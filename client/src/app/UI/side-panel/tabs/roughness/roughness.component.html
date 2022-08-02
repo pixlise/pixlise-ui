@@ -1,0 +1,121 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div fxLayout="column" fxFill>
+    <div fxLayout="row" fxLayoutAlign="space-between center" class="unit-padding light-background">
+        <span class="light-label">Roughness Map</span>
+        <two-state-icon-button
+            title="Toggle display of the roughness map on context image (can also be controlled on Layers panel)"
+            activeIcon="assets/button-icons/visible-on-yellow.svg"
+            inactiveIcon="assets/button-icons/visible-off.svg"
+            [active]="isMapShown"
+            (click)="onShowMap()">
+        </two-state-icon-button>
+    </div>
+    <div fxLayout="column" class="scrollable" style="max-height: calc(100vh - 130px)">
+        <closable-list label="User Entered Roughness">
+            <icon-button *ngIf="userPeakEditing" icon='assets/button-icons/plus-white.svg' title="Add Roughness Peak" (click)="onAddPeak()" header></icon-button>
+            <div fxLayout="column" list>
+                <div *ngIf="userRoughnessItems.length <= 0" class="none-text">None defined</div>
+                <div *ngIf="userRoughnessItems.length > 0" class="peaktable">
+                    <div class="table-header">
+                        <div class="cell0">PMC</div>
+                        <div class="cell eat-width"></div>
+                        <div class="cell">View</div>
+                        <div *ngIf="userPeakEditing" class="cell"></div>
+                    </div>
+                    <div
+                        *ngFor="let item of userRoughnessItems"
+                        class="table-row clickable table-text"
+                        [ngClass]="{'highlighted-row': item.id == visiblePeakId}"
+                        (click)="onClickUserPeakItem(item)">
+                        <div class="cell0">{{item.pmc}}</div>
+                        <div class="cell"></div>
+                        <two-state-icon-button
+                            class="cell"
+                            title="Selects the PMC of this roughness. This will be visible on Spectrum Chart if Display Spectra menu is set to show selected spectrum lines."
+                            activeIcon="assets/button-icons/visible-on-yellow.svg"
+                            inactiveIcon="assets/button-icons/visible-off.svg"
+                            [active]="item.id == visiblePeakId"
+                            (click)="onToggleUserPeakVisible(item);$event.stopPropagation();">
+                        </two-state-icon-button>
+                        <icon-button
+                            *ngIf="userPeakEditing"
+                            class="cell user-del"
+                            [hasBackground]="false"
+                            icon='assets/button-icons/close-cross.svg'
+                            title="Delete Roughness Peak"
+                            (click)="onDeleteUserPeak(item)">
+                        </icon-button>
+                    </div>
+                </div>
+            </div>
+        </closable-list>
+        <closable-list label="Detected Roughness">
+            <div fxLayout="column" list>
+                <!-- <div *ngIf="peaks.length <= 0" class="none-text centered">None defined</div> -->
+
+                <div class="peaktable">
+                    <div class="table-header">
+                        <div class="cell0 table-sort-button" [ngClass]="{'highlighted-col': sort==sortModePMC}" (click)="sort=sortModePMC">PMC</div>
+                        <div class="cell table-sort-button" [ngClass]="{'highlighted-col': sort==sortModeGlobalDiff}" (click)="sort=sortModeGlobalDiff">Global Difference</div>
+                        <div class="cell">View</div>
+                        <div *ngIf="userPeakEditing" class="cell">!Rough</div>
+                    </div>
+                    <div
+                        *ngFor="let item of roughnessItems"
+                        class="table-row clickable table-text"
+                        [ngClass]="{'highlighted-row': item.id == visiblePeakId}"
+                        (click)="onClickPeakItem(item)">
+                        <div class="cell0" [ngClass]="{'highlighted-col': sort==sortModePMC}">{{item.pmc}}</div>
+                        <div class="cell" [ngClass]="{'highlighted-col': sort==sortModeGlobalDiff}">{{item.globalDifference|number:'1.2-2'}}</div>
+                        <two-state-icon-button
+                            class="cell"
+                            title="Selects the PMC of this roughness. This will be visible on Spectrum Chart if Display Spectra menu is set to show selected spectrum lines."
+                            activeIcon="assets/button-icons/visible-on-yellow.svg"
+                            inactiveIcon="assets/button-icons/visible-off.svg"
+                            [active]="item.id == visiblePeakId"
+                            (click)="onTogglePeakVisible(item);$event.stopPropagation();">
+                        </two-state-icon-button>
+                        <icon-button
+                        *ngIf="userPeakEditing"
+                            class="cell"
+                            [hasBackground]="false"
+                            icon='assets/button-icons/close-cross.svg'
+                            title="Delete Roughness"
+                            (click)="onDeletePeak(item)">
+                        </icon-button>
+                    </div>
+                </div>
+            </div>
+        </closable-list>
+    </div>
+</div>

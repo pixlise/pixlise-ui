@@ -1,0 +1,135 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<ng-template #variogramSettingsMenu>
+    <div fxLayout="column" fxLayoutAlign="start start" class="settings-menu">
+        <h3>Settings</h3>
+        <two-state-button
+            leftLabel="Isotropic"
+            rightLabel="Vector"
+            toolTip="Switches drawing mode"
+            [active]="drawModeVector"
+            (onToggle)="setDrawModeVector($event)">
+        </two-state-button>
+
+        <h3>Model</h3>
+
+        <div fxLayout="row" fxLayoutAlign="start center">
+            <two-state-icon-button
+                activeIcon="assets/button-icons/radio-on.svg"
+                inactiveIcon="assets/button-icons/radio-off.svg"
+                [active]="varioModelIsExponential"
+                (onToggle)="onModelExponential()">
+            </two-state-icon-button>
+            <span>Exponential</span>
+        </div>
+        <div fxLayout="row" fxLayoutAlign="start center">
+            <two-state-icon-button
+                activeIcon="assets/button-icons/radio-on.svg"
+                inactiveIcon="assets/button-icons/radio-off.svg"
+                [active]="varioModelIsSpherical"
+                (onToggle)="onModelSpherical()">
+            </two-state-icon-button>
+            <span>Spherical</span>
+        </div>
+        <div fxLayout="row" fxLayoutAlign="start center">
+            <two-state-icon-button
+                activeIcon="assets/button-icons/radio-on.svg"
+                inactiveIcon="assets/button-icons/radio-off.svg"
+                [active]="varioModelIsGaussian"
+                (onToggle)="onModelGaussian()">
+            </two-state-icon-button>
+            <span>Gaussian</span>
+        </div>
+
+        <h3>Max Distance</h3>
+        <div fxLayout="row" fxLayoutAlign="space-between center">
+            <div class="slider-val" fxFlex>{{maxDistance|number:'1.4-4'}}mm</div>
+            <slider
+                [minValue]="distanceSliderMin"
+                [maxValue]="distanceSliderMax"
+                [pxLength]="88"
+                [value]="maxDistance"
+                (onChange)="onChangeDistance($event)">
+            </slider>
+        </div>
+
+        <h3>Number Of Bins</h3>
+        <div fxLayout="row" fxLayoutAlign="space-between center">
+            <div class="slider-val" fxFlex>{{binNumber}}</div>
+            <slider
+                [minValue]="binSliderMin"
+                [maxValue]="binSliderMax"
+                [pxLength]="88"
+                [value]="binNumber"
+                (onChange)="onChangeBins($event)">
+            </slider>
+        </div>
+    </div>
+</ng-template>
+
+<div class="panel outer-panel" fxLayout="column" fxFill>
+    <div fxLayout="row" fxLayoutAlign="space-between center" class="panel-title">
+        <widget-switcher [activeSelector]='thisSelector' [widgetPosition]='widgetPosition'></widget-switcher>
+        <div fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements">
+            <icon-button
+                (click)="onToggleSolo()"
+                title='Toggle Solo View'
+                icon="assets/button-icons/widget-solo.svg"
+                [state]="isSolo">
+            </icon-button>
+
+            <push-button (onClick)="onExpressions()" title="Choose elements/expressions to display">Elements</push-button>
+            <push-button (onClick)="onRegions($event)" title="Choose regions to display">Regions</push-button>
+
+            <widget-settings-menu [settingsDialog]="variogramSettingsMenu">
+                <icon-button
+                    title='Show Settings Menu'
+                    icon="assets/button-icons/settings.svg">
+                </icon-button>
+            </widget-settings-menu>
+        </div>
+    </div>
+
+    <app-widget-display-message *ngIf="errorMsg" [message]="errorMsg" fxFlex="100%"></app-widget-display-message>
+
+    <interactive-canvas
+        *ngIf="drawer && !errorMsg"
+        [ngClass]="cursorShown"
+        [drawer]="this"
+        [drawNotifier]="this"
+        [interactionHandler]="interaction"
+        [transform]="transform"
+        fxFlex="100%"> <!-- fxFlex here stretches out within the column layout parent above -->
+    </interactive-canvas>
+
+    <widget-key-display [items]="keyItems" class="key-location-top-right-below-title"></widget-key-display>
+</div>

@@ -1,0 +1,149 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<svg:svg class="range-svg horizontal" [attr.width]="pxDisplayLength" height="22" attr.viewBox="0 0 {{pxDisplayLength}} 22" fill="none" xmlns="http://www.w3.org/2000/svg" *ngIf="!orientVertical">
+
+    <ng-container *ngIf="trackColour!='viridis'">
+        <rect x="6" y="8" [attr.width]="pxLength-12" height="4" rx="2" [attr.fill]="trackColour"/>
+        <rect [attr.x]="rangeMinXDrawPos" y="8" [attr.width]="rangeMaxXDrawPos-rangeMinXDrawPos" height="4" rx="2" [attr.fill]="selectedTrackColour"/>
+        
+        <foreignObject height="12" width="12" attr.transform="translate({{rangeMinXDrawPos-6}},4)" class="foreign-handle">
+            <span class="circle-handle" (mousedown)="onMouseDown($event, true)" (mouseenter)="onMouseEnter($event, true)" (mouseleave)="onMouseLeave($event, true)">
+                <svg height="14" width="14">
+                    <circle transform="translate(8, 6)" r="6" fill="#F8F8F8"/>
+                </svg>
+                <span *ngIf="hoverMinValue" class="handle-tooltip">{{selectedMinValue.toFixed(2)}}</span>
+            </span>
+        </foreignObject>
+        <foreignObject height="12" width="12" attr.transform="translate({{rangeMaxXDrawPos-6}},4)" class="foreign-handle">
+            <span class="circle-handle" (mousedown)="onMouseDown($event, false)" (mouseenter)="onMouseEnter($event, false)" (mouseleave)="onMouseLeave($event, false)">
+                <svg height="14" width="14">
+                    <circle transform="translate(8, 6)" r="6" fill="#F8F8F8"/>
+                </svg>
+                <span *ngIf="hoverMaxValue" class="handle-tooltip">{{selectedMaxValue.toFixed(2)}}</span>
+            </span>
+        </foreignObject>
+    </ng-container>
+
+    <ng-container *ngIf="trackColour=='viridis'">
+        <!-- left-most area, below the min value -->
+        <rect x="6" y="6" [attr.width]="rangeMinXDrawPos" height="12" fill="black"/>
+
+        <!-- viridis image scaled to fit between tags -->
+        <rect
+            *ngFor="let clr of rampColours; let i = index"
+            [attr.x]="rangeMinXDrawPos+6+i*colourRampBoxWidth"
+            y="6"
+            [attr.width]="colourRampBoxWidth"
+            height="12"
+            attr.fill="{{clr}}"/>
+
+        <!-- above max value, max viridis colour -->
+        <rect [attr.x]="rangeMaxXDrawPos+6" y="6" [attr.width]="100-rangeMaxXDrawPos" height="12" fill="#FDFCC9"/>
+
+        <!-- min and max tags -->
+        <foreignObject width="6" height="20" attr.transform="translate({{rangeMinXDrawPos}},0)" style="position: relative;">
+            <span (mousedown)="onMouseDown($event, true)" class="handle left-handle">
+                <svg width="6" height="20">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M0 0H6V3.63636H5L0 0ZM6 20V3.63637H5V20H6Z" fill="#FFFF8D"/>
+                </svg>
+            </span>
+        </foreignObject>
+        <foreignObject width="6" height="20" attr.transform="translate({{rangeMaxXDrawPos+6}},0)" style="position: relative;">
+            <span (mousedown)="onMouseDown($event, false)" class="handle right-handle">
+                <svg width="6" height="20">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M6 0H0V3.63636H1L6 0ZM0 20V3.63637H1V20H0Z" fill="#FFFF8D"/>
+                </svg>
+            </span>
+        </foreignObject>
+    </ng-container>
+</svg>
+
+<svg:svg class="range-svg vertical" [attr.height]="pxDisplayLength" width="22" attr.viewBox="0 0 22 {{pxDisplayLength}}" fill="none" xmlns="http://www.w3.org/2000/svg" *ngIf="orientVertical">
+    <ng-container *ngIf="trackColour!='viridis'">
+        <rect y="6" x="8" [attr.height]="pxLength-12" width="4" ry="2" [attr.fill]="trackColour"/>
+        <rect [attr.y]="rangeMinXDrawPos" x="8" [attr.height]="rangeMaxXDrawPos-rangeMinXDrawPos" width="4" ry="2" [attr.fill]="selectedTrackColour"/>
+
+        <foreignObject height="12" width="12" attr.transform="translate(4,{{rangeMinXDrawPos}})" class="foreign-handle">
+            <span class="circle-handle" (mousedown)="onMouseDown($event, true)" (mouseenter)="onMouseEnter($event, true)" (mouseleave)="onMouseLeave($event, true)">
+                <svg height="14" width="14">
+                    <circle transform="translate(8, 6)" r="6" fill="#F8F8F8"/>
+                </svg>
+                <span *ngIf="hoverMinValue" class="handle-tooltip">
+                    <h5>{{selectedMinValue.toFixed(2)}}</h5>
+                </span>
+            </span>
+        </foreignObject>
+        <foreignObject height="12" width="12" attr.transform="translate(4,{{rangeMaxXDrawPos}})" class="foreign-handle">
+            <span class="circle-handle" (mousedown)="onMouseDown($event, false)" (mouseenter)="onMouseEnter($event, false)" (mouseleave)="onMouseLeave($event, false)">
+                <svg height="14" width="14">
+                    <circle transform="translate(8, 6)" r="6" fill="#F8F8F8"/>
+                </svg>
+                <span *ngIf="hoverMaxValue" class="handle-tooltip">
+                    <h5>{{selectedMaxValue.toFixed(2)}}</h5>
+                </span>
+            </span>
+        </foreignObject>
+    </ng-container>
+
+    <ng-container *ngIf="trackColour=='viridis'">
+        <!-- left-most area, below the min value -->
+        <rect x="6" y="6" [attr.height]="rangeMinXDrawPos" width="12" fill="black"/>
+
+        <!-- viridis image scaled to fit between tags -->
+        <rect
+            *ngFor="let clr of rampColours; let i = index"
+            [attr.y]="rangeMinXDrawPos+6+i*colourRampBoxWidth"
+            x="6"
+            [attr.height]="colourRampBoxWidth"
+            width="12"
+            attr.fill="{{clr}}"/>
+
+        <!-- above max value, max viridis colour -->
+        <rect [attr.y]="rangeMaxXDrawPos+6" x="6" [attr.height]="100-rangeMaxXDrawPos" width="12" fill="#FDFCC9"/>
+
+        <!-- min and max tags -->
+        <foreignObject height="6" width="20" attr.transform="translate(0,{{rangeMinXDrawPos}})" style="position: relative;">
+            <span (mousedown)="onMouseDown($event, true)" class="handle left-handle">
+                <svg height="6" width="20">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M0 0H6V3.63636H5L0 0ZM6 20V3.63637H5V20H6Z" fill="#FFFF8D"/>
+                </svg>
+            </span>
+        </foreignObject>
+        <foreignObject height="6" width="20" attr.transform="translate(0,{{rangeMaxXDrawPos+6}})" style="position: relative;">
+            <span (mousedown)="onMouseDown($event, false)" class="handle right-handle">
+                <svg height="6" width="20">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M6 0H0V3.63636H1L6 0ZM0 20V3.63637H1V20H0Z" fill="#FFFF8D"/>
+                </svg>
+            </span>
+        </foreignObject>
+    </ng-container>
+</svg>

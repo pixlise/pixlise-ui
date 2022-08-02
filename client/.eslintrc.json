@@ -1,0 +1,85 @@
+{
+    "env": {
+        "browser": true,
+        "es2021": true
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module"
+    },
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "rules": {
+        // 4-spaces indentation, that's how we roll. It unfortunately mangled a few
+        // bits of that had indentation to help dev interpretation but that's ok...
+        "indent": [
+            "error",
+            4
+        ],
+        "linebreak-style": [
+            "error",
+            "unix"
+        ],
+        // This is not the stone age, we use ""
+        "quotes": [
+            "error",
+            "double"
+        ],
+        // What've you got against semi colons?
+        "semi": [
+            "error",
+            "always"
+        ],
+        // Anywhere a variable isn't assigned to this whines if it's let not const
+        "prefer-const": [
+            "off"
+        ],
+        // Enforcing { on new line, but allows all single line {} shortcut
+        "brace-style": [
+            "error",
+            "allman",
+            {
+                "allowSingleLine": true
+            }
+        ],
+        // Doesn't like class var definition to contain type for eg in:
+        // Name: string = "hello";
+        // Pointless whinging
+        "@typescript-eslint/no-inferrable-types": [
+            "off"
+        ],
+        // Unused variables (including unused imports)
+        "no-unused-vars": "off", // need this off, see https://github.com/typescript-eslint/typescript-eslint/blob/main/packages/eslint-plugin/docs/rules/no-unused-vars.md
+        "@typescript-eslint/no-unused-vars": [
+            "error"
+        ],
+        // Taken mostly from the example for overrides: https://eslint.org/docs/rules/keyword-spacing
+        // We don't want spaces before/after but we do want a space after else, etc
+        "keyword-spacing": [
+            "error",
+            {
+                "overrides": {
+                    "if": {
+                        "after": false
+                    },
+                    "for": {
+                        "after": false
+                    },
+                    "while": {
+                        "after": false
+                    }
+                }
+            }
+        ],
+        // Spaces around operators, eg 1 + 2. We don't care, existing code is mixed.
+        "space-infix-ops": [
+            "off"
+        ]
+    }
+}

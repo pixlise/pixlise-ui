@@ -1,0 +1,190 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<cdk-virtual-scroll-viewport *ngIf="items" itemSize="{{itemSize}}" fxFlex="100%">
+    <ng-container *cdkVirtualFor="let item of items.items; templateCacheSize: 0">
+        <ng-container [ngSwitch]="item.itemType">
+            <ng-container *ngSwitchCase="elementsHeaderName">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
+                    <ng-content select="[elementHeader]" header></ng-content>
+                </context-visibility-header>
+            </ng-container>
+            <ng-container *ngSwitchCase="'element-map'">
+                <context-layer-settings
+                    [layerInfo]="item.content"
+                    [showSlider]="showOpacitySliders"
+                    [showSettings]="!showPureSwitchOnElements"
+                    [showColours]="showColourOptions"
+                    [showVisible]="true"
+                    [showPureSwitch]="showPureSwitchOnElements"
+                    [detectors]="detectors"
+                    [activeIcon]="selectedIcon"
+                    [inactiveIcon]="unselectedIcon"
+                    (visibilityChange)="onLayerVisibilityChange($event)"
+                    (colourChange)="onLayerColourChange($event)">
+                </context-layer-settings>
+            </ng-container>
+            <ng-container *ngSwitchCase="rgbMixHeaderName">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
+                    <ng-content select="[rgbMixHeader]" header></ng-content>
+                </context-visibility-header>
+            </ng-container>
+            <ng-container *ngSwitchCase="'rgbmix-exploratory'">
+                <div class="rgb-exploratory" fxLayout="column" fxLayoutAlign="space-around">
+                    <rgb-mix-selector
+                        [visible]="item.content.visible"
+                        [redChannelExpressionID]="item.content.red.expressionID"
+                        [greenChannelExpressionID]="item.content.green.expressionID"
+                        [blueChannelExpressionID]="item.content.blue.expressionID"
+                        [showVisibilityToggle]="true"
+                        (saveEvent)="onSaveRGBMixEvent($event)"
+                        (channelsChanged)="onExploratoryRGBChanged($event)">
+                    </rgb-mix-selector>
+                </div>
+            </ng-container>
+            <ng-container *ngSwitchCase="'rgbmix'">
+                <rgbmix-layer-settings
+                    [layerInfo]="item.content"
+                    [showEdit]="!item.shared"
+                    [showShare]="!item.shared"
+                    [activeIcon]="selectedIcon"
+                    [inactiveIcon]="unselectedIcon"
+                    (visibilityChange)="onLayerVisibilityChange($event)">
+                </rgbmix-layer-settings>
+            </ng-container>
+            <ng-container *ngSwitchCase="expressionsHeaderName">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
+                    <ng-content select="[expressionHeader]" header></ng-content>
+                </context-visibility-header>
+            </ng-container>
+            <ng-container *ngSwitchCase="'expression'">
+                <context-layer-settings
+                    [layerInfo]="item.content"
+                    [showSlider]="showOpacitySliders"
+                    [showSettings]="item.shared || !item.content.isPredefinedLayer"
+                    [showDelete]="!item.content.isPredefinedLayer"
+                    [showShare]="!item.content.isPredefinedLayer"
+                    [showColours]="showColourOptions"
+                    [showVisible]="true"
+                    [activeIcon]="selectedIcon"
+                    [inactiveIcon]="unselectedIcon"
+                    (visibilityChange)="onLayerVisibilityChange($event)"
+                    (colourChange)="onLayerColourChange($event)">
+                </context-layer-settings>
+            </ng-container>
+            <ng-container *ngSwitchCase="anomalyHeaderName">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
+                    <ng-content select="[anomalyHeader]" header></ng-content>
+                </context-visibility-header>
+            </ng-container>
+            <ng-container *ngSwitchCase="'anomaly'">
+                <context-layer-settings
+                    [layerInfo]="item.content"
+                    [showSlider]="false"
+                    [showSettings]="false"
+                    [showColours]="false"
+                    [showVisible]="true"
+                    [activeIcon]="selectedIcon"
+                    [inactiveIcon]="unselectedIcon"
+                    (visibilityChange)="onLayerVisibilityChange($event)">
+                </context-layer-settings>
+            </ng-container>
+            <ng-container *ngSwitchCase="pseudoIntensityHeaderName">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
+                    <ng-content select="[pseudoIntensityHeader]" header></ng-content>
+                </context-visibility-header>
+            </ng-container>
+            <ng-container *ngSwitchCase="'pseudointensity'">
+                <context-layer-settings
+                    [layerInfo]="item.content"
+                    [showSlider]="showOpacitySliders"
+                    [showSettings]="false"
+                    [showColours]="showColourOptions"
+                    [showVisible]="true"
+                    [activeIcon]="selectedIcon"
+                    [inactiveIcon]="unselectedIcon"
+                    (visibilityChange)="onLayerVisibilityChange($event)"
+                    (colourChange)="onLayerColourChange($event)">
+                </context-layer-settings>
+            </ng-container>
+            <ng-container *ngSwitchCase="settingHeaderName">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)">
+                </context-visibility-header>
+            </ng-container>
+            <ng-container *ngSwitchCase="'setting-scanpoints'">
+                <context-visibility-settings
+                    label="Scan Points"
+                    [bboxSettings]="false">
+                </context-visibility-settings>
+            </ng-container>
+            <ng-container *ngSwitchCase="'setting-footprint'">
+                <context-visibility-settings
+                    label="Instrument Footprint"
+                    [bboxSettings]="true">
+                </context-visibility-settings>
+            </ng-container>
+            <ng-container *ngSwitchCase="'empty'">
+                <context-visibility-empty
+                    [label]="item.content">
+                </context-visibility-empty>
+            </ng-container>
+            <ng-container *ngSwitchCase="'shared-section'">
+                <context-visibility-header
+                    [content]="item.content"
+                    [simpleMode]="true">
+                </context-visibility-header>
+            </ng-container>
+        </ng-container>
+    </ng-container>
+</cdk-virtual-scroll-viewport>

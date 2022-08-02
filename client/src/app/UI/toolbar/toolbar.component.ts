@@ -1,0 +1,339 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+import { CdkOverlayOrigin, ConnectionPositionPair, Overlay } from "@angular/cdk/overlay";
+import { Component, Injector, Input, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
+import { Title } from "@angular/platform-browser";
+import { NavigationEnd, ResolveEnd, Router } from "@angular/router";
+import { Subscription } from "rxjs";
+import { AuthenticationService } from "src/app/services/authentication.service";
+import { DataSetService } from "src/app/services/data-set.service";
+import { ExportDataService } from "src/app/services/export-data.service";
+import { ExportDataChoice } from "src/app/UI/export-data-dialog/export-models";
+import { UserMenuPanelComponent } from "src/app/UI/user-menu-panel/user-menu-panel.component";
+import { OverlayHost } from "src/app/utils/overlay-host";
+import { environment } from "src/environments/environment";
+
+
+class TabNav
+{
+    constructor(public label: string, public url: string, public enabled: boolean, public active: boolean = false)
+    {
+    }
+
+    get cssClass(): string
+    {
+        if(this.active)
+        {
+            return "nav-link-active";
+        }
+        if(!this.enabled)
+        {
+            return "nav-link-disabled";
+        }
+        return "nav-link-normal";
+    }
+}
+
+@Component({
+    selector: "app-toolbar",
+    templateUrl: "./toolbar.component.html",
+    styleUrls: ["./toolbar.component.scss"]
+})
+export class ToolbarComponent implements OnInit, OnDestroy
+{
+    @Input() titleToShow: string = "";
+    @Input() darkBackground: boolean = false;
+
+    @ViewChild(CdkOverlayOrigin) _overlayOrigin: CdkOverlayOrigin;
+
+    private _overlayHost: OverlayHost = null;
+
+    private _subs = new Subscription();
+    private _userPiquantConfigAllowed: boolean = false;
+    private _userUserAdminAllowed: boolean = false;
+    private _userPiquantJobsAllowed: boolean = false;
+    private _userExportAllowed: boolean = false;
+    private _isAnalysisTab: boolean = false;
+
+    private _currTab: string = "";
+    private _dataSetLoadedName = "";
+
+    title = "";
+    tabs: TabNav[] = [];
+    datasetID: string = "";
+
+    constructor(
+        private router: Router,
+        private _datasetService: DataSetService,
+        private authService: AuthenticationService,
+        private _exportService: ExportDataService,
+
+        private overlay: Overlay,
+        private viewContainerRef: ViewContainerRef,
+        private injector: Injector,
+        private titleService: Title
+    )
+    {
+    }
+
+    ngOnInit()
+    {
+        //this.UserLoggedIn = this.authService.loggedIn;
+        this.updateToolbar();
+
+        // Set up listeners for things that can change how we display...
+
+        // User login/logout/claims changing
+        this._subs.add(this.authService.getIdTokenClaims$().subscribe(
+            (claims)=>
+            {
+                this._userPiquantConfigAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionEditPiquantConfig);
+                this._userUserAdminAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionViewUserRoles);
+                this._userPiquantJobsAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionViewPiquantJobs);
+                this._userExportAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionExportMap);
+
+                this.updateToolbar();
+            },
+            (err)=>
+            {
+                this._userPiquantConfigAllowed = false;
+                this._userUserAdminAllowed = false;
+                this._userPiquantJobsAllowed = false;
+                this._userExportAllowed = false;
+
+                this.updateToolbar();
+            }
+        ));
+
+        // Enables more tabs/changes title, etc
+        this._subs.add(this._datasetService.dataset$.subscribe(
+            (dataset)=>
+            {
+                if(dataset)
+                {
+                    this.datasetID = this._datasetService.datasetIDLoaded;
+
+                    // If we load a dataset, we want to display the name
+                    this._dataSetLoadedName = dataset.experiment.getTitle();
+                    let sol = dataset.experiment.getSol();
+                    if(sol)
+                    {
+                        this._dataSetLoadedName = "SOL-"+sol+": "+this._dataSetLoadedName;
+                    }
+                    this.updateToolbar();
+                }
+                else
+                {
+                    this.datasetID = "";
+                    this._dataSetLoadedName = "";
+                    this.updateToolbar();
+                }
+            },
+            (err)=>
+            {
+                this.updateToolbar();
+            }
+        ));
+
+        // If user changes tabs, etc, we want to know
+        this._subs.add(this.router.events.subscribe(
+            (event)=>
+            {
+                if(event instanceof NavigationEnd || event instanceof ResolveEnd)
+                {
+                    this._overlayHost.hidePanel();
+                    this.updateToolbar();
+                }
+            }
+        ));
+    }
+
+    ngOnDestroy()
+    {
+        this._subs.unsubscribe();
+    }
+
+    ngAfterViewInit()
+    {
+        let userOverlayPos = [
+            new ConnectionPositionPair(
+                {
+                    originX: "end",
+                    originY: "bottom"
+                },
+                {
+                    overlayX: "end",
+                    overlayY: "top"
+                },
+                0, // Offset X
+                0  // Offset Y
+            )
+        ];
+
+        this._overlayHost = new OverlayHost(
+            this.overlay,
+            this.viewContainerRef,
+            this.injector,
+            this._overlayOrigin,
+            UserMenuPanelComponent,
+            userOverlayPos,
+            true
+        );
+    }
+
+    get showExport(): boolean
+    {
+        // titleToShow being non-empty means we're not on a dataset tab, eg Admin.
+        // Title being blank means dataset not yet loaded
+        return this.titleToShow.length <= 0 && this.title.length > 0 && this._userExportAllowed;
+    }
+
+    get showViewCapture(): boolean
+    {
+        return this._isAnalysisTab;
+    }
+
+    get showQuantPicker(): boolean
+    {
+        return (this._currTab == "Analysis" || this._currTab == "Element Maps");
+    }
+
+    private updateToolbar(): void
+    {
+        // Title to show overrides the dataset name
+        this.title = this.titleToShow ? this.titleToShow : this._dataSetLoadedName;
+
+        // Work out what URL we're on
+        const url = this.router.url;
+
+        // Build list of tabs
+        if(this._dataSetLoadedName.length <= 0)
+        {
+            this.tabs = [
+                //new TabNav('Help', 'help', true),
+                new TabNav("Datasets", "datasets", true)
+            ];
+        }
+        else
+        {
+            const datasetPrefix = "dataset/"+this.datasetID;
+
+            this.tabs = [
+                //new TabNav('Help', 'help', true),
+                new TabNav("Datasets", "datasets", true),
+                new TabNav("Analysis", datasetPrefix+"/analysis", true),
+            ];
+            // Only enabling maps tab if a quant is loaded
+            // TODO: Hide maps tap if no quants or whatever... this all changed when multiple quantifications came in, for now just enabling it always
+            this.tabs.push(new TabNav("Element Maps", datasetPrefix+"/maps", true));
+
+            if(environment.engineeringTabEnabled)
+            {
+                this.tabs.push(new TabNav("Engineering", datasetPrefix+"/engineering", true));
+            }
+
+            this.tabs.push(new TabNav("Quant Tracker", datasetPrefix+"/quant-logs", true));
+        }
+
+        if(this._userPiquantConfigAllowed)
+        {
+            this.tabs.push(new TabNav("Piquant", "piquant", true));
+        }
+
+        if(this._userUserAdminAllowed || this._userPiquantJobsAllowed)
+        {
+            this.tabs.push(new TabNav("Admin", "admin", true));
+        }
+
+        // Mark the right tab as being active
+        this._currTab = "";
+        for(let c = 0; c < this.tabs.length; c++)
+        {
+            this.tabs[c].active = url.indexOf("/"+this.tabs[c].url) > -1;
+
+            if(this.tabs[c].active)
+            {
+                this._currTab = this.tabs[c].label;
+            }
+        }
+
+        // Set the doc title to show the tab we're on
+        this.titleService.setTitle("PIXLISE" + (this._currTab.length > 0 ? (" - "+this._currTab) : ""));
+
+        // We only show saving of view state on analysis tab
+        this._isAnalysisTab = (this._currTab == "Analysis");
+    }
+
+    onUserMenu(): void
+    {
+        this._overlayHost.showPanel();
+    }
+
+    get isLoggedIn(): boolean
+    {
+        return this.authService.loggedIn;
+    }
+
+    onNavigate(tab: TabNav, event): void
+    {
+        event.preventDefault();
+
+        if(!tab.enabled)
+        {
+            return;
+        }
+        this.router.navigateByUrl("/"+tab.url);
+    }
+
+    onAbout(): void
+    {
+        this.router.navigateByUrl("/about");
+    }
+
+    onExport(): void
+    {
+        let choices = [
+            new ExportDataChoice("raw-spectra", "Raw Spectral Data Per PMC .csv (and bulk .msa)", false),
+            new ExportDataChoice("quant-map-csv", "PIQUANT Quantification map .csv", false),
+            //new ExportDataChoice('quant-map-tif', 'Floating point map images .tif', false),
+            new ExportDataChoice("beam-locations", "Beam Locations .csv", false),
+            new ExportDataChoice("context-image", "All context images with PMCs", false),
+            new ExportDataChoice("rois", "Regions of Interest PMC Members .csv", false),
+            new ExportDataChoice("unquantified-weight", "Unquantified Weight Percent .csv", false),
+        ];
+
+        this._exportService.exportData("PIXLISE Data", choices);
+    }
+
+    get discussLink(): string
+    {
+        return "https://discuss."+environment.appDomain;
+    }
+}

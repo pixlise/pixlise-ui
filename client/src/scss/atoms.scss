@@ -1,0 +1,313 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+@import 'variables.scss';
+
+/* See Figma PIXLISE - UI Components / atoms */
+/*
+h1 {
+    color: $clr-grey30;
+    font-family: "Roboto";
+    font-style: normal;
+    font-weight: 900;
+    font-size: 18px;
+    line-height: 21px;
+}
+
+h2 {
+    color: $clr-grey30;
+    font-family: "Roboto";
+    font-style: normal;
+    font-weight: bold;
+    font-size: 16px;
+    line-height: 19px;
+}
+
+.txt-navigation {
+    color: $clr-grey30;
+    font-family: "Roboto";
+    font-style: normal;
+    font-weight: 300;
+    font-size: 16px;
+    line-height: 19px;
+}
+
+.txt-button {
+    color: $clr-grey30;
+    font-family: "Roboto";
+    font-style: normal;
+    font-weight: 300;
+    font-size: 12px;
+    line-height: 14px;
+}
+*/
+
+.txt-dlg-heading {
+    color: $clr-gray-30;
+    font-family: Roboto;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 12px;
+    line-height: 14px;
+    text-transform: uppercase;
+}
+
+.txt-body {
+    color: $clr-gray-30;
+    font-family: "Roboto";
+    font-style: normal;
+    font-weight: normal;
+    font-size: 14px;
+    line-height: 16px;
+}
+
+.txt-button {
+    font-family: "Roboto";
+    font-style: normal;
+    font-weight: normal;
+    font-size: 14px;
+    line-height: 16px;
+
+    white-space: nowrap; 
+    overflow: hidden;
+}
+
+.txt-widget-title {
+    color: $clr-gray-30;
+    font-family: "Roboto";
+    font-style: normal;
+    font-weight: 900;
+    font-size: 16px;
+    line-height: 19px;
+    text-transform: uppercase;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.clickable {
+    user-select: none;
+    
+    &:hover {
+        cursor: pointer;
+    }
+}
+/*
+TODO: get this working... no time at time of writing
+.hover-circle {
+    &:hover {
+        background-color: rgba(var(--clr-gray-100), 0.2);
+        border-radius: $sz-unit;
+    }
+}
+*/
+.button-shadow {
+    margin: $sz-qtr;
+    // Drop shadow
+    box-shadow: 0px 0px $sz-half $clr-shadow;
+    border-radius: $sz-half;
+}
+
+.button-hoverable:hover {
+    // Drop shadow changes
+    box-shadow: 0px 0px $sz-half $clr-shadow-highlight;
+}
+
+.push-btn-rounded {
+    padding: $sz-half;
+    color: $clr-gray-30;
+    background-color: $clr-gray-100;
+    border-radius: $sz-half;
+    font-weight: normal;
+    font-size: 14px;
+    line-height: 16px;
+
+    white-space: nowrap; 
+    overflow: hidden;
+
+    &:hover {
+        background-color: $clr-gray-90;
+    }
+}
+
+.card {
+    background-color: $ui-panel-title-colour;
+    border-radius: $ui-border-radius;
+
+    padding: 0px;
+
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.dlg-border-no-backdrop {
+    padding: $sz-double;
+    box-shadow: 0px 0px $sz-unit $clr-shadow;
+}
+
+.dlg-border-with-backdrop {
+    padding: $sz-double;
+}
+
+.card-toolbar {
+    padding: $sz-unit;
+}
+
+.top-shadow {
+    z-index: 10;
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+}
+
+.card-toolbar-shadow {
+    @extend .top-shadow;
+    border-radius: 8px 8px 0px 0px;
+}
+
+.gap-separated-horizontal-elements > * + * {
+    margin-left: $sz-unit;
+}
+
+.gap-separated-vertical-elements > * + * {
+    margin-top: $sz-unit;
+}
+
+.gap-separated-vertical-elements-half > * + * {
+    margin-top: $sz-half;
+}
+
+.snackbar-below-toolbar {
+    position: absolute;
+    top: $sz-unit;
+    left: $sz-unit;
+    pointer-events: none;
+}
+
+.unit-padding {
+    padding: $sz-unit;
+}
+
+.setting-row-no-pad {
+    background-color: $clr-gray-70;
+    border-bottom: 1px solid $clr-gray-80;
+}
+
+.setting-row {
+    @extend .unit-padding;
+    @extend .setting-row-no-pad;
+}
+
+.setting-row-visible {
+    background-color: $clr-gray-60;
+}
+
+.setting-label {
+    @extend .txt-body;
+    user-select: none;
+}
+
+.obj-shared {
+    user-select: none;
+    margin-left: $sz-unit;
+}
+
+.obj-colour {
+}
+
+.list-subheading {
+    @extend .txt-dlg-heading;
+
+    background-color: $clr-gray-80;
+    padding: $sz-unit;
+    user-select: none;
+}
+
+.gray-label {
+    color: $clr-gray-30;
+    font-size: 14px;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+// Looks like an element tile but it's not an actual element, just a symbol (eg oxide/carbonate)
+.not-an-element {
+    color: $clr-gray-10;
+    background-color: $clr-gray-80;
+    border: 1px solid $clr-gray-100;
+    padding: 0px $sz-half;
+    white-space: nowrap;
+    line-height: 26px;
+    height: 26px; // element tiles are 28 but we also have a 1px border
+    cursor: default;
+}
+
+// Tab-like navigation, used on various pages under the toolbar
+nav {
+    margin: $sz-unit;
+}
+
+nav > a {
+    font-size: 16px;
+    line-height: 16px;
+    //border-top-left-radius: $sz-half;
+    //border-top-right-radius: $sz-half;
+    color: $clr-gray-30;
+
+    &:hover {
+        color: $clr-yellow;
+        text-decoration: none;
+    }
+}
+
+nav > a.active {
+    color: $clr-yellow;
+    //background-color: $clr-gray-80;
+}
+
+nav > a + a {
+    margin-left: 32px;
+}
+
+.full-height-below-toolbar {
+    max-height: calc(100vh - var(--top-toolbar-height)) !important;
+}
+
+.search-box-group {
+    background-color: $clr-gray-70;
+    border: 1px solid $clr-gray-60;
+    border-radius: $sz-half;
+}
+
+.badge-host {
+    position: relative;
+}
+
+.move-up-left {
+    position: absolute;
+    right: -6px;
+    top: -6px;
+}

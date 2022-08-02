@@ -1,0 +1,324 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+/* You can add global styles to this file, and also import other style files */
+
+@use "~inter-ui/default" as inter-ui with (
+    $inter-font-path: "~inter-ui/Inter (web latin)"
+);
+@include inter-ui.weight-400;
+@include inter-ui.weight-700;
+
+// The underlying colours
+:root {
+    --clr-gray-100: 27,29,30; // #1b1d1e
+    --clr-gray-90: 34,40,41; // #222829
+    --clr-gray-80: 41,49,55; // #293137
+    --clr-gray-70: 68,76,80; // #444c50
+    --clr-gray-60: 84,95,100; // #545f64
+    --clr-gray-50: 150,150,150; // #969696
+    --clr-gray-40: 188,188,188; // #bcbcbc
+    --clr-gray-30: 190,192,194; // #bec0c2
+    --clr-gray-20: 235,236,236; // #ebecec
+    --clr-gray-10: 248,248,248; // #f8f8f8
+
+    --clr-orange: 252,141,89; // #fc8d59
+    --clr-yellow: 255,255,141; // #ffff8d
+    --clr-blue: 145,191,219; // #91bfdb
+    --clr-purple: 158,63,255; // #9e3fff
+    --clr-context-purple: 255,0,246; // #ff00f6
+
+    --top-toolbar-height: 37px;
+    --widget-drop-below-title: 42px; // 38px title bar + standard padding
+    //--title-height-and-padding: 53px; // 37px title bar + top & bottom unit height
+}
+
+@import 'material-theme.scss';
+@import 'variables.scss';
+@import 'atoms.scss';
+
+@import '~codemirror/lib/codemirror';
+//@import '~codemirror/theme/material';
+@import 'pixlise-codemirror-theme.scss';
+
+/*@import "~@angular/material/prebuilt-themes/purple-green.css";*/
+
+
+/*html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+*/
+
+html, body {
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+/* TODO: There has to be a better way than !important with overriding angular things! */
+body {
+    background-color: $ui-color-background !important;
+    font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+button {
+    text-transform: uppercase;
+    padding: 0px 6px !important;
+    border-radius: $ui-border-radius !important;
+}
+
+a {
+    color: $clr-blue;
+    font-weight: bold;
+    text-decoration: none;
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+input {
+    background-color: $clr-gray-70;
+    color: $clr-gray-30;
+    border: 1px solid $clr-gray-60;
+    border-radius: $sz-half;
+
+    &:focus {
+        outline: none;
+    }
+}
+
+textarea {
+    resize: none;
+    background-color: $clr-gray-70;
+    color: $clr-gray-30;
+    border: 1px solid $clr-gray-60;
+    border-radius: $sz-half;
+
+    &:focus {
+        outline: none;
+    }
+}
+
+.mat-flat-button {
+    min-width: unset !important;
+    line-height: 24px !important;
+}
+.mat-icon {
+    width: 20px !important;
+    height: 20px !important;
+}
+.material-icons {
+    font-size: $button-icon-size !important;
+}
+mat-button-toggle {
+    width: 30px;
+    height: 24px;
+}
+.mat-button-toggle-label-content {
+    padding: 0px !important;
+    line-height: 24px !important;
+}
+.mat-select {
+    width: 90px !important;
+    margin-left: $small-gap;
+    padding: 4px;
+    border-radius: $ui-border-radius !important;
+    background-color: $button-colour !important;
+}
+
+/*
+Required because without this canvas seems to decide its own size
+and the whole UI no longer conforms to flex layout - some canvases
+end up at a default 300px wide
+*/
+.canvas-container {
+    position: relative;
+    min-height: 100px;
+    background-color: black;
+}
+canvas {
+    position: absolute;
+}
+
+/*
+button {
+    background-color: $button-colour;
+    color: $button-text-colour;
+
+    font-size: $button-text-size;
+    text-transform: uppercase;
+
+    border-radius: $ui-border-radius;
+    border-width: 0px;
+
+    padding: 4px 8px;
+
+    /* Remove blue halo around clicked buttons * /
+    outline: 0;
+
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: $button-colour-hover;
+    color: $button-text-colour;
+    font-size: $button-text-size;
+}
+*/
+/* Text styles */
+small {
+    color: $ui-color-text-dim;
+}
+
+.mat-dialog-container {
+    /*background-color: unset !important;*/
+    background-color: $ui-panel-title-colour;
+    padding: 0px !important;
+    border-radius: $sz-unit !important;
+}
+
+.panel {
+    background-color: $ui-panel-title-colour;
+    border-radius: $ui-border-radius;
+
+    border: 1px solid $ui-panel-title-colour;
+
+    padding: 0px;
+    /*margin: 5px;*/
+
+    overflow: hidden;
+    box-sizing: border-box;
+/*
+    &:hover {
+        border: 1px solid $ui-panel-border-highlight-colour;
+    }
+*/
+}
+
+// Inserted after dynamic creation, see createUnderSpectrumComponents()
+.flex-fill {
+    flex: 1 1 0%;
+    box-sizing: border-box;
+}
+
+.mat-h1, .mat-title, .mat-typography h1 {
+    margin: 0px;
+}
+.mat-h2, .mat-title, .mat-typography h2 {
+    margin: 0px;
+}
+.mat-h3, .mat-title, .mat-typography h3 {
+    margin: 0px;
+}
+
+h1, h2, h3 {
+    color: $ui-color-text-title;
+    text-transform: uppercase;
+}
+
+.panel-title {
+    padding: 5px;
+}
+
+.panel-upper {
+    /* TODO: fix height */
+    /*height: 65%;*/
+    height: 600px;
+}
+
+.panel-scrollable-content {
+    overflow-y: auto;
+}
+
+.card-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.widget-display-msg {
+    text-align: center;
+
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+
+    color: $ui-color-text-dim;
+}
+
+.large-top-gap {
+    margin-top: 35vh;
+}
+
+.obj-creator {
+    color: $clr-gray-50;
+    user-select: none;
+}
+
+.pickable {
+    padding: $small-gap;
+
+    &:hover {
+        cursor: pointer;
+        background-color: $clr-gray-60;
+    }
+}
+
+.hover-highlight:hover {
+    background-color: $ui-panel-title-highlight-colour;
+}
+
+.empty-msg {
+    padding: 80px 0px;
+    text-align: center;
+    color: $ui-color-text-dim;
+}
+
+.key-location-top-right-below-title {
+    position: absolute;
+    top: var(--widget-drop-below-title);
+    right: $sz-unit;
+}
+
+.selection-location-top-left {
+    position: absolute;
+    top: var(--widget-drop-below-title);
+    left: $sz-unit;
+}
+
+/* Needed so we can have floating controls over the canvas */
+.outer-panel {
+    position: relative;
+}
+
+.empty-overlay-backdrop {
+/* Deliberately empty: we don't want to tint the screen when a backdrop is showing */
+}

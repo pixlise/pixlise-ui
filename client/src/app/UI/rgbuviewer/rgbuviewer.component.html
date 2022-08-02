@@ -1,0 +1,84 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<!--
+<ng-template #settingsMenu>
+    <two-state-button
+        leftLabel="Linear Colour"
+        rightLabel="Log Colour"
+        toolTip="Toggles between linear and log colour"
+        [active]="logColour"
+        (onToggle)="onToggleLogColour()">
+    </two-state-button>
+    <slider
+        title="Brightness"
+        [value]="brightness"
+        [minValue]="0"
+        [maxValue]="10"
+        (onChange)="onChangeBrightness($event)"></slider>
+</ng-template>
+-->
+<div class="panel outer-panel" fxLayout="column" fxFill>
+    <div fxLayout="row" fxLayoutAlign="space-between center" class="panel-title">
+        <widget-switcher [activeSelector]='thisSelector' [widgetPosition]='widgetPosition'></widget-switcher>
+
+        <div fxLayout="row" fxLayoutAlign="start center">
+            <icon-button
+                (click)="onToggleSolo()"
+                title='Toggle Solo View'
+                icon="assets/button-icons/widget-solo.svg"
+                [state]="isSolo">
+            </icon-button>
+            <div>Gain: {{brightness|number:'1.3-3'}}</div>
+            <slider
+                title="Brightness"
+                [value]="brightness"
+                [minValue]="0"
+                [maxValue]="10"
+                [pxLength]="100"
+                (onChange)="onChangeBrightness($event)">
+            </slider>
+            <push-button title="Reset brightness to 1.0" (onClick)="onResetBrightness()">Reset</push-button>
+        </div>
+    </div>
+
+    <app-widget-display-message *ngIf="errorMsg" [message]="errorMsg" fxFlex="100%"></app-widget-display-message>
+
+    <interactive-canvas
+        *ngIf="drawer && !errorMsg"
+        [ngClass]="cursorShown"
+        [drawer]="this"
+        [drawNotifier]="this"
+        [interactionHandler]="interaction"
+        [transform]="dummyTransform"
+        fxFlex="100%"> <!-- fxFlex here stretches out within the column layout parent above -->
+    </interactive-canvas>
+</div>

@@ -1,0 +1,111 @@
+TY  - JOUR
+AU  - Allwood, Abigail C.
+AU  - Wade, Lawrence A.
+AU  - Foote, Marc C.
+AU  - Elam, William Timothy
+AU  - Hurowitz, Joel A.
+AU  - Battel, Steven
+AU  - Dawson, Douglas E.
+AU  - Denise, Robert W.
+AU  - Ek, Eric M.
+AU  - Gilbert, Martin S.
+AU  - King, Matthew E.
+AU  - Liebe, Carl Christian
+AU  - Parker, Todd
+AU  - Pedersen, David A. K.
+AU  - Randall, David P.
+AU  - Sharrow, Robert F.
+AU  - Sondheim, Michael E.
+AU  - Allen, George
+AU  - Arnett, Kenneth
+AU  - Au, Mitchell H.
+AU  - Basset, Christophe
+AU  - Benn, Mathias
+AU  - Bousman, John C.
+AU  - Braun, David
+AU  - Calvet, Robert J.
+AU  - Clark, Benton
+AU  - Cinquini, Luca
+AU  - Conaby, Sterling
+AU  - Conley, Henry A.
+AU  - Davidoff, Scott
+AU  - Delaney, Jenna
+AU  - Denver, Troelz
+AU  - Diaz, Ernesto
+AU  - Doran, Gary B.
+AU  - Ervin, Joan
+AU  - Evans, Michael
+AU  - Flannery, David O.
+AU  - Gao, Ning
+AU  - Gross, Johannes
+AU  - Grotzinger, John
+AU  - Hannah, Brett
+AU  - Harris, Jackson T.
+AU  - Harris, Cathleen M.
+AU  - He, Yejun
+AU  - Heirwegh, Christopher M.
+AU  - Hernandez, Christina
+AU  - Hertzberg, Eric
+AU  - Hodyss, Robert P.
+AU  - Holden, James R.
+AU  - Hummel, Christopher
+AU  - Jadusingh, Matthew A.
+AU  - Jørgensen, John L.
+AU  - Kawamura, Jonathan H.
+AU  - Kitiyakara, Amarit
+AU  - Kozaczek, Kris
+AU  - Lambert, James L.
+AU  - Lawson, Peter R.
+AU  - Liu, Yang
+AU  - Luchik, Thomas S.
+AU  - Macneal, Kristen M.
+AU  - Madsen, Soren N.
+AU  - McLennan, Scott M.
+AU  - McNally, Patrick
+AU  - Meras, Patrick L.
+AU  - Muller, Richard E.
+AU  - Napoli, Jamie
+AU  - Naylor, Bret J.
+AU  - Nemere, Peter
+AU  - Ponomarev, Igor
+AU  - Perez, Raul M.
+AU  - Pootrakul, Napat
+AU  - Romero, Raul A.
+AU  - Rosas, Rogelio
+AU  - Sachs, Jared
+AU  - Schaefer, Rembrandt T.
+AU  - Schein, Michael E.
+AU  - Setterfield, Timothy P.
+AU  - Singh, Vritika
+AU  - Song, Eugenie
+AU  - Soria, Mary M.
+AU  - Stek, Paul C.
+AU  - Tallarida, Nicholas R.
+AU  - Thompson, David R.
+AU  - Tice, Michael M.
+AU  - Timmermann, Lars
+AU  - Torossian, Violet
+AU  - Treiman, Allan
+AU  - Tsai, Shihchuan
+AU  - Uckert, Kyle
+AU  - Villalvazo, Juan
+AU  - Wang, Mandy
+AU  - Wilson, Daniel W.
+AU  - Worel, Shana C.
+AU  - Zamani, Payam
+AU  - Zappe, Mike
+AU  - Zhong, Fang
+AU  - Zimmerman, Richard
+PY  - 2020
+DA  - 2020/11/19
+TI  - PIXL: Planetary Instrument for X-Ray Lithochemistry
+JO  - Space Science Reviews
+SP  - 134
+VL  - 216
+IS  - 8
+AB  - Planetary Instrument for X-ray Lithochemistry (PIXL) is a micro-focus X-ray fluorescence spectrometer mounted on the robotic arm of NASA’s Perseverance rover. PIXL will acquire high spatial resolution observations of rock and soil chemistry, rapidly analyzing the elemental chemistry of a target surface. In 10 seconds, PIXL can use its powerful 120 μm-diameter X-ray beam to analyze a single, sand-sized grain with enough sensitivity to detect major and minor rock-forming elements, as well as many trace elements. Over a period of several hours, PIXL can autonomously raster-scan an area of the rock surface and acquire a hyperspectral map comprised of several thousand individual measured points. When correlated to a visual image acquired by PIXL’s camera, these maps reveal the distribution and abundance variations of chemical elements making up the rock, tied accurately to the physical texture and structure of the rock, at a scale comparable to a 10X magnifying geological hand lens. The many thousands of spectra in these postage stamp-sized elemental maps may be analyzed individually or summed together to create a bulk rock analysis, or subsets of spectra may be summed, quantified, analyzed, and compared using PIXLISE data analysis software. This hand lens-scale view of the petrology and geochemistry of materials at the Perseverance landing site will provide a valuable link between the larger, centimeter- to meter-scale observations by Mastcam-Z, RIMFAX and Supercam, and the much smaller (micron-scale) measurements that would be made on returned samples in terrestrial laboratories.
+SN  - 1572-9672
+UR  - https://doi.org/10.1007/s11214-020-00767-7
+DO  - 10.1007/s11214-020-00767-7
+ID  - Allwood2020
+ER  - 

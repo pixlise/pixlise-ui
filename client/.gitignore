@@ -1,0 +1,5 @@
+/src/app/protolibs
+/src/environments/version.ts
+/node_modules
+/dist
+/.angular

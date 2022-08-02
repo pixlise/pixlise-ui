@@ -1,0 +1,141 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+@import 'variables.scss';
+
+.about {
+    background-color: $clr-gray-90;
+}
+
+.welcome {
+    background-color: $clr-gray-100;
+    color: $clr-gray-30;
+    //height: 200px;
+    font-family: Inter;
+    font-size: 34px;
+    font-weight: 400;
+    line-height: 42px;
+    padding: $sz-double;
+}
+
+.welcome-subtext {
+    font-size: 14px;
+    line-height: 16px;
+}
+
+.about-container {
+    width: 336px;
+}
+
+h1 {
+    text-transform: uppercase;
+    font-family: Roboto;
+    font-weight: 900;
+    font-size: 16px;
+    line-height: 19px;
+    color: $clr-yellow;
+    padding: $sz-double 0px $sz-unit 0px;
+}
+
+h2 {
+    text-transform: uppercase;
+    font-family: Roboto;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 14px;
+    color: $clr-gray-10;
+    padding: $sz-unit 0px $sz-unit 0px;
+}
+
+h3 {
+    text-transform: uppercase;
+    font-family: Roboto;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 14px;
+    color: $clr-gray-30;
+    padding-bottom: $sz-unit;
+}
+
+.cap-desc, p {
+    font-family: Inter, Roboto;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    color: $clr-gray-30;
+    margin: 0px;
+}
+
+.role {
+    font-style: italic;
+}
+
+img {
+    object-fit: contain;
+}
+
+.cap-box {
+    border: solid 1px $clr-gray-30;
+    border-radius: $sz-half;
+    padding: $sz-unit;
+    height: 160px;
+    margin-bottom: $sz-unit;
+}
+
+.cap-desc {
+    padding: $sz-unit;
+    display: none;
+}
+
+.cap-box:hover > .cap-desc {
+    display: block;
+}
+
+.cap-box:hover > img {
+    display: none;
+}
+
+.redirection-alert {
+    height: 24px;
+    width: auto;
+}
+
+.redirection-text {
+    margin-top: $sz-unit;
+    font-weight: 700;
+    font-family: Inter;
+    font-size: 12px;
+    line-height: 16px;
+    margin-bottom: $sz-double;
+    text-align: center;
+}
+
+.para-gap {
+    margin: $sz-unit 0px;
+}

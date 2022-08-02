@@ -1,0 +1,447 @@
+import { BaseContextImageTool, IToolHost, ContextImageToolId } from './base-context-image-tool';
+import { IContextImageModel } from 'src/app/UI/context-image-view-widget/model-interface';
+import { DataSet, DataSetLocation } from 'src/app/models/DataSet';
+import { CanvasMouseEventId } from 'src/app/UI/atoms/interactive-canvas/interactive-canvas.component';
+import { LocationDataLayer, LocationData2D, LocationDataPointShape } from 'src/app/models/LocationData2D';
+import { CLR_LOWLIGHT, CLR_ERROR, CLR_ERROR2, CLR_BLACK } from 'src/app/utils/colours';
+import { Point, distanceBetweenPoints, addVectors, scaleVector, normalizeVector, getVectorBetweenPoints, getVectorLength } from 'src/app/models/Geometry';
+import { CANVAS_FONT_SIZE_TITLE } from 'src/app/utils/drawing';
+
+
+export class PMCInspector extends BaseContextImageTool
+{
+    private mouseHoverLocationIdx = -1;
+    private highlighedLocation: Point;
+
+    private pmcDisplayNormal: LocationDataLayer = new LocationDataLayer('normal_spectra', 'normal_spectra', null);
+    private pmcDisplayDwell: LocationDataLayer = new LocationDataLayer('dwell_spectra', 'dwell_spectra', null);
+    private pmcDisplayContextImage: LocationDataLayer = new LocationDataLayer('context_image', 'context_image', null);
+
+    constructor(contextImageSvc: IContextImageModel)
+    {
+        super(ContextImageToolId.PMC_INSPECTOR, contextImageSvc);
+    }
+
+    activate(): void
+    {
+        let dataset = this.contextImageSvc.dataset;
+        if(dataset)
+        {
+            this.pmcDisplayNormal.clearPoints();
+            this.pmcDisplayDwell.clearPoints();
+            this.pmcDisplayContextImage.clearPoints();
+
+            let locList = dataset.experiment.getLocationsList()
+
+            const normalScale = 1;
+            const largeScale = 1.6;
+
+            for(let loc of dataset.locationPointCache)
+            {
+                if(loc.coord)
+                {
+                    // Eugenies spreadsheet displays:
+                    // PMCs as small grey squares, on black lines
+                    // JPG as red diamond
+                    // UNC as orange diamond
+                    // OFS as blue X
+                    // TRN as purple +
+                    // SLI_A struct as green square
+                    // SLI_B struct as dark red square
+                    // ROI as yellow circle
+                    //
+                    // To try to be consistant, lets show the JPGs the same way, don't have
+                    // any of the other data yet.
+
+                    // All are added to the normal display
+                    this.pmcDisplayNormal.addPoint(new LocationData2D(loc.coord.x, loc.coord.y, 1, CLR_ERROR2, LocationDataPointShape.CIRCLE, normalScale));
+
+                    // If it has dwell spectra...
+                    if(dataset.hasDwellSpectra(loc.locationIdx))
+                    {
+                        this.pmcDisplayDwell.addPoint(new LocationData2D(loc.coord.x, loc.coord.y, 1, CLR_ERROR2, LocationDataPointShape.CIRCLE, largeScale));
+                    }
+
+                    // And if it has a context image...
+                    let ctxImg = locList[loc.locationIdx].getContextImage();
+                    if(ctxImg.length > 0)
+                    {
+                        this.pmcDisplayContextImage.addPoint(new LocationData2D(loc.coord.x, loc.coord.y, 1, CLR_ERROR2, LocationDataPointShape.DIAMOND, largeScale));
+                    }
+                }
+            }
+        }
+    }
+
+    onMouseEvent(event): boolean
+    {
+        if(event.shiftKey)
+        {
+            return this.panZoomMouseMove(event);
+        }
+
+        if(event.eventID == CanvasMouseEventId.MOUSE_LEAVE)
+        {
+            // Clear mouse highlight point
+            this.setMouseHoverLocationIdx(-1, this.contextImageSvc.dataset);
+            return true;
+        }
+
+        if(event.eventId == CanvasMouseEventId.MOUSE_WHEEL)
+        {
+            return this.handleMouseScrollZoom(event);
+        }
+
+        if(event.eventId == CanvasMouseEventId.MOUSE_DOWN)
+        {
+            // If it's a mouse down, start selected indexes from scratch
+            return true;
+        }
+        else if(event.eventId == CanvasMouseEventId.MOUSE_MOVE)
+        {
+            // Just moving it around, show highlighted idx if pointing to something
+            let idx = this.getDataIdxForPoint(event.point, this.contextImageSvc.dataset);
+            if(idx != this.mouseHoverLocationIdx)
+            {
+                this.setMouseHoverLocationIdx(idx, this.contextImageSvc.dataset);
+                return true; // Only re-draw if our highlight location changed, otherwise nothing to redraw for!
+            }
+        }
+        else if(event.eventId == CanvasMouseEventId.MOUSE_DRAG)
+        {
+            // They're dragging, add anything they drag over to the selected points
+            /*if(this.processPoint(event.point, this.contextImageSvc.dataset))
+            {
+                return true;
+            }*/
+        }
+        else if(event.eventId == CanvasMouseEventId.MOUSE_UP)
+        {
+            // Mouse released, process it (may have just been a click with no mouse drag msg in between)
+            this.processPoint(event.point, this.contextImageSvc.dataset)
+            return true;
+        }
+
+        return false;
+    }
+
+    drawWorldSpace(screenContext: CanvasRenderingContext2D, worldTransform: CanvasWorldTransform)
+    {
+        // NOTE: we ignore showOverlayPoints as it's not shown on the toolbar for our tool
+
+        // Draw the locations (as unfilled circles, hopefully not too distracting)
+        // NOTE: this only draws the LINES not the points, they come below!
+        let firstPMC = this.getFirstPMCLocation(this.contextImageSvc.dataset);
+
+        let settings = this.contextImageSvc.getPMCInspectorSettings();
+        if(settings.showPMCPath)
+        {
+            this.drawPMCPath(screenContext, this.contextImageSvc.dataset);
+        }
+
+        // The actual PMC points (currently purple)
+        let radius = this.drawPointRadius();
+
+        if(settings.showNormalPMC)
+        {
+            this.pmcDisplayNormal.drawLocationData(screenContext, radius, true);
+        }
+        if(settings.showDwellPMC)
+        {
+            this.pmcDisplayDwell.drawLocationData(screenContext, radius, true);
+        }
+        if(settings.showContextImagePMC)
+        {
+            this.pmcDisplayContextImage.drawLocationData(screenContext, radius, true);
+        }
+
+        // Draws the starting PMC number on top of everything
+        if(settings.showPMCPath)
+        {
+            this.drawPMCLabel(screenContext, firstPMC, this.contextImageSvc.dataset);
+        }
+
+        // Draw highlighted/selected points with the tool colour
+        let clr = this.getToolColour();
+
+        // Draw these a bit bigger than prev points
+        radius = this.drawPointRadius(1.1);
+
+        screenContext.save();
+
+            screenContext.fillStyle = clr;
+            screenContext.strokeStyle = clr;
+            screenContext.lineWidth = this.getDrawLineWidth(2);
+
+            // Draw what we're operating on
+            if(settings.highlightedPMCs.size > 0)
+            {
+                this.showHighlightPoint(screenContext, this.contextImageSvc.dataset, settings.highlightedPMCs.values().next().value);
+            }
+
+            // Draw a highlighted location if there is one
+            if(this.mouseHoverLocationIdx >= 0)
+            {
+                clr = this.getAddModeColour(); // Get add mode colour, not the active one, technically PMC has no add/subtract
+                                               // mode but if we call getModeColour we'd still be influenced by it by re-colouring
+                                               // the highlight point!
+
+                //screenContext.fillStyle = clr;
+                screenContext.strokeStyle = clr;
+
+                this.drawCircle(screenContext, this.highlighedLocation, radius, false);
+            }
+
+        screenContext.restore();
+    }
+
+    private showHighlightPoint(screenContext: CanvasRenderingContext2D, dataset: DataSet, pmc: number): void
+    {
+        let radius = this.drawPointRadius(1.1);
+
+        // Enough to show the first one, if there are multiple, they're stacked!
+        let idx = this.contextImageSvc.dataset.pmcToLocationIndex[pmc];
+        let locPt = this.contextImageSvc.dataset.locationPointCache[idx];
+        if(locPt && locPt.coord)
+        {
+            this.drawCircle(screenContext, locPt.coord, radius, false);
+
+            // If we have a "next" one, draw an arrow to it
+            let nextIdx = this.contextImageSvc.dataset.pmcToLocationIndex[pmc+1];
+            let nextLocPt = this.contextImageSvc.dataset.locationPointCache[nextIdx];
+
+            if(nextLocPt && nextLocPt.coord)
+            {
+                this.drawArrow(screenContext, dataset, locPt, nextLocPt, 1.5);
+            }
+        }
+    }
+
+    private drawArrow(screenContext: CanvasRenderingContext2D, dataset: DataSet, locStart: DataSetLocation, locEnd: DataSetLocation, scale: number): void
+    {
+        screenContext.beginPath();
+            screenContext.moveTo(locEnd.coord.x, locEnd.coord.y);
+
+            // Get a line normal to the direction
+            let dirVec = getVectorBetweenPoints(locEnd.coord, locStart.coord);
+
+            // Arrow head size is 1/3 the size of the smallest distance between 2 points
+            //let arrowHeadSize = getVectorLength(dirVec)/3;
+            let dirDist = getVectorLength(dirVec);
+            let arrowHeadSize = dataset.locationDisplayPointRadius/3 * scale;
+            if(dirDist > dataset.locationDisplayPointRadius*10)
+            {
+                // It's wayyy bigger, make a larger arrow head
+                arrowHeadSize *= 3;
+            }
+
+            let dir = scaleVector(normalizeVector(dirVec), arrowHeadSize);
+            let norm = scaleVector(new Point(dir.y, -dir.x), 0.4*scale);
+
+            let arrowLeft = addVectors(locEnd.coord, addVectors(dir, norm));
+            let arrowRight = addVectors(locEnd.coord, addVectors(dir, scaleVector(norm, -1)));
+
+            screenContext.lineTo(arrowLeft.x, arrowLeft.y);
+            screenContext.lineTo(arrowRight.x, arrowRight.y);
+
+        screenContext.closePath();
+        screenContext.fill();
+    }
+
+    // Return true if something was changed
+    private processPoint(ptWorld: Point, dataset: DataSet): boolean
+    {
+        let idx = this.getDataIdxForPoint(ptWorld, dataset);
+
+        if(idx > -1)
+        {
+            // Tell the service
+            let settings = this.contextImageSvc.getPMCInspectorSettings();
+            settings.highlightedPMCs = new Set<number>([dataset.locationPointCache[idx].PMC]);
+            this.contextImageSvc.setPMCInspectorSettings(settings);
+        }
+
+        this.setMouseHoverLocationIdx(idx, dataset);
+        return true;
+    }
+
+    private getDataIdxForPoint(worldPt: Point, dataset: DataSet): number
+    {
+        let idxs = [];
+        for(let loc of dataset.locationPointCache)
+        {
+            if( loc.coord &&
+                Math.abs(worldPt.x-loc.coord.x) < 3 &&
+                Math.abs(worldPt.y-loc.coord.y) < 3 )
+            {
+                idxs.push(loc.locationIdx);
+            }
+        }
+
+        // If we've got multiple, find the closest one geometrically
+        let closestDist = null;
+        let closestIdx = -1;
+        for(let idx of idxs)
+        {
+            let comparePt = dataset.locationPointCache[idx].coord;
+            if(closestIdx == -1)
+            {
+                closestIdx = idx;
+
+                if(idxs.length > 0)
+                {
+                    closestDist = distanceBetweenPoints(worldPt, comparePt);
+//console.log(idx+': '+worldPt.x+','+worldPt.y+' dist to: '+comparePt.x+','+comparePt.y+' distance='+closestDist);
+                }
+            }
+            else
+            {
+                let dist = distanceBetweenPoints(worldPt, comparePt);
+//console.log(idx+': '+worldPt.x+','+worldPt.y+' dist to: '+comparePt.x+','+comparePt.y+' distance='+closestDist);
+                if(dist < closestDist)
+                {
+                    closestIdx = idx;
+                    closestDist = dist;
+                }
+            }
+        }
+
+//console.log('Closest: '+closestIdx);
+        return closestIdx;
+    }
+
+    private setMouseHoverLocationIdx(idx: number, dataset: DataSet): void
+    {
+        this.mouseHoverLocationIdx = idx;
+
+        if(idx < 0)
+        {
+            this.highlighedLocation = null;
+        }
+        else if(dataset.locationPointCache[idx].coord)
+        {
+            this.highlighedLocation = dataset.locationPointCache[idx].coord;
+        }
+    }
+
+    private getFirstPMCLocation(dataset: DataSet): DataSetLocation
+    {
+        // Loop through all PMCs in order, draw arrow to next one
+        let minPMC = dataset.minimumPMC;
+        let pmcCount = Object.keys(dataset.pmcToLocationIndex).length;
+
+        let firstPMC: DataSetLocation = null;
+
+        for(let c = 1; c < pmcCount; c++)
+        {
+            let lastPMC = minPMC+c-1;
+            let thisPMC = minPMC+c;
+
+            let lastLocIdx = dataset.pmcToLocationIndex[lastPMC];
+            let thisLocIdx = dataset.pmcToLocationIndex[thisPMC];
+
+            if(lastLocIdx != undefined && thisLocIdx != undefined)
+            {
+                let startItem = dataset.locationPointCache[lastLocIdx];
+                let endItem = dataset.locationPointCache[thisLocIdx];
+
+                if(startItem.coord && endItem.coord)
+                {
+                    return startItem;
+                }
+            }
+        }
+
+        return 
+    }
+
+    private drawPMCPath(screenContext: CanvasRenderingContext2D, dataset: DataSet): void
+    {
+        if(!dataset || !dataset.locationPointCache)
+        {
+            return;
+        }
+
+        // Loop through all PMCs in order, draw arrow to next one
+        let minPMC = dataset.minimumPMC;
+        let pmcCount = Object.keys(dataset.pmcToLocationIndex).length;
+
+        screenContext.save();
+
+        let colour = CLR_LOWLIGHT.asString();
+        screenContext.strokeStyle = colour;
+        screenContext.fillStyle = colour;
+        screenContext.lineWidth = 0.4;
+
+        let firstPoint = true;
+
+        for(let c = 1; c < pmcCount; c++)
+        {
+            let lastPMC = minPMC+c-1;
+            let thisPMC = minPMC+c;
+
+            let lastLocIdx = dataset.pmcToLocationIndex[lastPMC];
+            let thisLocIdx = dataset.pmcToLocationIndex[thisPMC];
+
+            if(lastLocIdx != undefined && thisLocIdx != undefined)
+            {
+                let startItem = dataset.locationPointCache[lastLocIdx];
+                let endItem = dataset.locationPointCache[thisLocIdx];
+
+                if(startItem.coord && endItem.coord)
+                {
+                    // Draw an arrow head for the first one
+                    if(firstPoint)
+                    {
+                        this.drawArrow(screenContext, dataset, startItem, endItem, 1);
+                        firstPoint = false;
+                    }
+
+                    // Draw line from last to this
+                    screenContext.beginPath();
+                        screenContext.moveTo(startItem.coord.x, startItem.coord.y);
+                        screenContext.lineTo(endItem.coord.x, endItem.coord.y);
+                    screenContext.closePath();
+                    screenContext.stroke();
+                }
+            }
+        }
+        screenContext.restore();
+    }
+
+    drawPMCLabel(screenContext: CanvasRenderingContext2D, pmc: DataSetLocation, dataset: DataSet): void
+    {
+        // Draw first PMC value
+        // Make sure it's "away" from the object
+        let scaledFontSize = (CANVAS_FONT_SIZE_TITLE*1.2/this.contextImageSvc.panZoom.scale);
+        let offset = scaleVector(normalizeVector(getVectorBetweenPoints(dataset.locationPointBBox.center(), pmc.coord)), scaledFontSize);
+
+        if(offset.x > 0)
+        {
+            screenContext.textAlign = "left";
+        }
+        else
+        {
+            screenContext.textAlign = "right";
+        }
+
+        if(offset.y > 0)
+        {
+            screenContext.textBaseline = "top";
+        }
+        else
+        {
+            screenContext.textBaseline = "bottom";
+        }
+
+        let pos = addVectors(pmc.coord, offset);
+
+        screenContext.save();
+
+            screenContext.font = scaledFontSize+'px Roboto';
+            screenContext.fillStyle = CLR_BLACK.asString();
+            screenContext.fillText('PMC: '+pmc.PMC, pos.x, pos.y);
+
+        screenContext.restore();
+    }
+}

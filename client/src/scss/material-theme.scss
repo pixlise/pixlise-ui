@@ -1,0 +1,83 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+@import '~@angular/material/theming';
+@import 'variables.scss';
+
+
+// https://material.angular.io/guide/typography
+// Define a custom typography config that overrides the font-family and specific items
+$pixlise-typography: mat-typography-config(
+    $font-family: 'Roboto, monospace',
+    $headline: mat-typography-level(18px, 24px, 700), // only used on main toolbar centre text
+    $title: mat-typography-level(16px, 16px, 700),    // panel captions use this
+    $body-1: mat-typography-level(14px, 14px, 400),   // all the rest...
+    $button: mat-typography-level(12px, 12px, 400),
+    /*$caption: mat-typography-level(4px, 12px, 400)*/
+    //$input: mat-typography-level(16px, 1.25, 400)
+);
+
+
+// Plus imports for other components in your app.
+
+// Include the common styles for Angular Material. We include this here so that you only
+// have to load a single css file for Angular Material in your app.
+// Be sure that you only ever include this mixin once!
+@include mat-core($pixlise-typography);
+
+
+// https://blog.thoughtram.io/angular/2017/05/23/custom-themes-with-angular-material.html
+/*
+Primary - Main colors most widely used across all screens and components.
+Accent - Also known as the secondary color. Used for floating action buttons and interactive elements.
+Warn - Colors to convey error state.
+Foreground - Used for text and icons.
+Background - Colors used for element backgrounds.
+*/
+
+// Define the palettes for your theme using the Material Design palettes available in palette.scss
+// (imported above). For each palette, you can optionally specify a default, lighter, and darker
+// hue. Available color palettes: https://material.io/design/color/
+// Also useful: https://material.io/design/color/#tools-for-picking-colors
+$pixlise-app-primary: mat-palette($mat-gray, 900, 900, 900);
+$pixlise-app-accent: mat-palette($mat-yellow, A100);
+
+// The warn palette is optional (defaults to red).
+$pixlise-app-warn: mat-palette($mat-red);
+
+// Create the theme object (a Sass map containing all of the palettes).
+$pixlise-app-theme: mat-dark-theme($pixlise-app-primary, $pixlise-app-accent, $pixlise-app-warn);
+
+// Include theme styles for core and each component used in your app.
+// Alternatively, you can import and @include the theme mixins for each component
+// that you are using.
+@include angular-material-theme($pixlise-app-theme);
+
+@include mat-base-typography($pixlise-typography);
+@include angular-material-typography($pixlise-typography);
