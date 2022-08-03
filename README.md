@@ -1,5 +1,7 @@
 # PIXLISE
 
+[![DOI](https://zenodo.org/badge/519266678.svg)](https://zenodo.org/badge/latestdoi/519266678)
+
 ## Data Visualisation for Mars 2020 Rover Project
 
 ### What's here?
