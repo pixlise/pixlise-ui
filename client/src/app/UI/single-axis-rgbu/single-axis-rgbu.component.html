@@ -1,0 +1,118 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<ng-template #selectionSettingsMenu>
+    <div fxLayout="column" class="gap-separated-vertical-elements">
+        <multi-state-button
+            class="selection-modes"
+            [stateNames]='selectionModes'
+            [items]="['assets/button-icons/minus-yellow.svg', 'assets/button-icons/reset.svg', 'assets/button-icons/plus-white.svg']"
+            [activeState]='currentSelectionMode'
+            (onChange)="onChangeSelectionMode($event)"
+        ></multi-state-button>
+        <push-button (onClick)="onSelectionExclude()" title="Excludes selected pixels (inverts selection)">Exclude</push-button>
+        <push-button (onClick)="onSelectionClear()" title="Clears selected pixels">Clear</push-button>
+
+        <div fxLayout="column" fxLayoutAlign="start center" >
+            <label>ROI Overlap:</label>
+            <two-state-button
+                leftLabel="Opacity"
+                rightLabel="Stacked"
+                [active]="roiStackedOverlap"
+                (onToggle)="onToggleROIOStackedOverlap($event)"
+            >
+            </two-state-button>
+        </div>
+    </div>
+</ng-template>
+
+<div class="panel outer-panel" fxLayout="column" fxFill>
+    <div fxLayout="row" fxLayoutAlign="space-between center" class="panel-title">
+        <widget-switcher [activeSelector]='thisSelector' [widgetPosition]='widgetPosition'></widget-switcher>
+        <div fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements">
+
+            <push-button (onClick)="onMinerals($event)" title="Choose mineral areas to display">Minerals</push-button>
+            <push-button (onClick)="onRegions($event)" title="Choose RGBU regions to display">Regions</push-button>
+            <widget-settings-menu [settingsDialog]="selectionSettingsMenu">
+                <icon-button
+                    title='Show Settings Menu' 
+                    icon="assets/button-icons/settings.svg">
+                </icon-button>
+            </widget-settings-menu>
+
+            <icon-button
+                (click)="onToggleSolo()"
+                title='Toggle Solo View'
+                icon="assets/button-icons/widget-solo.svg"
+                [state]="isSolo">
+            </icon-button>
+        </div>
+    </div>
+
+    <app-widget-display-message *ngIf="errorMsg" [message]="errorMsg" fxFlex="100%"></app-widget-display-message>
+    <div fxLayout="row" class="axis-container" id="{{widgetPosition}}">
+        <div *ngIf="model && model.drawData" class="axis y-axis">
+            <h5 class="axis-label">
+                Count
+            </h5>
+        </div>
+        <div fxLayout="column" class="canvas-container">
+            <interactive-canvas
+                *ngIf="drawer && !errorMsg"
+                [ngClass]="cursorShown"
+                [drawer]="this"
+                [drawNotifier]="this"
+                [interactionHandler]="interaction"
+                [transform]="transform"
+                fxFlex="100%"> <!-- fxFlex here stretches out within the column layout parent above -->
+            </interactive-canvas>
+            <div *ngIf="model && model.drawData" class="axis x-axis">
+                <h5 class="axis-label" (click)="onAxisClick()">
+                    <span class="clickable-axis-btn"><img alt="X Axis Options" src="assets/icons/clickable.svg" /></span>
+                    {{model && model.drawData ? model.drawData.xAxisUnitLabel : ""}}
+                </h5>
+                <span>
+                    <range-slider
+                        [minValue]="xAxisMinMax.min"
+                        [selectedMinValue]="selectedMinXValue === null ? model.xAxis.minValue : selectedMinXValue"
+                        [maxValue]="xAxisMinMax.max"
+                        [selectedMaxValue]="selectedMaxXValue === null ? model.xAxis.maxValue : selectedMaxXValue"
+                        [pxLength]="xAxisSliderLength"
+                        (onChange)="onChangeXAxis($event)"
+                    >
+                    </range-slider>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <widget-key-display [items]="keyItems" class="key-location-top-right-below-title"></widget-key-display>
+</div>

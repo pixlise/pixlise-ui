@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { BrowserModule, Title } from "@angular/platform-browser";
-import { NgModule, ErrorHandler, Injectable } from "@angular/core";
+import { NgModule, ErrorHandler, Injectable, APP_INITIALIZER } from "@angular/core";
 import { HTTP_INTERCEPTORS } from "@angular/common/http";
 import { HttpClientModule } from "@angular/common/http";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
@@ -40,8 +40,6 @@ import { CdkAccordionModule } from "@angular/cdk/accordion";
 import * as Sentry from "@sentry/browser";
 
 import { CodemirrorModule } from "@ctrl/ngx-codemirror";
-
-import { environment } from "../environments/environment";
 
 import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
@@ -109,8 +107,6 @@ import { RolesComponent } from "./routes/admin/roles/roles.component";
 import { UserListItemComponent } from "./routes/admin/user-list-item/user-list-item.component";
 import { SnackBarComponent } from "./UI/atoms/snack-bar/snack-bar.component";
 import { SnackComponent } from "./UI/atoms/snack-bar/snack/snack.component";
-import { EngineeringComponent } from "./routes/dataset/engineering/engineering.component";
-import { PMCInspectorViewComponent } from "./routes/dataset/engineering/pmcinspector-view/pmcinspector-view.component";
 import { SliderComponent } from "./UI/atoms/slider/slider.component";
 import { ClosableListComponent } from "./UI/atoms/closable-list/closable-list.component";
 import { PickerDialogComponent } from "./UI/atoms/picker-dialog/picker-dialog.component";
@@ -210,31 +206,12 @@ import { ElementColumnPickerComponent } from "./UI/atoms/expression-list/layer-s
 import { RGBMixSelectorComponent } from "./UI/atoms/expression-list/rgbmix-selector/rgbmix-selector.component";
 import { RGBMixLayerSettingsComponent } from "./UI/atoms/expression-list/layer-settings/rgbmix-layer-settings.component";
 import { FilterBoxComponent } from "./UI/atoms/expression-list/filter-box/filter-box.component";
-
-
-if(environment.sentry_dsn.length > 0)
-{
-    console.log("Setting up sentry");
-    Sentry.init({
-        dsn: environment.sentry_dsn,
-        environment: environment.name,
-        // Added to stop all logs coming from instrument.js, see:
-        // https://github.com/getsentry/sentry-react-native/issues/794
-        integrations: [
-            new Sentry.Integrations.Breadcrumbs({
-                console: false
-            })
-        ]
-    });
-
-    const version = VERSION["version"]+"-"+VERSION["hash"];
-    console.log("Sentry Initialised, adding version tag: " + version);
-    Sentry.setTag("version", version);
-}
-else
-{
-    console.log("No Sentry DNS, Sentry error reporting disabled");
-}
+import { SingleAxisRGBUComponent } from "./UI/single-axis-rgbu/single-axis-rgbu.component";
+import { SpectrumFitContainerComponent } from "./UI/spectrum-chart-widget/spectrum-fit-container/spectrum-fit-container.component";
+import { FitLineConfigComponent } from "./UI/spectrum-chart-widget/spectrum-fit-container/fit-line-config/fit-line-config.component";
+import { FitElementsComponent } from "./UI/spectrum-chart-widget/spectrum-fit-container/fit-elements/fit-elements.component";
+import { FitElementSelectionComponent } from "./UI/spectrum-chart-widget/spectrum-fit-container/fit-element-selection/fit-element-selection.component";
+import { EnvConfigurationInitService, AppConfig } from "./services/env-configuration-init.service";
 
 
 @Injectable()
@@ -250,6 +227,44 @@ export class SentryErrorHandler implements ErrorHandler
         Sentry.showReportDialog({ eventId });
     }
 }
+
+const appInitializerFn = (configService: EnvConfigurationInitService)=>
+{
+    return ()=>
+    {
+        let config = configService.readAppConfig();
+
+        config.then((config: AppConfig)=>
+        {
+            // Init sentry now that we have the config
+            if(config.sentry_dsn.length > 0)
+            {
+                console.log("Setting up sentry");
+                Sentry.init({
+                    dsn: config.sentry_dsn,
+                    environment: config.name,
+                    // Added to stop all logs coming from instrument.js, see:
+                    // https://github.com/getsentry/sentry-react-native/issues/794
+                    integrations: [
+                        new Sentry.Integrations.Breadcrumbs({
+                            console: false
+                        })
+                    ]
+                });
+
+                const version = VERSION["version"]+"-"+VERSION["hash"];
+                console.log("Sentry Initialised, adding version tag: " + version);
+                Sentry.setTag("version", version);
+            }
+            else
+            {
+                console.log("No Sentry DNS, Sentry error reporting disabled");
+            }
+        });
+
+        return config;
+    };
+};
 
 @NgModule({
     declarations: [
@@ -272,7 +287,6 @@ export class SentryErrorHandler implements ErrorHandler
         PeriodicTableComponent,
         LayerControlComponent,
         AboutComponent,
-        PMCInspectorViewComponent,
         ContextImagePickerComponent,
         QuantificationTableComponent,
         HistogramViewComponent,
@@ -314,7 +328,6 @@ export class SentryErrorHandler implements ErrorHandler
         SnackBarComponent,
         SnackComponent,
         PushButtonComponent,
-        EngineeringComponent,
         LayerSettingsComponent,
         VisibilitySettingsComponent,
         VisibilitySettingsHeaderComponent,
@@ -393,7 +406,12 @@ export class SentryErrorHandler implements ErrorHandler
         CurrentQuantificationComponent,
         ScreenCaptureButtonComponent,
         ExpressionListComponent,
-        FilterBoxComponent
+        FilterBoxComponent,
+        SingleAxisRGBUComponent,
+        SpectrumFitContainerComponent,
+        FitLineConfigComponent,
+        FitElementsComponent,
+        FitElementSelectionComponent
     ],
     imports: [
         BrowserModule,
@@ -410,6 +428,13 @@ export class SentryErrorHandler implements ErrorHandler
         NgxDropzoneModule
     ],
     providers: [
+        EnvConfigurationInitService,
+        {
+            provide: APP_INITIALIZER,
+            useFactory: appInitializerFn,
+            multi: true,
+            deps: [EnvConfigurationInitService]
+        },
         Title,
         {
             provide: MAT_DIALOG_DEFAULT_OPTIONS,
@@ -429,13 +454,15 @@ export class SentryErrorHandler implements ErrorHandler
             provide: MatDialogRef,
             useValue: {}
         },
-        ...(environment.sentry_dsn.length > 0 ? [{ provide: ErrorHandler, useClass: SentryErrorHandler }] : [])
+        {
+            provide: ErrorHandler,
+            useClass: SentryErrorHandler
+        }
     ],
     entryComponents: [
         LayerControlComponent,
         ExpressionPickerComponent,
         ExpressionEditorComponent,
-        PMCInspectorViewComponent,
         QuantSelectorPanelComponent,
         UserMenuPanelComponent,
         AnnotationOptionsComponent,

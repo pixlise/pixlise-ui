@@ -27,32 +27,42 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { async, ComponentFixture, TestBed } from "@angular/core/testing";
-import { EngineeringComponent } from "./engineering.component";
 
+@import 'variables.scss';
+//@import 'atoms.scss';
 
-describe("EngineeringComponent", () => 
-{
-    let component: EngineeringComponent;
-    let fixture: ComponentFixture<EngineeringComponent>;
+.scrollable {
+    overflow-y: auto;
+    background-color: $clr-gray-90;
+}
 
-    beforeEach(async(() => 
-    {
-        TestBed.configureTestingModule({
-            declarations: [ EngineeringComponent ]
-        })
-            .compileComponents();
-    }));
+.footer {
+    height: 42px;
+    background-color: $clr-gray-80;
+}
 
-    beforeEach(() => 
-    {
-        fixture = TestBed.createComponent(EngineeringComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
+// Similar to card-toolbar-shadow
+.top-toolbar-shadow {
+    z-index: 10;
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
 
-    it("should create", () => 
-    {
-        expect(component).toBeTruthy();
-    });
-});
+    height: 40px;
+}
+
+.top-toolbar {
+    @extend .top-toolbar-shadow;
+
+    font-size: 12px;
+    font-weight: 400;
+    text-transform: uppercase;
+
+    user-select: none;
+}
+
+.left-gap {
+    padding-left: $sz-unit;
+}
+
+.chosen-list-footer {
+    padding: $sz-unit;
+}

@@ -37,8 +37,6 @@ import { ElementTileClickEvent } from "src/app/UI/periodic-table/element-tile/el
 import { TabSelectors } from "src/app/UI/spectrum-chart-widget/spectrum-peak-identification/tab-selectors";
 
 
-
-
 @Component({
     selector: TabSelectors.tabPeriodicTable,
     templateUrl: "./periodic-table-tab.component.html",
@@ -49,7 +47,6 @@ export class PeriodicTableTabComponent implements OnInit, OnDestroy
     private _subs = new Subscription();
 
     selectedElements = new Set<number>();
-    maxHighlightedElements: number = 1;
 
     lineGroups: XRFLineGroup[] = [];
 
@@ -143,19 +140,5 @@ export class PeriodicTableTabComponent implements OnInit, OnDestroy
     onClear()
     {
         this._spectrumService.mdl.xrfLinesPicked = [];
-    }
-
-    protected getLines(group: XRFLineGroup): XRFLine[]
-    {
-        let result: XRFLine[] = [];
-        for(let line of group.lines)
-        {
-            result.push(line);
-        }
-        for(let line of group.escapeLines)
-        {
-            result.push(line);
-        }
-        return result;
     }
 }

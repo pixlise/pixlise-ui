@@ -32,9 +32,7 @@ import { Subscription, timer } from "rxjs";
 import { LayoutService } from "src/app/services/layout.service";
 import { NotificationItem, NotificationService } from "src/app/services/notification.service";
 import { VersionUpdateCheckerService } from "src/app/services/version-update-checker.service";
-import { environment } from "src/environments/environment";
-
-
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 
 @Component({
@@ -52,7 +50,7 @@ export class NotificationBannerComponent implements OnInit
     constructor(
         private _notificationService: NotificationService,
         private _versionCheckService: VersionUpdateCheckerService,
-        private _layoutService: LayoutService
+        private _layoutService: LayoutService,
     )
     {
     }
@@ -68,7 +66,7 @@ export class NotificationBannerComponent implements OnInit
 
         // Start timer in a little while, don't want it rushing straight away
         const timerStartMs = 1000;
-        this._subs.add(timer(timerStartMs, environment.alertPollInterval_ms).subscribe(
+        this._subs.add(timer(timerStartMs, EnvConfigurationInitService.appConfig.alertPollInterval_ms).subscribe(
             (counter: number)=>
             {
                 this._notificationService.pollAPI();

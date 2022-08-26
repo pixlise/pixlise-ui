@@ -41,11 +41,6 @@ import { TabSelectors } from "src/app/UI/spectrum-chart-widget/spectrum-peak-ide
 import { SPECIAL_QUANT_ID } from "src/app/UI/spectrum-chart-widget/spectrum-peak-identification/tabs/element-set-row/element-set-row.component";
 
 
-
-
-
-
-
 @Component({
     selector: TabSelectors.tabElementSets,
     templateUrl: "./element-sets.component.html",

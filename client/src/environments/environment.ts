@@ -34,29 +34,7 @@
 export const environment = {
     production: false,
     route_dbg: false,
-    name: "local",
-
-    auth0_domain: "",
-    auth0_client: "",
-    // auth0_secret <-- not needed! Client should never have this
-    auth0_audience: "",
-    auth0_namespace: "",
-
-    sentry_dsn: "",
-
-    appDomain: "", // Sometimes forms discuss.pixlise.org, or www.pixlise.org
-    apiUrl: "http://localhost:8080/", // For running API locally. Must end in /
-
-    alertPollInterval_ms: 10000,
-    versionPollInterval_ms: 300000,
-    versionPollUrl: "",
-
-    engineeringTabEnabled: false,
-    allowDifferentMapSizesInExpressions: true,
-
-    expectedDataCollectionAgreementVersion: "1.0",
-
-    unassignedNewUserRoleId: "" // Auth0 role ID for unassigned new user
+    configName: "local-development-pixlise-config.json"
 };
 
 /*

@@ -28,7 +28,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { MinMax } from "src/app/models/BasicTypes";
-import { environment } from "src/environments/environment";
 
 
 export class PMCDataValue
@@ -392,25 +391,18 @@ export class PMCDataValues
 
         if(A.length != B.length)
         {
-            if(!environment.allowDifferentMapSizesInExpressions)
-            {
-                throw new Error("operationWithMap failed, maps not equal size: "+A.length+", other: "+B.length);
-            }
-            else
-            {
-                // Now in the multi-quant world, this is a valid scenario - user may have quantified an ROI with an element that wasn't
-                // quantified on any other PMCs, so if an expression deals with these 2 columns, we will have a different number of PMCs
-                // in each map. Instead of all-out failing we can take the intersection of PMCs between the 2 sets and try to work it out
-                let intersectionPMCValues = PMCDataValues.filterToCommonPMCsOnly([this, map]);
-                A = intersectionPMCValues[0].values;
-                B = intersectionPMCValues[1].values;
+            // Now in the multi-quant world, this is a valid scenario - user may have quantified an ROI with an element that wasn't
+            // quantified on any other PMCs, so if an expression deals with these 2 columns, we will have a different number of PMCs
+            // in each map. Instead of all-out failing we can take the intersection of PMCs between the 2 sets and try to work it out
+            let intersectionPMCValues = PMCDataValues.filterToCommonPMCsOnly([this, map]);
+            A = intersectionPMCValues[0].values;
+            B = intersectionPMCValues[1].values;
 
-                // We only really care if the 2 inputs were of different lengths!
-                //if(A.length != this.values.length || B.length != map.values.length)
-                if(this.values.length != map.values.length)
-                {
-                    warning = "Operation combining 2 sets of values had mismatched PMCs, some PMCS missing from result";
-                }
+            // We only really care if the 2 inputs were of different lengths!
+            //if(A.length != this.values.length || B.length != map.values.length)
+            if(this.values.length != map.values.length)
+            {
+                warning = "Operation combining 2 sets of values had mismatched PMCs, some PMCS missing from result";
             }
         }
 

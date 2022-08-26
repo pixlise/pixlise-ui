@@ -256,6 +256,19 @@ export class roiDisplayState
     }
 }
 
+export class singleAxisRGBUWidgetState
+{
+    constructor(
+        public minerals: string[],
+        public channelA: string,
+        public channelB: string,
+        public roiStackedOverlap: boolean
+    )
+    {
+    }
+}
+
+
 export class rgbuPlotWidgetState
 {
     constructor(
@@ -314,6 +327,7 @@ export class ViewState
         public variogramState: Map<string, variogramState>,
         public spectrums: Map<string, spectrumWidgetState>,
         public rgbuPlots: Map<string, rgbuPlotWidgetState>,
+        public singleAxisRGBU: Map<string, singleAxisRGBUWidgetState>,
         public rgbuImages: Map<string, rgbuImagesWidgetState>,
         public parallelograms: Map<string, parallelogramWidgetState>,
 
@@ -374,6 +388,7 @@ export class ViewStateService
     public static readonly widgetSelectorVariogram = "variogram-widget";
     public static readonly widgetSelectorRGBUViewer = "rgbu-viewer-widget";
     public static readonly widgetSelectorRGBUPlot = "rgbu-plot-widget";
+    public static readonly widgetSelectorSingleAxisRGBU = "single-axis-rgbu-widget";
     public static readonly widgetSelectorParallelCoordinates = "parallel-coords-widget";
     public static readonly widgetSelectorSpectrum = "spectrum-widget";
     public static readonly widgetSelectorContextImage = "context-image";
@@ -385,6 +400,7 @@ export class ViewStateService
     public static readonly widgetSelectorSpectrumRegions = "spectrum-region-picker";
     public static readonly widgetSelectorSpectrumAnnotations = "spectrum-annotations";
     public static readonly widgetSelectorSpectrumPeakID = "spectrum-peak-identification";
+    public static readonly widgetSelectorSpectrumFit = "spectrum-fit";
 
     public static readonly AllPointsColour: RGBA = Colours.GRAY_10;
     public static readonly SelectedPointsColour: RGBA = Colours.CONTEXT_BLUE;
@@ -418,6 +434,7 @@ export class ViewStateService
     private _showPeakIdentification = false;
     private _showAnnotations = false;
     private _showSpectrumRegionPicker = false;
+    private _showSpectrumFit = false;
 
     private _showSidePanel = false;
 
@@ -792,6 +809,11 @@ export class ViewStateService
         this.updateAnalysisViewSelectors();
     }
 
+    get showContextImageLayers(): boolean
+    {
+        return this._showContextImageLayers;
+    }
+
     set showContextImageOptions(val: boolean)
     {
         this.closeUnderContextPanels();
@@ -800,9 +822,15 @@ export class ViewStateService
         this.updateAnalysisViewSelectors();
     }
 
+    get showContextImageOptions(): boolean
+    {
+        return this._showContextImageOptions;
+    }
+
     private closeUnderSpectrumPanels(): void
     {
         this._showSpectrumRegionPicker = false;
+        this._showSpectrumFit = false;
         this._showAnnotations = false;
         this._showPeakIdentification = false;
     }
@@ -815,12 +843,22 @@ export class ViewStateService
         this.updateAnalysisViewSelectors();
     }
 
+    get showPeakIdentification(): boolean
+    {
+        return this._showPeakIdentification;
+    }
+
     set showAnnotations(val: boolean)
     {
         this.closeUnderSpectrumPanels();
         this._showAnnotations = val;
 
         this.updateAnalysisViewSelectors();
+    }
+
+    get showAnnotations(): boolean
+    {
+        return this._showAnnotations;
     }
 
     set showSpectrumRegionPicker(val: boolean)
@@ -831,29 +869,22 @@ export class ViewStateService
         this.updateAnalysisViewSelectors();
     }
 
-    get showContextImageLayers(): boolean
-    {
-        return this._showContextImageLayers;
-    }
-
-    get showContextImageOptions(): boolean
-    {
-        return this._showContextImageOptions;
-    }
-
-    get showPeakIdentification(): boolean
-    {
-        return this._showPeakIdentification;
-    }
-
-    get showAnnotations(): boolean
-    {
-        return this._showAnnotations;
-    }
-
     get showSpectrumRegionPicker(): boolean
     {
         return this._showSpectrumRegionPicker;
+    }
+
+    set showSpectrumFit(val: boolean)
+    {
+        this.closeUnderSpectrumPanels();
+        this._showSpectrumFit = val;
+
+        this.updateAnalysisViewSelectors();
+    }
+
+    get showSpectrumFit(): boolean
+    {
+        return this._showSpectrumFit;
     }
 
     get showColourScaleOnMaps(): boolean
@@ -1031,6 +1062,7 @@ export class ViewStateService
             this.readMapFromObject<variogramState>(stateWireObj["variograms"]),
             spectrums,
             this.readMapFromObject<rgbuPlotWidgetState>(stateWireObj["rgbuPlots"]),
+            this.readMapFromObject<singleAxisRGBUWidgetState>(stateWireObj["singleAxisRGBU"]),
             this.readMapFromObject<rgbuImagesWidgetState>(stateWireObj["rgbuImages"]),
             this.readMapFromObject<parallelogramWidgetState>(stateWireObj["parallelograms"]),
 
@@ -1058,6 +1090,7 @@ export class ViewStateService
             "variograms": this.writeMapToObject<variogramState>(state.variogramState),
             "spectrums": this.writeMapToObject<spectrumWidgetState>(state.spectrums),
             "rgbuPlots": this.writeMapToObject<rgbuPlotWidgetState>(state.rgbuPlots),
+            "singleAxisRGBU": this.writeMapToObject<singleAxisRGBUWidgetState>(state.singleAxisRGBU),
             "rgbuImages": this.writeMapToObject<rgbuImagesWidgetState>(state.rgbuImages),
             "parallelograms": this.writeMapToObject<parallelogramWidgetState>(state.parallelograms),
 
@@ -1119,6 +1152,7 @@ export class ViewStateService
         this._showPeakIdentification = false;
         this._showAnnotations = false;
         this._showSpectrumRegionPicker = false;
+        this._showSpectrumFit = false;
 
         this._showColourScaleOnMaps = true;
 
@@ -1606,6 +1640,18 @@ export class ViewStateService
         return true;
     }
 
+    setSingleAxisRGBUState(state: singleAxisRGBUWidgetState, whichInstance: string): boolean
+    {
+        if(!this._viewState)
+        {
+            return false;
+        }
+
+        this._viewState.singleAxisRGBU.set(whichInstance, state);
+        this.save(state, "singleAxisRGBU-"+whichInstance);
+        return true;
+    }
+
     setParallelogramState(state: parallelogramWidgetState, whichInstance: string): boolean
     {
         if(!this._viewState)
@@ -1678,6 +1724,10 @@ export class ViewStateService
         if(this._showSpectrumRegionPicker)
         {
             selectors[1] = ViewStateService.widgetSelectorSpectrumRegions;
+        }
+        else if(this._showSpectrumFit)
+        {
+            selectors = [selectors[0], ViewStateService.widgetSelectorSpectrumFit];
         }
         else if(this._showPeakIdentification)
         {

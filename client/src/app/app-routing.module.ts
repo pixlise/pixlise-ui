@@ -42,7 +42,6 @@ import { DatasetCustomisationComponent } from "./routes/dataset-customisation/da
 import { AnalysisComponent } from "./routes/dataset/analysis/analysis.component";
 import { QuantificationsComponent } from "./routes/dataset/quantifications/quantifications.component";
 import { MapBrowserComponent } from "./routes/dataset/map-browser/map-browser.component";
-import { EngineeringComponent } from "./routes/dataset/engineering/engineering.component";
 import { PiquantComponent } from "./routes/piquant/piquant.component";
 import { PiquantConfigComponent } from "./routes/piquant/piquant-config/piquant-config.component";
 import { PiquantVersionComponent } from "./routes/piquant/piquant-version/piquant-version.component";
@@ -128,11 +127,6 @@ function getRoutes(): Routes
 
         { path: "**", component: PageNotFoundComponent }
     ];
-
-    if(environment.engineeringTabEnabled)
-    {
-        routes[3].children.push({ path: "engineering", component: EngineeringComponent });
-    }
 
     return routes;
 }

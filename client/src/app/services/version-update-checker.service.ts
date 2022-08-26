@@ -32,12 +32,9 @@ import { Injectable } from "@angular/core";
 import { Subscription, timer } from "rxjs";
 import { makeHeaders } from "src/app/utils/api-helpers";
 import { doesVersionDiffer } from "src/app/utils/utils";
-import { environment } from "src/environments/environment";
 import { VERSION } from "src/environments/version";
 import { NotificationItem, NotificationService } from "./notification.service";
-
-
-
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 
 class DeployedVersion
@@ -59,17 +56,17 @@ export class VersionUpdateCheckerService
         private http: HttpClient
     )
     {
-        if(environment.versionPollUrl.length <= 0)
+        if(EnvConfigurationInitService.appConfig.versionPollUrl.length <= 0)
         {
             console.log("Version update checking is disabled, will not be performed");
             return;
         }
 
-        console.log("Version update checking will run every "+environment.versionPollInterval_ms+"ms");
+        console.log("Version update checking will run every "+EnvConfigurationInitService.appConfig.versionPollInterval_ms+"ms");
 
         // Start timer in a little while, don't want it rushing straight away
         const timerStartMs = 5000;
-        this._subs.add(timer(timerStartMs, environment.versionPollInterval_ms).subscribe(
+        this._subs.add(timer(timerStartMs, EnvConfigurationInitService.appConfig.versionPollInterval_ms).subscribe(
             (counter: number)=>
             {
                 this.pollServerVersion();
@@ -85,7 +82,7 @@ export class VersionUpdateCheckerService
     protected pollServerVersion(): void
     {
         // Request with a different URL so doesn't get cached
-        this.http.get<DeployedVersion>(environment.versionPollUrl+"?checktime="+Math.floor(Date.now() / 1000), makeHeaders()).subscribe(
+        this.http.get<DeployedVersion>(EnvConfigurationInitService.appConfig.versionPollUrl+"?checktime="+Math.floor(Date.now() / 1000), makeHeaders()).subscribe(
             (version: DeployedVersion)=>
             {
                 // Received version may start with a "v" and we may also (prod has v) so check without

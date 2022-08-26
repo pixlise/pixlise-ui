@@ -90,6 +90,18 @@ describe("setsEqual", () =>
         expect(setsEqual(new Set<number>([1,2,3]), new Set<number>([1,2,3]))).toEqual(true);
         expect(setsEqual(new Set<number>([3,6,4]), new Set<number>([4,3,6]))).toEqual(true);
     });
+
+    it("return false if one set is null", () => 
+    {
+        expect(setsEqual(new Set<number>([1,2,3]), null)).toEqual(false);
+        expect(setsEqual(null, new Set<number>([1,2,3]))).toEqual(false);
+    });
+
+    it("return false if one set is undefined", () => 
+    {
+        expect(setsEqual(new Set<number>([1,2,3]), undefined)).toEqual(false);
+        expect(setsEqual(undefined, new Set<number>([1,2,3]))).toEqual(false);
+    });
 });
 
 describe("isValidPhoneNumber", () =>

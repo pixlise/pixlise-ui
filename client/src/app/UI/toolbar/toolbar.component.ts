@@ -38,7 +38,7 @@ import { ExportDataService } from "src/app/services/export-data.service";
 import { ExportDataChoice } from "src/app/UI/export-data-dialog/export-models";
 import { UserMenuPanelComponent } from "src/app/UI/user-menu-panel/user-menu-panel.component";
 import { OverlayHost } from "src/app/utils/overlay-host";
-import { environment } from "src/environments/environment";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 
 class TabNav
@@ -253,12 +253,6 @@ export class ToolbarComponent implements OnInit, OnDestroy
             // Only enabling maps tab if a quant is loaded
             // TODO: Hide maps tap if no quants or whatever... this all changed when multiple quantifications came in, for now just enabling it always
             this.tabs.push(new TabNav("Element Maps", datasetPrefix+"/maps", true));
-
-            if(environment.engineeringTabEnabled)
-            {
-                this.tabs.push(new TabNav("Engineering", datasetPrefix+"/engineering", true));
-            }
-
             this.tabs.push(new TabNav("Quant Tracker", datasetPrefix+"/quant-logs", true));
         }
 
@@ -327,6 +321,7 @@ export class ToolbarComponent implements OnInit, OnDestroy
             new ExportDataChoice("context-image", "All context images with PMCs", false),
             new ExportDataChoice("rois", "Regions of Interest PMC Members .csv", false),
             new ExportDataChoice("unquantified-weight", "Unquantified Weight Percent .csv", false),
+            new ExportDataChoice("ui-diffraction-peak", "Anomaly Features .csv", false),
         ];
 
         this._exportService.exportData("PIXLISE Data", choices);
@@ -334,6 +329,6 @@ export class ToolbarComponent implements OnInit, OnDestroy
 
     get discussLink(): string
     {
-        return "https://discuss."+environment.appDomain;
+        return "https://discuss."+EnvConfigurationInitService.appConfig.appDomain;
     }
 }

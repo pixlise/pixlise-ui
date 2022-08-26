@@ -36,9 +36,6 @@ import { SpectrumChartService } from "src/app/services/spectrum-chart.service";
 import { ElementTileState } from "src/app/UI/periodic-table/element-tile/element-tile.component";
 
 
-
-
-
 @Component({
     selector: "browse-on-chart-table",
     templateUrl: "./browse-on-chart-table.component.html",
@@ -182,7 +179,7 @@ export class BrowseOnChartTableComponent implements OnInit
             return ElementTileState.GRAYED;
         }
 
-        return ElementTileState.NONE;
+        return ElementTileState.STATIC;
     }
 
     // Determines if line background should be highlighted in the "Browse on chart" tab, currently done if it's the most intense K/L/M line of that element

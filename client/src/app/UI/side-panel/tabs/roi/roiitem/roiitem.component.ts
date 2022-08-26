@@ -458,6 +458,10 @@ export class ROIItemComponent implements OnInit
         {
             alert("Please set a colour before turning on region visibility");
         }
+        else
+        {
+            this._roiService.setROIVisibility(this.roiSavedItem.id, val);
+        }
     }
 
     onDeletePMC(pmc: number): void

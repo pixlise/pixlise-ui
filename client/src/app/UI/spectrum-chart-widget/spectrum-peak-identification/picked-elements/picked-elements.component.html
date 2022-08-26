@@ -45,7 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div class="chosen-list-footer gap-separated-horizontal-elements" fxLayout="row" fxLayoutAlign="space-between center">
         <push-button buttonStyle="outline" (onClick)="onClearPickedList()">Clear</push-button>
-        <push-button *ngIf="quantificationEnabled" buttonStyle="yellow" (onClick)="onQuantify()">Quantify</push-button>
+        <push-button *ngIf="quantificationEnabled" buttonStyle="yellow" (onClick)="onQuantify()">Run PIQUANT</push-button>
         <div *ngIf="!quantificationEnabled" class="quant-disabled">Quantification Disabled</div>
     </div>
 </div>

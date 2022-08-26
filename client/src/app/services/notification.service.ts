@@ -34,10 +34,6 @@ import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { UserOptionsService } from "./user-options.service";
 
 
-
-
-
-
 /* An example that came back:
 [
     {

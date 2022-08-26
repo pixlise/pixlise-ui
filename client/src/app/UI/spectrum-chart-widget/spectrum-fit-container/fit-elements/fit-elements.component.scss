@@ -27,52 +27,33 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit } from "@angular/core";
-import { Subscription } from "rxjs";
-import { LayoutService } from "src/app/services/layout.service";
-import { UNICODE_CARET_UP } from "src/app/utils/utils";
+@import 'variables.scss';
 
+span {
+    white-space: nowrap;
+}
 
+.elem-item {
+    color: $clr-yellow;
+    font-weight: bold;
+    padding: $sz-unit;
+    background-color: $clr-gray-80;
+    border-bottom: 1px solid $clr-gray-100;
+}
 
-@Component({
-    selector: "app-engineering",
-    templateUrl: "./engineering.component.html",
-    styleUrls: ["./engineering.component.scss"]
-})
-export class EngineeringComponent implements OnInit
-{
-    private _subs = new Subscription();
+.elem-item span {
+    color: $clr-gray-30;
+    font-weight: normal;
+}
 
-    scatterPlotCaret = UNICODE_CARET_UP;
+.not-in-fit-elem {
+    color: $clr-purple;
+}
 
-    constructor(
-        private layoutService: LayoutService,
-    )
-    {
-    }
+.line-selector {
+    width: 34px;
+}
 
-    ngOnInit()
-    {
-        this.onShowScatterPlot();
-    }
-
-    ngOnDestroy()
-    {
-        this._subs.unsubscribe();
-    }
-
-    ngAfterViewInit()
-    {
-        this.layoutService.notifyNgAfterViewInit();
-    }
-
-    onShowScatterPlot(): void
-    {
-        this.layoutService.showScatterPlot = true;
-    }
-
-    get showScatterPlot(): boolean
-    {
-        return this.layoutService.showScatterPlot;
-    }
+.line-selector-all {
+    margin-right: 17px;
 }

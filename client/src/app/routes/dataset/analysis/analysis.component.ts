@@ -50,6 +50,7 @@ import { HistogramViewComponent } from "src/app/UI/histogram-view/histogram-view
 import { ParallelCoordinatesPlotWidgetComponent } from "src/app/UI/parallel-coordinates-plot-widget/parallel-coordinates-plot-widget.component";
 import { QuantificationTableComponent } from "src/app/UI/quantification-table/quantification-table.component";
 import { RGBUPlotComponent } from "src/app/UI/rgbuplot/rgbuplot.component";
+import { SingleAxisRGBUComponent } from "src/app/UI/single-axis-rgbu/single-axis-rgbu.component";
 import { RGBUViewerComponent } from "src/app/UI/rgbuviewer/rgbuviewer.component";
 import { ROIQuantCompareTableComponent } from "src/app/UI/roiquant-compare-table/roiquant-compare-table.component";
 import { SpectrumChartWidgetComponent } from "src/app/UI/spectrum-chart-widget/spectrum-chart-widget.component";
@@ -60,7 +61,7 @@ import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/terna
 import { VariogramWidgetComponent } from "src/app/UI/variogram-widget/variogram-widget.component";
 import { arraysEqual, parseNumberRangeString} from "src/app/utils/utils";
 import { BeamSelection } from "src/app/models/BeamSelection";
-
+import { SpectrumFitContainerComponent } from "src/app/UI/spectrum-chart-widget/spectrum-fit-container/spectrum-fit-container.component";
 
 
 
@@ -448,6 +449,10 @@ export class AnalysisComponent implements OnInit, OnDestroy
         {
             return RGBUPlotComponent;
         }
+        else if(selector == ViewStateService.widgetSelectorSingleAxisRGBU)
+        {
+            return SingleAxisRGBUComponent;
+        }
         else if(selector == ViewStateService.widgetSelectorRGBUViewer)
         {
             return RGBUViewerComponent;
@@ -485,6 +490,10 @@ export class AnalysisComponent implements OnInit, OnDestroy
         else if(selector == ViewStateService.widgetSelectorSpectrumRegions)
         {
             return SpectrumRegionPickerComponent;
+        }
+        else if(selector == ViewStateService.widgetSelectorSpectrumFit)
+        {
+            return SpectrumFitContainerComponent;
         }
         else if(selector == ViewStateService.widgetSelectorSpectrumAnnotations)
         {

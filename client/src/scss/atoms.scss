@@ -260,8 +260,8 @@ TODO: get this working... no time at time of writing
     border: 1px solid $clr-gray-100;
     padding: 0px $sz-half;
     white-space: nowrap;
-    line-height: 26px;
-    height: 26px; // element tiles are 28 but we also have a 1px border
+    line-height: 24px;
+    height: 24px; // element tiles are 22 but we also have a 1px border
     cursor: default;
 }
 

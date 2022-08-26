@@ -38,36 +38,36 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { ROIService } from "src/app/services/roi.service";
 import { isValidElementsString } from "src/app/utils/utils";
-import { environment } from "src/environments/environment";
 
 
 export class QuantificationStartOptionsParams
 {
     constructor(
-    // For UI to see
-        public datasetID: string,
-        // Settings which user may edit
-        public elements: string,
-        public parameters: string,
-        public quantName: string,
-        public detectorConfigs: string[]
+        public defaultCommand: string,
+        public atomicNumbers: Set<number>
     )
     {
     }
 }
 
-export class QuantificationStartOptions
+// The resulting quantification parameters, these are the ones directly passed to the API
+// for creating a quant, so this has to match the API struct!
+export class QuantCreateParameters
 {
     constructor(
-        public roiID: string,
-        public elements: string,
+        public name: string,
+        public pmcs: number[],
+        public elements: string[],
         public parameters: string,
-        public runTime: string,
-        public quantName: string,
         public detectorConfig: string,
+        public runTimeSec: number,
+        public roiID: string,
+        public elementSetID: string,
         public quantMode: string,
-        public roiIDs: string[], // for sum-then-quantify modes
-        public includeDwells: boolean
+        public roiIDs: string[],
+        public includeDwells: boolean,
+        public command: string,
+        //public comments: string
     )
     {
     }
@@ -93,16 +93,26 @@ export class QuantificationStartOptionsComponent implements OnInit
     private _subs = new Subscription();
 
     // Multi-select ROIs (scrollable list of checkboxes)
-    private _selectedROIs: string[] = [];
-    roisForMultiSelect: ROISavedItem[] = [];
+    private _selectedROIs: string[] = []; // These are the multiple ROIs chosen by check boxes
+    // NOTE: we display the same list of ROIs as with single selection
 
     // Single-select ROIs (dropdown)
     selectedROI: string = "";
     rois: ROISavedItem[] = [];
 
+    // The raw ROIs that came in (so we can look up by name)
+    private _rawROIs: Map<string, ROISavedItem> = null;
+
     asCarbonates: boolean = false;
+    ignoreArgon: boolean = true;
+    includeDwells: boolean = true;
+    ironProportion: number = 1.5;
     selectedDetectorConfig: string = "";
     singleSelectROI: boolean = true;
+    parameters: string = "";
+    quantName: string = "";
+    elements: string = "";
+    configVersions: string[] = [];
 
     detectorSettingLabels: string[] = ["Detectors Combined", "Detectors Separate"];
     detectorSettingChoices: string[] = [QuantModes.quantModeCombined, QuantModes.quantModeAB];
@@ -112,9 +122,9 @@ export class QuantificationStartOptionsComponent implements OnInit
     private static _quantModes: QuantModeItem[] = [
         new QuantModeItem("PMC", "Quantify Individual PMCs"),
         new QuantModeItem("Bulk", "Homogeneous ROI (total counts)"),
+        //new QuantModeItem("Bulk", "Heterogeneous ROI (counts/ms)"),
+        new QuantModeItem("Fit", "Spectral Fit"),
     ];
-
-    includeDwells: boolean = true;
 
     private _xraySourceElement: string = "";
 
@@ -126,19 +136,23 @@ export class QuantificationStartOptionsComponent implements OnInit
         @Inject(MAT_DIALOG_DATA) public data: QuantificationStartOptionsParams
     )
     {
-        if(data.detectorConfigs.length > 0)
+        if(this.data.defaultCommand)
         {
-            this.selectedDetectorConfig = data.detectorConfigs[data.detectorConfigs.length-1];
+            this.quantModeId = this.data.defaultCommand;
         }
     }
 
     ngOnInit()
     {
+        let elemSymbols = periodicTableDB.getElementSymbolsForAtomicNumbers(this.data.atomicNumbers);
+        this.elements = elemSymbols.join(",");
+
         this.checkSingleSelectROIMode();
 
         this._subs.add(this._roiService.roi$.subscribe(
             (rois: Map<string, ROISavedItem>)=>
             {
+                this._rawROIs = rois;
                 const allLocations = new ROISavedItem(PredefinedROIID.AllPoints, "All Locations", [], "", "", new Set<number>(), false, null);
 
                 // Separate out user and shared ones, each group alphabetically sorted
@@ -165,25 +179,49 @@ export class QuantificationStartOptionsComponent implements OnInit
                 this.rois = [allLocations];
                 this.rois.push(...userROIs);
                 this.rois.push(...sharedROIs);
-
-                // Also add to the list of pickable multiselect ROIs
-                this.roisForMultiSelect = [allLocations];
-                this.roisForMultiSelect.push(...userROIs);
-                this.roisForMultiSelect.push(...sharedROIs);
             },
             (err)=>
             {
+                console.error(err);
             }
         ));
 
         this._subs.add(this._envService.detectorConfig$.subscribe(
             (cfg: DetectorConfig)=>
             {
+                this.parameters = cfg.defaultParams;
                 if(cfg.tubeElement)
                 {
                     let elem = periodicTableDB.getElementByAtomicNumber(cfg.tubeElement);
                     this._xraySourceElement = elem.symbol;
                 }
+
+                let detectorConfig = this._datasetService.datasetLoaded.experiment.getDetectorConfig();
+
+                let configVersions: string[] = this._envService.detectorConfig.piquantConfigVersions;
+                if(configVersions.length <= 0)
+                {
+                    alert("Failed to determine PIQUANT config versions, quantification will fail.");
+                    return;
+                }
+                else
+                {
+                    // Set these to be valid strings of config + version
+                    let formattedVersions: string[] = [];
+                    for(let ver of configVersions)
+                    {
+                        ver = detectorConfig+"/"+ver;
+                        formattedVersions.push(ver);
+                    }
+                    configVersions = formattedVersions;
+                }
+
+                if(configVersions.length > 0)
+                {
+                    this.selectedDetectorConfig = configVersions[configVersions.length-1];
+                }
+
+                this.configVersions = configVersions;
             },
             (err)=>
             {
@@ -197,6 +235,12 @@ export class QuantificationStartOptionsComponent implements OnInit
         this._subs.unsubscribe();
     }
 
+    get loading(): boolean
+    {
+        // Return true if we're still loading up our values
+        return this._rawROIs == null || this.configVersions.length <= 0;
+    }
+
     get quantModes(): QuantModeItem[]
     {
         return QuantificationStartOptionsComponent._quantModes;
@@ -205,14 +249,23 @@ export class QuantificationStartOptionsComponent implements OnInit
     onOk()
     {
         // If no quant name, don't continue
-        if(this.data.quantName.length <= 0)
+        if(this.canSetName)
         {
-            alert("Please enter a name for the quantification you are creating");
-            return;
+            if(this.quantName.length <= 0)
+            {
+                alert("Please enter a name for the quantification you are creating");
+                return;
+            }
+        }
+        else
+        {
+            // Make sure there is no name set
+            this.quantName = "";
         }
 
         // API checks for this too but better if we don't even send it in!
-        if(!isValidElementsString(this.data.elements))
+        let elements = this.elements;
+        if(!isValidElementsString(elements))
         {
             alert("Elements string is empty or invalid. Must be composed comma-separated symbols only.");
             return;
@@ -224,8 +277,6 @@ export class QuantificationStartOptionsComponent implements OnInit
             alert("Please select a region of interest (ROI)");
             return;
         }
-
-        let elements = this.data.elements;
 
         // If the element list contains the xray source element, this will almost definitely come up with a weird quantification, so we bring
         // up a warning
@@ -244,6 +295,17 @@ export class QuantificationStartOptionsComponent implements OnInit
             elements = "CO3,"+elements;
         }
 
+        if(this.ignoreArgon)
+        {
+            elements = "Ar_I,"+elements;
+        }
+
+        let parameters = this.parameters;
+        if(this.ironProportion && !isNaN(this.ironProportion))
+        {
+            parameters += "-Fe,"+this.ironProportion;
+        }
+
         // Take our multiple inputs and form a quant mode
         let quantMode = this.detectorSetting;
         if(this.quantModeId == "Bulk")
@@ -251,19 +313,64 @@ export class QuantificationStartOptionsComponent implements OnInit
             quantMode += this.quantModeId;
         }
 
-        let result = new QuantificationStartOptions(
-            this.selectedROI,
-            elements,
-            this.data.parameters,
-            "60", // We want it done fast... so say 60 seconds, that should trigger max nodes to run PIQUANT on
-            this.data.quantName,
+        let roiID = this.selectedROI;
+        if(roiID == PredefinedROIID.AllPoints)
+        {
+            roiID = "";
+        }
+        let pmcs = this.makePMCList(roiID);
+
+        let result: QuantCreateParameters = new QuantCreateParameters(
+            this.quantName,
+            pmcs,
+            elements.split(","),
+            parameters,
             this.selectedDetectorConfig,
+            60, // We want it done fast... so say 60 seconds, that should trigger max nodes to run PIQUANT on
+            roiID,
+            "", // no element set ID yet
             quantMode,
-            this._selectedROIs,
-            this.includeDwells
+            this._selectedROIs, // useful for quantMode==*Bulk, where we need to sum PMCs in an ROI before quantifying them
+            this.includeDwells,
+            this.quantModeId == "Fit" ? "quant" : "map",
         );
 
         this.dialogRef.close(result);
+    }
+
+    private makePMCList(roiID: string): number[]
+    {
+        const dataset = this._datasetService.datasetLoaded;
+        if(!dataset)
+        {
+            return [];
+        }
+
+        let pmcs: number[] = [];
+
+        let roi = this._rawROIs.get(roiID);
+        if(roi)
+        {
+            pmcs = Array.from(dataset.getPMCsForLocationIndexes(roi.locationIndexes, true).values());
+        }
+        else
+        {
+            // Otherwise send ALL pmcs that have spectra
+
+            // NOTE: this is kind of weird with the multi-selection of ROIs, but in that case we end up passing in
+            //       all the PMCs as something in the pipeline requires them to be there... or maybe this can be
+            //       taken out in future, don't know, not a priority for now.
+
+            for(let loc of dataset.locationPointCache)
+            {
+                if(loc.hasNormalSpectra || loc.hasDwellSpectra)
+                {
+                    pmcs.push(loc.PMC);
+                }
+            }
+        }
+
+        return pmcs;
     }
 
     onCancel()
@@ -297,9 +404,19 @@ export class QuantificationStartOptionsComponent implements OnInit
         this.asCarbonates = !this.asCarbonates;
     }
 
+    onToggleIgnoreArgon(): void
+    {
+        this.ignoreArgon = !this.ignoreArgon;
+    }
+
     onQuantModeChanged(event): void
     {
         this.checkSingleSelectROIMode();
+    }
+
+    get canSetName(): boolean
+    {
+        return this.quantModeId != "Fit";
     }
 
     private checkSingleSelectROIMode(): void

@@ -34,6 +34,7 @@ import { Subscription } from "rxjs";
 import { QuantificationLayer, QuantificationSummary } from "src/app/models/Quantifications";
 import { DataExpressionService } from "src/app/services/data-expression.service";
 import { DataSetService } from "src/app/services/data-set.service";
+import { DiffractionPeak, DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { QuantificationService } from "src/app/services/quantification.service";
 import { ROIService } from "src/app/services/roi.service";
 import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
@@ -80,6 +81,8 @@ export class ExportDataDialogComponent implements OnInit
 
     private _closed = false;
 
+    private _allPeaks: DiffractionPeak[] = [];
+
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: ExportDataConfig,
         public dialogRef: MatDialogRef<ExportDataDialogComponent>,
@@ -88,6 +91,7 @@ export class ExportDataDialogComponent implements OnInit
         private _widgetDataService: WidgetRegionDataService,
         private _roiService: ROIService,
         private _exprService: DataExpressionService,
+        private _diffractionService: DiffractionPeakService,
         private dialog: MatDialog
     )
     {
@@ -151,6 +155,15 @@ export class ExportDataDialogComponent implements OnInit
                 this._quantService.refreshQuantList();
             }
         ));
+
+        this._subs.add(this._diffractionService.allPeaks$.subscribe(
+            (allPeaks: DiffractionPeak[])=>
+            {
+                this._allPeaks = allPeaks;
+            }
+        ));
+
+        this._diffractionService.refreshPeakStatuses(this._datasetService.datasetIDLoaded);
     }
 
     ngOnDestroy()
@@ -194,6 +207,16 @@ export class ExportDataDialogComponent implements OnInit
         this._closed = true;
     }
 
+    _generateDiffractionFeaturesCSV(): string
+    {
+        let headers = ["id", "pmc", "effectSize", "channel", "keV", "kevStart", "kevEnd"];
+        return this._allPeaks.reduce((prev, curr) => 
+        {
+            let currentLine = headers.map(field => curr[field]).join(",");
+            return `${prev}\n${currentLine}`;
+        }, headers.join(","));
+    }
+
     onExport(): void
     {
         if(this._closed)
@@ -214,16 +237,24 @@ export class ExportDataDialogComponent implements OnInit
         }
 
         let selectedIds: string[] = [];
+        let locallyComputedIds: string[] = [];
 
         for(let choice of this.data.choices)
         {
             if(choice.enabled)
             {
-                selectedIds.push(choice.id);
+                if(choice.id.startsWith("ui-")) 
+                {
+                    locallyComputedIds.push(choice.id);
+                }
+                else 
+                {
+                    selectedIds.push(choice.id);
+                }
             }
         }
 
-        if(selectedIds.length <= 0)
+        if(selectedIds.length <= 0 && locallyComputedIds.length <= 0)
         {
             alert("Nothing selected to export!");
             return;
@@ -258,29 +289,45 @@ export class ExportDataDialogComponent implements OnInit
             }
         }
 
-        this.data.exportGenerator.generateExport(this._datasetService.datasetIDLoaded, this._selectedQuantId, selectedIds, this._selectedROIs, this._selectedExpressionIds, expressionNames, fileName).subscribe(
-            (data: Blob)=>
+        locallyComputedIds.forEach((id) => 
+        {
+            if(id === "ui-diffraction-peak") 
             {
-                if(this._closed)
-                {
-                    return;
-                }
-
-                saveAs(data, fileName);
-
-                this.dialogRef.close(null);
-            },
-            (err)=>
-            {
-                if(this._closed)
-                {
-                    return;
-                }
-
-                this.state = "error";
-                this.prompt = httpErrorToString(err, "");
+                let contents = this._generateDiffractionFeaturesCSV();
+                saveAs(new Blob([contents], { type: "text/plain;charset=utf-8" }), fileName.replace(".zip", "-anomaly-features.csv"));
             }
-        );
+        });
+
+        if(selectedIds.length > 0) 
+        {
+            this.data.exportGenerator.generateExport(this._datasetService.datasetIDLoaded, this._selectedQuantId, selectedIds, this._selectedROIs, this._selectedExpressionIds, expressionNames, fileName).subscribe(
+                (data: Blob)=>
+                {
+                    if(this._closed)
+                    {
+                        return;
+                    }
+
+                    saveAs(data, fileName);
+
+                    this.dialogRef.close(null);
+                },
+                (err)=>
+                {
+                    if(this._closed)
+                    {
+                        return;
+                    }
+
+                    this.state = "error";
+                    this.prompt = httpErrorToString(err, "");
+                }
+            );
+        } 
+        else 
+        {
+            this.dialogRef.close(null);
+        }
     }
     /*
     isActiveROI(roiID: string): boolean

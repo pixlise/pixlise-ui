@@ -53,6 +53,7 @@ $clr-yellow: rgb(var(--clr-yellow));
 $clr-blue: rgb(var(--clr-blue));
 $clr-purple: rgb(var(--clr-purple));
 $clr-context-purple: rgb(var(--clr-context-purple));
+$clr-pink: rgb(var(--clr-pink));
 
 // Colours applied to specific things by name
 $ui-color-background: $clr-gray-100;
@@ -64,7 +65,6 @@ $ui-color-error2: $clr-purple;
 
 $ui-color-text-title: $clr-gray-30;
 $ui-color-text: white;
-$ui-color-text-dim: #727272;
 
 $ui-panel-title-colour: $ui-color-foreground;
 

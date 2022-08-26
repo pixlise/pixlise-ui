@@ -28,7 +28,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { CanvasDrawer } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
-import { EngineeringDrawer } from "src/app/UI/context-image-view-widget/drawers/engineering-drawer";
 import { MainContextImageLayeredDrawer } from "src/app/UI/context-image-view-widget/drawers/main-drawer";
 import { MapBrowserContextImageLayeredDrawer } from "src/app/UI/context-image-view-widget/drawers/map-drawer";
 import { ContextImageModel } from "src/app/UI/context-image-view-widget/model";
@@ -45,10 +44,6 @@ export function makeDrawer(drawerName: string, toolHost: ContextImageToolHost, m
     else if(drawerName == "MapBrowserContextImageLayeredDrawer")
     {
         return new MapBrowserContextImageLayeredDrawer(mdl, toolHost);
-    }
-    else if(drawerName == "EngineeringDrawer")
-    {
-        return new EngineeringDrawer(mdl, toolHost);
     }
 
     console.error("Failed to allocate drawer for context image. Unknown drawer name: "+drawerName);

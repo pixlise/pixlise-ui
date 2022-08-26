@@ -42,7 +42,8 @@ export class ROISavedItem
         public imageName: string,
         public pixelIndexes: Set<number>,
         public shared: boolean,
-        public creator: ObjectCreator
+        public creator: ObjectCreator,
+        public visible: boolean = false
     )
     {
     }

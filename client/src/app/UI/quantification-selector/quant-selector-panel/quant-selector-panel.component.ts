@@ -35,11 +35,6 @@ import { QuantificationSelectionService } from "src/app/services/quantification-
 import { ViewStateService } from "src/app/services/view-state.service";
 import { PANEL_CHILD_DATA } from "src/app/UI/atoms/buttons/panel-foldout-button/panel-foldout-button.component";
 import { QuantificationUploadDialogComponent } from "src/app/UI/quantification-upload-dialog/quantification-upload-dialog.component";
-import { environment } from "src/environments/environment";
-
-
-
-
 
 
 export class QuantSelectorPanelSettings

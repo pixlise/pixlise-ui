@@ -57,6 +57,7 @@ export class WidgetSwitcherComponent implements OnInit
         new SelectableWidget(ViewStateService.widgetSelectorParallelCoordinates, "Parallel Coords"),
         new SelectableWidget(ViewStateService.widgetSelectorRGBUViewer, "RGBU Images"),
         new SelectableWidget(ViewStateService.widgetSelectorRGBUPlot, "RGBU Plot"),
+        new SelectableWidget(ViewStateService.widgetSelectorSingleAxisRGBU, "Single Axis RGBU"),
         new SelectableWidget(ViewStateService.widgetSelectorROIQuantCompareTable, "ROI Quant Table"),
         new SelectableWidget(ViewStateService.widgetSelectorSpectrum, "Spectrum"),
         new SelectableWidget(ViewStateService.widgetSelectorQuantificationTable, "Table"),

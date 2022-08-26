@@ -59,6 +59,7 @@ export class SelectedQuantificationViewComponent implements OnInit
     hasLogs: boolean = false;
     logMissingReason: string = "";
     elementStateType: string = "";
+    ignoreAr: string = "";
     outputElements: string = "";
     displayMsg: string = "";
     quantMode: string = "";
@@ -138,11 +139,15 @@ export class SelectedQuantificationViewComponent implements OnInit
 
         let elemInfo = QuantificationSummary.getQuantifiedElements(quant);
         this.elementStateType = elemInfo.carbonates ? "carbonates" : "oxides";
+        this.ignoreAr = elemInfo.ignoreAr ? "Yes" : "No";
         let allSymbols = [];
         for(let sym of elemInfo.nonElementSymbols)
         {
             // Don't add CO3, it's a special parameter that makes PIQUANT generate carbonates
-            if(sym != "CO3")
+            // Same as Ar_I
+            // NOTE: The above 2 would only appear in the list as part of a fallback scenario
+            //       when the quants original parameter list is read
+            if(sym != "CO3" && sym != "Ar_I")
             {
                 allSymbols.push(sym);
             }

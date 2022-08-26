@@ -52,7 +52,8 @@ import { EnergyCalibrationManager } from "src/app/UI/spectrum-chart-widget/energ
 import { ISpectrumChartModel, SpectrumChartLine } from "src/app/UI/spectrum-chart-widget/model-interface";
 import { SpectrumChartToolHost } from "src/app/UI/spectrum-chart-widget/tools/tool-host";
 import { SpectrumXRFLinesNearMouse } from "src/app/UI/spectrum-chart-widget/xrf-near-mouse";
-import { RGBA } from "src/app/utils/colours";
+import { RGBA, Colours } from "src/app/utils/colours";
+import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 
 
 export class PseudoIntensityRangeItem
@@ -71,7 +72,11 @@ export class SpectrumLineChoice
     constructor(
         public lineExpression: string,
         public label: string,
-        public enabled: boolean
+        public enabled: boolean,
+        public values: SpectrumValues = null, // OPTIONAL! Dataset spectra are looked up via lineExpression, this is here for fit lines
+        public lineWidth: number = 1.0, // OPTIONAL! Can make lines wider by changing this
+        public opacity: number = 1.0, // OPTIONAL! Can change opacity
+        public drawFilled: boolean = false, // OPTIONAL! Can draw as filled polygon between line and x axis. NOTE: In this case, the line itself is not drawn
     )
     {
     }
@@ -89,7 +94,8 @@ export class SpectrumSource
         // Drawing options
         public colourRGBA: RGBA,
         public lineChoices: SpectrumLineChoice[],
-        public locationIndexes: number[]
+        public locationIndexes: number[],
+        public fitElementZ: number = 0, // If it's a fit line, can specify the element atomic number here
     )
     {
     }
@@ -116,11 +122,24 @@ const spectrumLineDashPatterns = [
     [1, 2, 1, 2, 1, 2, 8, 2]
 ];
 
+const fitLinePrefix = "fit_";
+
 export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifier
 {
     public static readonly lineExpressionBulkA = "bulk(A)";
     public static readonly lineExpressionBulkB = "bulk(B)";
     public static readonly lineExpressionMaxA = "max(A)";
+
+    public static readonly fitMeasuredSpectrum = "Measured Spectrum";
+    public static readonly fitCaclulatedTotalSpectrum = "Calculated Total Spectrum";
+    public static readonly fitResiduals = "Residuals";
+    public static readonly fitPileupPeaks = "Pileup Peaks";
+    public static readonly fitBackground = "Background";
+
+    public static readonly fitBackgroundDetC = "Background detC";
+    public static readonly fitBackgroundTotal = "Background Total";
+    public static readonly fitBackgroundCalc = "Background Calc";
+    public static readonly fitBackgroundSNIP = "Background SNIP";
 
     private _drawTransform: PanZoom = new PanZoom(new MinMax(1, null), new MinMax(1, null), new PanRestrictorToCanvas());
     private _toolHost: SpectrumChartToolHost = null;
@@ -135,6 +154,17 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
     private _spectrumSources: SpectrumSource[] = [];
     private _spectrumSources$ = new ReplaySubject<void>(1);
+
+    // Special spectrum source for fit lines, these come back when the user asks to fit a spectrum by PIQUANT and contains
+    // all the component lines that make up the spectrum
+    private _fitLineSources: SpectrumSource[] = [];
+    private _fitLineSources$ = new ReplaySubject<void>(1);
+    private _fitSelectedElementZs: number[] = [];
+    private _fitSelectedElementZs$ = new ReplaySubject<void>(1);
+    private _fitXValues: Float32Array = new Float32Array();
+    private _fitRawCSV: string = "";
+
+    private _showFitLines: boolean = false; // Flag that controls if lines are read from spectrum sources vs fit lines
 
     private _xrfLinesPicked: XRFLineGroup[] = [];
     private _xrfLinesHighlighted: XRFLineGroup = null;
@@ -152,6 +182,12 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     private _yAxis: ChartAxis = null;
     private _lineRangeX: MinMax = new MinMax();
     private _lineRangeY: MinMax = new MinMax();
+
+    // Indexes of which lines which we darken relative to others
+    // This was added as part of spectrum fit line changes. If an index is invalid
+    // this should be ignored. Can be set on the model, and the drawer picks it up while
+    // drawing the lines
+    private _spectrumLineDarkenIdxs: number[] = [];
 
     private _keyItems: KeyItem[] = [];
 
@@ -199,6 +235,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         // Reset anything we have stored at this point, we've loaded a dataset so anything happening after this is
         // is fresh
         this._spectrumSources = [];
+        this._fitLineSources = [];
+        this._fitSelectedElementZs = [];
         this._spectrumLines = [];
         this._xrfLinesPicked = [];
         this._xrfLinesHighlighted = null;
@@ -370,6 +408,27 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         return this._spectrumLines;
     }
 
+    get spectrumLineDarkenIdxs(): number[]
+    {
+        return this._spectrumLineDarkenIdxs;
+    }
+
+    setSpectrumLineDarken(lineExprs: string[]): void
+    {
+        // Make sure we start with the "current" list
+        this.recalcSpectrumLines();
+
+        this._spectrumLineDarkenIdxs = [];
+        for(let c = 0; c < this._spectrumLines.length; c++)
+        {
+            const line = this._spectrumLines[c];
+            if(lineExprs.indexOf(line.expression) > -1)
+            {
+                this._spectrumLineDarkenIdxs.push(c);
+            }
+        }
+    }
+
     get spectrumSources(): SpectrumSource[]
     {
         return this._spectrumSources;
@@ -378,6 +437,37 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     get spectrumSources$(): ReplaySubject<void>
     {
         return this._spectrumSources$;
+    }
+
+    get fitLineSources(): SpectrumSource[]
+    {
+        return this._fitLineSources;
+    }
+
+    get fitLineSources$(): ReplaySubject<void>
+    {
+        return this._fitLineSources$;
+    }
+
+    get fitRawCSV(): string
+    {
+        return this._fitRawCSV;
+    }
+
+    get fitSelectedElementZs(): number[]
+    {
+        return this._fitSelectedElementZs;
+    }
+
+    setFitSelectedElementZs(val: number[])
+    {
+        this._fitSelectedElementZs = val;
+        this._fitSelectedElementZs$.next();
+    }
+
+    get fitSelectedElementZs$(): ReplaySubject<void>
+    {
+        return this._fitSelectedElementZs$;
     }
 
     get xAxisEnergyScale(): boolean
@@ -836,6 +926,208 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         console.log("Spectrum updateSpectrumSources took: "+(t1-t0).toLocaleString()+"ms, spectrumSources$ took: "+(t3-t2).toLocaleString()+"ms");
     }
 
+    setFitLineMode(enabled: boolean): void
+    {
+        this._showFitLines = enabled;
+        this.recalcSpectrumLines();
+    }
+
+    setFitLineData(csv: string): void
+    {
+        this._fitRawCSV = csv;
+        this._fitLineSources = [];
+        //this._fitSelectedElementZs = [];
+
+        // Run through CSV columns and build sources for each line
+        let lines = csv.split("\n");
+        let headers = lines[1].split(",");
+
+        // Get the data values as numbers
+        let csvNumbersByRow: number[][] = [];
+        for(let c = 2; c < lines.length; c++)
+        {
+            csvNumbersByRow.push([]);
+
+            let lineData = lines[c].split(",");
+            for(let item of lineData)
+            {
+                csvNumbersByRow[c-2].push(Number.parseFloat(item.trim()));
+            }
+        }
+
+        // Create the right sources
+        // An example of headers:
+        // Energy (keV), meas, calc, bkg, sigma, residual, DetCE, Pileup
+        // Ar_K, Zr_K, Sr_K, Zn_K, Ni_K, Fe_K, Mn_K, Ba_L, Cr_K, V_K, Ti_K, Ca_K, K_K, Zr_L, Sr_L, P_K, Si_K, Al_K, Mg_K, Zn_L, Ba_M, Na_K, Ni_L, Fe_L, Mn_L, Cr_L, V_L, Ti_L,
+        // Rh_K_coh, Rh_L_coh, Rh_M_coh, Rh_K_inc, Rh_M_inc, Rh_L_coh_Lb1
+        //
+        // NOTE: With parameters to enable snip and background calc columns:
+        // -b,-1,-5 -bh,0,8,60,910,2800,6 -bx,150,7150
+        //
+        // We get:
+        // Energy (keV), meas, calc, bkg, sigma, residual, DetCE, Pileup
+        // Ti_K, Ca_K, Rh_K_coh, Rh_L_coh, Rh_K_inc, Rh_L_coh_Lb1
+        // calc bkg0, SNIP bkg <-- THE SNIP/CALC COLUMNS!
+        //
+        // Where we want to form the following sources:
+        // Measured: meas
+        // Total: calc
+        // Residuals: residual
+        // Background: DetCE, SNIP, calc bkg0, bkg (??)
+        // Pileups: Pileup
+        // And one source for each element containing one line per peak:
+        // Ba: L, K
+        // NOT sure what to do with the Rh lines for now...
+
+        let backgroundSrc: SpectrumSource = null;
+        let backgroundTotalLine: SpectrumLineChoice = null;
+        let perElementSources: Map<string, SpectrumSource> = new Map<string, SpectrumSource>();
+
+        for(let c = 0; c < headers.length; c++)
+        {
+            let header = headers[c];
+            header = header.trim();
+
+            if(header == "Energy (keV)")
+            {
+                this._fitXValues = new Float32Array(this.readFitColumn(c, csvNumbersByRow).values);
+            }
+            else if(header == "meas")
+            {
+                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitMeasuredSpectrum, false, null, Colours.WHITE,
+                    [
+                        new SpectrumLineChoice(
+                            fitLinePrefix+header,SpectrumChartModel.fitMeasuredSpectrum, true, this.readFitColumn(c, csvNumbersByRow), 1, 0.2, true),
+                    ],
+                    [])
+                );
+            }
+            else if(header == "calc")
+            {
+                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitCaclulatedTotalSpectrum, false, null, Colours.ORANGE,
+                    [new SpectrumLineChoice(fitLinePrefix+header, SpectrumChartModel.fitCaclulatedTotalSpectrum, true, this.readFitColumn(c, csvNumbersByRow))], []));
+            }
+            else if(header == "residual")
+            {
+                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitResiduals, false, null, Colours.BLUE,
+                    [new SpectrumLineChoice(fitLinePrefix+header, SpectrumChartModel.fitResiduals, true, this.readFitColumn(c, csvNumbersByRow))], []));
+            }
+            else if(header == "Pileup")
+            {
+                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitPileupPeaks, false, null, Colours.PINK,
+                    [new SpectrumLineChoice(fitLinePrefix+header, SpectrumChartModel.fitPileupPeaks, false, this.readFitColumn(c, csvNumbersByRow))], []));
+            }
+            else if(header == "DetCE" || header == "bkg" || header == "SNIP bkg" || header == "calc bkg0")
+            {
+                if(!backgroundSrc)
+                {
+                    backgroundSrc = new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitBackground, false, null, Colours.PURPLE, [], []);
+                }
+
+                // Add this to the background sources group
+                let savedName = SpectrumChartModel.fitBackgroundDetC;
+                if(header == "bkg")
+                {
+                    savedName = SpectrumChartModel.fitBackgroundTotal;
+                }
+                else if(header == "SNIP bkg")
+                {
+                    savedName = SpectrumChartModel.fitBackgroundSNIP;
+                }
+                else if(header == "calc bkg0")
+                {
+                    savedName = SpectrumChartModel.fitBackgroundCalc;
+                }
+
+                let line = new SpectrumLineChoice(
+                    fitLinePrefix+header,
+                    savedName,
+                    header == "bkg", // Only on by default for background total line
+                    this.readFitColumn(c, csvNumbersByRow)
+                );
+
+                if(header == "bkg")
+                {
+                    backgroundTotalLine = line;
+                }
+                else
+                {
+                    backgroundSrc.lineChoices.push(line);
+                }
+            }
+            else
+            {
+                // Find elements like: Ba_L
+                let pos = header.indexOf("_");
+                if(pos > 0)
+                {
+                    let elem = header.substring(0, pos);
+                    let line = header.substring(pos+1);
+
+                    // Don't include the weird ones like: Rh_L_coh
+                    if(line.indexOf("_") == -1)
+                    {
+                        // Get the atomic number
+                        let info = periodicTableDB.getElementOxidationState(elem);
+                        if(info && info.isElement)
+                        {
+                            // Make sure this element has a source defined
+                            if(!perElementSources.has(elem))
+                            {
+                                perElementSources.set(elem, new SpectrumSource(PredefinedROIID.AllPoints, elem, false, null, Colours.YELLOW, [], [], info.Z));
+                            }
+
+                            // Add this peak line to the element it belongs to
+                            // NOTE: we add element peak lines as NOT enabled
+                            let src = perElementSources.get(elem);
+                            src.lineChoices.push(new SpectrumLineChoice(fitLinePrefix+header, header, false, this.readFitColumn(c, csvNumbersByRow)));
+                        }
+                    }
+                }
+            }
+        }
+
+        if(backgroundSrc)
+        {
+            // Make sure background total line is at the back
+            if(backgroundTotalLine)
+            {
+                backgroundSrc.lineChoices.push(backgroundTotalLine);
+            }
+            this._fitLineSources.push(backgroundSrc);
+        }
+
+        for(let elem of perElementSources.values())
+        {
+            // Sort the lines in the element to ensure it's order is K, L, M...
+            elem.lineChoices.sort(
+                (a: SpectrumLineChoice, b: SpectrumLineChoice)=>
+                {
+                    return (a.label.localeCompare(b.label));
+                }
+            );
+            this._fitLineSources.push(elem);
+        }
+
+        this._fitLineSources$.next();
+    }
+
+    private readFitColumn(columnIdx: number, csvNumbersByRow: number[][]): SpectrumValues
+    {
+        let vals = new Float32Array(csvNumbersByRow.length);
+        let maxVal = csvNumbersByRow[0][columnIdx];
+        for(let c = 0; c < csvNumbersByRow.length; c++)
+        {
+            vals[c] = csvNumbersByRow[c][columnIdx];
+            if(vals[c] > maxVal)
+            {
+                maxVal = vals[c];
+            }
+        }
+
+        return new SpectrumValues(vals, maxVal, "", 0);
+    }
+
     private getLinesStates(roiID: string, hasMultiplePMCs: boolean): SpectrumLineChoice[]
     {
         let lines: SpectrumLineChoice[] = [];
@@ -990,7 +1282,9 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         this._lineRangeX = new MinMax(0, maxX);
         this._lineRangeY = new MinMax(0, 0);
 
-        for(let source of this._spectrumSources)
+        let lineSources = this._showFitLines ? this._fitLineSources : this._spectrumSources;
+
+        for(let source of lineSources)
         {
             for(let line of source.lineChoices)
             {
@@ -1043,7 +1337,16 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
         try
         {
-            values = parser.getSpectrumValues(this._datasetService.datasetLoaded, source.locationIndexes, line.lineExpression, line.label, readType, this._yAxisCountsPerMin, this._yAxisCountsPerPMC);
+            if(line.values)
+            {
+                // It's a fit line, unfortunately this stuff was added after the originals, so it's a bit of a hack here :(
+                values.set(line.label, line.values);
+            }
+            else
+            {
+                // Normal line data retrieval
+                values = parser.getSpectrumValues(this._datasetService.datasetLoaded, source.locationIndexes, line.lineExpression, line.label, readType, this._yAxisCountsPerMin, this._yAxisCountsPerPMC);
+            }
         }
         catch (error)
         {
@@ -1064,7 +1367,13 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
             let dashPattern = this.getDashPattern(colourStr);
 
             let xValues = this.calcXValues(valuesForLine.values.length, valuesForLine.sourceDetectorID);
-            let spectrumLine = new SpectrumChartLine(roiID, roiName, line.lineExpression, label, colourRGB.asString(), dashPattern, valuesForLine.values, valuesForLine.maxValue, xValues);
+            let spectrumLine = new SpectrumChartLine(
+                roiID, roiName,
+                line.lineExpression, label,
+                colourRGB.asString(), dashPattern, line.lineWidth, line.opacity, line.drawFilled,
+                valuesForLine.values, valuesForLine.maxValue,
+                xValues
+            );
             this._spectrumLines.push(spectrumLine);
         }
     }
@@ -1087,6 +1396,12 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
     private calcXValues(channelCount: number, forDetectorId: string): Float32Array
     {
+        // If we're drawing fit lines, we already have implicity x-axis values from the CSV returned
+        if(this._showFitLines && this._fitXValues)
+        {
+            return this._fitXValues;
+        }
+
         // Calculate x values
         let xvalues = new Float32Array(channelCount);
 

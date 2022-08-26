@@ -32,8 +32,8 @@ import { ChartAxisDrawer } from "src/app/UI/atoms/interactive-canvas/chart-axis"
 import { CanvasDrawer, CanvasDrawParameters, CanvasParams, CanvasWorldTransform } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { ISpectrumChartModel, SpectrumChartLine } from "src/app/UI/spectrum-chart-widget/model-interface";
 import { SpectrumChartToolHost } from "src/app/UI/spectrum-chart-widget/tools/tool-host";
-import { Colours } from "src/app/utils/colours";
 import { CANVAS_FONT_SIZE_TITLE } from "src/app/utils/drawing";
+import { RGBA, Colours } from "src/app/utils/colours";
 
 
 export class SpectrumChartDrawer implements CanvasDrawer
@@ -136,9 +136,10 @@ private drawStats(name: string, elapsed: number, total: number): string
         screenContext.rect(this._ctx.xAxis.startPx, 0, this._ctx.xAxis.endPx, viewport.height-this._ctx.yAxis.startPx);
         screenContext.clip();
 
-        for(let spectrum of this._ctx.spectrumLines)
+        for(let c = 0; c < this._ctx.spectrumLines.length; c++)
         {
-            this.drawSpectrum(screenContext, viewport, worldTransform, spectrum);
+            const spectrum  = this._ctx.spectrumLines[c];
+            this.drawSpectrum(screenContext, viewport, worldTransform, spectrum, this._ctx.spectrumLineDarkenIdxs.indexOf(c) > -1);
         }
 
         for(let peak of this._ctx.diffractionPeaksShown)
@@ -148,15 +149,35 @@ private drawStats(name: string, elapsed: number, total: number): string
         screenContext.restore();
     }
 
-    protected drawSpectrum(screenContext: CanvasRenderingContext2D, viewport: CanvasParams, worldTransform: CanvasWorldTransform, spectrum: SpectrumChartLine)
+    protected drawSpectrum(screenContext: CanvasRenderingContext2D, viewport: CanvasParams, worldTransform: CanvasWorldTransform, spectrum: SpectrumChartLine, darken: boolean)
     {
         if(spectrum.values.length <= 0)
         {
             return;
         }
 
-        screenContext.strokeStyle = spectrum.color;
-        screenContext.lineWidth = 1;
+        let opacity = spectrum.opacity;
+        if(darken)
+        {
+            opacity *= 0.2;
+        }
+
+        let clr = spectrum.color;
+        if(opacity < 1)
+        {
+            clr = RGBA.fromString(spectrum.color).asStringWithA(opacity);
+        }
+
+        if(spectrum.drawFilled)
+        {
+            screenContext.fillStyle = clr;
+        }
+        else
+        {
+            screenContext.strokeStyle = clr;
+        }
+
+        screenContext.lineWidth = spectrum.lineWidth;
         screenContext.setLineDash(spectrum.dashPattern);
 
         screenContext.beginPath();
@@ -189,7 +210,26 @@ private drawStats(name: string, elapsed: number, total: number): string
                 break;
             }
         }
-        screenContext.stroke();
+
+        if(spectrum.drawFilled)
+        {
+            // Draw 2 more points to bring it down to the x axis
+            screenContext.lineTo(
+                this._ctx.xAxis.valueToCanvas(endX),
+                this._ctx.yAxis.valueToCanvas(0)
+            );
+
+            screenContext.lineTo(
+                this._ctx.xAxis.valueToCanvas(startX),
+                this._ctx.yAxis.valueToCanvas(0)
+            );
+
+            screenContext.fill();
+        }
+        else
+        {
+            screenContext.stroke();
+        }
     }
 
     drawDiffractionPeakBand(screenContext: CanvasRenderingContext2D, viewport: CanvasParams, peak: DiffractionPeak)

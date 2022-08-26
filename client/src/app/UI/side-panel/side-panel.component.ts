@@ -31,7 +31,6 @@ import { Component, ComponentFactoryResolver, ComponentRef, OnInit, ViewChild, V
 import { rgbuPlotWidgetState, ViewStateService } from "src/app/services/view-state.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
 import { QuantificationCombineComponent } from "src/app/UI/side-panel/tabs/quantification-combine/quantification-combine.component";
-import { environment } from "src/environments/environment";
 import { DiffractionComponent } from "./tabs/diffraction/diffraction.component";
 import { ROIComponent } from "./tabs/roi/roi.component";
 import { RoughnessComponent } from "./tabs/roughness/roughness.component";

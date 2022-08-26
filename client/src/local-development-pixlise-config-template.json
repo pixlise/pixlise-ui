@@ -1,0 +1,26 @@
+{
+    "production": false,
+    "route_dbg": false,
+    "name": "local",
+
+    "auth0_domain": "",
+    "auth0_client": "",
+    "auth0_audience": "",
+    "auth0_namespace": "",
+
+    "sentry_dsn": "",
+
+    "appDomain": "",
+    "apiUrl": "http://localhost:8080/",
+
+    "alertPollInterval_ms": 10000,
+    "versionPollInterval_ms": 300000,
+    "versionPollUrl": "",
+
+    "engineeringTabEnabled": false,
+    "allowDifferentMapSizesInExpressions": true,
+
+    "expectedDataCollectionAgreementVersion": "1.0",
+
+    "unassignedNewUserRoleId": ""
+}

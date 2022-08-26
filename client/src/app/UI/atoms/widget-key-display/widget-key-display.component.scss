@@ -37,7 +37,7 @@
 }
 
 .key-item {
-    padding: $sz-half 0px;
+    padding: $sz-half $sz-unit;
 }
 
 .key-display {
@@ -68,5 +68,4 @@
 }
 
 .dash-pattern {
-    padding-left: $sz-unit;
 }
