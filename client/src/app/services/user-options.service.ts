@@ -34,12 +34,7 @@ import { Observable, ReplaySubject } from "rxjs";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { DataCollectionDialogComponent } from "src/app/UI/data-collection-dialog/data-collection-dialog.component";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
-import { environment } from "src/environments/environment";
-
-
-
-
-
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 
 export class NotificationMethod
@@ -171,26 +166,25 @@ export class UserOptionsService
     showDataCollectionDialog(): void
     {
         const dialogConfig = new MatDialogConfig();
-        //dialogConfig.backdropClass = 'empty-overlay-backdrop';
+
+        // Don't allow user to close config until data collection option is chosen
+        dialogConfig.disableClose = true;
 
         const dialogRef = this.dialog.open(DataCollectionDialogComponent, dialogConfig);
 
         dialogRef.afterClosed().subscribe(
             (allowed: boolean)=>
             {
-                if(allowed === true || allowed === false)
+                // Save this user setting
+                this._userConfig.data_collection = allowed ? EnvConfigurationInitService.appConfig.expectedDataCollectionAgreementVersion : "false";
+                this.saveUserConfig().subscribe(()=>
                 {
-                    // Save this user setting
-                    this._userConfig.data_collection = allowed ? environment.expectedDataCollectionAgreementVersion : "false";
-                    this.saveUserConfig().subscribe(()=>
-                    {
-                    },
-                    (err)=>
-                    {
-                        console.error("Failed to save data collection: "+JSON.stringify(err));
-                    }
-                    );
+                },
+                (err)=>
+                {
+                    console.error("Failed to save data collection: "+JSON.stringify(err));
                 }
+                );
             }
         );
     }
@@ -215,9 +209,8 @@ export class UserOptionsService
             {
                 this._userConfig = config;
                 this._userOptionsChanged$.next();
-
                 // If data collection flag does not match what we expect, show the dialog
-                if(this._userConfig.data_collection != "false" && this._userConfig.data_collection != environment.expectedDataCollectionAgreementVersion)
+                if(this._userConfig.data_collection !== "false" && this._userConfig.data_collection !== EnvConfigurationInitService.appConfig.expectedDataCollectionAgreementVersion)
                 {
                     this.showDataCollectionDialog();
                 }

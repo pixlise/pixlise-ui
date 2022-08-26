@@ -29,8 +29,6 @@
 
 import { HttpHeaders } from "@angular/common/http";
 //import { throwError, of } from 'rxjs';
-import { environment } from "src/environments/environment";
-
 
 
 export function makeHeaders(): object
@@ -46,6 +44,12 @@ export function makeHeaders(): object
 
 export class APIPaths
 {
+    private static _apiURL: string = "";
+    public static setAPIUrl(url: string)
+    {
+        APIPaths._apiURL = url;
+    }
+
     public static readonly api_detector_config = "detector-config";
     public static readonly api_piquant_root = "piquant";
     public static readonly api_componentVersions = "version";
@@ -68,6 +72,6 @@ export class APIPaths
     // path should be one of the above, or the above with more stuff added to it, making sure / are included!
     public static getWithHost(path: string): string
     {
-        return environment.apiUrl+path;
+        return APIPaths._apiURL+path;
     }
 }

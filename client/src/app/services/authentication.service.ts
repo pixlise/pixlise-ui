@@ -34,7 +34,7 @@ import Auth0Client from "@auth0/auth0-spa-js/dist/typings/Auth0Client";
 import * as Sentry from "@sentry/browser";
 import { BehaviorSubject, combineLatest, from, Observable, of, ReplaySubject, throwError } from "rxjs";
 import { catchError, concatMap, shareReplay, tap } from "rxjs/operators";
-import { environment } from "src/environments/environment";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 
 @Injectable({
@@ -62,27 +62,27 @@ export class AuthenticationService
 
     public static hasPermissionSet(claims, permissionToCheck: string): boolean
     {
-        if(!claims || !claims[environment.auth0_namespace] || !claims[environment.auth0_namespace][AuthenticationService.authPermissions])
+        if(!claims || !claims[EnvConfigurationInitService.appConfig.auth0_namespace] || !claims[EnvConfigurationInitService.appConfig.auth0_namespace][AuthenticationService.authPermissions])
         {
             // nothing to look in!
             return false;
         }
 
         // Look for the permission item
-        let permissions = claims[environment.auth0_namespace][AuthenticationService.authPermissions];
+        let permissions = claims[EnvConfigurationInitService.appConfig.auth0_namespace][AuthenticationService.authPermissions];
         return permissions.indexOf(permissionToCheck) != -1;
     }
 
     public static permissionCount(claims): number
     {
-        if(!claims || !claims[environment.auth0_namespace] || !claims[environment.auth0_namespace][AuthenticationService.authPermissions])
+        if(!claims || !claims[EnvConfigurationInitService.appConfig.auth0_namespace] || !claims[EnvConfigurationInitService.appConfig.auth0_namespace][AuthenticationService.authPermissions])
         {
             // nothing to look in!
             return -1;
         }
 
         // Look for the permission item
-        let permissions = claims[environment.auth0_namespace][AuthenticationService.authPermissions];
+        let permissions = claims[EnvConfigurationInitService.appConfig.auth0_namespace][AuthenticationService.authPermissions];
         return permissions.length;
     }
 
@@ -90,9 +90,9 @@ export class AuthenticationService
     {
         let result = [];
 
-        if(claims && claims[environment.auth0_namespace] && claims[environment.auth0_namespace][AuthenticationService.authPermissions])
+        if(claims && claims[EnvConfigurationInitService.appConfig.auth0_namespace] && claims[EnvConfigurationInitService.appConfig.auth0_namespace][AuthenticationService.authPermissions])
         {
-            let permissions = claims[environment.auth0_namespace][AuthenticationService.authPermissions];
+            let permissions = claims[EnvConfigurationInitService.appConfig.auth0_namespace][AuthenticationService.authPermissions];
             for(let perm of permissions)
             {
                 if(perm.startsWith(AuthenticationService.permissionAccessStartsWith))
@@ -107,51 +107,14 @@ export class AuthenticationService
     }
 
     // See: https://auth0.com/docs/architecture-scenarios/spa-api/part-3#implement-the-spa
-    private auth0Client$ = (from(
-        createAuth0Client({
-            domain: environment.auth0_domain,
-            client_id: environment.auth0_client,
-            redirect_uri: `${window.location.origin}/authenticate`,
-            audience: environment.auth0_audience,
-            scope: "",
-            responseType: "token id_token",
-            cacheLocation: this.getCacheLocation(),
-            leeway: 120 // TODO: what should we set this to?
-        })
-    ) as Observable<Auth0Client>).pipe(
-        shareReplay(1), // Every subscription receives the same shared value
-        catchError(
-            (err)=>
-            {
-                if(err && err.error == "unauthorized")
-                {
-                    let errStr = err.error;
-                    if(err.error_description != undefined)
-                    {
-                        errStr = err.error_description;
-                    }
-
-                    this.authErrors$.next(errStr);
-                    this.router.navigate(["/authenticate"]);
-                    return;
-                }
-                console.error(err);
-                return throwError(err);
-            }
-        )
-    );
+    private auth0Client$: Observable<Auth0Client>;
 
     // Define observables for SDK methods that return promises by default
     // For each Auth0 SDK method, first ensure the client instance is ready
     // concatMap: Using the client instance, call SDK method; SDK returns a promise
     // from: Convert that resulting promise into an observable
-    isAuthenticated$ = this.auth0Client$.pipe(
-        concatMap((client: Auth0Client) => from(client.isAuthenticated())),
-        tap(res => this.loggedIn = res)
-    );
-    handleRedirectCallback$ = this.auth0Client$.pipe(
-        concatMap((client: Auth0Client) => from(client.handleRedirectCallback()))
-    );
+    isAuthenticated$: Observable<boolean>;
+    handleRedirectCallback$: any;// Observable<RedirectLoginResult<TAppState>>;//OperatorFunction<Auth0Client, RedirectLoginResult>;//ObservedValueOf<O> | R>;//Observable<RedirectLoginResult>;//Observable<string>;
 
     // Local property for login status
     loggedIn: boolean = null;
@@ -162,17 +125,77 @@ export class AuthenticationService
 
     authErrors$ = new ReplaySubject<string>();
 
-    constructor(private router: Router)
+    constructor(
+        private router: Router,
+        private _envConfigSvc: EnvConfigurationInitService,
+    )
     {
-        // On initial load, check authentication state with authorization server
-        // Set up local auth streams if user is already authenticated
-        this.localAuthSetup();
-        // Handle redirect from Auth0 login
-        let errStr = this.handleAuthCallback();
-        if(errStr && errStr.length > 0)
-        {
-            this.authErrors$.next(errStr);
-        }
+        this._envConfigSvc.gotConfig$.subscribe(
+            ()=>
+            {
+                this.initClient();
+
+                // On initial load, check authentication state with authorization server
+                // Set up local auth streams if user is already authenticated
+                this.localAuthSetup();
+                // Handle redirect from Auth0 login
+                let errStr = this.handleAuthCallback();
+                if(errStr && errStr.length > 0)
+                {
+                    this.authErrors$.next(errStr);
+                }
+            }
+        );
+    }
+
+    private initClient(): void
+    {
+        this.auth0Client$ = (from(
+            createAuth0Client({
+                domain: EnvConfigurationInitService.appConfig.auth0_domain,
+                client_id: EnvConfigurationInitService.appConfig.auth0_client,
+                redirect_uri: `${window.location.origin}/authenticate`,
+                audience: EnvConfigurationInitService.appConfig.auth0_audience,
+                scope: "",
+                responseType: "token id_token",
+                cacheLocation: this.getCacheLocation(),
+                leeway: 120 // TODO: what should we set this to?
+            })
+        ) as Observable<Auth0Client>).pipe(
+            shareReplay(1), // Every subscription receives the same shared value
+            catchError(
+                (err)=>
+                {
+                    if(err && err.error == "unauthorized")
+                    {
+                        let errStr = err.error;
+                        if(err.error_description != undefined)
+                        {
+                            errStr = err.error_description;
+                        }
+    
+                        this.authErrors$.next(errStr);
+                        this.router.navigate(["/authenticate"]);
+                        return;
+                    }
+                    console.error(err);
+                    return throwError(err);
+                }
+            )
+        );
+    
+        // Define observables for SDK methods that return promises by default
+        // For each Auth0 SDK method, first ensure the client instance is ready
+        // concatMap: Using the client instance, call SDK method; SDK returns a promise
+        // from: Convert that resulting promise into an observable
+        this.isAuthenticated$ = this.auth0Client$.pipe(
+            concatMap((client: Auth0Client) => from(client.isAuthenticated())),
+            tap(res => this.loggedIn = res)
+        );
+
+        this.handleRedirectCallback$ = this.auth0Client$.pipe(
+            concatMap((client: Auth0Client) => from(client.handleRedirectCallback()))
+        );
     }
 
     // When calling, options can be passed if desired
@@ -309,10 +332,11 @@ export class AuthenticationService
                 // Have client, now call method to handle auth callback redirect
                 tap(cbRes => 
                 {
+                    let appState = cbRes["appState"];//cbRes.appState;
+
                     // Get and set target redirect route from callback results
-                    targetRoute = cbRes.appState && cbRes.appState.target ? cbRes.appState.target : "/";
-                    appQueryParams = cbRes.appState.queryParams;
-                    
+                    targetRoute = appState && appState.target ? appState.target : "/";
+                    appQueryParams = appState.queryParams;
                 }),
                 concatMap(() => 
                 {
@@ -360,7 +384,7 @@ export class AuthenticationService
         {
             // Call method to log out
             client.logout({
-                client_id: environment.auth0_client,
+                client_id: EnvConfigurationInitService.appConfig.auth0_client,
                 returnTo: `${window.location.origin}`
             });
         });

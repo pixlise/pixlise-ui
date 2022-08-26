@@ -52,12 +52,6 @@ import { SpectrumPeakLabelPickerComponent, SpectrumPeakLabelsVisible } from "src
 import { ZoomMap } from "src/app/UI/spectrum-chart-widget/ui-elements/zoom-map";
 
 
-
-
-
-
-
-
 @Component({
     selector: "spectrum-chart-widget",
     templateUrl: "./spectrum-chart-widget.component.html",
@@ -356,6 +350,16 @@ export class SpectrumChartWidgetComponent implements OnInit, OnDestroy
     onToggleShowSpectrumRegionPicker(event): void
     {
         this._viewStateService.showSpectrumRegionPicker = !this._viewStateService.showSpectrumRegionPicker;
+    }
+
+    get showSpectrumFit(): boolean
+    {
+        return this._viewStateService.showSpectrumFit;
+    }
+
+    onToggleShowSpectrumFit(event): void
+    {
+        this._viewStateService.showSpectrumFit = !this._viewStateService.showSpectrumFit;
     }
 
     get keyItems(): KeyItem[]

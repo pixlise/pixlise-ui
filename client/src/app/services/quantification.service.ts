@@ -29,37 +29,19 @@
 
 import { HttpClient, HttpEventType, HttpHeaders } from "@angular/common/http";
 import { Injectable } from "@angular/core";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Observable, ReplaySubject, Subject, Subscription, throwError, of, combineLatest } from "rxjs";
-import { map, mergeMap, shareReplay, tap, filter } from "rxjs/operators";
-import { DataSet, DataSetLocation } from "src/app/models/DataSet";
+import { map, mergeMap, shareReplay, tap, filter, first } from "rxjs/operators";
+import { DataSetLocation } from "src/app/models/DataSet";
 import { QuantificationBlessingDetails, QuantificationLayer, QuantificationSummary } from "src/app/models/Quantifications";
+import { QuantificationStartOptionsComponent, QuantificationStartOptionsParams, QuantCreateParameters } from "src/app/UI/quantification-start-options/quantification-start-options.component";
+import { httpErrorToString } from "src/app/utils/utils";
 import { PredefinedROIID, ROISavedItem } from "src/app/models/roi";
 import { Quantification } from "src/app/protolibs/quantification_pb";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { arraysEqual, getMB } from "src/app/utils/utils";
-import { environment } from "src/environments/environment";
 
-
-export class QuantCreateParameters
-{
-    constructor(
-        public name: string,
-        public pmcs: number[],
-        public elements: string[],
-        public parameters: string,
-        public detectorConfig: string,
-        public runTimeSec: number,
-        public roiID: string,
-        public elementSetID: string,
-        public quantMode: string,
-        public roiIDs: string[],
-        public includeDwells: boolean
-        //public comments: string
-    )
-    {
-    }
-}
 
 // Returned when listing quants
 class QuantListResponse
@@ -189,6 +171,7 @@ export class QuantificationService
     constructor(
         private http: HttpClient,
         private _loadingSvc: LoadingIndicatorService,
+        public dialog: MatDialog
     )
     {
     }
@@ -896,5 +879,41 @@ export class QuantificationService
         }
 
         return result;
+    }
+
+    showQuantificationDialog(
+        defaultCommand: string,
+        atomicNumbers: Set<number>,
+    ): Observable<QuantCreateParameters>
+    {
+        // Show the confirmation dialog
+        const dialogConfig = new MatDialogConfig();
+
+        //dialogConfig.disableClose = true;
+        //dialogConfig.autoFocus = true;
+        //dialogConfig.width = '1200px';
+
+        dialogConfig.data = new QuantificationStartOptionsParams(
+            defaultCommand,
+            atomicNumbers
+        );
+
+        const dialogRef = this.dialog.open(QuantificationStartOptionsComponent, dialogConfig);
+
+        return dialogRef.afterClosed();
+    }
+
+    getPiquantLastCommandOutput(command: string, file: string): Observable<string>
+    {
+        let apiUrl = APIPaths.getWithHost(APIPaths.api_quantification+"/last/download/"+this._datasetIDLoaded+"/"+command+"/"+file);
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                "Content-Type":  "text/plain",
+            }),
+            responseType: "text" as "json"
+        };
+
+        return this.http.get<string>(apiUrl, httpOptions);
     }
 }

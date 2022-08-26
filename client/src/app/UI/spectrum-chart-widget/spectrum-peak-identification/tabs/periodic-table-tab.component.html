@@ -34,12 +34,11 @@ POSSIBILITY OF SUCH DAMAGE.
 
         <!-- Removed: *ngIf="!loading" when trying to fix #1182 -->
         <periodic-table
+            [grayedElements]="[43]"
             [selectedElements]='selectedElements'
-            [maxHighlightedElements]='maxHighlightedElements'
             [onlyAllowSelectableItems]='false'
             (onElementClicked)='onElementClicked($event)'
-            (onElementHover)='onElementHover($event)'
-            >
+            (onElementHover)='onElementHover($event)'>
         </periodic-table>
     </div>
     <div class="footer">

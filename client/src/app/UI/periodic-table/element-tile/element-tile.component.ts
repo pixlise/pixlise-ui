@@ -31,6 +31,12 @@ import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { periodicTableDB, PeriodicTableItem } from "src/app/periodic-table/periodic-table-db";
 
 
+export class PeriodicElement
+{
+    constructor(public element: PeriodicTableItem, public state: ElementTileState, public tooltipExtra: string = "")
+    {
+    }
+}
 
 export class ElementTileClickEvent
 {
@@ -41,10 +47,12 @@ export class ElementTileClickEvent
 
 export enum ElementTileState
 {
-    NONE="NONE",
-    HOVER="HOVER",
-    SELECTED="SELECTED",
-    GRAYED="GRAYED"
+    GRAYED="GRAYED", // Non-selectable (grayed out text vs background)
+    STATIC="STATIC", // Looks the same as NORMAL but non-selectable
+    NORMAL="NORMAL", // Selectable (lighter)
+    NORMAL2="NORMAL2", // Selectable (darker)
+    SELECTED="SELECTED", // Shows in purple
+    SELECTED2="SELECTED2", // Shows in yellow
 }
 
 @Component({
@@ -54,64 +62,91 @@ export enum ElementTileState
 })
 export class ElementTileComponent implements OnInit
 {
-    @Input() atomicNumber: number = 0;
-    @Input() state: ElementTileState = ElementTileState.NONE;
-    @Input() selectable: boolean = false;
+    // Can either specify tileData
+    @Input() tileData: PeriodicElement = null; // null indicates it's one of the empty cells in the table, eg gap between Ba and Hf
 
+    // NOTE: Tried to remove these when refactoring to end up with just the above tileData, but element-tile is used in several places
+    // as a static display of an element with the only input being an atomic number, so unfortunately these are back, but optional
+    @Input() atomicNumber: number = 0;
+    @Input() state: ElementTileState = ElementTileState.STATIC;
+
+    // Outputs are mouse events
     @Output() onTileClicked = new EventEmitter();
     @Output() onTileHover = new EventEmitter();
 
-    element: PeriodicTableItem = null;
-
     private _classList: string[] = [];
-
-    constructor()
-    {
-    }
 
     ngOnInit()
     {
-        this._classList = [];
-        if(this.atomicNumber)
+        // If we were given atomicNumber form a tileData so the rest of our operation is the same
+        if(this.tileData && this.atomicNumber)
         {
-            this.element = periodicTableDB.getElementByAtomicNumber(this.atomicNumber);
-            this._classList = ["element-tile"];
+            throw new Error("element-tile requires tileData OR atomicNumber not both");
         }
 
-        if(this.selectable && this.state != ElementTileState.GRAYED)
+        if(!this.tileData && this.atomicNumber)
         {
-            this._classList.push("selectable");
+            this.tileData = new PeriodicElement(periodicTableDB.getElementByAtomicNumber(this.atomicNumber), this.state);
+        }
+
+        // Build our list of classes that apply
+        // Initially start out with nothing
+        this._classList = [];
+        if(this.tileData)
+        {
+            // We know that we're at least one of the element tiles...
+            this._classList = ["element-tile"];
+
+            if(this.tileData.state != ElementTileState.GRAYED && this.tileData.state != ElementTileState.STATIC)
+            {
+                this._classList.push("selectable");
+            }
         }
     }
 
-    get name(): string
+    get tooltip(): string
     {
-        if(!this.element)
+        if(!this.tileData)
         {
             return "";
         }
-        return this.element.name;
+        let tip = this.tileData.element.name;
+        if(this.tileData.tooltipExtra)
+        {
+            tip += " - " + this.tileData.tooltipExtra;
+        }
+        return tip;
     }
 
     get classList(): string
     {
-        let classes = [ "state-"+this.state ];
+        let classes = Array.from(this._classList);
+        if(this.tileData)
+        {
+            classes.push("state-"+this.tileData.state);
+        }
+        return classes.join(" ");
+        /*let classes = [ "state-"+this.state ];
         let allClasses = classes.concat(this._classList);
-        return allClasses.join(" ");
+        return allClasses.join(" ");*/
     }
 
     onClicked(event: MouseEvent): void
     {
-        this.onTileClicked.emit(new ElementTileClickEvent(this.atomicNumber, event.shiftKey));
+        if(this.tileData)
+        {
+            this.onTileClicked.emit(new ElementTileClickEvent(this.tileData.element.Z, event.shiftKey));
+        }
     }
 
-    onMouseOver(event): void
+    onMouseOver(event: MouseEvent): void
     {
         // If we're not selectable, send out 0 as atomic number...
         let zToReport = 0;
-        if(this.selectable && this.state != ElementTileState.GRAYED)
+        //if(this.selectable && this.state != ElementTileState.GRAYED)
+        if(this.tileData)
         {
-            zToReport = this.atomicNumber;
+            zToReport = this.tileData.element.Z;
         }
         this.onTileHover.emit(zToReport);
     }

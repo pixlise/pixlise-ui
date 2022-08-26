@@ -60,17 +60,13 @@ POSSIBILITY OF SUCH DAMAGE.
                 <div *ngIf="selectedConfigPixliseWindowElementZ" fxLayout="row" class="item-row">
                     <label>Detector Active Element</label>
                     <element-tile
-                        [atomicNumber]="selectedConfigPixliseWindowElementZ"
-                        [state]="elementState"
-                        [selectable]="false">
+                        [atomicNumber]="selectedConfigPixliseWindowElementZ">
                     </element-tile>
                 </div>
                 <div *ngIf="selectedConfigPixliseTubeElementZ" fxLayout="row" class="item-row">
                     <label>X-ray Tube Element</label>
                     <element-tile
-                        [atomicNumber]="selectedConfigPixliseTubeElementZ"
-                        [state]="elementState"
-                        [selectable]="false">
+                        [atomicNumber]="selectedConfigPixliseTubeElementZ">
                     </element-tile>
                 </div>
                 <h3 *ngIf="!itemMsg" class="top-gap">Piquant Configuration</h3>

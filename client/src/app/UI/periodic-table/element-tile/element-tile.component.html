@@ -30,16 +30,13 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div
-    title='{{name}}'
+    [title]='tooltip'
     class='tile'
     [ngClass]='classList'
     (click)="onClicked($event)"
-    (mouseover)="onMouseOver($event)"
-    >
-        <div *ngIf="atomicNumber" class="elem-number">{{atomicNumber}}</div>
-        <div *ngIf="atomicNumber" class="elem-symbol">{{element.symbol}}</div>
-<!--
-        <div *ngIf="atomicNumber && large" class="elem-name">{{name}}</div>
-        <div *ngIf="atomicNumber && large" class="elem-mass">{{atomicMass|number:'1.0-3'}}</div>
--->
+    (mouseover)="onMouseOver($event)">
+    <ng-container *ngIf="tileData">
+        <div class="elem-number">{{tileData.element.Z}}</div>
+        <div>{{tileData.element.symbol}}</div>
+    </ng-container>
 </div>

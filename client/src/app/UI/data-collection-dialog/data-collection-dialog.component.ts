@@ -29,7 +29,7 @@
 
 import { Component, OnInit } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
-import { environment } from "src/environments/environment";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 
 @Component({
@@ -61,6 +61,6 @@ export class DataCollectionDialogComponent implements OnInit
 
     get appDomain(): string
     {
-        return environment.appDomain;
+        return EnvConfigurationInitService.appConfig.appDomain;
     }
 }

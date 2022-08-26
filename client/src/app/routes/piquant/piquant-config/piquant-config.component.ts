@@ -62,7 +62,7 @@ export class PiquantConfigComponent implements OnInit
     public selectedConfigPiquantItems: ConfigItem[] = null;
     public loadingConfig: boolean = false;
     public itemMsg: string = "";
-    public elementState: ElementTileState = ElementTileState.NONE;
+    public elementState: ElementTileState = ElementTileState.STATIC;
 
     constructor(
         private envService: EnvConfigurationService

@@ -27,48 +27,28 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-.title {
-    text-align: center;
-    margin: $small-gap 0px;
-}
+import { FitLineConfigComponent } from './fit-line-config.component';
 
-img {
-    max-width: 400px;
-}
+describe('FitLineConfigComponent', () => {
+  let component: FitLineConfigComponent;
+  let fixture: ComponentFixture<FitLineConfigComponent>;
 
-.scrollable-container {
-    max-height: 300px;
-    overflow-y: scroll;
-}
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [ FitLineConfigComponent ]
+    })
+    .compileComponents();
+  });
 
-.inspect-panel {
-    padding: 0px $sz-unit;
-    overflow-y: scroll;
-}
+  beforeEach(() => {
+    fixture = TestBed.createComponent(FitLineConfigComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
 
-.intensity {
-    text-align: right;
-}
-
-.meta-display {
-    max-width: 400px;
-}
-
-.select-btn {
-    margin-left: $small-gap;
-}
-
-input {
-    width: 40px;
-}
-
-label {
-    color: $ui-color-text-dim;
-    margin-right: $small-gap;
-}
-
-mat-slide-toggle {
-    margin-left: $button-left-gap;
-}
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});

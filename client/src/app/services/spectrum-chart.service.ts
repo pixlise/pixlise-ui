@@ -37,20 +37,6 @@ import { DataSetService } from "./data-set.service";
 import { SelectionService } from "./selection.service";
 
 
-
-
-
-
-// TODO: remove me!
-export enum SpectrumMouseMode
-{
-    BROWSE,
-    PICK_KEV,
-    ADD_ANNOTATION,
-    EDIT_ANNOTATION
-}
-
-
 @Injectable({
     providedIn: "root"
 })

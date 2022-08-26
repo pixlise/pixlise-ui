@@ -29,8 +29,7 @@
 
 import { Component, OnInit } from "@angular/core";
 import { RoleInfo, UserInfo, UserManagementService } from "src/app/services/user-management.service";
-import { environment } from "src/environments/environment";
-
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 
 
@@ -61,7 +60,7 @@ export class UsersComponent implements OnInit
     selectedUserMissingRoles: RoleInfo[] = null;
 
     constructor(
-        private userMgmt: UserManagementService
+        private userMgmt: UserManagementService,
     )
     {
     }
@@ -94,7 +93,7 @@ export class UsersComponent implements OnInit
 
     protected refreshUnassignedNewUsers(): void
     {
-        this.userMgmt.getRoleUsers(environment.unassignedNewUserRoleId).subscribe(
+        this.userMgmt.getRoleUsers(EnvConfigurationInitService.appConfig.unassignedNewUserRoleId).subscribe(
             (users: UserInfo[])=>
             {
                 this.usersWithoutPermissions = users;

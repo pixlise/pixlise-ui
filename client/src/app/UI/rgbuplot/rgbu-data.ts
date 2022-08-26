@@ -116,13 +116,22 @@ export class RGBUAxisUnit
     }
 }
 
+export class ROICount
+{
+    roi: string;
+    colour: string;
+    count: number;
+}
+
 export class RGBURatioPoint
 {
     constructor(
         public ratioPt: Point,
         public count: number,
+        public combinedCount: number,
         public colour: RGBA,
-        public srcPixelIdxs: number[]
+        public srcPixelIdxs: number[],
+        public roiCount: ROICount[] = null
     )
     {
     }

@@ -156,6 +156,7 @@ export enum ColourRamp
     SHADE_MONO_FULL_RED = "SHADE_MONO_FULL_RED",
     SHADE_MONO_FULL_GREEN = "SHADE_MONO_FULL_GREEN",
     SHADE_MONO_FULL_BLUE = "SHADE_MONO_FULL_BLUE",
+    SHADE_MONO_SOLID_GRAY = "SHADE_MONO_SOLID_GRAY",
 
     SHADE_VIRIDIS = "SHADE_VIRIDIS",
     SHADE_MAGMA = "SHADE_MAGMA",
@@ -1213,8 +1214,8 @@ export class Colours
     public static readonly HOPBUSH = new RGBA(0xcc, 0x79, 0xa7, 0xff);
     public static readonly YELLOW = new RGBA(0xff, 0xff, 0x8d, 0xff);
     public static readonly PURPLE = new RGBA(0x9e, 0x3f, 0xff, 0xff);
-
     public static readonly BLUE = new RGBA(0x91, 0xbf, 0xdb, 0xff);
+    public static readonly PINK = new RGBA(0xcc, 0x79, 0xa7, 0xff);
 
     public static readonly RGBU_RED = new RGBA(0xff, 0x77, 0x60, 0xff);
     public static readonly RGBU_GREEN = new RGBA(0x1a, 0xff, 0x66, 0xff);
@@ -1272,35 +1273,36 @@ export class Colours
 
         switch (ramp)
         {
-            // Monochrome
-            case ColourRamp.SHADE_MONO_GRAY:
-                return Colours.monochromeRamp(Colours.BLACK, Colours.WHITE, percent);
-            case ColourRamp.SHADE_MONO_RED:
-                return Colours.monochromeRamp(Colours.BLACK, new RGBA(0xff, 0, 0, 255), percent);
-            case ColourRamp.SHADE_MONO_GREEN:
-                return Colours.monochromeRamp(Colours.BLACK, new RGBA(0, 0xff, 0, 255), percent);
-            case ColourRamp.SHADE_MONO_PURPLE:
-                return Colours.monochromeRamp(Colours.BLACK, new RGBA(0xff, 0, 0xff, 255), percent);
-            case ColourRamp.SHADE_MONO_FULL_RED:
-                return Colours.monochromeRamp(Colours.BLACK, new RGBA(255, 0, 0, 255), percent);
-            case ColourRamp.SHADE_MONO_FULL_GREEN:
-                return Colours.monochromeRamp(Colours.BLACK, new RGBA(0, 255, 0, 255), percent);
-            case ColourRamp.SHADE_MONO_FULL_BLUE:
-                return Colours.monochromeRamp(Colours.BLACK, new RGBA(0, 0, 255, 255), percent);
-
+        // Monochrome
+        case ColourRamp.SHADE_MONO_GRAY:
+            return Colours.monochromeRamp(Colours.BLACK, Colours.WHITE, percent);
+        case ColourRamp.SHADE_MONO_RED:
+            return Colours.monochromeRamp(Colours.BLACK, new RGBA(0xff, 0, 0, 255), percent);
+        case ColourRamp.SHADE_MONO_GREEN:
+            return Colours.monochromeRamp(Colours.BLACK, new RGBA(0, 0xff, 0, 255), percent);
+        case ColourRamp.SHADE_MONO_PURPLE:
+            return Colours.monochromeRamp(Colours.BLACK, new RGBA(0xff, 0, 0xff, 255), percent);
+        case ColourRamp.SHADE_MONO_FULL_RED:
+            return Colours.monochromeRamp(Colours.BLACK, new RGBA(255, 0, 0, 255), percent);
+        case ColourRamp.SHADE_MONO_FULL_GREEN:
+            return Colours.monochromeRamp(Colours.BLACK, new RGBA(0, 255, 0, 255), percent);
+        case ColourRamp.SHADE_MONO_FULL_BLUE:
+            return Colours.monochromeRamp(Colours.BLACK, new RGBA(0, 0, 255, 255), percent);
+        case ColourRamp.SHADE_MONO_SOLID_GRAY:
+            return Colours.monochromeRamp(new RGBA(0xBC, 0xBE, 0xC0, 255), new RGBA(0xBC, 0xBE, 0xC0, 255), percent);
             // Perceptually uniform scales
-            default:
-            case ColourRamp.SHADE_VIRIDIS:
-                rampValues = viridis;
-                break;
+        default:
+        case ColourRamp.SHADE_VIRIDIS:
+            rampValues = viridis;
+            break;
 
-            case ColourRamp.SHADE_MAGMA:
-                rampValues = magma;
-                break;
+        case ColourRamp.SHADE_MAGMA:
+            rampValues = magma;
+            break;
 
-            case ColourRamp.SHADE_INFERNO:
-                rampValues = inferno;
-                break;
+        case ColourRamp.SHADE_INFERNO:
+            rampValues = inferno;
+            break;
         }
 
         if(percent < 0 || percent > 1)

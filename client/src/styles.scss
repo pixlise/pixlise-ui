@@ -53,6 +53,7 @@
     --clr-blue: 145,191,219; // #91bfdb
     --clr-purple: 158,63,255; // #9e3fff
     --clr-context-purple: 255,0,246; // #ff00f6
+    --clr-pink: 204,121,167; // #cc79a7
 
     --top-toolbar-height: 37px;
     --widget-drop-below-title: 42px; // 38px title bar + standard padding
@@ -112,6 +113,11 @@ input {
     &:focus {
         outline: none;
     }
+}
+
+input:disabled {
+    background-color: $clr-gray-80;
+    color: $clr-gray-70;
 }
 
 textarea {
@@ -194,7 +200,7 @@ button:hover {
 */
 /* Text styles */
 small {
-    color: $ui-color-text-dim;
+    color: $clr-gray-70;
 }
 
 .mat-dialog-container {
@@ -271,7 +277,7 @@ h1, h2, h3 {
     justify-content: center;
     flex-direction: column;
 
-    color: $ui-color-text-dim;
+    color: $clr-gray-70;
 }
 
 .large-top-gap {
@@ -299,7 +305,7 @@ h1, h2, h3 {
 .empty-msg {
     padding: 80px 0px;
     text-align: center;
-    color: $ui-color-text-dim;
+    color: $clr-gray-70
 }
 
 .key-location-top-right-below-title {

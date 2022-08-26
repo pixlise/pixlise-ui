@@ -36,11 +36,9 @@ import { Observable, throwError } from "rxjs";
 import { catchError, mergeMap, tap } from "rxjs/operators";
 import { FullScreenDisplayComponent, FullScreenDisplayData } from "src/app/UI/atoms/full-screen-display/full-screen-display.component";
 import { APIPaths } from "src/app/utils/api-helpers";
-import { environment } from "src/environments/environment";
 import { AuthenticationService } from "./authentication.service";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 import { Router } from "@angular/router";
-
-
 
 
 // HttpInterceptorService is vital in communications with the PIXLISE API. It serves several purposes:
@@ -61,9 +59,9 @@ export class HttpInterceptorService implements HttpInterceptor
     private _commsErrorDlg: MatDialogRef<FullScreenDisplayComponent> = null;
 
     constructor(
-        private auth: AuthenticationService,
+        private _authService: AuthenticationService,
         public dialog: MatDialog,
-        private router: Router
+        private router: Router,
     )
     {
     }
@@ -83,86 +81,94 @@ export class HttpInterceptorService implements HttpInterceptor
             }
         }
 
-        if(req.url.startsWith(environment.apiUrl) && req.url != versionsURL)
-        {
-            return this.auth.getTokenSilently$().pipe(
-                mergeMap(token => 
-                {
-                    const tokenReq = req.clone({
-                        setHeaders: { Authorization: `Bearer ${token}` }
-                    });
-
-                    return next.handle(tokenReq);
-                }),
-                tap(
-                    (evt)=>
-                    {
-                        if(evt instanceof HttpResponse)
-                        {
-                            // If we've had a success, and are still showing the error dialog, remove it as the API
-                            // may have recovered
-                            if(this._commsErrorDlg)
-                            {
-                                console.log("Auto-closing comms issue dialog due to success response arriving!");
-                                this._commsErrorDlg.close(null);
-                            }
-                        }
-                    }
-                ),
-                catchError(
-                    (error: HttpErrorResponse)=>
-                    {
-                        if(error.error instanceof ErrorEvent)
-                        {
-                            // client-side error
-                            console.error(`Client Error: ${error.error.message}`);
-                        }
-                        else
-                        {
-                            // If no internet...
-                            if(error.status === 0)
-                            {
-                                console.error("Cannot communicate with API");
-                                if(!this._commsErrorDlg)
-                                {
-                                    this._commsErrorDlg = this.showNoInternetDialog("Cannot communicate with PIXLISE server!");
-                                }
-                            }
-                            // server-side error
-                            else if(error.status === 503)
-                            {
-                                // assume API is being upgraded
-                                if(!this._commsErrorDlg)
-                                {
-                                    this._commsErrorDlg = this.showCommsErrorDialog(
-                                        "PIXLISE server is in the process of an upgrade.\n\nPlease wait, this may take a few minutes...",
-                                        false,
-                                        FullScreenDisplayData.iconProgress
-                                    );
-                                }
-                            }
-                            else if(error.error === "login_required" && !["/", "/about"].includes(this.router.url))
-                            {
-                                console.error("Login required", error);
-                                // User's session token expired, so prompt to refresh
-                                this.showLoginTokenExpiredDialog("Your login session has expired.");
-                            }
-                            else if(error.status === 500)
-                            {
-                                // API had an internal error... log this too (?)
-                                console.log(`Error Code: ${error.status}\nMessage: ${error.message}`);
-                            }
-                        }
-
-                        return throwError(error);
-                    }
-                )
-            );
-        }
-        else
+        // If it's a request to:
+        // - Something starting with ./
+        // - The versions URL
+        // - NOT a request to our API
+        // Then we don't inject anything into the request!
+        if( req.url.startsWith("./") ||
+            !req.url.startsWith(EnvConfigurationInitService.appConfig.apiUrl) ||
+            req.url == versionsURL ||
+            !this._authService.isAuthenticated$
+        )
         {
             return next.handle(req);
         }
+
+        // Otherwise, we do:
+        return this._authService.getTokenSilently$().pipe(
+            mergeMap(token => 
+            {
+                const tokenReq = req.clone({
+                    setHeaders: { Authorization: `Bearer ${token}` }
+                });
+
+                return next.handle(tokenReq);
+            }),
+            tap(
+                (evt)=>
+                {
+                    if(evt instanceof HttpResponse)
+                    {
+                        // If we've had a success, and are still showing the error dialog, remove it as the API
+                        // may have recovered
+                        if(this._commsErrorDlg)
+                        {
+                            console.log("Auto-closing comms issue dialog due to success response arriving!");
+                            this._commsErrorDlg.close(null);
+                        }
+                    }
+                }
+            ),
+            catchError(
+                (error: HttpErrorResponse)=>
+                {
+                    if(error.error instanceof ErrorEvent)
+                    {
+                        // client-side error
+                        console.error(`Client Error: ${error.error.message}`);
+                    }
+                    else
+                    {
+                        // If no internet...
+                        if(error.status === 0)
+                        {
+                            console.error("Cannot communicate with API");
+                            if(!this._commsErrorDlg)
+                            {
+                                this._commsErrorDlg = this.showNoInternetDialog("Cannot communicate with PIXLISE server!");
+                            }
+                        }
+                        // server-side error
+                        else if(error.status === 503)
+                        {
+                            // assume API is being upgraded
+                            if(!this._commsErrorDlg)
+                            {
+                                this._commsErrorDlg = this.showCommsErrorDialog(
+                                    "PIXLISE server is in the process of an upgrade.\n\nPlease wait, this may take a few minutes...",
+                                    false,
+                                    FullScreenDisplayData.iconProgress
+                                );
+                            }
+                        }
+                        else if(error.error === "login_required" && !["/", "/about"].includes(this.router.url))
+                        {
+                            console.error("Login required", error);
+                            // User's session token expired, so prompt to refresh
+                            this.showLoginTokenExpiredDialog("Your login session has expired.");
+                        }
+                        else if(error.status === 500)
+                        {
+                            // API had an internal error... log this too (?)
+                            console.log(`Error Code: ${error.status}\nMessage: ${error.message}`);
+                        }
+                    }
+
+                    return throwError(error);
+                }
+            )
+        );
     }
 
     private showNoInternetDialog(msg: string): MatDialogRef<FullScreenDisplayComponent>

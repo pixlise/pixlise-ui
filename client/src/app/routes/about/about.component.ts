@@ -30,10 +30,7 @@
 import { Component, OnInit } from "@angular/core";
 import { Router } from "@angular/router";
 import { AuthenticationService } from "src/app/services/authentication.service";
-import { environment } from "src/environments/environment";
-
-
-
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 
 @Component({
@@ -54,9 +51,9 @@ export class AboutComponent implements OnInit
 
     ngOnInit()
     {
-        if(environment.name != "prod")
+        if(EnvConfigurationInitService.appConfig.name != "prod")
         {
-            this.notProdRedirectFrom = environment.name+"."+environment.appDomain;
+            this.notProdRedirectFrom = EnvConfigurationInitService.appConfig.name+"."+EnvConfigurationInitService.appConfig.appDomain;
         }
     }
 
@@ -67,12 +64,12 @@ export class AboutComponent implements OnInit
 
     get appDomain(): string
     {
-        return environment.appDomain;
+        return EnvConfigurationInitService.appConfig.appDomain;
     }
 
     get appSubDomain(): string
     {
-        return environment.name == "prod" ? "www" : environment.name;
+        return EnvConfigurationInitService.appConfig.name == "prod" ? "www" : EnvConfigurationInitService.appConfig.name;
     }
 
     onSignUp(): void
@@ -95,7 +92,7 @@ export class AboutComponent implements OnInit
 
     onDiscussionBoard(): void
     {
-        window.open("https://discuss."+environment.appDomain, "_blank");
+        window.open("https://discuss."+EnvConfigurationInitService.appConfig.appDomain, "_blank");
     }
 
     onDocumentation(): void

@@ -158,16 +158,13 @@ export class ROIComponent implements OnInit
         let regions = roi.roi.shared ? this._sharedROIs : this._userROIs;
 
         // If it exists, we just update it, so we don't reset the whole UI for this
-        for(let region of regions)
+        let regionIndex = regions.findIndex((region) => region.roi.id === roi.roi.id);
+        if(regionIndex >= 0)
         {
-            if(region.roi.id == roi.roi.id)
-            {
-                // update
-                region.roi = roi.roi;
-                region.visible = roi.visible;
-                region.opacity = roi.opacity;
-                return;
-            }
+            regions[regionIndex].roi = roi.roi;
+            regions[regionIndex].visible = roi.visible;
+            regions[regionIndex].opacity = roi.opacity;
+            return;
         }
 
         if(roi.roi.shared)

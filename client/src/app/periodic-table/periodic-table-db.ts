@@ -141,6 +141,12 @@ class PeriodicTableDB
     private _symbolToIdx: Map<string, number> = new Map<string, number>();
     private _dbgOutput: boolean = false;
 
+    // Consts for some elements... these mainly because of limits on PIXL sensitivity, easy to find the code
+    // that may care about it instead of searching for atomic numbers
+    public readonly zSodium = 11;
+    public readonly zUranium = 92;
+    public readonly zTechnetium = 43;
+
     constructor()
     {
         this.fillTable();

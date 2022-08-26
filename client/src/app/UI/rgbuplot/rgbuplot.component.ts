@@ -32,27 +32,23 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subject, Subscription } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
-import { Point } from "src/app/models/Geometry";
-import { PixelSelection } from "src/app/models/PixelSelection";
-import { FloatImage, RGBUImage } from "src/app/models/RGBUImage";
+import { RGBUImage } from "src/app/models/RGBUImage";
 import { orderVisibleROIs } from "src/app/models/roi";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
 import { rgbuPlotWidgetState, ViewStateService } from "src/app/services/view-state.service";
-import { RegionData, WidgetDataUpdateReason, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { WidgetDataUpdateReason, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
 import { CanvasDrawer, CanvasDrawParameters, CanvasInteractionHandler } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
-import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "src/app/UI/atoms/picker-dialog/picker-dialog.component";
 import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.component";
 import { RGBUAxisRatioPickerComponent } from "src/app/UI/rgbuplot/rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
-import { ColourRamp, Colours, RGBA } from "src/app/utils/colours";
 import { RGBUPlotDrawer } from "./drawer";
 import { RGBUPlotInteraction } from "./interaction";
 import { RGBUPlotModel } from "./model";
-import { RGBUAxisUnit, RGBUMineralPoint, RGBUMineralRatios, RGBUPlotData, RGBURatioPoint } from "./rgbu-data";
+import { RGBUAxisUnit, RGBUMineralPoint, RGBUPlotData, RGBURatioPoint } from "./rgbu-data";
 
 
 
@@ -130,7 +126,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         this._yAxisUnit = new RGBUAxisUnit(2, 3);
 
         // Decide what minerals to show initially...
-        this._mineralsShown = [];//Array.from(RGBUMineralRatios.names);
+        this._mineralsShown = [];
 
         // We want to know when a dataset changes, so we know what images are available to us
         this._subs.add(this._datasetService.dataset$.subscribe(
@@ -206,13 +202,13 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
                     {
                         this._mineralsShown = loadedState.minerals,
                         this._xAxisUnit = new RGBUAxisUnit(
-                            this.channelToIdx(loadedState.xChannelA), 
-                            this.channelToIdx(loadedState.xChannelB)
+                            RGBUPlotModel.channelToIdx(loadedState.xChannelA), 
+                            RGBUPlotModel.channelToIdx(loadedState.xChannelB)
                         );
 
                         this._yAxisUnit = new RGBUAxisUnit(
-                            this.channelToIdx(loadedState.yChannelA), 
-                            this.channelToIdx(loadedState.yChannelB)
+                            RGBUPlotModel.channelToIdx(loadedState.yChannelA), 
+                            RGBUPlotModel.channelToIdx(loadedState.yChannelB)
                         );
 
                         if(loadedState.drawMonochrome !== undefined)
@@ -294,13 +290,6 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         // Setup for drawing
         let inter = new RGBUPlotInteraction(this.model, this._selectionService, this._datasetService);
 
-        // this._subs.add(inter.axisClick$.subscribe(
-        //     (axis: string)=>
-        //     {
-        //         this.onAxisClick(axis);
-        //     }
-        // ));
-
         this.interaction = inter;
 
         this.drawer = new RGBUPlotDrawer(this.model);
@@ -313,34 +302,13 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         console.log("  RGBUPlot prepareData took: "+(t1-t0).toLocaleString()+"ms, needsDraw$ took: "+(t2-t1).toLocaleString()+"ms");
     }
 
-    private getValue(channel: FloatImage[], numeratorChannel: number, denominatorChannel: number, pixelIdx: number): number
-    {
-        let result = channel[numeratorChannel].values[pixelIdx];
-        if(denominatorChannel > -1)
-        {
-            result /= channel[denominatorChannel].values[pixelIdx];
-        }
-        return result;
-    }
-
     private setInitRange(xMinMax: MinMax, yMinMax: MinMax): void
     {
-        if(!this.selectedMinXValue) 
-        {
-            this.selectedMinXValue = 0;
-        }
-        if(!this.selectedMinYValue) 
-        {
-            this.selectedMinYValue = 0;
-        }
-        if(!this.selectedMaxXValue) 
-        {
-            this.selectedMaxXValue = xMinMax.max;
-        }
-        if(!this.selectedMaxYValue) 
-        {
-            this.selectedMaxYValue = yMinMax.max;
-        }
+        this.selectedMinXValue = this.selectedMinXValue || 0;
+        this.selectedMinYValue = this.selectedMinYValue || 0;
+        this.selectedMaxXValue = this.selectedMaxXValue || xMinMax.max;
+        this.selectedMaxYValue = this.selectedMaxYValue || yMinMax.max;
+
         // Edit so min is always 0 and we have a little buffer above the max
         this.xAxisMinMax = new MinMax(0, xMinMax.max*1.2);
         this.yAxisMinMax = new MinMax(0, yMinMax.max*1.2);
@@ -349,229 +317,74 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         const minAxisMax = 5;
         this.xAxisMinMax.expand(minAxisMax);
         this.yAxisMinMax.expand(minAxisMax);
-
     }
 
     private calcPoints(rgbu: RGBUImage): RGBUPlotData
     {
-        let channels = [rgbu.r, rgbu.g, rgbu.b, rgbu.u];
-        const pixels = rgbu.r.width*rgbu.r.height;
-
-        // Work out the min/max of mineral locations
-        let xAxisMinMax = this.getAxisMinMaxForMinerals(this._xAxisUnit.numeratorChannelIdx, this._xAxisUnit.denominatorChannelIdx);
-        let yAxisMinMax = this.getAxisMinMaxForMinerals(this._yAxisUnit.numeratorChannelIdx, this._yAxisUnit.denominatorChannelIdx);
-
-        this.setInitRange(xAxisMinMax, yAxisMinMax);
-        
-        xAxisMinMax = new MinMax(this.selectedMinXValue, this.selectedMaxXValue);
-        yAxisMinMax = new MinMax(this.selectedMinYValue, this.selectedMaxYValue);
-
-        // Generate the raw points while calculating min/max for each axis
-        let pts: Point[] = [];
-        let xMinMax = new MinMax();
-        let yMinMax = new MinMax();
-
-        // Get the selected and cropped pixels
         let currentSelection = this._selectionService.getCurrentSelection();
         let currSelPixels = currentSelection.pixelSelection.selectedPixels;
         let cropSelection = currentSelection.cropSelection;
 
-        // We also want to preserve where the pixels are, so store a corresponding array of source pixel indexes
-        let srcPixelIdxs: number[] = [];
-
-        for(let c = 0; c < pixels; c++)
+        let selectedXRange = null;
+        if(this.selectedMinXValue !== null && this.selectedMaxXValue !== null) 
         {
-            // Skip pixels if there's an active crop selection and they're not included
-            if(cropSelection.selectedPixels.size > 0 && !cropSelection.isPixelSelected(c)) 
-            {
-                continue;
-            }
-
-            let pt = new Point(
-                this.getValue(channels, this._xAxisUnit.numeratorChannelIdx, this._xAxisUnit.denominatorChannelIdx, c),
-                this.getValue(channels, this._yAxisUnit.numeratorChannelIdx, this._yAxisUnit.denominatorChannelIdx, c)
-            );
-
-            if(isFinite(pt.x) && isFinite(pt.y) && xAxisMinMax.isWithin(pt.x) && yAxisMinMax.isWithin(pt.y))
-            {
-                xMinMax.expand(pt.x);
-                yMinMax.expand(pt.y);
-
-                pts.push(pt);
-                srcPixelIdxs.push(c);
-            }
+            selectedXRange = new MinMax(this.selectedMinXValue, this.selectedMaxXValue);
+        }
+        let selectedYRange = null;
+        if(this.selectedMinYValue !== null && this.selectedMaxYValue !== null) 
+        {
+            selectedYRange = new MinMax(this.selectedMinYValue, this.selectedMaxYValue);
         }
 
-        // Taken out because we ended up with outliers... better to specify this above based on minerals visible
-        /*
-        // If the points reach past mineral locations, expand axis so it fits the points
-        xAxisMinMax.expand(xMinMax.min);
-        xAxisMinMax.expand(xMinMax.max);
-        yAxisMinMax.expand(yMinMax.min);
-        yAxisMinMax.expand(yMinMax.max);
-*/
-        // Bin them, wanting certain number of bins in x and y directions
+        let [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax] = this.model.generatePoints(
+            rgbu,
+            cropSelection,
+            this._xAxisUnit,
+            this._yAxisUnit,
+            selectedXRange,
+            selectedYRange
+        );
+
+        this.setInitRange(xAxisMinMax, yAxisMinMax);
+ 
         const xBinCount = 200;
         const yBinCount = 200;
 
         const xBinSize = 1 / (xBinCount-1);
         const yBinSize = 1 / (yBinCount-1);
 
-        // Allocate each bin so we can find their counts
-        let binCounts = new Array(xBinCount*yBinCount).fill(0);
-        let binMemberInfo = new Array(xBinCount*yBinCount).fill(0); // -1 = selected, 0 = nothing, 1+ = visibleROIs idx+1 (so 1 == visibleROIs[0]) 
-        let countMinMax = new MinMax(0, null);
+        // Minimize RGBU data into specified amounts of x and y bins
+        let [countMinMax, binCounts, binMemberInfo, visibleROIs, binSrcPixels] = this.model.minimizeRGBUData(
+            xBinCount,
+            yBinCount,
+            this._visibleROIs,
+            pts,
+            xMinMax,
+            yMinMax,
+            currSelPixels,
+            srcPixelIdxs,
+            this._widgetDataService,
+        );
 
-        // JAVASCRIPT IS SO SHIT! No, I don't want to fill it with the SAME array reference... So I'll just
-        // write ANOTHER for loop here. Thanks JS
-        //let binSrcPixels = new Array(xBinCount*yBinCount).fill([]);
-        let binSrcPixels: number[][] = [];
-        for(let c = 0; c < binCounts.length; c++)
-        {
-            binSrcPixels.push([]);
-        }
+        // Generate ratio points for newly binned data
+        let [ratioPoints, colourKey] = this.model.generateRGBURatioPoints(
+            xBinCount,
+            yBinCount,
+            binCounts,
+            xMinMax,
+            yMinMax,
+            Math.log(countMinMax.max),
+            this._drawMonochrome,
+            binMemberInfo,
+            visibleROIs,
+            currSelPixels,
+            binSrcPixels
+        );
 
-        let visibleROIs: RegionData[] = [];
-        for(let roi of this._visibleROIs)
-        {
-            let region = this._widgetDataService.regions.get(roi);
-            if(region)
-            {
-                visibleROIs.push(region);
-            }
-        }
+        const allMinerals = RGBUPlotModel.getMineralPointsForAxes(this._xAxisUnit, this._yAxisUnit);
+        let shownMinerals: RGBUMineralPoint[] = allMinerals.filter(mineral => this._mineralsShown.indexOf(mineral.name) >= 0);
 
-        for(let c = 0; c < pts.length; c++)
-        {
-            let pt = pts[c];
-
-            // Work out which bins they sit in
-            let pctX = xMinMax.getAsPercentageOfRange(pt.x, false);
-            let pctY = yMinMax.getAsPercentageOfRange(pt.y, false);
-
-            let xPos = Math.floor(pctX / xBinSize);
-            let yPos = Math.floor(pctY / yBinSize);
-
-            let idx = yPos*xBinCount+xPos;
-            binCounts[idx]++;
-            countMinMax.expand(binCounts[idx]);
-
-            // Remember if it's selected...
-            if(currSelPixels.has(srcPixelIdxs[c]))
-            {
-                binMemberInfo[idx] = -1;
-            }
-            else if(binMemberInfo[idx] == 0)
-            {
-                // Check if it's in any of the ROIs. First one sticks
-                let roiIdx = 1;
-                for(let roi of visibleROIs)
-                {
-                    if(roi.pixelIndexes.has(srcPixelIdxs[c]))
-                    {
-                        binMemberInfo[idx] = roiIdx;
-                        break;
-                    }
-
-                    roiIdx++;
-                }
-            }
-
-            // Remember what pixels are part of this bin
-            binSrcPixels[idx].push(srcPixelIdxs[c]);
-        }
-
-        let logCountMax = Math.log(countMinMax.max);
-
-        let colourRamp = this._drawMonochrome ? ColourRamp.SHADE_MONO_GRAY : ColourRamp.SHADE_MAGMA;
-
-        // Now run through the counts and generate points out of them
-        let ratioPoints: RGBURatioPoint[] = [];
-        for(let x = 0; x < xBinCount; x++)
-        {
-            for(let y = 0; y < yBinCount; y++)
-            {
-                let binIdx = y*xBinCount+x;
-
-                let count = binCounts[binIdx];
-                if(count > 0)
-                {
-                    // Convert x and y (which are in terms of bin coordinates eg: 0-bin count) back to
-                    // the range we had our data in
-                    let binPt = new Point(
-                        xMinMax.min+(x/xBinCount)*xMinMax.getRange(),
-                        yMinMax.min+(y/yBinCount)*yMinMax.getRange(),
-                    );
-
-                    // Prevents divide by 0 error when count === 1 and log of 1 is 0
-                    let colourRampPct = 0;
-                    if(count === logCountMax)
-                    {
-                        colourRampPct = 1;
-                    }
-                    else if(logCountMax > 0)
-                    {
-                        colourRampPct = Math.log(count) / logCountMax;
-                    }
-
-                    // By default, colour based on the colour ramp selected
-                    let colour: RGBA = Colours.sampleColourRamp(colourRamp, colourRampPct);
-
-                    // See if this is a member of an ROI
-
-                    //Colours.sampleColourRamp(ColourRamp.SHADE_MAGMA, Math.log(count) / logCountMax);
-
-                    // If nothing selected, we show these as opaque, but if we do have a selection, unselected points are transparent
-                    if(currSelPixels.size > 0 && binMemberInfo[binIdx] < 0) // binMemberInfo[binIdx] == -1 means it's selected
-                    {
-                        // SELECTED points are drawn in blue if in monochrome mode
-                        if(this._drawMonochrome)
-                        {
-                            colour = Colours.CONTEXT_BLUE;
-                        }
-                    }
-                    else
-                    {
-                        // Unselected, is it a member of an ROI?
-                        if(binMemberInfo[binIdx] > 0)
-                        {
-                            // Yes, colour it with ROI colour
-                            colour = visibleROIs[binMemberInfo[binIdx]-1].colour;
-                        }
-                        else
-                        {
-                            // Unselected colours are dimmed if not in monochrome
-                            if(!this._drawMonochrome && currSelPixels.size > 0)
-                            {
-                                colour = new RGBA(colour.r, colour.g, colour.b, colour.a*0.2);
-                            }
-                        }
-                    }
-
-                    ratioPoints.push(
-                        new RGBURatioPoint(
-                            binPt,
-                            count,
-                            colour,
-                            binSrcPixels[binIdx]
-                        )
-                    );
-                }
-            }
-        }
-
-        const allMinerals = this.getMineralPointsForAxes(this._xAxisUnit, this._yAxisUnit);
-        let shownMinerals: RGBUMineralPoint[] = [];
-
-        for(let m of allMinerals)
-        {
-            if(this._mineralsShown.indexOf(m.name) >= 0)
-            {
-                shownMinerals.push(m);
-            }
-        }
-
-        let result = new RGBUPlotData(
+        let rgbuPlotData = new RGBUPlotData(
             this._xAxisUnit,
             this._yAxisUnit,
             ratioPoints,
@@ -586,54 +399,8 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
             rgbu.path
         );
 
-        return result;
-    }
-
-    private getMineralPointsForAxes(xAxisUnit: RGBUAxisUnit, yAxisUnit: RGBUAxisUnit): RGBUMineralPoint[]
-    {
-        // Build the list of minerals with appropriate coordinates (based on what our axes are configured for)
-        let minerals: RGBUMineralPoint[] = [];
-        for(let c = 0; c < RGBUMineralRatios.names.length; c++)
-        {
-            let xVal = RGBUMineralRatios.ratioValues[c][xAxisUnit.numeratorChannelIdx];
-            if(xAxisUnit.denominatorChannelIdx > -1)
-            {
-                xVal /= RGBUMineralRatios.ratioValues[c][xAxisUnit.denominatorChannelIdx];
-            }
-
-            let yVal = RGBUMineralRatios.ratioValues[c][yAxisUnit.numeratorChannelIdx];
-            if(yAxisUnit.denominatorChannelIdx > -1)
-            {
-                yVal /= RGBUMineralRatios.ratioValues[c][yAxisUnit.denominatorChannelIdx];
-            }
-
-            minerals.push(
-                new RGBUMineralPoint(
-                    new Point(xVal, yVal),
-                    RGBUMineralRatios.names[c]
-                )
-            );
-        }
-        return minerals;
-    }
-
-    private getAxisMinMaxForMinerals(numeratorChannelIdx: number, denominatorChannelIdx: number): MinMax
-    {
-        let result = new MinMax();
-
-        // Look up the value for each
-        for(let mineralValues of RGBUMineralRatios.ratioValues)
-        {
-            let value = mineralValues[numeratorChannelIdx];
-            if(denominatorChannelIdx >= 0)
-            {
-                value /= mineralValues[denominatorChannelIdx];
-            }
-
-            result.expand(value);
-        }
-
-        return result;
+        this.keyItems = Object.entries(colourKey).map(([key, keyColour]) => (new KeyItem(key, key, keyColour)));
+        return rgbuPlotData;
     }
 
     get cursorShown(): string
@@ -717,31 +484,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
 
     onSelectionExclude(): void
     {
-        // Effectively inverts selection, we read the current selection, invert it, and re-assign it as the selection
-        let curSel = this._selectionService.getCurrentSelection();
-        let currSelPixels = curSel.pixelSelection.selectedPixels;
-
-        let allPixels = new Set<number>();
-        for(let c = 0; c < this.model.raw.imgWidth*this.model.raw.imgHeight; c++)
-        {
-            allPixels.add(c);
-        }
-
-        let difference = new Set(
-            [...allPixels].filter(x => !currSelPixels.has(x))
-        );
-
-        this._selectionService.setSelection(
-            this._datasetService.datasetLoaded,
-            null,
-            new PixelSelection(
-                this._datasetService.datasetLoaded,
-                difference,
-                this.model.raw.imgWidth,
-                this.model.raw.imgHeight,
-                curSel.pixelSelection.imageName
-            )
-        );
+        this.model.excludeSelection(this._selectionService, this._datasetService.datasetLoaded);
     }
 
     onSelectionClear(): void
@@ -751,42 +494,22 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
 
     onMinerals(event): void
     {
-        const dialogConfig = new MatDialogConfig();
-        //dialogConfig.backdropClass = 'empty-overlay-backdrop';
-
-        let items: PickerDialogItem[] = [];
-        items.push(new PickerDialogItem(null, "Minerals", null, true));
-
-        for(let m of RGBUMineralRatios.names)
+        RGBUPlotModel.selectMinerals(this.dialog, this._mineralsShown, (mineralsShown) => 
         {
-            items.push(new PickerDialogItem(m, m, null, true));
-        }
-
-        dialogConfig.data = new PickerDialogData(true, true, true, false, items, this._mineralsShown, "", new ElementRef(event.currentTarget));
-
-        const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
-        dialogRef.componentInstance.onSelectedIdsChanged.subscribe(
-            (mineralsShown: string[])=>
+            if(mineralsShown)
             {
-                if(mineralsShown)
-                {
-                    this._mineralsShown = mineralsShown;
-
-                    const reason = "mineral-choice";
-                    this.saveState(reason);
-                    this.prepareData(reason);
-                }
+                this._mineralsShown = mineralsShown;
+                const reason = "mineral-choice";
+                this.saveState(reason);
+                this.prepareData(reason);
             }
-        );
+        });
     }
 
     onRegions(event): void
     {
         const dialogConfig = new MatDialogConfig();
 
-        //dialogConfig.disableClose = true;
-        //dialogConfig.autoFocus = true;
-        //dialogConfig.width = '1200px';
         dialogConfig.data = new ROIPickerData(false, false, true, false, this._visibleROIs, false, true, new ElementRef(event.currentTarget));
 
         const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
@@ -811,9 +534,6 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
     {
         const dialogConfig = new MatDialogConfig();
 
-        //dialogConfig.disableClose = true;
-        //dialogConfig.autoFocus = true;
-        //dialogConfig.width = '1200px';
         let exprId = [];
         if(axis == "X")
         {
@@ -889,36 +609,14 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
     {
         let toSave = new rgbuPlotWidgetState(
             this._mineralsShown,
-            this.idxToChannel(this._yAxisUnit.numeratorChannelIdx),
-            this.idxToChannel(this._yAxisUnit.denominatorChannelIdx),
-            this.idxToChannel(this._xAxisUnit.numeratorChannelIdx),
-            this.idxToChannel(this._xAxisUnit.denominatorChannelIdx),
+            RGBUPlotModel.idxToChannel(this._yAxisUnit.numeratorChannelIdx),
+            RGBUPlotModel.idxToChannel(this._yAxisUnit.denominatorChannelIdx),
+            RGBUPlotModel.idxToChannel(this._xAxisUnit.numeratorChannelIdx),
+            RGBUPlotModel.idxToChannel(this._xAxisUnit.denominatorChannelIdx),
             this._drawMonochrome
         );
 
         return toSave;
-    }
-
-    private channelToIdx(ch: string): number
-    {
-        let idx = RGBUImage.channels.indexOf(ch);
-        if(idx < 0)
-        {
-            console.log("channelToIdx: invalid channel: "+ch);
-            idx = 0;
-        }
-        return idx;
-    }
-
-    private idxToChannel(idx: number): string
-    {
-        if(idx < 0 || idx >= RGBUImage.channels.length)
-        {
-            console.log("idxToChannel: invalid index: "+idx);
-            return RGBUImage.channels[0];
-        }
-
-        return RGBUImage.channels[idx];
     }
 
     // CanvasDrawer

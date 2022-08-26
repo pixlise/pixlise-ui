@@ -28,29 +28,14 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, OnInit } from "@angular/core";
-import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
-import { first } from "rxjs/operators";
-import { PredefinedROIID, ROISavedItem } from "src/app/models/roi";
-import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
 import { AuthenticationService } from "src/app/services/authentication.service";
-import { DataSetService } from "src/app/services/data-set.service";
 import { ElementSetService } from "src/app/services/element-set.service";
-import { EnvConfigurationService } from "src/app/services/env-configuration.service";
-import { NotificationService } from "src/app/services/notification.service";
-import { QuantCreateParameters, QuantificationService } from "src/app/services/quantification.service";
-import { ROIService } from "src/app/services/roi.service";
-import { SelectionService } from "src/app/services/selection.service";
+import { QuantificationService } from "src/app/services/quantification.service";
 import { SpectrumChartService } from "src/app/services/spectrum-chart.service";
-import { QuantificationStartOptions, QuantificationStartOptionsComponent, QuantificationStartOptionsParams } from "src/app/UI/quantification-start-options/quantification-start-options.component";
+import { QuantCreateParameters } from "src/app/UI/quantification-start-options/quantification-start-options.component";
 import { httpErrorToString } from "src/app/utils/utils";
-
-
-
-
-
-
 
 
 @Component({
@@ -69,13 +54,7 @@ export class PickedElementsComponent implements OnInit
         private _elementSetService: ElementSetService,
         private _spectrumService: SpectrumChartService,
         private _quantService: QuantificationService,
-        private _selectionService: SelectionService,
-        private _roiService: ROIService,
-        private _datasetService: DataSetService,
-        private _envService: EnvConfigurationService,
-        private _notificationService: NotificationService,
-        private _authService: AuthenticationService,
-        public dialog: MatDialog
+        private _authService: AuthenticationService
     )
     {
     }
@@ -157,122 +136,24 @@ export class PickedElementsComponent implements OnInit
             atomicNumbers.add(group.atomicNumber);
         }
 
-        let dataset = this._datasetService.datasetLoaded;
-
-        let elemSymbols = periodicTableDB.getElementSymbolsForAtomicNumbers(atomicNumbers);
-        let detectorConfig = dataset.experiment.getDetectorConfig();
-        let parameters = "";
-        let configVersions: string[] = [];
-        if(this._envService.detectorConfig != null)
-        {
-            parameters = this._envService.detectorConfig.defaultParams;
-            configVersions = this._envService.detectorConfig.piquantConfigVersions;
-        }
-
-        if(configVersions.length <= 0)
-        {
-            alert("Failed to determine PIQUANT config versions, quantification will fail.");
-            return;
-        }
-        else
-        {
-            // Set these to be valid strings of config + version
-            let formattedVersions: string[] = [];
-            for(let ver of configVersions)
+        this._quantService.showQuantificationDialog("", atomicNumbers).subscribe(
+            (params: QuantCreateParameters)=>
             {
-                ver = detectorConfig+"/"+ver;
-                formattedVersions.push(ver);
-            }
-            configVersions = formattedVersions;
-        }
-
-        let elemList = elemSymbols.join(",");
-
-        // Show the confirmation dialog
-        const dialogConfig = new MatDialogConfig();
-
-        //dialogConfig.disableClose = true;
-        //dialogConfig.autoFocus = true;
-        //dialogConfig.width = '1200px';
-
-        dialogConfig.data = new QuantificationStartOptionsParams(
-            this._datasetService.datasetIDLoaded,
-            elemList,
-            parameters,
-            "",
-            configVersions
-        );
-
-        const dialogRef = this.dialog.open(QuantificationStartOptionsComponent, dialogConfig);
-
-        dialogRef.afterClosed().subscribe(
-            (result: QuantificationStartOptions)=>
-            {
-                // Result should be a list of element symbol strings
-                if(result)
+                if(params)
                 {
-                    // Using the selected ROI ID, get the list of PMCs
-                    this._roiService.roi$.pipe(first()).subscribe(
-                        (rois: Map<string, ROISavedItem>)=>
+                    this._quantService.createQuantification(params).subscribe(
+                        (jobID: string)=>
                         {
-                            let pmcs: number[] = [];
-
-                            let roiID = result.roiID;
-                            if(roiID == PredefinedROIID.AllPoints)
-                            {
-                                roiID = "";
-                            }
-
-                            let roi = rois.get(roiID);
-                            if(roi)
-                            {
-                                pmcs = Array.from(dataset.getPMCsForLocationIndexes(roi.locationIndexes, true).values());
-                            }
-                            else
-                            {
-                                // Otherwise send ALL pmcs that have spectra
-                                for(let loc of dataset.locationPointCache)
-                                {
-                                    if(loc.hasNormalSpectra || loc.hasDwellSpectra)
-                                    {
-                                        pmcs.push(loc.PMC);
-                                    }
-                                }
-                            }
-
-                            // Call the actual quantification creation API
-                            let params: QuantCreateParameters = new QuantCreateParameters(
-                                result.quantName,
-                                pmcs,
-                                result.elements.split(","),
-                                result.parameters,
-                                result.detectorConfig,
-                                Number(result.runTime),
-                                roiID,
-                                "", // no element set ID yet
-                                result.quantMode,
-                                result.roiIDs, // useful for quantMode==*Bulk, where we need to sum PMCs in an ROI before quantifying them
-                                result.includeDwells
-                            );
-
-                            this._quantService.createQuantification(params).subscribe(
-                                (jobId: string)=>
-                                {
-                                    console.log("Job started, id: "+jobId);
-                                    /*                                    let msg = 'Started Quantification: "'+result.quantName+'" (id: '+jobId+'). Click on Quant Logs tab to follow progress.';
-                                    //alert(msg);
-                                    this._notificationService.addNotification(msg);*/
-                                },
-                                (err)=>
-                                {
-                                    let msg = httpErrorToString(err, "Quantification Not Run");
-                                    alert(msg);
-                                }
-                            );
+                            console.log("Job ID: "+jobID);
+                        },
+                        (err)=>
+                        {
+                            let msg = httpErrorToString(err, "Failed to start map quantification with PIQUANT. See logs. Error");
+                            alert(msg);
                         }
-                    ); // roi query
+                    );
                 }
             }
-        ); // afterClosed
+        );
     }
 }

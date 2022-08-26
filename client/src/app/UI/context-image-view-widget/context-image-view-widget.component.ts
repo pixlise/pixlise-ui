@@ -55,6 +55,7 @@ import { ContextImageToolId } from "src/app/UI/context-image-view-widget/tools/b
 import { ToolButtonState, ToolHostCreateSettings } from "src/app/UI/context-image-view-widget/tools/tool-host";
 import { randomString } from "src/app/utils/utils";
 import { makeDataForExpressionList, ExpressionListBuilder, ExpressionListGroupNames, ExpressionListItems, LocationDataLayerPropertiesWithVisibility } from "src/app/models/ExpressionList";
+import { ROIService } from "src/app/services/roi.service";
 
 
 @Component({
@@ -106,6 +107,7 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
         private _diffractionService: DiffractionPeakService,
         public dialog: MatDialog,
         private _loadingSvc: LoadingIndicatorService,
+        private _roiService: ROIService
     )
     {
         //console.warn('ContextImageViewWidgetComponent ['+this.id+'] constructor, got service: '+contextImageService.getId());
@@ -186,6 +188,20 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
         {
             this.allowSwitchingTools = false;
         }
+
+        // This is needed to sync ROI visibility in solo view (or a second context image widget) because the region manager is instantiated after
+        // the visibilty was toggled, so doesn't capture the original change request
+        this._subs.add(this._roiService.roi$.subscribe((rois) =>
+        {
+            rois.forEach(roi =>
+            {
+                let roiShowing = this._keyItems.findIndex((keyItem) => keyItem.id === roi.id) >= 0;
+                if(roi.visible && !roiShowing)
+                {
+                    this.mdl.regionManager.setRegionVisibility(roi.id, 1, true);
+                }
+            });
+        }));
     }
 
     setModel(mdl: ContextImageModel): void
@@ -200,10 +216,6 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
         if(this.mode == "map")
         {
             drawerName = "MapBrowserContextImageLayeredDrawer";
-        }
-        else if(this.mode == "engineering")
-        {
-            drawerName = "EngineeringDrawer";
         }
 
         this.drawer = makeDrawer(drawerName, /*'',*/ this.mdl.toolHost, this.mdl);

@@ -27,30 +27,17 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { CanvasDrawParameters } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
-import { MainContextImageLayeredDrawer } from "src/app/UI/context-image-view-widget/drawers/main-drawer";
-import { IContextImageModel } from "src/app/UI/context-image-view-widget/model-interface";
-import { ContextImageToolHost } from "src/app/UI/context-image-view-widget/tools/tool-host";
+export const environment = {
+    production: true,
+    route_dbg: false,
+    configName: "pixlise-config.json"
+};
 
-
-export class EngineeringDrawer extends MainContextImageLayeredDrawer
-{
-    constructor(ctx: IContextImageModel, toolHost: ContextImageToolHost)
-    {
-        super(ctx, toolHost);
-    }
-
-    drawWorldSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void
-    {
-        // If we want to draw the base image pixelated:
-        this.drawContextImage(screenContext, 0);
-
-        // Draw tool UI on top
-        this.drawWorldSpaceToolUIs(screenContext, drawParams);
-    }
-
-    drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void
-    {
-        this.drawScreenSpaceToolUIs(screenContext, drawParams);
-    }
-}
+/*
+ * For easier debugging in development mode, you can import the following file
+ * to ignore zone related error stack frames such as `zone.run`, `zoneDelegate.invokeTask`.
+ *
+ * This import should be commented out in production mode because it will have a negative impact
+ * on performance if an error is thrown.
+ */
+import "zone.js/dist/zone-error";  // Included with Angular CLI.

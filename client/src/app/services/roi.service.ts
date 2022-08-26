@@ -173,51 +173,42 @@ export class ROIService
 
         let apiURL = this.makeURL(datasetID, null);
 
-        this.http.get<Map<string, ROISavedItemWire>>(apiURL, makeHeaders()).subscribe((resp: Map<string, ROISavedItemWire>)=>
+        this.http.get<Map<string, ROISavedItemWire>>(apiURL, makeHeaders()).subscribe((response: Map<string, ROISavedItemWire>)=>
         {
-            // Make it into a list with ids in each item
-
-            let lookup: Map<string, ROISavedItem> = new Map<string, ROISavedItem>();
-            for(let key of Object.keys(resp)) // FIXME: response isn't interpreted as map
-            {
-                let value = resp[key];
-                let desc = value["description"];
-                if(!desc)
-                {
-                    desc = "";
-                }
-                let imgName = value["imageName"];
-                if(!imgName)
-                {
-                    imgName = "";
-                }
-                let pixels = value["pixelIndexes"];
-                if(!pixels)
-                {
-                    pixels = [];
-                }
-                lookup.set(key, new ROISavedItem(key, value.name, value.locationIndexes, desc, imgName, new Set<number>(pixels), value.shared, value.creator));
-            }
+            let rois: Map<string, ROISavedItem> = new Map<string, ROISavedItem>();
+            Object.entries(response).forEach(([roiID, roi]) =>
+                rois.set(roiID, new ROISavedItem(
+                    roiID,
+                    roi.name,
+                    roi.locationIndexes,
+                    roi["description"] || "",
+                    roi["imageName"] || "",
+                    new Set<number>(roi["pixelIndexes"] || []),
+                    roi.shared,
+                    roi.creator,
+                    this._lastROILookup ? this._lastROILookup[roiID]?.visible : false
+                ))
+            );
 
             // At this point we know the view state would've loaded already (we're only loaded once a dataset finishes loading, and that
             // only finishes after the view state arrives). Therefore here we can tell the view state service what ROI IDs are valid, so
             // it can delete ROI colours stored for old IDs. They're loaded as a map and are otherwise harmless (maybe a few warning msgs
             // go to the console), but we don't want them growing forever.
             // If this happens multiple times at runtime (if we're not just refreshing after a dataset load but for another reason), it's fine!
-            this._viewStateService.notifyValidROIIDs(Array.from(lookup.keys()));
+            this._viewStateService.notifyValidROIIDs(Array.from(rois.keys()));
 
 
             // If this matches what we last sent out, ignore it
-            if(this.areROILookupsEqual(this._lastROILookup, lookup))
+            if(this.areROILookupsEqual(this._lastROILookup, rois))
             {
                 return; // don't update, we just got sent the same ROI list
             }
 
             // Remember this for next time
-            this._lastROILookup = lookup;
+            this._lastROILookup = rois;
             this._lastROILookupDatasetID = datasetID;
 
-            this._roi$.next(lookup);
+            this._roi$.next(rois);
         },
         (err)=>
         {
@@ -227,6 +218,14 @@ export class ROIService
             this._roi$.next(new Map<string, ROISavedItem>());
         }
         );
+    }
+
+    setROIVisibility(roiID: string, visibility: boolean): void
+    {
+        let rois = new Map<string, ROISavedItem>(this._lastROILookup);
+        rois.get(roiID).visible = visibility;
+        this._lastROILookup = rois;
+        this._roi$.next(rois);
     }
 
     // Normally trying to keep UI out of these services, but this is called from several places

@@ -45,6 +45,14 @@ input {
     min-width: $input-width;
 }
 
+.short-input {
+    min-width: 50px;
+}
+
+.label-disabled {
+    color: $clr-gray-60;
+}
+
 .logo {
     width: 24px;
     height: 24px;

@@ -32,8 +32,6 @@ import { SpectrumChartService } from "src/app/services/spectrum-chart.service";
 import { TabSelectors } from "src/app/UI/spectrum-chart-widget/spectrum-peak-identification/tab-selectors";
 
 
-
-
 @Component({
     selector: TabSelectors.tabBrowseOnChart,
     templateUrl: "./browse-on-chart.component.html",

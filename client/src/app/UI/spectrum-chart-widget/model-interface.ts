@@ -47,10 +47,6 @@ import { SpectrumChartToolHost } from "src/app/UI/spectrum-chart-widget/tools/to
 import { SpectrumXRFLinesNearMouse } from "src/app/UI/spectrum-chart-widget/xrf-near-mouse";
 
 
-
-
-
-
 // Spectrum lines are drawn using this structure. This is recalculated from source information as needed
 export class SpectrumChartLine
 {
@@ -62,6 +58,9 @@ export class SpectrumChartLine
 
         public color: string,
         public dashPattern: number[],
+        public lineWidth: number,
+        public opacity: number,
+        public drawFilled: boolean = false,
 
         public values: Float32Array,
         public maxValue: number,
@@ -101,6 +100,7 @@ export interface ISpectrumChartModel
     recalcDisplayData(viewport: CanvasParams): void;
 
     spectrumLines: SpectrumChartLine[];
+    spectrumLineDarkenIdxs: number[];
 
     xAxis: ChartAxis;
     yAxis: ChartAxis;

@@ -30,9 +30,7 @@
 import { Component, OnInit } from "@angular/core";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { NotificationMethod, NotificationSubscriptions, UserOptionsService } from "src/app/services/user-options.service";
-import { environment } from "src/environments/environment";
-
-
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 
 class NotificationSetting
@@ -55,7 +53,8 @@ export class UserMenuPanelComponent implements OnInit
 
     constructor(
         private _authService: AuthenticationService,
-        private _userOptionsService: UserOptionsService)
+        private _userOptionsService: UserOptionsService,
+    )
     {
         this.notifications = [
             new NotificationSetting("Your Quantification Complete", NotificationSubscriptions.notificationUserQuantComplete, new NotificationMethod(false, false, false)),
@@ -159,7 +158,7 @@ export class UserMenuPanelComponent implements OnInit
 
     get dataCollectionActive(): boolean
     {
-        return this._userOptionsService.userConfig.data_collection == environment.expectedDataCollectionAgreementVersion;
+        return this._userOptionsService.userConfig.data_collection === EnvConfigurationInitService.appConfig.expectedDataCollectionAgreementVersion;
     }
 
     showDataCollectionDialog(): void
@@ -169,15 +168,7 @@ export class UserMenuPanelComponent implements OnInit
 
     onToggleDataCollection(): void
     {
-        // If it's enabled, allow disabling via this switch...
-        if(this.dataCollectionActive)
-        {
-            this._userOptionsService.disableDataCollection();
-        }
-        else
-        {
-            // If user enables, we show the dialog
-            this.showDataCollectionDialog();
-        }
+        // Add additional step to prevent accidental toggling
+        this.showDataCollectionDialog();
     }
 }

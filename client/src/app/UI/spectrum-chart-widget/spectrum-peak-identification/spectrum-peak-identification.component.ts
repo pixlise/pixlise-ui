@@ -37,11 +37,6 @@ import { ElementSetsComponent } from "./tabs/element-sets.component";
 import { PeriodicTableTabComponent } from "./tabs/periodic-table-tab.component";
 
 
-
-
-
-
-
 @Component({
     selector: ViewStateService.widgetSelectorSpectrumPeakID,
     templateUrl: "./spectrum-peak-identification.component.html",

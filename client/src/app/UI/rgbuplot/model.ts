@@ -33,9 +33,18 @@ import { CursorId } from "src/app/UI/atoms/interactive-canvas/cursor-id";
 import { CanvasParams } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
 import { HOVER_POINT_RADIUS, PLOT_POINTS_SIZE } from "src/app/utils/drawing";
-import { RGBUMineralPoint, RGBUPlotData } from "./rgbu-data";
+import { RGBUAxisUnit, RGBUMineralPoint, RGBUMineralRatios, RGBUPlotData, RGBURatioPoint, ROICount } from "./rgbu-data";
 import { ChartAxisDrawer } from "src/app/UI/atoms/interactive-canvas/chart-axis";
-import { Colours } from "src/app/utils/colours";
+import { ColourRamp, Colours, RGBA } from "src/app/utils/colours";
+import { MinMax } from "src/app/models/BasicTypes";
+import { FloatImage, RGBUImage } from "src/app/models/RGBUImage";
+import { SelectionService } from "src/app/services/selection.service";
+import { DataSet } from "src/app/models/DataSet";
+import { PixelSelection } from "src/app/models/PixelSelection";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "../atoms/picker-dialog/picker-dialog.component";
+import { ElementRef } from "@angular/core";
+import { RegionData, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 
 
 const xMargin = 40;
@@ -244,4 +253,413 @@ export class RGBUPlotModel
     {
         return new ChartAxisDrawer(RGBUPlotModel.FONT_SIZE+"px Roboto", Colours.GRAY_80.asString(), Colours.GRAY_30.asString(), 4, 4, false);
     }
+
+    excludeSelection(selectionService: SelectionService, dataset: DataSet): void
+    {
+        // Effectively inverts selection, we read the current selection, invert it, and re-assign it as the selection
+        let curSel = selectionService.getCurrentSelection();
+        let currSelPixels = curSel.pixelSelection.selectedPixels;
+
+        let allPixels = new Set<number>();
+        for(let c = 0; c < this.raw.imgWidth*this.raw.imgHeight; c++)
+        {
+            allPixels.add(c);
+        }
+
+        let difference = new Set(
+            [...allPixels].filter(x => !currSelPixels.has(x))
+        );
+
+        selectionService.setSelection(
+            dataset,
+            null,
+            new PixelSelection(
+                dataset,
+                difference,
+                this.raw.imgWidth,
+                this.raw.imgHeight,
+                curSel.pixelSelection.imageName
+            )
+        );
+    }
+
+    generatePoints(rgbu: RGBUImage, cropSelection: PixelSelection, xAxisUnit: RGBUAxisUnit, yAxisUnit: RGBUAxisUnit, selectedXRange?: MinMax, selectedYRange?: MinMax): [Point[], number[], MinMax, MinMax, MinMax, MinMax]
+    {
+        let channels = [rgbu.r, rgbu.g, rgbu.b, rgbu.u];
+        const pixels = rgbu.r.width*rgbu.r.height;
+
+        // Work out the min/max of mineral locations
+        let xAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(xAxisUnit.numeratorChannelIdx, xAxisUnit.denominatorChannelIdx);
+        let yAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(yAxisUnit.numeratorChannelIdx, yAxisUnit.denominatorChannelIdx);
+
+        if(selectedXRange) 
+        {
+            xAxisMinMax = selectedXRange;
+        }
+        if(selectedYRange) 
+        {
+            yAxisMinMax = selectedYRange;
+        }
+
+        let pts: Point[] = [];
+        let xMinMax = new MinMax();
+        let yMinMax = new MinMax();
+
+        // We also want to preserve where the pixels are, so store a corresponding array of source pixel indexes
+        let srcPixelIdxs: number[] = [];
+
+        for(let c = 0; c < pixels; c++)
+        {
+            // Skip pixels if there's an active crop selection and they're not included
+            if(cropSelection.selectedPixels.size > 0 && !cropSelection.isPixelSelected(c)) 
+            {
+                continue;
+            }
+
+            let pt = new Point(
+                RGBUPlotModel.getRatioValue(channels, xAxisUnit.numeratorChannelIdx, xAxisUnit.denominatorChannelIdx, c),
+                RGBUPlotModel.getRatioValue(channels, yAxisUnit.numeratorChannelIdx, yAxisUnit.denominatorChannelIdx, c)
+            );
+
+            if(isFinite(pt.x) && isFinite(pt.y) && xAxisMinMax.isWithin(pt.x) && yAxisMinMax.isWithin(pt.y))
+            {
+                xMinMax.expand(pt.x);
+                yMinMax.expand(pt.y);
+
+                pts.push(pt);
+                srcPixelIdxs.push(c);
+            }
+        }
+
+        return [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax];
+    }
+
+    minimizeRGBUData(
+        xBinCount: number,
+        yBinCount: number,
+        visibleROINamess: string[],
+        pts: Point[],
+        xMinMax: MinMax,
+        yMinMax: MinMax,
+        currSelPixels: Set<number>,
+        srcPixelIdxs: number[],
+        widgetDataService: WidgetRegionDataService
+    ): [
+        MinMax,
+        Array<number>,
+        Record<number, {selected: boolean; rois: number[];}>,
+        RegionData[],
+        number[][]
+    ]
+    {
+        const xBinSize = 1 / (xBinCount-1);
+        const yBinSize = 1 / (yBinCount-1);
+
+        // Allocate each bin so we can find their counts
+        let binCounts = new Array(xBinCount*yBinCount).fill(0);
+        let binMemberInfo: Record<number, {selected: boolean; rois: number[];}> = {};
+        let countMinMax = new MinMax(0, null);
+
+        let binSrcPixels: number[][] = Array.from({ length: xBinCount*yBinCount }, () => []);
+
+        let visibleROIs: RegionData[] = visibleROINamess.filter((roi) => widgetDataService.regions.get(roi)).map((roi) => widgetDataService.regions.get(roi));
+
+        for(let c = 0; c < pts.length; c++)
+        {
+            let pt = pts[c];
+
+            // Work out which bins they sit in
+            let pctX = xMinMax.getAsPercentageOfRange(pt.x, false);
+            let pctY = yMinMax.getAsPercentageOfRange(pt.y, false);
+
+            let xPos = Math.floor(pctX / xBinSize);
+            let yPos = Math.floor(pctY / yBinSize);
+
+            let idx = yPos*xBinCount+xPos;
+            binCounts[idx]++;
+            countMinMax.expand(binCounts[idx]);
+
+            let currentPixelGroups = {
+                selected: currSelPixels.has(srcPixelIdxs[c]), 
+                rois: visibleROIs.map((roi, i) => roi.pixelIndexes.has(srcPixelIdxs[c]) ? i : -1).filter(roiIdx => roiIdx >= 0)
+            };
+
+            // Remember if it's selected...
+            if(binMemberInfo[idx]) 
+            {
+                binMemberInfo[idx].selected = currSelPixels.has(srcPixelIdxs[c]) || currentPixelGroups.selected;
+                binMemberInfo[idx].rois = Array.from(new Set([...binMemberInfo[idx].rois, ...currentPixelGroups.rois]));
+            }
+            else 
+            {
+                binMemberInfo[idx] = currentPixelGroups;
+            }
+
+            // Remember what pixels are part of this bin
+            binSrcPixels[idx].push(srcPixelIdxs[c]);
+        }
+
+        return [countMinMax, binCounts, binMemberInfo, visibleROIs, binSrcPixels];
+    }
+
+    generateRGBURatioPoints(
+        xBinCount: number,
+        yBinCount: number,
+        binCounts: number[],
+        xMinMax: MinMax,
+        yMinMax: MinMax,
+        logCountMax: number,
+        drawMonochrome: boolean, 
+        binMemberInfo: Record<number, {selected: boolean; rois: number[];}>,
+        visibleROIs: RegionData[],
+        currSelPixels: Set<number>,
+        binSrcPixels: number[][],
+        useFirstROIColour: boolean = false,
+        stackedROIs = false
+    ): [RGBURatioPoint[], Record<string, RGBA>]
+    {
+        let colourRamp = drawMonochrome ? ColourRamp.SHADE_MONO_SOLID_GRAY : ColourRamp.SHADE_MAGMA;
+
+        let ratioPoints: RGBURatioPoint[] = [];
+        let colourKey: Record<string, RGBA> = {};
+        
+        for(let x = 0; x < xBinCount; x++)
+        {
+            for(let y = 0; y < yBinCount; y++)
+            {
+                let binIdx = y*xBinCount+x;
+                let count = binCounts[binIdx];
+                if(count > 0)
+                {
+                    // Convert x and y (which are in terms of bin coordinates eg: 0-bin count) back to
+                    // the range we had our data in
+                    let binPt = new Point(
+                        xMinMax.min+(x/xBinCount)*xMinMax.getRange(),
+                        yMinMax.min+(y/yBinCount)*yMinMax.getRange(),
+                    );
+
+                    // Prevents divide by 0 error when count === 1 and log of 1 is 0
+                    let colourRampPct = 0;
+                    if(count === logCountMax)
+                    {
+                        colourRampPct = 1;
+                    }
+                    else if(logCountMax > 0)
+                    {
+                        colourRampPct = Math.log(count) / logCountMax;
+                    }
+
+                    // By default, colour based on the colour ramp selected
+                    let colour: RGBA = Colours.sampleColourRamp(colourRamp, colourRampPct);
+                    let roiCount: ROICount[] = null;
+                    let combinedCount: number = count;
+
+                    let activePixelROIs = binMemberInfo[binIdx].rois;
+
+                    // If nothing selected, we show these as opaque, but if we do have a selection, unselected points are transparent
+                    if(currSelPixels.size > 0 && binMemberInfo[binIdx] && binMemberInfo[binIdx].selected) // binMemberInfo[binIdx] == -1 means it's selected
+                    {
+                        // SELECTED points are drawn in blue if in monochrome mode
+                        if(drawMonochrome)
+                        {
+                            colour = Colours.CONTEXT_BLUE;
+                        }
+
+                        if(stackedROIs)
+                        {
+                            roiCount = activePixelROIs.map((roi) => ({ roi: visibleROIs[roi].name, count, colour: colour.asString() }));
+                            combinedCount = count * activePixelROIs.length;
+                        }
+                    }
+                    else
+                    {
+                        // If were generating data for a stacked bar chart, get counts per ROI
+                        if(stackedROIs && binMemberInfo[binIdx].rois.length > 0)
+                        {
+                            colour = visibleROIs[activePixelROIs[0]].colour;
+                            roiCount = activePixelROIs.map((roi) => 
+                            {
+                                let currentColour = visibleROIs[roi].colour;
+                                currentColour = new RGBA(currentColour.r, currentColour.g, currentColour.b, 255);
+                                return {
+                                    roi: visibleROIs[roi].name,
+                                    count,
+                                    colour: currentColour.asString()
+                                };
+                            });
+                            combinedCount = count * activePixelROIs.length;
+                        }
+                        // If we don't care about overlapping ROIs, use first colour
+                        else if(useFirstROIColour && binMemberInfo[binIdx].rois.length > 0)
+                        {
+                            colour = visibleROIs[activePixelROIs[0]].colour;
+                        }
+                        // Unselected, is it a member of an ROI?
+                        else if(binMemberInfo[binIdx] && binMemberInfo[binIdx].rois.length > 0)
+                        {
+                            let activeColourKey = activePixelROIs.map((roi) => visibleROIs[roi].name).sort().join(", ");
+
+                            if(colourKey[activeColourKey]) 
+                            {
+                                colour = colourKey[activeColourKey];
+                            }
+                            else 
+                            {
+                                let averageColour = activePixelROIs.reduce((prev, curr, i) => 
+                                {
+                                    let currentColour = visibleROIs[activePixelROIs[i]].colour;
+                                    if(prev.r === -1) 
+                                    {
+                                        return {r: currentColour.r, g: currentColour.g, b: currentColour.b};
+                                    }
+                                    else 
+                                    {
+                                        return {
+                                            r: (prev.r + currentColour.r) / 2,
+                                            g: (prev.g + currentColour.g) / 2,
+                                            b: (prev.b + currentColour.b) / 2,
+                                        };
+                                    }
+                                }, {r: -1, g: -1, b: -1});
+                            
+                                colour = new RGBA(averageColour.r, averageColour.g, averageColour.b, 255);
+                                colourKey[activeColourKey] = colour;
+                            }
+                        }
+                        else
+                        {
+                            // Unselected colours are dimmed if not in monochrome
+                            if(!drawMonochrome && currSelPixels.size > 0)
+                            {
+                                colour = new RGBA(colour.r, colour.g, colour.b, colour.a*0.2);
+                            }
+                        }
+                    }
+
+                    ratioPoints.push(
+                        new RGBURatioPoint(
+                            binPt,
+                            count,
+                            combinedCount,
+                            colour,
+                            binSrcPixels[binIdx],
+                            roiCount
+                        )
+                    );
+                }
+            }
+        }
+
+        return [ratioPoints, colourKey];
+    }
+
+    static getRatioValue(channel: FloatImage[], numeratorChannel: number, denominatorChannel: number, pixelIdx: number): number
+    {
+        // Verify channels are valid
+        if(!channel || !channel[numeratorChannel] || !channel[denominatorChannel]) 
+        {
+            return 0;
+        }
+
+        let numeratorValue = channel[numeratorChannel]?.values[pixelIdx];
+        let denominatorValue = channel[denominatorChannel]?.values[pixelIdx];
+
+        // Numerator can be any number, denominator must be a non-zero number
+        if(typeof numeratorValue === "number" && denominatorValue) 
+        {
+            return numeratorValue / denominatorValue;
+        }
+        else 
+        {
+            return 0;
+        }
+    }
+
+    static selectMinerals(dialog: MatDialog, mineralsShown: string[], callback: (minerals: string[]) => void): void
+    {
+        const dialogConfig = new MatDialogConfig();
+
+        let items: PickerDialogItem[] = [];
+        items.push(new PickerDialogItem(null, "Minerals", null, true));
+
+        for(let m of RGBUMineralRatios.names)
+        {
+            items.push(new PickerDialogItem(m, m, null, true));
+        }
+
+        dialogConfig.data = new PickerDialogData(true, true, true, false, items, mineralsShown, "", new ElementRef(event.currentTarget));
+
+        const dialogRef = dialog.open(PickerDialogComponent, dialogConfig);
+        dialogRef.componentInstance.onSelectedIdsChanged.subscribe(callback);
+    }
+
+    static getMineralPointsForAxes(xAxisUnit: RGBUAxisUnit, yAxisUnit: RGBUAxisUnit): RGBUMineralPoint[]
+    {
+        // Build the list of minerals with appropriate coordinates (based on what our axes are configured for)
+        let minerals: RGBUMineralPoint[] = [];
+        for(let c = 0; c < RGBUMineralRatios.names.length; c++)
+        {
+            let xVal = RGBUMineralRatios.ratioValues[c][xAxisUnit.numeratorChannelIdx];
+            if(xAxisUnit.denominatorChannelIdx > -1)
+            {
+                xVal /= RGBUMineralRatios.ratioValues[c][xAxisUnit.denominatorChannelIdx];
+            }
+
+            let yVal = RGBUMineralRatios.ratioValues[c][yAxisUnit.numeratorChannelIdx];
+            if(yAxisUnit.denominatorChannelIdx > -1)
+            {
+                yVal /= RGBUMineralRatios.ratioValues[c][yAxisUnit.denominatorChannelIdx];
+            }
+
+            minerals.push(
+                new RGBUMineralPoint(
+                    new Point(xVal, yVal),
+                    RGBUMineralRatios.names[c]
+                )
+            );
+        }
+        return minerals;
+    }
+
+    static getAxisMinMaxForMinerals(numeratorChannelIdx: number, denominatorChannelIdx: number): MinMax
+    {
+        let result = new MinMax();
+
+        // Look up the value for each
+        for(let mineralValues of RGBUMineralRatios.ratioValues)
+        {
+            let value = mineralValues[numeratorChannelIdx];
+            if(denominatorChannelIdx >= 0)
+            {
+                value /= mineralValues[denominatorChannelIdx];
+            }
+
+            result.expand(value);
+        }
+
+        return result;
+    }
+
+    static channelToIdx(ch: string): number
+    {
+        let idx = RGBUImage.channels.indexOf(ch);
+        if(idx < 0)
+        {
+            console.log("channelToIdx: invalid channel: "+ch);
+            idx = 0;
+        }
+        return idx;
+    }
+
+    static idxToChannel(idx: number): string
+    {
+        if(idx < 0 || idx >= RGBUImage.channels.length)
+        {
+            console.log("idxToChannel: invalid index: "+idx);
+            return RGBUImage.channels[0];
+        }
+
+        return RGBUImage.channels[idx];
+    }
+
 }

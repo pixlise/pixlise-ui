@@ -30,20 +30,11 @@
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from "@angular/core";
 import { Subscription } from "rxjs";
 import { DetectorConfig } from "src/app/models/BasicTypes";
-import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { setsEqual } from "src/app/utils/utils";
-import { ElementTileClickEvent, ElementTileState } from "./element-tile/element-tile.component";
+import { ElementTileClickEvent, ElementTileState, PeriodicElement } from "./element-tile/element-tile.component";
+import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 
-
-
-
-class PeriodicElement
-{
-    constructor(public atomicNumber: number, public state: ElementTileState, public selectable: boolean)
-    {
-    }
-}
 
 @Component({
     selector: "periodic-table",
@@ -54,9 +45,12 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges
 {
     private _subs = new Subscription();
 
-    @Input() selectedElements: Set<number>;
-    @Input() maxHighlightedElements: number;
+    @Input() selectedElements: Set<number>; // Shown as selected (purple)
+    @Input() selectedAltElements: Set<number>; // Shown as selected (yellow)
     @Input() onlyAllowSelectableItems: boolean = false; // allow anything
+    @Input() grayedElements: number[] = [periodicTableDB.zTechnetium]; // Gray out technetium, not a stable isotope
+    @Input() darkerSelectableElements: Set<number> = new Set<number>(); // Work just like normal elements but have a darkened background
+    @Input() tooltipExtraForDarkerSelectable: string = ""; // Tooltip to explain why these are darker
 
     @Output() onElementClicked = new EventEmitter();
     @Output() onElementHover = new EventEmitter();
@@ -65,7 +59,9 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges
     lanthanoids: PeriodicElement[] = [];
     actinoids: PeriodicElement[] = [];
 
+    // Remember so we can rebuild less frequently if this hasn't changed
     private _lastSelectedElements: Set<number> = new Set<number>();
+    private _lastSelectedAltElements: Set<number> = new Set<number>();
     private _grayedElementLookup: Set<number> = new Set<number>();
 
     constructor(
@@ -90,7 +86,7 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges
     {
         // Inputs may have changed, but if we just call rebuild things get slow
         // so we really only care about the things that change element tile states
-        if(!setsEqual(this._lastSelectedElements, this.selectedElements))
+        if(!setsEqual(this._lastSelectedElements, this.selectedElements) || !setsEqual(this._lastSelectedAltElements, this.selectedAltElements))
         {
             // Run through all items and set their state
             let tables: PeriodicElement[][] = [...this.mainTable, this.lanthanoids, this.actinoids];
@@ -98,21 +94,37 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges
             {
                 for(let item of table)
                 {
-                    if(item.atomicNumber > 0)
+                    if(item && item.element.Z > 0)
                     {
-                        item.state = this.getState(item.atomicNumber);
+                        item.state = this.getState(item.element.Z);
                     }
                 }
             }
 
             this._lastSelectedElements = this.selectedElements;
+            this._lastSelectedAltElements = this.selectedAltElements;
+        }
+        // If grayed list changes, rebuild
+        else
+        {
+            let grayed = changes["grayedElements"];
+            if(grayed)
+            {
+                this.rebuild();
+            }
+
+            let darker = changes["darkerSelectableElements"];
+            if(darker)
+            {
+                this.rebuild();
+            }
         }
     }
 
     private rebuild(): void
     {
-        let minZ = 11;
-        let maxZ = 92;
+        let minZ = periodicTableDB.zSodium;
+        let maxZ = periodicTableDB.zUranium;
 
         if(this.envService.detectorConfig)
         {
@@ -136,6 +148,9 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges
         // If it's selected, we always want to allow unselecting...
         //let state = this.getState(event.atomicNumber);
         //if(state==ElementTileState.PICKED || this.isSelectable(event.atomicNumber))
+
+        // We don't ship mouse events for grayed elements
+        if(!this._grayedElementLookup.has(event.atomicNumber))
         {
             this.onElementClicked.emit(event);
         }
@@ -143,7 +158,11 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges
 
     onTileHover(atomicNumber: number): void
     {
-        this.onElementHover.emit(atomicNumber);
+        // We don't ship mouse events for grayed elements
+        if(!this._grayedElementLookup.has(atomicNumber))
+        {
+            this.onElementHover.emit(atomicNumber);
+        }
     }
 
     onMouseLeave(): void
@@ -159,19 +178,22 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges
         this.actinoids = [];
 
         // Build the structure
-        let skip = new PeriodicElement(0, ElementTileState.NONE, false);
 
         // Just get a list of element atomic numbers
         let element: PeriodicElement[] = [];
         for(let c = 1; c <= periodicTableDB.maxAtomicNumber; c++)
         {
-            element.push(
-                new PeriodicElement(
-                    c,
-                    this.getState(c),
-                    this.isSelectable(c)
-                )
+            let elem = new PeriodicElement(
+                periodicTableDB.getElementByAtomicNumber(c),
+                this.getState(c)
             );
+
+            if(elem.state == ElementTileState.NORMAL2)
+            {
+                elem.tooltipExtra = this.tooltipExtraForDarkerSelectable;
+            }
+
+            element.push(elem);
         }
 
         // Row 1
@@ -179,7 +201,7 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges
         row.push(element[0]);
         for(let c = 0; c < 16; c++)
         {
-            row.push(skip);
+            row.push(null); // Large gap at the top of the table
         }
         row.push(element[1]);
 
@@ -192,7 +214,7 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges
             row = [element[pos++], element[pos++]];
             for(let c = 0; c < 10; c++)
             {
-                row.push(skip);
+                row.push(null); // Gap at the top of the table
             }
             for(let c = 0; c < 6; c++)
             {
@@ -218,7 +240,7 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges
         for(let repeat = 0; repeat < 2; repeat++)
         {
             row = [element[pos++], element[pos++]];
-            row.push(skip);
+            row.push(null); // Gap where we skip 1
 
             for(let c = 0; c < 15; c++)
             {
@@ -251,15 +273,26 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges
                 return ElementTileState.GRAYED;
             }
 
+            // Check this first in case it exists in both
+            if(this.selectedAltElements && this.selectedAltElements.has(atomicNumber))
+            {
+                return ElementTileState.SELECTED2;
+            }
+
             if(this.selectedElements && this.selectedElements.has(atomicNumber))
             {
                 return ElementTileState.SELECTED;
             }
+
+            if(this.darkerSelectableElements.has(atomicNumber))
+            {
+                return ElementTileState.NORMAL2;
+            }
         }
 
-        return ElementTileState.NONE;
+        return ElementTileState.NORMAL;
     }
-
+    /*
     private isSelectable(atomicNumber: number): boolean
     {
         if(!atomicNumber)
@@ -277,7 +310,7 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges
         // If it's not grayed, it's selecetable
         return !this._grayedElementLookup.has(atomicNumber);
     }
-
+*/
     private makeGrayedLookup(minElementZ: number, maxElementZ: number): void
     {
         this._grayedElementLookup.clear();
@@ -288,8 +321,11 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges
             this._grayedElementLookup.add(c);
         }
 
-        // Gray out technetium, not a stable isotope
-        this._grayedElementLookup.add(43);
+        // Any grayed elements specified by caller are added here
+        for(let elem of this.grayedElements)
+        {
+            this._grayedElementLookup.add(elem);
+        }
 
         // Gray out ~93+
         // TODO: make this read from detector config

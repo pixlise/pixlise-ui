@@ -48,16 +48,20 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <div fxLayout="row" fxLayoutAlign="start center" class="card-toolbar gap-separated-horizontal-elements">
         <two-state-push-button
-            class="spectrum-bottom-left"
             [active]="showSpectrumRegionPicker"
             (onToggle)="onToggleShowSpectrumRegionPicker($event)"
-            >Select Spectra</two-state-push-button>
+            >Display Spectra</two-state-push-button>
+
+        <two-state-push-button
+            [active]="showSpectrumFit"
+            (onToggle)="onToggleShowSpectrumFit($event)"
+            >Display Fit</two-state-push-button>
 
         <two-state-push-button
             [active]="showPeakIdentification"
             [disabled]="!xAxisCalibratedeV"
             (onToggle)="onToggleShowPeakIdentification($event)"
-            >Peak Identification</two-state-push-button>
+            >Run PIQUANT</two-state-push-button>
 
         <two-state-push-button
             [active]="false"

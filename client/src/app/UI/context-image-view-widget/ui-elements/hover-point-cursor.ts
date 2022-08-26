@@ -146,25 +146,6 @@ export class HoverPointCursor extends BaseUIElement
         const locInfo = this._ctx.dataset.locationPointCache[this._ctx.highlighedLocationIdx];
 
         let pmcLabel = "PMC: "+locInfo.PMC;
-        // let layerMan = this._ctx.layerManager;
-        // let activeLayer = layerMan.getFirstVisibleLayer();
-        // if(activeLayer)
-        // {
-        //     let values = activeLayer.getValue(locInfo.PMC);
-        //     for(let value of values)
-        //     {
-        //         pmcLabel += ", "+value.layerName+": ";
-        //         if(value.value)
-        //         {
-        //             pmcLabel += value.value.toLocaleString();
-        //         }
-        //         else
-        //         {
-        //             pmcLabel += "(no value)";
-        //         }
-        //     }
-        // }
-
         if(locInfo.hasDwellSpectra)
         {
             pmcLabel += " Dwell";

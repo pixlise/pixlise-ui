@@ -67,30 +67,13 @@ export class RGBUPlotDrawer implements CanvasDrawer
         screenContext.save();
 
         screenContext.fillStyle = Colours.GRAY_90.asString();
-        // if(this._mdl.drawData.hoverLabel == "X")
-        // {
-        //     screenContext.fillRect(this._mdl.drawData.xAxisLabelArea.x, this._mdl.drawData.xAxisLabelArea.y, this._mdl.drawData.xAxisLabelArea.w, this._mdl.drawData.xAxisLabelArea.h);
-        // }
-
-        // if(this._mdl.drawData.hoverLabel == "Y")
-        // {
-        //     screenContext.fillRect(this._mdl.drawData.yAxisLabelArea.x, this._mdl.drawData.yAxisLabelArea.y, this._mdl.drawData.yAxisLabelArea.w, this._mdl.drawData.yAxisLabelArea.h);
-        // }
 
         // Draw axes
         let axisDrawer = this._mdl.makeChartAxisDrawer();
-        // axisDrawer.drawAxes(screenContext, drawParams.drawViewport, this._mdl.xAxis, this._mdl.drawData.xAxisUnitLabel, this._mdl.yAxis, this._mdl.drawData.yAxisUnitLabel);
         axisDrawer.drawAxes(screenContext, drawParams.drawViewport, this._mdl.xAxis, "", this._mdl.yAxis, "");
 
         // Draw data
         this.drawData(screenContext, this._mdl.drawData);
-        /*
-        // Draw title
-        if(this._mdl.raw.title)
-        {
-            this.drawTitle(screenContext, this._mdl.raw.title);
-        }
-*/
 
         // On top of everything, draw the mineral points
         this.drawMinerals(screenContext, this._mdl.drawData);
@@ -104,19 +87,7 @@ export class RGBUPlotDrawer implements CanvasDrawer
 
         screenContext.restore();
     }
-    /*
-    private drawTitle(screenContext: CanvasRenderingContext2D, title: string): void
-    {
-        const titlePadding = 20;
-        const titlePos = new Point(this._mdl.xAxis.startPx+titlePadding, titlePadding);
 
-        screenContext.font = 'bold '+CANVAS_FONT_SIZE_TITLE+'px Roboto';
-        screenContext.fillStyle = Colours.GRAY_10.asString();
-        screenContext.textAlign = "left";
-
-        screenContext.fillText(title, titlePos.x, titlePos.y);
-    }
-*/
     private drawData(screenContext: CanvasRenderingContext2D, drawData: RGBUPlotDrawModel): void
     {
         // We draw the points as little rectangles at the specified coordinates
@@ -165,7 +136,6 @@ export class RGBUPlotDrawer implements CanvasDrawer
             let backgroundColour = isHovered ? Colours.GRAY_80.asStringWithA(0.9) : Colours.GRAY_80.asStringWithA(0.5);
             let textColour = isHovered ? Colours.CONTEXT_PURPLE.asString() : Colours.GRAY_10.asString();
 
-            //screenContext.fillText(m.name, textRect.x, textRect.y);
             drawTextWithBackground(
                 screenContext,
                 m.name,

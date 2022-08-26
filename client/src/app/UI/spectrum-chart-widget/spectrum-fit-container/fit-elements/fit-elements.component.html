@@ -1,0 +1,94 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div fxLayout="column" fxFill>
+    <div fxLayout="row" fxLayoutAlign="space-between center" fxFlex="none" class="top-toolbar gap-separated-horizontal-elements">
+        <span class="left-gap">Fits All:</span>
+        <div fxLayout="row" fxLayoutAlign="start center" class="line-selector-all">
+            <div fxLayout="row" fxLayoutAlign="start center" class="line-selector">
+                <span>K</span>
+                <two-state-icon-button
+                    activeIcon="assets/button-icons/check-on.svg"
+                    inactiveIcon="assets/button-icons/check-off.svg"
+                    [active]="showAllK"
+                    (onToggle)="onToggleShowAllK()">
+                </two-state-icon-button>
+            </div>
+            <div fxLayout="row" fxLayoutAlign="start center" class="line-selector">
+                <span>L</span>
+                <two-state-icon-button
+                    activeIcon="assets/button-icons/check-on.svg"
+                    inactiveIcon="assets/button-icons/check-off.svg"
+                    [active]="showAllL"
+                    (onToggle)="onToggleShowAllL()">
+                </two-state-icon-button>
+            </div>
+            <div fxLayout="row" fxLayoutAlign="start center" class="line-selector">
+                <span>M</span>
+                <two-state-icon-button
+                    activeIcon="assets/button-icons/check-on.svg"
+                    inactiveIcon="assets/button-icons/check-off.svg"
+                    [active]="showAllM"
+                    (onToggle)="onToggleShowAllM()">
+                </two-state-icon-button>
+            </div>
+        </div>
+    </div>
+    <div class="scrollable" fxFlex>
+        <div
+            *ngFor="let src of sources"
+            fxLayout="row"
+            fxLayoutAlign="space-between center"
+            class="elem-item gap-separated-horizontal-elements">
+            <div [ngClass]="{'not-in-fit-elem': src.lineChoices.length==0}">{{src.roiName}}</div>
+            <div fxLayout="row" fxLayoutAlign="start center">
+                <div *ngFor="let line of getPadding(src, true)" class="line-selector"></div>
+                <div
+                    *ngFor="let line of src.lineChoices"
+                    class="line-selector"
+                    fxLayout="row"
+                    fxLayoutAlign="start center"
+                    (mouseover)="onHover(line.lineExpression)"
+                    (mouseleave)="onHoverFinish()">
+                    <span>{{makeDisplayLabel(line.label)}}</span>
+                    <two-state-icon-button
+                        activeIcon="assets/button-icons/check-on.svg"
+                        inactiveIcon="assets/button-icons/check-off.svg"
+                        [active]="line.enabled"
+                        (onToggle)="onToggleLine(src, line)">
+                    </two-state-icon-button>
+                </div>
+                <div *ngFor="let line of getPadding(src, false)" class="line-selector"></div>
+                <img class='clickable hover-circle' src="assets/button-icons/close-cross-gray.svg" title="Delete Element" (click)="onDeleteSource(src)">
+            </div>
+        </div>
+    </div>
+</div>

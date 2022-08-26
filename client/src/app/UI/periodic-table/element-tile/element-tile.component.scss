@@ -32,23 +32,19 @@
 
 .tile {
     padding: 1px 3px;
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     border: 1px solid transparent;
     cursor: default;
     text-align: left;
     user-select: none;
 }
-/*
-.large-container {
-    width: 60px;
-    height: 60px;
-}
-*/
+
 .element-tile {
     color: $clr-gray-10;
     background-color: $clr-gray-80;
-    border: 1px solid $clr-gray-100;
+    border-color: $clr-gray-100;
+    font-size: 14px;
 }
 
 .selectable:hover {
@@ -60,33 +56,24 @@
     background-color: $clr-purple;
 }
 
+.state-SELECTED2 {
+    background-color: $clr-yellow;
+    color: $clr-gray-80;
+}
+
+.state-NORMAL {
+}
+
+.state-NORMAL2 {
+    color: $clr-gray-30;
+    background-color: $clr-gray-100;
+}
+
 .state-GRAYED {
-    color: $ui-color-text-dim;
+    color: $clr-gray-70;
 }
 
 .elem-number {
     font-size: 8px;
     line-height: 10px;
 }
-
-.elem-symbol {
-    font-size: 14px;
-    margin-bottom: 2px;
-}
-/*
-.elem-name {
-    font-size: 10px;
-    margin-bottom: 2px;
-
-    text-overflow: ellipsis;
-
-    // Required for text-overflow to do anything
-    white-space: nowrap;
-    overflow: hidden;
-}
-
-.elem-mass {
-    font-size: 8px;
-    text-align: right;
-}
-*/

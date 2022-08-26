@@ -31,17 +31,17 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="column" class="dlg-border-with-backdrop">
     <div fxLayout="row" fxLayoutAlign="space-between start">
-        <h1>Quantification</h1>
+        <h1>PIQUANT</h1>
         <img class="logo" src="assets/piquant-inside.png">
     </div>
-
-    <label>Name</label>
-    <input type="text" placeholder="Enter Quantification Name" [(ngModel)]="data.quantName">
 
     <label>Mode</label>
     <mat-select [(ngModel)]="quantModeId" (selectionChange)="onQuantModeChanged($event)">
         <mat-option *ngFor="let mode of quantModes" [value]="mode.id">{{mode.label}}</mat-option>
     </mat-select>
+
+    <label [ngClass]="{'label-disabled': !canSetName}">Name</label>
+    <input type="text" [placeholder]="canSetName ? 'Enter Quantification Name' : 'Disabled'" [(ngModel)]="quantName" [disabled]="!canSetName">
 
     <div fxLayout="row" fxLayoutAlign="space-around start" class="top-gap">
         <multi-state-button
@@ -64,7 +64,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <label>PIQUANT Config</label>
     <mat-select [(ngModel)]="selectedDetectorConfig">
-        <mat-option *ngFor="let cfg of data.detectorConfigs" [value]="cfg">{{cfg}}</mat-option>
+        <mat-option *ngFor="let cfg of configVersions" [value]="cfg">{{cfg}}</mat-option>
     </mat-select>
 
     <label>Region of Interest</label>
@@ -73,7 +73,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </mat-select>
 
     <div *ngIf="!singleSelectROI" fxLayout="column" class="scrollable-container-roi-list">
-        <div *ngFor="let roi of roisForMultiSelect" fxLayout="row" fxLayoutAlign="space-between center" class="setting-row">
+        <div *ngFor="let roi of rois" fxLayout="row" fxLayoutAlign="space-between center" class="setting-row">
             <div>{{roi.name+((roi.shared && roi.creator) ? " (shared by: "+roi.creator.name+")" : "")}}</div>
             <two-state-icon-button
                 activeIcon="assets/button-icons/check-on.svg"
@@ -84,7 +84,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
 
     <label>Elements</label>
-    <input type="text" placeholder="Enter Element List" [(ngModel)]="data.elements">
+    <input type="text" placeholder="Enter Element List" [(ngModel)]="elements">
 
     <div fxLayout="row" fxLayoutAlign="space-between center" class="top-gap">
         <label class="nogap">Quantify as Carbonates:</label>
@@ -96,8 +96,23 @@ POSSIBILITY OF SUCH DAMAGE.
         </two-state-icon-button>
     </div>
 
+    <div fxLayout="row" fxLayoutAlign="space-between center" class="top-gap">
+        <label class="nogap">Ignore Ar as gas (Use Ar_I):</label>
+        <two-state-icon-button
+            activeIcon="assets/button-icons/check-on.svg"
+            inactiveIcon="assets/button-icons/check-off.svg"
+            [active]="ignoreArgon"
+            (onToggle)="onToggleIgnoreArgon()">
+        </two-state-icon-button>
+    </div>
+
+    <div fxLayout="row" fxLayoutAlign="space-between center" class="top-gap">
+        <label class="nogap">Fe Proportion (FeO / Fe2O3):</label>
+        <input type="text" placeholder="" class="short-input" [(ngModel)]="ironProportion">
+    </div>
+
     <label title="Anything entered in here is appended to the PIQUANT command line when executing it">Extra Parameters</label>
-    <input type="text" placeholder="" [(ngModel)]="data.parameters">
+    <input type="text" placeholder="" [(ngModel)]="parameters">
 
 <!--
     <label>Speed vs Cost</label>
@@ -108,6 +123,6 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
     <div fxLayout="row" fxLayoutAlign="end" class="bottom-button-gap gap-separated-horizontal-elements">
         <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-        <push-button buttonStyle="yellow" (onClick)="onOk()">Quantify</push-button>
+        <push-button buttonStyle="yellow" (onClick)="onOk()">Run</push-button>
     </div>
 </div>

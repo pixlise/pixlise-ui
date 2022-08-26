@@ -247,11 +247,17 @@ export function makeScatterPlotData(xvalues: any, yvalues: any, extraValueLookup
 
 export function setsEqual<T>(a: Set<T>, b: Set<T>): boolean
 {
-    if(a.size !== b.size)
+    if(!a || !b)
     {
-        return false;
+        return false; // If we are passed undefined or null sets, stop here
     }
 
+    if(a.size !== b.size)
+    {
+        return false; // Sizes differ, early-out for not equal
+    }
+
+    // Check each item
     for(let aVal of a)
     {
         if(!b.has(aVal))
@@ -264,6 +270,11 @@ export function setsEqual<T>(a: Set<T>, b: Set<T>): boolean
 
 export function arraysEqual<T>(a: Array<T>, b: Array<T>): boolean
 {
+    if(!a || !b)
+    {
+        return false; // If we are passed undefined or null arrays, stop here
+    }
+
     if(a.length !== b.length)
     {
         return false;
