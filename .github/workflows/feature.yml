@@ -19,7 +19,6 @@ env:
 
 jobs:
   docker:
-    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
