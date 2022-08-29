@@ -150,7 +150,6 @@ jobs:
   infratrigger:
     needs:
       - docker
-      - build
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Job
