@@ -1,4 +1,4 @@
-FROM ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16
+FROM ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16 as build
 
 ARG VERSION
 ARG BUILD_ENV
