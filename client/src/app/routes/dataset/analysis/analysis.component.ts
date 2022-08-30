@@ -151,7 +151,6 @@ export class AnalysisComponent implements OnInit, OnDestroy
                         });
                 }
             });
-
     }
 
     ngOnDestroy()
@@ -308,11 +307,11 @@ export class AnalysisComponent implements OnInit, OnDestroy
 
     private createUnderContextImageComponent(selector: string)
     {
-        if(this._underContextImageSelector == selector)
+/*        if(this._underContextImageSelector == selector)
         {
             console.log("createUnderContextImageComponent skipped, selector already exists: "+selector);
             return;
-        }
+        }*/
 
         this.underContextImageContainer.clear();
         this.clearUnderContextImageReplaceable();
@@ -334,12 +333,12 @@ export class AnalysisComponent implements OnInit, OnDestroy
         {
             selectors = [ViewStateService.widgetSelectorContextImage, ViewStateService.widgetSelectorSpectrum];
         }
-
+/*
         if(selectors[0] == this._topLeftSelector)
         {
             console.log("createTopRowComponents [0] skipped, selector already exists: "+selectors[0]);
         }
-        else
+        else*/
         {
             // Set this one
             this.topLeftContainer.clear();
@@ -358,12 +357,12 @@ export class AnalysisComponent implements OnInit, OnDestroy
             }
         }
 
-
+/*
         if(selectors[1] == this._topRightSelector)
         {
             console.log("createTopRowComponents [1] skipped, selector already exists: "+selectors[1]);
         }
-        else
+        else*/
         {
             // Set this one
             this.topRightContainer.clear();
@@ -385,11 +384,11 @@ export class AnalysisComponent implements OnInit, OnDestroy
 
     private createUnderSpectrumComponents(selectors: string[])
     {
-        if(arraysEqual(selectors, this._underSpectrumSelectors))
+/*        if(arraysEqual(selectors, this._underSpectrumSelectors))
         {
             console.log("createUnderSpectrumComponents skipped, selectors already exist: "+selectors.join(","));
             return;
-        }
+        }*/
 
         this.underSpectrumContainer.clear();
         this.clearUnderSpectrumReplaceables();

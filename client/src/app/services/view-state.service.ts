@@ -1140,7 +1140,7 @@ export class ViewStateService
     {
         let t0 = performance.now();
 
-        console.log("Applying view state...");
+        console.log("--- Applying view state... ---");
         //console.warn('applyViewState... '+JSON.stringify(state));
         this._viewState = state;
 

@@ -184,7 +184,10 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         this._subs.add(this._selectionService.selection$.subscribe(
             (sel: SelectionHistoryItem)=>
             {
-                this.prepareData("selection");
+                if(this._viewInited)
+                {
+                    this.prepareData("selection");
+                }
             }
         ));
 
@@ -221,7 +224,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
                         console.warn("Failed to find view state for rgbu plot: "+this.widgetPosition);
                     }
 
-                    this._viewInited = false;
+                    this._viewInited = true;
                 }
                 else
                 {
@@ -233,7 +236,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
                     }
                 }
 
-                this.prepareData("roi-colours");
+                this.prepareData("widget-data");
             }
         ));
     }
