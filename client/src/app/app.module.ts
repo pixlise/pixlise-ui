@@ -94,6 +94,8 @@ import { QuantSelectorPanelComponent } from "./UI/quantification-selector/quant-
 import { ExpressionEditorComponent } from "./UI/expression-editor/expression-editor.component";
 
 import { Base64ImagePipe } from "./utils/base64-image.pipe";
+import { AddBearerPipe } from "./utils/add-bearer-header.pipe";
+
 import { DatasetLoadingProgressComponent } from "./routes/dataset/dataset-loading-progress/dataset-loading-progress.component";
 import { SelectedQuantificationViewComponent } from "./routes/dataset/quantifications/selected-quantification-view/selected-quantification-view.component";
 
@@ -411,7 +413,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         SpectrumFitContainerComponent,
         FitLineConfigComponent,
         FitElementsComponent,
-        FitElementSelectionComponent
+        FitElementSelectionComponent,
+        AddBearerPipe
     ],
     imports: [
         BrowserModule,

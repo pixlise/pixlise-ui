@@ -35,11 +35,16 @@ POSSIBILITY OF SUCH DAMAGE.
     class="dataset-container clickable"
     [ngClass]="{'dataset-selected': isSelected}"
     (click)="onClickTileArea($event)">
-    <img *ngIf="thumbImageData!=null" [src]='thumbImageData | base64Image' class="tile-img">
-    <div fxLayout="row" fxLayoutAlign="space-around center" fxFlex="100%">
-        <mat-spinner *ngIf="hasContextImage && !thumbImageData" [diameter]="32" color="accent"></mat-spinner>
-        <div *ngIf="!hasContextImage">No Context Image</div>
-    </div>
+    <ng-container [ngSwitch]="tileImageURL.length">
+        <ng-container *ngSwitchCase="0">
+            <div fxLayout="row" fxLayoutAlign="space-around center" fxFlex="100%">
+                <div>No Context Image</div>
+            </div>
+        </ng-container>
+        <ng-container *ngSwitchDefault>
+            <img [src]='tileImageURL | addbearerheader | async' class="tile-img">
+        </ng-container>
+    </ng-container>
     <div class="title-container">
         <div class="title" [ngClass]="{'incomplete': incomplete}" title='Title: "{{title}}". Dataset ID: "{{summary.dataset_id}}" {{missingDataList}}'>
             {{title}}<br>{{summary.site}}

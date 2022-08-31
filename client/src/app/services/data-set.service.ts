@@ -385,40 +385,6 @@ export class DataSetService
         this._notificationService.addNotification(httpErrorToString(err, "Dataset load failed"));
     }
 
-    // Used by dataset tiles and selected tile, also locally from loadImageFromURL() and 
-    loadImgDataURLFromURL(url: string): Observable<string>
-    {
-        console.log("  Downloading image data: "+url);
-
-        return this.http.get(url, { responseType: "arraybuffer" }).pipe(
-            map(
-                (arrayBuf: ArrayBuffer)=>
-                {
-                    // TODO: look at this for speed, javascript puke is probably copying the array 100x before
-                    // we get our string. Found this was happening with some code examples used... This implementation
-                    // below seems to work but it's def not optimal.
-                    const data = new Uint8Array(arrayBuf);
-                    let base64 = btoa(Uint8ToString(data));
-                    let dataURL = "data:image;base64," + base64;
-
-                    // NOTE: the above isn't going to work straight in an img.src - you need to use the base64Image pipe
-                    return dataURL;
-                },
-                (err)=>
-                {
-                    if(err instanceof HttpErrorResponse && err.status == 404)
-                    {
-                        console.warn("  Context image not found - skipping download...");
-                    }
-                    else
-                    {
-                        console.error(err);
-                    }
-                }
-            )
-        );
-    }
-
     // Used by dataset customisation loading MCC background and aligned images, also locally (loadImage)
     // Shows progress on loadingSvc
     loadImageFromURL(url: string, showLoadingIndicator: boolean = true): Observable<HTMLImageElement>
@@ -441,44 +407,62 @@ export class DataSetService
         }
 
         // Seems file interface with onload/onerror functions is still best implemented wrapped in a new Observable
-        return new Observable<HTMLImageElement>((observer)=>
-        {
-            this.loadImgDataURLFromURL(url).subscribe(
-                (dataURL: string)=>
-                {
-                    if(showLoadingIndicator)
+        return new Observable<HTMLImageElement>(
+            (observer)=>
+            {
+                this.http.get(url, { responseType: "arraybuffer" }).subscribe(
+                    (arrayBuf: ArrayBuffer)=>
                     {
-                        this._loadingSvc.remove(loadID);
+                        if(showLoadingIndicator)
+                        {
+                            this._loadingSvc.remove(loadID);
+                        }
+
+                        let img = new Image();
+
+                        img.onload = () =>
+                        {
+                            console.log("  Loaded image: "+url+". Dimensions: "+img.width+"x"+img.height);
+                            observer.next(img);
+                            observer.complete();
+                        };
+
+                        img.onerror = ()=>
+                        {
+                            let errStr = "Failed to download context image: "+url;
+                            console.error(errStr);
+                            observer.error(errStr);
+                        };
+                        
+                        // TODO: look at this for speed, javascript puke is probably copying the array 100x before
+                        // we get our string. Found this was happening with some code examples used... This implementation
+                        // below seems to work but it's def not optimal.
+                        const data = new Uint8Array(arrayBuf);
+                        let base64 = btoa(Uint8ToString(data));
+                        let dataURL = "data:image;base64," + base64;
+    
+                        // NOTE: the above isn't going to work straight in an img.src - you need to use the base64Image pipe
+                        img.src = dataURL;
+                    },
+                    (err)=>
+                    {
+                        if(err instanceof HttpErrorResponse && err.status == 404)
+                        {
+                            console.warn(url+" not found - skipping download...");
+                        }
+                        else
+                        {
+                            console.error(err);
+                        }
+
+                        if(showLoadingIndicator)
+                        {
+                            this._loadingSvc.remove(loadID);
+                        }
+                        observer.error(err);
                     }
-
-                    let img = new Image();
-
-                    img.onload = () =>
-                    {
-                        console.log("  Loaded image: "+url+". Dimensions: "+img.width+"x"+img.height);
-                        observer.next(img);
-                        observer.complete();
-                    };
-
-                    img.onerror = ()=>
-                    {
-                        let errStr = "Failed to download context image: "+url;
-                        console.error(errStr);
-                        observer.error(errStr);
-                    };
-
-                    img.src = dataURL;
-                },
-                (err)=>
-                {
-                    if(showLoadingIndicator)
-                    {
-                        this._loadingSvc.remove(loadID);
-                    }
-                    observer.error(err);
-                }
-            );
-        }
+                );
+            }
         );
     }
 
@@ -488,15 +472,6 @@ export class DataSetService
         let apiUrl = APIPaths.getWithHost(APIPaths.api_dataset+"/download/"+this._datasetIDLoaded+"/"+contextImageFileName);
         return this.loadImageFromURL(apiUrl, false);
     }
-
-    /* Was used by PMC inspector
-    loadDataURLForContextImage(contextImageFileName: string): Observable<string>
-    {
-        // Get a signed URL that we can download
-        let apiUrl = APIPaths.getWithHost(APIPaths.api_dataset+"/download/"+this._datasetIDLoaded+"/"+contextImageFileName);
-        return this.loadImgDataURLFromURL(apiUrl);
-    }
-*/
 
     // Used by dataset customisation RGBU loading and from loadRGBUImage()
     // Gets and decodes image
