@@ -1141,6 +1141,10 @@ export class ViewStateService
         let t0 = performance.now();
 
         console.log("--- Applying view state... ---");
+
+        // Signify that we're resetting... this should kill all widgets. Applying view state is serious business!
+        this._analysisViewSelectors$.next(null);
+
         //console.warn('applyViewState... '+JSON.stringify(state));
         this._viewState = state;
 

@@ -36,7 +36,6 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription, timer } from "rxjs";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { LayoutService } from "src/app/services/layout.service";
-import { ROIService } from "src/app/services/roi.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { analysisLayoutState, ViewStateService } from "src/app/services/view-state.service";
 import { DataSetService } from "src/app/services/data-set.service";
@@ -59,11 +58,9 @@ import { SpectrumPeakIdentificationComponent } from "src/app/UI/spectrum-chart-w
 import { SpectrumRegionPickerComponent } from "src/app/UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
 import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/ternary-plot-widget.component";
 import { VariogramWidgetComponent } from "src/app/UI/variogram-widget/variogram-widget.component";
-import { arraysEqual, parseNumberRangeString} from "src/app/utils/utils";
+import { parseNumberRangeString} from "src/app/utils/utils";
 import { BeamSelection } from "src/app/models/BeamSelection";
 import { SpectrumFitContainerComponent } from "src/app/UI/spectrum-chart-widget/spectrum-fit-container/spectrum-fit-container.component";
-
-
 
 
 @Component({
@@ -81,19 +78,15 @@ export class AnalysisComponent implements OnInit, OnDestroy
 
     @ViewChild("underContextImage", { read: ViewContainerRef }) underContextImageContainer;
     private _underContextImageComponent = null;
-    private _underContextImageSelector: string = "";
 
     @ViewChild("topLeft", { read: ViewContainerRef }) topLeftContainer;
     private _topLeftComponent = null;
-    private _topLeftSelector: string = "";
 
     @ViewChild("topRight", { read: ViewContainerRef }) topRightContainer;
     private _topRightComponent = null;
-    private _topRightSelector: string = "";
 
     @ViewChild("underSpectrum", { read: ViewContainerRef }) underSpectrumContainer;
     private _underSpectrumComponents = [];
-    private _underSpectrumSelectors: string[] = [];
 
     //@ViewChild("soloView", { read: ViewContainerRef }) soloViewContainer;
     //private _soloViewComponent = null;
@@ -104,7 +97,6 @@ export class AnalysisComponent implements OnInit, OnDestroy
         private _router: Router,
         private _layoutService: LayoutService,
         private _selectionService: SelectionService,
-        private _roiService: ROIService,
         private _datasetService: DataSetService,
         private _viewStateService: ViewStateService,
         private resolver: ComponentFactoryResolver,
@@ -170,19 +162,37 @@ export class AnalysisComponent implements OnInit, OnDestroy
         this._subs.add(this._viewStateService.analysisViewSelectors$.subscribe(
             (selectors: analysisLayoutState)=>
             {
-                // Run these after this function finished, else we get ExpressionChangedAfterItHasBeenCheckedError
-                // See: https://stackoverflow.com/questions/43917940/angular-dynamic-component-loading-expressionchangedafterithasbeencheckederror
-                // Suggestion is we shouldn't be doing this in ngAfterViewInit, but if we do it in ngOnInit we don't yet have the view child
-                // refs available
-                const source = timer(1);
-                /*const sub =*/ source.subscribe(
-                    ()=>
-                    {
-                        this.createTopRowComponents(selectors.topWidgetSelectors);
-                        this.createUnderContextImageComponent(selectors.bottomWidgetSelectors[0]);
-                        this.createUnderSpectrumComponents(selectors.bottomWidgetSelectors.slice(1));
-                    }
-                );
+                if(selectors)
+                {
+                    // Run these after this function finished, else we get ExpressionChangedAfterItHasBeenCheckedError
+                    // See: https://stackoverflow.com/questions/43917940/angular-dynamic-component-loading-expressionchangedafterithasbeencheckederror
+                    // Suggestion is we shouldn't be doing this in ngAfterViewInit, but if we do it in ngOnInit we don't yet have the view child
+                    // refs available
+                    const source = timer(1);
+                    /*const sub =*/ source.subscribe(
+                        ()=>
+                        {
+                            this.createTopRowComponents(selectors.topWidgetSelectors);
+                            this.createUnderContextImageComponent(selectors.bottomWidgetSelectors[0]);
+                            this.createUnderSpectrumComponents(selectors.bottomWidgetSelectors.slice(1));
+                        }
+                    );
+                }
+                else
+                {
+                    // Clear now
+                    this.topLeftContainer.clear();
+                    this.clearTopLeftReplaceable();
+
+                    this.topRightContainer.clear();
+                    this.clearTopRightReplaceable();
+
+                    this.underContextImageContainer.clear();
+                    this.clearUnderContextImageReplaceable();
+
+                    this.underSpectrumContainer.clear();
+                    this.clearUnderSpectrumReplaceables();
+                }
             },
             (err)=>
             {
@@ -257,7 +267,6 @@ export class AnalysisComponent implements OnInit, OnDestroy
             comp.destroy();
         }
         this._underSpectrumComponents = [];
-        this._underSpectrumSelectors = [];
     }
 
     private clearUnderContextImageReplaceable(): void
@@ -267,7 +276,6 @@ export class AnalysisComponent implements OnInit, OnDestroy
         {
             this._underContextImageComponent.destroy();
             this._underContextImageComponent = null;
-            this._underContextImageSelector = "";
         }
     }
 
@@ -277,7 +285,6 @@ export class AnalysisComponent implements OnInit, OnDestroy
         {
             this._topLeftComponent.destroy();
             this._topLeftComponent = null;
-            this._topLeftSelector = "";
         }
     }
 
@@ -287,7 +294,6 @@ export class AnalysisComponent implements OnInit, OnDestroy
         {
             this._topRightComponent.destroy();
             this._topRightComponent = null;
-            this._topRightSelector = "";
         }
     }
 
@@ -307,12 +313,6 @@ export class AnalysisComponent implements OnInit, OnDestroy
 
     private createUnderContextImageComponent(selector: string)
     {
-/*        if(this._underContextImageSelector == selector)
-        {
-            console.log("createUnderContextImageComponent skipped, selector already exists: "+selector);
-            return;
-        }*/
-
         this.underContextImageContainer.clear();
         this.clearUnderContextImageReplaceable();
 
@@ -321,8 +321,6 @@ export class AnalysisComponent implements OnInit, OnDestroy
         {
             this._underContextImageComponent = this.underContextImageContainer.createComponent(factory);
             this._underContextImageComponent.instance.widgetPosition = "undercontext";
-
-            this._underContextImageSelector = selector;
         }
     }
 
@@ -333,63 +331,40 @@ export class AnalysisComponent implements OnInit, OnDestroy
         {
             selectors = [ViewStateService.widgetSelectorContextImage, ViewStateService.widgetSelectorSpectrum];
         }
-/*
-        if(selectors[0] == this._topLeftSelector)
+        
+        // Set this one
+        this.topLeftContainer.clear();
+        this.clearTopLeftReplaceable();
+
+        let factory = this.makeComponentFactory(selectors[0]);
+        if(factory)
         {
-            console.log("createTopRowComponents [0] skipped, selector already exists: "+selectors[0]);
-        }
-        else*/
-        {
-            // Set this one
-            this.topLeftContainer.clear();
-            this.clearTopLeftReplaceable();
+            let comp = this.topLeftContainer.createComponent(factory);
+            comp.instance.widgetPosition = "top0";
 
-            let factory = this.makeComponentFactory(selectors[0]);
-            if(factory)
-            {
-                let comp = this.topLeftContainer.createComponent(factory);
-                comp.instance.widgetPosition = "top0";
+            //this.renderer2.addClass(comp.location.nativeElement, 'flex-fill');
 
-                //this.renderer2.addClass(comp.location.nativeElement, 'flex-fill');
-
-                this._topLeftComponent = comp;
-                this._topLeftSelector = selectors[0];
-            }
+            this._topLeftComponent = comp;
         }
 
-/*
-        if(selectors[1] == this._topRightSelector)
+        // Set this one
+        this.topRightContainer.clear();
+        this.clearTopRightReplaceable();
+
+        factory = this.makeComponentFactory(selectors[1]);
+        if(factory)
         {
-            console.log("createTopRowComponents [1] skipped, selector already exists: "+selectors[1]);
-        }
-        else*/
-        {
-            // Set this one
-            this.topRightContainer.clear();
-            this.clearTopRightReplaceable();
+            let comp = this.topRightContainer.createComponent(factory);
+            comp.instance.widgetPosition = "top1";
 
-            let factory = this.makeComponentFactory(selectors[1]);
-            if(factory)
-            {
-                let comp = this.topRightContainer.createComponent(factory);
-                comp.instance.widgetPosition = "top1";
+            //this.renderer2.addClass(comp.location.nativeElement, 'flex-fill');
 
-                //this.renderer2.addClass(comp.location.nativeElement, 'flex-fill');
-
-                this._topRightComponent = comp;
-                this._topRightSelector = selectors[1];
-            }
+            this._topRightComponent = comp;
         }
     }
 
     private createUnderSpectrumComponents(selectors: string[])
     {
-/*        if(arraysEqual(selectors, this._underSpectrumSelectors))
-        {
-            console.log("createUnderSpectrumComponents skipped, selectors already exist: "+selectors.join(","));
-            return;
-        }*/
-
         this.underSpectrumContainer.clear();
         this.clearUnderSpectrumReplaceables();
 
@@ -409,8 +384,6 @@ export class AnalysisComponent implements OnInit, OnDestroy
                 this._underSpectrumComponents.push(comp);
             }
         }
-
-        this._underSpectrumSelectors = selectors;
     }
 
     // NOTE: there are ways to go from selector string to ComponentFactory:
