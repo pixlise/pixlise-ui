@@ -57,6 +57,7 @@ import { Router } from "@angular/router";
 export class HttpInterceptorService implements HttpInterceptor
 {
     private _commsErrorDlg: MatDialogRef<FullScreenDisplayComponent> = null;
+    private _showingLoginExpired: boolean = false;
 
     constructor(
         private _authService: AuthenticationService,
@@ -155,8 +156,22 @@ export class HttpInterceptorService implements HttpInterceptor
                         else if(error.error === "login_required" && !["/", "/about"].includes(this.router.url))
                         {
                             console.error("Login required", error);
-                            // User's session token expired, so prompt to refresh
-                            this.showLoginTokenExpiredDialog("Your login session has expired.");
+
+                            if(!this._showingLoginExpired)
+                            {
+                                if(this._commsErrorDlg)
+                                {
+                                    // Hide all other dialogs, this is more important!
+                                    this._commsErrorDlg.close(null);
+                                }
+
+                                this._commsErrorDlg = this.showCommsErrorDialog(
+                                    "Your login session has expired.\n\nPlease reload the page and PIXLISE will resume operating.",
+                                    false,
+                                    FullScreenDisplayData.iconTriangle
+                                );
+                                this._showingLoginExpired = true;
+                            }
                         }
                         else if(error.status === 500)
                         {
@@ -176,15 +191,6 @@ export class HttpInterceptorService implements HttpInterceptor
         return this.showCommsErrorDialog(
             msg+"\n\nPlease check your internet connection and PIXLISE will resume operating.",
             true,
-            FullScreenDisplayData.iconTriangle
-        );
-    }
-
-    private showLoginTokenExpiredDialog(msg: string): MatDialogRef<FullScreenDisplayComponent>
-    {
-        return this.showCommsErrorDialog(
-            msg+"\n\nPlease reload the page and PIXLISE will resume operating.",
-            false,
             FullScreenDisplayData.iconTriangle
         );
     }
