@@ -129,16 +129,16 @@ jobs:
         # against the sigstore community Fulcio instance.
         run: echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign {}@${{ steps.build-and-push.outputs.digest }}
 
-  infratrigger:
-    needs:
-      - docker
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Job
-        run: |
-          curl -X POST \
-               --fail \
-               -F token=${{ secrets.GITLABTOKEN }} \
-               -F ref="feat/env-stacks" \
-               -F "variables[STACK_NAME]=dev" \
-               https://gitlab.com/api/v4/projects/18114496/trigger/pipeline
+#  infratrigger:
+#    needs:
+#      - docker
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Trigger Job
+#        run: |
+#          curl -X POST \
+#               --fail \
+#               -F token=${{ secrets.GITLABTOKEN }} \
+#               -F ref="feat/env-stacks" \
+#               -F "variables[STACK_NAME]=dev" \
+#               https://gitlab.com/api/v4/projects/18114496/trigger/pipeline
