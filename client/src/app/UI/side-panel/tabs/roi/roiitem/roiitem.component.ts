@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, Input, OnInit, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { BeamSelection } from "src/app/models/BeamSelection";
@@ -63,6 +63,13 @@ export class ROIItemComponent implements OnInit
     @ViewChild("settingsButton") settingsButton: ElementRef;
 
     @Input() regionLayer: RegionLayerInfo;
+
+    // Settings used for MIST ROIs
+    @Input() isSelectable: boolean = false;
+    @Input() selected: boolean = false;
+    @Input() colorChangeOnly: boolean = false;
+
+    @Output() onROISelect = new EventEmitter();
 
     private _sharedBy: string = null;
     private _isSharedByOtherUser: boolean = false;
@@ -731,5 +738,28 @@ export class ROIItemComponent implements OnInit
     onPMCLeave(pmc: number)
     {
         this._selectionService.setHoverPMC(-1);
+    }
+
+    onCheckboxClick(event: any): void
+    {
+        if(this.onROISelect)
+        {
+            this.onROISelect.emit();
+        }
+    }
+
+    get levelIterator(): boolean[]
+    {
+        return new Array(5).fill(0).map((_, i) => i < this.level);
+    }
+
+    get level(): number
+    {
+        return this.regionLayer.roi.mistROIItem?.identificationDepth || null;
+    }
+
+    get dateAdded(): string
+    {
+        return this.regionLayer.roi?.dateAdded;
     }
 }

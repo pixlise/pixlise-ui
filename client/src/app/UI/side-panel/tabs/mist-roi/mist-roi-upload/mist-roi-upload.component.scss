@@ -27,25 +27,44 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-
-.roi-search {
-    background-color: $clr-gray-100;
-    padding: $sz-unit $sz-double;
-}
-
-input {
-    border: none;
-    background-color: $clr-gray-70;
-    color: $clr-gray-30;
-
-    &:focus {
-        outline: none;
+.mist-upload {
+    .card-toolbar.header {
+        margin-bottom: 8px;
     }
-}
 
-.scrollable-container {
-    max-height: calc(100vh - 140px);
-    max-width: 283px;
-    overflow-y: auto;
+    .upload-options {
+        min-width: 400px;
+        margin: 8px;
+        margin-bottom: 0;
+
+        .upload-option {
+            align-items: center;
+            margin: 8px;
+            margin-bottom: 0;
+
+            h5 {
+                margin: 0;
+                margin-right: auto;
+                font-size: 14px;
+            }
+
+            .browse-btn {
+                padding: 8px 0;
+            }
+        }
+
+        .overwrite-options {
+            margin: 8px;
+            margin-top: 4px;
+
+            .overwrite-option {
+                margin: 8px 0;
+
+                ::ng-deep label.mat-radio-label {
+                    display: flex;
+                    justify-content: space-between;
+                }
+            }
+        }
+    }
 }

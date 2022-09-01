@@ -25,7 +25,8 @@
             "aot": true,
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/local-development-pixlise-config.json"
             ],
             "styles": [
               "node_modules/roboto-fontface/css/roboto/roboto-fontface.css",

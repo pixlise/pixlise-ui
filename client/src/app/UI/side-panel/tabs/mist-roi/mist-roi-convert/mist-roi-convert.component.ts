@@ -27,25 +27,58 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+import { Component, ElementRef, Inject, OnInit } from "@angular/core";
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { MistROIItem } from "src/app/models/roi";
+import { RegionLayerInfo } from "src/app/UI/context-image-view-widget/region-manager";
 
-.roi-search {
-    background-color: $clr-gray-100;
-    padding: $sz-unit $sz-double;
-}
-
-input {
-    border: none;
-    background-color: $clr-gray-70;
-    color: $clr-gray-30;
-
-    &:focus {
-        outline: none;
+export class MistROIConvertData
+{
+    constructor(
+        public selected: RegionLayerInfo[]
+    )
+    {
     }
 }
 
-.scrollable-container {
-    max-height: calc(100vh - 140px);
-    max-width: 283px;
-    overflow-y: auto;
+
+@Component({
+    selector: "app-mist-roi-convert",
+    templateUrl: "./mist-roi-convert.component.html",
+    styleUrls: ["./mist-roi-convert.component.scss"]
+})
+export class MistRoiConvertComponent implements OnInit 
+{
+    public selectedROIs: RegionLayerInfo[] = [];
+
+    constructor(
+        @Inject(MAT_DIALOG_DATA) public data: MistROIConvertData,
+        public dialogRef: MatDialogRef<MistRoiConvertComponent>,
+        public dialog: MatDialog,
+    )
+    {
+        this.selectedROIs = data.selected;
+    }
+
+    ngOnInit(): void 
+    {
+    }
+
+    onCancel(): void
+    {
+        this.dialogRef.close(null);
+    }
+
+    onConvert(shareROIs: boolean=false): void
+    {
+        if(this.selectedROIs.length > 0) 
+        {
+            if(shareROIs) 
+            {
+                // Convert + Share
+            }
+            console.log(this.selectedROIs);
+            this.dialogRef.close();
+        }
+    }
 }

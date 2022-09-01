@@ -31,8 +31,10 @@ import { Component, ComponentFactoryResolver, ComponentRef, OnInit, ViewChild, V
 import { rgbuPlotWidgetState, ViewStateService } from "src/app/services/view-state.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
 import { QuantificationCombineComponent } from "src/app/UI/side-panel/tabs/quantification-combine/quantification-combine.component";
+import { environment } from "src/environments/environment";
 import { DiffractionComponent } from "./tabs/diffraction/diffraction.component";
 import { ROIComponent } from "./tabs/roi/roi.component";
+import { MistROIComponent } from "./tabs/mist-roi/mist-roi.component";
 import { RoughnessComponent } from "./tabs/roughness/roughness.component";
 import { SelectionComponent } from "./tabs/selection/selection.component";
 import { ViewStateCollectionsComponent } from "./tabs/view-state-collections/view-state-collections.component";
@@ -55,6 +57,7 @@ export class SidePanelComponent implements OnInit
     private _WorkspacesTab: string = "Workspaces";
     private _CollectionsTab: string = "Collections";
     private _ROITab: string = "Regions of Interest";
+    private _MistROITab: string = "MIST ROIs";
     private _DiffractionTab: string = "Diffraction";
     private _RoughnessTab: string = "Roughness";
     private _MultiQuantTab: string = "Multi-Quant";
@@ -66,6 +69,7 @@ export class SidePanelComponent implements OnInit
         this._WorkspacesTab,
         this._CollectionsTab,
         this._ROITab,
+        this._MistROITab,
         "Selection",
         this._DiffractionTab,
         this._RoughnessTab,
@@ -84,6 +88,7 @@ export class SidePanelComponent implements OnInit
         "assets/icons/workspaces.svg",
         "assets/icons/collections.svg",
         "assets/icons/roi.svg",
+        "assets/icons/roi.svg",
         "assets/icons/selection.svg",
         "assets/icons/diffraction.svg",
         "assets/icons/roughness.svg",
@@ -99,6 +104,7 @@ export class SidePanelComponent implements OnInit
         WorkspacesComponent,
         ViewStateCollectionsComponent,
         ROIComponent,
+        MistROIComponent,
         SelectionComponent,
         DiffractionComponent,
         RoughnessComponent,

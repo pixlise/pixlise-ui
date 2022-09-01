@@ -27,25 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MistROIComponent } from "./mist-roi.component";
 
-.roi-search {
-    background-color: $clr-gray-100;
-    padding: $sz-unit $sz-double;
-}
 
-input {
-    border: none;
-    background-color: $clr-gray-70;
-    color: $clr-gray-30;
+describe("MistROIComponent", () => 
+{
+    let component: MistROIComponent;
+    let fixture: ComponentFixture<MistROIComponent>;
 
-    &:focus {
-        outline: none;
-    }
-}
+    beforeEach(async () => 
+    {
+        await TestBed.configureTestingModule({
+            declarations: [ MistROIComponent ]
+        })
+            .compileComponents();
+    });
 
-.scrollable-container {
-    max-height: calc(100vh - 140px);
-    max-width: 283px;
-    overflow-y: auto;
-}
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(MistROIComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
+
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

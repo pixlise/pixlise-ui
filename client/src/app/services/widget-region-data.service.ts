@@ -34,7 +34,7 @@ import { getQuantifiedDataWithExpression } from "src/app/expression-language/exp
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
 import { QuantificationLayer } from "src/app/models/Quantifications";
-import { PredefinedROIID, ROISavedItem } from "src/app/models/roi";
+import { MistROIItem, PredefinedROIID, ROISavedItem } from "src/app/models/roi";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
 import { DataSetService } from "src/app/services/data-set.service";
@@ -92,9 +92,12 @@ export class RegionData extends ROISavedItem
         creator: ObjectCreator,
         public colour: RGBA,
         public pmcs: Set<number>,
+        mistROIItem: MistROIItem = null,
+        visible: boolean = false,
+        dateAdded: string = null
     )
     {
-        super(id, name, locationIndexes, description, imageName, pixelIndexes, shared, creator);
+        super(id, name, locationIndexes, description, imageName, pixelIndexes, shared, creator, mistROIItem, visible, dateAdded);
     }
 
     // TODO: this is pretty dodgy, there must be a better way. Quickly tried casting RegoinData as ROISavedItem and assignment
@@ -226,6 +229,14 @@ export class WidgetRegionDataService
 
     private resubscribeForViewState(): void
     {
+        // Reset all our subscriptions
+        this._viewStateRelatedSubs.unsubscribe();
+        this._viewStateRelatedSubs = new Subscription();
+
+        // Clear all data that we have loaded from these subscriptions - this ensures we won't trigger for every
+        // one coming in - we want to wait till all have arrived!
+        this.resetFlagsForDatasetSubscriptions();
+
         // Subscribe - these are all things we subscribe for AFTER we get a view state
 
         // These are part of the view state service. It needs to make sure these are up to date
