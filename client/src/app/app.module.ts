@@ -181,7 +181,6 @@ import { SidePanelComponent } from "./UI/side-panel/side-panel.component";
 import { WorkspacesComponent } from "./UI/side-panel/tabs/workspaces/workspaces.component";
 import { ROIComponent } from "./UI/side-panel/tabs/roi/roi.component";
 import { SelectionComponent } from "./UI/side-panel/tabs/selection/selection.component";
-import { DriftCorrectionComponent } from "./UI/side-panel/tabs/drift-correction/drift-correction.component";
 import { ViewStateCollectionsComponent } from "./UI/side-panel/tabs/view-state-collections/view-state-collections.component";
 import { ROIItemComponent } from "./UI/side-panel/tabs/roi/roiitem/roiitem.component";
 import { AddToCollectionDialogComponent } from "./UI/side-panel/tabs/workspaces/add-to-collection-dialog/add-to-collection-dialog.component";
@@ -389,7 +388,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         WorkspacesComponent,
         ROIComponent,
         SelectionComponent,
-        DriftCorrectionComponent,
         ViewStateCollectionsComponent,
         ROIItemComponent,
         AddToCollectionDialogComponent,
