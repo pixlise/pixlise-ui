@@ -184,7 +184,10 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         this._subs.add(this._selectionService.selection$.subscribe(
             (sel: SelectionHistoryItem)=>
             {
-                this.prepareData("selection");
+                if(this._viewInited)
+                {
+                    this.prepareData("selection");
+                }
             }
         ));
 
@@ -221,7 +224,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
                         console.warn("Failed to find view state for rgbu plot: "+this.widgetPosition);
                     }
 
-                    this._viewInited = false;
+                    this._viewInited = true;
                 }
                 else
                 {
@@ -233,7 +236,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
                     }
                 }
 
-                this.prepareData("roi-colours");
+                this.prepareData("widget-data");
             }
         ));
     }
@@ -250,6 +253,12 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
 
     private prepareData(reason: string): void
     {
+        if(!this._viewInited)
+        {
+            // Not inited yet, maybe called for reason other than widget-data, eg tif loaded...
+            return;
+        }
+
         console.log("RGBUPlot prepareData reason: "+reason);
         if(!this._rgbuLoaded)
         {
@@ -287,19 +296,22 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
 
         this.model.raw = data;
 
+        let t1 = performance.now();
+
         // Setup for drawing
         let inter = new RGBUPlotInteraction(this.model, this._selectionService, this._datasetService);
+
+        let t2 = performance.now();
 
         this.interaction = inter;
 
         this.drawer = new RGBUPlotDrawer(this.model);
         
-        let t1 = performance.now();
+        let t3 = performance.now();
         this.needsDraw$.next();
-        let t2 = performance.now();
+        let t4 = performance.now();
 
-
-        console.log("  RGBUPlot prepareData took: "+(t1-t0).toLocaleString()+"ms, needsDraw$ took: "+(t2-t1).toLocaleString()+"ms");
+        console.log("  RGBUPlot prepareData took: "+(t1-t0).toLocaleString()+"ms+"+(t2-t1).toLocaleString()+"ms+"+(t3-t2).toLocaleString()+"ms, needsDraw$ took: "+(t4-t3).toLocaleString()+"ms");
     }
 
     private setInitRange(xMinMax: MinMax, yMinMax: MinMax): void
@@ -321,6 +333,8 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
 
     private calcPoints(rgbu: RGBUImage): RGBUPlotData
     {
+        let t0 = performance.now();
+
         let currentSelection = this._selectionService.getCurrentSelection();
         let currSelPixels = currentSelection.pixelSelection.selectedPixels;
         let cropSelection = currentSelection.cropSelection;
@@ -345,6 +359,8 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
             selectedYRange
         );
 
+        let t1 = performance.now();
+
         this.setInitRange(xAxisMinMax, yAxisMinMax);
  
         const xBinCount = 200;
@@ -352,6 +368,8 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
 
         const xBinSize = 1 / (xBinCount-1);
         const yBinSize = 1 / (yBinCount-1);
+
+        let t2 = performance.now();
 
         // Minimize RGBU data into specified amounts of x and y bins
         let [countMinMax, binCounts, binMemberInfo, visibleROIs, binSrcPixels] = this.model.minimizeRGBUData(
@@ -365,6 +383,8 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
             srcPixelIdxs,
             this._widgetDataService,
         );
+
+        let t3 = performance.now();
 
         // Generate ratio points for newly binned data
         let [ratioPoints, colourKey] = this.model.generateRGBURatioPoints(
@@ -380,6 +400,8 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
             currSelPixels,
             binSrcPixels
         );
+
+        let t4 = performance.now();
 
         const allMinerals = RGBUPlotModel.getMineralPointsForAxes(this._xAxisUnit, this._yAxisUnit);
         let shownMinerals: RGBUMineralPoint[] = allMinerals.filter(mineral => this._mineralsShown.indexOf(mineral.name) >= 0);
@@ -399,7 +421,14 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
             rgbu.path
         );
 
+        let t5 = performance.now();
+
         this.keyItems = Object.entries(colourKey).map(([key, keyColour]) => (new KeyItem(key, key, keyColour)));
+
+        let t6 = performance.now();
+
+        //console.log("  RGBUPlot calcPoints took: "+(t1-t0).toLocaleString()+"ms+"+(t2-t1).toLocaleString()+"ms+"+(t3-t2).toLocaleString()+"ms+"+(t4-t3).toLocaleString()+"ms+"+(t5-t4).toLocaleString()+"ms+"+(t6-t5).toLocaleString()+"ms. Total="+(t6-t0).toLocaleString()+"ms");
+
         return rgbuPlotData;
     }
 

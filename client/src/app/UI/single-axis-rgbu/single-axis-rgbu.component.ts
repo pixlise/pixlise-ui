@@ -205,7 +205,7 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
                         console.warn("Failed to find view state for single axis rgbu: "+this.widgetPosition);
                     }
 
-                    this._viewInited = false;
+                    this._viewInited = true;
                 }
                 else
                 {
@@ -217,7 +217,7 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
                     }
                 }
 
-                this.prepareData("roi-colours");
+                this.prepareData("widget-data");
             }
         ));
     }
