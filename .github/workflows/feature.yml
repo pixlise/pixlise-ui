@@ -116,29 +116,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             BUILD_ENV=production
-      # Sign the resulting Docker image digest except on PRs.
-      # This will only write to the public Rekor transparency log when the Docker
-      # repository is public to avoid leaking data.  If you would like to publish
-      # transparency data even for private images, pass --force to cosign below.
-      # https://github.com/sigstore/cosign
-      - name: Sign the published Docker image
-        if: ${{ github.event_name != 'pull_request' }}
-        env:
-          COSIGN_EXPERIMENTAL: "true"
-        # This step uses the identity token to provision an ephemeral certificate
-        # against the sigstore community Fulcio instance.
-        run: echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign {}@${{ steps.build-and-push.outputs.digest }}
-
-#  infratrigger:
-#    needs:
-#      - docker
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Trigger Job
-#        run: |
-#          curl -X POST \
-#               --fail \
-#               -F token=${{ secrets.GITLABTOKEN }} \
-#               -F ref="feat/env-stacks" \
-#               -F "variables[STACK_NAME]=dev" \
-#               https://gitlab.com/api/v4/projects/18114496/trigger/pipeline
