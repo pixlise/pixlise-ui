@@ -327,7 +327,7 @@ export class DataSetService
                                         // that they've loaded before we call applyViewState.
 
                                         // Finally, apply the view state to anything now that dataset stuff is all ready
-                                        this._viewStateService.applyViewState(state, this._dataset.isRGBUDataset(), isHybrid);
+                                        this._viewStateService.applyViewState(state, this._dataset.isRGBUDataset(), isHybrid, false);
                                     },
                                     (err)=>
                                     {
@@ -335,7 +335,7 @@ export class DataSetService
                                         // which has since been deleted, we show an error notification and continue
                                         // on so user can continue to operate with this dataset.
 
-                                        this._viewStateService.applyViewState(state, this._dataset.isRGBUDataset(), isHybrid);
+                                        this._viewStateService.applyViewState(state, this._dataset.isRGBUDataset(), isHybrid, false);
                                         // We have since made the current quantification area able to show an error triangle, so no longer needed
                                         //this._notificationService.addNotification("Failed to load assigned quantification");
                                     }
@@ -345,7 +345,7 @@ export class DataSetService
                             {
                                 // Just apply the view state
                                 // Finally, apply the view state to anything now that dataset stuff is all ready
-                                this._viewStateService.applyViewState(state, this._dataset.isRGBUDataset(), isHybrid);
+                                this._viewStateService.applyViewState(state, this._dataset.isRGBUDataset(), isHybrid, false);
                             }
 
                         }
