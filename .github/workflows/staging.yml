@@ -3,7 +3,9 @@ name: UI Development
 on:
   push:
     branches:
-      - development
+      - 'main'
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
     inputs:
 
@@ -41,7 +43,7 @@ jobs:
           # Same as above except indicating a minor change, supports regular expressions wrapped with '/'
           minor_pattern: "(MINOR)"
           # A string to determine the format of the version output
-          version_format: "${major}.${minor}.${patch}-prerelease"
+          version_format: "${major}.${minor}.${patch}-RC${increment}"
           # Optional path to check for changes. If any changes are detected in the path the
           # 'changed' output will true. Enter multiple paths separated by spaces.
           #change_path: "src/my-service"
@@ -116,5 +118,5 @@ jobs:
                --fail \
                -F token=${{ secrets.GITLABTOKEN }} \
                -F ref="feat/env-stacks" \
-               -F "variables[STACK_NAME]=dev" \
+               -F "variables[STACK_NAME]=staging" \
                https://gitlab.com/api/v4/projects/18114496/trigger/pipeline
