@@ -1335,6 +1335,7 @@ export class ViewStateService
         // Save other items
         this.save(state.selection, "selection");
         this.save(state.quantification, "quantification");
+        this.saveROI(state.rois);
     }
 
     startPresentationOfViewStates(collectionID: string): Observable<void>
@@ -1532,7 +1533,7 @@ export class ViewStateService
         {
             // Publish this straight away
             this._roiColours$.next(this._viewState.rois.roiColours);
-            this.saveROI();
+            this.saveROI(this._viewState.rois);
         }
     }
 
@@ -1558,17 +1559,17 @@ export class ViewStateService
         // Publish this straight away
         this._roiColours$.next(this._viewState.rois.roiColours);
         let t2 = performance.now();
-        this.saveROI();
+        this.saveROI(this._viewState.rois);
         let t3 = performance.now();
 
         console.log("setROIColour timing: map="+(t1-t0).toLocaleString()+"ms, subject="+(t2-t1).toLocaleString()+"ms, saveROI="+(t3-t2).toLocaleString()+"ms");
         return true;
     }
 
-    private saveROI(): void
+    private saveROI(rois: roiDisplayState): void
     {
         let roiObj = { "roiColours": {}};
-        for(let [k, v] of this._viewState.rois.roiColours)
+        for(let [k, v] of rois.roiColours)
         {
             roiObj["roiColours"][k] = v;
         }
