@@ -111,7 +111,8 @@ export class ROIPickerComponent implements OnInit
                     "", // not shared
                     Colours.GRAY_10.asString(),
                     this.data.roiIDsVisible.indexOf(PredefinedROIID.AllPoints) > -1,
-                    Colours.CONTEXT_BLUE.asString()
+                    Colours.CONTEXT_BLUE.asString(),
+                    "circle"
                 );
 
                 // Work out if we're showing remaining PMCs
@@ -128,7 +129,8 @@ export class ROIPickerComponent implements OnInit
                             "", // not shared
                             Colours.CONTEXT_GREEN.asString(),
                             this.data.roiIDsVisible.indexOf(PredefinedROIID.RemainingPoints) > -1,
-                            ""
+                            "",
+                            "circle"
                         );
                     }
                 }
@@ -139,6 +141,7 @@ export class ROIPickerComponent implements OnInit
                 {
                     let visible = this.data.roiIDsVisible.indexOf(roi.id) > -1;
                     let colourRGB = this._viewStateService.getROIColour(roi.id);
+                    let shape = this._viewStateService.getROIShape(roi.id);
                     let sharedBy = null;
 
                     if(roi.shared && roi.creator != null)
@@ -156,7 +159,8 @@ export class ROIPickerComponent implements OnInit
                             sharedBy,
                             colourRGB,
                             visible,
-                            ""
+                            "",
+                            shape
                         );
 
                         if(roi.shared)

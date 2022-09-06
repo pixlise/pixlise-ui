@@ -51,15 +51,22 @@ POSSIBILITY OF SUCH DAMAGE.
     <div fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements">
         <icon-button
             *ngIf="showColourButton"
+            title="Configure Shapes"
+            icon="assets/button-icons/shapes.svg"
+            (click)="onShapes($event)">
+        </icon-button>
+        <icon-button
+            *ngIf="showColourButton"
             title="Configure Colours"
             icon="assets/button-icons/colours.svg"
-            (click)="onColours($event)"></icon-button>
-
+            (click)="onColours($event)">
+        </icon-button>
         <two-state-icon-button
             toolTip="Toggle Visibility"
             [activeIcon]="activeIcon"
             [inactiveIcon]="inactiveIcon"
             [active]="visible"
-            (onToggle)="onVisibility($event)"></two-state-icon-button>
+            (onToggle)="onVisibility($event)">
+        </two-state-icon-button>
     </div>
 </div>

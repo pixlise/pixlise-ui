@@ -41,7 +41,7 @@ import { PickerDialogComponent, PickerDialogData } from "src/app/UI/atoms/picker
 
 export class ROISettingsItem
 {
-    constructor(public roiID: string, public label: string, public sharedBy: string, public colour: string, public active: boolean, public colour2: string)
+    constructor(public roiID: string, public label: string, public sharedBy: string, public colour: string, public active: boolean, public colour2: string, public shape: string)
     {
     }
 }
@@ -62,6 +62,7 @@ export class RegionItemSettingsComponent implements OnInit
     private _subs = new Subscription();
     private _colourRGB: string = "";
     private _colour2RGB: string = ""; // Should only be set for the "special" all points ROI
+    private _shape: string = "circle";
 
     constructor(
         private _viewStateService: ViewStateService,
@@ -74,6 +75,7 @@ export class RegionItemSettingsComponent implements OnInit
     {
         this._colourRGB = this.item.colour;
         this._colour2RGB = this.item.colour2;
+        this._shape = this.item.shape;
     }
 
     ngOnDestroy()
@@ -104,6 +106,11 @@ export class RegionItemSettingsComponent implements OnInit
     get colour2(): string
     {
         return this._colour2RGB;
+    }
+
+    get shape(): string
+    {
+        return this.shape;
     }
 
     getAtomicNumber(elemSymbol: string): number
@@ -151,6 +158,51 @@ export class RegionItemSettingsComponent implements OnInit
                 else
                 {
                     this._colourRGB = this._viewStateService.getROIColour(this.item.roiID);
+                }
+            }
+        );
+    }
+
+    onShapes(event): void
+    {
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.backdropClass = "empty-overlay-backdrop";
+        //dialogConfig.panelClass = "panel";
+        //dialogConfig.disableClose = true;
+        //dialogConfig.autoFocus = true;
+        //dialogConfig.width = '1200px';
+
+        let usedShapes = this._viewStateService.getInUseROIShapes();
+        let items = PickerDialogData.getStandardShapeChoices(usedShapes);
+
+        // Find the colour we're currently set to
+        let curr: string[] = [];
+
+        if(this._colourRGB && this._colourRGB.length > 0)
+        {
+            curr.push(this._colourRGB);
+        }
+
+        dialogConfig.data = new PickerDialogData(false, true, false, false, items, curr, "This shape is applied to a different ROI", new ElementRef(event.currentTarget));
+
+        const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
+        dialogRef.componentInstance.onSelectedIdsChanged.subscribe(
+            (shapes: string[])=>
+            {
+                let shape = "";
+                if(shapes.length > 0)
+                {
+                    shape = shapes[0];
+                }
+
+                // Save this colour
+                if(!this._viewStateService.setROIShape(this.item.roiID, shape))
+                {
+                    alert("Failed to save colour setting \""+shape+"\" for ROI: \""+this.item.roiID+"\"");
+                }
+                else
+                {
+                    this._shape = this._viewStateService.getROIShape(this.item.roiID);
                 }
             }
         );
