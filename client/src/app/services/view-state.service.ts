@@ -1291,51 +1291,8 @@ export class ViewStateService
     {
         // Run through and save each item in the view state
         // First, save the layout of widgets:
-        this.save(state.analysisLayout, "analysisLayout");
-
-        // Now save each widget
-        let widgets: Map<string, any>[] = [
-            state.contextImages,
-            state.chordDiagrams,
-            state.binaryPlots,
-            state.ternaryPlots,
-            state.tables,
-            state.roiQuantTables,
-            state.variogramState,
-            state.spectrums,
-            state.rgbuImages,
-            state.rgbuPlots,
-            state.singleAxisRGBU,
-            state.parallelograms,
-            state.histograms
-        ];
-        let widgetPrefixes = [
-            "contextImage-",
-            "chord-",
-            "binary-",
-            "ternary-",
-            "table-",
-            "roiQuantTable-",
-            "variogram-",
-            "spectrum-",
-            "rgbuImages-",
-            "singleAxisRGBU-",
-            "parallelogram-",
-            "histogram-",
-        ];
-
-        for(let c = 0; c < widgetPrefixes.length; c++)
-        {
-            for(let [instance, item] of widgets[c].entries())
-            {
-                this.save(item, widgetPrefixes[c]+instance);
-            }
-        }
-
-        // Save other items
-        this.save(state.selection, "selection");
-        this.save(state.quantification, "quantification");
-        this.saveROI(state.rois);
+        let viewStateWireObj = this.makeWireViewState(state);
+        this.save(viewStateWireObj, "all");
     }
 
     startPresentationOfViewStates(collectionID: string): Observable<void>
