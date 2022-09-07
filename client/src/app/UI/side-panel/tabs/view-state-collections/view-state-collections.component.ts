@@ -402,7 +402,7 @@ export class ViewStateCollectionsComponent implements OnInit
             {
                 // Apply this view state!
                 // This will notify all widgets through ViewStateService.viewState$
-                this._viewStateService.applyViewState(state, this._datasetService.datasetLoaded.isRGBUDataset());
+                this._viewStateService.applyViewState(state, this._datasetService.datasetLoaded.isRGBUDataset(), false, true);
                 this._loadingSvc.remove(loadID);
             },
             (err)=>
