@@ -226,6 +226,14 @@ export class WidgetRegionDataService
 
     private resubscribeForViewState(): void
     {
+        // Reset all our subscriptions
+        this._viewStateRelatedSubs.unsubscribe();
+        this._viewStateRelatedSubs = new Subscription();
+
+        // Clear all data that we have loaded from these subscriptions - this ensures we won't trigger for every
+        // one coming in - we want to wait till all have arrived!
+        this.resetFlagsForDatasetSubscriptions();
+
         // Subscribe - these are all things we subscribe for AFTER we get a view state
 
         // These are part of the view state service. It needs to make sure these are up to date
