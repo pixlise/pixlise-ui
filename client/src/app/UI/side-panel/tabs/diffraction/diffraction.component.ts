@@ -153,6 +153,8 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
                         new DiffractionPeak(peak.pmc, 0, 0, peak.keV, peak.keV-0.1, peak.keV+0.1, DiffractionPeak.statusUnspecified, id)
                     );
                 }
+
+                this.updateShownMapIfNeeded();
             },
             (err)=>
             {
@@ -241,6 +243,8 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
 
     onShowMap()
     {
+        const layerMan = this.getLayerManager();
+
         // Found that for some reason we can end up without a roughness layer here
         if(!this._diffractionMapLayer)
         {
@@ -258,13 +262,31 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
             // We're making it visible now... Hide the roughness expression otherwise it looks
             // like showing the map failed because users dont see the layers concept in this view
             // (roughness would be "on top" and can't see our map)
-            this.getLayerManager().setLayerVisibility(DataExpressionService.predefinedRoughnessDataExpression, 1, false, []);
+            layerMan.setLayerVisibility(DataExpressionService.predefinedRoughnessDataExpression, 1, false, []);
         }
 
-        this.getLayerManager().setLayerVisibility(DataExpressionService.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, !this._diffractionMapLayer.visible, []);
+        layerMan.setLayerVisibility(DataExpressionService.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, !this._diffractionMapLayer.visible, []);
         
         this.refreshLayerInfo();
     }
+
+    private updateShownMapIfNeeded(): void
+    {
+        const layerMan = this.getLayerManager();
+
+        if(!this._diffractionMapLayer || !this._diffractionMapLayer.visible)
+        {
+            // Doesn't exist or not visible, do nothing
+            return;
+        }
+
+        // Force it to hide then show, this will recalculate it
+        layerMan.setLayerVisibility(DataExpressionService.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, false, []);
+        layerMan.setLayerVisibility(DataExpressionService.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, true, []);
+
+        //this.refreshLayerInfo();
+    }
+
     /*
     onPickElement()
     {
@@ -319,6 +341,7 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
             this._datasetService.datasetIDLoaded).subscribe(
             ()=>
             {
+                this.updateShownMapIfNeeded();
             },
             (err)=>
             {

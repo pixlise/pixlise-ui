@@ -151,6 +151,10 @@ export class UserRoughnessItem
     }
 }
 
+
+// TODO: Which detectors calibration do we adopt?
+const eVCalibrationDetector = "A";
+
 @Injectable({
     providedIn: "root"
 })
@@ -171,6 +175,8 @@ export class DiffractionPeakService implements DiffractionPeakQuerierSource
     private _userRoughnessItems: Map<string, UserDiffractionPeak> = new Map<string, UserDiffractionPeak>();
     private _userRoughnessItems$ = new ReplaySubject<Map<string, UserDiffractionPeak>>(1);
 
+    private _energyCalibrationManager: EnergyCalibrationManager = null;
+
     constructor(
         private http: HttpClient
     )
@@ -185,6 +191,9 @@ export class DiffractionPeakService implements DiffractionPeakQuerierSource
     // NOTE: Must be called after setDiffractionFile, can be called multiple times
     setEnergyCalibrationManager(energyCalibrationManager: EnergyCalibrationManager)
     {
+        // Store so we can query it later too
+        this._energyCalibrationManager = energyCalibrationManager;
+
         // Unsubscribe from any prev one
         this._subs.unsubscribe();
         this._subs = new Subscription();
@@ -192,18 +201,15 @@ export class DiffractionPeakService implements DiffractionPeakQuerierSource
         this._subs.add(energyCalibrationManager.calibrationChanged$.subscribe(
             ()=>
             {
-                // TODO: Which detectors calibration do we adopt?
-                const detector = "A";
-
                 for(let peak of this._allPeaks)
                 {
                     let channel = peak.channel;
                     let startChannel = channel-peakWidth/2;
                     let endChannel = channel+peakWidth/2;
 
-                    peak.keV = energyCalibrationManager.channelTokeV(channel, detector);
-                    peak.kevStart = energyCalibrationManager.channelTokeV(startChannel, detector);
-                    peak.kevEnd = energyCalibrationManager.channelTokeV(endChannel, detector);
+                    peak.keV = energyCalibrationManager.channelTokeV(channel, eVCalibrationDetector);
+                    peak.kevStart = energyCalibrationManager.channelTokeV(startChannel, eVCalibrationDetector);
+                    peak.kevEnd = energyCalibrationManager.channelTokeV(endChannel, eVCalibrationDetector);
                 }
 
                 this._allPeaks$.next(this._allPeaks);
@@ -487,7 +493,7 @@ export class DiffractionPeakService implements DiffractionPeakQuerierSource
 
         for(let peak of this._allPeaks)
         {
-            if(peak.channel >= channelStart && peak.channel < channelEnd)
+            if(peak.status != DiffractionPeak.statusNotAnomaly && peak.channel >= channelStart && peak.channel < channelEnd)
             {
                 let prev = pmcDiffractionCount.get(peak.pmc);
                 if(!prev)
@@ -495,6 +501,25 @@ export class DiffractionPeakService implements DiffractionPeakQuerierSource
                     prev = 0;
                 }
                 pmcDiffractionCount.set(peak.pmc, prev+1);
+            }
+        }
+
+        // Also loop through user-defined peaks
+        // If we can convert the user peak keV to a channel, do it and compare
+        if(this._energyCalibrationManager)
+        {
+            for(let peak of this._userPeaks.values())
+            {
+                let channel = this._energyCalibrationManager.keVToChannel(peak.keV, eVCalibrationDetector);
+                if(channel >= channelStart && channel < channelEnd)
+                {
+                    let prev = pmcDiffractionCount.get(peak.pmc);
+                    if(!prev)
+                    {
+                        prev = 0;
+                    }
+                    pmcDiffractionCount.set(peak.pmc, prev+1);
+                }
             }
         }
 

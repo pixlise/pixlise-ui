@@ -1,4 +1,4 @@
-name: UI Development
+name: UI Release
 
 on:
   push:

@@ -1136,7 +1136,19 @@ export class ViewStateService
         return result;
     }
 
-    applyViewState(state: ViewState, isRGBUDataset: boolean = false, isHybrid: boolean = false): void
+    // Applies a view state to PIXLISE. This can come from various sources:
+    // - Last saved view state auto-loaded when opening a dataset
+    // - User picking a view state (aka workspace) to view in UI
+    // - User picking a workspace as a member of a collection
+    // - User viewing a collection presentation where each workspace is subsequently loaded
+    // Parameters:
+    // state is self-explanatory
+    // isRGBUDataSet: true if dataset contains only RGBU data, so if defaults are applied, we will init an RGBU-focused view state
+    // isHybrid: true if dataset is a hybrid dataset, containing both RGBU and XRF data, same reason as above
+    // overwriteSavedViewState: true if this view state should overwrite what's in our last saved one for this dataset
+    //                          NOTE: This parameter should really only be true for users picking a view state, because when loading
+    //                                the last saved view state, we're already loading the one that we'd be overwriting!
+    applyViewState(state: ViewState, isRGBUDataset: boolean, isHybrid: boolean, overwriteSavedViewState: boolean): void
     {
         let t0 = performance.now();
 
@@ -1237,6 +1249,12 @@ export class ViewStateService
 
         console.log("--- View state applied in "+(t1-t0).toLocaleString()+"ms ---");
         //console.log(JSON.stringify(state));
+
+        // If we're asked to overwrite the saved view state, do this here, once it's all been applied
+        if(overwriteSavedViewState && this._viewState)
+        {
+            this.saveWholeViewState(this._viewState);
+        }
     }
 
     private updateAppliedQuantification(): void
@@ -1267,6 +1285,14 @@ export class ViewStateService
             console.error("Failed to save view state for: "+name);
         }
         );
+    }
+
+    private saveWholeViewState(state: ViewState): void
+    {
+        // Run through and save each item in the view state
+        // First, save the layout of widgets:
+        let viewStateWireObj = this.makeWireViewState(state);
+        this.save(viewStateWireObj, "all");
     }
 
     startPresentationOfViewStates(collectionID: string): Observable<void>
@@ -1356,7 +1382,7 @@ export class ViewStateService
         this._currentPresentedViewStateIdx = idx;
 
         // Show it
-        this.applyViewState(this._viewStatesToPresent[this._currentPresentedViewStateIdx], false);
+        this.applyViewState(this._viewStatesToPresent[this._currentPresentedViewStateIdx], false, false, true);
 
         // Remember this as the currently loaded view state, for back functionality to detect if user
         // has gone "off script"
@@ -1464,7 +1490,7 @@ export class ViewStateService
         {
             // Publish this straight away
             this._roiColours$.next(this._viewState.rois.roiColours);
-            this.saveROI();
+            this.saveROI(this._viewState.rois);
         }
     }
 
@@ -1490,17 +1516,17 @@ export class ViewStateService
         // Publish this straight away
         this._roiColours$.next(this._viewState.rois.roiColours);
         let t2 = performance.now();
-        this.saveROI();
+        this.saveROI(this._viewState.rois);
         let t3 = performance.now();
 
         console.log("setROIColour timing: map="+(t1-t0).toLocaleString()+"ms, subject="+(t2-t1).toLocaleString()+"ms, saveROI="+(t3-t2).toLocaleString()+"ms");
         return true;
     }
 
-    private saveROI(): void
+    private saveROI(rois: roiDisplayState): void
     {
         let roiObj = { "roiColours": {}};
-        for(let [k, v] of this._viewState.rois.roiColours)
+        for(let [k, v] of rois.roiColours)
         {
             roiObj["roiColours"][k] = v;
         }

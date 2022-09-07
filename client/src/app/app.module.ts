@@ -94,6 +94,8 @@ import { QuantSelectorPanelComponent } from "./UI/quantification-selector/quant-
 import { ExpressionEditorComponent } from "./UI/expression-editor/expression-editor.component";
 
 import { Base64ImagePipe } from "./utils/base64-image.pipe";
+import { AddBearerPipe } from "./utils/add-bearer-header.pipe";
+
 import { DatasetLoadingProgressComponent } from "./routes/dataset/dataset-loading-progress/dataset-loading-progress.component";
 import { SelectedQuantificationViewComponent } from "./routes/dataset/quantifications/selected-quantification-view/selected-quantification-view.component";
 
@@ -179,7 +181,6 @@ import { SidePanelComponent } from "./UI/side-panel/side-panel.component";
 import { WorkspacesComponent } from "./UI/side-panel/tabs/workspaces/workspaces.component";
 import { ROIComponent } from "./UI/side-panel/tabs/roi/roi.component";
 import { SelectionComponent } from "./UI/side-panel/tabs/selection/selection.component";
-import { DriftCorrectionComponent } from "./UI/side-panel/tabs/drift-correction/drift-correction.component";
 import { ViewStateCollectionsComponent } from "./UI/side-panel/tabs/view-state-collections/view-state-collections.component";
 import { ROIItemComponent } from "./UI/side-panel/tabs/roi/roiitem/roiitem.component";
 import { AddToCollectionDialogComponent } from "./UI/side-panel/tabs/workspaces/add-to-collection-dialog/add-to-collection-dialog.component";
@@ -387,7 +388,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         WorkspacesComponent,
         ROIComponent,
         SelectionComponent,
-        DriftCorrectionComponent,
         ViewStateCollectionsComponent,
         ROIItemComponent,
         AddToCollectionDialogComponent,
@@ -411,7 +411,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         SpectrumFitContainerComponent,
         FitLineConfigComponent,
         FitElementsComponent,
-        FitElementSelectionComponent
+        FitElementSelectionComponent,
+        AddBearerPipe
     ],
     imports: [
         BrowserModule,

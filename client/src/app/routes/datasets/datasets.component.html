@@ -91,9 +91,16 @@ POSSIBILITY OF SUCH DAMAGE.
 
             <div *ngIf="selectedDataset != null" fxLayout="column">
                 <div fxLayout="row" fxLayoutAlign="space-around center" class="meta-image-container">
-                    <img *ngIf="hasContextImage && selectedDatasetContextImage != null" class="meta-image" [src]="selectedDatasetContextImage | base64Image">
-                    <mat-spinner *ngIf="hasContextImage && selectedDatasetContextImage == null" [diameter]="32" color="accent"></mat-spinner>
-                    <div *ngIf="!hasContextImage">No Context Image</div>
+                    <ng-container [ngSwitch]="contextImageURL.length">
+                        <ng-container *ngSwitchCase="0">
+                            <div fxLayout="row" fxLayoutAlign="space-around center" fxFlex="100%">
+                                <div>No Context Image</div>
+                            </div>
+                        </ng-container>
+                        <ng-container *ngSwitchDefault>
+                            <img [src]='contextImageURL | addbearerheader | async' class="meta-image">
+                        </ng-container>
+                    </ng-container>
                 </div>
                 <div fxLayout="row" fxLayoutAlign="space-between center" class="meta-open-row">
                     <div>{{selectedDataset.title}}</div>
