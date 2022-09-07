@@ -311,6 +311,9 @@ export class DataSetService
                             // Pass the loaded diffraction file to the diffraction service
                             this._diffractionService.setDiffractionFile(data[2]);
 
+                            this._diffractionService.refreshPeakStatuses(this._datasetIDLoaded);
+                            this._diffractionService.refreshUserPeaks(this._datasetIDLoaded);
+
                             // Notify the world!
                             this._dataset$.next(this._dataset);
                             
