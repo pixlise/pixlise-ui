@@ -62,7 +62,7 @@ jobs:
         run: |
           echo "BUILDING VERSION ${{ steps.version.outputs.version }}"
           ls -al .
-          echo "{\"version\": \"${V}\" }" > ./client/version.json'
+          echo "{\"version\": \"${VERSION}\" }" > ./client/version.json'
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
