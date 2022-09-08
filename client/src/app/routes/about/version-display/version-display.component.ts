@@ -58,7 +58,7 @@ export class VersionDisplayComponent implements OnInit, OnDestroy
     {
         this.versions = null;
         this.error = false;
-        const verstr = VERSION["version"]+"-"+VERSION["hash"];
+        const verstr = VERSION["raw"];
 
         this._subs.add(this.envConfigService.getComponentVersions().subscribe((versions)=>
         {
