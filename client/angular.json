@@ -26,7 +26,8 @@
             "assets": [
               "src/favicon.ico",
               "src/assets",
-              "src/local-development-pixlise-config.json"
+              "src/local-development-pixlise-config.json",
+              "version.json"
             ],
             "styles": [
               "node_modules/roboto-fontface/css/roboto/roboto-fontface.css",
