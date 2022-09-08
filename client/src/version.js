@@ -28,12 +28,12 @@ const gitInfo = gitDescribeSync({
 gitInfo.version = version;
 var pversion = process.argv.slice(2);
 var v = {
-    "raw": pversion,
+    "raw": pversion[0],
     "hash": "unknown",
-    "tag": pversion,
+    "tag": pversion[0],
     "semver": {
-        "raw": pversion,
-        "version": pversion
+        "raw": pversion[0],
+        "version": pversion[0]
     }
 }
 const file = resolve(__dirname, '..', 'src', 'environments', 'version.ts');
