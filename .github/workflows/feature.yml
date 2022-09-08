@@ -116,3 +116,4 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             BUILD_ENV=production
+            VERSION=${{ steps.meta.outputs.tags }}
