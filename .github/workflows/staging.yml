@@ -106,7 +106,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             BUILD_ENV=production
-            VERSION=${{ steps.meta.outputs.tags }}
+            VERSION=${{ steps.version.outputs.version }}
 
   infratrigger:
     needs:
