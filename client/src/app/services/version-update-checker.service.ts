@@ -87,7 +87,7 @@ export class VersionUpdateCheckerService
             {
                 // Received version may start with a "v" and we may also (prod has v) so check without
                 // the v present
-                let thisBuildVersion = VERSION.version;
+                let thisBuildVersion = VERSION["semver"]["version"];
                 let recvVersion = version.version;
 
                 if(doesVersionDiffer(thisBuildVersion, recvVersion))
