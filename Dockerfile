@@ -11,7 +11,9 @@ RUN sh genproto.sh
 
 WORKDIR /build/client
 
-RUN npm i  && npm version ${VERSION} && npm run postinstall && ng build --configuration=$BUILD_ENV
+RUN echo ${VERSION}
+RUN echo ${BUILD_ENV}
+RUN npm i && npm version ${VERSION} && npm run postinstall ${VERSION} && ng build --configuration=${BUILD_ENV}
 
 FROM nginx:latest
 

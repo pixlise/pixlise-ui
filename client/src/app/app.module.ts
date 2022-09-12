@@ -253,7 +253,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
                     ]
                 });
 
-                const version = VERSION["version"]+"-"+VERSION["hash"];
+                const version = VERSION["raw"];
                 console.log("Sentry Initialised, adding version tag: " + version);
                 Sentry.setTag("version", version);
             }

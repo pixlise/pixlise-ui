@@ -61,6 +61,7 @@ jobs:
         id: taggen
         run: |
           echo "BUILDING VERSION ${{ steps.version.outputs.version }}"
+          echo "{\"version\": \"${{ steps.version.outputs.version }}\" }" > ./client/src/version.json
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
@@ -104,6 +105,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             BUILD_ENV=production
+            VERSION=${{ steps.version.outputs.version }}
 
   infratrigger:
     needs:
