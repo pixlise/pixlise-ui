@@ -45,4 +45,3 @@ export const VERSION = ${JSON.stringify(v, null, 4)};
 `, { encoding: 'utf-8' });
 
 console.log(`Passvd version is: ${pversion}`)
-console.log(`Wrote version info ${gitInfo.raw} to ${relative(resolve(__dirname, '..'), file)}`);
