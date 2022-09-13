@@ -544,16 +544,21 @@ export class ViewStateService
         );
     }
 
-    saveViewState(datasetID: string, viewStateTitle: string): Observable<void>
+    saveViewState(datasetID: string, viewStateTitle: string, force: boolean): Observable<void>
     {
         let loadID = this._loadingSvc.add("Saving view state...");
         let apiURL = this.makeSavedViewStateURL(datasetID, viewStateTitle);
+        if(force)
+        {
+            apiURL += "?force=true";
+        }
+
         let viewStateWireObj = this.makeWireViewState(this._viewState);
 
         // We now send up as an object with a name in it
         let data = {
             "viewState": viewStateWireObj,
-            "name": viewStateTitle,
+            "name": viewStateTitle
         };
 
         // Save it and it successful or error, refresh the list
@@ -592,29 +597,6 @@ export class ViewStateService
                 (err)=>
                 {
                     this._loadingSvc.remove(loadID);
-                }
-            )
-        );
-    }
-
-    renameViewState(datasetID: string, existingViewStateID: string, newViewStateID: string): Observable<void>
-    {
-        let loadID = this._loadingSvc.add("Renaming view state...");
-
-        let apiURL = APIPaths.getWithHost(APIPaths.api_view_state);
-        apiURL += "/saved/"+datasetID+"/"+existingViewStateID+"/rename";
-
-        return this.http.post<void>(apiURL, newViewStateID, makeHeaders()).pipe(
-            tap(
-                ()=>
-                {
-                    this._loadingSvc.remove(loadID);
-                    this.refreshSavedStates();
-                },
-                (err)=>
-                {
-                    this._loadingSvc.remove(loadID);
-                    this.refreshSavedStates();
                 }
             )
         );
