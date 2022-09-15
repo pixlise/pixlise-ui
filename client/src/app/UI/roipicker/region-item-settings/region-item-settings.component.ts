@@ -123,8 +123,8 @@ export class RegionItemSettingsComponent implements OnInit
         const dialogConfig = new MatDialogConfig();
         dialogConfig.backdropClass = "empty-overlay-backdrop";
 
-        let usedColours = this._viewStateService.getInUseROIColours();
-        let items = PickerDialogData.getStandardColourChoices(usedColours);
+        // let usedColours = this._viewStateService.getInUseROIColours();
+        let items = PickerDialogData.getStandardColourChoices([]);
 
         // Find the colour we're currently set to
         let curr: string[] = [];
@@ -164,8 +164,8 @@ export class RegionItemSettingsComponent implements OnInit
         const dialogConfig = new MatDialogConfig();
         dialogConfig.backdropClass = "empty-overlay-backdrop";
 
-        let usedShapes = this._viewStateService.getInUseROIShapes();
-        let items = PickerDialogData.getStandardShapeChoices(usedShapes);
+        // let usedShapes = this._viewStateService.getInUseROIShapes();
+        let items = PickerDialogData.getStandardShapeChoices([]);
 
         // Find the colour we're currently set to
         let currentShape: string[] = [];

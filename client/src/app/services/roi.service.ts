@@ -30,11 +30,12 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Observable, ReplaySubject, Subscription, of } from "rxjs";
+import { Observable, ReplaySubject, Subscription, of, forkJoin } from "rxjs";
+
 import { tap, switchMap, map } from "rxjs/operators";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
-import { ROIItem, ROISavedItem } from "src/app/models/roi";
+import { MistROIItem, ROIItem, ROISavedItem } from "src/app/models/roi";
 import { UserPromptDialogComponent, UserPromptDialogParams, UserPromptDialogResult, UserPromptDialogStringItem } from "src/app/UI/atoms/user-prompt-dialog/user-prompt-dialog.component";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { arraysEqual, httpErrorToString } from "src/app/utils/utils";
@@ -172,11 +173,22 @@ export class ROIService
         }
 
         let apiURL = this.makeURL(datasetID, null);
-
         this.http.get<Map<string, ROISavedItemWire>>(apiURL, makeHeaders()).subscribe((response: Map<string, ROISavedItemWire>)=>
         {
             let rois: Map<string, ROISavedItem> = new Map<string, ROISavedItem>();
-            Object.entries(response).forEach(([roiID, roi]) =>
+            Object.entries(response).forEach(([roiID, roi]) => {
+                let mistROI = null;
+                if(roi.mistROIItem && roi.mistROIItem?.ClassificationTrail.length > 0)
+                {
+                    mistROI = new MistROIItem(
+                        roi.mistROIItem.species,
+                        roi.mistROIItem.mineralGroupID,
+                        roi.mistROIItem.ID_Depth,
+                        roi.mistROIItem.ClassificationTrail,
+                        roi.mistROIItem.formula,
+                        roi.mistROIItem.isStandardROI
+                    );
+                }
                 rois.set(roiID, new ROISavedItem(
                     roiID,
                     roi.name,
@@ -186,9 +198,10 @@ export class ROIService
                     new Set<number>(roi["pixelIndexes"] || []),
                     roi.shared,
                     roi.creator,
+                    mistROI,
                     this._lastROILookup ? this._lastROILookup[roiID]?.visible : false
-                ))
-            );
+                ));
+            });
 
             // At this point we know the view state would've loaded already (we're only loaded once a dataset finishes loading, and that
             // only finishes after the view state arrives). Therefore here we can tell the view state service what ROI IDs are valid, so
@@ -196,7 +209,6 @@ export class ROIService
             // go to the console), but we don't want them growing forever.
             // If this happens multiple times at runtime (if we're not just refreshing after a dataset load but for another reason), it's fine!
             this._viewStateService.notifyValidROIIDs(Array.from(rois.keys()));
-
 
             // If this matches what we last sent out, ignore it
             if(this.areROILookupsEqual(this._lastROILookup, rois))
@@ -207,7 +219,6 @@ export class ROIService
             // Remember this for next time
             this._lastROILookup = rois;
             this._lastROILookupDatasetID = datasetID;
-
             this._roi$.next(rois);
         },
         (err)=>
@@ -287,26 +298,18 @@ export class ROIService
             map(
                 ()=>
                 {
-                    //console.log("Created ROI: "+roiName);
                     this.refreshROIList();
                     return true;
                 },
                 (err)=>
                 {
                     console.error(err);
-                    //console.error("Failed to create ROI: "+roiName+", reason: "+err);
                     this.refreshROIList();
                 }
             )
         );
     }
-    /*
-    get(id: string): Observable<ROIItem>
-    {
-        let apiURL = this.makeURL(this.getDatasetID(), id);
-        return this.http.get<ROIItem>(apiURL, makeHeaders());
-    }
-*/
+
     add(item: ROIItem): Observable<void>
     {
         // TODO: validate name, should be URL compatible
@@ -314,7 +317,7 @@ export class ROIService
 
         let loadID = this._loadingSvc.add("Saving new ROI...");
 
-        let apiURL = this.makeURL(this.getDatasetID(), null);
+        let apiURL = this.makeURL(this.getDatasetID(), null); 
         return this.http.post<void>(apiURL, item, makeHeaders()).pipe(
             tap(
                 ()=>
@@ -323,10 +326,49 @@ export class ROIService
                 },
                 (err)=>
                 {
+                    console.error("Error occurred saving ROI", err);
                     this._loadingSvc.remove(loadID);
                 }
             )
         );
+    }
+
+    bulkAdd(roiItems: ROIItem[], overwrite: boolean = false, skipDuplicates: boolean = false): Observable<void | unknown[]>
+    {
+        let loadID = this._loadingSvc.add(`Saving ${roiItems.length} new ROIs...`);
+        let apiURL = this.makeURL(this.getDatasetID(), "bulk"); 
+
+        return this.http.post<void>(apiURL, { roiItems, overwrite, skipDuplicates }, makeHeaders()).pipe(
+            tap(
+                () =>
+                {
+                    this._loadingSvc.remove(loadID);
+                },
+                (err) =>
+                {
+                    console.error("Error occurred bulk saving ROIs", err);
+                    this._loadingSvc.remove(loadID);
+                }   
+            )
+        );
+        // let tasks$ = [];
+        // items.forEach((item) =>
+        // {
+        //     tasks$.push(this.http.post<void>(apiURL, item, makeHeaders()));
+        // });
+        // return forkJoin(tasks$).pipe(
+        //     tap(
+        //         () =>
+        //         {
+        //             this._loadingSvc.remove(loadID);
+        //         },
+        //         (err) =>
+        //         {
+        //             console.error("Error occurred bulk saving ROIs", err);
+        //             this._loadingSvc.remove(loadID);
+        //         }
+        //     )
+        // );
     }
 
     update(id: string, item: ROIItem): Observable<void>

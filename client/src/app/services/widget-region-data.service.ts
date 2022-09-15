@@ -113,6 +113,7 @@ export class RegionData extends ROISavedItem
         this.imageName = roi.imageName;
         this.shared = roi.shared;
         this.creator = roi.creator;
+        this.mistROIItem = roi.mistROIItem;
     }
 }
 
@@ -399,8 +400,6 @@ export class WidgetRegionDataService
     {
         let logmsg = this._logPrefix+" rebuildData reason="+reason;
         let skipReasons = [];
-
-        console.log();
 
         let dataset = this._datasetService.datasetLoaded;
         let selection = this._selectionService.getCurrentSelection();

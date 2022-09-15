@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, Inject, OnInit } from "@angular/core";
+import { Component, Inject, OnInit } from "@angular/core";
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { MistROIItem } from "src/app/models/roi";
 import { RegionLayerInfo } from "src/app/UI/context-image-view-widget/region-manager";

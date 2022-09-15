@@ -225,6 +225,8 @@ export class ROIPickerComponent implements OnInit
             result.push(this.remainingPointsROI);
         }
 
+        
+        result.push(...this.mistROIs);
         result.push(...this.userROIs);
         result.push(...this.sharedROIs);
 
@@ -236,7 +238,7 @@ export class ROIPickerComponent implements OnInit
         let rois = this.getAllROIs();
         for(let roi of rois)
         {
-            if(roi.roiID == roiID)
+            if(roi.roiID === roiID)
             {
                 // Only allow making it visible if it has a colour assigned
                 // But if the colour picker button isn't showing, allow picking anything

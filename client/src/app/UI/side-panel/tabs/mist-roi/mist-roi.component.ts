@@ -59,7 +59,7 @@ export class MistROIComponent implements OnInit
 
     private _selectedROIs: RegionLayerInfo[] = [];
 
-    csvROIs: RegionLayerInfo[] = [];
+    mistROIs: RegionLayerInfo[] = [];
 
     allPointsColour = Colours.GRAY_10.asString();
 
@@ -80,6 +80,12 @@ export class MistROIComponent implements OnInit
 
     ngOnInit(): void
     {
+        this._subs.add(this._contextImageService.mdl$.subscribe(
+            ()=>
+            {
+                this.onGotModel();
+            }
+        ));
         this._subs.add(this._selectionService.selection$.subscribe(
             (sel: SelectionHistoryItem)=>
             {
@@ -94,36 +100,83 @@ export class MistROIComponent implements OnInit
         this._subs.unsubscribe();
     }
 
+    private getRegionManager(): RegionManager
+    {
+        return this._contextImageService.mdl.regionManager;
+    }
+
+
+    onGotModel(): void
+    {
+        // Listen to what layers exist...
+        this._subs.add(this.getRegionManager().regions$.subscribe(
+            (change: RegionChangeInfo)=>
+            {
+                let regions = this.getRegionManager().getDisplayedRegions(change.regions);
+                let roiIDs: Set<string> = new Set<string>();
+                for(let region of regions)
+                {
+                    if(region.roi.mistROIItem) 
+                    {
+                        this.setROI(region);
+                        roiIDs.add(region.roi.id);
+                    }
+                }
+
+                // Delete any that we didn't see in the new update
+                this.mistROIs = this.mistROIs.filter((region) => roiIDs.has(region.roi.id));
+            },
+            (err)=>
+            {
+            }
+        ));
+    }
+
+    private setROI(roi: RegionLayerInfo): void
+    {
+        // If it exists, we just update it, so we don't reset the whole UI for this
+        let regionIndex = this.mistROIs.findIndex((region) => region.roi.id === roi.roi.id);
+        if(regionIndex >= 0)
+        {
+            this.mistROIs[regionIndex].roi = roi.roi;
+            this.mistROIs[regionIndex].visible = roi.visible;
+            this.mistROIs[regionIndex].opacity = roi.opacity;
+            return;
+        }
+
+        this.mistROIs.push(roi);
+    }
+
     get fullyIdentifiedMistROIs(): RegionLayerInfo[]
     {
-        return this.csvROIs.filter(region => region.roi.mistROIItem?.ID_Depth >= 5);
+        return this.mistROIs.filter(region => region.roi.mistROIItem?.ID_Depth >= 5);
     }
 
     get groupIdentifiedMistROIs(): RegionLayerInfo[]
     {
-        return this.csvROIs.filter(region => region.roi.mistROIItem?.ID_Depth < 5).sort((roiA, roiB) => roiB.roi.mistROIItem.ID_Depth - roiA.roi.mistROIItem.ID_Depth);
+        return this.mistROIs.filter(region => region.roi.mistROIItem?.ID_Depth < 5).sort((roiA, roiB) => roiB.roi.mistROIItem.ID_Depth - roiA.roi.mistROIItem.ID_Depth);
     }
 
-    convertMistROIToRegion(mistROI: MistROIItem, index: number)
+    convertMistROIToRegion(mistROI: ROIItem)
     {
-        let date = new Date();
-        let regionData = new RegionData(
-            `${mistROI.mineralGroupID}.${index}`,
-            mistROI.mineralGroupID,
-            mistROI.locationIndexes,
-            mistROI.ClassificationTrail,
-            this._selectionService.getCurrentSelection().pixelSelection.imageName,
-            new Set(),
-            false,
-            new ObjectCreator("temp", "temp_id"),
-            new RGBA(255,0,255,1),
-            new Set(),
-            "circle",
-            mistROI,
-            false,
-            `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear().toString().slice(2)}`
-        );
-        return new RegionLayerInfo(regionData, false, 1, [], null);
+        // let date = new Date();
+        // let regionData = new RegionData(
+        //     mistROI.mistROIItem.ClassificationTrail,
+        //     mistROI.mistROIItem.mineralGroupID,
+        //     mistROI.locationIndexes,
+        //     mistROI.mistROIItem.ClassificationTrail,
+        //     this._selectionService.getCurrentSelection().pixelSelection.imageName,
+        //     new Set(),
+        //     false,
+        //     new ObjectCreator("temp", "temp_id"),
+        //     new RGBA(255,0,255,1),
+        //     new Set(),
+        //     "circle",
+        //     mistROI.mistROIItem,
+        //     false,
+        //     `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear().toString().slice(2)}`
+        // );
+        // return new RegionLayerInfo(regionData, false, 1, [], null);
     }
 
     onUploadROIs(event): void
@@ -134,9 +187,19 @@ export class MistROIComponent implements OnInit
         const dialogRef = this.dialog.open(MistRoiUploadComponent, dialogConfig);
 
         dialogRef.afterClosed().subscribe(
-            (response: {mistROIs: MistROIItem[]; overwriteOption: string;})=>
+            (response: {mistROIs: ROIItem[]; deleteExisting: boolean; overwrite: boolean; skipDuplicates: boolean;})=>
             {
-                this.csvROIs = response.mistROIs.map((mistROI, i) => this.convertMistROIToRegion(mistROI, i));
+                // TODO: Handle delete existing
+                this._roiService.bulkAdd(response.mistROIs, response.overwrite, response.skipDuplicates).subscribe(
+                    ()=>
+                    {
+                        this._selectionService.clearSelection();
+                    },
+                    (err)=>
+                    {
+                        alert(httpErrorToString(err, ""));
+                    }
+                );
                 this.expandedIndices = Array.from(new Set([...this.expandedIndices, 0]));
                 console.log(response);
 
@@ -196,7 +259,7 @@ export class MistROIComponent implements OnInit
         }
         else 
         {
-            let allFullMistROIs = this.csvROIs.filter(roi => roi.roi.mistROIItem.ID_Depth >= 5 && this._selectedROIs.findIndex(selected => selected.roi.id === roi.roi.id) < 0);
+            let allFullMistROIs = this.mistROIs.filter(roi => roi.roi.mistROIItem.ID_Depth >= 5 && this._selectedROIs.findIndex(selected => selected.roi.id === roi.roi.id) < 0);
             this._selectedROIs = [...this._selectedROIs, ...allFullMistROIs];
         }
     }
@@ -215,7 +278,7 @@ export class MistROIComponent implements OnInit
         }
         else 
         {
-            let allPartialMistROIs = this.csvROIs.filter(roi => roi.roi.mistROIItem.ID_Depth < 5 && this._selectedROIs.findIndex(selected => selected.roi.id === roi.roi.id) < 0);
+            let allPartialMistROIs = this.mistROIs.filter(roi => roi.roi.mistROIItem.ID_Depth < 5 && this._selectedROIs.findIndex(selected => selected.roi.id === roi.roi.id) < 0);
             this._selectedROIs = [...this._selectedROIs, ...allPartialMistROIs];
         }
     }
@@ -242,29 +305,24 @@ export class MistROIComponent implements OnInit
     {
         if(confirm(`Are you sure you want to delete ${this._selectedROIs.length} ROIs?`)) 
         {
-            this.csvROIs = this.csvROIs.filter((roi) => this._selectedROIs.findIndex(selected => selected.roi.id === roi.roi.id) < 0);
-        }
-    }
-
-    onNewROI()
-    {
-        this._roiService.makeROI(
-            this._selectionService.getCurrentSelection().beamSelection.locationIndexes,
-            this._selectionService.getCurrentSelection().pixelSelection.selectedPixels,
-            this._selectionService.getCurrentSelection().pixelSelection.imageName,
-            this.dialog
-        ).subscribe(
-            (created: boolean)=>
+            this.mistROIs.forEach((roi =>
             {
-                if(created)
+                if(this._selectedROIs.findIndex(selected => selected.roi.id === roi.roi.id) >= 0)
                 {
-                    this._selectionService.clearSelection();
+                    this._roiService.del(roi.roi.id).subscribe(
+                        ()=>
+                        {
+                            this._selectionService.clearSelection();
+                        },
+                        (err)=>
+                        {
+                            alert(httpErrorToString(err, ""));
+                        }
+                    );
                 }
-            },
-            (err)=>
-            {
-                alert(httpErrorToString(err, ""));
-            }
-        );
+            }));
+
+            this.mistROIs = this.mistROIs.filter((roi) => this._selectedROIs.findIndex(selected => selected.roi.id === roi.roi.id) < 0);
+        }
     }
 }

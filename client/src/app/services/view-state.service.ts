@@ -1467,6 +1467,15 @@ export class ViewStateService
             }
         }
 
+        for(let roiID of this._viewState.rois.roiShapes.keys())
+        {
+            if(validIDs.indexOf(roiID) < 0)
+            {
+                this._viewState.rois.roiShapes.delete(roiID);
+                deleteCount++;
+            }
+        }
+
         // If we made changes...
         if(deleteCount > 0)
         {

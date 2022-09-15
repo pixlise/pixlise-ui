@@ -27,9 +27,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, Inject, OnInit } from "@angular/core";
+import { Component, Inject, OnInit } from "@angular/core";
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
-import { MistROIItem } from "src/app/models/roi";
+import { MistROIItem, ROIItem } from "src/app/models/roi";
 
 export class MistROIUploadData
 {
@@ -49,7 +49,7 @@ export class MistRoiUploadComponent implements OnInit
     public overwriteOption: string = "Over-Write All";
     public overwriteOptions: string[] = ["Over-Write All", "Over-Write ROIs With the Same Name", "Do Not Over-Write"];
     public csvFile: File;
-    public mistROIs: MistROIItem[] = [];
+    public mistROIs: ROIItem[] = [];
 
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: MistROIUploadData,
@@ -79,9 +79,9 @@ export class MistRoiUploadComponent implements OnInit
         this.dialogRef.close(null);
     }
 
-    readInMistROIs(rawCSV: string): MistROIItem[]
+    readInMistROIs(rawCSV: string): ROIItem[]
     {
-        let items: MistROIItem[] = [];
+        let items: ROIItem[] = [];
 
         let expectedHeaders = ["ClassificationTrail", "ID_Depth", "PMC", "group1", "group2", "group3", "group4", "species", "formula"];
         let headers = [];
@@ -101,26 +101,41 @@ export class MistRoiUploadComponent implements OnInit
             {
                 let rawItem = headers.reduce((fields, key, i) => ({...fields, [key]: columns[i] }), {});
 
+                // Convert csv fields to numbers
+                rawItem.PMC = Number(rawItem.PMC);
+                rawItem.ID_Depth = Number(rawItem.ID_Depth);
+
                 // Ignore all rows where nothing was identified
-                if (rawItem.ID_Depth === 0 || rawItem.ClassificationTrail.length === 0) {
+                if(rawItem.ID_Depth === 0 || rawItem.ClassificationTrail.length === 0)
+                {
                     continue;
                 }
 
-                let existingIndex = items.findIndex((item) => item.ClassificationTrail === rawItem.ClassificationTrail);
-                if (existingIndex >= 0)
+                let existingIndex = items.findIndex((item) => item.mistROIItem.ClassificationTrail === rawItem.ClassificationTrail);
+                if(existingIndex >= 0)
                 {
                     items[existingIndex].locationIndexes.push(rawItem.PMC);
                 }
-                else {
+                else
+                {
                     let mineralGroupID = rawItem.ClassificationTrail.substring(rawItem.ClassificationTrail.lastIndexOf(".") + 1);
-                    items.push(new MistROIItem(
-                        rawItem.species,
-                        mineralGroupID,
-                        rawItem.ID_Depth,
-                        rawItem.ClassificationTrail,
-                        rawItem.formula,
-                        [rawItem.PMC]
-                    ));
+                    items.push(
+                        new ROIItem(
+                            mineralGroupID,
+                            [rawItem.PMC],
+                            rawItem.ClassificationTrail,
+                            null,
+                            null,
+                            new MistROIItem(
+                                rawItem.species,
+                                mineralGroupID,
+                                rawItem.ID_Depth,
+                                rawItem.ClassificationTrail,
+                                rawItem.formula,
+                                false
+                            )
+                        )
+                    );
                 }
             }
         }
@@ -137,8 +152,13 @@ export class MistRoiUploadComponent implements OnInit
     {
         if(this.mistROIs.length > 0) 
         {
+            let deleteExisting = this.overwriteOption === "Over-Write All";
+            let overwrite = deleteExisting || this.overwriteOption === "Over-Write ROIs With the Same Name";
+            let skipDuplicates = this.overwriteOption === "Do Not Over-Write";
             this.dialogRef.close({
-                overwriteOption: this.overwriteOption,
+                deleteExisting,
+                overwrite,
+                skipDuplicates,
                 mistROIs: this.mistROIs
             });
         }

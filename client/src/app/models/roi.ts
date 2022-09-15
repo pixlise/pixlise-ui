@@ -38,7 +38,7 @@ export class MistROIItem
         public ID_Depth: number,
         public ClassificationTrail: string,
         public formula: string,
-        public locationIndexes: number[]
+        public isStandardROI: boolean = false
     )
     {
     }
