@@ -1522,7 +1522,7 @@ export class ViewStateService
         }
         else
         {
-            this._viewState.rois.roiColours.set(roiID, shape);
+            this._viewState.rois.roiShapes.set(roiID, shape);
         }
         let t1 = performance.now();
         // Publish this straight away
@@ -1537,10 +1537,15 @@ export class ViewStateService
 
     private saveROI(): void
     {
-        let roiObj = { "roiColours": {}};
+        let roiObj = { "roiColours": {}, "roiShapes": {} };
         for(let [k, v] of this._viewState.rois.roiColours)
         {
             roiObj["roiColours"][k] = v;
+        }
+
+        for(let [k, v] of this._viewState.rois.roiShapes)
+        {
+            roiObj["roiShapes"][k] = v;
         }
         this.save(roiObj, "roi");
     }

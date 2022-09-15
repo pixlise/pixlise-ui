@@ -52,7 +52,7 @@ export class TernaryDataItem
 
 export class TernaryDataColour
 {
-    constructor(public colour: RGBA, public values: TernaryDataItem[])
+    constructor(public colour: RGBA, public shape: string, public values: TernaryDataItem[])
     {
     }
 }

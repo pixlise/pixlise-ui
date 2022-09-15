@@ -47,6 +47,7 @@ export class VariogramPointGroup
 {
     constructor(
         public colour: RGBA,
+        public shape: string,
         public points: VariogramPoint[],
         public valueRange: MinMax,
     )

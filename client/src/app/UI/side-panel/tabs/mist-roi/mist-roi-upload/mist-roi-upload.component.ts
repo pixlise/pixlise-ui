@@ -83,7 +83,7 @@ export class MistRoiUploadComponent implements OnInit
     {
         let items: MistROIItem[] = [];
 
-        let expectedHeaders = ["speciesLevelID", "mineralGroupID", "identificationDepth", "classificationTrail"];
+        let expectedHeaders = ["ClassificationTrail", "ID_Depth", "PMC", "group1", "group2", "group3", "group4", "species", "formula"];
         let headers = [];
         for(let [i, line] of rawCSV.trim().split("\n").entries())
         {
@@ -97,18 +97,34 @@ export class MistRoiUploadComponent implements OnInit
                     return [];
                 }
             }
-            else 
+            else
             {
                 let rawItem = headers.reduce((fields, key, i) => ({...fields, [key]: columns[i] }), {});
-                items.push(new MistROIItem(
-                    rawItem.speciesLevelID,
-                    rawItem.mineralGroupID,
-                    rawItem.identificationDepth,
-                    rawItem.classificationTrail
-                ));
+
+                // Ignore all rows where nothing was identified
+                if (rawItem.ID_Depth === 0 || rawItem.ClassificationTrail.length === 0) {
+                    continue;
+                }
+
+                let existingIndex = items.findIndex((item) => item.ClassificationTrail === rawItem.ClassificationTrail);
+                if (existingIndex >= 0)
+                {
+                    items[existingIndex].locationIndexes.push(rawItem.PMC);
+                }
+                else {
+                    let mineralGroupID = rawItem.ClassificationTrail.substring(rawItem.ClassificationTrail.lastIndexOf(".") + 1);
+                    items.push(new MistROIItem(
+                        rawItem.species,
+                        mineralGroupID,
+                        rawItem.ID_Depth,
+                        rawItem.ClassificationTrail,
+                        rawItem.formula,
+                        [rawItem.PMC]
+                    ));
+                }
             }
         }
-
+        console.log(items);
         return items;
     }
 

@@ -74,6 +74,7 @@ export class ROIPickerComponent implements OnInit
 
     fullDatasetROI: ROISettingsItem;
     remainingPointsROI: ROISettingsItem;
+    mistROIs: ROISettingsItem[] = [];
     userROIs: ROISettingsItem[] = [];
     sharedROIs: ROISettingsItem[] = [];
 
@@ -134,7 +135,7 @@ export class ROIPickerComponent implements OnInit
                         );
                     }
                 }
-
+                this.mistROIs = [];
                 this.userROIs = [];
                 this.sharedROIs = [];
                 for(let roi of rois.values())
@@ -163,7 +164,11 @@ export class ROIPickerComponent implements OnInit
                             shape
                         );
 
-                        if(roi.shared)
+                        if(roi.mistROIItem && roi.mistROIItem !== null)
+                        {
+                            this.mistROIs.push(newROI);
+                        }
+                        else if(roi.shared)
                         {
                             this.sharedROIs.push(newROI);
                         }

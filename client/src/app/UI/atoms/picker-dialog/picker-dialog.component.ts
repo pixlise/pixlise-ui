@@ -232,11 +232,7 @@ export class PickerDialogComponent implements OnInit
     isEnabled(item: PickerDialogItem): boolean
     {
         // If it's disabled, but selected, don't disable!
-        if(this._selectedIds.indexOf(item.id) >= 0)
-        {
-            return true;
-        }
-        return item.enabled;
+        return this._selectedIds.includes(item.id) || this.data.initialSelectedIds.includes(item.id) || item.enabled;
     }
 
     //this.dialogRef.close(null);

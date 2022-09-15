@@ -110,7 +110,7 @@ export class RegionItemSettingsComponent implements OnInit
 
     get shape(): string
     {
-        return this.shape;
+        return this._shape;
     }
 
     getAtomicNumber(elemSymbol: string): number
@@ -122,10 +122,6 @@ export class RegionItemSettingsComponent implements OnInit
     {
         const dialogConfig = new MatDialogConfig();
         dialogConfig.backdropClass = "empty-overlay-backdrop";
-        //dialogConfig.panelClass = "panel";
-        //dialogConfig.disableClose = true;
-        //dialogConfig.autoFocus = true;
-        //dialogConfig.width = '1200px';
 
         let usedColours = this._viewStateService.getInUseROIColours();
         let items = PickerDialogData.getStandardColourChoices(usedColours);
@@ -167,23 +163,19 @@ export class RegionItemSettingsComponent implements OnInit
     {
         const dialogConfig = new MatDialogConfig();
         dialogConfig.backdropClass = "empty-overlay-backdrop";
-        //dialogConfig.panelClass = "panel";
-        //dialogConfig.disableClose = true;
-        //dialogConfig.autoFocus = true;
-        //dialogConfig.width = '1200px';
 
         let usedShapes = this._viewStateService.getInUseROIShapes();
         let items = PickerDialogData.getStandardShapeChoices(usedShapes);
 
         // Find the colour we're currently set to
-        let curr: string[] = [];
+        let currentShape: string[] = [];
 
-        if(this._colourRGB && this._colourRGB.length > 0)
+        if(this._shape && this._shape.length > 0)
         {
-            curr.push(this._colourRGB);
+            currentShape.push(this._shape);
         }
 
-        dialogConfig.data = new PickerDialogData(false, true, false, false, items, curr, "This shape is applied to a different ROI", new ElementRef(event.currentTarget));
+        dialogConfig.data = new PickerDialogData(false, true, false, false, items, currentShape, "This shape is applied to a different ROI", new ElementRef(event.currentTarget));
 
         const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
         dialogRef.componentInstance.onSelectedIdsChanged.subscribe(
@@ -198,7 +190,7 @@ export class RegionItemSettingsComponent implements OnInit
                 // Save this colour
                 if(!this._viewStateService.setROIShape(this.item.roiID, shape))
                 {
-                    alert("Failed to save colour setting \""+shape+"\" for ROI: \""+this.item.roiID+"\"");
+                    alert("Failed to save shape setting \""+shape+"\" for ROI: \""+this.item.roiID+"\"");
                 }
                 else
                 {

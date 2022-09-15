@@ -30,14 +30,15 @@
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { arraysEqual } from "src/app/utils/utils";
 
-// TODO: Update based on CSV
 export class MistROIItem
 {
     constructor(
-        public speciesLevelID: string,
+        public species: string,
         public mineralGroupID: string,
-        public identificationDepth: number,
-        public classificationTrail: string,
+        public ID_Depth: number,
+        public ClassificationTrail: string,
+        public formula: string,
+        public locationIndexes: number[]
     )
     {
     }

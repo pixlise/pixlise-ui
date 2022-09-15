@@ -96,28 +96,29 @@ export class MistROIComponent implements OnInit
 
     get fullyIdentifiedMistROIs(): RegionLayerInfo[]
     {
-        return this.csvROIs.filter(region => region.roi.mistROIItem?.identificationDepth >= 5);
+        return this.csvROIs.filter(region => region.roi.mistROIItem?.ID_Depth >= 5);
     }
 
     get groupIdentifiedMistROIs(): RegionLayerInfo[]
     {
-        return this.csvROIs.filter(region => region.roi.mistROIItem?.identificationDepth < 5).sort((roiA, roiB) => roiB.roi.mistROIItem.identificationDepth - roiA.roi.mistROIItem.identificationDepth);
+        return this.csvROIs.filter(region => region.roi.mistROIItem?.ID_Depth < 5).sort((roiA, roiB) => roiB.roi.mistROIItem.ID_Depth - roiA.roi.mistROIItem.ID_Depth);
     }
 
     convertMistROIToRegion(mistROI: MistROIItem, index: number)
     {
         let date = new Date();
         let regionData = new RegionData(
-            `${mistROI.speciesLevelID}.${index}`,
-            mistROI.speciesLevelID,
-            [],
-            mistROI.classificationTrail,
+            `${mistROI.mineralGroupID}.${index}`,
+            mistROI.mineralGroupID,
+            mistROI.locationIndexes,
+            mistROI.ClassificationTrail,
             this._selectionService.getCurrentSelection().pixelSelection.imageName,
             new Set(),
             false,
             new ObjectCreator("temp", "temp_id"),
             new RGBA(255,0,255,1),
             new Set(),
+            "circle",
             mistROI,
             false,
             `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear().toString().slice(2)}`
@@ -191,11 +192,11 @@ export class MistROIComponent implements OnInit
     {
         if(this.isAllFullyIdentifiedMistROIsChecked) 
         {
-            this._selectedROIs = this._selectedROIs.filter(roi => roi.roi.mistROIItem.identificationDepth < 5);
+            this._selectedROIs = this._selectedROIs.filter(roi => roi.roi.mistROIItem.ID_Depth < 5);
         }
         else 
         {
-            let allFullMistROIs = this.csvROIs.filter(roi => roi.roi.mistROIItem.identificationDepth >= 5 && this._selectedROIs.findIndex(selected => selected.roi.id === roi.roi.id) < 0);
+            let allFullMistROIs = this.csvROIs.filter(roi => roi.roi.mistROIItem.ID_Depth >= 5 && this._selectedROIs.findIndex(selected => selected.roi.id === roi.roi.id) < 0);
             this._selectedROIs = [...this._selectedROIs, ...allFullMistROIs];
         }
     }
@@ -210,11 +211,11 @@ export class MistROIComponent implements OnInit
     {
         if(this.isAllGroupIdentifiedMistROIsChecked) 
         {
-            this._selectedROIs = this._selectedROIs.filter(roi => roi.roi.mistROIItem.identificationDepth >= 5);
+            this._selectedROIs = this._selectedROIs.filter(roi => roi.roi.mistROIItem.ID_Depth >= 5);
         }
         else 
         {
-            let allPartialMistROIs = this.csvROIs.filter(roi => roi.roi.mistROIItem.identificationDepth < 5 && this._selectedROIs.findIndex(selected => selected.roi.id === roi.roi.id) < 0);
+            let allPartialMistROIs = this.csvROIs.filter(roi => roi.roi.mistROIItem.ID_Depth < 5 && this._selectedROIs.findIndex(selected => selected.roi.id === roi.roi.id) < 0);
             this._selectedROIs = [...this._selectedROIs, ...allPartialMistROIs];
         }
     }
