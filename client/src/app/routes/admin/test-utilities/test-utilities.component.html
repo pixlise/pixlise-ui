@@ -46,5 +46,11 @@ POSSIBILITY OF SUCH DAMAGE.
         <push-button (onClick)="onTest500()">Test server 500</push-button>
         <push-button (onClick)="onTest503()">Test server 503</push-button>
         <push-button (onClick)="onTest404()">Test server 404</push-button>
+
+        <h2>Log Level</h2>
+        <mat-select [(ngModel)]="logLevel">
+            <mat-option *ngFor="let level of logLevels" [value]="level">{{level}}</mat-option>
+        </mat-select>
+        <push-button (onClick)="onLogLevelChanged()">Set Log Level</push-button>
     </div>
 </div>

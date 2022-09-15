@@ -32,7 +32,6 @@
 
 .content {
     background-color: $ui-panel-title-colour;
-    border-radius: $sz-unit;
     padding: $sz-double;
 }
 
@@ -46,4 +45,8 @@ label {
 
 input {
     width: 200px;
+}
+
+.mat-select {
+    width: 150px !important;
 }
