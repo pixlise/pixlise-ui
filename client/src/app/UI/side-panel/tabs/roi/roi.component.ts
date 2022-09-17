@@ -95,6 +95,11 @@ export class ROIComponent implements OnInit
         ));
     }
 
+    checkVisibleRegion(region: RegionLayerInfo)
+    {
+        return !region?.roi?.mistROIItem || region.roi.mistROIItem.ClassificationTrail === "" || region.roi.mistROIItem.isStandardROI;
+    }
+
     onGotModel(): void
     {
         // Listen to what layers exist...
@@ -104,11 +109,14 @@ export class ROIComponent implements OnInit
                 let regions = this.getRegionManager().getDisplayedRegions(change.regions);
                 let roiIDs: Set<string> = new Set<string>();
 
-                for(let region of regions)
+                regions.forEach(region => 
                 {
-                    this.setROI(region);
-                    roiIDs.add(region.roi.id);
-                }
+                    if(this.checkVisibleRegion(region))
+                    {
+                        this.setROI(region);
+                        roiIDs.add(region.roi.id);
+                    }
+                });
 
                 // Delete any that we didn't see in the new update
                 this.deleteROIsNotInList(roiIDs);

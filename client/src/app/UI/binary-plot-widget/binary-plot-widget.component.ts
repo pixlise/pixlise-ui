@@ -425,7 +425,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                         roiIdForKey = "";
                     }
 
-                    this.keyItems.push(new KeyItem(roiIdForKey, region.name, region.colour));
+                    this.keyItems.push(new KeyItem(roiIdForKey, region.name, region.colour, null, region.shape));
                 }
 
                 if(resultX.values.values.length != resultY.values.values.length)

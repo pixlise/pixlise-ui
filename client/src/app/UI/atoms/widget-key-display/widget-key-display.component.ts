@@ -35,7 +35,7 @@ export class KeyItem
 {
     colour: string;
 
-    constructor(public id: string, public label: string, colourRGB: RGBA|string, public dashPattern: number[] = null)
+    constructor(public id: string, public label: string, colourRGB: RGBA|string, public dashPattern: number[] = null, public shape: string = "")
     {
         let colourRGBA: RGBA = null;
 

@@ -34,7 +34,7 @@ import { getQuantifiedDataWithExpression } from "src/app/expression-language/exp
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
 import { QuantificationLayer } from "src/app/models/Quantifications";
-import { MistROIItem, PredefinedROIID, ROISavedItem } from "src/app/models/roi";
+import { MistROIItem, PredefinedROIID, ROIItem, ROISavedItem } from "src/app/models/roi";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
 import { DataSetService } from "src/app/services/data-set.service";
@@ -99,6 +99,18 @@ export class RegionData extends ROISavedItem
     )
     {
         super(id, name, locationIndexes, description, imageName, pixelIndexes, shared, creator, mistROIItem, visible, dateAdded);
+    }
+
+    convertToROIItem()
+    {
+        return new ROIItem(
+            this.name,
+            this.locationIndexes,
+            this.description,
+            this.imageName,
+            Array.from(this.pixelIndexes),
+            this.mistROIItem
+        );
     }
 
     // TODO: this is pretty dodgy, there must be a better way. Quickly tried casting RegoinData as ROISavedItem and assignment

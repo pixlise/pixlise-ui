@@ -73,12 +73,9 @@ export class MistRoiConvertComponent implements OnInit
     {
         if(this.selectedROIs.length > 0) 
         {
-            if(shareROIs) 
-            {
-                // Convert + Share
-            }
-            console.log(this.selectedROIs);
-            this.dialogRef.close();
+            this.dialogRef.close({
+                shareROIs
+            });
         }
     }
 }

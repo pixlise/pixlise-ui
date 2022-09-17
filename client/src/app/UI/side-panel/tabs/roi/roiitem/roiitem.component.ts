@@ -256,7 +256,7 @@ export class ROIItemComponent implements OnInit
 
     get labelToShow(): string
     {
-        return this.regionLayer.roi.name;
+        return this.regionLayer.roi.name.replace("mist__roi.", "");
     }
 
     get sharedBy(): string
@@ -317,17 +317,16 @@ export class ROIItemComponent implements OnInit
             [
                 new UserPromptDialogStringItem(
                     "Name",
-                    (val: string)=>{return val.length > 0;},
+                    (val: string) => val.length > 0,
                     existingROI.name
                 ),
                 new UserPromptDialogStringItem(
                     "Description",
-                    (val: string)=>{return true;},
+                    () => true,
                     existingROI.description
                 ),
             ]
         );
-        existingROI.id, existingROI.name, existingROI.description;
         const dialogRef = this.dialog.open(UserPromptDialogComponent, dialogConfig);
 
         dialogRef.afterClosed().subscribe(
@@ -344,8 +343,9 @@ export class ROIItemComponent implements OnInit
                             roiName,
                             existingROI.locationIndexes,
                             roiDescription,
-                            "",
-                            []
+                            existingROI.imageName,
+                            Array.from(existingROI.pixelIndexes),
+                            existingROI.mistROIItem
                         )
                     ).subscribe(
                         ()=>

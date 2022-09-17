@@ -28,7 +28,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, Inject, OnInit } from "@angular/core";
-import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog"
+
+import papa from "papaparse";
+
 import { MistROIItem, ROIItem } from "src/app/models/roi";
 
 export class MistROIUploadData
@@ -84,62 +87,63 @@ export class MistRoiUploadComponent implements OnInit
         let items: ROIItem[] = [];
 
         let expectedHeaders = ["ClassificationTrail", "ID_Depth", "PMC", "group1", "group2", "group3", "group4", "species", "formula"];
-        let headers = [];
-        for(let [i, line] of rawCSV.trim().split("\n").entries())
+
+        let rows = papa.parse(rawCSV);
+        let headers = rows.data.length > 0 ? rows.data[0] : [];
+        if(headers.filter(header => expectedHeaders.includes(header)).length !== expectedHeaders.length) 
         {
-            let columns = line.split(",").map(col => col.trim());
-            if(i === 0) 
+            alert("Malformed Mist ROI CSV! Unexpected headers found.");
+            return [];
+        }
+
+        for(let row of rows.data.slice(1))
+        {
+            let rawItem = headers.reduce((fields, key, i) => ({...fields, [key]: row[i] }), {});
+
+            // Convert csv fields to numbers
+            rawItem.PMC = Number(rawItem.PMC);
+            rawItem.ID_Depth = Number(rawItem.ID_Depth);
+
+            // Ignore all rows where nothing was identified
+            if(rawItem.ID_Depth === 0 || rawItem.ClassificationTrail.length === 0)
             {
-                headers = columns;
-                if(headers.filter(header => expectedHeaders.includes(header)).length !== expectedHeaders.length) 
-                {
-                    alert("Malformed Mist ROI CSV! Unexpected headers found.");
-                    return [];
-                }
+                continue;
+            }
+
+            let existingIndex = items.findIndex((item) => item.mistROIItem.ClassificationTrail === rawItem.ClassificationTrail);
+            if(existingIndex >= 0)
+            {
+                items[existingIndex].locationIndexes.push(rawItem.PMC);
             }
             else
             {
-                let rawItem = headers.reduce((fields, key, i) => ({...fields, [key]: columns[i] }), {});
+                let mineralGroupID = rawItem.ClassificationTrail.substring(rawItem.ClassificationTrail.lastIndexOf(".") + 1);
 
-                // Convert csv fields to numbers
-                rawItem.PMC = Number(rawItem.PMC);
-                rawItem.ID_Depth = Number(rawItem.ID_Depth);
-
-                // Ignore all rows where nothing was identified
-                if(rawItem.ID_Depth === 0 || rawItem.ClassificationTrail.length === 0)
-                {
-                    continue;
-                }
-
-                let existingIndex = items.findIndex((item) => item.mistROIItem.ClassificationTrail === rawItem.ClassificationTrail);
-                if(existingIndex >= 0)
-                {
-                    items[existingIndex].locationIndexes.push(rawItem.PMC);
-                }
-                else
-                {
-                    let mineralGroupID = rawItem.ClassificationTrail.substring(rawItem.ClassificationTrail.lastIndexOf(".") + 1);
-                    items.push(
-                        new ROIItem(
+                // There are occcasionally duplicate mineralGroupIDs, so we need to check if any already exist and use
+                // the unique classification trail as a name if one already exists
+                // Adding the "mist__roi." prefix so we can duplicate a MIST ROI into a "regular" ROI and keep the same name
+                let name = rawItem.species && rawItem.species.length > 0 ? rawItem.species : mineralGroupID;
+                let existingName = items.findIndex((item) => item.name.replace("mist__roi.", "") === name) >= 0;
+                items.push(
+                    new ROIItem(
+                        `mist__roi.${existingName ? rawItem.ClassificationTrail : name}`,
+                        [rawItem.PMC],
+                        rawItem.ClassificationTrail,
+                        null,
+                        null,
+                        new MistROIItem(
+                            rawItem.species,
                             mineralGroupID,
-                            [rawItem.PMC],
+                            rawItem.ID_Depth,
                             rawItem.ClassificationTrail,
-                            null,
-                            null,
-                            new MistROIItem(
-                                rawItem.species,
-                                mineralGroupID,
-                                rawItem.ID_Depth,
-                                rawItem.ClassificationTrail,
-                                rawItem.formula,
-                                false
-                            )
+                            rawItem.formula,
+                            false
                         )
-                    );
-                }
+                    )
+                );
             }
         }
-        console.log(items);
+
         return items;
     }
 

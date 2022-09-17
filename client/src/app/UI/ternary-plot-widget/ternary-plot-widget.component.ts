@@ -418,7 +418,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                         roiIdForKey = "";
                     }
 
-                    this.keyItems.push(new KeyItem(roiIdForKey, region.name, region.colour));
+                    this.keyItems.push(new KeyItem(roiIdForKey, region.name, region.colour, null, region.shape));
 
                     for(let c = 0; c < pointGroup.values.length; c++)
                     {

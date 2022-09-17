@@ -34,7 +34,7 @@ import { ObjectCreator } from "src/app/models/BasicTypes";
 import { MistROIItem, ROIItem } from "src/app/models/roi";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataSetService } from "src/app/services/data-set.service";
-import { ROIService } from "src/app/services/roi.service";
+import { ROIReference, ROIService } from "src/app/services/roi.service";
 import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
 import { RegionData } from "src/app/services/widget-region-data.service";
 import { UserPromptDialogParams, UserPromptDialogStringItem } from "src/app/UI/atoms/user-prompt-dialog/user-prompt-dialog.component";
@@ -116,7 +116,7 @@ export class MistROIComponent implements OnInit
                 let roiIDs: Set<string> = new Set<string>();
                 for(let region of regions)
                 {
-                    if(region.roi.mistROIItem) 
+                    if(region.roi?.mistROIItem) 
                     {
                         this.setROI(region);
                         roiIDs.add(region.roi.id);
@@ -157,28 +157,6 @@ export class MistROIComponent implements OnInit
         return this.mistROIs.filter(region => region.roi.mistROIItem?.ID_Depth < 5).sort((roiA, roiB) => roiB.roi.mistROIItem.ID_Depth - roiA.roi.mistROIItem.ID_Depth);
     }
 
-    convertMistROIToRegion(mistROI: ROIItem)
-    {
-        // let date = new Date();
-        // let regionData = new RegionData(
-        //     mistROI.mistROIItem.ClassificationTrail,
-        //     mistROI.mistROIItem.mineralGroupID,
-        //     mistROI.locationIndexes,
-        //     mistROI.mistROIItem.ClassificationTrail,
-        //     this._selectionService.getCurrentSelection().pixelSelection.imageName,
-        //     new Set(),
-        //     false,
-        //     new ObjectCreator("temp", "temp_id"),
-        //     new RGBA(255,0,255,1),
-        //     new Set(),
-        //     "circle",
-        //     mistROI.mistROIItem,
-        //     false,
-        //     `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear().toString().slice(2)}`
-        // );
-        // return new RegionLayerInfo(regionData, false, 1, [], null);
-    }
-
     onUploadROIs(event): void
     {
         const dialogConfig = new MatDialogConfig();
@@ -189,8 +167,11 @@ export class MistROIComponent implements OnInit
         dialogRef.afterClosed().subscribe(
             (response: {mistROIs: ROIItem[]; deleteExisting: boolean; overwrite: boolean; skipDuplicates: boolean;})=>
             {
-                // TODO: Handle delete existing
-                this._roiService.bulkAdd(response.mistROIs, response.overwrite, response.skipDuplicates).subscribe(
+                if(!response || !response?.mistROIs)
+                {
+                    return;
+                }
+                this._roiService.bulkAdd(response.mistROIs, response.overwrite, response.skipDuplicates, response.deleteExisting, true).subscribe(
                     ()=>
                     {
                         this._selectionService.clearSelection();
@@ -201,9 +182,6 @@ export class MistROIComponent implements OnInit
                     }
                 );
                 this.expandedIndices = Array.from(new Set([...this.expandedIndices, 0]));
-                console.log(response);
-
-                // TODO: Handle different overwrite options - need to hook up to API first and get existing Mist ROIs
             }
         );
     }
@@ -216,9 +194,27 @@ export class MistROIComponent implements OnInit
         const dialogRef = this.dialog.open(MistRoiConvertComponent, dialogConfig);
 
         dialogRef.afterClosed().subscribe(
-            (response)=>
+            (response: {shareROIs: boolean;})=>
             {
-                console.log(response);
+                let roiItems: ROIItem[] = this._selectedROIs.map((region) =>
+                {
+                    let roiItem = region.roi.convertToROIItem();
+                    roiItem.name = roiItem.name.replace("mist__roi.", "");
+                    roiItem.mistROIItem = null;
+                    
+                    return roiItem;
+                });
+
+                this._roiService.bulkAdd(roiItems, false, false, false, response.shareROIs).subscribe(
+                    ()=>
+                    {
+                        this._selectionService.clearSelection();
+                    },
+                    (err)=>
+                    {
+                        alert(httpErrorToString(err, ""));
+                    }
+                );
             }
         );
     }
@@ -305,24 +301,20 @@ export class MistROIComponent implements OnInit
     {
         if(confirm(`Are you sure you want to delete ${this._selectedROIs.length} ROIs?`)) 
         {
-            this.mistROIs.forEach((roi =>
-            {
-                if(this._selectedROIs.findIndex(selected => selected.roi.id === roi.roi.id) >= 0)
+            let roiIDs = this.mistROIs.filter((roi) => this._selectedROIs.findIndex(selected => selected.roi.id === roi.roi.id) >= 0).map(roi => roi.roi.id);
+            this._roiService.bulkDelete(roiIDs).subscribe(
+                ()=>
                 {
-                    this._roiService.del(roi.roi.id).subscribe(
-                        ()=>
-                        {
-                            this._selectionService.clearSelection();
-                        },
-                        (err)=>
-                        {
-                            alert(httpErrorToString(err, ""));
-                        }
-                    );
+                    this._selectionService.clearSelection();
+                },
+                (err)=>
+                {
+                    alert(httpErrorToString(err, ""));
                 }
-            }));
+            );
 
             this.mistROIs = this.mistROIs.filter((roi) => this._selectedROIs.findIndex(selected => selected.roi.id === roi.roi.id) < 0);
+            this._selectedROIs = [];
         }
     }
 }

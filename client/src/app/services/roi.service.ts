@@ -59,6 +59,16 @@ export class ROISavedItemWire
     }
 }
 
+export class ROIReference
+{
+    constructor(
+        public id: string,
+        public roi: ROIItem
+    )
+    {
+    }
+}
+
 
 
 @Injectable({
@@ -312,12 +322,9 @@ export class ROIService
 
     add(item: ROIItem): Observable<void>
     {
-        // TODO: validate name, should be URL compatible
-        // TODO: warn about overwrite??
-
         let loadID = this._loadingSvc.add("Saving new ROI...");
-
         let apiURL = this.makeURL(this.getDatasetID(), null); 
+
         return this.http.post<void>(apiURL, item, makeHeaders()).pipe(
             tap(
                 ()=>
@@ -333,42 +340,46 @@ export class ROIService
         );
     }
 
-    bulkAdd(roiItems: ROIItem[], overwrite: boolean = false, skipDuplicates: boolean = false): Observable<void | unknown[]>
+    bulkAdd(roiItems: ROIItem[], overwrite: boolean = false, skipDuplicates: boolean = false, deleteExistingMistROIs: boolean = false, shareROIs: boolean = false): Observable<void | unknown[]>
     {
         let loadID = this._loadingSvc.add(`Saving ${roiItems.length} new ROIs...`);
         let apiURL = this.makeURL(this.getDatasetID(), "bulk"); 
 
-        return this.http.post<void>(apiURL, { roiItems, overwrite, skipDuplicates }, makeHeaders()).pipe(
+        return this.http.post<void>(apiURL, { roiItems, overwrite, skipDuplicates, deleteExistingMistROIs, shareROIs }, makeHeaders()).pipe(
             tap(
                 () =>
                 {
+                    this.refreshROIList();
                     this._loadingSvc.remove(loadID);
                 },
                 (err) =>
                 {
                     console.error("Error occurred bulk saving ROIs", err);
+                    this.refreshROIList();
                     this._loadingSvc.remove(loadID);
                 }   
             )
         );
-        // let tasks$ = [];
-        // items.forEach((item) =>
-        // {
-        //     tasks$.push(this.http.post<void>(apiURL, item, makeHeaders()));
-        // });
-        // return forkJoin(tasks$).pipe(
-        //     tap(
-        //         () =>
-        //         {
-        //             this._loadingSvc.remove(loadID);
-        //         },
-        //         (err) =>
-        //         {
-        //             console.error("Error occurred bulk saving ROIs", err);
-        //             this._loadingSvc.remove(loadID);
-        //         }
-        //     )
-        // );
+    }
+
+    bulkUpdate(roiReferences: ROIReference[])
+    {
+        let loadID = this._loadingSvc.add(`Saving ${roiReferences.length} changed ROIs...`);
+        let apiURL = this.makeURL(this.getDatasetID(), "bulk");
+        return this.http.put<void>(apiURL, roiReferences, makeHeaders()).pipe(
+            tap(
+                ()=>
+                {
+                    this.refreshROIList();
+                    this._loadingSvc.remove(loadID);
+                },
+                ()=>
+                {
+                    this.refreshROIList();
+                    this._loadingSvc.remove(loadID);
+                }
+            )
+        );
     }
 
     update(id: string, item: ROIItem): Observable<void>
@@ -379,20 +390,42 @@ export class ROIService
             tap(
                 ()=>
                 {
+                    this.refreshROIList();
                     this._loadingSvc.remove(loadID);
                 },
-                (err)=>
+                ()=>
                 {
                     this._loadingSvc.remove(loadID);
                 }
             )
         );
     }
+    
+    bulkDelete(ids: string[]): Observable<void | ArrayBuffer>
+    {
+        let loadID = this._loadingSvc.add(`Deleting ${ids.length} ROIs...`);
+        let apiURL = this.makeURL(this.getDatasetID(), "bulk");
+        return this.http.request<void>("delete", apiURL, { body: { ids }, ...makeHeaders() }).pipe(
+            tap(
+                ()=>
+                {
+                    this.refreshROIList();
+                    this._loadingSvc.remove(loadID);
+                },
+                (err)=>
+                {
+                    this.refreshROIList();
+                    this._loadingSvc.remove(loadID);
+                }
+            )
+        );
+    }
 
-    del(id: string): Observable<void>
+    del(id: string): Observable<void | ArrayBuffer>
     {
         let loadID = this._loadingSvc.add("Deleting ROI...");
         let apiURL = this.makeURL(this.getDatasetID(), id);
+
         return this.http.delete<void>(apiURL, makeHeaders()).pipe(
             tap(
                 ()=>
@@ -407,18 +440,37 @@ export class ROIService
         );
     }
 
-    share(id: string): Observable<string>
+    bulkShare(roiReferences: ROIReference[])
     {
-        let loadID = this._loadingSvc.add("Sharing ROI...");
-        let apiURL = APIPaths.getWithHost(APIPaths.api_share+"/"+APIPaths.api_roi+"/"+this.getDatasetID()+"/"+id);
-        return this.http.post<string>(apiURL, "", makeHeaders()).pipe(
+        let loadID = this._loadingSvc.add(`Sharing ${roiReferences.length} ROIs...`);
+        let apiURL = APIPaths.getWithHost(`${APIPaths.api_share}/${APIPaths.api_roi}/${this.getDatasetID()}/bulk`);
+        return this.http.post<string>(apiURL, roiReferences, makeHeaders()).pipe(
             tap(
-                (ev)=>
+                ()=>
                 {
                     this._loadingSvc.remove(loadID);
                     this.refreshROIList();
                 },
-                (err)=>
+                ()=>
+                {
+                    this._loadingSvc.remove(loadID);
+                }
+            )
+        );
+    }
+
+    share(id: string): Observable<string>
+    {
+        let loadID = this._loadingSvc.add("Sharing ROI...");
+        let apiURL = APIPaths.getWithHost(`${APIPaths.api_share}/${APIPaths.api_roi}/${this.getDatasetID()}/${id}`);
+        return this.http.post<string>(apiURL, "", makeHeaders()).pipe(
+            tap(
+                ()=>
+                {
+                    this._loadingSvc.remove(loadID);
+                    this.refreshROIList();
+                },
+                ()=>
                 {
                     this._loadingSvc.remove(loadID);
                 }

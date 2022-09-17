@@ -85,7 +85,7 @@ export class RegionItemSettingsComponent implements OnInit
 
     get label(): string
     {
-        return this.item.label;
+        return this.item.label.replace("mist__roi.", "");
     }
 
     get sharedBy(): string
