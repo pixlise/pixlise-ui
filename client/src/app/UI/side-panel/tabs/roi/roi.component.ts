@@ -97,7 +97,7 @@ export class ROIComponent implements OnInit
 
     checkVisibleRegion(region: RegionLayerInfo)
     {
-        return !region?.roi?.mistROIItem || region.roi.mistROIItem.ClassificationTrail === "" || region.roi.mistROIItem.isStandardROI;
+        return !region?.roi?.mistROIItem || region.roi.mistROIItem.ClassificationTrail === "";
     }
 
     onGotModel(): void

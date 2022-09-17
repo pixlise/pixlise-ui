@@ -186,7 +186,8 @@ export class ROIService
         this.http.get<Map<string, ROISavedItemWire>>(apiURL, makeHeaders()).subscribe((response: Map<string, ROISavedItemWire>)=>
         {
             let rois: Map<string, ROISavedItem> = new Map<string, ROISavedItem>();
-            Object.entries(response).forEach(([roiID, roi]) => {
+            Object.entries(response).forEach(([roiID, roi]) =>
+            {
                 let mistROI = null;
                 if(roi.mistROIItem && roi.mistROIItem?.ClassificationTrail.length > 0)
                 {
@@ -195,8 +196,7 @@ export class ROIService
                         roi.mistROIItem.mineralGroupID,
                         roi.mistROIItem.ID_Depth,
                         roi.mistROIItem.ClassificationTrail,
-                        roi.mistROIItem.formula,
-                        roi.mistROIItem.isStandardROI
+                        roi.mistROIItem.formula
                     );
                 }
                 rois.set(roiID, new ROISavedItem(

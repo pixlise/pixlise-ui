@@ -37,8 +37,7 @@ export class MistROIItem
         public mineralGroupID: string,
         public ID_Depth: number,
         public ClassificationTrail: string,
-        public formula: string,
-        public isStandardROI: boolean = false
+        public formula: string
     )
     {
     }

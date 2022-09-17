@@ -136,8 +136,7 @@ export class MistRoiUploadComponent implements OnInit
                             mineralGroupID,
                             rawItem.ID_Depth,
                             rawItem.ClassificationTrail,
-                            rawItem.formula,
-                            false
+                            rawItem.formula
                         )
                     )
                 );
