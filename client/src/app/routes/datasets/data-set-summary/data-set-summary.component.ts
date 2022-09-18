@@ -47,8 +47,6 @@ export class DataSetSummaryComponent implements OnInit
     @Input() selected: DataSetSummary = null;
     @Output() onSelect = new EventEmitter();
 
-    thumbImageData: string = null;
-
     private _title: string = "";
     private _missingData: string = "";
 
@@ -60,20 +58,6 @@ export class DataSetSummaryComponent implements OnInit
 
     ngOnInit()
     {
-        // Download our context image as base 64 string, so it can be displayed
-        if(this.summary.context_image_link.length > 0)
-        {
-            this._subs.add(this.datasetService.loadImgDataURLFromURL(this.summary.context_image_link).subscribe(
-                (dataURL: string)=>
-                {
-                    this.thumbImageData = dataURL;
-                },
-                (err)=>
-                {
-                }
-            ));
-        }
-
         // Prepend SOL if it's there
         this._title = "";
         if(this.summary.sol)
@@ -98,6 +82,19 @@ export class DataSetSummaryComponent implements OnInit
         this._subs.unsubscribe();
     }
 
+    get tileImageURL(): string
+    {
+        // Snip off the end and replace with context-thumb, which allows the API to work out the image to return
+        let pos = this.summary.context_image_link.lastIndexOf("/");
+        if(pos < 0)
+        {
+            return this.summary.context_image_link;
+        }
+
+        let url = this.summary.context_image_link.substring(0, pos+1)+"context-thumb";
+        return url;
+    }
+
     get title(): string
     {
         return this._title;
@@ -111,11 +108,6 @@ export class DataSetSummaryComponent implements OnInit
     get missingDataList(): string
     {
         return this._missingData;
-    }
-
-    get hasContextImage(): boolean
-    {
-        return this.summary.context_image_link.length > 0;
     }
 
     get isSelected(): boolean

@@ -29,8 +29,10 @@
 
 import { Component, OnInit } from "@angular/core";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
+import { APILogService } from "src/app/services/apilog.service";
 import { NotificationItem, NotificationService } from "src/app/services/notification.service";
 import { SentryHelper } from "src/app/utils/utils";
+import { combineLatest } from "rxjs";
 
 
 @Component({
@@ -40,18 +42,23 @@ import { SentryHelper } from "src/app/utils/utils";
 })
 export class TestUtilitiesComponent implements OnInit
 {
+    logLevels: string[] = ["DEBUG", "INFO", "ERROR"];
+    logLevel: string = "";
+
     sendEmail: string = "";
     sendSms: string = "";
 
     constructor(
         private _notificationService: NotificationService,
-        private _envService: EnvConfigurationService
+        private _envService: EnvConfigurationService,
+        private _logService: APILogService
     )
     {
     }
 
     ngOnInit(): void
     {
+        this.refreshLogLevel();
     }
 
     onTriggerTestError(): void
@@ -128,6 +135,47 @@ export class TestUtilitiesComponent implements OnInit
             (err)=>
             {
                 console.log("404 test returned error: "+err);
+            }
+        );
+    }
+
+    onLogLevelChanged(): void
+    {
+        if(this.logLevel.length <= 0)
+        {
+            alert("Select a log level!");
+            return;
+        }
+
+        // Set this frequently a few times, this way we should be load balanced
+        // out to all APIs and set it for each
+        let waitSetResult = [];
+        for(let c = 0; c < 4; c++)
+        {
+            waitSetResult.push(this._logService.setLogLevel(this.logLevel));
+        }
+
+        let all$ = combineLatest(waitSetResult);
+        all$.subscribe(
+            (data)=>
+            {
+                alert("Log level has been set");
+                this.refreshLogLevel();
+            },
+            (err)=>
+            {
+                alert("Log level set encountered errors");
+                this.refreshLogLevel();
+            }
+        );
+    }
+
+    private refreshLogLevel(): void
+    {
+        this._logService.getLogLevel().subscribe(
+            (level: string)=>
+            {
+                this.logLevel = level;
             }
         );
     }

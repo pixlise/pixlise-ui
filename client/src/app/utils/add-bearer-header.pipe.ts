@@ -27,32 +27,46 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { DriftCorrectionComponent } from "./drift-correction.component";
+import { Pipe, PipeTransform } from "@angular/core";
+import { HttpClient } from "@angular/common/http";
+import { Observable } from "rxjs";
 
+// Based on:
+// https://stackoverflow.com/questions/46563607/angular-4-image-async-with-bearer-headers
 
-describe("DriftCorrectionComponent", () => 
+@Pipe({
+    name: "addbearerheader"
+})
+export class AddBearerPipe implements PipeTransform
 {
-    let component: DriftCorrectionComponent;
-    let fixture: ComponentFixture<DriftCorrectionComponent>;
-
-    beforeEach(async () => 
+    constructor(private http: HttpClient)
     {
-        await TestBed.configureTestingModule({
-            declarations: [ DriftCorrectionComponent ]
-        })
-            .compileComponents();
-    });
+    }
 
-    beforeEach(() => 
+    transform(url: string)
     {
-        fixture = TestBed.createComponent(DriftCorrectionComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
+        return new Observable<string>(
+            (observer)=>
+            {
+                // This is a 1x1 pixel transparent GIF
+                observer.next("data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==");
 
-    it("should create", () => 
-    {
-        expect(component).toBeTruthy();
-    });
-});
+                // The next and error callbacks from the observer
+                const {next, error} = observer;
+
+                this.http.get(url, {responseType: "blob"}).subscribe(
+                    (response)=>
+                    {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(response);
+                        reader.onloadend = function() {
+                            observer.next(reader.result.toString());
+                        };
+                    }
+                );
+
+                return {unsubscribe() {}};
+            }
+        );
+    }
+}

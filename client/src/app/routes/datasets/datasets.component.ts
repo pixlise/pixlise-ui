@@ -76,7 +76,6 @@ export class DatasetsComponent implements OnInit
 
     selectedDataset: DataSetSummary = null;
 
-    selectedDatasetContextImage: string = null;
     selectedDatasetSummaryItems: SummaryItem[] = [];
     selectedDatasetTrackingItems: SummaryItem[] = [];
     selectedMissingData: string = "";
@@ -432,31 +431,21 @@ export class DatasetsComponent implements OnInit
             new SummaryItem("PIXLISE ID:", this.selectedDataset.dataset_id.toString()),
         ];
 
-        this.selectedDatasetContextImage = null;
-        if(this.selectedDataset.context_image_link.length > 0)
-        {
-            this._datasetService.loadImgDataURLFromURL(this.selectedDataset.context_image_link).subscribe(
-                (dataURL: string)=>
-                {
-                    this.selectedDatasetContextImage = dataURL;
-                },
-                (err)=>
-                {
-                }
-            );
-        }
-        else
-        {
-            this.selectedDatasetContextImage = "";
-        }
-
         let missing = DataSetSummary.listMissingData(this.selectedDataset);
         this.selectedMissingData = missing.length > 0 ? "Dataset likely missing: "+Array.from(missing).join(",") : "";
     }
 
-    get hasContextImage(): boolean
+    get contextImageURL(): string
     {
-        return this.selectedDataset.context_image_link.length > 0;
+        // Snip off the end and replace with context-thumb, which allows the API to work out the image to return
+        let pos = this.selectedDataset.context_image_link.lastIndexOf("/");
+        if(pos < 0)
+        {
+            return this.selectedDataset.context_image_link;
+        }
+
+        let url = this.selectedDataset.context_image_link.substring(0, pos+1)+"context-image";
+        return url;
     }
 
     private spectraCount(count: number): string
@@ -472,7 +461,6 @@ export class DatasetsComponent implements OnInit
     {
         this.selectedDataset = null;
 
-        this.selectedDatasetContextImage = null;
         this.selectedDatasetSummaryItems = [];
         this.selectedDatasetTrackingItems = [];
     }

@@ -141,7 +141,10 @@ export class UserOptionsService
         this._authService.isAuthenticated$.subscribe(
             (loggedIn: boolean)=>
             {
-                this.refreshOptions();
+                if(loggedIn)
+                {
+                    this.refreshOptions();
+                }
             }
         );
     }
