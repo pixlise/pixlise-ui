@@ -191,6 +191,7 @@ export class BinaryPlotModel
 
     hoverPoint: Point = null;
     hoverPointData: Point = null;
+    hoverShape: string = "circle";
 
     cursorShown: string = CursorId.defaultPointer;
     mouseLassoPoints: Point[] = null;

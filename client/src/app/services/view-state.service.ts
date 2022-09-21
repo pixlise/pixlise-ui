@@ -250,7 +250,8 @@ export class contextImageState
 export class roiDisplayState
 {
     constructor(
-        public roiColours: Map<string, string>
+        public roiColours: Map<string, string>,
+        public roiShapes: Map<string, string>,
     )
     {
     }
@@ -414,6 +415,7 @@ export class ViewStateService
     private _viewState: ViewState = null;
 
     private _roiColours$ = new ReplaySubject<Map<string, string>>(1);
+    private _roiShapes$ = new ReplaySubject<Map<string, string>>(1);
     private _appliedQuantification$ = new ReplaySubject<string>(1);
 
     private _datasetID: string = null;
@@ -483,6 +485,11 @@ export class ViewStateService
     get roiColours$(): Subject<Map<string, string>>
     {
         return this._roiColours$;
+    }
+
+    get roiShapes$(): Subject<Map<string, string>>
+    {
+        return this._roiShapes$;
     }
 
     get appliedQuantification$(): Subject<string>
@@ -1066,7 +1073,7 @@ export class ViewStateService
             this.readMapFromObject<rgbuImagesWidgetState>(stateWireObj["rgbuImages"]),
             this.readMapFromObject<parallelogramWidgetState>(stateWireObj["parallelograms"]),
 
-            new roiDisplayState(this.readMapFromObject<string>(stateWireObj["rois"]["roiColours"])),
+            new roiDisplayState(this.readMapFromObject<string>(stateWireObj["rois"]["roiColours"]), this.readMapFromObject<string>(stateWireObj["rois"]["roiShapes"])),
             new quantificationState(stateWireObj["quantification"]["appliedQuantID"]),
             stateWireObj["selection"]
         );
@@ -1239,6 +1246,7 @@ export class ViewStateService
         this.updateAnalysisViewSelectors();
         this.updateAppliedQuantification();
         this._roiColours$.next(this._viewState.rois.roiColours);
+        this._roiShapes$.next(this._viewState.rois.roiShapes);
 
         // NOTE: we publish this last. This is because services can depend on view state
         // and once they get this, they will subscribe for the others, so they can expect
@@ -1485,11 +1493,21 @@ export class ViewStateService
             }
         }
 
+        for(let roiID of this._viewState.rois.roiShapes.keys())
+        {
+            if(validIDs.indexOf(roiID) < 0)
+            {
+                this._viewState.rois.roiShapes.delete(roiID);
+                deleteCount++;
+            }
+        }
+
         // If we made changes...
         if(deleteCount > 0)
         {
             // Publish this straight away
             this._roiColours$.next(this._viewState.rois.roiColours);
+            this._roiShapes$.next(this._viewState.rois.roiShapes);
             this.saveROI(this._viewState.rois);
         }
     }
@@ -1523,12 +1541,47 @@ export class ViewStateService
         return true;
     }
 
+    setROIShape(roiID: string, shape: string): boolean
+    {
+        if(!this._viewState)
+        {
+            // Can't save! We haven't downloaded the view state yet, so can't send one up
+            console.warn("Can't save ROI shape in view state, as initial view state snapshot not yet loaded. Ignored.");
+            return false;
+        }
+        let t0 = performance.now();
+
+        if(shape.length <= 0)
+        {
+            this._viewState.rois.roiShapes.delete(roiID);
+        }
+        else
+        {
+            this._viewState.rois.roiShapes.set(roiID, shape);
+        }
+        let t1 = performance.now();
+        // Publish this straight away
+        this._roiShapes$.next(this._viewState.rois.roiShapes);
+        let t2 = performance.now();
+        this.saveROI(this._viewState.rois);
+        let t3 = performance.now();
+
+        console.log(`setROIShape timing: map=${(t1-t0).toLocaleString()}ms, subject=${(t2-t1).toLocaleString()}ms, saveROI=${(t3-t2).toLocaleString()}ms`);
+        return true;
+    }
+
     private saveROI(rois: roiDisplayState): void
     {
-        let roiObj = { "roiColours": {}};
+        let roiObj = { "roiColours": {}, "roiShapes": {} };
         for(let [k, v] of rois.roiColours)
+
         {
             roiObj["roiColours"][k] = v;
+        }
+
+        for(let [k, v] of this._viewState.rois.roiShapes)
+        {
+            roiObj["roiShapes"][k] = v;
         }
         this.save(roiObj, "roi");
     }
@@ -1536,7 +1589,7 @@ export class ViewStateService
     getROIColour(roiID: string): string
     {
         let clr = this._viewState.rois.roiColours.get(roiID);
-        if(clr == undefined)
+        if(clr === undefined)
         {
             return "";
         }
@@ -1544,22 +1597,29 @@ export class ViewStateService
         return clr;
     }
 
+    getROIShape(roiID: string): string
+    {
+        let shape = this._viewState.rois.roiShapes.get(roiID);
+        if(shape === undefined)
+        {
+            return "";
+        }
+
+        return shape;
+    }
+
     getInUseROIColours(): string[]
     {
         // We have to support the fact that a colour may already be assigned to multiple ROIs, so here we build
         // a unique list of colours
+        return Array.from(new Set<string>(this._viewState.rois.roiColours.values())).filter((colour) => colour.length > 0);
+    }
 
-        // TODO: could've used array.filter with a func calling indexOf but this seems neater/matches other code
-        let usedColours: Set<string> = new Set<string>();
-        for(let clr of this._viewState.rois.roiColours.values())
-        {
-            if(clr.length > 0)
-            {
-                usedColours.add(clr);
-            }
-        }
-
-        return Array.from(usedColours.values());
+    getInUseROIShapes(): string[]
+    {
+        // We have to support the fact that a shape may already be assigned to multiple ROIs, so here we build
+        // a unique list of shapes
+        return Array.from(new Set<string>(this._viewState.rois.roiShapes.values())).filter((colour) => colour.length > 0);
     }
 
     setChord(state: chordState, whichInstance: string): boolean

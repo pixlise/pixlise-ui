@@ -30,11 +30,12 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Observable, ReplaySubject, Subscription, of } from "rxjs";
+import { Observable, ReplaySubject, Subscription, of, forkJoin } from "rxjs";
+
 import { tap, switchMap, map } from "rxjs/operators";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
-import { ROIItem, ROISavedItem } from "src/app/models/roi";
+import { MistROIItem, ROIItem, ROISavedItem } from "src/app/models/roi";
 import { UserPromptDialogComponent, UserPromptDialogParams, UserPromptDialogResult, UserPromptDialogStringItem } from "src/app/UI/atoms/user-prompt-dialog/user-prompt-dialog.component";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { arraysEqual, httpErrorToString } from "src/app/utils/utils";
@@ -53,6 +54,16 @@ export class ROISavedItemWire
         public pixelIndexes: number[],
         public shared: boolean,
         public creator: ObjectCreator
+    )
+    {
+    }
+}
+
+export class ROIReference
+{
+    constructor(
+        public id: string,
+        public roi: ROIItem
     )
     {
     }
@@ -172,11 +183,22 @@ export class ROIService
         }
 
         let apiURL = this.makeURL(datasetID, null);
-
         this.http.get<Map<string, ROISavedItemWire>>(apiURL, makeHeaders()).subscribe((response: Map<string, ROISavedItemWire>)=>
         {
             let rois: Map<string, ROISavedItem> = new Map<string, ROISavedItem>();
             Object.entries(response).forEach(([roiID, roi]) =>
+            {
+                let mistROI = null;
+                if(roi.mistROIItem && roi.mistROIItem?.ClassificationTrail.length > 0)
+                {
+                    mistROI = new MistROIItem(
+                        roi.mistROIItem.species,
+                        roi.mistROIItem.mineralGroupID,
+                        roi.mistROIItem.ID_Depth,
+                        roi.mistROIItem.ClassificationTrail,
+                        roi.mistROIItem.formula
+                    );
+                }
                 rois.set(roiID, new ROISavedItem(
                     roiID,
                     roi.name,
@@ -186,9 +208,10 @@ export class ROIService
                     new Set<number>(roi["pixelIndexes"] || []),
                     roi.shared,
                     roi.creator,
+                    mistROI,
                     this._lastROILookup ? this._lastROILookup[roiID]?.visible : false
-                ))
-            );
+                ));
+            });
 
             // At this point we know the view state would've loaded already (we're only loaded once a dataset finishes loading, and that
             // only finishes after the view state arrives). Therefore here we can tell the view state service what ROI IDs are valid, so
@@ -196,7 +219,6 @@ export class ROIService
             // go to the console), but we don't want them growing forever.
             // If this happens multiple times at runtime (if we're not just refreshing after a dataset load but for another reason), it's fine!
             this._viewStateService.notifyValidROIIDs(Array.from(rois.keys()));
-
 
             // If this matches what we last sent out, ignore it
             if(this.areROILookupsEqual(this._lastROILookup, rois))
@@ -207,7 +229,6 @@ export class ROIService
             // Remember this for next time
             this._lastROILookup = rois;
             this._lastROILookupDatasetID = datasetID;
-
             this._roi$.next(rois);
         },
         (err)=>
@@ -287,34 +308,23 @@ export class ROIService
             map(
                 ()=>
                 {
-                    //console.log("Created ROI: "+roiName);
                     this.refreshROIList();
                     return true;
                 },
                 (err)=>
                 {
                     console.error(err);
-                    //console.error("Failed to create ROI: "+roiName+", reason: "+err);
                     this.refreshROIList();
                 }
             )
         );
     }
-    /*
-    get(id: string): Observable<ROIItem>
-    {
-        let apiURL = this.makeURL(this.getDatasetID(), id);
-        return this.http.get<ROIItem>(apiURL, makeHeaders());
-    }
-*/
+
     add(item: ROIItem): Observable<void>
     {
-        // TODO: validate name, should be URL compatible
-        // TODO: warn about overwrite??
-
         let loadID = this._loadingSvc.add("Saving new ROI...");
+        let apiURL = this.makeURL(this.getDatasetID(), null); 
 
-        let apiURL = this.makeURL(this.getDatasetID(), null);
         return this.http.post<void>(apiURL, item, makeHeaders()).pipe(
             tap(
                 ()=>
@@ -323,6 +333,49 @@ export class ROIService
                 },
                 (err)=>
                 {
+                    console.error("Error occurred saving ROI", err);
+                    this._loadingSvc.remove(loadID);
+                }
+            )
+        );
+    }
+
+    bulkAdd(roiItems: ROIItem[], overwrite: boolean = false, skipDuplicates: boolean = false, deleteExistingMistROIs: boolean = false, shareROIs: boolean = false): Observable<void | unknown[]>
+    {
+        let loadID = this._loadingSvc.add(`Saving ${roiItems.length} new ROIs...`);
+        let apiURL = this.makeURL(this.getDatasetID(), "bulk"); 
+
+        return this.http.post<void>(apiURL, { roiItems, overwrite, skipDuplicates, deleteExistingMistROIs, shareROIs }, makeHeaders()).pipe(
+            tap(
+                () =>
+                {
+                    this.refreshROIList();
+                    this._loadingSvc.remove(loadID);
+                },
+                (err) =>
+                {
+                    console.error("Error occurred bulk saving ROIs", err);
+                    this.refreshROIList();
+                    this._loadingSvc.remove(loadID);
+                }   
+            )
+        );
+    }
+
+    bulkUpdate(roiReferences: ROIReference[])
+    {
+        let loadID = this._loadingSvc.add(`Saving ${roiReferences.length} changed ROIs...`);
+        let apiURL = this.makeURL(this.getDatasetID(), "bulk");
+        return this.http.put<void>(apiURL, roiReferences, makeHeaders()).pipe(
+            tap(
+                ()=>
+                {
+                    this.refreshROIList();
+                    this._loadingSvc.remove(loadID);
+                },
+                ()=>
+                {
+                    this.refreshROIList();
                     this._loadingSvc.remove(loadID);
                 }
             )
@@ -337,20 +390,42 @@ export class ROIService
             tap(
                 ()=>
                 {
+                    this.refreshROIList();
                     this._loadingSvc.remove(loadID);
                 },
-                (err)=>
+                ()=>
                 {
                     this._loadingSvc.remove(loadID);
                 }
             )
         );
     }
+    
+    bulkDelete(ids: string[]): Observable<void | ArrayBuffer>
+    {
+        let loadID = this._loadingSvc.add(`Deleting ${ids.length} ROIs...`);
+        let apiURL = this.makeURL(this.getDatasetID(), "bulk");
+        return this.http.request<void>("delete", apiURL, { body: { ids }, ...makeHeaders() }).pipe(
+            tap(
+                ()=>
+                {
+                    this.refreshROIList();
+                    this._loadingSvc.remove(loadID);
+                },
+                (err)=>
+                {
+                    this.refreshROIList();
+                    this._loadingSvc.remove(loadID);
+                }
+            )
+        );
+    }
 
-    del(id: string): Observable<void>
+    del(id: string): Observable<void | ArrayBuffer>
     {
         let loadID = this._loadingSvc.add("Deleting ROI...");
         let apiURL = this.makeURL(this.getDatasetID(), id);
+
         return this.http.delete<void>(apiURL, makeHeaders()).pipe(
             tap(
                 ()=>
@@ -365,18 +440,37 @@ export class ROIService
         );
     }
 
-    share(id: string): Observable<string>
+    bulkShare(roiReferences: ROIReference[])
     {
-        let loadID = this._loadingSvc.add("Sharing ROI...");
-        let apiURL = APIPaths.getWithHost(APIPaths.api_share+"/"+APIPaths.api_roi+"/"+this.getDatasetID()+"/"+id);
-        return this.http.post<string>(apiURL, "", makeHeaders()).pipe(
+        let loadID = this._loadingSvc.add(`Sharing ${roiReferences.length} ROIs...`);
+        let apiURL = APIPaths.getWithHost(`${APIPaths.api_share}/${APIPaths.api_roi}/${this.getDatasetID()}/bulk`);
+        return this.http.post<string>(apiURL, roiReferences, makeHeaders()).pipe(
             tap(
-                (ev)=>
+                ()=>
                 {
                     this._loadingSvc.remove(loadID);
                     this.refreshROIList();
                 },
-                (err)=>
+                ()=>
+                {
+                    this._loadingSvc.remove(loadID);
+                }
+            )
+        );
+    }
+
+    share(id: string): Observable<string>
+    {
+        let loadID = this._loadingSvc.add("Sharing ROI...");
+        let apiURL = APIPaths.getWithHost(`${APIPaths.api_share}/${APIPaths.api_roi}/${this.getDatasetID()}/${id}`);
+        return this.http.post<string>(apiURL, "", makeHeaders()).pipe(
+            tap(
+                ()=>
+                {
+                    this._loadingSvc.remove(loadID);
+                    this.refreshROIList();
+                },
+                ()=>
                 {
                     this._loadingSvc.remove(loadID);
                 }

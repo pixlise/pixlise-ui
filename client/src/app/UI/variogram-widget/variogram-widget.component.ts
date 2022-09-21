@@ -477,7 +477,7 @@ export class VariogramWidgetComponent implements OnInit
                 ptValueRange.expand(pt.meanValue);
             }
 
-            let ptGroup = new VariogramPointGroup(RGBA.fromWithA(region.colour, 1), pts, ptValueRange);
+            let ptGroup = new VariogramPointGroup(RGBA.fromWithA(region.colour, 1), region.shape, pts, ptValueRange);
             dispPoints.push(ptGroup);
             dispMinMax.expandByMinMax(ptValueRange);
 

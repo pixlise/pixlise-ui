@@ -30,7 +30,18 @@
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { arraysEqual } from "src/app/utils/utils";
 
-
+export class MistROIItem
+{
+    constructor(
+        public species: string,
+        public mineralGroupID: string,
+        public ID_Depth: number,
+        public ClassificationTrail: string,
+        public formula: string
+    )
+    {
+    }
+}
 
 export class ROISavedItem
 {
@@ -43,7 +54,9 @@ export class ROISavedItem
         public pixelIndexes: Set<number>,
         public shared: boolean,
         public creator: ObjectCreator,
-        public visible: boolean = false
+        public mistROIItem: MistROIItem = null,
+        public visible: boolean = false,
+        public dateAdded: string = null
     )
     {
     }
@@ -67,6 +80,7 @@ export class ROIItem
         public description: string,
         public imageName: string,
         public pixelIndexes: number[],
+        public mistROIItem: MistROIItem = null,
     )
     {
     }

@@ -339,7 +339,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                         continue;
                     }
 
-                    let pointGroup: TernaryDataColour = new TernaryDataColour(RGBA.fromWithA(region.colour, 1), []);
+                    let pointGroup: TernaryDataColour = new TernaryDataColour(RGBA.fromWithA(region.colour, 1), region.shape, []);
 
                     // Filter out PMCs that don't exist in the data for all 3 corners
                     let toFilter: PMCDataValues[] = [];
@@ -418,7 +418,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                         roiIdForKey = "";
                     }
 
-                    this.keyItems.push(new KeyItem(roiIdForKey, region.name, region.colour));
+                    this.keyItems.push(new KeyItem(roiIdForKey, region.name, region.colour, null, region.shape));
 
                     for(let c = 0; c < pointGroup.values.length; c++)
                     {
@@ -625,6 +625,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                 // Clearing, easy case
                 this._ternaryModel.hoverPoint = null;
                 this._ternaryModel.hoverPointData = null;
+                this._ternaryModel.hoverShape = "circle";
                 this.needsDraw$.next();
                 return;
             }
@@ -636,6 +637,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                 let coords = this._ternaryModel.drawData.pointGroupCoords[idx.pointGroup];
                 this._ternaryModel.hoverPoint = coords[idx.valueIndex];
                 this._ternaryModel.hoverPointData = this._ternaryModel.raw.pointGroups[idx.pointGroup].values[idx.valueIndex];
+                this._ternaryModel.hoverShape = this._ternaryModel.raw.pointGroups[idx.pointGroup].shape;
                 this.needsDraw$.next();
                 return;
             }

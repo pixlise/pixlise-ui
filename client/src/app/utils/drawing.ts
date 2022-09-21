@@ -166,18 +166,18 @@ export const OUTLINE_LINE_WIDTH = 1;
 export class PointDrawer
 {
     _screenContext: CanvasRenderingContext2D;
-    //_drawCircles: boolean;
     _fillColour: RGBA = null;
     _outlineColour: RGBA = null;
     _size: number;
+    _shape: string;
 
-    constructor(screenContext: CanvasRenderingContext2D, /*drawCircles: boolean,*/ size: number, fillColour: RGBA, outlineColour: RGBA)
+    constructor(screenContext: CanvasRenderingContext2D, size: number, fillColour: RGBA, outlineColour: RGBA, shape: string = "circle")
     {
         this._screenContext = screenContext;
-        //this._drawCircles = drawCircles;
         this._fillColour = fillColour;
         this._outlineColour = outlineColour;
         this._size = size;
+        this._shape = shape;
     }
 
     static getOpacity(pointCount: number): number
@@ -207,14 +207,31 @@ export class PointDrawer
             this._screenContext.strokeStyle = this._outlineColour.asStringWithA(colourAlpha);
         }
 
-        // let halfSize = this._size / 2;
-
         for(let pt of points)
         {
-            /*            if(this._drawCircles)
-                        {*/
-            this._screenContext.beginPath();
-            this._screenContext.arc(pt.x, pt.y, this._size, 0, 2 * Math.PI);
+            if(this._shape === "triangle")
+            {
+                this._screenContext.beginPath();
+                this._screenContext.moveTo(pt.x-this._size, pt.y+this._size);
+                this._screenContext.lineTo(pt.x, pt.y-this._size);
+                this._screenContext.lineTo(pt.x+this._size, pt.y+this._size);
+            }
+            else if(this._shape === "square")
+            {
+                this._screenContext.fillRect(pt.x-this._size, pt.y-this._size, this._size*2, this._size*2);
+            }
+            else if(this._shape === "cross")
+            {
+                this._screenContext.beginPath();
+                this._screenContext.fillRect(pt.x-this._size, pt.y-1/4*this._size, this._size*2, this._size/2);
+                this._screenContext.fillRect(pt.x-1/4*this._size, pt.y-this._size, this._size/2, this._size*2);
+            }
+            else
+            {
+                // Default case is circle
+                this._screenContext.beginPath();
+                this._screenContext.arc(pt.x, pt.y, this._size, 0, 2 * Math.PI);
+            }
 
             if(this._fillColour)
             {
@@ -225,19 +242,6 @@ export class PointDrawer
             {
                 this._screenContext.stroke();
             }
-            /*            }
-                        else // Squares
-                        {
-                            if(this._fillColour)
-                            {
-                                this._screenContext.fillRect(pt.x-halfSize, pt.y-halfSize, this._size, this._size);
-                            }
-            
-                            if(this._outlineColour)
-                            {
-                                this._screenContext.strokeRect(pt.x-halfSize, pt.y-halfSize, this._size, this._size);
-                            }
-                        }*/
         }
     }
 }

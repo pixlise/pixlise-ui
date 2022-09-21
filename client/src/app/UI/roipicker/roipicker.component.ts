@@ -74,6 +74,7 @@ export class ROIPickerComponent implements OnInit
 
     fullDatasetROI: ROISettingsItem;
     remainingPointsROI: ROISettingsItem;
+    mistROIs: ROISettingsItem[] = [];
     userROIs: ROISettingsItem[] = [];
     sharedROIs: ROISettingsItem[] = [];
 
@@ -111,7 +112,8 @@ export class ROIPickerComponent implements OnInit
                     "", // not shared
                     Colours.GRAY_10.asString(),
                     this.data.roiIDsVisible.indexOf(PredefinedROIID.AllPoints) > -1,
-                    Colours.CONTEXT_BLUE.asString()
+                    Colours.CONTEXT_BLUE.asString(),
+                    "circle"
                 );
 
                 // Work out if we're showing remaining PMCs
@@ -128,17 +130,19 @@ export class ROIPickerComponent implements OnInit
                             "", // not shared
                             Colours.CONTEXT_GREEN.asString(),
                             this.data.roiIDsVisible.indexOf(PredefinedROIID.RemainingPoints) > -1,
-                            ""
+                            "",
+                            "circle"
                         );
                     }
                 }
-
+                this.mistROIs = [];
                 this.userROIs = [];
                 this.sharedROIs = [];
                 for(let roi of rois.values())
                 {
                     let visible = this.data.roiIDsVisible.indexOf(roi.id) > -1;
                     let colourRGB = this._viewStateService.getROIColour(roi.id);
+                    let shape = this._viewStateService.getROIShape(roi.id);
                     let sharedBy = null;
 
                     if(roi.shared && roi.creator != null)
@@ -156,10 +160,15 @@ export class ROIPickerComponent implements OnInit
                             sharedBy,
                             colourRGB,
                             visible,
-                            ""
+                            "",
+                            shape
                         );
 
-                        if(roi.shared)
+                        if(roi.mistROIItem && roi.mistROIItem !== null)
+                        {
+                            this.mistROIs.push(newROI);
+                        }
+                        else if(roi.shared)
                         {
                             this.sharedROIs.push(newROI);
                         }
@@ -216,6 +225,8 @@ export class ROIPickerComponent implements OnInit
             result.push(this.remainingPointsROI);
         }
 
+        
+        result.push(...this.mistROIs);
         result.push(...this.userROIs);
         result.push(...this.sharedROIs);
 
@@ -227,7 +238,7 @@ export class ROIPickerComponent implements OnInit
         let rois = this.getAllROIs();
         for(let roi of rois)
         {
-            if(roi.roiID == roiID)
+            if(roi.roiID === roiID)
             {
                 // Only allow making it visible if it has a colour assigned
                 // But if the colour picker button isn't showing, allow picking anything

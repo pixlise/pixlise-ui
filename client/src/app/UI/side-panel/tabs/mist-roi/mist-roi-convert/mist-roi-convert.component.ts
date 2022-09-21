@@ -27,56 +27,55 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { MinMax } from "src/app/models/BasicTypes";
-import { RGBA } from "src/app/utils/colours";
+import { Component, Inject, OnInit } from "@angular/core";
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { MistROIItem } from "src/app/models/roi";
+import { RegionLayerInfo } from "src/app/UI/context-image-view-widget/region-manager";
 
-
-export class TernaryCorner
+export class MistROIConvertData
 {
     constructor(
-        public label: string,
-        public errorMsgShort: string,
-        public errorMsgLong: string,
-        public valueRange: MinMax
+        public selected: RegionLayerInfo[]
     )
     {
     }
 }
 
-export class TernaryDataItem
-{
-    constructor(public pmc: number, public a: number, public b: number, public c: number)
-    {
-    }
-}
 
-export class TernaryDataColour
+@Component({
+    selector: "app-mist-roi-convert",
+    templateUrl: "./mist-roi-convert.component.html",
+    styleUrls: ["./mist-roi-convert.component.scss"]
+})
+export class MistRoiConvertComponent implements OnInit 
 {
-    constructor(public colour: RGBA, public shape: string, public values: TernaryDataItem[])
-    {
-    }
-}
+    public selectedROIs: RegionLayerInfo[] = [];
 
-export class TernaryPlotPointIndex
-{
     constructor(
-        public pointGroup: number,
-        public valueIndex: number
+        @Inject(MAT_DIALOG_DATA) public data: MistROIConvertData,
+        public dialogRef: MatDialogRef<MistRoiConvertComponent>,
+        public dialog: MatDialog,
     )
     {
+        this.selectedROIs = data.selected;
     }
-}
 
-export class TernaryData
-{
-    constructor(
-        public cornerA: TernaryCorner,
-        public cornerB: TernaryCorner,
-        public cornerC: TernaryCorner,
-        public pointGroups: TernaryDataColour[],
-        public pmcToValueLookup: Map<number, TernaryPlotPointIndex>,
-        public visibleROIs: string[]
-    )
+    ngOnInit(): void 
     {
+    }
+
+    onCancel(): void
+    {
+        this.dialogRef.close(null);
+    }
+
+    onConvert(shareROIs: boolean=false): void
+    {
+        if(this.selectedROIs.length > 0) 
+        {
+            this.dialogRef.close({
+                shareROIs
+            });
+        }
     }
 }

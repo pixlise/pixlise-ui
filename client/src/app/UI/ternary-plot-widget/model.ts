@@ -203,6 +203,7 @@ export class TernaryModel
     // Settings for drawing
     hoverPoint: Point = null;
     hoverPointData: TernaryDataItem = null;
+    hoverShape: string = "circle";
 
     cursorShown: string = CursorId.defaultPointer;
     mouseLassoPoints: Point[] = null;

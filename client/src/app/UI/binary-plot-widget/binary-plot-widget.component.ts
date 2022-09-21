@@ -278,6 +278,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         let xValueRange = new MinMax(0, null);
         let yValueRange = new MinMax(0, null);
 
+        let shapes: string[] = [];
         let coloursRGB: RGBA[] = [];
         let xPointGroup: PMCDataValues[] = [];
         let yPointGroup: PMCDataValues[] = [];
@@ -414,6 +415,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                 if(region.colour)
                 {
                     coloursRGB.push(RGBA.fromWithA(region.colour, 1));
+                    shapes.push(region?.shape || "circle");
 
                     // Add to key too. We only specify an ID if it can be brought to front - all points & selection
                     // are fixed in their draw order, so don't supply for those
@@ -423,7 +425,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                         roiIdForKey = "";
                     }
 
-                    this.keyItems.push(new KeyItem(roiIdForKey, region.name, region.colour));
+                    this.keyItems.push(new KeyItem(roiIdForKey, region.name, region.colour, null, region.shape));
                 }
 
                 if(resultX.values.values.length != resultY.values.values.length)
@@ -439,6 +441,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         }
 
         let binaryData = new BinaryPlotData(
+            shapes,
             coloursRGB,
             new BinaryPlotAxisData(xLabel, xPointGroup, xValueRange, xErrorShort, xErrorLong),
             new BinaryPlotAxisData(yLabel, yPointGroup, yValueRange, yErrorShort, yErrorLong),
@@ -596,6 +599,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                 // Clearing, easy case
                 this._binaryModel.hoverPoint = null;
                 this._binaryModel.hoverPointData = null;
+                this._binaryModel.hoverShape = "circle";
                 this.needsDraw$.next();
                 return;
             }
@@ -614,6 +618,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             {
                 let coords = this._binaryModel.drawData.pointGroupCoords[idx.pointGroup];
                 this._binaryModel.hoverPoint = coords[idx.valueIndex];
+                this._binaryModel.hoverShape = this._binaryModel.raw.shapeGroups[idx.pointGroup];
                 this._binaryModel.hoverPointData = new Point(
                     this._binaryModel.raw.xAxisData.pointGroups[idx.pointGroup].values[idx.valueIndex].value,
                     this._binaryModel.raw.yAxisData.pointGroups[idx.pointGroup].values[idx.valueIndex].value

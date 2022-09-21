@@ -36,8 +36,17 @@ POSSIBILITY OF SUCH DAMAGE.
 
         <div fxLayout="row">
             <div *ngIf="colour" class="obj-colour">
-                <svg width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg *ngIf="!shape || shape === 'circle'" width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="4" cy="4" r="4" attr.fill="{{colour}}"/>
+                </svg>
+                <svg *ngIf="shape === 'triangle'" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5.55279 0.894427C5.73705 0.525902 6.26295 0.525903 6.44721 0.894427L11.6382 11.2764C11.8044 11.6088 11.5627 12 11.191 12H0.809017C0.437326 12 0.195578 11.6088 0.361803 11.2764L5.55279 0.894427Z" attr.fill="{{colour}}" />
+                </svg>
+                <svg *ngIf="shape === 'cross'" width="13" height="12" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M5.15385 0C4.60156 0 4.15385 0.447715 4.15385 1V4.15385H1C0.447715 4.15385 0 4.60156 0 5.15385V6.84615C0 7.39844 0.447717 7.84615 1 7.84615H4.15385V11C4.15385 11.5523 4.60156 12 5.15385 12H6.84615C7.39844 12 7.84615 11.5523 7.84615 11V7.84615H11.1846C11.7369 7.84615 12.1846 7.39844 12.1846 6.84615V5.15385C12.1846 4.60156 11.7369 4.15385 11.1846 4.15385H7.84615V1C7.84615 0.447715 7.39844 0 6.84615 0H5.15385Z" attr.fill="{{colour}}" />
+                </svg>
+                <svg *ngIf="shape === 'square'" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="12" height="12" rx="0.5" attr.fill="{{colour}}" />
                 </svg>
             </div>
             <div *ngIf="colour2" title='Selected points colour'>
@@ -51,15 +60,22 @@ POSSIBILITY OF SUCH DAMAGE.
     <div fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements">
         <icon-button
             *ngIf="showColourButton"
+            title="Configure Shapes"
+            icon="assets/button-icons/shapes.svg"
+            (click)="onShapes($event)">
+        </icon-button>
+        <icon-button
+            *ngIf="showColourButton"
             title="Configure Colours"
             icon="assets/button-icons/colours.svg"
-            (click)="onColours($event)"></icon-button>
-
+            (click)="onColours($event)">
+        </icon-button>
         <two-state-icon-button
             toolTip="Toggle Visibility"
             [activeIcon]="activeIcon"
             [inactiveIcon]="inactiveIcon"
             [active]="visible"
-            (onToggle)="onVisibility($event)"></two-state-icon-button>
+            (onToggle)="onVisibility($event)">
+        </two-state-icon-button>
     </div>
 </div>

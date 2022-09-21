@@ -58,6 +58,7 @@ export class BinaryPlotPointIndex
 export class BinaryPlotData
 {
     constructor(
+        public shapeGroups: string[],
         public pointGroupColours: RGBA[],
         public xAxisData: BinaryPlotAxisData,
         public yAxisData: BinaryPlotAxisData,

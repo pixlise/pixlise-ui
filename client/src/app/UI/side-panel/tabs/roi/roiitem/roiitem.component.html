@@ -61,13 +61,30 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="roi-colour" style="background-color: {{colour}}"></div>
     <div fxLayout="column" fxFlex="100%">
         <div fxLayout="row" fxLayoutAlign="space-between center" class="outer-padding roi-header gap-separated-horizontal-elements">
-            <div fxLayout="column" class="gap-separated-vertical-elements">
+            <two-state-icon-button
+                *ngIf="isSelectable"
+                toolTip="Toggle ROI"
+                activeIcon="assets/button-icons/check-on.svg"
+                inactiveIcon="assets/button-icons/check-off.svg"
+                class="checkbox-button"
+                [active]="selected"
+                (onToggle)="onCheckboxClick($event)"
+            >
+            </two-state-icon-button>
+            <div fxLayout="column" class="gap-separated-vertical-elements" class="label-container">
                 <div class="side-panel-label" title="{{labelToShow}}">{{labelToShow}}</div>
+                <div *ngIf="level !== null || dateAdded !== null" class="metadata-line" title="Level">
+                    <div *ngIf="level !== null" class="level-dots" title="Level">
+                        <div class="level-dot {{hasLevel ? 'filled' : ''}}" *ngFor="let hasLevel of levelIterator"></div>
+                    </div>
+                    <div class="date-added" title="Date Added">{{dateAdded}}</div>
+                </div>
                 <div *ngIf="sharedBy" class="obj-creator" title="Shared by this user">{{sharedBy}}</div>
             </div>
 
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
                 <widget-settings-menu
+                    *ngIf="!colorChangeOnly"
                     [settingsDialog]="roiSettingsMenu"
                     #settingsButton>
                     <icon-button
@@ -76,6 +93,13 @@ POSSIBILITY OF SUCH DAMAGE.
                         icon="assets/button-icons/settings-gray.svg">
                     </icon-button>
                 </widget-settings-menu>
+                <icon-button
+                    *ngIf="colorChangeOnly"
+                    title="Configure Colours"
+                    icon="assets/button-icons/colours.svg"
+                    (click)="onColours($event)"
+                >
+                </icon-button>
                 <two-state-icon-button
                     toolTip="Toggle visibility on Context Image"
                     activeIcon="assets/button-icons/visible-on-yellow.svg"
@@ -99,8 +123,9 @@ POSSIBILITY OF SUCH DAMAGE.
                     <img class="clickable" [src]="showMoreDetails ? 'assets/button-icons/arrow-down.svg' : 'assets/button-icons/arrow-right.svg'" (click)="onTogglePMCs()" title="Toggle showing PMCs">
                 </div>
             </div>
-            <div *ngIf="description" class="outer-padding">
-                <div class="limited-length-text" [title]="description">{{description}}</div>
+            <div *ngIf="description" class="description-container">
+                <input class="description-inner" [title]="description" value="{{description}}" readonly />
+                <!-- <div class="description-inner" [title]="description">{{description}}</div> -->
             </div>
         </div>
 

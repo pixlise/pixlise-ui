@@ -149,10 +149,10 @@ export class TernaryDiagramDrawer implements CanvasDrawer
         {
             let drawer = new PointDrawer(
                 screenContext,
-                //PLOT_POINTS_AS_CIRCLES,
                 PLOT_POINTS_SIZE,
                 this._mdl.raw.pointGroups[c].colour,
-                null
+                null,
+                this._mdl.raw.pointGroups[c].shape
             );
             drawer.drawPoints(drawData.pointGroupCoords[c], alpha);
         }
@@ -160,7 +160,7 @@ export class TernaryDiagramDrawer implements CanvasDrawer
         // And hover point if any
         if(this._mdl.hoverPoint != null)
         {
-            let drawer = new PointDrawer(screenContext, /*PLOT_POINTS_AS_CIRCLES,*/ HOVER_POINT_RADIUS, clrHover, null);
+            let drawer = new PointDrawer(screenContext, HOVER_POINT_RADIUS, clrHover, null, this._mdl.hoverShape);
             drawer.drawPoints([this._mdl.hoverPoint], 1);
         }
 
