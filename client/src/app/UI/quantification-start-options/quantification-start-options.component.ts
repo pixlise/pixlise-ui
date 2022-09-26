@@ -106,7 +106,7 @@ export class QuantificationStartOptionsComponent implements OnInit
     asCarbonates: boolean = false;
     ignoreArgon: boolean = true;
     includeDwells: boolean = true;
-    ironProportion: number = 1.5;
+    ironProportion: number = 1.0;
     selectedDetectorConfig: string = "";
     singleSelectROI: boolean = true;
     parameters: string = "";
@@ -301,7 +301,7 @@ export class QuantificationStartOptionsComponent implements OnInit
         }
 
         let parameters = this.parameters;
-        if(this.ironProportion && !isNaN(this.ironProportion))
+        if(this.ironProportion !== null && !isNaN(this.ironProportion))
         {
             parameters += "-Fe,"+this.ironProportion;
         }
