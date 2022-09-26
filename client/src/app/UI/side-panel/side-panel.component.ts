@@ -88,7 +88,7 @@ export class SidePanelComponent implements OnInit
         "assets/icons/workspaces.svg",
         "assets/icons/collections.svg",
         "assets/icons/roi.svg",
-        "assets/icons/roi.svg",
+        "assets/icons/mist-roi.svg",
         "assets/icons/selection.svg",
         "assets/icons/diffraction.svg",
         "assets/icons/roughness.svg",
