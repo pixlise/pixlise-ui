@@ -98,7 +98,7 @@ export class VariogramDrawer implements CanvasDrawer
         let idx = 0;
         for(let ptGroup of mdl.drawData.points)
         {
-            let drawer = new PointDrawer(screenContext, /*PLOT_POINTS_AS_CIRCLES,*/ PLOT_POINTS_SIZE, mdl.raw.pointGroups[idx].colour, null);
+            let drawer = new PointDrawer(screenContext, /*PLOT_POINTS_AS_CIRCLES,*/ PLOT_POINTS_SIZE, mdl.raw.pointGroups[idx].colour, null, mdl.raw.pointGroups[idx].shape);
             drawer.drawPoints(ptGroup, 1);
             idx++;
         }

@@ -789,14 +789,15 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         {
             let loc = locs[idx];
 
-            /* This has been commented out for a while, probably better we allow a crash and realise somethings broken than
-   pretending it's all fine and returning less PMCs than expected
+            // Ignore invalid PMC IDs - this can happen if the wrong MIST ROI CSV is imported and we want the user
+            // to be able to recover from it. This was previously commented out, but adding it back because this
+            // state is easier to get into now and is unrecoverable from the user's perspective as it hides all ROIs
             if(!loc)
             {
-                console.warn('getPMCsForLocationIndexes found invalid locationIdx: '+idx+'. Skipping...');
+                console.warn(`getPMCsForLocationIndexes found invalid locationIdx: ${idx} Skipping...`);
                 continue;
             }
-*/
+
             if(onlyWithNormalOrDwellSpectra && !loc.hasNormalSpectra && !loc.hasDwellSpectra)
             {
                 // We're filtering these out

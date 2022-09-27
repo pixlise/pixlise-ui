@@ -27,56 +27,44 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { MinMax } from "src/app/models/BasicTypes";
-import { RGBA } from "src/app/utils/colours";
-
-
-export class TernaryCorner
-{
-    constructor(
-        public label: string,
-        public errorMsgShort: string,
-        public errorMsgLong: string,
-        public valueRange: MinMax
-    )
-    {
+.mist-upload {
+    .card-toolbar.header {
+        margin-bottom: 8px;
     }
-}
 
-export class TernaryDataItem
-{
-    constructor(public pmc: number, public a: number, public b: number, public c: number)
-    {
-    }
-}
+    .upload-options {
+        min-width: 400px;
+        margin: 8px;
+        margin-bottom: 0;
 
-export class TernaryDataColour
-{
-    constructor(public colour: RGBA, public shape: string, public values: TernaryDataItem[])
-    {
-    }
-}
+        .upload-option {
+            align-items: center;
+            margin: 8px;
+            margin-bottom: 0;
 
-export class TernaryPlotPointIndex
-{
-    constructor(
-        public pointGroup: number,
-        public valueIndex: number
-    )
-    {
-    }
-}
+            h5 {
+                margin: 0;
+                margin-right: auto;
+                font-size: 14px;
+            }
 
-export class TernaryData
-{
-    constructor(
-        public cornerA: TernaryCorner,
-        public cornerB: TernaryCorner,
-        public cornerC: TernaryCorner,
-        public pointGroups: TernaryDataColour[],
-        public pmcToValueLookup: Map<number, TernaryPlotPointIndex>,
-        public visibleROIs: string[]
-    )
-    {
+            .browse-btn {
+                padding: 8px 0;
+            }
+        }
+
+        .overwrite-options {
+            margin: 8px;
+            margin-top: 4px;
+
+            .overwrite-option {
+                margin: 8px 0;
+
+                ::ng-deep label.mat-radio-label {
+                    display: flex;
+                    justify-content: space-between;
+                }
+            }
+        }
     }
 }

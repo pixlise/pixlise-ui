@@ -119,6 +119,23 @@ export class PickerDialogData
 
         return items;
     }
+
+    public static getStandardShapeChoices(usedShapeIds: string[]): PickerDialogItem[]
+    {
+        const shapes = [
+            ["circle", "assets/shapes/circle.svg"],
+            ["triangle", "assets/shapes/triangle.svg"],
+            ["square", "assets/shapes/square.svg"],
+            ["cross", "assets/shapes/cross.svg"],
+        ];
+
+        return [
+            new PickerDialogItem(null, "Shapes", null, true),
+            ...shapes.map(([shape, icon]) => (
+                new PickerDialogItem(shape, null, icon, usedShapeIds.indexOf(shape) < 0)
+            ))
+        ];
+    }
 }
 
 @Component({
@@ -215,11 +232,7 @@ export class PickerDialogComponent implements OnInit
     isEnabled(item: PickerDialogItem): boolean
     {
         // If it's disabled, but selected, don't disable!
-        if(this._selectedIds.indexOf(item.id) >= 0)
-        {
-            return true;
-        }
-        return item.enabled;
+        return this._selectedIds.includes(item.id) || this.data.initialSelectedIds.includes(item.id) || item.enabled;
     }
 
     //this.dialogRef.close(null);

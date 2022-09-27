@@ -34,7 +34,7 @@ import { getQuantifiedDataWithExpression } from "src/app/expression-language/exp
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
 import { QuantificationLayer } from "src/app/models/Quantifications";
-import { PredefinedROIID, ROISavedItem } from "src/app/models/roi";
+import { MistROIItem, PredefinedROIID, ROIItem, ROISavedItem } from "src/app/models/roi";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
 import { DataSetService } from "src/app/services/data-set.service";
@@ -92,9 +92,25 @@ export class RegionData extends ROISavedItem
         creator: ObjectCreator,
         public colour: RGBA,
         public pmcs: Set<number>,
+        public shape: string,
+        mistROIItem: MistROIItem = null,
+        visible: boolean = false,
+        dateAdded: string = null
     )
     {
-        super(id, name, locationIndexes, description, imageName, pixelIndexes, shared, creator);
+        super(id, name, locationIndexes, description, imageName, pixelIndexes, shared, creator, mistROIItem, visible, dateAdded);
+    }
+
+    convertToROIItem()
+    {
+        return new ROIItem(
+            this.name,
+            this.locationIndexes,
+            this.description,
+            this.imageName,
+            Array.from(this.pixelIndexes),
+            this.mistROIItem
+        );
     }
 
     // TODO: this is pretty dodgy, there must be a better way. Quickly tried casting RegoinData as ROISavedItem and assignment
@@ -109,6 +125,7 @@ export class RegionData extends ROISavedItem
         this.imageName = roi.imageName;
         this.shared = roi.shared;
         this.creator = roi.creator;
+        this.mistROIItem = roi.mistROIItem;
     }
 }
 
@@ -117,6 +134,7 @@ export enum WidgetDataUpdateReason
     WUPD_ROIS = "rios",
     WUPD_SELECTION = "selection",
     WUPD_ROI_COLOURS = "roi-colours",
+    WUPD_ROI_SHAPES = "roi-shapes",
     WUPD_QUANT = "quant",
     WUPD_EXPRESSIONS = "expr-updated",
     WUPD_DATASET = "dataset",
@@ -172,6 +190,7 @@ export class WidgetRegionDataService
     // Raw incoming data, we remember these so rebuildData can do its job
     private _rois: Map<string, ROISavedItem> = null;
     private _roiColours: Map<string, string> = null;
+    private _roiShapes: Map<string, string> = null;
     private _quantId: string = null; // null=not loaded yet
     private _quantIdLastLoaded: string = null; // This is the quant ID we last loaded (or got an error for). So we know not to continually re-request it
     private _quantificationLoaded: QuantificationLayer = null;
@@ -218,6 +237,7 @@ export class WidgetRegionDataService
         // Here we clear everything, as we expect the other subscriptions to come AFTER a new dataset
         this._rois = null;
         this._roiColours = null;
+        this._roiShapes = null;
         this._quantId = null;
         this._quantIdLastLoaded = null;
         this._quantificationLoaded = null;
@@ -239,6 +259,7 @@ export class WidgetRegionDataService
         // These are part of the view state service. It needs to make sure these are up to date
         // before notifying viewState$
         this.resubscribeViewStateROIColours();
+        this.resubscribeViewStateROIShapes();
         this.resubscribeViewStateQuantLoaded();
 
         // ROI service, needs to clear ROIs when new dataset is loaded otherwise we end up with
@@ -392,8 +413,6 @@ export class WidgetRegionDataService
         let logmsg = this._logPrefix+" rebuildData reason="+reason;
         let skipReasons = [];
 
-        console.log();
-
         let dataset = this._datasetService.datasetLoaded;
         let selection = this._selectionService.getCurrentSelection();
 
@@ -405,6 +424,10 @@ export class WidgetRegionDataService
         if(!this._roiColours)
         {
             skipReasons.push("ROI Colours");
+        }
+        if(!this._roiShapes)
+        {
+            skipReasons.push("ROI Shapes");
         }
         if(this._quantId == null)
         {
@@ -457,39 +480,48 @@ export class WidgetRegionDataService
             region.colour = RGBA.fromWithA(clr, 0.5);
         }
 
+        for(let [roiId, shape] of this._roiShapes)
+        {
+            let region = this.ensureRegionStored(roiId);
+            region.shape = shape;
+        }
+
         // Ensure the "special" regions of the entire dataset and the selection are stored too
 
         // This is all we had before... all points + selection. NOTE: Original colours were
         // all points=Colours.GRAY_10, alpha=0.4
         // selection =Colours.CONTEXT_PURPLE, alpha=0.7
-        let region = this.ensureRegionStored(PredefinedROIID.AllPoints);
-        region.setROISavedItemFields(new ROISavedItem(PredefinedROIID.AllPoints, "Dataset", [], "Built-in region representing all points in the dataset", "", new Set<number>(), false, null));
-        region.colour = RGBA.fromWithA(ViewStateService.AllPointsColour, 0.4);
-        region.pmcs = new Set<number>(dataset.pmcToLocationIndex.keys());
+        let allPointsRegion = this.ensureRegionStored(PredefinedROIID.AllPoints);
+        allPointsRegion.setROISavedItemFields(new ROISavedItem(PredefinedROIID.AllPoints, "Dataset", [], "Built-in region representing all points in the dataset", "", new Set<number>(), false, null));
+        allPointsRegion.colour = RGBA.fromWithA(ViewStateService.AllPointsColour, 0.4);
+        allPointsRegion.shape = "circle";
+        allPointsRegion.pmcs = new Set<number>(dataset.pmcToLocationIndex.keys());
 
-        region = this.ensureRegionStored(PredefinedROIID.SelectedPoints);
-        region.setROISavedItemFields(new ROISavedItem(PredefinedROIID.SelectedPoints, "Selection", [], "Built-in region representing the selected points in the dataset", "", new Set<number>(), false, null));
-        region.colour = RGBA.fromWithA(ViewStateService.SelectedPointsColour, 0.7);
-        region.pmcs = selection.beamSelection.getSelectedPMCs();
-        region.locationIndexes = Array.from(selection.beamSelection.locationIndexes);
+        let selectedPointsRegion = this.ensureRegionStored(PredefinedROIID.SelectedPoints);
+        selectedPointsRegion.setROISavedItemFields(new ROISavedItem(PredefinedROIID.SelectedPoints, "Selection", [], "Built-in region representing the selected points in the dataset", "", new Set<number>(), false, null));
+        selectedPointsRegion.colour = RGBA.fromWithA(ViewStateService.SelectedPointsColour, 0.7);
+        selectedPointsRegion.shape = "circle";
+        selectedPointsRegion.pmcs = selection.beamSelection.getSelectedPMCs();
+        selectedPointsRegion.locationIndexes = Array.from(selection.beamSelection.locationIndexes);
 
         // Also, if we have a multi-quant in progress, we want a region representing the "remaining points" which aren't in any of the ROIs
         if(this._quantService.multiQuantZStack.length > 0) // if no ROIs, we don't show at all
         {
-            region = this.ensureRegionStored(PredefinedROIID.RemainingPoints);
-            region.setROISavedItemFields(new ROISavedItem(PredefinedROIID.RemainingPoints, ViewStateService.RemainingPointsLabel, [], "Built-in region representing the points that are not a member of any ROIs in the multi-quant currently in progress", "", new Set<number>(), false, null));
-            region.colour = RGBA.fromWithA(ViewStateService.RemainingPointsColour, 0.7);
+            let remainingPointsRegion = this.ensureRegionStored(PredefinedROIID.RemainingPoints);
+            remainingPointsRegion.setROISavedItemFields(new ROISavedItem(PredefinedROIID.RemainingPoints, ViewStateService.RemainingPointsLabel, [], "Built-in region representing the points that are not a member of any ROIs in the multi-quant currently in progress", "", new Set<number>(), false, null));
+            remainingPointsRegion.colour = RGBA.fromWithA(ViewStateService.RemainingPointsColour, 0.7);
+            remainingPointsRegion.shape = "circle";
 
             let pmcs = this.getRemainingPMCs();
-            region.pmcs = new Set(pmcs);
-            region.locationIndexes = [];
+            remainingPointsRegion.pmcs = new Set(pmcs);
+            remainingPointsRegion.locationIndexes = [];
 
             for(let pmc of pmcs)
             {
                 let idx = dataset.pmcToLocationIndex.get(pmc);
                 if(!isNaN(idx))
                 {
-                    region.locationIndexes.push(idx);
+                    remainingPointsRegion.locationIndexes.push(idx);
                 }
             }
         }
@@ -531,7 +563,8 @@ export class WidgetRegionDataService
                 null,
                 // And the rest
                 null,
-                new Set<number>()
+                new Set<number>(),
+                ""
             );
             this._regions.set(roiId, region);
         }
@@ -678,6 +711,25 @@ export class WidgetRegionDataService
             ()=>
             {
                 this.resubscribeViewStateROIColours();
+            }
+        ));
+    }
+
+        private resubscribeViewStateROIShapes()
+    {
+        this._viewStateRelatedSubs.add(this._viewStateService.roiShapes$.subscribe(
+            (roiShapes: Map<string, string>)=>
+            {
+                this._roiShapes = roiShapes;
+                this.rebuildData(WidgetDataUpdateReason.WUPD_ROI_SHAPES);
+            },
+            (err)=>
+            {
+                console.error(httpErrorToString(err, this._logPrefix+" resubscribeViewStateROIShapes"));
+            },
+            ()=>
+            {
+                this.resubscribeViewStateROIShapes();
             }
         ));
     }

@@ -62,7 +62,19 @@ export class APILogService
 
     getLog(logId: string): Observable<LogData>
     {
-        let apiURL = APIPaths.getWithHost(APIPaths.api_logger+"/"+logId);
+        let apiURL = APIPaths.getWithHost(APIPaths.api_logger+"/fetch/"+logId);
         return this.http.get<LogData>(apiURL, makeHeaders());
+    }
+
+    getLogLevel(): Observable<string>
+    {
+        let apiURL = APIPaths.getWithHost(APIPaths.api_logger+"/level");
+        return this.http.get<string>(apiURL, makeHeaders());
+    }
+
+    setLogLevel(level: string): Observable<string>
+    {
+        let apiURL = APIPaths.getWithHost(APIPaths.api_logger+"/level/"+level);
+        return this.http.put<string>(apiURL, makeHeaders());
     }
 }

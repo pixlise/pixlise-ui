@@ -93,14 +93,14 @@ export class BinaryDiagramDrawer implements CanvasDrawer
         let alpha = PointDrawer.getOpacity(drawData.totalPointCount);
         for(let c = 0; c < drawData.pointGroupCoords.length; c++)
         {
-            let drawer = new PointDrawer(screenContext, /*PLOT_POINTS_AS_CIRCLES,*/ PLOT_POINTS_SIZE, this._mdl.raw.pointGroupColours[c], null);
+            let drawer = new PointDrawer(screenContext, PLOT_POINTS_SIZE, this._mdl.raw.pointGroupColours[c], null, this._mdl.raw.shapeGroups[c]);
             drawer.drawPoints(drawData.pointGroupCoords[c], alpha);
         }
 
         // And hover point if any
         if(this._mdl.hoverPoint != null)
         {
-            let drawer = new PointDrawer(screenContext, /*PLOT_POINTS_AS_CIRCLES,*/ HOVER_POINT_RADIUS, clrHover, null);
+            let drawer = new PointDrawer(screenContext, HOVER_POINT_RADIUS, clrHover, null, this._mdl.hoverShape);
             drawer.drawPoints([this._mdl.hoverPoint], 1);
         }
 

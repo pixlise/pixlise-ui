@@ -27,56 +27,33 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { MinMax } from "src/app/models/BasicTypes";
-import { RGBA } from "src/app/utils/colours";
 
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-export class TernaryCorner
+import { MistRoiConvertComponent } from "./mist-roi-convert.component";
+
+describe("MistRoiConvertComponent", () => 
 {
-    constructor(
-        public label: string,
-        public errorMsgShort: string,
-        public errorMsgLong: string,
-        public valueRange: MinMax
-    )
-    {
-    }
-}
+    let component: MistRoiConvertComponent;
+    let fixture: ComponentFixture<MistRoiConvertComponent>;
 
-export class TernaryDataItem
-{
-    constructor(public pmc: number, public a: number, public b: number, public c: number)
+    beforeEach(async () => 
     {
-    }
-}
+        await TestBed.configureTestingModule({
+            declarations: [ MistRoiConvertComponent ]
+        })
+            .compileComponents();
+    });
 
-export class TernaryDataColour
-{
-    constructor(public colour: RGBA, public shape: string, public values: TernaryDataItem[])
+    beforeEach(() => 
     {
-    }
-}
+        fixture = TestBed.createComponent(MistRoiConvertComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-export class TernaryPlotPointIndex
-{
-    constructor(
-        public pointGroup: number,
-        public valueIndex: number
-    )
+    it("should create", () => 
     {
-    }
-}
-
-export class TernaryData
-{
-    constructor(
-        public cornerA: TernaryCorner,
-        public cornerB: TernaryCorner,
-        public cornerC: TernaryCorner,
-        public pointGroups: TernaryDataColour[],
-        public pmcToValueLookup: Map<number, TernaryPlotPointIndex>,
-        public visibleROIs: string[]
-    )
-    {
-    }
-}
+        expect(component).toBeTruthy();
+    });
+});
