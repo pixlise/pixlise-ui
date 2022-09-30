@@ -207,22 +207,26 @@ export class UserOptionsService
 
     private refreshUserConfig(): void
     {
-        this.http.get<UserConfig>(this.makeUserConfigURL(), makeHeaders()).subscribe(
-            (config: UserConfig)=>
+        this.http.get<string>(EnvConfigurationInitService.appConfig.versionPollUrl+"?checktime="+Math.floor(Date.now() / 1000), makeHeaders()).subscribe(
+            (version: string)=>
             {
-                this._userConfig = config;
-                this._userOptionsChanged$.next();
-                // If data collection flag does not match what we expect, show the dialog
-                if(this._userConfig.data_collection !== "false" && this._userConfig.data_collection !== EnvConfigurationInitService.appConfig.expectedDataCollectionAgreementVersion)
-                {
-                    this.showDataCollectionDialog();
-                }
-            },
-            (err)=>
-            {
-                console.error("Failed to retrieve user config: "+JSON.stringify(err));
-            }
-        );
+                this.http.get<UserConfig>(this.makeUserConfigURL(), makeHeaders()).subscribe(
+                    (config: UserConfig)=>
+                    {
+                        this._userConfig = config;
+                        this._userOptionsChanged$.next();
+                        // If data collection flag does not match what we expect, show the dialog
+                        if(this._userConfig.data_collection !== "false" && this._userConfig.data_collection !== version)
+                        {
+                            this.showDataCollectionDialog();
+                        }
+                    },
+                    (err)=>
+                    {
+                        console.error("Failed to retrieve user config: "+JSON.stringify(err));
+                    }
+                );
+            });
     }
 
     private refreshSubscriptions(): void
