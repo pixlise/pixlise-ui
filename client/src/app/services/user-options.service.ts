@@ -207,7 +207,7 @@ export class UserOptionsService
 
     private refreshUserConfig(): void
     {
-        this.http.get<string>(EnvConfigurationInitService.appConfig.versionPollUrl+"?checktime="+Math.floor(Date.now() / 1000), makeHeaders()).subscribe(
+        this.http.get<string>(EnvConfigurationInitService.appConfig.dataCollectionAgreementVersionUrl, makeHeaders()).subscribe(
             (version: string)=>
             {
                 this.http.get<UserConfig>(this.makeUserConfigURL(), makeHeaders()).subscribe(

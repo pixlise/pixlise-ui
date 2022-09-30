@@ -27,6 +27,7 @@
               "src/favicon.ico",
               "src/assets",
               "src/local-development-pixlise-config.json",
+              "src/agreement-version.json",
               "src/version.json"
             ],
             "styles": [

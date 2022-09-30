@@ -60,6 +60,7 @@ export class AppConfig
     alertPollInterval_ms: number = 10000;
     versionPollInterval_ms: number = 300000;
     versionPollUrl: string = "";
+    dataCollectionAgreementVersionUrl: string = "/agreement-version.json";
 
     allowDifferentMapSizesInExpressions: boolean = true;
 
