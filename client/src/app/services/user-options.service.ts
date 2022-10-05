@@ -207,8 +207,8 @@ export class UserOptionsService
 
     private refreshUserConfig(): void
     {
-        this.http.get<string>(EnvConfigurationInitService.appConfig.dataCollectionAgreementVersionUrl, makeHeaders()).subscribe(
-            (version: string)=>
+        this.http.get<{ version: string; }>(EnvConfigurationInitService.appConfig.dataCollectionAgreementVersionUrl, makeHeaders()).subscribe(
+            (version: { version: string; })=>
             {
                 this.http.get<UserConfig>(this.makeUserConfigURL(), makeHeaders()).subscribe(
                     (config: UserConfig)=>
@@ -216,7 +216,7 @@ export class UserOptionsService
                         this._userConfig = config;
                         this._userOptionsChanged$.next();
                         // If data collection flag does not match what we expect, show the dialog
-                        if(this._userConfig.data_collection !== "false" && this._userConfig.data_collection !== version)
+                        if(this._userConfig.data_collection !== "false" && this._userConfig.data_collection !== version.version)
                         {
                             this.showDataCollectionDialog();
                         }

@@ -60,7 +60,7 @@ export class AppConfig
     alertPollInterval_ms: number = 10000;
     versionPollInterval_ms: number = 300000;
     versionPollUrl: string = "";
-    dataCollectionAgreementVersionUrl: string = "/agreement-version.json";
+    dataCollectionAgreementVersionUrl: string = "";
 
     allowDifferentMapSizesInExpressions: boolean = true;
 
@@ -92,6 +92,12 @@ export class EnvConfigurationInitService
                 (config)=>
                 {
                     EnvConfigurationInitService._appConfig = config;
+
+                    // We want a default here as this file is now fixed in the UI repo
+                    if(!config.dataCollectionAgreementVersionUrl)
+                    {
+                        config.dataCollectionAgreementVersionUrl = "/agreement-version.json";
+                    }
                     this._gotConfig$.next();
                     console.log("Loaded application config...");
 
