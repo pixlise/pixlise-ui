@@ -104,6 +104,21 @@ export class FullScreenAnnotationItem
         this._calcDimensions();
     }
 
+    moveAllPoints(offsetX: number, offsetY: number)
+    {
+        this.points = this.points.map((point) =>
+        {
+            let newPoint = point.copy();
+            newPoint.x += offsetX;
+            newPoint.y += offsetY;
+
+            return newPoint;
+        });
+
+        this._x += offsetX;
+        this._y += offsetY;
+    }
+
     get width(): number
     {
         return this._width;
@@ -162,6 +177,10 @@ export class AnnotationDisplayComponent implements OnInit
     @Output() onToolChange = new EventEmitter();
     @Output() onEditIndex = new EventEmitter();
 
+    _draggingID: number = -1;
+    _dragStartX: number = -1;
+    _dragStartY: number = -1;
+
     constructor(
         private _datasetService: DataSetService,
         private _viewStateService: ViewStateService,
@@ -181,6 +200,62 @@ export class AnnotationDisplayComponent implements OnInit
         bottomRightPoint.y += height;
 
         return [topLeftPoint, topRightPoint, bottomLeftPoint, bottomRightPoint];
+    }
+
+    @HostListener("document:mousedown", ["$event"])
+    mouseDownListener(event)
+    {
+        // Ignore if editor isn't open or if editor is clicked
+        if(!this.editable || !event || event.path.includes(document.querySelector("div#annotation-editor")) || event.path.includes(document.querySelector("#annotation-toggle-btn")))
+        {
+            return;
+        }
+
+        if(event && event.target && event.target.getAttribute("draggable") && event.target.id)
+        {
+            let annotationID: number = Number(event.target.id.replace("annotation-item-", ""));
+            if(!isNaN(annotationID))
+            {
+                this._draggingID = annotationID;
+                this._dragStartX = event.clientX;
+                this._dragStartY = event.clientY;
+            }
+            return false;
+        }
+    }
+
+    @HostListener("document:mousemove", ["$event"])
+    mouseMoveListener(event)
+    {
+        if(this._dragStartX === -1 || this._dragStartY === -1 || this._draggingID === -1)
+        {
+            return;
+        }
+
+        this.savedAnnotations[this._draggingID].moveAllPoints(event.clientX - this._dragStartX, event.clientY - this._dragStartY);
+        this._dragStartX = event.clientX;
+        this._dragStartY = event.clientY;
+
+        return false;
+    }
+
+    @HostListener("document:mouseup", ["$event"])
+    mouseUpListener(event)
+    {
+        if(this._dragStartX === -1 || this._dragStartY === -1 || this._draggingID === -1)
+        {
+            return;
+        }
+
+        this.savedAnnotations[this._draggingID].moveAllPoints(event.clientX - this._dragStartX, event.clientY - this._dragStartY);
+        this._dragStartX = event.clientX;
+        this._dragStartY = event.clientY;
+
+        this._draggingID = -1;
+        this._dragStartX = -1;
+        this._dragStartY = -1;
+        
+        return false;
     }
 
     @HostListener("document:click", ["$event"])
@@ -223,10 +298,8 @@ export class AnnotationDisplayComponent implements OnInit
                 ));
                 if(!["text"].includes(this.annotationTool.tool))
                 {
-                    // this.editingIndex = this.savedAnnotations.length - 1;
                     this.onEditIndex.emit(this.savedAnnotations.length - 1);
                 }
-                console.log(this.savedAnnotations);
             }
         }
         else
@@ -244,6 +317,11 @@ export class AnnotationDisplayComponent implements OnInit
         });
     }
 
+    getAnnotationItemID(id: number)
+    {
+        return `annotation-item-${id}`;
+    }
+
     convertFontSize(fontSize: number)
     {
         return `${fontSize}px`;
@@ -255,8 +333,6 @@ export class AnnotationDisplayComponent implements OnInit
         {
             this.savedAnnotations[index].text = event.target.innerText;
         }
-
-        console.log(this.savedAnnotations);
     }
 
     onTextClick(event: any, index: number)

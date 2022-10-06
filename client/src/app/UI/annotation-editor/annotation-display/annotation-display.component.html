@@ -34,12 +34,14 @@ POSSIBILITY OF SUCH DAMAGE.
 <div id="annotation-display-layer" [style.cursor]="toolCursor">
   <div
     class="annotation-container"
-    *ngFor="let item of annotationItems" 
+    *ngFor="let item of annotationItems"
+    [id]="getAnnotationItemID(item.id)"
     [ngClass]="editable && item.id === editingIndex ? 'editable editing' : editable ? 'editable' : ''"
     [style.left]="item.xStr"
     [style.top]="item.yStr"
+    draggable="true"
   >
-    <div 
+    <div
       *ngIf="item.type === 'text'"
       class="annotation-text-box"  
       [contentEditable]="editable"
