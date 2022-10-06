@@ -29,26 +29,40 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div fxLayout="row" fxLayoutAlign="space-between center" class="toolbar" [ngClass]="{'dark-background': darkBackground}">
-    <img src="assets/logos/pixlise.svg" title="Home Page" class="clickable" (click)="onAbout()">
+<div fxLayout="row" fxLayoutAlign="space-between center" class="toolbar"
+  [ngClass]="{'dark-background': darkBackground}">
+  <img src="assets/logos/pixlise.svg" title="Home Page" class="clickable" (click)="onAbout()">
 
-    <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
-        <missing-data-indicator></missing-data-indicator>
-        <div class="title-text" [title]="title">{{title}}</div>
-        <push-button *ngIf="showExport" buttonStyle="yellow" (onClick)="onExport()">Export</push-button>
-        <screen-capture-button *ngIf="showViewCapture" [datasetID]="datasetID"></screen-capture-button>
-    </div>
+  <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
+    <missing-data-indicator></missing-data-indicator>
+    <div class="title-text" [title]="title">{{title}}</div>
+    <push-button *ngIf="showExport" buttonStyle="outline" (onClick)="onExport()">Export</push-button>
+    <two-state-edit-button *ngIf="showViewCapture" id="annotation-toggle-btn" buttonStyle="gray" (onToggle)="onToggleAnnotations($event)"
+      [active]="annotationsVisible" [style.z-index]="11" (onEdit)="onEditAnnotations()">
+      Annotations
+      <img *ngIf="savedAnnotations.length > 0" src="assets/button-icons/yellow-tick.svg">
+    </two-state-edit-button>
+    <annotation-display 
+      *ngIf="annotationsVisible" 
+      [style.display]="'contents'"
+      [editable]="editAnnotationsOpen"
+      [savedAnnotations]="savedAnnotations"
+      [annotationTool]="annotationTool"
+      [editingIndex]="editingAnnotationIndex"
+      (onEditIndex)="onAnnotationEditIndex($event)"
+      (onToolChange)="onAnnotationToolChange($event)"
+    ></annotation-display>
+    <screen-capture-button *ngIf="showViewCapture" [datasetID]="datasetID"></screen-capture-button>
+  </div>
 
-    <div *ngIf="isLoggedIn" fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements-wide">
-        <current-quantification *ngIf="showQuantPicker"></current-quantification>
+  <div *ngIf="isLoggedIn" fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements-wide">
+    <current-quantification *ngIf="showQuantPicker"></current-quantification>
 
-        <a [href]="discussLink" class="nav-link-normal" target="_blank">Discussion</a>
+    <a [href]="discussLink" class="nav-link-normal" target="_blank">Discussion</a>
 
-        <a *ngFor="let tab of tabs"
-            [href]="tab.url"
-            (click)="onNavigate(tab, $event)"
-            class="{{tab.cssClass}}">{{tab.label}}</a>
+    <a *ngFor="let tab of tabs" [href]="tab.url" (click)="onNavigate(tab, $event)"
+      class="{{tab.cssClass}}">{{tab.label}}</a>
 
-        <img class="clickable" cdkOverlayOrigin (click)="onUserMenu()" src="assets/button-icons/user.svg">
-    </div>
+    <img class="clickable" cdkOverlayOrigin (click)="onUserMenu()" src="assets/button-icons/user.svg">
+  </div>
 </div>

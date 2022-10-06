@@ -29,7 +29,24 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements" [title]="errorMsg">
-    <img *ngIf="errorMsg" class="quant-error-icon" src="assets/icons/error-triangle.svg">
-    <quantification-selector [selectedQuantID]="selectedQuantID"></quantification-selector>
+<!-- [style.width]="item.widthStr"
+    [style.height]="item.heightStr" -->
+<div id="annotation-display-layer" [style.cursor]="toolCursor">
+  <div
+    class="annotation-container"
+    *ngFor="let item of annotationItems" 
+    [ngClass]="editable && item.id === editingIndex ? 'editable editing' : editable ? 'editable' : ''"
+    [style.left]="item.xStr"
+    [style.top]="item.yStr"
+  >
+    <div 
+      *ngIf="item.type === 'text'"
+      class="annotation-text-box"  
+      [contentEditable]="editable"
+      [style.color]="item.colour" 
+      [style.font-size]="convertFontSize(item.fontSize)"
+      (input)="onTextChange($event, item.id)"
+      (click)="onTextClick($event, item.id)"
+    >{{item.text}}</div>
+  </div>
 </div>

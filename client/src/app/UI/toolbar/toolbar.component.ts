@@ -39,7 +39,9 @@ import { ExportDataChoice } from "src/app/UI/export-data-dialog/export-models";
 import { UserMenuPanelComponent } from "src/app/UI/user-menu-panel/user-menu-panel.component";
 import { OverlayHost } from "src/app/utils/overlay-host";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
-
+import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
+import { AnnotationEditorComponent, AnnotationEditorData, AnnotationTool } from "../annotation-editor/annotation-editor.component";
+import { FullScreenAnnotationItem } from "../annotation-editor/annotation-display/annotation-display.component";
 
 class TabNav
 {
@@ -89,6 +91,14 @@ export class ToolbarComponent implements OnInit, OnDestroy
     tabs: TabNav[] = [];
     datasetID: string = "";
 
+    savedAnnotations: FullScreenAnnotationItem[] = [];
+    annotationTool: AnnotationTool = null;
+    editingAnnotationIndex: number = -1;
+
+    annotationsVisible: boolean = false;
+    editAnnotationsOpen: boolean = false;
+    annotationEditorDialogRef: MatDialogRef<AnnotationEditorComponent, MatDialogConfig> = null;
+
     constructor(
         private router: Router,
         private _datasetService: DataSetService,
@@ -98,7 +108,9 @@ export class ToolbarComponent implements OnInit, OnDestroy
         private overlay: Overlay,
         private viewContainerRef: ViewContainerRef,
         private injector: Injector,
-        private titleService: Title
+        private titleService: Title,
+
+        public annotationsDialog: MatDialog,
     )
     {
     }
@@ -325,6 +337,80 @@ export class ToolbarComponent implements OnInit, OnDestroy
         ];
 
         this._exportService.exportData("PIXLISE Data", choices);
+    }
+
+    onToggleAnnotations(active: boolean): void
+    {
+        this.annotationsVisible = active;
+    }
+
+    onEditAnnotations(): void
+    {
+        if(this.editAnnotationsOpen)
+        {
+            return;
+        }
+
+        this.annotationsVisible = true;
+        this.editAnnotationsOpen = true;
+
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.hasBackdrop = false;
+        this.annotationEditorDialogRef = this.annotationsDialog.open(AnnotationEditorComponent, dialogConfig);
+
+        this.annotationEditorDialogRef.componentInstance.onActiveTool.subscribe(
+            (activeTool: AnnotationTool)=>
+            {
+                if(this.annotationTool && this.annotationTool.tool !== activeTool.tool)
+                {
+                    this.editingAnnotationIndex = -1;
+                }
+                else if(this.editingAnnotationIndex >= 0)
+                {
+                    this.savedAnnotations[this.editingAnnotationIndex].colour = activeTool.colour;
+                    this.savedAnnotations[this.editingAnnotationIndex].fontSize = activeTool.fontSize;
+                }
+
+                this.annotationTool = activeTool;
+            }
+        );
+
+        this.annotationEditorDialogRef.componentInstance.onBulkAction.subscribe(
+            (action: string)=>
+            {
+                console.log(action);
+                if(action === "clear")
+                {
+                    this.savedAnnotations = [];
+                    this.editingAnnotationIndex = -1;
+                }
+            }
+        );
+
+
+        this.annotationEditorDialogRef.afterClosed().subscribe(
+            ()=>
+            {
+                this.editAnnotationsOpen = false;
+                this.editingAnnotationIndex = -1;
+            }
+        );
+    }
+
+    onAnnotationEditIndex(index: number)
+    {
+        this.editingAnnotationIndex = index;
+    }
+
+    onAnnotationToolChange(tool: AnnotationTool): void
+    {
+        this.annotationTool = tool;
+        if(this.annotationEditorDialogRef && this.annotationEditorDialogRef.componentInstance)
+        {
+            this.annotationEditorDialogRef.componentInstance.selectedTool = tool.tool;
+            this.annotationEditorDialogRef.componentInstance.selectedColour = tool.colour;
+            this.annotationEditorDialogRef.componentInstance.fontSize = tool.fontSize;
+        }
     }
 
     get discussLink(): string
