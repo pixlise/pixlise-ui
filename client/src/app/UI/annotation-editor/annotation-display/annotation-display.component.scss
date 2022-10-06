@@ -45,10 +45,14 @@ div#annotation-display-layer {
         padding: 8px;
 
         &.editable {
-            cursor: grab;
-            outline: 1px solid white;
+            cursor: move;
+            outline: 0px solid white;
 
-            &:hover, &.editing {
+            &:hover {
+                outline: 1px solid white;
+            }
+            
+            &.editing {
                 outline: 2px solid white;
             }
 
@@ -70,6 +74,10 @@ div#annotation-display-layer {
             background: none;
             border: none;
             outline: none;
+        }
+
+        .arrow-box {
+            overflow: visible;
         }
     }
 }
