@@ -43,16 +43,57 @@ export type AnnotationToolOption = "freeform" | "text" | "arrow";
 
 export class AnnotationPoint
 {
+    // Scaling is disproportionate across different elements, so these min dimensions are just used to prevent
+    // a total collapse of annotations at a small screen resolution
+    _minScreenWidth: number = 500;
+    _minScreenHeight: number = 500;
+
     constructor(
-        public x: number,
-        public y: number,
-        public screenWidth: number, 
-        public screenHeight: number,
-    ) {}
+        private _x: number,
+        private _y: number,
+        public screenWidth?: number, 
+        public screenHeight?: number,
+    )
+    {
+        this.screenWidth = screenWidth ? screenWidth : this._currentWidth();
+        this.screenHeight = screenHeight ? screenHeight : this._currentHeight();
+    }
+
+    _currentWidth(): number
+    {
+        return window.innerWidth > this._minScreenWidth ? window.innerWidth : this._minScreenWidth;
+    }
+
+    _currentHeight(): number
+    {
+        return window.innerHeight > this._minScreenHeight ? window.innerHeight : this._minScreenHeight;
+    }
+
+    get x(): number
+    {
+        return this._x / this.screenWidth * this._currentWidth();
+    }
+
+    set x(newX: number)
+    {
+        this._x = newX;
+        this.screenWidth = this._currentWidth();
+    }
+
+    get y(): number
+    {
+        return this._y / this.screenHeight * this._currentHeight();
+    }
+
+    set y(newY: number)
+    {
+        this._y = newY;
+        this.screenHeight = this._currentHeight();
+    }
 
     copy(): AnnotationPoint
     {
-        return new AnnotationPoint(this.x, this.y, this.screenWidth, this.screenHeight);
+        return new AnnotationPoint(this._x, this._y, this.screenWidth, this.screenHeight);
     }
 
     distanceTo(nextPoint: AnnotationPoint): number
@@ -63,14 +104,10 @@ export class AnnotationPoint
 
 export class FullScreenAnnotationItem
 {
-    private _cachedX: number = 0;
-    private _cachedY: number = 0;
-
-    private _x: number = 0;
-    private _y: number = 0;
+    private _startingPoint: AnnotationPoint;
+    private _cachedStartingPoint: AnnotationPoint;
     
-    private _width: number = 100;
-    private _height: number = 100;
+    private _relativeEndPoint: AnnotationPoint;
 
     private _pointPairs: [AnnotationPoint, AnnotationPoint][];
     private _relativePointPairs: [AnnotationPoint, AnnotationPoint][];
@@ -93,25 +130,25 @@ export class FullScreenAnnotationItem
 
     private _calcDimensions()
     {
-        let [minX, maxX, minY, maxY] = [0,0,0,0];
+        let minPoint = new AnnotationPoint(0,0);
+        let maxPoint = new AnnotationPoint(0,0);
+
         if(this.points.length > 0)
         {
-            [minX, maxX, minY, maxY] = [this.points[0].x, this.points[0].x, this.points[0].y, this.points[0].y];
+            minPoint = this.points[0].copy();
+            maxPoint = this.points[0].copy();
         }
         this.points.forEach(point =>
         {
-            minX = Math.min(point.x, minX);
-            maxX = Math.max(point.x, maxX);
-            minY = Math.min(point.y, minY);
-            maxY = Math.max(point.y, maxY);
+            minPoint.x = Math.min(point.x, minPoint.x);
+            maxPoint.x = Math.max(point.x, maxPoint.x);
+            minPoint.y = Math.min(point.y, minPoint.y);
+            maxPoint.y = Math.max(point.y, maxPoint.y);
         });
 
-        this._x = minX;
-        this._y = minY;
-        this._cachedX = minX;
-        this._cachedY = minY;
-        this._width = maxX - minX;
-        this._height = maxY - minY;
+        this._startingPoint = minPoint.copy();
+        this._cachedStartingPoint = minPoint.copy();
+        this._relativeEndPoint = new AnnotationPoint(maxPoint.x - minPoint.x, maxPoint.y - minPoint.y);
     }
 
     private _generatePointPairs()
@@ -125,8 +162,8 @@ export class FullScreenAnnotationItem
         let lastValue = this.points[0];
         this.points.forEach((point) =>
         {
-            pairs.push([lastValue, point]);
-            lastValue = point;
+            pairs.push([lastValue.copy(), point.copy()]);
+            lastValue = point.copy();
         });
 
         this._pointPairs = pairs;
@@ -136,17 +173,15 @@ export class FullScreenAnnotationItem
 
     _generateRelativePoints()
     {
-        this._cachedX = this._x;
-        this._cachedY = this._y;
-
+        this._cachedStartingPoint = this._startingPoint.copy();
         this._relativePointPairs = this._pointPairs.map(([pointA, pointB]) =>
         {
             let relativePointA = pointA.copy();
-            relativePointA.x -= this._cachedX;
-            relativePointA.y -= this._cachedY;
+            relativePointA.x -= this._cachedStartingPoint.x;
+            relativePointA.y -= this._cachedStartingPoint.y;
             let relativePointB = pointB.copy();
-            relativePointB.x -= this._cachedX;
-            relativePointB.y -= this._cachedY;
+            relativePointB.x -= this._cachedStartingPoint.x;
+            relativePointB.y -= this._cachedStartingPoint.y;
 
             return [
                 relativePointA,
@@ -160,15 +195,13 @@ export class FullScreenAnnotationItem
         this._pointPairs.push([this.points[this.points.length - 1], newPoint]);
         this.points.push(newPoint);
 
-        let minX = Math.min(newPoint.x, this._x);
-        let maxX = Math.max(newPoint.x, this._x + this.width);
-        let minY = Math.min(newPoint.y, this._y);
-        let maxY = Math.max(newPoint.y, this._y + this.height);
+        let minX = Math.min(newPoint.x, this._startingPoint.x);
+        let maxX = Math.max(newPoint.x, this._startingPoint.x + this.width);
+        let minY = Math.min(newPoint.y, this._startingPoint.y);
+        let maxY = Math.max(newPoint.y, this._startingPoint.y + this.height);
 
-        this._x = minX;
-        this._y = minY;
-        this._width = maxX - minX;
-        this._height = maxY - minY;
+        this._startingPoint = new AnnotationPoint(minX, minY);
+        this._relativeEndPoint = new AnnotationPoint(maxX - minX, maxY - minY);
     }
 
     shiftPoint(index: number, xShift: number, yShift: number)
@@ -176,23 +209,19 @@ export class FullScreenAnnotationItem
         this.points[index].x += xShift;
         this.points[index].y += yShift;
 
-        let minX = this.points[index].x;
-        let maxX = this.points[index].x;
-        let minY = this.points[index].y;
-        let maxY = this.points[index].y;
+        let minPoint = this.points[index].copy();
+        let maxPoint = this.points[index].copy();
 
         this.points.forEach(point =>
         {
-            minX = Math.min(point.x, minX);
-            maxX = Math.max(point.x, maxX);
-            minY = Math.min(point.y, minY);
-            maxY = Math.max(point.y, maxY);
+            minPoint.x = Math.min(point.x, minPoint.x);
+            maxPoint.x = Math.max(point.x, maxPoint.x);
+            minPoint.y = Math.min(point.y, minPoint.y);
+            maxPoint.y = Math.max(point.y, maxPoint.y);
         });
 
-        this._x = minX;
-        this._y = minY;
-        this._width = maxX - minX;
-        this._height = maxY - minY;
+        this._startingPoint = minPoint.copy();
+        this._relativeEndPoint = new AnnotationPoint(maxPoint.x - minPoint.x, maxPoint.y - minPoint.y);
 
         this._pointPairs[index][0] = this.points[index];
         if(this._pointPairs.length > 1)
@@ -217,20 +246,20 @@ export class FullScreenAnnotationItem
             return newPoint;
         });
 
-        this._x += offsetX;
-        this._y += offsetY;
+        this._startingPoint.x += offsetX;
+        this._startingPoint.y += offsetY;
         this._generatePointPairs();
     }
 
     moveCachedBase(offsetX: number, offsetY: number)
     {
-        this._cachedX += offsetX;
-        this._cachedY += offsetY;
+        this._cachedStartingPoint.x += offsetX;
+        this._cachedStartingPoint.y += offsetY;
     }
 
     updatePointCache()
     {
-        this.moveAllPoints(this._cachedX - this._x, this._cachedY - this._y);
+        this.moveAllPoints(this._cachedStartingPoint.x - this._startingPoint.x, this._cachedStartingPoint.y - this._startingPoint.y);
     }
 
     get pointPairs(): [AnnotationPoint, AnnotationPoint][]
@@ -245,22 +274,22 @@ export class FullScreenAnnotationItem
 
     get width(): number
     {
-        return this._width;
+        return this._relativeEndPoint.x;
     }
 
     get widthStr(): string
     {
-        return `${this._width}px`;
+        return `${this.width}px`;
     }
 
     get height(): number
     {
-        return this._height;
+        return this._relativeEndPoint.y;
     }
 
     get heightStr(): string
     {
-        return `${this._height}px`;
+        return `${this.height}px`;
     }
 
     get isGlobalPosition(): boolean
@@ -279,22 +308,22 @@ export class FullScreenAnnotationItem
 
     get x(): number
     {
-        return this.isGlobalPosition ? this._x : this._cachedX;
+        return this.isGlobalPosition ? this._startingPoint.x : this._cachedStartingPoint.x;
     }
 
     get xStr(): string
     {
-        return this.isGlobalPosition ? `${this._x}px` :  `${this._cachedX}px`;
+        return `${this.x}px`;
     }
 
     get y(): number
     {
-        return this.isGlobalPosition ? this._y : this._cachedY;
+        return this.isGlobalPosition ? this._startingPoint.y : this._cachedStartingPoint.y;
     }
 
     get yStr(): string
     {
-        return this.isGlobalPosition ? `${this._y}px` :  `${this._cachedY}px`;
+        return `${this.y}px`;
     }
 }
 
@@ -365,39 +394,26 @@ export class AnnotationDisplayComponent implements OnInit
         // Started creating arrow case
         else if(this.annotationTool.tool === "arrow")
         {
-            let startPoint = new AnnotationPoint(event.clientX, event.clientY, event.view.innerWidth, event.view.innerHeight);
+            let startPoint = new AnnotationPoint(event.clientX, event.clientY);
             this.onNewAnnotation.emit(new FullScreenAnnotationItem(
                 this.annotationTool.tool,
                 [startPoint, startPoint.copy()],
                 this.annotationTool.colour,
                 true
             ));
-            // this.savedAnnotations.push(new FullScreenAnnotationItem(
-            //     this.annotationTool.tool,
-            //     [startPoint, startPoint.copy()],
-            //     this.annotationTool.colour,
-            //     true
-            // ));
 
             this._draggingID = this.savedAnnotations.length - 1;
         }
         // Started creating freeform case
         else if(this.annotationTool.tool === "freeform")
         {
-            let startPoint = new AnnotationPoint(event.clientX, event.clientY, event.view.innerWidth, event.view.innerHeight);
+            let startPoint = new AnnotationPoint(event.clientX, event.clientY);
             this.onNewAnnotation.emit(new FullScreenAnnotationItem(
                 this.annotationTool.tool,
                 [startPoint],
                 this.annotationTool.colour,
                 true
             ));
-            // this.savedAnnotations.push(new FullScreenAnnotationItem(
-            //     this.annotationTool.tool,
-            //     [startPoint],
-            //     this.annotationTool.colour,
-            //     true
-            // ));
-
             this._draggingID = this.savedAnnotations.length - 1;
         }
     }
@@ -422,7 +438,7 @@ export class AnnotationDisplayComponent implements OnInit
         // Drawing shape
         else if(this._draggingID >= 0 && this.savedAnnotations[this._draggingID])
         {   
-            let newPoint = new AnnotationPoint(event.clientX, event.clientY, event.view.innerWidth, event.view.innerHeight);
+            let newPoint = new AnnotationPoint(event.clientX, event.clientY);
 
             let draggingPoints = this.savedAnnotations[this._draggingID].points;
             let lastPoint = draggingPoints[draggingPoints.length - 1];
@@ -475,7 +491,7 @@ export class AnnotationDisplayComponent implements OnInit
             // Finished creating freeform
             else if(this.savedAnnotations[this._draggingID].type === "freeform")
             {
-                let newPoint = new AnnotationPoint(event.clientX, event.clientY, event.view.innerWidth, event.view.innerHeight);
+                let newPoint = new AnnotationPoint(event.clientX, event.clientY);
                 this.savedAnnotations[this._draggingID].addPoint(newPoint);
                 this.savedAnnotations[this._draggingID].isGlobalPosition = false;
             }
@@ -507,7 +523,7 @@ export class AnnotationDisplayComponent implements OnInit
         // Verify there's an active tool
         if(this.annotationTool && this.annotationTool.tool)
         {
-            let clickPoint = new AnnotationPoint(event.clientX, event.clientY, event.view.innerWidth, event.view.innerHeight);
+            let clickPoint = new AnnotationPoint(event.clientX, event.clientY);
 
             // Only create new text if we're not currently editing
             if(this.editingIndex === -1)
@@ -542,7 +558,6 @@ export class AnnotationDisplayComponent implements OnInit
         if(["Delete", "Backspace"].includes(event.key) && this._isDeletable && this.editingIndex >= 0)
         {
             this.onDeleteAnnotation.emit(this.editingIndex);
-            // this.savedAnnotations = this.savedAnnotations.filter((_, index: number) => index !== this.editingIndex);
         }
     }
 
