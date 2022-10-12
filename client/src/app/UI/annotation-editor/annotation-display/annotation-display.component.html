@@ -73,21 +73,40 @@ POSSIBILITY OF SUCH DAMAGE.
         marker-end="url(#arrowhead)" 
       />
     </svg>
-
-     <svg 
+    <svg 
       class="freeform-box"
-      *ngIf="item.type === 'freeform'"
+      *ngIf="item.type === 'freeform' && item.isGlobalPosition"
       attr.viewBox="0 0 {{item.width}} {{item.height}}"
       [attr.width]="item.width"
       [attr.height]="item.height"
       draggable="true"
     >
-      <line 
+      <line
         *ngFor="let points of item.pointPairs"
         attr.x1="{{points[0].x - item.x}}" 
         attr.y1="{{points[0].y - item.y}}" 
         attr.x2="{{points[1].x - item.x}}" 
         attr.y2="{{points[1].y - item.y}}" 
+        attr.stroke="{{item.colour}}" 
+        stroke-width="2" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"
+      />
+    </svg>
+    <svg
+      class="freeform-box"
+      *ngIf="item.type === 'freeform' && !item.isGlobalPosition"
+      attr.viewBox="0 0 {{item.width}} {{item.height}}"
+      [attr.width]="item.width"
+      [attr.height]="item.height"
+      draggable="true"
+    >
+      <line
+        *ngFor="let points of item.relativePointPairs"
+        attr.x1="{{points[0].x}}" 
+        attr.y1="{{points[0].y}}" 
+        attr.x2="{{points[1].x}}" 
+        attr.y2="{{points[1].y}}" 
         attr.stroke="{{item.colour}}" 
         stroke-width="2" 
         stroke-linecap="round" 

@@ -378,7 +378,6 @@ export class ToolbarComponent implements OnInit, OnDestroy
         this.annotationEditorDialogRef.componentInstance.onBulkAction.subscribe(
             (action: string)=>
             {
-                console.log(action);
                 if(action === "clear")
                 {
                     this.savedAnnotations = [];
@@ -387,7 +386,6 @@ export class ToolbarComponent implements OnInit, OnDestroy
             }
         );
 
-
         this.annotationEditorDialogRef.afterClosed().subscribe(
             ()=>
             {
@@ -395,6 +393,22 @@ export class ToolbarComponent implements OnInit, OnDestroy
                 this.editingAnnotationIndex = -1;
             }
         );
+    }
+
+    onNewAnnotation(newAnnotation: FullScreenAnnotationItem)
+    {
+        this.savedAnnotations.push(newAnnotation);
+    }
+
+    onEditAnnotation({ id, annotation }: { id: number; annotation: FullScreenAnnotationItem; })
+    {
+        this.savedAnnotations[id] = annotation;
+    }
+
+    onDeleteAnnotation(deleteIndex: number)
+    {
+        this.savedAnnotations = this.savedAnnotations.filter((_, i) => deleteIndex !== i);
+        this.editingAnnotationIndex = -1;
     }
 
     onAnnotationEditIndex(index: number)

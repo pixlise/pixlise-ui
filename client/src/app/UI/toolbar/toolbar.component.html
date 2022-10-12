@@ -51,6 +51,9 @@ POSSIBILITY OF SUCH DAMAGE.
       [editingIndex]="editingAnnotationIndex"
       (onEditIndex)="onAnnotationEditIndex($event)"
       (onToolChange)="onAnnotationToolChange($event)"
+      (onNewAnnotation)="onNewAnnotation($event)"
+      (onEditAnnotation)="onEditAnnotation($event)"
+      (onDeleteAnnotation)="onDeleteAnnotation($event)"
     ></annotation-display>
     <screen-capture-button *ngIf="showViewCapture" [datasetID]="datasetID"></screen-capture-button>
   </div>

@@ -59,10 +59,13 @@ export class AnnotationPoint
     {
         return Math.sqrt(Math.pow(nextPoint.x - this.x, 2) + Math.pow(nextPoint.y - this.y, 2));
     }
-};
+}
 
 export class FullScreenAnnotationItem
 {
+    private _cachedX: number = 0;
+    private _cachedY: number = 0;
+
     private _x: number = 0;
     private _y: number = 0;
     
@@ -70,6 +73,9 @@ export class FullScreenAnnotationItem
     private _height: number = 100;
 
     private _pointPairs: [AnnotationPoint, AnnotationPoint][];
+    private _relativePointPairs: [AnnotationPoint, AnnotationPoint][];
+
+    private _isGlobalPosition: boolean = true;
 
     constructor(
         public type: AnnotationToolOption,
@@ -102,6 +108,8 @@ export class FullScreenAnnotationItem
 
         this._x = minX;
         this._y = minY;
+        this._cachedX = minX;
+        this._cachedY = minY;
         this._width = maxX - minX;
         this._height = maxY - minY;
     }
@@ -122,13 +130,35 @@ export class FullScreenAnnotationItem
         });
 
         this._pointPairs = pairs;
+
+        this._generateRelativePoints();
+    }
+
+    _generateRelativePoints()
+    {
+        this._cachedX = this._x;
+        this._cachedY = this._y;
+
+        this._relativePointPairs = this._pointPairs.map(([pointA, pointB]) =>
+        {
+            let relativePointA = pointA.copy();
+            relativePointA.x -= this._cachedX;
+            relativePointA.y -= this._cachedY;
+            let relativePointB = pointB.copy();
+            relativePointB.x -= this._cachedX;
+            relativePointB.y -= this._cachedY;
+
+            return [
+                relativePointA,
+                relativePointB
+            ];
+        });
     }
 
     addPoint(newPoint: AnnotationPoint)
     {
         this._pointPairs.push([this.points[this.points.length - 1], newPoint]);
         this.points.push(newPoint);
-
 
         let minX = Math.min(newPoint.x, this._x);
         let maxX = Math.max(newPoint.x, this._x + this.width);
@@ -146,10 +176,18 @@ export class FullScreenAnnotationItem
         this.points[index].x += xShift;
         this.points[index].y += yShift;
 
-        let minX = Math.min(this.points[index].x, this._x);
-        let maxX = Math.max(this.points[index].x, this._x + this.width);
-        let minY = Math.min(this.points[index].y, this._y);
-        let maxY = Math.max(this.points[index].y, this._y + this.height);
+        let minX = this.points[index].x;
+        let maxX = this.points[index].x;
+        let minY = this.points[index].y;
+        let maxY = this.points[index].y;
+
+        this.points.forEach(point =>
+        {
+            minX = Math.min(point.x, minX);
+            maxX = Math.max(point.x, maxX);
+            minY = Math.min(point.y, minY);
+            maxY = Math.max(point.y, maxY);
+        });
 
         this._x = minX;
         this._y = minY;
@@ -184,9 +222,25 @@ export class FullScreenAnnotationItem
         this._generatePointPairs();
     }
 
+    moveCachedBase(offsetX: number, offsetY: number)
+    {
+        this._cachedX += offsetX;
+        this._cachedY += offsetY;
+    }
+
+    updatePointCache()
+    {
+        this.moveAllPoints(this._cachedX - this._x, this._cachedY - this._y);
+    }
+
     get pointPairs(): [AnnotationPoint, AnnotationPoint][]
     {
         return this._pointPairs;
+    }
+
+    get relativePointPairs(): [AnnotationPoint, AnnotationPoint][]
+    {
+        return this._relativePointPairs;
     }
 
     get width(): number
@@ -209,24 +263,38 @@ export class FullScreenAnnotationItem
         return `${this._height}px`;
     }
 
+    get isGlobalPosition(): boolean
+    {
+        return this._isGlobalPosition;
+    }
+
+    set isGlobalPosition(globalPositioning: boolean)
+    {
+        if(!globalPositioning)
+        {
+            this._generateRelativePoints();
+        }
+        this._isGlobalPosition = globalPositioning;
+    }
+
     get x(): number
     {
-        return this._x;
+        return this.isGlobalPosition ? this._x : this._cachedX;
     }
 
     get xStr(): string
     {
-        return `${this._x}px`;
+        return this.isGlobalPosition ? `${this._x}px` :  `${this._cachedX}px`;
     }
 
     get y(): number
     {
-        return this._y;
+        return this.isGlobalPosition ? this._y : this._cachedY;
     }
 
     get yStr(): string
     {
-        return `${this._y}px`;
+        return this.isGlobalPosition ? `${this._y}px` :  `${this._cachedY}px`;
     }
 }
 
@@ -246,30 +314,21 @@ export class AnnotationDisplayComponent implements OnInit
 
     @Output() onToolChange = new EventEmitter();
     @Output() onEditIndex = new EventEmitter();
+    @Output() onNewAnnotation = new EventEmitter();
+    @Output() onDeleteAnnotation = new EventEmitter();
+    @Output() onEditAnnotation = new EventEmitter();
 
     _draggingID: number = -1;
     _dragStartX: number = -1;
     _dragStartY: number = -1;
+
+    _isDeletable: boolean = true;
 
     constructor(
         private _datasetService: DataSetService,
         private _viewStateService: ViewStateService,
     )
     {
-    }
-
-    makeBoundingBox(topLeftPoint: AnnotationPoint, width: number, height: number)
-    {
-        let topRightPoint = topLeftPoint.copy();
-        topRightPoint.x += width;
-
-        let bottomLeftPoint = topLeftPoint.copy();
-        bottomLeftPoint.y += height;
-
-        let bottomRightPoint = topRightPoint.copy();
-        bottomRightPoint.y += height;
-
-        return [topLeftPoint, topRightPoint, bottomLeftPoint, bottomRightPoint];
     }
 
     @HostListener("document:mousedown", ["$event"])
@@ -281,7 +340,7 @@ export class AnnotationDisplayComponent implements OnInit
             return;
         }
 
-        // Dragging annotation item case
+        // Started dragging annotation item case
         if(event.target.getAttribute("draggable"))
         {
             let annotationID: number = null;
@@ -303,29 +362,41 @@ export class AnnotationDisplayComponent implements OnInit
             return false;
         }
 
-        // Creating arrow case
+        // Started creating arrow case
         else if(this.annotationTool.tool === "arrow")
         {
             let startPoint = new AnnotationPoint(event.clientX, event.clientY, event.view.innerWidth, event.view.innerHeight);
-            this.savedAnnotations.push(new FullScreenAnnotationItem(
+            this.onNewAnnotation.emit(new FullScreenAnnotationItem(
                 this.annotationTool.tool,
                 [startPoint, startPoint.copy()],
                 this.annotationTool.colour,
                 true
             ));
+            // this.savedAnnotations.push(new FullScreenAnnotationItem(
+            //     this.annotationTool.tool,
+            //     [startPoint, startPoint.copy()],
+            //     this.annotationTool.colour,
+            //     true
+            // ));
 
             this._draggingID = this.savedAnnotations.length - 1;
         }
-        // Creating freeform
+        // Started creating freeform case
         else if(this.annotationTool.tool === "freeform")
         {
             let startPoint = new AnnotationPoint(event.clientX, event.clientY, event.view.innerWidth, event.view.innerHeight);
-            this.savedAnnotations.push(new FullScreenAnnotationItem(
+            this.onNewAnnotation.emit(new FullScreenAnnotationItem(
                 this.annotationTool.tool,
                 [startPoint],
                 this.annotationTool.colour,
                 true
             ));
+            // this.savedAnnotations.push(new FullScreenAnnotationItem(
+            //     this.annotationTool.tool,
+            //     [startPoint],
+            //     this.annotationTool.colour,
+            //     true
+            // ));
 
             this._draggingID = this.savedAnnotations.length - 1;
         }
@@ -337,7 +408,14 @@ export class AnnotationDisplayComponent implements OnInit
         // Dragging
         if(this._dragStartX > -1 && this._dragStartY > -1 && this._draggingID > -1 && this.savedAnnotations[this._draggingID])
         {
-            this.savedAnnotations[this._draggingID].moveAllPoints(event.clientX - this._dragStartX, event.clientY - this._dragStartY);
+            if(this.savedAnnotations[this._draggingID].isGlobalPosition)
+            {
+                this.savedAnnotations[this._draggingID].moveAllPoints(event.clientX - this._dragStartX, event.clientY - this._dragStartY);
+            }
+            else
+            {
+                this.savedAnnotations[this._draggingID].moveCachedBase(event.clientX - this._dragStartX, event.clientY - this._dragStartY);
+            }
             this._dragStartX = event.clientX;
             this._dragStartY = event.clientY;
         }
@@ -371,24 +449,35 @@ export class AnnotationDisplayComponent implements OnInit
     @HostListener("document:mouseup", ["$event"])
     mouseUpListener(event)
     {
+        // Finished dragging
         if(this._dragStartX > -1 && this._dragStartY > -1 && this._draggingID > -1 && this.savedAnnotations[this._draggingID])
         {
-            this.savedAnnotations[this._draggingID].moveAllPoints(event.clientX - this._dragStartX, event.clientY - this._dragStartY);
-            this._dragStartX = event.clientX;
-            this._dragStartY = event.clientY;
+            if(this.savedAnnotations[this._draggingID].isGlobalPosition)
+            {
+                this.savedAnnotations[this._draggingID].moveAllPoints(event.clientX - this._dragStartX, event.clientY - this._dragStartY);
+            }
+            else
+            {
+                this.savedAnnotations[this._draggingID].moveCachedBase(event.clientX - this._dragStartX, event.clientY - this._dragStartY);
+                this.savedAnnotations[this._draggingID].updatePointCache();
+            }
         }
+        // Finished drawing shape
         else if(this._draggingID >= 0 && this.savedAnnotations[this._draggingID])
         {
+            // Finished creating arrow
             if(this.savedAnnotations[this._draggingID].type === "arrow")
             {   
                 let xPoint = this.savedAnnotations[this._draggingID].points[1].x;
                 let yPoint = this.savedAnnotations[this._draggingID].points[1].y;
                 this.savedAnnotations[this._draggingID].shiftPoint(1, event.clientX - xPoint, event.clientY - yPoint);
             }
+            // Finished creating freeform
             else if(this.savedAnnotations[this._draggingID].type === "freeform")
             {
                 let newPoint = new AnnotationPoint(event.clientX, event.clientY, event.view.innerWidth, event.view.innerHeight);
                 this.savedAnnotations[this._draggingID].addPoint(newPoint);
+                this.savedAnnotations[this._draggingID].isGlobalPosition = false;
             }
 
             this.onToolChange.emit(new AnnotationTool(null, this.annotationTool.colour, this.annotationTool.fontSize));
@@ -398,6 +487,7 @@ export class AnnotationDisplayComponent implements OnInit
             return;
         }
 
+        this.onEditAnnotation.emit({ id: this._draggingID, annotation: this.savedAnnotations[this._draggingID] });
         this._draggingID = -1;
         this._dragStartX = -1;
         this._dragStartY = -1;
@@ -418,11 +508,9 @@ export class AnnotationDisplayComponent implements OnInit
         if(this.annotationTool && this.annotationTool.tool)
         {
             let clickPoint = new AnnotationPoint(event.clientX, event.clientY, event.view.innerWidth, event.view.innerHeight);
-            if(this.editingIndex >= 0)
-            {
-                // This isn't the first click
-            }
-            else
+
+            // Only create new text if we're not currently editing
+            if(this.editingIndex === -1)
             {
                 let annotationPoints = [clickPoint];
                 let text: string = null;
@@ -430,7 +518,7 @@ export class AnnotationDisplayComponent implements OnInit
 
                 if(this.annotationTool.tool === "text")
                 {
-                    annotationPoints = this.makeBoundingBox(clickPoint, 82, 20);
+                    annotationPoints = [clickPoint];
                     text = "New Text";
 
                     this.savedAnnotations.push(new FullScreenAnnotationItem(
@@ -446,9 +534,15 @@ export class AnnotationDisplayComponent implements OnInit
                 }
             }
         }
-        else
+    }
+
+    @HostListener("document:keyup", ["$event"])
+    deleteListener(event: KeyboardEvent)
+    {
+        if(["Delete", "Backspace"].includes(event.key) && this._isDeletable && this.editingIndex >= 0)
         {
-            // If no active tool, check for moving/resizing
+            this.onDeleteAnnotation.emit(this.editingIndex);
+            // this.savedAnnotations = this.savedAnnotations.filter((_, index: number) => index !== this.editingIndex);
         }
     }
 
@@ -484,6 +578,8 @@ export class AnnotationDisplayComponent implements OnInit
         if(this.editable && event && event.target && document)
         {
             this.onEditIndex.emit(index);
+            this._isDeletable = false;
+
             let selectedAnnotation = this.savedAnnotations[index];
             this.onToolChange.emit(new AnnotationTool(this.annotationTool.tool, selectedAnnotation.colour, selectedAnnotation.fontSize));
             if(!this.savedAnnotations[index].complete)
@@ -499,22 +595,29 @@ export class AnnotationDisplayComponent implements OnInit
     {
         if(this.editable && event && event.target)
         {
+            let isAnnotationContainer = event.target.classList && Array.from(event.target.classList).includes("annotation-container");
             let isAnnotationContainerChild = event.target.offsetParent && event.target.offsetParent.className && event.target.offsetParent.className.includes("annotation-container"); 
             let isArrowBox = event.target.classList && Array.from(event.target.classList).includes("arrow-box");
             let isFreeform = event.target.classList && Array.from(event.target.classList).includes("freeform-box");
-
-            let isAnnotationItem = isAnnotationContainerChild || isArrowBox || isFreeform;
-            if(isAnnotationItem)
+            
+            if(isAnnotationContainer || isAnnotationContainerChild || isArrowBox || isFreeform)
             {
                 let annotationID: number = null;
-                if(isAnnotationContainerChild)
+                if(isAnnotationContainer)
+                {
+                    annotationID = Number(event.target.id.replace("annotation-item-", ""));
+                    this._isDeletable = true;
+                }
+                else if(isAnnotationContainerChild)
                 {
                     annotationID = Number(event.target.offsetParent.id.replace("annotation-item-", ""));
                 }
                 else if(isArrowBox || isFreeform)
                 {
                     annotationID = Number(event.target.parentNode.id.replace("annotation-item-", ""));
+                    this._isDeletable = true;
                 }
+
                 if(!isNaN(annotationID))
                 {
                     this.onEditIndex.emit(annotationID);
@@ -523,6 +626,7 @@ export class AnnotationDisplayComponent implements OnInit
             else
             {
                 this.onEditIndex.emit(-1);
+                this._isDeletable = true;
             }
         }
     }
