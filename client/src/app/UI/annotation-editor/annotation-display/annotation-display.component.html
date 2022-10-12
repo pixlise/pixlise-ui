@@ -57,7 +57,7 @@ POSSIBILITY OF SUCH DAMAGE.
       draggable="true"
     >
       <defs>
-        <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="3.5" orient="auto">
+        <marker attr.id="arrowhead-{{item.id}}" markerWidth="10" markerHeight="10" refX="8" refY="3.5" orient="auto">
           <polygon points="0 0, 10 3.5, 0 7" attr.fill="{{item.colour}}" />
         </marker>
       </defs>
@@ -70,7 +70,7 @@ POSSIBILITY OF SUCH DAMAGE.
         stroke-width="2" 
         stroke-linecap="round" 
         stroke-linejoin="round"
-        marker-end="url(#arrowhead)" 
+        attr.marker-end="url(#arrowhead-{{item.id}})" 
       />
     </svg>
     <svg 
