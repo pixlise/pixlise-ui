@@ -57,10 +57,10 @@ jobs:
           search_commit_body: false
           # The output method used to generate list of users, 'csv' or 'json'.
           user_format_type: "csv"
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: "1.18.0"
+      #- name: Setup Go
+      #  uses: actions/setup-go@v3
+      #  with:
+      #    go-version: "1.18.0"
       - name: print version
         id: taggen
         run: |
