@@ -640,9 +640,9 @@ export class DataSetService
         return this.http.post<void>(apiUrl, fileBytes, makeHeaders());
     }
 
-    reprocessDataset(datasetID: string): Observable<void>
+    reprocessDataset(datasetID: string): Observable<string>
     {
         let apiUrl = APIPaths.getWithHost(APIPaths.api_dataset+"/reprocess/"+datasetID);
-        return this.http.post<void>(apiUrl, "", makeHeaders());
+        return this.http.post<string>(apiUrl, "", makeHeaders());
     }
 }
