@@ -364,7 +364,7 @@ export class AnnotationDisplayComponent implements OnInit
     mouseDownListener(event)
     {
         // Ignore if editor isn't open or if editor is clicked
-        if(!this.editable || !event || !event.target || event.path.includes(document.querySelector("div#annotation-editor")) || event.path.includes(document.querySelector("#annotation-toggle-btn")))
+        if(!this.editable || !event || !event.target || !event.path || event.path.includes(document.querySelector("div#annotation-editor")) || event.path.includes(document.querySelector("#annotation-toggle-btn")))
         {
             return;
         }
