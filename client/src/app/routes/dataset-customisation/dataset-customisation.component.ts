@@ -264,27 +264,35 @@ export class DatasetCustomisationComponent implements OnInit
     {
         // Title variable would hold the new value, save that
         this._datasetService.setCustomTitle(this.datasetID, this.title).subscribe(
-            (result: object)=>
+            ()=>
             {
-                // Check if we've got a job id back for this dataset conversion process
-                let logId = result["LogID"];
-                if(logId)
-                {
-                    alert("Saved. Dataset will be regenerated, watch log output for errors.");
+                // If it was successful, we trigger a dataset reprocess here
+                this._datasetService.reprocessDataset(this.datasetID).subscribe(
+                    (logId: string)=>
+                    {
+                        // Check if we've got a log id back for this dataset conversion process
+                        if(logId)
+                        {
+                            alert("Saved. Dataset will be regenerated, watch log output for errors.");
 
-                    this.logData = [];
-                    this._logIdWatched = logId;
+                            this.logData = [];
+                            this._logIdWatched = logId;
 
-                    // Refresh now and start auto-retrieving
-                    this._logAutoRetrieveCount = 0;
-                    setTimeout(()=>{this.onRefreshLog();}, 2000);
-                    //this.onRefreshLog();
-                }
-                else
-                {
-                    alert("Save failed, unknown error.");
-                }
-                this.refresh();
+                            // Refresh now and start auto-retrieving
+                            this._logAutoRetrieveCount = 0;
+                            setTimeout(()=>{this.onRefreshLog();}, 2000);
+                            //this.onRefreshLog();
+                        }
+                        else
+                        {
+                            alert("Save failed, unknown error.");
+                        }
+                        this.refresh();
+                    },
+                    (err)=>
+                    {
+                    }
+                );
             },
             (err)=>
             {
