@@ -30,10 +30,11 @@
 import { Component, ElementRef, EventEmitter, Inject, OnInit, Output } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
-import { DataSetService } from "src/app/services/data-set.service";
-import { ViewStateService } from "src/app/services/view-state.service";
+import { NotificationService } from "src/app/services/notification.service";
+import { SavedViewStateSummary, ViewStateService } from "src/app/services/view-state.service";
 import { IconButtonState } from "../atoms/buttons/icon-button/icon-button.component";
 import { PickerDialogComponent, PickerDialogData } from "../atoms/picker-dialog/picker-dialog.component";
+import { UserPromptDialogComponent, UserPromptDialogDropdownItem, UserPromptDialogParams, UserPromptDialogResult, UserPromptDialogStringItem } from "../atoms/user-prompt-dialog/user-prompt-dialog.component";
 import { AnnotationToolOption, FullScreenAnnotationItem } from "./annotation-display/annotation-display.component";
 
 
@@ -45,7 +46,7 @@ export class AnnotationTool
 
 export class AnnotationEditorData
 {
-    constructor(public tool: AnnotationTool)
+    constructor(public datasetID: string)
     {}
 }
 
@@ -59,6 +60,9 @@ export class AnnotationEditorComponent implements OnInit
     private _subs = new Subscription();
     private _fontSize: number = 12;
 
+    private _isNewWorkspace: boolean = false;
+    private _userViewStates: SavedViewStateSummary[] = [];
+
     selectedColour: string = "white";
     selectedTool: AnnotationToolOption = null;
 
@@ -70,19 +74,26 @@ export class AnnotationEditorComponent implements OnInit
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: AnnotationEditorData,
         public dialogRef: MatDialogRef<AnnotationEditorComponent>,
+        public saveWorkspaceDialogRef: MatDialogRef<UserPromptDialogComponent>,
         public dialog: MatDialog,
+        private _viewStateService: ViewStateService,
+        private _notificationService: NotificationService
     )
-    {
-        if(data && data.tool)
-        {
-            this.selectedTool = data.tool.tool;
-            this.selectedColour = data.tool.colour;
-            this.fontSize = data.tool.fontSize;
-        }
-    }
+    {}
 
     ngOnInit(): void
     {
+        this._subs.add(this._viewStateService.savedViewStates$.subscribe(
+            (items: SavedViewStateSummary[])=>
+            {
+                // We filter to only show not shared here
+                this._userViewStates = items.filter(item => !item.shared);
+            },
+            (err)=>
+            {
+                console.error(`Error fetching user workspaces ${err}`);
+            }
+        ));
     }
 
     ngAfterViewInit()
@@ -158,7 +169,106 @@ export class AnnotationEditorComponent implements OnInit
 
     onSave()
     {
-        this.dialogRef.close();
+        this.onBulkAction.emit("save-workspace");
+    }
+
+    createNewWorkspace(name: string, savedAnnotations: FullScreenAnnotationItem[])
+    {
+        console.log("CREATE NEW WORKSPACE", name, savedAnnotations);
+        this._viewStateService.saveViewState(this.data.datasetID, name).subscribe(
+            ()=>
+            {
+                // We're done, alert here
+                this._notificationService.addNotification(`Workspace saved: ${name}`);
+            },
+            (err)=>
+            {
+                alert(`Failed to save workspace: ${name}`);
+                console.error(`Failed to save workspace: ${name}`, err);
+            }
+        );
+    }
+
+    saveWorkspace(name: string, savedAnnotations: FullScreenAnnotationItem[])
+    {
+        console.log("SAVE WORKSPACE", name, savedAnnotations);
+        this._viewStateService.saveViewState(this.data.datasetID, name).subscribe(
+            ()=>
+            {
+                // We're done, alert here
+                this._notificationService.addNotification(`Workspace updated: ${name}`);
+            },
+            (err)=>
+            {
+                alert(`Failed to update workspace: ${name}`);
+                console.error(`Failed to update workspace: ${name}`, err);
+            }
+        );
+    }
+
+    openSaveWorkspaceDialog(savedAnnotations: FullScreenAnnotationItem[])
+    {
+        let selectWorkspaceLabel = "Select Workspace";
+        let textWorkspaceLabel = "Name Your Workspace";
+        let workspaceNames = this._userViewStates.map((viewState) => viewState.name);
+
+        const dialogConfig = new MatDialogConfig();
+
+        let params = new UserPromptDialogParams(
+            "Save Workspace",
+            "Save",
+            "Cancel",
+            [
+                new UserPromptDialogDropdownItem(
+                    selectWorkspaceLabel,
+                    ()=>{ return true;},
+                    workspaceNames,
+                    workspaceNames
+                )
+            ],
+            !this._isNewWorkspace,
+            "Create New Workspace",
+            () =>
+            {
+                this._isNewWorkspace = true;
+                this.saveWorkspaceDialogRef.componentInstance.data.middleButton = false;
+                this.saveWorkspaceDialogRef.componentInstance.data.items = [
+                    new UserPromptDialogStringItem(
+                        textWorkspaceLabel,
+                        (val: string)=>{return val.length > 0;}
+                    )
+                ];
+                this.saveWorkspaceDialogRef.componentInstance.refreshItemState();
+            }
+        );
+
+        dialogConfig.data = params;
+
+        this.saveWorkspaceDialogRef = this.dialog.open(UserPromptDialogComponent, dialogConfig);
+
+        this.saveWorkspaceDialogRef.afterClosed().subscribe(
+            (result: UserPromptDialogResult)=>
+            {
+                // If user didnt cancel and selected create new workspace, create one and close
+                if(result && this._isNewWorkspace)
+                {
+                    this.createNewWorkspace(result.enteredValues.get(textWorkspaceLabel), savedAnnotations);
+                }
+
+                // If user canceled from creating a new workspace, reset back to workspace selection
+                else if(!result && this._isNewWorkspace)
+                {
+                    this._isNewWorkspace = false;
+                    this.openSaveWorkspaceDialog(savedAnnotations);
+                }
+
+                // If user selected a workspace, save it
+                else if(result && !this._isNewWorkspace)
+                {
+                    this.saveWorkspace(result.enteredValues.get(selectWorkspaceLabel), savedAnnotations);
+                }
+            }
+        );
     }
 
     onClear()

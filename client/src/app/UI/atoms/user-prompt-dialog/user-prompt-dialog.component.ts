@@ -80,7 +80,10 @@ export class UserPromptDialogParams
         public title: string,
         public okButtonLabel: string,
         public cancelButtonLabel: string,
-        public items: UserPromptDialogItem[]
+        public items: UserPromptDialogItem[],
+        public middleButton: boolean = false,
+        public middleButtonLabel: string = "",
+        public middleButtonCallback: () => void = () => null
     )
     {
     }
@@ -120,13 +123,16 @@ export class UserPromptDialogComponent implements OnInit
     ngOnInit(): void
     {
         // Read in the parameters
-        for(let item of this.data.items)
-        {
-            this.names.push(item.name);
-            this.inputTypes.push(item.inputType);
-            this.values.push(item["initialValue"]);
-        }
+        this.refreshItemState();
     }
+
+    refreshItemState(): void
+    {
+        this.names = this.data.items.map((item) => item.name);
+        this.inputTypes = this.data.items.map((item) => item.inputType);
+        this.values = this.data.items.map((item) => item["initialValue"]);
+    }
+
 
     onOK(): void
     {

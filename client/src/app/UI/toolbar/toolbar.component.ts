@@ -42,6 +42,7 @@ import { EnvConfigurationInitService } from "src/app/services/env-configuration-
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 import { AnnotationEditorComponent, AnnotationEditorData, AnnotationTool } from "../annotation-editor/annotation-editor.component";
 import { FullScreenAnnotationItem } from "../annotation-editor/annotation-display/annotation-display.component";
+import { ViewStateService } from "src/app/services/view-state.service";
 
 class TabNav
 {
@@ -104,6 +105,7 @@ export class ToolbarComponent implements OnInit, OnDestroy
         private _datasetService: DataSetService,
         private authService: AuthenticationService,
         private _exportService: ExportDataService,
+        private _viewStateService: ViewStateService,
 
         private overlay: Overlay,
         private viewContainerRef: ViewContainerRef,
@@ -183,6 +185,13 @@ export class ToolbarComponent implements OnInit, OnDestroy
                     this._overlayHost.hidePanel();
                     this.updateToolbar();
                 }
+            }
+        ));
+
+        this._subs.add(this._viewStateService.annotations$.subscribe(
+            (annotations: FullScreenAnnotationItem[])=>
+            {
+                this.savedAnnotations = annotations;
             }
         ));
     }
@@ -356,6 +365,7 @@ export class ToolbarComponent implements OnInit, OnDestroy
 
         const dialogConfig = new MatDialogConfig();
         dialogConfig.hasBackdrop = false;
+        dialogConfig.data = new AnnotationEditorData(this.datasetID);
         this.annotationEditorDialogRef = this.annotationsDialog.open(AnnotationEditorComponent, dialogConfig);
 
         this.annotationEditorDialogRef.componentInstance.onActiveTool.subscribe(
@@ -369,6 +379,8 @@ export class ToolbarComponent implements OnInit, OnDestroy
                 {
                     this.savedAnnotations[this.editingAnnotationIndex].colour = activeTool.colour;
                     this.savedAnnotations[this.editingAnnotationIndex].fontSize = activeTool.fontSize;
+
+                    this._viewStateService.saveAnnotations(this.savedAnnotations);
                 }
 
                 this.annotationTool = activeTool;
@@ -381,7 +393,12 @@ export class ToolbarComponent implements OnInit, OnDestroy
                 if(action === "clear")
                 {
                     this.savedAnnotations = [];
+                    this._viewStateService.saveAnnotations(this.savedAnnotations);
                     this.editingAnnotationIndex = -1;
+                }
+                else if(action === "save-workspace")
+                {
+                    this.annotationEditorDialogRef.componentInstance.openSaveWorkspaceDialog(this.savedAnnotations);
                 }
             }
         );
@@ -398,16 +415,19 @@ export class ToolbarComponent implements OnInit, OnDestroy
     onNewAnnotation(newAnnotation: FullScreenAnnotationItem)
     {
         this.savedAnnotations.push(newAnnotation);
+        this._viewStateService.saveAnnotations(this.savedAnnotations);
     }
 
     onEditAnnotation({ id, annotation }: { id: number; annotation: FullScreenAnnotationItem; })
     {
         this.savedAnnotations[id] = annotation;
+        this._viewStateService.saveAnnotations(this.savedAnnotations);
     }
 
     onDeleteAnnotation(deleteIndex: number)
     {
         this.savedAnnotations = this.savedAnnotations.filter((_, i) => deleteIndex !== i);
+        this._viewStateService.saveAnnotations(this.savedAnnotations);
         this.editingAnnotationIndex = -1;
     }
 

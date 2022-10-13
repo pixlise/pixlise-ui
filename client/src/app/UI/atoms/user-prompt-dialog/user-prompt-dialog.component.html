@@ -45,6 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <div fxLayout="row" fxLayoutAlign="end" class="bottom-button-gap gap-separated-horizontal-elements">
         <push-button buttonStyle="outline" (onClick)="onCancel()">{{data.cancelButtonLabel}}</push-button>
+        <push-button *ngIf="data.middleButton" buttonStyle="yellow" (onClick)="data.middleButtonCallback()">{{data.middleButtonLabel}}</push-button>
         <push-button buttonStyle="yellow" (onClick)="onOK()">{{data.okButtonLabel}}</push-button>
     </div>
 </div>
