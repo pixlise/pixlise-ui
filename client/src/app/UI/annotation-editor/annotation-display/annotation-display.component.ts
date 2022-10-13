@@ -391,6 +391,12 @@ export class AnnotationDisplayComponent implements OnInit
             return false;
         }
 
+        // Ignore if no annotation tool selected
+        if(!this.annotationTool)
+        {
+            return;
+        }
+
         // Started creating arrow case
         else if(this.annotationTool.tool === "arrow")
         {
