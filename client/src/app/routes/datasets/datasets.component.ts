@@ -42,13 +42,8 @@ import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "src/a
 import { WidgetSettingsMenuComponent } from "src/app/UI/atoms/widget-settings-menu/widget-settings-menu.component";
 import { HelpMessage } from "src/app/utils/help-message";
 import { getMB, httpErrorToString } from "src/app/utils/utils";
-
-
-
-
-
-
-
+import { AddDatasetDialogComponent, AddDatasetResult } from "src/app/routes/datasets/add-dataset-dialog/add-dataset-dialog.component";
+import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
 
 
 class SummaryItem
@@ -95,7 +90,8 @@ export class DatasetsComponent implements OnInit
         private _datasetService: DataSetService,
         private _viewStateService: ViewStateService,
         private _authService: AuthenticationService,
-        private _userOptionsService: UserOptionsService, // Pull this in so data collection dialog is shown if needed
+        private _loadingSvc: LoadingIndicatorService,
+        //private _userOptionsService: UserOptionsService, // Pull this in so data collection dialog is shown if needed
         public dialog: MatDialog
     )
     {
@@ -433,6 +429,54 @@ export class DatasetsComponent implements OnInit
 
         let missing = DataSetSummary.listMissingData(this.selectedDataset);
         this.selectedMissingData = missing.length > 0 ? "Dataset likely missing: "+Array.from(missing).join(",") : "";
+    }
+
+    onAddDataset(): void
+    {
+        const dialogConfig = new MatDialogConfig();
+
+        //dialogConfig.disableClose = true;
+        //dialogConfig.autoFocus = true;
+        //dialogConfig.width = '1200px';
+
+        //dialogConfig.data = ;
+        const dialogRef = this.dialog.open(AddDatasetDialogComponent, dialogConfig);
+
+        dialogRef.afterClosed().subscribe(
+            (result: AddDatasetResult)=>
+            {
+                if(!result)
+                {
+                    // Cancelled
+                    return;
+                }
+
+                let loadID = this._loadingSvc.add("Creating dataset: "+result.nameHint+"...");
+
+                // Do the actual upload
+                result.fileToUpload.arrayBuffer().then(
+                    (fileBytes: ArrayBuffer)=>
+                    {
+                        this._datasetService.createDataset(result.nameHint, fileBytes).subscribe(
+                            ()=>
+                            {
+                                this._loadingSvc.remove(loadID);
+                            },
+                            (err)=>
+                            {
+                                alert(httpErrorToString(err, "Failed to create dataset"));
+                                this._loadingSvc.remove(loadID);
+                            }
+                        );
+                    },
+                    ()=>
+                    {
+                        this._loadingSvc.remove(loadID);
+                        alert("Error: Failed to read files to upload");
+                    }
+                );
+            }
+        );
     }
 
     get contextImageURL(): string

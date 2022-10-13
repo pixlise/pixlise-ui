@@ -43,21 +43,27 @@ POSSIBILITY OF SUCH DAMAGE.
     <notification-banner></notification-banner>
     <app-toolbar titleToShow="Select Dataset"></app-toolbar>
 
-    <div *ngIf="datasetListingAllowed" class="search-panel gap-separated-horizontal-elements" fxLayout="row" fxLayoutAlign="start center">
-        <h2>Search</h2>
+    <div fxLayout="row" fxLayoutAlign="space-between" class="search-panel">
+        <div *ngIf="datasetListingAllowed" class="gap-separated-horizontal-elements" fxLayout="row" fxLayoutAlign="start center">
+            <h2>Search</h2>
 
-        <div fxLayout="row" class="search-box-group">
-            <input [(ngModel)]="toSearch" class="search-box" type="text" placeholder="Search by dataset title..." (keyup.enter)="onSearch()">
-            <push-button (onClick)="onSearch()">
-                <img src="assets/button-icons/search.svg">
+            <div fxLayout="row" class="search-box-group">
+                <input [(ngModel)]="toSearch" class="search-box" type="text" placeholder="Search by dataset title..." (keyup.enter)="onSearch()">
+                <push-button (onClick)="onSearch()">
+                    <img src="assets/button-icons/search.svg">
+                </push-button>
+            </div>
+            <push-button (onClick)="onFilters()" class="badge-host">Filters
+                <badge *ngIf="filterCount>0" class="move-up-left" [value]="filterCount.toString()"></badge>
+            </push-button>
+            <push-button (onClick)="onGroups($event)" class="badge-host">Groups
+                <badge *ngIf="groupCount>0" class="move-up-left" [value]="groupCount.toString()"></badge>
             </push-button>
         </div>
-        <push-button (onClick)="onFilters()" class="badge-host">Filters
-            <badge *ngIf="filterCount>0" class="move-up-left" [value]="filterCount.toString()"></badge>
-        </push-button>
-        <push-button (onClick)="onGroups($event)" class="badge-host">Groups
-            <badge *ngIf="groupCount>0" class="move-up-left" [value]="groupCount.toString()"></badge>
-        </push-button>
+        <push-button
+            (onClick)="onAddDataset()"
+            buttonStyle="yellow"
+            title="Upload a new dataset">Upload</push-button>
     </div>
 
     <div fxLayout="row" fxFlex="100%">

@@ -632,4 +632,11 @@ export class DataSetService
         let apiUrl = APIPaths.getWithHost(APIPaths.api_dataset+"/images/"+datasetID+"/"+imageType+"/"+imgName);
         return this.http.delete<void>(apiUrl, makeHeaders());
     }
+
+    createDataset(nameHint: string, fileBytes: ArrayBuffer): Observable<void>
+    {
+        let datasetID = nameHint;
+        let apiUrl = APIPaths.getWithHost(APIPaths.api_dataset+"/"+datasetID)+"?format=jpl-breadboard";
+        return this.http.post<void>(apiUrl, fileBytes, makeHeaders());
+    }
 }
