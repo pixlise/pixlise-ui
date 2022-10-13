@@ -61,6 +61,7 @@ POSSIBILITY OF SUCH DAMAGE.
             </push-button>
         </div>
         <push-button
+            *ngIf="userCanEdit"
             (onClick)="onAddDataset()"
             buttonStyle="yellow"
             title="Upload a new dataset">Upload</push-button>
