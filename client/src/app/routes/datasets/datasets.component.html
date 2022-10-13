@@ -93,8 +93,8 @@ POSSIBILITY OF SUCH DAMAGE.
             <app-widget-display-message
                 *ngIf="!selectedDataset"
                 [message]="noSelectedDatasetMsg"
-                fxFlex="100%"
-                ></app-widget-display-message>
+                fxFlex="100%">
+            </app-widget-display-message>
 
             <div *ngIf="selectedDataset != null" fxLayout="column">
                 <div fxLayout="row" fxLayoutAlign="space-around center" class="meta-image-container">
