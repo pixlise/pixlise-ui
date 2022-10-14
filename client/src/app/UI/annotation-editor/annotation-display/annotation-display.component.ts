@@ -363,8 +363,12 @@ export class AnnotationDisplayComponent implements OnInit
     @HostListener("document:mousedown", ["$event"])
     mouseDownListener(event)
     {
+        // event path is only fully supported on Chrome, use legacy composedPath as backup and if that fails, accept things are going to act weird
+        let path = event.path ? event.path : event.composedPath ? event.composedPath() : [];
+        let isAboveAnnotationLayer = path.includes(document.querySelector("div#annotation-editor")) || path.includes(document.querySelector("#annotation-toggle-btn"));
+
         // Ignore if editor isn't open or if editor is clicked
-        if(!this.editable || !event || !event.target || !event.path || event.path.includes(document.querySelector("div#annotation-editor")) || event.path.includes(document.querySelector("#annotation-toggle-btn")))
+        if(!this.editable || !event || !event.target || isAboveAnnotationLayer)
         {
             return;
         }
@@ -520,8 +524,12 @@ export class AnnotationDisplayComponent implements OnInit
     @HostListener("document:click", ["$event"])
     clickListener(event)
     {
+        // event path is only fully supported on Chrome, use legacy composedPath as backup and if that fails, accept things are going to act weird
+        let path = event.path ? event.path : event.composedPath ? event.composedPath() : [];
+        let isAboveAnnotationLayer = path.includes(document.querySelector("div#annotation-editor")) || path.includes(document.querySelector("#annotation-toggle-btn"));
+        
         // Ignore if editor isn't open or if editor is clicked
-        if(!this.editable || !event || event.path.includes(document.querySelector("div#annotation-editor")) || event.path.includes(document.querySelector("#annotation-toggle-btn")))
+        if(!this.editable || !event || isAboveAnnotationLayer)
         {
             return;
         }
