@@ -36,13 +36,12 @@ import { DatasetFilter } from "src/app/routes/datasets/dataset-filter";
 import { FilterDialogComponent, FilterDialogData } from "src/app/routes/datasets/filter-dialog/filter-dialog.component";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { DataSetService } from "src/app/services/data-set.service";
-import { UserOptionsService } from "src/app/services/user-options.service";
 import { ViewStateService } from "src/app/services/view-state.service";
 import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "src/app/UI/atoms/picker-dialog/picker-dialog.component";
 import { WidgetSettingsMenuComponent } from "src/app/UI/atoms/widget-settings-menu/widget-settings-menu.component";
 import { HelpMessage } from "src/app/utils/help-message";
 import { getMB, httpErrorToString } from "src/app/utils/utils";
-import { AddDatasetDialogComponent, AddDatasetResult } from "src/app/routes/datasets/add-dataset-dialog/add-dataset-dialog.component";
+import { AddDatasetDialogComponent } from "src/app/routes/datasets/add-dataset-dialog/add-dataset-dialog.component";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
 
 
@@ -443,38 +442,10 @@ export class DatasetsComponent implements OnInit
         const dialogRef = this.dialog.open(AddDatasetDialogComponent, dialogConfig);
 
         dialogRef.afterClosed().subscribe(
-            (result: AddDatasetResult)=>
+            ()=>
             {
-                if(!result)
-                {
-                    // Cancelled
-                    return;
-                }
-
-                let loadID = this._loadingSvc.add("Creating dataset: "+result.nameHint+"...");
-
-                // Do the actual upload
-                result.fileToUpload.arrayBuffer().then(
-                    (fileBytes: ArrayBuffer)=>
-                    {
-                        this._datasetService.createDataset(result.nameHint, fileBytes).subscribe(
-                            ()=>
-                            {
-                                this._loadingSvc.remove(loadID);
-                            },
-                            (err)=>
-                            {
-                                alert(httpErrorToString(err, "Failed to create dataset"));
-                                this._loadingSvc.remove(loadID);
-                            }
-                        );
-                    },
-                    ()=>
-                    {
-                        this._loadingSvc.remove(loadID);
-                        alert("Error: Failed to read files to upload");
-                    }
-                );
+                // Refresh datasets in the near future, it should have appeared
+                setTimeout(()=>{this.onSearch();}, 2000);
             }
         );
     }

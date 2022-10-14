@@ -29,21 +29,9 @@
 
 import { Component, OnInit, Inject } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { DataSetService } from "src/app/services/data-set.service";
+import { httpErrorToString } from "src/app/utils/utils";
 
-/*
-export class AddDatasetParameters
-{
-    constructor()
-    {
-    }
-}
-*/
-export class AddDatasetResult
-{
-    constructor(public nameHint: string, public fileToUpload: File)
-    {
-    }
-}
 
 @Component({
     selector: "app-add-dataset-dialog",
@@ -52,12 +40,21 @@ export class AddDatasetResult
 })
 export class AddDatasetDialogComponent implements OnInit
 {
+    // switch modes for html
+    modeEntry = "entry";
+    modeCreate = "create";
+    modeComplete = "done";
+
     nameHint: string = "";
     droppedFiles: File[] = [];
+    logId: string = "";
+    mode: string = this.modeEntry;
+    modeTitle: string = "";
 
     constructor(
         //@Inject(MAT_DIALOG_DATA) public params: AddDatasetParameters,
-        public dialogRef: MatDialogRef<AddDatasetResult>,
+        public dialogRef: MatDialogRef<boolean>,
+        private _datasetService: DataSetService,
         )
     {
     }
@@ -80,7 +77,34 @@ export class AddDatasetDialogComponent implements OnInit
             return;
         }
 
-        this.dialogRef.close(new AddDatasetResult(this.nameHint, this.droppedFiles[0]));
+        // Here we trigger the dataset creation and monitor logs
+        this.droppedFiles[0].arrayBuffer().then(
+            (fileBytes: ArrayBuffer)=>
+            {
+                this.mode = this.modeCreate;
+                this.modeTitle = "Creating dataset: "+this.nameHint+"...";
+
+                this._datasetService.createDataset(this.nameHint, fileBytes).subscribe(
+                    (logID: string)=>
+                    {
+                        this.modeTitle = "Dataset: "+this.nameHint+" created";
+
+                        // This should trigger log viewing...
+                        this.logId = logID;
+                        this.mode = this.modeComplete;
+                    },
+                    (err)=>
+                    {
+                        this.modeTitle = httpErrorToString(err, "Failed to create dataset");
+                        this.mode = this.modeComplete;
+                    }
+                );
+            },
+            ()=>
+            {
+                alert("Error: Failed to read files to upload");
+            }
+        );
     }
 
     get acceptTypes(): string

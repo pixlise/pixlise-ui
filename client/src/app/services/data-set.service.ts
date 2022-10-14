@@ -633,11 +633,11 @@ export class DataSetService
         return this.http.delete<void>(apiUrl, makeHeaders());
     }
 
-    createDataset(nameHint: string, fileBytes: ArrayBuffer): Observable<void>
+    createDataset(nameHint: string, fileBytes: ArrayBuffer): Observable<string>
     {
         let datasetID = nameHint;
         let apiUrl = APIPaths.getWithHost(APIPaths.api_dataset+"/"+datasetID)+"?format=jpl-breadboard";
-        return this.http.post<void>(apiUrl, fileBytes, makeHeaders());
+        return this.http.post<string>(apiUrl, fileBytes, makeHeaders());
     }
 
     reprocessDataset(datasetID: string): Observable<string>

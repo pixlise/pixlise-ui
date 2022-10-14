@@ -217,6 +217,7 @@ import { FitElementsComponent } from "./UI/spectrum-chart-widget/spectrum-fit-co
 import { FitElementSelectionComponent } from "./UI/spectrum-chart-widget/spectrum-fit-container/fit-element-selection/fit-element-selection.component";
 import { EnvConfigurationInitService, AppConfig } from "./services/env-configuration-init.service";
 import { AddDatasetDialogComponent } from "./routes/datasets/add-dataset-dialog/add-dataset-dialog.component";
+import { LogViewerComponent } from './UI/log-viewer/log-viewer.component';
 
 
 @Injectable()
@@ -420,7 +421,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         MistRoiUploadComponent,
         MistRoiConvertComponent,
         AddBearerPipe,
-        AddDatasetDialogComponent
+        AddDatasetDialogComponent,
+        LogViewerComponent
     ],
     imports: [
         BrowserModule,

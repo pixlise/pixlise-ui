@@ -38,7 +38,8 @@ input {
 }
 
 .dlg {
-    min-width: 500px;
+    min-width: 800px;
+    min-height: 400px;
 }
 
 ngx-dropzone-preview,
@@ -76,4 +77,24 @@ ngx-dropzone,
 
 .dropzone.ngx-dz-hovered {
     border: $sz-half solid $clr-gray-30;
+}
+
+.important {
+    color: $clr-orange;
+    font-weight: bold;
+    max-width: 450px;
+}
+
+.log-area {
+    height: 300px;
+}
+
+.mode-title {
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.spinner {
+    padding-top: 64px;
 }
