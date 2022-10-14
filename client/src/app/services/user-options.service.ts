@@ -123,6 +123,7 @@ export class UserHints
 export class UserOptionsService
 {
     private _userConfig: UserConfig = new UserConfig("", "", "");
+    private _version: string = "";
     private _notificationConfig: NotificationConfig = new NotificationConfig(
         new NotificationMethod(true, false, false)
     );
@@ -178,8 +179,9 @@ export class UserOptionsService
         dialogRef.afterClosed().subscribe(
             (allowed: boolean)=>
             {
+                let falseValue = `${this._version}-false`;
                 // Save this user setting
-                this._userConfig.data_collection = allowed ? EnvConfigurationInitService.appConfig.expectedDataCollectionAgreementVersion : "false";
+                this._userConfig.data_collection = allowed ? this._version : falseValue;
                 this.saveUserConfig().subscribe(()=>
                 {
                 },
@@ -194,7 +196,7 @@ export class UserOptionsService
 
     disableDataCollection(): void
     {
-        this._userConfig.data_collection = "false";
+        this._userConfig.data_collection = `${this._version}-false`;
         this.saveUserConfig().subscribe(()=>
         {
         },
@@ -210,13 +212,14 @@ export class UserOptionsService
         this.http.get<{ version: string; }>(EnvConfigurationInitService.appConfig.dataCollectionAgreementVersionUrl, makeHeaders()).subscribe(
             (version: { version: string; })=>
             {
+                this._version = version.version;
                 this.http.get<UserConfig>(this.makeUserConfigURL(), makeHeaders()).subscribe(
                     (config: UserConfig)=>
                     {
                         this._userConfig = config;
                         this._userOptionsChanged$.next();
-                        // If data collection flag does not match what we expect, show the dialog
-                        if(this._userConfig.data_collection !== "false" && this._userConfig.data_collection !== version.version)
+                        // If data collection flag was not set at this version, show dialog
+                        if(![`${this._version}-false`, this._version].includes(this._userConfig.data_collection))
                         {
                             this.showDataCollectionDialog();
                         }
