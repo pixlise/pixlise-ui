@@ -93,8 +93,14 @@ ngx-dropzone,
     text-align: center;
     font-size: 14px;
     font-weight: bold;
+    color: $clr-gray-10;
+    padding: $sz-unit;
 }
 
 .spinner {
-    padding-top: 64px;
+    padding-top: 40px;
+}
+
+span {
+    color: $clr-gray-10;
 }
