@@ -303,6 +303,11 @@ export class UserOptionsService
         );
     }
 
+    get isDataCollectionEnabled(): boolean
+    {
+        return this._userConfig.data_collection === this._version;
+    }
+
     get userOptionsChanged$(): ReplaySubject<void>
     {
         return this._userOptionsChanged$;

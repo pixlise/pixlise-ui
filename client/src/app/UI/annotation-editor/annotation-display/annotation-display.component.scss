@@ -29,24 +29,56 @@
 
 @import 'variables.scss';
 
-.user-prompt-dlg {
-    min-width: 360px;
-}
 
-.bottom-button-gap {
-    margin-top: 24px;
-}
+div#annotation-display-layer {
+    position: absolute;
+    z-index: 10;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
 
-h3 {
-    font-size: 12px;
-    line-height: 16px;
-    margin-top: $sz-unit;
-    text-transform: unset;
-}
+    .annotation-container {
+        position: absolute;
 
-.mat-select {
-    min-width: 200px !important;
+        display: flex;
+        padding: 8px;
 
-    // 6px padding + 8px margin + 16px dialog padding = 30px overflow, !important overrides the forced 90px width from styles.scss
-    width: calc(100% - 30px) !important;
+        &.editable {
+            cursor: move;
+            outline: 0px solid white;
+
+            &:hover {
+                outline: 1px solid white;
+            }
+            
+            &.editing {
+                outline: 2px solid white;
+            }
+
+            .annotation-text-box {
+                &:hover {
+                    text-decoration: underline;
+                }
+            }
+        }
+
+        .annotation-text-box {
+            cursor: text;
+            user-select: text;
+            white-space: pre;
+            width: fit-content;
+            min-width: 10px;
+            height: fit-content;
+            line-height: normal;
+            max-height: 100%;
+            background: none;
+            border: none;
+            outline: none;
+        }
+
+        .arrow-box {
+            overflow: visible;
+        }
+    }
 }

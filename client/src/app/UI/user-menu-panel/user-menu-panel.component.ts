@@ -158,7 +158,7 @@ export class UserMenuPanelComponent implements OnInit
 
     get dataCollectionActive(): boolean
     {
-        return this._userOptionsService.userConfig.data_collection === EnvConfigurationInitService.appConfig.expectedDataCollectionAgreementVersion;
+        return this._userOptionsService.isDataCollectionEnabled;
     }
 
     showDataCollectionDialog(): void

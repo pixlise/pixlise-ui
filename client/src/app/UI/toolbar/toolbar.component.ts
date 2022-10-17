@@ -39,7 +39,10 @@ import { ExportDataChoice } from "src/app/UI/export-data-dialog/export-models";
 import { UserMenuPanelComponent } from "src/app/UI/user-menu-panel/user-menu-panel.component";
 import { OverlayHost } from "src/app/utils/overlay-host";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
-
+import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
+import { AnnotationEditorComponent, AnnotationEditorData, AnnotationTool } from "../annotation-editor/annotation-editor.component";
+import { FullScreenAnnotationItem } from "../annotation-editor/annotation-display/annotation-display.component";
+import { ViewStateService } from "src/app/services/view-state.service";
 
 class TabNav
 {
@@ -89,16 +92,27 @@ export class ToolbarComponent implements OnInit, OnDestroy
     tabs: TabNav[] = [];
     datasetID: string = "";
 
+    savedAnnotations: FullScreenAnnotationItem[] = [];
+    annotationTool: AnnotationTool = null;
+    editingAnnotationIndex: number = -1;
+
+    annotationsVisible: boolean = false;
+    editAnnotationsOpen: boolean = false;
+    annotationEditorDialogRef: MatDialogRef<AnnotationEditorComponent, MatDialogConfig> = null;
+
     constructor(
         private router: Router,
         private _datasetService: DataSetService,
         private authService: AuthenticationService,
         private _exportService: ExportDataService,
+        private _viewStateService: ViewStateService,
 
         private overlay: Overlay,
         private viewContainerRef: ViewContainerRef,
         private injector: Injector,
-        private titleService: Title
+        private titleService: Title,
+
+        public annotationsDialog: MatDialog,
     )
     {
     }
@@ -171,6 +185,13 @@ export class ToolbarComponent implements OnInit, OnDestroy
                     this._overlayHost.hidePanel();
                     this.updateToolbar();
                 }
+            }
+        ));
+
+        this._subs.add(this._viewStateService.annotations$.subscribe(
+            (annotations: FullScreenAnnotationItem[])=>
+            {
+                this.savedAnnotations = annotations;
             }
         ));
     }
@@ -325,6 +346,105 @@ export class ToolbarComponent implements OnInit, OnDestroy
         ];
 
         this._exportService.exportData("PIXLISE Data", choices);
+    }
+
+    onToggleAnnotations(active: boolean): void
+    {
+        this.annotationsVisible = active;
+    }
+
+    onEditAnnotations(): void
+    {
+        if(this.editAnnotationsOpen)
+        {
+            return;
+        }
+
+        this.annotationsVisible = true;
+        this.editAnnotationsOpen = true;
+
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.hasBackdrop = false;
+        dialogConfig.data = new AnnotationEditorData(this.datasetID);
+        this.annotationEditorDialogRef = this.annotationsDialog.open(AnnotationEditorComponent, dialogConfig);
+
+        this.annotationEditorDialogRef.componentInstance.onActiveTool.subscribe(
+            (activeTool: AnnotationTool)=>
+            {
+                if(this.annotationTool && this.annotationTool.tool !== activeTool.tool)
+                {
+                    this.editingAnnotationIndex = -1;
+                }
+                else if(this.editingAnnotationIndex >= 0)
+                {
+                    this.savedAnnotations[this.editingAnnotationIndex].colour = activeTool.colour;
+                    this.savedAnnotations[this.editingAnnotationIndex].fontSize = activeTool.fontSize;
+
+                    this._viewStateService.saveAnnotations(this.savedAnnotations);
+                }
+
+                this.annotationTool = activeTool;
+            }
+        );
+
+        this.annotationEditorDialogRef.componentInstance.onBulkAction.subscribe(
+            (action: string)=>
+            {
+                if(action === "clear")
+                {
+                    this.savedAnnotations = [];
+                    this._viewStateService.saveAnnotations(this.savedAnnotations);
+                    this.editingAnnotationIndex = -1;
+                }
+                else if(action === "save-workspace")
+                {
+                    this.annotationEditorDialogRef.componentInstance.openSaveWorkspaceDialog(this.savedAnnotations);
+                }
+            }
+        );
+
+        this.annotationEditorDialogRef.afterClosed().subscribe(
+            ()=>
+            {
+                this.editAnnotationsOpen = false;
+                this.editingAnnotationIndex = -1;
+            }
+        );
+    }
+
+    onNewAnnotation(newAnnotation: FullScreenAnnotationItem)
+    {
+        this.savedAnnotations.push(newAnnotation);
+        this._viewStateService.saveAnnotations(this.savedAnnotations);
+    }
+
+    onEditAnnotation({ id, annotation }: { id: number; annotation: FullScreenAnnotationItem; })
+    {
+        this.savedAnnotations[id] = annotation;
+        this._viewStateService.saveAnnotations(this.savedAnnotations);
+    }
+
+    onDeleteAnnotation(deleteIndex: number)
+    {
+        this.savedAnnotations = this.savedAnnotations.filter((_, i) => deleteIndex !== i);
+        this._viewStateService.saveAnnotations(this.savedAnnotations);
+        this.editingAnnotationIndex = -1;
+    }
+
+    onAnnotationEditIndex(index: number)
+    {
+        this.editingAnnotationIndex = index;
+    }
+
+    onAnnotationToolChange(tool: AnnotationTool): void
+    {
+        this.annotationTool = tool;
+        if(this.annotationEditorDialogRef && this.annotationEditorDialogRef.componentInstance)
+        {
+            this.annotationEditorDialogRef.componentInstance.selectedTool = tool.tool;
+            this.annotationEditorDialogRef.componentInstance.selectedColour = tool.colour;
+            this.annotationEditorDialogRef.componentInstance.fontSize = tool.fontSize;
+        }
     }
 
     get discussLink(): string
