@@ -66,6 +66,7 @@ div#annotation-display-layer {
         .annotation-text-box {
             cursor: text;
             user-select: text;
+            white-space: pre;
             width: fit-content;
             min-width: 10px;
             height: fit-content;

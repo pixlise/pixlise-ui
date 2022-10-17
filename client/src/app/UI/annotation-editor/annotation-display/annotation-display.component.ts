@@ -29,8 +29,6 @@
 
 import { Component, EventEmitter, HostListener, Input, OnInit, Output } from "@angular/core";
 import { Subscription } from "rxjs";
-import { DataSetService } from "src/app/services/data-set.service";
-import { ViewStateService } from "src/app/services/view-state.service";
 import { AnnotationTool } from "../annotation-editor.component";
 
 export const ANNOTATION_CURSORS = {
@@ -332,7 +330,7 @@ export class FullScreenAnnotationItem
     templateUrl: "./annotation-display.component.html",
     styleUrls: ["./annotation-display.component.scss"]
 })
-export class AnnotationDisplayComponent implements OnInit
+export class AnnotationDisplayComponent
 {
     private _subs = new Subscription();
 
@@ -352,13 +350,6 @@ export class AnnotationDisplayComponent implements OnInit
     _dragStartY: number = -1;
 
     _isDeletable: boolean = true;
-
-    constructor(
-        private _datasetService: DataSetService,
-        private _viewStateService: ViewStateService,
-    )
-    {
-    }
 
     @HostListener("document:mousedown", ["$event"])
     mouseDownListener(event)
@@ -598,6 +589,7 @@ export class AnnotationDisplayComponent implements OnInit
     {
         if(this.editable && event && event.target && event.target.innerText !== undefined)
         {
+            console.log("TEXT", event)
             this.savedAnnotations[index].text = event.target.innerText;
         }
     }
@@ -610,7 +602,7 @@ export class AnnotationDisplayComponent implements OnInit
             this._isDeletable = false;
 
             let selectedAnnotation = this.savedAnnotations[index];
-            this.onToolChange.emit(new AnnotationTool(this.annotationTool.tool, selectedAnnotation.colour, selectedAnnotation.fontSize));
+            this.onToolChange.emit(new AnnotationTool(this.annotationTool?.tool, selectedAnnotation.colour, selectedAnnotation.fontSize));
             if(!this.savedAnnotations[index].complete)
             {
                 event.target.innerText = "";
@@ -663,15 +655,6 @@ export class AnnotationDisplayComponent implements OnInit
     get toolCursor(): string
     {
         return ANNOTATION_CURSORS[this.annotationTool?.tool || "default"];
-    }
-
-
-    ngOnInit(): void
-    {
-    }
-
-    ngAfterViewInit()
-    {
     }
 
     ngOnDestroy()
