@@ -589,7 +589,6 @@ export class AnnotationDisplayComponent
     {
         if(this.editable && event && event.target && event.target.innerText !== undefined)
         {
-            console.log("TEXT", event)
             this.savedAnnotations[index].text = event.target.innerText;
         }
     }
