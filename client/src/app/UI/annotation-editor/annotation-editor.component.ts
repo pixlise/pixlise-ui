@@ -96,10 +96,6 @@ export class AnnotationEditorComponent implements OnInit
         ));
     }
 
-    ngAfterViewInit()
-    {
-    }
-
     ngOnDestroy()
     {
         this._subs.unsubscribe();
@@ -172,9 +168,8 @@ export class AnnotationEditorComponent implements OnInit
         this.onBulkAction.emit("save-workspace");
     }
 
-    createNewWorkspace(name: string, savedAnnotations: FullScreenAnnotationItem[])
+    createNewWorkspace(name: string)
     {
-        console.log("CREATE NEW WORKSPACE", name, savedAnnotations);
         this._viewStateService.saveViewState(this.data.datasetID, name).subscribe(
             ()=>
             {
@@ -189,9 +184,8 @@ export class AnnotationEditorComponent implements OnInit
         );
     }
 
-    saveWorkspace(name: string, savedAnnotations: FullScreenAnnotationItem[])
+    saveWorkspace(name: string)
     {
-        console.log("SAVE WORKSPACE", name, savedAnnotations);
         this._viewStateService.saveViewState(this.data.datasetID, name).subscribe(
             ()=>
             {
@@ -252,7 +246,7 @@ export class AnnotationEditorComponent implements OnInit
                 // If user didnt cancel and selected create new workspace, create one and close
                 if(result && this._isNewWorkspace)
                 {
-                    this.createNewWorkspace(result.enteredValues.get(textWorkspaceLabel), savedAnnotations);
+                    this.createNewWorkspace(result.enteredValues.get(textWorkspaceLabel));
                 }
 
                 // If user canceled from creating a new workspace, reset back to workspace selection
@@ -265,7 +259,7 @@ export class AnnotationEditorComponent implements OnInit
                 // If user selected a workspace, save it
                 else if(result && !this._isNewWorkspace)
                 {
-                    this.saveWorkspace(result.enteredValues.get(selectWorkspaceLabel), savedAnnotations);
+                    this.saveWorkspace(result.enteredValues.get(selectWorkspaceLabel));
                 }
             }
         );
