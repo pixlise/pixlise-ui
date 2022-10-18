@@ -27,26 +27,55 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 
-.user-prompt-dlg {
-    min-width: 360px;
-}
 
-.bottom-button-gap {
-    margin-top: 24px;
-}
+@Component({
+    selector: "two-state-edit-button",
+    templateUrl: "./two-state-edit-button.component.html",
+    styleUrls: ["./two-state-edit-button.component.scss"]
+})
+export class TwoStateEditButtonComponent implements OnInit
+{
+    @Input() buttonStyle: string = "normal";
+    @Input() disabled: boolean = false;
+    @Input() active: boolean = false;
 
-h3 {
-    font-size: 12px;
-    line-height: 16px;
-    margin-top: $sz-unit;
-    text-transform: unset;
-}
+    @Output() onToggle = new EventEmitter();
+    @Output() onEdit = new EventEmitter();
 
-.mat-select {
-    min-width: 200px !important;
+    constructor()
+    {
+    }
 
-    // 6px padding + 8px margin + 16px dialog padding = 30px overflow, !important overrides the forced 90px width from styles.scss
-    width: calc(100% - 30px) !important;
+    ngOnInit()
+    {
+        const validStyles = ["normal", "borderless", "yellow", "outline", "gray"];
+        if(validStyles.indexOf(this.buttonStyle) == -1)
+        {
+            console.warn("Invalid style for edit-button: "+this.buttonStyle);
+            this.buttonStyle = validStyles[0];
+        }
+    }
+
+    get styleCSS(): string
+    {
+        return `btn-${this.buttonStyle}${this.disabled ? " disabled" : ""}${this.active ? " active" : ""}`;
+    }
+
+    onToggleInternal(): void
+    {
+        if(!this.disabled)
+        {
+            this.active = !this.active;
+            this.onToggle.emit(this.active);
+        }
+    }
+    onEditInternal(event): void
+    {
+        if(!this.disabled)
+        {
+            this.onEdit.emit(event);
+        }
+    }
 }

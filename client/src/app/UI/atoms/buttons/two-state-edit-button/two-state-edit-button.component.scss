@@ -28,25 +28,106 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 @import 'variables.scss';
+@import 'atoms.scss';
 
-.user-prompt-dlg {
-    min-width: 360px;
+.btn-container {
+    display: flex;
 }
 
-.bottom-button-gap {
-    margin-top: 24px;
-}
+.btn-base {
+    padding: $sz-half $sz-double;
 
-h3 {
+    text-align: center;
+    text-transform: uppercase;
+
+    font-weight: 700;
+    font-family: Inter, Roboto;
+
     font-size: 12px;
     line-height: 16px;
-    margin-top: $sz-unit;
-    text-transform: unset;
+
+    white-space: nowrap;
 }
 
-.mat-select {
-    min-width: 200px !important;
+.btn-yellow {
+    @extend .btn-base;
+    color: black;
+    background-color: $clr-yellow;
+}
 
-    // 6px padding + 8px margin + 16px dialog padding = 30px overflow, !important overrides the forced 90px width from styles.scss
-    width: calc(100% - 30px) !important;
+.btn-gray {
+    @extend .btn-base;
+    color: $clr-gray-10;
+    background-color: $clr-gray-60;
+}
+
+.btn-outline {
+    @extend .btn-base;
+    color: $clr-gray-30;
+    border: 1px solid $clr-gray-30;
+    box-sizing: border-box;
+}
+
+.btn-normal {
+    @extend .btn-base;
+    padding: $sz-half;
+    color: $clr-gray-30;
+    text-transform: unset;
+    font-weight: 400;
+    font-family: Roboto;
+    font-size: 14px;
+    line-height: 16px;
+    background-color: $clr-gray-100;
+
+    &:hover {
+        background-color: $clr-gray-90;
+    }
+}
+
+.btn-borderless {
+    @extend .btn-base;
+
+    color: $clr-yellow;
+    opacity: 0.9;
+
+    //font-style: normal;
+
+    &:hover {
+        background-color: $clr-gray-60;
+    }
+}
+
+.main-btn {
+    border-radius: $sz-half;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-right: 1px solid $clr-gray-30;
+}
+
+.edit-btn {
+    border-radius: $sz-half;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+
+    display: flex;
+    align-items: center;
+    padding: 5px;
+}
+
+.disabled {
+    color: $clr-gray-60;
+    background-color: $clr-gray-80;
+
+    &:hover {
+        cursor: default;
+        background-color: $clr-gray-80;
+    }
+}
+
+.active {
+    color: $clr-yellow;
 }

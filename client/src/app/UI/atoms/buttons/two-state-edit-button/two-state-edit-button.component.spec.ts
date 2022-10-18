@@ -27,26 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+import { async, ComponentFixture, TestBed } from "@angular/core/testing";
+import { TwoStateEditButtonComponent } from "./two-state-edit-button.component";
 
-.user-prompt-dlg {
-    min-width: 360px;
-}
 
-.bottom-button-gap {
-    margin-top: 24px;
-}
+describe("TwoStateEditButtonComponent", () => 
+{
+    let component: TwoStateEditButtonComponent;
+    let fixture: ComponentFixture<TwoStateEditButtonComponent>;
 
-h3 {
-    font-size: 12px;
-    line-height: 16px;
-    margin-top: $sz-unit;
-    text-transform: unset;
-}
+    beforeEach(async(() => 
+    {
+        TestBed.configureTestingModule({
+            declarations: [ TwoStateEditButtonComponent ]
+        })
+            .compileComponents();
+    }));
 
-.mat-select {
-    min-width: 200px !important;
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(TwoStateEditButtonComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-    // 6px padding + 8px margin + 16px dialog padding = 30px overflow, !important overrides the forced 90px width from styles.scss
-    width: calc(100% - 30px) !important;
-}
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

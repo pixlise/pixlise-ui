@@ -29,23 +29,44 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-
-<div fxLayout="column" class="user-prompt-dlg dlg-border-with-backdrop gap-separated-vertical-elements">
-    <h1>{{data.title}}</h1>
-
-    <ng-container *ngFor="let name of names; let i = index">
-        <h3>{{name}}</h3>
-        <input *ngIf="inputTypes[i]=='string'" [(ngModel)]="values[i]" type="text" placeholder="...">
-        <mat-select *ngIf="inputTypes[i]=='dropdown'" [(ngModel)]="values[i]">
-            <mat-option
-                *ngFor="let itemName of data.items[i]['itemNames']; let selIdx = index"
-                [value]="data.items[i]['itemValues'][selIdx]">{{itemName}}</mat-option>
-        </mat-select>
-    </ng-container>
-
-    <div fxLayout="row" fxLayoutAlign="end" class="bottom-button-gap gap-separated-horizontal-elements">
-        <push-button buttonStyle="outline" (onClick)="onCancel()">{{data.cancelButtonLabel}}</push-button>
-        <push-button *ngIf="data.middleButton" buttonStyle="yellow" (onClick)="data.middleButtonCallback()">{{data.middleButtonLabel}}</push-button>
-        <push-button buttonStyle="yellow" (onClick)="onOK()">{{data.okButtonLabel}}</push-button>
-    </div>
+<div fxLayout="column" id="annotation-editor">
+  <div 
+    fxLayout="row" 
+    class="card-toolbar annotation-title" 
+    mat-dialog-title 
+    cdkDrag
+    cdkDragRootElement=".cdk-overlay-pane" 
+    cdkDragHandle
+  >
+    <h1>Edit Annotations</h1>
+    <img class="close-btn" src="assets/button-icons/close-cross-gray.svg" (click)="onClose()">
+  </div>
+  <div fxLayout="row" fxLayoutAlign="center center" class="card-toolbar gap-separated-horizontal-elements">
+    <icon-button 
+      icon="assets/button-icons/annotation-arrow.svg"
+      title="Arrow"
+      (onClick)="onToolSelect('arrow')"
+      [state]="arrowToolState">
+    </icon-button>
+    <icon-button 
+      icon="assets/button-icons/tool-line-draw.svg"
+      title="Freeform Draw"
+      (onClick)="onToolSelect('freeform')"
+      [state]="freeformToolState">
+    </icon-button>
+    <icon-button 
+      icon="assets/button-icons/annotation-text.svg"
+      title="Text"
+      (onClick)="onToolSelect('text')"
+      [state]="textToolState">
+    </icon-button>
+    <input class="font-size-input" [(ngModel)]="fontSize" type="number" step="1" placeholder="">
+    <icon-button icon="assets/button-icons/colours.svg" title="Colour" (click)="onSelectColourPicker($event)">
+    </icon-button>
+    <div class="selected-colour" [style.background-color]="selectedColour"></div>
+  </div>
+  <div fxLayout="row" fxLayoutAlign="end center" class="card-toolbar gap-separated-horizontal-elements">
+    <push-button buttonStyle='outline' (onClick)="onClear()">Clear</push-button>
+    <push-button buttonStyle='yellow' (onClick)="onSave()">Save To Workspace</push-button>
+  </div>
 </div>

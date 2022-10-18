@@ -29,24 +29,31 @@
 
 @import 'variables.scss';
 
-.user-prompt-dlg {
-    min-width: 360px;
+
+.scrollable-container {
+    height: 400px;
+    overflow-y: scroll;
 }
 
-.bottom-button-gap {
-    margin-top: 24px;
+.annotation-title {
+    margin: 0;
+    cursor: move;
 }
 
-h3 {
-    font-size: 12px;
-    line-height: 16px;
-    margin-top: $sz-unit;
-    text-transform: unset;
+.close-btn {
+    margin-left: auto;
+    width: 12px;
+    cursor: pointer;
 }
 
-.mat-select {
-    min-width: 200px !important;
+.selected-colour {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+}
 
-    // 6px padding + 8px margin + 16px dialog padding = 30px overflow, !important overrides the forced 90px width from styles.scss
-    width: calc(100% - 30px) !important;
+.font-size-input {
+    height: 24px;
+    width: 36px;
+    text-align: center;
 }

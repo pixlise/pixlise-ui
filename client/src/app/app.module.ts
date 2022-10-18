@@ -36,6 +36,7 @@ import { MAT_DIALOG_DEFAULT_OPTIONS } from "@angular/material/dialog";
 import { OverlayModule } from "@angular/cdk/overlay";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { CdkAccordionModule } from "@angular/cdk/accordion";
+import { DragDropModule } from "@angular/cdk/drag-drop";
 
 import * as Sentry from "@sentry/browser";
 
@@ -117,6 +118,7 @@ import { MapViewComponent } from "./UI/context-image-view-widget/map-view/map-vi
 import { MultiStateButtonComponent } from "./UI/atoms/buttons/multi-state-button/multi-state-button.component";
 import { PanelFoldoutButtonComponent } from "./UI/atoms/buttons/panel-foldout-button/panel-foldout-button.component";
 import { PushButtonComponent } from "./UI/atoms/buttons/push-button/push-button.component";
+import { TwoStateEditButtonComponent } from "./UI/atoms/buttons/two-state-edit-button/two-state-edit-button.component";
 import { IconButtonComponent } from "./UI/atoms/buttons/icon-button/icon-button.component";
 import { TwoStateButtonComponent } from "./UI/atoms/buttons/two-state-button/two-state-button.component";
 import { BulkSelectionSwitchComponent } from "./UI/atoms/buttons/two-state-button/bulk-selection-switch.component";
@@ -217,7 +219,9 @@ import { FitElementsComponent } from "./UI/spectrum-chart-widget/spectrum-fit-co
 import { FitElementSelectionComponent } from "./UI/spectrum-chart-widget/spectrum-fit-container/fit-element-selection/fit-element-selection.component";
 import { EnvConfigurationInitService, AppConfig } from "./services/env-configuration-init.service";
 import { AddDatasetDialogComponent } from "./routes/datasets/add-dataset-dialog/add-dataset-dialog.component";
-import { LogViewerComponent } from './UI/log-viewer/log-viewer.component';
+import { LogViewerComponent } from "./UI/log-viewer/log-viewer.component";
+import { AnnotationEditorComponent } from "./UI/annotation-editor/annotation-editor.component";
+import { AnnotationDisplayComponent } from "./UI/annotation-editor/annotation-display/annotation-display.component";
 
 
 @Injectable()
@@ -334,6 +338,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         SnackBarComponent,
         SnackComponent,
         PushButtonComponent,
+        TwoStateEditButtonComponent,
         LayerSettingsComponent,
         VisibilitySettingsComponent,
         VisibilitySettingsHeaderComponent,
@@ -351,6 +356,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         BinaryPlotWidgetComponent,
         TernaryPlotWidgetComponent,
         ROIPickerComponent,
+        AnnotationEditorComponent,
+        AnnotationDisplayComponent,
         RegionItemSettingsComponent,
         SpectrumRegionPickerComponent,
         SpectrumRegionSettingsComponent,
@@ -436,7 +443,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         OverlayModule,
         CdkAccordionModule,
         CodemirrorModule,
-        NgxDropzoneModule
+        NgxDropzoneModule,
+        DragDropModule,
     ],
     providers: [
         EnvConfigurationInitService,
