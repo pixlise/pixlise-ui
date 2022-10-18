@@ -1,0 +1,94 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div fxLayout="column" fxLayoutAlign="space-between stretch" class="dlg gap-separated-vertical-elements">
+    <div fxLayout="row" fxLayoutAlign="space-between center" class="card-toolbar card-toolbar-shadow">
+        <div class="txt-widget-title">Upload New Dataset</div>
+    </div>
+
+    <div *ngIf="modeTitle" class="mode-title">{{modeTitle}}</div>
+
+    <ng-container [ngSwitch]="mode">
+        <!-- Data entry mode -->
+        <ng-container *ngSwitchCase="modeEntry">
+            <div fxLayout="column" fxLayoutAlign="space-around center" class="gap-separated-vertical-elements left-right-padding meta-fields">
+                <div
+                    fxLayout="row"
+                    fxLayoutAlign="start center"
+                    class="gap-separated-horizontal-elements">
+                    <span>Dataset Name</span>
+                    <input [(ngModel)]="nameHint" type="text" placeholder="Name of dataset">
+                </div>
+                <div class="important">NOTE: Only JPL Breadboard datasets are supported at present. Zip files added must contain only .msa files, with no other files, and no directories in the zip file.</div>
+            </div>
+
+            <div class="dropzone" ngx-dropzone [accept]="acceptTypes" [multiple]="false" (change)="onDropFile($event)">
+                <ngx-dropzone-label>
+                    <div>
+                        <h2>Drop spectrum zip file</h2>
+                    </div>
+                </ngx-dropzone-label>
+                <ngx-dropzone-preview
+                    *ngFor="let f of droppedFiles"
+                    [removable]="true"
+                    (removed)="onRemoveDroppedFile(f)">
+                    <ngx-dropzone-label><div class="filename">{{f.name}}</div><div class="filetype">({{f.type}})</div></ngx-dropzone-label>
+                </ngx-dropzone-preview>
+            </div>
+
+        </ng-container>
+
+        <!-- Waiting for creation -->
+        <ng-container *ngSwitchCase="modeCreate">
+            <div fxLayout="row" fxLayoutAlign="space-around" class="spinner">
+                <mat-spinner [diameter]="64" color="accent"></mat-spinner>
+            </div>
+        </ng-container>
+
+        <!-- Complete -->
+        <ng-container *ngSwitchDefault>
+            <div class="log-area">
+                <log-viewer title="Dataset Creation Log" [logID]="logId" fxFill></log-viewer>
+            </div>
+        </ng-container>
+    </ng-container>
+
+    <div
+        fxLayout="row"
+        fxLayoutAlign="end center"
+        class="gap-separated-horizontal-elements card-toolbar">
+        <push-button *ngIf="mode==modeComplete" buttonStyle="yellow" (onClick)="onCancel()">Close</push-button>
+        <ng-container *ngIf="mode==modeEntry">
+            <push-button buttonStyle='outline' (onClick)="onCancel()">Cancel</push-button>
+            <push-button buttonStyle="yellow" (onClick)="onOK()">Upload</push-button>
+        </ng-container>
+    </div>
+</div>

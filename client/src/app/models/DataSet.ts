@@ -107,7 +107,7 @@ export class ContextImageItem
 {
     constructor(
         public path: string,
-        public pmc: number,
+        public imagePMC: number,
         public hasBeamData: boolean,
         public beamIJIndex: number, // -1=default context image beam ij's, 0+ indexes into beam.context_locations[]
         public imageDrawTransform: ContextImageItemTransform,
@@ -1619,17 +1619,29 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         for(let image of matchedAlignedImages)
         {
             // Get the PMC from the aligned image, so we show the right beam location coordinates
+            // NOTE: If there IS NO aligned image, ie a breadboard dataset with NO images included
+            // but just made from spectra... we still need to honor the matched images added to the
+            // dataset!
             const alignedIdx = image.getAlignedIndex();
-            if(alignedIdx >= 0 && alignedIdx < alignedImages.length)
+            if(alignedIdx >= 0 && (alignedImages.length == 0 || alignedIdx < alignedImages.length))
             {
                 let transform = new ContextImageItemTransform(image.getXOffset(), image.getYOffset(), image.getXScale(), image.getYScale());
+
+                // Find the beam IJ number (which "bank" of beam IJ's this image is associated with)
+                let beamIdx = alignedIdx-1; // NOTE: start from -1, because -1 references the "default" context image, aka aligned image 0's beam coordinates
+
+                let alignedImagePMC = 0; // If there is no "aligned" image, this just stays at 0
+                if(alignedImages.length > 0)
+                {
+                    alignedImagePMC = alignedImages[alignedIdx].getPmc();
+                }
 
                 this.contextImages.push(
                     new ContextImageItem(
                         image.getImage(), // File name
-                        alignedImages[alignedIdx].getPmc(), // Use the PMC of the aligned image
+                        alignedImagePMC, // Use the PMC of the aligned image
                         true, // This is beam aligned
-                        alignedIdx-1, // start from -1, because -1 references the "default" context image, aka aligned image 0's beam coordinates
+                        beamIdx,
                         transform, // Transform info as read from file
                         null, // Not RGBU
                         null, // Don't have the image at the moment, will be lazy loaded if needed
@@ -1665,21 +1677,21 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
                 isdefault = " <-- Main Image";
                 this.defaultContextImageIdx = c;
             }
-            console.log("   * "+i.path+", pmc="+i.pmc+", hasBeam="+i.hasBeamData+", hasData="+(i.rgbSourceImage!=null||i.rgbuSourceImage!=null)+isdefault);
+            console.log("   * "+i.path+", pmc="+i.imagePMC+", hasBeam="+i.hasBeamData+", hasData="+(i.rgbSourceImage!=null||i.rgbuSourceImage!=null)+isdefault);
         }
 
         // If we still haven't picked a default, pick the one with the lowest PMC
         if(this.defaultContextImageIdx < 0 && this.contextImages.length)
         {
-            let minPMC = this.contextImages[0].pmc;
+            let minPMC = this.contextImages[0].imagePMC;
             let minPMCIdx = -1;
 
             for(let c = 0; c < this.contextImages.length; c++)
             {
                 let i = this.contextImages[c];
-                if(i.pmc < minPMC)
+                if(i.imagePMC < minPMC)
                 {
-                    minPMC = i.pmc;
+                    minPMC = i.imagePMC;
                     minPMCIdx = c;
                 }
             }

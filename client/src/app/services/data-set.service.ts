@@ -551,13 +551,13 @@ export class DataSetService
         );
     }
 
-    setCustomTitle(datasetID: string, title: string): Observable<object>
+    setCustomTitle(datasetID: string, title: string): Observable<void>
     {
         // TODO: define a struct for this, for now this works OK
         let body = { "title": title };
 
         let apiUrl = APIPaths.getWithHost(APIPaths.api_dataset+"/meta/"+datasetID);
-        return this.http.put<object>(apiUrl, body, makeHeaders());
+        return this.http.put<void>(apiUrl, body, makeHeaders());
     }
 
     listCustomImages(datasetID: string, imageType: string): Observable<string[]>
@@ -631,5 +631,18 @@ export class DataSetService
     {
         let apiUrl = APIPaths.getWithHost(APIPaths.api_dataset+"/images/"+datasetID+"/"+imageType+"/"+imgName);
         return this.http.delete<void>(apiUrl, makeHeaders());
+    }
+
+    createDataset(nameHint: string, fileBytes: ArrayBuffer): Observable<string>
+    {
+        let datasetID = nameHint;
+        let apiUrl = APIPaths.getWithHost(APIPaths.api_dataset+"/"+datasetID)+"?format=jpl-breadboard";
+        return this.http.post<string>(apiUrl, fileBytes, makeHeaders());
+    }
+
+    reprocessDataset(datasetID: string): Observable<string>
+    {
+        let apiUrl = APIPaths.getWithHost(APIPaths.api_dataset+"/reprocess/"+datasetID);
+        return this.http.post<string>(apiUrl, "", makeHeaders());
     }
 }

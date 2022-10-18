@@ -428,6 +428,7 @@ export class WorkspacesComponent implements OnInit
         );
     }
 */
+/*
     onRenameWorkspace(id: string, event): void
     {
         event.stopPropagation();
@@ -455,7 +456,7 @@ export class WorkspacesComponent implements OnInit
             }
         );
     }
-
+*/
     onToggleShowShared(): void
     {
         this.showShared = !this.showShared;

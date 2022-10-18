@@ -646,7 +646,7 @@ export class ViewStateService
             )
         );
     }
-
+/*
     renameViewState(datasetID: string, existingViewStateID: string, newViewStateID: string): Observable<void>
     {
         let loadID = this._loadingSvc.add("Renaming view state...");
@@ -669,7 +669,7 @@ export class ViewStateService
             )
         );
     }
-
+*/
     // View state collections
     private makeViewStateCollectionURL(datasetID: string, collectionID: string): string
     {

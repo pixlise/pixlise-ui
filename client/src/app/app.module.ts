@@ -218,6 +218,8 @@ import { FitLineConfigComponent } from "./UI/spectrum-chart-widget/spectrum-fit-
 import { FitElementsComponent } from "./UI/spectrum-chart-widget/spectrum-fit-container/fit-elements/fit-elements.component";
 import { FitElementSelectionComponent } from "./UI/spectrum-chart-widget/spectrum-fit-container/fit-element-selection/fit-element-selection.component";
 import { EnvConfigurationInitService, AppConfig } from "./services/env-configuration-init.service";
+import { AddDatasetDialogComponent } from "./routes/datasets/add-dataset-dialog/add-dataset-dialog.component";
+import { LogViewerComponent } from "./UI/log-viewer/log-viewer.component";
 import { AnnotationEditorComponent } from "./UI/annotation-editor/annotation-editor.component";
 import { AnnotationDisplayComponent } from "./UI/annotation-editor/annotation-display/annotation-display.component";
 
@@ -425,7 +427,9 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         FitElementSelectionComponent,
         MistRoiUploadComponent,
         MistRoiConvertComponent,
-        AddBearerPipe
+        AddBearerPipe,
+        AddDatasetDialogComponent,
+        LogViewerComponent
     ],
     imports: [
         BrowserModule,
