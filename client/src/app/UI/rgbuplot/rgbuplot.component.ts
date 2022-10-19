@@ -43,7 +43,7 @@ import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-butto
 import { CanvasDrawer, CanvasDrawParameters, CanvasInteractionHandler } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
 import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.component";
-import { RGBUAxisRatioPickerComponent } from "src/app/UI/rgbuplot/rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
+import { RatioPickerData, RGBUAxisRatioPickerComponent } from "src/app/UI/rgbuplot/rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
 import { RGBUPlotDrawer } from "./drawer";
 import { RGBUPlotInteraction } from "./interaction";
@@ -568,11 +568,17 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         let exprId = [];
         if(axis == "X")
         {
-            dialogConfig.data = new RGBUAxisUnit(this._xAxisUnit.numeratorChannelIdx, this._xAxisUnit.denominatorChannelIdx);
+            dialogConfig.data = {
+                axis: new RGBUAxisUnit(this._xAxisUnit.numeratorChannelIdx, this._xAxisUnit.denominatorChannelIdx),
+                range: new MinMax(this.selectedMinXValue, this.selectedMaxXValue),
+            };
         }
         else if(axis == "Y")
         {
-            dialogConfig.data = new RGBUAxisUnit(this._yAxisUnit.numeratorChannelIdx, this._yAxisUnit.denominatorChannelIdx);
+            dialogConfig.data = {
+                axis: new RGBUAxisUnit(this._yAxisUnit.numeratorChannelIdx, this._yAxisUnit.denominatorChannelIdx),
+                range: new MinMax(this.selectedMinYValue, this.selectedMaxYValue),
+            };
         }
         else
         {
@@ -583,23 +589,44 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         const dialogRef = this.dialog.open(RGBUAxisRatioPickerComponent, dialogConfig);
 
         dialogRef.afterClosed().subscribe(
-            (result: RGBUAxisUnit)=>
+            (result: RatioPickerData)=>
             {
                 if(result)
                 {
-                    let resultCopy = new RGBUAxisUnit(result.numeratorChannelIdx, result.denominatorChannelIdx);
-                    if(axis == "X")
+                    if(result.axis)
                     {
-                        this._xAxisUnit = resultCopy;
+                        let resultCopy = new RGBUAxisUnit(result.axis.numeratorChannelIdx, result.axis.denominatorChannelIdx);
+                        if(axis == "X")
+                        {
+                            this._xAxisUnit = resultCopy;
+                        }
+                        else if(axis == "Y")
+                        {
+                            this._yAxisUnit = resultCopy;
+                        }
+                        else
+                        {
+                            console.error("Unknown axis for rgbu plot axis setting: "+axis);
+                            return;
+                        }
                     }
-                    else if(axis == "Y")
+                    if(result.range)
                     {
-                        this._yAxisUnit = resultCopy;
-                    }
-                    else
-                    {
-                        console.error("Unknown axis for rgbu plot axis setting: "+axis);
-                        return;
+                        if(axis == "X")
+                        {
+                            this.selectedMinXValue = result.range.min;
+                            this.selectedMaxXValue = result.range.max;
+                        }
+                        else if(axis == "Y")
+                        {
+                            this.selectedMinYValue = result.range.min;
+                            this.selectedMaxYValue = result.range.max;
+                        }
+                        else
+                        {
+                            console.error("Unknown axis for rgbu plot axis setting: "+axis);
+                            return;
+                        }
                     }
 
                     const reason = "axis-swap-"+axis;

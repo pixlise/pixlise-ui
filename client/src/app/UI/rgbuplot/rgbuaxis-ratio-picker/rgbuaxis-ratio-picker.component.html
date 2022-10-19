@@ -33,18 +33,29 @@ POSSIBILITY OF SUCH DAMAGE.
     fxLayout="column"
     class="dlg-border-with-backdrop gap-separated-vertical-elements">
     <h3>RGBU Axis</h3>
-    <div fxLayout="row" class="gap-separated-horizontal-elements">
-        <mat-select [(ngModel)]="numeratorChannel">
-            <mat-option *ngFor="let channel of channels" [value]="channel">{{channel}}</mat-option>
-        </mat-select>
-
-        <div>/</div>
-
-        <mat-select [(ngModel)]="denominatorChannel">
-            <mat-option *ngFor="let channel of channelsWithNone" [value]="channel">{{channel}}</mat-option>
-        </mat-select>
-
-        <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-        <push-button buttonStyle="yellow" (onClick)="onOK()">Apply</push-button>
+    <div fxLayout="column" class="gap-separated-horizontal-elements">
+        <div class="channel-selection">
+          <mat-select [(ngModel)]="numeratorChannel">
+              <mat-option *ngFor="let channel of channels" [value]="channel">{{channel}}</mat-option>
+          </mat-select>
+          <div class="channel-divider">/</div>
+          <mat-select [(ngModel)]="denominatorChannel">
+              <mat-option *ngFor="let channel of channelsWithNone" [value]="channel">{{channel}}</mat-option>
+          </mat-select>
+        </div>
+        <div class="range-selection">
+          <div>
+            <div class="label min-label">Min:</div>
+            <input class="min-label" type="number" step="0.1" [(ngModel)]="minValue">
+          </div>
+          <div>
+            <div class="label max-label">Max:</div>
+            <input class="max-label" type="number" step="0.1" [(ngModel)]="maxValue">
+          </div>
+        </div>
+        <div class="options">
+          <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+          <push-button buttonStyle="yellow" (onClick)="onOK()">Apply</push-button>
+        </div>
     </div>
 </div>

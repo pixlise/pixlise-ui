@@ -29,10 +29,14 @@
 
 import { Component, Inject, OnInit } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { MinMax } from "src/app/models/BasicTypes";
 import { RGBUAxisUnit } from "src/app/UI/rgbuplot/rgbu-data";
 
 
-
+export type RatioPickerData = {
+    axis: RGBUAxisUnit;
+    range: MinMax;
+}
 
 @Component({
     selector: "app-rgbuaxis-ratio-picker",
@@ -47,8 +51,10 @@ export class RGBUAxisRatioPickerComponent implements OnInit
     channels: string[] = ["Near-IR", "Green", "Blue", "UV"];
     channelsWithNone: string[] = ["Near-IR", "Green", "Blue", "UV", "None"];
 
+    valueRange: MinMax = new MinMax(0, 1);
+
     constructor(
-        @Inject(MAT_DIALOG_DATA) public data: RGBUAxisUnit,
+        @Inject(MAT_DIALOG_DATA) public data: RatioPickerData,
         public dialogRef: MatDialogRef<RGBUAxisRatioPickerComponent>,
     )
     {
@@ -58,15 +64,41 @@ export class RGBUAxisRatioPickerComponent implements OnInit
     {
         if(this.data)
         {
-            if(this.data.numeratorChannelIdx >= 0)
+            if(this.data.axis)
             {
-                this.numeratorChannel = this.channels[this.data.numeratorChannelIdx];
+                if(this.data.axis.numeratorChannelIdx >= 0)
+                {
+                    this.numeratorChannel = this.channels[this.data.axis.numeratorChannelIdx];
+                }
+                if(this.data.axis.denominatorChannelIdx >= 0)
+                {
+                    this.denominatorChannel = this.channelsWithNone[this.data.axis.denominatorChannelIdx];
+                }
             }
-            if(this.data.denominatorChannelIdx >= 0)
+
+            if(this.data.range)
             {
-                this.denominatorChannel = this.channelsWithNone[this.data.denominatorChannelIdx];
+                this.valueRange = this.data.range;
             }
         }
+    }
+
+    get minValue(): number
+    {
+        return this.valueRange.min;
+    }
+    set minValue(value: number)
+    {
+        this.valueRange = new MinMax(value, this.valueRange.max);
+    }
+    
+    get maxValue(): number
+    {
+        return this.valueRange.max;
+    }
+    set maxValue(value: number)
+    {
+        this.valueRange = new MinMax(this.valueRange.min, value);
     }
 
     onOK(): void
@@ -78,8 +110,8 @@ export class RGBUAxisRatioPickerComponent implements OnInit
         }
 
         // Form a new axis
-        let result = new RGBUAxisUnit(this.channelNameToIdx(this.numeratorChannel), this.channelNameToIdx(this.denominatorChannel));
-        this.dialogRef.close(result);
+        let axis = new RGBUAxisUnit(this.channelNameToIdx(this.numeratorChannel), this.channelNameToIdx(this.denominatorChannel));
+        this.dialogRef.close({ axis, range: this.valueRange });
     }
 
     private channelNameToIdx(name: string): number

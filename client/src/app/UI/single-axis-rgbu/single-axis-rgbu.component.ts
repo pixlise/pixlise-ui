@@ -43,7 +43,7 @@ import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-butto
 import { CanvasDrawer, CanvasDrawParameters, CanvasInteractionHandler } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
 import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.component";
-import { RGBUAxisRatioPickerComponent } from "src/app/UI/rgbuplot/rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
+import { RatioPickerData, RGBUAxisRatioPickerComponent } from "src/app/UI/rgbuplot/rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
 import { SingleAxisRGBUDrawer } from "./drawer";
 import { RGBUPlotInteraction } from "../rgbuplot/interaction";
@@ -522,19 +522,23 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
     onAxisClick(): void
     {
         const dialogConfig = new MatDialogConfig();
-        dialogConfig.data = new RGBUAxisUnit(this._axisUnit.numeratorChannelIdx, this._axisUnit.denominatorChannelIdx);
+        dialogConfig.data = {
+            axis: new RGBUAxisUnit(this._axisUnit.numeratorChannelIdx, this._axisUnit.denominatorChannelIdx),
+            range: new MinMax(this.selectedMinXValue, this.selectedMaxXValue),
+        };
 
 
         const dialogRef = this.dialog.open(RGBUAxisRatioPickerComponent, dialogConfig);
 
         dialogRef.afterClosed().subscribe(
-            (result: RGBUAxisUnit)=>
+            (result: RatioPickerData)=>
             {
                 if(result)
                 {
-                    let resultCopy = new RGBUAxisUnit(result.numeratorChannelIdx, result.denominatorChannelIdx);
+                    let resultCopy = new RGBUAxisUnit(result.axis.numeratorChannelIdx, result.axis.denominatorChannelIdx);
                     this._axisUnit = resultCopy;
-
+                    this.selectedMinXValue = result.range.min;
+                    this.selectedMaxXValue = result.range.max;
                     const reason = "axis-swap";
                     this.saveState(reason);
                     this.prepareData(reason);
