@@ -177,9 +177,9 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
         ));
 
         this._subs.add(this._selectionService.selection$.subscribe(
-            (sel: SelectionHistoryItem)=>
+            ()=>
             {
-                // this.prepareData("selection");
+                this.prepareData("selection");
             }
         ));
 
@@ -288,7 +288,7 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
         this.selectedMinXValue = this.selectedMinXValue || 0;
         this.selectedMaxXValue = this.selectedMaxXValue || xMinMax.max;
 
-        // Edit so min is always 0 and we have a little buffer above the max
+        // Edit so absolute min is always 0 and we have a little buffer above the max
         this.xAxisMinMax = new MinMax(0, xMinMax.max*1.2);
         this.yAxisMinMax = new MinMax(0, yMinMax.max*1.2);
 

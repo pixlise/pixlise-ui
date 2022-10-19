@@ -555,10 +555,10 @@ export class RGBUPlotModel
 
     static getRatioValue(channel: FloatImage[], numeratorChannel: number, denominatorChannel: number, pixelIdx: number): number
     {
-        // Verify channels are valid
+        // Verify channels are valid, if not return -1 so these values can be filtered out
         if(!channel || !channel[numeratorChannel] || !channel[denominatorChannel]) 
         {
-            return 0;
+            return -1;
         }
 
         let numeratorValue = channel[numeratorChannel]?.values[pixelIdx];
@@ -571,7 +571,7 @@ export class RGBUPlotModel
         }
         else 
         {
-            return 0;
+            return -1;
         }
     }
 
