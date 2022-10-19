@@ -322,8 +322,11 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         this.selectedMaxYValue = this.selectedMaxYValue || yMinMax.max;
 
         // Edit so min is always 0 and we have a little buffer above the max
-        this.xAxisMinMax = new MinMax(0, xMinMax.max*1.2);
-        this.yAxisMinMax = new MinMax(0, yMinMax.max*1.2);
+        // this.xAxisMinMax = new MinMax(0, xMinMax.max*1.2);
+        // this.yAxisMinMax = new MinMax(0, yMinMax.max*1.2);
+
+        this.xAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._xAxisUnit.numeratorChannelIdx, this._xAxisUnit.denominatorChannelIdx);
+        this.yAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._yAxisUnit.numeratorChannelIdx, this._yAxisUnit.denominatorChannelIdx);
 
         // 5 seems to work well for both axes, as used by DTU
         const minAxisMax = 5;

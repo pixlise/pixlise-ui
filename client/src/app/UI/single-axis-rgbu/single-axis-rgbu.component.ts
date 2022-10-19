@@ -283,14 +283,13 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
         console.log("singleAxisRGBU prepareData took: "+(t1-t0).toLocaleString()+"ms, needsDraw$ took: "+(t2-t1).toLocaleString()+"ms");
     }
 
-    private setInitRange(xMinMax: MinMax, yMinMax: MinMax): void
+    private setInitRange(xMinMax: MinMax): void
     {
         this.selectedMinXValue = this.selectedMinXValue || 0;
         this.selectedMaxXValue = this.selectedMaxXValue || xMinMax.max;
 
-        // Edit so absolute min is always 0 and we have a little buffer above the max
-        this.xAxisMinMax = new MinMax(0, xMinMax.max*1.2);
-        this.yAxisMinMax = new MinMax(0, yMinMax.max*1.2);
+        this.xAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._axisUnit.numeratorChannelIdx, this._axisUnit.denominatorChannelIdx);
+        this.yAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._axisUnit.numeratorChannelIdx, this._axisUnit.denominatorChannelIdx);
 
         // 5 seems to work well for both axes, as used by DTU
         const minAxisMax = 5;
@@ -318,7 +317,7 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
             selectedXRange
         );
 
-        this.setInitRange(xAxisMinMax, yAxisMinMax);
+        this.setInitRange(xAxisMinMax);
 
         const xBinCount = 200;
         const yBinCount = 200;
