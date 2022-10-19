@@ -288,12 +288,14 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
         this.selectedMinXValue = this.selectedMinXValue || 0;
         this.selectedMaxXValue = this.selectedMaxXValue || xMinMax.max;
 
-        this.xAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._axisUnit.numeratorChannelIdx, this._axisUnit.denominatorChannelIdx);
-        this.yAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._axisUnit.numeratorChannelIdx, this._axisUnit.denominatorChannelIdx);
-
         // 5 seems to work well for both axes, as used by DTU
         const minAxisMax = 5;
-        this.xAxisMinMax.expand(minAxisMax);
+
+        this.xAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._axisUnit.numeratorChannelIdx, this._axisUnit.denominatorChannelIdx);
+        this.xAxisMinMax.expand(0);
+        this.xAxisMinMax.expand(Math.max(xMinMax.max*1.2, minAxisMax));
+
+        this.yAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._axisUnit.numeratorChannelIdx, this._axisUnit.denominatorChannelIdx);
         this.yAxisMinMax.expand(minAxisMax);
     }
 
@@ -309,7 +311,7 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
             selectedXRange = new MinMax(this.selectedMinXValue, this.selectedMaxXValue);
         }
 
-        let [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax] = this.model.generatePoints(
+        let [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax, xAxisRawMinMax] = this.model.generatePoints(
             rgbu,
             cropSelection,
             this._axisUnit,
@@ -317,7 +319,7 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
             selectedXRange
         );
 
-        this.setInitRange(xAxisMinMax);
+        this.setInitRange(xAxisRawMinMax);
 
         const xBinCount = 200;
         const yBinCount = 200;

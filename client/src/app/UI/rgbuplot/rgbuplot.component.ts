@@ -321,17 +321,16 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         this.selectedMaxXValue = this.selectedMaxXValue || xMinMax.max;
         this.selectedMaxYValue = this.selectedMaxYValue || yMinMax.max;
 
-        // Edit so min is always 0 and we have a little buffer above the max
-        // this.xAxisMinMax = new MinMax(0, xMinMax.max*1.2);
-        // this.yAxisMinMax = new MinMax(0, yMinMax.max*1.2);
-
-        this.xAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._xAxisUnit.numeratorChannelIdx, this._xAxisUnit.denominatorChannelIdx);
-        this.yAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._yAxisUnit.numeratorChannelIdx, this._yAxisUnit.denominatorChannelIdx);
-
         // 5 seems to work well for both axes, as used by DTU
         const minAxisMax = 5;
-        this.xAxisMinMax.expand(minAxisMax);
-        this.yAxisMinMax.expand(minAxisMax);
+
+        this.xAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._xAxisUnit.numeratorChannelIdx, this._xAxisUnit.denominatorChannelIdx);
+        this.xAxisMinMax.expand(0);
+        this.xAxisMinMax.expand(Math.max(xMinMax.max*1.2, minAxisMax));
+
+        this.yAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._yAxisUnit.numeratorChannelIdx, this._yAxisUnit.denominatorChannelIdx);
+        this.yAxisMinMax.expand(0);
+        this.yAxisMinMax.expand(Math.max(yMinMax.max*1.2, minAxisMax));
     }
 
     private calcPoints(rgbu: RGBUImage): RGBUPlotData
@@ -353,7 +352,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
             selectedYRange = new MinMax(this.selectedMinYValue, this.selectedMaxYValue);
         }
 
-        let [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax] = this.model.generatePoints(
+        let [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax, xAxisRawMinMax, yAxisRawMinMax] = this.model.generatePoints(
             rgbu,
             cropSelection,
             this._xAxisUnit,
@@ -364,7 +363,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
 
         let t1 = performance.now();
 
-        this.setInitRange(xAxisMinMax, yAxisMinMax);
+        this.setInitRange(xAxisRawMinMax, yAxisRawMinMax);
  
         const xBinCount = 200;
         const yBinCount = 200;

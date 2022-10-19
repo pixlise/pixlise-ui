@@ -283,7 +283,7 @@ export class RGBUPlotModel
         );
     }
 
-    generatePoints(rgbu: RGBUImage, cropSelection: PixelSelection, xAxisUnit: RGBUAxisUnit, yAxisUnit: RGBUAxisUnit, selectedXRange?: MinMax, selectedYRange?: MinMax): [Point[], number[], MinMax, MinMax, MinMax, MinMax]
+    generatePoints(rgbu: RGBUImage, cropSelection: PixelSelection, xAxisUnit: RGBUAxisUnit, yAxisUnit: RGBUAxisUnit, selectedXRange?: MinMax, selectedYRange?: MinMax): [Point[], number[], MinMax, MinMax, MinMax, MinMax, MinMax, MinMax]
     {
         let channels = [rgbu.r, rgbu.g, rgbu.b, rgbu.u];
         const pixels = rgbu.r.width*rgbu.r.height;
@@ -291,6 +291,9 @@ export class RGBUPlotModel
         // Work out the min/max of mineral locations
         let xAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(xAxisUnit.numeratorChannelIdx, xAxisUnit.denominatorChannelIdx);
         let yAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(yAxisUnit.numeratorChannelIdx, yAxisUnit.denominatorChannelIdx);
+
+        let xAxisRawMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(xAxisUnit.numeratorChannelIdx, xAxisUnit.denominatorChannelIdx);;
+        let yAxisRawMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(yAxisUnit.numeratorChannelIdx, yAxisUnit.denominatorChannelIdx);
 
         if(selectedXRange) 
         {
@@ -329,9 +332,12 @@ export class RGBUPlotModel
                 pts.push(pt);
                 srcPixelIdxs.push(c);
             }
+
+            xAxisRawMinMax.expand(pt.x);
+            yAxisRawMinMax.expand(pt.y);
         }
 
-        return [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax];
+        return [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax, xAxisRawMinMax, yAxisRawMinMax];
     }
 
     minimizeRGBUData(
