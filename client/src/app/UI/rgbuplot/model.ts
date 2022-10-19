@@ -301,16 +301,6 @@ export class RGBUPlotModel
             yAxisMinMax = selectedYRange;
         }
 
-        // Force mins to 0, they get forced by setInitRange anyway
-        if(xAxisMinMax.min > 0)
-        {
-            xAxisMinMax.setMin(0);
-        }
-        if(yAxisMinMax.min > 0)
-        {
-            yAxisMinMax.setMin(0);
-        }
-
         let pts: Point[] = [];
         let xMinMax = new MinMax();
         let yMinMax = new MinMax();
