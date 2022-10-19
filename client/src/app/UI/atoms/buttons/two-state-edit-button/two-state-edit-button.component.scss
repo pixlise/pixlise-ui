@@ -28,58 +28,106 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 @import 'variables.scss';
+@import 'atoms.scss';
 
-.left-menu {
-    max-width: 30%;
+.btn-container {
+    display: flex;
 }
 
-.left-right-padding {
-    padding: 0px $sz-unit;
-}
+.btn-base {
+    padding: $sz-half $sz-double;
 
-.page-container {
-    padding: 0px $sz-unit $sz-unit $sz-unit;
-}
-
-.meta-row {
-    background-color: $clr-gray-80;
-    color: $clr-gray-30;
-    text-transform: uppercase;
-    white-space: nowrap;
-    font-size: 12px;
-    padding: $sz-unit;
-    margin-bottom: 1px;
-}
-
-.panel {
-    overflow: unset;
-    box-sizing: unset;
-    padding: $sz-unit 0px;
-}
-
-.img-area {
-    //max-height: calc(100vh - 144px) !important;
-}
-
-.none-text {
-    font-size: 12px;
-    color: $clr-gray-30;
     text-align: center;
+    text-transform: uppercase;
+
+    font-weight: 700;
+    font-family: Inter, Roboto;
+
+    font-size: 12px;
+    line-height: 16px;
+
+    white-space: nowrap;
 }
 
-.meta-edit {
+.btn-yellow {
+    @extend .btn-base;
+    color: black;
+    background-color: $clr-yellow;
+}
+
+.btn-gray {
+    @extend .btn-base;
+    color: $clr-gray-10;
+    background-color: $clr-gray-60;
+}
+
+.btn-outline {
+    @extend .btn-base;
     color: $clr-gray-30;
+    border: 1px solid $clr-gray-30;
+    box-sizing: border-box;
 }
 
-.meta-edit input {
-    width: 50px;
+.btn-normal {
+    @extend .btn-base;
+    padding: $sz-half;
+    color: $clr-gray-30;
+    text-transform: unset;
+    font-weight: 400;
+    font-family: Roboto;
+    font-size: 14px;
+    line-height: 16px;
+    background-color: $clr-gray-100;
+
+    &:hover {
+        background-color: $clr-gray-90;
+    }
 }
 
-.scrollable-container {
-    max-height: calc(100vh - 144px) !important;
-    overflow-y: auto;
+.btn-borderless {
+    @extend .btn-base;
+
+    color: $clr-yellow;
+    opacity: 0.9;
+
+    //font-style: normal;
+
+    &:hover {
+        background-color: $clr-gray-60;
+    }
 }
 
-.log-area {
-    height: 220px;
+.main-btn {
+    border-radius: $sz-half;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-right: 1px solid $clr-gray-30;
+}
+
+.edit-btn {
+    border-radius: $sz-half;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+
+    display: flex;
+    align-items: center;
+    padding: 5px;
+}
+
+.disabled {
+    color: $clr-gray-60;
+    background-color: $clr-gray-80;
+
+    &:hover {
+        cursor: default;
+        background-color: $clr-gray-80;
+    }
+}
+
+.active {
+    color: $clr-yellow;
 }

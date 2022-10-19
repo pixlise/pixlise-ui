@@ -29,57 +29,78 @@
 
 @import 'variables.scss';
 
-.left-menu {
-    max-width: 30%;
-}
-
 .left-right-padding {
     padding: 0px $sz-unit;
 }
 
-.page-container {
-    padding: 0px $sz-unit $sz-unit $sz-unit;
+input {
+    min-width: 250px;
 }
 
-.meta-row {
+.dlg {
+    min-width: 800px;
+    min-height: 400px;
+}
+
+ngx-dropzone-preview,
+.dropzone  {
+    color: $clr-gray-30;
     background-color: $clr-gray-80;
-    color: $clr-gray-30;
-    text-transform: uppercase;
-    white-space: nowrap;
-    font-size: 12px;
-    padding: $sz-unit;
-    margin-bottom: 1px;
+    background-image: unset;
+
+    &:hover {
+        background-color: $clr-gray-80;
+        background-image: unset;
+    }
 }
 
-.panel {
-    overflow: unset;
-    box-sizing: unset;
-    padding: $sz-unit 0px;
+:host ::ng-deep ngx-dropzone-preview {
+    max-width: 100% !important;
 }
 
-.img-area {
-    //max-height: calc(100vh - 144px) !important;
+ngx-dropzone,
+.dropzone {
+  margin: $sz-double;
 }
 
-.none-text {
-    font-size: 12px;
-    color: $clr-gray-30;
-    text-align: center;
+.dropzone {
+    background: $clr-gray-90;
+    color: #fff;
+    border: $sz-half dashed $clr-gray-30;
+    border-radius: $sz-half;
+    font-size: 20px;
+
+    &:hover {
+        background: $clr-gray-90;
+    }
 }
 
-.meta-edit {
-    color: $clr-gray-30;
+.dropzone.ngx-dz-hovered {
+    border: $sz-half solid $clr-gray-30;
 }
 
-.meta-edit input {
-    width: 50px;
-}
-
-.scrollable-container {
-    max-height: calc(100vh - 144px) !important;
-    overflow-y: auto;
+.important {
+    color: $clr-orange;
+    font-weight: bold;
+    max-width: 450px;
 }
 
 .log-area {
-    height: 220px;
+    height: 300px;
+}
+
+.mode-title {
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: $clr-gray-10;
+    padding: $sz-unit;
+}
+
+.spinner {
+    padding-top: 40px;
+}
+
+span {
+    color: $clr-gray-10;
 }

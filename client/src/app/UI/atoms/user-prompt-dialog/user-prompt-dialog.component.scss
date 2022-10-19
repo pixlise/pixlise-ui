@@ -46,4 +46,7 @@ h3 {
 
 .mat-select {
     min-width: 200px !important;
+
+    // 6px padding + 8px margin + 16px dialog padding = 30px overflow, !important overrides the forced 90px width from styles.scss
+    width: calc(100% - 30px) !important;
 }

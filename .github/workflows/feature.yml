@@ -57,23 +57,20 @@ jobs:
           search_commit_body: false
           # The output method used to generate list of users, 'csv' or 'json'.
           user_format_type: "csv"
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: "1.18.0"
+
       - name: print version
         id: taggen
         run: |
           echo "BUILDING VERSION ${{ steps.version.outputs.version }}"
           echo "{\"version\": \"${{ steps.version.outputs.version }}\" }" > ./client/src/version.json
           cat ./client/src/version.json
-          echo "::set-output name=semverbranch::${{ steps.version.outputs.version}}-${GITHUB_REF_NAME}"
+          echo "::set-output name=semverslug::${GITHUB_REF_NAME}"
 
       - uses: gacts/github-slug@v1
         id: slug
         with:
           # replace value in "to-slug" this on your choice
-          to-slug: ${{ steps.taggen.outputs.semverbranch }}
+          to-slug: ${{ steps.taggen.outputs.semverslug }}
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
@@ -82,7 +79,6 @@ jobs:
         uses: sigstore/cosign-installer@7e0881f8fe90b25e305bbf0309761e9314607e25
         with:
           cosign-release: 'v1.9.0'
-
 
       # Workaround: https://github.com/docker/build-push-action/issues/461
       - name: Setup Docker buildx
@@ -105,7 +101,7 @@ jobs:
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: type=raw,value=${{ steps.slug.outputs.slug }}
+          tags: type=raw,value=${{ steps.version.outputs.version}}-${{ steps.slug.outputs.slug }}
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image

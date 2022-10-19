@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="column" fxFill>
     <notification-banner></notification-banner>
-    <app-toolbar titleToShow="Edit Dataset: {{datasetID}}"></app-toolbar>
+    <app-toolbar titleToShow="Edit: {{datasetID}}"></app-toolbar>
 
     <div fxLayout="row" class="page-container gap-separated-horizontal-elements" fxFlex>
         <!-- left pane browsable stuff -->
@@ -154,12 +154,7 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
 
             <div *ngIf="showLog" class="panel log-area">
-                <div class="log-scroll log-data" fxLayout="column" fxFlex="100%">
-                    <div *ngFor="let line of logData" class="log-data-line">{{line.timeStampUnixMs|date:'medium'}} - {{line.message}}</div>
-                    <div fxLayout="row" fxLayoutAlign="space-around">
-                        <push-button (onClick)="onRefreshLog()" buttonStyle="outline">Refresh</push-button>
-                    </div>
-                </div>
+                <log-viewer title="Dataset Regeneration Log" [logID]="logId" fxFill></log-viewer>
             </div>
         </div>
     </div>

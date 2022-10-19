@@ -30,7 +30,6 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements" [title]="errorMsg">
-    <div class="label" [ngClass]='{"quant-error-label": errorMsg}'>Current Quantification:</div>
     <img *ngIf="errorMsg" class="quant-error-icon" src="assets/icons/error-triangle.svg">
     <quantification-selector [selectedQuantID]="selectedQuantID"></quantification-selector>
 </div>

@@ -68,7 +68,7 @@ POSSIBILITY OF SUCH DAMAGE.
             fxLayout="row"
             fxLayoutAlign="start center"
             class="gap-separated-horizontal-elements">
-            <img *ngIf="!showShared" class='clickable hover-circle' src="assets/button-icons/edit.svg" (click)="onRenameWorkspace(item.id, $event)">
+            <!-- <img *ngIf="!showShared" class='clickable hover-circle' src="assets/button-icons/edit.svg" (click)="onRenameWorkspace(item.id, $event)"> -->
             <img *ngIf="!showShared" class='clickable hover-circle' src="assets/button-icons/share-small.svg" (click)="onShareWorkspace(item.id, $event)">
             <img class='clickable hover-circle' src="assets/button-icons/close-cross-gray.svg" (click)="onDeleteWorkspace(item.id, $event)">
         </div>

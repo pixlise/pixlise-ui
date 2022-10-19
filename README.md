@@ -5,8 +5,9 @@
 ## Data Visualisation for Mars 2020 Rover Project
 
 ### What's here?
+* `/.github/workflows` contains github workflows (actions) for build and deployment and trello integration
 * `/auth0` contains auth0 extensions
-* `/client` contains source code of angular client that runs as a webpage
+* `/client` contains source code of angular client that runs as a single page web app
 * `/data-formats` git sub-module for data-formats repository should check out to here
 
 ### Setting up for PIXLISE UI development

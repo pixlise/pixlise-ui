@@ -27,59 +27,55 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 
-.left-menu {
-    max-width: 30%;
-}
 
-.left-right-padding {
-    padding: 0px $sz-unit;
-}
+@Component({
+    selector: "two-state-edit-button",
+    templateUrl: "./two-state-edit-button.component.html",
+    styleUrls: ["./two-state-edit-button.component.scss"]
+})
+export class TwoStateEditButtonComponent implements OnInit
+{
+    @Input() buttonStyle: string = "normal";
+    @Input() disabled: boolean = false;
+    @Input() active: boolean = false;
 
-.page-container {
-    padding: 0px $sz-unit $sz-unit $sz-unit;
-}
+    @Output() onToggle = new EventEmitter();
+    @Output() onEdit = new EventEmitter();
 
-.meta-row {
-    background-color: $clr-gray-80;
-    color: $clr-gray-30;
-    text-transform: uppercase;
-    white-space: nowrap;
-    font-size: 12px;
-    padding: $sz-unit;
-    margin-bottom: 1px;
-}
+    constructor()
+    {
+    }
 
-.panel {
-    overflow: unset;
-    box-sizing: unset;
-    padding: $sz-unit 0px;
-}
+    ngOnInit()
+    {
+        const validStyles = ["normal", "borderless", "yellow", "outline", "gray"];
+        if(validStyles.indexOf(this.buttonStyle) == -1)
+        {
+            console.warn("Invalid style for edit-button: "+this.buttonStyle);
+            this.buttonStyle = validStyles[0];
+        }
+    }
 
-.img-area {
-    //max-height: calc(100vh - 144px) !important;
-}
+    get styleCSS(): string
+    {
+        return `btn-${this.buttonStyle}${this.disabled ? " disabled" : ""}${this.active ? " active" : ""}`;
+    }
 
-.none-text {
-    font-size: 12px;
-    color: $clr-gray-30;
-    text-align: center;
-}
-
-.meta-edit {
-    color: $clr-gray-30;
-}
-
-.meta-edit input {
-    width: 50px;
-}
-
-.scrollable-container {
-    max-height: calc(100vh - 144px) !important;
-    overflow-y: auto;
-}
-
-.log-area {
-    height: 220px;
+    onToggleInternal(): void
+    {
+        if(!this.disabled)
+        {
+            this.active = !this.active;
+            this.onToggle.emit(this.active);
+        }
+    }
+    onEditInternal(event): void
+    {
+        if(!this.disabled)
+        {
+            this.onEdit.emit(event);
+        }
+    }
 }

@@ -114,9 +114,9 @@ be a bit misleading.
     private makeTitle(): string
     {
         let title = "";
-        if(this.item.pmc != DataSet.invalidPMC)
+        if(this.item.imagePMC != DataSet.invalidPMC)
         {
-            title = "PMC: "+this.item.pmc+" ";
+            title = "PMC: "+this.item.imagePMC+" ";
 
             if(this.item.hasBeamData)
             {
@@ -201,7 +201,7 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy
                         {
                             rgbuImgs.push(dispItem);
                         }
-                        else if(img.pmc > DataSet.invalidPMC)
+                        else if(img.imagePMC > DataSet.invalidPMC)
                         {
                             if(!img.imageDrawTransform)
                             {
@@ -220,11 +220,11 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy
 
                     let sortFunc = (a: DisplayContextImageItem, b: DisplayContextImageItem)=>
                     {
-                        if(a.item.pmc == b.item.pmc)
+                        if(a.item.imagePMC == b.item.imagePMC)
                         {
                             return a.item.path.localeCompare(b.item.path);
                         }
-                        else if(a.item.pmc > b.item.pmc)
+                        else if(a.item.imagePMC > b.item.imagePMC)
                         {
                             return 1;
                         }

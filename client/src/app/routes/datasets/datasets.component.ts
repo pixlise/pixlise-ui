@@ -36,19 +36,13 @@ import { DatasetFilter } from "src/app/routes/datasets/dataset-filter";
 import { FilterDialogComponent, FilterDialogData } from "src/app/routes/datasets/filter-dialog/filter-dialog.component";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { DataSetService } from "src/app/services/data-set.service";
-import { UserOptionsService } from "src/app/services/user-options.service";
 import { ViewStateService } from "src/app/services/view-state.service";
 import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "src/app/UI/atoms/picker-dialog/picker-dialog.component";
 import { WidgetSettingsMenuComponent } from "src/app/UI/atoms/widget-settings-menu/widget-settings-menu.component";
 import { HelpMessage } from "src/app/utils/help-message";
 import { getMB, httpErrorToString } from "src/app/utils/utils";
-
-
-
-
-
-
-
+import { AddDatasetDialogComponent } from "src/app/routes/datasets/add-dataset-dialog/add-dataset-dialog.component";
+import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
 
 
 class SummaryItem
@@ -95,7 +89,8 @@ export class DatasetsComponent implements OnInit
         private _datasetService: DataSetService,
         private _viewStateService: ViewStateService,
         private _authService: AuthenticationService,
-        private _userOptionsService: UserOptionsService, // Pull this in so data collection dialog is shown if needed
+        private _loadingSvc: LoadingIndicatorService,
+        //private _userOptionsService: UserOptionsService, // Pull this in so data collection dialog is shown if needed
         public dialog: MatDialog
     )
     {
@@ -433,6 +428,26 @@ export class DatasetsComponent implements OnInit
 
         let missing = DataSetSummary.listMissingData(this.selectedDataset);
         this.selectedMissingData = missing.length > 0 ? "Dataset likely missing: "+Array.from(missing).join(",") : "";
+    }
+
+    onAddDataset(): void
+    {
+        const dialogConfig = new MatDialogConfig();
+
+        //dialogConfig.disableClose = true;
+        //dialogConfig.autoFocus = true;
+        //dialogConfig.width = '1200px';
+
+        //dialogConfig.data = ;
+        const dialogRef = this.dialog.open(AddDatasetDialogComponent, dialogConfig);
+
+        dialogRef.afterClosed().subscribe(
+            ()=>
+            {
+                // Refresh datasets in the near future, it should have appeared
+                setTimeout(()=>{this.onSearch();}, 2000);
+            }
+        );
     }
 
     get contextImageURL(): string

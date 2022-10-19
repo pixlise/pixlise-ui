@@ -34,7 +34,6 @@ import { Observable, Subject, Subscription, throwError } from "rxjs";
 import { map } from "rxjs/operators";
 import { PixelSelection } from "src/app/models/PixelSelection";
 import { RGBUImage } from "src/app/models/RGBUImage";
-import { APILogService, LogData, LogLine } from "src/app/services/apilog.service";
 import { DatasetCustomImageInfo, DataSetService } from "src/app/services/data-set.service";
 import { LayoutService } from "src/app/services/layout.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
@@ -52,8 +51,6 @@ const imgTypeMatched = "matched";
 //const imgTypeRGBU = 'rgbu';
 const imgTypeUnaligned = "unaligned";
 
-const logAutoRetrieveLimit = 10; // 10 requests
-
 
 @Component({
     selector: "app-dataset-customisation",
@@ -70,6 +67,7 @@ export class DatasetCustomisationComponent implements OnInit
     title: string = "";
 
     datasetID: string = "";
+    logId: string = "";
 
     // For drawing to canvas
     transform: PanZoom = new PanZoom();
@@ -79,11 +77,6 @@ export class DatasetCustomisationComponent implements OnInit
 
     private _drawModel: AlignmentModel = new AlignmentModel();
     private _loadedMeta: DatasetCustomImageInfo = null;
-
-    private _logIdWatched: string = "";//dataimport-t1ix4qjrir8h2vgo';
-    private _logAutoRetrieveCount: number = 0;
-
-    logData: LogLine[] = [];
 
     xOffset: string = "";
     yOffset: string = "";
@@ -96,7 +89,6 @@ export class DatasetCustomisationComponent implements OnInit
         private _layoutService: LayoutService,
         private _datasetService: DataSetService,
         public dialog: MatDialog,
-        private _logService: APILogService,
         private _loadingSvc: LoadingIndicatorService,
     )
     {
@@ -264,27 +256,29 @@ export class DatasetCustomisationComponent implements OnInit
     {
         // Title variable would hold the new value, save that
         this._datasetService.setCustomTitle(this.datasetID, this.title).subscribe(
-            (result: object)=>
+            ()=>
             {
-                // Check if we've got a job id back for this dataset conversion process
-                let logId = result["LogID"];
-                if(logId)
-                {
-                    alert("Saved. Dataset will be regenerated, watch log output for errors.");
+                // If it was successful, we trigger a dataset reprocess here
+                this._datasetService.reprocessDataset(this.datasetID).subscribe(
+                    (logId: string)=>
+                    {
+                        // Check if we've got a log id back for this dataset conversion process
+                        if(logId)
+                        {
+                            alert("Saved. Dataset will be regenerated, watch log output for errors.");
 
-                    this.logData = [];
-                    this._logIdWatched = logId;
-
-                    // Refresh now and start auto-retrieving
-                    this._logAutoRetrieveCount = 0;
-                    setTimeout(()=>{this.onRefreshLog();}, 2000);
-                    //this.onRefreshLog();
-                }
-                else
-                {
-                    alert("Save failed, unknown error.");
-                }
-                this.refresh();
+                            this.logId = logId;
+                        }
+                        else
+                        {
+                            alert("Save failed, unknown error.");
+                        }
+                        this.refresh();
+                    },
+                    (err)=>
+                    {
+                    }
+                );
             },
             (err)=>
             {
@@ -619,30 +613,6 @@ export class DatasetCustomisationComponent implements OnInit
         );
     }
 
-    onRefreshLog(): void
-    {
-        this._logService.getLog(this._logIdWatched).subscribe(
-            (resp: LogData)=>
-            {
-                if(resp.lines.length > this.logData.length)
-                {
-                    this.logData = resp.lines;
-                }
-
-                this._logAutoRetrieveCount++;
-
-                if(this._logAutoRetrieveCount < logAutoRetrieveLimit)
-                {
-                    setTimeout(()=>{this.onRefreshLog();}, 2000);
-                }
-            },
-            (err)=>
-            {
-                this.logData = [new LogLine(Date.now(), httpErrorToString(err, "Failed to retrieve log"))];
-            }
-        );
-    }
-
     get matchedOpacity(): number
     {
         return this._drawModel.matchedOpacity;
@@ -675,7 +645,7 @@ export class DatasetCustomisationComponent implements OnInit
 
     get showLog(): boolean
     {
-        return this._logIdWatched.length > 0;
+        return this.logId.length > 0;
     }
 
     get selectedImageMeta(): DatasetCustomImageInfo

@@ -29,23 +29,15 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-
-<div fxLayout="column" class="user-prompt-dlg dlg-border-with-backdrop gap-separated-vertical-elements">
-    <h1>{{data.title}}</h1>
-
-    <ng-container *ngFor="let name of names; let i = index">
-        <h3>{{name}}</h3>
-        <input *ngIf="inputTypes[i]=='string'" [(ngModel)]="values[i]" type="text" placeholder="...">
-        <mat-select *ngIf="inputTypes[i]=='dropdown'" [(ngModel)]="values[i]">
-            <mat-option
-                *ngFor="let itemName of data.items[i]['itemNames']; let selIdx = index"
-                [value]="data.items[i]['itemValues'][selIdx]">{{itemName}}</mat-option>
-        </mat-select>
-    </ng-container>
-
-    <div fxLayout="row" fxLayoutAlign="end" class="bottom-button-gap gap-separated-horizontal-elements">
-        <push-button buttonStyle="outline" (onClick)="onCancel()">{{data.cancelButtonLabel}}</push-button>
-        <push-button *ngIf="data.middleButton" buttonStyle="yellow" (onClick)="data.middleButtonCallback()">{{data.middleButtonLabel}}</push-button>
-        <push-button buttonStyle="yellow" (onClick)="onOK()">{{data.okButtonLabel}}</push-button>
+<div fxLayout="column" fxFlex="100%">
+    <div fxLayout="row" fxLayoutAlign="space-between" class="top-row">
+        <div fxLayout="row" class="gap-separated-horizontal-elements">
+            <div class="txt-widget-title">{{title}}</div>
+            <mat-spinner *ngIf="loading" [diameter]="16" color="accent"></mat-spinner>
+        </div>
+        <push-button (onClick)="onRefreshLog()" buttonStyle="outline">Refresh</push-button>
+    </div>
+    <div class="log-scroll log-data" fxLayout="column" fxFlex="100%">
+        <div *ngFor="let line of logData" class="log-data-line">{{line.timeStampUnixMs|date:'dd MMM yyy HH:mm:ss'}} - {{line.message}}</div>
     </div>
 </div>

@@ -39,6 +39,7 @@ import { ElementSetItemLines } from "./element-set.service";
 import { LayoutService } from "./layout.service";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
+import { AnnotationPoint, AnnotationToolOption, FullScreenAnnotationItem } from "../UI/annotation-editor/annotation-display/annotation-display.component";
 
 
 export class spectrumXRFLineState
@@ -257,6 +258,40 @@ export class roiDisplayState
     }
 }
 
+export class annotationPointWireFrame
+{
+    constructor(
+        public x: number,
+        public y: number,
+        public screenWidth: number,
+        public screenHeight: number,
+    )
+    {}
+}
+
+export class fullScreenAnnotationItemWireFrame
+{
+    constructor(
+        public type: string,
+        public points: annotationPointWireFrame[],
+        public colour: string,
+        public complete: boolean,
+        public text?: string,
+        public fontSize?: number,
+        public id?: number
+    )
+    {}
+}
+
+export class annotationsDisplayState
+{
+    constructor(
+        public savedAnnotations: fullScreenAnnotationItemWireFrame[]
+    )
+    {
+    }
+}
+
 export class singleAxisRGBUWidgetState
 {
     constructor(
@@ -332,6 +367,7 @@ export class ViewState
         public rgbuImages: Map<string, rgbuImagesWidgetState>,
         public parallelograms: Map<string, parallelogramWidgetState>,
 
+        public annotations: annotationsDisplayState,
         public rois: roiDisplayState,
         public quantification: quantificationState,
         public selection: selectionState
@@ -418,6 +454,8 @@ export class ViewStateService
     private _roiShapes$ = new ReplaySubject<Map<string, string>>(1);
     private _appliedQuantification$ = new ReplaySubject<string>(1);
 
+    private _annotations$ = new ReplaySubject<FullScreenAnnotationItem[]>(1);
+
     private _datasetID: string = null;
 
     private _viewSelectorsAreDefaults: boolean = false;
@@ -490,6 +528,11 @@ export class ViewStateService
     get roiShapes$(): Subject<Map<string, string>>
     {
         return this._roiShapes$;
+    }
+
+    get annotations$(): Subject<FullScreenAnnotationItem[]>
+    {
+        return this._annotations$;
     }
 
     get appliedQuantification$(): Subject<string>
@@ -603,7 +646,7 @@ export class ViewStateService
             )
         );
     }
-
+/*
     renameViewState(datasetID: string, existingViewStateID: string, newViewStateID: string): Observable<void>
     {
         let loadID = this._loadingSvc.add("Renaming view state...");
@@ -626,7 +669,7 @@ export class ViewStateService
             )
         );
     }
-
+*/
     // View state collections
     private makeViewStateCollectionURL(datasetID: string, collectionID: string): string
     {
@@ -1073,6 +1116,7 @@ export class ViewStateService
             this.readMapFromObject<rgbuImagesWidgetState>(stateWireObj["rgbuImages"]),
             this.readMapFromObject<parallelogramWidgetState>(stateWireObj["parallelograms"]),
 
+            new annotationsDisplayState(stateWireObj["annotations"]["savedAnnotations"]),
             new roiDisplayState(this.readMapFromObject<string>(stateWireObj["rois"]["roiColours"]), this.readMapFromObject<string>(stateWireObj["rois"]["roiShapes"])),
             new quantificationState(stateWireObj["quantification"]["appliedQuantID"]),
             stateWireObj["selection"]
@@ -1085,8 +1129,10 @@ export class ViewStateService
     private makeWireViewState(state: ViewState): object
     {
         let result = {
+            // Layouts
             "analysisLayout": state.analysisLayout,
 
+            // Widgets
             "contextImages": this.writeMapToObject<contextImageState>(state.contextImages),
             "histograms": this.writeMapToObject<histogramState>(state.histograms),
             "chordDiagrams": this.writeMapToObject<chordState>(state.chordDiagrams),
@@ -1101,6 +1147,10 @@ export class ViewStateService
             "rgbuImages": this.writeMapToObject<rgbuImagesWidgetState>(state.rgbuImages),
             "parallelograms": this.writeMapToObject<parallelogramWidgetState>(state.parallelograms),
 
+            // Services
+            "annotations": {
+                "savedAnnotations": state.annotations.savedAnnotations
+            },
             "rois": {
                 "roiColours": this.writeMapToObject<string>(state.rois.roiColours)
             },
@@ -1247,6 +1297,7 @@ export class ViewStateService
         this.updateAppliedQuantification();
         this._roiColours$.next(this._viewState.rois.roiColours);
         this._roiShapes$.next(this._viewState.rois.roiShapes);
+        this._annotations$.next(this.convertAnnotationsFromWireFrame(this._viewState.annotations.savedAnnotations));
 
         // NOTE: we publish this last. This is because services can depend on view state
         // and once they get this, they will subscribe for the others, so they can expect
@@ -1620,6 +1671,63 @@ export class ViewStateService
         // We have to support the fact that a shape may already be assigned to multiple ROIs, so here we build
         // a unique list of shapes
         return Array.from(new Set<string>(this._viewState.rois.roiShapes.values())).filter((colour) => colour.length > 0);
+    }
+
+    convertAnnotationsFromWireFrame(annotations: fullScreenAnnotationItemWireFrame[]): FullScreenAnnotationItem[]
+    {
+        return annotations.map(annotationWireFrame =>
+            new FullScreenAnnotationItem(
+                annotationWireFrame.type as AnnotationToolOption,
+                annotationWireFrame.points.map(point => new AnnotationPoint(point.x, point.y, point.screenWidth, point.screenHeight)),
+                annotationWireFrame.colour,
+                annotationWireFrame.complete,
+                annotationWireFrame.text,
+                annotationWireFrame.fontSize,
+                annotationWireFrame.id
+            )
+        );
+    }
+
+    convertAnnotationsToWireFrame(annotations: FullScreenAnnotationItem[]): fullScreenAnnotationItemWireFrame[]
+    {
+        return annotations.map(annotation =>
+        {
+            return {
+                type: annotation.type,
+                points: annotation.points.map(point => { return { x: point.x, y: point.y, screenWidth: point.screenWidth, screenHeight: point.screenHeight }; }),
+                colour: annotation.colour,
+                complete: annotation.complete,
+                text: annotation.text,
+                fontSize: annotation.fontSize,
+                id: annotation.id
+            };
+        });
+    }
+
+    saveAnnotations(annotations: FullScreenAnnotationItem[]): boolean
+    {
+        if(!this._viewState)
+        {
+            console.warn("Can't save annotations in view state, as initial view state snapshot not yet loaded. Ignored.");
+            return false;
+        }
+
+        let t0 = performance.now();
+
+        this._viewState.annotations.savedAnnotations = this.convertAnnotationsToWireFrame(annotations);
+
+        let t1 = performance.now();
+
+        this._annotations$.next(annotations);
+        
+        let t2 = performance.now();
+
+        this.save({ "savedAnnotations": this._viewState.annotations.savedAnnotations }, "annotations");
+
+        let t3 = performance.now();
+
+        console.log(`saveAnnotations timing: map=${(t1-t0).toLocaleString()}ms, subject=${(t2-t1).toLocaleString()}ms, save=${(t3-t2).toLocaleString()}ms`);
+        return true;
     }
 
     setChord(state: chordState, whichInstance: string): boolean

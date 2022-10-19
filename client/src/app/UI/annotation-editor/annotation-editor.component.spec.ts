@@ -27,59 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { AnnotationEditorComponent } from "./annotation-editor.component";
 
-.left-menu {
-    max-width: 30%;
-}
 
-.left-right-padding {
-    padding: 0px $sz-unit;
-}
+describe("AnnotationEditorComponent", () => 
+{
+    let component: AnnotationEditorComponent;
+    let fixture: ComponentFixture<AnnotationEditorComponent>;
 
-.page-container {
-    padding: 0px $sz-unit $sz-unit $sz-unit;
-}
+    beforeEach(async () => 
+    {
+        await TestBed.configureTestingModule({
+            declarations: [ AnnotationEditorComponent ]
+        })
+            .compileComponents();
+    });
 
-.meta-row {
-    background-color: $clr-gray-80;
-    color: $clr-gray-30;
-    text-transform: uppercase;
-    white-space: nowrap;
-    font-size: 12px;
-    padding: $sz-unit;
-    margin-bottom: 1px;
-}
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(AnnotationEditorComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-.panel {
-    overflow: unset;
-    box-sizing: unset;
-    padding: $sz-unit 0px;
-}
-
-.img-area {
-    //max-height: calc(100vh - 144px) !important;
-}
-
-.none-text {
-    font-size: 12px;
-    color: $clr-gray-30;
-    text-align: center;
-}
-
-.meta-edit {
-    color: $clr-gray-30;
-}
-
-.meta-edit input {
-    width: 50px;
-}
-
-.scrollable-container {
-    max-height: calc(100vh - 144px) !important;
-    overflow-y: auto;
-}
-
-.log-area {
-    height: 220px;
-}
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});
