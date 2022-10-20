@@ -283,7 +283,7 @@ export class RGBUPlotModel
         );
     }
 
-    generatePoints(rgbu: RGBUImage, cropSelection: PixelSelection, xAxisUnit: RGBUAxisUnit, yAxisUnit: RGBUAxisUnit, selectedXRange?: MinMax, selectedYRange?: MinMax): [Point[], number[], MinMax, MinMax, MinMax, MinMax]
+    generatePoints(rgbu: RGBUImage, cropSelection: PixelSelection, xAxisUnit: RGBUAxisUnit, yAxisUnit: RGBUAxisUnit, selectedXRange?: MinMax, selectedYRange?: MinMax): [Point[], number[], MinMax, MinMax, MinMax, MinMax, MinMax, MinMax]
     {
         let channels = [rgbu.r, rgbu.g, rgbu.b, rgbu.u];
         const pixels = rgbu.r.width*rgbu.r.height;
@@ -292,6 +292,9 @@ export class RGBUPlotModel
         let xAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(xAxisUnit.numeratorChannelIdx, xAxisUnit.denominatorChannelIdx);
         let yAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(yAxisUnit.numeratorChannelIdx, yAxisUnit.denominatorChannelIdx);
 
+        let xAxisRawMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(xAxisUnit.numeratorChannelIdx, xAxisUnit.denominatorChannelIdx);;
+        let yAxisRawMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(yAxisUnit.numeratorChannelIdx, yAxisUnit.denominatorChannelIdx);
+
         if(selectedXRange) 
         {
             xAxisMinMax = selectedXRange;
@@ -299,16 +302,6 @@ export class RGBUPlotModel
         if(selectedYRange) 
         {
             yAxisMinMax = selectedYRange;
-        }
-
-        // Force mins to 0, they get forced by setInitRange anyway
-        if(xAxisMinMax.min > 0)
-        {
-            xAxisMinMax.setMin(0);
-        }
-        if(yAxisMinMax.min > 0)
-        {
-            yAxisMinMax.setMin(0);
         }
 
         let pts: Point[] = [];
@@ -339,9 +332,12 @@ export class RGBUPlotModel
                 pts.push(pt);
                 srcPixelIdxs.push(c);
             }
+
+            xAxisRawMinMax.expand(pt.x);
+            yAxisRawMinMax.expand(pt.y);
         }
 
-        return [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax];
+        return [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax, xAxisRawMinMax, yAxisRawMinMax];
     }
 
     minimizeRGBUData(
@@ -475,7 +471,7 @@ export class RGBUPlotModel
                             colour = Colours.CONTEXT_BLUE;
                         }
 
-                        if(stackedROIs)
+                        if(stackedROIs && binMemberInfo[binIdx].rois.length > 0)
                         {
                             roiCount = activePixelROIs.map((roi) => ({ roi: visibleROIs[roi].name, count, colour: colour.asString() }));
                             combinedCount = count * activePixelROIs.length;
@@ -565,10 +561,10 @@ export class RGBUPlotModel
 
     static getRatioValue(channel: FloatImage[], numeratorChannel: number, denominatorChannel: number, pixelIdx: number): number
     {
-        // Verify channels are valid
+        // Verify channels are valid, if not return -1 so these values can be filtered out
         if(!channel || !channel[numeratorChannel] || !channel[denominatorChannel]) 
         {
-            return 0;
+            return -1;
         }
 
         let numeratorValue = channel[numeratorChannel]?.values[pixelIdx];
@@ -581,7 +577,7 @@ export class RGBUPlotModel
         }
         else 
         {
-            return 0;
+            return -1;
         }
     }
 

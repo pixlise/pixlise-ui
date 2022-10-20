@@ -36,14 +36,14 @@ import {  RGBUImage } from "src/app/models/RGBUImage";
 import { orderVisibleROIs } from "src/app/models/roi";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataSetService } from "src/app/services/data-set.service";
-import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
+import { SelectionService } from "src/app/services/selection.service";
 import {  singleAxisRGBUWidgetState, ViewStateService } from "src/app/services/view-state.service";
 import {  WidgetDataUpdateReason, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
 import { CanvasDrawer, CanvasDrawParameters, CanvasInteractionHandler } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
 import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.component";
-import { RGBUAxisRatioPickerComponent } from "src/app/UI/rgbuplot/rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
+import { RatioPickerData, RGBUAxisRatioPickerComponent } from "src/app/UI/rgbuplot/rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
 import { SingleAxisRGBUDrawer } from "./drawer";
 import { RGBUPlotInteraction } from "../rgbuplot/interaction";
@@ -177,9 +177,9 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
         ));
 
         this._subs.add(this._selectionService.selection$.subscribe(
-            (sel: SelectionHistoryItem)=>
+            ()=>
             {
-                // this.prepareData("selection");
+                this.prepareData("selection");
             }
         ));
 
@@ -283,18 +283,19 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
         console.log("singleAxisRGBU prepareData took: "+(t1-t0).toLocaleString()+"ms, needsDraw$ took: "+(t2-t1).toLocaleString()+"ms");
     }
 
-    private setInitRange(xMinMax: MinMax, yMinMax: MinMax): void
+    private setInitRange(xMinMax: MinMax): void
     {
         this.selectedMinXValue = this.selectedMinXValue || 0;
         this.selectedMaxXValue = this.selectedMaxXValue || xMinMax.max;
 
-        // Edit so min is always 0 and we have a little buffer above the max
-        this.xAxisMinMax = new MinMax(0, xMinMax.max*1.2);
-        this.yAxisMinMax = new MinMax(0, yMinMax.max*1.2);
-
         // 5 seems to work well for both axes, as used by DTU
         const minAxisMax = 5;
-        this.xAxisMinMax.expand(minAxisMax);
+
+        this.xAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._axisUnit.numeratorChannelIdx, this._axisUnit.denominatorChannelIdx);
+        this.xAxisMinMax.expand(0);
+        this.xAxisMinMax.expand(Math.max(xMinMax.max*1.2, minAxisMax));
+
+        this.yAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._axisUnit.numeratorChannelIdx, this._axisUnit.denominatorChannelIdx);
         this.yAxisMinMax.expand(minAxisMax);
     }
 
@@ -310,7 +311,7 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
             selectedXRange = new MinMax(this.selectedMinXValue, this.selectedMaxXValue);
         }
 
-        let [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax] = this.model.generatePoints(
+        let [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax, xAxisRawMinMax] = this.model.generatePoints(
             rgbu,
             cropSelection,
             this._axisUnit,
@@ -318,7 +319,7 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
             selectedXRange
         );
 
-        this.setInitRange(xAxisMinMax, yAxisMinMax);
+        this.setInitRange(xAxisRawMinMax);
 
         const xBinCount = 200;
         const yBinCount = 200;
@@ -521,19 +522,23 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
     onAxisClick(): void
     {
         const dialogConfig = new MatDialogConfig();
-        dialogConfig.data = new RGBUAxisUnit(this._axisUnit.numeratorChannelIdx, this._axisUnit.denominatorChannelIdx);
+        dialogConfig.data = {
+            axis: new RGBUAxisUnit(this._axisUnit.numeratorChannelIdx, this._axisUnit.denominatorChannelIdx),
+            range: new MinMax(this.selectedMinXValue, this.selectedMaxXValue),
+        };
 
 
         const dialogRef = this.dialog.open(RGBUAxisRatioPickerComponent, dialogConfig);
 
         dialogRef.afterClosed().subscribe(
-            (result: RGBUAxisUnit)=>
+            (result: RatioPickerData)=>
             {
                 if(result)
                 {
-                    let resultCopy = new RGBUAxisUnit(result.numeratorChannelIdx, result.denominatorChannelIdx);
+                    let resultCopy = new RGBUAxisUnit(result.axis.numeratorChannelIdx, result.axis.denominatorChannelIdx);
                     this._axisUnit = resultCopy;
-
+                    this.selectedMinXValue = result.range.min;
+                    this.selectedMaxXValue = result.range.max;
                     const reason = "axis-swap";
                     this.saveState(reason);
                     this.prepareData(reason);
