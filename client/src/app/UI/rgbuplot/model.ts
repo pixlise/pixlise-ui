@@ -471,7 +471,7 @@ export class RGBUPlotModel
                             colour = Colours.CONTEXT_BLUE;
                         }
 
-                        if(stackedROIs)
+                        if(stackedROIs && binMemberInfo[binIdx].rois.length > 0)
                         {
                             roiCount = activePixelROIs.map((roi) => ({ roi: visibleROIs[roi].name, count, colour: colour.asString() }));
                             combinedCount = count * activePixelROIs.length;

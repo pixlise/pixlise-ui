@@ -36,7 +36,7 @@ import {  RGBUImage } from "src/app/models/RGBUImage";
 import { orderVisibleROIs } from "src/app/models/roi";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataSetService } from "src/app/services/data-set.service";
-import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
+import { SelectionService } from "src/app/services/selection.service";
 import {  singleAxisRGBUWidgetState, ViewStateService } from "src/app/services/view-state.service";
 import {  WidgetDataUpdateReason, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
