@@ -102,9 +102,9 @@ export class LayerManager
         console.log("LayerManager: publishing change (reason="+reason+") took: " + (t1 - t0).toLocaleString() + "ms");
     }
 
-    setDataset(dataset: DataSet): void
+    clearDataset(): void
     {
-        this._dataset = dataset;
+        this._dataset = null;
     }
 
     viewStateLoaded(layers: mapLayerVisibility[]): void
@@ -123,8 +123,9 @@ export class LayerManager
     // Expects same parameters as ExpressionListBuilder notifyDataArrived
     notifyDataArrived(data: unknown[]): void
     {
+        this._dataset = data[0] as DataSet;
         this._listBuilder.notifyDataArrived(
-            (data[0] as DataSet).getPseudoIntensityElementsList(),
+            this._dataset.getPseudoIntensityElementsList(),
             data[1] as QuantificationLayer,
             this._exprService.getExpressions(DataExpressionService.DataExpressionTypeAll),
             this._rgbMixService.getRGBMixes()

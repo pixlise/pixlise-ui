@@ -267,21 +267,46 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
         this._modelSubs.add(all$.subscribe(
             (data: unknown[])=>
             {
+                this.mdl.regionManager.setDataset(data[0] as DataSet);
+
+                // Process widget data update reason with the rest. Previously this was received either before or after notifyDataArrived causing
+                // issues like visible element maps to turn off when layers list closed
+                let updReason = data[3] as WidgetDataUpdateReason;
+
+                this.mdl.regionManager.widgetDataUpdated(updReason);
+
+                if(!this._viewInited)
+                {
+                    console.log("Restoring context image view ("+this.mode+")...");
+
+                    // Shouldn't happen but print anyway if it does
+                    if(!this.datasetService.datasetLoaded)
+                    {
+                        console.error("Context image: dataset not assigned before view state loaded. View state ignored.");
+                        return;
+                    }
+
+                    let state = this.widgetDataService.viewState.contextImages.get(this.mode);
+                    if(!state)
+                    {
+                        state = null;
+                    }
+
+                    this.mdl.setViewState(state, this.mode, this.datasetService.datasetLoaded);
+                    this._viewInited = true;
+                }
+                else
+                {
+                    // Not the first one!
+                    if(updReason == WidgetDataUpdateReason.WUPD_SELECTION)
+                    {
+                        // We don't update here...
+                        return;
+                    }
+                }
+
                 // Based on the data we received, generate a new list of expressions
                 this.mdl.layerManager.notifyDataArrived(data);
-            }
-        ));
-
-        // TODO: move into mdl?
-        this._modelSubs.add(this.datasetService.dataset$.subscribe(
-            (dataset: DataSet)=>
-            {
-                //console.warn('Context image: '+this.id+' got new dataset...');
-                this.mdl.layerManager.setDataset(dataset);
-                this.mdl.regionManager.setDataset(dataset);
-            },
-            (err)=>
-            {
             }
         ));
 
@@ -355,43 +380,6 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
                 {
                     this.mdl.setBeamRadius(cfg.mmBeamRadius);
                 }
-            }
-        ));
-
-        this._modelSubs.add(this.widgetDataService.widgetData$.subscribe(
-            (updReason: WidgetDataUpdateReason)=>
-            {
-                if(!this._viewInited)
-                {
-                    console.log("Restoring context image view ("+this.mode+")...");
-
-                    // Shouldn't happen but print anyway if it does
-                    if(!this.datasetService.datasetLoaded)
-                    {
-                        console.error("Context image: dataset not assigned before view state loaded. View state ignored.");
-                        return;
-                    }
-
-                    let state = this.widgetDataService.viewState.contextImages.get(this.mode);
-                    if(!state)
-                    {
-                        state = null;
-                    }
-
-                    this.mdl.setViewState(state, this.mode, this.datasetService.datasetLoaded);
-                    this._viewInited = true;
-                }
-                else
-                {
-                    // Not the first one!
-                    if(updReason == WidgetDataUpdateReason.WUPD_SELECTION)
-                    {
-                        // We don't update here...
-                        return;
-                    }
-                }
-
-                this.mdl.regionManager.widgetDataUpdated(updReason);
             }
         ));
 

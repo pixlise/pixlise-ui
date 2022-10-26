@@ -122,7 +122,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
     shutdown(): void
     {
-        this._layerManager.setDataset(null);
+        this._layerManager.clearDataset();
         this._regionManager.setDataset(null);
     }
 
