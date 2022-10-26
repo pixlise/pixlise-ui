@@ -42,7 +42,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 fxLayoutAlign="space-between center"
                 class="gap-separated-horizontal-elements meta-row">
                 <span>Custom Title</span>
-                <input *ngIf="title !== null" [(ngModel)]="title" type="text" placeholder="Custom Title...">
+                <input *ngIf="title !== null" [(ngModel)]="title" type="text" placeholder="Custom Title..." fxFlex="100%">
                 <mat-spinner *ngIf="title === null" [diameter]="24" color="accent"></mat-spinner>
                 <push-button (onClick)="onSaveTitle()" buttonStyle="yellow">Save</push-button>
             </div>
@@ -60,7 +60,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     fxLayoutAlign="space-between center"
                     class="setting-row clickable"
                     (click)="onSelectImage('matched', item)">
-                    <span>{{item}}</span>
+                    <span fxFlex="100%" [title]="item">{{item}}</span>
                     <icon-button icon="assets/button-icons/delete.svg" (click)="onDeleteImage('matched', item, $event)"></icon-button>
                 </div>
                 <mat-spinner *ngIf="matchedImages === null" [diameter]="24" color="accent"></mat-spinner>
@@ -98,7 +98,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     fxLayoutAlign="space-between center"
                     class="setting-row clickable"
                     (click)="onSelectImage('unaligned', item)">
-                    <span>{{item}}</span>
+                    <span fxFlex="100%" [title]="item">{{item}}</span>
                     <icon-button icon="assets/button-icons/delete.svg" (click)="onDeleteImage('unaligned', item, $event)"></icon-button>
                 </div>
                 <mat-spinner *ngIf="unalignedImages === null" [diameter]="24" color="accent"></mat-spinner>
