@@ -57,6 +57,12 @@ POSSIBILITY OF SUCH DAMAGE.
             </icon-button>
             <push-button (onClick)="onRegions($event)" title="Choose regions to display">Regions</push-button>
 
+            <icon-button
+                (click)="onExport()"
+                title="Export"
+                icon="assets/button-icons/export.svg">
+            </icon-button>
+
             <widget-settings-menu [settingsDialog]="binarySettingsMenu">
                 <icon-button
                     title='Show Settings Menu'

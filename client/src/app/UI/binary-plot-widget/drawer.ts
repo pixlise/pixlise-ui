@@ -40,6 +40,8 @@ export class BinaryDiagramDrawer implements CanvasDrawer
     protected _mdl: BinaryPlotModel;
     protected _lastCalcCanvasParams: CanvasParams;
 
+    public showSwapButton: boolean = true;
+
     constructor(mdl: BinaryPlotModel)
     {
         this._mdl = mdl;
@@ -167,7 +169,8 @@ export class BinaryDiagramDrawer implements CanvasDrawer
             //rawData.xAxis.errorMsgLong,
             this._mdl.drawData.hoverLabel=="X",
             Colours.GRAY_30.asString(),
-            viewport.width
+            viewport.width,
+            this.showSwapButton
         );
     }
 
@@ -217,7 +220,8 @@ export class BinaryDiagramDrawer implements CanvasDrawer
             //errorStringLong,
             isHovered,
             labelColour,
-            calculatedRect.h
+            calculatedRect.h,
+            this.showSwapButton
         );
 
         screenContext.restore();

@@ -29,7 +29,7 @@
 
 import { Component, ElementRef, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Subject, Subscription } from "rxjs";
+import { Observable, Subject, Subscription } from "rxjs";
 import { PMCDataValues } from "src/app/expression-language/data-values";
 import { MinMax } from "src/app/models/BasicTypes";
 import { Point } from "src/app/models/Geometry";
@@ -40,7 +40,7 @@ import { SelectionService } from "src/app/services/selection.service";
 import { binaryState, ViewStateService } from "src/app/services/view-state.service";
 import { DataSourceParams, DataUnit, RegionDataResults, WidgetDataErrorType, WidgetDataUpdateReason, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
-import { CanvasDrawer, CanvasDrawParameters, CanvasInteractionHandler } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawer, CanvasDrawParameters, CanvasInteractionHandler, CanvasParams, InteractiveCanvasComponent } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
 import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.component";
 import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expression-picker/expression-picker.component";
@@ -48,6 +48,7 @@ import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicke
 import { RGBA } from "src/app/utils/colours";
 //import { BinaryScatterPlotData } from '../binary-plot-view-widget/binary-plot-view-widget.component';
 import { randomString } from "src/app/utils/utils";
+import { CanvasExportItem, CSVExportItem, drawStaticLegend, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { BinaryPlotAxisData, BinaryPlotData, BinaryPlotPointIndex } from "./binary-data";
 import { BinaryDiagramDrawer } from "./drawer";
 import { BinaryInteraction } from "./interaction";
@@ -652,5 +653,77 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
     onToggleSelectModeExcludeROI()
     {
         this._binaryModel.selectModeExcludeROI = !this._binaryModel.selectModeExcludeROI;
+    }
+
+    exportPlotData(): string
+    {
+        let xAxisLabel = this._binaryModel.raw.xAxisData.axisLabel;
+        let yAxisLabel = this._binaryModel.raw.yAxisData.axisLabel;
+
+        let data = `"PMC","ROI","${xAxisLabel}","${yAxisLabel}"\n`;
+        Array.from(this._binaryModel.raw.pmcToValueLookup.entries()).forEach(([pmc, idx]) =>
+        {
+            let x = this._binaryModel.raw.xAxisData.pointGroups[idx.pointGroup].values[idx.valueIndex].value;
+            let y = this._binaryModel.raw.yAxisData.pointGroups[idx.pointGroup].values[idx.valueIndex].value;
+            let roiId = this._binaryModel.raw.visibleROIs[idx.pointGroup];
+            let roiName = this._widgetDataService.regions.get(roiId).name;
+            data += `${pmc},${roiName},${x},${y}\n`;
+        });
+
+        return data;
+    }
+
+    onExport()
+    {
+        if(this._binaryModel && this._binaryModel.raw)
+        {
+            let exportOptions = [
+                new PlotExporterDialogOption("Plot Image", false),
+                new PlotExporterDialogOption("Large Plot Image", false),
+                new PlotExporterDialogOption("Visible Key", false, true),
+                new PlotExporterDialogOption("Plot Data .csv", false),
+            ];
+
+            const dialogConfig = new MatDialogConfig();
+            dialogConfig.data = new PlotExporterDialogData(`${this._datasetService.datasetLoaded.getId()} - Binary Plot`, "Binary Plot Export", exportOptions);
+
+            const dialogRef = this.dialog.open(PlotExporterDialogComponent, dialogConfig);
+            dialogRef.componentInstance.onConfirmOptions.subscribe(
+                (options: string[])=>
+                {
+                    let canvases: CanvasExportItem[] = [];
+                    let csvs: CSVExportItem[] = [];
+
+                    let showKey = options.indexOf("Visible Key") > -1;
+
+                    if(options.indexOf("Plot Image") > -1)
+                    {
+                        canvases.push(new CanvasExportItem(
+                            "Binary Plot",
+                            generatePlotImage(this.drawer, this.transform, this.keyItems, 1200, 800, showKey)
+                        ));   
+                    }
+
+                    if(options.indexOf("Large Plot Image") > -1)
+                    {
+                        canvases.push(new CanvasExportItem(
+                            "Binary Plot - Large",
+                            generatePlotImage(this.drawer, this.transform, this.keyItems, 4096, 2160, showKey)
+                        ));
+                    }
+
+                    if(options.indexOf("Plot Data .csv") > -1)
+                    {
+                        csvs.push(new CSVExportItem(
+                            "Binary Plot Data",
+                            this.exportPlotData()
+                        ));
+                    }
+
+                    dialogRef.componentInstance.onDownload(canvases, csvs);
+                });
+
+            return dialogRef.afterClosed();
+        }
     }
 }

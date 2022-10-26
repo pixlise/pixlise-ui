@@ -205,7 +205,9 @@ export class TernaryDiagramDrawer implements CanvasDrawer
         errorStringShort: string,
         isHovered: boolean,
         labelColour: string,
-        maxX: number): void
+        maxX: number,
+        showSwapButton: boolean = true
+    ): void
     {
         const buttonSize = TernaryModel.SWAP_BUTTON_SIZE;
 
@@ -293,11 +295,14 @@ export class TernaryDiagramDrawer implements CanvasDrawer
         }
 
         // NOTE: need to pass in the center!
-        drawSwapButton(
-            ctx,
-            new Point(buttonX+buttonSize/2, buttonY),
-            buttonSize
-        );
+        if(showSwapButton)
+        {
+            drawSwapButton(
+                ctx,
+                new Point(buttonX+buttonSize/2, buttonY),
+                buttonSize
+            );
+        }
     }
 
     private drawBackground(ctx: CanvasRenderingContext2D, viewport: CanvasParams, mdl: TernaryDrawModel): void

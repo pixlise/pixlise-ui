@@ -222,6 +222,7 @@ import { AddDatasetDialogComponent } from "./routes/datasets/add-dataset-dialog/
 import { LogViewerComponent } from "./UI/log-viewer/log-viewer.component";
 import { AnnotationEditorComponent } from "./UI/annotation-editor/annotation-editor.component";
 import { AnnotationDisplayComponent } from "./UI/annotation-editor/annotation-display/annotation-display.component";
+import { PlotExporterDialogComponent } from "./UI/atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 
 
 @Injectable()
@@ -429,7 +430,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         MistRoiConvertComponent,
         AddBearerPipe,
         AddDatasetDialogComponent,
-        LogViewerComponent
+        LogViewerComponent,
+        PlotExporterDialogComponent
     ],
     imports: [
         BrowserModule,
