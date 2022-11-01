@@ -218,6 +218,11 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
                         {
                             this._drawMonochrome = loadedState.drawMonochrome;
                         }
+
+                        this.selectedMinXValue = loadedState?.selectedMinXValue || null;
+                        this.selectedMaxXValue = loadedState?.selectedMaxXValue || null;
+                        this.selectedMinYValue = loadedState?.selectedMinYValue || null;
+                        this.selectedMaxYValue = loadedState?.selectedMaxYValue || null;
                     }
                     else
                     {
@@ -671,7 +676,11 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
             RGBUPlotModel.idxToChannel(this._yAxisUnit.denominatorChannelIdx),
             RGBUPlotModel.idxToChannel(this._xAxisUnit.numeratorChannelIdx),
             RGBUPlotModel.idxToChannel(this._xAxisUnit.denominatorChannelIdx),
-            this._drawMonochrome
+            this._drawMonochrome,
+            this.selectedMinXValue,
+            this.selectedMaxXValue,
+            this.selectedMinYValue,
+            this.selectedMaxYValue,
         );
 
         return toSave;

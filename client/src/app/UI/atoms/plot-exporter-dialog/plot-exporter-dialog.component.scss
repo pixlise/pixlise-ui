@@ -71,3 +71,15 @@
 .active {
     color: $clr-yellow;
 }
+
+h3 {
+    background: $clr-gray-90;
+
+    margin-left: -16px;
+    margin-right: -16px;
+    padding-left: 16px;
+
+    &:first-of-type {
+        margin-top: 16px !important;
+    }
+}

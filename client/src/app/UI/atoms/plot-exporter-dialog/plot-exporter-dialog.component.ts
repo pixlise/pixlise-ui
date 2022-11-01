@@ -33,7 +33,7 @@ import * as JSZip from "jszip";
 import { Point } from "src/app/models/Geometry";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { PointDrawer } from "src/app/utils/drawing";
-import { CanvasParams, InteractiveCanvasComponent } from "../interactive-canvas/interactive-canvas.component";
+import { CanvasDrawer, CanvasParams, CanvasWorldTransform, InteractiveCanvasComponent } from "../interactive-canvas/interactive-canvas.component";
 import { KeyItem } from "../widget-key-display/widget-key-display.component";
 
 export class CanvasExportItem
@@ -46,13 +46,18 @@ export class CSVExportItem
     constructor(public name: string, public data: string) {}
 }
 
+export type PlotExporterType = {
+    type: "checkbox" | "switch";
+    options?: string[];
+}
+
 export class PlotExporterDialogOption
 {
     constructor(
         public label: string,
-        public enabled: boolean,
+        public value: boolean | string,
         public isModifier: boolean = false,
-        public type: string = "checkbox",
+        public type: PlotExporterType = { type: "checkbox" },
     )
     {
     }
@@ -69,7 +74,7 @@ export class PlotExporterDialogData
     }
 }
 
-export const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyItems: KeyItem[], viewport: CanvasParams): void =>
+export const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyItems: KeyItem[], viewport: CanvasParams, lightMode: boolean): void =>
 {
     if(keyItems.length === 0)
     {
@@ -77,18 +82,18 @@ export const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyIte
     }
 
     let legendWidth = 200;
-    let legendHeight = 30 + keyItems.length * 20;
+    let legendHeight = 35 + keyItems.length * 20;
     let legendX = viewport.width - legendWidth - 10;
     let legendY = 10;
 
     screenContext.save();
 
-    screenContext.strokeStyle = Colours.WHITE.asString();
+    screenContext.strokeStyle = lightMode ? Colours.GRAY_80.asString() : Colours.WHITE.asString();
     screenContext.lineWidth = 1;
     screenContext.strokeRect(legendX, legendY, legendWidth, legendHeight);
 
     screenContext.font = "12px Arial";
-    screenContext.fillStyle = Colours.WHITE.asString();
+    screenContext.fillStyle = lightMode ? Colours.GRAY_80.asString() : Colours.WHITE.asString();
     screenContext.textAlign = "left";
     screenContext.textBaseline = "middle";
 
@@ -98,25 +103,30 @@ export const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyIte
     screenContext.fillText("Key", legendTextX - 5, legendTextY);
     legendTextY += 20;
 
+    screenContext.fillStyle = lightMode ? Colours.GRAY_80.asString() : Colours.WHITE.asString();
+    screenContext.fillRect(legendTextX - 15, legendTextY - 10, legendWidth, 1.5);
+
+    legendTextY += 5;
+
     keyItems.forEach(keyItem =>
     {
         let drawer = new PointDrawer(
             screenContext,
             5,
-            RGBA.fromString(keyItem.colour),
+            keyItem.label === "Dataset" && lightMode ? Colours.GRAY_80 : RGBA.fromString(keyItem.colour),
             null,
             keyItem.shape
         );
         drawer.drawPoints([new Point(legendTextX, legendTextY)], 1);
 
-        screenContext.fillStyle = Colours.WHITE.asString();
+        screenContext.fillStyle = lightMode ? Colours.GRAY_80.asString() : Colours.WHITE.asString();
         screenContext.fillText(keyItem.label, legendTextX + 15, legendTextY);
 
         legendTextY += 20;
     });
 };
 
-export const generatePlotImage = (drawer, transform, keyItems, width, height, showKey): HTMLCanvasElement =>
+export const generatePlotImage = (drawer: CanvasDrawer, transform: CanvasWorldTransform, keyItems: KeyItem[], width: number, height: number, showKey: boolean, lightMode: boolean=true): HTMLCanvasElement =>
 {
     let canvas = document.createElement("canvas");
     canvas.width = width;
@@ -126,17 +136,21 @@ export const generatePlotImage = (drawer, transform, keyItems, width, height, sh
 
     let viewport = new CanvasParams(width, height, 1);
 
+    let existingMode = drawer.lightMode;
+
     drawer.showSwapButton = false;
+    drawer.lightMode = lightMode;
 
     InteractiveCanvasComponent.drawFrame(context, viewport, transform, drawer, []);
 
     if(showKey)
     {
-        drawStaticLegend(context, keyItems, viewport);
+        drawStaticLegend(context, keyItems, viewport, lightMode);
     }
 
     // Reset the drawer
     drawer.showSwapButton = true;
+    drawer.lightMode = existingMode;
 
     return canvas;
 };
@@ -170,7 +184,7 @@ export class PlotExporterDialogComponent
 
     onToggleOption(option: PlotExporterDialogOption)
     {
-        option.enabled = !option.enabled;
+        option.value = !option.value;
     }
 
     onCancel(): void
@@ -180,12 +194,22 @@ export class PlotExporterDialogComponent
 
     get enabledOptions(): string[]
     {
-        return this.options.filter(option => option.enabled).map(option => option.label);
+        return this.options.filter(option => option.value).map(option => option.label);
+    }
+
+    get dataModifiers(): PlotExporterDialogOption[]
+    {
+        return this.options.filter(option => option.isModifier);
+    }
+
+    get dataProducts(): PlotExporterDialogOption[]
+    {
+        return this.options.filter(option => !option.isModifier);
     }
 
     get isDownloadable(): boolean
     {
-        return this.options.filter(option => option.enabled && !option.isModifier).length > 0;
+        return this.options.filter(option => option.value && !option.isModifier).length > 0;
     }
 
     onExport(): void
@@ -204,7 +228,7 @@ export class PlotExporterDialogComponent
         });
         this.state = "loading";
         this.prompt = "Generating zip file...";
-        zip.generateAsync({type:"blob"}).then((content) =>
+        zip.generateAsync({ type:"blob" }).then((content) =>
         {
             let fileName = this.fileName ? this.fileName : this.zipFileNamePlaceholder;
             saveAs(content, `${fileName}.zip`);

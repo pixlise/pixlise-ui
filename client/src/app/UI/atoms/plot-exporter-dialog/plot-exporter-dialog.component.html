@@ -54,12 +54,35 @@ POSSIBILITY OF SUCH DAMAGE.
                 <div class="list-subheading">Zip File Name</div>
                 <input [(ngModel)]="fileName" type="text" [placeholder]="zipFileNamePlaceholder">
 
-                <div *ngFor="let option of options" fxLayout="row" fxLayoutAlign="space-between center"
+                <h3 *ngIf="dataModifiers.length > 0">Options</h3>
+                <div *ngFor="let option of dataModifiers" fxLayout="row" fxLayoutAlign="space-between center"
                     class="gap-separated-horizontal-elements">
                     <div>{{option.label}}:</div>
-                    <two-state-icon-button activeIcon="assets/button-icons/check-on.svg"
+                    <two-state-icon-button 
+                        *ngIf="option.type.type === 'checkbox'"
+                        activeIcon="assets/button-icons/check-on.svg"
+                        inactiveIcon="assets/button-icons/check-off.svg"
+                        [active]="option.value === true"
+                        (onToggle)="onToggleOption(option)">
+                    </two-state-icon-button>
+                    <switch-button 
+                        *ngIf="option.type.type === 'switch'"
+                        [label]="option.type.options[0]"
+                        [endLabel]="option.type.options[1]"
+                        [active]="option.value === true"
+                        (onToggle)="onToggleOption(option)">
+                    </switch-button>
+                </div>
+
+                <h3 *ngIf="dataProducts.length > 0">Data Products</h3>
+                <div *ngFor="let option of dataProducts" fxLayout="row" fxLayoutAlign="space-between center"
+                    class="gap-separated-horizontal-elements">
+                    <div>{{option.label}}:</div>
+                    <two-state-icon-button 
+                        *ngIf="option.type.type === 'checkbox'"
+                        activeIcon="assets/button-icons/check-on.svg"
                         inactiveIcon="assets/button-icons/check-off.svg" 
-                        [active]="option.enabled"
+                        [active]="option.value === true"
                         (onToggle)="onToggleOption(option)">
                     </two-state-icon-button>
                 </div>

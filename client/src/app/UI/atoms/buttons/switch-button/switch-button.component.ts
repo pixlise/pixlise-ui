@@ -38,6 +38,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 export class SwitchButtonComponent implements OnInit
 {
     @Input() label: string;
+    @Input() endLabel: string = "";
     @Input() active: boolean;
 
     @Output() onToggle = new EventEmitter();

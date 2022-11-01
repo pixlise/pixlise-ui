@@ -41,6 +41,7 @@ export class BinaryDiagramDrawer implements CanvasDrawer
     protected _lastCalcCanvasParams: CanvasParams;
 
     public showSwapButton: boolean = true;
+    public lightMode: boolean = false;
 
     constructor(mdl: BinaryPlotModel)
     {
@@ -74,6 +75,10 @@ export class BinaryDiagramDrawer implements CanvasDrawer
         let clrLasso = Colours.PURPLE;
         let viewport = drawParams.drawViewport;
 
+        // Draw background
+        screenContext.fillStyle = this.lightMode ? Colours.WHITE.asString() : Colours.BLACK.asString();
+        screenContext.fillRect(0, 0, viewport.width, viewport.height);
+
         // Draw axes
         let axisDrawer = drawData.makeChartAxisDrawer();
         axisDrawer.drawAxes(
@@ -95,8 +100,10 @@ export class BinaryDiagramDrawer implements CanvasDrawer
         let alpha = PointDrawer.getOpacity(drawData.totalPointCount);
         for(let c = 0; c < drawData.pointGroupCoords.length; c++)
         {
-            let drawer = new PointDrawer(screenContext, PLOT_POINTS_SIZE, this._mdl.raw.pointGroupColours[c], null, this._mdl.raw.shapeGroups[c]);
-            drawer.drawPoints(drawData.pointGroupCoords[c], alpha);
+            let colourGroup = this._mdl.raw.visibleROIs[c] === "AllPoints" && this.lightMode ? Colours.GRAY_80 : this._mdl.raw.pointGroupColours[c];
+            let visibility = this._mdl.raw.visibleROIs[c] === "AllPoints" && this.lightMode ? 0.4 : alpha;
+            let drawer = new PointDrawer(screenContext, PLOT_POINTS_SIZE, colourGroup, null, this._mdl.raw.shapeGroups[c]);
+            drawer.drawPoints(drawData.pointGroupCoords[c], visibility);
         }
 
         // And hover point if any
@@ -143,7 +150,7 @@ export class BinaryDiagramDrawer implements CanvasDrawer
         }
 
         screenContext.font = BinaryPlotModel.FONT_SIZE+"px Roboto";
-        screenContext.fillStyle = Colours.GRAY_30.asString();
+        screenContext.fillStyle = this.lightMode ? Colours.GRAY_80.asString() : Colours.GRAY_30.asString();
 
         // Y axis
         this.drawYAxisLabel(
@@ -153,7 +160,7 @@ export class BinaryDiagramDrawer implements CanvasDrawer
             rawData.yAxisData.errorMsgShort,
             rawData.yAxisData.errorMsgLong,
             this._mdl.drawData.hoverLabel=="Y",
-            Colours.GRAY_30.asString(),
+            this.lightMode ? Colours.GRAY_80.asString() : Colours.GRAY_30.asString(),
         );
 
         // X axis
@@ -168,7 +175,7 @@ export class BinaryDiagramDrawer implements CanvasDrawer
             rawData.xAxisData.errorMsgShort,
             //rawData.xAxis.errorMsgLong,
             this._mdl.drawData.hoverLabel=="X",
-            Colours.GRAY_30.asString(),
+            this.lightMode ? Colours.GRAY_80.asString() : Colours.GRAY_30.asString(),
             viewport.width,
             this.showSwapButton
         );

@@ -89,6 +89,7 @@ export interface CanvasDrawer
 
     // Optional parameters just for export
     showSwapButton?: boolean;
+    lightMode?: boolean;
 }
 
 export enum CanvasMouseEventId

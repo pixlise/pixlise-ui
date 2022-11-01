@@ -313,7 +313,11 @@ export class rgbuPlotWidgetState
         public yChannelB: string,
         public xChannelA: string,
         public xChannelB: string,
-        public drawMonochrome: boolean
+        public drawMonochrome: boolean,
+        public selectedMinXValue: number = null,
+        public selectedMaxXValue: number = null,
+        public selectedMinYValue: number = null,
+        public selectedMaxYValue: number = null,
     )
     {
     }
