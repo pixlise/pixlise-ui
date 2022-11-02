@@ -49,6 +49,7 @@ export class CSVExportItem
 export type PlotExporterType = {
     type: "checkbox" | "switch";
     options?: string[];
+    disabled?: boolean;
 }
 
 export class PlotExporterDialogOption

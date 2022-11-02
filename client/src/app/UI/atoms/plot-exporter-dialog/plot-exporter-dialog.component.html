@@ -57,19 +57,22 @@ POSSIBILITY OF SUCH DAMAGE.
                 <h3 *ngIf="dataModifiers.length > 0">Options</h3>
                 <div *ngFor="let option of dataModifiers" fxLayout="row" fxLayoutAlign="space-between center"
                     class="gap-separated-horizontal-elements">
-                    <div>{{option.label}}:</div>
+                    <div class="{{option.type.disabled ? 'disabled-text' : ''}}">{{option.label}}:</div>
                     <two-state-icon-button 
                         *ngIf="option.type.type === 'checkbox'"
                         activeIcon="assets/button-icons/check-on.svg"
                         inactiveIcon="assets/button-icons/check-off.svg"
-                        [active]="option.value === true"
+                        disabledIcon="assets/button-icons/check-off.svg"
+                        [active]="!option.type.disabled && option.value === true"
+                        [disabled]="option.type.disabled"
                         (onToggle)="onToggleOption(option)">
                     </two-state-icon-button>
                     <switch-button 
                         *ngIf="option.type.type === 'switch'"
                         [label]="option.type.options[0]"
                         [endLabel]="option.type.options[1]"
-                        [active]="option.value === true"
+                        [active]="!option.type.disabled && option.value === true"
+                        [disabled]="option.type.disabled"
                         (onToggle)="onToggleOption(option)">
                     </switch-button>
                 </div>

@@ -40,6 +40,7 @@ export class SwitchButtonComponent implements OnInit
     @Input() label: string;
     @Input() endLabel: string = "";
     @Input() active: boolean;
+    @Input() disabled: boolean = false;
 
     @Output() onToggle = new EventEmitter();
 
@@ -53,7 +54,7 @@ export class SwitchButtonComponent implements OnInit
 
     getImg(): string
     {
-        if(this.active)
+        if(this.active && !this.disabled)
         {
             return "assets/button-icons/switch-on.svg";
         }
@@ -62,6 +63,9 @@ export class SwitchButtonComponent implements OnInit
 
     onClick(event: any): void
     {
-        this.onToggle.emit(!this.active);
+        if(!this.disabled)
+        {
+            this.onToggle.emit(!this.active);
+        }
     }
 }

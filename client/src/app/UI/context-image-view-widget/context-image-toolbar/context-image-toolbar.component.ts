@@ -28,11 +28,14 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, Input, OnInit } from "@angular/core";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { Point, Rect } from "src/app/models/Geometry";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { ViewStateService } from "src/app/services/view-state.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
+import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
+import { MapColourScale } from "../ui-elements/map-colour-scale";
 
 
 
@@ -51,7 +54,8 @@ export class ContextImageToolbarComponent implements OnInit
     constructor(
         private _contextImageService: ContextImageService,
         private _viewStateService: ViewStateService,
-        private router: Router
+        private router: Router,
+        public dialog: MatDialog
     )
     {
     }
@@ -205,6 +209,65 @@ export class ContextImageToolbarComponent implements OnInit
         if(this._contextImageService.mdl)
         {
             this._viewStateService.toggleSoloView(ViewStateService.widgetSelectorContextImage, this._contextImageService.mdl.widgetPosition);
+        }
+    }
+
+    onExport()
+    {
+        if(this._contextImageService && this._contextImageService.mdl)
+        {
+            let visibleROIs = this._contextImageService.mdl.regionManager.getRegionsForDraw().filter(roi => roi.visible);
+            let colourScale = this._contextImageService.mdl.toolHost.getMapColourScaleDrawer() as MapColourScale;
+            let activeColourScale = colourScale && colourScale.channelScales.length > 0;
+            let exportOptions = [
+                new PlotExporterDialogOption("Visible Scale", true, true),
+                new PlotExporterDialogOption("Visible Key", true, true, { type: "checkbox", disabled: visibleROIs.length === 0 }),
+                new PlotExporterDialogOption("Visible Color Scale", true, true, { type: "checkbox", disabled: !activeColourScale }),
+                new PlotExporterDialogOption("Standard Size Image", true),
+                new PlotExporterDialogOption("Large Image", true),
+            ];
+
+            const dialogConfig = new MatDialogConfig();
+            dialogConfig.data = new PlotExporterDialogData(`${this._contextImageService.mdl.dataset.getId()} - Context Image`, "Export Context Image", exportOptions);
+
+            const dialogRef = this.dialog.open(PlotExporterDialogComponent, dialogConfig);
+            dialogRef.componentInstance.onConfirmOptions.subscribe(
+                (options: string[])=>
+                {
+                    let canvases: CanvasExportItem[] = [];
+
+                    let showKey = options.indexOf("Visible Key") > -1;
+                    let showColorScale = options.indexOf("Visible Color Scale") > -1;
+                    let showScale = options.indexOf("Visible Scale") > -1;
+
+                    // if(options.indexOf("Plot Image") > -1)
+                    // {
+                    //     canvases.push(new CanvasExportItem(
+                    //         "Ternary Plot",
+                    //         generatePlotImage(this.drawer, this.transform, this.keyItems, 1200, 800, showKey, lightMode)
+                    //     ));   
+                    // }
+
+                    // if(options.indexOf("Large Plot Image") > -1)
+                    // {
+                    //     canvases.push(new CanvasExportItem(
+                    //         "Ternary Plot - Large",
+                    //         generatePlotImage(this.drawer, this.transform, this.keyItems, 4096, 2160, showKey, lightMode)
+                    //     ));
+                    // }
+
+                    // if(options.indexOf("Plot Data .csv") > -1)
+                    // {
+                    //     csvs.push(new CSVExportItem(
+                    //         "Ternary Plot Data",
+                    //         this.exportPlotData()
+                    //     ));
+                    // }
+
+                    dialogRef.componentInstance.onDownload(canvases, []);
+                });
+
+            return dialogRef.afterClosed();
         }
     }
 
