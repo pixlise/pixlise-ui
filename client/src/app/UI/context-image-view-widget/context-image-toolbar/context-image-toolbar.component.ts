@@ -35,6 +35,9 @@ import { ContextImageService } from "src/app/services/context-image.service";
 import { ViewStateService } from "src/app/services/view-state.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
 import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
+import { KeyItem } from "../../atoms/widget-key-display/widget-key-display.component";
+import { ClientSideExportGenerator } from "../../export-data-dialog/client-side-export";
+import { ExportDrawer } from "../drawers/export-drawer";
 import { MapColourScale } from "../ui-elements/map-colour-scale";
 
 
@@ -216,13 +219,13 @@ export class ContextImageToolbarComponent implements OnInit
     {
         if(this._contextImageService && this._contextImageService.mdl)
         {
-            let visibleROIs = this._contextImageService.mdl.regionManager.getRegionsForDraw().filter(roi => roi.visible);
+            let visibleROIs = this._contextImageService.mdl.regionManager.getRegionsForDraw().filter(roi => roi.isVisible());
             let colourScale = this._contextImageService.mdl.toolHost.getMapColourScaleDrawer() as MapColourScale;
             let activeColourScale = colourScale && colourScale.channelScales.length > 0;
             let exportOptions = [
                 new PlotExporterDialogOption("Visible Scale", true, true),
                 new PlotExporterDialogOption("Visible Key", true, true, { type: "checkbox", disabled: visibleROIs.length === 0 }),
-                new PlotExporterDialogOption("Visible Color Scale", true, true, { type: "checkbox", disabled: !activeColourScale }),
+                new PlotExporterDialogOption("Visible Colour Scale", true, true, { type: "checkbox", disabled: !activeColourScale }),
                 new PlotExporterDialogOption("Standard Size Image", true),
                 new PlotExporterDialogOption("Large Image", true),
             ];
@@ -237,15 +240,83 @@ export class ContextImageToolbarComponent implements OnInit
                     let canvases: CanvasExportItem[] = [];
 
                     let showKey = options.indexOf("Visible Key") > -1;
-                    let showColorScale = options.indexOf("Visible Color Scale") > -1;
+                    let showColourScale = options.indexOf("Visible Colour Scale") > -1;
                     let showScale = options.indexOf("Visible Scale") > -1;
+ 
+                    let keyItems = this._contextImageService.mdl.regionManager.getRegionsForDraw().filter(roi => roi.isVisible()).map(roi => new KeyItem(roi.roi.id, roi.roi.name, roi.roi.colour));
+
+                    let drawer = new ExportDrawer(this._contextImageService.mdl, this._contextImageService.mdl.toolHost);
+                    let exportIDs = [
+                        ClientSideExportGenerator.exportContextImage,
+                        ClientSideExportGenerator.exportContextImageFootprint,
+                        ClientSideExportGenerator.exportContextImageROIs,
+                        ClientSideExportGenerator.exportContextImageScanPoints,
+                        ClientSideExportGenerator.exportDrawBackgroundBlack
+                    ];
+
+                    if(showColourScale)
+                    {
+                        exportIDs.push(ClientSideExportGenerator.exportContextImageColourScale);
+                    }
+                    if(showScale)
+                    {
+                        exportIDs.push(ClientSideExportGenerator.exportContextImagePhysicalScale);
+                    }
+
+                    if(options.indexOf("Standard Size Image") > -1)
+                    {
+                        exportIDs.push(ClientSideExportGenerator.exportWebResolution);
+                        canvases.push(new CanvasExportItem(
+                            "Context Image",
+                            generatePlotImage(drawer, this._contextImageService.mdl.transform, keyItems, 1200, 800, showKey, false, exportIDs)
+                        ));
+                    }
+
+                    if(options.indexOf("Large Image") > -1)
+                    {
+                        exportIDs.push(ClientSideExportGenerator.exportPrintResolution);
+                        canvases.push(new CanvasExportItem(
+                            "Context Image - Large",
+                            generatePlotImage(drawer, this._contextImageService.mdl.transform, keyItems, 4096, 2160, showKey, false, exportIDs)
+                        ));
+                    }
+
+                    // this.generateExportImage(
+                    //     "Context/"+resName[resPass]+"-context-image-with-scales.png",
+                    //     widths[resPass], heights[resPass],
+                    //     viewport,
+                    //     drawer,
+                    //     this._contextImageService.mdl.transform,
+                    //     [
+                    //         ClientSideExportGenerator.exportContextImage,
+                    //         ClientSideExportGenerator.exportContextImagePhysicalScale,
+                    //         ClientSideExportGenerator.exportContextImageColourScale,
+                    //     ]
+                    // )
+                    
+                    // let exportGen = new ClientSideExportGenerator(
+                    //     this._contextImageService.mdl.dataset,
+                    //     this._widgetDataService,
+                    //     drawer,
+                    //     this._contextImageService.mdl.transform,
+                    //     params,
+                    //     this._rgbMixService,
+                    //     this._exprService,
+                    //     this._diffractionService
+                    // );
+
+                    // showExportDialog(this.dialog, "Context Image Export Options", false, false, true, true, choices, exportGen).subscribe(
+                    //     ()=>
+                    //     {
+                    //     }
+                    // );
 
                     // if(options.indexOf("Plot Image") > -1)
                     // {
                     //     canvases.push(new CanvasExportItem(
                     //         "Ternary Plot",
                     //         generatePlotImage(this.drawer, this.transform, this.keyItems, 1200, 800, showKey, lightMode)
-                    //     ));   
+                    //     ));
                     // }
 
                     // if(options.indexOf("Large Plot Image") > -1)

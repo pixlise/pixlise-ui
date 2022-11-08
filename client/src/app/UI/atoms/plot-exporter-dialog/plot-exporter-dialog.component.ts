@@ -127,7 +127,7 @@ export const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyIte
     });
 };
 
-export const generatePlotImage = (drawer: CanvasDrawer, transform: CanvasWorldTransform, keyItems: KeyItem[], width: number, height: number, showKey: boolean, lightMode: boolean=true): HTMLCanvasElement =>
+export const generatePlotImage = (drawer: CanvasDrawer, transform: CanvasWorldTransform, keyItems: KeyItem[], width: number, height: number, showKey: boolean, lightMode: boolean=true, exportItemIds=[]): HTMLCanvasElement =>
 {
     let canvas = document.createElement("canvas");
     canvas.width = width;
@@ -142,7 +142,7 @@ export const generatePlotImage = (drawer: CanvasDrawer, transform: CanvasWorldTr
     drawer.showSwapButton = false;
     drawer.lightMode = lightMode;
 
-    InteractiveCanvasComponent.drawFrame(context, viewport, transform, drawer, []);
+    InteractiveCanvasComponent.drawFrame(context, viewport, transform, drawer, exportItemIds);
 
     if(showKey)
     {
