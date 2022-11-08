@@ -281,60 +281,6 @@ export class ContextImageToolbarComponent implements OnInit
                         ));
                     }
 
-                    // this.generateExportImage(
-                    //     "Context/"+resName[resPass]+"-context-image-with-scales.png",
-                    //     widths[resPass], heights[resPass],
-                    //     viewport,
-                    //     drawer,
-                    //     this._contextImageService.mdl.transform,
-                    //     [
-                    //         ClientSideExportGenerator.exportContextImage,
-                    //         ClientSideExportGenerator.exportContextImagePhysicalScale,
-                    //         ClientSideExportGenerator.exportContextImageColourScale,
-                    //     ]
-                    // )
-                    
-                    // let exportGen = new ClientSideExportGenerator(
-                    //     this._contextImageService.mdl.dataset,
-                    //     this._widgetDataService,
-                    //     drawer,
-                    //     this._contextImageService.mdl.transform,
-                    //     params,
-                    //     this._rgbMixService,
-                    //     this._exprService,
-                    //     this._diffractionService
-                    // );
-
-                    // showExportDialog(this.dialog, "Context Image Export Options", false, false, true, true, choices, exportGen).subscribe(
-                    //     ()=>
-                    //     {
-                    //     }
-                    // );
-
-                    // if(options.indexOf("Plot Image") > -1)
-                    // {
-                    //     canvases.push(new CanvasExportItem(
-                    //         "Ternary Plot",
-                    //         generatePlotImage(this.drawer, this.transform, this.keyItems, 1200, 800, showKey, lightMode)
-                    //     ));
-                    // }
-
-                    // if(options.indexOf("Large Plot Image") > -1)
-                    // {
-                    //     canvases.push(new CanvasExportItem(
-                    //         "Ternary Plot - Large",
-                    //         generatePlotImage(this.drawer, this.transform, this.keyItems, 4096, 2160, showKey, lightMode)
-                    //     ));
-                    // }
-
-                    // if(options.indexOf("Plot Data .csv") > -1)
-                    // {
-                    //     csvs.push(new CSVExportItem(
-                    //         "Ternary Plot Data",
-                    //         this.exportPlotData()
-                    //     ));
-                    // }
-
                     dialogRef.componentInstance.onDownload(canvases, []);
                 });
 
