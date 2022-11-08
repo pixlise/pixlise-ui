@@ -35,6 +35,7 @@ import { ViewStateService } from "src/app/services/view-state.service";
 import { QuantificationService } from "src/app/services/quantification.service";
 import { SpectrumChartService } from "src/app/services/spectrum-chart.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
+import { AuthenticationService } from "src/app/services/authentication.service";
 import { QuantCreateParameters } from "src/app/UI/quantification-start-options/quantification-start-options.component";
 import { httpErrorToString } from "src/app/utils/utils";
 
@@ -50,11 +51,13 @@ export class SpectrumFitContainerComponent implements OnInit
 {
     private _subs = new Subscription();
     message: string = NoFitYetMessage;
+    quantificationEnabled: boolean = false;
 
     constructor(
         private _spectrumService: SpectrumChartService,
         private _loadingSvc: LoadingIndicatorService,
         private _quantService: QuantificationService,
+        private _authService: AuthenticationService
     )
     {
     }
@@ -72,6 +75,13 @@ export class SpectrumFitContainerComponent implements OnInit
                 console.error(err);
             }
         ));
+
+        this._authService.getIdTokenClaims$().subscribe(
+            (claims)=>
+            {
+                this.quantificationEnabled = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionCreateQuantification);
+            }
+        );
     }
 
     ngOnDestroy()
@@ -122,11 +132,6 @@ export class SpectrumFitContainerComponent implements OnInit
             {
             }
         ));
-    }
-
-    get quantificationEnabled(): boolean
-    {
-        return true;
     }
 
     get hasFitData(): boolean
