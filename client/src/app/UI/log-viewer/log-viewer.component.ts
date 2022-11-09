@@ -94,6 +94,14 @@ export class LogViewerComponent implements OnInit
             {
                 this._loading = false;
                 this.logData = [new LogLine(Date.now(), httpErrorToString(err, "Failed to retrieve log"))];
+
+                // Auto-retry anyway, we may have only got a 404 because log isn't yet created/available!
+                this._logAutoRetrieveCount++;
+
+                if(this._logAutoRetrieveCount < logAutoRetrieveLimit)
+                {
+                    setTimeout(()=>{this.onRefreshLog();}, 2000);
+                }
             }
         );
     }

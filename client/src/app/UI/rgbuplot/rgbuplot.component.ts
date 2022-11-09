@@ -43,7 +43,7 @@ import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-butto
 import { CanvasDrawer, CanvasDrawParameters, CanvasInteractionHandler } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
 import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.component";
-import { RGBUAxisRatioPickerComponent } from "src/app/UI/rgbuplot/rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
+import { RatioPickerData, RGBUAxisRatioPickerComponent } from "src/app/UI/rgbuplot/rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
 import { RGBUPlotDrawer } from "./drawer";
 import { RGBUPlotInteraction } from "./interaction";
@@ -321,14 +321,16 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         this.selectedMaxXValue = this.selectedMaxXValue || xMinMax.max;
         this.selectedMaxYValue = this.selectedMaxYValue || yMinMax.max;
 
-        // Edit so min is always 0 and we have a little buffer above the max
-        this.xAxisMinMax = new MinMax(0, xMinMax.max*1.2);
-        this.yAxisMinMax = new MinMax(0, yMinMax.max*1.2);
-
         // 5 seems to work well for both axes, as used by DTU
         const minAxisMax = 5;
-        this.xAxisMinMax.expand(minAxisMax);
-        this.yAxisMinMax.expand(minAxisMax);
+
+        this.xAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._xAxisUnit.numeratorChannelIdx, this._xAxisUnit.denominatorChannelIdx);
+        this.xAxisMinMax.expand(0);
+        this.xAxisMinMax.expand(Math.max(xMinMax.max*1.2, minAxisMax));
+
+        this.yAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this._yAxisUnit.numeratorChannelIdx, this._yAxisUnit.denominatorChannelIdx);
+        this.yAxisMinMax.expand(0);
+        this.yAxisMinMax.expand(Math.max(yMinMax.max*1.2, minAxisMax));
     }
 
     private calcPoints(rgbu: RGBUImage): RGBUPlotData
@@ -350,7 +352,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
             selectedYRange = new MinMax(this.selectedMinYValue, this.selectedMaxYValue);
         }
 
-        let [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax] = this.model.generatePoints(
+        let [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax, xAxisRawMinMax, yAxisRawMinMax] = this.model.generatePoints(
             rgbu,
             cropSelection,
             this._xAxisUnit,
@@ -361,7 +363,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
 
         let t1 = performance.now();
 
-        this.setInitRange(xAxisMinMax, yAxisMinMax);
+        this.setInitRange(xAxisRawMinMax, yAxisRawMinMax);
  
         const xBinCount = 200;
         const yBinCount = 200;
@@ -566,11 +568,17 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         let exprId = [];
         if(axis == "X")
         {
-            dialogConfig.data = new RGBUAxisUnit(this._xAxisUnit.numeratorChannelIdx, this._xAxisUnit.denominatorChannelIdx);
+            dialogConfig.data = {
+                axis: new RGBUAxisUnit(this._xAxisUnit.numeratorChannelIdx, this._xAxisUnit.denominatorChannelIdx),
+                range: new MinMax(this.selectedMinXValue, this.selectedMaxXValue),
+            };
         }
         else if(axis == "Y")
         {
-            dialogConfig.data = new RGBUAxisUnit(this._yAxisUnit.numeratorChannelIdx, this._yAxisUnit.denominatorChannelIdx);
+            dialogConfig.data = {
+                axis: new RGBUAxisUnit(this._yAxisUnit.numeratorChannelIdx, this._yAxisUnit.denominatorChannelIdx),
+                range: new MinMax(this.selectedMinYValue, this.selectedMaxYValue),
+            };
         }
         else
         {
@@ -581,23 +589,44 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         const dialogRef = this.dialog.open(RGBUAxisRatioPickerComponent, dialogConfig);
 
         dialogRef.afterClosed().subscribe(
-            (result: RGBUAxisUnit)=>
+            (result: RatioPickerData)=>
             {
                 if(result)
                 {
-                    let resultCopy = new RGBUAxisUnit(result.numeratorChannelIdx, result.denominatorChannelIdx);
-                    if(axis == "X")
+                    if(result.axis)
                     {
-                        this._xAxisUnit = resultCopy;
+                        let resultCopy = new RGBUAxisUnit(result.axis.numeratorChannelIdx, result.axis.denominatorChannelIdx);
+                        if(axis == "X")
+                        {
+                            this._xAxisUnit = resultCopy;
+                        }
+                        else if(axis == "Y")
+                        {
+                            this._yAxisUnit = resultCopy;
+                        }
+                        else
+                        {
+                            console.error("Unknown axis for rgbu plot axis setting: "+axis);
+                            return;
+                        }
                     }
-                    else if(axis == "Y")
+                    if(result.range)
                     {
-                        this._yAxisUnit = resultCopy;
-                    }
-                    else
-                    {
-                        console.error("Unknown axis for rgbu plot axis setting: "+axis);
-                        return;
+                        if(axis == "X")
+                        {
+                            this.selectedMinXValue = result.range.min;
+                            this.selectedMaxXValue = result.range.max;
+                        }
+                        else if(axis == "Y")
+                        {
+                            this.selectedMinYValue = result.range.min;
+                            this.selectedMaxYValue = result.range.max;
+                        }
+                        else
+                        {
+                            console.error("Unknown axis for rgbu plot axis setting: "+axis);
+                            return;
+                        }
                     }
 
                     const reason = "axis-swap-"+axis;
