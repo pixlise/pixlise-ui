@@ -34,7 +34,7 @@ import { Point, Rect } from "src/app/models/Geometry";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { ViewStateService } from "src/app/services/view-state.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
-import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
+import { CanvasExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { KeyItem } from "../../atoms/widget-key-display/widget-key-display.component";
 import { ClientSideExportGenerator } from "../../export-data-dialog/client-side-export";
 import { ExportDrawer } from "../drawers/export-drawer";

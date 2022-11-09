@@ -566,4 +566,9 @@ export class ImageOptionsComponent implements OnInit
             this.colourRatioMax = event.maxValue;
         }
     }
+
+    onExport(): void
+    {
+        
+    }
 }
