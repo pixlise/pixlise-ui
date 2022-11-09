@@ -109,7 +109,7 @@ export class AddDatasetDialogComponent implements OnInit
 
     get acceptTypes(): string
     {
-        return "application/zip";
+        return "application/zip,application/x-zip-compressed";
     }
 
     onCancel()
