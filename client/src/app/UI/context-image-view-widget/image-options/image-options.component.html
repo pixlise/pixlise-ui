@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="panel gap-separated-vertical-elements" fxLayout="column" fxFill>
     <div fxLayout="row" fxLayoutAlign="space-between center" class="card-toolbar card-toolbar-shadow gap-separated-horizontal-elements">
         <div class="txt-widget-title">Image Controls</div>
-        <icon-button (click)="onExport()" tooltip="Download all images" title="Download all images" icon="assets/button-icons/export.svg"></icon-button>
+        <icon-button (click)="onExport()" title="Download all images" icon="assets/button-icons/export.svg" [loading]="downloadLoading"></icon-button>
     </div>
     <div fxLayout="column" class="scrollable-container" fxFlex>
         <div class="subheading-line">Image Selection</div>
