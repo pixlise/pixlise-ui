@@ -782,7 +782,7 @@ export function makeDataForExpressionList(
     datasetService: DataSetService,
     widgetDataService: WidgetRegionDataService,
     exprService: DataExpressionService,
-    rgbMixService: RGBMixConfigService
+    rgbMixService: RGBMixConfigService,
 ): Observable<unknown[]>
 {
     // Now subscribe for data we need, process when all have arrived
@@ -791,6 +791,7 @@ export function makeDataForExpressionList(
     subsToCombine.push(datasetService.dataset$);
     subsToCombine.push(widgetDataService.quantificationLoaded$);
     subsToCombine.push(exprService.expressionsUpdated$);
+    subsToCombine.push(widgetDataService.widgetData$);
     
     if(rgbMixService)
     {
