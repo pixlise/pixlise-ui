@@ -561,7 +561,7 @@ export class ViewStateService
     }
 
     // Saved view states by name
-    private makeSavedViewStateURL(datasetID: string, viewStateID: string): string
+    private makeSavedViewStateURL(datasetID: string, viewStateID: string, forceFlag: boolean = false): string
     {
         let apiURL = APIPaths.getWithHost(APIPaths.api_view_state);
         apiURL += "/saved/"+datasetID;
@@ -569,6 +569,11 @@ export class ViewStateService
         if(viewStateID)
         {
             apiURL += "/"+viewStateID;
+        }
+
+        if(forceFlag)
+        {
+            apiURL += "?force=true";
         }
 
         return apiURL;
@@ -594,10 +599,10 @@ export class ViewStateService
         );
     }
 
-    saveViewState(datasetID: string, viewStateTitle: string): Observable<void>
+    saveViewState(datasetID: string, viewStateTitle: string, forceFlag: boolean = false): Observable<void>
     {
         let loadID = this._loadingSvc.add("Saving view state...");
-        let apiURL = this.makeSavedViewStateURL(datasetID, viewStateTitle);
+        let apiURL = this.makeSavedViewStateURL(datasetID, viewStateTitle, forceFlag);
         let viewStateWireObj = this.makeWireViewState(this._viewState);
 
         // We now send up as an object with a name in it
