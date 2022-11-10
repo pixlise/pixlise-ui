@@ -89,6 +89,9 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     private _lastLayerChangeCount: number = 0;
 
+    authors: string[] = [];
+    private _filteredAuthors: string[] = [];
+
     //private _groups: ExpressionListGroupItems[] = [];
 
     constructor(
@@ -154,6 +157,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                     layerManager.recalcHeaderInfos(this.items);
                 }
                 this._lastLayerChangeCount = change.layers.length;
+                this.populateAuthorsList();
 
                 let t1 = performance.now();
                 let timing = "layer control regeneration: " + (t1 - t0).toLocaleString() + "ms";
@@ -193,9 +197,18 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         //this.updateHeaderCounts(); // updates counts for the header too...
     }
 
+    private populateAuthorsList(): void
+    {
+        let items = this.getLayerManager().makeExpressionList(new Set(["expressions-header", "rgbmix-header"]), "", this._contextImageService.lastSubLayerOwners, []);
+        if(items && items.items && items.items.length > 0)
+        {
+            this.authors = [...new Set(items.items.map((item) => item.content?.layer?.source?.creator?.name))].filter((author) => author);
+        }
+    }
+
     private regenerateItemList(fromGroupHeaderName: string): void
     {
-        let items = this.getLayerManager().makeExpressionList(this.headerSectionsOpen, this._filterText, this._contextImageService.lastSubLayerOwners);
+        let items = this.getLayerManager().makeExpressionList(this.headerSectionsOpen, this._filterText, this._contextImageService.lastSubLayerOwners, this.filteredAuthors);
         if(!items)
         {
             return;
@@ -493,5 +506,22 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         }
 
         return false;
+    }
+
+    get filteredAuthors(): string[]
+    {
+        return this._filteredAuthors;
+    }
+
+    set filteredAuthors(authors: string[])
+    {
+        this._filteredAuthors = authors;
+
+        this.regenerateItemList("");
+    }
+
+    onFilterTags(): void
+    {
+
     }
 }

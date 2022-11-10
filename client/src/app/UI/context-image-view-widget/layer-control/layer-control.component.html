@@ -33,18 +33,22 @@ POSSIBILITY OF SUCH DAMAGE.
     <div fxLayout="row" fxLayoutAlign="space-between center" class="card-toolbar card-toolbar-shadow gap-separated-horizontal-elements">
         <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
             <div class="txt-widget-title">{{title}}</div>
-            <filter-box
-                placeholder="Filter Items..."
-                (onFilterChanged)="onFilterExpressions($event)">
+        </div>
+        <div fxLayout="row">
+            <filter-box placeholder="Filter Items..." (onFilterChanged)="onFilterExpressions($event)">
             </filter-box>
-            <icon-button
-                *ngIf="showHideAllButton"
-                icon="assets/button-icons/visible-off.svg"
-                [hasBackground]="false"
+            <icon-button *ngIf="showHideAllButton" icon="assets/button-icons/visible-off.svg" [hasBackground]="false"
                 (onClick)="onHideAllLayers()">
             </icon-button>
+            <icon-button icon="assets/button-icons/tag.svg" (onClick)="onFilterTags()">
+            </icon-button>
+            <mat-select multiple [(ngModel)]="filteredAuthors" class="authors-filter" placeholder="Author ...">
+                <mat-option *ngFor="let author of authors;"
+                    [value]="author">{{author}}
+                </mat-option>
+            </mat-select>
         </div>
-        <push-button *ngIf="showExportButton" buttonStyle="yellow" (click)="onExport()">Export Panel</push-button>
+        <!-- <push-button *ngIf="showExportButton" buttonStyle="yellow" (click)="onExport()">Export Panel</push-button> -->
     </div>
     <expression-list
         [headerSectionsOpen]="headerSectionsOpen"
