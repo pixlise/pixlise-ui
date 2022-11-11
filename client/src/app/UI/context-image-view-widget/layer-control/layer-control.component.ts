@@ -202,7 +202,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         let items = this.getLayerManager().makeExpressionList(new Set(["expressions-header", "rgbmix-header"]), "", this._contextImageService.lastSubLayerOwners, []);
         if(items && items.items && items.items.length > 0)
         {
-            this.authors = [...new Set(items.items.map((item) => item.content?.layer?.source?.creator?.name))].filter((author) => author);
+            this.authors = [...new Set(items.items.map((item) => item.content?.layer?.source?.creator?.name))].filter((author) => author).sort();
         }
     }
 

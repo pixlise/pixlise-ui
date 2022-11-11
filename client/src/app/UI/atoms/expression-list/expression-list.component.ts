@@ -29,14 +29,14 @@
 
 import { Component, Input, OnInit, Output, EventEmitter, ViewChild } from "@angular/core";
 import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
-import { timer } from "rxjs";
+import { iif, timer } from "rxjs";
 
 import { DataExpressionService } from "src/app/services/data-expression.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 
 import { RGBChannelsEvent } from "src/app/UI/atoms/expression-list/rgbmix-selector/rgbmix-selector.component";
 import { LayerVisibilityChange, LayerColourChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
-import { ExpressionListGroupNames, ExpressionListItems } from "src/app/models/ExpressionList";
+import { ExpressionListGroupNames, ExpressionListItems, LayerViewItem } from "src/app/models/ExpressionList";
 
 
 export class ExpressionListHeaderToggleEvent
@@ -69,6 +69,8 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     @Output() headerSectionToggle = new EventEmitter();
     @Output() visibilityChange = new EventEmitter();
     @Output() colourChange = new EventEmitter();
+
+    stickyItem: LayerViewItem = null;
 
     constructor(
         private _exprService: DataExpressionService,
@@ -114,6 +116,10 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
 
     onToggleLayerSectionOpen(itemType: string, event): void
     {
+        if(Array.from(this.headerSectionsOpen).filter((headerName) => headerName !== itemType).length === 0)
+        {
+            this.stickyItem = null;
+        }
         this.headerSectionToggle.emit(new ExpressionListHeaderToggleEvent(itemType, event));
     }
 
@@ -204,5 +210,39 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
                 this.cdkVirtualScrollViewport.scrollToIndex(event);
             }
         );
+    }
+
+    findActiveHeader(currentScrollPosition: number): LayerViewItem | null
+    {
+        let lastHeaderIndex = 0;
+        let activeHeader: LayerViewItem = null;
+        this.items.items.forEach((item, i) =>
+        {
+            if(item.itemType.includes("-header") || i === this.items.items.length - 1)
+            {
+                let startPosition = lastHeaderIndex * this.itemSize;
+                let endPosition = i * this.itemSize;
+                if(endPosition - startPosition > this.itemSize && currentScrollPosition >= startPosition && currentScrollPosition < endPosition)
+                {
+                    activeHeader = this.items.items[lastHeaderIndex];
+                }
+                lastHeaderIndex = i;
+            }
+        });
+
+        return activeHeader;
+    }
+
+    onScroll(event): void
+    {
+        let activeHeader = this.findActiveHeader(this.cdkVirtualScrollViewport.measureScrollOffset("top"));
+        if(activeHeader !== null && this.headerSectionsOpen.has(activeHeader.itemType))
+        {
+            this.stickyItem = activeHeader;
+        }
+        else
+        {
+            this.stickyItem = null;
+        }
     }
 }
