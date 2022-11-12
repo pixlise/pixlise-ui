@@ -84,3 +84,15 @@ input {
     font-weight: bold;
 }
 */
+
+.more-buttons-menu {
+    display: flex;
+
+    icon-button {
+        margin-right: $sz-half;
+    }
+
+    icon-button:last-of-type {
+        margin-right: 0;
+    }
+}

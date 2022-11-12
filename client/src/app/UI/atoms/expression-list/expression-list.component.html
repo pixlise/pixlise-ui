@@ -36,7 +36,6 @@ POSSIBILITY OF SUCH DAMAGE.
     [isOpen]="isSectionOpen(stickyItem.itemType)"
     (onToggleOpen)="onToggleLayerSectionOpen(stickyItem.itemType, $event)"
     (onScrollToItem)="onScrollToItem(stickyItem.itemType, $event)">
-    <ng-content select="[elementHeader]" header></ng-content>
 </context-visibility-header>
 <cdk-virtual-scroll-viewport *ngIf="items" itemSize="{{itemSize}}" fxFlex="100%" (scroll)="onScroll($event)">
     <ng-container *cdkVirtualFor="let item of items.items; templateCacheSize: 0">

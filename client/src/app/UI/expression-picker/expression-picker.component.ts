@@ -321,6 +321,11 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
         );
     }
 
+    onDownloadAllElements(): void
+    {
+        // TODO: Download all elements
+    }
+
     onOK()
     {
         this.dialogRef.close(Array.from(this._activeIDs));

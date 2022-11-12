@@ -322,9 +322,14 @@ export class LayerSettingsComponent implements OnInit
         return this.layerInfo.layer.visible;
     }
 
+    get isPredefined(): boolean
+    {
+        return this._expressionElement.length > 0;
+    }
+
     onSettings(event): void
     {
-        if(this._expressionElement.length > 0)
+        if(this.isPredefined)
         {
             this.onElementSettings(event);
         }
@@ -483,6 +488,34 @@ export class LayerSettingsComponent implements OnInit
     get selectedDetector(): string
     {
         return DataExpressionService.getPredefinedQuantExpressionDetector(this.layerInfo.layer.id);
+    }
+
+    get layerButtons(): string[]
+    {
+        let buttons: Record<string, boolean> = {
+            showDetectorPicker: this.showDetectorPicker,
+            showShare: this.showShare && !this.sharedBy,
+            showDelete: this.showDelete && !this.isSharedByOtherUser,
+            showSettingsButton: this.showSettingsButton,
+            showColours: this.showColours,
+            showVisible: this.showVisible,
+        };
+        return Object.entries(buttons).filter(([, visible]) => visible).map(([layerButtonName]) => layerButtonName);
+    }
+
+    get visibleLayerButtons(): string[]
+    {
+        return this.layerButtons.slice(this.layerButtons.length - 3, this.layerButtons.length);
+    }
+
+    get showMoreButtonVisible(): boolean
+    {
+        return this.layerButtons.length > 3;
+    }
+
+    get hiddenLayerButtons(): string[]
+    {
+        return this.layerButtons.slice(0, this.layerButtons.length - 3);
     }
     
     onChangeDetector(detector: string)

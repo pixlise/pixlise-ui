@@ -524,4 +524,9 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
     {
 
     }
+
+    onDownloadAllElements(): void
+    {
+        // TODO: Download all elements
+    }
 }

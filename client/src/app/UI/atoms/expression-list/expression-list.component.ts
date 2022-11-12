@@ -216,12 +216,20 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     {
         let lastHeaderIndex = 0;
         let activeHeader: LayerViewItem = null;
+        if(currentScrollPosition < this.itemSize)
+        {
+            // If we're at the top, don't show a sticky header
+            return null;
+        }
+
         this.items.items.forEach((item, i) =>
         {
             if(item.itemType.includes("-header") || i === this.items.items.length - 1)
             {
                 let startPosition = lastHeaderIndex * this.itemSize;
                 let endPosition = i * this.itemSize;
+
+                // If the last header is open and the current scroll position is within it's start/end, set it as the active header
                 if(endPosition - startPosition > this.itemSize && currentScrollPosition >= startPosition && currentScrollPosition < endPosition)
                 {
                     activeHeader = this.items.items[lastHeaderIndex];
@@ -236,6 +244,8 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     onScroll(event): void
     {
         let activeHeader = this.findActiveHeader(this.cdkVirtualScrollViewport.measureScrollOffset("top"));
+
+        // This if statement is probably unnecessary, but is an extra verification that the header is open 
         if(activeHeader !== null && this.headerSectionsOpen.has(activeHeader.itemType))
         {
             this.stickyItem = activeHeader;
