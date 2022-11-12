@@ -505,12 +505,12 @@ export class LayerSettingsComponent implements OnInit
 
     get visibleLayerButtons(): string[]
     {
-        return this.layerButtons.slice(this.layerButtons.length - 3, this.layerButtons.length);
+        return this.showMoreButtonVisible ? this.layerButtons.slice(this.layerButtons.length - 3, this.layerButtons.length) : this.layerButtons;
     }
 
     get showMoreButtonVisible(): boolean
     {
-        return this.layerButtons.length > 3;
+        return this.layerButtons.length > 4;
     }
 
     get hiddenLayerButtons(): string[]
