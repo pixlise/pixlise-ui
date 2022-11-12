@@ -59,6 +59,7 @@ export class RGBMixLayerSettingsComponent implements OnInit
     @Input() layerInfo: RGBLayerInfo;
     @Input() showShare: boolean = true;
     @Input() showDelete: boolean = true;
+    @Input() showDownload: boolean = false;
     @Input() showEdit: boolean = true;
     @Input() activeIcon: string;
     @Input() inactiveIcon: string;
@@ -246,5 +247,10 @@ export class RGBMixLayerSettingsComponent implements OnInit
             return false;
         }
         return this.layerInfo.layer.visible;
+    }
+
+    onDownload(): void
+    {
+        // Download the RGB mix
     }
 }

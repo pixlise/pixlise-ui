@@ -140,4 +140,9 @@ export class VisibilitySettingsComponent implements OnInit
         }
         return this.contextImageService.mdl.showPoints;
     }
+
+    onDownload(): void
+    {
+        // TODO: Download
+    }
 }

@@ -59,6 +59,12 @@ POSSIBILITY OF SUCH DAMAGE.
                 (click)="onDelete()">
             </icon-button>
             <icon-button
+                *ngIf="layerButton === 'showDownload'"
+                title="Download this expression"
+                icon="assets/button-icons/export.svg"
+                (click)="onDownload()">
+            </icon-button>
+            <icon-button
                 *ngIf="layerButton === 'showSettingsButton'"
                 title="Edit expression"
                 icon="assets/button-icons/code.svg"
@@ -127,6 +133,12 @@ POSSIBILITY OF SUCH DAMAGE.
                     title="Delete this expression"
                     icon="assets/button-icons/delete.svg"
                     (click)="onDelete()">
+                </icon-button>
+                <icon-button
+                    *ngIf="layerButton === 'showDownload'"
+                    title="Download this expression"
+                    icon="assets/button-icons/export.svg"
+                    (click)="onDownload()">
                 </icon-button>
                 <icon-button
                     *ngIf="layerButton === 'showSettingsButton'"

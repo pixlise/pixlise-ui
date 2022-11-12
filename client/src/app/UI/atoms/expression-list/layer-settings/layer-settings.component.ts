@@ -105,6 +105,7 @@ export class LayerSettingsComponent implements OnInit
     @Input() showSettings: boolean;
     @Input() showShare: boolean;
     @Input() showDelete: boolean;
+    @Input() showDownload: boolean;
     @Input() showColours: boolean;
     @Input() showVisible: boolean;
     @Input() showPureSwitch: boolean;
@@ -496,6 +497,7 @@ export class LayerSettingsComponent implements OnInit
             showDetectorPicker: this.showDetectorPicker,
             showShare: this.showShare && !this.sharedBy,
             showDelete: this.showDelete && !this.isSharedByOtherUser,
+            showDownload: this.showDownload,
             showSettingsButton: this.showSettingsButton,
             showColours: this.showColours,
             showVisible: this.showVisible,
@@ -537,5 +539,10 @@ export class LayerSettingsComponent implements OnInit
             }
         }
         this.setVisibleSubLayer(showLayerID);
+    }
+
+    onDownload(): void
+    {
+        // TODO: Download
     }
 }
