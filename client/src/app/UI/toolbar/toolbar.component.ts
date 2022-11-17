@@ -43,6 +43,7 @@ import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dial
 import { AnnotationEditorComponent, AnnotationEditorData, AnnotationTool } from "../annotation-editor/annotation-editor.component";
 import { FullScreenAnnotationItem } from "../annotation-editor/annotation-display/annotation-display.component";
 import { ViewStateService } from "src/app/services/view-state.service";
+import { ClientSideExportGenerator } from "../export-data-dialog/client-side-export";
 
 class TabNav
 {
