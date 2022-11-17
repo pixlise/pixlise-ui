@@ -37,8 +37,8 @@ POSSIBILITY OF SUCH DAMAGE.
         <div fxLayout="row">
             <filter-box placeholder="Filter Items..." (onFilterChanged)="onFilterExpressions($event)">
             </filter-box>
-            <icon-button icon="assets/button-icons/tag.svg" (onClick)="onFilterTags()">
-            </icon-button>
+            <!-- <icon-button icon="assets/button-icons/tag.svg" (onClick)="onFilterTags()">
+            </icon-button> -->
             <mat-select multiple [(ngModel)]="filteredAuthors" class="authors-filter" placeholder="Author ...">
                 <mat-option *ngFor="let author of authors;"
                     [value]="author">{{author}}
