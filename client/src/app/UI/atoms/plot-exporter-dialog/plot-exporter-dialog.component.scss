@@ -113,6 +113,7 @@ h3 {
 }
 
 .preview-container {
+    position: relative;
     display: flex;
     border: 1px solid rgb(var(--clr-gray-60));
     border-radius: $sz-half;
@@ -125,4 +126,11 @@ h3 {
         flex: 1;
         border-radius: $sz-half;
     }
+}
+
+.preview-label {
+    position: absolute;
+    color: #FFFF8D;
+    top: $sz-unit;
+    left: $sz-unit;
 }

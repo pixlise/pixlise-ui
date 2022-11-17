@@ -84,7 +84,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     </multi-switch-button>
                 </div>
 
-                <h3 *ngIf="dataProducts.length > 0">Data Products ({{enabledDataProducts.length}})</h3>
+                <h3 *ngIf="dataProducts.length > 0">Data Products ({{enabledDataProducts.length * data.dataProductMultiplier}})</h3>
                 <div *ngFor="let option of dataProducts" fxLayout="row" fxLayoutAlign="space-between center"
                     class="gap-separated-horizontal-elements">
                     <div>{{option.label}}:</div>
@@ -110,6 +110,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 </two-state-icon-button>
             </h3>
             <div *ngIf="data.imagePreview && isPreviewVisible && !!preview && preview.toDataURL" class="preview-container">
+                <span *ngIf="previewLabel" class="preview-label">{{previewLabel}}</span>
                 <img *ngIf="!previewLoading" src="{{preview.toDataURL()}}">
                 <mat-spinner *ngIf="previewLoading" [diameter]="24" color="accent"></mat-spinner>
             </div>

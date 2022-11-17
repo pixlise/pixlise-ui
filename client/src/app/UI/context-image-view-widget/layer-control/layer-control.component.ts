@@ -36,7 +36,7 @@ import { DataExpression, DataExpressionService } from "src/app/services/data-exp
 import { DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { ViewStateService } from "src/app/services/view-state.service";
-import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
 import { LayerChangeInfo, LayerManager } from "src/app/UI/context-image-view-widget/layer-manager";
 import { CanvasExportParameters, ClientSideExportGenerator } from "src/app/UI/export-data-dialog/client-side-export";
@@ -47,6 +47,9 @@ import { LayerVisibilityChange, LayerColourChange } from "src/app/UI/atoms/expre
 import { ExpressionListHeaderInfo } from "src/app/UI/atoms/expression-list/layer-settings/header.component";
 import { ExpressionListHeaderToggleEvent } from "src/app/UI/atoms/expression-list/expression-list.component";
 import { ExpressionListGroupNames, ExpressionListItems, LayerViewItem } from "src/app/models/ExpressionList";
+import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
+import { DataSetService } from "src/app/services/data-set.service";
+import { PredefinedROIID } from "src/app/models/roi";
 
 
 export class LayerDetails
@@ -101,6 +104,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         private _widgetDataService: WidgetRegionDataService,
         private _authService: AuthenticationService,
         private _diffractionService: DiffractionPeakService,
+        private _datasetService: DataSetService,
         public dialog: MatDialog
     )
     {
@@ -525,8 +529,146 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     }
 
-    onDownloadAllElements(): void
+    exportExpressionValues(id: string): string
     {
-        // TODO: Download all elements
+        let queryData: RegionDataResults = this._widgetDataService.getData([new DataSourceParams(id, PredefinedROIID.AllPoints)], false);
+
+        if(queryData.error)
+        {
+            throw new Error(`Failed to query CSV data for expression: ${id}. ${queryData.error}`);
+        }
+
+        let csv: string = "PMC,Value\n";
+        queryData.queryResults[0].values.values.forEach(({pmc, value, isUndefined})=>
+        {
+            csv += `${pmc},${isUndefined ? "" : value}\n`;
+        });
+
+        return csv;
+    }
+
+    getCanvasOptions(options: PlotExporterDialogOption[], ids: string[]): string[]
+    {
+        let isColourScaleVisible = options.findIndex((option) => option.label == "Visible Colour Scale") > -1;
+        let backgroundMode = options[options.findIndex((option) => option.label == "Background")].value;
+        let exportIDs = [
+            ClientSideExportGenerator.exportContextImageScanPoints,
+            ClientSideExportGenerator.exportContextImageElementMap,
+            ...ids.map((id) => `${ClientSideExportGenerator.exportExpressionPrefix}${id}`)
+        ];
+
+        if(isColourScaleVisible)
+        {
+            exportIDs.push(ClientSideExportGenerator.exportContextImageColourScale);
+        }
+
+        if(backgroundMode === "Context Image")
+        {
+            exportIDs.push(ClientSideExportGenerator.exportContextImage);
+        }
+        else if(backgroundMode === "Black")
+        {
+            exportIDs.push(ClientSideExportGenerator.exportDrawBackgroundBlack);
+        }
+
+        return exportIDs;
+    }
+
+    getAllElements(): LayerViewItem[]
+    {
+        let items = this.getLayerManager().makeExpressionList(new Set(["elements-header"]), "", this._contextImageService.lastSubLayerOwners, []);
+        return items.items.filter((item) => item.itemType == "element-map");
+    }
+
+    onDownloadAllElements()
+    {
+        let exportOptions = [
+            new PlotExporterDialogOption("Background", "Context Image", true, { type: "switch", options: ["Transparent", "Context Image", "Black"] }),
+            new PlotExporterDialogOption("Visible Colour Scale", true, true),
+            new PlotExporterDialogOption("Web Resolution (1200x800)", true),
+            new PlotExporterDialogOption("Print Resolution (4096x2160)", true),
+            new PlotExporterDialogOption("Expression Values .csv", true),
+        ];
+
+        let elements = this.getAllElements();
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.data = new PlotExporterDialogData(`${this._datasetService.datasetLoaded.getId()} - All Elements`, "Export All Quantified Elements", exportOptions, true, elements.length);
+
+        const dialogRef = this.dialog.open(PlotExporterDialogComponent, dialogConfig);
+
+        dialogRef.componentInstance.onPreviewChange.subscribe((options: PlotExporterDialogOption[]) =>
+        {
+            let ids = [];
+            let previewLabel = null;
+            if(elements.length > 0 && elements[0]?.content?.layer?.source)
+            {
+                ids.push(elements[0].content.layer.source.id);
+                previewLabel = `(Group Export) ${elements[0].content.layer.source.name} Shown as Example`;
+            }
+            let drawer = new ExportDrawer(this._contextImageService.mdl, this._contextImageService.mdl.toolHost);
+            let exportIDs = this.getCanvasOptions(options, ids);
+
+            let preview: HTMLCanvasElement = null;
+            if(options.findIndex((option) => option.label === "Web Resolution (1200x800)" || option.label === "Print Resolution (4096x2160)") > -1)
+            {
+                preview = generatePlotImage(drawer, this._contextImageService.mdl.transform, [], 1200, 800, false, false, exportIDs);
+            }
+            else
+            {
+                preview = generatePlotImage(drawer, this._contextImageService.mdl.transform, [], 1200, 800, false, false, []);
+            }
+
+            dialogRef.componentInstance.updatePreview(preview, previewLabel);
+        });
+
+        dialogRef.componentInstance.onConfirmOptions.subscribe(
+            (options: PlotExporterDialogOption[])=>
+            {
+                let canvases: CanvasExportItem[] = [];
+                let csvs: CSVExportItem[] = [];
+
+                let drawer = new ExportDrawer(this._contextImageService.mdl, this._contextImageService.mdl.toolHost);
+
+                elements.forEach((element) =>
+                {
+                    let id = element?.content?.layer?.source?.id;
+                    let name = element?.content?.layer?.source?.name;
+
+                    if(!element?.content?.layer?.source?.id)
+                    {
+                        console.error("Failed to export element. No ID found.", element);
+                        return;
+                    }
+                    let exportIDs = this.getCanvasOptions(options, [id]);
+
+                    if(options.findIndex((option) => option.label === "Web Resolution (1200x800)") > -1)
+                    {
+                        canvases.push(new CanvasExportItem(
+                            `Web Resolution/${name.replace(/\//g, "_")}`,
+                            generatePlotImage(drawer, this._contextImageService.mdl.transform, [], 1200, 800, false, false, exportIDs)
+                        ));   
+                    }
+
+                    if(options.findIndex((option) => option.label === "Print Resolution (4096x2160)") > -1)
+                    {
+                        canvases.push(new CanvasExportItem(
+                            `Print Resolution/${name.replace(/\//g, "_")}`,
+                            generatePlotImage(drawer, this._contextImageService.mdl.transform, [], 4096, 2160, false, false, exportIDs)
+                        ));   
+                    }
+
+                    if(options.findIndex((option) => option.label == "Expression Values .csv") > -1)
+                    {
+                        csvs.push(new CSVExportItem(
+                            `Expression Values/${name.replace(/\//g, "_")}`,
+                            this.exportExpressionValues(id)
+                        ));  
+                    }
+                });
+
+                dialogRef.componentInstance.onDownload(canvases, csvs);
+            });
+
+        return dialogRef.afterClosed();
     }
 }

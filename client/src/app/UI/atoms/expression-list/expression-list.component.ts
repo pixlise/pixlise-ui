@@ -62,6 +62,7 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     @Input() showColourOptions: boolean = true;
     @Input() showPureSwitchOnElements: boolean;
     @Input() initialScrollToIdx: number = -1;
+    @Input() downloadable: boolean = true;
 
     @Input() selectedIcon: string = "assets/button-icons/check-on.svg";
     @Input() unselectedIcon: string = "assets/button-icons/check-off.svg";

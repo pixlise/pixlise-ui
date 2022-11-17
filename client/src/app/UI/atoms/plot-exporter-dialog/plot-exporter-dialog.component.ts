@@ -34,7 +34,6 @@ import { Point } from "src/app/models/Geometry";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { PointDrawer } from "src/app/utils/drawing";
 import { CanvasDrawer, CanvasParams, CanvasWorldTransform, InteractiveCanvasComponent } from "../interactive-canvas/interactive-canvas.component";
-import { PanZoom } from "../interactive-canvas/pan-zoom";
 import { KeyItem } from "../widget-key-display/widget-key-display.component";
 
 export class CanvasExportItem
@@ -72,6 +71,7 @@ export class PlotExporterDialogData
         public title: string,
         public options: PlotExporterDialogOption[],
         public imagePreview: boolean = false,
+        public dataProductMultiplier: number = 1,
     )
     {
     }
@@ -174,6 +174,7 @@ export class PlotExporterDialogComponent implements OnInit
     isPreviewVisible: boolean = false;
     previewLoading: boolean = false;
     preview: HTMLCanvasElement = null;
+    previewLabel: string = "";
 
     @Output() onConfirmOptions = new EventEmitter();
     @Output() onPreviewChange = new EventEmitter();
@@ -222,9 +223,10 @@ export class PlotExporterDialogComponent implements OnInit
         }
     }
 
-    updatePreview(preview: HTMLCanvasElement)
+    updatePreview(preview: HTMLCanvasElement, previewLabel: string = "")
     {
         this.preview = preview;
+        this.previewLabel = previewLabel;
         this.previewLoading = false;
     }
 

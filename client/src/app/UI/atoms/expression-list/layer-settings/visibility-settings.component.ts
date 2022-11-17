@@ -185,7 +185,6 @@ export class VisibilitySettingsComponent implements OnInit
             new PlotExporterDialogOption("Visible Colour Scale", true, true),
             new PlotExporterDialogOption("Web Resolution (1200x800)", true),
             new PlotExporterDialogOption("Print Resolution (4096x2160)", true),
-            new PlotExporterDialogOption("Expression Values .csv", true),
         ];
 
         const dialogConfig = new MatDialogConfig();
