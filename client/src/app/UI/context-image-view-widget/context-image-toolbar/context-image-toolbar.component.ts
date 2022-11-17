@@ -235,13 +235,14 @@ export class ContextImageToolbarComponent implements OnInit
 
             const dialogRef = this.dialog.open(PlotExporterDialogComponent, dialogConfig);
             dialogRef.componentInstance.onConfirmOptions.subscribe(
-                (options: string[])=>
+                (options: PlotExporterDialogOption[])=>
                 {
+                    let optionLabels = options.map(option => option.label);
                     let canvases: CanvasExportItem[] = [];
 
-                    let showKey = options.indexOf("Visible Key") > -1;
-                    let showColourScale = options.indexOf("Visible Colour Scale") > -1;
-                    let showScale = options.indexOf("Visible Scale") > -1;
+                    let showKey = optionLabels.indexOf("Visible Key") > -1;
+                    let showColourScale = optionLabels.indexOf("Visible Colour Scale") > -1;
+                    let showScale = optionLabels.indexOf("Visible Scale") > -1;
  
                     let keyItems = this._contextImageService.mdl.regionManager.getRegionsForDraw().filter(roi => roi.isVisible()).map(roi => new KeyItem(roi.roi.id, roi.roi.name, roi.roi.colour));
 
@@ -263,7 +264,7 @@ export class ContextImageToolbarComponent implements OnInit
                         exportIDs.push(ClientSideExportGenerator.exportContextImagePhysicalScale);
                     }
 
-                    if(options.indexOf("Standard Size Image") > -1)
+                    if(optionLabels.indexOf("Standard Size Image") > -1)
                     {
                         exportIDs.push(ClientSideExportGenerator.exportWebResolution);
                         canvases.push(new CanvasExportItem(
@@ -272,7 +273,7 @@ export class ContextImageToolbarComponent implements OnInit
                         ));
                     }
 
-                    if(options.indexOf("Large Image") > -1)
+                    if(optionLabels.indexOf("Large Image") > -1)
                     {
                         exportIDs.push(ClientSideExportGenerator.exportPrintResolution);
                         canvases.push(new CanvasExportItem(

@@ -27,13 +27,14 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Inject, Output } from "@angular/core";
+import { Component, EventEmitter, Inject, OnInit, Output } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import * as JSZip from "jszip";
 import { Point } from "src/app/models/Geometry";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { PointDrawer } from "src/app/utils/drawing";
 import { CanvasDrawer, CanvasParams, CanvasWorldTransform, InteractiveCanvasComponent } from "../interactive-canvas/interactive-canvas.component";
+import { PanZoom } from "../interactive-canvas/pan-zoom";
 import { KeyItem } from "../widget-key-display/widget-key-display.component";
 
 export class CanvasExportItem
@@ -70,6 +71,7 @@ export class PlotExporterDialogData
         public zipFileNamePlaceholder: string,
         public title: string,
         public options: PlotExporterDialogOption[],
+        public imagePreview: boolean = false,
     )
     {
     }
@@ -161,7 +163,7 @@ export const generatePlotImage = (drawer: CanvasDrawer, transform: CanvasWorldTr
     templateUrl: "./plot-exporter-dialog.component.html",
     styleUrls: ["./plot-exporter-dialog.component.scss"]
 })
-export class PlotExporterDialogComponent
+export class PlotExporterDialogComponent implements OnInit
 {
     state: string = "download";
     prompt: string = "";
@@ -169,7 +171,12 @@ export class PlotExporterDialogComponent
     fileName: string = "";
     zipFileNamePlaceholder: string = "Enter a zip file name";
 
+    isPreviewVisible: boolean = false;
+    previewLoading: boolean = false;
+    preview: HTMLCanvasElement = null;
+
     @Output() onConfirmOptions = new EventEmitter();
+    @Output() onPreviewChange = new EventEmitter();
 
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: PlotExporterDialogData,
@@ -183,9 +190,42 @@ export class PlotExporterDialogComponent
         }
     }
 
+    ngOnInit(): void
+    {
+        if(this.data.imagePreview)
+        {
+            this.previewLoading = true;
+            setTimeout(() =>
+            {
+                this.onPreviewChange.emit(this.enabledOptions);
+            }, 500);
+        }
+    }
+
     onToggleOption(option: PlotExporterDialogOption)
     {
         option.value = !option.value;
+        if(this.data.imagePreview)
+        {
+            this.previewLoading = true;
+            this.onPreviewChange.emit(this.enabledOptions);
+        }
+    }
+
+    onSwitchOption(option: PlotExporterDialogOption, selectedValue: string)
+    {
+        option.value = selectedValue;
+        if(this.data.imagePreview)
+        {
+            this.previewLoading = true;
+            this.onPreviewChange.emit(this.enabledOptions);
+        }
+    }
+
+    updatePreview(preview: HTMLCanvasElement)
+    {
+        this.preview = preview;
+        this.previewLoading = false;
     }
 
     onCancel(): void
@@ -193,9 +233,9 @@ export class PlotExporterDialogComponent
         this.dialogRef.close(null);
     }
 
-    get enabledOptions(): string[]
+    get enabledOptions(): PlotExporterDialogOption[]
     {
-        return this.options.filter(option => option.value).map(option => option.label);
+        return this.options.filter(option => option.value);
     }
 
     get dataModifiers(): PlotExporterDialogOption[]
@@ -206,6 +246,16 @@ export class PlotExporterDialogComponent
     get dataProducts(): PlotExporterDialogOption[]
     {
         return this.options.filter(option => !option.isModifier);
+    }
+
+    onTogglePreview(): void
+    {
+        this.isPreviewVisible = !this.isPreviewVisible;
+    }
+
+    get enabledDataProducts(): PlotExporterDialogOption[]
+    {
+        return this.dataProducts.filter(option => option.value);
     }
 
     get isDownloadable(): boolean

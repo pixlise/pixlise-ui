@@ -690,15 +690,16 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
 
             const dialogRef = this.dialog.open(PlotExporterDialogComponent, dialogConfig);
             dialogRef.componentInstance.onConfirmOptions.subscribe(
-                (options: string[])=>
+                (options: PlotExporterDialogOption[])=>
                 {
+                    let optionLabels = options.map(option => option.label);
                     let canvases: CanvasExportItem[] = [];
                     let csvs: CSVExportItem[] = [];
 
-                    let showKey = options.indexOf("Visible Key") > -1;
-                    let lightMode = options.indexOf("Color") > -1;
+                    let showKey = optionLabels.indexOf("Visible Key") > -1;
+                    let lightMode = optionLabels.indexOf("Color") > -1;
 
-                    if(options.indexOf("Plot Image") > -1)
+                    if(optionLabels.indexOf("Plot Image") > -1)
                     {
                         canvases.push(new CanvasExportItem(
                             "Binary Plot",
@@ -706,7 +707,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                         ));   
                     }
 
-                    if(options.indexOf("Large Plot Image") > -1)
+                    if(optionLabels.indexOf("Large Plot Image") > -1)
                     {
                         canvases.push(new CanvasExportItem(
                             "Binary Plot - Large",
@@ -714,7 +715,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                         ));
                     }
 
-                    if(options.indexOf("Plot Data .csv") > -1)
+                    if(optionLabels.indexOf("Plot Data .csv") > -1)
                     {
                         csvs.push(new CSVExportItem(
                             "Binary Plot Data",

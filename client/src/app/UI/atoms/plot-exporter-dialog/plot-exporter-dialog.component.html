@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="column" class="dlg-border-with-backdrop" #outerDialog>
     <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
-        <h1>{{data.title}}</h1>
+        <h1 class="title">{{data.title}}</h1>
     </div>
 
     <ng-container [ngSwitch]="state">
@@ -56,7 +56,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
                 <h3 *ngIf="dataModifiers.length > 0">Options</h3>
                 <div *ngFor="let option of dataModifiers" fxLayout="row" fxLayoutAlign="space-between center"
-                    class="gap-separated-horizontal-elements">
+                    class="{{option.type.type === 'switch' && option.type.options.length > 2 ? 'multi-switch-wrapper' : 'gap-separated-horizontal-elements'}}">
                     <div class="{{option.type.disabled ? 'disabled-text' : ''}}">{{option.label}}:</div>
                     <two-state-icon-button 
                         *ngIf="option.type.type === 'checkbox'"
@@ -68,16 +68,23 @@ POSSIBILITY OF SUCH DAMAGE.
                         (onToggle)="onToggleOption(option)">
                     </two-state-icon-button>
                     <switch-button 
-                        *ngIf="option.type.type === 'switch'"
+                        *ngIf="option.type.type === 'switch' && option.type.options.length === 2"
                         [label]="option.type.options[0]"
                         [endLabel]="option.type.options[1]"
                         [active]="!option.type.disabled && option.value === true"
                         [disabled]="option.type.disabled"
                         (onToggle)="onToggleOption(option)">
                     </switch-button>
+                    <multi-switch-button 
+                        *ngIf="option.type.type === 'switch' && option.type.options.length > 2"
+                        [options]="option.type.options"
+                        [value]="option.value + ''"
+                        [disabled]="option.type.disabled"
+                        (onChange)="onSwitchOption(option, $event)">
+                    </multi-switch-button>
                 </div>
 
-                <h3 *ngIf="dataProducts.length > 0">Data Products</h3>
+                <h3 *ngIf="dataProducts.length > 0">Data Products ({{enabledDataProducts.length}})</h3>
                 <div *ngFor="let option of dataProducts" fxLayout="row" fxLayoutAlign="space-between center"
                     class="gap-separated-horizontal-elements">
                     <div>{{option.label}}:</div>
@@ -89,6 +96,22 @@ POSSIBILITY OF SUCH DAMAGE.
                         (onToggle)="onToggleOption(option)">
                     </two-state-icon-button>
                 </div>
+            </div>
+        </ng-container>
+        <ng-container>
+            <h3 class="preview-btn-container" *ngIf="data.imagePreview">
+                Preview
+                <two-state-icon-button
+                    class="preview-button"
+                    activeIcon="assets/button-icons/check-on.svg"
+                    inactiveIcon="assets/button-icons/check-off.svg" 
+                    [active]="isPreviewVisible"
+                    (onToggle)="onTogglePreview()">
+                </two-state-icon-button>
+            </h3>
+            <div *ngIf="data.imagePreview && isPreviewVisible && !!preview && preview.toDataURL" class="preview-container">
+                <img *ngIf="!previewLoading" src="{{preview.toDataURL()}}">
+                <mat-spinner *ngIf="previewLoading" [diameter]="24" color="accent"></mat-spinner>
             </div>
         </ng-container>
     </ng-container>

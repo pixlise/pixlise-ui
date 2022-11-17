@@ -27,77 +27,44 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { Component, EventEmitter, Input, Output } from "@angular/core";
 
-// Licensed to NASA JPL under one or more contributor
-// license agreements. See the NOTICE file distributed with
-// this work for additional information regarding copyright
-// ownership. NASA JPL licenses this file to you under
-// the Apache License, Version 2.0 (the "License"); you may
-// not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing,
-// software distributed under the License is distributed on an
-// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied.  See the License for the
-// specific language governing permissions and limitations
-// under the License.
 
-@import 'variables.scss';
-@import 'atoms.scss';
+@Component({
+    selector: "multi-switch-button",
+    templateUrl: "./multi-switch-button.component.html",
+    styleUrls: ["./multi-switch-button.component.scss"]
+})
+export class MultiSwitchButtonComponent
+{
+    @Input() options: string[];
+    @Input() value: string;
+    @Input() disabled: boolean = false;
 
-.layer-row-height {
-    height: 60px;
-}
+    @Output() onChange = new EventEmitter();
 
-.setting-row {
-    @extend .layer-row-height;
-    padding-right: $sz-double;
-}
-
-.setting-label {
-    color: $clr-gray-10;
-    user-select: text;
-}
-
-.incompatible {
-    text-decoration: line-through;
-}
-
-input {
-    background-color: $clr-gray-80;
-    padding: $sz-half;
-}
-
-.comment {
-    color: $clr-gray-40;
-    font-size: 12px;
-    overflow-wrap: break-word;
-    max-width: 500px;
-}
-
-.obj-creator {
-    color: $clr-gray-40;
-}
-
-/*
-.expr-error {
-    @extend .comment;
-    color: $clr-orange;
-    font-weight: bold;
-}
-*/
-
-.more-buttons-menu {
-    display: flex;
-
-    icon-button {
-        margin-right: $sz-half;
+    constructor()
+    {
     }
 
-    icon-button:last-of-type {
-        margin-right: 0;
+    get activeWidth(): number | string
+    {
+        return this.options.length > 0 ? `${Math.round(1 / this.options.length * 1000)/10}%` : 0;
     }
+
+    get activeLeftOffset(): number | string
+    {
+        let index = this.options.findIndex((option) => option === this.value);
+        return index >= 0 && this.options.length > 0 ? `${Math.round(index / this.options.length * 1000)/10}%` : 0;
+    }
+
+    onClick(selectedValue: string)
+    {
+        if(!this.disabled)
+        {
+            this.value = selectedValue;
+            this.onChange.emit(selectedValue);
+        }
+    }
+
 }

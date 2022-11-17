@@ -124,6 +124,7 @@ import { TwoStateButtonComponent } from "./UI/atoms/buttons/two-state-button/two
 import { BulkSelectionSwitchComponent } from "./UI/atoms/buttons/two-state-button/bulk-selection-switch.component";
 import { PlusMinusSwitchComponent } from "./UI/atoms/buttons/two-state-button/plus-minus-switch.component";
 import { SwitchButtonComponent } from "./UI/atoms/buttons/switch-button/switch-button.component";
+import { MultiSwitchButtonComponent } from "./UI/atoms/buttons/multi-switch-button/multi-switch-button.component";
 import { TwoStateIconButton } from "./UI/atoms/buttons/two-state-button/two-state-icon-button.component";
 import { TwoStateIconPushButton } from "./UI/atoms/buttons/two-state-button/two-state-icon-push-button.component";
 import { TwoStatePushButton } from "./UI/atoms/buttons/two-state-button/two-state-push-button.component";
@@ -333,6 +334,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         BulkSelectionSwitchComponent,
         PlusMinusSwitchComponent,
         SwitchButtonComponent,
+        MultiSwitchButtonComponent,
         TwoStateIconButton,
         TwoStatePushButton,
         TwoStateIconPushButton,

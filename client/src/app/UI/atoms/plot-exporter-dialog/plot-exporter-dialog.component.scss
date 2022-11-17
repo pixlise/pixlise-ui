@@ -31,6 +31,10 @@
 @import 'atoms.scss';
 
 
+h1.title {
+    max-width: 366px;
+}
+
 .gap-above {
     margin-top: $sz-double;
 }
@@ -86,4 +90,39 @@ h3 {
 
 .disabled-text {
     color: $clr-gray-60;
+}
+
+.multi-switch-wrapper {
+    display: flex;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+
+    multi-switch-button {
+        width: 100%;
+        margin-top: $sz-unit;
+    }
+}
+
+.preview-btn-container {
+    display: flex;
+}
+
+.preview-button {
+    margin-left: auto;
+    margin-right: $sz-double;
+}
+
+.preview-container {
+    display: flex;
+    border: 1px solid rgb(var(--clr-gray-60));
+    border-radius: $sz-half;
+    width: 366px;
+    min-height: 200px;
+    margin-top: $sz-unit;
+
+    img {
+        width: 100%;
+        flex: 1;
+        border-radius: $sz-half;
+    }
 }
