@@ -34,7 +34,7 @@ import { Observable } from "rxjs";
 
 export class ExportDataChoice
 {
-    constructor(public id: string, public label: string, public enabled: boolean)
+    constructor(public id: string, public label: string, public enabled: boolean, public isGlobalOption: boolean = true)
     {
     }
 }

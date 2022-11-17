@@ -119,6 +119,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <div fxLayout="row" fxLayoutAlign="end" class="gap-separated-horizontal-elements gap-above">
         <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-        <push-button [disabled]="state!='download' || !isDownloadable" buttonStyle="yellow" (onClick)="onExport()">Export</push-button>
+        <push-button [disabled]="state!='download' || !isDownloadable" buttonStyle="yellow" (onClick)="onExport()">{{data.exportLabel}}</push-button>
     </div>
 </div>

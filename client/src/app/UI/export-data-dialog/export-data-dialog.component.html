@@ -75,50 +75,38 @@ POSSIBILITY OF SUCH DAMAGE.
         <ng-container *ngSwitchCase="'download'">
             <div fxLayout="column" class="gap-separated-vertical-elements gap-above">
                 <div class="list-subheading">Zip File Name</div>
-                <input [(ngModel)]="fileName" type="text" placeholder="">
+                <input [(ngModel)]="fileName" type="text" placeholder="{{fileNamePlaceholder}}">
 
+                <h3>Options</h3>
+                <multi-switch-button
+                        [options]="['Global', 'Regions of Interest']"
+                        [value]="isGlobal ? 'Global' : 'Regions of Interest'"
+                        [disabled]="false"
+                        (onChange)="onToggleGlobal()">
+                    </multi-switch-button>
                 <ng-container *ngIf="showQuantPicker">
                     <div class="list-subheading">Quantification</div>
-                    <mat-select [(ngModel)]="selectedQuantId">
+                    <mat-select [(ngModel)]="selectedQuantId" class="quantification-select">
                         <mat-option *ngFor="let quant of quants" [value]="quant.id">{{quant.label}}</mat-option>
                     </mat-select>
                 </ng-container>
+                <ng-container *ngIf="!isGlobal">
+                    <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
+                        <push-button [title]="roiNameTooltip" (onClick)="onRegions()">Select Regions<img *ngIf="hasSelectedROIs" src="assets/button-icons/yellow-tick.svg"></push-button>
+                        <push-button [title]="expressionNameTooltip" (onClick)="onExpressions()" [disabled]="!hasSelectedROIs">Select Expressions<img *ngIf="hasExpressions" src="assets/button-icons/yellow-tick.svg"></push-button>
+                    </div>
+                </ng-container>
 
-                <div *ngFor="let choice of data.choices" fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
-                    <div>{{choice.label}}</div>
+                <h3>Data Products ({{dataProductCount}})</h3>
+
+                <div *ngFor="let choice of visibleChoices" fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
+                    <div class="{{checkDisabled(choice.id) ? 'disabled-choice' : ''}}">{{choice.label}}</div>
                     <two-state-icon-button
                         activeIcon="assets/button-icons/check-on.svg"
                         inactiveIcon="assets/button-icons/check-off.svg"
                         [active]="choice.enabled"
-                        (onToggle)="onToggleChoice(choice)"></two-state-icon-button>
-                </div>
-
-                <div *ngIf="showROIPicker" fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
-                    <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
-                        <div>Regions of Interest</div>
-                        <img *ngIf="hasSelectedROIs" src="assets/button-icons/yellow-tick.svg">
-                    </div>
-                    <push-button (onClick)="onRegions()">Regions</push-button>
-<!--
-                    <div fxLayout="column" class="scrollable-container-roi-list">
-                        <div *ngFor="let roi of rois" fxLayout="row" fxLayoutAlign="space-between center" class="setting-row">
-                            <div>{{roi.name+((roi.shared && roi.creator) ? " (shared by: "+roi.creator.name+")" : "")}}</div>
-                            <two-state-icon-button
-                                activeIcon="assets/button-icons/check-on.svg"
-                                inactiveIcon="assets/button-icons/check-off.svg"
-                                [active]="isActiveROI(roi.id)"
-                                (onToggle)="onToggleROI(roi.id)"></two-state-icon-button>
-                        </div>
-                    </div>
--->
-                </div>
-
-                <div *ngIf="showExpressionPicker" fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
-                    <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
-                        <div>Expression Maps</div>
-                        <img *ngIf="hasExpressions" src="assets/button-icons/yellow-tick.svg">
-                    </div>
-                    <push-button (onClick)="onExpressions()">Expressions</push-button>
+                        (onToggle)="onToggleChoice(choice)">
+                    </two-state-icon-button>
                 </div>
             </div>
         </ng-container>
@@ -126,6 +114,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <div fxLayout="row" fxLayoutAlign="end" class="gap-separated-horizontal-elements gap-above">
         <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-        <push-button [disabled]="state!='download'" buttonStyle="yellow" (onClick)="onExport()">Export</push-button>
+        <push-button [disabled]="state!='download' || dataProductCount === 0" buttonStyle="yellow" (onClick)="onExport()">Export</push-button>
     </div>
 </div>

@@ -71,6 +71,7 @@ export class PlotExporterDialogData
         public title: string,
         public options: PlotExporterDialogOption[],
         public imagePreview: boolean = false,
+        public exportLabel: string = "Export",
         public dataProductMultiplier: number = 1,
     )
     {

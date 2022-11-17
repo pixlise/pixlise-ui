@@ -592,10 +592,10 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
         let elements = this.getAllElements();
         const dialogConfig = new MatDialogConfig();
-        dialogConfig.data = new PlotExporterDialogData(`${this._datasetService.datasetLoaded.getId()} - All Elements`, "Export All Quantified Elements", exportOptions, true, elements.length);
+        dialogConfig.data = new PlotExporterDialogData(`${this._datasetService.datasetLoaded.getId()} - All Elements`, "Export All Quantified Elements", exportOptions, true, "Export All Elements", elements.length);
 
         const dialogRef = this.dialog.open(PlotExporterDialogComponent, dialogConfig);
-
+        
         dialogRef.componentInstance.onPreviewChange.subscribe((options: PlotExporterDialogOption[]) =>
         {
             let ids = [];
