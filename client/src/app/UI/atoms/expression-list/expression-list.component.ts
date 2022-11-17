@@ -214,7 +214,7 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
         );
     }
 
-    findActiveHeader(currentScrollPosition: number): LayerViewItem | null
+    findActiveHeader(currentScrollPosition: number, checkShared: boolean = false): LayerViewItem | null
     {
         let lastHeaderIndex = 0;
         let activeHeader: LayerViewItem = null;
@@ -226,7 +226,7 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
 
         this.items.items.forEach((item, i) =>
         {
-            if(item.itemType.includes("-header") || item.itemType.includes("shared-") || i === this.items.items.length - 1)
+            if(item.itemType.includes("-header") || (item.itemType.includes("shared-") && checkShared) || i === this.items.items.length - 1)
             {
                 let startPosition = lastHeaderIndex * this.itemSize;
                 let endPosition = i * this.itemSize;
@@ -246,16 +246,13 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     onScroll(event): void
     {
         let activeHeader = this.findActiveHeader(this.cdkVirtualScrollViewport.measureScrollOffset("top"));
+        let activeHeaderWithShared = this.findActiveHeader(this.cdkVirtualScrollViewport.measureScrollOffset("top"), true);
 
         // This if statement is probably unnecessary, but is an extra verification that the header is open 
         if(activeHeader !== null && this.headerSectionsOpen.has(activeHeader.itemType))
         {
             this.stickyItem = activeHeader;
-            this.stickyItemHeaderName = activeHeader.content.label;
-        }
-        else if(activeHeader !== null && activeHeader.itemType.includes("shared-"))
-        {
-            this.stickyItemHeaderName = activeHeader.content.label;
+            this.stickyItemHeaderName = activeHeaderWithShared.itemType.includes("shared-") ? activeHeaderWithShared.content.label : activeHeader.content.label;
         }
         else
         {
