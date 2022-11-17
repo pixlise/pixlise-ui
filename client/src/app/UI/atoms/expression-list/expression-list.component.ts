@@ -71,6 +71,7 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     @Output() visibilityChange = new EventEmitter();
     @Output() colourChange = new EventEmitter();
 
+    stickyItemHeaderName: string = "";
     stickyItem: LayerViewItem = null;
 
     constructor(
@@ -225,7 +226,7 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
 
         this.items.items.forEach((item, i) =>
         {
-            if(item.itemType.includes("-header") || i === this.items.items.length - 1)
+            if(item.itemType.includes("-header") || item.itemType.includes("shared-") || i === this.items.items.length - 1)
             {
                 let startPosition = lastHeaderIndex * this.itemSize;
                 let endPosition = i * this.itemSize;
@@ -250,10 +251,16 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
         if(activeHeader !== null && this.headerSectionsOpen.has(activeHeader.itemType))
         {
             this.stickyItem = activeHeader;
+            this.stickyItemHeaderName = activeHeader.content.label;
+        }
+        else if(activeHeader !== null && activeHeader.itemType.includes("shared-"))
+        {
+            this.stickyItemHeaderName = activeHeader.content.label;
         }
         else
         {
             this.stickyItem = null;
+            this.stickyItemHeaderName = null;
         }
     }
 }

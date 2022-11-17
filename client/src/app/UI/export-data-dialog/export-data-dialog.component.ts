@@ -479,7 +479,6 @@ export class ExportDataDialogComponent implements OnInit
 
         if(selectedIds.length > 0) 
         {
-            console.log("Exporting data products: ", selectedIds, this._selectedQuantId, this._selectedROIs, this._selectedExpressionIds);
             this.data.exportGenerator.generateExport(this._datasetService.datasetIDLoaded, this._selectedQuantId, selectedIds, this._selectedROIs, this._selectedExpressionIds, expressionNames, fileName).subscribe(
                 (data: Blob)=>
                 {

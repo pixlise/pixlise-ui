@@ -33,6 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
     class="sticky-header"
     *ngIf="stickyItem"
     [content]="stickyItem.content"
+    [headerName]="stickyItemHeaderName"
     [isOpen]="isSectionOpen(stickyItem.itemType)"
     (onToggleOpen)="onToggleLayerSectionOpen(stickyItem.itemType, $event)"
     (onScrollToItem)="onScrollToItem(stickyItem.itemType, $event)">
