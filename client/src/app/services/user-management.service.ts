@@ -121,4 +121,16 @@ export class UserManagementService
             }
         );
     }
+
+    setUserName(name: string): Observable<void>
+    {
+        // Users sign up via auth0 and only need to provide an email address. We later ask them for their
+        // name and save via here.
+        // This passes the name to the API endpoint, which can then do the appropriate updates on the back-end
+        // Users must log out & back in for change to take effect
+        
+        // Call search API
+        let apiUrl = APIPaths.getWithHost(APIPaths.api_user_management+"/name");
+        return this.http.post<void>(apiUrl, "\""+name+"\"", makeHeaders());
+    }
 }

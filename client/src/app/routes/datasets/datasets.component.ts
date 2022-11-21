@@ -43,6 +43,7 @@ import { HelpMessage } from "src/app/utils/help-message";
 import { getMB, httpErrorToString } from "src/app/utils/utils";
 import { AddDatasetDialogComponent } from "src/app/routes/datasets/add-dataset-dialog/add-dataset-dialog.component";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
+import { UserManagementService } from "src/app/services/user-management.service";
 
 
 class SummaryItem
@@ -89,6 +90,7 @@ export class DatasetsComponent implements OnInit
         private _datasetService: DataSetService,
         private _viewStateService: ViewStateService,
         private _authService: AuthenticationService,
+        private _userService: UserManagementService,
         private _loadingSvc: LoadingIndicatorService,
         //private _userOptionsService: UserOptionsService, // Pull this in so data collection dialog is shown if needed
         public dialog: MatDialog
@@ -98,6 +100,33 @@ export class DatasetsComponent implements OnInit
 
     ngOnInit()
     {
+        this._authService.userProfile$.subscribe(
+            (user)=>
+            {
+                if(user.name == user.email)
+                {
+                    // This is a user who hasn't got a name set properly yet
+                    // so here we ask them to type one in that we can overwrite
+                    // in both Auth0 and our own user database
+                    let name = prompt("We don't have your name stored, only your email address. This means PIXLISE will not show your name correctly when you share data/obvservations. Please enter your name.")
+                    if(name.length > 0)
+                    {
+                        this._userService.setUserName(name).subscribe(
+                            ()=>
+                            {
+                                alert("You will now be logged out. When you log back in your name will be correctly loaded. You can check this using the user menu on the top-right. Thanks!")
+                                this._authService.logout();
+                            },
+                            (err)=>
+                            {
+                                alert(httpErrorToString(err, "Failed to save user name"));
+                            }
+                        );
+                    }
+                }
+            }
+        );
+
         this._authService.getIdTokenClaims$().subscribe(
             (claims)=>
             {
