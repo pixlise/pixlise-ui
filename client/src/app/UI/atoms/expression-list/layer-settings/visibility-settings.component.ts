@@ -30,8 +30,12 @@
 import { Component, ElementRef, Input, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ContextImageService } from "src/app/services/context-image.service";
+import { DataSetService } from "src/app/services/data-set.service";
 import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "src/app/UI/atoms/picker-dialog/picker-dialog.component";
+import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
 import { ColourScheme } from "src/app/UI/context-image-view-widget/model-interface";
+import { ClientSideExportGenerator } from "src/app/UI/export-data-dialog/client-side-export";
+import { CanvasExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../plot-exporter-dialog/plot-exporter-dialog.component";
 
 
 @Component({
@@ -48,6 +52,7 @@ export class VisibilitySettingsComponent implements OnInit
 
     constructor(
         private contextImageService: ContextImageService,
+        private _datasetService: DataSetService,
         public dialog: MatDialog
     )
     {
@@ -139,5 +144,99 @@ export class VisibilitySettingsComponent implements OnInit
             return this.contextImageService.mdl.showPointBBox;
         }
         return this.contextImageService.mdl.showPoints;
+    }
+
+    getCanvasOptions(options: PlotExporterDialogOption[]): string[]
+    {
+        let isColourScaleVisible = options.findIndex((option) => option.label == "Visible Colour Scale") > -1;
+        let backgroundMode = options[options.findIndex((option) => option.label == "Background")].value;
+        let exportIDs = [];
+
+        if(this.label === "Instrument Footprint")
+        {
+            exportIDs.push(ClientSideExportGenerator.exportContextImageFootprint);
+        }
+        else if(this.label === "Scan Points")
+        {
+            exportIDs.push(ClientSideExportGenerator.exportContextImageScanPoints);
+        }
+
+        if(isColourScaleVisible)
+        {
+            exportIDs.push(ClientSideExportGenerator.exportContextImageColourScale);
+        }
+
+        if(backgroundMode === "Context Image")
+        {
+            exportIDs.push(ClientSideExportGenerator.exportContextImage);
+        }
+        else if(backgroundMode === "Black")
+        {
+            exportIDs.push(ClientSideExportGenerator.exportDrawBackgroundBlack);
+        }
+
+        return exportIDs;
+    }
+
+    onDownload()
+    {
+        let exportOptions = [
+            new PlotExporterDialogOption("Background", "Context Image", true, { type: "switch", options: ["Transparent", "Context Image", "Black"] }),
+            new PlotExporterDialogOption("Visible Colour Scale", true, true),
+            new PlotExporterDialogOption("Web Resolution (1200x800)", true),
+            new PlotExporterDialogOption("Print Resolution (4096x2160)", true),
+        ];
+
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.data = new PlotExporterDialogData(`${this._datasetService.datasetLoaded.getId()} - ${this.label}`, `Export ${this.label}`, exportOptions, true);
+
+        const dialogRef = this.dialog.open(PlotExporterDialogComponent, dialogConfig);
+
+        dialogRef.componentInstance.onPreviewChange.subscribe((options: PlotExporterDialogOption[]) =>
+        {
+            let drawer = new ExportDrawer(this.contextImageService.mdl, this.contextImageService.mdl.toolHost);
+            let exportIDs = this.getCanvasOptions(options);
+
+            let preview: HTMLCanvasElement = null;
+            if(options.findIndex((option) => option.label === "Web Resolution (1200x800)" || option.label === "Print Resolution (4096x2160)") > -1)
+            {
+                preview = generatePlotImage(drawer, this.contextImageService.mdl.transform, [], 1200, 800, false, false, exportIDs);
+            }
+            else
+            {
+                preview = generatePlotImage(drawer, this.contextImageService.mdl.transform, [], 1200, 800, false, false, []);
+            }
+
+            dialogRef.componentInstance.updatePreview(preview);
+        });
+
+        dialogRef.componentInstance.onConfirmOptions.subscribe(
+            (options: PlotExporterDialogOption[])=>
+            {
+                let canvases: CanvasExportItem[] = [];
+
+                let drawer = new ExportDrawer(this.contextImageService.mdl, this.contextImageService.mdl.toolHost);
+                let exportIDs = this.getCanvasOptions(options);
+
+                if(options.findIndex((option) => option.label === "Web Resolution (1200x800)") > -1)
+                {
+                    canvases.push(new CanvasExportItem(
+                        "Web Resolution",
+                        generatePlotImage(drawer, this.contextImageService.mdl.transform, [], 1200, 800, false, false, exportIDs)
+                    ));   
+                }
+
+                if(options.findIndex((option) => option.label === "Print Resolution (4096x2160)") > -1)
+                {
+                    canvases.push(new CanvasExportItem(
+                        "Print Resolution",
+                        generatePlotImage(drawer, this.contextImageService.mdl.transform, [], 4096, 2160, false, false, exportIDs)
+                    ));   
+                }
+
+                dialogRef.componentInstance.onDownload(canvases, []);
+            });
+
+        return dialogRef.afterClosed();
     }
 }

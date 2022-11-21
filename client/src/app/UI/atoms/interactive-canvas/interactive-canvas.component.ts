@@ -86,6 +86,10 @@ export interface CanvasDrawer
 
     drawWorldSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void;
     drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void;
+
+    // Optional parameters just for export
+    showSwapButton?: boolean;
+    lightMode?: boolean;
 }
 
 export enum CanvasMouseEventId

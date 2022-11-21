@@ -41,6 +41,9 @@ export class TernaryDiagramDrawer implements CanvasDrawer
     protected _mdl: TernaryModel;
     protected _lastCalcCanvasParams: CanvasParams;
 
+    public showSwapButton: boolean = true;
+    public lightMode: boolean = false;
+
     constructor(mdl: TernaryModel)
     {
         this._mdl = mdl;
@@ -68,7 +71,7 @@ export class TernaryDiagramDrawer implements CanvasDrawer
 
     private drawTernary(screenContext: CanvasRenderingContext2D, viewport: CanvasParams, drawData: TernaryDrawModel): void
     {
-        let clrLabel = Colours.GRAY_30.asString();
+        let clrLabel = this.lightMode ? Colours.GRAY_80.asString() : Colours.GRAY_30.asString();
 
         let clrHover = Colours.CONTEXT_PURPLE;
         let clrLasso = Colours.PURPLE;
@@ -88,7 +91,8 @@ export class TernaryDiagramDrawer implements CanvasDrawer
                     rawData.cornerA.errorMsgShort,
                     this._mdl.drawData.hoverLabel=="A",
                     clrLabel,
-                    viewport.width
+                    viewport.width,
+                    this.showSwapButton
                 );
             };
 
@@ -101,7 +105,8 @@ export class TernaryDiagramDrawer implements CanvasDrawer
                     rawData.cornerB.errorMsgShort,
                     this._mdl.drawData.hoverLabel=="B",
                     clrLabel,
-                    viewport.width
+                    viewport.width,
+                    this.showSwapButton
                 );
             };
 
@@ -124,7 +129,8 @@ export class TernaryDiagramDrawer implements CanvasDrawer
                 rawData.cornerC.errorMsgShort,
                 this._mdl.drawData.hoverLabel=="C",
                 clrLabel,
-                viewport.width
+                viewport.width,
+                this.showSwapButton
             );
         }
 
@@ -147,14 +153,16 @@ export class TernaryDiagramDrawer implements CanvasDrawer
         let alpha = PointDrawer.getOpacity(drawData.totalPointCount);
         for(let c = 0; c < drawData.pointGroupCoords.length; c++)
         {
+            let colourGroup = this._mdl.raw.visibleROIs[c] === "AllPoints" && this.lightMode ? Colours.GRAY_80 : this._mdl.raw.pointGroups[c].colour;
+            let visibility = this._mdl.raw.visibleROIs[c] === "AllPoints" && this.lightMode ? 0.4 : alpha;
             let drawer = new PointDrawer(
                 screenContext,
                 PLOT_POINTS_SIZE,
-                this._mdl.raw.pointGroups[c].colour,
+                colourGroup,
                 null,
                 this._mdl.raw.pointGroups[c].shape
             );
-            drawer.drawPoints(drawData.pointGroupCoords[c], alpha);
+            drawer.drawPoints(drawData.pointGroupCoords[c], visibility);
         }
 
         // And hover point if any
@@ -205,7 +213,9 @@ export class TernaryDiagramDrawer implements CanvasDrawer
         errorStringShort: string,
         isHovered: boolean,
         labelColour: string,
-        maxX: number): void
+        maxX: number,
+        showSwapButton: boolean = true
+    ): void
     {
         const buttonSize = TernaryModel.SWAP_BUTTON_SIZE;
 
@@ -293,17 +303,24 @@ export class TernaryDiagramDrawer implements CanvasDrawer
         }
 
         // NOTE: need to pass in the center!
-        drawSwapButton(
-            ctx,
-            new Point(buttonX+buttonSize/2, buttonY),
-            buttonSize
-        );
+        if(showSwapButton)
+        {
+            drawSwapButton(
+                ctx,
+                new Point(buttonX+buttonSize/2, buttonY),
+                buttonSize
+            );
+        }
     }
 
     private drawBackground(ctx: CanvasRenderingContext2D, viewport: CanvasParams, mdl: TernaryDrawModel): void
     {
+        // Draw color background
+        ctx.fillStyle = this.lightMode ? Colours.WHITE.asString() : Colours.BLACK.asString();
+        ctx.fillRect(0, 0, viewport.width, viewport.height);
+
         // Draw the triangle
-        ctx.strokeStyle = Colours.GRAY_60.asString();
+        ctx.strokeStyle = this.lightMode ? Colours.GRAY_90.asString() : Colours.GRAY_60.asString();
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(mdl.triangleA.x, mdl.triangleA.y);

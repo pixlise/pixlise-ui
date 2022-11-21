@@ -44,18 +44,26 @@ POSSIBILITY OF SUCH DAMAGE.
                     *ngIf="showShare && !sharedBy"
                     title="Share this RGB Mix"
                     icon="assets/button-icons/share.svg"
-                    (click)="onShare()"></icon-button>
+                    (click)="onShare()">
+                </icon-button>
                 <icon-button
                     *ngIf="showDelete && !isSharedByOtherUser"
                     title="Delete this RGB Mix"
                     icon="assets/button-icons/delete.svg"
-                    (click)="onDelete()"></icon-button>
+                    (click)="onDelete()">
+                </icon-button>
+                <icon-button
+                    *ngIf="showDownload"
+                    title="Download this RGB Mix"
+                    icon="assets/button-icons/export.svg"
+                    (click)="onDownload()">
+                </icon-button>
                 <icon-button
                     *ngIf="showEdit"
                     title="Edit this RGB Mix"
                     icon="assets/button-icons/edit.svg"
-                    (click)="onEdit()"></icon-button>
-
+                    (click)="onEdit()">
+                </icon-button>
                 <two-state-icon-button
                     toolTip="Toggle Visibility"
                     [activeIcon]="activeIcon"

@@ -36,6 +36,7 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { ViewStateService } from "src/app/services/view-state.service";
 import { SliderValue } from "src/app/UI/atoms/slider/slider.component";
 import { RangeSliderValue } from "src/app/UI/atoms/range-slider/range-slider.component";
+import { ExportDataService } from "src/app/services/export-data.service";
 
 
 @Component({
@@ -55,9 +56,12 @@ export class ImageOptionsComponent implements OnInit
     private _chosenChannels: string = "RGB";
     private _chosenRatios: string = "R/G";
 
+    public downloadLoading: boolean = false;
+
     constructor(
         private _contextImageService: ContextImageService,
-        private _datasetService: DataSetService
+        private _datasetService: DataSetService,
+        private _exportDataService: ExportDataService
     )
     {   
         this.displayedChannels = [...RGBUImage.channelToDisplayMap.values()];
@@ -565,5 +569,23 @@ export class ImageOptionsComponent implements OnInit
             this.colourRatioMin = event.minValue;
             this.colourRatioMax = event.maxValue;
         }
+    }
+
+    onExport(): void
+    {
+        let outputName = `${this._datasetService.datasetIDLoaded} - Images.zip`;
+        this.downloadLoading = true;
+        this._exportDataService.generateExport(this._datasetService.datasetIDLoaded, "", ["context-image"], [], [], [], outputName).subscribe(
+            (data: Blob)=>
+            {
+                this.downloadLoading = false;
+                saveAs(data, outputName);
+            },
+            (err)=>
+            {
+                this.downloadLoading = false;
+                console.error(`Error exporting images: ${err}`);
+            }
+        );
     }
 }

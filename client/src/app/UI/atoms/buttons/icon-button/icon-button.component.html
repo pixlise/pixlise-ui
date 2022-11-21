@@ -30,9 +30,10 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div
-    class="clickable icon-btn"
-    [ngClass]="{'button-inactive': !state && hasBackground, 'button-active': state==1, 'button-active-overridden': state==2, 'button-disabled': state==3, 'icon-button-background': hasBackground, 'button-shadow': hasBackground, 'button-hoverable': hasBackground }"
-    [ngStyle]="{'background-image': 'url('+icon+')'}"
-    (click)='onClickInternal($event)'
-    >
+  class="clickable icon-btn"
+  [ngClass]="{'button-inactive': !state && hasBackground, 'button-active': state==1, 'button-active-overridden': state==2, 'button-disabled': state==3, 'icon-button-background': hasBackground, 'button-shadow': hasBackground, 'button-hoverable': hasBackground }"
+  [ngStyle]="{'background-image': loading ? 'none' : 'url('+icon+')'}"
+  (click)='onClickInternal($event)'
+>
+  <mat-spinner *ngIf="loading" [diameter]="24" [strokeWidth]="4" color="accent"></mat-spinner>
 </div>

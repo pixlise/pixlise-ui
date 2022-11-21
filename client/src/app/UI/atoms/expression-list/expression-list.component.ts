@@ -29,14 +29,14 @@
 
 import { Component, Input, OnInit, Output, EventEmitter, ViewChild } from "@angular/core";
 import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
-import { timer } from "rxjs";
+import { iif, timer } from "rxjs";
 
 import { DataExpressionService } from "src/app/services/data-expression.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 
 import { RGBChannelsEvent } from "src/app/UI/atoms/expression-list/rgbmix-selector/rgbmix-selector.component";
 import { LayerVisibilityChange, LayerColourChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
-import { ExpressionListGroupNames, ExpressionListItems } from "src/app/models/ExpressionList";
+import { ExpressionListGroupNames, ExpressionListItems, LayerViewItem } from "src/app/models/ExpressionList";
 
 
 export class ExpressionListHeaderToggleEvent
@@ -62,6 +62,7 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     @Input() showColourOptions: boolean = true;
     @Input() showPureSwitchOnElements: boolean;
     @Input() initialScrollToIdx: number = -1;
+    @Input() downloadable: boolean = true;
 
     @Input() selectedIcon: string = "assets/button-icons/check-on.svg";
     @Input() unselectedIcon: string = "assets/button-icons/check-off.svg";
@@ -69,6 +70,9 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     @Output() headerSectionToggle = new EventEmitter();
     @Output() visibilityChange = new EventEmitter();
     @Output() colourChange = new EventEmitter();
+
+    stickyItemHeaderName: string = "";
+    stickyItem: LayerViewItem = null;
 
     constructor(
         private _exprService: DataExpressionService,
@@ -114,6 +118,10 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
 
     onToggleLayerSectionOpen(itemType: string, event): void
     {
+        if(Array.from(this.headerSectionsOpen).filter((headerName) => headerName !== itemType).length === 0)
+        {
+            this.stickyItem = null;
+        }
         this.headerSectionToggle.emit(new ExpressionListHeaderToggleEvent(itemType, event));
     }
 
@@ -204,5 +212,52 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
                 this.cdkVirtualScrollViewport.scrollToIndex(event);
             }
         );
+    }
+
+    findActiveHeader(currentScrollPosition: number, checkShared: boolean = false): LayerViewItem | null
+    {
+        let lastHeaderIndex = 0;
+        let activeHeader: LayerViewItem = null;
+        if(currentScrollPosition < this.itemSize)
+        {
+            // If we're at the top, don't show a sticky header
+            return null;
+        }
+
+        this.items.items.forEach((item, i) =>
+        {
+            if(item.itemType.includes("-header") || (item.itemType.includes("shared-") && checkShared) || i === this.items.items.length - 1)
+            {
+                let startPosition = lastHeaderIndex * this.itemSize;
+                let endPosition = i * this.itemSize;
+
+                // If the last header is open and the current scroll position is within it's start/end, set it as the active header
+                if(endPosition - startPosition > this.itemSize && currentScrollPosition >= startPosition && currentScrollPosition < endPosition)
+                {
+                    activeHeader = this.items.items[lastHeaderIndex];
+                }
+                lastHeaderIndex = i;
+            }
+        });
+
+        return activeHeader;
+    }
+
+    onScroll(event): void
+    {
+        let activeHeader = this.findActiveHeader(this.cdkVirtualScrollViewport.measureScrollOffset("top"));
+        let activeHeaderWithShared = this.findActiveHeader(this.cdkVirtualScrollViewport.measureScrollOffset("top"), true);
+
+        // This if statement is probably unnecessary, but is an extra verification that the header is open 
+        if(activeHeader !== null && this.headerSectionsOpen.has(activeHeader.itemType))
+        {
+            this.stickyItem = activeHeader;
+            this.stickyItemHeaderName = activeHeaderWithShared.itemType.includes("shared-") ? activeHeaderWithShared.content.label : activeHeader.content.label;
+        }
+        else
+        {
+            this.stickyItem = null;
+            this.stickyItemHeaderName = null;
+        }
     }
 }

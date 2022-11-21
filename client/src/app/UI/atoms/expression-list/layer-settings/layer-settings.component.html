@@ -29,6 +29,65 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
+<ng-template #moreButtonsMenu>
+    <div class="more-buttons-menu">
+        <ng-container *ngFor="let layerButton of hiddenLayerButtons">
+            <multi-state-button
+                *ngIf="layerButton === 'showDetectorPicker'"
+                [stateNames]='detectors'
+                [items]="detectors"
+                [activeState]='selectedDetector'
+                (onChange)="onChangeDetector($event)">
+            </multi-state-button>
+            <div *ngIf="layerButton === 'showPureSwitch'" fxLayout="row" fxLayoutAlign="start center">
+                <div class="gray-label">Pure Element:</div>
+                <switch-button
+                    [active]="pureEnabled"
+                    (onToggle)="onTogglePureElement()">
+                </switch-button>
+            </div>
+            <icon-button
+                *ngIf="layerButton === 'showShare'"
+                title="Share this expression"
+                icon="assets/button-icons/share.svg"
+                (click)="onShareExpression()">
+            </icon-button>
+            <icon-button
+                *ngIf="layerButton === 'showDelete'"
+                title="Delete this expression"
+                icon="assets/button-icons/delete.svg"
+                (click)="onDelete()">
+            </icon-button>
+            <icon-button
+                *ngIf="layerButton === 'showDownload'"
+                title="Download this expression"
+                icon="assets/button-icons/export.svg"
+                (click)="onDownload()">
+            </icon-button>
+            <icon-button
+                *ngIf="layerButton === 'showSettingsButton'"
+                title="Edit expression"
+                icon="assets/button-icons/code.svg"
+                (click)="onSettings($event)">
+            </icon-button>
+            <icon-button
+                *ngIf="layerButton === 'showColours'"
+                title="Configure Colours"
+                icon="assets/button-icons/colours.svg"
+                (click)="onColours($event)">
+            </icon-button>
+            <two-state-icon-button
+                *ngIf="layerButton === 'showVisible'"
+                toolTip="Toggle Visibility"
+                [activeIcon]="activeIcon"
+                [inactiveIcon]="inactiveIcon"
+                [active]="visible"
+                (onToggle)="onVisibility($event)">
+            </two-state-icon-button>
+        </ng-container>
+    </div>
+</ng-template>
+
 <div fxLayout="column" class="setting-row" [ngClass]="{'setting-row-visible': visible}">
     <div fxLayout="row" fxLayoutAlign="space-between center">
         <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
@@ -43,52 +102,65 @@ POSSIBILITY OF SUCH DAMAGE.
                 [value]="opacity"
                 [minValue]="0"
                 [maxValue]="1"
-                (onChange)="onChangeOpacity($event)"></slider>
-
-            <multi-state-button
-                *ngIf="showDetectorPicker"
-                [stateNames]='detectors'
-                [items]="detectors"
-                [activeState]='selectedDetector'
-                (onChange)="onChangeDetector($event)">
-            </multi-state-button>
-            <div *ngIf="showPureSwitch" fxLayout="row" fxLayoutAlign="start center">
-                <div class="gray-label">Pure Element:</div>
-                <switch-button
-                    [active]="pureEnabled"
-                    (onToggle)="onTogglePureElement()">
-                </switch-button>
-            </div>
-            <icon-button
-                *ngIf="showShare && !sharedBy"
-                title="Share this expression"
-                icon="assets/button-icons/share.svg"
-                (click)="onShareExpression()"></icon-button>
-            <icon-button
-                *ngIf="showDelete && !isSharedByOtherUser"
-                title="Delete this expression"
-                icon="assets/button-icons/delete.svg"
-                (click)="onDelete()"></icon-button>
-
-    <!-- *ngIf="showSettings && !isSharedByOtherUser && subLayerIDs.length > 1" -->
-            <icon-button
-                *ngIf="showSettingsButton"
-                title="Edit expression"
-                icon="assets/button-icons/edit.svg"
-                (click)="onSettings($event)"></icon-button>
-            <icon-button
-                *ngIf="showColours"
-                title="Configure Colours"
-                icon="assets/button-icons/colours.svg"
-                (click)="onColours($event)"></icon-button>
-
-            <two-state-icon-button
-                *ngIf="showVisible"
-                toolTip="Toggle Visibility"
-                [activeIcon]="activeIcon"
-                [inactiveIcon]="inactiveIcon"
-                [active]="visible"
-                (onToggle)="onVisibility($event)"></two-state-icon-button>
+                (onChange)="onChangeOpacity($event)">
+            </slider>
+            <widget-settings-menu *ngIf="showMoreButtonVisible" [settingsDialog]="moreButtonsMenu">
+                <icon-button title="View more options" icon="assets/button-icons/three-dots.svg"></icon-button>
+            </widget-settings-menu>
+            <ng-container *ngFor="let layerButton of visibleLayerButtons">
+                <multi-state-button
+                    *ngIf="layerButton === 'showDetectorPicker'"
+                    [stateNames]='detectors'
+                    [items]="detectors"
+                    [activeState]='selectedDetector'
+                    (onChange)="onChangeDetector($event)">
+                </multi-state-button>
+                <div *ngIf="layerButton === 'showPureSwitch'" fxLayout="row" fxLayoutAlign="start center">
+                    <div class="gray-label">Pure Element:</div>
+                    <switch-button
+                        [active]="pureEnabled"
+                        (onToggle)="onTogglePureElement()">
+                    </switch-button>
+                </div>
+                <icon-button
+                    *ngIf="layerButton === 'showShare'"
+                    title="Share this expression"
+                    icon="assets/button-icons/share.svg"
+                    (click)="onShareExpression()">
+                </icon-button>
+                <icon-button
+                    *ngIf="layerButton === 'showDelete'"
+                    title="Delete this expression"
+                    icon="assets/button-icons/delete.svg"
+                    (click)="onDelete()">
+                </icon-button>
+                <icon-button
+                    *ngIf="layerButton === 'showDownload'"
+                    title="Download this expression"
+                    icon="assets/button-icons/export.svg"
+                    (click)="onDownload()">
+                </icon-button>
+                <icon-button
+                    *ngIf="layerButton === 'showSettingsButton'"
+                    title="Edit expression"
+                    icon="{{isPredefined ? 'assets/button-icons/gear.svg' : 'assets/button-icons/code.svg'}}"
+                    (click)="onSettings($event)">
+                </icon-button>
+                <icon-button
+                    *ngIf="layerButton === 'showColours'"
+                    title="Configure Colours"
+                    icon="assets/button-icons/colours.svg"
+                    (click)="onColours($event)">
+                </icon-button>
+                <two-state-icon-button
+                    *ngIf="layerButton === 'showVisible'"
+                    toolTip="Toggle Visibility"
+                    [activeIcon]="activeIcon"
+                    [inactiveIcon]="inactiveIcon"
+                    [active]="visible"
+                    (onToggle)="onVisibility($event)">
+                </two-state-icon-button>
+            </ng-container>
         </div>
     </div>
     <div *ngIf="expressionComments.length > 0" class="comment" title="{{expressionComments}}">{{expressionComments}}</div>

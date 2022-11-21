@@ -30,6 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
+    <icon-button (click)="onExport()" title="Export" icon="assets/button-icons/export.svg"></icon-button>
     <two-state-push-button *ngIf="isRGBU" [active]="isCropped" [disabled]="!isCroppable" title="Click here to remove unselected pixels" (click)="onCrop()">Crop</two-state-push-button>
     <icon-button
         (click)="onToggleSolo()"

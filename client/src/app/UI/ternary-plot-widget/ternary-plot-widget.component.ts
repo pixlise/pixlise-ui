@@ -48,6 +48,7 @@ import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicke
 import { RGBA } from "src/app/utils/colours";
 //import { BinaryScatterPlotData } from '../binary-plot-view-widget/binary-plot-view-widget.component';
 import { randomString } from "src/app/utils/utils";
+import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { TernaryDiagramDrawer } from "./drawer";
 import { TernaryInteraction } from "./interaction";
 import { TernaryModel } from "./model";
@@ -559,6 +560,83 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                 }
             }
         );
+    }
+
+    exportPlotData(): string
+    {
+        let cornerALabel = this._ternaryModel.raw.cornerA.label;
+        let cornerBLabel = this._ternaryModel.raw.cornerB.label;
+        let cornerCLabel = this._ternaryModel.raw.cornerC.label;
+
+        let data = `"PMC","ROI","${cornerALabel}","${cornerBLabel}","${cornerCLabel}"\n`;
+        Array.from(this._ternaryModel.raw.pmcToValueLookup.entries()).forEach(([pmc, idx]) =>
+        {
+            let cornerAValue = this._ternaryModel.raw.pointGroups[idx.pointGroup].values[idx.valueIndex].a;
+            let cornerBValue = this._ternaryModel.raw.pointGroups[idx.pointGroup].values[idx.valueIndex].b;
+            let cornerCValue = this._ternaryModel.raw.pointGroups[idx.pointGroup].values[idx.valueIndex].c;
+
+            let roiId = this._ternaryModel.raw.visibleROIs[idx.pointGroup];
+            let roiName = this._widgetDataService.regions.get(roiId).name;
+            data += `${pmc},${roiName},${cornerAValue},${cornerBValue},${cornerCValue}\n`;
+        });
+
+        return data;
+    }
+
+    onExport()
+    {
+        if(this._ternaryModel && this._ternaryModel.raw)
+        {
+            let exportOptions = [
+                new PlotExporterDialogOption("Color", true, true, { type: "switch", options: ["Dark Mode", "Light Mode"] }),
+                new PlotExporterDialogOption("Visible Key", true, true),
+                new PlotExporterDialogOption("Plot Image", true),
+                new PlotExporterDialogOption("Large Plot Image", true),
+                new PlotExporterDialogOption("Plot Data .csv", true),
+            ];
+
+            const dialogConfig = new MatDialogConfig();
+            dialogConfig.data = new PlotExporterDialogData(`${this._datasetService.datasetLoaded.getId()} - Ternary Plot`, "Export Ternary Plot", exportOptions);
+
+            const dialogRef = this.dialog.open(PlotExporterDialogComponent, dialogConfig);
+            dialogRef.componentInstance.onConfirmOptions.subscribe(
+                (options: string[])=>
+                {
+                    let canvases: CanvasExportItem[] = [];
+                    let csvs: CSVExportItem[] = [];
+
+                    let showKey = options.indexOf("Visible Key") > -1;
+                    let lightMode = options.indexOf("Color") > -1;
+
+                    if(options.indexOf("Plot Image") > -1)
+                    {
+                        canvases.push(new CanvasExportItem(
+                            "Ternary Plot",
+                            generatePlotImage(this.drawer, this.transform, this.keyItems, 1200, 800, showKey, lightMode)
+                        ));   
+                    }
+
+                    if(options.indexOf("Large Plot Image") > -1)
+                    {
+                        canvases.push(new CanvasExportItem(
+                            "Ternary Plot - Large",
+                            generatePlotImage(this.drawer, this.transform, this.keyItems, 4096, 2160, showKey, lightMode)
+                        ));
+                    }
+
+                    if(options.indexOf("Plot Data .csv") > -1)
+                    {
+                        csvs.push(new CSVExportItem(
+                            "Ternary Plot Data",
+                            this.exportPlotData()
+                        ));
+                    }
+
+                    dialogRef.componentInstance.onDownload(canvases, csvs);
+                });
+
+            return dialogRef.afterClosed();
+        }
     }
 
     onCornerSwap(corner: string): void

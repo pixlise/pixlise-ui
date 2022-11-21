@@ -27,35 +27,110 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+@import 'variables.scss';
+@import 'atoms.scss';
 
-import { Observable } from "rxjs";
 
+h1.title {
+    max-width: 366px;
+}
 
+.gap-above {
+    margin-top: $sz-double;
+}
 
-export class ExportDataChoice
-{
-    constructor(public id: string, public label: string, public enabled: boolean, public isGlobalOption: boolean = true)
-    {
+.dlg-border-with-backdrop {
+    @extend .txt-dlg-heading;
+    color: $clr-gray-10;
+    text-transform: unset;
+    min-width: 400px;
+}
+
+.list-subheading {
+    padding: 0px;
+}
+
+.prompt {
+    font-size: 14px;
+    color: $clr-gray-30;
+}
+
+.scrollable-container-roi-list {
+    margin: $sz-unit;
+    max-height: 150px;
+    overflow-y: scroll;
+}
+
+.mat-select {
+    width: 300px !important;
+}
+
+.tab {
+    text-transform: uppercase;
+    padding: $sz-unit;
+    font-weight: bold;
+    color: $clr-gray-30;
+}
+
+.active {
+    color: $clr-yellow;
+}
+
+h3 {
+    background: $clr-gray-90;
+
+    margin-left: -16px;
+    margin-right: -16px;
+    padding-left: 16px;
+
+    &:first-of-type {
+        margin-top: 16px !important;
     }
 }
 
-export interface ExportGenerator
-{
-    generateExport(datasetID: string, quantID: string, choiceIds: string[], selectedROIs: string[], selectedExpressionIDs: string[], selectedExpressionNames: string[], outFileName: string): Observable<Blob>
+.disabled-text {
+    color: $clr-gray-60;
 }
 
-export class ExportDataConfig
-{
-    constructor(
-        public title: string,
-        public fileName: string,
-        public showPublish: boolean,
-        public showQuantPicker: boolean,
-        public showROIPicker: boolean,
-        public showExpressionPicker: boolean,
-        public choices: ExportDataChoice[],
-        public exportGenerator: ExportGenerator,
-    )
-    {
+.multi-switch-wrapper {
+    display: flex;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+
+    multi-switch-button {
+        width: 100%;
+        margin-top: $sz-unit;
     }
+}
+
+.preview-btn-container {
+    display: flex;
+}
+
+.preview-button {
+    margin-left: auto;
+    margin-right: $sz-double;
+}
+
+.preview-container {
+    position: relative;
+    display: flex;
+    border: 1px solid rgb(var(--clr-gray-60));
+    border-radius: $sz-half;
+    width: 366px;
+    min-height: 200px;
+    margin-top: $sz-unit;
+
+    img {
+        width: 100%;
+        flex: 1;
+        border-radius: $sz-half;
+    }
+}
+
+.preview-label {
+    position: absolute;
+    color: #FFFF8D;
+    top: $sz-unit;
+    left: $sz-unit;
 }

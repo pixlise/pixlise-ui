@@ -77,6 +77,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
     initialScrollToIdx: number = -1;
 
     private _filterText: string = "";
+    private _filterAuthors: string[] = [];
     private _activeIDs: Set<string> = new Set<string>();
     private _listBuilder: ExpressionListBuilder;
 
@@ -184,6 +185,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
             this._activeIDs,
             new Set<string>(),
             this._filterText,
+            this._filterAuthors,
             false, // We never show the exploratory RGB mix item
             (source: DataExpression|RGBMix): LocationDataLayerProperties=>
             {

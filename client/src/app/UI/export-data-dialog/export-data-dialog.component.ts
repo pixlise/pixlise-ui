@@ -30,14 +30,20 @@
 import { Component, ElementRef, Inject, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { saveAs } from "file-saver";
+import * as JSZip from "jszip";
 import { Subscription } from "rxjs";
+import { PMCDataValues } from "src/app/expression-language/data-values";
+import { getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
 import { QuantificationLayer, QuantificationSummary } from "src/app/models/Quantifications";
+import { RGBUImage } from "src/app/models/RGBUImage";
+import { PredefinedROIID, ROISavedItem } from "src/app/models/roi";
 import { DataExpressionService } from "src/app/services/data-expression.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { DiffractionPeak, DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { QuantificationService } from "src/app/services/quantification.service";
+import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { ROIService } from "src/app/services/roi.service";
-import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { ExportDataChoice, ExportDataConfig } from "src/app/UI/export-data-dialog/export-models";
 import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expression-picker/expression-picker.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
@@ -66,8 +72,11 @@ export class ExportDataDialogComponent implements OnInit
     @ViewChild("outerDialog") outerDialog: ElementRef;
 
     fileName: string = "";
+    fileNamePlaceholder: string = "";
     state: string = "download";
     prompt: string = "";
+
+    public isGlobal: boolean = true;
 
     minHeight: number = 0;
 
@@ -83,6 +92,8 @@ export class ExportDataDialogComponent implements OnInit
 
     private _allPeaks: DiffractionPeak[] = [];
 
+    private _rois = new Map<string, ROISavedItem>();
+
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: ExportDataConfig,
         public dialogRef: MatDialogRef<ExportDataDialogComponent>,
@@ -92,10 +103,13 @@ export class ExportDataDialogComponent implements OnInit
         private _roiService: ROIService,
         private _exprService: DataExpressionService,
         private _diffractionService: DiffractionPeakService,
+        private _rgbMixService: RGBMixConfigService,
+        private _diffractionSource: DiffractionPeakService,
         private dialog: MatDialog
     )
     {
         this.fileName = data.fileName;
+        this.fileNamePlaceholder = `${this._datasetService.datasetLoaded.getId()} - Data Export`;
     }
 
     ngOnInit(): void
@@ -103,17 +117,14 @@ export class ExportDataDialogComponent implements OnInit
         // Refresh, someone may have shared one for example!
         this._roiService.refreshROIList();
         this._quantService.refreshQuantList();
-        /*
-        this._subs.add(this._roiService.roi$.subscribe(
+
+        this._roiService.roi$.subscribe(
             (rois: Map<string, ROISavedItem>)=>
             {
-                this.rois = Array.from(rois.values());
-            },
-            (err)=>
-            {
+                this._rois = rois;
             }
-        ));
-*/
+        );
+
         this._subs.add(this._quantService.quantificationList$.subscribe(
             (quants: QuantificationSummary[])=>
             {
@@ -196,9 +207,27 @@ export class ExportDataDialogComponent implements OnInit
         return this.data.showExpressionPicker;
     }
 
+    checkDisabled(id: string): boolean
+    {
+        return (id === "rois" && !this.hasSelectedROIs) || (id === "ui-roi-expressions" && !this.hasExpressions);
+    }
+
+    get visibleChoices(): ExportDataChoice[]
+    {
+        return this.data.choices.filter(choice => choice.isGlobalOption === this.isGlobal);
+    }
+
     onToggleChoice(choice: ExportDataChoice): void
     {
-        choice.enabled = !choice.enabled;
+        if(!this.checkDisabled(choice.id))
+        {
+            choice.enabled = !choice.enabled;
+        }
+    }
+
+    onToggleGlobal(): void
+    {
+        this.isGlobal = !this.isGlobal;
     }
 
     onCancel(): void
@@ -217,6 +246,133 @@ export class ExportDataDialogComponent implements OnInit
         }, headers.join(","));
     }
 
+    get roiNameTooltip(): string
+    {
+        if(this._selectedROIs.length === 0)
+        {
+            return "No regions selected";
+        }
+        else
+        {
+            return this._selectedROIs.map((roiID) => this._rois.get(roiID).name).join("\n");
+        }
+    }
+
+    get expressionNameTooltip(): string
+    {
+        if(this._selectedExpressionIds.length === 0)
+        {
+            return "No expressions selected";
+        }
+        else
+        {
+            return this._selectedExpressionIds.map((id) =>
+            {
+                let expression = this._exprService.getExpression(id);
+                return expression ? expression.name : id;
+            }).join("\n");
+        }
+    }
+
+    get dataProductCount(): number
+    {
+        let count = 0;
+
+        let weightedChoices = {
+            "raw-spectra": 3,
+            "ui-roi-expressions": this._selectedExpressionIds.length * this._selectedROIs.length
+        };
+
+        this.visibleChoices.forEach((choice) =>
+        {
+            if(choice.enabled)
+            {
+                count += weightedChoices[choice.id] || 1;
+            }
+        });
+
+        return count;
+    }
+
+    generateExportCSVForExpression(expressionID: string, roiID: string): string
+    {
+        let queryData: RegionDataResults = this._widgetDataService.getData([new DataSourceParams(expressionID, roiID || PredefinedROIID.AllPoints)], false);
+
+        if(queryData.error)
+        {
+            throw new Error(`Failed to query CSV data for expression: ${expressionID}. ${queryData.error}`);
+        }
+
+        let csv: string = "PMC,Value\n";
+        queryData.queryResults[0].values.values.forEach(({pmc, value, isUndefined})=>
+        {
+            csv += `${pmc},${isUndefined ? "" : value}\n`;
+        });
+
+        return csv;
+    }
+
+    generateExportCSVForRGBMix(expressionID: string): string
+    {
+        let rgbMix = this._rgbMixService.getRGBMixes().get(expressionID);
+        if(!rgbMix)
+        {
+            throw new Error("RGB mix info not found for: "+expressionID);
+        }
+        
+        let csv = "PMC";
+
+        let expressionIDs = [rgbMix.red.expressionID, rgbMix.green.expressionID, rgbMix.blue.expressionID];
+        expressionIDs.forEach((expressionID)=>
+        {
+            csv += `,${this._exprService.getExpressionShortDisplayName(expressionID, 15).name}`;
+        });
+
+        let perElemAndPMCData: PMCDataValues[] = PMCDataValues.filterToCommonPMCsOnly(expressionIDs.map((expressionID, i)=>
+        {
+            let expression = this._exprService.getExpression(expressionID);
+            if(!expression)
+            {
+                throw new Error(`Failed to find expression: ${expressionID} for channel: ${RGBUImage.channels[i]}`);
+            }
+            
+            return getQuantifiedDataWithExpression(expression.expression, this._widgetDataService.quantificationLoaded, this._datasetService.datasetLoaded, this._datasetService.datasetLoaded, this._datasetService.datasetLoaded, this._diffractionSource, this._datasetService.datasetLoaded);
+        }));
+
+        // If we didn't get 3 channels, stop here
+        if(perElemAndPMCData.length !== 3)
+        {
+            throw new Error("Failed to generate RGB columns for RGB expression: "+expressionID);
+        }
+
+        perElemAndPMCData[0].values.forEach((pmcData, i)=>
+        {
+            if(pmcData.pmc !== perElemAndPMCData[1].values[i].pmc || pmcData.pmc !== perElemAndPMCData[2].values[i].pmc)
+            {
+                throw new Error(`Failed to generate RGB CSV for rgb mix ID: ${expressionID}, mismatched PMC returned for item: ${i}`);
+            }
+
+            csv += `\n${pmcData.pmc},${pmcData.value},${perElemAndPMCData[1].values[i].value},${perElemAndPMCData[2].values[i].value}`;
+        });
+
+        return csv;
+    }
+
+    exportExpressionValues(expressionID: string, roiID: string): string
+    {
+        let csv = "";
+        if(RGBMixConfigService.isRGBMixID(expressionID))
+        {
+            csv = this.generateExportCSVForRGBMix(expressionID);
+        }
+        else
+        {
+            csv = this.generateExportCSVForExpression(expressionID, roiID);
+        }
+
+        return csv;
+    }
+
     onExport(): void
     {
         if(this._closed)
@@ -224,13 +380,7 @@ export class ExportDataDialogComponent implements OnInit
             return;
         }
 
-        if(this.fileName.length <= 0)
-        {
-            alert("Please enter a file name");
-            return;
-        }
-
-        let fileName = this.fileName;
+        let fileName = this.fileName.length <= 0 ? this.fileNamePlaceholder : this.fileName;
         if(!fileName.endsWith(".zip"))
         {
             fileName += ".zip";
@@ -239,7 +389,7 @@ export class ExportDataDialogComponent implements OnInit
         let selectedIds: string[] = [];
         let locallyComputedIds: string[] = [];
 
-        for(let choice of this.data.choices)
+        for(let choice of this.visibleChoices)
         {
             if(choice.enabled)
             {
@@ -291,11 +441,40 @@ export class ExportDataDialogComponent implements OnInit
 
         locallyComputedIds.forEach((id) => 
         {
+            let zip = new JSZip();
             if(id === "ui-diffraction-peak") 
             {
                 let contents = this._generateDiffractionFeaturesCSV();
-                saveAs(new Blob([contents], { type: "text/plain;charset=utf-8" }), fileName.replace(".zip", "-anomaly-features.csv"));
+                zip.folder("csvs").file("anomaly-features.csv", contents);
             }
+            else if(id === "ui-roi-expressions") 
+            {
+                this._selectedExpressionIds.forEach((id) =>
+                {
+                    this._selectedROIs.forEach((roiID) => 
+                    {
+                        let expression = this._exprService.getExpression(id);
+                        let expressionName = expression ? expression.name.replace(/\//g, "-") : id;
+                        let roi = this._rois.get(roiID);
+                        let roiName = roi ? roi.name.replace(/\//g, "-") : roiID;
+                        let contents = this.exportExpressionValues(id, roiID);
+                        zip.folder("csvs").file(`${roiName} - ${expressionName}.csv`, contents);
+                    });
+                });
+            }
+
+            zip.generateAsync({ type:"blob" }).then((content) =>
+            {
+                let fileName = this.fileName ? this.fileName : this.fileNamePlaceholder;
+                saveAs(content, `${fileName}-ui-data.zip`);
+                this.state = "download";
+                this.prompt = "";
+            }).catch((err) =>
+            {
+                console.error(err);
+                this.prompt = `Failed to generate zip file: "${err}"`;
+                this.state = "error";
+            });
         });
 
         if(selectedIds.length > 0) 
@@ -329,32 +508,11 @@ export class ExportDataDialogComponent implements OnInit
             this.dialogRef.close(null);
         }
     }
-    /*
-    isActiveROI(roiID: string): boolean
-    {
-        return this._selectedROIs.indexOf(roiID) > -1;
-    }
 
-    onToggleROI(roiID: string)
-    {
-        let idx = this._selectedROIs.indexOf(roiID);
-        if(idx == -1)
-        {
-            this._selectedROIs.push(roiID);
-        }
-        else
-        {
-            this._selectedROIs.splice(idx, 1);
-        }
-    }
-*/
     onRegions(): void
     {
         const dialogConfig = new MatDialogConfig();
 
-        //dialogConfig.disableClose = true;
-        //dialogConfig.autoFocus = true;
-        //dialogConfig.width = '1200px';
         dialogConfig.data = new ROIPickerData(false, false, true, false, this._selectedROIs, true, true, null);
 
         const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
@@ -418,10 +576,6 @@ export class ExportDataDialogComponent implements OnInit
     onExpressions()
     {
         const dialogConfig = new MatDialogConfig();
-
-        //dialogConfig.disableClose = true;
-        //dialogConfig.autoFocus = true;
-        //dialogConfig.width = '1200px';
 
         dialogConfig.data = new ExpressionPickerData("Expression", DataExpressionService.DataExpressionTypeAll, this._selectedExpressionIds, false, true, true);
 
