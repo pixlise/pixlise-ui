@@ -257,7 +257,7 @@ export class AuthenticationService
 
         Sentry.setUser({
             id: this.getUserID(),
-            username: user.name || user.nickname,
+            username: user.name,
             email: user.email
         });
     }

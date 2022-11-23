@@ -139,12 +139,7 @@ export class UserMenuPanelComponent implements OnInit
             return "Loading...";
         }
 
-        if(this.user.name)
-        {
-            return this.user.name;
-        }
-
-        return this.user.nickname;
+        return this.user.name;
     }
 
     get userEmail(): string
