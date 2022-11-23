@@ -29,6 +29,45 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
+<ng-template #tagMenu>
+    <div class="tag-container">
+        <div class="tag-search-container">
+            <input
+                autofocus="true"
+                maxlength="100"
+                type="text"
+                placeholder="Search Tags ..."
+                (keydown.enter)="onTagEnter()"
+                [(ngModel)]="tagSearchValue"
+            >
+            <svg width="10" height="7" viewBox="0 0 10 7" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 6L5.04938 2L1 6" stroke="#F8F8F8" stroke-width="1.75" />
+            </svg>
+        </div>
+        <div class="authors">
+            <div class="author-container" *ngFor="let authorTags of tagsByAuthor">
+                <h3>{{authorTags.author}}</h3>
+                <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements tag" *ngFor="let tag of authorTags.tags" (click)="onToggleTag(tag.id)">
+                    <two-state-icon-button
+                        activeIcon="assets/button-icons/check-on.svg"
+                        inactiveIcon="assets/button-icons/check-off.svg"
+                        [active]="checkTagActive(tag.id)"
+                    >
+                    </two-state-icon-button>
+                    <div class="tag-title">{{tag.name}}</div>
+                </div>
+            </div>
+            <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements tag" (click)="onCreateNewTag(true)"
+                *ngIf="filteredTags.length === 0">
+                <div class="new-tag">Press Enter to create new tag</div>
+            </div>
+        </div>
+        <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements tag sep-tag" (click)="onCreateNewTag(true)"
+            *ngIf="filteredTags.length > 0 && tagSearchValue.length > 0 && filteredTags[0].name.toLowerCase().trim() !== tagSearchValue.toLowerCase().trim()">
+            <div class="new-tag">Click to create new tag "{{tagSearchValue.trim()}}"</div>
+        </div>
+    </div>
+</ng-template>
 <div class="panel" fxLayout="column" fxFill>
     <div fxLayout="row" fxLayoutAlign="space-between center" class="card-toolbar card-toolbar-shadow gap-separated-horizontal-elements">
         <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
@@ -37,8 +76,13 @@ POSSIBILITY OF SUCH DAMAGE.
         <div fxLayout="row">
             <filter-box placeholder="Filter Items..." (onFilterChanged)="onFilterExpressions($event)">
             </filter-box>
-            <!-- <icon-button icon="assets/button-icons/tag.svg" (onClick)="onFilterTags()">
-            </icon-button> -->
+            <widget-settings-menu [settingsDialog]="tagMenu" class="tag-button" [openDirDown]="false">
+                <icon-button 
+                    icon="assets/button-icons/tag.svg"
+                    [notificationCount]="tagCount"
+                >
+                </icon-button>
+            </widget-settings-menu>
             <mat-select multiple [(ngModel)]="filteredAuthors" class="authors-filter" placeholder="Author ...">
                 <mat-option *ngFor="let author of authors;"
                     [value]="author">{{author}}
@@ -48,7 +92,6 @@ POSSIBILITY OF SUCH DAMAGE.
                 (onClick)="onHideAllLayers()">
             </icon-button>
         </div>
-        <!-- <push-button *ngIf="showExportButton" buttonStyle="yellow" (click)="onExport()">Export Panel</push-button> -->
     </div>
     <expression-list
         [headerSectionsOpen]="headerSectionsOpen"

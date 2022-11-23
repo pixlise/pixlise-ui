@@ -36,4 +36,11 @@ POSSIBILITY OF SUCH DAMAGE.
   (click)='onClickInternal($event)'
 >
   <mat-spinner *ngIf="loading" [diameter]="24" [strokeWidth]="4" color="accent"></mat-spinner>
+  <badge
+      *ngIf="notificationCount > 0"
+      class="notifications"
+      [value]="notificationCount.toString()"
+      title="{{notificationCount}} active notifications"
+  >
+  </badge>
 </div>
