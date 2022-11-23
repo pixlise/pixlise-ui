@@ -5,7 +5,7 @@ function (user, context, callback) {
   });
 
   // user name
-  context.accessToken['DOMAIN_GOES_HERE/username'] = user.nickname;
+  context.accessToken['DOMAIN_GOES_HERE/username'] = user.name;
 
   // and email
   context.accessToken.custom_email = user.email;
