@@ -324,6 +324,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         chosenElementIDs: Set<string>,
         recentChosenElementIDs: Set<string>,
         expressionNameFilter: string,
+        expressionAuthorsFilter: string[],
         includeExploratoryRGBMix: boolean,
         makeLayer: (source: DataExpression | RGBMix)=>LocationDataLayerProperties
     ): ExpressionListItems
@@ -343,6 +344,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                 headerSectionsOpen.has(this.elementsHeaderName),
                 "element-map",
                 expressionNameFilter,
+                expressionAuthorsFilter,
                 elements,
                 "No quantified elements - have you loaded a quantification?",
                 null,
@@ -360,6 +362,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                     headerSectionsOpen.has(this.rgbMixHeaderName),
                     "rgbmix",
                     expressionNameFilter,
+                    expressionAuthorsFilter,
                     this.getRGBItems(this._userRGBMixes, makeLayer),
                     "No user RGB mixes to view",
                     this.getRGBItems(this._sharedRGBMixes, makeLayer),
@@ -376,6 +379,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                 headerSectionsOpen.has(this.expressionsHeaderName),
                 "expression",
                 expressionNameFilter,
+                expressionAuthorsFilter,
                 this.getItems(this._userExpressions, makeLayer),
                 "No user expressions to view",
                 this.getItems(this._sharedExpressions, makeLayer),
@@ -393,6 +397,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                     headerSectionsOpen.has(this.anomalyHeaderName),
                     "anomaly",
                     expressionNameFilter,
+                    expressionAuthorsFilter,
                     this.getItems(this._anomalies, makeLayer),
                     "No anomalies to view",
                     null,
@@ -409,6 +414,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                 headerSectionsOpen.has(this.pseudoIntensityHeaderName),
                 "pseudointensity",
                 expressionNameFilter,
+                expressionAuthorsFilter,
                 this.getItems(this._pseudointensities, makeLayer),
                 "No pseudo-intensity data available",
                 null,
@@ -830,6 +836,7 @@ export class ExpressionListGroupItems
         headerOpen: boolean, // is the header open? If not, the user/shared items are ignored
         childItemType: string, // the type of item we create
         childFilter: string, // "" if no filtering, otherwise only adds child items if their name contains the filter string
+        childAuthors: string[], // [] if no filtering, otherwise only adds child items if their author is in this list
         userItems,
         userItemsEmptyMsg: string,
         sharedItems,
@@ -894,6 +901,16 @@ export class ExpressionListGroupItems
                         if(upperName.indexOf(upperCaseFilter) == -1)
                         {
                             // Does not contain the filter text, so don't show it
+                            continue;
+                        }
+                    }
+
+                    if(childAuthors && childAuthors.length > 0)
+                    {
+                        let upperAuthor = item.layer?.source?.creator?.name.toUpperCase();
+                        if(!childAuthors.map(author => author.toUpperCase()).includes(upperAuthor))
+                        {
+                            // Was not authored by one of the authors in the filter list
                             continue;
                         }
                     }

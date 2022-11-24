@@ -27,35 +27,44 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-
-import { Observable } from "rxjs";
-
+import { Component, EventEmitter, Input, Output } from "@angular/core";
 
 
-export class ExportDataChoice
+@Component({
+    selector: "multi-switch-button",
+    templateUrl: "./multi-switch-button.component.html",
+    styleUrls: ["./multi-switch-button.component.scss"]
+})
+export class MultiSwitchButtonComponent
 {
-    constructor(public id: string, public label: string, public enabled: boolean, public isGlobalOption: boolean = true)
+    @Input() options: string[];
+    @Input() value: string;
+    @Input() disabled: boolean = false;
+
+    @Output() onChange = new EventEmitter();
+
+    constructor()
     {
     }
-}
 
-export interface ExportGenerator
-{
-    generateExport(datasetID: string, quantID: string, choiceIds: string[], selectedROIs: string[], selectedExpressionIDs: string[], selectedExpressionNames: string[], outFileName: string): Observable<Blob>
-}
-
-export class ExportDataConfig
-{
-    constructor(
-        public title: string,
-        public fileName: string,
-        public showPublish: boolean,
-        public showQuantPicker: boolean,
-        public showROIPicker: boolean,
-        public showExpressionPicker: boolean,
-        public choices: ExportDataChoice[],
-        public exportGenerator: ExportGenerator,
-    )
+    get activeWidth(): number | string
     {
+        return this.options.length > 0 ? `${Math.round(1 / this.options.length * 1000)/10}%` : 0;
     }
+
+    get activeLeftOffset(): number | string
+    {
+        let index = this.options.findIndex((option) => option === this.value);
+        return index >= 0 && this.options.length > 0 ? `${Math.round(index / this.options.length * 1000)/10}%` : 0;
+    }
+
+    onClick(selectedValue: string)
+    {
+        if(!this.disabled)
+        {
+            this.value = selectedValue;
+            this.onChange.emit(selectedValue);
+        }
+    }
+
 }

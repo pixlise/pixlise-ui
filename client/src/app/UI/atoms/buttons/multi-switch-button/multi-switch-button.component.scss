@@ -27,35 +27,52 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+@import 'variables.scss';
 
-import { Observable } from "rxjs";
+.multi-switch-container {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    background: $clr-gray-90;
+    border-radius: $sz-half;
+    width: 100%;
 
+    .multi-switch-option {
+        flex: 1;
+        border-radius: $sz-half;
+        padding: $sz-half $sz-unit;
+        text-align: center;
+        color: $clr-gray-30;
+        cursor: pointer;
 
-
-export class ExportDataChoice
-{
-    constructor(public id: string, public label: string, public enabled: boolean, public isGlobalOption: boolean = true)
-    {
+        &.active {
+            background: transparent;
+            color: white;
+            z-index: 10;
+        }
     }
-}
 
-export interface ExportGenerator
-{
-    generateExport(datasetID: string, quantID: string, choiceIds: string[], selectedROIs: string[], selectedExpressionIDs: string[], selectedExpressionNames: string[], outFileName: string): Observable<Blob>
-}
+    &.disabled {
+        .multi-switch-option {
+            &.active {
+                color: $clr-gray-30;
+            }
+        }
 
-export class ExportDataConfig
-{
-    constructor(
-        public title: string,
-        public fileName: string,
-        public showPublish: boolean,
-        public showQuantPicker: boolean,
-        public showROIPicker: boolean,
-        public showExpressionPicker: boolean,
-        public choices: ExportDataChoice[],
-        public exportGenerator: ExportGenerator,
-    )
-    {
+        .active-selector {
+            box-shadow: none;
+        }
+    }
+
+    .active-selector {
+        transition: all 0.2s ease;
+        background: $clr-gray-60;
+        box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.75);
+        border-radius: $sz-half;
+        position: absolute;
+        height: 100%;
+
     }
 }

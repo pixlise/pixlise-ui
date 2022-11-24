@@ -47,3 +47,18 @@
 
 @import 'variables.scss';
 @import 'atoms.scss';
+
+
+.search-box {
+    border-right: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+push-button {
+    &:hover {
+        path {
+            fill: lighten(#BCBCBC, 20%);
+        }
+    }
+}

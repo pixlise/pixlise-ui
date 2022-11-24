@@ -30,9 +30,16 @@
 @import 'variables.scss';
 
 span {
-    margin-right: $sz-unit;
     white-space: nowrap; 
     overflow: hidden;
     user-select: none;
     cursor: pointer;
+
+    &:first-of-type {
+        margin-right: $sz-unit;
+    }
+
+    &.last {
+        margin-left: $sz-unit;
+    }
 }

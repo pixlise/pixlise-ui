@@ -48,17 +48,27 @@ POSSIBILITY OF SUCH DAMAGE.
                 [active]="selectModeExcludeROI"
                 (onToggle)="onToggleSelectModeExcludeROI()"
                 title="Exclude Lasso: will not select points that are in an ROI"
-                >Exclude</two-state-push-button>
+            >
+                Exclude
+            </two-state-push-button>
+            <push-button
+                (onClick)="onRegions($event)"
+                title="Choose regions to display"
+            >
+                Regions
+            </push-button>
+
+            <icon-button
+                (click)="onExport()"
+                title="Export"
+                icon="assets/button-icons/export.svg">
+            </icon-button>
             <icon-button
                 (click)="onToggleSolo()"
                 title='Toggle Solo View'
                 icon="assets/button-icons/widget-solo.svg"
                 [state]="isSolo">
             </icon-button>
-            <push-button
-                (onClick)="onRegions($event)"
-                title="Choose regions to display">Regions</push-button>
-
             <widget-settings-menu [settingsDialog]="ternarySettingsMenu">
                 <icon-button
                     title='Show Settings Menu'

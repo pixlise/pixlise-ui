@@ -33,13 +33,25 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="setting-label">{{label}}</div>
 
     <div fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements">
-        <icon-button title="Configure Colours" icon="assets/button-icons/colours.svg" (click)="onColours($event)"></icon-button>
+       <icon-button 
+          title="Download"
+          icon="assets/button-icons/export.svg" 
+          (click)="onDownload()"
+        >
+        </icon-button>
+        <icon-button 
+          title="Configure Colours"
+          icon="assets/button-icons/colours.svg" 
+          (click)="onColours($event)"
+        >
+        </icon-button>
 
         <two-state-icon-button
             toolTip="Toggle Visibility"
             activeIcon="assets/button-icons/visible-on.svg"
             inactiveIcon="assets/button-icons/visible-off.svg"
             [active]="visible"
-            (onToggle)="onVisibility($event)"></two-state-icon-button>
+            (onToggle)="onVisibility($event)">
+        </two-state-icon-button>
     </div>
 </div>

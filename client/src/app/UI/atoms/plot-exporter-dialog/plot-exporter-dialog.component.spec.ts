@@ -27,35 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { async, ComponentFixture, TestBed } from "@angular/core/testing";
+import { PlotExporterDialogComponent } from "./plot-exporter-dialog.component";
 
-import { Observable } from "rxjs";
 
-
-
-export class ExportDataChoice
+describe("PlotExporterDialogComponent", () => 
 {
-    constructor(public id: string, public label: string, public enabled: boolean, public isGlobalOption: boolean = true)
+    let component: PlotExporterDialogComponent;
+    let fixture: ComponentFixture<PlotExporterDialogComponent>;
+
+    beforeEach(async(() => 
     {
-    }
-}
+        TestBed.configureTestingModule({
+            declarations: [ PlotExporterDialogComponent ]
+        })
+            .compileComponents();
+    }));
 
-export interface ExportGenerator
-{
-    generateExport(datasetID: string, quantID: string, choiceIds: string[], selectedROIs: string[], selectedExpressionIDs: string[], selectedExpressionNames: string[], outFileName: string): Observable<Blob>
-}
-
-export class ExportDataConfig
-{
-    constructor(
-        public title: string,
-        public fileName: string,
-        public showPublish: boolean,
-        public showQuantPicker: boolean,
-        public showROIPicker: boolean,
-        public showExpressionPicker: boolean,
-        public choices: ExportDataChoice[],
-        public exportGenerator: ExportGenerator,
-    )
+    beforeEach(() => 
     {
-    }
-}
+        fixture = TestBed.createComponent(PlotExporterDialogComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
+
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

@@ -28,11 +28,17 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, Input, OnInit } from "@angular/core";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { Point, Rect } from "src/app/models/Geometry";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { ViewStateService } from "src/app/services/view-state.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
+import { CanvasExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
+import { KeyItem } from "../../atoms/widget-key-display/widget-key-display.component";
+import { ClientSideExportGenerator } from "../../export-data-dialog/client-side-export";
+import { ExportDrawer } from "../drawers/export-drawer";
+import { MapColourScale } from "../ui-elements/map-colour-scale";
 
 
 
@@ -51,7 +57,8 @@ export class ContextImageToolbarComponent implements OnInit
     constructor(
         private _contextImageService: ContextImageService,
         private _viewStateService: ViewStateService,
-        private router: Router
+        private router: Router,
+        public dialog: MatDialog
     )
     {
     }
@@ -205,6 +212,80 @@ export class ContextImageToolbarComponent implements OnInit
         if(this._contextImageService.mdl)
         {
             this._viewStateService.toggleSoloView(ViewStateService.widgetSelectorContextImage, this._contextImageService.mdl.widgetPosition);
+        }
+    }
+
+    onExport()
+    {
+        if(this._contextImageService && this._contextImageService.mdl)
+        {
+            let visibleROIs = this._contextImageService.mdl.regionManager.getRegionsForDraw().filter(roi => roi.isVisible());
+            let colourScale = this._contextImageService.mdl.toolHost.getMapColourScaleDrawer() as MapColourScale;
+            let activeColourScale = colourScale && colourScale.channelScales.length > 0;
+            let exportOptions = [
+                new PlotExporterDialogOption("Visible Scale", true, true),
+                new PlotExporterDialogOption("Visible Key", true, true, { type: "checkbox", disabled: visibleROIs.length === 0 }),
+                new PlotExporterDialogOption("Visible Colour Scale", true, true, { type: "checkbox", disabled: !activeColourScale }),
+                new PlotExporterDialogOption("Standard Size Image", true),
+                new PlotExporterDialogOption("Large Image", true),
+            ];
+
+            const dialogConfig = new MatDialogConfig();
+            dialogConfig.data = new PlotExporterDialogData(`${this._contextImageService.mdl.dataset.getId()} - Context Image`, "Export Context Image", exportOptions);
+
+            const dialogRef = this.dialog.open(PlotExporterDialogComponent, dialogConfig);
+            dialogRef.componentInstance.onConfirmOptions.subscribe(
+                (options: PlotExporterDialogOption[])=>
+                {
+                    let optionLabels = options.map(option => option.label);
+                    let canvases: CanvasExportItem[] = [];
+
+                    let showKey = optionLabels.indexOf("Visible Key") > -1;
+                    let showColourScale = optionLabels.indexOf("Visible Colour Scale") > -1;
+                    let showScale = optionLabels.indexOf("Visible Scale") > -1;
+ 
+                    let keyItems = this._contextImageService.mdl.regionManager.getRegionsForDraw().filter(roi => roi.isVisible()).map(roi => new KeyItem(roi.roi.id, roi.roi.name, roi.roi.colour));
+
+                    let drawer = new ExportDrawer(this._contextImageService.mdl, this._contextImageService.mdl.toolHost);
+                    let exportIDs = [
+                        ClientSideExportGenerator.exportContextImage,
+                        ClientSideExportGenerator.exportContextImageFootprint,
+                        ClientSideExportGenerator.exportContextImageROIs,
+                        ClientSideExportGenerator.exportContextImageScanPoints,
+                        ClientSideExportGenerator.exportDrawBackgroundBlack
+                    ];
+
+                    if(showColourScale)
+                    {
+                        exportIDs.push(ClientSideExportGenerator.exportContextImageColourScale);
+                    }
+                    if(showScale)
+                    {
+                        exportIDs.push(ClientSideExportGenerator.exportContextImagePhysicalScale);
+                    }
+
+                    if(optionLabels.indexOf("Standard Size Image") > -1)
+                    {
+                        exportIDs.push(ClientSideExportGenerator.exportWebResolution);
+                        canvases.push(new CanvasExportItem(
+                            "Context Image",
+                            generatePlotImage(drawer, this._contextImageService.mdl.transform, keyItems, 1200, 800, showKey, false, exportIDs)
+                        ));
+                    }
+
+                    if(optionLabels.indexOf("Large Image") > -1)
+                    {
+                        exportIDs.push(ClientSideExportGenerator.exportPrintResolution);
+                        canvases.push(new CanvasExportItem(
+                            "Context Image - Large",
+                            generatePlotImage(drawer, this._contextImageService.mdl.transform, keyItems, 4096, 2160, showKey, false, exportIDs)
+                        ));
+                    }
+
+                    dialogRef.componentInstance.onDownload(canvases, []);
+                });
+
+            return dialogRef.afterClosed();
         }
     }
 

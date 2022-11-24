@@ -94,6 +94,15 @@
     }
 }
 
+.btn-light-right-outline {
+    @extend .btn-base;
+    border: 1px solid $clr-gray-60;
+    border-left: none;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    padding: $sz-half 8px;
+}
+
 .disabled {
     color: $clr-gray-60;
     background-color: $clr-gray-80;

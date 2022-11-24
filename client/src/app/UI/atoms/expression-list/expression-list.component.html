@@ -29,7 +29,16 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<cdk-virtual-scroll-viewport *ngIf="items" itemSize="{{itemSize}}" fxFlex="100%">
+<context-visibility-header
+    class="sticky-header"
+    *ngIf="stickyItem"
+    [content]="stickyItem.content"
+    [headerName]="stickyItemHeaderName"
+    [isOpen]="isSectionOpen(stickyItem.itemType)"
+    (onToggleOpen)="onToggleLayerSectionOpen(stickyItem.itemType, $event)"
+    (onScrollToItem)="onScrollToItem(stickyItem.itemType, $event)">
+</context-visibility-header>
+<cdk-virtual-scroll-viewport *ngIf="items" itemSize="{{itemSize}}" fxFlex="100%" (scroll)="onScroll($event)">
     <ng-container *cdkVirtualFor="let item of items.items; templateCacheSize: 0">
         <ng-container [ngSwitch]="item.itemType">
             <ng-container *ngSwitchCase="elementsHeaderName">
@@ -83,6 +92,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [layerInfo]="item.content"
                     [showEdit]="!item.shared"
                     [showShare]="!item.shared"
+                    [showDownload]="downloadable"
                     [activeIcon]="selectedIcon"
                     [inactiveIcon]="unselectedIcon"
                     (visibilityChange)="onLayerVisibilityChange($event)">
@@ -106,6 +116,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [showShare]="!item.content.isPredefinedLayer"
                     [showColours]="showColourOptions"
                     [showVisible]="true"
+                    [showDownload]="downloadable"
                     [activeIcon]="selectedIcon"
                     [inactiveIcon]="unselectedIcon"
                     (visibilityChange)="onLayerVisibilityChange($event)"
@@ -128,6 +139,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [showSettings]="false"
                     [showColours]="false"
                     [showVisible]="true"
+                    [showDownload]="downloadable"
                     [activeIcon]="selectedIcon"
                     [inactiveIcon]="unselectedIcon"
                     (visibilityChange)="onLayerVisibilityChange($event)">
@@ -149,6 +161,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [showSettings]="false"
                     [showColours]="showColourOptions"
                     [showVisible]="true"
+                    [showDownload]="downloadable"
                     [activeIcon]="selectedIcon"
                     [inactiveIcon]="unselectedIcon"
                     (visibilityChange)="onLayerVisibilityChange($event)"

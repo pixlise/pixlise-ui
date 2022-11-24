@@ -48,6 +48,7 @@ export class IconButtonComponent implements OnInit
     @Input() icon: string;
     @Input() state: IconButtonState;
     @Input() hasBackground: boolean = true;
+    @Input() loading: boolean = false;
 
     @Output() onClick = new EventEmitter();
 
@@ -61,7 +62,7 @@ export class IconButtonComponent implements OnInit
 
     onClickInternal(event): void
     {
-        if(this.state != IconButtonState.DISABLED)
+        if(!this.loading && this.state !== IconButtonState.DISABLED)
         {
             this.onClick.emit(event);
         }

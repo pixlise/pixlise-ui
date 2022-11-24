@@ -124,6 +124,7 @@ import { TwoStateButtonComponent } from "./UI/atoms/buttons/two-state-button/two
 import { BulkSelectionSwitchComponent } from "./UI/atoms/buttons/two-state-button/bulk-selection-switch.component";
 import { PlusMinusSwitchComponent } from "./UI/atoms/buttons/two-state-button/plus-minus-switch.component";
 import { SwitchButtonComponent } from "./UI/atoms/buttons/switch-button/switch-button.component";
+import { MultiSwitchButtonComponent } from "./UI/atoms/buttons/multi-switch-button/multi-switch-button.component";
 import { TwoStateIconButton } from "./UI/atoms/buttons/two-state-button/two-state-icon-button.component";
 import { TwoStateIconPushButton } from "./UI/atoms/buttons/two-state-button/two-state-icon-push-button.component";
 import { TwoStatePushButton } from "./UI/atoms/buttons/two-state-button/two-state-push-button.component";
@@ -222,6 +223,7 @@ import { AddDatasetDialogComponent } from "./routes/datasets/add-dataset-dialog/
 import { LogViewerComponent } from "./UI/log-viewer/log-viewer.component";
 import { AnnotationEditorComponent } from "./UI/annotation-editor/annotation-editor.component";
 import { AnnotationDisplayComponent } from "./UI/annotation-editor/annotation-display/annotation-display.component";
+import { PlotExporterDialogComponent } from "./UI/atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 
 
 @Injectable()
@@ -332,6 +334,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         BulkSelectionSwitchComponent,
         PlusMinusSwitchComponent,
         SwitchButtonComponent,
+        MultiSwitchButtonComponent,
         TwoStateIconButton,
         TwoStatePushButton,
         TwoStateIconPushButton,
@@ -429,7 +432,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         MistRoiConvertComponent,
         AddBearerPipe,
         AddDatasetDialogComponent,
-        LogViewerComponent
+        LogViewerComponent,
+        PlotExporterDialogComponent
     ],
     imports: [
         BrowserModule,

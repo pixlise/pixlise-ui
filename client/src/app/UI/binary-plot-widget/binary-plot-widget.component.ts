@@ -46,8 +46,9 @@ import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.
 import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expression-picker/expression-picker.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
 import { RGBA } from "src/app/utils/colours";
-//import { BinaryScatterPlotData } from '../binary-plot-view-widget/binary-plot-view-widget.component';
+
 import { randomString } from "src/app/utils/utils";
+import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { BinaryPlotAxisData, BinaryPlotData, BinaryPlotPointIndex } from "./binary-data";
 import { BinaryDiagramDrawer } from "./drawer";
 import { BinaryInteraction } from "./interaction";
@@ -652,5 +653,80 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
     onToggleSelectModeExcludeROI()
     {
         this._binaryModel.selectModeExcludeROI = !this._binaryModel.selectModeExcludeROI;
+    }
+
+    exportPlotData(): string
+    {
+        let xAxisLabel = this._binaryModel.raw.xAxisData.axisLabel;
+        let yAxisLabel = this._binaryModel.raw.yAxisData.axisLabel;
+
+        let data = `"PMC","ROI","${xAxisLabel}","${yAxisLabel}"\n`;
+        Array.from(this._binaryModel.raw.pmcToValueLookup.entries()).forEach(([pmc, idx]) =>
+        {
+            let x = this._binaryModel.raw.xAxisData.pointGroups[idx.pointGroup].values[idx.valueIndex].value;
+            let y = this._binaryModel.raw.yAxisData.pointGroups[idx.pointGroup].values[idx.valueIndex].value;
+            let roiId = this._binaryModel.raw.visibleROIs[idx.pointGroup];
+            let roiName = this._widgetDataService.regions.get(roiId).name;
+            data += `${pmc},${roiName},${x},${y}\n`;
+        });
+
+        return data;
+    }
+
+    onExport()
+    {
+        if(this._binaryModel && this._binaryModel.raw)
+        {
+            let exportOptions = [
+                new PlotExporterDialogOption("Color", true, true, { type: "switch", options: ["Dark Mode", "Light Mode"] }),
+                new PlotExporterDialogOption("Visible Key", true, true),
+                new PlotExporterDialogOption("Plot Image", true),
+                new PlotExporterDialogOption("Large Plot Image", true),
+                new PlotExporterDialogOption("Plot Data .csv", true),
+            ];
+
+            const dialogConfig = new MatDialogConfig();
+            dialogConfig.data = new PlotExporterDialogData(`${this._datasetService.datasetLoaded.getId()} - Binary Plot`, "Export Binary Plot", exportOptions);
+
+            const dialogRef = this.dialog.open(PlotExporterDialogComponent, dialogConfig);
+            dialogRef.componentInstance.onConfirmOptions.subscribe(
+                (options: PlotExporterDialogOption[])=>
+                {
+                    let optionLabels = options.map(option => option.label);
+                    let canvases: CanvasExportItem[] = [];
+                    let csvs: CSVExportItem[] = [];
+
+                    let showKey = optionLabels.indexOf("Visible Key") > -1;
+                    let lightMode = optionLabels.indexOf("Color") > -1;
+
+                    if(optionLabels.indexOf("Plot Image") > -1)
+                    {
+                        canvases.push(new CanvasExportItem(
+                            "Binary Plot",
+                            generatePlotImage(this.drawer, this.transform, this.keyItems, 1200, 800, showKey, lightMode)
+                        ));   
+                    }
+
+                    if(optionLabels.indexOf("Large Plot Image") > -1)
+                    {
+                        canvases.push(new CanvasExportItem(
+                            "Binary Plot - Large",
+                            generatePlotImage(this.drawer, this.transform, this.keyItems, 4096, 2160, showKey, lightMode)
+                        ));
+                    }
+
+                    if(optionLabels.indexOf("Plot Data .csv") > -1)
+                    {
+                        csvs.push(new CSVExportItem(
+                            "Binary Plot Data",
+                            this.exportPlotData()
+                        ));
+                    }
+
+                    dialogRef.componentInstance.onDownload(canvases, csvs);
+                });
+
+            return dialogRef.afterClosed();
+        }
     }
 }

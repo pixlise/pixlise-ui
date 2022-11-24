@@ -43,6 +43,7 @@ import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dial
 import { AnnotationEditorComponent, AnnotationEditorData, AnnotationTool } from "../annotation-editor/annotation-editor.component";
 import { FullScreenAnnotationItem } from "../annotation-editor/annotation-display/annotation-display.component";
 import { ViewStateService } from "src/app/services/view-state.service";
+import { ClientSideExportGenerator } from "../export-data-dialog/client-side-export";
 
 class TabNav
 {
@@ -335,14 +336,15 @@ export class ToolbarComponent implements OnInit, OnDestroy
     onExport(): void
     {
         let choices = [
-            new ExportDataChoice("raw-spectra", "Raw Spectral Data Per PMC .csv (and bulk .msa)", false),
-            new ExportDataChoice("quant-map-csv", "PIQUANT Quantification map .csv", false),
+            new ExportDataChoice("raw-spectra", "Raw Spectral Data Per PMC .csv (and bulk .msa)", true),
+            new ExportDataChoice("quant-map-csv", "PIQUANT Quantification map .csv", true),
             //new ExportDataChoice('quant-map-tif', 'Floating point map images .tif', false),
-            new ExportDataChoice("beam-locations", "Beam Locations .csv", false),
-            new ExportDataChoice("context-image", "All context images with PMCs", false),
-            new ExportDataChoice("rois", "Regions of Interest PMC Members .csv", false),
-            new ExportDataChoice("unquantified-weight", "Unquantified Weight Percent .csv", false),
-            new ExportDataChoice("ui-diffraction-peak", "Anomaly Features .csv", false),
+            new ExportDataChoice("beam-locations", "Beam Locations .csv", true),
+            // new ExportDataChoice("context-image", "All context images with PMCs", false),
+            new ExportDataChoice("unquantified-weight", "Unquantified Weight Percent .csv", true),
+            new ExportDataChoice("ui-diffraction-peak", "Anomaly Features .csv", true),
+            new ExportDataChoice("rois", "ROI PMC Membership List .csv", false, false),
+            new ExportDataChoice("ui-roi-expressions", "ROI Expression Values .csv", false, false),
         ];
 
         this._exportService.exportData("PIXLISE Data", choices);

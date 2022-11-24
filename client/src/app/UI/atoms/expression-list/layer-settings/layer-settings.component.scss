@@ -58,6 +58,7 @@
 }
 
 .setting-label {
+    color: $clr-gray-10;
     user-select: text;
 }
 
@@ -71,10 +72,14 @@ input {
 }
 
 .comment {
-    color: $clr-gray-30;
+    color: $clr-gray-40;
     font-size: 12px;
     overflow-wrap: break-word;
     max-width: 500px;
+}
+
+.obj-creator {
+    color: $clr-gray-40;
 }
 
 /*
@@ -84,3 +89,15 @@ input {
     font-weight: bold;
 }
 */
+
+.more-buttons-menu {
+    display: flex;
+
+    icon-button {
+        margin-right: $sz-half;
+    }
+
+    icon-button:last-of-type {
+        margin-right: 0;
+    }
+}

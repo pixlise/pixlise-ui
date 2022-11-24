@@ -66,7 +66,7 @@ export class CanvasExportParameters
     }
 }
 
-class ExportedFileData
+export class ExportedFileData
 {
     constructor(
         public name: string,
