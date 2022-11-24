@@ -1040,4 +1040,9 @@ export class MapColourScale extends BaseUIElement
             }
         }
     }
+
+    get channelScales(): LayerChannelScale[]
+    {
+        return this._channelScales;
+    }
 }

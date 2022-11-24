@@ -30,5 +30,5 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div fxLayout="row" fxLayoutAlign="start center" (click)="onClick($event)">
-    <span>{{label}}</span><img src="{{getImg()}}" class="button-shadow button-hoverable clickable">
+    <span>{{label}}</span><img src="{{getImg()}}" class="button-shadow button-hoverable clickable"><span *ngIf="endLabel" class="last">{{endLabel}}</span>
 </div>

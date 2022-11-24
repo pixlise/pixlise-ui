@@ -54,6 +54,7 @@ export class VisibilitySettingsHeaderComponent implements OnInit
     @Input() content: ExpressionListHeaderInfo;
     @Input() simpleMode: boolean = false;
     @Input() isOpen: boolean = false;
+    @Input() headerName: string = null;
 
     @Output() onToggleOpen = new EventEmitter();
     @Output() onScrollToItem = new EventEmitter();
@@ -68,11 +69,11 @@ export class VisibilitySettingsHeaderComponent implements OnInit
 
     get label(): string
     {
-        if(!this.content || !this.content.label)
+        if(!this.headerName && (!this.content || !this.content.label))
         {
             return "";
         }
-        return this.content.label;
+        return this.headerName || this.content.label;
     }
 
     get totalCount(): number

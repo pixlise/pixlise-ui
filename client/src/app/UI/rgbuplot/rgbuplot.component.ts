@@ -200,7 +200,6 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
                     console.log("Restoring rgbu plot view state...");
 
                     let loadedState = this._widgetDataService.viewState.rgbuPlots.get(this.widgetPosition);
-
                     if(loadedState)
                     {
                         this._mineralsShown = loadedState.minerals,
@@ -218,6 +217,11 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
                         {
                             this._drawMonochrome = loadedState.drawMonochrome;
                         }
+
+                        this.selectedMinXValue = loadedState?.selectedMinXValue || null;
+                        this.selectedMaxXValue = loadedState?.selectedMaxXValue || null;
+                        this.selectedMinYValue = loadedState?.selectedMinYValue || null;
+                        this.selectedMaxYValue = loadedState?.selectedMaxYValue || null;
                     }
                     else
                     {
@@ -644,6 +648,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         if(event.finish) 
         {
             this.prepareData("scaling x axis");
+            this.saveState("scaling x axis");
         }
     }
 
@@ -654,6 +659,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         if(event.finish) 
         {
             this.prepareData("scaling y axis");
+            this.saveState("scaling y axis");
         }
     }
 
@@ -671,7 +677,11 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
             RGBUPlotModel.idxToChannel(this._yAxisUnit.denominatorChannelIdx),
             RGBUPlotModel.idxToChannel(this._xAxisUnit.numeratorChannelIdx),
             RGBUPlotModel.idxToChannel(this._xAxisUnit.denominatorChannelIdx),
-            this._drawMonochrome
+            this._drawMonochrome,
+            this.selectedMinXValue,
+            this.selectedMaxXValue,
+            this.selectedMinYValue,
+            this.selectedMaxYValue,
         );
 
         return toSave;

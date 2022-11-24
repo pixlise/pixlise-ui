@@ -33,18 +33,22 @@ POSSIBILITY OF SUCH DAMAGE.
     <div fxLayout="row" fxLayoutAlign="space-between center" class="card-toolbar card-toolbar-shadow gap-separated-horizontal-elements">
         <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
             <div class="txt-widget-title">{{title}}</div>
-            <filter-box
-                placeholder="Filter Items..."
-                (onFilterChanged)="onFilterExpressions($event)">
+        </div>
+        <div fxLayout="row">
+            <filter-box placeholder="Filter Items..." (onFilterChanged)="onFilterExpressions($event)">
             </filter-box>
-            <icon-button
-                *ngIf="showHideAllButton"
-                icon="assets/button-icons/visible-off.svg"
-                [hasBackground]="false"
+            <!-- <icon-button icon="assets/button-icons/tag.svg" (onClick)="onFilterTags()">
+            </icon-button> -->
+            <mat-select multiple [(ngModel)]="filteredAuthors" class="authors-filter" placeholder="Author ...">
+                <mat-option *ngFor="let author of authors;"
+                    [value]="author">{{author}}
+                </mat-option>
+            </mat-select>
+            <icon-button *ngIf="showHideAllButton" icon="assets/button-icons/visible-off.svg" [hasBackground]="false"
                 (onClick)="onHideAllLayers()">
             </icon-button>
         </div>
-        <push-button *ngIf="showExportButton" buttonStyle="yellow" (click)="onExport()">Export Panel</push-button>
+        <!-- <push-button *ngIf="showExportButton" buttonStyle="yellow" (click)="onExport()">Export Panel</push-button> -->
     </div>
     <expression-list
         [headerSectionsOpen]="headerSectionsOpen"
@@ -68,5 +72,8 @@ POSSIBILITY OF SUCH DAMAGE.
         </two-state-button>
         <!-- Show add button for expressions -->
         <icon-button icon='assets/button-icons/plus-white.svg' (click)="onAddExpression()" expressionHeader></icon-button>
+
+        <!-- Show download all button for quantified elements -->
+        <icon-button icon='assets/button-icons/export.svg' (click)="onDownloadAllElements()" title="Download All Quantified Elements" elementHeader></icon-button>
     </expression-list>
 </div>

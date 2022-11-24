@@ -71,3 +71,51 @@
 .active {
     color: $clr-yellow;
 }
+
+mat-select.quantification-select {
+    width: calc(100% - 8px) !important;
+    margin-left: 0 !important;
+    background-color: rgb(var(--clr-gray-100)) !important;
+
+    ::ng-deep div.mat-select-value {
+        color: rgb(var(--clr-gray-50));
+    }
+}
+
+h3 {
+    background: $clr-gray-90;
+
+    margin-left: -16px;
+    margin-right: -16px;
+    padding-left: 16px;
+
+    &:first-of-type {
+        margin-top: 16px !important;
+        margin-bottom: 8px;
+    }
+}
+
+push-button {
+    flex: 1;
+
+    ::ng-deep div.clickable.btn-normal {
+        display: flex;
+        position: relative;
+        align-items: center;
+        justify-content: center;
+        height: 18px;
+
+        img {
+            position: absolute;
+            right: 4px;
+        }
+    }
+}
+
+multi-switch-button {
+    margin-bottom: 8px;
+}
+
+div.disabled-choice {
+    color: $clr-gray-60;
+}

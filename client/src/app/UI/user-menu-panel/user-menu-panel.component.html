@@ -32,8 +32,14 @@ POSSIBILITY OF SUCH DAMAGE.
 <div fxLayout="column" class="panel" fxLayoutAlign="start stretch">
     <div fxLayout="row" fxLayoutAlign="space-between center" class="section">
         <div fxLayout="column" class="user-info">
-            <div>{{userName}}</div>
-            <div>{{userEmail}}</div>
+            <div fxLayout="row" class="gap-separated-horizontal-elements">
+                <div>{{userName}}</div>
+                <img class='clickable hover-circle' src="assets/button-icons/edit.svg" (click)="onEditName()">
+            </div>
+            <div fxLayout="row" class="gap-separated-horizontal-elements">
+                <div>{{userEmail}}</div>
+                <img class='clickable hover-circle' src="assets/button-icons/edit.svg" (click)="onEditEmail()">
+            </div>
         </div>
         <img *ngIf="user !== null" class="user-icon" src="{{user.picture}}">
     </div>

@@ -44,3 +44,16 @@
     text-align: center;
     color: $clr-gray-30;
 }
+
+icon-button {
+    margin-left: 6px;
+}
+
+.authors-filter {
+    padding-top: 5px;
+    padding-bottom: 0;
+
+    background: #454c50 !important;
+    border-radius: $sz-half !important;
+    border: 2px solid rgb(var(--clr-gray-60));
+}

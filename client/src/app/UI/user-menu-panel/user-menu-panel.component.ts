@@ -30,7 +30,8 @@
 import { Component, OnInit } from "@angular/core";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { NotificationMethod, NotificationSubscriptions, UserOptionsService } from "src/app/services/user-options.service";
-import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
+import { UserManagementService } from "src/app/services/user-management.service";
+import { httpErrorToString } from "src/app/utils/utils";
 
 
 class NotificationSetting
@@ -54,6 +55,7 @@ export class UserMenuPanelComponent implements OnInit
     constructor(
         private _authService: AuthenticationService,
         private _userOptionsService: UserOptionsService,
+        private _userService: UserManagementService,
     )
     {
         this.notifications = [
@@ -139,12 +141,7 @@ export class UserMenuPanelComponent implements OnInit
             return "Loading...";
         }
 
-        if(this.user.name)
-        {
-            return this.user.name;
-        }
-
-        return this.user.nickname;
+        return this.user.name;
     }
 
     get userEmail(): string
@@ -170,5 +167,43 @@ export class UserMenuPanelComponent implements OnInit
     {
         // Add additional step to prevent accidental toggling
         this.showDataCollectionDialog();
+    }
+
+    onEditName(): void
+    {
+        let name = prompt("Please enter your name");
+        if(name.length > 0)
+        {
+            this._userService.setUserField("name", name).subscribe(
+                ()=>
+                {
+                    alert("You will now be logged out. When you log back in your name will be correctly loaded.")
+                    this._authService.logout();
+                },
+                (err)=>
+                {
+                    alert(httpErrorToString(err, "Failed to save user name"));
+                }
+            );
+        }
+    }
+
+    onEditEmail(): void
+    {
+        let email = prompt("Please enter your email address");
+        if(email.length > 0)
+        {
+            this._userService.setUserField("email", email).subscribe(
+                ()=>
+                {
+                    alert("You will now be logged out. When you log back in your name will be correctly loaded. You can check this using the user menu on the top-right. Thanks!")
+                    this._authService.logout();
+                },
+                (err)=>
+                {
+                    alert(httpErrorToString(err, "Failed to save user email"));
+                }
+            );
+        }
     }
 }

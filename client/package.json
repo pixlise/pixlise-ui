@@ -44,7 +44,7 @@
     "jsep": "^1.2.0",
     "jszip": "^3.7.1",
     "mathjs": "^7.6.0",
-    "moment": "^2.29.1",
+    "moment": "^2.29.4",
     "ngx-dropzone": "^3.0.0",
     "papaparse": "^5.3.2",
     "parcoord-es": "^2.2.10",

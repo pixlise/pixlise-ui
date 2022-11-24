@@ -47,7 +47,7 @@ export class PushButtonComponent implements OnInit
 
     ngOnInit()
     {
-        const validStyles = ["normal", "borderless", "yellow", "outline", "gray"];
+        const validStyles = ["normal", "borderless", "yellow", "outline", "gray", "light-right-outline"];
         if(validStyles.indexOf(this.buttonStyle) == -1)
         {
             console.warn("Invalid style for push-button: "+this.buttonStyle);
