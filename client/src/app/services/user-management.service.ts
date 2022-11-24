@@ -122,7 +122,7 @@ export class UserManagementService
         );
     }
 
-    setUserName(name: string): Observable<void>
+    setUserField(fieldName: string, value: string): Observable<void>
     {
         // Users sign up via auth0 and only need to provide an email address. We later ask them for their
         // name and save via here.
@@ -130,7 +130,7 @@ export class UserManagementService
         // Users must log out & back in for change to take effect
         
         // Call search API
-        let apiUrl = APIPaths.getWithHost(APIPaths.api_user_management+"/name");
-        return this.http.post<void>(apiUrl, "\""+name+"\"", makeHeaders());
+        let apiUrl = APIPaths.getWithHost(APIPaths.api_user_management+"/field/"+fieldName);
+        return this.http.put<void>(apiUrl, "\""+value+"\"", makeHeaders());
     }
 }

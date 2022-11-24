@@ -108,21 +108,7 @@ export class DatasetsComponent implements OnInit
                     // This is a user who hasn't got a name set properly yet
                     // so here we ask them to type one in that we can overwrite
                     // in both Auth0 and our own user database
-                    let name = prompt("We don't have your name stored, only your email address. This means PIXLISE will not show your name correctly when you share data/obvservations. Please enter your name.")
-                    if(name.length > 0)
-                    {
-                        this._userService.setUserName(name).subscribe(
-                            ()=>
-                            {
-                                alert("You will now be logged out. When you log back in your name will be correctly loaded. You can check this using the user menu on the top-right. Thanks!")
-                                this._authService.logout();
-                            },
-                            (err)=>
-                            {
-                                alert(httpErrorToString(err, "Failed to save user name"));
-                            }
-                        );
-                    }
+                    alert("We don't have your name stored, only your email address. This means PIXLISE will not show your name correctly when you share data/obvservations. Please set your user name using the edit button on the user panel (click on user icon in top-right).")
                 }
             }
         );
