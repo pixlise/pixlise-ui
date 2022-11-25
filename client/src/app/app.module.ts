@@ -235,7 +235,7 @@ export class SentryErrorHandler implements ErrorHandler
 
     handleError(error)
     {
-        const eventId = SentryHelper.logException(error.originalError || error);
+        const eventId = SentryHelper.logException(error, "SentryErrorHandler");
         Sentry.showReportDialog({ eventId });
     }
 }
@@ -251,7 +251,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
             // Init sentry now that we have the config
             if(config.sentry_dsn.length > 0)
             {
-                console.log("Setting up sentry");
+                //console.log("Setting up sentry");
                 Sentry.init({
                     dsn: config.sentry_dsn,
                     environment: config.name,
@@ -261,7 +261,27 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
                         new Sentry.Integrations.Breadcrumbs({
                             console: false
                         })
-                    ]
+                    ],
+                    // The below came from: https://github.com/getsentry/sentry-javascript/issues/2292
+                    beforeSend(event, hint)
+                    {
+                        // Note: issue with double entries during http exceptions: https://github.com/getsentry/sentry-javascript/issues/2169
+                        // Note: issue with a second entry not being set correctly (as a non-error): https://github.com/getsentry/sentry-javascript/issues/2292#issuecomment-554932519
+                        const isNonErrorException = event.exception.values[0].value.startsWith("Non-Error exception captured");
+                        if(isNonErrorException)
+                        {
+                            if(!event.extra.__serialized__)
+                            {
+                                return null;
+                            }
+                            let realErrMsg = event.extra.__serialized__["error"] ? event.extra.__serialized__["error"].message : null;
+                            realErrMsg = realErrMsg || event.extra.__serialized__["message"];
+                            // this is a useless error message that masks the actual error.  Lets try to set it properly
+                            event.exception.values[0].value = realErrMsg;
+                            event.message = realErrMsg;
+                        }
+                        return event;
+                    }
                 });
 
                 const version = VERSION["raw"];

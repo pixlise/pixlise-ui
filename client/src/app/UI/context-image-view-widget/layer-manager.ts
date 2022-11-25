@@ -579,7 +579,7 @@ export class LayerManager
         }
         catch (error)
         {
-            SentryHelper.logException(error);
+            SentryHelper.logException(error, "makeLocationDataLayerForExpression");
             return null;
         }
 
@@ -623,7 +623,7 @@ export class LayerManager
         }
         catch (error)
         {
-            SentryHelper.logException(error);
+            SentryHelper.logException(error, "generatePointsIfNeeded");
             //layer.errorMessage = error;
             return error;
         }
@@ -674,7 +674,7 @@ export class LayerManager
         }
         catch (error)
         {
-            SentryHelper.logException(error);
+            SentryHelper.logException(error, "generateRGBMixLayer");
             return error;
         }
 
