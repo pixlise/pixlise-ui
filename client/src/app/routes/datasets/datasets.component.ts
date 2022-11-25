@@ -42,8 +42,6 @@ import { WidgetSettingsMenuComponent } from "src/app/UI/atoms/widget-settings-me
 import { HelpMessage } from "src/app/utils/help-message";
 import { getMB, httpErrorToString } from "src/app/utils/utils";
 import { AddDatasetDialogComponent } from "src/app/routes/datasets/add-dataset-dialog/add-dataset-dialog.component";
-import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
-import { UserManagementService } from "src/app/services/user-management.service";
 
 
 class SummaryItem
@@ -90,9 +88,6 @@ export class DatasetsComponent implements OnInit
         private _datasetService: DataSetService,
         private _viewStateService: ViewStateService,
         private _authService: AuthenticationService,
-        private _userService: UserManagementService,
-        private _loadingSvc: LoadingIndicatorService,
-        //private _userOptionsService: UserOptionsService, // Pull this in so data collection dialog is shown if needed
         public dialog: MatDialog
     )
     {
