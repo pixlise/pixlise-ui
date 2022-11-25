@@ -29,9 +29,8 @@
 
 import { BrowserModule, Title } from "@angular/platform-browser";
 import { NgModule, ErrorHandler, Injectable, APP_INITIALIZER } from "@angular/core";
-import { HTTP_INTERCEPTORS } from "@angular/common/http";
-import { HttpClientModule } from "@angular/common/http";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { HTTP_INTERCEPTORS, HttpErrorResponse, HttpClientModule } from "@angular/common/http";
+import { FormsModule } from "@angular/forms";
 import { MAT_DIALOG_DEFAULT_OPTIONS } from "@angular/material/dialog";
 import { OverlayModule } from "@angular/cdk/overlay";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
@@ -235,7 +234,16 @@ export class SentryErrorHandler implements ErrorHandler
 
     handleError(error)
     {
+        if(error instanceof HttpErrorResponse)
+        {
+            console.log("Not reporting HttpErrorResponse to Sentry...");
+            return;
+        }
+
         const eventId = SentryHelper.logException(error, "SentryErrorHandler");
+
+        // NOTE: this may stack multiple dialogs on top of each other, we have no way of knowing when the user has dismissed
+        // a sentry error dialog so we can't implement some kind of ref counting here :(
         Sentry.showReportDialog({ eventId });
     }
 }

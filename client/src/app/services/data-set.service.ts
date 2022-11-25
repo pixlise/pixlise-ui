@@ -72,8 +72,6 @@ export class DataSetService
     private _dataset$ = new ReplaySubject<DataSet>(1);
     private _datasetIDLoaded: string = null;
 
-    private _reqDatasetID$;
-
     constructor(
         private router: Router,
         private http: HttpClient,
@@ -362,6 +360,10 @@ export class DataSetService
                     },
                     (err)=>
                     {
+                        // When this happens, we clear the dialog forcefully because we got 1 or more errors loading a file
+                        // and not all error handlers will be called, dialog was stuck there
+                        this._loadingSvc.clear();
+                        
                         // MUST NOT send error on _dataset$, we only send out null or newly loaded datasets
                         // errors are handled in UI from listening to datasetLoadProgress$
                         //this._dataset$.error(err);
