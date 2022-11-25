@@ -164,7 +164,7 @@ export class ExpressionEditorComponent implements OnInit, OnDestroy
         }
         catch (error)
         {
-            SentryHelper.logException(error);
+            SentryHelper.logException(error, "ExpressionEditorComponent.findVariables");
             this._exprParts = new ExpressionParts([], [], [], "");
         }
     }

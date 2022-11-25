@@ -345,7 +345,7 @@ export class WidgetRegionDataService
             }
             catch (error)
             {
-                let errorMsg = error.message;
+                let errorMsg = httpErrorToString(error, "WidgetRegionDataService.getData")
                 SentryHelper.logMsg(true, errorMsg);
                 result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null));
                 //return null;
