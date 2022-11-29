@@ -92,12 +92,9 @@ input {
 
 .more-buttons-menu {
     display: flex;
+    padding: $sz-half;
 
     icon-button {
         margin-right: $sz-half;
-    }
-
-    icon-button:last-of-type {
-        margin-right: 0;
     }
 }

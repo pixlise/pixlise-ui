@@ -27,41 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-@import 'atoms.scss';
+import { async, ComponentFixture, TestBed } from "@angular/core/testing";
+import { TagPickerComponent } from "./tag-picker.component";
 
-.layer-control {
-}
 
-.layer-name {
-    white-space: nowrap; 
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+describe("TagPickerComponent", () => 
+{
+    let component: TagPickerComponent;
+    let fixture: ComponentFixture<TagPickerComponent>;
 
-.empty-category {
-    @extend .setting-row;
-    text-align: center;
-    color: $clr-gray-30;
-}
+    beforeEach(async(() => 
+    {
+        TestBed.configureTestingModule({
+            declarations: [ TagPickerComponent ]
+        })
+            .compileComponents();
+    }));
 
-icon-button {
-    margin-left: 6px;
-}
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(TagPickerComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-.authors-filter {
-    padding-top: 5px;
-    padding-bottom: 0;
-
-    background: #454c50 !important;
-    border-radius: $sz-half !important;
-    border: 2px solid rgb(var(--clr-gray-60));
-}
-
-::ng-deep .mat-select-panel {
-    background-color: rgb(var(--clr-gray-90)) !important;
-}
-
-tag-picker {
-    margin-left: 6px;
-}
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

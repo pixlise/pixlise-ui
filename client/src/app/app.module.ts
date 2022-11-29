@@ -140,6 +140,7 @@ import { AnnotationsComponent } from "./UI/spectrum-chart-widget/spectrum-peak-i
 import { BrowseOnChartComponent } from "./UI/spectrum-chart-widget/spectrum-peak-identification/tabs/browse-on-chart.component";
 import { PeriodicTableTabComponent } from "./UI/spectrum-chart-widget/spectrum-peak-identification/tabs/periodic-table-tab.component";
 import { ExpressionPickerComponent } from "./UI/expression-picker/expression-picker.component";
+import { TagPickerComponent } from "./UI/tag-picker/tag-picker.component";
 import { ROIPickerComponent } from "./UI/roipicker/roipicker.component";
 import { RegionItemSettingsComponent } from "./UI/roipicker/region-item-settings/region-item-settings.component";
 import { SpectrumRegionPickerComponent } from "./UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
@@ -356,6 +357,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         SpectrumEnergyCalibrationComponent,
         SpectrumPeakIdentificationComponent,
         ExpressionPickerComponent,
+        TagPickerComponent,
         BinaryPlotWidgetComponent,
         TernaryPlotWidgetComponent,
         ROIPickerComponent,

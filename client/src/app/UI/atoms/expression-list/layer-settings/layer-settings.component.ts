@@ -46,6 +46,7 @@ import { ContextImageService } from "src/app/services/context-image.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
 import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
+import { ItemTag } from "src/app/UI/tag-picker/tag-picker.component";
 
 
 export class LayerInfo
@@ -116,15 +117,22 @@ export class LayerSettingsComponent implements OnInit
     @Input() showColours: boolean;
     @Input() showVisible: boolean;
     @Input() showPureSwitch: boolean;
+    @Input() showTagPicker: boolean;
+    
     @Input() detectors: string[] = [];
+    
     @Input() activeIcon: string;
     @Input() inactiveIcon: string;
+
+    @Input() tags: ItemTag[] = [];
 
     @Output() visibilityChange = new EventEmitter();
     @Output() colourChange = new EventEmitter();
 
     private _isPureElement: boolean = false;
     private _expressionElement: string = "";
+
+    selectedTagIDs: string[] = [];
 
     constructor(
         private _exprService: DataExpressionService,
@@ -489,6 +497,11 @@ export class LayerSettingsComponent implements OnInit
         }
     }
 
+    onTagSelectionChanged(tagIDs: string[]): void
+    {
+        this.selectedTagIDs = tagIDs;
+    }
+
     get showDetectorPicker(): boolean
     {
         // We only show the option to pick a detector if the current quantification has multiple detectors.
@@ -508,6 +521,7 @@ export class LayerSettingsComponent implements OnInit
             showShare: this.showShare && !this.sharedBy,
             showDelete: this.showDelete && !this.isSharedByOtherUser,
             showDownload: this.showDownload,
+            showTagPicker: this.showTagPicker,
             showSettingsButton: this.showSettingsButton,
             showColours: this.showColours,
             showVisible: this.showVisible,

@@ -108,15 +108,11 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
     
     private _lastLayerChangeCount: number = 0;
     
-    currentAuthor: string = "Author 2";
     authors: string[] = [];
     private _filteredAuthors: string[] = [];
     
     selectedTagIDs: string[] = [];
-    _tagSearchValue: string = "";
-    filteredTags: ItemTag[] = [];
-    tagsByAuthor: AuthorTags[] = [];
-    private _tags: ItemTag[] = [
+    tags: ItemTag[] = [
         new ItemTag("1", "Layer 1", "Author 1", "2020-01-01", "Layer"),
         new ItemTag("12", "Layer 2", "Author 1", "2020-01-01", "Layer"),
         new ItemTag("13", "Layer 3", "Author 1", "2020-01-01", "Layer"),
@@ -159,8 +155,6 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                 this._userExportAllowed = false;
             }
         ));
-
-        this.groupTags();
     }
 
     onGotModel(): void
@@ -555,106 +549,9 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         this.regenerateItemList("");
     }
 
-    get tags(): ItemTag[]
+    onTagSelectionChanged(tagIDs: string[]): void
     {
-        return this._tags;
-    }
-
-    get tagCount(): number
-    {
-        return this.selectedTagIDs.length;
-    }
-
-    get tagSearchValue(): string
-    {
-        return this._tagSearchValue;
-    }
-
-    set tagSearchValue(value: string)
-    {
-        this._tagSearchValue = value.slice(0, 100);
-        this.groupTags();
-    }
-
-    onTagEnter(): void
-    {
-        if(this.filteredTags.length === 0)
-        {
-            this.onCreateNewTag(true);
-        }
-        else if(this.filteredTags.length > 0)
-        {
-            this.onToggleTag(this.filteredTags[0].id);
-            this.tagSearchValue = "";
-        }
-    }
-
-    focusOnInput(): void
-    {
-        let tagInput = document.querySelector(".tag-search-container input") as any;
-        if(tagInput && tagInput.focus)
-        {
-            tagInput.focus({focusVisible: true});
-        }
-    }
-
-    onCreateNewTag(selected: boolean = false): ItemTag
-    {
-        let currentDate = new Date().toLocaleDateString();
-        let tagID = `${this.currentAuthor.replace(/\s/g, "-")}-${this._tags.length}`;
-
-        let newTag = new ItemTag(tagID, this._tagSearchValue.trim(), this.currentAuthor, currentDate, "layer");
-        this._tags.push(newTag);
-        this.tagSearchValue = "";
-        if(selected)
-        {
-            this.selectedTagIDs.push(tagID);
-            this.focusOnInput();
-        }
-
-        return newTag;
-    }
-
-    groupTags(): void
-    {
-        this.filteredTags = this._tags.filter((tag: ItemTag) => tag.name.toLowerCase().includes(this.tagSearchValue.toLowerCase()));
-
-        let authorMap = {};
-        if(this.filteredTags.length === 0)
-        {
-            authorMap[this.currentAuthor] = [];
-        }
-
-        this.filteredTags.forEach(tag =>
-        {
-            if(!authorMap[tag.author])
-            {
-                authorMap[tag.author] = [];
-            }
-
-            authorMap[tag.author].push(tag);
-        });
-
-        this.tagsByAuthor = Object.entries(authorMap).map(([author, tags]) => ({ author, tags } as AuthorTags)).sort((a, b) => (a.author > b.author && a.author !== this.currentAuthor) ? 1 : -1);
-    }
-
-    checkTagActive(tagID: string): boolean
-    {
-        return this.selectedTagIDs.includes(tagID);
-    }
-
-    onToggleTag(tagID: string): void
-    {
-        if(this.selectedTagIDs.includes(tagID))
-        {
-            this.selectedTagIDs = this.selectedTagIDs.filter(id => id !== tagID);
-        }
-        else
-        {
-            this.selectedTagIDs.push(tagID);
-        }
-
-        this.focusOnInput();   
+        this.selectedTagIDs = tagIDs;
     }
 
     exportExpressionValues(id: string): string
