@@ -27,6 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { HttpErrorResponse } from "@angular/common/http";
 import { Rect } from "src/app/models/Geometry";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import * as Sentry from "@sentry/browser";
@@ -54,10 +55,82 @@ export class SentryHelper
     }
 
     // Wrapper for captureException, also logs to console as error
-    public static logException(error): string
+    public static logException(error: any, location: string = ""): string
     {
+        // error can be anything - we've seen sentry errors like:
+        // Non-Error exception captured with keys: error, headers, message, name, ok
+        // Coming from instances where we got a 404 for an image and somehow a non-error object was passed in here. Here we try to
+        // handle all the crap JS can throw at us and provide sentry with something it's happy to process!
+
+        // Firstly, log to console, so we may be able to capture it if needed
         console.error(error);
-        return Sentry.captureException(error);
+        if(location.length > 0)
+        {
+            console.log("Last error location: "+location);
+        }
+
+        // Now get a usable error object
+        let processableError = SentryHelper.extractError(error);
+
+        // Send this to Sentry
+        return Sentry.captureException(processableError);
+    }
+
+    // Inspired by: https://github.com/getsentry/sentry-javascript/issues/2292
+    public static extractError(error: any)
+    {
+        // Try to unwrap zone.js error.
+        // https://github.com/angular/angular/blob/master/packages/core/src/util/errors.ts
+        if(error && error.ngOriginalError)
+        {
+            error = error.ngOriginalError;
+        }
+        else if(error && error.originalError)
+        {
+            error = error.originalError;
+        }
+
+        // We can handle messages and Error objects directly.
+        if(typeof error === "string" || error instanceof Error)
+        {
+            return error;
+        }
+        // If it's http module error, extract as much information from it as we can.
+        if(error instanceof HttpErrorResponse)
+        {
+            // The `error` property of http exception can be either an `Error` object, which we can use directly...
+            if(error.error instanceof Error)
+            {
+                return error.error;
+            }
+            // ... or an`ErrorEvent`, which can provide us with the message but no stack...
+            if(error.error instanceof ErrorEvent)
+            {
+                return error.error.message;
+            }
+            // ...or the request body itself, which we can use as a message instead.
+            if(typeof error.error === "string")
+            {
+                return `Server returned code ${error.status} with body "${error.error}"`;
+            }
+            // If we don't have any detailed information, fallback to the request message itself.
+            return error.message;
+        }
+    
+        // ***** CUSTOM *****
+        // The above code doesn't always work since 'instanceof' relies on the object being created with the 'new' keyword
+        if(error.error && error.error.message)
+        {
+            return error.error.message;
+        }
+        if(error.message)
+        {
+            return error.message;
+        }
+        // ***** END CUSTOM *****
+    
+        // Skip if there's no error, and let user decide what to do with it.
+        return null;
     }
 }
 
@@ -410,7 +483,7 @@ export function positionDialogNearParent(openerRect, ourWindowRect): object
     return pos;
 }
 
-export function httpErrorToString(err, operationMsg: string): string
+export function httpErrorToString(err: any, operationMsg: string): string
 {
     console.error(err);
 

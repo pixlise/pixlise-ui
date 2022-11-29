@@ -200,7 +200,6 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
                     console.log("Restoring rgbu plot view state...");
 
                     let loadedState = this._widgetDataService.viewState.rgbuPlots.get(this.widgetPosition);
-
                     if(loadedState)
                     {
                         this._mineralsShown = loadedState.minerals,
@@ -649,6 +648,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         if(event.finish) 
         {
             this.prepareData("scaling x axis");
+            this.saveState("scaling x axis");
         }
     }
 
@@ -659,6 +659,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
         if(event.finish) 
         {
             this.prepareData("scaling y axis");
+            this.saveState("scaling y axis");
         }
     }
 

@@ -583,7 +583,7 @@ export class ClientSideExportGenerator implements ExportGenerator
                 }
                 catch (error)
                 {
-                    SentryHelper.logException(error);
+                    SentryHelper.logException(error, "generateExportCSV");
                     return error;
                 }
 

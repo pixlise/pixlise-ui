@@ -29,9 +29,8 @@
 
 import { BrowserModule, Title } from "@angular/platform-browser";
 import { NgModule, ErrorHandler, Injectable, APP_INITIALIZER } from "@angular/core";
-import { HTTP_INTERCEPTORS } from "@angular/common/http";
-import { HttpClientModule } from "@angular/common/http";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { HTTP_INTERCEPTORS, HttpErrorResponse, HttpClientModule } from "@angular/common/http";
+import { FormsModule } from "@angular/forms";
 import { MAT_DIALOG_DEFAULT_OPTIONS } from "@angular/material/dialog";
 import { OverlayModule } from "@angular/cdk/overlay";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
@@ -236,7 +235,16 @@ export class SentryErrorHandler implements ErrorHandler
 
     handleError(error)
     {
-        const eventId = SentryHelper.logException(error.originalError || error);
+        if(error instanceof HttpErrorResponse)
+        {
+            console.log("Not reporting HttpErrorResponse to Sentry...");
+            return;
+        }
+
+        const eventId = SentryHelper.logException(error, "SentryErrorHandler");
+
+        // NOTE: this may stack multiple dialogs on top of each other, we have no way of knowing when the user has dismissed
+        // a sentry error dialog so we can't implement some kind of ref counting here :(
         Sentry.showReportDialog({ eventId });
     }
 }
@@ -252,7 +260,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
             // Init sentry now that we have the config
             if(config.sentry_dsn.length > 0)
             {
-                console.log("Setting up sentry");
+                //console.log("Setting up sentry");
                 Sentry.init({
                     dsn: config.sentry_dsn,
                     environment: config.name,
@@ -262,7 +270,27 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
                         new Sentry.Integrations.Breadcrumbs({
                             console: false
                         })
-                    ]
+                    ],
+                    // The below came from: https://github.com/getsentry/sentry-javascript/issues/2292
+                    beforeSend(event, hint)
+                    {
+                        // Note: issue with double entries during http exceptions: https://github.com/getsentry/sentry-javascript/issues/2169
+                        // Note: issue with a second entry not being set correctly (as a non-error): https://github.com/getsentry/sentry-javascript/issues/2292#issuecomment-554932519
+                        const isNonErrorException = event.exception.values[0].value.startsWith("Non-Error exception captured");
+                        if(isNonErrorException)
+                        {
+                            if(!event.extra.__serialized__)
+                            {
+                                return null;
+                            }
+                            let realErrMsg = event.extra.__serialized__["error"] ? event.extra.__serialized__["error"].message : null;
+                            realErrMsg = realErrMsg || event.extra.__serialized__["message"];
+                            // this is a useless error message that masks the actual error.  Lets try to set it properly
+                            event.exception.values[0].value = realErrMsg;
+                            event.message = realErrMsg;
+                        }
+                        return event;
+                    }
                 });
 
                 const version = VERSION["raw"];

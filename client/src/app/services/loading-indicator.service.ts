@@ -94,6 +94,12 @@ export class LoadingIndicatorService
         this.updateDialog();
     }
 
+    clear(): void
+    {
+        this._items.clear();
+        this.updateDialog();
+    }
+
     private updateDialog(): void
     {
         let labels = Array.from(this._items.values());
