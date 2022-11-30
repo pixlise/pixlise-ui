@@ -95,10 +95,11 @@ export class RegionData extends ROISavedItem
         public shape: string,
         mistROIItem: MistROIItem = null,
         visible: boolean = false,
-        dateAdded: string = null
+        createUnixTimeSec: number = 0,
+        modUnixTimeSec: number = 0
     )
     {
-        super(id, name, locationIndexes, description, imageName, pixelIndexes, shared, creator, mistROIItem, visible, dateAdded);
+        super(id, name, locationIndexes, description, imageName, pixelIndexes, shared, creator, mistROIItem, visible, createUnixTimeSec, modUnixTimeSec);
     }
 
     convertToROIItem()

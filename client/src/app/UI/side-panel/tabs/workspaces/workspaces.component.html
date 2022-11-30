@@ -60,7 +60,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 (click)="onToggleWorkspaceCheckbox(item.id, $event)">
             </two-state-icon-button>
             <div fxLayout="column" class="gap-separated-vertical-elements">
-                <span class="side-panel-label" [ngClass]="{'selected': isLoadedViewState(item.id)}" title="{{item.name}}">{{item.name}}</span>
+                <span class="side-panel-label" [ngClass]="{'selected': isLoadedViewState(item.id)}" title="{{item.name}}, created: {{item.create_unix_time_sec*1000|date:'medium'}}">{{item.name}}</span>
                 <span *ngIf="showShared" class="obj-creator">{{item.creator.name}}</span>
             </div>
         </div>

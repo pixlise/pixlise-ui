@@ -389,7 +389,13 @@ export class ViewStateCollectionItem
 
 export class ViewStateCollectionWire
 {
-    constructor(public name: string, public description: string, public viewStateIDs: string[], public viewStates: Map<string, ViewState>)
+    constructor(
+        public name: string,
+        public description: string,
+        public viewStateIDs: string[],
+        public viewStates: Map<string, ViewState>,
+        public create_unix_time_sec: number,
+        public mod_unix_time_sec: number)
     {
     }
 }
@@ -410,7 +416,13 @@ export class ViewStateReferencedIDs
 
 export class SavedViewStateSummary
 {
-    constructor(public id: string, public name: string, public shared: boolean, public creator: ObjectCreator)
+    constructor(
+        public id: string,
+        public name: string,
+        public shared: boolean,
+        public creator: ObjectCreator,
+        public create_unix_time_sec: number,
+        public mod_unix_time_sec: number)
     {
     }
 }
@@ -726,7 +738,9 @@ export class ViewStateService
                     result["name"],
                     result["description"],
                     result["viewStateIDs"],
-                    viewStates
+                    viewStates,
+                    result["create_unix_time_sec"],
+                    result["mod_unix_time_sec"]
                 );
             }
             )

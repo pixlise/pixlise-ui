@@ -53,7 +53,9 @@ export class ROISavedItemWire
         public imageName: string,
         public pixelIndexes: number[],
         public shared: boolean,
-        public creator: ObjectCreator
+        public creator: ObjectCreator,
+        public create_unix_time_sec: number,
+        public mod_unix_time_sec: number
     )
     {
     }

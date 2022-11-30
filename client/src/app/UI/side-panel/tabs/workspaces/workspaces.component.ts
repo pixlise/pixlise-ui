@@ -262,7 +262,7 @@ export class WorkspacesComponent implements OnInit
                     },
                     (err)=>
                     {
-                        alert("Failed to share workspace: "+id);
+                        alert(httpErrorToString(err, "Failed to share workspace \""+id+"\""));
                     }
                 );
             },
@@ -295,7 +295,7 @@ export class WorkspacesComponent implements OnInit
             },
             (err)=>
             {
-                alert("Failed to delete workspace: "+id);
+                alert(httpErrorToString(err, "Failed to delete workspace \""+id+"\""));
                 this._viewStateService.refreshSavedStates();
             }
         );
@@ -351,7 +351,7 @@ export class WorkspacesComponent implements OnInit
             },
             (err)=>
             {
-                alert("Failed to query collections");
+                alert(httpErrorToString(err, "Failed to query collections"));
             }
         );
     }
@@ -365,7 +365,7 @@ export class WorkspacesComponent implements OnInit
             },
             (err)=>
             {
-                alert("Failed to create collection: "+collectionID);
+                alert(httpErrorToString(err, "Failed to create collection: \""+collectionID+"\""));
             }
         );
     }
@@ -380,7 +380,7 @@ export class WorkspacesComponent implements OnInit
             },
             (err)=>
             {
-                alert("Failed to create collection: "+collectionID);
+                alert(httpErrorToString(err, "Failed to add to collection: \""+collectionID+"\""));
             }
         );
     }
