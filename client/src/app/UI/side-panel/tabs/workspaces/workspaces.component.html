@@ -30,17 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div fxLayout="column" class="scrollable-content">
-<!--
-     <div
-          fxLayout="row"
-          fxLayoutAlign="space-between center"
-          class="unit-padding">
-          <div class="txt-widget-title">Workspaces</div>
-          <two-state-push-button [active]="showShared" (click)="onToggleShowShared()">Shared</two-state-push-button>
-     </div>
--->
      <div fxLayout="row" fxLayoutAlign="space-around center" class="workspace gap-separated-horizontal-elements">
-          <!-- <push-button (onClick)="onDeleteSelectedWorkspaces()" [disabled]="!hasSelectedWorkspaces" buttonStyle="outline">Delete</push-button> -->
           <push-button (onClick)="onAddToCollection()" [disabled]="!hasSelectedWorkspaces" buttonStyle="yellow">Add To Collection</push-button>
      </div>
      <div
@@ -68,7 +58,6 @@ POSSIBILITY OF SUCH DAMAGE.
             fxLayout="row"
             fxLayoutAlign="start center"
             class="gap-separated-horizontal-elements">
-            <!-- <img *ngIf="!showShared" class='clickable hover-circle' src="assets/button-icons/edit.svg" (click)="onRenameWorkspace(item.id, $event)"> -->
             <img *ngIf="!showShared" class='clickable hover-circle' src="assets/button-icons/share-small.svg" (click)="onShareWorkspace(item.id, $event)">
             <img class='clickable hover-circle' src="assets/button-icons/close-cross-gray.svg" (click)="onDeleteWorkspace(item.id, $event)">
         </div>
