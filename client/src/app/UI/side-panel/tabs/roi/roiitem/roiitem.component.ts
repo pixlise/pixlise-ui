@@ -760,6 +760,6 @@ export class ROIItemComponent implements OnInit
 
     get dateAdded(): number
     {
-        return this.regionLayer.roi?.createUnixTimeSec;
+        return this.regionLayer.roi.createUnixTimeSec*1000;
     }
 }

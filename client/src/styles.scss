@@ -289,6 +289,12 @@ h1, h2, h3 {
     user-select: none;
 }
 
+.obj-create-time {
+    color: $clr-gray-50;
+    user-select: none;
+    font-size: 12px;
+}
+
 .pickable {
     padding: $small-gap;
 

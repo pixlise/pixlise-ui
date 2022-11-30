@@ -201,18 +201,22 @@ export class ROIService
                         roi.mistROIItem.formula
                     );
                 }
-                rois.set(roiID, new ROISavedItem(
-                    roiID,
-                    roi.name,
-                    roi.locationIndexes,
-                    roi["description"] || "",
-                    roi["imageName"] || "",
-                    new Set<number>(roi["pixelIndexes"] || []),
-                    roi.shared,
-                    roi.creator,
-                    mistROI,
-                    this._lastROILookup ? this._lastROILookup[roiID]?.visible : false
-                ));
+                rois.set(roiID,
+                    new ROISavedItem(
+                        roiID,
+                        roi.name,
+                        roi.locationIndexes,
+                        roi["description"] || "",
+                        roi["imageName"] || "",
+                        new Set<number>(roi["pixelIndexes"] || []),
+                        roi.shared,
+                        roi.creator,
+                        mistROI,
+                        this._lastROILookup ? this._lastROILookup[roiID]?.visible : false,
+                        roi.create_unix_time_sec,
+                        roi.mod_unix_time_sec
+                    )
+                );
             });
 
             // At this point we know the view state would've loaded already (we're only loaded once a dataset finishes loading, and that

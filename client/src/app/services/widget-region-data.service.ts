@@ -127,6 +127,8 @@ export class RegionData extends ROISavedItem
         this.shared = roi.shared;
         this.creator = roi.creator;
         this.mistROIItem = roi.mistROIItem;
+        this.createUnixTimeSec = roi.createUnixTimeSec;
+        this.modUnixTimeSec = roi.modUnixTimeSec;
     }
 }
 

@@ -77,7 +77,9 @@ export class AnnotationItem
         public id: string,
         public roiID: string,
         public shared: boolean,
-        public creator: ObjectCreator
+        public creator: ObjectCreator,
+        public create_unix_time_sec: number,
+        public mod_unix_time_sec: number
     )
     {
     }
@@ -169,7 +171,9 @@ export class AnnotationService
                     k,
                     roiID,
                     annotation.shared,
-                    annotation.creator
+                    annotation.creator,
+                    annotation.create_unix_time_sec,
+                    annotation.mod_unix_time_sec
                 )
             );
         }

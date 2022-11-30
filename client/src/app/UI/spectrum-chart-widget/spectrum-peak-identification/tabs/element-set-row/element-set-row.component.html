@@ -32,8 +32,9 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="elem-set-row" fxLayout="row" fxLayoutAlign="space-between center">
     <div fxLayout="column">
         <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
-            <span title="{{item.id}}">{{item.name}}</span>
-            <span *ngIf="item.shared && item.creator" class="obj-creator" title="{{item.id}}">{{item.creator.name}}</span>
+            <span title="Id: {{item.id}}">{{item.name}}</span>
+            <span *ngIf="createdTime > 0" class="obj-create-time">Created: {{createdTime|date:'medium'}}</span>
+            <span *ngIf="item.shared && item.creator" class="obj-creator">By: {{item.creator.name}}</span>
         </div>
         <div fxLayout="row wrap" class="elements">
             <element-tile
