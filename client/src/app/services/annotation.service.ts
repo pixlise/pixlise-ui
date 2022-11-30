@@ -40,14 +40,8 @@ import { SelectionService } from "./selection.service";
 
 
 
-
-
-
-
-
-
 // Data types the API expects/sends us
-
+/*
 class WireAnnotationItem
 {
     constructor(
@@ -60,6 +54,7 @@ class WireAnnotationItem
     {
     }
 }
+*/
 
 class WireAnnotationItemInput
 {

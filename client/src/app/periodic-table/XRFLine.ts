@@ -28,7 +28,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { ElementLine, EscapeLine } from "./periodic-table-db";
-//import { AnnotationItem } from 'src/app/services/spectrum-annotation.service';
 
 
 export enum XRFLineType
@@ -74,12 +73,7 @@ export class XRFLine
                 this.lineType == XRFLineType.L_OTHER ||
                 this.lineType == XRFLineType.M_OTHER;
     }
-    /*
-    static makeFromAnnotationItem(item: AnnotationItem, roi: string): XRFLine
-    {
-        return new XRFLine(0, item.name, item.eV, 0, '', '', XRFLineType.ANNOTATION, [], roi);
-    }
-*/
+
     static makeXRFLineFromEscapeLine(symbol: string, atomicNumber: number, escLine: EscapeLine): XRFLine
     {
         return new XRFLine(
