@@ -68,6 +68,7 @@ export class APIPaths
     public static readonly api_diffraction = "diffraction";
     public static readonly api_rgb_mix = "rgb-mix";
     public static readonly api_logger = "logger";
+    public static readonly api_tags = "tags";
 
     // path should be one of the above, or the above with more stuff added to it, making sure / are included!
     public static getWithHost(path: string): string
