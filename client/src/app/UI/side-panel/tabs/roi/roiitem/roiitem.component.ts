@@ -758,7 +758,7 @@ export class ROIItemComponent implements OnInit
         return this.regionLayer.roi.mistROIItem?.ID_Depth || null;
     }
 
-    get dateAdded(): string
+    get dateAdded(): number
     {
         return this.regionLayer.roi?.dateAdded;
     }
