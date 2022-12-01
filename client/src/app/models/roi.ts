@@ -56,7 +56,7 @@ export class ROISavedItem
         public creator: ObjectCreator,
         public mistROIItem: MistROIItem = null,
         public visible: boolean = false,
-        public dateAdded: string = null
+        public dateAdded: number = null
     )
     {
     }

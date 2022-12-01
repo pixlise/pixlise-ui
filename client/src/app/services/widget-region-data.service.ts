@@ -95,7 +95,7 @@ export class RegionData extends ROISavedItem
         public shape: string,
         mistROIItem: MistROIItem = null,
         visible: boolean = false,
-        dateAdded: string = null
+        dateAdded: number = null
     )
     {
         super(id, name, locationIndexes, description, imageName, pixelIndexes, shared, creator, mistROIItem, visible, dateAdded);
@@ -345,7 +345,7 @@ export class WidgetRegionDataService
             }
             catch (error)
             {
-                let errorMsg = httpErrorToString(error, "WidgetRegionDataService.getData")
+                let errorMsg = httpErrorToString(error, "WidgetRegionDataService.getData");
                 SentryHelper.logMsg(true, errorMsg);
                 result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null));
                 //return null;
@@ -715,7 +715,7 @@ export class WidgetRegionDataService
         ));
     }
 
-        private resubscribeViewStateROIShapes()
+    private resubscribeViewStateROIShapes()
     {
         this._viewStateRelatedSubs.add(this._viewStateService.roiShapes$.subscribe(
             (roiShapes: Map<string, string>)=>

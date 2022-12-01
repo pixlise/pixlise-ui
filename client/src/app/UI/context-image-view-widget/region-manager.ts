@@ -475,7 +475,7 @@ export class RegionManager
 
         for(let locIdx of locationIndexes)
         {
-            if(this._dataset.locationPointCache[locIdx].polygon.length > 0)
+            if(this._dataset.locationPointCache[locIdx] && this._dataset.locationPointCache[locIdx].polygon.length > 0)
             {
                 result.push(new RegionDisplayPolygon(this._dataset.locationPointCache[locIdx].polygon, []));
             }
