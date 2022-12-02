@@ -46,7 +46,7 @@ import { ContextImageService } from "src/app/services/context-image.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
 import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
-import { ItemTag } from "src/app/UI/tag-picker/tag-picker.component";
+import { ItemTag } from "src/app/models/tags";
 
 
 export class LayerInfo
@@ -124,7 +124,7 @@ export class LayerSettingsComponent implements OnInit
     @Input() activeIcon: string;
     @Input() inactiveIcon: string;
 
-    @Input() tags: ItemTag[] = [];
+    // @Input() tags: ItemTag[] = [];
 
     @Output() visibilityChange = new EventEmitter();
     @Output() colourChange = new EventEmitter();
@@ -132,7 +132,7 @@ export class LayerSettingsComponent implements OnInit
     private _isPureElement: boolean = false;
     private _expressionElement: string = "";
 
-    selectedTagIDs: string[] = [];
+    // selectedTagIDs: string[] = [];
 
     constructor(
         private _exprService: DataExpressionService,
@@ -202,7 +202,7 @@ export class LayerSettingsComponent implements OnInit
         {
             return false;
         }
-        return this.sharedBy != null && this.layerInfo.layer.source.creator.user_id != this._authService.getUserID();
+        return this.sharedBy !== null && this.layerInfo.layer.source.creator.user_id !== this._authService.getUserID();
     }
 
     get expressionHover(): string
@@ -279,8 +279,8 @@ export class LayerSettingsComponent implements OnInit
             let state = periodicTableDB.getElementOxidationState(elem);
             if(
                 state &&
-                DataExpressionService.getPredefinedQuantExpressionDetector(id) == detector &&
-                this._isPureElement != state.isElement
+                DataExpressionService.getPredefinedQuantExpressionDetector(id) === detector &&
+                this._isPureElement !== state.isElement
             )
             {
                 this.setVisibleSubLayer(id);
@@ -497,9 +497,15 @@ export class LayerSettingsComponent implements OnInit
         }
     }
 
+    get selectedTagIDs(): string[]
+    {
+        return this.layerInfo.layer.source.tags || [];
+    }
+
     onTagSelectionChanged(tagIDs: string[]): void
     {
-        this.selectedTagIDs = tagIDs;
+        this._exprService.updateTags(this.layerInfo.layer.id, tagIDs).subscribe(() => null,
+        (err) => alert("Failed to update tags"));
     }
 
     get showDetectorPicker(): boolean

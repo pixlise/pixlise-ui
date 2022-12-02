@@ -27,19 +27,11 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Input, OnInit } from "@angular/core";
+import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { Subscription } from "rxjs";
-
-export class ItemTag
-{
-    constructor(
-        public id: string,
-        public name: string,
-        public author: string,
-        public dateCreated: string,
-        public type: string,
-    ) {}
-}
+import { ItemTag } from "src/app/models/tags";
+import { TaggingService } from "src/app/services/tagging.service";
+import { UserOptionsService } from "src/app/services/user-options.service";
 
 export interface AuthorTags
 {
@@ -56,9 +48,10 @@ export class TagPickerComponent implements OnInit
 {
     private _subs = new Subscription();
 
-    currentAuthor: string = "Author 2";
+    private _tagSelectionChanged: boolean = false;
+
+    currentAuthor: string = null;
     authors: string[] = [];
-    
     
     _tagSearchValue: string = "";
     filteredTags: ItemTag[] = [];
@@ -66,16 +59,32 @@ export class TagPickerComponent implements OnInit
     
     @Input() showCurrentTagsSection: boolean = false;
 
+    @Input() type: string = "layer";
+    @Input() editable: boolean = true;
     @Input() selectedTagIDs: string[] = [];
     @Input() tags: ItemTag[] = [];
-    @Input() onTagSelectionChanged: (tagIDs: string[]) => void = () => null;
+
+    @Output() onTagSelectionChanged = new EventEmitter<string[]>();
     
 
-    constructor()
-    {}
+    constructor(
+        private _taggingService: TaggingService,
+        private _userService: UserOptionsService
+    )
+    {
+    }
 
     ngOnInit()
     {
+        this.currentAuthor = this._userService.userConfig.name;
+        this._taggingService.refreshTagList();
+
+        this._taggingService.tags$.subscribe((tags) =>
+        {
+            this.tags = Array.from(tags.values());
+            this.groupTags();
+        });
+
         this.groupTags();
         this.focusOnInput();
     }
@@ -103,6 +112,11 @@ export class TagPickerComponent implements OnInit
 
     onTagEnter(): void
     {
+        if(!this.editable)
+        {
+            return;
+        }
+
         if(this.filteredTags.length === 0)
         {
             this.onCreateNewTag(true);
@@ -128,22 +142,25 @@ export class TagPickerComponent implements OnInit
         }
     }
 
-    onCreateNewTag(selected: boolean = false): ItemTag
+    onCreateNewTag(selected: boolean = false): void
     {
-        let currentDate = new Date().toLocaleDateString();
-        let tagID = `${this.currentAuthor.replace(/\s/g, "-")}-${this.tags.length}`;
-
-        let newTag = new ItemTag(tagID, this._tagSearchValue.trim(), this.currentAuthor, currentDate, "layer");
-        this.tags.push(newTag);
-        this.tagSearchValue = "";
-        if(selected)
+        if(!this.editable)
         {
-            this.selectedTagIDs.push(tagID);
-            this.onTagSelectionChanged(this.selectedTagIDs);
-            this.focusOnInput();
+            return;
         }
 
-        return newTag;
+        this._taggingService.createNewTag(this._tagSearchValue.trim(), this.type).subscribe(({ id }) =>
+        {
+            this._taggingService.refreshTagList();
+            if(selected)
+            {
+                this.selectedTagIDs.push(id);
+                this.onTagSelectionChanged.emit(this.selectedTagIDs);
+                this.focusOnInput();
+            }
+
+        });
+        this.tagSearchValue = "";
     }
 
     get selectedTags(): ItemTag[]
@@ -155,23 +172,28 @@ export class TagPickerComponent implements OnInit
     {
         this.filteredTags = this.tags.filter((tag: ItemTag) => tag.name.toLowerCase().includes(this.tagSearchValue.trim().toLowerCase()));
 
-        let authorMap = {};
+        let creators: Record<string, string> = {};
+        creators[this.currentAuthor] = this.currentAuthor;
+
+        let creatorMap = {};
         if(this.filteredTags.length === 0)
         {
-            authorMap[this.currentAuthor] = [];
+            creatorMap[this.currentAuthor] = [];
         }
 
         this.filteredTags.forEach(tag =>
         {
-            if(!authorMap[tag.author])
+            let userID = tag.creator.name === this.currentAuthor ? this.currentAuthor : tag.creator.user_id;
+            if(!creatorMap[userID])
             {
-                authorMap[tag.author] = [];
+                creatorMap[userID] = [];
+                creators[userID] = tag.creator.name;
             }
 
-            authorMap[tag.author].push(tag);
+            creatorMap[userID].push(tag);
         });
 
-        this.tagsByAuthor = Object.entries(authorMap).map(([author, tags]) => ({ author, tags } as AuthorTags)).sort((a, b) => (a.author > b.author && a.author !== this.currentAuthor) ? 1 : -1);
+        this.tagsByAuthor = Object.entries(creatorMap).map(([creator_id, tags]) => ({ "author": creators[creator_id], tags } as AuthorTags)).sort((a, b) => (a.author > b.author && a.author !== this.currentAuthor) ? 1 : -1);
     }
 
     checkTagActive(tagID: string): boolean
@@ -181,17 +203,33 @@ export class TagPickerComponent implements OnInit
 
     onToggleTag(tagID: string): void
     {
+        if(!this.editable)
+        {
+            return;
+        }
+
+        let newTags = this.selectedTagIDs.slice();
         if(this.selectedTagIDs.includes(tagID))
         {
-            this.selectedTagIDs = this.selectedTagIDs.filter(id => id !== tagID);
+            newTags = newTags.filter(id => id !== tagID);
         }
         else
         {
-            this.selectedTagIDs.push(tagID);
+            newTags.push(tagID);
         }
 
-        this.onTagSelectionChanged(this.selectedTagIDs);
+        this._tagSelectionChanged = true;
+        this.selectedTagIDs = newTags;
 
         this.focusOnInput();   
+    }
+
+    onClose(): void
+    {
+        if(this._tagSelectionChanged)
+        {
+            this.onTagSelectionChanged.emit(this.selectedTagIDs);
+            this._tagSelectionChanged = false;
+        }
     }
 }

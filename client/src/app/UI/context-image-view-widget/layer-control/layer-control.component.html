@@ -38,7 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <filter-box placeholder="Filter Items..." (onFilterChanged)="onFilterExpressions($event)">
             </filter-box>
             <tag-picker
-                [tags]="tags"
+                type="expression"
                 [selectedTagIDs]="selectedTagIDs"
                 [showCurrentTagsSection]="false"
                 (onTagSelectionChanged)="onTagSelectionChanged"

@@ -36,35 +36,10 @@ import { DataSet } from "src/app/models/DataSet";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { arraysEqual, httpErrorToString } from "src/app/utils/utils";
 import { DataSetService } from "./data-set.service";
-import { ViewStateService } from "./view-state.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
 import { ItemTag, ItemTagWire } from "../models/tags";
 
-// export class ItemTagWire
-// {
-//     constructor(
-//         public id: string,
-//         public name: string,
-//         public creator: ObjectCreator,
-//         public dateCreated: number,
-//         public type: string,
-//     ) {}
-// }
-
-// export class ItemTag
-// {
-//     constructor(
-//         public id: string,
-//         public name: string,
-//         public creator: ObjectCreator,
-//         public dateCreated: Date,
-//         public type: string,
-//     ) {}
-// }
-
-@Injectable({
-    providedIn: "root"
-})
+@Injectable({ providedIn: "root" })
 export class TaggingService
 {
     private _subs = new Subscription();
@@ -75,7 +50,6 @@ export class TaggingService
     constructor(
         private http: HttpClient,
         private _datasetService: DataSetService,
-        private _viewStateService: ViewStateService,
         private _loadingSvc: LoadingIndicatorService
     )
     {
@@ -102,9 +76,7 @@ export class TaggingService
                     this._tags$.next(new Map<string, ItemTag>());
                 }
             },
-            (err)=>
-            {
-            },
+            ()=>null,
             ()=>
             {
                 this.resubscribeDataset();
@@ -169,10 +141,7 @@ export class TaggingService
             this._lastTagsLookup = null;
         }
 
-        let apiURL = this.makeURL();
-        // let rois: Map<string, ROISavedItem> = new Map<string, ROISavedItem>();
-        //     Object.entries(response).forEach(([roiID, roi]) =>
-        this.http.get<Map<string, ItemTagWire>>(apiURL, makeHeaders()).subscribe((response: Map<string, ItemTagWire>)=>
+        this.http.get<Map<string, ItemTagWire>>(this.makeURL(), makeHeaders()).subscribe((response: Map<string, ItemTagWire>)=>
         {
             let tags = new Map<string, ItemTag>();
             Object.entries(response).forEach(([tagID, tag]) =>
@@ -184,7 +153,7 @@ export class TaggingService
             // If this matches what we last sent out, ignore it
             if(this.areLookupsEqual(this._lastTagsLookup, tags))
             {
-                return; // don't update, we just got sent the same ROI list
+                return; // don't update, we just got sent the same tag list
             }
 
             // Remember this for next time
@@ -200,27 +169,30 @@ export class TaggingService
         );
     }
 
-    createNewTag(item: ItemTag): Observable<void>
+    createNewTag(name: string, type: string): Observable<{ id: string; }>
     {
         let loadID = this._loadingSvc.add("Saving new Tag...");
 
-        let itemWire = new ItemTagWire(item.id, item.name, item.creator, Math.round(item.dateCreated.getTime() / 1000), item.type);
-        return this.http.post<void>(this.makeURL(), itemWire, makeHeaders()).pipe(
+        let itemWire = new ItemTagWire(null, name, null, null, type);
+        return this.http.post<{ id: string; }>(this.makeURL(), itemWire, makeHeaders()).pipe(
             tap(
-                ()=>
+                (tagID: { id: string; })=>
                 {
+                    this.refreshTagList();
                     this._loadingSvc.remove(loadID);
+                    return tagID;
                 },
                 (err)=>
                 {
                     console.error("Error occurred saving Tag", err);
                     this._loadingSvc.remove(loadID);
+                    return null;
                 }
             )
         );
     }
 
-    delete(id: string): Observable<void | ArrayBuffer>
+    delete(id: string): Observable<void | ArrayBuffer> 
     {
         let loadID = this._loadingSvc.add("Deleting Tag...");
         let apiURL = this.makeURL(id);
@@ -230,7 +202,7 @@ export class TaggingService
                 {
                     this._loadingSvc.remove(loadID);
                 },
-                (err)=>
+                ()=>
                 {
                     this._loadingSvc.remove(loadID);
                 }

@@ -34,7 +34,7 @@ import { tap } from "rxjs/operators";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
 
 
 export class ChannelConfigWire
@@ -71,7 +71,8 @@ class RGBMixWire
         public blue: ChannelConfigWire,
         public shared: boolean,
         public creator: ObjectCreator,
-        public visible: boolean = false
+        public visible: boolean = false,
+        public tags: string[] = []
     )
     {
     }
@@ -104,7 +105,8 @@ export class RGBMix
         public blue: ChannelConfig,
         public shared: boolean,
         public creator: ObjectCreator,
-        public visible: boolean
+        public visible: boolean,
+        public tags: string[] = []
     )
     {
     }

@@ -60,10 +60,11 @@ POSSIBILITY OF SUCH DAMAGE.
             </icon-button>
             <tag-picker
                 *ngIf="layerButton === 'showTagPicker'"
-                [tags]="tags"
+                type="expression"
                 [selectedTagIDs]="selectedTagIDs"
                 [showCurrentTagsSection]="true"
-                (onTagSelectionChanged)="onTagSelectionChanged"
+                [editable]="!isSharedByOtherUser"
+                (onTagSelectionChanged)="onTagSelectionChanged($event)"
             >
             </tag-picker>
             <icon-button

@@ -51,22 +51,6 @@ import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogC
 import { DataSetService } from "src/app/services/data-set.service";
 import { PredefinedROIID } from "src/app/models/roi";
 
-export class ItemTag
-{
-    constructor(
-        public id: string,
-        public name: string,
-        public author: string,
-        public dateCreated: string,
-        public type: string,
-    ) {}
-}
-
-export interface AuthorTags
-{
-    author: string;
-    tags: ItemTag[];
-}
 
 
 export class LayerDetails
@@ -112,15 +96,6 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
     private _filteredAuthors: string[] = [];
     
     selectedTagIDs: string[] = [];
-    tags: ItemTag[] = [
-        new ItemTag("1", "Layer 1", "Author 1", "2020-01-01", "Layer"),
-        new ItemTag("12", "Layer 2", "Author 1", "2020-01-01", "Layer"),
-        new ItemTag("13", "Layer 3", "Author 1", "2020-01-01", "Layer"),
-        new ItemTag("14", "Layer 4", "Author 2", "2020-01-01", "Layer"),
-        new ItemTag("15", "Layer 5", "Author 2", "2020-01-01", "Layer"),
-        new ItemTag("16", "Layer 6", "Author 2", "2020-01-01", "Layer"),
-        new ItemTag("17", "Layer 7", "Author 3", "2020-01-01", "Layer"),
-    ];
 
     constructor(
         private _contextImageService: ContextImageService,

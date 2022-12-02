@@ -36,7 +36,7 @@ import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications"
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { DataSetService } from "src/app/services/data-set.service";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
-import { UNICODE_GREEK_LOWERCASE_PSI, UNICODE_MATHEMATICAL_F } from "src/app/utils/utils";
+import { UNICODE_GREEK_LOWERCASE_PSI } from "src/app/utils/utils";
 import { QuantificationService } from "./quantification.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
 
@@ -47,7 +47,8 @@ class DataExpressionInput
         public name: string,
         public expression: string,
         public type: string,
-        public comments: string
+        public comments: string,
+        public tags: string[] = [],
     )
     {
     }
@@ -62,7 +63,8 @@ class DataExpressionWire
         public type: string,
         public comments: string,
         public shared: boolean,
-        public creator: ObjectCreator
+        public creator: ObjectCreator,
+        public tags: string[] = [],
     )
     {
     }
@@ -83,7 +85,8 @@ export class DataExpression
         public type: string,
         public comments: string,
         public shared: boolean,
-        public creator: ObjectCreator
+        public creator: ObjectCreator,
+        public tags: string[] = [],
     )
     {
         this.parseRequiredQuantificationData();
@@ -326,21 +329,21 @@ export class DataExpressionService
         let t0 = performance.now();
         let receivedExprs = new Map<string, DataExpression>();
 
-        for(let key of Object.keys(respObj)) // This really should've been a map but it's not :( Thanks typescript/JS/angular
-        //for(let [key, value] of resp)
+        Object.entries(respObj).forEach(([id, expression]: [string, DataExpression])=>
         {
-            let value = respObj[key];
+            let toAdd = new DataExpression(
+                id,
+                expression.name,
+                expression.expression,
+                expression.type,
+                expression.comments || "",
+                expression.shared,
+                expression.creator,
+                expression.tags || []
+            );
 
-            // This wasn't in old expressions...
-            let comments = value.comments;
-            if(!comments)
-            {
-                comments = "";
-            }
-
-            let toAdd = new DataExpression(key, value.name, value.expression, value.type, comments, value.shared, value.creator);
-            receivedExprs.set(key, toAdd);
-        }
+            receivedExprs.set(id, toAdd);
+        });
 
         // Back up existing
         let existingExprs = this._expressions;
@@ -754,7 +757,7 @@ export class DataExpressionService
     edit(id: string, name: string, expression: string, type: string, comments: string): Observable<object>
     {
         let loadID = this._loadingSvc.add("Saving changed expression...");
-        let apiURL = APIPaths.getWithHost(APIPaths.api_data_expression+"/"+id);
+        let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
 
         let toSave = new DataExpressionInput(name, expression, type, comments);
         return this.http.put<object>(apiURL, toSave, makeHeaders())
@@ -762,6 +765,31 @@ export class DataExpressionService
                 tap(
                     (resp: object)=>
                     {
+                        this.processReceivedExpressionList(resp);
+                        this._loadingSvc.remove(loadID);
+                    },
+                    (err)=>
+                    {
+                        this._loadingSvc.remove(loadID);
+                    }
+                )
+            );
+    }
+
+    updateTags(id: string, tags: string[]): Observable<object>
+    {
+        let loadID = this._loadingSvc.add("Saving new expression tags...");
+        let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
+
+        let expression = this.getExpression(id);
+        let toSave = new DataExpressionInput(expression.name, expression.expression, expression.type, expression.comments, tags);
+        console.log("SAVING TAGS", apiURL, id, toSave)
+        return this.http.put<object>(apiURL, toSave, makeHeaders())
+            .pipe(
+                tap(
+                    (resp: object)=>
+                    {
+                        console.log("PUT RESP", resp)
                         this.processReceivedExpressionList(resp);
                         this._loadingSvc.remove(loadID);
                     },
