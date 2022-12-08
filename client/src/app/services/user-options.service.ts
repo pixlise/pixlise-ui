@@ -35,6 +35,7 @@ import { AuthenticationService } from "src/app/services/authentication.service";
 import { DataCollectionDialogComponent } from "src/app/UI/data-collection-dialog/data-collection-dialog.component";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
+import { httpErrorToString } from "../utils/utils";
 
 
 export class NotificationMethod
@@ -155,11 +156,6 @@ export class UserOptionsService
         return APIPaths.getWithHost(APIPaths.api_notification+"/"+path);
     }
 
-    private makeUserConfigURL(): string
-    {
-        return APIPaths.getWithHost(APIPaths.api_user_management+"/config");
-    }
-
     private refreshOptions(): void
     {
         this.refreshUserConfig();
@@ -187,7 +183,7 @@ export class UserOptionsService
                 },
                 (err)=>
                 {
-                    console.error("Failed to save data collection: "+JSON.stringify(err));
+                    console.error(httpErrorToString(err, "Failed to save data collection ("+this._userConfig.data_collection+")"));
                 }
                 );
             }
@@ -202,7 +198,7 @@ export class UserOptionsService
         },
         (err)=>
         {
-            console.error("Failed to save data collection: "+JSON.stringify(err));
+            console.error(httpErrorToString(err, "Failed to save data collection ("+this._userConfig.data_collection+")"));
         }
         );
     }
@@ -213,7 +209,7 @@ export class UserOptionsService
             (version: { version: string; })=>
             {
                 this._version = version.version;
-                this.http.get<UserConfig>(this.makeUserConfigURL(), makeHeaders()).subscribe(
+                this.http.get<UserConfig>(this.makeURL("config"), makeHeaders()).subscribe(
                     (config: UserConfig)=>
                     {
                         this._userConfig = config;
@@ -226,7 +222,7 @@ export class UserOptionsService
                     },
                     (err)=>
                     {
-                        console.error("Failed to retrieve user config: "+JSON.stringify(err));
+                        console.error(httpErrorToString(err, "Failed to retrieve user config"));
                     }
                 );
             });
@@ -248,7 +244,7 @@ export class UserOptionsService
             },
             (err)=>
             {
-                console.error("Failed to retrieve subscriptions: "+JSON.stringify(err));
+                console.error(httpErrorToString(err, "Failed to retrieve user subscriptions"));
             }
         );
     }
@@ -266,14 +262,14 @@ export class UserOptionsService
             },
             (err)=>
             {
-                console.error("Failed to retrieve user hints: "+JSON.stringify(err));
+                console.error(httpErrorToString(err, "Failed to retrieve user hints"));
             }
         );
     }
 
     private saveUserConfig(): Observable<void>
     {
-        let apiURL = this.makeUserConfigURL();
+        let apiURL = this.makeURL("config");
         return this.http.post<void>(apiURL, this._userConfig, makeHeaders());
     }
 
@@ -285,7 +281,7 @@ export class UserOptionsService
         },
         (err)=>
         {
-            console.error("Failed to save notification subscriptions: "+JSON.stringify(err));
+            console.error(httpErrorToString(err, "Failed to save user subscriptions"));
         }
         );
     }
@@ -298,7 +294,7 @@ export class UserOptionsService
         },
         (err)=>
         {
-            console.error("Failed to save user hints: "+JSON.stringify(err));
+            console.error(httpErrorToString(err, "Failed to save user hints"));
         }
         );
     }
