@@ -96,7 +96,7 @@ export class TagPickerComponent implements OnInit
 
     get tagCount(): number
     {
-        return this.selectedTagIDs.length;
+        return this.selectedTags.length;
     }
 
     get tagSearchValue(): string
@@ -161,6 +161,21 @@ export class TagPickerComponent implements OnInit
 
         });
         this.tagSearchValue = "";
+    }
+
+    onDeleteTag(tagID: string): void
+    {
+        if(!this.editable)
+        {
+            return;
+        }
+
+        this.selectedTagIDs = this.selectedTagIDs.filter(id => id !== tagID);
+        this._taggingService.delete(tagID).subscribe(() =>
+        {
+            this._taggingService.refreshTagList();
+            this.focusOnInput();
+        });
     }
 
     get selectedTags(): ItemTag[]

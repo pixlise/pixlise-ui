@@ -117,3 +117,27 @@
         background-color: rgb(var(--clr-gray-70));
     }
 }
+
+.tag {
+    padding: 0 !important;
+
+    .toggle-tag-container {
+        flex: 1;
+        width: 100%;
+        display: flex;
+        align-items: center;
+
+        padding: $sz-half;
+    }
+}
+
+.delete-button {
+    margin-right: $sz-unit;
+    padding: 5px;
+
+    cursor: pointer;
+
+    &:hover path {
+        fill: rgb(var(--clr-gray-10));
+    }
+}

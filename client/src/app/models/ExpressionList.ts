@@ -925,7 +925,7 @@ export class ExpressionListGroupItems
                     if(filterTagIDs && filterTagIDs.length > 0)
                     {
                         let tagIDs = item.layer?.source?.tags;
-                        if(!filterTagIDs.every(tag => tagIDs.includes(tag)))
+                        if(!tagIDs || !filterTagIDs.every(tag => tagIDs.includes(tag)))
                         {
                             // Was not tagged with one of the tags in the filter list
                             continue;

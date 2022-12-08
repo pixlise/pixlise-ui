@@ -195,15 +195,19 @@ export class TaggingService
     delete(id: string): Observable<void | ArrayBuffer> 
     {
         let loadID = this._loadingSvc.add("Deleting Tag...");
+
         let apiURL = this.makeURL(id);
-        return this.http.delete<void>(apiURL, makeHeaders()).pipe(
+
+        return this.http.request<void>("delete", apiURL, makeHeaders()).pipe(
             tap(
                 ()=>
                 {
+                    this.refreshTagList();
                     this._loadingSvc.remove(loadID);
                 },
-                ()=>
+                (err)=>
                 {
+                    console.error("Error occurred deleting Tag", err);
                     this._loadingSvc.remove(loadID);
                 }
             )

@@ -403,7 +403,7 @@ export class RGBMixConfigService
                         value.shared,
                         value.creator,
                         value.visible,
-                        value.tags
+                        value.tags || []
                     );
 
                     this._rgbMixes.set(key, toAdd);
