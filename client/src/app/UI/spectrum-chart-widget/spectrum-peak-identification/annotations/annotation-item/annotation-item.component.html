@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="row" fxLayoutAlign="space-between center" class="setting-row gap-separated-horizontal-elements">
     <div fxLayout="column" fxFlex="100%">
-        <div class="setting-label">{{label}}</div>
+        <div class="setting-label" title="{{(createdTime > 0) ? (createdTime|date:'medium') : ''}}">{{label}}</div>
         <div class="detail">{{details}}</div>
     </div>
     <div fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements">

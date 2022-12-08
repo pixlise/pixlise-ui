@@ -34,7 +34,7 @@ import { tap } from "rxjs/operators";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
 
 
 export class ChannelConfigWire
@@ -71,7 +71,9 @@ class RGBMixWire
         public blue: ChannelConfigWire,
         public shared: boolean,
         public creator: ObjectCreator,
-        public visible: boolean = false
+        public visible: boolean,
+        public create_unix_time_sec: number,
+        public mod_unix_time_sec: number
     )
     {
     }
@@ -104,7 +106,9 @@ export class RGBMix
         public blue: ChannelConfig,
         public shared: boolean,
         public creator: ObjectCreator,
-        public visible: boolean
+        public visible: boolean,
+        public createUnixTimeSec: number,
+        public modUnixTimeSec: number
     )
     {
     }
@@ -247,7 +251,9 @@ export class RGBMixConfigService
             new ChannelConfig(blueExpressionId, 0, 0, exprs[2] ? exprs[2].name : redExpressionId, exprs[2] ? exprs[2].isCompatibleWithQuantification : true),
             false,
             null,
-            visible
+            visible,
+            0,
+            0
         );
         this._rgbExploratoryVisible = visible;
     }
@@ -376,7 +382,9 @@ export class RGBMixConfigService
                         this.readSavedChannelConfig(value.blue),
                         value.shared,
                         value.creator,
-                        value.visible
+                        value.visible,
+                        value.create_unix_time_sec,
+                        value.mod_unix_time_sec
                     );
 
                     this._rgbMixes.set(key, toAdd);

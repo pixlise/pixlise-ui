@@ -197,6 +197,16 @@ export class LayerSettingsComponent implements OnInit
         return this.sharedBy != null && this.layerInfo.layer.source.creator.user_id != this._authService.getUserID();
     }
 
+    get createdTime(): number
+    {
+        let t = 0;
+        if(this.layerInfo.layer.source.createUnixTimeSec)
+        {
+            t = this.layerInfo.layer.source.createUnixTimeSec*1000;
+        }
+        return t;
+    }
+
     get expressionHover(): string
     {
         if(this.layerInfo.layer.source)
@@ -420,7 +430,7 @@ export class LayerSettingsComponent implements OnInit
                 }
                 else
                 {
-                    let expr = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator);
+                    let expr = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec);
                     this._exprService.edit(this.layerInfo.layer.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments).subscribe(
                         ()=>
                         {

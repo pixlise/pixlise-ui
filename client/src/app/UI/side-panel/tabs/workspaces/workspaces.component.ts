@@ -262,7 +262,7 @@ export class WorkspacesComponent implements OnInit
                     },
                     (err)=>
                     {
-                        alert("Failed to share workspace: "+id);
+                        alert(httpErrorToString(err, "Failed to share workspace \""+id+"\""));
                     }
                 );
             },
@@ -295,7 +295,7 @@ export class WorkspacesComponent implements OnInit
             },
             (err)=>
             {
-                alert("Failed to delete workspace: "+id);
+                alert(httpErrorToString(err, "Failed to delete workspace \""+id+"\""));
                 this._viewStateService.refreshSavedStates();
             }
         );
@@ -351,7 +351,7 @@ export class WorkspacesComponent implements OnInit
             },
             (err)=>
             {
-                alert("Failed to query collections");
+                alert(httpErrorToString(err, "Failed to query collections"));
             }
         );
     }
@@ -365,7 +365,7 @@ export class WorkspacesComponent implements OnInit
             },
             (err)=>
             {
-                alert("Failed to create collection: "+collectionID);
+                alert(httpErrorToString(err, "Failed to create collection: \""+collectionID+"\""));
             }
         );
     }
@@ -380,83 +380,11 @@ export class WorkspacesComponent implements OnInit
             },
             (err)=>
             {
-                alert("Failed to create collection: "+collectionID);
+                alert(httpErrorToString(err, "Failed to add to collection: \""+collectionID+"\""));
             }
         );
     }
 
-    /*
-    onDeleteSelectedWorkspaces(): void
-    {
-        if(!confirm('Are you sure you want to delete the selected workspaces?'))
-        {
-            return;
-        }
-
-        if(!this._datasetService.datasetIDLoaded)
-        {
-            alert('Cannot get dataset ID');
-            return;
-        }
-
-        // Get the selection
-        let ids = Array.from(this._selectedViewStateIDs);
-
-         // Clear it
-        this._selectedViewStateIDs = [];
-
-        // Delete each one
-        let deleteResults = [];
-
-        for(let id of ids)
-        {
-            deleteResults.push(this._viewStateService.deleteViewState(this._datasetService.datasetIDLoaded, id));
-        }
-
-        // Wait for all deletes to complete
-        let all$ = combineLatest(deleteResults);
-        all$.subscribe(
-            (data)=>
-            {
-                this._viewStateService.refreshSavedStates();
-            },
-            (err)=>
-            {
-                alert('Failed to delete one or more selected view states');
-                this._viewStateService.refreshSavedStates();
-            }
-        );
-    }
-*/
-/*
-    onRenameWorkspace(id: string, event): void
-    {
-        event.stopPropagation();
-
-        if(!this._datasetService.datasetIDLoaded)
-        {
-            alert("Cannot get dataset ID");
-            return;
-        }
-
-        let newId = prompt("Enter new name for workspace");
-
-        if(!newId)
-        {
-            // user cancelled
-            return;
-        }
-
-        this._viewStateService.renameViewState(this._datasetService.datasetIDLoaded, id, newId).subscribe(
-            ()=>
-            {
-            },
-            (err)=>
-            {
-            }
-        );
-    }
-*/
     onToggleShowShared(): void
     {
         this.showShared = !this.showShared;
