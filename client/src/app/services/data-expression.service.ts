@@ -324,60 +324,32 @@ export class DataExpressionService
         );
     }
 
-    private processReceivedExpressionList(respObj: object): void
+    private processReceivedExpressionList(receivedDataExpressions: object, deleteReceived: boolean = false): void
     {
         let t0 = performance.now();
-        let receivedExprs = new Map<string, DataExpression>();
 
-        Object.entries(respObj).forEach(([id, expression]: [string, DataExpression])=>
+        // Only update changed expressions
+        Object.entries(receivedDataExpressions).forEach(([id, expression]: [string, DataExpression])=>
         {
-            let toAdd = new DataExpression(
-                id,
-                expression.name,
-                expression.expression,
-                expression.type,
-                expression.comments || "",
-                expression.shared,
-                expression.creator,
-                expression.tags || []
-            );
-
-            receivedExprs.set(id, toAdd);
-        });
-
-        // Back up existing
-        let existingExprs = this._expressions;
-
-        // Read in new ones
-        this._expressions = new Map<string, DataExpression>();
-
-        let hadUser = false;
-        let hadShared = false;
-        for(let [id, expr] of receivedExprs)
-        {
-            this._expressions.set(id, expr);
-            if(expr.shared)
+            if(deleteReceived)
             {
-                hadShared = true;
+                this._expressions.delete(id);
             }
             else
             {
-                hadUser = true;
+                let receivedDataExpression = new DataExpression(
+                    id,
+                    expression.name,
+                    expression.expression,
+                    expression.type,
+                    expression.comments || "",
+                    expression.shared,
+                    expression.creator,
+                    expression.tags || []
+                );
+                this._expressions.set(id, receivedDataExpression);
             }
-        }
-
-        // If new ones didn't have shared or non-shared, substitute with what we already have, because responses to things like put/share
-        // may only return the shared list which they edited
-        if(!hadShared || !hadUser)
-        {
-            for(let [id, expr] of existingExprs)
-            {
-                if(!hadUser && !expr.shared || !hadShared && expr.shared)
-                {
-                    this._expressions.set(id, expr);
-                }
-            }
-        }
+        });
 
         this.checkQuantCompatibleExpressions();
 
@@ -783,13 +755,12 @@ export class DataExpressionService
 
         let expression = this.getExpression(id);
         let toSave = new DataExpressionInput(expression.name, expression.expression, expression.type, expression.comments, tags);
-        console.log("SAVING TAGS", apiURL, id, toSave)
+
         return this.http.put<object>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(
                     (resp: object)=>
                     {
-                        console.log("PUT RESP", resp)
                         this.processReceivedExpressionList(resp);
                         this._loadingSvc.remove(loadID);
                     },
@@ -810,7 +781,8 @@ export class DataExpressionService
                 tap(
                     (resp: object)=>
                     {
-                        this.processReceivedExpressionList(resp);
+                        // Response is a dictionary of deleted IDs, so we need to remove them from the list
+                        this.processReceivedExpressionList(resp, true);
                         this._loadingSvc.remove(loadID);
                     },
                     (err)=>

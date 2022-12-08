@@ -41,12 +41,12 @@ POSSIBILITY OF SUCH DAMAGE.
                 type="expression"
                 [selectedTagIDs]="selectedTagIDs"
                 [showCurrentTagsSection]="false"
-                (onTagSelectionChanged)="onTagSelectionChanged"
+                (onTagSelectionChanged)="onTagSelectionChanged($event)"
             >
             </tag-picker>
             <mat-select multiple [(ngModel)]="filteredAuthors" class="authors-filter" placeholder="Author ...">
                 <mat-option *ngFor="let author of authors;"
-                    [value]="author">{{author}}
+                    [value]="author.user_id">{{author.name}}
                 </mat-option>
             </mat-select>
             <icon-button *ngIf="showHideAllButton" icon="assets/button-icons/visible-off.svg" [hasBackground]="false"

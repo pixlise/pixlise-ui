@@ -221,7 +221,12 @@ export class TagPickerComponent implements OnInit
         this._tagSelectionChanged = true;
         this.selectedTagIDs = newTags;
 
-        this.focusOnInput();   
+        if(!this.showCurrentTagsSection)
+        {
+            this.onTagSelectionChanged.emit(this.selectedTagIDs);
+        }
+
+        this.focusOnInput();
     }
 
     onClose(): void
