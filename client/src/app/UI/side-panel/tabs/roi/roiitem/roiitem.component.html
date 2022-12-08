@@ -73,11 +73,11 @@ POSSIBILITY OF SUCH DAMAGE.
             </two-state-icon-button>
             <div fxLayout="column" class="gap-separated-vertical-elements" class="label-container">
                 <div class="side-panel-label" title="{{labelToShow}}">{{labelToShow}}</div>
-                <div *ngIf="level !== null || dateAdded !== null" class="metadata-line" title="Level">
+                <div *ngIf="level !== null || dateAdded > 0" class="metadata-line" title="Level">
                     <div *ngIf="level !== null" class="level-dots" title="Level">
                         <div class="level-dot {{hasLevel ? 'filled' : ''}}" *ngFor="let hasLevel of levelIterator"></div>
                     </div>
-                    <div class="date-added" title="Date Added">{{dateAdded}}</div>
+                    <div class="date-added" title="Date Added">{{dateAdded|date:'medium'}}</div>
                 </div>
                 <div *ngIf="sharedBy" class="obj-creator" title="Shared by this user">{{sharedBy}}</div>
             </div>

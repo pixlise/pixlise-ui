@@ -71,4 +71,14 @@ export class ElementSetRowComponent implements OnInit
     {
         this.onDelete.emit(this.item);
     }
+
+    get createdTime(): number
+    {
+        let t = 0;
+        if(this.item.create_unix_time_sec)
+        {
+            t = this.item.create_unix_time_sec*1000;
+        }
+        return t;
+    }
 }

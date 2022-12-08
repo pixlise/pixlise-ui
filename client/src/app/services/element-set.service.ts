@@ -55,7 +55,9 @@ export class ElementSetSummary
         public name: string,
         public atomicNumbers: number[],
         public shared: boolean,
-        public creator: ObjectCreator
+        public creator: ObjectCreator,
+        public create_unix_time_sec: number,
+        public mod_unix_time_sec: number
     )
     {
     }
@@ -80,7 +82,9 @@ export class ElementSetItem
         public name: string,
         public lines: ElementSetItemLines[],
         public shared: boolean,
-        public creator: ObjectCreator
+        public creator: ObjectCreator,
+        public create_unix_time_sec: number,
+        public mod_unix_time_sec: number
     )
     {
     }
@@ -133,7 +137,17 @@ export class ElementSetService
             //for(let [key, value] of resp)
             {
                 let value = resp[key];
-                summaries.push(new ElementSetSummary(key, value.name, value.atomicNumbers, value.shared, value.creator));
+                summaries.push(
+                    new ElementSetSummary(
+                        key,
+                        value.name,
+                        value.atomicNumbers,
+                        value.shared,
+                        value.creator,
+                        value.create_unix_time_sec,
+                        value.mod_unix_time_sec
+                    )
+                );
             }
             this._elementSets$.next(summaries);
         },

@@ -112,6 +112,30 @@ export class ScreenCaptureButtonComponent implements OnInit
 
                 const dialogRef = this.dialog.open(UserPromptDialogComponent, dialogConfig);
 
+                const handleSaveOK = (name: string, collection: string)=>
+                {
+                    // If user also wanted to save it into a collection...
+                    if(collection)
+                    {
+                        // Save to the named one
+                        this._viewStateService.addViewStateToCollection(this.datasetID, [name], collection).subscribe(
+                            ()=>
+                            {
+                                this._notificationService.addNotification("Workspace saved: "+name+" and added to collection: "+collection);
+                            },
+                            (err)=>
+                            {
+                                alert("Saved workspace, but failed to add to collection: "+collection);
+                            }
+                        );
+                    }
+                    else
+                    {
+                        // We're done, alert here
+                        this._notificationService.addNotification("Workspace saved: "+name);
+                    }
+                }
+
                 dialogRef.afterClosed().subscribe(
                     (result: UserPromptDialogResult)=>
                     {
@@ -122,33 +146,35 @@ export class ScreenCaptureButtonComponent implements OnInit
                             let name = result.enteredValues.get("Name");
                             let collection = result.enteredValues.get(colName);
 
-                            this._viewStateService.saveViewState(this.datasetID, name).subscribe(
+                            this._viewStateService.saveViewState(this.datasetID, name, false).subscribe(
                                 ()=>
                                 {
-                                    // If user also wanted to save it into a collection...
-                                    if(collection)
-                                    {
-                                        // Save to the named one
-                                        this._viewStateService.addViewStateToCollection(this.datasetID, [name], collection).subscribe(
-                                            ()=>
-                                            {
-                                                this._notificationService.addNotification("Workspace saved: "+name+" and added to collection: "+collection);
-                                            },
-                                            (err)=>
-                                            {
-                                                alert("Saved workspace, but failed to add to collection: "+collection);
-                                            }
-                                        );
-                                    }
-                                    else
-                                    {
-                                        // We're done, alert here
-                                        this._notificationService.addNotification("Workspace saved: "+name);
-                                    }
+                                    handleSaveOK(name, collection);
                                 },
                                 (err)=>
                                 {
-                                    alert("Failed to save workspace: "+name);
+                                    // It may have failed because there is already one with this name. Here we allow the user
+                                    // to force-overwrite
+                                    if(err["status"] == 409) // 409=Conflict
+                                    {
+                                        if(confirm("A workspace named "+name+" already exists. Are you sure you want to overwrite it?"))
+                                        {
+                                            this._viewStateService.saveViewState(this.datasetID, name, true).subscribe(
+                                                ()=>
+                                                {
+                                                    handleSaveOK(name, collection);
+                                                },
+                                                (err)=>
+                                                {
+                                                    alert("Failed to save workspace: "+name);
+                                                }
+                                            );
+                                        }
+                                    }
+                                    else
+                                    {
+                                        alert("Failed to save workspace: "+name);
+                                    }
                                 }
                             );
                         }

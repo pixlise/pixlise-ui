@@ -36,7 +36,7 @@ import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications"
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { DataSetService } from "src/app/services/data-set.service";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
-import { UNICODE_GREEK_LOWERCASE_PSI, UNICODE_MATHEMATICAL_F } from "src/app/utils/utils";
+import { UNICODE_GREEK_LOWERCASE_PSI } from "src/app/utils/utils";
 import { QuantificationService } from "./quantification.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
 
@@ -62,7 +62,9 @@ class DataExpressionWire
         public type: string,
         public comments: string,
         public shared: boolean,
-        public creator: ObjectCreator
+        public creator: ObjectCreator,
+        public create_unix_time_sec: number,
+        public mod_unix_time_sec: number
     )
     {
     }
@@ -83,7 +85,9 @@ export class DataExpression
         public type: string,
         public comments: string,
         public shared: boolean,
-        public creator: ObjectCreator
+        public creator: ObjectCreator,
+        public createUnixTimeSec: number,
+        public modUnixTimeSec: number
     )
     {
         this.parseRequiredQuantificationData();
@@ -338,7 +342,7 @@ export class DataExpressionService
                 comments = "";
             }
 
-            let toAdd = new DataExpression(key, value.name, value.expression, value.type, comments, value.shared, value.creator);
+            let toAdd = new DataExpression(key, value.name, value.expression, value.type, comments, value.shared, value.creator, value.create_unix_time_sec, value.mod_unix_time_sec);
             receivedExprs.set(key, toAdd);
         }
 
@@ -714,7 +718,9 @@ export class DataExpressionService
             DataExpressionService.DataExpressionTypeAll, // TODO: bad hard code here! Should be a param for this func
             "Built-in expression",
             false,
-            null
+            null,
+            0,
+            0
         );
 
         // Run the compatibility checker on this
