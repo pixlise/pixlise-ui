@@ -46,7 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
             </icon-button>
             <tag-picker
                 *ngIf="layerButton === 'showTagPicker'"
-                type="expression"
+                type="rgbmix"
                 [selectedTagIDs]="selectedTagIDs"
                 [showCurrentTagsSection]="true"
                 [editable]="!isSharedByOtherUser"
@@ -99,7 +99,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     </icon-button>
                     <tag-picker
                         *ngIf="layerButton === 'showTagPicker'"
-                        type="expression"
+                        type="rgbmix"
                         [selectedTagIDs]="selectedTagIDs"
                         [showCurrentTagsSection]="true"
                         [editable]="!isSharedByOtherUser"

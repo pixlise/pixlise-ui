@@ -37,6 +37,7 @@ export class ItemTagWire
         public creator: ObjectCreator,
         public dateCreated: number,
         public type: string,
+        public datasetID: string = ""
     ) {}
 }
 
@@ -48,6 +49,7 @@ export class ItemTag
         public creator: ObjectCreator,
         public dateCreated: Date,
         public type: string,
+        public datasetID: string = ""
     ) {}
 
     public static equals(a: ItemTag, b: ItemTag): boolean
