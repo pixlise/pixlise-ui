@@ -48,14 +48,16 @@ POSSIBILITY OF SUCH DAMAGE.
             <div class="author-container" *ngIf="showCurrentTagsSection">
                 <h3>Current Tags</h3>
                 <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements tag" *ngFor="let tag of selectedTags" (click)="onToggleTag(tag.id)">
-                    <two-state-icon-button
-                        *ngIf="editable"
-                        activeIcon="assets/button-icons/check-on.svg"
-                        inactiveIcon="assets/button-icons/check-off.svg"
-                        [active]="checkTagActive(tag.id)"
-                    >
-                    </two-state-icon-button>
-                    <div class="tag-title {{editable ? '' : 'disabled'}}">{{tag.name}}</div>
+                    <div class="toggle-tag-container">
+                        <two-state-icon-button
+                            *ngIf="editable"
+                            activeIcon="assets/button-icons/check-on.svg"
+                            inactiveIcon="assets/button-icons/check-off.svg"
+                            [active]="checkTagActive(tag.id)"
+                        >
+                        </two-state-icon-button>
+                        <div class="tag-title {{editable ? '' : 'disabled'}}">{{tag.name}}</div>
+                    </div>
                 </div>
             </div>
             <ng-container *ngIf="editable">

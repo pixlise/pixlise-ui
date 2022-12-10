@@ -74,8 +74,10 @@ input {
 .comment {
     color: $clr-gray-40;
     font-size: 12px;
-    overflow-wrap: break-word;
-    max-width: 500px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 25vw;
 }
 
 .obj-creator {
