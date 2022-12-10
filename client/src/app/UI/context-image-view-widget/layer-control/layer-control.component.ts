@@ -341,7 +341,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     onAddExpression(): void
     {
-        this.showExpressionEditor(new DataExpression("", "", "", DataExpressionService.DataExpressionTypeAll, "", false, null)).subscribe(
+        this.showExpressionEditor(new DataExpression("", "", "", DataExpressionService.DataExpressionTypeAll, "", false, null, 0, 0)).subscribe(
             (expr: DataExpression)=>
             {
                 if(expr)
@@ -387,7 +387,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                         let toReturn: DataExpression = null;
                         if(dlgResult)
                         {
-                            toReturn = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator);
+                            toReturn = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec);
                         }
 
                         observer.next(toReturn);

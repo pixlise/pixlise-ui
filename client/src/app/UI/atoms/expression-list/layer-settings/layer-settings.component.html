@@ -172,6 +172,9 @@ POSSIBILITY OF SUCH DAMAGE.
             </ng-container>
         </div>
     </div>
-    <div *ngIf="expressionComments.length > 0" class="comment" title="{{expressionComments}}">{{expressionComments}}</div>
+    <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
+        <div *ngIf="createdTime > 0" class="obj-create-time">Created: {{createdTime|date:'medium'}}</div>
+        <div *ngIf="expressionComments.length > 0" class="comment" title="{{expressionComments}}">{{expressionComments}}</div>
+    </div>
     <!-- <div *ngIf="expressionErrorMessage.length > 0" class="expr-error" title="{{expressionErrorMessage}}">{{expressionErrorMessage}}</div> -->
 </div>

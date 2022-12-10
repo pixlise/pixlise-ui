@@ -93,7 +93,7 @@ export class ExpressionEditorComponent implements OnInit, OnDestroy
     )
     {
         // Make a copy of incoming expression, so we don't edit what's there!
-        this._expr = new DataExpression(data.expr.id, data.expr.name, data.expr.expression, data.expr.type, data.expr.comments, data.expr.shared, data.expr.creator);
+        this._expr = new DataExpression(data.expr.id, data.expr.name, data.expr.expression, data.expr.type, data.expr.comments, data.expr.shared, data.expr.creator, data.expr.createUnixTimeSec, data.expr.modUnixTimeSec);
         this.findVariables();
 
         // https://stackoverflow.com/questions/62676638/ngx-codemirror-cursor-is-not-working-correctly-angular-8

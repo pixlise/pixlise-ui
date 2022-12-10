@@ -389,7 +389,13 @@ export class ViewStateCollectionItem
 
 export class ViewStateCollectionWire
 {
-    constructor(public name: string, public description: string, public viewStateIDs: string[], public viewStates: Map<string, ViewState>)
+    constructor(
+        public name: string,
+        public description: string,
+        public viewStateIDs: string[],
+        public viewStates: Map<string, ViewState>,
+        public create_unix_time_sec: number,
+        public mod_unix_time_sec: number)
     {
     }
 }
@@ -410,7 +416,13 @@ export class ViewStateReferencedIDs
 
 export class SavedViewStateSummary
 {
-    constructor(public id: string, public name: string, public shared: boolean, public creator: ObjectCreator)
+    constructor(
+        public id: string,
+        public name: string,
+        public shared: boolean,
+        public creator: ObjectCreator,
+        public create_unix_time_sec: number,
+        public mod_unix_time_sec: number)
     {
     }
 }
@@ -603,16 +615,21 @@ export class ViewStateService
         );
     }
 
-    saveViewState(datasetID: string, viewStateTitle: string, forceFlag: boolean = false): Observable<void>
+    saveViewState(datasetID: string, viewStateTitle: string, force: boolean): Observable<void>
     {
         let loadID = this._loadingSvc.add("Saving view state...");
-        let apiURL = this.makeSavedViewStateURL(datasetID, viewStateTitle, forceFlag);
+        let apiURL = this.makeSavedViewStateURL(datasetID, viewStateTitle);
+        if(force)
+        {
+            apiURL += "?force=true";
+        }
+
         let viewStateWireObj = this.makeWireViewState(this._viewState);
 
         // We now send up as an object with a name in it
         let data = {
             "viewState": viewStateWireObj,
-            "name": viewStateTitle,
+            "name": viewStateTitle
         };
 
         // Save it and it successful or error, refresh the list
@@ -655,30 +672,6 @@ export class ViewStateService
             )
         );
     }
-/*
-    renameViewState(datasetID: string, existingViewStateID: string, newViewStateID: string): Observable<void>
-    {
-        let loadID = this._loadingSvc.add("Renaming view state...");
-
-        let apiURL = APIPaths.getWithHost(APIPaths.api_view_state);
-        apiURL += "/saved/"+datasetID+"/"+existingViewStateID+"/rename";
-
-        return this.http.post<void>(apiURL, newViewStateID, makeHeaders()).pipe(
-            tap(
-                ()=>
-                {
-                    this._loadingSvc.remove(loadID);
-                    this.refreshSavedStates();
-                },
-                (err)=>
-                {
-                    this._loadingSvc.remove(loadID);
-                    this.refreshSavedStates();
-                }
-            )
-        );
-    }
-*/
     // View state collections
     private makeViewStateCollectionURL(datasetID: string, collectionID: string): string
     {
@@ -726,7 +719,9 @@ export class ViewStateService
                     result["name"],
                     result["description"],
                     result["viewStateIDs"],
-                    viewStates
+                    viewStates,
+                    result["create_unix_time_sec"],
+                    result["mod_unix_time_sec"]
                 );
             }
             )

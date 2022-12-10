@@ -170,7 +170,7 @@ export class AnnotationEditorComponent implements OnInit
 
     createNewWorkspace(name: string)
     {
-        this._viewStateService.saveViewState(this.data.datasetID, name).subscribe(
+        this._viewStateService.saveViewState(this.data.datasetID, name, false).subscribe(
             ()=>
             {
                 // We're done, alert here

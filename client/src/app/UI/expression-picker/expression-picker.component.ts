@@ -269,7 +269,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
         dialogConfig.disableClose = true;
         //dialogConfig.backdropClass = "panel";
 
-        let blankExpr = new DataExpression("", "", "", this.data.exprType, "", false, null);
+        let blankExpr = new DataExpression("", "", "", this.data.exprType, "", false, null, 0, 0);
         dialogConfig.data = new ExpressionEditorConfig(blankExpr, true);
 
         const dialogRef = this.dialog.open(ExpressionEditorComponent, dialogConfig);

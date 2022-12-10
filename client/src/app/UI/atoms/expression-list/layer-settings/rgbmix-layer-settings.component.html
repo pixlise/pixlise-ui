@@ -77,6 +77,7 @@ POSSIBILITY OF SUCH DAMAGE.
             fxLayout="row" fxLayoutAlign="space-between center" fxFlex="100%">
             <div fxLayout="row" class="gap-separated-horizontal-elements">
                 <div class="setting-label" title="{{tooltip}}" [ngClass]='{"incompatible": incompatibleWithQuant}'>{{label}}</div>
+                <span *ngIf="createdTime > 0" class="obj-create-time">Created: {{createdTime|date:'medium'}}</span>
                 <div *ngIf="sharedBy" class="obj-creator">{{sharedBy}}</div>
             </div>
 

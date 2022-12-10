@@ -72,7 +72,9 @@ class RGBMixWire
         public blue: ChannelConfigWire,
         public shared: boolean,
         public creator: ObjectCreator,
-        public visible: boolean = false,
+        public visible: boolean,
+        public create_unix_time_sec: number,
+        public mod_unix_time_sec,
         public tags: string[] = []
     )
     {
@@ -107,7 +109,9 @@ export class RGBMix
         public shared: boolean,
         public creator: ObjectCreator,
         public visible: boolean,
-        public tags: string[] = []
+        public createUnixTimeSec: number,
+        public modUnixTimeSec: number
+        public tags: string[] = [],
     )
     {
     }
@@ -250,7 +254,9 @@ export class RGBMixConfigService
             new ChannelConfig(blueExpressionId, 0, 0, exprs[2] ? exprs[2].name : redExpressionId, exprs[2] ? exprs[2].isCompatibleWithQuantification : true),
             false,
             null,
-            visible
+            visible,
+            0,
+            0
         );
         this._rgbExploratoryVisible = visible;
     }
@@ -403,6 +409,8 @@ export class RGBMixConfigService
                         value.shared,
                         value.creator,
                         value.visible,
+                        value.create_unix_time_sec,
+                        value.mod_unix_time_sec,
                         value.tags || []
                     );
 

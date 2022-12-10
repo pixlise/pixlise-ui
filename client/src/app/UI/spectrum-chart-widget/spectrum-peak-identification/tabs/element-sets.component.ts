@@ -106,7 +106,15 @@ export class ElementSetsComponent implements OnInit, OnDestroy
 
         if(rawQuantElementAtomicNumbers.length > 0)
         {
-            this.quantElementSet = new ElementSetSummary(SPECIAL_QUANT_ID, "All Quantified Elements", rawQuantElementAtomicNumbers, false, null);
+            this.quantElementSet = new ElementSetSummary(
+                SPECIAL_QUANT_ID,
+                "All Quantified Elements",
+                rawQuantElementAtomicNumbers,
+                false,
+                null,
+                0,
+                0
+            );
         }
 
         // And add all others

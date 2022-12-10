@@ -166,6 +166,16 @@ export class RGBMixLayerSettingsComponent implements OnInit
         return this.sharedBy != null && this.layerInfo.layer.source.creator.user_id != this._authService.getUserID();
     }
 
+    get createdTime(): number
+    {
+        let t = 0;
+        if(this.layerInfo.layer.source.createUnixTimeSec)
+        {
+            t = this.layerInfo.layer.source.createUnixTimeSec*1000;
+        }
+        return t;
+    }
+
     get incompatibleWithQuant(): boolean
     {
         if(!this.layerInfo.layer.source)

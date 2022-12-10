@@ -64,6 +64,8 @@ class DataExpressionWire
         public comments: string,
         public shared: boolean,
         public creator: ObjectCreator,
+        public create_unix_time_sec: number,
+        public mod_unix_time_sec: number,
         public tags: string[] = [],
     )
     {
@@ -86,6 +88,8 @@ export class DataExpression
         public comments: string,
         public shared: boolean,
         public creator: ObjectCreator,
+        public createUnixTimeSec: number,
+        public modUnixTimeSec: number,
         public tags: string[] = [],
     )
     {
@@ -345,8 +349,11 @@ export class DataExpressionService
                     expression.comments || "",
                     expression.shared,
                     expression.creator,
+                    expression.createUnixTimeSec,
+                    expression.modUnixTimeSec,
                     expression.tags || []
                 );
+
                 this._expressions.set(id, receivedDataExpression);
             }
         });
@@ -689,7 +696,9 @@ export class DataExpressionService
             DataExpressionService.DataExpressionTypeAll, // TODO: bad hard code here! Should be a param for this func
             "Built-in expression",
             false,
-            null
+            null,
+            0,
+            0
         );
 
         // Run the compatibility checker on this
