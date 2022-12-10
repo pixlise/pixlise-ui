@@ -110,7 +110,7 @@ export class RGBMix
         public creator: ObjectCreator,
         public visible: boolean,
         public createUnixTimeSec: number,
-        public modUnixTimeSec: number
+        public modUnixTimeSec: number,
         public tags: string[] = [],
     )
     {
