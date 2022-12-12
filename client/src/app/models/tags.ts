@@ -27,44 +27,34 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-@import 'atoms.scss';
+import { ObjectCreator } from "./BasicTypes";
 
-.icon-btn {
-    width: 24px;
-    height: 24px;
-
-    background-repeat: no-repeat;
-    background-position: center;
+export class ItemTagWire
+{
+    constructor(
+        public id: string,
+        public name: string,
+        public creator: ObjectCreator,
+        public dateCreated: number,
+        public type: string,
+        public datasetID: string = ""
+    ) {}
 }
 
-.button-inactive {
-    background-color: $clr-gray-60;
-}
+export class ItemTag
+{
+    constructor(
+        public id: string,
+        public name: string,
+        public creator: ObjectCreator,
+        public dateCreated: Date,
+        public type: string,
+        public datasetID: string = ""
+    ) {}
 
-.icon-button-background {
-    background-color: $clr-gray-60;
-    filter: drop-shadow(0px 0px $sz-half $clr-shadow);
-    border-radius: $sz-half;
-}
-
-.button-active {
-    margin: 0px;
-    border: $sz-qtr solid $clr-yellow;
-}
-
-.button-active-overridden {
-    margin: 0px;
-    border: $sz-qtr solid rgba(var(--clr-yellow), 0.25);
-}
-
-.button-disabled {
-    background-color: $clr-gray-80;
-}
-
-
-.notifications {
-    position: absolute;
-    top: -6.5px;   
-    right: -6.5px;
+    public static equals(a: ItemTag, b: ItemTag): boolean
+    {
+        return a.id === b.id && a.name === b.name && a.creator.user_id === b.creator.user_id 
+        && a.dateCreated.getTime() === b.dateCreated.getTime() && a.type === b.type;
+    }
 }

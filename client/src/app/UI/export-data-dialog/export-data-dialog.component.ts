@@ -80,7 +80,6 @@ export class ExportDataDialogComponent implements OnInit
 
     minHeight: number = 0;
 
-    //rois: ROISavedItem[] = [];
     private _selectedROIs: string[] = [];
 
     quants: ExportQuantChoice[] = [];
@@ -280,7 +279,8 @@ export class ExportDataDialogComponent implements OnInit
 
         let weightedChoices = {
             "raw-spectra": 3,
-            "ui-roi-expressions": this._selectedExpressionIds.length * this._selectedROIs.length
+            "ui-roi-expressions": this._selectedExpressionIds.length * this._selectedROIs.length,
+            "rois": this._selectedROIs.length,
         };
 
         this.visibleChoices.forEach((choice) =>
@@ -516,6 +516,7 @@ export class ExportDataDialogComponent implements OnInit
         dialogConfig.data = new ROIPickerData(false, false, true, false, this._selectedROIs, true, true, null);
 
         const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
+        dialogRef.componentInstance.isDisplayed = false;
 
         dialogRef.afterClosed().subscribe(
             (selectedROIs: string[])=>

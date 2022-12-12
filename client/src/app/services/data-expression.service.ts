@@ -47,7 +47,8 @@ class DataExpressionInput
         public name: string,
         public expression: string,
         public type: string,
-        public comments: string
+        public comments: string,
+        public tags: string[] = [],
     )
     {
     }
@@ -64,7 +65,8 @@ class DataExpressionWire
         public shared: boolean,
         public creator: ObjectCreator,
         public create_unix_time_sec: number,
-        public mod_unix_time_sec: number
+        public mod_unix_time_sec: number,
+        public tags: string[] = [],
     )
     {
     }
@@ -87,7 +89,8 @@ export class DataExpression
         public shared: boolean,
         public creator: ObjectCreator,
         public createUnixTimeSec: number,
-        public modUnixTimeSec: number
+        public modUnixTimeSec: number,
+        public tags: string[] = [],
     )
     {
         this.parseRequiredQuantificationData();
@@ -325,60 +328,35 @@ export class DataExpressionService
         );
     }
 
-    private processReceivedExpressionList(respObj: object): void
+    private processReceivedExpressionList(receivedDataExpressions: object, deleteReceived: boolean = false): void
     {
         let t0 = performance.now();
-        let receivedExprs = new Map<string, DataExpression>();
 
-        for(let key of Object.keys(respObj)) // This really should've been a map but it's not :( Thanks typescript/JS/angular
-        //for(let [key, value] of resp)
+        // Only update changed expressions
+        Object.entries(receivedDataExpressions).forEach(([id, expression]: [string, DataExpression])=>
         {
-            let value = respObj[key];
-
-            // This wasn't in old expressions...
-            let comments = value.comments;
-            if(!comments)
+            if(deleteReceived)
             {
-                comments = "";
-            }
-
-            let toAdd = new DataExpression(key, value.name, value.expression, value.type, comments, value.shared, value.creator, value.create_unix_time_sec, value.mod_unix_time_sec);
-            receivedExprs.set(key, toAdd);
-        }
-
-        // Back up existing
-        let existingExprs = this._expressions;
-
-        // Read in new ones
-        this._expressions = new Map<string, DataExpression>();
-
-        let hadUser = false;
-        let hadShared = false;
-        for(let [id, expr] of receivedExprs)
-        {
-            this._expressions.set(id, expr);
-            if(expr.shared)
-            {
-                hadShared = true;
+                this._expressions.delete(id);
             }
             else
             {
-                hadUser = true;
-            }
-        }
+                let receivedDataExpression = new DataExpression(
+                    id,
+                    expression.name,
+                    expression.expression,
+                    expression.type,
+                    expression.comments || "",
+                    expression.shared,
+                    expression.creator,
+                    expression.createUnixTimeSec,
+                    expression.modUnixTimeSec,
+                    expression.tags || []
+                );
 
-        // If new ones didn't have shared or non-shared, substitute with what we already have, because responses to things like put/share
-        // may only return the shared list which they edited
-        if(!hadShared || !hadUser)
-        {
-            for(let [id, expr] of existingExprs)
-            {
-                if(!hadUser && !expr.shared || !hadShared && expr.shared)
-                {
-                    this._expressions.set(id, expr);
-                }
+                this._expressions.set(id, receivedDataExpression);
             }
-        }
+        });
 
         this.checkQuantCompatibleExpressions();
 
@@ -760,9 +738,33 @@ export class DataExpressionService
     edit(id: string, name: string, expression: string, type: string, comments: string): Observable<object>
     {
         let loadID = this._loadingSvc.add("Saving changed expression...");
-        let apiURL = APIPaths.getWithHost(APIPaths.api_data_expression+"/"+id);
+        let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
 
         let toSave = new DataExpressionInput(name, expression, type, comments);
+        return this.http.put<object>(apiURL, toSave, makeHeaders())
+            .pipe(
+                tap(
+                    (resp: object)=>
+                    {
+                        this.processReceivedExpressionList(resp);
+                        this._loadingSvc.remove(loadID);
+                    },
+                    (err)=>
+                    {
+                        this._loadingSvc.remove(loadID);
+                    }
+                )
+            );
+    }
+
+    updateTags(id: string, tags: string[]): Observable<object>
+    {
+        let loadID = this._loadingSvc.add("Saving new expression tags...");
+        let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
+
+        let expression = this.getExpression(id);
+        let toSave = new DataExpressionInput(expression.name, expression.expression, expression.type, expression.comments, tags);
+
         return this.http.put<object>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(
@@ -788,7 +790,8 @@ export class DataExpressionService
                 tap(
                     (resp: object)=>
                     {
-                        this.processReceivedExpressionList(resp);
+                        // Response is a dictionary of deleted IDs, so we need to remove them from the list
+                        this.processReceivedExpressionList(resp, true);
                         this._loadingSvc.remove(loadID);
                     },
                     (err)=>

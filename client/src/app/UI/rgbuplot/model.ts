@@ -393,7 +393,7 @@ export class RGBUPlotModel
             // Remember if it's selected...
             if(binMemberInfo[idx]) 
             {
-                binMemberInfo[idx].selected = currSelPixels.has(srcPixelIdxs[c]) || currentPixelGroups.selected;
+                binMemberInfo[idx].selected = binMemberInfo[idx].selected || currentPixelGroups.selected;
                 binMemberInfo[idx].rois = Array.from(new Set([...binMemberInfo[idx].rois, ...currentPixelGroups.rois]));
             }
             else 

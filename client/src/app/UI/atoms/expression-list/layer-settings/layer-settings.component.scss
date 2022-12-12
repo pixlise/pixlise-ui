@@ -74,8 +74,10 @@ input {
 .comment {
     color: $clr-gray-40;
     font-size: 12px;
-    overflow-wrap: break-word;
-    max-width: 500px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 25vw;
 }
 
 .obj-creator {
@@ -92,12 +94,9 @@ input {
 
 .more-buttons-menu {
     display: flex;
+    padding: $sz-half;
 
     icon-button {
         margin-right: $sz-half;
-    }
-
-    icon-button:last-of-type {
-        margin-right: 0;
     }
 }

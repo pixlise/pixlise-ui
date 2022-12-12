@@ -58,6 +58,15 @@ POSSIBILITY OF SUCH DAMAGE.
                 icon="assets/button-icons/delete.svg"
                 (click)="onDelete()">
             </icon-button>
+            <tag-picker
+                *ngIf="layerButton === 'showTagPicker'"
+                type="expression"
+                [selectedTagIDs]="selectedTagIDs"
+                [showCurrentTagsSection]="true"
+                [editable]="!isSharedByOtherUser"
+                (onTagSelectionChanged)="onTagSelectionChanged($event)"
+            >
+            </tag-picker>
             <icon-button
                 *ngIf="layerButton === 'showDownload'"
                 title="Download this expression"

@@ -345,7 +345,8 @@ export class ObjectCreator
 {
     constructor(
         public name: string,
-        public user_id: string
+        public user_id: string,
+        public email?: string,
     )
     {
     }

@@ -50,6 +50,8 @@ import { ExpressionListGroupNames, ExpressionListItems, LayerViewItem } from "sr
 import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { DataSetService } from "src/app/services/data-set.service";
 import { PredefinedROIID } from "src/app/models/roi";
+import { ObjectCreator } from "src/app/models/BasicTypes";
+
 
 
 export class LayerDetails
@@ -65,9 +67,8 @@ export class LayerDetails
         public expressionID: string,
         public opacity: number,
         public visible: boolean,
-        public shared: boolean)
-    {
-    }
+        public shared: boolean
+    ) {}
 }
 
 @Component({
@@ -86,16 +87,16 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     private _userExportAllowed: boolean = false;
     private _filterText: string = "";
-
+    
     headerSectionsOpen: Set<string> = new Set<string>();
     items: ExpressionListItems = null;
-
+    
     private _lastLayerChangeCount: number = 0;
-
-    authors: string[] = [];
+    
+    private _authors: ObjectCreator[] = [];
     private _filteredAuthors: string[] = [];
-
-    //private _groups: ExpressionListGroupItems[] = [];
+    
+    selectedTagIDs: string[] = [];
 
     constructor(
         private _contextImageService: ContextImageService,
@@ -203,16 +204,62 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     private populateAuthorsList(): void
     {
-        let items = this.getLayerManager().makeExpressionList(new Set(["expressions-header", "rgbmix-header"]), "", this._contextImageService.lastSubLayerOwners, []);
+        let items = this.getLayerManager().makeExpressionList(new Set(["expressions-header", "rgbmix-header"]), "", this._contextImageService.lastSubLayerOwners, [], this.selectedTagIDs);
+        
+        let duplicateNames = new Set<string>();
+        let existingNames = new Set<string>();
+        let existingIDs = new Set<string>();
+
         if(items && items.items && items.items.length > 0)
         {
-            this.authors = [...new Set(items.items.map((item) => item.content?.layer?.source?.creator?.name))].filter((author) => author).sort();
+            let authorMap = new Map<string, ObjectCreator>();
+            items.items.forEach((item) =>
+            {
+                let creator = item.content?.layer?.source?.creator;
+                let id = creator?.user_id;
+
+                if(id)
+                {
+                    if(authorMap.has(id) && authorMap[id])
+                    {
+                        // Some expressions were created prior to name changes, so we need to group by ID and prefer the non-email one
+                        let { name, email } = authorMap[id];
+                        authorMap[id].name = email.includes(name) ? creator.name : name;
+                    }
+                    else
+                    {
+                        authorMap.set(id, creator);
+                    }
+
+                    // Check for duplicate names so we can name them differently in the dropdown, while keeping IDs unique
+                    if(existingNames.has(creator.name) && !existingIDs.has(creator.user_id))
+                    {
+                        duplicateNames.add(creator.name);
+                    }
+                    else
+                    {
+                        existingNames.add(creator.name);
+                        existingIDs.add(creator.user_id);
+                    }
+                }
+            });
+
+            // Rename creators with duplicate names to include email
+            for(let [, creator] of authorMap)
+            {
+                if(duplicateNames.has(creator.name))
+                {
+                    creator.name = `${creator.name} (${creator.email})`;
+                }
+            }
+           
+            this.authors = Array.from(authorMap.values()).sort((a, b) => a.name > b.name ? 1 : -1);
         }
     }
 
     private regenerateItemList(fromGroupHeaderName: string): void
     {
-        let items = this.getLayerManager().makeExpressionList(this.headerSectionsOpen, this._filterText, this._contextImageService.lastSubLayerOwners, this.filteredAuthors);
+        let items = this.getLayerManager().makeExpressionList(this.headerSectionsOpen, this._filterText, this._contextImageService.lastSubLayerOwners, this.filteredAuthors, this.selectedTagIDs);
         if(!items)
         {
             return;
@@ -512,6 +559,16 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         return false;
     }
 
+    get authors(): ObjectCreator[]
+    {
+        return this._authors;
+    }
+
+    set authors(authors: ObjectCreator[])
+    {
+        this._authors = authors;
+    }
+
     get filteredAuthors(): string[]
     {
         return this._filteredAuthors;
@@ -524,9 +581,10 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         this.regenerateItemList("");
     }
 
-    onFilterTags(): void
+    onTagSelectionChanged(tagIDs: string[]): void
     {
-
+        this.selectedTagIDs = tagIDs;
+        this.regenerateItemList("");
     }
 
     exportExpressionValues(id: string): string
@@ -576,7 +634,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     getAllElements(): LayerViewItem[]
     {
-        let items = this.getLayerManager().makeExpressionList(new Set(["elements-header"]), "", this._contextImageService.lastSubLayerOwners, []);
+        let items = this.getLayerManager().makeExpressionList(new Set(["elements-header"]), "", this._contextImageService.lastSubLayerOwners, [], []);
         return items.items.filter((item) => item.itemType == "element-map");
     }
 

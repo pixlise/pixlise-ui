@@ -37,18 +37,22 @@ POSSIBILITY OF SUCH DAMAGE.
         <div fxLayout="row">
             <filter-box placeholder="Filter Items..." (onFilterChanged)="onFilterExpressions($event)">
             </filter-box>
-            <!-- <icon-button icon="assets/button-icons/tag.svg" (onClick)="onFilterTags()">
-            </icon-button> -->
+            <tag-picker
+                type="expression"
+                [selectedTagIDs]="selectedTagIDs"
+                [showCurrentTagsSection]="false"
+                (onTagSelectionChanged)="onTagSelectionChanged($event)"
+            >
+            </tag-picker>
             <mat-select multiple [(ngModel)]="filteredAuthors" class="authors-filter" placeholder="Author ...">
                 <mat-option *ngFor="let author of authors;"
-                    [value]="author">{{author}}
+                    [value]="author.user_id">{{author.name}}
                 </mat-option>
             </mat-select>
             <icon-button *ngIf="showHideAllButton" icon="assets/button-icons/visible-off.svg" [hasBackground]="false"
                 (onClick)="onHideAllLayers()">
             </icon-button>
         </div>
-        <!-- <push-button *ngIf="showExportButton" buttonStyle="yellow" (click)="onExport()">Export Panel</push-button> -->
     </div>
     <expression-list
         [headerSectionsOpen]="headerSectionsOpen"
