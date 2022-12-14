@@ -52,7 +52,10 @@ export class WidgetSwitcherComponent implements OnInit
     selectableOptions: SelectableWidget[] = [
         new SelectableWidget(ViewStateService.widgetSelectorBinaryPlot, "Binary"),
         new SelectableWidget(ViewStateService.widgetSelectorChordDiagram, "Chord"),
-        new SelectableWidget(ViewStateService.widgetSelectorContextImage, "Context Image"),
+        // Removed because we decided to make context fixed in top-left, as the image/layers button opens the panel below
+        // Looks really weird with 2 context images or one in a different location with the image/layers panels opening in
+        // bottom-left anyway!
+        //new SelectableWidget(ViewStateService.widgetSelectorContextImage, "Context Image"),
         new SelectableWidget(ViewStateService.widgetSelectorHistogram, "Histogram"),
         new SelectableWidget(ViewStateService.widgetSelectorParallelCoordinates, "Parallel Coords"),
         new SelectableWidget(ViewStateService.widgetSelectorRGBUViewer, "RGBU Images"),

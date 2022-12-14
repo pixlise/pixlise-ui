@@ -186,7 +186,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
         {
             this._pointColourScheme = state.pointColourScheme;
         }
-        this._showPoints = state.showPoints;
+        this._showPointBBox = state.showPointBBox;
         if(state.pointBBoxColourScheme)
         {
             this._pointBBoxColourScheme = state.pointBBoxColourScheme;
