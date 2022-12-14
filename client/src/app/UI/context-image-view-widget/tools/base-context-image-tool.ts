@@ -168,7 +168,7 @@ export class BaseContextImageTool implements CanvasInteractionHandler, CanvasDra
 
     protected drawFootprint(screenContext: CanvasRenderingContext2D): void
     {
-        let dataset = this._ctx.dataset;
+        //let dataset = this._ctx.dataset;
 
         let clrs = getSchemeColours(this._ctx.pointBBoxColourScheme);
         const clrInner = clrs[0].asString();
@@ -181,7 +181,7 @@ export class BaseContextImageTool implements CanvasInteractionHandler, CanvasDra
 
         screenContext.lineWidth = lineWidth;
 
-        let center = this._ctx.dataset.locationPointBBox.center();
+        //let center = this._ctx.dataset.locationPointBBox.center();
 
         let footprintDrawer = new FootprintDrawer(this._ctx);
 
