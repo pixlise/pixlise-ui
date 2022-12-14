@@ -57,3 +57,11 @@ icon-button {
     border-radius: $sz-half !important;
     border: 2px solid rgb(var(--clr-gray-60));
 }
+
+::ng-deep .mat-select-panel {
+    background-color: rgb(var(--clr-gray-90)) !important;
+}
+
+tag-picker {
+    margin-left: 6px;
+}

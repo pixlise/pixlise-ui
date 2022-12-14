@@ -29,7 +29,7 @@
 
 import { CdkOverlayOrigin, ConnectionPositionPair, Overlay, OverlayConfig, OverlayRef } from "@angular/cdk/overlay";
 import { ComponentPortal } from "@angular/cdk/portal";
-import { Component, Injector, Input, OnInit, TemplateRef, ViewChild, ViewContainerRef } from "@angular/core";
+import { Component, EventEmitter, Injector, Input, OnInit, Output, TemplateRef, ViewChild, ViewContainerRef } from "@angular/core";
 import { MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { MenuPanelHostComponent, MenuPanelHostData } from "./menu-panel-host/menu-panel-host.component";
 
@@ -60,6 +60,7 @@ export class WidgetSettingsMenuComponent implements OnInit
 
     @Input() settingsDialog: TemplateRef<any> = null;
     @Input() openDirDown: boolean = true;
+    @Output() onClose = new EventEmitter();
 
     private _overlayRef: OverlayRef = null;
 
@@ -114,6 +115,7 @@ export class WidgetSettingsMenuComponent implements OnInit
         this._overlayRef = null;
 
         let result = ref.detach();
+        this.onClose.emit();
         // NOTE: 
     }
 

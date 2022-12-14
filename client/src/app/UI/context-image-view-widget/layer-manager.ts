@@ -144,7 +144,7 @@ export class LayerManager
         }
     }
 
-    makeExpressionList(headerSectionsOpen: Set<string>, filterText: string, lastElementSubLayerOwnerIDs: Set<string>, filterAuthors: string[] = []): ExpressionListItems
+    makeExpressionList(headerSectionsOpen: Set<string>, filterText: string, lastElementSubLayerOwnerIDs: Set<string>, filterAuthors: string[] = [], filterTagIDs: string[] = []): ExpressionListItems
     {
         // If we have no layers stored yet, regenerateLayers wasn't called yet... so bail
         if(this._layers.getLayerArray().length <= 0)
@@ -176,6 +176,7 @@ export class LayerManager
             lastElementSubLayerOwnerIDs,
             filterText,
             filterAuthors,
+            filterTagIDs,
             true,
             (source: DataExpression|RGBMix): LocationDataLayerProperties=>
             {

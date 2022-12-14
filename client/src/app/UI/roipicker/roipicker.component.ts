@@ -77,6 +77,7 @@ export class ROIPickerComponent implements OnInit
     mistROIs: ROISettingsItem[] = [];
     userROIs: ROISettingsItem[] = [];
     sharedROIs: ROISettingsItem[] = [];
+    isDisplayed: boolean = true;
 
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: ROIPickerData,
@@ -245,7 +246,7 @@ export class ROIPickerComponent implements OnInit
                 if(this.isShowingColourButton(roiID))
                 {
                     let clr = this._viewStateService.getROIColour(roiID);
-                    if(!roi.active && clr.length <= 0)
+                    if(this.isDisplayed && !roi.active && clr.length <= 0)
                     {
                         alert("Please set a colour before turning on region visibility");
                         return;

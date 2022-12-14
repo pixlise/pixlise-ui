@@ -29,6 +29,47 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
+<ng-template #moreButtonsMenu>
+    <div class="more-buttons-menu">
+        <ng-container *ngFor="let layerButton of hiddenLayerButtons">
+            <icon-button
+                *ngIf="layerButton === 'showShare'"
+                title="Share this RGB Mix"
+                icon="assets/button-icons/share.svg"
+                (click)="onShare()">
+            </icon-button>
+            <icon-button
+                *ngIf="layerButton === 'showDelete'"
+                title="Delete this RGB Mix"
+                icon="assets/button-icons/delete.svg"
+                (click)="onDelete()">
+            </icon-button>
+            <tag-picker
+                *ngIf="layerButton === 'showTagPicker'"
+                type="rgbmix"
+                [selectedTagIDs]="selectedTagIDs"
+                [showCurrentTagsSection]="true"
+                [editable]="!isSharedByOtherUser"
+                (onTagSelectionChanged)="onTagSelectionChanged($event)"
+            >
+            </tag-picker>
+            <icon-button
+                *ngIf="layerButton === 'showDownload'"
+                title="Download this RGB Mix"
+                icon="assets/button-icons/export.svg"
+                (click)="onDownload()">
+            </icon-button>
+            <icon-button
+                *ngIf="layerButton === 'showEdit'"
+                title="Edit this RGB Mix"
+                icon="assets/button-icons/edit.svg"
+                (click)="onEdit()">
+            </icon-button>
+        </ng-container>
+    </div>
+</ng-template>
+
+
 <div fxLayout="row" fxLayoutAlign="space-between center" class="setting-row" [ngClass]="{'setting-row-visible': visible}">
     <ng-container [ngSwitch]="editMode">
         <div
@@ -41,30 +82,44 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
 
             <div fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements">
-                 <icon-button
-                    *ngIf="showShare && !sharedBy"
-                    title="Share this RGB Mix"
-                    icon="assets/button-icons/share.svg"
-                    (click)="onShare()">
-                </icon-button>
-                <icon-button
-                    *ngIf="showDelete && !isSharedByOtherUser"
-                    title="Delete this RGB Mix"
-                    icon="assets/button-icons/delete.svg"
-                    (click)="onDelete()">
-                </icon-button>
-                <icon-button
-                    *ngIf="showDownload"
-                    title="Download this RGB Mix"
-                    icon="assets/button-icons/export.svg"
-                    (click)="onDownload()">
-                </icon-button>
-                <icon-button
-                    *ngIf="showEdit"
-                    title="Edit this RGB Mix"
-                    icon="assets/button-icons/edit.svg"
-                    (click)="onEdit()">
-                </icon-button>
+                <widget-settings-menu *ngIf="showMoreButtonVisible" [settingsDialog]="moreButtonsMenu">
+                    <icon-button title="View more options" icon="assets/button-icons/three-dots.svg"></icon-button>
+                </widget-settings-menu>
+                <ng-container *ngFor="let layerButton of visibleLayerButtons">
+                    <icon-button
+                        *ngIf="layerButton === 'showShare'"
+                        title="Share this RGB Mix"
+                        icon="assets/button-icons/share.svg"
+                        (click)="onShare()">
+                    </icon-button>
+                    <icon-button
+                        *ngIf="layerButton === 'showDelete'"
+                        title="Delete this RGB Mix"
+                        icon="assets/button-icons/delete.svg"
+                        (click)="onDelete()">
+                    </icon-button>
+                    <tag-picker
+                        *ngIf="layerButton === 'showTagPicker'"
+                        type="rgbmix"
+                        [selectedTagIDs]="selectedTagIDs"
+                        [showCurrentTagsSection]="true"
+                        [editable]="!isSharedByOtherUser"
+                        (onTagSelectionChanged)="onTagSelectionChanged($event)"
+                    >
+                    </tag-picker>
+                    <icon-button
+                        *ngIf="layerButton === 'showDownload'"
+                        title="Download this RGB Mix"
+                        icon="assets/button-icons/export.svg"
+                        (click)="onDownload()">
+                    </icon-button>
+                    <icon-button
+                        *ngIf="layerButton === 'showEdit'"
+                        title="Edit this RGB Mix"
+                        icon="assets/button-icons/edit.svg"
+                        (click)="onEdit()">
+                    </icon-button>
+                </ng-container>
                 <two-state-icon-button
                     toolTip="Toggle Visibility"
                     [activeIcon]="activeIcon"

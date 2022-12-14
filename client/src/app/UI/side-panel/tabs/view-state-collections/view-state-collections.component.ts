@@ -299,6 +299,7 @@ export class ViewStateCollectionsComponent implements OnInit
         this._viewStateService.shareViewStateCollection(this._datasetService.datasetIDLoaded, id).subscribe(
             ()=>
             {
+                this._viewStateService.refreshCollections();
             },
             (err)=>
             {

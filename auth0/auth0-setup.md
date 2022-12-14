@@ -11,34 +11,36 @@ Add a single page application via the Auth0 web interface with the following cus
 
 ## API
 Add a back-end API via the Auth0 web interface, making note of the "identifier" string as this will be the `audience` field in all JWTs created by user logins. Add the following permissions for the back-end API:
-- `write:quantification`Create Quantifications	
-- `read:piquant-config`	View piquant configurations per device	
-- `write:piquant-config`	Editing piquant configurations per device	
-- `download:piquant`	Downloading piquant binaries	
-- `export:map`	Allow exporting maps from map browser tab	
-- `read:data-analysis`	For reading ROI, element set, annotation, expressions	
-- `write:data-analysis`	For add/edit/delete of ROI, element set, annotation, expressions	
-- `write:pixlise-settings`	Saving PIXLISE app settings, eg view state	
-- `read:pixlise-settings`	Reading PIXLISE app settings, eg view state	
-- `write:metrics`	Saving metrics about user interaction/clicks etc	
-- `read:piquant-jobs`	View all active and completed piquant jobs	
-- `read:user-roles`	Viewing users and their roles	
-- `write:shared-roi`	Sharing ROIs	
-- `write:shared-element-set`	Sharing element sets	
-- `write:shared-quantification`	Sharing quantifications	
-- `write:shared-annotation`	Sharing spectrum chart annotations	
-- `write:shared-expression`	Sharing data expressions	
-- `write:user-roles`	Adding/deleting user roles	
-- `access:PIXL-FM`	Allows access to PIXL flightmodel datasets	
-- `access:Stony Brook Breadboard`	Test data from Stony Brook breadboard	
-- `access:JPL Breadboard`	Allows user access to JPL breadboard test data sets	
-- `download:bulksum`	Allows users to see/use bulk sum MSA download button	
-- `no-permission`	Marking user as not having permissions, different from Unassigned user, so we know what error msg to show for newly signed up users.	
-- `access:PIXL-EM`	Allows access to PIXL engineering model datasets	
-- `write:bless-quant`	Bless a (already shared) quantification	
-- `write:publish-quant`	Publish a quantification to PDS	
-- `read:diffraction-peaks`	Reading user created and accepted diffraction peaks	
-- `write:diffraction-peaks`	Create user defined diffraction peaks and accept automatically detected ones	
+- `write:quantification`Create Quantifications
+- `read:piquant-config`	View piquant configurations per device
+- `write:piquant-config`	Editing piquant configurations per device
+- `download:piquant`	Downloading piquant binaries
+- `export:map`	Allow exporting maps from map browser tab
+- `read:data-analysis`	For reading ROI, element set, annotation, expressions
+- `write:data-analysis`	For add/edit/delete of ROI, element set, annotation, expressions
+- `write:pixlise-settings`	Saving PIXLISE app settings, eg view state
+- `read:pixlise-settings`	Reading PIXLISE app settings, eg view state
+- `write:metrics`	Saving metrics about user interaction/clicks etc
+- `read:piquant-jobs`	View all active and completed piquant jobs
+- `read:user-roles`	Viewing users and their roles
+- `read:user-settings` Reading users own settings, pretty much everyone should be able to do this, to view subscription/data collection/name
+- `write:user-settings` Reading users own settings, pretty much everyone should be able to do this, to change subscription/data collection/name
+- `write:shared-roi`	Sharing ROIs
+- `write:shared-element-set`	Sharing element sets
+- `write:shared-quantification`	Sharing quantifications
+- `write:shared-annotation`	Sharing spectrum chart annotations
+- `write:shared-expression`	Sharing data expressions
+- `write:user-roles`	Adding/deleting user roles
+- `access:PIXL-FM`	Allows access to PIXL flightmodel datasets
+- `access:Stony Brook Breadboard`	Test data from Stony Brook breadboard
+- `access:JPL Breadboard`	Allows user access to JPL breadboard test data sets
+- `download:bulksum`	Allows users to see/use bulk sum MSA download button
+- `no-permission`	Marking user as not having permissions, different from Unassigned user, so we know what error msg to show for newly signed up users.
+- `access:PIXL-EM`	Allows access to PIXL engineering model datasets
+- `write:bless-quant`	Bless a (already shared) quantification
+- `write:publish-quant`	Publish a quantification to PDS
+- `read:diffraction-peaks`	Reading user created and accepted diffraction peaks
+- `write:diffraction-peaks`	Create user defined diffraction peaks and accept automatically detected ones
 - `write:dataset`	Allows editing datasets (titles, custom images)
 
 ## Roles

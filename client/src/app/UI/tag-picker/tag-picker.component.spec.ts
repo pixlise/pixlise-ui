@@ -27,44 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-@import 'atoms.scss';
-
-.icon-btn {
-    width: 24px;
-    height: 24px;
-
-    background-repeat: no-repeat;
-    background-position: center;
-}
-
-.button-inactive {
-    background-color: $clr-gray-60;
-}
-
-.icon-button-background {
-    background-color: $clr-gray-60;
-    filter: drop-shadow(0px 0px $sz-half $clr-shadow);
-    border-radius: $sz-half;
-}
-
-.button-active {
-    margin: 0px;
-    border: $sz-qtr solid $clr-yellow;
-}
-
-.button-active-overridden {
-    margin: 0px;
-    border: $sz-qtr solid rgba(var(--clr-yellow), 0.25);
-}
-
-.button-disabled {
-    background-color: $clr-gray-80;
-}
+import { async, ComponentFixture, TestBed } from "@angular/core/testing";
+import { TagPickerComponent } from "./tag-picker.component";
 
 
-.notifications {
-    position: absolute;
-    top: -6.5px;   
-    right: -6.5px;
-}
+describe("TagPickerComponent", () => 
+{
+    let component: TagPickerComponent;
+    let fixture: ComponentFixture<TagPickerComponent>;
+
+    beforeEach(async(() => 
+    {
+        TestBed.configureTestingModule({
+            declarations: [ TagPickerComponent ]
+        })
+            .compileComponents();
+    }));
+
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(TagPickerComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
+
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

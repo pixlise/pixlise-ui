@@ -55,7 +55,8 @@ export class RGBMixInput
         public name: string,
         public red: ChannelConfigWire,
         public green: ChannelConfigWire,
-        public blue: ChannelConfigWire
+        public blue: ChannelConfigWire,
+        public tags: string[] = []
     )
     {
     }
@@ -73,7 +74,8 @@ class RGBMixWire
         public creator: ObjectCreator,
         public visible: boolean,
         public create_unix_time_sec: number,
-        public mod_unix_time_sec: number
+        public mod_unix_time_sec,
+        public tags: string[] = []
     )
     {
     }
@@ -108,7 +110,8 @@ export class RGBMix
         public creator: ObjectCreator,
         public visible: boolean,
         public createUnixTimeSec: number,
-        public modUnixTimeSec: number
+        public modUnixTimeSec: number,
+        public tags: string[] = [],
     )
     {
     }
@@ -322,6 +325,29 @@ export class RGBMixConfigService
         );
     }
 
+    updateTags(id: string, tags: string[]): Observable<void>
+    {
+        let loadID = this._loadingSvc.add("Saving new RGB mix tags...");
+        let apiURL = APIPaths.getWithHost(`${APIPaths.api_rgb_mix}/${id}`);
+
+        let rgbMix = this._rgbMixes.get(id);
+        let toSave = new RGBMixInput(rgbMix.name, rgbMix.red, rgbMix.green, rgbMix.blue, tags);
+        return this.http.put<void>(apiURL, toSave, makeHeaders()).pipe(
+            tap(
+                ()=>
+                {
+                    this._loadingSvc.remove(loadID);
+                    this.refresh();
+                },
+                ()=>
+                {
+                    this._loadingSvc.remove(loadID);
+                    this.refresh();
+                }
+            )
+        );
+    }
+
     deleteRGBMix(id: string): Observable<void>
     {
         let loadID = this._loadingSvc.add("Deleting RGB mix...");
@@ -384,7 +410,8 @@ export class RGBMixConfigService
                         value.creator,
                         value.visible,
                         value.create_unix_time_sec,
-                        value.mod_unix_time_sec
+                        value.mod_unix_time_sec,
+                        value.tags || []
                     );
 
                     this._rgbMixes.set(key, toAdd);

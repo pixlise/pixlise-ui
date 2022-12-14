@@ -179,7 +179,7 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
         this._subs.add(this._selectionService.selection$.subscribe(
             ()=>
             {
-                this.prepareData("selection");
+                this.prepareData("selection-changed");
             }
         ));
 
@@ -304,6 +304,7 @@ export class SingleAxisRGBUComponent implements OnInit, OnDestroy
         let currentSelection = this._selectionService.getCurrentSelection();
         let currSelPixels = currentSelection.pixelSelection.selectedPixels;
         let cropSelection = currentSelection.cropSelection;
+        console.log("RECALC", currentSelection)
 
         let selectedXRange = null;
         if(this.selectedMinXValue !== null && this.selectedMaxXValue !== null) 

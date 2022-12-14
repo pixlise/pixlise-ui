@@ -49,6 +49,7 @@ export class IconButtonComponent implements OnInit
     @Input() state: IconButtonState;
     @Input() hasBackground: boolean = true;
     @Input() loading: boolean = false;
+    @Input() notificationCount: number = 0;
 
     @Output() onClick = new EventEmitter();
 

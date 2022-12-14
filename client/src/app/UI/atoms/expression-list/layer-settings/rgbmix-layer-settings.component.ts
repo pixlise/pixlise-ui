@@ -72,6 +72,7 @@ export class RGBMixLayerSettingsComponent implements OnInit
     @Input() showDelete: boolean = true;
     @Input() showDownload: boolean = false;
     @Input() showEdit: boolean = true;
+    @Input() showTagPicker: boolean = true;
     @Input() activeIcon: string;
     @Input() inactiveIcon: string;
 
@@ -197,14 +198,52 @@ export class RGBMixLayerSettingsComponent implements OnInit
         return null;
     }
 
+    get layerButtons(): string[]
+    {
+        let buttons: Record<string, boolean> = {
+            showShare: this.showShare && !this.sharedBy,
+            showDelete: this.showDelete && !this.isSharedByOtherUser,
+            showTagPicker: this.showTagPicker,
+            showDownload: this.showDownload,
+            showEdit: this.showEdit,
+        };
+        return Object.entries(buttons).filter(([, visible]) => visible).map(([layerButtonName]) => layerButtonName);
+    }
+
+    get visibleLayerButtons(): string[]
+    {
+        return this.showMoreButtonVisible ? this.layerButtons.slice(this.layerButtons.length - 3, this.layerButtons.length) : this.layerButtons;
+    }
+
+    get showMoreButtonVisible(): boolean
+    {
+        return this.layerButtons.length > 4;
+    }
+
+    get hiddenLayerButtons(): string[]
+    {
+        return this.layerButtons.slice(0, this.layerButtons.length - 3);
+    }
+
+    get selectedTagIDs(): string[]
+    {
+        return this.layerInfo.layer.source.tags || [];
+    }
+
+    onTagSelectionChanged(tagIDs: string[]): void
+    {
+        this._rgbMixService.updateTags(this.layerInfo.layer.id, tagIDs).subscribe(() => null,
+            () => alert("Failed to update tags")
+        );
+    }
+
+
     onShare(): void
     {
         if(confirm("Are you sure you want to share this RGB mix?"))
         {
             this._rgbMixService.shareRGBMix(this.layerInfo.layer.id).subscribe(
-                ()=>
-                {
-                },
+                ()=>null,
                 (err)=>
                 {
                     alert(httpErrorToString(err, "Failed to share RGB mix"));
