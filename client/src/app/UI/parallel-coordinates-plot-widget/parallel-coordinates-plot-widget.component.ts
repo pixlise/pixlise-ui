@@ -27,32 +27,96 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, HostListener, Input, OnInit, OnDestroy } from "@angular/core";
+import { Component, HostListener, Input, OnInit, OnDestroy, ElementRef } from "@angular/core";
 import { Subscription } from "rxjs";
 import { ViewStateService } from "src/app/services/view-state.service";
-import { DataSetService } from "src/app/services/data-set.service";
-import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
+import { SelectionService } from "src/app/services/selection.service";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { RGBUImage } from "src/app/models/RGBUImage";
-import { DataSet } from "src/app/models/DataSet";
 
-import "parcoord-es/dist/parcoords.css";
-import ParCoords from "parcoord-es";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { ROIPickerComponent, ROIPickerData } from "../roipicker/roipicker.component";
+import { orderVisibleROIs } from "src/app/models/roi";
+import {  WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 
-import * as d3 from "d3";
-import { PixelSelection } from "src/app/models/PixelSelection";
+export class PCPLine
+{
+    constructor(
+        public xStart: number | string = 0,
+        public yStart: number | string = 0,
+        public xEnd: number | string = 0,
+        public yEnd: number | string = 0,
+    ){}
+}
 
-export type RGBUPoint = {
-    r: number;
-    g: number;
-    b: number;
-    u: number;
-    rg: number;
-    rb: number;
-    ru: number;
-    gb: number;
-    gu: number;
-    bu: number;
+
+export class RGBUPoint
+{
+    lines: PCPLine[] = [];
+
+    _tooltipText: string = "";
+
+    constructor(
+        public r: number = 0,
+        public g: number = 0,
+        public b: number = 0,
+        public u: number = 0,
+        public rg: number = 0,
+        public rb: number = 0,
+        public ru: number = 0,
+        public gb: number = 0,
+        public gu: number = 0,
+        public bu: number = 0,
+        public color: string = "255,255,255",
+        public name: string = "",
+    )
+    {}
+
+    get tooltipText(): string
+    {
+        return this._tooltipText;
+    }
+
+    calculateLinesForAxes(axes: PCPAxis[], plotID: string): void
+    {
+        let plotContainer = document.querySelector(`${plotID}`);
+        let domAxes = document.querySelectorAll(`${plotID} .axes .axis-container`);
+        if(!domAxes || !plotContainer || domAxes.length != axes.length)
+        {
+            // Something isn't loaded right, don't continue drawing
+            return;
+        }
+
+        let axesXLocations = Array.from(domAxes).map((axis) =>
+        {
+            let clientRect = axis.getBoundingClientRect();
+            return clientRect.x + clientRect.width/2;
+        });
+
+        let relativeX = plotContainer.getBoundingClientRect().x;
+
+        this.lines = [];
+        for(let i = 0; i < axes.length-1; i++)
+        {
+            let currentAxisValue = axes[i].getValueAsPercentage(this[axes[i].key]);
+            let nextAxisValue = axes[i + 1].getValueAsPercentage(this[axes[i + 1].key]);
+            
+            let xStart = `${Math.round((axesXLocations[i] - relativeX) * 100)/100}`;
+            let xEnd = `${Math.round((axesXLocations[i+1] - relativeX) * 100)/100}`;
+            let yStart = `${currentAxisValue * 100}%`;
+            let yEnd = `${nextAxisValue * 100}%`;
+
+            let line = new PCPLine(xStart, yStart, xEnd, yEnd);
+            this.lines.push(line);
+        }
+
+        let tooltipText = `${this.name} Averages:\n`;
+        axes.forEach(axis =>
+        {
+            tooltipText += `${axis.title}: ${this[axis.key].toFixed(2)}\n`;
+        });
+        this._tooltipText = tooltipText;
+    }
 }
 
 export type Dimension = {
@@ -62,12 +126,52 @@ export type Dimension = {
     visible?: boolean;
 }
 
-export type PCPAxis = {
-    key: string;
-    title: string;
-    visible: boolean;
-}
+export class PCPAxis
+{
+    minSelection: number = 0;
+    maxSelection: number = 0;
+    activeSelection: boolean = false;
 
+    constructor(
+        public key: string = "",
+        public title: string = "",
+        public visible: boolean = true,
+        public min: number = 0,
+        public max: number = 0,
+    ){}
+
+    public getSelectionRange(): number[]
+    {
+        return [this.minSelection, this.maxSelection];
+    }
+
+    public setSelectionRange(min: number, max: number): void
+    {
+        this.minSelection = min;
+        this.maxSelection = max;
+        this.activeSelection = true;
+    }
+
+    public clearSelection(): void
+    {
+        this.minSelection = 0;
+        this.maxSelection = 0;
+        this.activeSelection = false;
+    }
+
+    public getValueAsPercentage(value: number): number
+    {
+        if(this.min === this.max)
+        {
+            return 0.5;
+        }
+        else
+        {
+            return 1 - (value - this.min) / (this.max - this.min);
+        }
+    }
+
+}
 
 @Component({
     selector: "app-parallel-coordinates-plot-widget",
@@ -81,18 +185,19 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
     private _subs = new Subscription();
 
     private _rgbuLoaded: RGBUImage = null;
-    public activeSelectionCount: number = 0;
-    public isSelectionLoaded: boolean = false;
-    private _autoLoadLimit: number = 100000;
+
+    private _visibleROIs: string[] = [];
     private _data: RGBUPoint[] = [];
-    private _parCoords: ParCoords = null;
+
+
     public dimensions: Record<keyof RGBUPoint, Dimension> = null;
     public axes: PCPAxis[] = [];
 
     constructor(
         private _contextImageService: ContextImageService,
-        private _datasetService: DataSetService,
         private _selectionService: SelectionService,
+        private _widgetDataService: WidgetRegionDataService,
+        public dialog: MatDialog
     )
     {
     }
@@ -112,113 +217,64 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
                         if(!this._rgbuLoaded) 
                         {
                             this._data = [];
-                            this._resetPlot();
-                            this._drawParallelCoordsPlot();
+                            this.recalculateLines();
                             return;
                         }
-    
-                        // Load the plot if there's an active selection that's less than the auto load limit
-                        this.activeSelectionCount = this.getActiveSelectionCount();
-                        if(this.activeSelectionCount > 0 && this.activeSelectionCount < this._autoLoadLimit) 
-                        {
-                            this.isSelectionLoaded = true;
-                            this._resetPlot();
-                            this._prepareData("context-image-loaded");
-                            this._drawParallelCoordsPlot();
-                        }
-                        else 
-                        {
-                            this.isSelectionLoaded = false;
-                            this._data = [];
-                            this._resetPlot();
-                            this._drawParallelCoordsPlot();
-                        }
+
+                        this._prepareData("context-image-loaded");
+                        this.recalculateLines();
                     }
                 ));
             }
         ));
 
         this._subs.add(this._selectionService.selection$.subscribe(
-            (selection)=>
+            ()=>
             {
-                // Load the plot if the current selection is less than the auto load limit and not 0 (meaning no selection)
-                this.activeSelectionCount = this.getActiveSelectionCount(selection);
-                if(this.activeSelectionCount > 0 && this.activeSelectionCount < this._autoLoadLimit) 
-                {
-                    this.isSelectionLoaded = true;
-                    this._resetPlot();
-                    this._prepareData("selection-changed");
-                    this._drawParallelCoordsPlot();
-                }
-                else 
-                {
-                    this.isSelectionLoaded = false;
-                    this._data = [];
-                    this._resetPlot();
-                    this._drawParallelCoordsPlot();
-                }
+                this._prepareData("selection-changed");
+                this.recalculateLines();
+            }
+        ));
+
+        this._subs.add(this._widgetDataService.widgetData$.subscribe(
+            ()=>
+            {
+                this._prepareData("regions changed");
+                this.recalculateLines();
             }
         ));
     }
 
-    private getActiveSelectionCount(selection: SelectionHistoryItem = null): number
-    {
-        let currentSelection = null;
-        if(selection)
-        {
-            currentSelection = selection;
-        }
-        else if(this._selectionService)
-        {
-            currentSelection = this._selectionService.getCurrentSelection();
-        }
-        let selectedPixelCount = currentSelection ? currentSelection.pixelSelection.selectedPixels.size : 0;
-        let croppedPixelCount = currentSelection && currentSelection.cropSelection ? currentSelection.cropSelection.selectedPixels.size : 0;
-        
-        return selectedPixelCount > 0 ? selectedPixelCount : croppedPixelCount;
-    }
-
     ngAfterViewInit()
     {
-        // Do another check for selection after the view has been initialized and check if selection is cropped
-        this.activeSelectionCount = this.getActiveSelectionCount();
-        if(this.activeSelectionCount > 0 && this.activeSelectionCount < this._autoLoadLimit)
-        {
-            this.isSelectionLoaded = true;
-            this._prepareData("init");
-        }
-        // If it hasn't loaded yet, draw an empty plot
-        if(!this._parCoords)
-        {
-            this._drawParallelCoordsPlot();
-        }
+        this._prepareData("init");
+        setTimeout(() => this.recalculateLines(), 50);
     }
 
     ngOnDestroy(): void
     {
-        this._resetPlot();
         this._subs.unsubscribe();
     }
 
-
-    get selectionCountText(): string
+    getFormattedValueAsPercentage(point: RGBUPoint, axis: PCPAxis): string
     {
-        return this.activeSelectionCount ? `${this.activeSelectionCount}` : "All";
+        let percentage = axis.getValueAsPercentage(point[axis.key]);
+        return `${Math.round(percentage * 100)}%`;
     }
 
     private _initAxes(): void
     {
         this.axes = [
-            {key: "r", title: "Red", visible: true},
-            {key: "g", title: "Green", visible: true},
-            {key: "b", title: "Blue", visible: true},
-            {key: "u", title: "Ultraviolet", visible: true},
-            {key: "rg", title: "Red/Green", visible: true},
-            {key: "rb", title: "Red/Blue", visible: true},
-            {key: "ru", title: "Red/Ultraviolet", visible: true},
-            {key: "gb", title: "Green/Blue", visible: true},
-            {key: "gu", title: "Green/Ultraviolet", visible: true},
-            {key: "bu", title: "Blue/Ultraviolet", visible: true},
+            new PCPAxis("r", "Red", true),
+            new PCPAxis("g", "Green", true),
+            new PCPAxis("b", "Blue", true),
+            new PCPAxis("u", "Ultraviolet", true),
+            new PCPAxis("rg", "Red/Green", false),
+            new PCPAxis("rb", "Red/Blue", false),
+            new PCPAxis("ru", "Red/Ultraviolet", false),
+            new PCPAxis("gb", "Green/Blue", false),
+            new PCPAxis("gu", "Green/Ultraviolet", false),
+            new PCPAxis("bu", "Blue/Ultraviolet", false),
         ];
 
         let dimensions = {};
@@ -233,139 +289,120 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
         this.dimensions = dimensions as Record<keyof RGBUPoint, Dimension>;
     }
 
-    get highlightedCount(): number
-    {
-        if(this._parCoords && this._parCoords.state.brushed && this._parCoords.state.brushed.length < this._parCoords.state.data.length)
-        {
-            return this._parCoords.state.brushed.length;
-        }
-
-        return 0;
-    }
-    get isHighlighted(): boolean
-    {
-        if(this._parCoords && this._parCoords.state.brushed)
-        {
-            return this._parCoords.state.brushed.length > 0 && this._parCoords.state.brushed.length < this._parCoords.state.data.length;
-        }
-
-        return false;
-    }
-
     toggleAxis(axisKey: string): void
     {
         this.axes.find(axis => axis.key === axisKey).visible = !this.axes.find(axis => axis.key === axisKey).visible;
-
-        let hiddenAxes = ["color", "index", ...this.axes.filter((axis) => !axis.visible).map((axis) => axis.key)];
-        this._parCoords.dimensions(this.dimensions).hideAxis(hiddenAxes).render().updateAxes();
-
-        d3.selectAll("g.axis > text").style("fill", "currentColor");
+        setTimeout(() => this.recalculateLines(), 50);
     }
 
-    loadPoints(): void
+    toggleAll(visible: boolean): void
     {
-        this.isSelectionLoaded = true;
-        this._resetPlot();
-        this._prepareData("user-triggered-load");
-        this._drawParallelCoordsPlot();
+        this.axes.forEach((axis) => axis.visible = visible);
+        setTimeout(() => this.recalculateLines(), 50);
     }
 
-    convertToSelection(): void
+    onRegions(event): void
     {
-        if(this._parCoords && this._parCoords.state.brushed && this._parCoords.state.brushed.length < this._parCoords.state.data.length)
-        {
-            let currentSelection = this._selectionService.getCurrentSelection();
-            let width = 0;
-            let height = 0;
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.data = new ROIPickerData(true, true, true, false, this._visibleROIs, false, true, new ElementRef(event.currentTarget));
 
-            if(this._contextImageService.mdl.contextImageItemShowing.rgbuSourceImage) 
+        const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
+
+        dialogRef.afterClosed().subscribe(
+            (visibleROIs: string[])=>
             {
-                width = this._contextImageService.mdl.contextImageItemShowing.rgbuSourceImage.r.width;
-                height = this._contextImageService.mdl.contextImageItemShowing.rgbuSourceImage.r.height;
-            }
-            else if(this._contextImageService.mdl.contextImageItemShowing.rgbSourceImage) 
-            {
-                width = this._contextImageService.mdl.contextImageItemShowing.rgbSourceImage.width;
-                height = this._contextImageService.mdl.contextImageItemShowing.rgbSourceImage.height;
-            }
+                // Result should be a list of element symbol strings
+                if(visibleROIs)
+                {
+                    this._visibleROIs = orderVisibleROIs(visibleROIs);
 
-            this._selectionService.setSelection(
-                this._datasetService.datasetLoaded,
-                null,
-                new PixelSelection(
-                    this._datasetService.datasetLoaded,
-                    new Set(this._parCoords.state.brushed.map(point => point.index)),
-                    width,
-                    height,
-                    currentSelection.pixelSelection.imageName
-                )
-            );
-
-            this._resetPlot();
-            this._prepareData("selection-changed");
-            this._drawParallelCoordsPlot();
-        }
+                    // this.saveState(reason);
+                    this._prepareData("roi-dialog");
+                    this.recalculateLines();
+                }
+            }
+        );
     }
 
-    private _getPixelColor = (channelAcronyms: string[], index: number): string =>
+    private getROIAveragePoint(points: Set<number>, color: string, name: string): RGBUPoint
     {
-        let color: string = null;
+        let avgData = new RGBUPoint();
+        avgData.name = name;
+        avgData.color = color;
 
-        // Verify this is a 2 channel ratio image, calculate ratio at pixel, and retrieve color from layer
-        if(channelAcronyms.length === 2)
+        if(!points || points.size <= 0 || !this._rgbuLoaded || !this._rgbuLoaded.r || !this._rgbuLoaded.r.values)
         {
-            if(!this._contextImageService || !this._contextImageService.mdl || !this._contextImageService.mdl.rgbuImageLayerForScale)
-            {
-                return "255,255,255";
-            }
-            let layer = this._contextImageService.mdl.rgbuImageLayerForScale;
-            let ratioValue = this._rgbuLoaded[channelAcronyms[0]].values[index] / this._rgbuLoaded[channelAcronyms[1]].values[index];
-            let drawParams = layer.getDrawParamsForRawValue(0, ratioValue, layer.getDisplayValueRange(0));
-            color = `${drawParams.colour.r},${drawParams.colour.g},${drawParams.colour.b}`;
+            return avgData;
         }
-        else 
-        {
-            // Default to using RGB colors from the RGBU image
-            color = `${this._rgbuLoaded.r.values[index]},${this._rgbuLoaded.g.values[index]},${this._rgbuLoaded.b.values[index]}`;
-        }
-        return color;   
-    };
 
-    private _formLineData(i: number, channelAcronyms: string[]): RGBUPoint
+        points.forEach(i => 
+        {
+            let [red, green, blue, uv] = [this._rgbuLoaded.r.values[i], this._rgbuLoaded.g.values[i], this._rgbuLoaded.b.values[i], this._rgbuLoaded.u.values[i]];
+            avgData.r += red;
+            avgData.g += green;
+            avgData.b += blue;
+            avgData.u += uv;
+        });
+
+        avgData.r = avgData.r / points.size;
+        avgData.g = avgData.g / points.size;
+        avgData.b = avgData.b / points.size;
+        avgData.u = avgData.u / points.size;
+
+        if(avgData.g > 0)
+        {
+            avgData.rg = avgData.r / avgData.g;
+        }
+        if(avgData.b > 0)
+        {
+            avgData.rb = avgData.r / avgData.b;
+            avgData.gb = avgData.g / avgData.b;
+        }
+        if(avgData.u > 0)
+        {
+            avgData.ru = avgData.r / avgData.u;
+            avgData.gu = avgData.g / avgData.u;
+            avgData.bu = avgData.b / avgData.u;
+        }
+
+        return avgData;
+    }
+
+    private _getMinPoint(pointA: RGBUPoint, pointB: RGBUPoint): RGBUPoint
     {
-        let lineData = {r: 0, g: 0, b: 0, u: 0, rg: 0, rb: 0, ru: 0, gb: 0, gu: 0, bu: 0, color: "#000", index: 0};
-        if(i < 0 || !this._rgbuLoaded || !this._rgbuLoaded.r || !this._rgbuLoaded.r.values || i >= this._rgbuLoaded.r.values.length) 
-        {
-            return lineData;
-        }
+        let minPoint = new RGBUPoint();
+        minPoint.r = Math.min(pointA.r, pointB.r);
+        minPoint.g = Math.min(pointA.g, pointB.g);
+        minPoint.b = Math.min(pointA.b, pointB.b);
+        minPoint.u = Math.min(pointA.u, pointB.u);
+        minPoint.rg = Math.min(pointA.rg, pointB.rg);
+        minPoint.rb = Math.min(pointA.rb, pointB.rb);
+        minPoint.ru = Math.min(pointA.ru, pointB.ru);
+        minPoint.gb = Math.min(pointA.gb, pointB.gb);
+        minPoint.gu = Math.min(pointA.gu, pointB.gu);
+        minPoint.bu = Math.min(pointA.bu, pointB.bu);
+        return minPoint;
+    }
 
-        let color: string = this._getPixelColor(channelAcronyms, i);
-        let [red, green, blue, uv] = [this._rgbuLoaded.r.values[i], this._rgbuLoaded.g.values[i], this._rgbuLoaded.b.values[i], this._rgbuLoaded.u.values[i]];
-        lineData.r = red;
-        lineData.g = green;
-        lineData.b = blue;
-        lineData.u = uv;
-        lineData.color = color;
-        lineData.index = i;
+    private _getMaxPoint(pointA: RGBUPoint, pointB: RGBUPoint): RGBUPoint
+    {
+        let maxPoint = new RGBUPoint();
+        maxPoint.r = Math.max(pointA.r, pointB.r);
+        maxPoint.g = Math.max(pointA.g, pointB.g);
+        maxPoint.b = Math.max(pointA.b, pointB.b);
+        maxPoint.u = Math.max(pointA.u, pointB.u);
+        maxPoint.rg = Math.max(pointA.rg, pointB.rg);
+        maxPoint.rb = Math.max(pointA.rb, pointB.rb);
+        maxPoint.ru = Math.max(pointA.ru, pointB.ru);
+        maxPoint.gb = Math.max(pointA.gb, pointB.gb);
+        maxPoint.gu = Math.max(pointA.gu, pointB.gu);
+        maxPoint.bu = Math.max(pointA.bu, pointB.bu);
+        return maxPoint;
+    }
 
-        // Ensure data is not null and no divide by zero errors occur
-        if(green && green > 0) 
-        {
-            lineData.rg = red / green;
-        }
-        if(blue && blue > 0) 
-        {
-            lineData.rb = red / blue;
-            lineData.gb = green / blue;
-        }
-        if(uv && uv > 0) 
-        {
-            lineData.ru = red / uv;
-            lineData.gu = green / uv;
-            lineData.bu = blue / uv;
-        }
-
-        return lineData;
+    get data(): RGBUPoint[]
+    {
+        return this._data;
     }
 
     private _prepareData(reason: string): void
@@ -379,45 +416,55 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
 
         // Make sure we're starting with a clean slate
         this._data = [];
-
-        // Get active channels if this is a ratio image
-        let channelAcronyms: string[] = [];
-        if(this._contextImageService && this._contextImageService.mdl && this._contextImageService.mdl.displayedChannels)
-        {
-            channelAcronyms = this._contextImageService.mdl.displayedChannels.toLowerCase().split("/").filter(acronym => ["r", "g", "b", "u"].includes(acronym));
-        }
         let selectedPixels = new Set<number>();
-        let croppedPixels = new Set<number>();
         if(this._selectionService && this._selectionService.getCurrentSelection())
         {
             let currentSelection = this._selectionService.getCurrentSelection();
             selectedPixels = currentSelection.pixelSelection.selectedPixels;
-            croppedPixels = currentSelection.cropSelection ? currentSelection.cropSelection.selectedPixels : null;
-            this.activeSelectionCount = selectedPixels.size > 0 ? selectedPixels.size : croppedPixels.size;
         }
 
-        // If there is a selection, only use the selected pixels as the base data otherwise default to all pixels
+        // Get averages for all selected pixels
         if(selectedPixels.size > 0)
         {
-            selectedPixels.forEach((_, i) => 
-            {
-                this._data.push(this._formLineData(i, channelAcronyms));
-            });
+            let averageSelection = this.getROIAveragePoint(selectedPixels, "110, 239, 255", "Selection");
+            averageSelection.calculateLinesForAxes(this.visibleAxes, this.plotID);
+            this._data.push(averageSelection);
         }
-        else if(croppedPixels.size > 0)
+
+        // Get averages for all ROIs
+        this._visibleROIs.forEach((roiID) =>
         {
-            croppedPixels.forEach((_, i) => 
+            if(roiID === "SelectedPoints")
             {
-                this._data.push(this._formLineData(i, channelAcronyms));
-            });   
-        }
-        else 
+                return;
+            }
+            let roi = this._widgetDataService.regions.get(roiID);
+            let color = roi.colour;
+            let colorStr = `${color.r},${color.g},${color.b}`;
+            let averagePoint = this.getROIAveragePoint(roi.pixelIndexes, colorStr, roi.name);
+            averagePoint.calculateLinesForAxes(this.visibleAxes, this.plotID);
+            this._data.push(averagePoint);
+        });
+
+        let minPoint = new RGBUPoint();
+        let maxPoint = new RGBUPoint();
+        if(this._data.length > 0)
         {
-            this._rgbuLoaded.r.values.forEach((_, i) => 
-            {
-                this._data.push(this._formLineData(i, channelAcronyms));
-            });
+            minPoint = this._data[0];
+            maxPoint = this._data[0];
         }
+
+        this._data.forEach(point =>
+        {
+            minPoint = this._getMinPoint(minPoint, point);
+            maxPoint = this._getMaxPoint(maxPoint, point);
+        });
+
+        this.axes.forEach(axis =>
+        {
+            axis.min = minPoint[axis.key];
+            axis.max = maxPoint[axis.key];
+        });
     }
 
     get plotID(): string
@@ -425,15 +472,9 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
         return `#parallel-coords-${this.widgetPosition}`;
     }
 
-    private _resetPlot(): void
+    get visibleAxes(): PCPAxis[]
     {
-        let plot = d3.select(this.plotID);
-        if(plot && plot.node())
-        {
-            plot.selectAll("canvas").remove();
-            plot.selectAll("svg").remove();
-            this._parCoords = ParCoords()(this.plotID);
-        }
+        return this.axes.filter((axis) => axis.visible);
     }
 
     private _getHiddenAxes(): string[]
@@ -443,62 +484,18 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
         return hiddenAxes;
     }
 
-    private _drawParallelCoordsPlot(): void 
+    private recalculateLines(): void
     {
-        let plot: any = d3.select(this.plotID);
-        if(!plot || !plot.node() || !this.dimensions || Object.keys(this.dimensions).length <= 0)
+        this._data.forEach(point =>
         {
-            return;
-        }
-        let boundingRect = plot.node().getBoundingClientRect();
-        if(!boundingRect || !boundingRect.width || !boundingRect.height)
-        {
-            return;
-        }
-
-        if(!this._parCoords)
-        {
-            this._parCoords = ParCoords()(this.plotID);
-        }
-
-        let hiddenAxes = this._getHiddenAxes();
-        this._parCoords
-            .data(this._data.length > 0 ? this._data : [this._formLineData(-1, [])])
-            .width(boundingRect.width)
-            .height(boundingRect.height)
-            .dimensions(this.dimensions)
-            .hideAxis(hiddenAxes)
-            .color((line) => `rgba(${line.color},0.1)`)
-            .margin({ top: 20, left: 0, bottom: 12, right: 0 })
-            .mode("queue")
-            .brushedColor((line) => `rgba(${line.color},1)`)
-            .render()
-            .createAxes()
-            .reorderable()
-            .interactive()
-            .brushMode("1D-axes");
-
-        d3.selectAll("g.axis > text").style("fill", "currentColor");
+            point.calculateLinesForAxes(this.visibleAxes, this.plotID);
+        });
     }
 
     @HostListener("window:resize", ["$event"])
     onResize()
     {
-        // Window resized, get new bounds and update plot
-        let plot: any = d3.select(this.plotID);
-        if(!this._data || !plot || !plot.node())
-        {
-            return;
-        }
-        let boundingRect = plot.node().getBoundingClientRect();
-        if(!boundingRect || !boundingRect.width || !boundingRect.height)
-        {
-            return;
-        }
-        this._parCoords.render().width(boundingRect.width).height(boundingRect.height).brushMode("1D-axes").updateAxes();
-
-        // When axes are updated, the fill color gets reset so have to hack it back in
-        d3.selectAll("g.axis > text").style("fill", "currentColor");
+        this.recalculateLines();
     }
 
     get thisSelector(): string

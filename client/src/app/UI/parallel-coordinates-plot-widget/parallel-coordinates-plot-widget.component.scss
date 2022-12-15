@@ -27,11 +27,113 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-.load-points {
+@import 'variables.scss';
+
+.regions-btn {
     margin-left: auto;
     margin-right: 5px;
 }
 
-.convert-selection {
-    margin-right: 5px;
+::ng-deep .mat-tooltip  {
+  white-space: pre-line !important;
+  background-color: #2B3136;
+}
+
+.axis-toggle {
+    margin: 4px 0;
+}
+
+.selection-container {
+    margin-top: $sz-unit;
+}
+
+.axes {
+    display: flex;
+    justify-content: space-between;
+    height: 100%;
+
+    .axis-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+
+        .axis-title {
+            font-size: 12px;
+            padding: 8px;
+            padding-bottom: 2px;
+            color: $clr-gray-30;
+        }
+
+        .axis-line {
+            width: 1px;
+            height: 100%;
+            background: $clr-gray-60;
+            position: relative;
+            z-index: 100;
+
+            .point-container {
+                position: absolute;
+                width: 1px;
+                height: calc(100% - 14px);
+            }
+        }
+
+        .tick-container {
+            position: relative;
+
+            .tick {
+                width: 20px;
+                height: 1px;
+                background: $clr-gray-60;
+            }
+
+            .tick-label {
+                font-size: 10px;
+                position: absolute;
+                top: -6.5px;
+                left: 22px;
+                color: $clr-gray-60;
+                text-shadow: 1px 1px 2px black;
+            }
+        }
+
+        .point-tick-container {
+            position: absolute;
+            display: flex;
+            align-items: center;
+
+            .inner-tick {
+                width: 5px;
+                height: 1px;
+                background: $clr-gray-60;
+            }
+
+            .inner-point {
+                width: 6px;
+                height: 6px;
+                position: absolute;
+                left: -3px;
+                border-radius: 50%;
+            }
+
+            .tick-label {
+                margin-left: 2px;
+                font-size: 10px;
+                color: white;
+                text-shadow: 0px 0px 3px black;
+
+                z-index: 100;
+            }
+        }
+    }
+}
+
+.pcp-plot {
+    position: relative;
+
+    .line-container {
+        position: absolute;
+        top: 31px;
+    }
 }
