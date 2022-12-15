@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <ng-template #selectionSettingsMenu>
     <div fxLayout="column" class="gap-separated-vertical-elements" *ngIf="dimensions">
-        <div>
+        <div class="{{isUnderSpectrum ? 'axis-toggle-container-mini' : ''}}">
             <div *ngFor="let axis of axes" class="axis-toggle">
                 <div fxLayout="row" fxLayoutAlign="space-between center"
                     class="ctrl-row gap-separated-horizontal-elements">
@@ -50,6 +50,10 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="setting-label">Lines:</div>
         <switch-button [active]="showLines" (onToggle)="toggleLineVisibility()"></switch-button>
     </div>
+    <div fxLayout="row" fxLayoutAlign="space-between center" class="ctrl-row gap-separated-horizontal-elements line-toggle">
+        <div class="setting-label">Labels:</div>
+        <switch-button [active]="showLabels" (onToggle)="toggleLabelVisibility()"></switch-button>
+    </div>
 </ng-template>
 
 
@@ -67,7 +71,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <div style="width: 100%; height: calc(100% - 10px);" id="parallel-coords-{{widgetPosition}}" class="pcp-plot">
             <div class="axes">
                 <div *ngFor="let axis of visibleAxes" class="axis-container">
-                    <div class="axis-title">{{axis.title}}</div>
+                    <div class="axis-title">{{miniMode ? axis.key.toUpperCase() : axis.title}}</div>
                     <div class="tick-container">
                         <div class="tick"></div>
                         <div class="tick-label">{{axis.max|number:'1.0-2'}}</div>
@@ -84,7 +88,8 @@ POSSIBILITY OF SUCH DAMAGE.
                                     [matTooltip]="point.tooltipText"
                                 >
                                 </div>
-                                <div class="tick-label">{{point[axis.key]|number:'1.0-2'}}</div>
+                                <div *ngIf="showLabels" class="tick-label">{{point[axis.key]|number:'1.0-2'}}</div>
+                                <div *ngIf="!showLabels" class="tick-label-placeholder"></div>
                             </div>
                         </div>
                     </div>
