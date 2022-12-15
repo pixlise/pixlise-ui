@@ -38,6 +38,7 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ROIPickerComponent, ROIPickerData } from "../roipicker/roipicker.component";
 import { orderVisibleROIs } from "src/app/models/roi";
 import {  WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { LayoutService } from "src/app/services/layout.service";
 
 export class PCPLine
 {
@@ -189,15 +190,16 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
     private _visibleROIs: string[] = [];
     private _data: RGBUPoint[] = [];
 
-
     public dimensions: Record<keyof RGBUPoint, Dimension> = null;
     public axes: PCPAxis[] = [];
+    public showLines: boolean = true;
 
     constructor(
         private _contextImageService: ContextImageService,
         private _selectionService: SelectionService,
         private _widgetDataService: WidgetRegionDataService,
         private _viewStateService: ViewStateService,
+        private _layoutService: LayoutService,
         public dialog: MatDialog
     )
     {
@@ -250,6 +252,12 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
                 this.recalculateLines();
             }
         ));
+
+        // Recalculate lines if side panel is opened/closed
+        this._subs.add(this._layoutService.resizeCanvas$.subscribe(()=>
+        {
+            this.recalculateLines();
+        }));
     }
 
     ngAfterViewInit()
@@ -519,19 +527,20 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
         return this.axes.filter((axis) => axis.visible);
     }
 
-    private _getHiddenAxes(): string[]
+    toggleLineVisibility(): void
     {
-        let hiddenAxes = ["color", "index", ...this.axes.filter((axis) => !axis.visible).map((axis) => axis.key)];
-
-        return hiddenAxes;
+        this.showLines = !this.showLines;
     }
 
     private recalculateLines(): void
     {
-        this._data.forEach(point =>
+        if(this.showLines)
         {
-            point.calculateLinesForAxes(this.visibleAxes, this.plotID);
-        });
+            this._data.forEach(point =>
+            {
+                point.calculateLinesForAxes(this.visibleAxes, this.plotID);
+            });
+        }
     }
 
     @HostListener("window:resize", ["$event"])

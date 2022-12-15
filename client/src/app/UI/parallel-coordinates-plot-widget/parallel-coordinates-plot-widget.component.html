@@ -45,6 +45,11 @@ POSSIBILITY OF SUCH DAMAGE.
         <push-button (onClick)="toggleAll(true)">Select All</push-button>
         <push-button (onClick)="toggleAll(false)">Deselect All</push-button>
     </div>
+
+    <div fxLayout="row" fxLayoutAlign="space-between center" class="ctrl-row gap-separated-horizontal-elements line-toggle">
+        <div class="setting-label">Lines:</div>
+        <switch-button [active]="showLines" (onToggle)="toggleLineVisibility()"></switch-button>
+    </div>
 </ng-template>
 
 
@@ -88,7 +93,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     </div>
                 </div>
             </div>
-            <svg width="100%" height="calc(100% - 14px - 12px - 12px)" class="line-container">
+            <svg width="100%" height="calc(100% - 14px - 12px - 12px)" class="line-container" *ngIf="showLines">
                 <g *ngFor="let point of data">
                     <line
                         *ngFor="let line of point.lines" 
