@@ -37,7 +37,7 @@ import { RGBUImage } from "src/app/models/RGBUImage";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ROIPickerComponent, ROIPickerData } from "../roipicker/roipicker.component";
 import { orderVisibleROIs } from "src/app/models/roi";
-import {  WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { LayoutService } from "src/app/services/layout.service";
 import { KeyItem } from "../atoms/widget-key-display/widget-key-display.component";
 
@@ -194,6 +194,7 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
     public dimensions: Record<keyof RGBUPoint, Dimension> = null;
     public axes: PCPAxis[] = [];
     public showLines: boolean = true;
+    public showLabels: boolean = true;
 
     public keyShowing: boolean = false;
     public keyItems: KeyItem[] = [];
@@ -531,6 +532,16 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
         });
     }
 
+    get isUnderSpectrum(): boolean
+    {
+        return this.widgetPosition.includes("under");
+    }
+
+    get miniMode(): boolean
+    {
+        return this.visibleAxes.length > 6 && this.isUnderSpectrum;
+    }
+
     get plotID(): string
     {
         return `#parallel-coords-${this.widgetPosition}`;
@@ -548,6 +559,11 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
         {
             this.recalculateLines();
         }
+    }
+
+    toggleLabelVisibility(): void
+    {
+        this.showLabels = !this.showLabels;
     }
 
     private recalculateLines(): void

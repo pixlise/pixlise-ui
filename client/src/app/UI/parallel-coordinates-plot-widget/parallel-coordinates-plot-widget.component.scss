@@ -144,3 +144,13 @@ widget-key-display {
         top: 31px;
     }
 }
+
+.tick-label-placeholder {
+    width: 1px;
+    height: 14px;
+}
+
+.axis-toggle-container-mini {
+    max-height: 150px;
+    overflow: scroll;
+}
