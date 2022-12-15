@@ -52,13 +52,15 @@ export interface PixelPoint {
 
 export class SelectionTabModel 
 {
-    static calculateAverageRGBURatio(selection: SelectionHistoryItem, contextImage: ContextImageItem, firstChannel: string, secondChannel: string): AverageRGBURatio
+    static calculateAverageRGBURatio(pixels: Set<number>, contextImage: ContextImageItem, firstChannel: string, secondChannel: string): AverageRGBURatio
     {
+        let averageName = firstChannel === secondChannel ? `${rgbuDisplayNames[firstChannel]}` : `${rgbuDisplayNames[firstChannel]}/${rgbuDisplayNames[secondChannel]}`;
+
         // Verify context image is valid and there is an RGBU source image
         if(!contextImage || !contextImage.rgbuSourceImage)
         {
             return {
-                name: `${rgbuDisplayNames[firstChannel]}/${rgbuDisplayNames[secondChannel]}`,
+                name: averageName,
                 ratio: null
             };
         }
@@ -69,28 +71,60 @@ export class SelectionTabModel
         {
             console.error(`Invalid Channel Selection (${firstChannel}/${secondChannel})`);
             return {
-                name: `${rgbuDisplayNames[firstChannel]}/${rgbuDisplayNames[secondChannel]}`,
+                name: averageName,
                 ratio: null
             };
         }
         let firstChannelPixels = rgbuSourceImage[firstChannel].values;
         let secondChannelPixels = rgbuSourceImage[secondChannel].values;
 
-        let averageRatio = Array.from(selection.pixelSelection.selectedPixels).reduce((acc, currPixel, i) =>
-        {
-            let currRatio = firstChannelPixels[currPixel] / secondChannelPixels[currPixel];
+        let averageRatio = 0;
+        let count = pixels.size;
 
-            // Primarily fires if divide by 0 occurs, in which case we ignore these pixels
-            if(isNaN(currRatio) || !isFinite(currRatio))
+        // Use all pixels if no selection is made
+        if(count === 0)
+        {
+            count = firstChannelPixels.length;
+            firstChannelPixels.forEach((value, index) =>
             {
-                return acc;
-            }
-            return i === 0 ? currRatio : (currRatio + acc) / 2;
-        }, 0);
+                let currRatio = firstChannel === secondChannel ? value : value / secondChannelPixels[index];
+
+                // Primarily fires if divide by 0 occurs, in which case we ignore these pixels
+                if(isNaN(currRatio) || !isFinite(currRatio))
+                {
+                    count--;
+                    return;
+                }
+                else
+                {
+                    averageRatio += currRatio;
+                }
+            });
+        }
+        else
+        {
+            pixels.forEach((pixel) =>
+            {
+                let currRatio = firstChannel === secondChannel ? firstChannelPixels[pixel] : firstChannelPixels[pixel] / secondChannelPixels[pixel];
+
+                // // Primarily fires if divide by 0 occurs, in which case we ignore these pixels
+                if(isNaN(currRatio) || !isFinite(currRatio))
+                {
+                    count--;
+                    return;
+                }
+                else
+                {
+                    averageRatio += currRatio;
+                }
+            });
+        }
+
+        averageRatio /= count;
 
         return {
-            name: `${rgbuDisplayNames[firstChannel]}/${rgbuDisplayNames[secondChannel]}`,
-            ratio: Math.round(averageRatio * 100) / 100
+            name: averageName,
+            ratio: averageRatio
         };
     }
 
@@ -99,6 +133,7 @@ export class SelectionTabModel
         let channelPermutations = [];
         Object.keys(rgbuDisplayNames).forEach(channel =>
         {
+            channelPermutations.push([channel, channel]);
             Object.keys(rgbuDisplayNames).filter(subChannel => subChannel !== channel).forEach(subChannel =>
             {
                 channelPermutations.push([channel, subChannel]);
@@ -107,7 +142,7 @@ export class SelectionTabModel
 
         return channelPermutations.map(([firstChannel, secondChannel]) =>
         {
-            return this.calculateAverageRGBURatio(selection, contextImage, firstChannel, secondChannel);
+            return this.calculateAverageRGBURatio(selection.pixelSelection.selectedPixels, contextImage, firstChannel, secondChannel);
         });
     }
 

@@ -336,7 +336,8 @@ export class rgbuImagesWidgetState
 export class parallelogramWidgetState
 {
     constructor(
-        public colourChannels: string[]
+        public regions: string[],
+        public channels: string[],
     )
     {
     }

@@ -198,6 +198,20 @@ export class RGBMixLayerSettingsComponent implements OnInit
         return null;
     }
 
+    get collapsedNotificationCount(): number
+    {
+        let notificationCount = 0;
+        this.hiddenLayerButtons.forEach(button =>
+        {
+            if(button === "showTagPicker")
+            {
+                notificationCount += this.selectedTagIDs.length;
+            }
+        });
+
+        return notificationCount;
+    }
+
     get layerButtons(): string[]
     {
         let buttons: Record<string, boolean> = {

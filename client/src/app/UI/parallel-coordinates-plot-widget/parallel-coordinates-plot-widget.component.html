@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <ng-template #selectionSettingsMenu>
     <div fxLayout="column" class="gap-separated-vertical-elements" *ngIf="dimensions">
         <div>
-            <div *ngFor="let axis of axes">
+            <div *ngFor="let axis of axes" class="axis-toggle">
                 <div fxLayout="row" fxLayoutAlign="space-between center"
                     class="ctrl-row gap-separated-horizontal-elements">
                     <div class="setting-label">{{axis.title}}:</div>
@@ -41,26 +41,83 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
         </div>
     </div>
+    <div class="selection-container" fxLayout="row" fxLayoutAlign="space-evenly center">
+        <push-button (onClick)="toggleAll(true)">Select All</push-button>
+        <push-button (onClick)="toggleAll(false)">Deselect All</push-button>
+    </div>
+
+    <div fxLayout="row" fxLayoutAlign="space-between center" class="ctrl-row gap-separated-horizontal-elements line-toggle">
+        <div class="setting-label">Lines:</div>
+        <switch-button [active]="showLines" (onToggle)="toggleLineVisibility()"></switch-button>
+    </div>
 </ng-template>
 
 
 <div fxLayout="column" class="panel outer-panel" fxFill>
     <div fxLayout="row" fxLayoutAlign="space-between center" class="panel-title">
         <widget-switcher [activeSelector]='thisSelector' [widgetPosition]='widgetPosition'></widget-switcher>
-        <push-button title="Load All Points" (onClick)="loadPoints()" [disabled]="isSelectionLoaded"
-            class="load-points">Load
-            {{selectionCountText}} Points
-        </push-button>
-        <push-button [disabled]="!isHighlighted" (onClick)="convertToSelection()"
-            title="Convert PCP Selection to Global Selection" class="convert-selection">Convert To Selection
-            ({{highlightedCount}})
-        </push-button>
+        <push-button (onClick)="onRegions($event)" title="Choose RGBU regions to display" class="regions-btn">Regions</push-button>
+        <push-button (onClick)="toggleKey()" title="Toggle Key" class="key-btn">Key</push-button>
         <widget-settings-menu [settingsDialog]="selectionSettingsMenu">
             <icon-button title='Show Settings Menu' icon="assets/button-icons/settings.svg">
             </icon-button>
         </widget-settings-menu>
     </div>
     <div style="width: 100%; height: 100%; background: black; position: relative;">
-        <div style="width: 100%; height: calc(100% - 30px);" id="parallel-coords-{{widgetPosition}}"></div>
+        <div style="width: 100%; height: calc(100% - 10px);" id="parallel-coords-{{widgetPosition}}" class="pcp-plot">
+            <div class="axes">
+                <div *ngFor="let axis of visibleAxes" class="axis-container">
+                    <div class="axis-title">{{axis.title}}</div>
+                    <div class="tick-container">
+                        <div class="tick"></div>
+                        <div class="tick-label">{{axis.max|number:'1.0-2'}}</div>
+                    </div>
+                    <div class="axis-line">
+                        <div class="point-container">
+                            <div *ngFor="let point of data" class="point-tick-container"
+                                [style.top]="getFormattedValueAsPercentage(point, axis)">
+                                <div class="inner-tick"></div>
+                                <div 
+                                    class="inner-point" 
+                                    style.background="rgb({{point.color}})" 
+                                    #tooltip="matTooltip" 
+                                    [matTooltip]="point.tooltipText"
+                                >
+                                </div>
+                                <div class="tick-label">{{point[axis.key]|number:'1.0-2'}}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tick-container">
+                        <div class="tick"></div>
+                        <div class="tick-label">{{axis.min|number:'1.0-2'}}</div>
+                    </div>
+                </div>
+            </div>
+            <svg width="100%" height="calc(100% - 14px - 12px - 12px)" class="line-container" *ngIf="showLines">
+                <g *ngFor="let point of data">
+                    <line
+                        *ngFor="let line of point.lines" 
+                        #tooltip="matTooltip" 
+                        [matTooltip]="point.tooltipText"
+                        [attr.x1]="line.xStart"
+                        [attr.y1]="line.yStart" 
+                        [attr.x2]="line.xEnd" 
+                        [attr.y2]="line.yEnd"
+                        attr.stroke="rgb({{point.color}})"
+                        stroke-width="3px"
+                    />
+                </g>
+            </svg>
+
+        </div>
     </div>
+    <widget-key-display 
+        *ngIf="keyShowing"
+        [keyShowing]="keyShowing"
+        (onToggleKey)="toggleKey()"
+        [items]="keyItems"
+        class="key-location-top-right-below-title"
+    >
+    </widget-key-display>
 </div>

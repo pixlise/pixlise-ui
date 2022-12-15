@@ -208,7 +208,7 @@ TODO: get this working... no time at time of writing
 }
 
 .unit-padding {
-    padding: $sz-unit;
+    padding: $sz-unit !important;
 }
 
 .setting-row-no-pad {
@@ -310,4 +310,10 @@ nav > a + a {
     position: absolute;
     right: -6px;
     top: -6px;
+}
+
+::ng-deep .mat-tooltip  {
+  white-space: pre-line !important;
+  background-color: #2B3136;
+  box-shadow: 0 0 2px black;
 }

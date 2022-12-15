@@ -44,7 +44,14 @@ POSSIBILITY OF SUCH DAMAGE.
                 (onTagSelectionChanged)="onTagSelectionChanged($event)"
             >
             </tag-picker>
-            <mat-select multiple [(ngModel)]="filteredAuthors" class="authors-filter" placeholder="Author ...">
+            <mat-select
+                #tooltip="matTooltip"
+                [matTooltip]="authorsTooltip"
+                multiple
+                [(ngModel)]="filteredAuthors"
+                class="authors-filter"
+                placeholder="Author ..."
+            >
                 <mat-option *ngFor="let author of authors;"
                     [value]="author.user_id">{{author.name}}
                 </mat-option>

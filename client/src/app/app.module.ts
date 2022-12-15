@@ -31,9 +31,9 @@ import { BrowserModule, Title } from "@angular/platform-browser";
 import { NgModule, ErrorHandler, Injectable, APP_INITIALIZER } from "@angular/core";
 import { HTTP_INTERCEPTORS, HttpErrorResponse, HttpClientModule } from "@angular/common/http";
 import { FormsModule } from "@angular/forms";
-import { MAT_DIALOG_DEFAULT_OPTIONS } from "@angular/material/dialog";
+import { MAT_DIALOG_DEFAULT_OPTIONS,  MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { OverlayModule } from "@angular/cdk/overlay";
-import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { CdkAccordionModule } from "@angular/cdk/accordion";
 import { DragDropModule } from "@angular/cdk/drag-drop";
 
@@ -463,7 +463,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         AddBearerPipe,
         AddDatasetDialogComponent,
         LogViewerComponent,
-        PlotExporterDialogComponent
+        PlotExporterDialogComponent,
     ],
     imports: [
         BrowserModule,
@@ -479,6 +479,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         CodemirrorModule,
         NgxDropzoneModule,
         DragDropModule,
+        MatTooltipModule,
     ],
     providers: [
         EnvConfigurationInitService,

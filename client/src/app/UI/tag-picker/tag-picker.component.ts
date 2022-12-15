@@ -99,6 +99,11 @@ export class TagPickerComponent implements OnInit
         return this.selectedTags.length;
     }
 
+    get selectedTagsTooltip(): string
+    {
+        return this.selectedTags.length > 0 ? `Tags:\n${this.selectedTags.map(tag => tag.name).join("\n")}` : "No tags selected";
+    }
+
     get tagSearchValue(): string
     {
         return this._tagSearchValue;
