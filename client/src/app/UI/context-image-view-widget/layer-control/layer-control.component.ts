@@ -569,6 +569,12 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         this._authors = authors;
     }
 
+    get authorsTooltip(): string
+    {
+        let authorNames = this._authors.filter((author) => this._filteredAuthors.includes(author.user_id)).map((author) => author.name);
+        return this._filteredAuthors.length > 0 ? `Authors:\n${authorNames.join("\n")}` : "No Authors Selected";
+    }
+
     get filteredAuthors(): string[]
     {
         return this._filteredAuthors;

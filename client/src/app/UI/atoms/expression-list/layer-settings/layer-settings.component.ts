@@ -124,15 +124,11 @@ export class LayerSettingsComponent implements OnInit
     @Input() activeIcon: string;
     @Input() inactiveIcon: string;
 
-    // @Input() tags: ItemTag[] = [];
-
     @Output() visibilityChange = new EventEmitter();
     @Output() colourChange = new EventEmitter();
 
     private _isPureElement: boolean = false;
     private _expressionElement: string = "";
-
-    // selectedTagIDs: string[] = [];
 
     constructor(
         private _exprService: DataExpressionService,
@@ -176,6 +172,20 @@ export class LayerSettingsComponent implements OnInit
         }
 
         return true;
+    }
+
+    get collapsedNotificationCount(): number
+    {
+        let notificationCount = 0;
+        this.hiddenLayerButtons.forEach(button =>
+        {
+            if(button === "showTagPicker")
+            {
+                notificationCount += this.selectedTagIDs.length;
+            }
+        });
+
+        return notificationCount;
     }
 
     get labelToShow(): string
