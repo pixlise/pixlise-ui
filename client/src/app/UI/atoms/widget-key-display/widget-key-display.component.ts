@@ -73,8 +73,9 @@ export class WidgetKeyDisplayComponent implements OnInit
 {
     @Input() items: KeyItem[] = [];
     @Output() keyClick = new EventEmitter();
+    @Output() onToggleKey = new EventEmitter();
 
-    private _keyShowing: boolean;
+    @Input() public keyShowing: boolean = false;
 
     constructor()
     {
@@ -84,14 +85,10 @@ export class WidgetKeyDisplayComponent implements OnInit
     {
     }
 
-    get keyShowing(): boolean
-    {
-        return this._keyShowing;
-    }
-
     onToggleShowKey(): void
     {
-        this._keyShowing = !this._keyShowing;
+        this.keyShowing = !this.keyShowing;
+        this.onToggleKey.emit(this.keyShowing);
     }
 
     onClickLabel(id: string): void

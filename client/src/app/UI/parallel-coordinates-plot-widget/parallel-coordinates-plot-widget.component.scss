@@ -31,7 +31,15 @@
 
 .regions-btn {
     margin-left: auto;
-    margin-right: 5px;
+    margin-right: 4px;
+}
+
+widget-key-display {
+    z-index: 101;
+}
+
+.key-btn {
+    margin-right: 4px;
 }
 
 ::ng-deep .mat-tooltip  {

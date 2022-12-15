@@ -57,6 +57,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div fxLayout="row" fxLayoutAlign="space-between center" class="panel-title">
         <widget-switcher [activeSelector]='thisSelector' [widgetPosition]='widgetPosition'></widget-switcher>
         <push-button (onClick)="onRegions($event)" title="Choose RGBU regions to display" class="regions-btn">Regions</push-button>
+        <push-button (onClick)="toggleKey()" title="Toggle Key" class="key-btn">Key</push-button>
         <widget-settings-menu [settingsDialog]="selectionSettingsMenu">
             <icon-button title='Show Settings Menu' icon="assets/button-icons/settings.svg">
             </icon-button>
@@ -111,4 +112,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
         </div>
     </div>
+    <widget-key-display 
+        *ngIf="keyShowing"
+        [keyShowing]="keyShowing"
+        (onToggleKey)="toggleKey()"
+        [items]="keyItems"
+        class="key-location-top-right-below-title"
+    >
+    </widget-key-display>
 </div>

@@ -39,6 +39,7 @@ import { ROIPickerComponent, ROIPickerData } from "../roipicker/roipicker.compon
 import { orderVisibleROIs } from "src/app/models/roi";
 import {  WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { LayoutService } from "src/app/services/layout.service";
+import { KeyItem } from "../atoms/widget-key-display/widget-key-display.component";
 
 export class PCPLine
 {
@@ -193,6 +194,9 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
     public dimensions: Record<keyof RGBUPoint, Dimension> = null;
     public axes: PCPAxis[] = [];
     public showLines: boolean = true;
+
+    public keyShowing: boolean = false;
+    public keyItems: KeyItem[] = [];
 
     constructor(
         private _contextImageService: ContextImageService,
@@ -455,6 +459,11 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
         return this._data;
     }
 
+    toggleKey(): void
+    {
+        this.keyShowing = !this.keyShowing;
+    }
+
     private _prepareData(reason: string): void
     {
         console.log(`Parallel Coordinates Plot prepareData reason: ${reason}`);
@@ -473,11 +482,15 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
             selectedPixels = currentSelection.pixelSelection.selectedPixels;
         }
 
+        this.keyItems = [];
+
         // Get averages for all selected pixels
         if(selectedPixels.size > 0)
         {
-            let averageSelection = this.getROIAveragePoint(selectedPixels, "110, 239, 255", "Selection");
+            let selectionColor = "110,239,255";
+            let averageSelection = this.getROIAveragePoint(selectedPixels, selectionColor, "Selection");
             averageSelection.calculateLinesForAxes(this.visibleAxes, this.plotID);
+            this.keyItems.push(new KeyItem("SelectedPoints", "Selection", `rgba(${selectionColor},255)`));
             this._data.push(averageSelection);
         }
 
@@ -491,6 +504,7 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
             let roi = this._widgetDataService.regions.get(roiID);
             let color = roi.colour;
             let colorStr = `${color.r},${color.g},${color.b}`;
+            this.keyItems.push(new KeyItem(roiID, roi.name, color));
             let averagePoint = this.getROIAveragePoint(roi.pixelIndexes, colorStr, roi.name, roiID === "AllPoints");
             averagePoint.calculateLinesForAxes(this.visibleAxes, this.plotID);
             this._data.push(averagePoint);
@@ -530,6 +544,10 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
     toggleLineVisibility(): void
     {
         this.showLines = !this.showLines;
+        if(this.showLines)
+        {
+            this.recalculateLines();
+        }
     }
 
     private recalculateLines(): void
