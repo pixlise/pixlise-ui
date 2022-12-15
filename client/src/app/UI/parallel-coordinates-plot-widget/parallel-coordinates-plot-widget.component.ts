@@ -29,7 +29,7 @@
 
 import { Component, HostListener, Input, OnInit, OnDestroy, ElementRef } from "@angular/core";
 import { Subscription } from "rxjs";
-import { ViewStateService } from "src/app/services/view-state.service";
+import { parallelogramWidgetState, ViewStateService } from "src/app/services/view-state.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { RGBUImage } from "src/app/models/RGBUImage";
@@ -197,6 +197,7 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
         private _contextImageService: ContextImageService,
         private _selectionService: SelectionService,
         private _widgetDataService: WidgetRegionDataService,
+        private _viewStateService: ViewStateService,
         public dialog: MatDialog
     )
     {
@@ -239,6 +240,12 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
         this._subs.add(this._widgetDataService.widgetData$.subscribe(
             ()=>
             {
+                let loadedState = this._widgetDataService.viewState.parallelograms.get(this.widgetPosition);
+                if(loadedState)
+                {
+                    this._visibleROIs = loadedState.regions;
+                    this.axes.forEach(axis => axis.visible = loadedState.channels.includes(axis.key));
+                }
                 this._prepareData("regions changed");
                 this.recalculateLines();
             }
@@ -293,12 +300,14 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
     {
         this.axes.find(axis => axis.key === axisKey).visible = !this.axes.find(axis => axis.key === axisKey).visible;
         setTimeout(() => this.recalculateLines(), 50);
+        this.saveState("axis-toggle");
     }
 
     toggleAll(visible: boolean): void
     {
         this.axes.forEach((axis) => axis.visible = visible);
         setTimeout(() => this.recalculateLines(), 50);
+        this.saveState("all-axis-toggle");
     }
 
     onRegions(event): void
@@ -316,38 +325,71 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
                 {
                     this._visibleROIs = orderVisibleROIs(visibleROIs);
 
-                    // this.saveState(reason);
-                    this._prepareData("roi-dialog");
+                    let reason = "roi-dialog";
+                    this.saveState(reason);
+                    this._prepareData(reason);
                     this.recalculateLines();
                 }
             }
         );
     }
 
-    private getROIAveragePoint(points: Set<number>, color: string, name: string): RGBUPoint
+    private saveState(reason: string): void
+    {
+        console.log("Parallel Coordinates Plot saveState called due to: "+reason);
+        this._viewStateService.setParallelogramState(this.getViewState(), this.widgetPosition);
+    }
+
+    private getViewState(): parallelogramWidgetState
+    {
+        let toSave = new parallelogramWidgetState(
+            this._visibleROIs,
+            this.axes.filter(axis => axis.visible).map(axis => axis.key)
+        );
+
+        return toSave;
+    }
+
+    private getROIAveragePoint(points: Set<number>, color: string, name: string, fullDataset: boolean = false): RGBUPoint
     {
         let avgData = new RGBUPoint();
         avgData.name = name;
         avgData.color = color;
 
-        if(!points || points.size <= 0 || !this._rgbuLoaded || !this._rgbuLoaded.r || !this._rgbuLoaded.r.values)
+        let datasetLength = fullDataset ? this._rgbuLoaded.r.values.length : points.size;
+
+        if((!fullDataset && (!points || points.size <= 0)) || !this._rgbuLoaded || !this._rgbuLoaded.r || !this._rgbuLoaded.r.values)
         {
             return avgData;
         }
 
-        points.forEach(i => 
+        if(fullDataset)
         {
-            let [red, green, blue, uv] = [this._rgbuLoaded.r.values[i], this._rgbuLoaded.g.values[i], this._rgbuLoaded.b.values[i], this._rgbuLoaded.u.values[i]];
-            avgData.r += red;
-            avgData.g += green;
-            avgData.b += blue;
-            avgData.u += uv;
-        });
+            this._rgbuLoaded.r.values.forEach((red, i) => 
+            {
+                let [green, blue, uv] = [this._rgbuLoaded.g.values[i], this._rgbuLoaded.b.values[i], this._rgbuLoaded.u.values[i]];
+                avgData.r += red;
+                avgData.g += green;
+                avgData.b += blue;
+                avgData.u += uv;
+            });
+        }
+        else
+        {
+            points.forEach(i => 
+            {
+                let [red, green, blue, uv] = [this._rgbuLoaded.r.values[i], this._rgbuLoaded.g.values[i], this._rgbuLoaded.b.values[i], this._rgbuLoaded.u.values[i]];
+                avgData.r += red;
+                avgData.g += green;
+                avgData.b += blue;
+                avgData.u += uv;
+            });
+        }
 
-        avgData.r = avgData.r / points.size;
-        avgData.g = avgData.g / points.size;
-        avgData.b = avgData.b / points.size;
-        avgData.u = avgData.u / points.size;
+        avgData.r = avgData.r / datasetLength;
+        avgData.g = avgData.g / datasetLength;
+        avgData.b = avgData.b / datasetLength;
+        avgData.u = avgData.u / datasetLength;
 
         if(avgData.g > 0)
         {
@@ -441,7 +483,7 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
             let roi = this._widgetDataService.regions.get(roiID);
             let color = roi.colour;
             let colorStr = `${color.r},${color.g},${color.b}`;
-            let averagePoint = this.getROIAveragePoint(roi.pixelIndexes, colorStr, roi.name);
+            let averagePoint = this.getROIAveragePoint(roi.pixelIndexes, colorStr, roi.name, roiID === "AllPoints");
             averagePoint.calculateLinesForAxes(this.visibleAxes, this.plotID);
             this._data.push(averagePoint);
         });
