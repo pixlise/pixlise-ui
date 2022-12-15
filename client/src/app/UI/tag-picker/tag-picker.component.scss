@@ -39,7 +39,6 @@
 
 ::ng-deep div.panel {
     border-radius: 4px;
-    padding: 0 !important;
 }
 
 .tag-title {
@@ -57,6 +56,8 @@
 
     width: 300px;
     max-height: 350px;
+
+    margin: -8px;
 
     background-color: rgb(var(--clr-gray-90));
 
