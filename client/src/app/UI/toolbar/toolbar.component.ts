@@ -234,7 +234,12 @@ export class ToolbarComponent implements OnInit, OnDestroy
     {
         // titleToShow being non-empty means we're not on a dataset tab, eg Admin.
         // Title being blank means dataset not yet loaded
-        return this.titleToShow.length <= 0 && this.title.length > 0 && this._userExportAllowed;
+        return this.titleToShow.length <= 0 && this.title.length > 0 && this._userExportAllowed && (![""].includes(this._currTab));
+    }
+
+    get showTitle(): boolean
+    {
+        return this.title.length > 0 && (![""].includes(this._currTab));
     }
 
     get showViewCapture(): boolean
