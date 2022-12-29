@@ -35,7 +35,7 @@ export class MenuPanelHostData
 {
     constructor(
         public menuTemplate: TemplateRef<any>,
-        public noPadding: boolean
+        public noPadding: boolean = false
     )
     {
     }
