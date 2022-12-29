@@ -54,6 +54,8 @@ import { SpectrumChartToolHost } from "src/app/UI/spectrum-chart-widget/tools/to
 import { SpectrumXRFLinesNearMouse } from "src/app/UI/spectrum-chart-widget/xrf-near-mouse";
 import { RGBA, Colours } from "src/app/utils/colours";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
+import { MatDialog } from "@angular/material/dialog";
+import { Clipboard } from "@angular/cdk/clipboard";
 
 
 export class PseudoIntensityRangeItem
@@ -218,11 +220,13 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         public snackService: SnackService,
         public expressionService: DataExpressionService, // only here for RangeSelect to be able to add an expression!
         public envService: EnvConfigurationService,
-        widgetPosition: string
+        widgetPosition: string,
+        public dialog: MatDialog,
+        public clipboard: Clipboard
     )
     {
         this._widgetPosition = widgetPosition;
-        this._toolHost = new SpectrumChartToolHost(this);
+        this._toolHost = new SpectrumChartToolHost(this, dialog, clipboard);
     }
 
     setDataset(dataset: DataSet): void

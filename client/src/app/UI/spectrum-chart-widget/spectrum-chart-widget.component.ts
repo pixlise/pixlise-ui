@@ -28,6 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, Input, OnDestroy, OnInit } from "@angular/core";
+import { Clipboard } from "@angular/cdk/clipboard";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { DetectorConfig } from "src/app/models/BasicTypes";
@@ -86,6 +87,7 @@ export class SpectrumChartWidgetComponent implements OnInit, OnDestroy
         private _spectrumService: SpectrumChartService,
         private _widgetDataService: WidgetRegionDataService,
         public dialog: MatDialog,
+        public clipboard: Clipboard
     )
     {
     }
@@ -93,7 +95,7 @@ export class SpectrumChartWidgetComponent implements OnInit, OnDestroy
     ngOnInit()
     {
         this.mdl = new SpectrumChartModel(
-            this._datasetService, this._viewStateService, this._snackService, this._exprService, this._envService, this.widgetPosition
+            this._datasetService, this._viewStateService, this._snackService, this._exprService, this._envService, this.widgetPosition, this.dialog, this.clipboard
         );
         this._spectrumService.setModel(this.mdl);
         this.drawer = new SpectrumChartDrawer(this.mdl, this.mdl.toolHost);
