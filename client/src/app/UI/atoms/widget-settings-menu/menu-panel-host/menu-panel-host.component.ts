@@ -34,7 +34,8 @@ import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 export class MenuPanelHostData
 {
     constructor(
-        public menuTemplate: TemplateRef<any>
+        public menuTemplate: TemplateRef<any>,
+        public noPadding: boolean
     )
     {
     }

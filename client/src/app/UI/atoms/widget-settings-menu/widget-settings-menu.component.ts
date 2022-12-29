@@ -60,6 +60,7 @@ export class WidgetSettingsMenuComponent implements OnInit
 
     @Input() settingsDialog: TemplateRef<any> = null;
     @Input() openDirDown: boolean = true;
+    @Input() noPadding: boolean = false;
     @Output() onClose = new EventEmitter();
 
     private _overlayRef: OverlayRef = null;
@@ -164,7 +165,7 @@ export class WidgetSettingsMenuComponent implements OnInit
                 parent: this.injector,
                 providers: [
                     { provide: OverlayRef, useValue: this._overlayRef },
-                    { provide: MAT_DIALOG_DATA, useValue: new MenuPanelHostData(this.settingsDialog) },
+                    { provide: MAT_DIALOG_DATA, useValue: new MenuPanelHostData(this.settingsDialog, this.noPadding) },
                 ]
             }
         );
