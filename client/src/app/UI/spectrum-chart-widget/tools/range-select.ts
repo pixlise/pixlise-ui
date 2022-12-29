@@ -27,15 +27,20 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { Clipboard } from "@angular/cdk/clipboard";
+
 import { Subscription } from "rxjs";
 import { Rect } from "src/app/models/Geometry";
-import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
 import { SnackEvent } from "src/app/services/snack.service";
 import { CursorId } from "src/app/UI/atoms/interactive-canvas/cursor-id";
 import { CanvasDrawParameters, CanvasInteractionResult, CanvasKeyEvent, CanvasMouseEvent, CanvasMouseEventId } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { ISpectrumChartModel } from "src/app/UI/spectrum-chart-widget/model-interface";
 import { Colours } from "src/app/utils/colours";
+import { UserPromptDialogComponent, UserPromptDialogParams, UserPromptDialogResult } from "../../atoms/user-prompt-dialog/user-prompt-dialog.component";
 import { BaseSpectrumTool, ISpectrumToolHost, SpectrumToolId } from "./base-tool";
+import { ExpressionEditorComponent, ExpressionEditorConfig } from "../../expression-editor/expression-editor.component";
 
 
 
@@ -62,7 +67,9 @@ export class RangeSelect extends BaseSpectrumTool
 
     constructor(
         ctx: ISpectrumChartModel,
-        host: ISpectrumToolHost
+        host: ISpectrumToolHost,
+        public dialog: MatDialog,
+        public clipboard: Clipboard,
     )
     {
         super(SpectrumToolId.RANGE_SELECT,
@@ -147,6 +154,50 @@ export class RangeSelect extends BaseSpectrumTool
         }
     }
 
+    private onExpressionEditor(expressionID): void
+    {
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.panelClass = "panel";
+        dialogConfig.disableClose = true;
+        //dialogConfig.backdropClass = "panel";
+
+        let toEdit = this._ctx.expressionService.getExpression(expressionID);
+
+        // We only allow editing if we were allowed to, AND if expression is NOT shared AND if it was created by our user
+        dialogConfig.data = new ExpressionEditorConfig(toEdit, true);
+
+        const dialogRef = this.dialog.open(ExpressionEditorComponent, dialogConfig);
+
+        dialogRef.afterClosed().subscribe(
+            (dlgResult: ExpressionEditorConfig)=>
+            {
+                if(!dlgResult)
+                {
+                    // User probably cancelled
+                }
+                else
+                {
+                    let expr = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec);
+                    this._ctx.expressionService.edit(expressionID, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments).subscribe(
+                        ()=>
+                        {
+                            // Don't need to do anything, service refreshes
+                        },
+                        (err)=>
+                        {
+                            alert("Failed to save edit data expression: "+expr.name);
+                        }
+                    );
+                }
+            },
+            (err)=>
+            {
+                alert("Error while editing data expression: "+toEdit.name);
+            }
+        );
+    }
+
+
     private onAccept(): void
     {
         const det = "A"; // For now we just do this on the A spectrum!
@@ -159,17 +210,49 @@ export class RangeSelect extends BaseSpectrumTool
 
         let expr = "spectrum("+minChannel+","+maxChannel+", \""+det+"\")";
         let name = this._ctx.makePrintableXValue(this._rangeMin)+"-"+this._ctx.makePrintableXValue(this._rangeMax);
+        let expressionComment = `Generated expression for channel ${minChannel}->${maxChannel} (keV range: ${this._rangeMin.toLocaleString()}->${this._rangeMax.toLocaleString()})`;
 
-        this._ctx.expressionService.add(name, expr, DataExpressionService.DataExpressionTypeAll, "Generated expression for channel "+minChannel+"->"+maxChannel+" (keV range: "+this._rangeMin.toLocaleString()+"->"+this._rangeMax.toLocaleString()+")").subscribe(
-            ()=>
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.data = new UserPromptDialogParams(
+            "New Range Expression",
+            "Copy to Clipboard",
+            "Okay",
+            [],
+            true,
+            "Take Me There",
+            () => null
+        );
+        const dialogRef = this.dialog.open(UserPromptDialogComponent, dialogConfig);
+        
+        this._ctx.expressionService.add(name, expr, DataExpressionService.DataExpressionTypeAll, expressionComment).subscribe(
+            (expressions)=>
             {
                 console.log("Added expression: "+name);
+            
+                dialogRef.componentInstance.data.middleButtonCallback = () =>
+                {
+                    let expressionID = Object.keys(expressions).pop();
+                    this._ctx.viewStateService.showContextImageLayers = true;
+                    this.onExpressionEditor(expressionID);
+                    dialogRef.close();
+                };
             },
             (err)=>
             {
                 alert("Failed to add data expression: "+name);
             }
         );
+
+        dialogRef.afterClosed().subscribe(
+            (result: UserPromptDialogResult)=>
+            {
+                if(result !== null)
+                {
+                    this.clipboard.copy(expr);
+                }
+            }
+        );
+
 
         // Show the layers dropdown under context image
         this._ctx.viewStateService.showContextImageLayers = true;
