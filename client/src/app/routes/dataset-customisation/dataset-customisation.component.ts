@@ -34,7 +34,7 @@ import { Observable, Subject, Subscription, throwError } from "rxjs";
 import { map } from "rxjs/operators";
 import { PixelSelection } from "src/app/models/PixelSelection";
 import { RGBUImage } from "src/app/models/RGBUImage";
-import { DatasetCustomImageInfo, DataSetService } from "src/app/services/data-set.service";
+import { DatasetCustomImageInfo, CustomMeta, DataSetService } from "src/app/services/data-set.service";
 import { LayoutService } from "src/app/services/layout.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
 import { CanvasDrawer, CanvasDrawParameters } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
@@ -65,6 +65,7 @@ export class DatasetCustomisationComponent implements OnInit
     unalignedImages: string[] = [];
     matchedImages: string[] = [];
     title: string = "";
+    defaultContextImage: string = "";
 
     datasetID: string = "";
     logId: string = "";
@@ -126,17 +127,20 @@ export class DatasetCustomisationComponent implements OnInit
     private refresh(): void
     {
         this.title = null;
+        this.defaultContextImage = null;
 
-        this._datasetService.getCustomTitle(this.datasetID).subscribe(
-            (title: string)=>
+        this._datasetService.getCustomMeta(this.datasetID).subscribe(
+            (meta: CustomMeta)=>
             {
-                this.title = title;
+                this.title = meta.title;
+                this.defaultContextImage = meta.defaultContextImage;
             },
             (err)=>
             {
-                console.error("Failed to get custom title!");
+                console.error("Failed to get custom metadata for dataset!");
                 console.log(err);
                 this.title = "";
+                this.defaultContextImage = "";
             }
         );
 
@@ -252,10 +256,11 @@ export class DatasetCustomisationComponent implements OnInit
         this.needsDraw$.next();
     }
 
-    onSaveTitle(): void
+    onSaveChanges(): void
     {
         // Title variable would hold the new value, save that
-        this._datasetService.setCustomTitle(this.datasetID, this.title).subscribe(
+        let meta = new CustomMeta(this.title, this.defaultContextImage);
+        this._datasetService.setCustomMeta(this.datasetID, meta).subscribe(
             ()=>
             {
                 // If it was successful, we trigger a dataset reprocess here
@@ -266,7 +271,6 @@ export class DatasetCustomisationComponent implements OnInit
                         if(logId)
                         {
                             alert("Saved. Dataset will be regenerated, watch log output for errors.");
-
                             this.logId = logId;
                         }
                         else
