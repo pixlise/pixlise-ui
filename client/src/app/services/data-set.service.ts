@@ -62,6 +62,16 @@ export class DatasetCustomImageInfo
     }
 }
 
+export class CustomMeta
+{
+    constructor(
+        public title: string,
+        public defaultContextImage: string,
+    )
+    {
+    }
+}
+
 @Injectable({
     providedIn: "root"
 })
@@ -540,26 +550,16 @@ export class DataSetService
     }
 
     // Customisation of datasets:
-    getCustomTitle(datasetID: string): Observable<string>
+    getCustomMeta(datasetID: string): Observable<CustomMeta>
     {
         let apiUrl = APIPaths.getWithHost(APIPaths.api_dataset+"/meta/"+datasetID);
-        return this.http.get<object>(apiUrl, makeHeaders()).pipe(
-            map((x: object)=>
-            {
-                // TODO: define a struct for this, for now this works OK
-                return x["title"];
-            }
-            )
-        );
+        return this.http.get<CustomMeta>(apiUrl, makeHeaders());
     }
 
-    setCustomTitle(datasetID: string, title: string): Observable<void>
+    setCustomMeta(datasetID: string, meta: CustomMeta): Observable<void>
     {
-        // TODO: define a struct for this, for now this works OK
-        let body = { "title": title };
-
         let apiUrl = APIPaths.getWithHost(APIPaths.api_dataset+"/meta/"+datasetID);
-        return this.http.put<void>(apiUrl, body, makeHeaders());
+        return this.http.put<void>(apiUrl, meta, makeHeaders());
     }
 
     listCustomImages(datasetID: string, imageType: string): Observable<string[]>

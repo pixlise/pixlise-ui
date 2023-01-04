@@ -48,3 +48,7 @@
 .img-item-selected {
     color: $clr-yellow;
 }
+
+.selectable {
+    user-select: text;
+}

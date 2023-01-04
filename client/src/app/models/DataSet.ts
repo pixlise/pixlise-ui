@@ -1677,7 +1677,7 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
                 isdefault = " <-- Main Image";
                 this.defaultContextImageIdx = c;
             }
-            console.log("   * "+i.path+", pmc="+i.imagePMC+", hasBeam="+i.hasBeamData+", hasData="+(i.rgbSourceImage!=null||i.rgbuSourceImage!=null)+isdefault);
+            console.log("   * "+i.path+", pmc="+i.imagePMC+", hasBeam="+i.hasBeamData+", hasImageLoaded="+(i.rgbSourceImage!=null||i.rgbuSourceImage!=null)+isdefault);
         }
 
         // If we still haven't picked a default, pick the one with the lowest PMC
