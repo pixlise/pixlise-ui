@@ -69,6 +69,7 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
 
     @Output() headerSectionToggle = new EventEmitter();
     @Output() visibilityChange = new EventEmitter();
+    @Output() onLayerImmediateSelection = new EventEmitter();
     @Output() colourChange = new EventEmitter();
 
     stickyItemHeaderName: string = "";
@@ -171,6 +172,12 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
         {
             this._rgbMixService.setExploratoryRGBMix(event.red, event.green, event.blue, event.visible);
         }
+    }
+
+    // Shortcut to select and propogate an immediate "apply" event up to parent for current layer
+    onLayerImmediateSelectionEvent(event: LayerVisibilityChange): void
+    {
+        this.onLayerImmediateSelection.emit(event);
     }
 
     // Layer visibility, we pass this through to our owner, as it may need to be processed a certain way

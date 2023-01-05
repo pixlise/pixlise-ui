@@ -121,6 +121,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [activeIcon]="selectedIcon"
                     [inactiveIcon]="unselectedIcon"
                     (visibilityChange)="onLayerVisibilityChange($event)"
+                    (onLayerImmediateSelection)="onLayerImmediateSelectionEvent($event)"
                     (colourChange)="onLayerColourChange($event)">
                 </context-layer-settings>
             </ng-container>

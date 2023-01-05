@@ -45,7 +45,8 @@ export class ExpressionEditorConfig
     constructor(
         public expr: DataExpression,
         public allowEdit: boolean,
-        public applyNow: boolean = false
+        public applyNow: boolean = false,
+        public isImmediatelyAppliable: boolean = true,
     )
     {
     }

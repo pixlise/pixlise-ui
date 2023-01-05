@@ -125,6 +125,7 @@ export class LayerSettingsComponent implements OnInit
     @Input() inactiveIcon: string;
 
     @Output() visibilityChange = new EventEmitter();
+    @Output() onLayerImmediateSelection = new EventEmitter();
     @Output() colourChange = new EventEmitter();
 
     private _isPureElement: boolean = false;
@@ -452,6 +453,12 @@ export class LayerSettingsComponent implements OnInit
                     this._exprService.edit(this.layerInfo.layer.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments).subscribe(
                         ()=>
                         {
+                            if(dlgResult.applyNow)
+                            {
+                                let visibilityChange = new LayerVisibilityChange(this.layerInfo.layer.id, true, this.layerInfo.layer.opacity, []);
+                                this.visibilityChange.emit(visibilityChange);
+                                this.onLayerImmediateSelection.emit(visibilityChange);
+                            }
                             // Don't need to do anything, service refreshes
                         },
                         (err)=>
