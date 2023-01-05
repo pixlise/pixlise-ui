@@ -49,6 +49,7 @@ POSSIBILITY OF SUCH DAMAGE.
         [initialScrollToIdx]="initialScrollToIdx"
         (headerSectionToggle)="onToggleLayerSectionOpen($event)"
         (visibilityChange)="onLayerVisibilityChange($event)"
+        (onLayerImmediateSelection)="onLayerImmediateSelection($event)"
         fxFlex="100%">
         <!-- NOTE: we don't listen for layer colour change as we don't show the colour picker -->
 

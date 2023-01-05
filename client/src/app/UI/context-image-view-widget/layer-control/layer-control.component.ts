@@ -342,19 +342,24 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
     onAddExpression(): void
     {
         this.showExpressionEditor(new DataExpression("", "", "", DataExpressionService.DataExpressionTypeAll, "", false, null, 0, 0)).subscribe(
-            (expr: DataExpression)=>
+            ({ expression, applyNow })=>
             {
-                if(expr)
+                if(expression)
                 {
                     // User has defined a new one, upload it
-                    this._exprService.add(expr.name, expr.expression, expr.type, expr.comments).subscribe(
-                        ()=>
+                    this._exprService.add(expression.name, expression.expression, expression.type, expression.comments).subscribe(
+                        (response)=>
                         {
-                            // Don't need to do anything, service refreshes
+                            if(applyNow)
+                            {
+                                // If save and apply now is selected, turn on the layer
+                                let layerID = Object.keys(response || {})[0] || "";
+                                this._contextImageService.mdl.layerManager.setLayerVisibility(layerID, 1, true, []);
+                            }
                         },
                         (err)=>
                         {
-                            alert("Failed to add data expression: "+expr.name);
+                            alert("Failed to add data expression: "+expression.name);
                         }
                     );
                 }
@@ -367,15 +372,14 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         );
     }
 
-    private showExpressionEditor(toEdit: DataExpression): Observable<DataExpression>
+    private showExpressionEditor(toEdit: DataExpression): Observable<{expression: DataExpression; applyNow: boolean;}>
     {
-        return new Observable<DataExpression>(
+        return new Observable<{expression: DataExpression; applyNow: boolean;}>(
             (observer)=>
             {
                 const dialogConfig = new MatDialogConfig();
                 dialogConfig.panelClass = "panel";
                 dialogConfig.disableClose = true;
-                //dialogConfig.backdropClass = "panel";
 
                 dialogConfig.data = new ExpressionEditorConfig(toEdit, true);
 
@@ -390,7 +394,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                             toReturn = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec);
                         }
 
-                        observer.next(toReturn);
+                        observer.next({ expression: toReturn, applyNow: dlgResult.applyNow });
                         observer.complete();
                     },
                     (err)=>

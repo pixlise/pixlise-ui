@@ -220,6 +220,12 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
         this.regenerateItemList();
     }
 
+    onLayerImmediateSelection(event: LayerVisibilityChange): void
+    {
+        this.onLayerVisibilityChange(event);
+        this.onOK();
+    }
+
     onLayerVisibilityChange(event: LayerVisibilityChange): void
     {
         // We handle this by saving the ID in our list of "active" ids, if it's marked visible...

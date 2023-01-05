@@ -159,38 +159,29 @@ export class RangeSelect extends BaseSpectrumTool
         const dialogConfig = new MatDialogConfig();
         dialogConfig.panelClass = "panel";
         dialogConfig.disableClose = true;
-        //dialogConfig.backdropClass = "panel";
 
         let toEdit = this._ctx.expressionService.getExpression(expressionID);
 
-        // We only allow editing if we were allowed to, AND if expression is NOT shared AND if it was created by our user
-        dialogConfig.data = new ExpressionEditorConfig(toEdit, true);
+        dialogConfig.data = new ExpressionEditorConfig(toEdit, true, false, false);
 
         const dialogRef = this.dialog.open(ExpressionEditorComponent, dialogConfig);
 
         dialogRef.afterClosed().subscribe(
             (dlgResult: ExpressionEditorConfig)=>
             {
-                if(!dlgResult)
-                {
-                    // User probably cancelled
-                }
-                else
+                if(dlgResult)
                 {
                     let expr = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec);
                     this._ctx.expressionService.edit(expressionID, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments).subscribe(
+                        ()=> null,
                         ()=>
-                        {
-                            // Don't need to do anything, service refreshes
-                        },
-                        (err)=>
                         {
                             alert("Failed to save edit data expression: "+expr.name);
                         }
                     );
                 }
             },
-            (err)=>
+            ()=>
             {
                 alert("Error while editing data expression: "+toEdit.name);
             }

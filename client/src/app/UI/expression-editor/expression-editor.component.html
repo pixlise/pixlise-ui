@@ -58,7 +58,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <div fxLayout="row" fxLayoutAlign="end" class="choice-container gap-separated-horizontal-elements">
         <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-        <push-button buttonStyle="outline" [disabled]="!isEditable" (onClick)="onApplyToChart()">Save and Apply to Chart</push-button>
+        <push-button *ngIf="data.isImmediatelyAppliable" buttonStyle="outline" [disabled]="!isEditable" (onClick)="onApplyToChart()">Save and Apply to Chart</push-button>
         <push-button buttonStyle="yellow" [disabled]="!isEditable" (onClick)="onOK()">Apply</push-button>
     </div>
 </div>
