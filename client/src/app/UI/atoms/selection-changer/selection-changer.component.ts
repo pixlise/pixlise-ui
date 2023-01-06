@@ -33,14 +33,9 @@ import { Subscription } from "rxjs";
 import { BeamSelection } from "src/app/models/BeamSelection";
 import { DataSetService } from "src/app/services/data-set.service";
 import { ROIService } from "src/app/services/roi.service";
-import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
+import { SelectionHistoryItem, SelectionService, makeSelectionPrompt } from "src/app/services/selection.service";
 import { SelectionOption, SelectionOptionsComponent, SelectionOptionsDialogData } from "src/app/UI/atoms/selection-changer/selection-options/selection-options.component";
 import { httpErrorToString, parseNumberRangeString, UNICODE_CARET_DOWN } from "src/app/utils/utils";
-
-
-
-
-
 
 
 @Component({
@@ -168,7 +163,8 @@ export class SelectionChangerComponent implements OnInit
             return;
         }
 
-        let pmcStr = prompt("Enter PMCs between "+dataset.pmcMinMax.min+" and "+dataset.pmcMinMax.max+". Eg: "+dataset.pmcMinMax.min+","+(dataset.pmcMinMax.min+1)+","+(dataset.pmcMinMax.min+5)+"-"+(dataset.pmcMinMax.min+8));
+        let promptMsg = makeSelectionPrompt(dataset);
+        let pmcStr = prompt(promptMsg);
         if(pmcStr)
         {
             let selectPMCs = parseNumberRangeString(pmcStr);

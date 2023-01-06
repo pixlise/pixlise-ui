@@ -31,15 +31,14 @@ import { Component, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { BeamSelection } from "src/app/models/BeamSelection";
-import { ContextImageItem } from "src/app/models/DataSet";
+import { DataSet, ContextImageItem } from "src/app/models/DataSet";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { ROIService } from "src/app/services/roi.service";
-import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
+import { SelectionHistoryItem, SelectionService, makeSelectionPrompt } from "src/app/services/selection.service";
 import { httpErrorToString, parseNumberRangeString } from "src/app/utils/utils";
-import { DataSet } from "src/app/models/DataSet";
-
 import { SelectionTabModel, AverageRGBURatio } from "./model";
+
 
 const emptySelectionDescription = "Empty";
 
@@ -341,22 +340,7 @@ export class SelectionComponent implements OnInit
             return;
         }
 
-        let promptMsg = "Enter PMCs between "+dataset.pmcMinMax.min+" and "+dataset.pmcMinMax.max+". Eg: "+dataset.pmcMinMax.min+","+(dataset.pmcMinMax.min+1)+","+(dataset.pmcMinMax.min+5)+"-"+(dataset.pmcMinMax.min+8);
-
-        // If we viewing a combined dataset, show extra info about each datasets PMCs so users can work out what to enter exactly
-        if(dataset.experiment.getScanSourcesList().length > 0)
-        {
-            promptMsg += "\n\nNOTE: This dataset contains multiple scans. To select the PMC from the right scan, add the following offsets:\n";
-            let srcs = dataset.experiment.getScanSourcesList();
-            for(let src of srcs)
-            {
-                if(src.getIdOffset() > 0)
-                {
-                    promptMsg += src.getRtt()+": add "+src.getIdOffset()+"\n";
-                }
-            }
-        }
-
+        let promptMsg = makeSelectionPrompt(dataset);
         let pmcStr = prompt(promptMsg);
         if(pmcStr)
         {
