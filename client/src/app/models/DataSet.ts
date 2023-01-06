@@ -1558,7 +1558,7 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
                     item = [];
                 }
 
-                let decoded = DecompressZeroRunLengthEncoding(detector.getSpectrumList());
+                let decoded = DecompressZeroRunLengthEncoding(detector.getSpectrumList(), DataSet.getSpectrumValueCount());
                 item.push(decoded);
 
                 this._decompressedSpectra.set(pmc, item);
