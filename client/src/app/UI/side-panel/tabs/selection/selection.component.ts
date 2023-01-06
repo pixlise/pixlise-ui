@@ -37,12 +37,13 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { ROIService } from "src/app/services/roi.service";
 import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
 import { httpErrorToString, parseNumberRangeString } from "src/app/utils/utils";
+import { DataSet } from "src/app/models/DataSet";
 
 import { SelectionTabModel, AverageRGBURatio } from "./model";
 
 const emptySelectionDescription = "Empty";
 
-class PMCAndDisplay
+export class PMCAndDisplay
 {
     constructor(public pmc: number, public displayPMC: string)
     {
@@ -96,32 +97,7 @@ export class SelectionComponent implements OnInit
                     }
                 );
 
-                // Make a display string list, this includes subheadings for dataset IDs where there are combined datasets
-                let pmcsByDataset = new Map<string, number[]>(); // NOTE we add PMC twice to the array, once the original, once the without offset one
-
-                for(let pmc of this._selectedPMCs)
-                {
-                    let idx = this._datasetService.datasetLoaded.pmcToLocationIndex.get(pmc);
-                    let datasetID = "";
-                    let savePMC = pmc;
-
-                    if(idx != undefined)
-                    {
-                        let loc = this._datasetService.datasetLoaded.locationPointCache[idx];
-                        if(loc.source)
-                        {
-                            savePMC = loc.getPMCWithoutOffset();
-                            datasetID = loc.source.getRtt();
-                        }
-                    }
-
-                    if(pmcsByDataset.get(datasetID) == undefined)
-                    {
-                        pmcsByDataset.set(datasetID, []);
-                    }
-
-                    pmcsByDataset.get(datasetID).push(pmc, savePMC);
-                }
+                let pmcsByDataset = SelectionComponent.MakePMCsByDataset(this._selectedPMCs, this._datasetService.datasetLoaded);
 
                 // Now run through the maps and build displayable stuff
                 this._displaySelectedPMCs = [];
@@ -185,6 +161,37 @@ export class SelectionComponent implements OnInit
     ngOnDestroy()
     {
         this._subs.unsubscribe();
+    }
+
+    public static MakePMCsByDataset(pmcs: number[], dataset: DataSet): Map<string, number[]>
+    {
+        // Make a display string list, this includes subheadings for dataset IDs where there are combined datasets
+        let pmcsByDataset = new Map<string, number[]>(); // NOTE we add PMC twice to the array, once the original, once the without offset one
+
+        for(let pmc of pmcs)
+        {
+            let idx = dataset.pmcToLocationIndex.get(pmc);
+            let datasetID = "";
+            let savePMC = pmc;
+
+            if(idx != undefined)
+            {
+                let loc = dataset.locationPointCache[idx];
+                if(loc.source)
+                {
+                    savePMC = loc.getPMCWithoutOffset();
+                    datasetID = loc.source.getRtt();
+                }
+            }
+
+            if(pmcsByDataset.get(datasetID) == undefined)
+            {
+                pmcsByDataset.set(datasetID, []);
+            }
+
+            pmcsByDataset.get(datasetID).push(pmc, savePMC);
+        }
+        return pmcsByDataset;
     }
 
     get summary(): string
