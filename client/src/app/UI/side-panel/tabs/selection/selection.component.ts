@@ -31,16 +31,23 @@ import { Component, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { BeamSelection } from "src/app/models/BeamSelection";
-import { ContextImageItem } from "src/app/models/DataSet";
+import { DataSet, ContextImageItem } from "src/app/models/DataSet";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { ROIService } from "src/app/services/roi.service";
-import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
+import { SelectionHistoryItem, SelectionService, makeSelectionPrompt } from "src/app/services/selection.service";
 import { httpErrorToString, parseNumberRangeString } from "src/app/utils/utils";
-
 import { SelectionTabModel, AverageRGBURatio } from "./model";
 
+
 const emptySelectionDescription = "Empty";
+
+export class PMCAndDisplay
+{
+    constructor(public pmc: number, public displayPMC: string)
+    {
+    }
+}
 
 @Component({
     selector: "app-selection",
@@ -52,6 +59,7 @@ export class SelectionComponent implements OnInit
     private _subs = new Subscription();
 
     private _selectedPMCs: number[] = [];
+    private _displaySelectedPMCs: PMCAndDisplay[] = [];
     private _summary: string = emptySelectionDescription;
     private _averageRGBURatios: AverageRGBURatio[] = [];
     hoverPMC: number = -1;
@@ -87,6 +95,24 @@ export class SelectionComponent implements OnInit
                         return -1;
                     }
                 );
+
+                let pmcsByDataset = SelectionComponent.MakePMCsByDataset(this._selectedPMCs, this._datasetService.datasetLoaded);
+
+                // Now run through the maps and build displayable stuff
+                this._displaySelectedPMCs = [];
+                for(let [id, pmcs] of pmcsByDataset)
+                {
+                    if(id != "")
+                    {
+                        // Add a sub-heading
+                        this._displaySelectedPMCs.push(new PMCAndDisplay(-1, "Dataset RTT: "+id));
+                    }
+
+                    for(let c = 0; c < pmcs.length; c+=2)
+                    {
+                        this._displaySelectedPMCs.push(new PMCAndDisplay(pmcs[c], pmcs[c+1].toLocaleString()));
+                    }
+                }
 
                 this._summary = "";
                 if(this._selectedPMCs.length > 0)
@@ -136,14 +162,45 @@ export class SelectionComponent implements OnInit
         this._subs.unsubscribe();
     }
 
+    public static MakePMCsByDataset(pmcs: number[], dataset: DataSet): Map<string, number[]>
+    {
+        // Make a display string list, this includes subheadings for dataset IDs where there are combined datasets
+        let pmcsByDataset = new Map<string, number[]>(); // NOTE we add PMC twice to the array, once the original, once the without offset one
+
+        for(let pmc of pmcs)
+        {
+            let idx = dataset.pmcToLocationIndex.get(pmc);
+            let datasetID = "";
+            let savePMC = pmc;
+
+            if(idx != undefined)
+            {
+                let loc = dataset.locationPointCache[idx];
+                if(loc.source)
+                {
+                    savePMC = loc.getPMCWithoutOffset();
+                    datasetID = loc.source.getRtt();
+                }
+            }
+
+            if(pmcsByDataset.get(datasetID) == undefined)
+            {
+                pmcsByDataset.set(datasetID, []);
+            }
+
+            pmcsByDataset.get(datasetID).push(pmc, savePMC);
+        }
+        return pmcsByDataset;
+    }
+
     get summary(): string
     {
         return this._summary;
     }
 
-    get selectedPMCs(): number[]
+    get displaySelectedPMCs(): PMCAndDisplay[]
     {
-        return this._selectedPMCs;
+        return this._displaySelectedPMCs;
     }
 
     get averageRGBURatios(): AverageRGBURatio[]
@@ -283,7 +340,8 @@ export class SelectionComponent implements OnInit
             return;
         }
 
-        let pmcStr = prompt("Enter PMCs between "+dataset.pmcMinMax.min+" and "+dataset.pmcMinMax.max+". Eg: "+dataset.pmcMinMax.min+","+(dataset.pmcMinMax.min+1)+","+(dataset.pmcMinMax.min+5)+"-"+(dataset.pmcMinMax.min+8));
+        let promptMsg = makeSelectionPrompt(dataset);
+        let pmcStr = prompt(promptMsg);
         if(pmcStr)
         {
             let selectPMCs = parseNumberRangeString(pmcStr);

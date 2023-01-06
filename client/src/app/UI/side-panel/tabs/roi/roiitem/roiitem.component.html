@@ -139,15 +139,15 @@ POSSIBILITY OF SUCH DAMAGE.
                 <push-button (onClick)="onPMCPageNext()">Next</push-button>
             </div>
             <div
-                *ngFor="let pmc of pmcs"
+                *ngFor="let item of displaySelectedPMCs"
                 fxLayout="row"
                 fxLayoutAlign="space-between center"
                 class="roi-pmc outer-padding"
-                (mouseenter)="onPMCEnter(pmc)"
-                (mouseleave)="onPMCLeave(pmc)"
-                [ngClass]="{'pmc-highlight': pmc==hoverPMC}">
-                <div>{{pmc}}</div>
-                <img class="clickable" (click)="onDeletePMC(pmc)" src="assets/button-icons/close-cross-gray.svg">
+                [ngClass]="{'pmc-highlight': item.pmc>=0&&item.pmc==hoverPMC, 'pmc-dataset-heading': item.pmc < 0}"
+                (mouseenter)="onPMCEnter(item.pmc)"
+                (mouseleave)="onPMCLeave(item.pmc)">
+                <div>{{item.displayPMC}}</div>
+                <img *ngIf="item.pmc >= 0" class="clickable" (click)="onDeletePMC(item.pmc)" src="assets/button-icons/close-cross-gray.svg">
             </div>
         </ng-container>
     </div>

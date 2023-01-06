@@ -145,7 +145,8 @@ export class HoverPointCursor extends BaseUIElement
         // Write some info about the hovered point
         const locInfo = this._ctx.dataset.locationPointCache[this._ctx.highlighedLocationIdx];
 
-        let pmcLabel = "PMC: "+locInfo.PMC;
+        let pmcLabel = "PMC: "+locInfo.getPrintablePMC();
+        
         if(locInfo.hasDwellSpectra)
         {
             pmcLabel += " Dwell";

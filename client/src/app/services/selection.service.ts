@@ -70,6 +70,27 @@ export class SelectionHistoryItem
     }
 }
 
+export function makeSelectionPrompt(dataset: DataSet): string
+{
+    let promptMsg = "Enter PMCs between "+dataset.pmcMinMax.min+" and "+dataset.pmcMinMax.max+". Eg: "+dataset.pmcMinMax.min+","+(dataset.pmcMinMax.min+1)+","+(dataset.pmcMinMax.min+5)+"-"+(dataset.pmcMinMax.min+8);
+
+    // If we viewing a combined dataset, show extra info about each datasets PMCs so users can work out what to enter exactly
+    if(dataset.experiment.getScanSourcesList().length > 0)
+    {
+        promptMsg += "\n\nNOTE: This dataset contains multiple scans. To select the PMC from the right scan, add the following offsets:\n";
+        let srcs = dataset.experiment.getScanSourcesList();
+        for(let src of srcs)
+        {
+            if(src.getIdOffset() > 0)
+            {
+                promptMsg += src.getRtt()+": add "+src.getIdOffset()+"\n";
+            }
+        }
+    }
+
+    return promptMsg;
+}
+
 @Injectable({
     providedIn: "root"
 })
