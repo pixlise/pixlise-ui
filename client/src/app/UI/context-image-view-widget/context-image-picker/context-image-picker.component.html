@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
             [ngClass]="{'img-item-selected': img.selected}"
             title="{{img.tooltip}}"
             (click)="onSetImage(img)">
-            <div>{{img.title}}</div>
+            <div class="selectable">{{img.title}}</div>
             <img
                 *ngIf="img.marsViewerURL"
                 src="assets/button-icons/open-external.svg"
