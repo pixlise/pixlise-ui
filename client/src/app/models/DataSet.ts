@@ -47,10 +47,6 @@ import { invalidPMC, radToDeg } from "src/app/utils/utils";
 import Voronoi from "voronoi";
 
 
-
-
-
-
 let QuickHull = require("quickhull");
 const polygonClipping = require("polygon-clipping");
 
@@ -66,8 +62,32 @@ export class DataSetLocation
         public hasMissingData: boolean,
         public polygon: Point[],
         public hasPseudoIntensities: boolean = false,
+        public source: Experiment.ScanSource = null,
     )
     {
+    }
+
+    // PMC is usually a number but in combined datasets we need
+    // to also show the dataset this PMC is sourced from
+    getPrintablePMC(): string
+    {
+        if(!this.source)
+        {
+            return this.PMC.toLocaleString();
+        }
+
+        let result = this.getPMCWithoutOffset().toLocaleString();
+        result += " Dataset: "+this.source.getRtt();
+        return result;
+    }
+
+    getPMCWithoutOffset(): number
+    {
+        if(!this.source)
+        {
+            return this.PMC;
+        }
+        return this.PMC-this.source.getIdOffset();
     }
 }
 
@@ -926,6 +946,7 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         let locPointYMinMax = new MinMax();
         let locPointZMinMax = new MinMax();
 
+        let scanSources = this.experiment.getScanSourcesList();
         let locs = this.experiment.getLocationsList();
         let idx = 0;
         for(let loc of locs)
@@ -995,8 +1016,14 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
             let pseudoIntensities = loc.getPseudoIntensitiesList();
             let hasPseudo = pseudoIntensities && pseudoIntensities.length > 0;
             let hasMissingData = hasPseudo && !hasNormalSpectra;
+            let scanSourceIdx = loc.getScanSource();
+            let scanSource = null;
+            if(scanSourceIdx >= 0 && scanSourceIdx < scanSources.length)
+            {
+                scanSource = scanSources[scanSourceIdx];
+            }
 
-            let locToCache = new DataSetLocation(beamPoint, idx, pmc, hasNormalSpectra, hasDwellSpectra, hasMissingData, [], hasPseudo);
+            let locToCache = new DataSetLocation(beamPoint, idx, pmc, hasNormalSpectra, hasDwellSpectra, hasMissingData, [], hasPseudo, scanSource);
             this.locationPointCache.push(locToCache);
 
             if(locToCache.hasNormalSpectra || locToCache.hasDwellSpectra)

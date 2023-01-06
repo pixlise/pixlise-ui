@@ -42,6 +42,13 @@ import { SelectionTabModel, AverageRGBURatio } from "./model";
 
 const emptySelectionDescription = "Empty";
 
+class PMCAndDisplay
+{
+    constructor(public pmc: number, public displayPMC: string)
+    {
+    }
+}
+
 @Component({
     selector: "app-selection",
     templateUrl: "./selection.component.html",
@@ -52,6 +59,7 @@ export class SelectionComponent implements OnInit
     private _subs = new Subscription();
 
     private _selectedPMCs: number[] = [];
+    private _displaySelectedPMCs: PMCAndDisplay[] = [];
     private _summary: string = emptySelectionDescription;
     private _averageRGBURatios: AverageRGBURatio[] = [];
     hoverPMC: number = -1;
@@ -87,6 +95,49 @@ export class SelectionComponent implements OnInit
                         return -1;
                     }
                 );
+
+                // Make a display string list, this includes subheadings for dataset IDs where there are combined datasets
+                let pmcsByDataset = new Map<string, number[]>(); // NOTE we add PMC twice to the array, once the original, once the without offset one
+
+                for(let pmc of this._selectedPMCs)
+                {
+                    let idx = this._datasetService.datasetLoaded.pmcToLocationIndex.get(pmc);
+                    let datasetID = "";
+                    let savePMC = pmc;
+
+                    if(idx != undefined)
+                    {
+                        let loc = this._datasetService.datasetLoaded.locationPointCache[idx];
+                        if(loc.source)
+                        {
+                            savePMC = loc.getPMCWithoutOffset();
+                            datasetID = loc.source.getRtt();
+                        }
+                    }
+
+                    if(pmcsByDataset.get(datasetID) == undefined)
+                    {
+                        pmcsByDataset.set(datasetID, []);
+                    }
+
+                    pmcsByDataset.get(datasetID).push(pmc, savePMC);
+                }
+
+                // Now run through the maps and build displayable stuff
+                this._displaySelectedPMCs = [];
+                for(let [id, pmcs] of pmcsByDataset)
+                {
+                    if(id != "")
+                    {
+                        // Add a sub-heading
+                        this._displaySelectedPMCs.push(new PMCAndDisplay(-1, "Dataset RTT: "+id));
+                    }
+
+                    for(let c = 0; c < pmcs.length; c+=2)
+                    {
+                        this._displaySelectedPMCs.push(new PMCAndDisplay(pmcs[c], pmcs[c+1].toLocaleString()));
+                    }
+                }
 
                 this._summary = "";
                 if(this._selectedPMCs.length > 0)
@@ -141,9 +192,9 @@ export class SelectionComponent implements OnInit
         return this._summary;
     }
 
-    get selectedPMCs(): number[]
+    get displaySelectedPMCs(): PMCAndDisplay[]
     {
-        return this._selectedPMCs;
+        return this._displaySelectedPMCs;
     }
 
     get averageRGBURatios(): AverageRGBURatio[]
@@ -283,7 +334,23 @@ export class SelectionComponent implements OnInit
             return;
         }
 
-        let pmcStr = prompt("Enter PMCs between "+dataset.pmcMinMax.min+" and "+dataset.pmcMinMax.max+". Eg: "+dataset.pmcMinMax.min+","+(dataset.pmcMinMax.min+1)+","+(dataset.pmcMinMax.min+5)+"-"+(dataset.pmcMinMax.min+8));
+        let promptMsg = "Enter PMCs between "+dataset.pmcMinMax.min+" and "+dataset.pmcMinMax.max+". Eg: "+dataset.pmcMinMax.min+","+(dataset.pmcMinMax.min+1)+","+(dataset.pmcMinMax.min+5)+"-"+(dataset.pmcMinMax.min+8);
+
+        // If we viewing a combined dataset, show extra info about each datasets PMCs so users can work out what to enter exactly
+        if(dataset.experiment.getScanSourcesList().length > 0)
+        {
+            promptMsg += "\n\nNOTE: This dataset contains multiple scans. To select the PMC from the right scan, add the following offsets:\n";
+            let srcs = dataset.experiment.getScanSourcesList();
+            for(let src of srcs)
+            {
+                if(src.getIdOffset() > 0)
+                {
+                    promptMsg += src.getRtt()+": add "+src.getIdOffset()+"\n";
+                }
+            }
+        }
+
+        let pmcStr = prompt(promptMsg);
         if(pmcStr)
         {
             let selectPMCs = parseNumberRangeString(pmcStr);
