@@ -42,16 +42,17 @@ POSSIBILITY OF SUCH DAMAGE.
      </div>
 
      <div fxLayout="column" class="panel-row gap-separated-vertical-elements">
-          <div fxLayout="row" class="gap-separated-horizontal-elements">
-               <push-button (onClick)="onSelectAll()" buttonStyle="outline" fxFlex="50%">Select All</push-button>
-               <push-button (onClick)="onClearSelection()" buttonStyle="outline" fxFlex="50%">Clear</push-button>
-          </div>
-          <div fxLayout="row" class="gap-separated-horizontal-elements">
-               <push-button (onClick)="onSelectDwellPMCs()" buttonStyle="outline" fxFlex="50%">Select Dwells</push-button>
-               <push-button (onClick)="onEnterSelection()" buttonStyle="outline" fxFlex="50%">Enter PMCs</push-button>
-          </div>
+        <div fxLayout="row" class="gap-separated-horizontal-elements">
+            <push-button (onClick)="onSelectAll()" buttonStyle="outline" fxFlex="50%">Select All</push-button>
+            <push-button (onClick)="onClearSelection()" buttonStyle="outline" fxFlex="50%">Clear</push-button>
+        </div>
+        <div fxLayout="row" class="gap-separated-horizontal-elements">
+            <push-button (onClick)="onSelectDwellPMCs()" buttonStyle="outline" fxFlex="50%">Select Dwells</push-button>
+            <push-button (onClick)="onEnterSelection()" buttonStyle="outline" fxFlex="50%">Enter PMCs</push-button>
+        </div>
+        <push-button *ngFor="let id of subDataSetIDs" (onClick)="onSelectForSubDataset(id)" buttonStyle="outline" fxFlex="100%">All Points for Dataset: {{id}}</push-button>
         <push-button (onClick)="onAddNearbyPixels()" buttonStyle="outline" [disabled]="displaySelectedPMCs.length <= 0" fxFlex="100%">Add Nearby Pixels From PMC Locations</push-button>
-          <push-button (onClick)="onNewROI()" buttonStyle="yellow" [disabled]="displaySelectedPMCs.length <= 0" fxFlex="100%">Save selection as ROI</push-button>
+        <push-button (onClick)="onNewROI()" buttonStyle="yellow" [disabled]="displaySelectedPMCs.length <= 0" fxFlex="100%">Save selection as ROI</push-button>
      </div>
 
      <cdk-accordion class="selection-accordion">

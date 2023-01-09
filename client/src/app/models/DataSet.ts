@@ -785,6 +785,21 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         return result;
     }
 
+    getLocationIdxsForSubDataset(id: string): Set<number>
+    {
+        let result = new Set<number>();
+
+        for(let locCache of this.locationPointCache)
+        {
+            if(locCache.source && locCache.source.getRtt() == id)
+            {
+                result.add(locCache.locationIdx);
+            }
+        }
+
+        return result;
+    }
+
     getPseudoIntensityElementsList(): string[]
     {
         let ranges = this.experiment.getPseudoIntensityRangesList();
