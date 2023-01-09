@@ -64,6 +64,7 @@ export class SelectionComponent implements OnInit
     private _averageRGBURatios: AverageRGBURatio[] = [];
     hoverPMC: number = -1;
     expandedIndices: number[] = [0, 1];
+    subDataSetIDs: string[] = [];
 
     constructor(
         private _datasetService: DataSetService,
@@ -77,6 +78,19 @@ export class SelectionComponent implements OnInit
 
     ngOnInit(): void
     {
+        this._subs.add(this._datasetService.dataset$.subscribe(
+            (dataset: DataSet)=>
+            {
+                this.subDataSetIDs = [];
+
+                let sources = dataset.experiment.getScanSourcesList();
+                for(let src of sources)
+                {
+                    this.subDataSetIDs.push(src.getRtt());
+                }
+            }
+        ));
+
         this._subs.add(this._selectionService.selection$.subscribe(
             (selection: SelectionHistoryItem)=>
             {
@@ -410,5 +424,17 @@ export class SelectionComponent implements OnInit
     onDriftCorrection(): void
     {
         alert("Not implemented yet");
+    }
+
+    onSelectForSubDataset(id: string): void
+    {
+        let dataset = this._datasetService.datasetLoaded;
+        if(!dataset)
+        {
+            return;
+        }
+
+        let selection = dataset.getLocationIdxsForSubDataset(id);
+        this._selectionService.setSelection(dataset, new BeamSelection(dataset, selection), null);
     }
 }

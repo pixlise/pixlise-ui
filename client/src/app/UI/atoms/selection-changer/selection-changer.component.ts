@@ -32,9 +32,10 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { BeamSelection } from "src/app/models/BeamSelection";
 import { DataSetService } from "src/app/services/data-set.service";
+import { DataSet } from "src/app/models/DataSet";
 import { ROIService } from "src/app/services/roi.service";
 import { SelectionHistoryItem, SelectionService, makeSelectionPrompt } from "src/app/services/selection.service";
-import { SelectionOption, SelectionOptionsComponent, SelectionOptionsDialogData } from "src/app/UI/atoms/selection-changer/selection-options/selection-options.component";
+import { SelectionOption, SelectionOptionsComponent, SelectionOptionsDialogData, SelectionOptionsDialogResult } from "src/app/UI/atoms/selection-changer/selection-options/selection-options.component";
 import { httpErrorToString, parseNumberRangeString, UNICODE_CARET_DOWN } from "src/app/utils/utils";
 
 
@@ -49,6 +50,7 @@ export class SelectionChangerComponent implements OnInit
 
     private _defaultLeftText = "No Selection";
     private _leftText: string = this._defaultLeftText;
+    private _subDataSetIDs: string[] = [];
 
     constructor(
         private _selectionService: SelectionService,
@@ -61,6 +63,19 @@ export class SelectionChangerComponent implements OnInit
 
     ngOnInit(): void
     {
+        this._subs.add(this._datasetService.dataset$.subscribe(
+            (dataset: DataSet)=>
+            {
+                this._subDataSetIDs = [];
+
+                let sources = dataset.experiment.getScanSourcesList();
+                for(let src of sources)
+                {
+                    this._subDataSetIDs.push(src.getRtt());
+                }
+            }
+        ));
+
         this._subs.add(this._selectionService.selection$.subscribe(
             (selection: SelectionHistoryItem) =>
             {
@@ -94,12 +109,12 @@ export class SelectionChangerComponent implements OnInit
         dialogConfig.backdropClass = "empty-overlay-backdrop";
 
         let dwellPMCs = this._datasetService.datasetLoaded.getDwellLocationIdxs();
-        dialogConfig.data = new SelectionOptionsDialogData(dwellPMCs.size > 0, new ElementRef(event.currentTarget));
+        dialogConfig.data = new SelectionOptionsDialogData(dwellPMCs.size > 0, this._subDataSetIDs, new ElementRef(event.currentTarget));
 
         const dialogRef = this.dialog.open(SelectionOptionsComponent, dialogConfig);
 
         dialogRef.afterClosed().subscribe(
-            (choice: SelectionOption)=>
+            (choice: SelectionOptionsDialogResult)=>
             {
                 if(choice == null || choice == undefined)
                 {
@@ -107,21 +122,25 @@ export class SelectionChangerComponent implements OnInit
                     return;
                 }
 
-                if(choice == SelectionOption.SEL_ALL)
+                if(choice.result == SelectionOption.SEL_ALL)
                 {
                     this.onSelectAll();
                 }
-                else if(choice == SelectionOption.SEL_ENTER_PMCS)
+                else if(choice.result == SelectionOption.SEL_ENTER_PMCS)
                 {
                     this.onSelectSpecificPMC();
                 }
-                else if(choice == SelectionOption.SEL_DWELL)
+                else if(choice.result == SelectionOption.SEL_DWELL)
                 {
                     this.onSelectDwellPMCs();
                 }
-                else if(choice == SelectionOption.NEW_ROI)
+                else if(choice.result == SelectionOption.NEW_ROI)
                 {
                     this.onNewROIFromSelection();
+                }
+                else if(choice.result == SelectionOption.SEL_SUBDATASET)
+                {
+                    this.onSelectForSubDataset(choice.value);
                 }
                 else
                 {
@@ -224,5 +243,17 @@ export class SelectionChangerComponent implements OnInit
                 alert(httpErrorToString(err, ""));
             }
         );
+    }
+
+    onSelectForSubDataset(id: string): void
+    {
+        let dataset = this._datasetService.datasetLoaded;
+        if(!dataset)
+        {
+            return;
+        }
+
+        let selection = dataset.getLocationIdxsForSubDataset(id);
+        this._selectionService.setSelection(dataset, new BeamSelection(dataset, selection), null);
     }
 }
