@@ -606,10 +606,35 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
             throw new Error(`Failed to query CSV data for expression: ${id}. ${queryData.error}`);
         }
 
-        let csv: string = "PMC,Value\n";
+        let csv: string = "PMC";
+        let dataset = this._datasetService.datasetLoaded;
+        let combined = dataset.isCombinedDataset();
+        let locations = dataset.experiment.getLocationsList();
+        if(combined)
+        {
+            csv += ",SourceRTT,SourcePMC";
+        }
+        csv += ",Value\n";
+
         queryData.queryResults[0].values.values.forEach(({pmc, value, isUndefined})=>
         {
-            csv += `${pmc},${isUndefined ? "" : value}\n`;
+            csv += `${pmc}`;
+            if(combined)
+            {
+                let locIdx = dataset.pmcToLocationIndex.get(pmc);
+                if(locIdx != undefined)
+                {
+                    let sourceIdx = locations[locIdx].getScanSource();
+                    let source = dataset.experiment.getScanSourcesList()[sourceIdx];
+
+                    let sourceRTT = source.getRtt();
+                    let sourcePMC = pmc-source.getIdOffset();
+
+                    csv += `,${sourceRTT},${sourcePMC}`;
+                }
+            }
+            csv += `,${isUndefined ? "" : value}`;
+            csv += "\n";
         });
 
         return csv;
