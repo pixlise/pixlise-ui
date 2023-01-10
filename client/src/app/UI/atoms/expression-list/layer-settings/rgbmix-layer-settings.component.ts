@@ -338,12 +338,21 @@ export class RGBMixLayerSettingsComponent implements OnInit
         }
         
         let csv = "PMC";
+        let dataset = this._datasetService.datasetLoaded;
+        let combined = dataset.isCombinedDataset();
+        let locations = dataset.experiment.getLocationsList();
+        if(combined)
+        {
+            csv += ",SourceRTT,SourcePMC";
+        }
 
         let expressionIDs = [rgbMix.red.expressionID, rgbMix.green.expressionID, rgbMix.blue.expressionID];
         expressionIDs.forEach((expressionID)=>
         {
             csv += `,${this._exprService.getExpressionShortDisplayName(expressionID, 15).name}`;
         });
+
+        csv += "\n";
 
         let perElemAndPMCData: PMCDataValues[] = PMCDataValues.filterToCommonPMCsOnly(expressionIDs.map((expressionID, i)=>
         {
@@ -369,7 +378,25 @@ export class RGBMixLayerSettingsComponent implements OnInit
                 throw new Error(`Failed to generate RGB CSV for rgb mix ID: ${this.layerInfo.layer.id}, mismatched PMC returned for item: ${i}`);
             }
 
-            csv += `\n${pmcData.pmc},${pmcData.value},${perElemAndPMCData[1].values[i].value},${perElemAndPMCData[2].values[i].value}`;
+            csv += `${pmcData.pmc}`;
+
+            if(combined)
+            {
+                let locIdx = dataset.pmcToLocationIndex.get(pmcData.pmc);
+                if(locIdx != undefined)
+                {
+                    let sourceIdx = locations[locIdx].getScanSource();
+                    let source = dataset.experiment.getScanSourcesList()[sourceIdx];
+
+                    let sourceRTT = source.getRtt();
+                    let sourcePMC = pmcData.pmc-source.getIdOffset();
+
+                    csv += `,${sourceRTT},${sourcePMC}`;
+                }
+            }
+
+            csv += `,${pmcData.value},${perElemAndPMCData[1].values[i].value},${perElemAndPMCData[2].values[i].value}`;
+            csv += "\n";
         });
 
         return csv;

@@ -608,10 +608,33 @@ export class LayerSettingsComponent implements OnInit
             throw new Error(`Failed to query CSV data for expression: ${this.layerInfo.layer.id}. ${queryData.error}`);
         }
 
-        let csv: string = "PMC,Value\n";
+        let csv: string = "PMC,Value";
+        let dataset = this._datasetService.datasetLoaded;
+        let combined = dataset.isCombinedDataset();
+        let locations = dataset.experiment.getLocationsList();
+        if(combined)
+        {
+            csv += ",SourceRTT,SourcePMC";
+        }
+        csv += "\n";
         queryData.queryResults[0].values.values.forEach(({pmc, value, isUndefined})=>
         {
-            csv += `${pmc},${isUndefined ? "" : value}\n`;
+            csv += `${pmc},${isUndefined ? "" : value}`;
+            if(combined)
+            {
+                let locIdx = dataset.pmcToLocationIndex.get(pmc);
+                if(locIdx != undefined)
+                {
+                    let sourceIdx = locations[locIdx].getScanSource();
+                    let source = dataset.experiment.getScanSourcesList()[sourceIdx];
+
+                    let sourceRTT = source.getRtt();
+                    let sourcePMC = pmc-source.getIdOffset();
+
+                    csv += `,${sourceRTT},${sourcePMC}`;
+                }
+            }
+            csv += "\n";
         });
 
         return csv;

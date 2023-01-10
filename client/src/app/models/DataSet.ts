@@ -800,6 +800,21 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         return result;
     }
 
+    isCombinedDataset(): boolean
+    {
+        if(!this.experiment)
+        {
+            return false;
+        }
+        let list = this.experiment.getScanSourcesList();
+        if(!list)
+        {
+            return false;
+        }
+
+        return list.length > 1;
+    }
+
     getPseudoIntensityElementsList(): string[]
     {
         let ranges = this.experiment.getPseudoIntensityRangesList();
