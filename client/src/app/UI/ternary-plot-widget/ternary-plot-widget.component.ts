@@ -568,7 +568,16 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
         let cornerBLabel = this._ternaryModel.raw.cornerB.label;
         let cornerCLabel = this._ternaryModel.raw.cornerC.label;
 
-        let data = `"PMC","ROI","${cornerALabel}","${cornerBLabel}","${cornerCLabel}"\n`;
+        let data = `"PMC","ROI","${cornerALabel}","${cornerBLabel}","${cornerCLabel}"`;
+        let dataset = this._datasetService.datasetLoaded;
+        let combined = dataset.isCombinedDataset();
+        let locations = dataset.experiment.getLocationsList();
+        if(combined)
+        {
+            data += ",\"SourceRTT\",\"SourcePMC\"";
+        }
+        data += "\n";
+
         Array.from(this._ternaryModel.raw.pmcToValueLookup.entries()).forEach(([pmc, idx]) =>
         {
             let cornerAValue = this._ternaryModel.raw.pointGroups[idx.pointGroup].values[idx.valueIndex].a;
@@ -577,7 +586,22 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
 
             let roiId = this._ternaryModel.raw.visibleROIs[idx.pointGroup];
             let roiName = this._widgetDataService.regions.get(roiId).name;
-            data += `${pmc},${roiName},${cornerAValue},${cornerBValue},${cornerCValue}\n`;
+            data += `${pmc},${roiName},${cornerAValue},${cornerBValue},${cornerCValue}`;
+            if(combined)
+            {
+                let locIdx = dataset.pmcToLocationIndex.get(pmc);
+                if(locIdx != undefined)
+                {
+                    let sourceIdx = locations[locIdx].getScanSource();
+                    let source = dataset.experiment.getScanSourcesList()[sourceIdx];
+
+                    let sourceRTT = source.getRtt();
+                    let sourcePMC = pmc-source.getIdOffset();
+
+                    data += `,${sourceRTT},${sourcePMC}`;
+                }
+            }
+            data += "\n";
         });
 
         return data;
