@@ -154,3 +154,7 @@ widget-key-display {
     max-height: 150px;
     overflow: scroll;
 }
+
+.export-btn, .solo-btn {
+    margin-right: $sz-half;
+}
