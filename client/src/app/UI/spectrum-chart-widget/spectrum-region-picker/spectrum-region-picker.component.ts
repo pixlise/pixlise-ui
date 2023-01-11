@@ -96,6 +96,16 @@ export class SpectrumRegionPickerComponent implements OnInit
 
                 this.userSources.sort((a: SpectrumSource, b: SpectrumSource)=>(a.roiName.localeCompare(b.roiName)));
                 this.sharedSources.sort((a: SpectrumSource, b: SpectrumSource)=>(a.roiName.localeCompare(b.roiName)));
+
+                let enabledUserSources = this.userSources.filter((source) => source.lineChoices.some((choice) => choice.enabled));
+                let enabledSharedSources = this.sharedSources.filter((source) => source.lineChoices.some((choice) => choice.enabled));
+
+                let disabledUserSources = this.userSources.filter((source) => !source.lineChoices.some((choice) => choice.enabled));
+                let disabledSharedSources = this.sharedSources.filter((source) => !source.lineChoices.some((choice) => choice.enabled));
+
+                // Move enabled sources to the top of the list
+                this.userSources = enabledUserSources.concat(disabledUserSources);
+                this.sharedSources = enabledSharedSources.concat(disabledSharedSources);
             },
             (err)=>
             {
