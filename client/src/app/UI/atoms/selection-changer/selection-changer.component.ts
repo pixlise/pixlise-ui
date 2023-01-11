@@ -34,9 +34,11 @@ import { BeamSelection } from "src/app/models/BeamSelection";
 import { DataSetService } from "src/app/services/data-set.service";
 import { DataSet } from "src/app/models/DataSet";
 import { ROIService } from "src/app/services/roi.service";
-import { SelectionHistoryItem, SelectionService, makeSelectionPrompt } from "src/app/services/selection.service";
+import { SelectionHistoryItem, SelectionService, getPMCsForRTTs } from "src/app/services/selection.service";
 import { SelectionOption, SelectionOptionsComponent, SelectionOptionsDialogData, SelectionOptionsDialogResult } from "src/app/UI/atoms/selection-changer/selection-options/selection-options.component";
-import { httpErrorToString, parseNumberRangeString, UNICODE_CARET_DOWN } from "src/app/utils/utils";
+import { httpErrorToString, UNICODE_CARET_DOWN } from "src/app/utils/utils";
+import { UserPromptDialogComponent, UserPromptDialogParams, UserPromptDialogResult, UserPromptDialogStringItem } from "src/app/UI/atoms/user-prompt-dialog/user-prompt-dialog.component";
+import { SelectionComponent } from "src/app/UI/side-panel/tabs/selection/selection.component";
 
 
 @Component({
@@ -176,39 +178,7 @@ export class SelectionChangerComponent implements OnInit
 
     onSelectSpecificPMC(): void
     {
-        let dataset = this._datasetService.datasetLoaded;
-        if(!dataset)
-        {
-            return;
-        }
-
-        let promptMsg = makeSelectionPrompt(dataset);
-        let pmcStr = prompt(promptMsg);
-        if(pmcStr)
-        {
-            let selectPMCs = parseNumberRangeString(pmcStr);
-
-            let selection = new Set<number>();
-            for(let pmc of selectPMCs)
-            {
-                let locIdx = dataset.pmcToLocationIndex.get(pmc);
-                if(locIdx == undefined)
-                {
-                    alert("PMC: "+pmc+" is not valid");
-                    return;
-                }
-
-                selection.add(locIdx);
-            }
-
-            if(selection.size > 0)
-            {
-                this._selectionService.setSelection(dataset, new BeamSelection(dataset, selection), null);
-                return;
-            }
-
-            alert("No PMCs were able to be read from entered text. Selection not changed.");
-        }
+        SelectionComponent.DoEnterSelection(this._datasetService, this.dialog, this._selectionService);
     }
 
     onSelectDwellPMCs(): void

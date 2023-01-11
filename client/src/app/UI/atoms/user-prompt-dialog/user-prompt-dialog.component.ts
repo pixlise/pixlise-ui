@@ -83,7 +83,8 @@ export class UserPromptDialogParams
         public items: UserPromptDialogItem[],
         public middleButton: boolean = false,
         public middleButtonLabel: string = "",
-        public middleButtonCallback: () => void = () => null
+        public middleButtonCallback: () => void = () => null,
+        public info: string = "", // Info shown below title
     )
     {
     }
