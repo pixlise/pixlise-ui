@@ -105,8 +105,7 @@ export class ExpressionEditorComponent implements OnInit, OnDestroy
         this.dialogRef.afterOpened().subscribe(
             ()=>
             {
-                //let cm = this._codeMirror.codeMirror;
-                //cm.refresh();
+                this._codeMirror.codeMirror.refresh();
             }
         );
     }
