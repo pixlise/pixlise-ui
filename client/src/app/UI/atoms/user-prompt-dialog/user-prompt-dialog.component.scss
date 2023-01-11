@@ -44,6 +44,11 @@ h3 {
     text-transform: unset;
 }
 
+.info-text {
+    color: $clr-gray-30;
+    white-space: pre-wrap;
+}
+
 .mat-select {
     min-width: 200px !important;
 

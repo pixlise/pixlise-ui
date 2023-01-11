@@ -35,6 +35,7 @@ import { ROIService } from "src/app/services/roi.service";
 import { selectionState, ViewState, ViewStateService } from "src/app/services/view-state.service";
 import { DataSet } from "../models/DataSet";
 import { DataSetService } from "./data-set.service";
+import { parseNumberRangeString} from "src/app/utils/utils";
 
 
 
@@ -70,25 +71,39 @@ export class SelectionHistoryItem
     }
 }
 
-export function makeSelectionPrompt(dataset: DataSet): string
+// Gets PMCs relative to whole dataset for ones entered for corresponding sub-datasets (in case of combined datasets)
+// otherwise for original-style single datasets, it just creates the PMCs from the range one string specified
+export function getPMCsForRTTs(pmcRangeStrings: string[], dataset: DataSet): Set<number>
 {
-    let promptMsg = "Enter PMCs between "+dataset.pmcMinMax.min+" and "+dataset.pmcMinMax.max+". Eg: "+dataset.pmcMinMax.min+","+(dataset.pmcMinMax.min+1)+","+(dataset.pmcMinMax.min+5)+"-"+(dataset.pmcMinMax.min+8);
+    let selection = new Set<number>();
+    let datasetScanSources = dataset.experiment.getScanSourcesList();
 
-    // If we viewing a combined dataset, show extra info about each datasets PMCs so users can work out what to enter exactly
-    if(dataset.experiment.getScanSourcesList().length > 0)
+    for(let c = 0; c < pmcRangeStrings.length; c++)
     {
-        promptMsg += "\n\nNOTE: This dataset contains multiple scans. To select the PMC from the right scan, add the following offsets:\n";
-        let srcs = dataset.experiment.getScanSourcesList();
-        for(let src of srcs)
+        let entry = pmcRangeStrings[c];
+        let selectPMCs = parseNumberRangeString(entry);
+
+        for(let pmc of selectPMCs)
         {
-            if(src.getIdOffset() > 0)
+            // Add PMC offset for this dataset (if needed)...
+            let selectPMC = pmc;
+            if(datasetScanSources.length > 0)
             {
-                promptMsg += src.getRtt()+": add "+src.getIdOffset()+"\n";
+                selectPMC += datasetScanSources[c].getIdOffset();
             }
+
+            let locIdx = dataset.pmcToLocationIndex.get(selectPMC);
+            if(locIdx == undefined)
+            {
+                // Show alert for the entered PMC!
+                alert("PMC: "+pmc+" is not valid for dataset: "+datasetScanSources[c].getRtt());
+                return;
+            }
+
+            selection.add(locIdx);
         }
     }
-
-    return promptMsg;
+    return selection;
 }
 
 @Injectable({
