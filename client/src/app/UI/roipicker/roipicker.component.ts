@@ -298,4 +298,13 @@ export class ROIPickerComponent implements OnInit
     {
         this.dialogRef.close(null);
     }
+
+    onClear()
+    {
+        let rois = this.getAllROIs();
+        rois.forEach((roi) =>
+        {
+            roi.active = false;
+        });
+    }
 }

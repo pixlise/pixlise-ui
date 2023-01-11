@@ -107,4 +107,16 @@ export class SpectrumRegionPickerComponent implements OnInit
     {
         this._subs.unsubscribe();
     }
+
+    onClear(sources: SpectrumSource[]): void
+    {
+        sources.forEach((source) => 
+        {
+            source.lineChoices.forEach(choice =>
+            {
+                choice.enabled = false;
+                this._spectrumService.mdl.removeSpectrumLine(source.roiID, choice.lineExpression);
+            });
+        });
+    }
 }
