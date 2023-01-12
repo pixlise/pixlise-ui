@@ -172,7 +172,7 @@ export class RangeSelect extends BaseSpectrumTool
                 if(dlgResult)
                 {
                     let expr = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec);
-                    this._ctx.expressionService.edit(expressionID, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments).subscribe(
+                    this._ctx.expressionService.edit(expressionID, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, []).subscribe(
                         ()=> null,
                         ()=>
                         {

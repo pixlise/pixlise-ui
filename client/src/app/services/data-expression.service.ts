@@ -707,11 +707,11 @@ export class DataExpressionService
         return result;
     }
 
-    add(name: string, expression: string, type: string, comments: string): Observable<object>
+    add(name: string, expression: string, type: string, comments: string, tags: string[] = []): Observable<object>
     {
         let loadID = this._loadingSvc.add("Saving new expression...");
         let apiURL = APIPaths.getWithHost(APIPaths.api_data_expression);
-        let toSave = new DataExpressionInput(name, expression, type, comments);
+        let toSave = new DataExpressionInput(name, expression, type, comments, tags);
         return this.http.post<object>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(
@@ -735,12 +735,12 @@ export class DataExpressionService
             );
     }
 
-    edit(id: string, name: string, expression: string, type: string, comments: string): Observable<object>
+    edit(id: string, name: string, expression: string, type: string, comments: string, tags: string[] = []): Observable<object>
     {
         let loadID = this._loadingSvc.add("Saving changed expression...");
         let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
 
-        let toSave = new DataExpressionInput(name, expression, type, comments);
+        let toSave = new DataExpressionInput(name, expression, type, comments, tags);
         return this.http.put<object>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(
