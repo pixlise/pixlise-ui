@@ -46,7 +46,6 @@ import { ContextImageService } from "src/app/services/context-image.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
 import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
-import { ItemTag } from "src/app/models/tags";
 
 
 export class LayerInfo
@@ -449,8 +448,19 @@ export class LayerSettingsComponent implements OnInit
                 }
                 else
                 {
-                    let expr = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec);
-                    this._exprService.edit(this.layerInfo.layer.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments).subscribe(
+                    let expr = new DataExpression(
+                        toEdit.id,
+                        dlgResult.expr.name,
+                        dlgResult.expr.expression,
+                        toEdit.type,
+                        dlgResult.expr.comments,
+                        toEdit.shared,
+                        toEdit.creator,
+                        toEdit.createUnixTimeSec,
+                        toEdit.modUnixTimeSec,
+                        toEdit.tags
+                    );
+                    this._exprService.edit(this.layerInfo.layer.id, expr.name, expr.expression, expr.type, expr.comments, expr.tags).subscribe(
                         ()=>
                         {
                             if(dlgResult.applyNow)
