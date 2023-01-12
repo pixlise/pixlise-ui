@@ -33,3 +33,12 @@
 .scrollable-container {
     overflow-y: scroll;
 }
+
+.clearable-heading {
+    display: flex;
+    align-items: center;
+
+    push-button {
+        margin-left: auto;
+    }
+}

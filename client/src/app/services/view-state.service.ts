@@ -989,6 +989,9 @@ export class ViewStateService
             this._soloViewSourcePosition = position;
         }
 
+        // Update analysis view selectors as user may have changed things in solo view
+        this.updateAnalysisViewSelectors();
+
         // Tell listeners solo status changed
         this._viewSolo$.next();
     }

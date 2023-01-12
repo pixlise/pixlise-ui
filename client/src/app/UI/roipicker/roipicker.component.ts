@@ -182,6 +182,19 @@ export class ROIPickerComponent implements OnInit
 
                 this.userROIs.sort((a, b) => (a.label.localeCompare(b.label)));
                 this.sharedROIs.sort((a, b) => (a.label.localeCompare(b.label)));
+
+                // Sort enabled ROIS to the top for easier access
+                let enabledUserROIs = this.userROIs.filter((roi) => roi.active);
+                let enabledSharedROIs = this.sharedROIs.filter((roi) => roi.active);
+                let enabledMISTROIs = this.mistROIs.filter((roi) => roi.active);
+
+                let disabledUserROIs = this.userROIs.filter((roi) => !roi.active);
+                let disabledSharedROIs = this.sharedROIs.filter((roi) => !roi.active);
+                let disabledMISTROIs = this.mistROIs.filter((roi) => !roi.active);
+
+                this.userROIs = enabledUserROIs.concat(disabledUserROIs);
+                this.sharedROIs = enabledSharedROIs.concat(disabledSharedROIs);
+                this.mistROIs = enabledMISTROIs.concat(disabledMISTROIs);
             },
             (err)=>
             {
@@ -297,5 +310,14 @@ export class ROIPickerComponent implements OnInit
     onCancel()
     {
         this.dialogRef.close(null);
+    }
+
+    onClear()
+    {
+        let rois = this.getAllROIs();
+        rois.forEach((roi) =>
+        {
+            roi.active = false;
+        });
     }
 }

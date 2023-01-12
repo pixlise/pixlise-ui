@@ -38,12 +38,16 @@ POSSIBILITY OF SUCH DAMAGE.
             *ngFor="let source of predefinedSources"
             [source]="source">
         </spectrum-region-settings>
-        <div *ngIf="userSources.length > 0" class="list-subheading">User Regions</div>
+        <div *ngIf="userSources.length > 0" class="list-subheading clearable-heading">User Regions 
+            <push-button buttonStyle="outline" (onClick)="onClear(userSources)">Clear</push-button>
+        </div>
         <spectrum-region-settings
             *ngFor="let source of userSources"
             [source]="source">
         </spectrum-region-settings>
-        <div *ngIf="sharedSources.length > 0" class="list-subheading">Shared Regions</div>
+        <div *ngIf="sharedSources.length > 0" class="list-subheading">Shared Regions
+            <push-button buttonStyle="outline" (onClick)="onClear(sharedSources)">Clear</push-button>
+        </div>
         <spectrum-region-settings
             *ngFor="let source of sharedSources"
             [source]="source">
