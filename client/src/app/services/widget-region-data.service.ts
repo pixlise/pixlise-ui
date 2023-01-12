@@ -181,6 +181,120 @@ export class RegionDataResults
     }
 }
 
+// Query result cache item to store the results of running an expression
+// These results should only be used if they are not too old, and the ROI and expression referenced have not
+// been updated since this was stored! So we will periodically throw away old ones
+class QueryCacheItem
+{
+    constructor(
+        public params: DataSourceParams,
+        public runtimeMs: number,
+        public cacheUnixTimeMs: number,
+        public calculatedResult: RegionDataResultItem,
+        public lastAccessUnixTimeMs: number,
+    )
+    {
+    }
+}
+
+class QueryResultCache
+{
+    private _queryResultCache: Map<string, QueryCacheItem> = new Map<string, QueryCacheItem>();
+    private _lastPurgeUnixTimeMs: number = Date.now();
+
+    constructor(public unusedTimeoutMs: number, public purgeFrequencyMs: number)
+    {
+    }
+
+    addCachedResult(params: DataSourceParams, runtimeMs: number, calculatedResult: RegionDataResultItem)
+    {
+        // Add to the cache if we want to cache it
+        if(runtimeMs < 100)
+        {
+            // We don't cache this one because it runs quick enough, and we prefer not to store more memory
+            return;
+        }
+
+        let key = this.makeKey(params);
+        let nowUnixMs = Date.now();
+        this._queryResultCache.set(key, new QueryCacheItem(params, runtimeMs, nowUnixMs, calculatedResult, nowUnixMs));
+
+        console.log("  Cached query result for: "+key+", calc duration: "+Math.floor(runtimeMs)+"ms");
+
+        // Garbage collect
+        this.purgeOldItems();
+    }
+
+    getCachedResult(params: DataSourceParams, expressionModUnixTimeSec: number, roiModUnixTimeSec: number): RegionDataResultItem
+    {
+        // Search the cache
+        let key = this.makeKey(params);
+        let item = this._queryResultCache.get(key);
+
+        if(!item)
+        {
+            console.log("  No cached query found for: "+key);
+            return null;
+        }
+
+        // Check that this cache item is NEWER than the ROI and Expression last modified time
+        // because if someone modified one of these we don't want to be returning the previous result
+        let cacheUnixTimeSec = item.cacheUnixTimeMs/1000;
+        if(cacheUnixTimeSec < expressionModUnixTimeSec)
+        {
+            console.log("  Found outdated (expr) cache item, deleted for: "+key);
+            this._queryResultCache.delete(key);
+            return null;
+        }
+
+        if(cacheUnixTimeSec < roiModUnixTimeSec)
+        {
+            console.log("  Found outdated (roi) cache item, deleted for: "+key);
+            this._queryResultCache.delete(key);
+            return null;
+        }
+
+        let nowUnixMs = Date.now();
+        item.lastAccessUnixTimeMs = nowUnixMs;
+        console.log("  Found cached query item for: "+key+", calc duration was: "+Math.floor(item.runtimeMs)+"ms");
+
+        return item.calculatedResult;
+    }
+
+    clear()
+    {
+        this._queryResultCache.clear();
+    }
+
+    private makeKey(params: DataSourceParams): string
+    {
+        return params.exprId+"/"+params.roiId+"/"+params.units;
+    }
+
+    private purgeOldItems()
+    {
+        let nowUnixMs = Date.now();
+        if(this._lastPurgeUnixTimeMs-nowUnixMs < this.purgeFrequencyMs)
+        {
+            // Don't purge, don't need to do this that often...
+            return;
+        }
+
+        this._lastPurgeUnixTimeMs = nowUnixMs;
+        
+        // Purge anything that hasn't been accessed in a while
+        for(let [key, item] of this._queryResultCache)
+        {
+            let accessedAgoMs = nowUnixMs-item.lastAccessUnixTimeMs;
+            if(accessedAgoMs > this.unusedTimeoutMs)
+            {
+                console.log("  Deleting (timeout) old cache item for: "+key);
+                this._queryResultCache.delete(key);
+            }
+        }
+    }
+}
+
 @Injectable({
     providedIn: "root"
 })
@@ -209,6 +323,9 @@ export class WidgetRegionDataService
     quantificationLoaded$: Subject<QuantificationLayer> = new ReplaySubject<QuantificationLayer>(1);
 
     private _logPrefix = "  >>> WidgetRegionDataService["+randomString(4)+"]";
+
+    // Query result cache - for slow queries we cache their result
+    private _resultCache: QueryResultCache = new QueryResultCache(60000, 10000);
 
     constructor(
         private _roiService: ROIService,
@@ -249,6 +366,9 @@ export class WidgetRegionDataService
 
     private resubscribeForViewState(): void
     {
+        // Forget any cached query results
+        this._resultCache.clear();
+
         // Reset all our subscriptions
         this._viewStateRelatedSubs.unsubscribe();
         this._viewStateRelatedSubs = new Subscription();
@@ -340,18 +460,38 @@ export class WidgetRegionDataService
                 return new RegionDataResults([], errorMsg);
             }
 
-            try
+            // Check if we have a cached value that can be used
+
+            // If we have a cached value for this, return that
+            let cachedResult = this._resultCache.getCachedResult(query, expr.modUnixTimeSec, region.modUnixTimeSec);
+            if(cachedResult != null)
             {
-                let data = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, region.pmcs);
-                data = this.applyUnitConversion(expr, data, query.units);
-                result.push(new RegionDataResultItem(data, null, null, data.warning));
+                result.push(cachedResult);
             }
-            catch (error)
+            else
             {
-                let errorMsg = httpErrorToString(error, "WidgetRegionDataService.getData");
-                SentryHelper.logMsg(true, errorMsg);
-                result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null));
-                //return null;
+                try
+                {
+                    // Some expressions run slowly, so we cache their results in case they are re-run frequently
+                    // eg in the case of UI refreshing binary or ternary plots
+                    let t0 = performance.now();
+
+                    let data = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, region.pmcs);
+                    data = this.applyUnitConversion(expr, data, query.units);
+                    let resultItem = new RegionDataResultItem(data, null, null, data.warning);
+                    result.push(resultItem);
+
+                    // Cache if needed
+                    let t1 = performance.now();
+                    this._resultCache.addCachedResult(query, t1-t0, resultItem);
+                }
+                catch (error)
+                {
+                    let errorMsg = httpErrorToString(error, "WidgetRegionDataService.getData");
+                    SentryHelper.logMsg(true, errorMsg);
+                    result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null));
+                    //return null;
+                }
             }
         }
 

@@ -590,7 +590,6 @@ export class LayerManager
     // Returns an error string if something goes wrong - otherwise null
     private generatePointsIfNeeded(layer: LocationDataLayer): string
     {
-        //let t0 = performance.now();
         if(!layer.isVisible())
         {
             // Not visible, we're lazy, why bother?
@@ -601,6 +600,8 @@ export class LayerManager
         {
             return this.generateRGBMixLayer(layer);
         }
+
+        let t0 = performance.now();
 
         // At this point assume it's a DataExpression - we used to look this up but expression is now in
         // layer.source, just need to cast it
@@ -628,14 +629,17 @@ export class LayerManager
             //layer.errorMessage = error;
             return error;
         }
-        //let t1 = performance.now();
-        //console.log('generatePointsIfNeeded for '+layer.name+' took: ' + (t1-t0).toLocaleString() + 'ms');
+
+        let t1 = performance.now();
+        console.log(" generatePointsIfNeeded for "+layer.name+" took: " + (t1-t0).toLocaleString() + "ms");
 
         return null;
     }
 
     private generateRGBMixLayer(layer: LocationDataLayer): string
     {
+        let t0 = performance.now();
+
         // Run through and get data for each element
         let quantLayer: QuantificationLayer = this._widgetDataService.quantificationLoaded;
 
@@ -671,15 +675,18 @@ export class LayerManager
             }
 
             // Now we run through ch0 (R) and recolour the points to mix in the G and B values, making ch0 our render-able channel
-            return layer.generateRGBMix(perElemData, this._dataset);
+            let result = layer.generateRGBMix(perElemData, this._dataset);
+
+            let t1 = performance.now();
+            console.log(" generatePointsIfNeeded for "+layer.name+" took: " + (t1-t0).toLocaleString() + "ms");
+
+            return result;
         }
         catch (error)
         {
             SentryHelper.logException(error, "generateRGBMixLayer");
             return error;
         }
-
-        return null;
     }
 
     private updateDisplayValueRangeOverride(): void
