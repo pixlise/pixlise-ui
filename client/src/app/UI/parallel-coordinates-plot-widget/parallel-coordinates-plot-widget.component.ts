@@ -84,8 +84,8 @@ export class RGBUPoint
 
     calculateLinesForAxes(axes: PCPAxis[], element: ElementRef, plotID: string): void
     {
-        let plotContainer = element.nativeElement.querySelector(`.${plotID}`);
-        let domAxes = plotContainer.querySelectorAll(".axes .axis-container");
+        let plotContainer = element?.nativeElement?.querySelector(`.${plotID}`);
+        let domAxes = plotContainer?.querySelectorAll(".axes .axis-container");
         if(!domAxes || !plotContainer || domAxes.length != axes.length)
         {
             // Something isn't loaded right, don't continue drawing
