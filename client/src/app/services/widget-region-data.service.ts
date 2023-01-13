@@ -281,7 +281,7 @@ class QueryResultCache
         }
 
         this._lastPurgeUnixTimeMs = nowUnixMs;
-        
+
         // Purge anything that hasn't been accessed in a while
         for(let [key, item] of this._queryResultCache)
         {
@@ -427,20 +427,24 @@ export class WidgetRegionDataService
 
         for(let query of what)
         {
-            // Get region info
-            let region = this._regions.get(query.roiId);
-            if(!region)
+            // Get region info (allow NULL in request because context image doesn't need to be slowed by this)
+            let region = null;
+            if(query.roiId != null)
             {
-                let errorMsg = "Failed to find region id: \""+query.roiId+"\"";
-
-                if(continueOnError)
+                region = this._regions.get(query.roiId);
+                if(!region)
                 {
-                    console.error("getData: "+errorMsg+". Ignored...");
-                    result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null));
-                    continue;
+                    let errorMsg = "Failed to find region id: \""+query.roiId+"\"";
+
+                    if(continueOnError)
+                    {
+                        console.error("getData: "+errorMsg+". Ignored...");
+                        result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null));
+                        continue;
+                    }
+                    console.error("getData: "+errorMsg);
+                    return new RegionDataResults([], errorMsg);
                 }
-                console.error("getData: "+errorMsg);
-                return new RegionDataResults([], errorMsg);
             }
 
             // Get the expression
@@ -460,10 +464,8 @@ export class WidgetRegionDataService
                 return new RegionDataResults([], errorMsg);
             }
 
-            // Check if we have a cached value that can be used
-
             // If we have a cached value for this, return that
-            let cachedResult = this._resultCache.getCachedResult(query, expr.modUnixTimeSec, region.modUnixTimeSec);
+            let cachedResult = this._resultCache.getCachedResult(query, expr.modUnixTimeSec, region ? region.modUnixTimeSec : 0);
             if(cachedResult != null)
             {
                 result.push(cachedResult);
@@ -476,7 +478,7 @@ export class WidgetRegionDataService
                     // eg in the case of UI refreshing binary or ternary plots
                     let t0 = performance.now();
 
-                    let data = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, region.pmcs);
+                    let data = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, region ? region.pmcs : null);
                     data = this.applyUnitConversion(expr, data, query.units);
                     let resultItem = new RegionDataResultItem(data, null, null, data.warning);
                     result.push(resultItem);

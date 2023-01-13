@@ -541,6 +541,16 @@ export function httpErrorToString(err: any, operationMsg: string): string
             errorStr = err["statusText"];
         }
 
+        if(errorStr.length <= 0)
+        {
+            // Still don't have one? Try use this other function
+            //errorStr = SentryHelper.extractError(err);
+            if(err["message"])
+            {
+                errorStr = err["message"];
+            }
+        }
+
         if(errorStr.length > 0)
         {
             msg += errorStr;
