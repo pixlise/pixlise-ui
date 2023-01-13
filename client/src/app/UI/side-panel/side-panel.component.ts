@@ -31,7 +31,6 @@ import { Component, ComponentFactoryResolver, ComponentRef, OnInit, ViewChild, V
 import { rgbuPlotWidgetState, ViewStateService } from "src/app/services/view-state.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
 import { QuantificationCombineComponent } from "src/app/UI/side-panel/tabs/quantification-combine/quantification-combine.component";
-import { environment } from "src/environments/environment";
 import { DiffractionComponent } from "./tabs/diffraction/diffraction.component";
 import { ROIComponent } from "./tabs/roi/roi.component";
 import { MistROIComponent } from "./tabs/mist-roi/mist-roi.component";
@@ -58,6 +57,7 @@ export class SidePanelComponent implements OnInit
     private _CollectionsTab: string = "Collections";
     private _ROITab: string = "Regions of Interest";
     private _MistROITab: string = "MIST ROIs";
+    private _SelectionTab: string = "Selection";
     private _DiffractionTab: string = "Diffraction";
     private _RoughnessTab: string = "Roughness";
     private _MultiQuantTab: string = "Multi-Quant";
@@ -70,7 +70,7 @@ export class SidePanelComponent implements OnInit
         this._CollectionsTab,
         this._ROITab,
         this._MistROITab,
-        "Selection",
+        this._SelectionTab,
         this._DiffractionTab,
         this._RoughnessTab,
         //"Drift Correction"
@@ -291,7 +291,7 @@ export class SidePanelComponent implements OnInit
 
     onOpenView(shortcut: string): void
     {
-        if(shortcut==="RGBU View")
+        if(shortcut === "RGBU View")
         {
             // Show RGBU Plot in the underspectrum0 spot and display UV/Blue and UV/IR
             this._viewStateService.setAnalysisViewSelector("underspectrum0", ViewStateService.widgetSelectorRGBUPlot);

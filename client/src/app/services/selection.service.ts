@@ -35,6 +35,7 @@ import { ROIService } from "src/app/services/roi.service";
 import { selectionState, ViewState, ViewStateService } from "src/app/services/view-state.service";
 import { DataSet } from "../models/DataSet";
 import { DataSetService } from "./data-set.service";
+import { parseNumberRangeString} from "src/app/utils/utils";
 
 
 
@@ -68,6 +69,41 @@ export class SelectionHistoryItem
     {
         return new SelectionHistoryItem(BeamSelection.makeEmptySelection(), PixelSelection.makeEmptySelection(), PixelSelection.makeEmptySelection());
     }
+}
+
+// Gets PMCs relative to whole dataset for ones entered for corresponding sub-datasets (in case of combined datasets)
+// otherwise for original-style single datasets, it just creates the PMCs from the range one string specified
+export function getPMCsForRTTs(pmcRangeStrings: string[], dataset: DataSet): Set<number>
+{
+    let selection = new Set<number>();
+    let datasetScanSources = dataset.experiment.getScanSourcesList();
+
+    for(let c = 0; c < pmcRangeStrings.length; c++)
+    {
+        let entry = pmcRangeStrings[c];
+        let selectPMCs = parseNumberRangeString(entry);
+
+        for(let pmc of selectPMCs)
+        {
+            // Add PMC offset for this dataset (if needed)...
+            let selectPMC = pmc;
+            if(datasetScanSources.length > 0)
+            {
+                selectPMC += datasetScanSources[c].getIdOffset();
+            }
+
+            let locIdx = dataset.pmcToLocationIndex.get(selectPMC);
+            if(locIdx == undefined)
+            {
+                // Show alert for the entered PMC!
+                alert("PMC: "+pmc+" is not valid for dataset: "+datasetScanSources[c].getRtt());
+                return;
+            }
+
+            selection.add(locIdx);
+        }
+    }
+    return selection;
 }
 
 @Injectable({

@@ -32,10 +32,31 @@ POSSIBILITY OF SUCH DAMAGE.
 <div fxLayout="column" class="picker">
     <div fxLayout="row" fxLayoutAlign="space-between center" class="card-toolbar card-toolbar-shadow">
         <div class="txt-widget-title">{{title}}</div>
-        <filter-box
-            placeholder="Filter Expressions..."
-            (onFilterChanged)="onFilterExpressions($event)">
-        </filter-box>
+        <div fxLayout="row" class="filter-container">
+            <filter-box
+                placeholder="Filter Expressions..."
+                (onFilterChanged)="onFilterExpressions($event)">
+            </filter-box>
+            <tag-picker
+                type="expression"
+                [selectedTagIDs]="selectedTagIDs"
+                [showCurrentTagsSection]="false"
+                (onTagSelectionChanged)="onTagSelectionChanged($event)"
+            >
+            </tag-picker>
+             <mat-select
+                #tooltip="matTooltip"
+                [matTooltip]="authorsTooltip"
+                multiple
+                [(ngModel)]="filteredAuthors"
+                class="authors-filter"
+                placeholder="Author ..."
+            >
+                <mat-option *ngFor="let author of authors;"
+                    [value]="author.user_id">{{author.name}}
+                </mat-option>
+            </mat-select>
+        </div>
     </div>
     <expression-list
         [headerSectionsOpen]="headerSectionsOpen"
@@ -49,6 +70,7 @@ POSSIBILITY OF SUCH DAMAGE.
         [initialScrollToIdx]="initialScrollToIdx"
         (headerSectionToggle)="onToggleLayerSectionOpen($event)"
         (visibilityChange)="onLayerVisibilityChange($event)"
+        (onLayerImmediateSelection)="onLayerImmediateSelection($event)"
         fxFlex="100%">
         <!-- NOTE: we don't listen for layer colour change as we don't show the colour picker -->
 

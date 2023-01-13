@@ -30,8 +30,8 @@
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { Subscription } from "rxjs";
 import { ItemTag } from "src/app/models/tags";
+import { AuthenticationService } from "src/app/services/authentication.service";
 import { TaggingService } from "src/app/services/tagging.service";
-import { UserOptionsService } from "src/app/services/user-options.service";
 
 export interface AuthorTags
 {
@@ -50,6 +50,7 @@ export class TagPickerComponent implements OnInit
 
     private _tagSelectionChanged: boolean = false;
 
+    user: any = null; // Auth0 User Object
     currentAuthor: string = null;
     authors: string[] = [];
     
@@ -69,14 +70,21 @@ export class TagPickerComponent implements OnInit
 
     constructor(
         private _taggingService: TaggingService,
-        private _userService: UserOptionsService
+        private _authService: AuthenticationService
     )
     {
     }
 
     ngOnInit()
     {
-        this.currentAuthor = this._userService.userConfig.name;
+        this._authService.userProfile$.subscribe(
+            (user)=>
+            {
+                this.user = user;
+                this.currentAuthor = this.user.name;
+            }
+        );
+
         this._taggingService.refreshTagList();
 
         this._taggingService.tags$.subscribe((tags) =>
@@ -97,6 +105,11 @@ export class TagPickerComponent implements OnInit
     get tagCount(): number
     {
         return this.selectedTags.length;
+    }
+
+    get selectedTagsTooltip(): string
+    {
+        return this.selectedTags.length > 0 ? `Tags:\n${this.selectedTags.map(tag => tag.name).join("\n")}` : "No tags selected";
     }
 
     get tagSearchValue(): string
@@ -198,7 +211,7 @@ export class TagPickerComponent implements OnInit
 
         this.filteredTags.forEach(tag =>
         {
-            let userID = tag.creator.name === this.currentAuthor ? this.currentAuthor : tag.creator.user_id;
+            let userID = tag.creator.email === this.user.email ? this.currentAuthor : tag.creator.user_id;
             if(!creatorMap[userID])
             {
                 creatorMap[userID] = [];

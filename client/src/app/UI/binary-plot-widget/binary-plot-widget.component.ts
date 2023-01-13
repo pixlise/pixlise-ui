@@ -660,14 +660,38 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         let xAxisLabel = this._binaryModel.raw.xAxisData.axisLabel;
         let yAxisLabel = this._binaryModel.raw.yAxisData.axisLabel;
 
-        let data = `"PMC","ROI","${xAxisLabel}","${yAxisLabel}"\n`;
+        let data = `"PMC","ROI","${xAxisLabel}","${yAxisLabel}"`;
+        let dataset = this._datasetService.datasetLoaded;
+        let combined = dataset.isCombinedDataset();
+        let locations = dataset.experiment.getLocationsList();
+        if(combined)
+        {
+            data += ",\"SourceRTT\",\"SourcePMC\"";
+        }
+        data += "\n";
+
         Array.from(this._binaryModel.raw.pmcToValueLookup.entries()).forEach(([pmc, idx]) =>
         {
             let x = this._binaryModel.raw.xAxisData.pointGroups[idx.pointGroup].values[idx.valueIndex].value;
             let y = this._binaryModel.raw.yAxisData.pointGroups[idx.pointGroup].values[idx.valueIndex].value;
             let roiId = this._binaryModel.raw.visibleROIs[idx.pointGroup];
             let roiName = this._widgetDataService.regions.get(roiId).name;
-            data += `${pmc},${roiName},${x},${y}\n`;
+            data += `${pmc},${roiName},${x},${y}`;
+            if(combined)
+            {
+                let locIdx = dataset.pmcToLocationIndex.get(pmc);
+                if(locIdx != undefined)
+                {
+                    let sourceIdx = locations[locIdx].getScanSource();
+                    let source = dataset.experiment.getScanSourcesList()[sourceIdx];
+
+                    let sourceRTT = source.getRtt();
+                    let sourcePMC = pmc-source.getIdOffset();
+
+                    data += `,${sourceRTT},${sourcePMC}`;
+                }
+            }
+            data += "\n";
         });
 
         return data;

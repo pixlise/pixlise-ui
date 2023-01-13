@@ -258,7 +258,27 @@ export class LinearChartAxis extends ChartAxis
         this._ticks = [];
         for(let v = roundedValueStart; v < roundedValueEnd; v += spacing)
         {
-            this._ticks.push(new ChartAxisTick(v.toLocaleString(), this.valueToCanvas(v)));
+            let valStr = v.toLocaleString();
+
+            // If our max chart value is becoming pretty large to print...
+            if(this.maxValue > 100000)
+            {
+                // Shorten the string with K, M, B
+                if(this.maxValue > 1000000000)
+                {
+                    valStr = (v/1000000000).toPrecision(3)+"B";
+                }
+                else if(this.maxValue > 1000000)
+                {
+                    valStr = (v/1000000).toPrecision(3)+"M";
+                }
+                else if(this.maxValue > 1000)
+                {
+                    valStr = (v/1000).toPrecision(3)+"K";
+                }
+            }
+
+            this._ticks.push(new ChartAxisTick(valStr, this.valueToCanvas(v)));
         }
     }
 

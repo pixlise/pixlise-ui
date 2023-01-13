@@ -342,19 +342,24 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
     onAddExpression(): void
     {
         this.showExpressionEditor(new DataExpression("", "", "", DataExpressionService.DataExpressionTypeAll, "", false, null, 0, 0)).subscribe(
-            (expr: DataExpression)=>
+            ({ expression, applyNow })=>
             {
-                if(expr)
+                if(expression)
                 {
                     // User has defined a new one, upload it
-                    this._exprService.add(expr.name, expr.expression, expr.type, expr.comments).subscribe(
-                        ()=>
+                    this._exprService.add(expression.name, expression.expression, expression.type, expression.comments).subscribe(
+                        (response)=>
                         {
-                            // Don't need to do anything, service refreshes
+                            if(applyNow)
+                            {
+                                // If save and apply now is selected, turn on the layer
+                                let layerID = Object.keys(response || {})[0] || "";
+                                this._contextImageService.mdl.layerManager.setLayerVisibility(layerID, 1, true, []);
+                            }
                         },
                         (err)=>
                         {
-                            alert("Failed to add data expression: "+expr.name);
+                            alert("Failed to add data expression: "+expression.name);
                         }
                     );
                 }
@@ -367,15 +372,14 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         );
     }
 
-    private showExpressionEditor(toEdit: DataExpression): Observable<DataExpression>
+    private showExpressionEditor(toEdit: DataExpression): Observable<{expression: DataExpression; applyNow: boolean;}>
     {
-        return new Observable<DataExpression>(
+        return new Observable<{expression: DataExpression; applyNow: boolean;}>(
             (observer)=>
             {
                 const dialogConfig = new MatDialogConfig();
                 dialogConfig.panelClass = "panel";
                 dialogConfig.disableClose = true;
-                //dialogConfig.backdropClass = "panel";
 
                 dialogConfig.data = new ExpressionEditorConfig(toEdit, true);
 
@@ -390,7 +394,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                             toReturn = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec);
                         }
 
-                        observer.next(toReturn);
+                        observer.next({ expression: toReturn, applyNow: dlgResult.applyNow });
                         observer.complete();
                     },
                     (err)=>
@@ -569,6 +573,12 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         this._authors = authors;
     }
 
+    get authorsTooltip(): string
+    {
+        let authorNames = this._authors.filter((author) => this._filteredAuthors.includes(author.user_id)).map((author) => author.name);
+        return this._filteredAuthors.length > 0 ? `Authors:\n${authorNames.join("\n")}` : "No Authors Selected";
+    }
+
     get filteredAuthors(): string[]
     {
         return this._filteredAuthors;
@@ -596,10 +606,35 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
             throw new Error(`Failed to query CSV data for expression: ${id}. ${queryData.error}`);
         }
 
-        let csv: string = "PMC,Value\n";
+        let csv: string = "PMC";
+        let dataset = this._datasetService.datasetLoaded;
+        let combined = dataset.isCombinedDataset();
+        let locations = dataset.experiment.getLocationsList();
+        if(combined)
+        {
+            csv += ",SourceRTT,SourcePMC";
+        }
+        csv += ",Value\n";
+
         queryData.queryResults[0].values.values.forEach(({pmc, value, isUndefined})=>
         {
-            csv += `${pmc},${isUndefined ? "" : value}\n`;
+            csv += `${pmc}`;
+            if(combined)
+            {
+                let locIdx = dataset.pmcToLocationIndex.get(pmc);
+                if(locIdx != undefined)
+                {
+                    let sourceIdx = locations[locIdx].getScanSource();
+                    let source = dataset.experiment.getScanSourcesList()[sourceIdx];
+
+                    let sourceRTT = source.getRtt();
+                    let sourcePMC = pmc-source.getIdOffset();
+
+                    csv += `,${sourceRTT},${sourcePMC}`;
+                }
+            }
+            csv += `,${isUndefined ? "" : value}`;
+            csv += "\n";
         });
 
         return csv;

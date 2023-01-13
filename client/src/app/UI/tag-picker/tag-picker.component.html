@@ -107,7 +107,9 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
 </ng-template>
 <widget-settings-menu [settingsDialog]="tagMenu" class="tag-button" [openDirDown]="false" (onClose)="onClose()">
-    <icon-button 
+    <icon-button
+        #tooltip="matTooltip"
+        [matTooltip]="selectedTagsTooltip"
         icon="assets/button-icons/tag.svg"
         [notificationCount]="tagCount"
         (click)="delayedFocusOnInput()"

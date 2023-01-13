@@ -52,7 +52,6 @@ export class SpectrumRegionSettingsComponent implements OnInit
     @Input() source: SpectrumSource;
 
     private _colourRGB: string = "";
-    private _visible: boolean = false;
     private _sharedBy: string = null;
 
     constructor(
@@ -67,16 +66,6 @@ export class SpectrumRegionSettingsComponent implements OnInit
     ngOnInit(): void
     {
         this._colourRGB = this.source.colourRGBA ? RGBA.fromWithA(this.source.colourRGBA, 1).asString() : "";
-        this._visible = false;
-
-        for(let line of this.source.lineChoices)
-        {
-            if(line.enabled)
-            {
-                this._visible = true;
-                break;
-            }
-        }
 
         if(this.source.creator != null && this.source.shared)
         {
@@ -106,7 +95,7 @@ export class SpectrumRegionSettingsComponent implements OnInit
 
     get visible(): boolean
     {
-        return this._visible;
+        return this.source.lineChoices.some((line) => line.enabled);
     }
 
     get sharedBy(): string
@@ -198,10 +187,6 @@ export class SpectrumRegionSettingsComponent implements OnInit
                         this._spectrumService.mdl.removeSpectrumLine(this.source.roiID, id);
                     }
                 }
-
-                // Remember what's now selected, in case user keeps clicking (while dialog still active)!
-                selectedItems = Array.from(selectedIds);
-                this._visible = selectedItems.length > 0;
             }
         );
     }

@@ -48,6 +48,8 @@ import { SelectionTabModel } from "../../selection/model";
 import { RGBA } from "src/app/utils/colours";
 import { ContextImageItem } from "src/app/models/DataSet";
 import { PixelSelection } from "src/app/models/PixelSelection";
+import { PMCAndDisplay, SelectionComponent } from "../../selection/selection.component";
+import { DataSet } from "src/app/models/DataSet";
 
 
 @Component({
@@ -84,7 +86,7 @@ export class ROIItemComponent implements OnInit
     private _summaryLabel: string = "";
 
     hoverPMC: number = -1;
-    pmcs: number[] = [];
+    displaySelectedPMCs: PMCAndDisplay[] = [];
 
     constructor(
         private _authService: AuthenticationService,
@@ -178,7 +180,7 @@ export class ROIItemComponent implements OnInit
         // Read a page worth into our array
         let last = this._pmcPageIdx+this._pmcPageSize;
 
-        this.pmcs = [];
+        this.displaySelectedPMCs = [];
 
         let allPMCS = Array.from(this.regionLayer.roi.pmcs).sort((a, b) => (a > b) ? 1 : -1);
         if(last > allPMCS.length)
@@ -186,9 +188,27 @@ export class ROIItemComponent implements OnInit
             last = allPMCS.length;
         }
 
+        let thisPagePMCs = [];
         for(let c = this._pmcPageIdx; c < last; c++)
         {
-            this.pmcs.push(allPMCS[c]);
+            thisPagePMCs.push(allPMCS[c]);
+        }
+
+        let pmcsByDataset = SelectionComponent.MakePMCsByDataset(thisPagePMCs, this._datasetService.datasetLoaded);
+
+        // Loop through and build the items, including dataset heading permanently at the start (and in middle if needed)
+        for(let [id, pmcs] of pmcsByDataset)
+        {
+            if(id != "")
+            {
+                // Add a sub-heading
+                this.displaySelectedPMCs.push(new PMCAndDisplay(-1, "Dataset RTT: "+id));
+            }
+
+            for(let c = 0; c < pmcs.length; c+=2)
+            {
+                this.displaySelectedPMCs.push(new PMCAndDisplay(pmcs[c], pmcs[c+1].toLocaleString()));
+            }
         }
     }
 

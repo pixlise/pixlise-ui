@@ -336,7 +336,8 @@ export class rgbuImagesWidgetState
 export class parallelogramWidgetState
 {
     constructor(
-        public colourChannels: string[]
+        public regions: string[],
+        public channels: string[],
     )
     {
     }
@@ -987,6 +988,9 @@ export class ViewStateService
             this._soloViewSelector = selector;
             this._soloViewSourcePosition = position;
         }
+
+        // Update analysis view selectors as user may have changed things in solo view
+        this.updateAnalysisViewSelectors();
 
         // Tell listeners solo status changed
         this._viewSolo$.next();

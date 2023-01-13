@@ -28,19 +28,27 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, OnInit } from "@angular/core";
-import { MatDialog } from "@angular/material/dialog";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { BeamSelection } from "src/app/models/BeamSelection";
-import { ContextImageItem } from "src/app/models/DataSet";
+import { DataSet, ContextImageItem } from "src/app/models/DataSet";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { ROIService } from "src/app/services/roi.service";
-import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
-import { httpErrorToString, parseNumberRangeString } from "src/app/utils/utils";
-
+import { SelectionHistoryItem, SelectionService, getPMCsForRTTs } from "src/app/services/selection.service";
+import { httpErrorToString } from "src/app/utils/utils";
 import { SelectionTabModel, AverageRGBURatio } from "./model";
+import { UserPromptDialogComponent, UserPromptDialogParams, UserPromptDialogResult, UserPromptDialogStringItem } from "src/app/UI/atoms/user-prompt-dialog/user-prompt-dialog.component";
+
 
 const emptySelectionDescription = "Empty";
+
+export class PMCAndDisplay
+{
+    constructor(public pmc: number, public displayPMC: string)
+    {
+    }
+}
 
 @Component({
     selector: "app-selection",
@@ -52,10 +60,12 @@ export class SelectionComponent implements OnInit
     private _subs = new Subscription();
 
     private _selectedPMCs: number[] = [];
+    private _displaySelectedPMCs: PMCAndDisplay[] = [];
     private _summary: string = emptySelectionDescription;
     private _averageRGBURatios: AverageRGBURatio[] = [];
     hoverPMC: number = -1;
     expandedIndices: number[] = [0, 1];
+    subDataSetIDs: string[] = [];
 
     constructor(
         private _datasetService: DataSetService,
@@ -69,6 +79,19 @@ export class SelectionComponent implements OnInit
 
     ngOnInit(): void
     {
+        this._subs.add(this._datasetService.dataset$.subscribe(
+            (dataset: DataSet)=>
+            {
+                this.subDataSetIDs = [];
+
+                let sources = dataset.experiment.getScanSourcesList();
+                for(let src of sources)
+                {
+                    this.subDataSetIDs.push(src.getRtt());
+                }
+            }
+        ));
+
         this._subs.add(this._selectionService.selection$.subscribe(
             (selection: SelectionHistoryItem)=>
             {
@@ -87,6 +110,24 @@ export class SelectionComponent implements OnInit
                         return -1;
                     }
                 );
+
+                let pmcsByDataset = SelectionComponent.MakePMCsByDataset(this._selectedPMCs, this._datasetService.datasetLoaded);
+
+                // Now run through the maps and build displayable stuff
+                this._displaySelectedPMCs = [];
+                for(let [id, pmcs] of pmcsByDataset)
+                {
+                    if(id != "")
+                    {
+                        // Add a sub-heading
+                        this._displaySelectedPMCs.push(new PMCAndDisplay(-1, "Dataset RTT: "+id));
+                    }
+
+                    for(let c = 0; c < pmcs.length; c+=2)
+                    {
+                        this._displaySelectedPMCs.push(new PMCAndDisplay(pmcs[c], pmcs[c+1].toLocaleString()));
+                    }
+                }
 
                 this._summary = "";
                 if(this._selectedPMCs.length > 0)
@@ -136,14 +177,45 @@ export class SelectionComponent implements OnInit
         this._subs.unsubscribe();
     }
 
+    public static MakePMCsByDataset(pmcs: number[], dataset: DataSet): Map<string, number[]>
+    {
+        // Make a display string list, this includes subheadings for dataset IDs where there are combined datasets
+        let pmcsByDataset = new Map<string, number[]>(); // NOTE we add PMC twice to the array, once the original, once the without offset one
+
+        for(let pmc of pmcs)
+        {
+            let idx = dataset.pmcToLocationIndex.get(pmc);
+            let datasetID = "";
+            let savePMC = pmc;
+
+            if(idx != undefined)
+            {
+                let loc = dataset.locationPointCache[idx];
+                if(loc.source)
+                {
+                    savePMC = loc.getPMCWithoutOffset();
+                    datasetID = loc.source.getRtt();
+                }
+            }
+
+            if(pmcsByDataset.get(datasetID) == undefined)
+            {
+                pmcsByDataset.set(datasetID, []);
+            }
+
+            pmcsByDataset.get(datasetID).push(pmc, savePMC);
+        }
+        return pmcsByDataset;
+    }
+
     get summary(): string
     {
         return this._summary;
     }
 
-    get selectedPMCs(): number[]
+    get displaySelectedPMCs(): PMCAndDisplay[]
     {
-        return this._selectedPMCs;
+        return this._displaySelectedPMCs;
     }
 
     get averageRGBURatios(): AverageRGBURatio[]
@@ -275,40 +347,78 @@ export class SelectionComponent implements OnInit
         this._selectionService.setSelection(dataset, beamSelection, pixelSelection);
     }
 
-    onEnterSelection()
+    onEnterSelection(): void
     {
-        let dataset = this._datasetService.datasetLoaded;
+        SelectionComponent.DoEnterSelection(this._datasetService, this.dialog, this._selectionService);
+    }
+
+    public static DoEnterSelection(datasetService: DataSetService, dialog: MatDialog, selectionService: SelectionService): void
+    {
+        let dataset = datasetService.datasetLoaded;
         if(!dataset)
         {
             return;
         }
 
-        let pmcStr = prompt("Enter PMCs between "+dataset.pmcMinMax.min+" and "+dataset.pmcMinMax.max+". Eg: "+dataset.pmcMinMax.min+","+(dataset.pmcMinMax.min+1)+","+(dataset.pmcMinMax.min+5)+"-"+(dataset.pmcMinMax.min+8));
-        if(pmcStr)
+        let datasetScanSources = dataset.experiment.getScanSourcesList();
+
+        let promptMsg = "You can enter PMCs in a comma-separated list, and ranges are also allowed.\n\nFor example: 10,11,13-17";
+        let prompts = [];
+
+        for(let src of datasetScanSources)
         {
-            let selectPMCs = parseNumberRangeString(pmcStr);
-
-            let selection = new Set<number>();
-            for(let pmc of selectPMCs)
-            {
-                let locIdx = dataset.pmcToLocationIndex.get(pmc);
-                if(locIdx == undefined)
-                {
-                    alert("PMC: "+pmc+" is not valid");
-                    return;
-                }
-
-                selection.add(locIdx);
-            }
-
-            if(selection.size > 0)
-            {
-                this._selectionService.setSelection(dataset, new BeamSelection(dataset, selection), null);
-                return;
-            }
-
-            alert("No PMCs were able to be read from entered text. Selection not changed.");
+            prompts.push("Enter PMCs for dataset: "+src.getRtt());
         }
+
+        if(prompts.length <= 0)
+        {
+            prompts.push("Enter PMCs for current dataset:");
+        }
+
+        let promptItems = [];
+
+        for(let prompt of prompts)
+        {
+            promptItems.push(
+                new UserPromptDialogStringItem(
+                    prompt,
+                    (val: string)=>{return true;}
+                )
+            );
+        }
+
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.data = new UserPromptDialogParams(
+            "Enter PMCs to Select",
+            "Select",
+            "Cancel",
+            promptItems,
+            false,
+            "",
+            null,
+            promptMsg,
+        );
+
+        const dialogRef = dialog.open(UserPromptDialogComponent, dialogConfig);
+
+        dialogRef.afterClosed().subscribe(
+            (result: UserPromptDialogResult)=>
+            {
+                if(result)
+                {
+                    let enteredValues = Array.from(result.enteredValues.values());
+                    let selection = getPMCsForRTTs(enteredValues, dataset);
+                    if(selection.size > 0)
+                    {
+                        selectionService.setSelection(dataset, new BeamSelection(dataset, selection), null);
+                        return;
+                    }
+
+                    alert("No PMCs were able to be read from entered text. Selection not changed.");
+                }
+                // else: User cancelled...
+            }
+        );
     }
 
     onUnselectPMC(pmc: number)
@@ -352,5 +462,17 @@ export class SelectionComponent implements OnInit
     onDriftCorrection(): void
     {
         alert("Not implemented yet");
+    }
+
+    onSelectForSubDataset(id: string): void
+    {
+        let dataset = this._datasetService.datasetLoaded;
+        if(!dataset)
+        {
+            return;
+        }
+
+        let selection = dataset.getLocationIdxsForSubDataset(id);
+        this._selectionService.setSelection(dataset, new BeamSelection(dataset, selection), null);
     }
 }

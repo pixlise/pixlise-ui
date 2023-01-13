@@ -27,6 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { Clipboard } from "@angular/cdk/clipboard";
+import { MatDialog } from "@angular/material/dialog";
 import { ReplaySubject, Subject } from "rxjs";
 import { Point } from "src/app/models/Geometry";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
@@ -94,12 +96,12 @@ export class SpectrumChartToolHost implements CanvasInteractionHandler, ISpectru
     toolStateChanged$ = new Subject<void>();
     activeCursor$ = new ReplaySubject<string>(1);
 
-    constructor(private _ctx: ISpectrumChartModel)
+    constructor(private _ctx: ISpectrumChartModel, public dialog: MatDialog, public clipboard: Clipboard)
     {
         this._tools = [
             new SpectrumPan(_ctx, this),
             new SpectrumZoom(_ctx, this),
-            new RangeSelect(_ctx, this)
+            new RangeSelect(_ctx, this, dialog, clipboard)
         ];
         this.setTool(SpectrumToolId.PAN);
 

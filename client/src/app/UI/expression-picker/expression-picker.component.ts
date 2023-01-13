@@ -42,6 +42,7 @@ import { LayerVisibilityChange } from "src/app/UI/atoms/expression-list/layer-se
 import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
 import { RGBMix } from "src/app/services/rgbmix-config.service";
 import { makeDataForExpressionList, ExpressionListBuilder, ExpressionListGroupNames, ExpressionListItems, LocationDataLayerPropertiesWithVisibility } from "src/app/models/ExpressionList";
+import { ObjectCreator } from "src/app/models/BasicTypes";
 
 
 export class ExpressionPickerData
@@ -77,10 +78,14 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
     initialScrollToIdx: number = -1;
 
     private _filterText: string = "";
-    private _filterAuthors: string[] = [];
-    private _filterTagIDs: string[] = [];
+
+    private _authors: ObjectCreator[] = [];
+    private _filteredAuthors: string[] = [];
+    
     private _activeIDs: Set<string> = new Set<string>();
     private _listBuilder: ExpressionListBuilder;
+
+    selectedTagIDs: string[] = [];
 
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: ExpressionPickerData,
@@ -144,6 +149,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
                 this.headerSectionsOpen.add(this.expressionsHeaderName);
             }
         }
+        
 
         // Now subscribe for data we need, process when all have arrived
         let all$ = makeDataForExpressionList(
@@ -186,8 +192,8 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
             this._activeIDs,
             new Set<string>(),
             this._filterText,
-            this._filterAuthors,
-            this._filterTagIDs,
+            this._filteredAuthors,
+            this.selectedTagIDs,
             false, // We never show the exploratory RGB mix item
             (source: DataExpression|RGBMix): LocationDataLayerProperties=>
             {
@@ -196,6 +202,112 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
                 return layer;
             }
         );
+
+        this.populateAuthorsList();
+    }
+
+    private populateAuthorsList(): void
+    {
+        let items = this._listBuilder.makeExpressionList(
+            new Set(["expressions-header", "rgbmix-header"]),
+            new Set(),
+            new Set(),
+            "",
+            [],
+            [],
+            false,
+            (source: DataExpression|RGBMix): LocationDataLayerProperties=>
+            {
+                let layer = new LocationDataLayerPropertiesWithVisibility(source.id, source.name, source.id, source);
+                layer.visible = (this._activeIDs.has(source.id));
+                return layer;
+            }
+        );
+        
+        let duplicateNames = new Set<string>();
+        let existingNames = new Set<string>();
+        let existingIDs = new Set<string>();
+
+        if(items && items.items && items.items.length > 0)
+        {
+            let authorMap = new Map<string, ObjectCreator>();
+            items.items.forEach((item) =>
+            {
+                let creator = item.content?.layer?.source?.creator;
+                let id = creator?.user_id;
+
+                if(id)
+                {
+                    if(authorMap.has(id) && authorMap[id])
+                    {
+                        // Some expressions were created prior to name changes, so we need to group by ID and prefer the non-email one
+                        let { name, email } = authorMap[id];
+                        authorMap[id].name = email.includes(name) ? creator.name : name;
+                    }
+                    else
+                    {
+                        authorMap.set(id, creator);
+                    }
+
+                    // Check for duplicate names so we can name them differently in the dropdown, while keeping IDs unique
+                    if(existingNames.has(creator.name) && !existingIDs.has(creator.user_id))
+                    {
+                        duplicateNames.add(creator.name);
+                    }
+                    else
+                    {
+                        existingNames.add(creator.name);
+                        existingIDs.add(creator.user_id);
+                    }
+                }
+            });
+
+            // Rename creators with duplicate names to include email
+            for(let [, creator] of authorMap)
+            {
+                if(duplicateNames.has(creator.name))
+                {
+                    creator.name = `${creator.name} (${creator.email})`;
+                }
+            }
+           
+            this.authors = Array.from(authorMap.values()).sort((a, b) => a.name > b.name ? 1 : -1);
+        }
+    }
+
+    get authors(): ObjectCreator[]
+    {
+        return this._authors;
+    }
+
+    set authors(authors: ObjectCreator[])
+    {
+        this._authors = authors;
+    }
+
+    get authorsTooltip(): string
+    {
+        let authorNames = this._authors.filter((author) => this._filteredAuthors.includes(author.user_id)).map((author) => author.name);
+        return this._filteredAuthors.length > 0 ? `Authors:\n${authorNames.join("\n")}` : "No Authors Selected";
+    }
+
+    get filteredAuthors(): string[]
+    {
+        return this._filteredAuthors;
+    }
+
+    set filteredAuthors(authors: string[])
+    {
+        this._filteredAuthors = authors;
+
+        this.regenerateItemList();
+    }
+
+
+    onTagSelectionChanged(tagIDs: string[]): void
+    {
+        this.selectedTagIDs = tagIDs;
+        this.regenerateItemList();
     }
 
     private toggleLayerSectionOpenNoRegen(itemType: string, open: boolean): void
@@ -218,6 +330,12 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
 
         // Now that one of our sections has toggled, regenerate the whole list of what to show
         this.regenerateItemList();
+    }
+
+    onLayerImmediateSelection(event: LayerVisibilityChange): void
+    {
+        this.onLayerVisibilityChange(event);
+        this.onOK();
     }
 
     onLayerVisibilityChange(event: LayerVisibilityChange): void

@@ -50,17 +50,6 @@ import { RGBUPlotInteraction } from "./interaction";
 import { RGBUPlotModel } from "./model";
 import { RGBUAxisUnit, RGBUMineralPoint, RGBUPlotData, RGBURatioPoint } from "./rgbu-data";
 
-
-
-
-
-
-
-
-
-
-
-
 @Component({
     selector: "rgbu-plot",
     templateUrl: "./rgbuplot.component.html",
@@ -247,6 +236,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
 
     ngAfterViewInit(): void
     {
+        this.prepareData("init");
         this.onResize();
     }
 
@@ -433,7 +423,7 @@ export class RGBUPlotComponent implements OnInit, OnDestroy, AfterViewInit
 
         let t6 = performance.now();
 
-        //console.log("  RGBUPlot calcPoints took: "+(t1-t0).toLocaleString()+"ms+"+(t2-t1).toLocaleString()+"ms+"+(t3-t2).toLocaleString()+"ms+"+(t4-t3).toLocaleString()+"ms+"+(t5-t4).toLocaleString()+"ms+"+(t6-t5).toLocaleString()+"ms. Total="+(t6-t0).toLocaleString()+"ms");
+        console.log("  RGBUPlot calcPoints took: "+(t1-t0).toLocaleString()+"ms+"+(t2-t1).toLocaleString()+"ms+"+(t3-t2).toLocaleString()+"ms+"+(t4-t3).toLocaleString()+"ms+"+(t5-t4).toLocaleString()+"ms+"+(t6-t5).toLocaleString()+"ms. Total="+(t6-t0).toLocaleString()+"ms");
 
         return rgbuPlotData;
     }

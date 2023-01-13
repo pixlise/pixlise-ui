@@ -221,7 +221,11 @@ export class DataExpression
 
         if(commaCount != 2 || params.length != 3)
         {
-            console.error("Failed to parse parameters for expression("+code+")");
+            // We failed to get the element requested from the element() function. This is mostly going to happen
+            // if the expression defines a string variable to store the name of the element, and passes that to
+            // the element() function. The side-effect of this is that the function won't be properly checked for
+            // being "crossed-out", so the user won't know that this expression is valid against their loaded quant
+            console.warn("Failed to parse parameters for expression("+code+")");
             return [];
         }
 
@@ -333,7 +337,7 @@ export class DataExpressionService
         let t0 = performance.now();
 
         // Only update changed expressions
-        Object.entries(receivedDataExpressions).forEach(([id, expression]: [string, DataExpression])=>
+        Object.entries(receivedDataExpressions).forEach(([id, expression]: [string, DataExpressionWire])=>
         {
             if(deleteReceived)
             {
@@ -349,8 +353,8 @@ export class DataExpressionService
                     expression.comments || "",
                     expression.shared,
                     expression.creator,
-                    expression.createUnixTimeSec,
-                    expression.modUnixTimeSec,
+                    expression.create_unix_time_sec,
+                    expression.mod_unix_time_sec,
                     expression.tags || []
                 );
 
@@ -598,7 +602,11 @@ export class DataExpressionService
         {
             if(this._validDetectors.indexOf(exprDetector) < 0)
             {
-                console.error("Predefined expression: \""+id+"\" referenced invalid detector: \""+exprDetector+"\", valid choices: "+this._validDetectors);
+                // If this happens, check that it causes issues - it may not! For example, there are cases when just the name
+                // of an expression is being queried and it doesn't matter that the detector specified in the id does not
+                // match an valid detector - when the time comes to query it properly the detector may be specified correctly
+                // in a later call!
+                console.warn("Predefined expression: \""+id+"\" referenced invalid detector: \""+exprDetector+"\", valid choices: "+this._validDetectors);
             }
             detectorId = exprDetector;
         }
@@ -707,11 +715,11 @@ export class DataExpressionService
         return result;
     }
 
-    add(name: string, expression: string, type: string, comments: string): Observable<object>
+    add(name: string, expression: string, type: string, comments: string, tags: string[] = []): Observable<object>
     {
         let loadID = this._loadingSvc.add("Saving new expression...");
         let apiURL = APIPaths.getWithHost(APIPaths.api_data_expression);
-        let toSave = new DataExpressionInput(name, expression, type, comments);
+        let toSave = new DataExpressionInput(name, expression, type, comments, tags);
         return this.http.post<object>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(
@@ -735,12 +743,12 @@ export class DataExpressionService
             );
     }
 
-    edit(id: string, name: string, expression: string, type: string, comments: string): Observable<object>
+    edit(id: string, name: string, expression: string, type: string, comments: string, tags: string[] = []): Observable<object>
     {
         let loadID = this._loadingSvc.add("Saving changed expression...");
         let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
 
-        let toSave = new DataExpressionInput(name, expression, type, comments);
+        let toSave = new DataExpressionInput(name, expression, type, comments, tags);
         return this.http.put<object>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(

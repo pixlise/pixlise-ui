@@ -311,3 +311,9 @@ nav > a + a {
     right: -6px;
     top: -6px;
 }
+
+::ng-deep .mat-tooltip  {
+  white-space: pre-line !important;
+  background-color: #2B3136;
+  box-shadow: 0 0 2px black;
+}

@@ -46,7 +46,6 @@ import { ContextImageService } from "src/app/services/context-image.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
 import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
-import { ItemTag } from "src/app/models/tags";
 
 
 export class LayerInfo
@@ -124,15 +123,12 @@ export class LayerSettingsComponent implements OnInit
     @Input() activeIcon: string;
     @Input() inactiveIcon: string;
 
-    // @Input() tags: ItemTag[] = [];
-
     @Output() visibilityChange = new EventEmitter();
+    @Output() onLayerImmediateSelection = new EventEmitter();
     @Output() colourChange = new EventEmitter();
 
     private _isPureElement: boolean = false;
     private _expressionElement: string = "";
-
-    // selectedTagIDs: string[] = [];
 
     constructor(
         private _exprService: DataExpressionService,
@@ -176,6 +172,20 @@ export class LayerSettingsComponent implements OnInit
         }
 
         return true;
+    }
+
+    get collapsedNotificationCount(): number
+    {
+        let notificationCount = 0;
+        this.hiddenLayerButtons.forEach(button =>
+        {
+            if(button === "showTagPicker")
+            {
+                notificationCount += this.selectedTagIDs.length;
+            }
+        });
+
+        return notificationCount;
     }
 
     get labelToShow(): string
@@ -438,10 +448,27 @@ export class LayerSettingsComponent implements OnInit
                 }
                 else
                 {
-                    let expr = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec);
-                    this._exprService.edit(this.layerInfo.layer.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments).subscribe(
+                    let expr = new DataExpression(
+                        toEdit.id,
+                        dlgResult.expr.name,
+                        dlgResult.expr.expression,
+                        toEdit.type,
+                        dlgResult.expr.comments,
+                        toEdit.shared,
+                        toEdit.creator,
+                        toEdit.createUnixTimeSec,
+                        toEdit.modUnixTimeSec,
+                        toEdit.tags
+                    );
+                    this._exprService.edit(this.layerInfo.layer.id, expr.name, expr.expression, expr.type, expr.comments, expr.tags).subscribe(
                         ()=>
                         {
+                            if(dlgResult.applyNow)
+                            {
+                                let visibilityChange = new LayerVisibilityChange(this.layerInfo.layer.id, true, this.layerInfo.layer.opacity, []);
+                                this.visibilityChange.emit(visibilityChange);
+                                this.onLayerImmediateSelection.emit(visibilityChange);
+                            }
                             // Don't need to do anything, service refreshes
                         },
                         (err)=>
@@ -591,10 +618,33 @@ export class LayerSettingsComponent implements OnInit
             throw new Error(`Failed to query CSV data for expression: ${this.layerInfo.layer.id}. ${queryData.error}`);
         }
 
-        let csv: string = "PMC,Value\n";
+        let csv: string = "PMC,Value";
+        let dataset = this._datasetService.datasetLoaded;
+        let combined = dataset.isCombinedDataset();
+        let locations = dataset.experiment.getLocationsList();
+        if(combined)
+        {
+            csv += ",SourceRTT,SourcePMC";
+        }
+        csv += "\n";
         queryData.queryResults[0].values.values.forEach(({pmc, value, isUndefined})=>
         {
-            csv += `${pmc},${isUndefined ? "" : value}\n`;
+            csv += `${pmc},${isUndefined ? "" : value}`;
+            if(combined)
+            {
+                let locIdx = dataset.pmcToLocationIndex.get(pmc);
+                if(locIdx != undefined)
+                {
+                    let sourceIdx = locations[locIdx].getScanSource();
+                    let source = dataset.experiment.getScanSourcesList()[sourceIdx];
+
+                    let sourceRTT = source.getRtt();
+                    let sourcePMC = pmc-source.getIdOffset();
+
+                    csv += `,${sourceRTT},${sourcePMC}`;
+                }
+            }
+            csv += "\n";
         });
 
         return csv;

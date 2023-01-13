@@ -113,8 +113,12 @@ POSSIBILITY OF SUCH DAMAGE.
                 [maxValue]="1"
                 (onChange)="onChangeOpacity($event)">
             </slider>
-            <widget-settings-menu *ngIf="showMoreButtonVisible" [settingsDialog]="moreButtonsMenu">
-                <icon-button title="View more options" icon="assets/button-icons/three-dots.svg"></icon-button>
+            <widget-settings-menu *ngIf="showMoreButtonVisible" [settingsDialog]="moreButtonsMenu" [noPadding]="true">
+                <icon-button
+                    [notificationCount]="collapsedNotificationCount"
+                    title="View more options"
+                    icon="assets/button-icons/three-dots.svg"
+                ></icon-button>
             </widget-settings-menu>
             <ng-container *ngFor="let layerButton of visibleLayerButtons">
                 <multi-state-button
@@ -143,6 +147,15 @@ POSSIBILITY OF SUCH DAMAGE.
                     icon="assets/button-icons/delete.svg"
                     (click)="onDelete()">
                 </icon-button>
+                <tag-picker
+                    *ngIf="layerButton === 'showTagPicker'"
+                    type="expression"
+                    [selectedTagIDs]="selectedTagIDs"
+                    [showCurrentTagsSection]="true"
+                    [editable]="!isSharedByOtherUser"
+                    (onTagSelectionChanged)="onTagSelectionChanged($event)"
+                >
+                </tag-picker>
                 <icon-button
                     *ngIf="layerButton === 'showDownload'"
                     title="Download this expression"
@@ -176,5 +189,4 @@ POSSIBILITY OF SUCH DAMAGE.
         <div *ngIf="createdTime > 0" class="obj-create-time">Created: {{createdTime|date:'medium'}}</div>
         <div *ngIf="expressionComments.length > 0" class="comment" title="{{expressionComments}}">{{expressionComments}}</div>
     </div>
-    <!-- <div *ngIf="expressionErrorMessage.length > 0" class="expr-error" title="{{expressionErrorMessage}}">{{expressionErrorMessage}}</div> -->
 </div>
