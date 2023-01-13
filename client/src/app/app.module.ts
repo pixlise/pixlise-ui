@@ -70,7 +70,6 @@ import { InteractiveCanvasComponent } from "./UI/atoms/interactive-canvas/intera
 import { ChordViewWidgetComponent } from "./UI/chord-view-widget/chord-view-widget.component";
 import { BinaryPlotWidgetComponent } from "./UI/binary-plot-widget/binary-plot-widget.component";
 import { TernaryPlotWidgetComponent } from "./UI/ternary-plot-widget/ternary-plot-widget.component";
-import { ScatterPlotViewComponent } from "./UI/scatter-plot-view/scatter-plot-view.component";
 
 import { MaterialModule } from "./modules/material.module";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
@@ -322,7 +321,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         InteractiveCanvasComponent,
         ContextImageViewWidgetComponent,
         ChordViewWidgetComponent,
-        ScatterPlotViewComponent,
         PanelComponent,
         ElementTileComponent,
         PeriodicTableComponent,
