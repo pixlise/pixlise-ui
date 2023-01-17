@@ -128,6 +128,7 @@ export class ExpressionEditorComponent implements OnInit, OnDestroy
             cmObj.setOption("mode", "pixlise");
             cmObj.setOption("lineNumbers", true);
             cmObj.setOption("theme", "pixlise");
+            cmObj.setOption("readOnly", !this.data.allowEdit);
 
             // Not sure what codemirror is doing, and why it does it but some ms after creation it has been resetting... we now reset it 2x, once for
             // reducing flicker for user, 2nd time to ensure anything that changed is overwritten with our settings again

@@ -45,7 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
             *ngFor="let source of userSources"
             [source]="source">
         </spectrum-region-settings>
-        <div *ngIf="sharedSources.length > 0" class="list-subheading">Shared Regions
+        <div *ngIf="sharedSources.length > 0" class="list-subheading clearable-heading">Shared Regions
             <push-button buttonStyle="outline" (onClick)="onClear(sharedSources)">Clear</push-button>
         </div>
         <spectrum-region-settings
