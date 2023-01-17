@@ -27,25 +27,19 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, OnInit } from "@angular/core";
+import { Component, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
-import { ObjectCreator } from "src/app/models/BasicTypes";
-import { MistROIItem, ROIItem } from "src/app/models/roi";
+import { ROIItem } from "src/app/models/roi";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataSetService } from "src/app/services/data-set.service";
-import { ROIReference, ROIService } from "src/app/services/roi.service";
+import { ROIService } from "src/app/services/roi.service";
 import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
-import { RegionData } from "src/app/services/widget-region-data.service";
-import { UserPromptDialogParams, UserPromptDialogStringItem } from "src/app/UI/atoms/user-prompt-dialog/user-prompt-dialog.component";
 import { RegionChangeInfo, RegionLayerInfo, RegionManager } from "src/app/UI/context-image-view-widget/region-manager";
-import { Colours, RGBA } from "src/app/utils/colours";
+import { Colours } from "src/app/utils/colours";
 import { httpErrorToString } from "src/app/utils/utils";
 import { MistRoiConvertComponent, MistROIConvertData } from "./mist-roi-convert/mist-roi-convert.component";
 import { MistRoiUploadComponent, MistROIUploadData } from "./mist-roi-upload/mist-roi-upload.component";
-
-
-
 
 
 @Component({
@@ -126,9 +120,7 @@ export class MistROIComponent implements OnInit
                 // Delete any that we didn't see in the new update
                 this.mistROIs = this.mistROIs.filter((region) => roiIDs.has(region.roi.id));
             },
-            (err)=>
-            {
-            }
+            () => null
         ));
     }
 
