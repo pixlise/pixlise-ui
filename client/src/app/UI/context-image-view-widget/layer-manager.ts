@@ -30,6 +30,7 @@
 import { ReplaySubject } from "rxjs";
 import { DiffractionPeakQuerierSource } from "src/app/expression-language/data-sources";
 import { PMCDataValues } from "src/app/expression-language/data-values";
+import { PredefinedROIID } from "src/app/models/roi";
 import { getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
 import { MinMax } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
@@ -39,7 +40,7 @@ import { RGBUImage } from "src/app/models/RGBUImage"; // for channel names, prob
 import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
 import { RGBMixConfigService, RGBMix } from "src/app/services/rgbmix-config.service";
 import { mapLayerVisibility } from "src/app/services/view-state.service";
-import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { WidgetRegionDataService, DataSourceParams } from "src/app/services/widget-region-data.service";
 import { ColourRamp } from "src/app/utils/colours";
 import { SentryHelper } from "src/app/utils/utils";
 import { LayerStore, ExpressionListBuilder, ExpressionListItems } from "src/app/models/ExpressionList";
@@ -87,7 +88,6 @@ export class LayerManager
         private _exprService: DataExpressionService,
         private _rgbMixService: RGBMixConfigService,
         private _widgetDataService: WidgetRegionDataService,
-        private _diffractionSource: DiffractionPeakQuerierSource,
     )
     {
         this._listBuilder = new ExpressionListBuilder(true, [], true, true, true, true, this._exprService);
@@ -590,7 +590,6 @@ export class LayerManager
     // Returns an error string if something goes wrong - otherwise null
     private generatePointsIfNeeded(layer: LocationDataLayer): string
     {
-        //let t0 = performance.now();
         if(!layer.isVisible())
         {
             // Not visible, we're lazy, why bother?
@@ -601,6 +600,8 @@ export class LayerManager
         {
             return this.generateRGBMixLayer(layer);
         }
+
+        //let t0 = performance.now();
 
         // At this point assume it's a DataExpression - we used to look this up but expression is now in
         // layer.source, just need to cast it
@@ -614,9 +615,20 @@ export class LayerManager
 
         try
         {
-            let quantLayer: QuantificationLayer = this._widgetDataService.quantificationLoaded;
+            let queryResults = this._widgetDataService.getData([new DataSourceParams(expr.id, null)], false);
 
-            let data = getQuantifiedDataWithExpression(expr.expression, quantLayer, this._dataset, this._dataset, this._dataset, this._diffractionSource, this._dataset);
+            if(queryResults.error)
+            {
+                throw new Error(queryResults.error);
+            }
+
+            if(queryResults.queryResults[0].error)
+            {
+                throw new Error(queryResults.queryResults[0].error);
+            }
+
+            let data = queryResults.queryResults[0].values;
+
             layer.generatePoints(0, data, this._dataset);
 
             // Expand our min/max values as needed
@@ -628,19 +640,18 @@ export class LayerManager
             //layer.errorMessage = error;
             return error;
         }
+
         //let t1 = performance.now();
-        //console.log('generatePointsIfNeeded for '+layer.name+' took: ' + (t1-t0).toLocaleString() + 'ms');
+        //console.log(" generatePointsIfNeeded for "+layer.name+" took: " + (t1-t0).toLocaleString() + "ms");
 
         return null;
     }
 
     private generateRGBMixLayer(layer: LocationDataLayer): string
     {
-        // Run through and get data for each element
-        let quantLayer: QuantificationLayer = this._widgetDataService.quantificationLoaded;
+        //let t0 = performance.now();
 
-        // Run the expression to get a map back
-
+        // Run the expression to get a map back for each colour channel
         try
         {
             let rgbMixes = this._rgbMixService.getRGBMixes();
@@ -651,35 +662,43 @@ export class LayerManager
                 return "RGB mix info not found for: "+layer.id;
             }
 
-            let exprIds = [rgbMix.red.expressionID, rgbMix.green.expressionID, rgbMix.blue.expressionID];
+            // Query all 3 expressions together
+            let query = [
+                new DataSourceParams(rgbMix.red.expressionID, null),
+                new DataSourceParams(rgbMix.green.expressionID, null),
+                new DataSourceParams(rgbMix.blue.expressionID, null)
+            ];
+
+            let queryResults = this._widgetDataService.getData(query, false);
 
             let perElemData: PMCDataValues[] = [];
             let ch = 0;
-            for(let exprId of exprIds)
-            {
-                let expr = this._exprService.getExpression(exprId);
 
-                if(!expr)
+            for(let channelResult of queryResults.queryResults)
+            {
+                if(channelResult.error)
                 {
-                    throw new Error("Failed to find expression: "+exprId+" for channel: "+RGBUImage.channels[ch]);
+                    throw new Error("Failed to find expression: "+query[ch].exprId+" for channel: "+RGBUImage.channels[ch]);
                 }
 
-                let data = getQuantifiedDataWithExpression(expr.expression, quantLayer, this._dataset, this._dataset, this._dataset, this._diffractionSource, this._dataset);
-                perElemData.push(data);
-                //layer.generatePoints(ch, data, this._dataset);
+                perElemData.push(channelResult.values);
+
                 ch++;
             }
 
             // Now we run through ch0 (R) and recolour the points to mix in the G and B values, making ch0 our render-able channel
-            return layer.generateRGBMix(perElemData, this._dataset);
+            let result = layer.generateRGBMix(perElemData, this._dataset);
+
+            //let t1 = performance.now();
+            //console.log(" generatePointsIfNeeded for "+layer.name+" took: " + (t1-t0).toLocaleString() + "ms");
+
+            return result;
         }
         catch (error)
         {
             SentryHelper.logException(error, "generateRGBMixLayer");
             return error;
         }
-
-        return null;
     }
 
     private updateDisplayValueRangeOverride(): void

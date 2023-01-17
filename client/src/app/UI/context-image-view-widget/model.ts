@@ -116,7 +116,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     )
     {
         this._toolHost = new ContextImageToolHost(toolSettings, this);
-        this._layerManager = new LayerManager(_exprService, _rgbMixService, widgetDataService, _diffractionService);
+        this._layerManager = new LayerManager(_exprService, _rgbMixService, widgetDataService);
         this._regionManager = new RegionManager(widgetDataService);
     }
 
