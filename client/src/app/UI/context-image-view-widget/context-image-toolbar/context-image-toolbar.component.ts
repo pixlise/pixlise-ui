@@ -36,7 +36,7 @@ import { ViewStateService } from "src/app/services/view-state.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
 import { CanvasExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { KeyItem } from "../../atoms/widget-key-display/widget-key-display.component";
-import { ClientSideExportGenerator } from "../../export-data-dialog/client-side-export";
+import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
 import { ExportDrawer } from "../drawers/export-drawer";
 import { MapColourScale } from "../ui-elements/map-colour-scale";
 

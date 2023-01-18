@@ -29,11 +29,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div
-    fxLayout="column"
-    class="dlg-border-with-backdrop"
-    style="min-height: {{minHeight}}px;"
-    #outerDialog>
+<div fxLayout="column" class="dlg-border-with-backdrop" style="min-height: {{minHeight}}px;" #outerDialog>
     <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
         <h1>{{title}}</h1>
 
@@ -45,13 +41,15 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <ng-container [ngSwitch]="state">
         <ng-container *ngSwitchCase="'loading'">
-            <div fxLayout="column" fxFlex="100%" fxLayoutAlign="center center" class="gap-separated-vertical-elements gap-above">
+            <div fxLayout="column" fxFlex="100%" fxLayoutAlign="center center"
+                class="gap-separated-vertical-elements gap-above">
                 <div class="prompt">{{prompt}}</div>
                 <mat-spinner *ngIf="state == 'loading'" [diameter]="24" color="accent"></mat-spinner>
             </div>
         </ng-container>
         <ng-container *ngSwitchCase="'error'">
-            <div fxLayout="column" fxFlex="100%" fxLayoutAlign="center center" class="gap-separated-vertical-elements gap-above">
+            <div fxLayout="column" fxFlex="100%" fxLayoutAlign="center center"
+                class="gap-separated-vertical-elements gap-above">
                 <img class="error-triangle" src="assets/icons/error-triangle.svg">
                 <div class="prompt">{{prompt}}</div>
             </div>

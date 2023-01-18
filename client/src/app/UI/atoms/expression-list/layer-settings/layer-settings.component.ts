@@ -41,11 +41,12 @@ import { ColourRamp } from "src/app/utils/colours";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../plot-exporter-dialog/plot-exporter-dialog.component";
 import { DataSetService } from "src/app/services/data-set.service";
-import { ClientSideExportGenerator } from "src/app/UI/export-data-dialog/client-side-export";
+import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
 import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
+import { generateExportCSVForExpression } from "src/app/services/export-data.service";
 
 
 export class LayerInfo
@@ -609,47 +610,6 @@ export class LayerSettingsComponent implements OnInit
         this.setVisibleSubLayer(showLayerID);
     }
 
-    exportExpressionValues(): string
-    {
-        let queryData: RegionDataResults = this._widgetDataService.getData([new DataSourceParams(this.layerInfo.layer.id, PredefinedROIID.AllPoints)], false);
-
-        if(queryData.error)
-        {
-            throw new Error(`Failed to query CSV data for expression: ${this.layerInfo.layer.id}. ${queryData.error}`);
-        }
-
-        let csv: string = "PMC,Value";
-        let dataset = this._datasetService.datasetLoaded;
-        let combined = dataset.isCombinedDataset();
-        let locations = dataset.experiment.getLocationsList();
-        if(combined)
-        {
-            csv += ",SourceRTT,SourcePMC";
-        }
-        csv += "\n";
-        queryData.queryResults[0].values.values.forEach(({pmc, value, isUndefined})=>
-        {
-            csv += `${pmc},${isUndefined ? "" : value}`;
-            if(combined)
-            {
-                let locIdx = dataset.pmcToLocationIndex.get(pmc);
-                if(locIdx != undefined)
-                {
-                    let sourceIdx = locations[locIdx].getScanSource();
-                    let source = dataset.experiment.getScanSourcesList()[sourceIdx];
-
-                    let sourceRTT = source.getRtt();
-                    let sourcePMC = pmc-source.getIdOffset();
-
-                    csv += `,${sourceRTT},${sourcePMC}`;
-                }
-            }
-            csv += "\n";
-        });
-
-        return csv;
-    }
-
     getCanvasOptions(options: PlotExporterDialogOption[]): string[]
     {
         let isColourScaleVisible = options.findIndex((option) => option.label == "Visible Colour Scale") > -1;
@@ -737,10 +697,22 @@ export class LayerSettingsComponent implements OnInit
 
                 if(options.findIndex((option) => option.label == "Expression Values .csv") > -1)
                 {
-                    csvs.push(new CSVExportItem(
-                        "Expression Values",
-                        this.exportExpressionValues()
-                    ));  
+                    // Export CSV
+                    // Loop through all sub-datasets of this one if there are any
+                    let subDatasetIDs = this._datasetService.datasetLoaded.getSubDatasetIds();
+                    if(subDatasetIDs.length <= 0)
+                    {
+                        // Specify a blank one
+                        subDatasetIDs = [""];
+                    }
+
+                    for(let datasetId of subDatasetIDs)
+                    {
+                        csvs.push(new CSVExportItem(
+                            "Expression Values for dataset "+datasetId,
+                            generateExportCSVForExpression([this.layerInfo.layer.id], PredefinedROIID.AllPoints, datasetId, this._widgetDataService)
+                        ));
+                    }  
                 }
 
                 dialogRef.componentInstance.onDownload(canvases, csvs);

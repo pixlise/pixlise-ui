@@ -34,7 +34,7 @@ import { getVectorBetweenPoints, Point, Rect } from "src/app/models/Geometry";
 import { Histogram, LocationDataPointState } from "src/app/models/LocationData2D";
 import { CanvasDrawParameters, CanvasInteractionResult, CanvasMouseEvent, CanvasMouseEventId, CanvasParams, CanvasWorldTransform } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { IContextImageModel } from "src/app/UI/context-image-view-widget/model-interface";
-import { ClientSideExportGenerator } from "src/app/UI/export-data-dialog/client-side-export";
+import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { CANVAS_FONT_WIDTH_PERCENT, drawTextWithBackground } from "src/app/utils/drawing";
 import { getValueDecimals } from "src/app/utils/utils";
