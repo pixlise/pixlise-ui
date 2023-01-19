@@ -28,11 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { ReplaySubject } from "rxjs";
-import { DiffractionPeakQuerierSource } from "src/app/expression-language/data-sources";
 import { PMCDataValues } from "src/app/expression-language/data-values";
-import { PredefinedROIID } from "src/app/models/roi";
-import { getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
-import { MinMax } from "src/app/models/BasicTypes";
+import { MinMax, ObjectCreator } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
 import { LocationDataLayer, LocationDataLayerProperties } from "src/app/models/LocationData2D";
 import { QuantificationLayer } from "src/app/models/Quantifications";
@@ -191,6 +188,11 @@ export class LayerManager
         );
 
         return items;
+    }
+
+    getAuthors(headerSections: string[] = ["expressions-header", "rgbmix-header"]): ObjectCreator[]
+    {
+        return this._listBuilder.getAuthors(headerSections);
     }
 
     recalcHeaderInfos(exprList: ExpressionListItems): void

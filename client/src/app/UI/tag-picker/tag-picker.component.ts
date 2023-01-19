@@ -60,6 +60,7 @@ export class TagPickerComponent implements OnInit
     
     @Input() showCurrentTagsSection: boolean = false;
 
+    @Input() placeholderText: string = "Search Tags ...";
     @Input() type: string = "layer";
     @Input() editable: boolean = true;
     @Input() selectedTagIDs: string[] = [];

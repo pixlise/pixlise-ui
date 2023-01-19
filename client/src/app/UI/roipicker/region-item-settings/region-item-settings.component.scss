@@ -33,3 +33,10 @@
 .mat-select {
     width: 200px !important;
 }
+
+.text-container {
+    text-overflow: ellipsis;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+}

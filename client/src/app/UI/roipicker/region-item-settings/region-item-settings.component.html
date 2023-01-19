@@ -31,7 +31,14 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="row" fxLayoutAlign="space-between center" class="setting-row gap-separated-horizontal-elements" [ngClass]="{'setting-row-visible': visible}">
     <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
-        <div class="setting-label">{{label}}</div>
+        <div 
+            class="setting-label text-container"
+            #tooltip="matTooltip"
+            [matTooltip]="label"
+            [matTooltipDisabled]="label.length < 30"
+        >
+            {{label}}
+        </div>
         <div *ngIf="sharedBy" class="obj-creator">{{sharedBy}}</div>
 
         <div fxLayout="row">
@@ -61,6 +68,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <tag-picker
             *ngIf="showTags"
             type="roi"
+            placeholderText="Search ROI Tags ..."
             [selectedTagIDs]="selectedTagIDs"
             [showCurrentTagsSection]="true"
             [editable]="!isSharedByOtherUser"
