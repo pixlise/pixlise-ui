@@ -289,6 +289,11 @@ export class ROIItemComponent implements OnInit
         return this._isSharedByOtherUser;
     }
 
+    get selectedTagIDs(): string[]
+    {
+        return this.roiSavedItem.tags;
+    }
+
     get colour(): string
     {
         return this._colourRGB;
@@ -766,6 +771,21 @@ export class ROIItemComponent implements OnInit
         {
             this.onROISelect.emit();
         }
+    }
+
+    onTagSelectionChanged(tags: string[]): void
+    {
+        this._roiService.tag(this.roiSavedItem.id, tags).subscribe(
+            ()=>
+            {
+                this._roiService.refreshROIList();
+            },
+            (err)=>
+            {
+                alert(`Error while tagging ROI: ${this.roiSavedItem.id}`);
+                this._roiService.refreshROIList();
+            }
+        );
     }
 
     get levelIterator(): boolean[]

@@ -72,12 +72,19 @@ POSSIBILITY OF SUCH DAMAGE.
             >
             </two-state-icon-button>
             <div fxLayout="column" class="gap-separated-vertical-elements" class="label-container">
-                <div class="side-panel-label" title="{{labelToShow}}">{{labelToShow}}</div>
+                <div
+                #tooltip="matTooltip"
+                [matTooltip]="labelToShow"
+                [matTooltipDisabled]="!labelToShow || labelToShow.length < 20"
+                class="roi-label"
+                >
+                {{labelToShow}}
+                </div>
                 <div *ngIf="level !== null || dateAdded > 0" class="metadata-line" title="Level">
                     <div *ngIf="level !== null" class="level-dots" title="Level">
                         <div class="level-dot {{hasLevel ? 'filled' : ''}}" *ngFor="let hasLevel of levelIterator"></div>
                     </div>
-                    <div class="date-added" title="Date Added">{{dateAdded|date:'medium'}}</div>
+                    <div class="date-added" title="Date Added">{{dateAdded|date:'short'}}</div>
                 </div>
                 <div *ngIf="sharedBy" class="obj-creator" title="Shared by this user">{{sharedBy}}</div>
             </div>
@@ -93,6 +100,15 @@ POSSIBILITY OF SUCH DAMAGE.
                         icon="assets/button-icons/settings-gray.svg">
                     </icon-button>
                 </widget-settings-menu>
+                <tag-picker
+                    type="roi"
+                    placeholderText="Search ROI Tags ..."
+                    [selectedTagIDs]="selectedTagIDs"
+                    [showCurrentTagsSection]="true"
+                    [editable]="!isSharedByOtherUser"
+                    (onTagSelectionChanged)="onTagSelectionChanged($event)"
+                >
+                </tag-picker>
                 <icon-button
                     *ngIf="colorChangeOnly"
                     title="Configure Colours"
@@ -124,13 +140,25 @@ POSSIBILITY OF SUCH DAMAGE.
                 </div>
             </div>
             <div *ngIf="description" class="description-container">
-                <input class="description-inner" [title]="description" value="{{description}}" readonly />
+                <input 
+                    #tooltip="matTooltip"
+                    [matTooltip]="description"
+                    [matTooltipDisabled]="!description || description.length < 50"
+                    class="description-inner"
+                    value="{{description}}" 
+                    readonly
+                />
                 <!-- <div class="description-inner" [title]="description">{{description}}</div> -->
             </div>
         </div>
 
         <ng-container *ngIf="showMoreDetails">
-            <div *ngIf="imageName" title="ROI pixels were selected from image: {{imageName}}" class="limited-length-text outer-padding">Image: {{imageName}}</div>
+            <div 
+                #tooltip="matTooltip"
+                matTooltip="ROI pixels were selected from image: {{imageName}}"
+                *ngIf="imageName" 
+                class="limited-length-text outer-padding"
+            >Image: {{imageName}}</div>
             <push-button class="outer-padding" (onClick)="onSaveSelectionToROI()" title="Saves the selected PMCs into this ROI, overwriting previous PMC list" buttonStyle="outline">Save Selection to ROI</push-button>
             <push-button class="outer-padding no-top-padding" [disabled]="!hasRGBUContextImageItemShowing" (onClick)="onAddRGBUPixelsToROI()" title="Adds pixels within bounding polygons of PMC points to ROI" buttonStyle="outline">Add RGBU Pixels to ROI</push-button>
             <div *ngIf="totalPMCs > 0" fxLayout="row" fxLayoutAlign="space-between center" class="outer-padding gap-separated-horizontal-elements">

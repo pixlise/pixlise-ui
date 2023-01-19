@@ -49,3 +49,32 @@ input {
     max-width: 283px;
     overflow-y: auto;
 }
+
+filter-box {
+    width: 100px;
+    flex: 1;
+}
+
+mat-select.mat-select.authors-filter {
+    min-width: 50px !important;
+    width: 80px;
+}
+
+.authors-filter {
+    height: 19px;
+
+    padding-top: 5px;
+    padding-bottom: 0;
+
+    background: #454c50 !important;
+    border-radius: $sz-half !important;
+    border: 2px solid rgb(var(--clr-gray-60));
+}
+
+tag-picker {
+    margin-left: 6px;
+}
+
+.filters-row {
+    padding: 8px;
+}
