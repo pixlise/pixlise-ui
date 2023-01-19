@@ -30,10 +30,10 @@
 import { Component, ElementRef, Inject, OnInit, ViewContainerRef } from "@angular/core";
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
-import { PredefinedROIID, ROISavedItem } from "src/app/models/roi";
+import { PredefinedROIID, ROIItem, ROISavedItem } from "src/app/models/roi";
 import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationService } from "src/app/services/quantification.service";
-import { ROIService } from "src/app/services/roi.service";
+import { ROIReference, ROIService } from "src/app/services/roi.service";
 import { ViewStateService } from "src/app/services/view-state.service";
 import { ROISettingsItem } from "src/app/UI/roipicker/region-item-settings/region-item-settings.component";
 import { Colours } from "src/app/utils/colours";
@@ -162,7 +162,9 @@ export class ROIPickerComponent implements OnInit
                             colourRGB,
                             visible,
                             "",
-                            shape
+                            shape,
+                            roi.creator.user_id,
+                            roi.tags || [],
                         );
 
                         if(roi.mistROIItem && roi.mistROIItem !== null)
@@ -196,9 +198,7 @@ export class ROIPickerComponent implements OnInit
                 this.sharedROIs = enabledSharedROIs.concat(disabledSharedROIs);
                 this.mistROIs = enabledMISTROIs.concat(disabledMISTROIs);
             },
-            (err)=>
-            {
-            }
+            ()=>null
         ));
     }
 
@@ -319,5 +319,20 @@ export class ROIPickerComponent implements OnInit
         {
             roi.active = false;
         });
+    }
+
+    onTagSelectionChanged({roiID, tags})
+    {
+        this._roiService.tag(roiID, tags).subscribe(
+            ()=>
+            {
+                this._roiService.refreshROIList();
+            },
+            (err)=>
+            {
+                alert(`Error while tagging ROI: ${roiID}`);
+                this._roiService.refreshROIList();
+            }
+        );
     }
 }

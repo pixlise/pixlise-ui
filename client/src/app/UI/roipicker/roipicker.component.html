@@ -41,14 +41,20 @@ POSSIBILITY OF SUCH DAMAGE.
             [showColourButton]="isShowingColourButton(fullDatasetROI.roiID)"
             [activeIcon]="activeIcon"
             [inactiveIcon]="inactiveIcon"
-            (toggleVisible)="onVisibility($event)"></region-item-settings>
+            (toggleVisible)="onVisibility($event)"
+            [showTags]="false"
+        >
+        </region-item-settings>
         <region-item-settings
             *ngIf="data.showRemainingPointsIfExists && remainingPointsROI"
             [item]="remainingPointsROI"
             [showColourButton]="isShowingColourButton(remainingPointsROI.roiID)"
             [activeIcon]="activeIcon"
             [inactiveIcon]="inactiveIcon"
-            (toggleVisible)="onVisibility($event)"></region-item-settings>
+            (toggleVisible)="onVisibility($event)"
+            [showTags]="false"
+        >
+        </region-item-settings>
 
         <div *ngIf="mistROIs.length > 0" class="list-subheading">MIST Algorithm Mineral Species IDs</div>
         <region-item-settings
@@ -57,7 +63,10 @@ POSSIBILITY OF SUCH DAMAGE.
             [showColourButton]="isShowingColourButton(item.roiID)"
             [activeIcon]="activeIcon"
             [inactiveIcon]="inactiveIcon"
-            (toggleVisible)="onVisibility($event)"></region-item-settings>
+            (toggleVisible)="onVisibility($event)"
+            (onTagSelectionChanged)="onTagSelectionChanged($event)"
+        >
+        </region-item-settings>
         <div *ngIf="userROIs.length > 0" class="list-subheading">User Defined Regions</div>
         <region-item-settings
             *ngFor="let item of userROIs"
@@ -65,7 +74,10 @@ POSSIBILITY OF SUCH DAMAGE.
             [showColourButton]="isShowingColourButton(item.roiID)"
             [activeIcon]="activeIcon"
             [inactiveIcon]="inactiveIcon"
-            (toggleVisible)="onVisibility($event)"></region-item-settings>
+            (toggleVisible)="onVisibility($event)"
+            (onTagSelectionChanged)="onTagSelectionChanged($event)"
+        >
+        </region-item-settings>
         <div *ngIf="sharedROIs.length > 0" class="list-subheading">Shared Regions</div>
         <region-item-settings
             *ngFor="let item of sharedROIs"
@@ -73,7 +85,10 @@ POSSIBILITY OF SUCH DAMAGE.
             [showColourButton]="isShowingColourButton(item.roiID)"
             [activeIcon]="activeIcon"
             [inactiveIcon]="inactiveIcon"
-            (toggleVisible)="onVisibility($event)"></region-item-settings>
+            (toggleVisible)="onVisibility($event)"
+            (onTagSelectionChanged)="onTagSelectionChanged($event)"
+        >
+        </region-item-settings>
     </div>
 
     <div fxLayout="row" fxLayoutAlign="end center" class="card-toolbar gap-separated-horizontal-elements">

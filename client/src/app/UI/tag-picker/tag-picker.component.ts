@@ -64,6 +64,8 @@ export class TagPickerComponent implements OnInit
     @Input() editable: boolean = true;
     @Input() selectedTagIDs: string[] = [];
     @Input() tags: ItemTag[] = [];
+    @Input() filterToTagType: boolean = true;
+    @Input() additionalVisibleTagType: string[] = ["layer"];
 
     @Output() onTagSelectionChanged = new EventEmitter<string[]>();
     
@@ -89,7 +91,13 @@ export class TagPickerComponent implements OnInit
 
         this._taggingService.tags$.subscribe((tags) =>
         {
-            this.tags = Array.from(tags.values());
+            // Only show tags that are of the same type as the current item if filterToTagType or are of the additional visible type
+            this.tags = Array.from(tags.values()).filter((tag) => 
+                !this.filterToTagType
+                || tag.type === this.type
+                || this.additionalVisibleTagType.includes(tag.type)
+            );
+
             this.groupTags();
         });
 
@@ -183,7 +191,15 @@ export class TagPickerComponent implements OnInit
             return;
         }
 
-        this.selectedTagIDs = this.selectedTagIDs.filter(id => id !== tagID);
+        let filteredTagIDs = this.validSelectedTagIDs.filter(id => id !== tagID);
+
+        // If the tag is selected, unselect it before deleting
+        if(this.selectedTagIDs.includes(tagID))
+        {
+            this.onTagSelectionChanged.emit(filteredTagIDs);
+        }
+
+        this.selectedTagIDs = filteredTagIDs;
         this._taggingService.delete(tagID).subscribe(() =>
         {
             this._taggingService.refreshTagList();
@@ -194,6 +210,11 @@ export class TagPickerComponent implements OnInit
     get selectedTags(): ItemTag[]
     {
         return this.tags.filter(tag => this.selectedTagIDs.includes(tag.id));
+    }
+
+    get validSelectedTagIDs(): string[]
+    {
+        return this.selectedTags.map(tag => tag.id);
     }
 
     groupTags(): void
@@ -251,7 +272,8 @@ export class TagPickerComponent implements OnInit
 
         if(!this.showCurrentTagsSection)
         {
-            this.onTagSelectionChanged.emit(this.selectedTagIDs);
+            // Prune non-existing tags on edit
+            this.onTagSelectionChanged.emit(this.validSelectedTagIDs);
         }
 
         this.focusOnInput();
@@ -261,7 +283,8 @@ export class TagPickerComponent implements OnInit
     {
         if(this._tagSelectionChanged)
         {
-            this.onTagSelectionChanged.emit(this.selectedTagIDs);
+            // Prune non-existing tags on edit
+            this.onTagSelectionChanged.emit(this.validSelectedTagIDs);
             this._tagSelectionChanged = false;
         }
     }

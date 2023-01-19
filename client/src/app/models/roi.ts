@@ -55,6 +55,7 @@ export class ROISavedItem
         public shared: boolean,
         public creator: ObjectCreator,
         public mistROIItem: MistROIItem = null,
+        public tags: string[] = [],
         public visible: boolean = false,
         public createUnixTimeSec: number = 0,
         public modUnixTimeSec: number = 0
@@ -64,12 +65,13 @@ export class ROISavedItem
 
     public static equals(a: ROISavedItem, b: ROISavedItem): boolean
     {
-        return a.id == b.id &&
-            a.name == b.name &&
+        return a.id === b.id &&
+            a.name === b.name &&
             arraysEqual(a.locationIndexes, b.locationIndexes) &&
-            a.description == b.description &&
-            a.shared == b.shared &&
-            ( (!a.creator && !b.creator) || a.creator.user_id == b.creator.user_id);
+            a.description === b.description &&
+            a.shared === b.shared &&
+            ((!a.creator && !b.creator) || a.creator.user_id === b.creator.user_id) && 
+            arraysEqual(a.tags, b.tags);
     }
 }
 
@@ -82,6 +84,7 @@ export class ROIItem
         public imageName: string,
         public pixelIndexes: number[],
         public mistROIItem: MistROIItem = null,
+        public tags: string[] = [],
     )
     {
     }

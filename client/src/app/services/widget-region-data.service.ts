@@ -94,12 +94,13 @@ export class RegionData extends ROISavedItem
         public pmcs: Set<number>,
         public shape: string,
         mistROIItem: MistROIItem = null,
+        tags: string[] = [],
         visible: boolean = false,
         createUnixTimeSec: number = 0,
         modUnixTimeSec: number = 0
     )
     {
-        super(id, name, locationIndexes, description, imageName, pixelIndexes, shared, creator, mistROIItem, visible, createUnixTimeSec, modUnixTimeSec);
+        super(id, name, locationIndexes, description, imageName, pixelIndexes, shared, creator, mistROIItem, tags, visible, createUnixTimeSec, modUnixTimeSec);
     }
 
     convertToROIItem()
@@ -110,7 +111,8 @@ export class RegionData extends ROISavedItem
             this.description,
             this.imageName,
             Array.from(this.pixelIndexes),
-            this.mistROIItem
+            this.mistROIItem,
+            this.tags
         );
     }
 
@@ -129,6 +131,7 @@ export class RegionData extends ROISavedItem
         this.mistROIItem = roi.mistROIItem;
         this.createUnixTimeSec = roi.createUnixTimeSec;
         this.modUnixTimeSec = roi.modUnixTimeSec;
+        this.tags = roi.tags;
     }
 }
 
