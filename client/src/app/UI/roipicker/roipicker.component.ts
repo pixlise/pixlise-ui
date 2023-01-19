@@ -30,10 +30,11 @@
 import { Component, ElementRef, Inject, OnInit, ViewContainerRef } from "@angular/core";
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
-import { PredefinedROIID, ROIItem, ROISavedItem } from "src/app/models/roi";
+import { ObjectCreator } from "src/app/models/BasicTypes";
+import { PredefinedROIID, ROISavedItem } from "src/app/models/roi";
 import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationService } from "src/app/services/quantification.service";
-import { ROIReference, ROIService } from "src/app/services/roi.service";
+import { ROIService } from "src/app/services/roi.service";
 import { ViewStateService } from "src/app/services/view-state.service";
 import { ROISettingsItem } from "src/app/UI/roipicker/region-item-settings/region-item-settings.component";
 import { Colours } from "src/app/utils/colours";
@@ -74,10 +75,24 @@ export class ROIPickerComponent implements OnInit
 
     fullDatasetROI: ROISettingsItem;
     remainingPointsROI: ROISettingsItem;
+
     mistROIs: ROISettingsItem[] = [];
     userROIs: ROISettingsItem[] = [];
     sharedROIs: ROISettingsItem[] = [];
+
+    filteredMISTROIs: ROISettingsItem[] = [];
+    filteredUserROIs: ROISettingsItem[] = [];
+    filteredSharedROIs: ROISettingsItem[] = [];
+
     isDisplayed: boolean = true;
+
+    isFiltering: boolean = false;
+
+    _authors: ObjectCreator[] = [];
+    _filteredAuthors: string[] = [];
+    _filterText: string = "";
+    filteredTagIDs: string[] = [];
+
 
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: ROIPickerData,
@@ -197,6 +212,9 @@ export class ROIPickerComponent implements OnInit
                 this.userROIs = enabledUserROIs.concat(disabledUserROIs);
                 this.sharedROIs = enabledSharedROIs.concat(disabledSharedROIs);
                 this.mistROIs = enabledMISTROIs.concat(disabledMISTROIs);
+
+                this.filterROIs();
+                this.extractAuthors(Array.from(rois.values()));
             },
             ()=>null
         ));
@@ -334,5 +352,104 @@ export class ROIPickerComponent implements OnInit
                 this._roiService.refreshROIList();
             }
         );
+    }
+
+    extractAuthors(rois: ROISavedItem[])
+    {
+        let authorIDs = new Set<string>();
+        let authors: ObjectCreator[] = [];
+        rois.forEach((roi) =>
+        {
+            if(!authorIDs.has(roi.creator.user_id))
+            {
+                authors.push(roi.creator);
+                authorIDs.add(roi.creator.user_id);
+            }
+        });
+
+        this.authors = authors;
+    }
+
+    filterROI(roi: ROISettingsItem): boolean
+    {
+        let matchesText = true;
+        let matchesTags = true;
+        let matchesAuthors = true;
+
+        let filterText = this._filterText?.toLowerCase();
+        if(filterText.length > 0)
+        {
+            matchesText = roi.label?.toLowerCase().includes(filterText);
+        }
+        if(this.filteredTagIDs.length > 0)
+        {
+            matchesTags = this.filteredTagIDs.some((tagID) => roi.tags.includes(tagID));
+        }
+        if(this.filteredAuthors.length > 0)
+        {
+            matchesAuthors = this.filteredAuthors.some((author) => roi.user_id === author);
+        }
+
+        return matchesText && matchesTags && matchesAuthors;
+    }
+
+    filterROIs(): void
+    {
+        if(this.isFiltering)
+        {
+            this.filteredUserROIs = this.userROIs.filter((roi) => this.filterROI(roi));
+            this.filteredSharedROIs = this.sharedROIs.filter((roi) => this.filterROI(roi));
+            this.filteredMISTROIs = this.mistROIs.filter((roi) => this.filterROI(roi));
+        }
+        else
+        {
+            this.filteredUserROIs = [...this.userROIs];
+            this.filteredSharedROIs = [...this.sharedROIs];
+            this.filteredMISTROIs = [...this.mistROIs];
+        }
+    }
+
+    toggleFilters(): void
+    {
+        this.isFiltering = !this.isFiltering;
+    }
+
+    get authors(): ObjectCreator[]
+    {
+        return this._authors;
+    }
+
+    set authors(authors: ObjectCreator[])
+    {
+        this._authors = authors;
+    }
+
+    get authorsTooltip(): string
+    {
+        let authorNames = this._authors.filter((author) => this._filteredAuthors.includes(author.user_id)).map((author) => author.name);
+        return this._filteredAuthors.length > 0 ? `Authors:\n${authorNames.join("\n")}` : "No Authors Selected";
+    }
+
+    get filteredAuthors(): string[]
+    {
+        return this._filteredAuthors;
+    }
+
+    set filteredAuthors(authors: string[])
+    {
+        this._filteredAuthors = authors;
+        this.filterROIs();
+    }
+
+    onTagFilterChanged(tagIDs: string[]): void
+    {
+        this.filteredTagIDs = tagIDs;
+        this.filterROIs();
+    }
+
+    onFilterText(filterText: string): void
+    {
+        this._filterText = filterText || "";
+        this.filterROIs();
     }
 }

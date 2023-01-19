@@ -32,6 +32,36 @@ POSSIBILITY OF SUCH DAMAGE.
 <div fxLayout="column" class="roi-picker-container">
     <div fxLayout="row" fxLayoutAlign="space-between center" class="card-toolbar card-toolbar-shadow">
         <div class="txt-widget-title">Regions Of Interest</div>
+        <icon-button 
+            icon="assets/button-icons/filter-white.svg" 
+            (onClick)="toggleFilters()" 
+        ></icon-button>
+    </div>
+    <div fxLayout="row" fxLayoutAlign="space-between center" class="card-toolbar card-toolbar-shadow filters-row {{isFiltering ? 'visible-filters' : 'hidden-filters'}}">
+        <filter-box 
+            placeholder="Filter Items..." 
+            (onFilterChanged)="onFilterText($event)"
+        >
+        </filter-box>
+        <tag-picker
+            type="roi"
+            [selectedTagIDs]="filteredTagIDs"
+            [showCurrentTagsSection]="false"
+            (onTagSelectionChanged)="onTagFilterChanged($event)"
+        >
+        </tag-picker>
+        <mat-select
+            #tooltip="matTooltip"
+            [matTooltip]="authorsTooltip"
+            multiple
+            [(ngModel)]="filteredAuthors"
+            class="authors-filter"
+            placeholder="Author ..."
+        >
+            <mat-option *ngFor="let author of authors;"
+                [value]="author.user_id">{{author.name}}
+            </mat-option>
+        </mat-select>
     </div>
 
     <div fxLayout="column" class="scrollable-container">
@@ -58,7 +88,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
         <div *ngIf="mistROIs.length > 0" class="list-subheading">MIST Algorithm Mineral Species IDs</div>
         <region-item-settings
-            *ngFor="let item of mistROIs"
+            *ngFor="let item of filteredMISTROIs"
             [item]="item"
             [showColourButton]="isShowingColourButton(item.roiID)"
             [activeIcon]="activeIcon"
@@ -69,7 +99,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </region-item-settings>
         <div *ngIf="userROIs.length > 0" class="list-subheading">User Defined Regions</div>
         <region-item-settings
-            *ngFor="let item of userROIs"
+            *ngFor="let item of filteredUserROIs"
             [item]="item"
             [showColourButton]="isShowingColourButton(item.roiID)"
             [activeIcon]="activeIcon"
@@ -80,7 +110,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </region-item-settings>
         <div *ngIf="sharedROIs.length > 0" class="list-subheading">Shared Regions</div>
         <region-item-settings
-            *ngFor="let item of sharedROIs"
+            *ngFor="let item of filteredSharedROIs"
             [item]="item"
             [showColourButton]="isShowingColourButton(item.roiID)"
             [activeIcon]="activeIcon"
