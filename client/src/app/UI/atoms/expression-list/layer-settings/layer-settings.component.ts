@@ -534,6 +534,11 @@ export class LayerSettingsComponent implements OnInit
         }
     }
 
+    get tooltipText(): string
+    {
+        return `${this.labelToShow}:\n\n${this.expressionHover}`;
+    }
+
     get selectedTagIDs(): string[]
     {
         return this.layerInfo.layer.source.tags || [];

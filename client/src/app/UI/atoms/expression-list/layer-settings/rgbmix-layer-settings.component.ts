@@ -83,8 +83,8 @@ export class RGBMixLayerSettingsComponent implements OnInit
     // For edit mode, we have a name string
     nameForSave: string = "";
 
-    // tooltip, generated on init
-    tooltip: string = "";
+    // rgbmixTooltip, generated on init
+    rgbmixTooltip: string = "";
 
     constructor(
         private _rgbMixService: RGBMixConfigService,
@@ -145,7 +145,7 @@ export class RGBMixLayerSettingsComponent implements OnInit
             }
         }
 
-        this.tooltip = tooltip;
+        this.rgbmixTooltip = tooltip;
     }
 
     get sharedBy(): string
