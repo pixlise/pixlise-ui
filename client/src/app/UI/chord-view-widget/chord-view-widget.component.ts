@@ -428,7 +428,7 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
         let query: DataSourceParams[] = [];
         for(let exprId of this._displayExpressionIDs)
         {
-            query.push(new DataSourceParams(exprId, queryROI));
+            query.push(new DataSourceParams(exprId, queryROI, ""));
 
             // If we just added a request for an element expression, also add one for the corresponding error column value
             let elem = DataExpressionService.getPredefinedQuantExpressionElement(exprId);
@@ -437,7 +437,7 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
                 let detector = DataExpressionService.getPredefinedQuantExpressionDetector(exprId);
 
                 let errExprId = DataExpressionService.makePredefinedQuantElementExpression(elem, "err", detector);
-                query.push(new DataSourceParams(errExprId, queryROI));
+                query.push(new DataSourceParams(errExprId, queryROI, ""));
             }
         }
 

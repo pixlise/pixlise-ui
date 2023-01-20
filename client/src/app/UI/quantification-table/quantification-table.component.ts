@@ -182,7 +182,7 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
                 for(let detector of detectors)
                 {
                     let exprId = DataExpressionService.makePredefinedQuantElementExpression(formula, "%", detector);
-                    query.push(new DataSourceParams(exprId, roiId));
+                    query.push(new DataSourceParams(exprId, roiId, ""));
                     formulaeQueried.push(formula);
                 }
             }

@@ -616,6 +616,7 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
 
                     if(optionLabels.indexOf("Plot Data .csv") > -1)
                     {
+                        // Export CSV
                         csvs.push(new CSVExportItem(
                             "Parallel Coords Plot Data",
                             this.exportPlotData()

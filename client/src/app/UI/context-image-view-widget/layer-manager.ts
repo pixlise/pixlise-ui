@@ -615,7 +615,7 @@ export class LayerManager
 
         try
         {
-            let queryResults = this._widgetDataService.getData([new DataSourceParams(expr.id, null)], false);
+            let queryResults = this._widgetDataService.getData([new DataSourceParams(expr.id, null, "")], false);
 
             if(queryResults.error)
             {
@@ -664,9 +664,9 @@ export class LayerManager
 
             // Query all 3 expressions together
             let query = [
-                new DataSourceParams(rgbMix.red.expressionID, null),
-                new DataSourceParams(rgbMix.green.expressionID, null),
-                new DataSourceParams(rgbMix.blue.expressionID, null)
+                new DataSourceParams(rgbMix.red.expressionID, null, ""),
+                new DataSourceParams(rgbMix.green.expressionID, null, ""),
+                new DataSourceParams(rgbMix.blue.expressionID, null, "")
             ];
 
             let queryResults = this._widgetDataService.getData(query, false);

@@ -395,7 +395,7 @@ export class VariogramWidgetComponent implements OnInit
             {
                 for(let exprId of this._expressionIds)
                 {
-                    query.push(new DataSourceParams(exprId, roiId));
+                    query.push(new DataSourceParams(exprId, roiId, ""));
                 }
             }
 
