@@ -31,7 +31,11 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="row" fxLayoutAlign="space-between center" class="setting-row" [ngClass]="{'setting-row-visible': visible}">
     <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
-        <div class="setting-label">{{labelToShow}}</div>
+        <div 
+            class="setting-label"
+            #tooltip="matTooltip"
+            [matTooltip]="labelToShow"
+        >{{labelToShow}}</div>
         <div *ngIf="sharedBy" class="obj-creator">{{sharedBy}}</div>
         <div *ngIf="colour" class="obj-colour">
             <svg width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -41,6 +45,16 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
 
     <div fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements">
+        <tag-picker
+            *ngIf="showColour"
+            type="roi"
+            placeholderText="Search ROI Tags ..."
+            [selectedTagIDs]="selectedTagIDs"
+            [showCurrentTagsSection]="true"
+            [editable]="!isSharedByOtherUser"
+            (onTagSelectionChanged)="onTagSelectionChanged($event)"
+        >
+        </tag-picker>
         <icon-button
             *ngIf="showColour"
             title="Configure Colours"

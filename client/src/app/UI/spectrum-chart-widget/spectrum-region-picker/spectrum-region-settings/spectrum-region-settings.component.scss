@@ -32,4 +32,9 @@
 
 .setting-label {
     user-select: text;
+
+    max-width: 120px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
 }

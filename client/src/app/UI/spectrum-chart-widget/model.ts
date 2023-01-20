@@ -92,6 +92,7 @@ export class SpectrumSource
         public roiName: string,
         public shared: boolean,
         public creator: ObjectCreator,
+        public tags: string[],
 
         // Drawing options
         public colourRGBA: RGBA,
@@ -828,9 +829,10 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
                             region.name,
                             region.shared,
                             region.creator,
+                            region.tags,
                             region.colour == null ? null : RGBA.fromWithA(region.colour, 1),
                             lineChoices,
-                            region.locationIndexes
+                            region.locationIndexes,
                         )
                     );
                 }
@@ -852,9 +854,10 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
                         region.name,
                         region.shared,
                         region.creator,
+                        region.tags,
                         region.colour == null ? null : RGBA.fromWithA(region.colour, 1),
                         this.getLinesStates(roiID, region.pmcs.size > 1),
-                        region.locationIndexes
+                        region.locationIndexes,
                     )
                 );
 
@@ -998,7 +1001,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
             }
             else if(header == "meas")
             {
-                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitMeasuredSpectrum, false, null, Colours.WHITE,
+                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitMeasuredSpectrum, false, null, [], Colours.WHITE,
                     [
                         new SpectrumLineChoice(
                             fitLinePrefix+header,SpectrumChartModel.fitMeasuredSpectrum, true, this.readFitColumn(c, csvNumbersByRow), 1, 0.2, true),
@@ -1008,24 +1011,24 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
             }
             else if(header == "calc")
             {
-                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitCaclulatedTotalSpectrum, false, null, Colours.ORANGE,
+                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitCaclulatedTotalSpectrum, false, null, [], Colours.ORANGE,
                     [new SpectrumLineChoice(fitLinePrefix+header, SpectrumChartModel.fitCaclulatedTotalSpectrum, true, this.readFitColumn(c, csvNumbersByRow))], []));
             }
             else if(header == "residual")
             {
-                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitResiduals, false, null, Colours.BLUE,
+                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitResiduals, false, null, [], Colours.BLUE,
                     [new SpectrumLineChoice(fitLinePrefix+header, SpectrumChartModel.fitResiduals, true, this.readFitColumn(c, csvNumbersByRow))], []));
             }
             else if(header == "Pileup")
             {
-                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitPileupPeaks, false, null, Colours.PINK,
+                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitPileupPeaks, false, null, [], Colours.PINK,
                     [new SpectrumLineChoice(fitLinePrefix+header, SpectrumChartModel.fitPileupPeaks, false, this.readFitColumn(c, csvNumbersByRow))], []));
             }
             else if(header == "DetCE" || header == "bkg" || header == "SNIP bkg" || header == "calc bkg0")
             {
                 if(!backgroundSrc)
                 {
-                    backgroundSrc = new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitBackground, false, null, Colours.PURPLE, [], []);
+                    backgroundSrc = new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitBackground, false, null, [], Colours.PURPLE, [], []);
                 }
 
                 // Add this to the background sources group
@@ -1078,7 +1081,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
                             // Make sure this element has a source defined
                             if(!perElementSources.has(elem))
                             {
-                                perElementSources.set(elem, new SpectrumSource(PredefinedROIID.AllPoints, elem, false, null, Colours.YELLOW, [], [], info.Z));
+                                perElementSources.set(elem, new SpectrumSource(PredefinedROIID.AllPoints, elem, false, null, [], Colours.YELLOW, [], [], info.Z));
                             }
 
                             // Add this peak line to the element it belongs to

@@ -30,6 +30,7 @@
 import { Component, ElementRef, Input, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { PredefinedROIID } from "src/app/models/roi";
+import { AuthenticationService } from "src/app/services/authentication.service";
 import { ROIService } from "src/app/services/roi.service";
 import { SpectrumChartService } from "src/app/services/spectrum-chart.service";
 import { ViewStateService } from "src/app/services/view-state.service";
@@ -55,6 +56,7 @@ export class SpectrumRegionSettingsComponent implements OnInit
     private _sharedBy: string = null;
 
     constructor(
+        private _authService: AuthenticationService,
         private _roiService: ROIService,
         private _viewStateService: ViewStateService,
         private _spectrumService: SpectrumChartService,
@@ -101,6 +103,32 @@ export class SpectrumRegionSettingsComponent implements OnInit
     get sharedBy(): string
     {
         return this._sharedBy;
+    }
+
+
+    get selectedTagIDs(): string[]
+    {
+        return this.source.tags;
+    }
+
+    get isSharedByOtherUser(): boolean
+    {
+        return this.sharedBy !== null && this.source.creator.user_id !== this._authService.getUserID();
+    }
+
+    onTagSelectionChanged(tags: string[]): void
+    {
+        this._roiService.tag(this.source.roiID, tags).subscribe(
+            ()=>
+            {
+                this._roiService.refreshROIList();
+            },
+            (err)=>
+            {
+                alert(`Error while tagging ROI: ${this.source.roiName}`);
+                this._roiService.refreshROIList();
+            }
+        );
     }
 
     onSelectSpectra(): void
