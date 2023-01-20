@@ -590,7 +590,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
             new PlotExporterDialogOption("Visible Colour Scale", true, true),
             new PlotExporterDialogOption("Web Resolution (1200x800)", true),
             new PlotExporterDialogOption("Print Resolution (4096x2160)", true),
-            new PlotExporterDialogOption("Expression Values .csv", true),
+            new PlotExporterDialogOption("Weight Percents .csv", true),
         ];
 
         let elements = this.getAllElements();
@@ -659,27 +659,50 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                             generatePlotImage(drawer, this._contextImageService.mdl.transform, [], 4096, 2160, false, false, exportIDs)
                         ));   
                     }
-
-                    if(options.findIndex((option) => option.label == "Expression Values .csv") > -1)
-                    {
-                        // Export CSV
-                        // Loop through all sub-datasets of this one if there are any
-                        let subDatasetIDs = this._datasetService.datasetLoaded.getSubDatasetIds();
-                        if(subDatasetIDs.length <= 0)
-                        {
-                            // Specify a blank one
-                            subDatasetIDs = [""];
-                        }
-
-                        for(let datasetId of subDatasetIDs)
-                        {
-                            csvs.push(new CSVExportItem(
-                                `Expression Values/${name.replace(/\//g, "_")}`+" for dataset"+datasetId,
-                                generateExportCSVForExpression([id], PredefinedROIID.AllPoints, datasetId, this._widgetDataService)
-                            ));
-                        }
-                    }
                 });
+
+                // Group the elements together into one CSV
+                if(options.findIndex((option) => option.label == "Weight Percents .csv") > -1)
+                {
+                    let elemExprIds = [];
+                    let name = "Weight Percents ";
+
+                    let first = true;
+                    for(let element of elements)
+                    {
+                        let id = element?.content?.layer?.source?.id;
+
+                        let elem = DataExpressionService.getPredefinedQuantExpressionElement(id);
+                        if(elem.length > 0)
+                        {
+                            if(!first)
+                            {
+                                name += ",";
+                            }
+                            name += elem +"("+DataExpressionService.getPredefinedQuantExpressionDetector(id)+")";
+                        }
+
+                        elemExprIds.push(id);
+                        first = false;
+                    }
+
+                    // Export CSV
+                    // Loop through all sub-datasets of this one if there are any
+                    let subDatasetIDs = this._datasetService.datasetLoaded.getSubDatasetIds();
+                    if(subDatasetIDs.length <= 0)
+                    {
+                        // Specify a blank one
+                        subDatasetIDs = [""];
+                    }
+
+                    for(let datasetId of subDatasetIDs)
+                    {
+                        csvs.push(new CSVExportItem(
+                            `${name}`+" for dataset"+datasetId,
+                            generateExportCSVForExpression(elemExprIds, PredefinedROIID.AllPoints, datasetId, this._widgetDataService)
+                        ));
+                    }
+                }
 
                 dialogRef.componentInstance.onDownload(canvases, csvs);
             });
