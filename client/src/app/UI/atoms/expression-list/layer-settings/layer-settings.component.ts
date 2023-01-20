@@ -46,6 +46,7 @@ import { ContextImageService } from "src/app/services/context-image.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
 import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
+import { TaggingService } from "src/app/services/tagging.service";
 
 
 export class LayerInfo
@@ -136,6 +137,7 @@ export class LayerSettingsComponent implements OnInit
         private _datasetService: DataSetService,
         private _contextImageService: ContextImageService,
         private _widgetDataService: WidgetRegionDataService,
+        private _taggingService: TaggingService,
         public dialog: MatDialog,
     )
     {
@@ -186,6 +188,21 @@ export class LayerSettingsComponent implements OnInit
         });
 
         return notificationCount;
+    }
+
+    get collapsedNotificationTooltipText(): string
+    {
+        let tooltipText = "";
+        this.hiddenLayerButtons.forEach(button =>
+        {
+            if(button === "showTagPicker" && this.selectedTagIDs.length > 0)
+            {
+                tooltipText += "Tags:\n";
+                tooltipText += this.selectedTagIDs.map(tagID => this._taggingService.getTagName(tagID)).join("\n");
+            }
+        });
+
+        return tooltipText.length > 0 ? tooltipText : "View more options";
     }
 
     get labelToShow(): string
@@ -458,7 +475,7 @@ export class LayerSettingsComponent implements OnInit
                         toEdit.creator,
                         toEdit.createUnixTimeSec,
                         toEdit.modUnixTimeSec,
-                        toEdit.tags
+                        dlgResult.expr.tags
                     );
                     this._exprService.edit(this.layerInfo.layer.id, expr.name, expr.expression, expr.type, expr.comments, expr.tags).subscribe(
                         ()=>

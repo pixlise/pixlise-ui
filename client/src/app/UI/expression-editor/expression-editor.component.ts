@@ -79,6 +79,7 @@ export class ExpressionEditorComponent implements OnInit, OnDestroy
 
     dropdownTop: string = "";
     dropdownLeft: string = "";
+
     /*
     codeMirrorOptions = {
         lineNumbers: true,
@@ -94,7 +95,7 @@ export class ExpressionEditorComponent implements OnInit, OnDestroy
     )
     {
         // Make a copy of incoming expression, so we don't edit what's there!
-        this._expr = new DataExpression(data.expr.id, data.expr.name, data.expr.expression, data.expr.type, data.expr.comments, data.expr.shared, data.expr.creator, data.expr.createUnixTimeSec, data.expr.modUnixTimeSec);
+        this._expr = new DataExpression(data.expr.id, data.expr.name, data.expr.expression, data.expr.type, data.expr.comments, data.expr.shared, data.expr.creator, data.expr.createUnixTimeSec, data.expr.modUnixTimeSec, data.expr.tags);
         this.findVariables();
 
         // https://stackoverflow.com/questions/62676638/ngx-codemirror-cursor-is-not-working-correctly-angular-8
@@ -836,5 +837,15 @@ export class ExpressionEditorComponent implements OnInit, OnDestroy
     {
         // Expression editor needs quant to get elements, elem columns (%, int, etc), other columns (eg chisq), detectors
         return this._widgetDataService.quantificationLoaded;
+    }
+
+    get selectedTagIDs(): string[]
+    {
+        return this._expr.tags;
+    }
+
+    onTagSelectionChanged(tags: string[]): void
+    {
+        this._expr.tags = tags;
     }
 }

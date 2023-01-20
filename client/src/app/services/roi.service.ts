@@ -291,7 +291,13 @@ export class ROIService
                     "Description",
                     ()=>true
                 ),
-            ]
+            ],
+            false,
+            null,
+            ()=>null,
+            null,
+            true,
+            ["roi"]
         );
 
         const dialogRef = dialog.open(UserPromptDialogComponent, dialogConfig);
@@ -308,7 +314,7 @@ export class ROIService
 
                     let roiName = result.enteredValues.get("Name");
 
-                    let toSave = new ROIItem(roiName, Array.from(locationIndexes), result.enteredValues.get("Description"), imageName, Array.from(pixelIndexes), null, []);
+                    let toSave = new ROIItem(roiName, Array.from(locationIndexes), result.enteredValues.get("Description"), imageName, Array.from(pixelIndexes), null, result.tags);
                     return this.add(toSave);
                 }
             ),

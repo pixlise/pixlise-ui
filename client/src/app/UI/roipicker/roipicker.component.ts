@@ -85,7 +85,6 @@ export class ROIPickerComponent implements OnInit
     filteredSharedROIs: ROISettingsItem[] = [];
 
     isDisplayed: boolean = true;
-
     isFiltering: boolean = false;
 
     _authors: ObjectCreator[] = [];

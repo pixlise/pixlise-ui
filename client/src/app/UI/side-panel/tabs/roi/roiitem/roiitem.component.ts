@@ -350,7 +350,14 @@ export class ROIItemComponent implements OnInit
                     () => true,
                     existingROI.description
                 ),
-            ]
+            ],
+            false,
+            "",
+            ()=>null,
+            null,
+            true,
+            ["roi"],
+            existingROI.tags
         );
         const dialogRef = this.dialog.open(UserPromptDialogComponent, dialogConfig);
 
@@ -370,7 +377,8 @@ export class ROIItemComponent implements OnInit
                             roiDescription,
                             existingROI.imageName,
                             Array.from(existingROI.pixelIndexes),
-                            existingROI.mistROIItem
+                            existingROI.mistROIItem,
+                            result.tags
                         )
                     ).subscribe(
                         ()=>

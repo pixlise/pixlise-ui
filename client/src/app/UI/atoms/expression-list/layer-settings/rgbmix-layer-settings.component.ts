@@ -46,6 +46,7 @@ import { ClientSideExportGenerator } from "src/app/UI/export-data-dialog/client-
 import { httpErrorToString } from "src/app/utils/utils";
 import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../plot-exporter-dialog/plot-exporter-dialog.component";
 import { LayerVisibilityChange } from "./layer-settings.component";
+import { TaggingService } from "src/app/services/tagging.service";
 
 
 export class RGBLayerInfo
@@ -94,6 +95,7 @@ export class RGBMixLayerSettingsComponent implements OnInit
         private _datasetService: DataSetService,
         private _diffractionSource: DiffractionPeakService,
         private _contextImageService: ContextImageService,
+        private _taggingService: TaggingService,
         public dialog: MatDialog
     )
     {
@@ -194,6 +196,21 @@ export class RGBMixLayerSettingsComponent implements OnInit
         });
 
         return notificationCount;
+    }
+
+    get collapsedNotificationTooltipText(): string
+    {
+        let tooltipText = "";
+        this.hiddenLayerButtons.forEach(button =>
+        {
+            if(button === "showTagPicker" && this.selectedTagIDs.length > 0)
+            {
+                tooltipText += "Tags:\n";
+                tooltipText += this.selectedTagIDs.map(tagID => this._taggingService.getTagName(tagID)).join("\n");
+            }
+        });
+
+        return tooltipText.length > 0 ? tooltipText : "View more options";
     }
 
     get layerButtons(): string[]

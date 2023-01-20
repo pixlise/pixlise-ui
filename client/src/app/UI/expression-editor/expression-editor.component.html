@@ -41,6 +41,13 @@ POSSIBILITY OF SUCH DAMAGE.
         <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
             <div class="label">Expression Name</div>
             <input type="text" placeholder="" [(ngModel)]="expressionName" fxFlex>
+            <tag-picker
+                type="expression"
+                [selectedTagIDs]="selectedTagIDs"
+                [showCurrentTagsSection]="true"
+                (onTagSelectionChanged)="onTagSelectionChanged($event)"
+            >
+            </tag-picker>
         </div>
     </div>
 

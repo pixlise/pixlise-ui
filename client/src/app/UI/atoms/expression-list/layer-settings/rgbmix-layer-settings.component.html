@@ -103,8 +103,9 @@ POSSIBILITY OF SUCH DAMAGE.
             <div fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements">
                 <widget-settings-menu *ngIf="showMoreButtonVisible" [settingsDialog]="moreButtonsMenu">
                     <icon-button
+                        #tooltip="matTooltip"
+                        [matTooltip]="collapsedNotificationTooltipText"
                         [notificationCount]="collapsedNotificationCount"
-                        title="View more options"
                         icon="assets/button-icons/three-dots.svg"
                     ></icon-button>
                 </widget-settings-menu>

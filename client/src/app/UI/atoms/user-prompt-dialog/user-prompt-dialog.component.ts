@@ -85,6 +85,9 @@ export class UserPromptDialogParams
         public middleButtonLabel: string = "",
         public middleButtonCallback: () => void = () => null,
         public info: string = "", // Info shown below title
+        public showTagPicker: boolean = false,
+        public tagPickerTypes: string[] = [],
+        public tags: string[] = [],
     )
     {
     }
@@ -92,7 +95,7 @@ export class UserPromptDialogParams
 
 export class UserPromptDialogResult
 {
-    constructor(public enteredValues: Map<string, string>)
+    constructor(public enteredValues: Map<string, string>, public tags: string[] = [])
     {
     }
 }
@@ -114,11 +117,14 @@ export class UserPromptDialogComponent implements OnInit
     inputTypes: string[] = [];
     values: string[] = [];
 
+    selectedTagIDs: string[] = [];
+
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: UserPromptDialogParams,
         public dialogRef: MatDialogRef<UserPromptDialogComponent>,
     )
     {
+        this.selectedTagIDs = data.tags;
     }
 
     ngOnInit(): void
@@ -134,6 +140,10 @@ export class UserPromptDialogComponent implements OnInit
         this.values = this.data.items.map((item) => item["initialValue"]);
     }
 
+    onTagSelectionChanged(tags: string[]): void
+    {
+        this.selectedTagIDs = tags;
+    }
 
     onOK(): void
     {
@@ -154,7 +164,7 @@ export class UserPromptDialogComponent implements OnInit
             result.set(item.name, val);
         }
 
-        this.dialogRef.close(new UserPromptDialogResult(result));
+        this.dialogRef.close(new UserPromptDialogResult(result, this.selectedTagIDs));
     }
 
     onCancel(): void

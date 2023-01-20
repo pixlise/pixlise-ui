@@ -123,10 +123,15 @@ POSSIBILITY OF SUCH DAMAGE.
                 [maxValue]="1"
                 (onChange)="onChangeOpacity($event)">
             </slider>
-            <widget-settings-menu *ngIf="showMoreButtonVisible" [settingsDialog]="moreButtonsMenu" [noPadding]="true">
+            <widget-settings-menu 
+                *ngIf="showMoreButtonVisible"
+                [settingsDialog]="moreButtonsMenu" 
+                [noPadding]="true"
+            >
                 <icon-button
+                    #tooltip="matTooltip"
+                    [matTooltip]="collapsedNotificationTooltipText"
                     [notificationCount]="collapsedNotificationCount"
-                    title="View more options"
                     icon="assets/button-icons/three-dots.svg"
                 ></icon-button>
             </widget-settings-menu>

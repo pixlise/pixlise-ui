@@ -29,6 +29,15 @@
 
 @import 'variables.scss';
 
+h1 {
+    display: flex;
+    align-items: center;
+
+    tag-picker {
+        margin-left: auto;
+    }
+}
+
 .user-prompt-dlg {
     min-width: 360px;
 }
