@@ -30,16 +30,22 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div fxLayout="row" fxLayoutAlign="space-between center" class="setting-row gap-separated-horizontal-elements" [ngClass]="{'setting-row-visible': visible}">
-    <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
+    <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements labels-container">
         <div 
             class="setting-label text-container"
             #tooltip="matTooltip"
             [matTooltip]="label"
-            [matTooltipDisabled]="label.length < 30"
+            [matTooltipDisabled]="label.length < 20"
         >
             {{label}}
         </div>
-        <div *ngIf="sharedBy" class="obj-creator">{{sharedBy}}</div>
+        <div 
+            *ngIf="sharedBy"
+            class="obj-creator"
+            #tooltip="matTooltip"
+            [matTooltip]="sharedBy"
+            [matTooltipDisabled]="sharedBy.length < 6"
+        >{{sharedBy}}</div>
 
         <div fxLayout="row">
             <div *ngIf="colour" class="obj-colour">

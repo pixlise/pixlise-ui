@@ -204,6 +204,7 @@ export class SpectrumRegionPickerComponent implements OnInit
     toggleFilters(): void
     {
         this.isFiltering = !this.isFiltering;
+        this.filterROIs();
     }
 
     filterROIs(): void

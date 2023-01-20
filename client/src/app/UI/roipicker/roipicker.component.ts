@@ -417,6 +417,7 @@ export class ROIPickerComponent implements OnInit
     toggleFilters(): void
     {
         this.isFiltering = !this.isFiltering;
+        this.filterROIs();
     }
 
     get authors(): ObjectCreator[]

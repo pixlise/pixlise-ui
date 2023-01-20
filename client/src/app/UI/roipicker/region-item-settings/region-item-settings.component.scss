@@ -34,9 +34,22 @@
     width: 200px !important;
 }
 
+.labels-container {
+    max-width: 240px;
+    display: flex;
+}
+
 .text-container {
     text-overflow: ellipsis;
-    max-width: 200px;
+    flex: 1;
     white-space: nowrap;
     overflow: hidden;
+}
+
+.obj-creator {
+    font-size: 12px;
+    max-width: 80px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
 }
