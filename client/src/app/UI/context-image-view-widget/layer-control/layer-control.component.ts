@@ -39,9 +39,7 @@ import { ViewStateService } from "src/app/services/view-state.service";
 import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
 import { LayerChangeInfo, LayerManager } from "src/app/UI/context-image-view-widget/layer-manager";
-import { CanvasExportParameters, ClientSideExportGenerator } from "src/app/UI/export-data-dialog/client-side-export";
-import { ExportDataChoice } from "src/app/UI/export-data-dialog/export-models";
-import { showExportDialog } from "src/app/UI/export-data-dialog/show-export-dialog";
+import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
 import { ExpressionEditorComponent, ExpressionEditorConfig } from "src/app/UI/expression-editor/expression-editor.component";
 import { LayerVisibilityChange, LayerColourChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ExpressionListHeaderInfo } from "src/app/UI/atoms/expression-list/layer-settings/header.component";
@@ -51,7 +49,7 @@ import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogC
 import { DataSetService } from "src/app/services/data-set.service";
 import { PredefinedROIID } from "src/app/models/roi";
 import { ObjectCreator } from "src/app/models/BasicTypes";
-
+import { generateExportCSVForExpression } from "src/app/services/export-data.service";
 
 
 export class LayerDetails
@@ -368,70 +366,6 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         }
     }
 
-    onExport(): void
-    {
-        let choices = [
-            new ExportDataChoice(ClientSideExportGenerator.exportWebResolution, "Web Resolution", false),
-            new ExportDataChoice(ClientSideExportGenerator.exportPrintResolution, "Print Resolution", false),
-
-            new ExportDataChoice(ClientSideExportGenerator.exportDrawBackgroundBlack, "Black Background On Images", true),
-
-            new ExportDataChoice(ClientSideExportGenerator.exportContextImage, "Visible Context Image", false),
-
-            new ExportDataChoice(ClientSideExportGenerator.exportContextImageFootprint, "Include Instrument Footprint", false),
-            new ExportDataChoice(ClientSideExportGenerator.exportContextImageScanPoints, "Include Scan Points", false),
-
-            new ExportDataChoice(ClientSideExportGenerator.exportContextImageROIs, "Visible Regions of Interest", false),
-            new ExportDataChoice(ClientSideExportGenerator.exportExpressionValues, "Expression Values .csv", false),
-            new ExportDataChoice(ClientSideExportGenerator.exportROIExpressionValues, "Separate ROI Expression Values .csv", false),
-            // new ExportDataChoice(ClientSideExportGenerator.exportContextImageROIKey, '', false),
-        ];
-
-        // Come up with some defaults
-        let params = new CanvasExportParameters(
-            "file.name",
-            1200, 800, 1,
-            4096, 2160, 1
-        );
-
-        let lastDrawTransform = this._contextImageService.mdl.transform;
-        if(lastDrawTransform && lastDrawTransform.canvasParams)
-        {
-            /*
-            // Make the web res images double what we have in the viewport
-            params.webResWidth = lastDrawTransform.canvasParams.width*2;
-            params.webResHeight = lastDrawTransform.canvasParams.height*2;
-*/
-            // Make the web res be 1280 x (preserved aspect ratio)
-            params.webResWidth = 1280;
-            params.webResHeight = Math.floor(lastDrawTransform.canvasParams.height/lastDrawTransform.canvasParams.width*params.webResWidth);
-            params.webDPI = params.webResWidth/lastDrawTransform.canvasParams.width;
-
-            // Make the print res be 4096 x (preserved aspect ratio)
-            params.printResWidth = 4096;
-            params.printResHeight = Math.floor(lastDrawTransform.canvasParams.height/lastDrawTransform.canvasParams.width*params.printResWidth);
-            params.printDPI = params.printResWidth/lastDrawTransform.canvasParams.width;
-        }
-
-        let drawer = new ExportDrawer(this._contextImageService.mdl, this._contextImageService.mdl.toolHost);
-        let exportGen = new ClientSideExportGenerator(
-            this._contextImageService.mdl.dataset,
-            this._widgetDataService,
-            drawer,
-            this._contextImageService.mdl.transform,
-            params,
-            this._rgbMixService,
-            this._exprService,
-            this._diffractionService
-        );
-
-        showExportDialog(this.dialog, "Context Image Export Options", false, false, true, true, choices, exportGen).subscribe(
-            ()=>
-            {
-            }
-        );
-    }
-
     onFilterExpressions(filter: string): void
     {
         this._filterText = filter;
@@ -542,44 +476,20 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         this.regenerateItemList("");
     }
 
-    exportExpressionValues(id: string): string
+    exportExpressionValues(exprId: string, datasetId: string): string
     {
-        let queryData: RegionDataResults = this._widgetDataService.getData([new DataSourceParams(id, PredefinedROIID.AllPoints)], false);
+        let queryData: RegionDataResults = this._widgetDataService.getData([new DataSourceParams(exprId, PredefinedROIID.AllPoints, datasetId)], false);
 
         if(queryData.error)
         {
-            throw new Error(`Failed to query CSV data for expression: ${id}. ${queryData.error}`);
+            throw new Error(`Failed to query CSV data for expression: ${exprId}. ${queryData.error}`);
         }
 
-        let csv: string = "PMC";
-        let dataset = this._datasetService.datasetLoaded;
-        let combined = dataset.isCombinedDataset();
-        let locations = dataset.experiment.getLocationsList();
-        if(combined)
-        {
-            csv += ",SourceRTT,SourcePMC";
-        }
-        csv += ",Value\n";
+        let csv: string = "PMC,Value\n";
 
         queryData.queryResults[0].values.values.forEach(({pmc, value, isUndefined})=>
         {
-            csv += `${pmc}`;
-            if(combined)
-            {
-                let locIdx = dataset.pmcToLocationIndex.get(pmc);
-                if(locIdx != undefined)
-                {
-                    let sourceIdx = locations[locIdx].getScanSource();
-                    let source = dataset.experiment.getScanSourcesList()[sourceIdx];
-
-                    let sourceRTT = source.getRtt();
-                    let sourcePMC = pmc-source.getIdOffset();
-
-                    csv += `,${sourceRTT},${sourcePMC}`;
-                }
-            }
-            csv += `,${isUndefined ? "" : value}`;
-            csv += "\n";
+            csv += `${pmc},${isUndefined ? "" : value}\n`;
         });
 
         return csv;
@@ -625,7 +535,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
             new PlotExporterDialogOption("Visible Colour Scale", true, true),
             new PlotExporterDialogOption("Web Resolution (1200x800)", true),
             new PlotExporterDialogOption("Print Resolution (4096x2160)", true),
-            new PlotExporterDialogOption("Expression Values .csv", true),
+            new PlotExporterDialogOption("Weight Percents .csv", true),
         ];
 
         let elements = this.getAllElements();
@@ -694,15 +604,50 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                             generatePlotImage(drawer, this._contextImageService.mdl.transform, [], 4096, 2160, false, false, exportIDs)
                         ));   
                     }
+                });
 
-                    if(options.findIndex((option) => option.label == "Expression Values .csv") > -1)
+                // Group the elements together into one CSV
+                if(options.findIndex((option) => option.label == "Weight Percents .csv") > -1)
+                {
+                    let elemExprIds = [];
+                    let name = "Weight Percents ";
+
+                    let first = true;
+                    for(let element of elements)
+                    {
+                        let id = element?.content?.layer?.source?.id;
+
+                        let elem = DataExpressionService.getPredefinedQuantExpressionElement(id);
+                        if(elem.length > 0)
+                        {
+                            if(!first)
+                            {
+                                name += ",";
+                            }
+                            name += elem +"("+DataExpressionService.getPredefinedQuantExpressionDetector(id)+")";
+                        }
+
+                        elemExprIds.push(id);
+                        first = false;
+                    }
+
+                    // Export CSV
+                    // Loop through all sub-datasets of this one if there are any
+                    let subDatasetIDs = this._datasetService.datasetLoaded.getSubDatasetIds();
+                    if(subDatasetIDs.length <= 0)
+                    {
+                        // Specify a blank one
+                        subDatasetIDs = [""];
+                    }
+
+                    for(let datasetId of subDatasetIDs)
                     {
                         csvs.push(new CSVExportItem(
-                            `Expression Values/${name.replace(/\//g, "_")}`,
-                            this.exportExpressionValues(id)
-                        ));  
+                            `${name}`+" for dataset"+datasetId,
+                            generateExportCSVForExpression(elemExprIds, PredefinedROIID.AllPoints, datasetId, this._widgetDataService)
+                        ));
                     }
-                });
+                }
 
                 dialogRef.componentInstance.onDownload(canvases, csvs);
             });

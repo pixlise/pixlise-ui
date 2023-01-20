@@ -168,7 +168,7 @@ import { GlobalNotificationsComponent } from "./routes/admin/global-notification
 import { SpectrumPeakLabelPickerComponent } from "./UI/spectrum-chart-widget/spectrum-peak-label-picker/spectrum-peak-label-picker.component";
 import { RangeSliderComponent } from "./UI/atoms/range-slider/range-slider.component";
 import { VariogramWidgetComponent } from "./UI/variogram-widget/variogram-widget.component";
-import { ExportDataDialogComponent } from "./UI/export-data-dialog/export-data-dialog.component";
+import { ExportDataDialogComponent } from "./UI/atoms/export-data-dialog/export-data-dialog.component";
 import { RGBUViewerComponent } from "./UI/rgbuviewer/rgbuviewer.component";
 import { RGBUPlotComponent } from "./UI/rgbuplot/rgbuplot.component";
 import { RGBUAxisRatioPickerComponent } from "./UI/rgbuplot/rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";

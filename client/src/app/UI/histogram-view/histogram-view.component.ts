@@ -331,7 +331,7 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
                 // Selected points ROI: Only add it if the selection is not empty!
                 if(roiId != PredefinedROIID.SelectedPoints || this._selectionService.getCurrentSelection().beamSelection.locationIndexes.size > 0)
                 {
-                    query.push(new DataSourceParams(exprId, roiId));
+                    query.push(new DataSourceParams(exprId, roiId, ""));
                 }
             }
 
@@ -536,7 +536,7 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
 
         // Try query it
         let errExprId = DataExpressionService.makePredefinedQuantElementExpression(elem, "err", detector);
-        let query: DataSourceParams[] = [new DataSourceParams(errExprId, roiId)];
+        let query: DataSourceParams[] = [new DataSourceParams(errExprId, roiId, "")];
         let queryData = this._widgetDataService.getData(query, false);
         if(queryData.error || queryData.hasQueryErrors() || queryData.queryResults.length != 1)
         {

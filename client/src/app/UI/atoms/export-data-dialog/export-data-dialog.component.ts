@@ -44,10 +44,11 @@ import { QuantificationService } from "src/app/services/quantification.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { ROIService } from "src/app/services/roi.service";
 import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
-import { ExportDataChoice, ExportDataConfig } from "src/app/UI/export-data-dialog/export-models";
+import { ExportDataChoice, ExportDataConfig } from "src/app/UI/atoms/export-data-dialog/export-models";
 import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expression-picker/expression-picker.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
 import { httpErrorToString } from "src/app/utils/utils";
+import { generateExportCSVForExpression } from "src/app/services/export-data.service";
 
 
 class ExportQuantChoice
@@ -294,24 +295,6 @@ export class ExportDataDialogComponent implements OnInit
         return count;
     }
 
-    generateExportCSVForExpression(expressionID: string, roiID: string): string
-    {
-        let queryData: RegionDataResults = this._widgetDataService.getData([new DataSourceParams(expressionID, roiID || PredefinedROIID.AllPoints)], false);
-
-        if(queryData.error)
-        {
-            throw new Error(`Failed to query CSV data for expression: ${expressionID}. ${queryData.error}`);
-        }
-
-        let csv: string = "PMC,Value\n";
-        queryData.queryResults[0].values.values.forEach(({pmc, value, isUndefined})=>
-        {
-            csv += `${pmc},${isUndefined ? "" : value}\n`;
-        });
-
-        return csv;
-    }
-
     generateExportCSVForRGBMix(expressionID: string): string
     {
         let rgbMix = this._rgbMixService.getRGBMixes().get(expressionID);
@@ -358,7 +341,7 @@ export class ExportDataDialogComponent implements OnInit
         return csv;
     }
 
-    exportExpressionValues(expressionID: string, roiID: string): string
+    exportExpressionValues(expressionID: string, roiID: string, datasetId: string): string
     {
         let csv = "";
         if(RGBMixConfigService.isRGBMixID(expressionID))
@@ -367,7 +350,7 @@ export class ExportDataDialogComponent implements OnInit
         }
         else
         {
-            csv = this.generateExportCSVForExpression(expressionID, roiID);
+            csv = generateExportCSVForExpression([expressionID], roiID, datasetId, this._widgetDataService);
         }
 
         return csv;
@@ -453,12 +436,21 @@ export class ExportDataDialogComponent implements OnInit
                 {
                     this._selectedROIs.forEach((roiID) => 
                     {
-                        let expression = this._exprService.getExpression(id);
-                        let expressionName = expression ? expression.name.replace(/\//g, "-") : id;
-                        let roi = this._rois.get(roiID);
-                        let roiName = roi ? roi.name.replace(/\//g, "-") : roiID;
-                        let contents = this.exportExpressionValues(id, roiID);
-                        zip.folder("csvs").file(`${roiName} - ${expressionName}.csv`, contents);
+                        let datasetIds = this._datasetService.datasetLoaded.getSubDatasetIds();
+                        if(datasetIds.length <= 0)
+                        {
+                            datasetIds.push("");
+                        }
+
+                        for(let datasetId of datasetIds)
+                        {
+                            let expression = this._exprService.getExpression(id);
+                            let expressionName = expression ? expression.name.replace(/\//g, "-") : id;
+                            let roi = this._rois.get(roiID);
+                            let roiName = roi ? roi.name.replace(/\//g, "-") : roiID;
+                            let contents = this.exportExpressionValues(id, roiID, datasetId);
+                            zip.folder("csvs").file(`${roiName} - ${expressionName} - ${datasetId}.csv`, contents);
+                        }
                     });
                 });
             }

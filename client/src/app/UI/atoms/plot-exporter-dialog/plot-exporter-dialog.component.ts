@@ -33,8 +33,9 @@ import * as JSZip from "jszip";
 import { Point } from "src/app/models/Geometry";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { PointDrawer } from "src/app/utils/drawing";
-import { CanvasDrawer, CanvasParams, CanvasWorldTransform, InteractiveCanvasComponent } from "../interactive-canvas/interactive-canvas.component";
-import { KeyItem } from "../widget-key-display/widget-key-display.component";
+import { CanvasDrawer, CanvasParams, CanvasWorldTransform, InteractiveCanvasComponent } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
+import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.component";
+
 
 export class CanvasExportItem
 {
@@ -78,7 +79,7 @@ export class PlotExporterDialogData
     }
 }
 
-export const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyItems: KeyItem[], viewport: CanvasParams, lightMode: boolean): void =>
+const drawStaticLegend = (screenContext: CanvasRenderingContext2D, keyItems: KeyItem[], viewport: CanvasParams, lightMode: boolean): void =>
 {
     if(keyItems.length === 0)
     {

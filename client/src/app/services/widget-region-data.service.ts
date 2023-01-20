@@ -74,7 +74,7 @@ export enum DataUnit
 
 export class DataSourceParams
 {
-    constructor(public exprId: string, public roiId: string, public units: DataUnit = DataUnit.UNIT_DEFAULT)
+    constructor(public exprId: string, public roiId: string, public datasetId: string, public units: DataUnit = DataUnit.UNIT_DEFAULT)
     {
     }
 }
@@ -157,7 +157,7 @@ export enum WidgetDataErrorType
 
 export class RegionDataResultItem
 {
-    constructor(public values: PMCDataValues, public errorType: WidgetDataErrorType, public error: string, public warning: string)
+    constructor(public values: PMCDataValues, public errorType: WidgetDataErrorType, public error: string, public warning: string, public expressionName: string)
     {
     }
 }
@@ -271,7 +271,7 @@ class QueryResultCache
 
     private makeKey(params: DataSourceParams): string
     {
-        return params.exprId+"/"+params.roiId+"/"+params.units;
+        return params.exprId+"/"+params.roiId+"/"+params.datasetId+"/"+params.units;
     }
 
     private purgeOldItems()
@@ -415,7 +415,9 @@ export class WidgetRegionDataService
     // This queries data based on parameters. The assumption is it either returns null, or returns an array with the same
     // amount of items as the input parameters array (what). This is required because code calling this can then know which
     // DataSourceParams is associated with which returned value. The result array may contain null items, but the length
-    // should equal "what.length"
+    // should equal "what.length". There are also error values that can be returned.
+    // NOTE: If a dataset ID is specified (in case of combined datasets), the output PMCs will be relative to that dataset
+    //       so they won't be unique against the PMCs for the overall dataset anymore!
     getData(what: DataSourceParams[], continueOnError: boolean): RegionDataResults
     {
         let dataset = this._datasetService.datasetLoaded;
@@ -430,6 +432,11 @@ export class WidgetRegionDataService
 
         for(let query of what)
         {
+            if(query.datasetId && !dataset.isCombinedDataset())
+            {
+                return new RegionDataResults([], "Queried for dataset ID: "+query.datasetId+" when not in combined dataset!");
+            }
+
             // Get region info (allow NULL in request because context image doesn't need to be slowed by this)
             let region = null;
             if(query.roiId != null)
@@ -442,7 +449,7 @@ export class WidgetRegionDataService
                     if(continueOnError)
                     {
                         console.error("getData: "+errorMsg+". Ignored...");
-                        result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null));
+                        result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null, ""));
                         continue;
                     }
                     console.error("getData: "+errorMsg);
@@ -460,7 +467,7 @@ export class WidgetRegionDataService
                 {
                     
                     console.error("getData: "+errorMsg+". Ignored...");
-                    result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_EXPR, errorMsg, null));
+                    result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_EXPR, errorMsg, null, expr.name));
                     continue;
                 }
                 console.error("getData: "+errorMsg);
@@ -481,9 +488,43 @@ export class WidgetRegionDataService
                     // eg in the case of UI refreshing binary or ternary plots
                     let t0 = performance.now();
 
-                    let data = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, region ? region.pmcs : null);
+                    // At this point, we have to decide what we're querying for. If we have an ROI specified, we are only querying for its PMCs
+                    // BUT datasetId filters this further, because if we have one specified (in the case of combined datasets), we need to
+                    // only include PMCs for that dataset!
+                    let pmcsToQuery = region ? region.pmcs : null;
+                    let pmcOffset = 0;
+
+                    if(query.datasetId)
+                    {
+                        // Get the offset for this dataset ID
+                        pmcOffset = dataset.getIdOffsetForSubDataset(query.datasetId);
+
+                        // We're filtering down!
+                        if(!pmcsToQuery)
+                        {
+                            // No PMCs given, so just get all for the given dataset ID
+                            pmcsToQuery = this.getPMCsForDatasetId(query.datasetId, dataset)
+                        }
+                        else
+                        {
+                            // Region PMCs are specified, so filter down to only those for the given dataset!
+                            pmcsToQuery = this.filterPMCsForDatasetId(region.pmcs, query.datasetId, dataset);
+                        }
+                    }
+
+                    let data = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
                     data = this.applyUnitConversion(expr, data, query.units);
-                    let resultItem = new RegionDataResultItem(data, null, null, data.warning);
+
+                    // Also change the PMC values to be dataset-relative in the case of combined dataset
+                    if(pmcOffset > 0)
+                    {
+                        for(let c = 0; c < data.values.length; c++)
+                        {
+                            data.values[c].pmc -= pmcOffset;
+                        }
+                    }
+
+                    let resultItem = new RegionDataResultItem(data, null, null, data.warning, expr.name);
                     result.push(resultItem);
 
                     // Cache if needed
@@ -494,13 +535,56 @@ export class WidgetRegionDataService
                 {
                     let errorMsg = httpErrorToString(error, "WidgetRegionDataService.getData");
                     SentryHelper.logMsg(true, errorMsg);
-                    result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null));
+                    result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr.name));
                     //return null;
                 }
             }
         }
 
         return new RegionDataResults(result, "");
+    }
+
+    private getPMCsForDatasetId(datasetId: string, dataset: DataSet): Set<number>
+    {
+        let locIdxs = dataset.getLocationIdxsForSubDataset(datasetId);
+        let locations = dataset.experiment.getLocationsList();
+
+        let pmcsToQuery = new Set<number>();
+
+        // Convert each to a PMC & use it
+        for(let locIdx of locIdxs)
+        {
+            let loc = locations[locIdx];
+            let pmc = Number.parseInt(loc.getId());
+            if(pmc != undefined)
+            {
+                // NOTE: here we're using the PMC that's for the whole dataset, so it has the source offset included already!
+                pmcsToQuery.add(pmc);
+            }
+        }
+
+        return pmcsToQuery;
+    }
+
+    private filterPMCsForDatasetId(regionPMCs: Set<number>, datasetId: string, dataset: DataSet): Set<number>
+    {
+        let locIdxs = dataset.getLocationIdxsForSubDataset(datasetId);
+        let locations = dataset.experiment.getLocationsList();
+
+        let pmcsToQuery = new Set<number>();
+        for(let regionPMC of regionPMCs)
+        {
+            let locIdx = dataset.pmcToLocationIndex.get(regionPMC);
+
+            // See if it exists in the loc idxs for the sub-dataset
+            if(locIdxs.has(locIdx))
+            {
+                // We're adding it!
+                pmcsToQuery.add(regionPMC);
+            }
+        }
+
+        return pmcsToQuery;
     }
 
     private applyUnitConversion(sourceExpression: DataExpression, data: PMCDataValues, unitsRequested: DataUnit): PMCDataValues

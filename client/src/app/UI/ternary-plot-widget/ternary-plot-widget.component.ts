@@ -46,22 +46,13 @@ import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.
 import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expression-picker/expression-picker.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
 import { RGBA } from "src/app/utils/colours";
-//import { BinaryScatterPlotData } from '../binary-plot-view-widget/binary-plot-view-widget.component';
 import { randomString } from "src/app/utils/utils";
 import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { TernaryDiagramDrawer } from "./drawer";
 import { TernaryInteraction } from "./interaction";
 import { TernaryModel } from "./model";
 import { TernaryCorner, TernaryData, TernaryDataColour, TernaryDataItem, TernaryPlotPointIndex } from "./ternary-data";
-
-
-
-
-
-
-
-
-
+import { exportScatterPlot } from "src/app/UI/ternary-plot-widget/export-helper";
 
 
 @Component({
@@ -312,7 +303,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
             {
                 for(let exprId of exprIds)
                 {
-                    query.push(new DataSourceParams(exprId, roiId, this.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT));
+                    query.push(new DataSourceParams(exprId, roiId, "", this.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT));
                 }
             }
 
@@ -562,46 +553,31 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
         );
     }
 
-    exportPlotData(): string
+    exportPlotData(datasetId: string): string
     {
         let cornerALabel = this._ternaryModel.raw.cornerA.label;
         let cornerBLabel = this._ternaryModel.raw.cornerB.label;
         let cornerCLabel = this._ternaryModel.raw.cornerC.label;
 
-        let data = `"PMC","ROI","${cornerALabel}","${cornerBLabel}","${cornerCLabel}"`;
+        let data = `"PMC","ROI","${cornerALabel}","${cornerBLabel}","${cornerCLabel}"\n`;
         let dataset = this._datasetService.datasetLoaded;
-        let combined = dataset.isCombinedDataset();
-        let locations = dataset.experiment.getLocationsList();
-        if(combined)
-        {
-            data += ",\"SourceRTT\",\"SourcePMC\"";
-        }
-        data += "\n";
 
         Array.from(this._ternaryModel.raw.pmcToValueLookup.entries()).forEach(([pmc, idx]) =>
         {
-            let cornerAValue = this._ternaryModel.raw.pointGroups[idx.pointGroup].values[idx.valueIndex].a;
-            let cornerBValue = this._ternaryModel.raw.pointGroups[idx.pointGroup].values[idx.valueIndex].b;
-            let cornerCValue = this._ternaryModel.raw.pointGroups[idx.pointGroup].values[idx.valueIndex].c;
-
-            let roiId = this._ternaryModel.raw.visibleROIs[idx.pointGroup];
-            let roiName = this._widgetDataService.regions.get(roiId).name;
-            data += `${pmc},${roiName},${cornerAValue},${cornerBValue},${cornerCValue}`;
-            if(combined)
+            // Check if this PMC is a member of the dataset ID we're exporting for
+            if(dataset.getSubDatasetIdForPMC(pmc) == datasetId)
             {
-                let locIdx = dataset.pmcToLocationIndex.get(pmc);
-                if(locIdx != undefined)
-                {
-                    let sourceIdx = locations[locIdx].getScanSource();
-                    let source = dataset.experiment.getScanSourcesList()[sourceIdx];
+                // Subtract the PMC offset
+                pmc -= dataset.getIdOffsetForSubDataset(datasetId);
 
-                    let sourceRTT = source.getRtt();
-                    let sourcePMC = pmc-source.getIdOffset();
+                let cornerAValue = this._ternaryModel.raw.pointGroups[idx.pointGroup].values[idx.valueIndex].a;
+                let cornerBValue = this._ternaryModel.raw.pointGroups[idx.pointGroup].values[idx.valueIndex].b;
+                let cornerCValue = this._ternaryModel.raw.pointGroups[idx.pointGroup].values[idx.valueIndex].c;
 
-                    data += `,${sourceRTT},${sourcePMC}`;
-                }
+                let roiId = this._ternaryModel.raw.visibleROIs[idx.pointGroup];
+                let roiName = this._widgetDataService.regions.get(roiId).name;
+                data += `${pmc},${roiName},${cornerAValue},${cornerBValue},${cornerCValue}\n`;
             }
-            data += "\n";
         });
 
         return data;
@@ -609,59 +585,12 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
 
     onExport()
     {
-        if(this._ternaryModel && this._ternaryModel.raw)
+        if(!this._ternaryModel || !this._ternaryModel.raw)
         {
-            let exportOptions = [
-                new PlotExporterDialogOption("Color", true, true, { type: "switch", options: ["Dark Mode", "Light Mode"] }),
-                new PlotExporterDialogOption("Visible Key", true, true),
-                new PlotExporterDialogOption("Plot Image", true),
-                new PlotExporterDialogOption("Large Plot Image", true),
-                new PlotExporterDialogOption("Plot Data .csv", true),
-            ];
-
-            const dialogConfig = new MatDialogConfig();
-            dialogConfig.data = new PlotExporterDialogData(`${this._datasetService.datasetLoaded.getId()} - Ternary Plot`, "Export Ternary Plot", exportOptions);
-
-            const dialogRef = this.dialog.open(PlotExporterDialogComponent, dialogConfig);
-            dialogRef.componentInstance.onConfirmOptions.subscribe(
-                (options: PlotExporterDialogOption[])=>
-                {
-                    let optionLabels = options.map(option => option.label);
-                    let canvases: CanvasExportItem[] = [];
-                    let csvs: CSVExportItem[] = [];
-
-                    let showKey = optionLabels.indexOf("Visible Key") > -1;
-                    let lightMode = optionLabels.indexOf("Color") > -1;
-
-                    if(optionLabels.indexOf("Plot Image") > -1)
-                    {
-                        canvases.push(new CanvasExportItem(
-                            "Ternary Plot",
-                            generatePlotImage(this.drawer, this.transform, this.keyItems, 1200, 800, showKey, lightMode)
-                        ));   
-                    }
-
-                    if(optionLabels.indexOf("Large Plot Image") > -1)
-                    {
-                        canvases.push(new CanvasExportItem(
-                            "Ternary Plot - Large",
-                            generatePlotImage(this.drawer, this.transform, this.keyItems, 4096, 2160, showKey, lightMode)
-                        ));
-                    }
-
-                    if(optionLabels.indexOf("Plot Data .csv") > -1)
-                    {
-                        csvs.push(new CSVExportItem(
-                            "Ternary Plot Data",
-                            this.exportPlotData()
-                        ));
-                    }
-
-                    dialogRef.componentInstance.onDownload(canvases, csvs);
-                });
-
-            return dialogRef.afterClosed();
+            return;
         }
+
+        exportScatterPlot(this.dialog, "Ternary", this._datasetService.datasetLoaded, this);
     }
 
     onCornerSwap(corner: string): void

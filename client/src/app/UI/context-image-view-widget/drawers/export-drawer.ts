@@ -32,7 +32,7 @@ import { MainContextImageLayeredDrawer } from "src/app/UI/context-image-view-wid
 import { FootprintDrawer } from "src/app/UI/context-image-view-widget/drawers/footprint-drawer";
 import {getSchemeColours, IContextImageModel } from "src/app/UI/context-image-view-widget/model-interface";
 import { ContextImageToolHost } from "src/app/UI/context-image-view-widget/tools/tool-host";
-import { ClientSideExportGenerator } from "src/app/UI/export-data-dialog/client-side-export";
+import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
 
 
 // Special drawer used for generating export images, this is told what to draw in the constructor so when the draw call
