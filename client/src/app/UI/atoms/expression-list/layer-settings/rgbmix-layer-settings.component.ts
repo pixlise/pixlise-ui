@@ -46,6 +46,7 @@ import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/c
 import { httpErrorToString } from "src/app/utils/utils";
 import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../plot-exporter-dialog/plot-exporter-dialog.component";
 import { LayerVisibilityChange } from "./layer-settings.component";
+import { TaggingService } from "src/app/services/tagging.service";
 
 
 export class RGBLayerInfo
@@ -83,8 +84,8 @@ export class RGBMixLayerSettingsComponent implements OnInit
     // For edit mode, we have a name string
     nameForSave: string = "";
 
-    // tooltip, generated on init
-    tooltip: string = "";
+    // rgbmixTooltip, generated on init
+    rgbmixTooltip: string = "";
 
     constructor(
         private _rgbMixService: RGBMixConfigService,
@@ -94,6 +95,7 @@ export class RGBMixLayerSettingsComponent implements OnInit
         private _datasetService: DataSetService,
         private _diffractionSource: DiffractionPeakService,
         private _contextImageService: ContextImageService,
+        private _taggingService: TaggingService,
         public dialog: MatDialog
     )
     {
@@ -125,27 +127,11 @@ export class RGBMixLayerSettingsComponent implements OnInit
             this.layerInfo.greenExpressionName,
             this.layerInfo.blueExpressionName
         ];
+        
+        let tooltip = `${this.layerInfo.layer.name}\n\n`;
+        tooltip += expressionNames.map((expressionName, i) => `${RGBUImage.channels[i]}: ${expressionName || "?"}`).join("\n");
 
-        let tooltip = "";
-        for(let c = 0; c < expressionNames.length; c++)
-        {
-            if(c > 0)
-            {
-                tooltip += "\n";
-            }
-
-            tooltip += RGBUImage.channels[c]+": ";
-            if(expressionNames[c])
-            {
-                tooltip += expressionNames[c];
-            }
-            else
-            {
-                tooltip += "?";
-            }
-        }
-
-        this.tooltip = tooltip;
+        this.rgbmixTooltip = tooltip;
     }
 
     get sharedBy(): string
@@ -210,6 +196,21 @@ export class RGBMixLayerSettingsComponent implements OnInit
         });
 
         return notificationCount;
+    }
+
+    get collapsedNotificationTooltipText(): string
+    {
+        let tooltipText = "";
+        this.hiddenLayerButtons.forEach(button =>
+        {
+            if(button === "showTagPicker" && this.selectedTagIDs.length > 0)
+            {
+                tooltipText += "Tags:\n";
+                tooltipText += this.selectedTagIDs.map(tagID => this._taggingService.getTagName(tagID)).join("\n");
+            }
+        });
+
+        return tooltipText.length > 0 ? tooltipText : "View more options";
     }
 
     get layerButtons(): string[]

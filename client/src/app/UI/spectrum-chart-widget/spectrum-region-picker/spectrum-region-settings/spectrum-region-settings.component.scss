@@ -30,6 +30,23 @@
 @import 'variables.scss';
 @import 'atoms.scss';
 
+.labels-container {
+    display: flex;
+    max-width: 150px;
+}
+
 .setting-label {
     user-select: text;
+
+    flex: 1;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.obj-creator {
+    max-width: 65px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
 }

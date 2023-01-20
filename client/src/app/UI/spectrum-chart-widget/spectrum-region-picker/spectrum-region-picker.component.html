@@ -32,7 +32,42 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="panel" fxLayout="column" fxFill>
     <div fxLayout="row" fxLayoutAlign="space-between center" class="card-toolbar card-toolbar-shadow">
         <div class="txt-widget-title">Select Spectrum Lines To Display</div>
+        <icon-button
+            icon="assets/button-icons/filter-white.svg"
+            (onClick)="toggleFilters()">
+        </icon-button>
     </div>
+     <div 
+        fxLayout="row" 
+        fxLayoutAlign="space-between center" 
+        class="card-toolbar card-toolbar-shadow filters-row {{isFiltering ? 'visible-filters' : 'hidden-filters'}}"
+    >
+        <filter-box 
+            placeholder="Filter ROIs..." 
+            (onFilterChanged)="onFilterText($event)"
+        >
+        </filter-box>
+        <tag-picker
+            type="roi"
+            [selectedTagIDs]="filteredTagIDs"
+            [showCurrentTagsSection]="false"
+            (onTagSelectionChanged)="onTagFilterChanged($event)"
+        >
+        </tag-picker>
+        <mat-select
+            #tooltip="matTooltip"
+            [matTooltip]="authorsTooltip"
+            multiple
+            [(ngModel)]="filteredAuthors"
+            class="authors-filter"
+            placeholder="Author ..."
+        >
+            <mat-option *ngFor="let author of authors;"
+                [value]="author.user_id">{{author.name}}
+            </mat-option>
+        </mat-select>
+    </div>
+
     <div fxLayout="column" class="scrollable-container" fxFlex>
         <spectrum-region-settings
             *ngFor="let source of predefinedSources"
@@ -40,17 +75,60 @@ POSSIBILITY OF SUCH DAMAGE.
         </spectrum-region-settings>
         <div *ngIf="userSources.length > 0" class="list-subheading clearable-heading">User Regions 
             <push-button buttonStyle="outline" (onClick)="onClear(userSources)">Clear</push-button>
+            <two-state-icon-button
+              toolTip="Show/hide group contents" 
+              activeIcon="assets/button-icons/caret-down.svg"
+              inactiveIcon="assets/button-icons/caret-right.svg" 
+              class="carat-button"
+              [active]="isUserRegionsOpen"
+              (onToggle)="onToggleUserRegions()"
+            >
+            </two-state-icon-button>
         </div>
-        <spectrum-region-settings
-            *ngFor="let source of userSources"
-            [source]="source">
-        </spectrum-region-settings>
+        <ng-container *ngIf="isUserRegionsOpen">
+            <spectrum-region-settings
+                *ngFor="let source of filteredUserSources"
+                [source]="source">
+            </spectrum-region-settings>
+        </ng-container>
+
+        <div *ngIf="sharedSources.length > 0" class="list-subheading clearable-heading">MIST Mineral Species Regions
+            <push-button buttonStyle="outline" (onClick)="onClear(mistSources)">Clear</push-button>
+            <two-state-icon-button
+              toolTip="Show/hide group contents" 
+              activeIcon="assets/button-icons/caret-down.svg"
+              inactiveIcon="assets/button-icons/caret-right.svg" 
+              class="carat-button"
+              [active]="isMISTRegionsOpen"
+              (onToggle)="onToggleMISTRegions()"
+            >
+            </two-state-icon-button>
+        </div>
+        <ng-container *ngIf="isMISTRegionsOpen">
+            <spectrum-region-settings 
+                *ngFor="let source of filteredMISTSources" 
+                [source]="source"
+            >
+            </spectrum-region-settings>
+        </ng-container>
+
         <div *ngIf="sharedSources.length > 0" class="list-subheading clearable-heading">Shared Regions
             <push-button buttonStyle="outline" (onClick)="onClear(sharedSources)">Clear</push-button>
+            <two-state-icon-button
+              toolTip="Show/hide group contents" 
+              activeIcon="assets/button-icons/caret-down.svg"
+              inactiveIcon="assets/button-icons/caret-right.svg" 
+              class="carat-button"
+              [active]="isSharedRegionsOpen"
+              (onToggle)="onToggleSharedRegions()"
+            >
+            </two-state-icon-button>
         </div>
-        <spectrum-region-settings
-            *ngFor="let source of sharedSources"
-            [source]="source">
-        </spectrum-region-settings>
+        <ng-container *ngIf="isSharedRegionsOpen">
+            <spectrum-region-settings
+                *ngFor="let source of filteredSharedSources"
+                [source]="source">
+            </spectrum-region-settings>
+        </ng-container>
     </div>
 </div>

@@ -30,6 +30,7 @@
 import { Component, ElementRef, Inject, OnInit, ViewContainerRef } from "@angular/core";
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
+import { ObjectCreator } from "src/app/models/BasicTypes";
 import { PredefinedROIID, ROISavedItem } from "src/app/models/roi";
 import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationService } from "src/app/services/quantification.service";
@@ -74,10 +75,23 @@ export class ROIPickerComponent implements OnInit
 
     fullDatasetROI: ROISettingsItem;
     remainingPointsROI: ROISettingsItem;
+
     mistROIs: ROISettingsItem[] = [];
     userROIs: ROISettingsItem[] = [];
     sharedROIs: ROISettingsItem[] = [];
+
+    filteredMISTROIs: ROISettingsItem[] = [];
+    filteredUserROIs: ROISettingsItem[] = [];
+    filteredSharedROIs: ROISettingsItem[] = [];
+
     isDisplayed: boolean = true;
+    isFiltering: boolean = false;
+
+    _authors: ObjectCreator[] = [];
+    _filteredAuthors: string[] = [];
+    _filterText: string = "";
+    filteredTagIDs: string[] = [];
+
 
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: ROIPickerData,
@@ -162,12 +176,18 @@ export class ROIPickerComponent implements OnInit
                             colourRGB,
                             visible,
                             "",
-                            shape
+                            shape,
+                            roi.creator.user_id,
+                            roi.tags || [],
                         );
 
                         if(roi.mistROIItem && roi.mistROIItem !== null)
                         {
-                            this.mistROIs.push(newROI);
+                            // Only show MIST ROI if it's species level
+                            if(roi.mistROIItem && roi?.mistROIItem.ID_Depth >= 5)
+                            {
+                                this.mistROIs.push(newROI);
+                            }
                         }
                         else if(roi.shared)
                         {
@@ -182,6 +202,7 @@ export class ROIPickerComponent implements OnInit
 
                 this.userROIs.sort((a, b) => (a.label.localeCompare(b.label)));
                 this.sharedROIs.sort((a, b) => (a.label.localeCompare(b.label)));
+                this.mistROIs.sort((a, b) => (a.label.localeCompare(b.label)));
 
                 // Sort enabled ROIS to the top for easier access
                 let enabledUserROIs = this.userROIs.filter((roi) => roi.active);
@@ -195,10 +216,11 @@ export class ROIPickerComponent implements OnInit
                 this.userROIs = enabledUserROIs.concat(disabledUserROIs);
                 this.sharedROIs = enabledSharedROIs.concat(disabledSharedROIs);
                 this.mistROIs = enabledMISTROIs.concat(disabledMISTROIs);
+
+                this.filterROIs();
+                this.extractAuthors(Array.from(rois.values()));
             },
-            (err)=>
-            {
-            }
+            ()=>null
         ));
     }
 
@@ -319,5 +341,120 @@ export class ROIPickerComponent implements OnInit
         {
             roi.active = false;
         });
+    }
+
+    onTagSelectionChanged({roiID, tags})
+    {
+        this._roiService.tag(roiID, tags).subscribe(
+            ()=>
+            {
+                this._roiService.refreshROIList();
+            },
+            (err)=>
+            {
+                alert(`Error while tagging ROI: ${roiID}`);
+                this._roiService.refreshROIList();
+            }
+        );
+    }
+
+    extractAuthors(rois: ROISavedItem[])
+    {
+        let authorIDs = new Set<string>();
+        let authors: ObjectCreator[] = [];
+        rois.forEach((roi) =>
+        {
+            if(!authorIDs.has(roi.creator.user_id))
+            {
+                authors.push(roi.creator);
+                authorIDs.add(roi.creator.user_id);
+            }
+        });
+
+        this.authors = authors;
+    }
+
+    filterROI(roi: ROISettingsItem): boolean
+    {
+        let matchesText = true;
+        let matchesTags = true;
+        let matchesAuthors = true;
+
+        let filterText = this._filterText?.toLowerCase();
+        if(filterText.length > 0)
+        {
+            matchesText = roi.label?.toLowerCase().includes(filterText);
+        }
+        if(this.filteredTagIDs.length > 0)
+        {
+            matchesTags = this.filteredTagIDs.some((tagID) => roi.tags.includes(tagID));
+        }
+        if(this.filteredAuthors.length > 0)
+        {
+            matchesAuthors = this.filteredAuthors.some((author) => roi.user_id === author);
+        }
+
+        return matchesText && matchesTags && matchesAuthors;
+    }
+
+    filterROIs(): void
+    {
+        if(this.isFiltering)
+        {
+            this.filteredUserROIs = this.userROIs.filter((roi) => this.filterROI(roi));
+            this.filteredSharedROIs = this.sharedROIs.filter((roi) => this.filterROI(roi));
+            this.filteredMISTROIs = this.mistROIs.filter((roi) => this.filterROI(roi));
+        }
+        else
+        {
+            this.filteredUserROIs = [...this.userROIs];
+            this.filteredSharedROIs = [...this.sharedROIs];
+            this.filteredMISTROIs = [...this.mistROIs];
+        }
+    }
+
+    toggleFilters(): void
+    {
+        this.isFiltering = !this.isFiltering;
+        this.filterROIs();
+    }
+
+    get authors(): ObjectCreator[]
+    {
+        return this._authors;
+    }
+
+    set authors(authors: ObjectCreator[])
+    {
+        this._authors = authors;
+    }
+
+    get authorsTooltip(): string
+    {
+        let authorNames = this._authors.filter((author) => this._filteredAuthors.includes(author.user_id)).map((author) => author.name);
+        return this._filteredAuthors.length > 0 ? `Authors:\n${authorNames.join("\n")}` : "No Authors Selected";
+    }
+
+    get filteredAuthors(): string[]
+    {
+        return this._filteredAuthors;
+    }
+
+    set filteredAuthors(authors: string[])
+    {
+        this._filteredAuthors = authors;
+        this.filterROIs();
+    }
+
+    onTagFilterChanged(tagIDs: string[]): void
+    {
+        this.filteredTagIDs = tagIDs;
+        this.filterROIs();
+    }
+
+    onFilterText(filterText: string): void
+    {
+        this._filterText = filterText || "";
+        this.filterROIs();
     }
 }

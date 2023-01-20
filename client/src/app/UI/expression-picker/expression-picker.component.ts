@@ -203,76 +203,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
             }
         );
 
-        this.populateAuthorsList();
-    }
-
-    private populateAuthorsList(): void
-    {
-        let items = this._listBuilder.makeExpressionList(
-            new Set(["expressions-header", "rgbmix-header"]),
-            new Set(),
-            new Set(),
-            "",
-            [],
-            [],
-            false,
-            (source: DataExpression|RGBMix): LocationDataLayerProperties=>
-            {
-                let layer = new LocationDataLayerPropertiesWithVisibility(source.id, source.name, source.id, source);
-                layer.visible = (this._activeIDs.has(source.id));
-                return layer;
-            }
-        );
-        
-        let duplicateNames = new Set<string>();
-        let existingNames = new Set<string>();
-        let existingIDs = new Set<string>();
-
-        if(items && items.items && items.items.length > 0)
-        {
-            let authorMap = new Map<string, ObjectCreator>();
-            items.items.forEach((item) =>
-            {
-                let creator = item.content?.layer?.source?.creator;
-                let id = creator?.user_id;
-
-                if(id)
-                {
-                    if(authorMap.has(id) && authorMap[id])
-                    {
-                        // Some expressions were created prior to name changes, so we need to group by ID and prefer the non-email one
-                        let { name, email } = authorMap[id];
-                        authorMap[id].name = email.includes(name) ? creator.name : name;
-                    }
-                    else
-                    {
-                        authorMap.set(id, creator);
-                    }
-
-                    // Check for duplicate names so we can name them differently in the dropdown, while keeping IDs unique
-                    if(existingNames.has(creator.name) && !existingIDs.has(creator.user_id))
-                    {
-                        duplicateNames.add(creator.name);
-                    }
-                    else
-                    {
-                        existingNames.add(creator.name);
-                        existingIDs.add(creator.user_id);
-                    }
-                }
-            });
-
-            // Rename creators with duplicate names to include email
-            for(let [, creator] of authorMap)
-            {
-                if(duplicateNames.has(creator.name))
-                {
-                    creator.name = `${creator.name} (${creator.email})`;
-                }
-            }
-           
-            this.authors = Array.from(authorMap.values()).sort((a, b) => a.name > b.name ? 1 : -1);
-        }
+        this.authors = this._listBuilder.getAuthors();
     }
 
     get authors(): ObjectCreator[]

@@ -30,9 +30,8 @@
 import { Component, OnInit } from "@angular/core";
 import { Subscription } from "rxjs";
 import { SpectrumChartService } from "src/app/services/spectrum-chart.service";
-import { SpectrumSource, SpectrumChartModel, SpectrumLineChoice } from "src/app/UI/spectrum-chart-widget/model";
+import { SpectrumSource, SpectrumLineChoice } from "src/app/UI/spectrum-chart-widget/model";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { keyframes } from "@angular/animations";
 
 
 @Component({
@@ -117,6 +116,8 @@ export class FitElementsComponent implements OnInit
                     elem.symbol,
                     false,
                     null,
+                    [],
+                    false,
                     null,
                     [],
                     [],

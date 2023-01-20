@@ -31,6 +31,8 @@ import { Component, ElementRef, EventEmitter, Input, OnInit, Output } from "@ang
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
+import { AuthenticationService } from "src/app/services/authentication.service";
+import { ROIService } from "src/app/services/roi.service";
 import { ViewStateService } from "src/app/services/view-state.service";
 import { PickerDialogComponent, PickerDialogData } from "src/app/UI/atoms/picker-dialog/picker-dialog.component";
 
@@ -41,7 +43,17 @@ import { PickerDialogComponent, PickerDialogData } from "src/app/UI/atoms/picker
 
 export class ROISettingsItem
 {
-    constructor(public roiID: string, public label: string, public sharedBy: string, public colour: string, public active: boolean, public colour2: string, public shape: string)
+    constructor(
+        public roiID: string,
+        public label: string,
+        public sharedBy: string,
+        public colour: string,
+        public active: boolean,
+        public colour2: string,
+        public shape: string,
+        public user_id: string = "",
+        public tags: string[] = []
+    )
     {
     }
 }
@@ -55,9 +67,11 @@ export class RegionItemSettingsComponent implements OnInit
 {
     @Input() item: ROISettingsItem;
     @Input() showColourButton: boolean;
+    @Input() showTags: boolean = true;
     @Input() activeIcon: string;
     @Input() inactiveIcon: string;
     @Output() toggleVisible = new EventEmitter();
+    @Output() onTagSelectionChanged = new EventEmitter();
 
     private _subs = new Subscription();
     private _colourRGB: string = "";
@@ -66,6 +80,8 @@ export class RegionItemSettingsComponent implements OnInit
 
     constructor(
         private _viewStateService: ViewStateService,
+        private _authService: AuthenticationService,
+        private _roiService: ROIService,
         public dialog: MatDialog
     )
     {
@@ -91,6 +107,16 @@ export class RegionItemSettingsComponent implements OnInit
     get sharedBy(): string
     {
         return this.item.sharedBy;
+    }
+
+    get selectedTagIDs(): string[]
+    {
+        return this.item.tags || [];
+    }
+
+    get isSharedByOtherUser(): boolean
+    {
+        return this.sharedBy !== null && this.item.user_id !== this._authService.getUserID();
     }
 
     get visible(): boolean
@@ -203,5 +229,10 @@ export class RegionItemSettingsComponent implements OnInit
     onVisibility(event)
     {
         this.toggleVisible.emit(this.item.roiID);
+    }
+
+    onTagSelectionChangedEvent(event)
+    {
+        this.onTagSelectionChanged.emit({ roiID: this.item.roiID, tags: event });
     }
 }

@@ -99,9 +99,19 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="column" class="setting-row" [ngClass]="{'setting-row-visible': visible}">
     <div fxLayout="row" fxLayoutAlign="space-between center">
-        <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
-            <div class="setting-label" [title]="'Expression:\n'+expressionHover" [ngClass]='{"incompatible": incompatibleWithQuant}'>{{labelToShow}}</div>
-            <div *ngIf="sharedBy" class="obj-creator">{{sharedBy}}</div>
+        <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements labels-container">
+            <div 
+                class="setting-label label-text"
+                #tooltip="matTooltip"
+                [matTooltip]="tooltipText"
+                [ngClass]='{"incompatible": incompatibleWithQuant}'
+            >{{labelToShow}}</div>
+            <div 
+                *ngIf="sharedBy" 
+                class="obj-creator"
+                #tooltip="matTooltip"
+                [matTooltip]="sharedBy"
+            >{{sharedBy}}</div>
         </div>
 
         <div fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements">
@@ -113,10 +123,15 @@ POSSIBILITY OF SUCH DAMAGE.
                 [maxValue]="1"
                 (onChange)="onChangeOpacity($event)">
             </slider>
-            <widget-settings-menu *ngIf="showMoreButtonVisible" [settingsDialog]="moreButtonsMenu" [noPadding]="true">
+            <widget-settings-menu 
+                *ngIf="showMoreButtonVisible"
+                [settingsDialog]="moreButtonsMenu" 
+                [noPadding]="true"
+            >
                 <icon-button
+                    #tooltip="matTooltip"
+                    [matTooltip]="collapsedNotificationTooltipText"
                     [notificationCount]="collapsedNotificationCount"
-                    title="View more options"
                     icon="assets/button-icons/three-dots.svg"
                 ></icon-button>
             </widget-settings-menu>
@@ -186,7 +201,17 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
     </div>
     <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
-        <div *ngIf="createdTime > 0" class="obj-create-time">Created: {{createdTime|date:'medium'}}</div>
-        <div *ngIf="expressionComments.length > 0" class="comment" title="{{expressionComments}}">{{expressionComments}}</div>
+        <div 
+            *ngIf="createdTime > 0" 
+            class="obj-create-time"
+            #tooltip="matTooltip"
+            matTooltip="Created: {{createdTime | date:'medium'}}"
+        >{{createdTime|date:'shortDate'}}</div>
+        <div 
+            *ngIf="expressionComments.length > 0" 
+            class="comment"
+            #tooltip="matTooltip"
+            [matTooltip]="expressionComments"
+        >{{expressionComments}}</div>
     </div>
 </div>

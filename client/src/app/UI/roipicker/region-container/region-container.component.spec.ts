@@ -27,32 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-@import 'atoms.scss';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { RegionContainerComponent } from "./region-container.component";
 
 
-.picker {
-    height: 60vh;
-    min-width: 35vw;
-}
+describe("RegionContainerComponent", () => 
+{
+    let component: RegionContainerComponent;
+    let fixture: ComponentFixture<RegionContainerComponent>;
 
-.add-label {
-    text-transform: capitalize;
-}
+    beforeEach(async () => 
+    {
+        await TestBed.configureTestingModule({
+            declarations: [ RegionContainerComponent ]
+        })
+            .compileComponents();
+    });
 
-.filter-container {
-    display: flex;
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(RegionContainerComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-    tag-picker {
-        margin-left: 6px;
-    }
-
-    .authors-filter {
-        padding-top: 5px;
-        padding-bottom: 0;
-
-        background: #454c50 !important;
-        border-radius: $sz-half !important;
-        border: 2px solid rgb(var(--clr-gray-60));
-    }
-}
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

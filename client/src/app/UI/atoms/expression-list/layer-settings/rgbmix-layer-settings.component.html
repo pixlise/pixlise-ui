@@ -75,17 +75,37 @@ POSSIBILITY OF SUCH DAMAGE.
         <div
             *ngSwitchCase="false"
             fxLayout="row" fxLayoutAlign="space-between center" fxFlex="100%">
-            <div fxLayout="row" class="gap-separated-horizontal-elements">
-                <div class="setting-label" title="{{tooltip}}" [ngClass]='{"incompatible": incompatibleWithQuant}'>{{label}}</div>
-                <span *ngIf="createdTime > 0" class="obj-create-time">Created: {{createdTime|date:'medium'}}</span>
-                <div *ngIf="sharedBy" class="obj-creator">{{sharedBy}}</div>
+            <div fxLayout="column">
+                <div fxLayout="row" class="gap-separated-horizontal-elements labels-container">
+                    <div 
+                        class="setting-label label-text"
+                        #tooltip="matTooltip"
+                        [matTooltip]="rgbmixTooltip"
+                        [ngClass]='{"incompatible": incompatibleWithQuant}'
+                    >{{label}}</div>
+                    <div 
+                        *ngIf="sharedBy" 
+                        class="obj-creator"
+                        #tooltip="matTooltip"
+                        [matTooltip]="sharedBy"
+                    >{{sharedBy}}</div>
+                </div>
+                <div fxLayout="row" class="gap-separated-horizontal-elements labels-container">
+                    <span 
+                        *ngIf="createdTime > 0"
+                        class="obj-create-time"
+                        #tooltip="matTooltip"
+                        matTooltip="Created: {{createdTime | date:'medium'}}"
+                    >{{createdTime|date:'shortDate'}}</span>
+                </div>
             </div>
 
             <div fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements">
                 <widget-settings-menu *ngIf="showMoreButtonVisible" [settingsDialog]="moreButtonsMenu">
                     <icon-button
+                        #tooltip="matTooltip"
+                        [matTooltip]="collapsedNotificationTooltipText"
                         [notificationCount]="collapsedNotificationCount"
-                        title="View more options"
                         icon="assets/button-icons/three-dots.svg"
                     ></icon-button>
                 </widget-settings-menu>

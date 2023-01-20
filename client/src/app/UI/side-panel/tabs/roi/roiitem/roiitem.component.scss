@@ -92,6 +92,14 @@
     text-overflow: ellipsis;
 }
 
+.roi-label {
+    max-width: 120px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;   
+}
+
 .description-container {
     background: $clr-gray-90;
     padding: $sz-unit;

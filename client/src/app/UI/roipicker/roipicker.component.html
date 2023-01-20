@@ -29,9 +29,39 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div fxLayout="column">
+<div fxLayout="column" class="roi-picker-container">
     <div fxLayout="row" fxLayoutAlign="space-between center" class="card-toolbar card-toolbar-shadow">
         <div class="txt-widget-title">Regions Of Interest</div>
+        <icon-button 
+            icon="assets/button-icons/filter-white.svg" 
+            (onClick)="toggleFilters()" 
+        ></icon-button>
+    </div>
+    <div fxLayout="row" fxLayoutAlign="space-between center" class="card-toolbar card-toolbar-shadow filters-row {{isFiltering ? 'visible-filters' : 'hidden-filters'}}">
+        <filter-box 
+            placeholder="Filter ROIs..." 
+            (onFilterChanged)="onFilterText($event)"
+        >
+        </filter-box>
+        <tag-picker
+            type="roi"
+            [selectedTagIDs]="filteredTagIDs"
+            [showCurrentTagsSection]="false"
+            (onTagSelectionChanged)="onTagFilterChanged($event)"
+        >
+        </tag-picker>
+        <mat-select
+            #tooltip="matTooltip"
+            [matTooltip]="authorsTooltip"
+            multiple
+            [(ngModel)]="filteredAuthors"
+            class="authors-filter"
+            placeholder="Author ..."
+        >
+            <mat-option *ngFor="let author of authors;"
+                [value]="author.user_id">{{author.name}}
+            </mat-option>
+        </mat-select>
     </div>
 
     <div fxLayout="column" class="scrollable-container">
@@ -41,39 +71,51 @@ POSSIBILITY OF SUCH DAMAGE.
             [showColourButton]="isShowingColourButton(fullDatasetROI.roiID)"
             [activeIcon]="activeIcon"
             [inactiveIcon]="inactiveIcon"
-            (toggleVisible)="onVisibility($event)"></region-item-settings>
+            (toggleVisible)="onVisibility($event)"
+            [showTags]="false"
+        >
+        </region-item-settings>
         <region-item-settings
             *ngIf="data.showRemainingPointsIfExists && remainingPointsROI"
             [item]="remainingPointsROI"
             [showColourButton]="isShowingColourButton(remainingPointsROI.roiID)"
             [activeIcon]="activeIcon"
             [inactiveIcon]="inactiveIcon"
-            (toggleVisible)="onVisibility($event)"></region-item-settings>
+            (toggleVisible)="onVisibility($event)"
+            [showTags]="false"
+        >
+        </region-item-settings>
 
-        <div *ngIf="mistROIs.length > 0" class="list-subheading">MIST Algorithm Mineral Species IDs</div>
-        <region-item-settings
-            *ngFor="let item of mistROIs"
-            [item]="item"
-            [showColourButton]="isShowingColourButton(item.roiID)"
-            [activeIcon]="activeIcon"
-            [inactiveIcon]="inactiveIcon"
-            (toggleVisible)="onVisibility($event)"></region-item-settings>
-        <div *ngIf="userROIs.length > 0" class="list-subheading">User Defined Regions</div>
-        <region-item-settings
-            *ngFor="let item of userROIs"
-            [item]="item"
-            [showColourButton]="isShowingColourButton(item.roiID)"
-            [activeIcon]="activeIcon"
-            [inactiveIcon]="inactiveIcon"
-            (toggleVisible)="onVisibility($event)"></region-item-settings>
-        <div *ngIf="sharedROIs.length > 0" class="list-subheading">Shared Regions</div>
-        <region-item-settings
-            *ngFor="let item of sharedROIs"
-            [item]="item"
-            [showColourButton]="isShowingColourButton(item.roiID)"
-            [activeIcon]="activeIcon"
-            [inactiveIcon]="inactiveIcon"
-            (toggleVisible)="onVisibility($event)"></region-item-settings>
+        <region-container
+            *ngIf="mistROIs.length > 0"
+            regionTitle="MIST Algorithm Mineral Species IDs"
+            [rois]="mistROIs"
+            [filteredROIs]="filteredMISTROIs"
+            [showColourButton]="data.showColourButton"
+            [isDisplayed]="isDisplayed"
+            [singleSelection]="data.singleSelection"
+        >
+        </region-container>
+        <region-container
+            *ngIf="userROIs.length > 0"
+            regionTitle="User Defined Regions"
+            [rois]="userROIs"
+            [filteredROIs]="filteredUserROIs"
+            [showColourButton]="data.showColourButton"
+            [isDisplayed]="isDisplayed"
+            [singleSelection]="data.singleSelection"
+        >
+        </region-container>
+        <region-container
+            *ngIf="sharedROIs.length > 0"
+            regionTitle="Shared Regions"
+            [rois]="sharedROIs"
+            [filteredROIs]="filteredSharedROIs"
+            [showColourButton]="data.showColourButton"
+            [isDisplayed]="isDisplayed"
+            [singleSelection]="data.singleSelection"
+        >
+        </region-container>
     </div>
 
     <div fxLayout="row" fxLayoutAlign="end center" class="card-toolbar gap-separated-horizontal-elements">

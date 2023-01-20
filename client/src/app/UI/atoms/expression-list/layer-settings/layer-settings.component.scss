@@ -77,7 +77,8 @@ input {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    max-width: 25vw;
+    max-width: calc(35vw - 48px - 230px);
+    flex: 1;
 }
 
 .obj-creator {
@@ -98,5 +99,25 @@ input {
 
     icon-button {
         margin-right: $sz-half;
+    }
+}
+
+.labels-container {
+    display: flex;
+    max-width: calc(35vw - 48px - 230px);
+
+    .label-text {
+        flex: 1;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        min-width: 30px;
+    }
+
+    .obj-creator {
+        max-width: 150px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 }
