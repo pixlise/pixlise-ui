@@ -125,25 +125,9 @@ export class RGBMixLayerSettingsComponent implements OnInit
             this.layerInfo.greenExpressionName,
             this.layerInfo.blueExpressionName
         ];
-
-        let tooltip = "";
-        for(let c = 0; c < expressionNames.length; c++)
-        {
-            if(c > 0)
-            {
-                tooltip += "\n";
-            }
-
-            tooltip += RGBUImage.channels[c]+": ";
-            if(expressionNames[c])
-            {
-                tooltip += expressionNames[c];
-            }
-            else
-            {
-                tooltip += "?";
-            }
-        }
+        
+        let tooltip = `${this.layerInfo.layer.name}\n\n`;
+        tooltip += expressionNames.map((expressionName, i) => `${RGBUImage.channels[i]}: ${expressionName || "?"}`).join("\n");
 
         this.rgbmixTooltip = tooltip;
     }
