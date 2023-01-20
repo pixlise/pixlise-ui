@@ -27,54 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { RegionContainerComponent } from "./region-container.component";
 
 
-.scrollable-container {
-    overflow-y: scroll;
-}
+describe("RegionContainerComponent", () => 
+{
+    let component: RegionContainerComponent;
+    let fixture: ComponentFixture<RegionContainerComponent>;
 
-.clearable-heading {
-    display: flex;
-    align-items: center;
-    border-bottom: 1px solid #454c50;
+    beforeEach(async () => 
+    {
+        await TestBed.configureTestingModule({
+            declarations: [ RegionContainerComponent ]
+        })
+            .compileComponents();
+    });
 
-    push-button {
-        margin-left: auto;
-    }
-}
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(RegionContainerComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-
-.authors-filter {
-    flex: 1;
-    height: 19px;
-
-    padding-top: 5px;
-    padding-bottom: 0;
-
-    background: #454c50 !important;
-    border-radius: $sz-half !important;
-    border: 2px solid rgb(var(--clr-gray-60));
-}
-
-tag-picker {
-    margin-left: 6px;
-}
-
-.filters-row {
-    overflow: hidden;
-    transition: all 0.1s linear;
-}
-.visible-filters {
-    height: 44px;
-    padding: 8px;
-}
-
-.hidden-filters {
-    height: 0;
-    padding: 0 8px;
-}
-
-.carat-button {
-    margin-left: $sz-unit;
-}
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

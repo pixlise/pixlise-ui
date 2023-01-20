@@ -77,7 +77,23 @@ export class SpectrumRegionSettingsComponent implements OnInit
 
     get selectButtonDisabled(): boolean
     {
-        return (this.source.roiID != PredefinedROIID.AllPoints && this.source.locationIndexes.length <= 0);
+        return (this.source.roiID !== PredefinedROIID.AllPoints && this.source.locationIndexes.length <= 0) || this._colourRGB.length <= 0;
+    }
+
+    get spectraDisabledTooltip(): string
+    {
+        if(this.source.roiID !== PredefinedROIID.AllPoints && this.source.locationIndexes.length <= 0)
+        {
+            return "Region has no points to display";
+        }
+        else if(this._colourRGB.length <= 0)
+        {
+            return `No colour defined for ROI: "${this.labelToShow}" cannot show lines`;
+        }
+        else
+        {
+            return "";
+        }
     }
 
     get labelToShow(): string
@@ -124,7 +140,7 @@ export class SpectrumRegionSettingsComponent implements OnInit
             },
             (err)=>
             {
-                alert(`Error while tagging ROI: ${this.source.roiName}`);
+                alert(`Error while tagging ROI: ${this.labelToShow}`);
                 this._roiService.refreshROIList();
             }
         );
@@ -139,7 +155,7 @@ export class SpectrumRegionSettingsComponent implements OnInit
             this._colourRGB.length <= 0
         )
         {
-            alert("No colour defined for ROI: "+this.source.roiName+", cannot show lines");
+            alert("No colour defined for ROI: "+this.labelToShow+", cannot show lines");
             return;
         }
 

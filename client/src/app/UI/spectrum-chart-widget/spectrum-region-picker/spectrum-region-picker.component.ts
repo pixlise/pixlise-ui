@@ -65,6 +65,10 @@ export class SpectrumRegionPickerComponent implements OnInit
     authors: ObjectCreator[] = [];
     private _filteredAuthors: string[] = [];
 
+    isUserRegionsOpen: boolean = true;
+    isSharedRegionsOpen: boolean = true;
+    isMISTRegionsOpen: boolean = true;
+
     constructor(
         private _spectrumService: SpectrumChartService,
     )
@@ -251,5 +255,20 @@ export class SpectrumRegionPickerComponent implements OnInit
     {
         this._filterText = filterText || "";
         this.filterROIs();
+    }
+
+    onToggleUserRegions(): void
+    {
+        this.isUserRegionsOpen = !this.isUserRegionsOpen;
+    }
+
+    onToggleSharedRegions(): void
+    {
+        this.isSharedRegionsOpen = !this.isSharedRegionsOpen;
+    }
+
+    onToggleMISTRegions(): void
+    {
+        this.isMISTRegionsOpen = !this.isMISTRegionsOpen;
     }
 }

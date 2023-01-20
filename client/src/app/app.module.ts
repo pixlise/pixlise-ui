@@ -141,6 +141,7 @@ import { ExpressionPickerComponent } from "./UI/expression-picker/expression-pic
 import { TagPickerComponent } from "./UI/tag-picker/tag-picker.component";
 import { ROIPickerComponent } from "./UI/roipicker/roipicker.component";
 import { RegionItemSettingsComponent } from "./UI/roipicker/region-item-settings/region-item-settings.component";
+import { RegionContainerComponent } from "./UI/roipicker/region-container/region-container.component";
 import { SpectrumRegionPickerComponent } from "./UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
 import { SpectrumRegionSettingsComponent } from "./UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-settings/spectrum-region-settings.component";
 import { WidgetSwitcherComponent } from "./UI/atoms/widget-switcher/widget-switcher.component";
@@ -390,6 +391,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         AnnotationEditorComponent,
         AnnotationDisplayComponent,
         RegionItemSettingsComponent,
+        RegionContainerComponent,
         SpectrumRegionPickerComponent,
         SpectrumRegionSettingsComponent,
         WidgetSwitcherComponent,

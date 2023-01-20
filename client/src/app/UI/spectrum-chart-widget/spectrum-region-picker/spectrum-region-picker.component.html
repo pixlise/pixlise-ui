@@ -75,25 +75,60 @@ POSSIBILITY OF SUCH DAMAGE.
         </spectrum-region-settings>
         <div *ngIf="userSources.length > 0" class="list-subheading clearable-heading">User Regions 
             <push-button buttonStyle="outline" (onClick)="onClear(userSources)">Clear</push-button>
+            <two-state-icon-button
+              toolTip="Show/hide group contents" 
+              activeIcon="assets/button-icons/caret-down.svg"
+              inactiveIcon="assets/button-icons/caret-right.svg" 
+              class="carat-button"
+              [active]="isUserRegionsOpen"
+              (onToggle)="onToggleUserRegions()"
+            >
+            </two-state-icon-button>
         </div>
-        <spectrum-region-settings
-            *ngFor="let source of filteredUserSources"
-            [source]="source">
-        </spectrum-region-settings>
-        <div *ngIf="sharedSources.length > 0" class="list-subheading clearable-heading">MIST Algorithm Mineral Species Regions
+        <ng-container *ngIf="isUserRegionsOpen">
+            <spectrum-region-settings
+                *ngFor="let source of filteredUserSources"
+                [source]="source">
+            </spectrum-region-settings>
+        </ng-container>
+
+        <div *ngIf="sharedSources.length > 0" class="list-subheading clearable-heading">MIST Mineral Species Regions
             <push-button buttonStyle="outline" (onClick)="onClear(mistSources)">Clear</push-button>
+            <two-state-icon-button
+              toolTip="Show/hide group contents" 
+              activeIcon="assets/button-icons/caret-down.svg"
+              inactiveIcon="assets/button-icons/caret-right.svg" 
+              class="carat-button"
+              [active]="isMISTRegionsOpen"
+              (onToggle)="onToggleMISTRegions()"
+            >
+            </two-state-icon-button>
         </div>
-        <spectrum-region-settings 
-            *ngFor="let source of filteredMISTSources" 
-            [source]="source"
-        >
-        </spectrum-region-settings>
+        <ng-container *ngIf="isMISTRegionsOpen">
+            <spectrum-region-settings 
+                *ngFor="let source of filteredMISTSources" 
+                [source]="source"
+            >
+            </spectrum-region-settings>
+        </ng-container>
+
         <div *ngIf="sharedSources.length > 0" class="list-subheading clearable-heading">Shared Regions
             <push-button buttonStyle="outline" (onClick)="onClear(sharedSources)">Clear</push-button>
+            <two-state-icon-button
+              toolTip="Show/hide group contents" 
+              activeIcon="assets/button-icons/caret-down.svg"
+              inactiveIcon="assets/button-icons/caret-right.svg" 
+              class="carat-button"
+              [active]="isSharedRegionsOpen"
+              (onToggle)="onToggleSharedRegions()"
+            >
+            </two-state-icon-button>
         </div>
-        <spectrum-region-settings
-            *ngFor="let source of filteredSharedSources"
-            [source]="source">
-        </spectrum-region-settings>
+        <ng-container *ngIf="isSharedRegionsOpen">
+            <spectrum-region-settings
+                *ngFor="let source of filteredSharedSources"
+                [source]="source">
+            </spectrum-region-settings>
+        </ng-container>
     </div>
 </div>

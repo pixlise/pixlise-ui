@@ -68,6 +68,12 @@ POSSIBILITY OF SUCH DAMAGE.
             icon="assets/button-icons/colours.svg"
             (click)="onColours($event)"></icon-button>
 
-        <push-button (onClick)="onSelectSpectra()" [disabled]='selectButtonDisabled'>Select Spectra</push-button>
+        <push-button
+            #tooltip="matTooltip"
+            [matTooltip]="spectraDisabledTooltip"
+            [matTooltipDisabled]="!selectButtonDisabled"
+            (onClick)="onSelectSpectra()"
+            [disabled]='selectButtonDisabled'>Select Spectra
+        </push-button>
     </div>
 </div>
