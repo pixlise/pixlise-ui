@@ -1,0 +1,20 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: pixlise-ui
+  description: |
+    The Pixlise UI.
+  links:
+    - title: Website
+      url: https://pixlise.org
+    - title: Documentation
+      url: https://pixlise.gitbook.io/
+  annotations:
+    github.com/project-slug: pixlise/core/core
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: service
+  owner: default/developers
+  lifecycle: production
+  dependentOn:
+    - component:pixlise-api
