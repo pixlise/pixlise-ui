@@ -117,6 +117,7 @@ export class FitElementsComponent implements OnInit
                     false,
                     null,
                     [],
+                    false,
                     null,
                     [],
                     [],

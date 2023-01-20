@@ -33,7 +33,14 @@
 .setting-label {
     user-select: text;
 
-    max-width: 120px;
+    max-width: 100px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.obj-creator {
+    max-width: 65px;
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;

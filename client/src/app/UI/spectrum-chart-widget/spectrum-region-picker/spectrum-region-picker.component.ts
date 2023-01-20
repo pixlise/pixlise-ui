@@ -29,6 +29,7 @@
 
 import { Component, OnInit } from "@angular/core";
 import { Subscription } from "rxjs";
+import { ObjectCreator } from "src/app/models/BasicTypes";
 import { PredefinedROIID } from "src/app/models/roi";
 import { SpectrumChartService } from "src/app/services/spectrum-chart.service";
 import { ViewStateService } from "src/app/services/view-state.service";
@@ -46,8 +47,23 @@ export class SpectrumRegionPickerComponent implements OnInit
     private _subs = new Subscription();
 
     predefinedSources: SpectrumSource[] = [];
+
     userSources: SpectrumSource[] = [];
     sharedSources: SpectrumSource[] = [];
+    mistSources: SpectrumSource[] = [];
+
+    isFiltering: boolean = false;
+
+    filteredUserSources: SpectrumSource[] = [];
+    filteredSharedSources: SpectrumSource[] = [];
+    filteredMISTSources: SpectrumSource[] = [];
+
+    filteredTagIDs: string[] = [];
+    
+    private _filterText: string = "";
+    
+    authors: ObjectCreator[] = [];
+    private _filteredAuthors: string[] = [];
 
     constructor(
         private _spectrumService: SpectrumChartService,
@@ -74,12 +90,20 @@ export class SpectrumRegionPickerComponent implements OnInit
                 this.predefinedSources = [];
                 this.userSources = [];
                 this.sharedSources = [];
+                this.mistSources = [];
 
                 for(let source of this._spectrumService.mdl.spectrumSources)
                 {
                     if(source.shared)
                     {
-                        this.sharedSources.push(source);
+                        if(source.isMIST)
+                        {
+                            this.mistSources.push(source);
+                        }
+                        else
+                        {
+                            this.sharedSources.push(source);
+                        }
                     }
                     else
                     {
@@ -96,16 +120,23 @@ export class SpectrumRegionPickerComponent implements OnInit
 
                 this.userSources.sort((a: SpectrumSource, b: SpectrumSource)=>(a.roiName.localeCompare(b.roiName)));
                 this.sharedSources.sort((a: SpectrumSource, b: SpectrumSource)=>(a.roiName.localeCompare(b.roiName)));
+                this.mistSources.sort((a: SpectrumSource, b: SpectrumSource)=>(a.roiName.localeCompare(b.roiName)));
 
                 let enabledUserSources = this.userSources.filter((source) => source.lineChoices.some((choice) => choice.enabled));
                 let enabledSharedSources = this.sharedSources.filter((source) => source.lineChoices.some((choice) => choice.enabled));
+                let enabledMistSources = this.mistSources.filter((source) => source.lineChoices.some((choice) => choice.enabled));
 
                 let disabledUserSources = this.userSources.filter((source) => !source.lineChoices.some((choice) => choice.enabled));
                 let disabledSharedSources = this.sharedSources.filter((source) => !source.lineChoices.some((choice) => choice.enabled));
+                let disabledMISTSources = this.mistSources.filter((source) => !source.lineChoices.some((choice) => choice.enabled));
 
                 // Move enabled sources to the top of the list
                 this.userSources = enabledUserSources.concat(disabledUserSources);
                 this.sharedSources = enabledSharedSources.concat(disabledSharedSources);
+                this.mistSources = enabledMistSources.concat(disabledMISTSources);
+
+                this.filterROIs();
+                this.extractAuthors(this._spectrumService.mdl.spectrumSources);
             },
             (err)=>
             {
@@ -128,5 +159,96 @@ export class SpectrumRegionPickerComponent implements OnInit
                 this._spectrumService.mdl.removeSpectrumLine(source.roiID, choice.lineExpression);
             });
         });
+    }
+
+    extractAuthors(rois: SpectrumSource[])
+    {
+        let authorIDs = new Set<string>();
+        let authors: ObjectCreator[] = [];
+        rois.forEach((roi) =>
+        {
+            if(roi?.creator && !authorIDs.has(roi.creator.user_id))
+            {
+                authors.push(roi.creator);
+                authorIDs.add(roi.creator.user_id);
+            }
+        });
+
+        this.authors = authors;
+    }
+
+
+    filterROI(roi: SpectrumSource): boolean
+    {
+        let matchesText = true;
+        let matchesTags = true;
+        let matchesAuthors = true;
+
+        let filterText = this._filterText?.toLowerCase();
+        if(filterText.length > 0)
+        {
+            matchesText = roi.roiName?.toLowerCase().includes(filterText);
+        }
+        if(this.filteredTagIDs.length > 0)
+        {
+            matchesTags = this.filteredTagIDs.some((tagID) => roi.tags.includes(tagID));
+        }
+        if(this.filteredAuthors.length > 0)
+        {
+            matchesAuthors = this.filteredAuthors.some((author) => roi.creator.user_id === author);
+        }
+
+        return matchesText && matchesTags && matchesAuthors;
+    }
+
+    toggleFilters(): void
+    {
+        this.isFiltering = !this.isFiltering;
+    }
+
+    filterROIs(): void
+    {
+        if(this.isFiltering)
+        {
+            this.filteredUserSources = this.userSources.filter((roi) => this.filterROI(roi));
+            this.filteredSharedSources = this.sharedSources.filter((roi) => this.filterROI(roi));
+            this.filteredMISTSources = this.mistSources.filter((roi) => this.filterROI(roi));
+        }
+        else
+        {
+            this.filteredUserSources = [...this.userSources];
+            this.filteredSharedSources = [...this.sharedSources];
+            this.filteredMISTSources = [...this.mistSources];
+        }
+    }
+
+    get authorsTooltip(): string
+    {
+        let authorNames = this.authors.filter((author) => this._filteredAuthors.includes(author.user_id)).map((author) => author.name);
+        return this._filteredAuthors.length > 0 ? `Authors:\n${authorNames.join("\n")}` : "No Authors Selected";
+    }
+
+
+    get filteredAuthors(): string[]
+    {
+        return this._filteredAuthors;
+    }
+
+    set filteredAuthors(authors: string[])
+    {
+        this._filteredAuthors = authors;
+        this.filterROIs();
+    }
+
+    onTagFilterChanged(tagIDs: string[]): void
+    {
+        this.filteredTagIDs = tagIDs;
+        this.filterROIs();
+    }
+
+    onFilterText(filterText: string): void
+    {
+        this._filterText = filterText || "";
+        this.filterROIs();
     }
 }

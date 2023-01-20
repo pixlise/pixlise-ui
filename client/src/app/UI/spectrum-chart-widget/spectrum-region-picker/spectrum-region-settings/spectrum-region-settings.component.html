@@ -35,8 +35,15 @@ POSSIBILITY OF SUCH DAMAGE.
             class="setting-label"
             #tooltip="matTooltip"
             [matTooltip]="labelToShow"
+            [matTooltipDisabled]="!labelToShow || labelToShow.length < 20"
         >{{labelToShow}}</div>
-        <div *ngIf="sharedBy" class="obj-creator">{{sharedBy}}</div>
+        <div 
+            *ngIf="sharedBy" 
+            class="obj-creator"
+            #tooltip="matTooltip"
+            [matTooltip]="sharedBy"
+            [matTooltipDisabled]="!sharedBy || sharedBy.length < 10"
+        >{{sharedBy}}</div>
         <div *ngIf="colour" class="obj-colour">
             <svg width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="4" cy="4" r="4" attr.fill="{{colour}}"/>

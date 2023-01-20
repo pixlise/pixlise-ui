@@ -82,7 +82,7 @@ export class SpectrumRegionSettingsComponent implements OnInit
 
     get labelToShow(): string
     {
-        return this.source.roiName;
+        return this.source.roiName.replace("mist__roi.", "");
     }
 
     get showColour(): boolean
@@ -104,7 +104,6 @@ export class SpectrumRegionSettingsComponent implements OnInit
     {
         return this._sharedBy;
     }
-
 
     get selectedTagIDs(): string[]
     {

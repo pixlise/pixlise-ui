@@ -278,29 +278,6 @@ export class ROIComponent implements OnInit
         );
     }
 
-    filterROI(roi: RegionLayerInfo): boolean
-    {
-        let matchesText = true;
-        let matchesTags = true;
-        let matchesAuthors = true;
-
-        let filterText = this.roiSearchString?.toLowerCase();
-        if(filterText.length > 0)
-        {
-            matchesText = roi.roi.name?.toLowerCase().includes(filterText);
-        }
-        if(this.filteredTagIDs.length > 0)
-        {
-            matchesTags = this.filteredTagIDs.some((tagID) => roi.roi.tags.includes(tagID));
-        }
-        if(this.filteredAuthors.length > 0)
-        {
-            matchesAuthors = this.filteredAuthors.some((author) => roi.roi.creator.user_id === author);
-        }
-
-        return matchesText && matchesTags && matchesAuthors;
-    }
-
     get authors(): ObjectCreator[]
     {
         return this._authors;

@@ -184,7 +184,11 @@ export class ROIPickerComponent implements OnInit
 
                         if(roi.mistROIItem && roi.mistROIItem !== null)
                         {
-                            this.mistROIs.push(newROI);
+                            // Only show MIST ROI if it's species level
+                            if(roi.mistROIItem && roi?.mistROIItem.ID_Depth >= 5)
+                            {
+                                this.mistROIs.push(newROI);
+                            }
                         }
                         else if(roi.shared)
                         {
@@ -199,6 +203,7 @@ export class ROIPickerComponent implements OnInit
 
                 this.userROIs.sort((a, b) => (a.label.localeCompare(b.label)));
                 this.sharedROIs.sort((a, b) => (a.label.localeCompare(b.label)));
+                this.mistROIs.sort((a, b) => (a.label.localeCompare(b.label)));
 
                 // Sort enabled ROIS to the top for easier access
                 let enabledUserROIs = this.userROIs.filter((roi) => roi.active);
