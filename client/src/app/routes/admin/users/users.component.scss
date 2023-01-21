@@ -86,9 +86,25 @@ h3 {
 }
 
 .user-list-container-short-bottom {
-    height: calc(75vh - 100px);
+    height: calc(60vh - 100px);
 }
 
 input {
     width: 200px;
+}
+
+.search-box {
+    margin-left: auto;
+}
+
+.user-stats {
+    h2 {
+        margin-bottom: 8px;
+    }
+
+    .info-row {
+        label {
+            display: flex;
+        }
+    }
 }

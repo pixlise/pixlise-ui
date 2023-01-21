@@ -52,10 +52,18 @@ POSSIBILITY OF SUCH DAMAGE.
             fxLayout="column"
             class="panel-scrollable-content user-list-container"
             [ngClass]="{'user-list-container': usersWithoutPermissions.length <= 0, 'user-list-container-short-bottom': usersWithoutPermissions.length > 0}">
-            <app-user-list-item *ngFor="let user of users" [user]="user" (click)="onSelect(user)"></app-user-list-item>
+            <app-user-list-item *ngFor="let user of filteredUsers" [user]="user" (click)="onSelect(user)"></app-user-list-item>
         </div>
         <div *ngIf="users == null" fxLayout="row" fxLayoutAlign="space-around center" class="large-top-gap">
             <mat-spinner [diameter]="32" color="accent"></mat-spinner>
+        </div>
+        <div *ngIf="users != null" fxLayout="column" class="header user-stats">
+            <h2>User Stats</h2>
+            <div fxLayout="column" class="gap-separated-vertical-elements">
+                <div class="info-row"><label>Data Collection Breakdown</label><span>{{dataCollectionGroups}}</span></div>
+                <div class="info-row"><label>Logins in Last 30 Days</label><span>{{usersInLastMonth}}</span></div>
+                <div class="info-row"><label>New Users in Last 30 Days</label><span>{{newUsersInLastMonth}}</span></div>
+            </div>
         </div>
     </div>
     <div fxLayout="column" class="content-column-right" fxFlex>
@@ -70,6 +78,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     <div class="info-row"><label>Name</label><span>{{selectedUserDetails.name}}</span></div>
                     <div class="info-row"><label>User ID</label><span>{{selectedUserDetails.user_id}}</span></div>
                     <div class="info-row"><label>Email</label><span>{{selectedUserDetails.email}}</span></div>
+                    <div *ngIf="selectedUserDetails.created_at > 0" class="info-row"><label>Data Collection Status</label><span>{{selectedUserDetails?.user_details?.userconfig?.data_collection}}</span></div>
                     <div *ngIf="selectedUserDetails.last_login > 0" class="info-row"><label>Last Login</label><span>{{selectedUserDetails.last_login*1000|date:'medium'}}</span></div>
                     <div *ngIf="selectedUserDetails.created_at > 0" class="info-row"><label>Created At</label><span>{{selectedUserDetails.created_at*1000|date:'medium'}}</span></div>
                 </div>
