@@ -320,6 +320,10 @@ export class DataQuerier
         {
             return left.operationWithMap(op, right);
         }
+        else if(typeof left == "string" && typeof right == "string")
+        {
+            return this.addString(op, left, right);
+        }
 
         throw new Error("Failed to calculate operation: "+expressionParseTreeNode["operator"]+" in: "+this._runningExpression);
     }
@@ -343,6 +347,18 @@ export class DataQuerier
         }
 
         throw new Error("Failed to apply operation: "+operation+" to 2 scalars in: "+this._runningExpression);
+    }
+
+    private addString(operation: QuantOp, left: string, right: string): string
+    {
+        switch (operation)
+        {
+        case QuantOp.ADD:
+            return left+right;
+            break;
+        }
+
+        throw new Error("Failed to apply operation: "+operation+" to 2 strings in: "+this._runningExpression);
     }
 
     //ALLOWED_CALLS = ['normalize', 'data', 'min', 'max', 'threshold'];
@@ -435,6 +451,18 @@ export class DataQuerier
         {
             return this.mapOperation(true, true, callee, args);
         }
+        else if(callee == "makeMap")
+        {
+            return this.makeMap(args);
+        }
+        else if(callee == "sin" || callee == "cos" || callee == "tan" || callee == "asin" || callee == "acos" || callee == "atan")
+        {
+            return this.mathFunction(callee, args);
+        }
+        else if(callee == "exp" || callee == "ln")
+        {
+            return this.mathFunction(callee, args);
+        }
 
         throw new Error("Unknown callee: "+callee+" in: "+this._runningExpression);
 
@@ -465,16 +493,17 @@ export class DataQuerier
         return argList[0].threshold(argList[1], argList[2]);
     }
 
-    // Expects PMCDataValues or scalar, scalar
+    // Expects PMCDataValues or scalar, scalar, returns scalar or PMCDataValues
     private pow(argList): any
     {
-        if(
-            argList.length != 2 ||
-            (!(argList[0] instanceof PMCDataValues) && typeof argList[0] != "number") ||
-            (typeof argList[1] != "number")
-        )
+        if(argList.length != 2)
         {
             throw new Error("pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Received: "+argList.length+" parameters");
+        }
+
+        if(typeof argList[1] != "number")
+        {
+            throw new Error("pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Arg1 was wrong type");
         }
 
         if(typeof argList[0] == "number")
@@ -482,7 +511,13 @@ export class DataQuerier
             return Math.pow(argList[0], argList[1]);
         }
 
-        return argList[0].pow(argList[1]);
+        if(argList[0] instanceof PMCDataValues)
+        {
+            // Input is a map of radians, we run the trig function for each value and return a map of the same size
+            return argList[0].mathFuncWithArg(Math.pow, argList[1]);
+        }
+
+        throw new Error("pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Arg0 was wrong type");
     }
 
     ////////////////////////////////////// Calling Quant Data Source //////////////////////////////////////
@@ -736,6 +771,77 @@ export class DataQuerier
         }
 
         return this.housekeepingDataSource.getPositionData(argList[0]);
+    }
+
+    // Expects: 1 parameter, the values to put into each map cell
+    private makeMap(argList): PMCDataValues
+    {
+        if(
+            argList.length != 1 || // only 1 param
+            (typeof argList[0] != "number") // must be a number
+            )
+        {
+            throw new Error("makeMap() expression expects 1 parameter: map value");
+        }
+
+        if(!this.quantDataSource)
+        {
+            throw new Error("makeMap() expression failed, failed to determine map dimensions");
+        }
+
+        let quantifiedPMCs = this.quantDataSource.getPMCList();
+        let mapValue = argList[0];
+
+        let values: PMCDataValue[] = [];
+
+        for(let pmc of quantifiedPMCs)
+        {
+            values.push(
+                new PMCDataValue(
+                    pmc,
+                    mapValue
+                )
+            );
+        }
+
+        return PMCDataValues.makeWithValues(values);
+    }
+
+    ////////////////////////////////////// Calling Trig Functions //////////////////////////////////////
+    // Expects: Function name, and arg of either PMCDataValues or scalar
+    // Returns: PMCDataValues or scalar depending on args
+    private mathFunction(funcName: string, argList): any
+    {
+        // Expect the right one(s)
+        let trigFunctionNames = ["sin", "cos", "tan", "asin", "acos", "atan", "exp", "ln"];
+        let trigFunctions = [Math.sin, Math.cos, Math.tan, Math.asin, Math.acos, Math.atan, Math.exp, Math.log];
+        let trigFuncIdx = trigFunctionNames.indexOf(funcName);
+        if(trigFuncIdx < 0)
+        {
+            throw new Error("trigFunction() expression unknown function: "+funcName);
+        }
+ 
+        if(argList.length != 1)
+        {
+            throw new Error(funcName+"() expression expects 1 parameter: scalar (radians) OR map of radians");
+        }
+
+        let trigFunc = trigFunctions[trigFuncIdx];
+
+        // If argument is a scalar, we simply call the trig function and return the result as a single value
+        // this is useful for things like makeMap(sin(0.5)) where we want a whole map initialised to a certain value
+        if(typeof argList[0] == "number")
+        {
+            return trigFunc(argList[0]);
+        }
+
+        if(argList[0] instanceof PMCDataValues)
+        {
+            // Input is a map of radians, we run the trig function for each value and return a map of the same size
+            return argList[0].mathFunc(trigFunc);
+        }
+
+        throw new Error(funcName+"() expression expects 1 parameter: scalar (radians) OR map of radians. Arg was wrong type.");
     }
 
     ////////////////////////////////////// Calling Pseudo-Intensity Data Source //////////////////////////////////////
