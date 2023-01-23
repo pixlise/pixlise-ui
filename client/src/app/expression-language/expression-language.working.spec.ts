@@ -569,6 +569,46 @@ describe("math functions", () =>
     }
 });
 
+describe("atomicMass function", () =>
+{
+    let querier: DataQuerier;
+
+    beforeEach(() => 
+    {
+        querier = new DataQuerier(null, null, null, null, null, null);
+    });
+
+    it("atomicMass should fail if no param", () => 
+    {
+        expect(()=>querier.runQuery("atomicMass()")).toThrowError("atomicMass() expression expects 1 parameters: Atomic symbol. Received: 0 parameters");
+    });
+
+    it("atomicMass should fail if more than 1", () => 
+    {
+        expect(()=>querier.runQuery("atomicMass(\"Hi\", 3)")).toThrowError("atomicMass() expression expects 1 parameters: Atomic symbol. Received: 2 parameters");
+    });
+
+    it("atomicMass should fail not string param", () => 
+    {
+        expect(()=>querier.runQuery("atomicMass(3)")).toThrowError("atomicMass() expression expects 1 parameters: Atomic symbol, eg Fe, O or Fe2O3");
+    });
+
+    it("atomicMass should fail for invalid formula", () => 
+    {
+        expect(()=>querier.runQuery("atomicMass(\"Hello\")")).toThrowError("atomicMass() Failed to calculate mass for: Hello");
+    });
+
+    it("atomicMass should work for element (though result wont be map so should print error)", () => 
+    {
+        expect(()=>querier.runQuery("atomicMass(\"Fe\")")).toThrowError("Expression: atomicMass(\"Fe\") did not result in usable map data. Result was: 55.847");
+    });
+
+    it("atomicMass should work for formula (though result wont be map so should print error)", () => 
+    {
+        expect(()=>querier.runQuery("atomicMass(\"Fe2O3\")")).toThrowError("Expression: atomicMass(\"Fe2O3\") did not result in usable map data. Result was: "+(55.847*2+15.9994*3));
+    });
+});
+
 describe("Data source NOT set", () =>
 {
     let querier: DataQuerier;

@@ -463,6 +463,10 @@ export class DataQuerier
         {
             return this.mathFunction(callee, args);
         }
+        else if(callee == "atomicMass")
+        {
+            return this.atomicMass(args);
+        }
 
         throw new Error("Unknown callee: "+callee+" in: "+this._runningExpression);
 
@@ -842,6 +846,29 @@ export class DataQuerier
         }
 
         throw new Error(funcName+"() expression expects 1 parameter: scalar (radians) OR map of radians. Arg was wrong type.");
+    }
+
+    ////////////////////////////////////// Querying Periodic Table Data //////////////////////////////////////
+    // Expects: Element symbol, eg Fe or O and also works with carbonates/oxides the same way the rest of
+    //          PIXLISE works it out
+    // Returns: scalar atomic mass
+    private atomicMass(argList): number
+    {
+        if(argList.length != 1)
+        {
+            throw new Error("atomicMass() expression expects 1 parameters: Atomic symbol. Received: "+argList.length+" parameters");
+        }
+        if(typeof argList[0] != "string")
+        {
+            throw new Error("atomicMass() expression expects 1 parameters: Atomic symbol, eg Fe, O or Fe2O3");
+        }
+
+        let mass = periodicTableDB.getMolecularMass(argList[0]);
+        if(mass <= 0)
+        {
+            throw new Error("atomicMass() Failed to calculate mass for: "+argList[0]);
+        }
+        return mass;
     }
 
     ////////////////////////////////////// Calling Pseudo-Intensity Data Source //////////////////////////////////////
