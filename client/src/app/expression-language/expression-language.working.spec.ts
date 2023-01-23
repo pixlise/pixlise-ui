@@ -38,7 +38,7 @@ import { DataSet } from "src/app/models/DataSet";
 
 class MockSource implements QuantifiedDataQuerierSource
 {
-    constructor(public data: object, protected _elemList: string[])
+    constructor(public data: object, protected _elemList: string[], protected _pmcs: number[])
     {
     }
 
@@ -58,6 +58,11 @@ class MockSource implements QuantifiedDataQuerierSource
     getElementList(): string[]
     {
         return this._elemList;
+    }
+
+    getPMCList(): number[]
+    {
+        return this._pmcs;
     }
 }
 
@@ -154,6 +159,8 @@ const srcData = {
 
 const srcDataElements = ["Fe", "Ti"];
 
+const srcPMCs = [642, 643, 644];
+
 const pseudoSrcData = {
     "Fe": PMCDataValues.makeWithValues(
         [new PMCDataValue(642, 61), new PMCDataValue(643, 62), new PMCDataValue(644, 63)]
@@ -176,7 +183,7 @@ describe("element() call", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -261,7 +268,7 @@ describe("element() call FeO-T special case", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcDataFeO, srcDataElementsFeO);
+        source = new MockSource(srcDataFeO, srcDataElementsFeO, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -289,7 +296,7 @@ describe("elementSum() call", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -460,6 +467,147 @@ describe("roughness() call", () =>
 */
 });
 
+describe("makeMap() call", () =>
+{
+    let source: MockSource;
+    let querier: DataQuerier;
+
+    beforeEach(() => 
+    {
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
+        querier = new DataQuerier(source, null, null, null, null, null);
+    });
+
+    it("should fail if no param", () => 
+    {
+        expect(()=>querier.runQuery("makeMap()")).toThrowError("makeMap() expression expects 1 parameter: map value");
+    });
+
+    it("should fail if non-number param", () => 
+    {
+        expect(()=>querier.runQuery("makeMap(\"Mg\")")).toThrowError("makeMap() expression expects 1 parameter: map value");
+    });
+
+    it("makeMap should work", () => 
+    {
+        let result = querier.runQuery("makeMap(3.1415926)");
+
+        let expValues = PMCDataValues.makeWithValues(
+            [new PMCDataValue(642, 3.1415926), new PMCDataValue(643, 3.1415926), new PMCDataValue(644, 3.1415926)]
+        );
+
+        expect(result).toEqual(expValues);
+    });
+
+    it("makeMap should work when called with scalar func pow", () => 
+    {
+        let result = querier.runQuery("makeMap(pow(2, 3))");
+
+        let expValues = PMCDataValues.makeWithValues(
+            [new PMCDataValue(642, 8), new PMCDataValue(643, 8), new PMCDataValue(644, 8)]
+        );
+
+        expect(result).toEqual(expValues);
+    });
+
+    it("makeMap should work when called with scalar func sin", () => 
+    {
+        let result = querier.runQuery("makeMap(sin(2))");
+
+        let expValues = PMCDataValues.makeWithValues(
+            [new PMCDataValue(642, 0.9092974268256817), new PMCDataValue(643, 0.9092974268256817), new PMCDataValue(644, 0.9092974268256817)]
+        );
+
+        expect(result).toEqual(expValues);
+    });
+});
+
+describe("math functions", () =>
+{
+    let source: MockSource;
+    let querier: DataQuerier;
+
+    beforeEach(() => 
+    {
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
+        querier = new DataQuerier(source, null, null, null, null, null);
+    });
+
+    let trigFunctionNames = ["sin", "cos", "tan", "asin", "acos", "atan", "exp", "ln"];
+    let trigFunctions = [Math.sin, Math.cos, Math.tan, Math.asin, Math.acos, Math.atan, Math.exp, Math.log];
+
+    for(let c = 0; c < trigFunctionNames.length; c++)
+    {
+        let func = trigFunctionNames[c];
+        let funcPtr = trigFunctions[c];
+
+        it(func+" should fail if no param", () => 
+        {
+            expect(()=>querier.runQuery(func+"()")).toThrowError(func+"() expression expects 1 parameter: scalar (radians) OR map of radians");
+        });
+
+        it(func+" should fail if non-number param", () => 
+        {
+            expect(()=>querier.runQuery(func+"(\"Mg\")")).toThrowError(func+"() expression expects 1 parameter: scalar (radians) OR map of radians. Arg was wrong type.");
+        });
+
+        it(func+" should work for scalar (though result wont be map so should print error)", () => 
+        {
+            expect(()=>querier.runQuery(func+"(1.5)")).toThrowError("Expression: "+func+"(1.5) did not result in usable map data. Result was: "+funcPtr(1.5));
+        });
+
+        it(func+" should work for map", () => 
+        {
+            let result = querier.runQuery(func+"(element(\"Fe\", \"%\", \"A\"))");
+
+            let expValues = PMCDataValues.makeWithValues(
+                [new PMCDataValue(642, funcPtr(1)), new PMCDataValue(643, funcPtr(2)), new PMCDataValue(644, funcPtr(3))]
+            );
+
+            expect(result).toEqual(expValues);
+        });
+    }
+});
+
+describe("atomicMass function", () =>
+{
+    let querier: DataQuerier;
+
+    beforeEach(() => 
+    {
+        querier = new DataQuerier(null, null, null, null, null, null);
+    });
+
+    it("atomicMass should fail if no param", () => 
+    {
+        expect(()=>querier.runQuery("atomicMass()")).toThrowError("atomicMass() expression expects 1 parameters: Atomic symbol. Received: 0 parameters");
+    });
+
+    it("atomicMass should fail if more than 1", () => 
+    {
+        expect(()=>querier.runQuery("atomicMass(\"Hi\", 3)")).toThrowError("atomicMass() expression expects 1 parameters: Atomic symbol. Received: 2 parameters");
+    });
+
+    it("atomicMass should fail not string param", () => 
+    {
+        expect(()=>querier.runQuery("atomicMass(3)")).toThrowError("atomicMass() expression expects 1 parameters: Atomic symbol, eg Fe, O or Fe2O3");
+    });
+
+    it("atomicMass should fail for invalid formula", () => 
+    {
+        expect(()=>querier.runQuery("atomicMass(\"Hello\")")).toThrowError("atomicMass() Failed to calculate mass for: Hello");
+    });
+
+    it("atomicMass should work for element (though result wont be map so should print error)", () => 
+    {
+        expect(()=>querier.runQuery("atomicMass(\"Fe\")")).toThrowError("Expression: atomicMass(\"Fe\") did not result in usable map data. Result was: 55.847");
+    });
+
+    it("atomicMass should work for formula (though result wont be map so should print error)", () => 
+    {
+        expect(()=>querier.runQuery("atomicMass(\"Fe2O3\")")).toThrowError("Expression: atomicMass(\"Fe2O3\") did not result in usable map data. Result was: "+(55.847*2+15.9994*3));
+    });
+});
 
 describe("Data source NOT set", () =>
 {
@@ -489,6 +637,11 @@ describe("Data source NOT set", () =>
     {
         expect(()=>querier.runQuery("element(\"chisq\", \"%\", \"A\")")).toThrowError("element() expression failed, no quantification data loaded");
     });
+
+    it("makeMap() - should fail with cannot map dimensions error", () => 
+    {
+        expect(()=>querier.runQuery("makeMap(123)")).toThrowError("makeMap() expression failed, failed to determine map dimensions");
+    });
 });
 
 
@@ -499,7 +652,7 @@ describe("data() call", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -533,7 +686,7 @@ describe("normalize() call", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -590,7 +743,7 @@ describe("threshold() call", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -655,7 +808,7 @@ describe("pow() call", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -676,12 +829,17 @@ describe("pow() call", () =>
 
     it("should fail if second parameter is map", () => 
     {
-        expect(()=>querier.runQuery("pow(37, element(\"Ti\", \"%\", \"B\"))")).toThrowError("pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Received: 2 parameters");
+        expect(()=>querier.runQuery("pow(37, element(\"Ti\", \"%\", \"B\"))")).toThrowError("pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Arg1 was wrong type");
     });
 
     it("should pow for scalars (though result wont be map so should print error)", () => 
     {
         expect(()=>querier.runQuery("pow(2, 8)")).toThrowError("Expression: pow(2, 8) did not result in usable map data. Result was: 256");
+    });
+
+    it("should fail if first param is not scalar or map)", () => 
+    {
+        expect(()=>querier.runQuery("pow(\"Ti\", 8)")).toThrowError("pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Arg0 was wrong type");
     });
 
     it("should pow for map, scalar", () => 
@@ -701,7 +859,7 @@ describe("avg() call", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -747,7 +905,7 @@ describe("min() call", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -797,7 +955,7 @@ describe("max() call", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -847,7 +1005,7 @@ describe("under() call", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -902,7 +1060,7 @@ describe("under_undef() call", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -957,7 +1115,7 @@ describe("over() call", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -1012,7 +1170,7 @@ describe("over_undef() call", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -1067,7 +1225,7 @@ describe("+ operator", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -1121,7 +1279,7 @@ describe("- operator", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -1175,7 +1333,7 @@ describe("* operator", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -1229,7 +1387,7 @@ describe("/ operator", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -1284,7 +1442,7 @@ describe("more complex operations", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 
@@ -1462,7 +1620,7 @@ describe("multi-line expression with variables", () =>
 
     beforeEach(() => 
     {
-        source = new MockSource(srcData, srcDataElements);
+        source = new MockSource(srcData, srcDataElements, srcPMCs);
         querier = new DataQuerier(source, null, null, null, null, null);
     });
 

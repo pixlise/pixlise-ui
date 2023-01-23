@@ -216,7 +216,8 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
         const abc = source.subscribe(
             ()=>
             {
-                this.cdkVirtualScrollViewport.scrollToIndex(event);
+                // Scroll to event-1 so it's visible (was getting obscured by floating header)
+                this.cdkVirtualScrollViewport.scrollToIndex(event-1);
             }
         );
     }
