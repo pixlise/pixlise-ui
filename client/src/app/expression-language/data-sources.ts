@@ -35,6 +35,7 @@ export interface QuantifiedDataQuerierSource
 {
     getQuantifiedDataForDetector(detectorId: string, dataLabel: string): PMCDataValues;
     getElementList(): string[];
+    getPMCList(): number[];
 }
 
 export interface PseudoIntensityDataQuerierSource
