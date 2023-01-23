@@ -290,7 +290,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                 if(expression)
                 {
                     // User has defined a new one, upload it
-                    this._exprService.add(expression.name, expression.expression, expression.type, expression.comments).subscribe(
+                    this._exprService.add(expression.name, expression.expression, expression.type, expression.comments, expression.tags).subscribe(
                         (response)=>
                         {
                             if(applyNow)
@@ -334,7 +334,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                         let toReturn: DataExpression = null;
                         if(dlgResult)
                         {
-                            toReturn = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec);
+                            toReturn = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec, dlgResult.expr.tags);
                         }
 
                         observer.next({ expression: toReturn, applyNow: dlgResult.applyNow });

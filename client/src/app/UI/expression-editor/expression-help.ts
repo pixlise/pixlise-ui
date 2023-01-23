@@ -193,9 +193,21 @@ const funcDescriptionList = [
         ["map", "number"]
     ),
     new FunctionHelp(
+        "over_undef",
+        ["Map", "Scalar"],
+        "Map containing 1 where input map > Scalar, else 0. 0 values are marked undefined.",
+        ["map", "number"]
+    ),
+    new FunctionHelp(
         "under",
         ["Map", "Scalar"],
         "Map containing 1 where input map < Scalar, else 0",
+        ["map", "number"]
+    ),
+    new FunctionHelp(
+        "under_undef",
+        ["Map", "Scalar"],
+        "Map containing 1 where input map < Scalar, else 0. 0 values are marked undefined.",
         ["map", "number"]
     ),
     new FunctionHelp(
@@ -233,7 +245,67 @@ const funcDescriptionList = [
         ["Base", "Exponent"],
         "Raise base to the power of exponent",
         ["map|number", "number"]
-    )
+    ),
+    new FunctionHelp(
+        "sin",
+        ["Radians"],
+        "Returns sin of all values in map, or single value if param is scalar",
+        ["map|number"]
+    ),
+    new FunctionHelp(
+        "cos",
+        ["Radians"],
+        "Returns cos of all values in map, or single value if param is scalar",
+        ["map|number"]
+    ),
+    new FunctionHelp(
+        "tan",
+        ["Radians"],
+        "Returns tan of all values in map, or single value if param is scalar",
+        ["map|number"]
+    ),
+    new FunctionHelp(
+        "asin",
+        ["Radians"],
+        "Returns asin of all values in map, or single value if param is scalar",
+        ["map|number"]
+    ),
+    new FunctionHelp(
+        "acos",
+        ["Radians"],
+        "Returns acos of all values in map, or single value if param is scalar",
+        ["map|number"]
+    ),
+    new FunctionHelp(
+        "atan",
+        ["Radians"],
+        "Returns atan of all values in map, or single value if param is scalar",
+        ["map|number"]
+    ),
+    new FunctionHelp(
+        "exp",
+        ["Power"],
+        "Returns e raised to power values in map, or single value if param is scalar",
+        ["map|number"]
+    ),
+    new FunctionHelp(
+        "ln",
+        ["Value"],
+        "Returns natural logarithm (base e) of values in map, or single value if param is scalar",
+        ["map|number"]
+    ),
+    new FunctionHelp(
+        "makeMap",
+        ["Value"],
+        "Returns a map sized the same as quant data filled with parameter value",
+        ["map"]
+    ),
+    new FunctionHelp(
+        "atomicMass",
+        ["Symbol"],
+        "Returns atomic mass of specified element or chemical formula. Eg Fe or Fe2O3",
+        ["elements"]
+    ),
 ];
 
 export class ExpressionHelp
