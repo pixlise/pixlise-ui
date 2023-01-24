@@ -28,7 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Injectable } from "@angular/core";
-import { ReplaySubject, Subject, Subscription } from "rxjs";
+import { ReplaySubject, Subject, Subscription, Observable } from "rxjs";
+import { of } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
 import { ObjectCreator } from "src/app/models/BasicTypes";
@@ -418,14 +419,14 @@ export class WidgetRegionDataService
     // should equal "what.length". There are also error values that can be returned.
     // NOTE: If a dataset ID is specified (in case of combined datasets), the output PMCs will be relative to that dataset
     //       so they won't be unique against the PMCs for the overall dataset anymore!
-    getData(what: DataSourceParams[], continueOnError: boolean): RegionDataResults
+    getData(what: DataSourceParams[], continueOnError: boolean): Observable<RegionDataResults>
     {
         let dataset = this._datasetService.datasetLoaded;
 
         if(!dataset)
         {
             console.error("getData: No dataset");
-            return new RegionDataResults([], "No dataset");
+            return of(new RegionDataResults([], "No dataset"));
         }
 
         let result: RegionDataResultItem[] = [];
@@ -434,7 +435,7 @@ export class WidgetRegionDataService
         {
             if(query.datasetId && !dataset.isCombinedDataset())
             {
-                return new RegionDataResults([], "Queried for dataset ID: "+query.datasetId+" when not in combined dataset!");
+                return of(new RegionDataResults([], "Queried for dataset ID: "+query.datasetId+" when not in combined dataset!"));
             }
 
             // Get region info (allow NULL in request because context image doesn't need to be slowed by this)
@@ -453,7 +454,7 @@ export class WidgetRegionDataService
                         continue;
                     }
                     console.error("getData: "+errorMsg);
-                    return new RegionDataResults([], errorMsg);
+                    return of(new RegionDataResults([], errorMsg));
                 }
             }
 
@@ -471,7 +472,7 @@ export class WidgetRegionDataService
                     continue;
                 }
                 console.error("getData: "+errorMsg);
-                return new RegionDataResults([], errorMsg);
+                return of(new RegionDataResults([], errorMsg));
             }
 
             // If we have a cached value for this, return that
@@ -541,7 +542,7 @@ export class WidgetRegionDataService
             }
         }
 
-        return new RegionDataResults(result, "");
+        return of(new RegionDataResults(result, ""));
     }
 
     private getPMCsForDatasetId(datasetId: string, dataset: DataSet): Set<number>

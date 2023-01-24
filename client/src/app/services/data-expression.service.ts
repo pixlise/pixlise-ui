@@ -83,7 +83,7 @@ export class DataExpression
     constructor(
         public id: string,
         public name: string,
-        public expression: string,
+        public expressionText: string,
         public type: string,
         public comments: string,
         public shared: boolean,
@@ -93,7 +93,6 @@ export class DataExpression
         public tags: string[] = [],
     )
     {
-        this.parseRequiredQuantificationData();
     }
 
     get isCompatibleWithQuantification(): boolean
@@ -131,51 +130,6 @@ export class DataExpression
         // If we made it this far, it's compatible
         this._isCompatibleWithQuantification = true;
         return wasCompatible != this._isCompatibleWithQuantification;
-    }
-
-    private parseRequiredQuantificationData()
-    {
-        this._requiredElementFormulae.clear();
-        this._requiredDetectors.clear();
-
-        // Find all occurances of element() in expression and determine what element formulae (eg element or oxide/carbonate)
-        // are used, and what detectors are referenced
-        // This can be used elsewhere to show if this expression is compatible with the currently loaded quantification
-        const element = "element";
-        let elemPos = this.expression.indexOf(element);
-
-        while(elemPos > -1)
-        {
-            let nextSearchStart = elemPos+element.length;
-
-            // Make sure it's not elementSum()
-            if(this.expression.substring(elemPos, elemPos+element.length+3) != "elementSum")
-            {
-                // Find (
-                let openBracketPos = this.expression.indexOf("(", elemPos+element.length);
-                let closeBracketPos = openBracketPos;
-                if(openBracketPos > -1)
-                {
-                    // Find )
-                    closeBracketPos = this.expression.indexOf(")", openBracketPos);
-
-                    if(closeBracketPos > -1)
-                    {
-                        // We've now got the start and end of the expression parameters. Break this into tokens
-                        let params = this.getExpressionParameters(this.expression.substring(openBracketPos+1, closeBracketPos));
-                        if(params.length == 3)
-                        {
-                            this._requiredElementFormulae.add(params[0]);
-                            this._requiredDetectors.add(params[2]);
-                        }
-
-                        nextSearchStart = closeBracketPos;
-                    }
-                }
-            }
-
-            elemPos = this.expression.indexOf(element, nextSearchStart);
-        }
     }
 
     // Expects strings like:
@@ -254,8 +208,6 @@ const SuffixZHeight = "zheight";
 })
 export class DataExpressionService
 {
-    private subs = new Subscription();
-
     private _expressionsUpdated$ = new ReplaySubject<void>(1);
     private _expressions: Map<string, DataExpression> = new Map<string, DataExpression>();
 
@@ -547,26 +499,6 @@ export class DataExpressionService
                     {
                         // Cut it short
                         result.shortName = result.shortName.substring(0, charLimit)+"...";
-                        /*
-                        const elemSearch = "element(";
-                        let elemPos = expr.expression.indexOf(elemSearch);
-                        if(elemPos > -1)
-                        {
-                            elemPos += elemSearch.length;
-
-                            // Find the element after this
-                            let commaPos = expr.expression.indexOf(",", elemPos+1);
-                            let elem = expr.expression.substring(elemPos, commaPos);
-                            elem = elem.replace(/['"]+/g, "");
-
-                            // Was limiting to 2 chars, but we now deal a lot in oxides/carbonates
-                            // so this wasn't triggering often!
-                            //if(elem.length <= 2)
-                            {
-                                //result = 'f('+elem+')';
-                                result.shortName = UNICODE_MATHEMATICAL_F+elem;
-                            }
-                        }*/
                     }
                 }
             }
@@ -771,7 +703,7 @@ export class DataExpressionService
         let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
 
         let expression = this.getExpression(id);
-        let toSave = new DataExpressionInput(expression.name, expression.expression, expression.type, expression.comments, tags);
+        let toSave = new DataExpressionInput(expression.name, expression.expressionText, expression.type, expression.comments, tags);
 
         return this.http.put<object>(apiURL, toSave, makeHeaders())
             .pipe(
