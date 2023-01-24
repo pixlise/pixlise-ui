@@ -93,6 +93,32 @@ POSSIBILITY OF SUCH DAMAGE.
                 (onChange)="onChangeBins($event)">
             </slider>
         </div>
+
+        <ng-container *ngIf="expressionNames.length > 0">
+            <h3>Cross-Combining Algorithm</h3>
+            <div fxLayout="row" fxLayoutAlign="space-between center">
+                <div class="label" title="{{expressionNames[0]}}" fxFlex>{{expressionNames[0]}}</div>
+                <two-state-button
+                    leftLabel="Subtract"
+                    rightLabel="XOR-Sum"
+                    toolTip="Selection of combining algorithm"
+                    [active]="xorLeft"
+                    (onToggle)="setCombiningAlgorithm($event, true)">
+                </two-state-button>
+            </div>
+            <ng-container *ngIf="expressionNames.length > 1">
+                <div fxLayout="row" fxLayoutAlign="space-between center">
+                    <div class="label" title="{{expressionNames[1]}}" fxFlex>{{expressionNames[1]}}</div>
+                    <two-state-button
+                        leftLabel="Subtract"
+                        rightLabel="XOR-Sum"
+                        toolTip="Selection of combining algorithm"
+                        [active]="xorRight"
+                        (onToggle)="setCombiningAlgorithm($event, false)">
+                    </two-state-button>
+                </div>
+            </ng-container>
+        </ng-container>
     </div>
 </ng-template>
 
