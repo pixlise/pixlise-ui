@@ -115,11 +115,13 @@ export class DataQuerier
             {
                 // Initialize a new lua environment factory
                 // Pass our hosted wasm file location in here
+/*
                 let wasmURI = EnvConfigurationInitService.appConfig.name == "prod" ? "www" : EnvConfigurationInitService.appConfig.name;
                 wasmURI = "https://"+wasmURI+"."+EnvConfigurationInitService.appConfig.appDomain;
-                wasmURI += "/assets/glue.wasm";
+                wasmURI += "/assets/glue.wasm";*/
+                let wasmURI = "https://dev.pixlise.org/assets/glue.wasm";
                 console.log("Loading WASM from: "+wasmURI);
-                
+
                 const factory = new LuaFactory(wasmURI);
                 let lua = factory.createEngine();
                 lua.then((eng)=>{
