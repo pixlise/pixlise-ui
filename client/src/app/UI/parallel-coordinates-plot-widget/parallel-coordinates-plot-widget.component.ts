@@ -40,9 +40,9 @@ import { orderVisibleROIs } from "src/app/models/roi";
 import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { LayoutService } from "src/app/services/layout.service";
 import { KeyItem } from "../atoms/widget-key-display/widget-key-display.component";
-import { IconButtonState } from "../atoms/buttons/icon-button/icon-button.component";
 import { CSVExportItem, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { DataSetService } from "src/app/services/data-set.service";
+import { MinMax } from "src/app/models/BasicTypes";
 
 export class PCPLine
 {
@@ -159,8 +159,8 @@ export class PCPAxis
 
     public clearSelection(): void
     {
-        this.minSelection = 0;
-        this.maxSelection = 0;
+        // this.minSelection = 0;
+        // this.maxSelection = 0;
         this.activeSelection = false;
     }
 
@@ -428,6 +428,22 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
         return avgData;
     }
 
+    private _getCrossChannelMinMax(pointA: RGBUPoint, pointB: RGBUPoint, channels: string[], bufferPercent: number): MinMax
+    {
+        let minMax = new MinMax();
+        channels.forEach((channel) =>
+        {
+            minMax.expand(pointA[channel]);
+            minMax.expand(pointB[channel]);
+        });
+
+        let buffer = (minMax.max - minMax.min) * bufferPercent;
+        minMax.expandMin(minMax.min - buffer);
+        minMax.expandMax(minMax.max + buffer);
+
+        return minMax;
+    }
+
     private _getMinPoint(pointA: RGBUPoint, pointB: RGBUPoint): RGBUPoint
     {
         let minPoint = new RGBUPoint();
@@ -530,10 +546,23 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
             maxPoint = this._getMaxPoint(maxPoint, point);
         });
 
+        let rgbuChannels = ["r", "g", "b", "u"];
+        let ratioChannels = ["rg", "rb", "ru", "gb", "gu", "bu"];
+        let crossRGBUMinMax = this._getCrossChannelMinMax(minPoint, maxPoint, rgbuChannels, 0.05);
+        let crossRatioMinMax = this._getCrossChannelMinMax(minPoint, maxPoint, ratioChannels, 0.05);
+
         this.axes.forEach(axis =>
         {
-            axis.min = minPoint[axis.key];
-            axis.max = maxPoint[axis.key];
+            if(rgbuChannels.includes(axis.key))
+            {
+                axis.min = crossRGBUMinMax.min;
+                axis.max = crossRGBUMinMax.max;
+            }
+            else
+            {
+                axis.min = crossRatioMinMax.min;
+                axis.max = crossRatioMinMax.max;
+            }
         });
     }
 
