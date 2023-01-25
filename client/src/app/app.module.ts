@@ -32,6 +32,7 @@ import { NgModule, ErrorHandler, Injectable, APP_INITIALIZER } from "@angular/co
 import { HTTP_INTERCEPTORS, HttpErrorResponse, HttpClientModule } from "@angular/common/http";
 import { FormsModule } from "@angular/forms";
 import { MAT_DIALOG_DEFAULT_OPTIONS,  MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { Observable } from "rxjs";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { OverlayModule } from "@angular/cdk/overlay";
 import { CdkAccordionModule } from "@angular/cdk/accordion";
@@ -225,6 +226,8 @@ import { AnnotationEditorComponent } from "./UI/annotation-editor/annotation-edi
 import { AnnotationDisplayComponent } from "./UI/annotation-editor/annotation-display/annotation-display.component";
 import { PlotExporterDialogComponent } from "./UI/atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 
+import { DataQuerier } from "src/app/expression-language/expression-language";
+
 
 @Injectable()
 export class SentryErrorHandler implements ErrorHandler
@@ -306,6 +309,10 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         return config;
     };
 };
+
+function initLua(): () => Observable<any> {
+    return ()=>DataQuerier.initLua();
+}
 
 @NgModule({
     declarations: [
@@ -488,6 +495,11 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
             useFactory: appInitializerFn,
             multi: true,
             deps: [EnvConfigurationInitService]
+        },
+        {
+            provide: APP_INITIALIZER,
+            useFactory: initLua,
+            multi: true,
         },
         Title,
         {

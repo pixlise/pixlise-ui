@@ -51,6 +51,7 @@
     "rxjs": "~6.6.3",
     "tslib": "^2.0.0",
     "voronoi": "^1.0.0",
+    "wasmoon": "^1.14.1",
     "zone.js": "^0.11.4"
   },
   "devDependencies": {
@@ -82,6 +83,9 @@
     "os": false,
     "path": false,
     "http": false,
-    "https": false
+    "https": false,
+    "child_process": false,
+    "crypto": false,
+    "url": false
   }
 }

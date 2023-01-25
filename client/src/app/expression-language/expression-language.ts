@@ -28,12 +28,17 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import jsep from "jsep";
+import { Observable, from } from "rxjs";
+import { tap } from "rxjs/operators";
 import {
     DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
 } from "src/app/expression-language/data-sources";
 import { PMCDataValue, PMCDataValues, QuantOp } from "src/app/expression-language/data-values";
 import { DataSet } from "src/app/models/DataSet";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
+import { LuaEngine } from "wasmoon";
+
+const { LuaFactory } = require('wasmoon')
 
 //import { Jsep } from 'jsep';
 //const jsep = require('jsep').default;
@@ -52,8 +57,6 @@ export function getQuantifiedDataWithExpression(
 ): PMCDataValues
 {
     //console.log('  getQuantifiedDataWithExpression: "'+expression+'", forPMCs: '+(forPMCs===null ? 'All' : forPMCs.size));
-
-
     let query = new DataQuerier(quantSource, pseudoSource, housekeepingSource, spectrumSource, diffractionSource, dataset);
     let queryResult = query.runQuery(expression);
 
@@ -85,6 +88,8 @@ export class ExpressionParts
 export class DataQuerier
 {
     private _runningExpression: string = "";
+    private static _lua = null;
+    private static _context: DataQuerier = null;
 
     constructor(
         public quantDataSource: QuantifiedDataQuerierSource,
@@ -97,8 +102,305 @@ export class DataQuerier
     {
     }
 
+    public static initLua(): Observable<void>
+    {
+        // NOTE: WE NEVER DO THIS:
+        // DataQuerier._lua.global.close()
+        // DO WE NEED TO???
+
+        console.log("Initializing Lua...");
+        return new Observable<void>(
+            (observer)=>
+            {
+                // Initialize a new lua environment factory
+                // You can pass the wasm location as the first argument, useful if you are using wasmoon on a web environment and want to host the file by yourself
+                const factory = new LuaFactory();
+                let lua = factory.createEngine();
+                lua.then((eng)=>{
+                    console.log("Lua Engine created...");
+
+                    // Save this for later
+                    DataQuerier._lua = eng;
+
+                    // Set up constants/functions that can be accessed from Lua
+                    DataQuerier.setupLua();
+
+                    console.log("Lua Engine ready...");
+                    observer.complete();
+                })
+                .catch((err)=>{
+                    console.error(err);
+                    observer.error(err);
+                });
+            }
+        );
+/*
+        // Create a standalone lua environment from the factory
+        return from(factory.createEngine())
+        .pipe(
+            tap(
+                (lua)=>
+                {
+                    DataQuerier._lua = lua;
+                }
+            )
+        );*/
+    }
+
+    private static setupLua(): void
+    {
+        // Implementing new functions for Lua to deal with our maps/operators
+        DataQuerier._lua.global.set("add", DataQuerier.LaddMap);
+        DataQuerier._lua.global.set("sub", DataQuerier.LsubtractMap);
+        DataQuerier._lua.global.set("mult", DataQuerier.LmultiplyMap);
+        DataQuerier._lua.global.set("div", DataQuerier.LdivideMap);
+        DataQuerier._lua.global.set("under", DataQuerier.LunderMap);
+        DataQuerier._lua.global.set("over", DataQuerier.LoverMap);
+        DataQuerier._lua.global.set("under_undef", DataQuerier.LunderUndefinedMap);
+        DataQuerier._lua.global.set("over_undef", DataQuerier.LoverUndefinedMap);
+        DataQuerier._lua.global.set("avg", DataQuerier.LavgMap);
+        DataQuerier._lua.global.set("min", DataQuerier.LminMap);
+        DataQuerier._lua.global.set("max", DataQuerier.LmaxMap);
+
+        // Implementing original expression language
+        DataQuerier._lua.global.set("element", DataQuerier.LreadElement);
+        DataQuerier._lua.global.set("elementSum", DataQuerier.LreadElementSum);
+        DataQuerier._lua.global.set("data", DataQuerier.LreadDataColumn);
+        DataQuerier._lua.global.set("spectrum", DataQuerier.LreadSpectrum);
+        DataQuerier._lua.global.set("spectrumDiff", DataQuerier.LreadSpectrumDiff);
+        DataQuerier._lua.global.set("pseudo", DataQuerier.LreadPseudoIntensity);
+        DataQuerier._lua.global.set("housekeeping", DataQuerier.LreadHouseKeeping);
+        DataQuerier._lua.global.set("diffractionPeaks", DataQuerier.LreadDiffractionPeaks);
+        DataQuerier._lua.global.set("roughness", DataQuerier.LreadRoughness);
+        DataQuerier._lua.global.set("position", DataQuerier.LreadPosition);
+        DataQuerier._lua.global.set("makeMap", DataQuerier.LmakeMap);
+        DataQuerier._lua.global.set("normalize", DataQuerier.LnormalizeMap);
+        DataQuerier._lua.global.set("threshold", DataQuerier.LthresholdMap);
+        DataQuerier._lua.global.set("pow", DataQuerier.LpowMap);
+        DataQuerier._lua.global.set("atomicMass", (symbol)=>
+        {
+            return periodicTableDB.getMolecularMass(symbol);
+        });
+        DataQuerier._lua.global.set("sin", DataQuerier.LsinMap);
+        DataQuerier._lua.global.set("cos", DataQuerier.LcosMap);
+        DataQuerier._lua.global.set("tan", DataQuerier.LtanMap);
+        DataQuerier._lua.global.set("asin", DataQuerier.LasinMap);
+        DataQuerier._lua.global.set("acos", DataQuerier.LacosMap);
+        DataQuerier._lua.global.set("atan", DataQuerier.LatanMap);
+        DataQuerier._lua.global.set("exp", DataQuerier.LexpMap);
+        DataQuerier._lua.global.set("ln", DataQuerier.LlnMap);
+    }
+
+    private static LaddMap(left, right)
+    {
+        return DataQuerier.mapBinaryOp(QuantOp.ADD, left, right);
+    }
+    private static LsubtractMap(left, right)
+    {
+        return DataQuerier.mapBinaryOp(QuantOp.SUBTRACT, left, right);
+    }
+    private static LmultiplyMap(left, right)
+    {
+        return DataQuerier.mapBinaryOp(QuantOp.MULTIPLY, left, right);
+    }
+    private static LdivideMap(left, right)
+    {
+        return DataQuerier.mapBinaryOp(QuantOp.DIVIDE, left, right);
+    }
+    private static LunderMap(left, right)
+    {
+        return DataQuerier._context.mapOperation(false, true, "under", [left, right]);
+    }
+    private static LoverMap(left, right)
+    {
+        return DataQuerier._context.mapOperation(false, true, "over", [left, right]);
+    }
+    private static LunderUndefinedMap(left, right)
+    {
+        return DataQuerier._context.mapOperation(false, true, "under_undef", [left, right]);
+    }
+    private static LoverUndefinedMap(left, right)
+    {
+        return DataQuerier._context.mapOperation(false, true, "over_undef", [left, right]);
+    }
+    private static LavgMap(left, right)
+    {
+        return DataQuerier._context.mapOperation(true, false, "avg", [left, right]);
+    }
+    private static LminMap(left, right)
+    {
+        return DataQuerier._context.mapOperation(true, true, "min", [left, right]);
+    }
+    private static LmaxMap(left, right)
+    {
+        return DataQuerier._context.mapOperation(true, true, "max", [left, right]);
+    }
+    private static LreadElement(symbol, column, detector)
+    {
+        return DataQuerier._context.readElement([symbol, column, detector]);
+    }
+    private static LreadElementSum(column, detector)
+    {
+        return DataQuerier._context.readElementSum([column, detector]);
+    }
+    private static LreadDataColumn(column, detector)
+    {
+        return DataQuerier._context.readMap([column, detector]);
+    }
+    private static LreadSpectrum(startChannel, endChannel, detector)
+    {
+        return DataQuerier._context.readSpectrum([startChannel, endChannel, detector]);
+    }
+    private static LreadSpectrumDiff(startChannel, endChannel, op)
+    {
+        return DataQuerier._context.readSpectrumDifferences([startChannel, endChannel, op]);
+    }
+    private static LreadPseudoIntensity(elem)
+    {
+        return DataQuerier._context.readPseudoIntensity([elem]);
+    }
+    private static LreadHouseKeeping(column)
+    {
+        return DataQuerier._context.readHousekeepingData([column]);
+    }
+    private static LreadDiffractionPeaks(eVstart, eVend)
+    {
+        return DataQuerier._context.readDiffractionData([eVstart, eVend])
+    }
+    private static LreadRoughness()
+    {
+        return DataQuerier._context.readRoughnessData([]);
+    }
+    private static LreadPosition(axis)
+    {
+        return DataQuerier._context.readPosition([axis]);
+    }
+    private static LmakeMap(value)
+    {
+        return DataQuerier._context.makeMap([value]);
+    }
+    private static LnormalizeMap(m)
+    {
+        return DataQuerier._context.normalizeMap([m]);
+    }
+    private static LthresholdMap(m)
+    {
+        return DataQuerier._context.thresholdMap([m]);
+    }
+    private static LpowMap(left, right)
+    {
+        return DataQuerier._context.pow([left, right]);
+    }
+    private static LsinMap(arg)
+    {
+        return DataQuerier._context.mathFunction("sin", arg);
+    }
+    private static LcosMap(arg)
+    {
+        return DataQuerier._context.mathFunction("cos", arg);
+    }
+    private static LtanMap(arg)
+    {
+        return DataQuerier._context.mathFunction("tan", arg);
+    }
+    private static LasinMap(arg)
+    {
+        return DataQuerier._context.mathFunction("asin", arg);
+    }
+    private static LacosMap(arg)
+    {
+        return DataQuerier._context.mathFunction("acos", arg);
+    }
+    private static LatanMap(arg)
+    {
+        return DataQuerier._context.mathFunction("atan", arg);
+    }
+    private static LexpMap(arg)
+    {
+        return DataQuerier._context.mathFunction("exp", arg);
+    }
+    private static LlnMap(arg)
+    {
+        return DataQuerier._context.mathFunction("ln", arg);
+    }
+
+    // Used as helpers by the above function calls
+    private static mapBinaryOp(op: QuantOp, left, right)
+    {
+        if(left instanceof PMCDataValues && typeof right == "number")
+        {
+            return left.operationWithScalar(op, right, false); // false because: map <op> number
+        }
+        else if(right instanceof PMCDataValues && typeof left == "number")
+        {
+            return right.operationWithScalar(op, left, true); // true because: number <op> map
+        }
+        else if(left instanceof PMCDataValues && right instanceof PMCDataValues)
+        {
+            return left.operationWithMap(op, right);
+        }
+
+        throw new Error("Unable to perform operation: "+op+" on parameters passed");
+    }
+
+
+// See: https://github.com/ceifa/wasmoon
+/*
+    // Set a JS function to be a global lua function
+    lua.global.set('sum', (x, y) => x + y)
+    // Run a lua string
+    await lua.doString(`
+    print(sum(10, 10))
+    function multiply(x, y)
+        return x * y
+    end
+    `)
+    // Get a global lua function as a JS function
+    const multiply = lua.global.get('multiply')
+    console.log(multiply(10, 10))
+*/
+
     public runQuery(expression: string): PMCDataValues
     {
+        // If it's a LUA script, run it directly here
+        if(expression.startsWith("LUA"))
+        {
+            // Trim the marker
+            expression = expression.substring(3);
+
+            // Set context for this run
+            DataQuerier._context = this;
+
+            let result = null;
+            try
+            {
+                // Run a lua string
+                result = DataQuerier._lua.doStringSync(expression)
+            }
+            catch (err)
+            {
+                console.error(err);
+                throw new Error(err);
+            }
+            finally
+            {
+                // Clear the context, don't want any Lua code to execute with us around any more
+                DataQuerier._context = null;
+
+                // Close the lua environment, so it can be freed
+                //DataQuerier._lua.global.close()
+            }
+
+            if(result)
+            {
+                return result;
+            }
+
+            throw new Error("Expression: "+expression+" did not complete");
+        }
+
+        // It's an old-style expression, run it the old way...
+
         // Parse the expression
         // We do this in 2 stages, first we allow variables to be defined, then we expect to end in a line that has an expression in it
         // Blank lines and // comments are ignored
