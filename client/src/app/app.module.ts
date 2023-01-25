@@ -500,6 +500,7 @@ function initLua(): () => Observable<any> {
             provide: APP_INITIALIZER,
             useFactory: initLua,
             multi: true,
+            deps: [EnvConfigurationInitService]
         },
         Title,
         {

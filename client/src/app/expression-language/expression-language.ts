@@ -37,6 +37,7 @@ import { PMCDataValue, PMCDataValues, QuantOp } from "src/app/expression-languag
 import { DataSet } from "src/app/models/DataSet";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { LuaEngine } from "wasmoon";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 const { LuaFactory } = require('wasmoon')
 
@@ -113,8 +114,13 @@ export class DataQuerier
             (observer)=>
             {
                 // Initialize a new lua environment factory
-                // You can pass the wasm location as the first argument, useful if you are using wasmoon on a web environment and want to host the file by yourself
-                const factory = new LuaFactory();
+                // Pass our hosted wasm file location in here
+                let wasmURI = EnvConfigurationInitService.appConfig.name == "prod" ? "www" : EnvConfigurationInitService.appConfig.name;
+                wasmURI = "https://"+wasmURI+"."+EnvConfigurationInitService.appConfig.appDomain;
+                wasmURI += "/assets/glue.wasm";
+                console.log("Loading WASM from: "+wasmURI);
+                
+                const factory = new LuaFactory(wasmURI);
                 let lua = factory.createEngine();
                 lua.then((eng)=>{
                     console.log("Lua Engine created...");
