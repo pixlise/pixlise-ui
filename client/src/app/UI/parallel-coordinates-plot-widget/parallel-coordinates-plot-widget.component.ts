@@ -43,6 +43,8 @@ import { KeyItem } from "../atoms/widget-key-display/widget-key-display.componen
 import { CSVExportItem, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { DataSetService } from "src/app/services/data-set.service";
 import { MinMax } from "src/app/models/BasicTypes";
+import { RGBUMineralRatios } from "../rgbuplot/rgbu-data";
+import { RGBUPlotModel } from "../rgbuplot/model";
 
 export class PCPLine
 {
@@ -201,6 +203,8 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
 
     public keyShowing: boolean = false;
     public keyItems: KeyItem[] = [];
+
+    public minerals: string[] = [];
 
     constructor(
         private _elementRef: ElementRef,
@@ -497,6 +501,10 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
 
         // Make sure we're starting with a clean slate
         this._data = [];
+
+        // Add the visible minerals
+        this._data = this._data.concat(this.visibleMinerals);
+
         let selectedPixels = new Set<number>();
         if(this._selectionService && this._selectionService.getCurrentSelection())
         {
@@ -584,6 +592,45 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
     get visibleAxes(): PCPAxis[]
     {
         return this.axes.filter((axis) => axis.visible);
+    }
+    
+    get visibleMinerals(): RGBUPoint[]
+    {
+        return this.minerals.map((mineralName) =>
+        {
+            let mineralIndex = RGBUMineralRatios.names.findIndex((mineral) => mineral === mineralName);
+            let rgbuValues = RGBUMineralRatios.ratioValues[mineralIndex];
+
+            return new RGBUPoint(
+                rgbuValues[0] * 255,
+                rgbuValues[1] * 255,
+                rgbuValues[2] * 255,
+                rgbuValues[3] * 255,
+                rgbuValues[0] / rgbuValues[1],
+                rgbuValues[0] / rgbuValues[2],
+                rgbuValues[0] / rgbuValues[3],
+                rgbuValues[1] / rgbuValues[2],
+                rgbuValues[1] / rgbuValues[3],
+                rgbuValues[2] / rgbuValues[3],
+                "234,58,238",
+                mineralName,
+            );
+        });
+    }
+
+    onMinerals(event): void
+    {
+        RGBUPlotModel.selectMinerals(this.dialog, this.minerals, (mineralsShown) => 
+        {
+            if(mineralsShown)
+            {
+                this.minerals = mineralsShown;
+                const reason = "mineral-choice";
+                this.saveState(reason);
+                this._prepareData(reason);
+                this.recalculateLines();
+            }
+        });
     }
 
     toggleLineVisibility(): void

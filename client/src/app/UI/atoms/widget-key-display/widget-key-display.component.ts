@@ -98,4 +98,21 @@ export class WidgetKeyDisplayComponent implements OnInit
             this.keyClick.emit(id);
         }
     }
+
+    getLabel(item: KeyItem): string
+    {
+        return item.label.replace("mist__roi.", "");
+    }
+
+    getTruncatedLabel(item: KeyItem): string
+    {
+        let maxLength = 15;
+        let label = this.getLabel(item);
+        if(label.length > maxLength)
+        {
+            label = label.slice(0, maxLength) + "...";
+        }
+
+        return label;
+    }
 }
