@@ -193,6 +193,157 @@ export class DataQuerier
         DataQuerier._lua.global.set("atan", DataQuerier.LatanMap);
         DataQuerier._lua.global.set("exp", DataQuerier.LexpMap);
         DataQuerier._lua.global.set("ln", DataQuerier.LlnMap);
+
+/*
+luaL_addgsub
+luaL_addlstring
+luaL_addstring
+luaL_addvalue
+luaL_argerror()
+luaL_buffinit()
+luaL_buffinitsize()
+luaL_callmeta()
+luaL_checkany()
+luaL_checkinteger()
+luaL_checklstring()
+luaL_checknumber()
+luaL_checkstack()
+luaL_checktype()
+luaL_checkudata()
+luaL_checkversion_()
+luaL_execresult()
+luaL_fileresult()
+luaL_getmetafield()
+luaL_getsubtable()
+luaL_gsub()
+luaL_len()
+luaL_loadbufferx()
+luaL_loadfilex()
+luaL_loadstring()
+luaL_newmetatable()
+luaL_newstate()
+luaL_openlibs()
+luaL_optinteger()
+luaL_optlstring()
+luaL_optnumber()
+luaL_prepbuffsize()
+luaL_pushresult()
+luaL_pushresultsize()
+luaL_ref()
+luaL_requiref()
+luaL_setfuncs()
+luaL_setmetatable()
+luaL_testudata()
+luaL_tolstring()
+luaL_traceback()
+luaL_typeerror()
+luaL_unref()
+luaL_where()
+lua_absindex()
+lua_arith()
+lua_atpanic()
+lua_callk()
+lua_checkstack()
+lua_close()
+lua_closeslot()
+lua_compare()
+lua_concat()
+lua_copy()
+lua_createtable()
+lua_dump()
+lua_error()
+lua_getallocf()
+lua_getfield()
+lua_getglobal()
+lua_gethook()
+lua_gethookcount()
+lua_gethookmask()
+lua_geti()
+lua_getinfo()
+lua_getiuservalue()
+lua_getlocal()
+lua_getmetatable()
+lua_getstack()
+lua_gettable()
+lua_gettop()
+lua_getupvalue()
+lua_iscfunction()
+lua_isinteger()
+lua_isnumber()
+lua_isstring()
+lua_isuserdata()
+lua_isyieldable()
+lua_len()
+lua_load()
+lua_newstate()
+lua_newthread()
+lua_newuserdatauv()
+lua_next()
+lua_pcallk()
+lua_pushboolean()
+lua_pushcclosure()
+lua_pushinteger()
+lua_pushlightuserdata()
+lua_pushlstring()
+lua_pushnil()
+lua_pushnumber()
+lua_pushstring()
+lua_pushthread()
+lua_pushvalue()
+lua_rawequal()
+lua_rawget()
+lua_rawgeti()
+lua_rawgetp()
+lua_rawlen()
+lua_rawset()
+lua_rawseti()
+lua_rawsetp()
+lua_resetthread()
+lua_resume()
+lua_rotate()
+lua_setallocf()
+lua_setcstacklimit()
+lua_setfield()
+lua_setglobal()
+lua_sethook()
+lua_seti()
+lua_setiuservalue()
+lua_setlocal()
+lua_setmetatable()
+lua_settable()
+lua_settop()
+lua_setupvalue()
+lua_setwarnf()
+lua_status()
+lua_stringtonumber()
+lua_toboolean()
+lua_tocfunction()
+lua_toclose()
+lua_tointegerx()
+lua_tolstring()
+lua_tonumberx()
+lua_topointer()
+lua_tothread()
+lua_touserdata()
+lua_type()
+lua_typename()
+lua_upvalueid()
+lua_upvaluejoin()
+lua_version()
+lua_warning()
+lua_xmove()
+lua_yieldk()
+luaopen_base()
+luaopen_coroutine()
+luaopen_debug()
+luaopen_io()
+luaopen_math()
+luaopen_os()
+luaopen_package()
+luaopen_string()
+luaopen_table()
+luaopen_utf8()
+*/
     }
 
     private static LaddMap(left, right)
@@ -397,7 +548,9 @@ export class DataQuerier
 
             if(result)
             {
-                return result;
+                // We got an object back that represents a table in Lua. Here we assume this is a PMCDataValue[] effectively
+                // so lets convert it to something we'll use here (PMCDataValues)
+                return this.readLuaTable(result);
             }
 
             throw new Error("Expression: "+expression+" did not complete");
@@ -419,6 +572,35 @@ export class DataQuerier
         }
 
         throw new Error("Expression: "+expression+" did not result in usable map data. Result was: "+result);
+    }
+
+    Need to write Lua add/mul/div/subtract/avg/over/under etc functions using for k, v in pairs(arr) do
+    Need to return tables to Lua which are just PMCDataValue[] in table form
+
+    private readLuaTable(t: object): PMCDataValues
+    {
+        let values: PMCDataValue[] = [];
+        for(let key of Object.keys(t))
+        {
+            let pmc = Number.parseInt(key);
+
+            if(isNaN(pmc))
+            {
+                throw new Error("Returned value from expression has invalid field: "+key);
+            }
+
+            let value: number = t[key];
+            let isUndef = false;
+            if(value === null)
+            {
+                value = 0;
+                isUndef = true;
+            }
+
+            values.push(new PMCDataValue(pmc, value, isUndef))
+        }
+
+        return PMCDataValues.makeWithValues(values);
     }
 
     private parseExpression(expression: string, variableLookup: Map<string, string | number | PMCDataValues>): any
