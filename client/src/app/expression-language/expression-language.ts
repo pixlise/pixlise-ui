@@ -114,11 +114,7 @@ export class DataQuerier
             (observer)=>
             {
                 // Initialize a new lua environment factory
-                // Pass our hosted wasm file location in here
-/*
-                let wasmURI = EnvConfigurationInitService.appConfig.name == "prod" ? "www" : EnvConfigurationInitService.appConfig.name;
-                wasmURI = "https://"+wasmURI+"."+EnvConfigurationInitService.appConfig.appDomain;
-                wasmURI += "/assets/glue.wasm";*/
+                // Pass our hosted wasm file location in here. Simplest method is relative path to served location
                 let wasmURI = "assets/glue.wasm";
                 console.log("Loading WASM from: "+wasmURI);
 
@@ -371,7 +367,7 @@ export class DataQuerier
     public runQuery(expression: string): PMCDataValues
     {
         // If it's a LUA script, run it directly here
-        if(expression.startsWith("LUA"))
+        if(DataQuerier.isLUA(expression))
         {
             // Trim the marker
             expression = expression.substring(3);
@@ -433,8 +429,18 @@ export class DataQuerier
         return this.parseExpressionNode(parseTree, variableLookup);
     }
 
+    private static isLUA(expression: string): boolean
+    {
+        return expression.startsWith("LUA");
+    }
+
     public static breakExpressionIntoParts(expression: string): ExpressionParts
     {
+        if(DataQuerier.isLUA(expression))
+        {
+            return new ExpressionParts([], [], [], "");
+        }
+
         let lines = expression.split("\n");
         let variableNames: string[] = [];
         let variableExpressions: string[] = [];
