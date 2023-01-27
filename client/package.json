@@ -85,7 +85,6 @@
     "http": false,
     "https": false,
     "child_process": false,
-    "crypto": false,
-    "url": false
+    "crypto": false
   }
 }
