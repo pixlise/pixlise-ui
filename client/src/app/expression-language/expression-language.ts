@@ -119,7 +119,7 @@ export class DataQuerier
                 let wasmURI = EnvConfigurationInitService.appConfig.name == "prod" ? "www" : EnvConfigurationInitService.appConfig.name;
                 wasmURI = "https://"+wasmURI+"."+EnvConfigurationInitService.appConfig.appDomain;
                 wasmURI += "/assets/glue.wasm";*/
-                let wasmURI = "https://dev.pixlise.org/assets/glue.wasm";
+                let wasmURI = "assets/glue.wasm";
                 console.log("Loading WASM from: "+wasmURI);
 
                 const factory = new LuaFactory(wasmURI);
