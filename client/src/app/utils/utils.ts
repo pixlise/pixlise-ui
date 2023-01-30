@@ -182,6 +182,24 @@ export function radToDeg(rad: number): number
     return rad*180/Math.PI;
 }
 
+export function xor_sum(value1: number, value2: number): number
+{
+    let xor = value1^value2;
+
+    // What's sum mean here? Are we adding up the bits that are on after xor?
+    let bit = 1;
+    let sum = 0;
+    for(let c = 0; c < 31; c++)
+    {
+        if(xor & bit)
+        {
+            sum++;
+        }
+        bit = bit << 1;
+    }
+    return sum;
+}
+
 export function isValidPhoneNumber(phNum: string): boolean
 {
     if(phNum.length > 0 && phNum.length < 7)

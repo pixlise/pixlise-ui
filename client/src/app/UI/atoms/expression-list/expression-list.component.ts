@@ -226,6 +226,7 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     {
         let lastHeaderIndex = 0;
         let activeHeader: LayerViewItem = null;
+        let activeHeaderIndex = 0;
         if(currentScrollPosition < this.itemSize)
         {
             // If we're at the top, don't show a sticky header
@@ -243,10 +244,35 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
                 if(endPosition - startPosition > this.itemSize && currentScrollPosition >= startPosition && currentScrollPosition < endPosition)
                 {
                     activeHeader = this.items.items[lastHeaderIndex];
+                    activeHeaderIndex = lastHeaderIndex;
                 }
                 lastHeaderIndex = i;
             }
         });
+
+        if(activeHeader?.itemType?.includes("shared-") && checkShared && activeHeaderIndex + 1 < this.items.items.length)
+        {
+            let totalSharedCount = 0;
+            let totalVisibleSharedCount = 0;
+
+            let activeItemType = this.items.items[activeHeaderIndex + 1].itemType;
+
+            // Update count of shared items
+            this.items.items.forEach((item) =>
+            {
+                if(item.itemType === activeItemType && item.shared)
+                {
+                    totalSharedCount++;
+                    if(item?.content?.layer?.visible)
+                    {
+                        totalVisibleSharedCount++;
+                    }
+                }
+            });
+
+            activeHeader.content.totalCount = totalSharedCount;
+            activeHeader.content.visibleCount = totalVisibleSharedCount;
+        }
 
         return activeHeader;
     }
@@ -259,8 +285,9 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
         // This if statement is probably unnecessary, but is an extra verification that the header is open 
         if(activeHeader !== null && this.headerSectionsOpen.has(activeHeader.itemType))
         {
-            this.stickyItem = activeHeader;
-            this.stickyItemHeaderName = activeHeaderWithShared.itemType.includes("shared-") ? activeHeaderWithShared.content.label : activeHeader.content.label;
+            let isSharedSectionOpen = activeHeaderWithShared.itemType.includes("shared-");
+            this.stickyItem = isSharedSectionOpen ? activeHeaderWithShared : activeHeader;
+            this.stickyItemHeaderName = isSharedSectionOpen ? activeHeaderWithShared.content.label : activeHeader.content.label;
         }
         else
         {

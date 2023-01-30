@@ -30,7 +30,7 @@
 import {
     byteToHexString, doesVersionDiffer, isValidElementsString, isValidPhoneNumber, parseNumberRangeString, randomString, SDSFields,
     //getPearsonCorrelation,
-    setsEqual, stripInvalidCharsFromPhoneNumber
+    setsEqual, stripInvalidCharsFromPhoneNumber, xor_sum
 } from "./utils";
 
 
@@ -452,4 +452,23 @@ describe("SDSFields.parseFileName", () =>
             expect(f.toDebugString()+" - "+f.PMC+","+f.RTT+","+f.SCLK+","+f.SOL).toEqual(exp[c]);
         });
     }
+});
+
+describe("xor_sum", () =>
+{
+    it("xor_sum works", () => 
+    {
+        // 25=00011001
+        // 19=00010011
+        expect(xor_sum(25, 19)).toEqual(2);
+        expect(xor_sum(19, 25)).toEqual(2);
+        // 24=00011000
+        // 19=00010011
+        expect(xor_sum(19, 24)).toEqual(3);
+        expect(xor_sum(24, 19)).toEqual(3);
+        // 24=00011000
+        //  3=00000001
+        expect(xor_sum(24, 3)).toEqual(4);
+        expect(xor_sum(3, 24)).toEqual(4);
+    });
 });
