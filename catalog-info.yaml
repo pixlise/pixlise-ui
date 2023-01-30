@@ -17,5 +17,6 @@ spec:
   type: service
   owner: default/developers
   lifecycle: production
+  system: public-websites
   dependsOn:
     - component:pixlise-api
