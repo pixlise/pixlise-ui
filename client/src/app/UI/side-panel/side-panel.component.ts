@@ -38,6 +38,8 @@ import { RoughnessComponent } from "./tabs/roughness/roughness.component";
 import { SelectionComponent } from "./tabs/selection/selection.component";
 import { ViewStateCollectionsComponent } from "./tabs/view-state-collections/view-state-collections.component";
 import { WorkspacesComponent } from "./tabs/workspaces/workspaces.component";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { ViewStateUploadComponent, ViewStateUploadData } from "./viewstate-upload/viewstate-upload.component";
 
 
 
@@ -107,7 +109,7 @@ export class SidePanelComponent implements OnInit
     ];
 
     private _adminIcons: string[] = [
-        "assets/button-icons/export.svg",
+        "assets/button-icons/upload.svg",
     ];
 
     private _tabClasses: any[] = [
@@ -135,7 +137,8 @@ export class SidePanelComponent implements OnInit
 
     constructor(
         private _componentFactoryResolver: ComponentFactoryResolver,
-        private _viewStateService: ViewStateService
+        private _viewStateService: ViewStateService,
+        private _dialog: MatDialog,
     )
     {
     }
@@ -338,7 +341,17 @@ export class SidePanelComponent implements OnInit
     {
         if(adminBtn === this._AdminImportViewState)
         {
-            // TODO: Import/Export dialog for view state
+            const dialogConfig = new MatDialogConfig();
+
+            dialogConfig.data = new ViewStateUploadData();
+            const dialogRef = this._dialog.open(ViewStateUploadComponent, dialogConfig);
+
+            dialogRef.afterClosed().subscribe(
+                (response: any)=>
+                {
+                    console.log(response);
+                }
+            );
         }
     }
 
