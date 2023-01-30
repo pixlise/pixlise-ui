@@ -48,11 +48,13 @@ function sortUserByLogin(a: UserInfo, b: UserInfo)
 })
 export class UsersComponent implements OnInit
 {
-    toSearch: string = "";
+    _toSearch: string = "";
 
     roles: RoleInfo[] = [];
 
     users: UserInfo[] = [];
+    filteredUsers: UserInfo[] = [];
+
     usersWithoutPermissions: UserInfo[] = [];
 
     selectedUserDetails: UserInfo = null;
@@ -107,16 +109,28 @@ export class UsersComponent implements OnInit
         );
     }
 
+    get toSearch(): string
+    {
+        return this._toSearch;
+    }
+
+    set toSearch(searchText: string)
+    {
+        this._toSearch = searchText;
+        this.filteredUsers = this.users.filter((user: UserInfo)=> user.name.includes(this._toSearch));
+    }
+
     onSearch()
     {
         this.users = null;
-        this.userMgmt.searchUsers(this.toSearch).subscribe(
+        this.userMgmt.searchUsers(this._toSearch).subscribe(
             (users: UserInfo[])=>
             {
                 // If user has no permissions, it gets bin sorted into the other list...
                 this.users = users;
-
                 this.users.sort(sortUserByLogin);
+
+                this.filteredUsers = this.users.filter((user: UserInfo)=> user.name.includes(this._toSearch));
                 this.selectedUserDetails = null;
             },
             (err)=>
@@ -125,6 +139,35 @@ export class UsersComponent implements OnInit
                 console.log(err);
             }
         );
+    }
+
+    get usersInLastMonth(): number
+    {
+        return this.filteredUsers.filter((user: UserInfo)=> user.last_login > Date.now()/1000 - 30*24*60*60).length;
+    }
+
+    get newUsersInLastMonth(): number
+    {
+        return this.filteredUsers.filter((user: UserInfo)=> user.created_at > Date.now()/1000 - 30*24*60*60).length;
+    }
+
+    get dataCollectionGroups(): string
+    {
+        let groups = {};
+        this.filteredUsers.forEach((user: UserInfo)=>
+        {
+            let dataCollectionGroup = user.user_details.userconfig.data_collection;
+            if(groups[dataCollectionGroup])
+            {
+                groups[dataCollectionGroup]++;
+            }
+            else
+            {
+                groups[dataCollectionGroup] = 1;
+            }
+        });
+
+        return Object.entries(groups).map(([groupName, count]) => `${groupName}: ${count}`).join(", ");
     }
 
     onSelect(user: UserInfo)
@@ -140,25 +183,14 @@ export class UsersComponent implements OnInit
 
         // Load roles for this user
         this.userMgmt.getUserRoles(this.selectedUserDetails.user_id).subscribe(
-            (roles: RoleInfo[])=>
+            (roles: RoleInfo[] | null)=>
             {
-                this.selectedUserRoles = roles;
-
-                let existingRoleIDs = new Set<string>();
-                for(let r of roles)
-                {
-                    existingRoleIDs.add(r.id);
-                }
+                
+                this.selectedUserRoles = roles || [];
+                let existingRoleIDs = new Set<string>(this.selectedUserRoles.map(role => role.id));
 
                 // Put the roles that are missing from the above into the missing list
-                this.selectedUserMissingRoles = [];
-                for(let r of this.roles)
-                {
-                    if(!existingRoleIDs.has(r.id))
-                    {
-                        this.selectedUserMissingRoles.push(r);
-                    }
-                }
+                this.selectedUserMissingRoles = this.roles.filter((role)=> !existingRoleIDs.has(role.id));
             },
             (err)=>
             {

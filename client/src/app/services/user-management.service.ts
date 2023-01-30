@@ -32,7 +32,21 @@ import { Injectable } from "@angular/core";
 import { Observable, ReplaySubject, Subject } from "rxjs";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 
-
+export class UserDetails
+{
+    userid: string;
+    notifications: {
+        topics: string[];
+        hints: string[];
+        uinotifications: string[];
+    };
+    userconfig: {
+        name: string;
+        email: string;
+        cell: string;
+        data_collection: string;
+    };
+}
 
 export class UserInfo
 {
@@ -43,7 +57,8 @@ export class UserInfo
         public created_at: number,
         public last_login: number,
         public picture: string,
-        public roles: string[]
+        public roles: string[],
+        public user_details: UserDetails
     )
     {
     }
@@ -78,8 +93,9 @@ export class UserManagementService
 
     searchUsers(query: string): Observable<UserInfo[]>
     {
-        console.log("Searching for users with query: "+query);
-        let apiURL = APIPaths.getWithHost(APIPaths.api_user_management+"/query");
+        // NOTE: This doesn't actually search anything in the backend. Filtering is done on frontend
+        // console.log("Searching for users with query: "+query);
+        let apiURL = APIPaths.getWithHost(`${APIPaths.api_user_management}/query`);
         return this.http.get<UserInfo[]>(apiURL, makeHeaders());
     }
 

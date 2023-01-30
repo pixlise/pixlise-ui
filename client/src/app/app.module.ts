@@ -185,6 +185,7 @@ import { WorkspacesComponent } from "./UI/side-panel/tabs/workspaces/workspaces.
 import { ROIComponent } from "./UI/side-panel/tabs/roi/roi.component";
 import { MistROIComponent } from "./UI/side-panel/tabs/mist-roi/mist-roi.component";
 import { MistRoiUploadComponent } from "./UI/side-panel/tabs/mist-roi/mist-roi-upload/mist-roi-upload.component";
+import { ViewStateUploadComponent } from "./UI/side-panel/viewstate-upload/viewstate-upload.component";
 import { MistRoiConvertComponent } from "./UI/side-panel/tabs/mist-roi/mist-roi-convert/mist-roi-convert.component";
 import { SelectionComponent } from "./UI/side-panel/tabs/selection/selection.component";
 import { ViewStateCollectionsComponent } from "./UI/side-panel/tabs/view-state-collections/view-state-collections.component";
@@ -460,6 +461,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         FitElementSelectionComponent,
         MistRoiUploadComponent,
         MistRoiConvertComponent,
+        ViewStateUploadComponent,
         AddBearerPipe,
         AddDatasetDialogComponent,
         LogViewerComponent,
