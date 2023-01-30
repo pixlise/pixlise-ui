@@ -40,6 +40,8 @@ import { ViewStateCollectionsComponent } from "./tabs/view-state-collections/vie
 import { WorkspacesComponent } from "./tabs/workspaces/workspaces.component";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ViewStateUploadComponent, ViewStateUploadData } from "./viewstate-upload/viewstate-upload.component";
+import { AuthenticationService } from "src/app/services/authentication.service";
+import { Subscription } from "rxjs";
 
 
 
@@ -135,16 +137,31 @@ export class SidePanelComponent implements OnInit
 
     private _topPercent: number = 50;
 
+    private _subs = new Subscription();
+
+    private _userUserAdminAllowed: boolean = false;
+
     constructor(
         private _componentFactoryResolver: ComponentFactoryResolver,
         private _viewStateService: ViewStateService,
         private _dialog: MatDialog,
+        private _authService: AuthenticationService,
     )
     {
     }
 
     ngOnInit(): void
     {
+        this._subs.add(this._authService.getIdTokenClaims$().subscribe(
+            (claims)=>
+            {
+                this._userUserAdminAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionViewUserRoles);
+            },
+            (err)=>
+            {
+                this._userUserAdminAllowed = false;
+            }
+        ));
     }
 
     ngAfterViewInit(): void
@@ -503,5 +520,10 @@ export class SidePanelComponent implements OnInit
     get prevButtonState(): IconButtonState
     {
         return (this._viewStateService.presentationSlideIdx <= 0) ? IconButtonState.DISABLED : IconButtonState.ACTIVE;
+    }
+
+    get isAdmin(): boolean
+    {
+        return this._userUserAdminAllowed;
     }
 }

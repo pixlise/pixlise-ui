@@ -64,8 +64,8 @@ POSSIBILITY OF SUCH DAMAGE.
                 <icon-button title="{{viewShortcut}}" icon="{{viewIcon(viewShortcut)}}" (click)="onOpenView(viewShortcut)"></icon-button>
             </div>
         </div>
-        <hr class="panel-break">
-        <div fxLayout="column" class="tab-shortcuts">
+        <hr *ngIf="isAdmin" class="panel-break">
+        <div *ngIf="isAdmin" fxLayout="column" class="tab-shortcuts">
             <div *ngFor="let adminBtn of adminButtons" class="view-btn-container">
                 <icon-button title="{{adminBtn}}" icon="{{getAdminIcon(adminBtn)}}" (click)="onAdminAction(adminBtn)"></icon-button>
             </div>
