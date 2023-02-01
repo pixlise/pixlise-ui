@@ -30,6 +30,7 @@
 import { Component, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
+import { ObjectCreator } from "src/app/models/BasicTypes";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { ROIService } from "src/app/services/roi.service";
@@ -54,6 +55,9 @@ export class ROIComponent implements OnInit
     private _userROIs: RegionLayerInfo[] = [];
     private _sharedROIs: RegionLayerInfo[] = [];
 
+    private _filteredUserROIs: RegionLayerInfo[] = [];
+    private _filteredSharedROIs: RegionLayerInfo[] = [];
+
     // All the ROIs that are relevant, and we search within these to produce this.ROIs
     private _allROIsForDisplay: RegionLayerInfo[] = [];
 
@@ -67,6 +71,11 @@ export class ROIComponent implements OnInit
     private _selectionEmpty: boolean = true;
 
     roiSearchString: string = "";
+
+    private _authors: ObjectCreator[] = [];
+    private _filteredAuthors: string[] = [];
+
+    filteredTagIDs: string[] = [];
 
     constructor(
         private _contextImageService: ContextImageService,
@@ -131,7 +140,8 @@ export class ROIComponent implements OnInit
                     this._allROIsForDisplay = this._userROIs;
                 }
 
-                this.ROIs = this.filterROIsForDisplay(this._allROIsForDisplay, this.roiSearchString);
+                this.filterROIsForDisplay();
+                this.extractAuthors();
             },
             (err)=>
             {
@@ -144,21 +154,42 @@ export class ROIComponent implements OnInit
         this._subs.unsubscribe();
     }
 
-    private filterROIsForDisplay(ROIs: RegionLayerInfo[], nameMustContain: string): RegionLayerInfo[]
+    extractAuthors()
     {
-        let result: RegionLayerInfo[] = [];
-        let nameMustContainLower = nameMustContain.toLowerCase();
+        let authorIDs = new Set<string>();
+        let authors: ObjectCreator[] = [];
+        this._allROIsForDisplay.forEach((roi) =>
+        {
+            if(!authorIDs.has(roi.roi.creator.user_id))
+            {
+                authors.push(roi.roi.creator);
+                authorIDs.add(roi.roi.creator.user_id);
+            }
+        });
 
-        for(let roi of ROIs)
+        this.authors = authors;
+    }
+
+
+    private filterROIsForDisplay(): void
+    {
+        let filteredROIs: RegionLayerInfo[] = [];
+        let searchString = this.roiSearchString.toLowerCase();
+
+        for(let roi of this._allROIsForDisplay)
         {
             let roiNameLower = roi.roi.name.toLowerCase();
-            if(nameMustContainLower.length <= 0 || roiNameLower.indexOf(nameMustContainLower) >= 0)
+            if(
+                (searchString.length <= 0 || roiNameLower.indexOf(searchString) >= 0)
+                && (this.filteredTagIDs.length <= 0 || this.filteredTagIDs.some((tagID) => roi.roi.tags.includes(tagID)))
+                && (this.filteredAuthors.length <= 0 || this.filteredAuthors.some((author) => roi.roi.creator.user_id === author))
+            )
             {
-                result.push(roi);
+                filteredROIs.push(roi);
             }
         }
 
-        return result;
+        this.ROIs = filteredROIs;
     }
 
     private setROI(roi: RegionLayerInfo): void
@@ -220,11 +251,6 @@ export class ROIComponent implements OnInit
         return this._contextImageService.mdl.regionManager;
     }
 
-    onSearch(): void
-    {
-        this.ROIs = this.filterROIsForDisplay(this._allROIsForDisplay, this.roiSearchString);
-    }
-
     get selectionEmpty(): boolean
     {
         return this._selectionEmpty;
@@ -251,4 +277,44 @@ export class ROIComponent implements OnInit
             }
         );
     }
+
+    get authors(): ObjectCreator[]
+    {
+        return this._authors;
+    }
+
+    set authors(authors: ObjectCreator[])
+    {
+        this._authors = authors;
+    }
+
+    get authorsTooltip(): string
+    {
+        let authorNames = this._authors.filter((author) => this._filteredAuthors.includes(author.user_id)).map((author) => author.name);
+        return this._filteredAuthors.length > 0 ? `Authors:\n${authorNames.join("\n")}` : "No Authors Selected";
+    }
+
+    get filteredAuthors(): string[]
+    {
+        return this._filteredAuthors;
+    }
+
+    set filteredAuthors(authors: string[])
+    {
+        this._filteredAuthors = authors;
+        this.filterROIsForDisplay();
+    }
+
+    onTagFilterChanged(tagIDs: string[]): void
+    {
+        this.filteredTagIDs = tagIDs;
+        this.filterROIsForDisplay();
+    }
+
+    onFilterText(filterText: string): void
+    {
+        this.roiSearchString = filterText || "";
+        this.filterROIsForDisplay();
+    }
+
 }

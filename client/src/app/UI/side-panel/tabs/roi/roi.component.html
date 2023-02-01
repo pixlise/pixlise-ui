@@ -33,12 +33,32 @@ POSSIBILITY OF SUCH DAMAGE.
      <div class="panel-row">
           <push-button (onClick)="onNewROI()" buttonStyle="yellow" [disabled]="selectionEmpty" fxFlex="100%">New ROI from selection</push-button>
      </div>
-     <ng-container *ngIf="showSearch">
-          <div fxLayout="row" class="roi-search gap-separated-horizontal-elements">
-               <input [(ngModel)]="roiSearchString" class="search-box" type="text" placeholder="Input Search Text" (keyup.enter)="onSearch()" fxFlex="100%">
-               <icon-button icon='assets/button-icons/search-white.svg' (click)="onSearch()"></icon-button>
-          </div>
-     </ng-container>
+     <div *ngIf="showSearch" fxLayout="row" class="gap-separated-horizontal-elements filters-row">
+          <filter-box
+               placeholder="Filter Name..."
+               (onFilterChanged)="onFilterText($event)"
+          >
+          </filter-box>
+          <tag-picker
+               type="roi"
+               [selectedTagIDs]="filteredTagIDs"
+               [showCurrentTagsSection]="false"
+               (onTagSelectionChanged)="onTagFilterChanged($event)"
+          >
+          </tag-picker>
+          <mat-select
+               #tooltip="matTooltip"
+               [matTooltip]="authorsTooltip"
+               multiple
+               [(ngModel)]="filteredAuthors"
+               class="authors-filter"
+               placeholder="Author ..."
+          >
+               <mat-option *ngFor="let author of authors;"
+                    [value]="author.user_id">{{author.name}}
+               </mat-option>
+          </mat-select>
+     </div>
      <roi-item
           *ngFor="let item of ROIs"
           [regionLayer]="item">

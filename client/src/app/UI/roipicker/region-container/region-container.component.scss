@@ -27,26 +27,17 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Observable } from "rxjs";
-import { ExportDataDialogComponent } from "src/app/UI/export-data-dialog/export-data-dialog.component";
-import { ExportDataChoice, ExportDataConfig, ExportGenerator } from "src/app/UI/export-data-dialog/export-models";
+@import 'variables.scss';
+@import 'atoms.scss';
 
+.region-header {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #454c50;
 
-
-
-// This is largely here to break a circular reference: Export service shows export dialog, export dialog calls function on service
-
-export function showExportDialog(dialogSvc: MatDialog, title: string, showPublish: boolean, showQuantPicker: boolean, showROIPicker: boolean, showExpressionPicker: boolean, choices: ExportDataChoice[], exportGenerator: ExportGenerator): Observable<void>
-{
-    const dialogConfig = new MatDialogConfig();
-
-    //dialogConfig.disableClose = true;
-    //dialogConfig.autoFocus = true;
-    //dialogConfig.width = '1200px';
-    dialogConfig.data = new ExportDataConfig(title, "", showPublish, showQuantPicker, showROIPicker, showExpressionPicker, choices, exportGenerator);
-
-    const dialogRef = dialogSvc.open(ExportDataDialogComponent, dialogConfig);
-
-    return dialogRef.afterClosed();
+    .title-btn-container {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+    }
 }

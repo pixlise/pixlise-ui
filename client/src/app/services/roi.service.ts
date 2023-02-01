@@ -30,7 +30,7 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Observable, ReplaySubject, Subscription, of, forkJoin } from "rxjs";
+import { Observable, ReplaySubject, Subscription, of } from "rxjs";
 
 import { tap, switchMap, map } from "rxjs/operators";
 import { ObjectCreator } from "src/app/models/BasicTypes";
@@ -54,8 +54,10 @@ export class ROISavedItemWire
         public pixelIndexes: number[],
         public shared: boolean,
         public creator: ObjectCreator,
+        public tags: string[],
+        public mistROIItem: MistROIItem = null,
         public create_unix_time_sec: number,
-        public mod_unix_time_sec: number
+        public mod_unix_time_sec: number,
     )
     {
     }
@@ -113,9 +115,7 @@ export class ROIService
                     this._roi$.next(new Map<string, ROISavedItem>());
                 }
             },
-            (err)=>
-            {
-            },
+            ()=>null,
             ()=>
             {
                 this.resubscribeDataset();
@@ -178,7 +178,7 @@ export class ROIService
     refreshROIList()
     {
         let datasetID = this.getDatasetID();
-        if(datasetID != this._lastROILookupDatasetID)
+        if(datasetID !== this._lastROILookupDatasetID)
         {
             // Clear our cache because new dataset ID loading
             this._lastROILookup = null;
@@ -212,9 +212,10 @@ export class ROIService
                         roi.shared,
                         roi.creator,
                         mistROI,
+                        roi.tags || [],
                         this._lastROILookup ? this._lastROILookup[roiID]?.visible : false,
                         roi.create_unix_time_sec,
-                        roi.mod_unix_time_sec
+                        roi.mod_unix_time_sec,
                     )
                 );
             });
@@ -288,9 +289,15 @@ export class ROIService
                 ),
                 new UserPromptDialogStringItem(
                     "Description",
-                    (val: string)=>{return true;}
+                    ()=>true
                 ),
-            ]
+            ],
+            false,
+            null,
+            ()=>null,
+            null,
+            true,
+            ["roi"]
         );
 
         const dialogRef = dialog.open(UserPromptDialogComponent, dialogConfig);
@@ -307,7 +314,7 @@ export class ROIService
 
                     let roiName = result.enteredValues.get("Name");
 
-                    let toSave = new ROIItem(roiName, Array.from(locationIndexes), result.enteredValues.get("Description"), imageName, Array.from(pixelIndexes));
+                    let toSave = new ROIItem(roiName, Array.from(locationIndexes), result.enteredValues.get("Description"), imageName, Array.from(pixelIndexes), null, result.tags);
                     return this.add(toSave);
                 }
             ),
@@ -393,6 +400,36 @@ export class ROIService
         let loadID = this._loadingSvc.add("Saving changed ROI...");
         let apiURL = this.makeURL(this.getDatasetID(), id);
         return this.http.put<void>(apiURL, item, makeHeaders()).pipe(
+            tap(
+                ()=>
+                {
+                    this.refreshROIList();
+                    this._loadingSvc.remove(loadID);
+                },
+                ()=>
+                {
+                    this._loadingSvc.remove(loadID);
+                }
+            )
+        );
+    }
+
+    tag(id: string, tags: string[]): Observable<void>
+    {
+        let item = this._lastROILookup.get(id);
+        let roi = new ROIItem(item.name, item.locationIndexes, item.description, item.imageName, Array.from(item.pixelIndexes), item.mistROIItem, tags);
+
+        // If the ID is available, then we should already have the roi in the lookup
+        if(!roi)
+        {
+            console.error("Could not find ROI with ID", id);
+            return of(null);
+        }
+
+        roi.tags = tags;
+        let loadID = this._loadingSvc.add("Saving changed ROI...");
+        let apiURL = this.makeURL(this.getDatasetID(), id);
+        return this.http.put<void>(apiURL, roi, makeHeaders()).pipe(
             tap(
                 ()=>
                 {

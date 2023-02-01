@@ -240,13 +240,15 @@ export class PMCDataValues
         return result;
     }
 
-    public pow(exponent: number): PMCDataValues
+    // For example, Math.pow taking in 2 args, returning 1
+    // Executes this for each value in map (second param comes from arg)
+    public mathFuncWithArg(mathFunc: (a1: number, a2: number)=>number, arg: number): PMCDataValues
     {
         let result = new PMCDataValues();
 
         for(let c = 0; c < this.values.length; c++)
         {
-            let towrite = Math.pow(this.values[c].value, exponent);
+            let towrite = mathFunc(this.values[c].value, arg);
             if(this.values[c].isUndefined)
             {
                 towrite = 0;
@@ -255,12 +257,43 @@ export class PMCDataValues
         }
 
         result._valueRange = new MinMax(
-            Math.pow(this._valueRange.min, exponent),
-            Math.pow(this._valueRange.max, exponent)
+            mathFunc(this._valueRange.min, arg),
+            mathFunc(this._valueRange.max, arg)
+        );
+
+        result.isBinary = false;
+        return result;
+    }
+
+    // For example, Math.sin taking in map value as arg
+    // Executes this for each value in map
+    public mathFunc(mathFunc: (number)=>number): PMCDataValues
+    {
+        //let result = new PMCDataValues();
+        let result: PMCDataValue[] = [];
+
+        for(let c = 0; c < this.values.length; c++)
+        {
+            let towrite = mathFunc(this.values[c].value);
+            if(this.values[c].isUndefined)
+            {
+                towrite = 0;
+            }
+
+            result./*values.*/push(new PMCDataValue(this.values[c].pmc, towrite, this.values[c].isUndefined));
+        }
+
+/* This was failing for some trig functions... seemed like min vs max were backwards?!
+        result._valueRange = new MinMax(
+            mathFunc(this._valueRange.min),
+            mathFunc(this._valueRange.max)
         );
         result.isBinary = false;
 
         return result;
+*/
+        return PMCDataValues.makeWithValues(result);
+
     }
 
     public operationWithScalar(operation: QuantOp, scalar: number, scalarIsLeft: boolean): PMCDataValues

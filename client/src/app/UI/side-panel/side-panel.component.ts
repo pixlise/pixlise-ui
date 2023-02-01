@@ -38,6 +38,10 @@ import { RoughnessComponent } from "./tabs/roughness/roughness.component";
 import { SelectionComponent } from "./tabs/selection/selection.component";
 import { ViewStateCollectionsComponent } from "./tabs/view-state-collections/view-state-collections.component";
 import { WorkspacesComponent } from "./tabs/workspaces/workspaces.component";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { ViewStateUploadComponent, ViewStateUploadData } from "./viewstate-upload/viewstate-upload.component";
+import { AuthenticationService } from "src/app/services/authentication.service";
+import { Subscription } from "rxjs";
 
 
 
@@ -65,6 +69,8 @@ export class SidePanelComponent implements OnInit
     private _XRFView: string = "XRF View";
     private _RGBUView: string = "RGBU View";
 
+    private _AdminImportViewState: string = "Import View State";
+
     tabs: string[] = [
         this._WorkspacesTab,
         this._CollectionsTab,
@@ -80,6 +86,10 @@ export class SidePanelComponent implements OnInit
     shortcuts: string[] = [
         this._XRFView,
         this._RGBUView
+    ];
+
+    adminButtons: string[] = [
+        this._AdminImportViewState
     ];
 
     tabsWithNone: string[] = [...this.tabs, this._noneTab];
@@ -98,6 +108,10 @@ export class SidePanelComponent implements OnInit
     private _viewIcons: string[] = [
         "assets/icons/xrf-symbol.svg",
         "assets/icons/rgbu-symbol.svg"
+    ];
+
+    private _adminIcons: string[] = [
+        "assets/button-icons/upload.svg",
     ];
 
     private _tabClasses: any[] = [
@@ -123,15 +137,31 @@ export class SidePanelComponent implements OnInit
 
     private _topPercent: number = 50;
 
+    private _subs = new Subscription();
+
+    private _userUserAdminAllowed: boolean = false;
+
     constructor(
         private _componentFactoryResolver: ComponentFactoryResolver,
-        private _viewStateService: ViewStateService
+        private _viewStateService: ViewStateService,
+        private _dialog: MatDialog,
+        private _authService: AuthenticationService,
     )
     {
     }
 
     ngOnInit(): void
     {
+        this._subs.add(this._authService.getIdTokenClaims$().subscribe(
+            (claims)=>
+            {
+                this._userUserAdminAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionViewUserRoles);
+            },
+            (err)=>
+            {
+                this._userUserAdminAllowed = false;
+            }
+        ));
     }
 
     ngAfterViewInit(): void
@@ -291,7 +321,7 @@ export class SidePanelComponent implements OnInit
 
     onOpenView(shortcut: string): void
     {
-        if(shortcut === "RGBU View")
+        if(shortcut === this._RGBUView)
         {
             // Show RGBU Plot in the underspectrum0 spot and display UV/Blue and UV/IR
             this._viewStateService.setAnalysisViewSelector("underspectrum0", ViewStateService.widgetSelectorRGBUPlot);
@@ -314,7 +344,7 @@ export class SidePanelComponent implements OnInit
             this._viewStateService.setAnalysisViewSelector("undercontext", ViewStateService.widgetSelectorHistogram);
             this._viewStateService.showContextImageOptions = true;
         }
-        else if(shortcut === "XRF View")
+        else if(shortcut === this._XRFView)
         {
             this._viewStateService.setAnalysisViewSelector("underspectrum0", ViewStateService.widgetSelectorChordDiagram);
             this._viewStateService.setAnalysisViewSelector("underspectrum1", ViewStateService.widgetSelectorBinaryPlot);
@@ -324,10 +354,28 @@ export class SidePanelComponent implements OnInit
         }
     }
 
+    onAdminAction(adminBtn: string): void
+    {
+        if(adminBtn === this._AdminImportViewState)
+        {
+            const dialogConfig = new MatDialogConfig();
+
+            dialogConfig.data = new ViewStateUploadData();
+            const dialogRef = this._dialog.open(ViewStateUploadComponent, dialogConfig);
+
+            dialogRef.afterClosed().subscribe(
+                (response: any)=>
+                {
+                    console.log(response);
+                }
+            );
+        }
+    }
+
     tabIcon(tab: string): string
     {
         let idx = this.tabs.indexOf(tab);
-        if(idx == undefined)
+        if(idx === undefined)
         {
             return "";
         }
@@ -337,11 +385,21 @@ export class SidePanelComponent implements OnInit
     viewIcon(viewShortcut: string): string
     {
         let idx = this.shortcuts.indexOf(viewShortcut);
-        if(idx == undefined)
+        if(idx === undefined)
         {
             return "";
         }
         return this._viewIcons[idx];
+    }
+
+    getAdminIcon(adminBtn: string): string
+    {
+        let idx = this.adminButtons.indexOf(adminBtn);
+        if(idx === undefined)
+        {
+            return "";
+        }
+        return this._adminIcons[idx];
     }
 
     onSizePanel(): void
@@ -462,5 +520,10 @@ export class SidePanelComponent implements OnInit
     get prevButtonState(): IconButtonState
     {
         return (this._viewStateService.presentationSlideIdx <= 0) ? IconButtonState.DISABLED : IconButtonState.ACTIVE;
+    }
+
+    get isAdmin(): boolean
+    {
+        return this._userUserAdminAllowed;
     }
 }

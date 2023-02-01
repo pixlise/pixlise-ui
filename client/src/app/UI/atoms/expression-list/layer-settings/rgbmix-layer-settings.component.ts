@@ -40,12 +40,13 @@ import { DataExpressionService } from "src/app/services/data-expression.service"
 import { DataSetService } from "src/app/services/data-set.service";
 import { DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { RGBMixConfigService, RGBMix } from "src/app/services/rgbmix-config.service";
-import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { WidgetRegionDataService, DataSourceParams } from "src/app/services/widget-region-data.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
-import { ClientSideExportGenerator } from "src/app/UI/export-data-dialog/client-side-export";
+import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
 import { httpErrorToString } from "src/app/utils/utils";
 import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../plot-exporter-dialog/plot-exporter-dialog.component";
 import { LayerVisibilityChange } from "./layer-settings.component";
+import { TaggingService } from "src/app/services/tagging.service";
 
 
 export class RGBLayerInfo
@@ -83,8 +84,8 @@ export class RGBMixLayerSettingsComponent implements OnInit
     // For edit mode, we have a name string
     nameForSave: string = "";
 
-    // tooltip, generated on init
-    tooltip: string = "";
+    // rgbmixTooltip, generated on init
+    rgbmixTooltip: string = "";
 
     constructor(
         private _rgbMixService: RGBMixConfigService,
@@ -94,6 +95,7 @@ export class RGBMixLayerSettingsComponent implements OnInit
         private _datasetService: DataSetService,
         private _diffractionSource: DiffractionPeakService,
         private _contextImageService: ContextImageService,
+        private _taggingService: TaggingService,
         public dialog: MatDialog
     )
     {
@@ -125,27 +127,11 @@ export class RGBMixLayerSettingsComponent implements OnInit
             this.layerInfo.greenExpressionName,
             this.layerInfo.blueExpressionName
         ];
+        
+        let tooltip = `${this.layerInfo.layer.name}\n\n`;
+        tooltip += expressionNames.map((expressionName, i) => `${RGBUImage.channels[i]}: ${expressionName || "?"}`).join("\n");
 
-        let tooltip = "";
-        for(let c = 0; c < expressionNames.length; c++)
-        {
-            if(c > 0)
-            {
-                tooltip += "\n";
-            }
-
-            tooltip += RGBUImage.channels[c]+": ";
-            if(expressionNames[c])
-            {
-                tooltip += expressionNames[c];
-            }
-            else
-            {
-                tooltip += "?";
-            }
-        }
-
-        this.tooltip = tooltip;
+        this.rgbmixTooltip = tooltip;
     }
 
     get sharedBy(): string
@@ -210,6 +196,21 @@ export class RGBMixLayerSettingsComponent implements OnInit
         });
 
         return notificationCount;
+    }
+
+    get collapsedNotificationTooltipText(): string
+    {
+        let tooltipText = "";
+        this.hiddenLayerButtons.forEach(button =>
+        {
+            if(button === "showTagPicker" && this.selectedTagIDs.length > 0)
+            {
+                tooltipText += "Tags:\n";
+                tooltipText += this.selectedTagIDs.map(tagID => this._taggingService.getTagName(tagID)).join("\n");
+            }
+        });
+
+        return tooltipText.length > 0 ? tooltipText : "View more options";
     }
 
     get layerButtons(): string[]
@@ -329,7 +330,7 @@ export class RGBMixLayerSettingsComponent implements OnInit
         return this.layerInfo.layer.visible;
     }
 
-    exportExpressionValues(): string
+    exportExpressionValues(datasetId: string): string
     {
         let rgbMix = this._rgbMixService.getRGBMixes().get(this.layerInfo.layer.id);
         if(!rgbMix)
@@ -337,66 +338,47 @@ export class RGBMixLayerSettingsComponent implements OnInit
             throw new Error("RGB mix info not found for: "+this.layerInfo.layer.id);
         }
         
+        let query = [
+            new DataSourceParams(rgbMix.red.expressionID, null, datasetId),
+            new DataSourceParams(rgbMix.green.expressionID, null, datasetId),
+            new DataSourceParams(rgbMix.blue.expressionID, null, datasetId)
+        ];
+
+        let queryResults = this._widgetDataService.getData(query, false);
+
         let csv = "PMC";
-        let dataset = this._datasetService.datasetLoaded;
-        let combined = dataset.isCombinedDataset();
-        let locations = dataset.experiment.getLocationsList();
-        if(combined)
+        let perChanData: PMCDataValues[] = [];
+        let ch = 0;
+
+        for(let channelResult of queryResults.queryResults)
         {
-            csv += ",SourceRTT,SourcePMC";
+            if(channelResult.error)
+            {
+                throw new Error("Failed to find expression: "+query[ch].exprId+" for channel: "+RGBUImage.channels[ch]);
+            }
+
+            perChanData.push(channelResult.values);
+            csv += ","+channelResult.expressionName;
+
+            ch++;
         }
-
-        let expressionIDs = [rgbMix.red.expressionID, rgbMix.green.expressionID, rgbMix.blue.expressionID];
-        expressionIDs.forEach((expressionID)=>
-        {
-            csv += `,${this._exprService.getExpressionShortDisplayName(expressionID, 15).name}`;
-        });
-
         csv += "\n";
 
-        let perElemAndPMCData: PMCDataValues[] = PMCDataValues.filterToCommonPMCsOnly(expressionIDs.map((expressionID, i)=>
-        {
-            let expression = this._exprService.getExpression(expressionID);
-            if(!expression)
-            {
-                throw new Error(`Failed to find expression: ${expressionID} for channel: ${RGBUImage.channels[i]}`);
-            }
-            
-            return getQuantifiedDataWithExpression(expression.expression, this._widgetDataService.quantificationLoaded, this._datasetService.datasetLoaded, this._datasetService.datasetLoaded, this._datasetService.datasetLoaded, this._diffractionSource, this._datasetService.datasetLoaded);
-        }));
-
         // If we didn't get 3 channels, stop here
-        if(perElemAndPMCData.length !== 3)
+        if(perChanData.length !== 3)
         {
             throw new Error("Failed to generate RGB columns for RGB expression: "+this.layerInfo.layer.id);
         }
 
-        perElemAndPMCData[0].values.forEach((pmcData, i)=>
+        let perChanDataNoGaps = PMCDataValues.filterToCommonPMCsOnly(perChanData);
+        perChanDataNoGaps[0].values.forEach((pmcData, i)=>
         {
-            if(pmcData.pmc !== perElemAndPMCData[1].values[i].pmc || pmcData.pmc !== perElemAndPMCData[2].values[i].pmc)
+            if(pmcData.pmc !== perChanDataNoGaps[1].values[i].pmc || pmcData.pmc !== perChanDataNoGaps[2].values[i].pmc)
             {
                 throw new Error(`Failed to generate RGB CSV for rgb mix ID: ${this.layerInfo.layer.id}, mismatched PMC returned for item: ${i}`);
             }
 
-            csv += `${pmcData.pmc}`;
-
-            if(combined)
-            {
-                let locIdx = dataset.pmcToLocationIndex.get(pmcData.pmc);
-                if(locIdx != undefined)
-                {
-                    let sourceIdx = locations[locIdx].getScanSource();
-                    let source = dataset.experiment.getScanSourcesList()[sourceIdx];
-
-                    let sourceRTT = source.getRtt();
-                    let sourcePMC = pmcData.pmc-source.getIdOffset();
-
-                    csv += `,${sourceRTT},${sourcePMC}`;
-                }
-            }
-
-            csv += `,${pmcData.value},${perElemAndPMCData[1].values[i].value},${perElemAndPMCData[2].values[i].value}`;
-            csv += "\n";
+            csv += `${pmcData.pmc},${pmcData.value},${perChanDataNoGaps[1].values[i].value},${perChanDataNoGaps[2].values[i].value}\n`;
         });
 
         return csv;
@@ -489,10 +471,22 @@ export class RGBMixLayerSettingsComponent implements OnInit
 
                 if(options.findIndex((option) => option.label == "Expression Values .csv") > -1)
                 {
-                    csvs.push(new CSVExportItem(
-                        "Expression Values",
-                        this.exportExpressionValues()
-                    ));  
+                    // Export CSV
+                    // Loop through all sub-datasets of this one if there are any
+                    let subDatasetIDs = this._datasetService.datasetLoaded.getSubDatasetIds();
+                    if(subDatasetIDs.length <= 0)
+                    {
+                        // Specify a blank one
+                        subDatasetIDs = [""];
+                    }
+
+                    for(let datasetId of subDatasetIDs)
+                    {
+                        csvs.push(new CSVExportItem(
+                            "Expression Values - "+datasetId,
+                            this.exportExpressionValues(datasetId)
+                        ));
+                    }
                 }
 
                 dialogRef.componentInstance.onDownload(canvases, csvs);

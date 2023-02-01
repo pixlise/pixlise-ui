@@ -141,6 +141,7 @@ import { ExpressionPickerComponent } from "./UI/expression-picker/expression-pic
 import { TagPickerComponent } from "./UI/tag-picker/tag-picker.component";
 import { ROIPickerComponent } from "./UI/roipicker/roipicker.component";
 import { RegionItemSettingsComponent } from "./UI/roipicker/region-item-settings/region-item-settings.component";
+import { RegionContainerComponent } from "./UI/roipicker/region-container/region-container.component";
 import { SpectrumRegionPickerComponent } from "./UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
 import { SpectrumRegionSettingsComponent } from "./UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-settings/spectrum-region-settings.component";
 import { WidgetSwitcherComponent } from "./UI/atoms/widget-switcher/widget-switcher.component";
@@ -167,7 +168,7 @@ import { GlobalNotificationsComponent } from "./routes/admin/global-notification
 import { SpectrumPeakLabelPickerComponent } from "./UI/spectrum-chart-widget/spectrum-peak-label-picker/spectrum-peak-label-picker.component";
 import { RangeSliderComponent } from "./UI/atoms/range-slider/range-slider.component";
 import { VariogramWidgetComponent } from "./UI/variogram-widget/variogram-widget.component";
-import { ExportDataDialogComponent } from "./UI/export-data-dialog/export-data-dialog.component";
+import { ExportDataDialogComponent } from "./UI/atoms/export-data-dialog/export-data-dialog.component";
 import { RGBUViewerComponent } from "./UI/rgbuviewer/rgbuviewer.component";
 import { RGBUPlotComponent } from "./UI/rgbuplot/rgbuplot.component";
 import { RGBUAxisRatioPickerComponent } from "./UI/rgbuplot/rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
@@ -184,6 +185,7 @@ import { WorkspacesComponent } from "./UI/side-panel/tabs/workspaces/workspaces.
 import { ROIComponent } from "./UI/side-panel/tabs/roi/roi.component";
 import { MistROIComponent } from "./UI/side-panel/tabs/mist-roi/mist-roi.component";
 import { MistRoiUploadComponent } from "./UI/side-panel/tabs/mist-roi/mist-roi-upload/mist-roi-upload.component";
+import { ViewStateUploadComponent } from "./UI/side-panel/viewstate-upload/viewstate-upload.component";
 import { MistRoiConvertComponent } from "./UI/side-panel/tabs/mist-roi/mist-roi-convert/mist-roi-convert.component";
 import { SelectionComponent } from "./UI/side-panel/tabs/selection/selection.component";
 import { ViewStateCollectionsComponent } from "./UI/side-panel/tabs/view-state-collections/view-state-collections.component";
@@ -390,6 +392,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         AnnotationEditorComponent,
         AnnotationDisplayComponent,
         RegionItemSettingsComponent,
+        RegionContainerComponent,
         SpectrumRegionPickerComponent,
         SpectrumRegionSettingsComponent,
         WidgetSwitcherComponent,
@@ -458,6 +461,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         FitElementSelectionComponent,
         MistRoiUploadComponent,
         MistRoiConvertComponent,
+        ViewStateUploadComponent,
         AddBearerPipe,
         AddDatasetDialogComponent,
         LogViewerComponent,

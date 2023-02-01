@@ -50,6 +50,9 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
             <div
                 *ngIf="!item.dashPattern"
+                #tooltip="matTooltip"
+                [matTooltip]="getLabel(item)"
+                [matTooltipDisabled]="getLabel(item).length <= 15"
                 class='main-label'
                 [ngClass]="{'main-label-clickable': item.id.length > 0}"
                 [style]="{'color': item.colour}"
@@ -76,9 +79,9 @@ POSSIBILITY OF SUCH DAMAGE.
                     xmlns="http://www.w3.org/2000/svg">
                     <rect width="12" height="12" rx="0.5" attr.fill="{{item.colour}}" />
                 </svg>
-                {{item.label.replace("mist__roi.", "")}}
+                {{getTruncatedLabel(item)}}
             </div>
-            <div *ngIf="item.dashPattern" class='dash-label'>{{item.label.replace("mist__roi.", "")}}</div>
+            <div *ngIf="item.dashPattern" class='dash-label'>{{getTruncatedLabel(item)}}</div>
         </div>
     </div>
     <ng-content></ng-content>

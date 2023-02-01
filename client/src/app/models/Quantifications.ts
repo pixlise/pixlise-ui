@@ -415,6 +415,25 @@ export class QuantificationLayer implements QuantifiedDataQuerierSource
         return Array.from(this._elementColumns.keys());
     }
 
+    getPMCList(): number[]
+    {
+        // Loop through all our locations and extract PMCs we have values for
+        // NOTE: we don't care which detector...
+        let result: number[] = [];
+
+        for(let quantLocSet of this.quantData.getLocationsetList())
+        {
+            for(let quantLoc of quantLocSet.getLocationList())
+            {
+                let pmc = quantLoc.getPmc();
+                result.push(pmc);
+            }
+            break;
+        }
+
+        return result;
+    }
+
     private getQuantifiedDataValues(detectorId: string, colIdx: number, mult: number, isPctColumn: boolean): PMCDataValue[]
     {
         let resultData: PMCDataValue[] = [];

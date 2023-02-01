@@ -60,6 +60,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <div fxLayout="column" class="panel outer-panel" fxFill>
     <div fxLayout="row" fxLayoutAlign="space-between center" class="panel-title">
         <widget-switcher [activeSelector]='thisSelector' [widgetPosition]='widgetPosition'></widget-switcher>
+        <push-button (onClick)="onMinerals($event)" title="Choose mineral areas to display" class="minerals-btn">Minerals</push-button>
         <push-button (onClick)="onRegions($event)" title="Choose RGBU regions to display" class="regions-btn">Regions</push-button>
         <icon-button
             class="export-btn"

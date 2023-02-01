@@ -765,7 +765,7 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
         }
 
         // Get the map data
-        let query: DataSourceParams[] = [new DataSourceParams(DataExpressionService.predefinedDiffractionCountDataExpression, PredefinedROIID.AllPoints)];
+        let query: DataSourceParams[] = [new DataSourceParams(DataExpressionService.predefinedDiffractionCountDataExpression, PredefinedROIID.AllPoints, "")];
         let queryData: RegionDataResults = this._widgetDataService.getData(query, false);
 
         // If we have valid data, we select all PMCs where value >= 1

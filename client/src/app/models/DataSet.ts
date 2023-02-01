@@ -800,19 +800,72 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         return result;
     }
 
+    getIdOffsetForSubDataset(id: string): number
+    {
+        let list = this.experiment.getScanSourcesList();
+        for(let src of list)
+        {
+            if(src.getRtt() == id)
+            {
+                return src.getIdOffset();
+            }
+        }
+
+        return 0;
+    }
+
     isCombinedDataset(): boolean
+    {
+        return this.getSubDatasetIds().length > 1;
+    }
+
+    getSubDatasetIds(): string[]
     {
         if(!this.experiment)
         {
-            return false;
+            return [];
         }
         let list = this.experiment.getScanSourcesList();
         if(!list)
         {
-            return false;
+            return [];
         }
 
-        return list.length > 1;
+        let ids = [];
+        for(let item of list)
+        {
+            ids.push(item.getRtt());
+        }
+        return ids;
+    }
+
+    getSubDatasetIdForPMC(pmc: number): string
+    {
+        // If we are not a "combined" dataset, just return blank
+        if(!this.isCombinedDataset())
+        {
+            return "";
+        }
+
+        // Otherwise, look it up
+        let locIdx = this.pmcToLocationIndex.get(pmc);
+        if(locIdx == undefined)
+        {
+            return "";
+        }
+
+        let loc = this.locationPointCache[locIdx];
+        if(!loc)
+        {
+            return "";
+        }
+        
+        if(!loc.source)
+        {
+            return "";
+        }
+
+        return loc.source.getRtt();
     }
 
     getPseudoIntensityElementsList(): string[]
