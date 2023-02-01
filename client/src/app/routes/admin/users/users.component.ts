@@ -130,7 +130,9 @@ export class UsersComponent implements OnInit
                 this.users = users;
                 this.users.sort(sortUserByLogin);
 
-                this.filteredUsers = this.users.filter((user: UserInfo)=> user.name.includes(this._toSearch));
+
+                let searchValue = this._toSearch?.toLowerCase() || "";
+                this.filteredUsers = this.users.filter((user: UserInfo)=> user.name.toLowerCase().includes(searchValue));
                 this.selectedUserDetails = null;
             },
             (err)=>
@@ -151,7 +153,7 @@ export class UsersComponent implements OnInit
         return this.filteredUsers.filter((user: UserInfo)=> user.created_at > Date.now()/1000 - 30*24*60*60).length;
     }
 
-    get dataCollectionGroups(): string
+    get dataCollectionGroups(): string[]
     {
         let groups = {};
         this.filteredUsers.forEach((user: UserInfo)=>
@@ -167,7 +169,7 @@ export class UsersComponent implements OnInit
             }
         });
 
-        return Object.entries(groups).map(([groupName, count]) => `${groupName}: ${count}`).join(", ");
+        return Object.entries(groups).map(([groupName, count]) => `${groupName}: ${count}`);
     }
 
     onSelect(user: UserInfo)

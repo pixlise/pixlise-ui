@@ -156,6 +156,11 @@ export class UserOptionsService
         return APIPaths.getWithHost(APIPaths.api_notification+"/"+path);
     }
 
+    private makeUserURL(path: string): string
+    {
+        return APIPaths.getWithHost(APIPaths.api_user_management+"/"+path);
+    }
+
     private refreshOptions(): void
     {
         this.refreshUserConfig();
@@ -209,7 +214,7 @@ export class UserOptionsService
             (version: { version: string; })=>
             {
                 this._version = version.version;
-                this.http.get<UserConfig>(this.makeURL("config"), makeHeaders()).subscribe(
+                this.http.get<UserConfig>(this.makeUserURL("config"), makeHeaders()).subscribe(
                     (config: UserConfig)=>
                     {
                         this._userConfig = config;
@@ -269,7 +274,7 @@ export class UserOptionsService
 
     private saveUserConfig(): Observable<void>
     {
-        let apiURL = this.makeURL("config");
+        let apiURL = this.makeUserURL("config");
         return this.http.post<void>(apiURL, this._userConfig, makeHeaders());
     }
 
