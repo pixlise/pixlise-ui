@@ -39,7 +39,7 @@ import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { LuaEngine } from "wasmoon";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
-const { LuaFactory } = require('wasmoon')
+const { LuaFactory, LuaLibraries, LUA_MULTRET } = require('wasmoon')
 
 //import { Jsep } from 'jsep';
 //const jsep = require('jsep').default;
@@ -115,22 +115,60 @@ export class DataQuerier
             {
                 // Initialize a new lua environment factory
                 // Pass our hosted wasm file location in here. Simplest method is relative path to served location
-                let wasmURI = "assets/glue.wasm";
+                let wasmURI = "assets/lua/glue.wasm";
                 console.log("Loading WASM from: "+wasmURI);
 
                 const factory = new LuaFactory(wasmURI);
-                let lua = factory.createEngine();
+                const luaOpts = {
+                    openStandardLibs: true,
+                    injectObjects: false,
+                    enableProxy: false,
+                    traceAllocations: false
+                };
+                let lua = factory.createEngine(luaOpts);
                 lua.then((eng)=>{
                     console.log("Lua Engine created...");
 
                     // Save this for later
                     DataQuerier._lua = eng;
 
-                    // Set up constants/functions that can be accessed from Lua
-                    DataQuerier.setupLua();
+                    // Load std libs we want
+                    let t0 = performance.now();
+                    
+                    DataQuerier._lua.global.loadLibrary(LuaLibraries.Debug);
 
-                    console.log("Lua Engine ready...");
-                    observer.complete();
+                    let t1 = performance.now();
+                    console.log("Lua Engine std libs loaded "+(t1-t0).toLocaleString()+"ms...");
+
+                    // Add PIXLISE-lib to Lua
+                    fetch("assets/lua/Map.lua").then(
+                        (response: Response)=>
+                        {
+                            response.text().then(
+                                (lib: string)=>
+                                {
+                                    let t0 = performance.now();
+
+                                    // Set up constants/functions that can be accessed from Lua
+                                    // NOTE: at this point we wrap the Lua module so it looks like a function
+                                    let libAsFunction = "function makeMapLib()\n"+lib+"\nend";
+                                    DataQuerier.setupLua(libAsFunction);
+
+                                    let t1 = performance.now();
+                                    console.log("Lua Engine made ready in "+(t1-t0).toLocaleString()+"ms...");
+                                    observer.complete();
+                                }
+                            )
+                            .catch(()=>
+                            {
+                                throw new Error("Failed to apply PIXLISE Lua library");
+                            });
+                        }
+                    )
+                    .catch(()=>
+                    {
+                        throw new Error("Failed to download PIXLISE Lua library");
+                    });
                 })
                 .catch((err)=>{
                     console.error(err);
@@ -138,21 +176,11 @@ export class DataQuerier
                 });
             }
         );
-/*
-        // Create a standalone lua environment from the factory
-        return from(factory.createEngine())
-        .pipe(
-            tap(
-                (lua)=>
-                {
-                    DataQuerier._lua = lua;
-                }
-            )
-        );*/
     }
 
-    private static setupLua(): void
+    private static setupLua(pixliseLib: string): void
     {
+/*
         // Implementing new functions for Lua to deal with our maps/operators
         DataQuerier._lua.global.set("add", DataQuerier.LaddMap);
         DataQuerier._lua.global.set("sub", DataQuerier.LsubtractMap);
@@ -165,6 +193,8 @@ export class DataQuerier
         DataQuerier._lua.global.set("avg", DataQuerier.LavgMap);
         DataQuerier._lua.global.set("min", DataQuerier.LminMap);
         DataQuerier._lua.global.set("max", DataQuerier.LmaxMap);
+*/
+        DataQuerier._lua.doStringSync(pixliseLib);
 
         // Implementing original expression language
         DataQuerier._lua.global.set("element", DataQuerier.LreadElement);
@@ -392,47 +422,47 @@ luaopen_utf8()
     }
     private static LreadElement(symbol, column, detector)
     {
-        return DataQuerier._context.readElement([symbol, column, detector]);
+        return DataQuerier.makeLuaTable(DataQuerier._context.readElement([symbol, column, detector]));
     }
     private static LreadElementSum(column, detector)
     {
-        return DataQuerier._context.readElementSum([column, detector]);
+        return DataQuerier.makeLuaTable(DataQuerier._context.readElementSum([column, detector]));
     }
     private static LreadDataColumn(column, detector)
     {
-        return DataQuerier._context.readMap([column, detector]);
+        return DataQuerier.makeLuaTable(DataQuerier._context.readMap([column, detector]));
     }
     private static LreadSpectrum(startChannel, endChannel, detector)
     {
-        return DataQuerier._context.readSpectrum([startChannel, endChannel, detector]);
+        return DataQuerier.makeLuaTable(DataQuerier._context.readSpectrum([startChannel, endChannel, detector]));
     }
     private static LreadSpectrumDiff(startChannel, endChannel, op)
     {
-        return DataQuerier._context.readSpectrumDifferences([startChannel, endChannel, op]);
+        return DataQuerier.makeLuaTable(DataQuerier._context.readSpectrumDifferences([startChannel, endChannel, op]));
     }
     private static LreadPseudoIntensity(elem)
     {
-        return DataQuerier._context.readPseudoIntensity([elem]);
+        return DataQuerier.makeLuaTable(DataQuerier._context.readPseudoIntensity([elem]));
     }
     private static LreadHouseKeeping(column)
     {
-        return DataQuerier._context.readHousekeepingData([column]);
+        return DataQuerier.makeLuaTable(DataQuerier._context.readHousekeepingData([column]));
     }
     private static LreadDiffractionPeaks(eVstart, eVend)
     {
-        return DataQuerier._context.readDiffractionData([eVstart, eVend])
+        return DataQuerier.makeLuaTable(DataQuerier._context.readDiffractionData([eVstart, eVend]));
     }
     private static LreadRoughness()
     {
-        return DataQuerier._context.readRoughnessData([]);
+        return DataQuerier.makeLuaTable(DataQuerier._context.readRoughnessData([]));
     }
     private static LreadPosition(axis)
     {
-        return DataQuerier._context.readPosition([axis]);
+        return DataQuerier.makeLuaTable(DataQuerier._context.readPosition([axis]));
     }
     private static LmakeMap(value)
     {
-        return DataQuerier._context.makeMap([value]);
+        return DataQuerier.makeLuaTable(DataQuerier._context.makeMap([value]));
     }
     private static LnormalizeMap(m)
     {
@@ -517,11 +547,16 @@ luaopen_utf8()
 
     public runQuery(expression: string): PMCDataValues
     {
+        let t0 = performance.now();
+
         // If it's a LUA script, run it directly here
         if(DataQuerier.isLUA(expression))
         {
             // Trim the marker
             expression = expression.substring(3);
+
+            // Make it into a function, so if we get called again, we overwrite
+            expression = "Map = makeMapLib()\nfunction main()\n"+expression+"\nend\nreturn main()\n"
 
             // Set context for this run
             DataQuerier._context = this;
@@ -529,16 +564,50 @@ luaopen_utf8()
             let result = null;
             try
             {
+                let thread = DataQuerier._lua.global;
+                let lua = thread.lua;
+
                 // Run a lua string
                 result = DataQuerier._lua.doStringSync(expression)
+/*
+                thread.loadString(expression);
+                thread.assertOk(lua.lua_pcallk(thread.address, 0, LUA_MULTRET, 0, 0, null));
+
+                // Get the result
+                let topIdx = lua.lua_gettop(thread.address);
+
+                // Should only be one result on the stack
+                if(topIdx != 1)
+                {
+                    throw new Error("Function did not result in one return value");
+                }
+
+                // Should be a table
+                result = this.readLuaTable2(lua, thread, topIdx);
+                
+                // Pop it
+                lua.lua_pop(thread.address, 1);
+*/
+                //return this.getStackValues();
+/*
+if(result && typeof(result) === "string")
+{
+    // It's an error!
+    console.error(result);
+    throw new Error(result);
+}*/
             }
             catch (err)
             {
                 console.error(err);
+                DataQuerier._lua.global.dumpStack(console.error);
                 throw new Error(err);
             }
             finally
             {
+                // Clear the function code that just ran
+                DataQuerier._lua.global.set("main", null);
+
                 // Clear the context, don't want any Lua code to execute with us around any more
                 DataQuerier._context = null;
 
@@ -550,7 +619,12 @@ luaopen_utf8()
             {
                 // We got an object back that represents a table in Lua. Here we assume this is a PMCDataValue[] effectively
                 // so lets convert it to something we'll use here (PMCDataValues)
-                return this.readLuaTable(result);
+                result = this.readLuaTable(result);
+
+let t1 = performance.now();
+console.log(">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms");
+
+                return result;
             }
 
             throw new Error("Expression: "+expression+" did not complete");
@@ -567,29 +641,86 @@ luaopen_utf8()
 
         let result = this.parseExpression(exprParts.expressionLine, variableLookup);
         if(result instanceof PMCDataValues)
-        {
+        {            
+let t1 = performance.now();
+console.log(">>> PIXLISE expression took: "+(t1-t0).toLocaleString()+"ms");
+
             return result as PMCDataValues;
         }
 
         throw new Error("Expression: "+expression+" did not result in usable map data. Result was: "+result);
     }
-
+/*
     Need to write Lua add/mul/div/subtract/avg/over/under etc functions using for k, v in pairs(arr) do
     Need to return tables to Lua which are just PMCDataValue[] in table form
-
-    private readLuaTable(t: object): PMCDataValues
+*/
+    // Based on: https://stackoverflow.com/questions/6137684/iterate-through-lua-table
+    private readLuaTable2(lua, thread, idx: number): PMCDataValues
     {
         let values: PMCDataValue[] = [];
-        for(let key of Object.keys(t))
-        {
-            let pmc = Number.parseInt(key);
 
-            if(isNaN(pmc))
+        lua.lua_pushvalue(thread.address, idx);
+        lua.lua_pushnil(thread.address);
+
+        while(lua.lua_next(thread.address, -2))
+        {
+            lua.lua_pushvalue(thread.address, -2);
+
+            lua.lua_pushvalue(thread.address, idx);
+            lua.lua_pushnil(thread.address);
+            
+            let pmc = 0;
+            let value = 0;
+
+            let c = 0;
+            while(lua.lua_next(thread.address, -2))
             {
-                throw new Error("Returned value from expression has invalid field: "+key);
+                lua.lua_pushvalue(thread.address, -2);
+                if(c == 0)
+                {
+                    pmc = lua.lua_tointegerx(thread.address, -1);
+                }
+                else
+                {
+                    value = lua.lua_tonumberx(thread.address, -1);
+                }
+
+                lua.lua_pop(thread.address, 2);
+                c++;
             }
 
-            let value: number = t[key];
+            values.push(new PMCDataValue(pmc, value, value==null));
+
+            lua.lua_pop(thread.address, 2);
+        }
+
+        lua.lua_pop(thread.address, 1);
+        return PMCDataValues.makeWithValues(values);
+    }
+
+    // Expecting results to come back as maps that we encode to pass in
+    // So Lua code for one:
+    // t = {{1,3.5},{3,5.7},{7,1.1}}
+    // Expecting it come back as:
+    // [[1,3.5],[3,5.7],[7,1.1]]
+    private readLuaTable(table: any): PMCDataValues
+    {
+        let values: PMCDataValue[] = [];
+        let c = 0;
+        for(let row of table)
+        {
+            if(row.length != 2)
+            {
+                throw new Error("Table row["+c+"] is not 2 items");
+            }
+
+            let pmc = Number.parseInt(row[0]);
+            if(isNaN(pmc))
+            {
+                throw new Error("Returned value from expression has invalid field: "+row[0]);
+            }
+
+            let value: number = row[1];
             let isUndef = false;
             if(value === null)
             {
@@ -597,10 +728,54 @@ luaopen_utf8()
                 isUndef = true;
             }
 
-            values.push(new PMCDataValue(pmc, value, isUndef))
+            values.push(new PMCDataValue(pmc, value, isUndef));
+            c++;
         }
 
         return PMCDataValues.makeWithValues(values);
+    }
+
+    private static makeLuaTable(values: PMCDataValues): any
+    {
+        let arr = [];
+        for(let item of values.values)
+        {
+            arr.push([item.pmc, item.isUndefined ? null : item.value]);
+        }
+        return arr;
+/*
+        return values.values;
+
+        let o = new Object();
+        for(let item of values.values)
+        {
+            o[item.pmc] = item.isUndefined ? null : item.value;
+        }
+        return o;
+        
+
+        let thread = DataQuerier._lua.global;
+        let lua = thread.lua;
+
+        lua.lua_createtable(thread.address, 0, 0);// values.values.length, values.values.length);
+        // Table is now on the stack at top
+        //lua.lua_newtable(thread.address);
+        //let i = 0;
+        for(let item of values.values)
+        {
+            // Add key to stack
+            lua.lua_pushinteger(thread.address, item.pmc);
+            //lua.lua_rawseti(thread.address, -2, 1);
+
+            // Add value to stack
+            lua.lua_pushnumber(thread.address, item.isUndefined ? null : item.value);
+            //lua.lua_rawseti(thread.address, -2, 2);
+
+            //lua.lua_rawseti(thread.address, -2, i+1);
+
+            lua.lua_settable(thread.address, -3)
+            //i++;
+        }*/
     }
 
     private parseExpression(expression: string, variableLookup: Map<string, string | number | PMCDataValues>): any
