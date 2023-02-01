@@ -60,7 +60,11 @@ POSSIBILITY OF SUCH DAMAGE.
         <div *ngIf="users != null" fxLayout="column" class="header user-stats">
             <h2>User Stats</h2>
             <div fxLayout="column" class="gap-separated-vertical-elements">
-                <div class="info-row"><label>Data Collection Breakdown</label><span>{{dataCollectionGroups}}</span></div>
+                <div class="info-row"><label>Data Collection Breakdown</label>
+                    <div class="data-collection-groups">
+                        <span class="data-collection-group" *ngFor="let dataCollectionGroup of dataCollectionGroups">{{dataCollectionGroup}}</span>
+                    </div>
+                </div>
                 <div class="info-row"><label>Logins in Last 30 Days</label><span>{{usersInLastMonth}}</span></div>
                 <div class="info-row"><label>New Users in Last 30 Days</label><span>{{newUsersInLastMonth}}</span></div>
             </div>

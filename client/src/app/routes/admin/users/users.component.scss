@@ -108,3 +108,17 @@ input {
         }
     }
 }
+
+.data-collection-groups {
+    display: flex;
+    flex-wrap: wrap;
+    overflow: scroll;
+
+    .data-collection-group {
+        background: #454c50;
+        border-radius: 8px;
+        padding: 4px;
+        margin: 4px;
+        white-space: pre;
+    }
+}
