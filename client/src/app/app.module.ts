@@ -277,7 +277,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
                     {
                         // Note: issue with double entries during http exceptions: https://github.com/getsentry/sentry-javascript/issues/2169
                         // Note: issue with a second entry not being set correctly (as a non-error): https://github.com/getsentry/sentry-javascript/issues/2292#issuecomment-554932519
-                        const isNonErrorException = event.exception.values[0].value.startsWith("Non-Error exception captured");
+                        const isNonErrorException = event?.exception?.values[0]?.value?.startsWith?.("Non-Error exception captured");
                         if(isNonErrorException)
                         {
                             if(!event.extra.__serialized__)
