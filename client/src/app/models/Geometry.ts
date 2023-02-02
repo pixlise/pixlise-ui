@@ -38,7 +38,7 @@ import { environment } from "src/environments/environment";
 // Unless we want to maintain our own??
 export class Point
 {
-    constructor(public x: number = 0, public y: number = 0)
+    constructor(public x: number = 0, public y: number = 0, public label: string = "")
     {
     }
 

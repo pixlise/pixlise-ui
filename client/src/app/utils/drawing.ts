@@ -194,7 +194,7 @@ export class PointDrawer
         return a;
     }
 
-    drawPoints(points: Point[], colourAlpha: number): void
+    drawPoints(points: Point[], colourAlpha: number, showLabels: boolean = false): void
     {
         // Setup the context for drawing this
         if(this._fillColour)
@@ -241,6 +241,26 @@ export class PointDrawer
             if(this._outlineColour)
             {
                 this._screenContext.stroke();
+            }
+
+            if(showLabels && pt.label && pt.label !== "")
+            {
+                // Save the existing font and fill style
+                this._screenContext.save();
+
+                // Draw the label
+                this._screenContext.font = CANVAS_FONT_SIZE + "px Roboto";
+                this._screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
+                let labels = pt.label.split("\n");
+
+                // Parse newline characters in the label
+                labels.forEach((label, i) =>
+                {
+                    this._screenContext.fillText(label, pt.x, pt.y - (CANVAS_FONT_SIZE * (labels.length - i)));
+                });
+
+                // Restore the existing font and fill style
+                this._screenContext.restore();
             }
         }
     }

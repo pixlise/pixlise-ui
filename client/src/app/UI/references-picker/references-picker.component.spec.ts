@@ -27,48 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ReferencesPickerComponent } from "./references-picker.component";
 
-.channel-selection {
-    display: flex;
-    justify-content: center;
 
-    .channel-divider {
-        margin: 5px;
-    }
+describe("ReferencesPickerComponent", () => 
+{
+    let component: ReferencesPickerComponent;
+    let fixture: ComponentFixture<ReferencesPickerComponent>;
 
-    .mat-select:last-of-type {
-        margin-left: 0;
-    }
-}
+    beforeEach(async () => 
+    {
+        await TestBed.configureTestingModule({
+            declarations: [ ReferencesPickerComponent ]
+        })
+            .compileComponents();
+    });
 
-.range-selection {
-    display: flex;
-    align-items: center;
-    flex-direction: row;
-    justify-content: space-between;
-    margin-top: 10px;
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(ReferencesPickerComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-    > div {
-        display: flex;
-        align-items: center;
-
-        .label {
-            margin-right: 6px;
-        }
-    }
-
-    input {
-        width: 50px;
-    }
-}
-
-.options {
-    display: flex;
-    align-items: center;
-    margin-left: auto;
-    margin-top: 10px;
-
-    push-button:first-of-type {
-        margin-right: 6px;
-    }
-}
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

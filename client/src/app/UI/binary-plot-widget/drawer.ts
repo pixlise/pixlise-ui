@@ -107,10 +107,10 @@ export class BinaryDiagramDrawer implements CanvasDrawer
         }
 
         // And hover point if any
-        if(this._mdl.hoverPoint != null)
+        if(this._mdl.hoverPoint !== null)
         {
             let drawer = new PointDrawer(screenContext, HOVER_POINT_RADIUS, clrHover, null, this._mdl.hoverShape);
-            drawer.drawPoints([this._mdl.hoverPoint], 1);
+            drawer.drawPoints([this._mdl.hoverPoint], 1, true);
         }
 
         // And lasso if any
