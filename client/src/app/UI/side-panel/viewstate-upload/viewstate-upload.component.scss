@@ -27,98 +27,42 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-
-.content {
-    background-color: $ui-panel-title-colour;
-}
-
-.content-column-left {
-    margin: 0px $sz-half 0px 10%;
-}
-
-.content-column-right {
-    margin: 0px 10% 0px $sz-half;
-}
-
-.header {
-    margin: $sz-unit 0px;
-    height: 32px;
-}
-
-.bottom-area {
-    height: $sz-unit;
-    background-color: yellow;/*$ui-panel-title-colour;*/
-}
-
-.indent {
-    margin-left: $sz-unit;
-}
-
-.avatar {
-    max-height: 60px;
-    max-width: 60px;
-    margin: $sz-half $sz-unit $sz-half $sz-half;
-}
-
-.avatar-big {
-    max-height: 150px;
-    max-width: 150px;
-    margin: $sz-half $sz-unit $sz-half $sz-half;
-}
-
-label {
-    margin: 0px $sz-half $sz-half $sz-half;
-    color: $clr-gray-30;
-}
-
-h3 {
-    margin: $sz-unit 0px $sz-half 0px !important;
-}
-
-.user-list-container {
-    height: calc(100vh - 150px);
-}
-
-.user-list-container-short-top {
-    height: calc(25vh - 100px);
-    min-height: 50px;
-}
-
-.user-list-container-short-bottom {
-    height: calc(60vh - 100px);
-}
-
-input {
-    width: 200px;
-}
-
-.search-box {
-    margin-left: auto;
-}
-
-.user-stats {
-    h2 {
+.viewstate-upload {
+    .card-toolbar.header {
         margin-bottom: 8px;
     }
 
-    .info-row {
-        label {
-            display: flex;
+    .upload-options {
+        min-width: 400px;
+        margin: 0 8px;
+
+        .upload-option {
+            align-items: center;
+            margin: 0 8px;
+
+            h5 {
+                margin: 0;
+                margin-right: auto;
+                font-size: 14px;
+            }
+
+            .browse-btn {
+                padding: 8px 0;
+            }
         }
-    }
-}
 
-.data-collection-groups {
-    display: flex;
-    flex-wrap: wrap;
-    overflow: scroll;
+        .overwrite-options {
+            margin: 8px;
+            margin-top: 4px;
 
-    .data-collection-group {
-        background: #454c50;
-        border-radius: 8px;
-        padding: 4px;
-        margin: 4px;
-        white-space: pre;
+            .overwrite-option {
+                margin: 8px 0;
+
+                ::ng-deep label.mat-radio-label {
+                    display: flex;
+                    justify-content: space-between;
+                }
+            }
+        }
     }
 }

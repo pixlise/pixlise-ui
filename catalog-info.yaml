@@ -1,0 +1,22 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: pixlise-ui
+  description: |
+    The Pixlise UI.
+  links:
+    - title: Website
+      url: https://pixlise.org
+    - title: Documentation
+      url: https://pixlise.gitbook.io/
+  annotations:
+    github.com/project-slug: pixlise/pixlise-ui
+    backstage.io/techdocs-ref: dir:.
+    grafana/alert-label-selector: "type=lambda"
+spec:
+  type: service
+  owner: default/developers
+  lifecycle: production
+  system: public-websites
+  dependsOn:
+    - component:pixlise-api

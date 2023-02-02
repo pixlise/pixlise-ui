@@ -1082,7 +1082,7 @@ export class ViewStateService
     }
 
     // NOTE: MUST BE IN SYNC WITH makeWireViewState
-    private readWireViewState(stateWireObj: object): ViewState
+    readWireViewState(stateWireObj: object): ViewState
     {
         // If we get no widgets for the bottom, use the defaults
         let analysisLayout = stateWireObj["analysisLayout"] as analysisLayoutState;
@@ -1134,7 +1134,7 @@ export class ViewStateService
     }
 
     // NOTE: MUST BE IN SYNC WITH readWireViewState
-    private makeWireViewState(state: ViewState): object
+    makeWireViewState(state: ViewState): object
     {
         let result = {
             // Layouts

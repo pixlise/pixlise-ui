@@ -35,7 +35,9 @@ POSSIBILITY OF SUCH DAMAGE.
             <div class="txt-widget-title">{{title}}</div>
         </div>
         <div fxLayout="row">
-            <filter-box placeholder="Filter Items..." (onFilterChanged)="onFilterExpressions($event)">
+            <filter-box
+                placeholder="Filter Name..."
+                (onFilterChanged)="onFilterExpressions($event)">
             </filter-box>
             <tag-picker
                 type="expression"

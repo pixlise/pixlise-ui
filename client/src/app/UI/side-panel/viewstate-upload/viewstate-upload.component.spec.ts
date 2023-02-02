@@ -27,98 +27,33 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
 
-.content {
-    background-color: $ui-panel-title-colour;
-}
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-.content-column-left {
-    margin: 0px $sz-half 0px 10%;
-}
+import { ViewStateUploadComponent } from "./viewstate-upload.component";
 
-.content-column-right {
-    margin: 0px 10% 0px $sz-half;
-}
+describe("ViewStateUploadComponent", () => 
+{
+    let component: ViewStateUploadComponent;
+    let fixture: ComponentFixture<ViewStateUploadComponent>;
 
-.header {
-    margin: $sz-unit 0px;
-    height: 32px;
-}
+    beforeEach(async () => 
+    {
+        await TestBed.configureTestingModule({
+            declarations: [ ViewStateUploadComponent ]
+        })
+            .compileComponents();
+    });
 
-.bottom-area {
-    height: $sz-unit;
-    background-color: yellow;/*$ui-panel-title-colour;*/
-}
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(ViewStateUploadComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-.indent {
-    margin-left: $sz-unit;
-}
-
-.avatar {
-    max-height: 60px;
-    max-width: 60px;
-    margin: $sz-half $sz-unit $sz-half $sz-half;
-}
-
-.avatar-big {
-    max-height: 150px;
-    max-width: 150px;
-    margin: $sz-half $sz-unit $sz-half $sz-half;
-}
-
-label {
-    margin: 0px $sz-half $sz-half $sz-half;
-    color: $clr-gray-30;
-}
-
-h3 {
-    margin: $sz-unit 0px $sz-half 0px !important;
-}
-
-.user-list-container {
-    height: calc(100vh - 150px);
-}
-
-.user-list-container-short-top {
-    height: calc(25vh - 100px);
-    min-height: 50px;
-}
-
-.user-list-container-short-bottom {
-    height: calc(60vh - 100px);
-}
-
-input {
-    width: 200px;
-}
-
-.search-box {
-    margin-left: auto;
-}
-
-.user-stats {
-    h2 {
-        margin-bottom: 8px;
-    }
-
-    .info-row {
-        label {
-            display: flex;
-        }
-    }
-}
-
-.data-collection-groups {
-    display: flex;
-    flex-wrap: wrap;
-    overflow: scroll;
-
-    .data-collection-group {
-        background: #454c50;
-        border-radius: 8px;
-        padding: 4px;
-        margin: 4px;
-        white-space: pre;
-    }
-}
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

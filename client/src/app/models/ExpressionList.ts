@@ -747,13 +747,22 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
 
     protected getItems(items: DataExpression[], makeLayer: (source: DataExpression | RGBMix)=>LocationDataLayerProperties): LayerInfo[]
     {
-        let result: LayerInfo[] = [];
+        let layers: LayerInfo[] = [];
         for(let item of items)
         {
             let layer = makeLayer(item);
-            result.push(new LayerInfo(layer, []));
+            layers.push(new LayerInfo(layer, []));
         }
-        return result;
+
+        layers.sort((layerA, layerB) =>
+        {
+            return layerB.layer.source.createUnixTimeSec - layerA.layer.source.createUnixTimeSec;
+        });
+
+        let visibleLayers = layers.filter(layer => layer.layer.visible);
+        let hiddenLayers = layers.filter(layer => !layer.layer.visible);
+        
+        return [...visibleLayers, ...hiddenLayers];
     }
 
     protected getRGBItems(items: RGBMix[], makeLayer: (source: DataExpression | RGBMix)=>LocationDataLayerProperties): RGBLayerInfo[]
