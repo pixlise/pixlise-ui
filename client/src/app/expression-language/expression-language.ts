@@ -28,21 +28,17 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import jsep from "jsep";
-import { Observable, from } from "rxjs";
-import { tap } from "rxjs/operators";
+import { Observable } from "rxjs";
 import {
     DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
 } from "src/app/expression-language/data-sources";
 import { PMCDataValue, PMCDataValues, QuantOp } from "src/app/expression-language/data-values";
 import { DataSet } from "src/app/models/DataSet";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { LuaEngine } from "wasmoon";
-import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
-const { LuaFactory, LuaLibraries, LUA_MULTRET } = require('wasmoon')
+const { LuaFactory, LuaLibraries } = require('wasmoon')
 
-//import { Jsep } from 'jsep';
-//const jsep = require('jsep').default;
+import { LuaTranspiler } from "./lua-transpiler";
 
 
 // Helper function to run a query
@@ -180,20 +176,6 @@ export class DataQuerier
 
     private static setupLua(pixliseLib: string): void
     {
-/*
-        // Implementing new functions for Lua to deal with our maps/operators
-        DataQuerier._lua.global.set("add", DataQuerier.LaddMap);
-        DataQuerier._lua.global.set("sub", DataQuerier.LsubtractMap);
-        DataQuerier._lua.global.set("mult", DataQuerier.LmultiplyMap);
-        DataQuerier._lua.global.set("div", DataQuerier.LdivideMap);
-        DataQuerier._lua.global.set("under", DataQuerier.LunderMap);
-        DataQuerier._lua.global.set("over", DataQuerier.LoverMap);
-        DataQuerier._lua.global.set("under_undef", DataQuerier.LunderUndefinedMap);
-        DataQuerier._lua.global.set("over_undef", DataQuerier.LoverUndefinedMap);
-        DataQuerier._lua.global.set("avg", DataQuerier.LavgMap);
-        DataQuerier._lua.global.set("min", DataQuerier.LminMap);
-        DataQuerier._lua.global.set("max", DataQuerier.LmaxMap);
-*/
         DataQuerier._lua.doStringSync(pixliseLib);
 
         // Implementing original expression language
@@ -208,218 +190,12 @@ export class DataQuerier
         DataQuerier._lua.global.set("roughness", DataQuerier.LreadRoughness);
         DataQuerier._lua.global.set("position", DataQuerier.LreadPosition);
         DataQuerier._lua.global.set("makeMap", DataQuerier.LmakeMap);
-        DataQuerier._lua.global.set("normalize", DataQuerier.LnormalizeMap);
-        DataQuerier._lua.global.set("threshold", DataQuerier.LthresholdMap);
-        DataQuerier._lua.global.set("pow", DataQuerier.LpowMap);
         DataQuerier._lua.global.set("atomicMass", (symbol)=>
         {
             return periodicTableDB.getMolecularMass(symbol);
         });
-        DataQuerier._lua.global.set("sin", DataQuerier.LsinMap);
-        DataQuerier._lua.global.set("cos", DataQuerier.LcosMap);
-        DataQuerier._lua.global.set("tan", DataQuerier.LtanMap);
-        DataQuerier._lua.global.set("asin", DataQuerier.LasinMap);
-        DataQuerier._lua.global.set("acos", DataQuerier.LacosMap);
-        DataQuerier._lua.global.set("atan", DataQuerier.LatanMap);
-        DataQuerier._lua.global.set("exp", DataQuerier.LexpMap);
-        DataQuerier._lua.global.set("ln", DataQuerier.LlnMap);
-
-/*
-luaL_addgsub
-luaL_addlstring
-luaL_addstring
-luaL_addvalue
-luaL_argerror()
-luaL_buffinit()
-luaL_buffinitsize()
-luaL_callmeta()
-luaL_checkany()
-luaL_checkinteger()
-luaL_checklstring()
-luaL_checknumber()
-luaL_checkstack()
-luaL_checktype()
-luaL_checkudata()
-luaL_checkversion_()
-luaL_execresult()
-luaL_fileresult()
-luaL_getmetafield()
-luaL_getsubtable()
-luaL_gsub()
-luaL_len()
-luaL_loadbufferx()
-luaL_loadfilex()
-luaL_loadstring()
-luaL_newmetatable()
-luaL_newstate()
-luaL_openlibs()
-luaL_optinteger()
-luaL_optlstring()
-luaL_optnumber()
-luaL_prepbuffsize()
-luaL_pushresult()
-luaL_pushresultsize()
-luaL_ref()
-luaL_requiref()
-luaL_setfuncs()
-luaL_setmetatable()
-luaL_testudata()
-luaL_tolstring()
-luaL_traceback()
-luaL_typeerror()
-luaL_unref()
-luaL_where()
-lua_absindex()
-lua_arith()
-lua_atpanic()
-lua_callk()
-lua_checkstack()
-lua_close()
-lua_closeslot()
-lua_compare()
-lua_concat()
-lua_copy()
-lua_createtable()
-lua_dump()
-lua_error()
-lua_getallocf()
-lua_getfield()
-lua_getglobal()
-lua_gethook()
-lua_gethookcount()
-lua_gethookmask()
-lua_geti()
-lua_getinfo()
-lua_getiuservalue()
-lua_getlocal()
-lua_getmetatable()
-lua_getstack()
-lua_gettable()
-lua_gettop()
-lua_getupvalue()
-lua_iscfunction()
-lua_isinteger()
-lua_isnumber()
-lua_isstring()
-lua_isuserdata()
-lua_isyieldable()
-lua_len()
-lua_load()
-lua_newstate()
-lua_newthread()
-lua_newuserdatauv()
-lua_next()
-lua_pcallk()
-lua_pushboolean()
-lua_pushcclosure()
-lua_pushinteger()
-lua_pushlightuserdata()
-lua_pushlstring()
-lua_pushnil()
-lua_pushnumber()
-lua_pushstring()
-lua_pushthread()
-lua_pushvalue()
-lua_rawequal()
-lua_rawget()
-lua_rawgeti()
-lua_rawgetp()
-lua_rawlen()
-lua_rawset()
-lua_rawseti()
-lua_rawsetp()
-lua_resetthread()
-lua_resume()
-lua_rotate()
-lua_setallocf()
-lua_setcstacklimit()
-lua_setfield()
-lua_setglobal()
-lua_sethook()
-lua_seti()
-lua_setiuservalue()
-lua_setlocal()
-lua_setmetatable()
-lua_settable()
-lua_settop()
-lua_setupvalue()
-lua_setwarnf()
-lua_status()
-lua_stringtonumber()
-lua_toboolean()
-lua_tocfunction()
-lua_toclose()
-lua_tointegerx()
-lua_tolstring()
-lua_tonumberx()
-lua_topointer()
-lua_tothread()
-lua_touserdata()
-lua_type()
-lua_typename()
-lua_upvalueid()
-lua_upvaluejoin()
-lua_version()
-lua_warning()
-lua_xmove()
-lua_yieldk()
-luaopen_base()
-luaopen_coroutine()
-luaopen_debug()
-luaopen_io()
-luaopen_math()
-luaopen_os()
-luaopen_package()
-luaopen_string()
-luaopen_table()
-luaopen_utf8()
-*/
     }
 
-    private static LaddMap(left, right)
-    {
-        return DataQuerier.mapBinaryOp(QuantOp.ADD, left, right);
-    }
-    private static LsubtractMap(left, right)
-    {
-        return DataQuerier.mapBinaryOp(QuantOp.SUBTRACT, left, right);
-    }
-    private static LmultiplyMap(left, right)
-    {
-        return DataQuerier.mapBinaryOp(QuantOp.MULTIPLY, left, right);
-    }
-    private static LdivideMap(left, right)
-    {
-        return DataQuerier.mapBinaryOp(QuantOp.DIVIDE, left, right);
-    }
-    private static LunderMap(left, right)
-    {
-        return DataQuerier._context.mapOperation(false, true, "under", [left, right]);
-    }
-    private static LoverMap(left, right)
-    {
-        return DataQuerier._context.mapOperation(false, true, "over", [left, right]);
-    }
-    private static LunderUndefinedMap(left, right)
-    {
-        return DataQuerier._context.mapOperation(false, true, "under_undef", [left, right]);
-    }
-    private static LoverUndefinedMap(left, right)
-    {
-        return DataQuerier._context.mapOperation(false, true, "over_undef", [left, right]);
-    }
-    private static LavgMap(left, right)
-    {
-        return DataQuerier._context.mapOperation(true, false, "avg", [left, right]);
-    }
-    private static LminMap(left, right)
-    {
-        return DataQuerier._context.mapOperation(true, true, "min", [left, right]);
-    }
-    private static LmaxMap(left, right)
-    {
-        return DataQuerier._context.mapOperation(true, true, "max", [left, right]);
-    }
     private static LreadElement(symbol, column, detector)
     {
         return DataQuerier.makeLuaTable(DataQuerier._context.readElement([symbol, column, detector]));
@@ -464,89 +240,18 @@ luaopen_utf8()
     {
         return DataQuerier.makeLuaTable(DataQuerier._context.makeMap([value]));
     }
-    private static LnormalizeMap(m)
-    {
-        return DataQuerier._context.normalizeMap([m]);
-    }
-    private static LthresholdMap(m)
-    {
-        return DataQuerier._context.thresholdMap([m]);
-    }
-    private static LpowMap(left, right)
-    {
-        return DataQuerier._context.pow([left, right]);
-    }
-    private static LsinMap(arg)
-    {
-        return DataQuerier._context.mathFunction("sin", arg);
-    }
-    private static LcosMap(arg)
-    {
-        return DataQuerier._context.mathFunction("cos", arg);
-    }
-    private static LtanMap(arg)
-    {
-        return DataQuerier._context.mathFunction("tan", arg);
-    }
-    private static LasinMap(arg)
-    {
-        return DataQuerier._context.mathFunction("asin", arg);
-    }
-    private static LacosMap(arg)
-    {
-        return DataQuerier._context.mathFunction("acos", arg);
-    }
-    private static LatanMap(arg)
-    {
-        return DataQuerier._context.mathFunction("atan", arg);
-    }
-    private static LexpMap(arg)
-    {
-        return DataQuerier._context.mathFunction("exp", arg);
-    }
-    private static LlnMap(arg)
-    {
-        return DataQuerier._context.mathFunction("ln", arg);
-    }
-
-    // Used as helpers by the above function calls
-    private static mapBinaryOp(op: QuantOp, left, right)
-    {
-        if(left instanceof PMCDataValues && typeof right == "number")
-        {
-            return left.operationWithScalar(op, right, false); // false because: map <op> number
-        }
-        else if(right instanceof PMCDataValues && typeof left == "number")
-        {
-            return right.operationWithScalar(op, left, true); // true because: number <op> map
-        }
-        else if(left instanceof PMCDataValues && right instanceof PMCDataValues)
-        {
-            return left.operationWithMap(op, right);
-        }
-
-        throw new Error("Unable to perform operation: "+op+" on parameters passed");
-    }
 
 
 // See: https://github.com/ceifa/wasmoon
-/*
-    // Set a JS function to be a global lua function
-    lua.global.set('sum', (x, y) => x + y)
-    // Run a lua string
-    await lua.doString(`
-    print(sum(10, 10))
-    function multiply(x, y)
-        return x * y
-    end
-    `)
-    // Get a global lua function as a JS function
-    const multiply = lua.global.get('multiply')
-    console.log(multiply(10, 10))
-*/
-
     public runQuery(expression: string): PMCDataValues
     {
+if(!DataQuerier.isLUA(expression))
+{
+let luaTranspiler = new LuaTranspiler();
+let luaVersion = luaTranspiler.transpile(expression);
+console.log(luaVersion);
+}
+
         let t0 = performance.now();
 
         // If it's a LUA script, run it directly here
@@ -564,43 +269,21 @@ luaopen_utf8()
             let result = null;
             try
             {
-                let thread = DataQuerier._lua.global;
-                let lua = thread.lua;
-
                 // Run a lua string
-                result = DataQuerier._lua.doStringSync(expression)
-/*
-                thread.loadString(expression);
-                thread.assertOk(lua.lua_pcallk(thread.address, 0, LUA_MULTRET, 0, 0, null));
-
-                // Get the result
-                let topIdx = lua.lua_gettop(thread.address);
-
-                // Should only be one result on the stack
-                if(topIdx != 1)
-                {
-                    throw new Error("Function did not result in one return value");
-                }
-
-                // Should be a table
-                result = this.readLuaTable2(lua, thread, topIdx);
-                
-                // Pop it
-                lua.lua_pop(thread.address, 1);
-*/
-                //return this.getStackValues();
-/*
-if(result && typeof(result) === "string")
-{
-    // It's an error!
-    console.error(result);
-    throw new Error(result);
-}*/
+                result = DataQuerier._lua.doStringSync(expression);
             }
             catch (err)
             {
                 console.error(err);
                 DataQuerier._lua.global.dumpStack(console.error);
+
+                // Print out everything...
+                for(let c = 1; c < 10; c++)
+                {
+                    const traceback = DataQuerier._lua.global.lua.lua_tolstring(DataQuerier._lua.global.address, -c, null);
+                    console.log(traceback);
+                }
+
                 throw new Error(err);
             }
             finally
@@ -636,10 +319,9 @@ console.log(">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms");
         // We do this in 2 stages, first we allow variables to be defined, then we expect to end in a line that has an expression in it
         // Blank lines and // comments are ignored
         let exprParts = DataQuerier.breakExpressionIntoParts(expression);
-
         let variableLookup = this.parseVariables(exprParts);
-
         let result = this.parseExpression(exprParts.expressionLine, variableLookup);
+
         if(result instanceof PMCDataValues)
         {            
 let t1 = performance.now();
@@ -649,53 +331,6 @@ console.log(">>> PIXLISE expression took: "+(t1-t0).toLocaleString()+"ms");
         }
 
         throw new Error("Expression: "+expression+" did not result in usable map data. Result was: "+result);
-    }
-/*
-    Need to write Lua add/mul/div/subtract/avg/over/under etc functions using for k, v in pairs(arr) do
-    Need to return tables to Lua which are just PMCDataValue[] in table form
-*/
-    // Based on: https://stackoverflow.com/questions/6137684/iterate-through-lua-table
-    private readLuaTable2(lua, thread, idx: number): PMCDataValues
-    {
-        let values: PMCDataValue[] = [];
-
-        lua.lua_pushvalue(thread.address, idx);
-        lua.lua_pushnil(thread.address);
-
-        while(lua.lua_next(thread.address, -2))
-        {
-            lua.lua_pushvalue(thread.address, -2);
-
-            lua.lua_pushvalue(thread.address, idx);
-            lua.lua_pushnil(thread.address);
-            
-            let pmc = 0;
-            let value = 0;
-
-            let c = 0;
-            while(lua.lua_next(thread.address, -2))
-            {
-                lua.lua_pushvalue(thread.address, -2);
-                if(c == 0)
-                {
-                    pmc = lua.lua_tointegerx(thread.address, -1);
-                }
-                else
-                {
-                    value = lua.lua_tonumberx(thread.address, -1);
-                }
-
-                lua.lua_pop(thread.address, 2);
-                c++;
-            }
-
-            values.push(new PMCDataValue(pmc, value, value==null));
-
-            lua.lua_pop(thread.address, 2);
-        }
-
-        lua.lua_pop(thread.address, 1);
-        return PMCDataValues.makeWithValues(values);
     }
 
     // Expecting results to come back as maps that we encode to pass in
@@ -743,39 +378,6 @@ console.log(">>> PIXLISE expression took: "+(t1-t0).toLocaleString()+"ms");
             arr.push([item.pmc, item.isUndefined ? null : item.value]);
         }
         return arr;
-/*
-        return values.values;
-
-        let o = new Object();
-        for(let item of values.values)
-        {
-            o[item.pmc] = item.isUndefined ? null : item.value;
-        }
-        return o;
-        
-
-        let thread = DataQuerier._lua.global;
-        let lua = thread.lua;
-
-        lua.lua_createtable(thread.address, 0, 0);// values.values.length, values.values.length);
-        // Table is now on the stack at top
-        //lua.lua_newtable(thread.address);
-        //let i = 0;
-        for(let item of values.values)
-        {
-            // Add key to stack
-            lua.lua_pushinteger(thread.address, item.pmc);
-            //lua.lua_rawseti(thread.address, -2, 1);
-
-            // Add value to stack
-            lua.lua_pushnumber(thread.address, item.isUndefined ? null : item.value);
-            //lua.lua_rawseti(thread.address, -2, 2);
-
-            //lua.lua_rawseti(thread.address, -2, i+1);
-
-            lua.lua_settable(thread.address, -3)
-            //i++;
-        }*/
     }
 
     private parseExpression(expression: string, variableLookup: Map<string, string | number | PMCDataValues>): any
@@ -783,6 +385,7 @@ console.log(">>> PIXLISE expression took: "+(t1-t0).toLocaleString()+"ms");
         // Save this expression in a local var so anything printing error msgs can reference it
         this._runningExpression = "\""+expression+"\"";
         let parseTree = jsep(expression);
+
         return this.parseExpressionNode(parseTree, variableLookup);
     }
 
