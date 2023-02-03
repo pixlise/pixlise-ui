@@ -39,9 +39,11 @@ export class LuaDataQuerier
 {
     private static _lua = null;
     private static _context: LuaDataQuerier = null;
+    private static _loggedTables = [];
 
     constructor(
-        private _dataSource: InterpreterDataSource
+        private _dataSource: InterpreterDataSource,
+        private _logTables: boolean = false
     )
     {
     }
@@ -157,8 +159,16 @@ export class LuaDataQuerier
         let result = null;
         try
         {
+            LuaDataQuerier._loggedTables = [];
+
             // Run a lua string
             result = LuaDataQuerier._lua.doStringSync(expression);
+
+            // Log the tables
+            if(this._logTables)
+            {
+                this.logTables();
+            }
         }
         catch (err)
         {
@@ -290,6 +300,46 @@ console.log(">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms");
         {
             arr.push([item.pmc, item.isUndefined ? null : item.value]);
         }
+
+        if(LuaDataQuerier._context._logTables)
+        {
+            // Save table for later
+            LuaDataQuerier._loggedTables.push(arr);
+        }
+
         return arr;
+    }
+
+    private logTables()
+    {
+        let luaTableText = "allTables = {";
+
+        for(let table of LuaDataQuerier._loggedTables)
+        {
+            luaTableText += " {\n";
+
+            for(let row of table)
+            {
+                luaTableText += "  {";
+
+                let first = true;
+                for(let col of row)
+                {
+                    if(!first)
+                    {
+                        luaTableText += ","
+                    }
+                    luaTableText += col;
+                    first = false;
+                }
+
+                luaTableText += "},\n";
+            }
+
+            luaTableText += " },\n";
+        }
+
+        luaTableText += "}"
+        console.log(luaTableText);
     }
 }

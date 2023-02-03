@@ -98,8 +98,8 @@ export class DataQuerier
         );
 
         this._interpretPixlise = new PixliseDataQuerier(this._dataSource);
-        this._interpretLua = new LuaDataQuerier(this._dataSource);
-        this._luaTranspiler = new LuaTranspiler();
+        this._interpretLua = new LuaDataQuerier(this._dataSource, true);
+        //this._luaTranspiler = new LuaTranspiler();
     }
 
     public runQuery(expression: string): PMCDataValues
@@ -114,9 +114,13 @@ export class DataQuerier
         }
         else
         {
-// Transpile to Lua for debugging purposes
-let asLua = this._luaTranspiler.transpile(expression);
-console.log(asLua);
+            if(this._luaTranspiler)
+            {
+                // Transpile to Lua for debugging purposes
+                let asLua = this._luaTranspiler.transpile(expression);
+                console.log(asLua);
+            }
+
             return this._interpretPixlise.runQuery(expression);
         }
     }
