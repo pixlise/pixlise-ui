@@ -104,6 +104,23 @@ export class ExpressionReferences
 
         return index >= 0 ? expressionValues[index] : null;
     }
+
+    static getCombinedExpressionValues(reference: ExpressionReference): ExpressionValue[]
+    {
+        let expressionValues = reference.expressionValues;
+        let combinedExpressionValues: ExpressionValue[] = [];
+        expressionValues.forEach((expressionValue: ExpressionValue) =>
+        {
+            let noDetName = expressionValue.name.replace(/-%\([A-Za-z]+\)/, "");
+            let combinedExpressionValue = combinedExpressionValues.find((combinedExpressionValue: ExpressionValue) => combinedExpressionValue.name === noDetName);
+            if(!combinedExpressionValue)
+            {
+                combinedExpressionValues.push({ name: noDetName, value: expressionValue.value });
+            }
+        });
+
+        return combinedExpressionValues;
+    }
 }
 
 @Component({
@@ -115,7 +132,7 @@ export class ReferencesPickerComponent
 {
     selectedReferences: string[] = [];
 
-    @Input() plotIDs: string[];
+    @Input() plotIDs: string[] = [];
     @Output() onChange = new EventEmitter();
 
     dialogRef: MatDialogRef<PickerDialogComponent>;

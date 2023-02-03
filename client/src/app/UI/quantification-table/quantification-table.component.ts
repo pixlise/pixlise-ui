@@ -39,8 +39,9 @@ import { DataSourceParams, RegionDataResults, WidgetDataUpdateReason, WidgetRegi
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
 import { TableData, TableHeaderItem, TableRow } from "src/app/UI/atoms/table/table.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
-import { RGBA } from "src/app/utils/colours";
+import { Colours, RGBA } from "src/app/utils/colours";
 import { SentryHelper } from "src/app/utils/utils";
+import { ExpressionReferences } from "../references-picker/references-picker.component";
 
 
 @Component({
@@ -61,6 +62,8 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
     private _showSettings: boolean = false;
 
     private _viewInited: boolean = false;
+
+    private _references: string[] = [];
 
     regionDataTables: TableData[] = [];
     helpMessage: string = "";
@@ -289,6 +292,43 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
                 );
             }
         }
+
+        this._references.forEach((referenceName) =>
+        {
+            let headers: TableHeaderItem[] = [new TableHeaderItem("Element", "")];
+            headers.push(new TableHeaderItem("Weight %", "(A)"));
+            headers.push(new TableHeaderItem("Weight %", "(B)"));
+
+            let reference = ExpressionReferences.getByName(referenceName);
+            let combinedExpressionValues = ExpressionReferences.getCombinedExpressionValues(reference);
+            let rows = combinedExpressionValues.map((expressionValue) =>
+            {
+                let detectorAName = `${expressionValue.name}-%(A)`;
+                let detectorBName = `${expressionValue.name}-%(B)`;
+
+                let expressionName = this._exprService.getExpressionShortDisplayName(detectorAName, 30);
+                let elementName = expressionName.shortName.replace("-A", "");
+
+                let detAValue = ExpressionReferences.getExpressionValue(reference, detectorAName);
+                let detBValue = ExpressionReferences.getExpressionValue(reference, detectorBName);
+
+                return new TableRow(elementName, [detAValue.value, detBValue.value], [])
+            });
+
+            let totalA = rows.reduce((total, row) => total + row.values[0], 0);
+            let totalB = rows.reduce((total, row) => total + row.values[1], 0);
+
+            this.regionDataTables.push(
+                new TableData(
+                    referenceName,
+                    Colours.CONTEXT_PURPLE.asString(),
+                    " Wt.%",
+                    headers,
+                    rows,
+                    new TableRow("Totals:", [totalA, totalB], [])
+                )
+            );
+        });
     }
 
     private getFormulaeToQuery(quant: QuantificationLayer): string[]
@@ -365,6 +405,13 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
             }
         );
     }
+
+    onReferences(references): void
+    {
+        this._references = references;
+        this.updateTable("references-changed", null);
+    }
+
 
     get usePureElement(): boolean
     {
