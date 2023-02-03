@@ -46,11 +46,14 @@ POSSIBILITY OF SUCH DAMAGE.
 
         <span 
             *ngIf="item.id"
+            class="item-label"
             [ngClass]="{'disabled': !isEnabled(item)}"
             #tooltip="matTooltip"
             [matTooltip]="item.tooltip"
             [matTooltipDisabled]="!item.tooltip"
-        >{{item.label}}</span>
+        >{{item.label}}
+            <img *ngIf="item.tooltip" class="warning-tooltip" src="assets/icons/error-triangle.svg">
+        </span>
         <img *ngIf="item.id && item.icon" [ngClass]="{'colour-disabled': !isEnabled(item)}" [src]='item.icon'>
     </div>
 
