@@ -38,13 +38,13 @@ import { environment } from "src/environments/environment";
 // Unless we want to maintain our own??
 export class Point
 {
-    constructor(public x: number = 0, public y: number = 0, public label: string = "")
+    constructor(public x: number = 0, public y: number = 0, public label: string = "", public endX: number = null, public endY: number = null)
     {
     }
 
     public copy(): Point
     {
-        return new Point(this.x, this.y);
+        return new Point(this.x, this.y, this.label, this.endX, this.endY);
     }
 }
 
@@ -229,7 +229,7 @@ export function normalizeVector(v: Point): Point
 
 export function scaleVector(v: Point, s: number): Point
 {
-    return new Point(v.x*s, v.y*s);
+    return new Point(v.x*s, v.y*s, v.label, v.endX ? v.endX*s : undefined, v.endY ? v.endY*s : undefined);
 }
 
 export function addVectors(v1: Point, v2: Point): Point

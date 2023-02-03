@@ -39,3 +39,9 @@
 .key-location-top-right-below-title {
     top: calc(var(--widget-drop-below-title) + #{$sz-double});
 }
+
+.exclude-btn {
+    display: block;
+    text-align: center;
+    margin-top: 8px;
+}

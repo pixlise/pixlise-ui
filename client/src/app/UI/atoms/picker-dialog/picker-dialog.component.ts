@@ -45,7 +45,8 @@ export class PickerDialogItem
         public id: string,
         public label: string,
         public icon: string,
-        public enabled: boolean
+        public enabled: boolean,
+        public tooltip: string = null
     )
     {
     }

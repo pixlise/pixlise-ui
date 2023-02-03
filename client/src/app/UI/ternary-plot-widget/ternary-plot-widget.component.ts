@@ -30,7 +30,7 @@
 import { Component, ElementRef, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subject, Subscription } from "rxjs";
-import { PMCDataValues } from "src/app/expression-language/data-values";
+import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { MinMax } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
 import { orderVisibleROIs, PredefinedROIID } from "src/app/models/roi";
@@ -45,7 +45,7 @@ import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
 import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.component";
 import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expression-picker/expression-picker.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
-import { RGBA } from "src/app/utils/colours";
+import { Colours, RGBA } from "src/app/utils/colours";
 import { randomString } from "src/app/utils/utils";
 import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { TernaryDiagramDrawer } from "./drawer";
@@ -53,6 +53,7 @@ import { TernaryInteraction } from "./interaction";
 import { TernaryModel } from "./model";
 import { TernaryCorner, TernaryData, TernaryDataColour, TernaryDataItem, TernaryPlotPointIndex } from "./ternary-data";
 import { exportScatterPlot } from "src/app/UI/ternary-plot-widget/export-helper";
+import { ExpressionReferences } from "../references-picker/references-picker.component";
 
 
 @Component({
@@ -68,6 +69,8 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
     private _subs = new Subscription();
 
     private _visibleROIs: string[] = [];
+
+    private _references: string[] = [];
 
     // Triangle points
     //    C
@@ -423,6 +426,60 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                     }
                 }
             }
+
+            if(this._references.length > 0)
+            {
+                let pointGroup: TernaryDataColour = new TernaryDataColour(Colours.CONTEXT_PURPLE, "circle", []);
+
+                this._references.forEach((referenceName, i) =>
+                {
+                    let reference = ExpressionReferences.getByName(referenceName);
+
+                    if(!reference)
+                    {
+                        console.error(`TernaryPlot prepareData: Couldn't find reference ${referenceName}`);
+                        return;
+                    }
+
+                    let refAValue = ExpressionReferences.getExpressionValue(reference, this._aExpressionId)?.value;
+                    let refBValue = ExpressionReferences.getExpressionValue(reference, this._bExpressionId)?.value;
+                    let refCValue = ExpressionReferences.getExpressionValue(reference, this._cExpressionId)?.value;
+                    let nullMask = [refAValue == null, refBValue == null, refCValue == null];
+
+                    // If we have more than one null value, we can't plot this reference on a ternary plot
+                    if(nullMask.filter(isNull => isNull).length > 1)
+                    {
+                        console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this._aExpressionId},${this._bExpressionId},${this._cExpressionId} values`);
+                        return;
+                    }
+
+                    if(refAValue == null)
+                    {
+                        refAValue = 0;
+                        console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this._aExpressionId} value`);
+                    }
+                    if(refBValue == null)
+                    {
+                        refBValue = 0;
+                        console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this._bExpressionId} value`);
+                    }
+                    if(refCValue == null)
+                    {
+                        refCValue = 0;
+                        console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this._cExpressionId} value`);
+                    }
+
+                    // We don't have a PMC for these, so -10 and below are now reserverd for reference values
+                    let referenceIndex = ExpressionReferences.references.findIndex((ref) => ref.name === referenceName);
+                    let id = -10 - referenceIndex;
+
+                    pointGroup.values.push(new TernaryDataItem(id, refAValue, refBValue, refCValue, referenceName, nullMask));
+                    pmcLookup.set(id, new TernaryPlotPointIndex(this._references.length, i));
+                });
+
+                pointGroups.push(pointGroup);
+                this.keyItems.push(new KeyItem("references", "Ref Points", Colours.CONTEXT_PURPLE, null, "circle"));
+            }
         }
 
         if(queryWarnings.length > 0)
@@ -652,7 +709,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
         let hoverPMC = this._selectionService.hoverPMC;
         if(this._ternaryModel)
         {
-            if(hoverPMC <= DataSet.invalidPMC)
+            if(hoverPMC <= DataSet.invalidPMC && hoverPMC > -10)
             {
                 // Clearing, easy case
                 this._ternaryModel.hoverPoint = null;
@@ -674,6 +731,17 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                 return;
             }
         }
+    }
+
+    onReferences(references)
+    {
+        this._references = references;
+        this.prepareData("references changed", null);
+    }
+
+    get axesIDs(): string[]
+    {
+        return [this._aExpressionId, this._bExpressionId, this._cExpressionId];
     }
 
     onBringToFront(roiID: string): void

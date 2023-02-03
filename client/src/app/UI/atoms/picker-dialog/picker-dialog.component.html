@@ -44,7 +44,13 @@ POSSIBILITY OF SUCH DAMAGE.
             class='btn-gap'>
         </two-state-icon-button>
 
-        <span *ngIf="item.id" [ngClass]="{'disabled': !isEnabled(item)}">{{item.label}}</span>
+        <span 
+            *ngIf="item.id"
+            [ngClass]="{'disabled': !isEnabled(item)}"
+            #tooltip="matTooltip"
+            [matTooltip]="item.tooltip"
+            [matTooltipDisabled]="!item.tooltip"
+        >{{item.label}}</span>
         <img *ngIf="item.id && item.icon" [ngClass]="{'colour-disabled': !isEnabled(item)}" [src]='item.icon'>
     </div>
 

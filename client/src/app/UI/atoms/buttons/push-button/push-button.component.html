@@ -31,4 +31,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="clickable" [ngClass]="styleCSS" (click)='onClickInternal($event)'>
     <ng-content></ng-content>
+    <badge
+      *ngIf="notificationCount > 0"
+      class="notifications"
+      [value]="notificationCount.toString()"
+      [badgeStyle]="badgeStyle"
+      title="{{notificationCount}} active notifications"
+  >
+  </badge>
 </div>

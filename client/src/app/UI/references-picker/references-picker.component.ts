@@ -27,9 +27,10 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, EventEmitter, Output } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, Output } from "@angular/core";
 import { MatDialogRef, MatDialogConfig, MatDialog } from "@angular/material/dialog";
 import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "../atoms/picker-dialog/picker-dialog.component";
+import { DataExpressionService } from "src/app/services/data-expression.service";
 
 export type ExpressionValue = {
     name: string;
@@ -46,7 +47,7 @@ const EXPRESSION_REFERENCES: ExpressionReference[] = [
         name: "Mars Dust", 
         expressionValues: 
         [
-            { name: "expr-elem-Na2O-%(A)", value: 5 },
+            { name: "expr-elem-Na2O-%(A)", value: 50 },
             { name: "expr-elem-Na2O-%(B)", value: 5 },
             { name: "expr-elem-MgO-%(A)", value: 5 },
             { name: "expr-elem-MgO-%(B)", value: 5 },
@@ -114,14 +115,43 @@ export class ReferencesPickerComponent
 {
     selectedReferences: string[] = [];
 
+    @Input() plotIDs: string[];
     @Output() onChange = new EventEmitter();
 
     dialogRef: MatDialogRef<PickerDialogComponent>;
 
     constructor(
-        public dialog: MatDialog
+        public dialog: MatDialog,
+        private _exprService: DataExpressionService
     )
     {
+    }
+
+    get warnings(): string[]
+    {
+        let refWarnings: string[] = [];
+        this.selectedReferences.forEach((refID: string, i) =>
+        {
+            let expressionValues = ExpressionReferences.getByName(refID).expressionValues;
+            let missingExpressionIDs = this.plotIDs.filter((plotID: string) => !expressionValues.find((expressionValue: ExpressionValue) => expressionValue.name === plotID));
+            missingExpressionIDs.forEach((expressionID: string) =>
+            {
+                let expressionName = this._exprService.getExpressionShortDisplayName(expressionID, 30).shortName;
+                refWarnings.push(`${refID}: undefined ${expressionName}`);
+            });
+
+            if(i !== this.selectedReferences.length - 1)
+            {
+                refWarnings.push("");
+            }
+        });
+
+        return refWarnings;
+    }
+
+    get warningTooltip(): string
+    {
+        return this.warnings.join("\n");
     }
 
     onReferences(): void
@@ -131,9 +161,18 @@ export class ReferencesPickerComponent
         let items: PickerDialogItem[] = [];
         items.push(new PickerDialogItem(null, "References", null, true));
 
-        for(let marsRef of ExpressionReferences.references)
+        for(let ref of ExpressionReferences.references)
         {
-            items.push(new PickerDialogItem(marsRef.name, marsRef.name, null, true));
+            let missingExpressionNames = this.plotIDs.filter((plotID: string) => 
+                !ref.expressionValues.find((expressionValue: ExpressionValue) => expressionValue.name === plotID)
+            ).map((expressionID: string) =>
+            {
+                return this._exprService.getExpressionShortDisplayName(expressionID, 30).shortName;
+            });
+
+            let missingExpressionNamesString = missingExpressionNames.length > 0 ? "Missing: " + missingExpressionNames.join(", ") : "";
+
+            items.push(new PickerDialogItem(ref.name, ref.name, null, true, missingExpressionNamesString));
         }
 
         dialogConfig.data = new PickerDialogData(true, true, true, false, items, this.selectedReferences, "", new ElementRef(event.currentTarget));

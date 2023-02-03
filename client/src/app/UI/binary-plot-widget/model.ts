@@ -126,13 +126,20 @@ export class BinaryDrawModel
             for(let i = 0; i < raw.xAxisData.pointGroups[c].values.length; i++)
             {
                 let pointXValue = raw.xAxisData.pointGroups[c].values[i];
+                let xValue = pointXValue.isUndefined ? "null" : pointXValue.value;
+                let canvasX = this.xAxis.valueToCanvas(pointXValue.value);
+
                 let pointYValue = raw.yAxisData.pointGroups[c].values[i];
+                let yValue = pointYValue.isUndefined ? "null" : pointYValue.value;
+                let canvasY = this.yAxis.valueToCanvas(pointYValue.value);
 
                 coords.push(
                     new Point(
-                        this.xAxis.valueToCanvas(pointXValue.value),
-                        this.yAxis.valueToCanvas(pointYValue.value),
-                        pointXValue.label ? `${pointXValue.label} (${pointXValue.value}, ${pointYValue.value})` : ""
+                        pointXValue.isUndefined ? this.xAxis.pctToCanvas(1) : canvasX,
+                        pointYValue.isUndefined ? this.yAxis.pctToCanvas(1) : canvasY,
+                        pointXValue.label ? `${pointXValue.label} (${xValue}, ${yValue})` : "",
+                        pointXValue.isUndefined ? this.xAxis.pctToCanvas(0) : canvasX,
+                        pointYValue.isUndefined ? this.yAxis.pctToCanvas(0) : canvasY
                     )
                 );
             }

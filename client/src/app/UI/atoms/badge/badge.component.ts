@@ -29,6 +29,8 @@
 
 import { Component, Input, OnInit } from "@angular/core";
 
+export type BadgeStyle = "notification" | "warning" | "error";
+
 @Component({
     selector: "badge",
     templateUrl: "./badge.component.html",
@@ -37,6 +39,7 @@ import { Component, Input, OnInit } from "@angular/core";
 export class BadgeComponent implements OnInit
 {
     @Input() value: string;
+    @Input() badgeStyle: BadgeStyle = "notification";
 
     constructor()
     {

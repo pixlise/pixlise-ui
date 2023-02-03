@@ -445,34 +445,40 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                 }
 
                 let refXValue = ExpressionReferences.getExpressionValue(reference, exprX.id)?.value;
+                let isRefXNull = refXValue == null;
                 let refYValue = ExpressionReferences.getExpressionValue(reference, exprY.id)?.value;
+                let isRefYNull = refYValue == null;
 
-                let warnings: string[] = [];
-                if(refXValue === null || refXValue === undefined)
+                if(isRefXNull && isRefYNull)
+                {
+                    console.warn(`BinaryPlot prepareData: Reference ${referenceName} has undefined values for: ${xLabel}, ${yLabel}`);
+                    return;
+                }
+
+                if(isRefXNull)
                 {
                     refXValue = 0;
-                    warnings.push("undefined x");
-                    console.warn(`BinaryPlot prepareData: Reference ${referenceName} has undefined ${exprX.id} value`);
+                    console.warn(`BinaryPlot prepareData: Reference ${referenceName} has undefined ${xLabel} value`);
                 }
-                if(refYValue === null || refYValue === undefined)
+                if(isRefYNull)
                 {
                     refYValue = 0;
-                    warnings.push("undefined y");
-                    console.warn(`BinaryPlot prepareData: Reference ${referenceName} has undefined ${exprY.id} value`);
-                }
-
-                let label = referenceName;
-                if(warnings.length > 0)
-                {
-                    label += `\n${warnings.join(", ")}\n`;
+                    console.warn(`BinaryPlot prepareData: Reference ${referenceName} has undefined ${yLabel} value`);
                 }
 
                 // We don't have a PMC for these, so -10 and below are now reserverd for reference values
-                refXDataValue.values.push(new PMCDataValue(-10 - i, refXValue, false, label));
-                refYDataValue.values.push(new PMCDataValue(-10 - i, refYValue, false, label));
+                let referenceIndex = ExpressionReferences.references.findIndex((ref) => ref.name === referenceName);
+                let id = -10 - referenceIndex;
+
+                console.log(`BinaryPlot prepareData: Adding reference ${referenceName} with id ${id} and values (${refXValue}, ${refYValue})`)
+                refXDataValue.values.push(new PMCDataValue(id, refXValue, isRefXNull, referenceName));
+                refYDataValue.values.push(new PMCDataValue(id, refYValue, isRefYNull, referenceName));
                 pmcLookup.set(refXDataValue.values[i].pmc, new BinaryPlotPointIndex(xPointGroup.length, i));
             });
 
+            refXDataValue = PMCDataValues.makeWithValues(refXDataValue.values);
+            refYDataValue = PMCDataValues.makeWithValues(refYDataValue.values);
+            
             xValueRange.expandByMinMax(refXDataValue.valueRange);
             yValueRange.expandByMinMax(refYDataValue.valueRange);
 
@@ -516,6 +522,11 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         let t2 = performance.now();
 
         console.log("  Binary prepareData took: "+(t1-t0).toLocaleString()+"ms, needsDraw$ took: "+(t2-t1).toLocaleString()+"ms");
+    }
+
+    get axesIDs(): string[]
+    {
+        return [this._xAxisExpressionId, this._yAxisExpressionId];
     }
 
     private setDefaultsIfNeeded(widgetUpdReason: WidgetDataUpdateReason): void
