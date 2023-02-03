@@ -31,7 +31,7 @@ import { Component, Inject, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { CodemirrorComponent } from "@ctrl/ngx-codemirror";
 import { Subscription, timer } from "rxjs";
-import { DataQuerier, ExpressionParts } from "src/app/expression-language/expression-language";
+import { ExpressionParts, PixliseDataQuerier } from "src/app/expression-language/interpret-pixlise";
 import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications";
 import { DataExpression } from "src/app/services/data-expression.service";
 import { DataSetService } from "src/app/services/data-set.service";
@@ -162,7 +162,7 @@ export class ExpressionEditorComponent implements OnInit, OnDestroy
     {
         try
         {
-            this._exprParts = DataQuerier.breakExpressionIntoParts(this._expr.expression);
+            this._exprParts = PixliseDataQuerier.breakExpressionIntoParts(this._expr.expression);
         }
         catch (error)
         {

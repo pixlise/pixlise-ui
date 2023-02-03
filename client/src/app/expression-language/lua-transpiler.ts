@@ -29,8 +29,8 @@
 
 
 import jsep from "jsep";
-import { DataQuerier } from "src/app/expression-language/expression-language";
 import { QuantOp } from "src/app/expression-language/data-values";
+import { PixliseDataQuerier } from "src/app/expression-language/interpret-pixlise";
 
 
 export class LuaTranspiler
@@ -92,7 +92,7 @@ export class LuaTranspiler
                 {
                     varName = line.substring(0, equalPos).trim();
                     varName = this.ensureNoClash(varName);
-                    if(!DataQuerier.isValidVariableName(varName))
+                    if(!PixliseDataQuerier.isValidVariableName(varName))
                     {
                         throw new Error("ERROR: Line "+(c+1)+": Invalid variable name definition: \""+varName+"\"");
                     }

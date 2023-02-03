@@ -227,7 +227,7 @@ import { AnnotationEditorComponent } from "./UI/annotation-editor/annotation-edi
 import { AnnotationDisplayComponent } from "./UI/annotation-editor/annotation-display/annotation-display.component";
 import { PlotExporterDialogComponent } from "./UI/atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 
-import { DataQuerier } from "src/app/expression-language/expression-language";
+import { LuaDataQuerier } from "src/app/expression-language/interpret-lua";
 
 
 @Injectable()
@@ -312,7 +312,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
 };
 
 function initLua(): () => Observable<any> {
-    return ()=>DataQuerier.initLua();
+    return ()=>LuaDataQuerier.initLua();
 }
 
 @NgModule({
