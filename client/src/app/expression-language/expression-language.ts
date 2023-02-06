@@ -98,7 +98,7 @@ export class DataQuerier
         );
 
         this._interpretPixlise = new PixliseDataQuerier(this._dataSource);
-        this._interpretLua = new LuaDataQuerier(this._dataSource, true);
+        this._interpretLua = new LuaDataQuerier(this._dataSource, false);
         //this._luaTranspiler = new LuaTranspiler();
     }
 
