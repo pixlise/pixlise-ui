@@ -50,3 +50,13 @@
 span {
     color: $clr-gray-10;
 }
+
+.item-label {
+    display: flex;
+    align-items: center;
+}
+
+.warning-tooltip {
+    width: 16px;
+    margin-left: 4px;
+}

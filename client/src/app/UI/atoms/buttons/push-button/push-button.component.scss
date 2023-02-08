@@ -112,3 +112,13 @@
         background-color: $clr-gray-80;
     }
 }
+
+.clickable {
+    position: relative;
+}
+
+.notifications {
+    position: absolute;
+    top: -6.5px;   
+    right: -6.5px;
+}
