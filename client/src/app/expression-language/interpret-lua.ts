@@ -30,6 +30,7 @@
 import { Observable } from "rxjs";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
+import { httpErrorToString } from "../utils/utils";
 import { InterpreterDataSource } from "./interpreter-data-source";
 
 const { LuaFactory, LuaLibraries } = require('wasmoon')
@@ -40,6 +41,8 @@ export class LuaDataQuerier
     private static _lua = null;
     private static _context: LuaDataQuerier = null;
     private static _loggedTables = [];
+    private static _makeLuaTableTime = 0;
+    private static _debug = false;
 
     constructor(
         private _dataSource: InterpreterDataSource,
@@ -104,15 +107,15 @@ export class LuaDataQuerier
                                     observer.complete();
                                 }
                             )
-                            .catch(()=>
+                            .catch((err)=>
                             {
-                                throw new Error("Failed to apply PIXLISE Lua library");
+                                throw new Error("Failed to apply PIXLISE Lua library\n"+err["message"]+"\n"+err["stack"]);
                             });
                         }
                     )
-                    .catch(()=>
+                    .catch((err)=>
                     {
-                        throw new Error("Failed to download PIXLISE Lua library");
+                        throw new Error("Failed to download PIXLISE Lua library\n"+err["message"]+"\n"+err["stack"]);
                     });
                 })
                 .catch((err)=>{
@@ -123,22 +126,28 @@ export class LuaDataQuerier
         );
     }
 
+    private static LuaFunctionNames = ["element", "elementSum", "data", "spectrum", "spectrumDiff", "pseudo", "housekeeping", "diffractionPeaks", "roughness", "position", "makeMap"];
+    private static LuaFunctionArgCounts = [3, 2, 2, 3, 3, 1, 1, 2, 0, 1, 1];
+    private static LuaFuncs = [LuaDataQuerier.LreadElement, LuaDataQuerier.LreadElementSum, LuaDataQuerier.LreadDataColumn, LuaDataQuerier.LreadSpectrum, LuaDataQuerier.LreadSpectrumDiff, LuaDataQuerier.LreadPseudoIntensity, LuaDataQuerier.LreadHouseKeeping, LuaDataQuerier.LreadDiffractionPeaks, LuaDataQuerier.LreadRoughness, LuaDataQuerier.LreadPosition, LuaDataQuerier.LmakeMap];
+
+
     private static setupLua(pixliseLib: string): void
     {
         LuaDataQuerier._lua.doStringSync(pixliseLib);
 
         // Implementing original expression language
-        LuaDataQuerier._lua.global.set("element", LuaDataQuerier.LreadElement);
-        LuaDataQuerier._lua.global.set("elementSum", LuaDataQuerier.LreadElementSum);
-        LuaDataQuerier._lua.global.set("data", LuaDataQuerier.LreadDataColumn);
-        LuaDataQuerier._lua.global.set("spectrum", LuaDataQuerier.LreadSpectrum);
-        LuaDataQuerier._lua.global.set("spectrumDiff", LuaDataQuerier.LreadSpectrumDiff);
-        LuaDataQuerier._lua.global.set("pseudo", LuaDataQuerier.LreadPseudoIntensity);
-        LuaDataQuerier._lua.global.set("housekeeping", LuaDataQuerier.LreadHouseKeeping);
-        LuaDataQuerier._lua.global.set("diffractionPeaks", LuaDataQuerier.LreadDiffractionPeaks);
-        LuaDataQuerier._lua.global.set("roughness", LuaDataQuerier.LreadRoughness);
-        LuaDataQuerier._lua.global.set("position", LuaDataQuerier.LreadPosition);
-        LuaDataQuerier._lua.global.set("makeMap", LuaDataQuerier.LmakeMap);
+        let prefix = "";
+        if(LuaDataQuerier._debug)
+        {
+            prefix = "P";
+        }
+
+        for(let c = 0; c < LuaDataQuerier.LuaFunctionNames.length; c++)
+        {
+            LuaDataQuerier._lua.global.set(prefix+LuaDataQuerier.LuaFunctionNames[c], LuaDataQuerier.LuaFuncs[c]);
+        }
+
+        // Special simple one, we don't have debugging for this
         LuaDataQuerier._lua.global.set("atomicMass", (symbol)=>
         {
             return periodicTableDB.getMolecularMass(symbol);
@@ -146,12 +155,71 @@ export class LuaDataQuerier
     }
 
     // See: https://github.com/ceifa/wasmoon
-    public runQuery(expression: string): PMCDataValues
+    public runQuery(origExpression: string): PMCDataValues
     {
         let t0 = performance.now();
+        LuaDataQuerier._makeLuaTableTime = 0;
 
         // Make it into a function, so if we get called again, we overwrite
-        expression = "Map = makeMapLib()\nfunction main()\n"+expression+"\nend\nreturn main()\n"
+        let expression = `Map = makeMapLib()\n
+function printMap(m, comment)
+    print(comment.." map size: "..#m[1])
+    for k, v in ipairs(m[1]) do
+        print(v.."="..m[2][k])
+    end
+end
+        function expression()
+`
+        expression += origExpression+"\nend\n";
+
+        if(LuaDataQuerier._debug)
+        {
+            expression += "t0=os.clock()\n";
+            expression += "times = {}\n"
+
+            for(let funcName of LuaDataQuerier.LuaFunctionNames)
+            {
+                expression += `times["${funcName}"] = 0\n`;
+            }
+
+            // Add wrappers for our functions
+            for(let f = 0; f < LuaDataQuerier.LuaFunctionNames.length; f++)
+            {
+                // Add a wrapper with timing code around it that accumulates it
+                let funcName = LuaDataQuerier.LuaFunctionNames[f];
+                expression += "function "+funcName+"(";
+
+                let argList = "";
+                for(let c = 0; c < LuaDataQuerier.LuaFunctionArgCounts[f]; c++)
+                {
+                    if(argList.length > 0)
+                    {
+                        argList += ",";
+                    }
+
+                    argList += "a"+c;
+                }
+                expression += argList+")";
+                expression += `
+  local t0=os.clock()
+  local funcResult = P${funcName}(${argList})
+  local t1=os.clock()
+  times["${funcName}"] = times["${funcName}"]+(t1-t0)
+  return funcResult
+end
+`;
+            }
+        }
+        expression += "result = expression()\n";
+
+        if(LuaDataQuerier._debug)
+        {
+            expression += "t1=os.clock()\nprint(\"Code ran for: \"..(t1-t0))\nlocal timesTotal=0\n";
+            // Print out the table too
+            expression += "for k, v in pairs(times) do\n  print(k..\" took: \"..v)\n  timesTotal = timesTotal+v\nend\nprint(\"Total functions: \"..timesTotal)\n"
+        }
+
+        expression += "return result\n";
 
         // Set context for this run
         LuaDataQuerier._context = this;
@@ -203,7 +271,7 @@ export class LuaDataQuerier
             result = this.readLuaTable(result);
 
 let t1 = performance.now();
-console.log(">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms");
+console.log(">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms, makeTable calls took: "+LuaDataQuerier._makeLuaTableTime+"ms");
 
             return result;
         }
@@ -264,14 +332,14 @@ console.log(">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms");
     private readLuaTable(table: any): PMCDataValues
     {
         if(table.length != 2)
-            {
+        {
             throw new Error("Table expected to have arrays, has: "+table.length);
-            }
+        }
 
         let values: PMCDataValue[] = [];
         let c = 0;
         for(let pmc of table[0])
-            {
+        {
             let value: number = table[1][c];
             let isUndef = false;
             if(value === null)
@@ -293,9 +361,9 @@ console.log(">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms");
         let pmcs = [];
         let values = [];
         for(let item of data.values)
-    {
-            if(item.pmc < 20)
         {
+            if(item.pmc < 20)
+            {
                 pmcs.push(item.pmc);
                 values.push(item.isUndefined ? null : item.value);
             }
