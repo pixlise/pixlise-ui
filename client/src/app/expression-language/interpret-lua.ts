@@ -256,29 +256,23 @@ console.log(">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms");
         return LuaDataQuerier.makeLuaTable(LuaDataQuerier._context._dataSource.makeMap([value]));
     }
 
-    // Expecting results to come back as maps that we encode to pass in
+    // Expecting results to come back as table with 2 arrays in it, one for pmc, one for values
     // So Lua code for one:
-    // t = {{1,3.5},{3,5.7},{7,1.1}}
+    // t = {{1,3,7},{3.5,5.7,1.1}}
     // Expecting it come back as:
-    // [[1,3.5],[3,5.7],[7,1.1]]
+    // [[1,3,7],[3.5,5.7,1.1]]
     private readLuaTable(table: any): PMCDataValues
     {
+        if(table.length != 2)
+            {
+            throw new Error("Table expected to have arrays, has: "+table.length);
+            }
+
         let values: PMCDataValue[] = [];
         let c = 0;
-        for(let row of table)
-        {
-            if(row.length != 2)
+        for(let pmc of table[0])
             {
-                throw new Error("Table row["+c+"] is not 2 items");
-            }
-
-            let pmc = Number.parseInt(row[0]);
-            if(isNaN(pmc))
-            {
-                throw new Error("Returned value from expression has invalid field: "+row[0]);
-            }
-
-            let value: number = row[1];
+            let value: number = table[1][c];
             let isUndef = false;
             if(value === null)
             {
@@ -293,21 +287,32 @@ console.log(">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms");
         return PMCDataValues.makeWithValues(values);
     }
 
-    private static makeLuaTable(values: PMCDataValues): any
+    private static makeLuaTable(data: PMCDataValues): any
     {
-        let arr = [];
-        for(let item of values.values)
+        let t0 = performance.now();
+        let pmcs = [];
+        let values = [];
+        for(let item of data.values)
+    {
+            if(item.pmc < 20)
         {
-            arr.push([item.pmc, item.isUndefined ? null : item.value]);
+                pmcs.push(item.pmc);
+                values.push(item.isUndefined ? null : item.value);
+            }
         }
+
+        let luaTable = [pmcs, values];
 
         if(LuaDataQuerier._context._logTables)
         {
             // Save table for later
-            LuaDataQuerier._loggedTables.push(arr);
+            LuaDataQuerier._loggedTables.push(luaTable);
         }
 
-        return arr;
+        let t1 = performance.now();
+        
+        LuaDataQuerier._makeLuaTableTime += t1-t0;
+        return luaTable;
     }
 
     private logTables()
