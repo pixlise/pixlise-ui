@@ -45,7 +45,7 @@ export class TernaryCorner
 
 export class TernaryDataItem
 {
-    constructor(public pmc: number, public a: number, public b: number, public c: number)
+    constructor(public pmc: number, public a: number, public b: number, public c: number, public label: string = "", public nullMask: boolean[] = [false, false, false])
     {
     }
 }

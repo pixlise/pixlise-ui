@@ -57,11 +57,15 @@ POSSIBILITY OF SUCH DAMAGE.
                 <td
                     *ngFor="let val of row.values; let i = index"
                     class="row-value right-align"
-                    [title]="i >= row.tooltips.length ? '' : row.tooltips[i]">{{val ? (val|number:'1.3-3') : '--'}} {{table.valueSuffix}}</td>
+                    [title]="i >= row.tooltips.length ? '' : row.tooltips[i]"
+                >{{val ? (val|number:'1.3-3') : '--'}} {{table.getSuffix(i)}}</td>
             </tr>
             <tr *ngIf="table.totalsRow" class="total-row">
                 <td *ngIf="table.totalsRow.label">{{table.totalsRow.label}}</td>
-                <td *ngFor="let val of table.totalsRow.values" class="right-align">{{val? (val|number:'1.3-3') : '--'}} {{table.valueSuffix}}</td>
+                <td 
+                    *ngFor="let val of table.totalsRow.values; let i = index"
+                    class="right-align"
+                >{{val? (val|number:'1.3-3') : '--'}} {{table.getSuffix(i)}}</td>
             </tr>
         </tbody>
     </table>

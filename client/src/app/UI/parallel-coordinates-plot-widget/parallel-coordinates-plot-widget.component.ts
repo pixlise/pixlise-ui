@@ -161,8 +161,6 @@ export class PCPAxis
 
     public clearSelection(): void
     {
-        // this.minSelection = 0;
-        // this.maxSelection = 0;
         this.activeSelection = false;
     }
 
