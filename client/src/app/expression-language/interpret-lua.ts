@@ -30,7 +30,6 @@
 import { Observable } from "rxjs";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { httpErrorToString } from "../utils/utils";
 import { InterpreterDataSource } from "./interpreter-data-source";
 
 const { LuaFactory, LuaLibraries } = require('wasmoon')
@@ -362,11 +361,11 @@ console.log(">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms, makeTable 
         let values = [];
         for(let item of data.values)
         {
-            if(item.pmc < 20)
-            {
+            //if(item.pmc < 20)
+            //{
                 pmcs.push(item.pmc);
                 values.push(item.isUndefined ? null : item.value);
-            }
+            //}
         }
 
         let luaTable = [pmcs, values];
