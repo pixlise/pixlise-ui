@@ -444,9 +444,9 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                     return;
                 }
 
-                let refXValue = ExpressionReferences.getExpressionValue(reference, exprX.id)?.value;
+                let refXValue = ExpressionReferences.getExpressionValue(reference, exprX.id)?.weightPercentage;
                 let isRefXNull = refXValue == null;
-                let refYValue = ExpressionReferences.getExpressionValue(reference, exprY.id)?.value;
+                let refYValue = ExpressionReferences.getExpressionValue(reference, exprY.id)?.weightPercentage;
                 let isRefYNull = refYValue == null;
 
                 if(isRefXNull && isRefYNull)
@@ -470,7 +470,8 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                 let referenceIndex = ExpressionReferences.references.findIndex((ref) => ref.name === referenceName);
                 let id = -10 - referenceIndex;
 
-                console.log(`BinaryPlot prepareData: Adding reference ${referenceName} with id ${id} and values (${refXValue}, ${refYValue})`)
+                console.log(`BinaryPlot prepareData: Adding reference ${referenceName} with id ${id} and values (${refXValue}, ${refYValue})`);
+
                 refXDataValue.values.push(new PMCDataValue(id, refXValue, isRefXNull, referenceName));
                 refYDataValue.values.push(new PMCDataValue(id, refYValue, isRefYNull, referenceName));
                 pmcLookup.set(refXDataValue.values[i].pmc, new BinaryPlotPointIndex(xPointGroup.length, i));

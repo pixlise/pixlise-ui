@@ -194,7 +194,7 @@ export class PointDrawer
         return a;
     }
 
-    drawPoints(points: Point[], colourAlpha: number, showLabels: boolean = false): void
+    drawPoints(points: Point[], colourAlpha: number, showLabels: boolean = false, maxLabelLength: number = 15): void
     {
         // Setup the context for drawing this
         if(this._fillColour)
@@ -263,13 +263,34 @@ export class PointDrawer
 
             if(showLabels && pt.label && pt.label !== "")
             {
+                let label = "";
+                let labelWords = pt.label.split(" ");
+
+                let currentSegment = "";
+                labelWords.forEach((word, i) =>
+                {
+                    if(i == labelWords.length - 1)
+                    {
+                        label += currentSegment + word;
+                    }
+                    else if(currentSegment.length + word.length > maxLabelLength)
+                    {
+                        label += currentSegment + "\n";
+                        currentSegment = word + " ";
+                    }
+                    else
+                    {
+                        currentSegment += word + " ";
+                    }
+                });
+
                 // Save the existing font and fill style
                 this._screenContext.save();
 
                 // Draw the label
                 this._screenContext.font = CANVAS_FONT_SIZE + "px Roboto";
                 this._screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
-                let labels = pt.label.split("\n");
+                let labels = label.split("\n");
 
                 // Parse newline characters in the label
                 labels.forEach((label, i) =>

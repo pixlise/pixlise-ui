@@ -296,36 +296,34 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
         this._references.forEach((referenceName) =>
         {
             let headers: TableHeaderItem[] = [new TableHeaderItem("Element", "")];
-            headers.push(new TableHeaderItem("Weight %", "(A)"));
-            headers.push(new TableHeaderItem("Weight %", "(B)"));
+            headers.push(new TableHeaderItem("Weight %", ""));
+            headers.push(new TableHeaderItem("Error", ""));
 
             let reference = ExpressionReferences.getByName(referenceName);
             let combinedExpressionValues = ExpressionReferences.getCombinedExpressionValues(reference);
             let rows = combinedExpressionValues.map((expressionValue) =>
             {
                 let detectorAName = `${expressionValue.name}-%(A)`;
-                let detectorBName = `${expressionValue.name}-%(B)`;
 
                 let expressionName = this._exprService.getExpressionShortDisplayName(detectorAName, 30);
                 let elementName = expressionName.shortName.replace("-A", "");
 
-                let detAValue = ExpressionReferences.getExpressionValue(reference, detectorAName);
-                let detBValue = ExpressionReferences.getExpressionValue(reference, detectorBName);
+                let refValue = ExpressionReferences.getExpressionValue(reference, detectorAName);
 
-                return new TableRow(elementName, [detAValue.value, detBValue.value], [])
+                return new TableRow(elementName, [refValue.weightPercentage, refValue.error], []);
             });
 
-            let totalA = rows.reduce((total, row) => total + row.values[0], 0);
-            let totalB = rows.reduce((total, row) => total + row.values[1], 0);
+            let total = rows.reduce((total, row) => total + row.values[0], 0);
+            let totalErr = rows.reduce((total, row) => total + row.values[1], 0);
 
             this.regionDataTables.push(
                 new TableData(
                     referenceName,
                     Colours.CONTEXT_PURPLE.asString(),
-                    " Wt.%",
+                    [" Wt.% ", ""],
                     headers,
                     rows,
-                    new TableRow("Totals:", [totalA, totalB], [])
+                    new TableRow("Totals:", [total, totalErr], [])
                 )
             );
         });

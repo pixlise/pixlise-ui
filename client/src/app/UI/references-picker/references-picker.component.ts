@@ -34,7 +34,8 @@ import { DataExpressionService } from "src/app/services/data-expression.service"
 
 export type ExpressionValue = {
     name: string;
-    value: number;
+    weightPercentage: number;
+    error: number;
 }
 
 export type ExpressionReference = {
@@ -42,52 +43,83 @@ export type ExpressionReference = {
     expressionValues: ExpressionValue[];
 }
 
-const EXPRESSION_REFERENCES: ExpressionReference[] = [
-    { 
-        name: "Mars Dust", 
-        expressionValues: 
-        [
-            { name: "expr-elem-Na2O-%(A)", value: 50 },
-            { name: "expr-elem-Na2O-%(B)", value: 5 },
-            { name: "expr-elem-MgO-%(A)", value: 5 },
-            { name: "expr-elem-MgO-%(B)", value: 5 },
-            { name: "expr-elem-Al2O3-%(A)", value: 1 },
-            { name: "expr-elem-Al2O3-%(B)", value: 1 },
-            { name: "expr-elem-SiO2-%(A)", value: 1 },
-            { name: "expr-elem-SiO2-%(B)", value: 1 },
-            { name: "expr-elem-P2O5-%(A)", value: 1 },
-            { name: "expr-elem-P2O5-%(B)", value: 2 },
-            { name: "expr-elem-SO3-%(A)", value: 2 },
-            { name: "expr-elem-SO3-%(B)", value: 2 },
-            { name: "expr-elem-Cl-%(A)", value: 2 },
-            { name: "expr-elem-Cl-%(B)", value: 2 },
-            { name: "expr-elem-K2O-%(A)", value: 2 },
-            { name: "expr-elem-K2O-%(B)", value: 3 },
-            { name: "expr-elem-CaCO3-%(A)", value: 3 },
-            { name: "expr-elem-CaCO3-%(B)", value: 3 },
-            { name: "expr-elem-CaO-%(A)", value: 3 },
-            { name: "expr-elem-CaO-%(B)", value: 3 },
-            { name: "expr-elem-TiO2-%(A)", value: 3 },
-            { name: "expr-elem-TiO2-%(B)", value: 3 },
-            { name: "expr-elem-Cr2O3-%(A)", value: 3 },
-            { name: "expr-elem-Cr2O3-%(B)", value: 4 },
-            { name: "expr-elem-MnCO3-%(A)", value: 4 },
-            { name: "expr-elem-MnCO3-%(B)", value: 4 },
-            { name: "expr-elem-MnO-%(A)", value: 4 },
-            { name: "expr-elem-MnO-%(B)", value: 4 },
-            { name: "expr-elem-FeCO3-T-%(A)", value: 0.5 },
-            { name: "expr-elem-FeCO3-T-%(B)", value: 0.5 },
-            { name: "expr-elem-FeO-T-%(A)", value: 0.5 },
-            { name: "expr-elem-FeO-T-%(B)", value: 0.5 },
-            { name: "expr-elem-NiO-%(A)", value: 0.5 },
-            { name: "expr-elem-NiO-%(B)", value: 0.5 },
+// Berger et al., 2016, https://doi.org/10.1002/2015GL066675
+const MARS_REFERENCES: ExpressionReference[] = [
+    {
+        name: "MSL Gale Crater O-Tray Dust Sol 571",
+        expressionValues: [
+            {name: "Na2O", weightPercentage: 2.75, error: 0.22},
+            {name: "MgO", weightPercentage: 8.31, error: 0.38},
+            {name: "Al2O3", weightPercentage: 8.91, error: 0.39},
+            {name: "SiO2", weightPercentage: 39.3, error: 1.7},
+            {name: "SO3", weightPercentage: 8.01, error: 0.94},
+            {name: "Cl", weightPercentage: 1.06, error: 0.27},
+            {name: "K2O", weightPercentage: 0.47, error: 0.09},
+            {name: "CaO", weightPercentage: 7.04, error: 0.6},
+            {name: "TiO2", weightPercentage: 1.06, error: 0.09},
+            {name: "MnO", weightPercentage: 0.42, error: 0.1},
+            {name: "FeOT", weightPercentage: 21, error: 2.2},
+        ],
+    },
+    {
+        name: "MER Gusev Crater Dust",
+        expressionValues: [
+            {name: "Na2O", weightPercentage: 2.9, error: 0.3},
+            {name: "MgO", weightPercentage: 8.25, error: 0.15},
+            {name: "Al2O3", weightPercentage: 9.56, error: 0.16},
+            {name: "SiO2", weightPercentage: 45, error: 0.5},
+            {name: "P2O5", weightPercentage: 0.91, error: 0.09},
+            {name: "SO3", weightPercentage: 7.61, error: 0.13},
+            {name: "Cl", weightPercentage: 0.88, error: 0.03},
+            {name: "K2O", weightPercentage: 0.49, error: 0.07},
+            {name: "CaO", weightPercentage: 6.17, error: 0.07},
+            {name: "TiO2", weightPercentage: 0.89, error: 0.08},
+            {name: "MnO", weightPercentage: 0.31, error: 0.02},
+            {name: "FeOT", weightPercentage: 16.5, error: 0.15}
         ]
     },
+    {
+        name: "MER Meridiani Planum Dust",
+        expressionValues: [
+            {name: "Na2O", weightPercentage: 2.22, error: 0.19},
+            {name: "MgO", weightPercentage: 7.57, error: 0.08},
+            {name: "Al2O3", weightPercentage: 9.14, error: 0.09},
+            {name: "SiO2", weightPercentage: 45, error: 0.3},
+            {name: "P2O5", weightPercentage: 0.93, error: 0.09},
+            {name: "SO3", weightPercentage: 7.28, error: 0.07},
+            {name: "Cl", weightPercentage: 0.78, error: 0.01},
+            {name: "K2O", weightPercentage: 0.48, error: 0.06},
+            {name: "CaO", weightPercentage: 6.54, error: 0.04},
+            {name: "TiO2", weightPercentage: 1.01, error: 0.07},
+            {name: "MnO", weightPercentage: 0.34, error: 0.01},
+            {name: "FeOT", weightPercentage: 17.5, error: 0.04}
+        ]
+    }
 ];
 
 export class ExpressionReferences
 {
-    static references: ExpressionReference[] = EXPRESSION_REFERENCES;
+    static references: ExpressionReference[] = this._convertSimpleNamesToIDs(MARS_REFERENCES);
+
+    private static _convertSimpleNamesToIDs(expressionReferences: ExpressionReference[]): ExpressionReference[]
+    {
+        return expressionReferences.map((expressionReference: ExpressionReference) =>
+        {
+            let expandedExpressionValues: ExpressionValue[] = [];
+            expressionReference.expressionValues.forEach((expressionValue: ExpressionValue) =>
+            {
+                ["A", "B"].forEach((detector: string) =>
+                {
+                    let name = `expr-elem-${expressionValue.name}-%(${detector})`;
+                    expandedExpressionValues.push({ ...expressionValue, name });
+                });
+            });
+            return {
+                ...expressionReference,
+                expressionValues: expandedExpressionValues
+            };
+        });
+    }
 
     static getByName(name: string): ExpressionReference
     {
@@ -115,7 +147,7 @@ export class ExpressionReferences
             let combinedExpressionValue = combinedExpressionValues.find((combinedExpressionValue: ExpressionValue) => combinedExpressionValue.name === noDetName);
             if(!combinedExpressionValue)
             {
-                combinedExpressionValues.push({ name: noDetName, value: expressionValue.value });
+                combinedExpressionValues.push({ ...expressionValue, name: noDetName });
             }
         });
 
@@ -147,7 +179,7 @@ export class ReferencesPickerComponent
     get warnings(): string[]
     {
         let refWarnings: string[] = [];
-        this.selectedReferences.forEach((refID: string, i) =>
+        this.selectedReferences.forEach((refID: string) =>
         {
             let expressionValues = ExpressionReferences.getByName(refID).expressionValues;
             let missingExpressionIDs = this.plotIDs.filter((plotID: string) => !expressionValues.find((expressionValue: ExpressionValue) => expressionValue.name === plotID));
@@ -156,11 +188,6 @@ export class ReferencesPickerComponent
                 let expressionName = this._exprService.getExpressionShortDisplayName(expressionID, 30).shortName;
                 refWarnings.push(`${refID}: undefined ${expressionName}`);
             });
-
-            if(i !== this.selectedReferences.length - 1)
-            {
-                refWarnings.push("");
-            }
         });
 
         return refWarnings;

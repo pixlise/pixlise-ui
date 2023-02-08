@@ -441,9 +441,9 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                         return;
                     }
 
-                    let refAValue = ExpressionReferences.getExpressionValue(reference, this._aExpressionId)?.value;
-                    let refBValue = ExpressionReferences.getExpressionValue(reference, this._bExpressionId)?.value;
-                    let refCValue = ExpressionReferences.getExpressionValue(reference, this._cExpressionId)?.value;
+                    let refAValue = ExpressionReferences.getExpressionValue(reference, this._aExpressionId)?.weightPercentage;
+                    let refBValue = ExpressionReferences.getExpressionValue(reference, this._bExpressionId)?.weightPercentage;
+                    let refCValue = ExpressionReferences.getExpressionValue(reference, this._cExpressionId)?.weightPercentage;
                     let nullMask = [refAValue == null, refBValue == null, refCValue == null];
 
                     // If we have more than one null value, we can't plot this reference on a ternary plot
