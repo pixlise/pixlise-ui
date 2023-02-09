@@ -36,6 +36,7 @@ import { InterpreterDataSource } from "./interpreter-data-source";
 import { PixliseDataQuerier } from "./interpret-pixlise";
 import { LuaDataQuerier } from "./interpret-lua";
 import { LuaTranspiler } from "./lua-transpiler";
+import { ResultComparer } from "./result-comparer";
 
 
 // Helper function to run a query
@@ -78,6 +79,7 @@ export class DataQuerier
     private _interpretPixlise: PixliseDataQuerier = null;
     private _interpretLua: LuaDataQuerier = null;
     private _luaTranspiler: LuaTranspiler = null;
+    private _resultComparer: ResultComparer = null;
 
     constructor(
         quantDataSource: QuantifiedDataQuerierSource,
@@ -99,7 +101,8 @@ export class DataQuerier
 
         this._interpretPixlise = new PixliseDataQuerier(this._dataSource);
         this._interpretLua = new LuaDataQuerier(this._dataSource, false);
-        //this._luaTranspiler = new LuaTranspiler();
+        this._luaTranspiler = new LuaTranspiler();
+        this._resultComparer = new ResultComparer(this._interpretPixlise, this._interpretLua);
     }
 
     public runQuery(expression: string): PMCDataValues
@@ -118,7 +121,24 @@ export class DataQuerier
             {
                 // Transpile to Lua for debugging purposes
                 let asLua = this._luaTranspiler.transpile(expression);
-                console.log(asLua);
+
+                // If we've got a result comparer, run that
+                if(this._resultComparer)
+                {
+                    let line = this._resultComparer.findDifferenceLine(asLua, expression, 0);
+                    if(line < 0)
+                    {
+                        console.log("No difference between PIXLISE and Lua expressions");
+                    }
+                    else
+                    {
+                        console.log("PIXLISE and Lua expressions differ at line: "+line);
+                    }
+                }
+                else
+                {
+                    console.log(asLua);
+                }
             }
 
             return this._interpretPixlise.runQuery(expression);

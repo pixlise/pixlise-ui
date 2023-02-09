@@ -167,7 +167,11 @@ export class LuaTranspiler
                 }
             }
 
-            result += luaLine+"\n";
+            result += luaLine;
+            if(c < lines.length-1)
+            {
+                result += "\n";
+            }
         }
 
         return result;

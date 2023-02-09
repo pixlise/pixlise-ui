@@ -30,6 +30,7 @@
 import { Observable } from "rxjs";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
+import { DataQuerier } from "./expression-language";
 import { InterpreterDataSource } from "./interpreter-data-source";
 
 const { LuaFactory, LuaLibraries } = require('wasmoon')
@@ -160,15 +161,20 @@ export class LuaDataQuerier
         LuaDataQuerier._makeLuaTableTime = 0;
 
         // Make it into a function, so if we get called again, we overwrite
-        let expression = `Map = makeMapLib()\n
-function printMap(m, comment)
+        let exprFuncName = "expression";
+        let expression = "local Map = makeMapLib()\n";
+        if(LuaDataQuerier._debug)
+        {
+            expression += `function printMap(m, comment)
     print(comment.." map size: "..#m[1])
     for k, v in ipairs(m[1]) do
         print(v.."="..m[2][k])
     end
-end
-        function expression()
-`
+end\n`
+        }
+
+        expression += "local function "+exprFuncName+"()\n"
+
         expression += origExpression+"\nend\n";
 
         if(LuaDataQuerier._debug)
@@ -209,7 +215,7 @@ end
 `;
             }
         }
-        expression += "result = expression()\n";
+        expression += "result = "+exprFuncName+"()\n";
 
         if(LuaDataQuerier._debug)
         {
@@ -254,7 +260,7 @@ end
         finally
         {
             // Clear the function code that just ran
-            LuaDataQuerier._lua.global.set("main", null);
+            LuaDataQuerier._lua.global.set(exprFuncName, null);
 
             // Clear the context, don't want any Lua code to execute with us around any more
             LuaDataQuerier._context = null;
@@ -361,11 +367,11 @@ console.log(">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms, makeTable 
         let values = [];
         for(let item of data.values)
         {
-            //if(item.pmc < 20)
-            //{
+            //if(item.pmc < 130 && item.pmc > 126)
+            {
                 pmcs.push(item.pmc);
                 values.push(item.isUndefined ? null : item.value);
-            //}
+            }
         }
 
         let luaTable = [pmcs, values];
