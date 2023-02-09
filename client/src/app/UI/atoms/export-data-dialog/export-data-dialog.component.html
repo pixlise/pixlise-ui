@@ -77,11 +77,11 @@ POSSIBILITY OF SUCH DAMAGE.
 
                 <h3>Options</h3>
                 <multi-switch-button
-                        [options]="['Global', 'Regions of Interest']"
-                        [value]="isGlobal ? 'Global' : 'Regions of Interest'"
-                        [disabled]="false"
-                        (onChange)="onToggleGlobal()">
-                    </multi-switch-button>
+                    [options]="['Global', 'Regions of Interest']"
+                    [value]="isGlobal ? 'Global' : 'Regions of Interest'"
+                    [disabled]="false"
+                    (onChange)="onToggleGlobal()">
+                </multi-switch-button>
                 <ng-container *ngIf="showQuantPicker">
                     <div class="list-subheading">Quantification</div>
                     <mat-select [(ngModel)]="selectedQuantId" class="quantification-select">
@@ -90,8 +90,15 @@ POSSIBILITY OF SUCH DAMAGE.
                 </ng-container>
                 <ng-container *ngIf="!isGlobal">
                     <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
-                        <push-button [title]="roiNameTooltip" (onClick)="onRegions()">Select Regions<img *ngIf="hasSelectedROIs" src="assets/button-icons/yellow-tick.svg"></push-button>
-                        <push-button [title]="expressionNameTooltip" (onClick)="onExpressions()" [disabled]="!hasSelectedROIs">Select Expressions<img *ngIf="hasExpressions" src="assets/button-icons/yellow-tick.svg"></push-button>
+                        <push-button [tooltipTitle]="roiNameTooltip" (onClick)="onRegions()">Select Regions<img *ngIf="hasSelectedROIs" src="assets/button-icons/yellow-tick.svg"></push-button>
+                        <push-button [tooltipTitle]="expressionNameTooltip" (onClick)="onExpressions()" [disabled]="!hasSelectedROIs">Select Expressions<img *ngIf="hasExpressions" src="assets/button-icons/yellow-tick.svg"></push-button>
+                    </div>
+                    <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
+                        <div>One CSV per Region</div>
+                        <two-state-icon-button activeIcon="assets/button-icons/check-on.svg"
+                            inactiveIcon="assets/button-icons/check-off.svg" [active]="singleCSVPerRegion"
+                            (onToggle)="onToggleCSVPerRegion()">
+                        </two-state-icon-button>
                     </div>
                 </ng-container>
 
