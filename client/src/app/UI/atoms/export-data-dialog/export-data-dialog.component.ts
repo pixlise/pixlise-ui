@@ -285,10 +285,22 @@ export class ExportDataDialogComponent implements OnInit
     {
         let count = 0;
 
+        let totalUIROIExpressionCount = 0;
+        if(this.singleCSVPerRegion)
+        {
+            // This is a weird case because all RGBMixes are still exported separately, but non-rgbmixes are exported as a single CSV per ROI
+            let rgbMixExpressionIDs = this._selectedExpressionIds.filter((expressionID) => RGBMixConfigService.isRGBMixID(expressionID));
+            totalUIROIExpressionCount += this._selectedROIs.length * (1 + rgbMixExpressionIDs.length);
+        }
+        else
+        {
+            totalUIROIExpressionCount += this._selectedROIs.length * this._selectedExpressionIds.length;
+        }
+
         let weightedChoices = {
             "raw-spectra": 3,
-            "ui-roi-expressions": this._selectedExpressionIds.length * this._selectedROIs.length,
-            "rois": this._selectedROIs.length,
+            "ui-roi-expressions": totalUIROIExpressionCount,
+            "rois": this._selectedROIs.filter((roi) => !["AllPoints", "SelectedPoints"].includes(roi)).length,
         };
 
         this.visibleChoices.forEach((choice) =>
