@@ -48,21 +48,14 @@ POSSIBILITY OF SUCH DAMAGE.
             </tag-picker>
         </div>
     </div>
-
     <expression-text-editor
         [expression]="expression"
         [allowEdit]="data.allowEdit"
         [isImmediatelyAppliable]="data.isImmediatelyAppliable"
         [applyNow]="data.applyNow"
-        (onChange)="onExpressionChanged($event)"
+        (onTextChange)="onExpressionTextChanged($event)"
     >
     </expression-text-editor>
-
-    <!-- <ngx-codemirror
-        class="separator"
-        [(ngModel)]="editExpression"
-        (click)='onClickExpression($event)'>
-    </ngx-codemirror> -->
     <div class="label">Expression Description</div>
     <input type="text" placeholder="" [(ngModel)]="expressionComments" fxFlex>
 
@@ -72,12 +65,3 @@ POSSIBILITY OF SUCH DAMAGE.
         <push-button buttonStyle="yellow" [disabled]="!isEditable" (onClick)="onOK()">Apply</push-button>
     </div>
 </div>
-
-<!-- <expression-help-dropdown
-    *ngIf="activeHelp"
-    class="help-dropdown"
-    style="top: {{dropdownTop}}; left: {{dropdownLeft}}"
-    [help]="activeHelp"
-    (escEvent)="onHelpEscape($event)"
-    (clickEvent)="onHelpClick($event)">
-</expression-help-dropdown> -->

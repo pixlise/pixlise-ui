@@ -27,8 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Inject, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
-import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
 import { CodemirrorComponent } from "@ctrl/ngx-codemirror";
 import { Subscription, timer } from "rxjs";
 import { DataQuerier, ExpressionParts } from "src/app/expression-language/expression-language";
@@ -85,6 +84,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Input() isImmediatelyAppliable: boolean = true;
 
     @Output() onChange = new EventEmitter<DataExpression>();
+    @Output() onTextChange = new EventEmitter<string>();
 
     constructor(
         private _datasetService: DataSetService,
@@ -120,11 +120,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             // reducing flicker for user, 2nd time to ensure anything that changed is overwritten with our settings again
             let setupFunc = ()=>
             {
-                //cm.setSize(null, '100%');
-                //cm.setSize(null, cm.defaultTextHeight() + 2 * 4);
-                //cm.setOption('cursorHeight', 1);
-                //cm.setOption('autofocus', true);
-
                 this.setupCodeMirrorEventHandlers(cmObj);
                 cmObj.refresh();
             };
@@ -145,6 +140,12 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     private findVariables(): void
     {
+        if(this._expr.expression == null || this._expr.expression.length == 0)
+        {
+            this._exprParts = new ExpressionParts([], [], [], "");
+            return;
+        }
+
         try
         {
             this._exprParts = DataQuerier.breakExpressionIntoParts(this._expr.expression);
@@ -174,6 +175,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     set editExpression(val: string)
     {
         this._expr.expression = val;
+        this.onTextChange.emit(this._expr.expression || "");
     }
 
     get expressionComments(): string
@@ -191,48 +193,10 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         return this.allowEdit;
     }
 
-    onOK()
-    {
-        // Make sure both have data
-        if(this._expr == null || this._expr.name.length <= 0 || this._expr.expression.length <= 0)
-        {
-            alert("Please enter a name and expression");
-            return;
-        }
-
-        this.onChange.emit(this._expr);
-        // this.dialogRef.close(new ExpressionEditorConfig(this._expr, this.allowEdit));
-    }
-
-    onApplyToChart()
-    {
-        // Make sure both have data
-        if(this._expr == null || this._expr.name.length <= 0 || this._expr.expression.length <= 0)
-        {
-            alert("Please enter a name and expression");
-            return;
-        }
-
-        this.onChange.emit(this._expr);
-        // this.dialogRef.close(new ExpressionEditorConfig(this._expr, this.allowEdit, true));
-    }
-
-    // onCancel()
-    // {
-    //     this.dialogRef.close(null);
-    // }
-
     onKeyDown(event: KeyboardEvent): void
     {
-        //console.log(event);
         if(event.key == "Escape")
         {
-            // User is going "up" a menu in the help window
-            // If we're already at the root menu, hide the help system all together
-            /*if(this.activeHelp)
-            {
-                this.onHelpClick();
-            }*/
             this.activeHelp = null;
         }
 
@@ -241,14 +205,11 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     onKeyUp(event: KeyboardEvent): void
     {
-        //console.log(event);
         event.stopPropagation();
     }
 
     onHelpEscape(parentMenuId: string): void
     {
-        //console.log('onHelpEscape parentMenuId='+parentMenuId);
-
         // We show the parent menu if we can
         if(parentMenuId)
         {
@@ -275,9 +236,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         // Work out what the cursor is over, need to consider multi-line!
         let lines = this._expr.expression.split("\n");
         let cursorIdx = ExpressionHelp.getIndexInExpression(cursor.line, cursor.ch, lines);
-
-        //console.log('onHelpClick actionId='+actionId);
-        //console.log(suggestionSelected);
 
         // Do whatever the action id suggests
         if(actionId == LabelElement.idElementFunction)
@@ -428,26 +386,9 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     {
         cm.on("beforeChange", (instance, event)=>
         {
-            /*
-            // Enforce single line tip: https://discuss.codemirror.net/t/single-line-codemirror/195/3
-            let typedNewLine = event.origin == '+input' && typeof event.text == "object" && event.text.join("") == "";
-            if (typedNewLine)
-            {
-                return event.cancel();
-            }
-*/
             let pastedNewLine = event.origin == "paste" && typeof event.text == "object" && event.text.length > 1;
             if(pastedNewLine)
             {
-                /*
-                // Force it to be all on one line
-                let newText = event.text.join(" ");
-
-                // trim
-                //newText = $.trim(newText);
-
-                return event.update(null, null, [newText]);
-                */
                 return event.update(null, null, event.text);
             }
 
@@ -470,29 +411,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         cm.on("focus", (instance)=>
         {
             this.updateHelp();
-        });
-
-        cm.on("blur", (instance)=>
-        {
-            // The intent was to hide the dialog if the expression editor lost focus
-            // This can't be done though, because the focus may have been lost to something
-            // that's on the expression help area! If we close the whole thing now, that event
-            // never comes back up to us
-            /*
-            // Lost focus
-//console.log('Lost focus');
-
-            // Allow any mouse clicks to process (because if we remove the help dialog now
-            // we cancel anything that was clicked there, to which we lost our focus!)
-            const source = timer(1);
-            source.subscribe(
-                ()=>
-                {
-                    //this.updateHelp();
-                    this.activeHelp = null;
-                }
-            );
-*/
         });
 
         // TODO: key map, remove up/down arrow keys so they can be handled outside of codemirror, and we can move up/down help
@@ -535,7 +453,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             this._markMatchedBracketPositions = ExpressionTextEditorComponent.findMatchedBracketPositions(this._expr.expression, cursor);
         }
 
-        //console.log(this);
         if(this.activeHelp && cm)
         {
             let cursorCoord = cm.cursorCoords(true, "page");
