@@ -91,6 +91,7 @@ import { VersionDisplayComponent } from "./routes/about/version-display/version-
 
 import { QuantSelectorPanelComponent } from "./UI/quantification-selector/quant-selector-panel/quant-selector-panel.component";
 import { ExpressionEditorComponent } from "./UI/expression-editor/expression-editor.component";
+import { ExpressionTextEditorComponent } from "./UI/expression-editor/expression-text-editor/expression-text-editor.component";
 
 import { Base64ImagePipe } from "./utils/base64-image.pipe";
 import { AddBearerPipe } from "./utils/add-bearer-header.pipe";
@@ -348,6 +349,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         PeriodicTableTabComponent,
         QuantSelectorPanelComponent,
         ExpressionEditorComponent,
+        ExpressionTextEditorComponent,
         Base64ImagePipe,
         MapBrowserComponent,
         DatasetLoadingProgressComponent,
@@ -523,6 +525,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         LayerControlComponent,
         ExpressionPickerComponent,
         ExpressionEditorComponent,
+        ExpressionTextEditorComponent,
         QuantSelectorPanelComponent,
         UserMenuPanelComponent,
         AnnotationOptionsComponent,

@@ -32,52 +32,21 @@ POSSIBILITY OF SUCH DAMAGE.
 <div
     fxLayout="column"
     class="dlg-border-with-backdrop gap-separated-vertical-elements"
->
-
-    <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
-        <h1>Expression Editor</h1>
-        <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
-            <div class="label">Expression Name</div>
-            <input type="text" placeholder="" [(ngModel)]="expressionName" fxFlex>
-            <tag-picker
-                type="expression"
-                [selectedTagIDs]="selectedTagIDs"
-                [showCurrentTagsSection]="true"
-                (onTagSelectionChanged)="onTagSelectionChanged($event)"
-            >
-            </tag-picker>
-        </div>
-    </div>
-
-    <expression-text-editor
-        [expression]="expression"
-        [allowEdit]="data.allowEdit"
-        [isImmediatelyAppliable]="data.isImmediatelyAppliable"
-        [applyNow]="data.applyNow"
-        (onChange)="onExpressionChanged($event)"
-    >
-    </expression-text-editor>
-
-    <!-- <ngx-codemirror
+    (keydown)='onKeyDown($event)'
+    (keyup)='onKeyUp($event)'
+    (click)='onClickDialog($event)'>
+    <ngx-codemirror
         class="separator"
         [(ngModel)]="editExpression"
         (click)='onClickExpression($event)'>
-    </ngx-codemirror> -->
-    <div class="label">Expression Description</div>
-    <input type="text" placeholder="" [(ngModel)]="expressionComments" fxFlex>
-
-    <div fxLayout="row" fxLayoutAlign="end" class="choice-container gap-separated-horizontal-elements">
-        <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-        <push-button *ngIf="data.isImmediatelyAppliable" buttonStyle="outline" [disabled]="!isEditable" (onClick)="onApplyToChart()">Save and Apply to Chart</push-button>
-        <push-button buttonStyle="yellow" [disabled]="!isEditable" (onClick)="onOK()">Apply</push-button>
-    </div>
+    </ngx-codemirror>
 </div>
 
-<!-- <expression-help-dropdown
+<expression-help-dropdown
     *ngIf="activeHelp"
     class="help-dropdown"
     style="top: {{dropdownTop}}; left: {{dropdownLeft}}"
     [help]="activeHelp"
     (escEvent)="onHelpEscape($event)"
     (clickEvent)="onHelpClick($event)">
-</expression-help-dropdown> -->
+</expression-help-dropdown>

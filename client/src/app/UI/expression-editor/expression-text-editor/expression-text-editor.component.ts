@@ -27,67 +27,48 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import {
-    Component, ComponentFactoryResolver, HostListener, OnDestroy, OnInit, Renderer2, ViewChild,
-    ViewContainerRef
-} from "@angular/core";
-import { ActivatedRoute, Router } from "@angular/router";
-import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Subscription, timer } from "rxjs";
-import { ContextImageService } from "src/app/services/context-image.service";
-import { LayoutService } from "src/app/services/layout.service";
-import { SelectionService } from "src/app/services/selection.service";
-import { analysisLayoutState, ViewStateService } from "src/app/services/view-state.service";
-import { DataSetService } from "src/app/services/data-set.service";
-import { BinaryPlotWidgetComponent } from "src/app/UI/binary-plot-widget/binary-plot-widget.component";
-// Components we can create dynamically
-import { ChordViewWidgetComponent } from "src/app/UI/chord-view-widget/chord-view-widget.component";
-import { ContextImageViewWidgetComponent } from "src/app/UI/context-image-view-widget/context-image-view-widget.component";
-import { ImageOptionsComponent } from "src/app/UI/context-image-view-widget/image-options/image-options.component";
-import { LayerControlComponent } from "src/app/UI/context-image-view-widget/layer-control/layer-control.component";
-import { HistogramViewComponent } from "src/app/UI/histogram-view/histogram-view.component";
-import { ParallelCoordinatesPlotWidgetComponent } from "src/app/UI/parallel-coordinates-plot-widget/parallel-coordinates-plot-widget.component";
-import { QuantificationTableComponent } from "src/app/UI/quantification-table/quantification-table.component";
-import { RGBUPlotComponent } from "src/app/UI/rgbuplot/rgbuplot.component";
-import { SingleAxisRGBUComponent } from "src/app/UI/single-axis-rgbu/single-axis-rgbu.component";
-import { RGBUViewerComponent } from "src/app/UI/rgbuviewer/rgbuviewer.component";
-import { ROIQuantCompareTableComponent } from "src/app/UI/roiquant-compare-table/roiquant-compare-table.component";
-import { SpectrumChartWidgetComponent } from "src/app/UI/spectrum-chart-widget/spectrum-chart-widget.component";
-import { AnnotationsComponent } from "src/app/UI/spectrum-chart-widget/spectrum-peak-identification/annotations/annotations.component";
-import { SpectrumPeakIdentificationComponent } from "src/app/UI/spectrum-chart-widget/spectrum-peak-identification/spectrum-peak-identification.component";
-import { SpectrumRegionPickerComponent } from "src/app/UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
-import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/ternary-plot-widget.component";
-import { VariogramWidgetComponent } from "src/app/UI/variogram-widget/variogram-widget.component";
-import { SentryHelper, parseNumberRangeString} from "src/app/utils/utils";
-import { BeamSelection } from "src/app/models/BeamSelection";
-import { SpectrumFitContainerComponent } from "src/app/UI/spectrum-chart-widget/spectrum-fit-container/spectrum-fit-container.component";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { Component, EventEmitter, Inject, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
+import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { CodemirrorComponent } from "@ctrl/ngx-codemirror";
-import { ExpressionEditorComponent, ExpressionEditorConfig, MarkPosition } from "src/app/UI/expression-editor/expression-editor.component";
+import { Subscription, timer } from "rxjs";
 import { DataQuerier, ExpressionParts } from "src/app/expression-language/expression-language";
-import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElement, Suggestion } from "src/app/UI/expression-editor/expression-help";
-import { QuantModes, QuantificationLayer } from "src/app/models/Quantifications";
+import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications";
+import { DataExpression } from "src/app/services/data-expression.service";
+import { DataSetService } from "src/app/services/data-set.service";
 import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElement, Suggestion } from "../expression-help";
+import { SentryHelper } from "src/app/utils/utils";
 
+
+export class ExpressionEditorConfig
+{
+    constructor(
+        public expr: DataExpression,
+        public allowEdit: boolean,
+        public applyNow: boolean = false,
+        public isImmediatelyAppliable: boolean = true,
+    )
+    {
+    }
+}
+
+export class MarkPosition
+{
+    constructor(public line: number, public idxStart: number, public idxEnd: number)
+    {
+    }
+}
 
 @Component({
-    selector: "code-editor",
-    templateUrl: "./code-editor.component.html",
-    styleUrls: ["./code-editor.component.scss"],
-    providers: [ContextImageService],
+    selector: "expression-text-editor",
+    templateUrl: "./expression-text-editor.component.html",
+    styleUrls: ["./expression-text-editor.component.scss"]
 })
-export class CodeEditorComponent implements OnInit, OnDestroy
+export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 {
     @ViewChild(CodemirrorComponent, {static: false}) private _codeMirror: CodemirrorComponent;
-    @ViewChild("preview", { read: ViewContainerRef }) previewContainer;
 
     private _subs = new Subscription();
-
-    private _previewComponent = null;
-
-    private _expression: DataExpression = null;
-    private _expressionID: string = "";
-
     private _expr: DataExpression = null;
     private _exprParts: ExpressionParts = null;
 
@@ -98,87 +79,32 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     dropdownTop: string = "";
     dropdownLeft: string = "";
 
+    @Input() expression: DataExpression = null;
+    @Input() allowEdit: boolean = true;
+    @Input() applyNow: boolean = false;
+    @Input() isImmediatelyAppliable: boolean = true;
+
+    @Output() onChange = new EventEmitter<DataExpression>();
 
     constructor(
-        private _route: ActivatedRoute,
-        private _router: Router,
-        private _layoutService: LayoutService,
-        private _selectionService: SelectionService,
         private _datasetService: DataSetService,
-        private _viewStateService: ViewStateService,
-        private resolver: ComponentFactoryResolver,
-        public dialog: MatDialog,
-        private renderer2: Renderer2,
-        private _expressionService: DataExpressionService,
         private _widgetDataService: WidgetRegionDataService,
     )
     {
     }
 
-
     ngOnInit()
     {
-        this._expressionID = this._route.snapshot.params["expression_id"];
-        this._expressionService.expressionsUpdated$.subscribe(() =>
-        {
-            let expression = this._expressionService.getExpression(this._expressionID);
-            console.log("expression", this._expressionID, expression)
-            this._expression = new DataExpression(
-                expression.id,
-                expression.name,
-                expression.expression,
-                expression.type,
-                expression.comments,
-                expression.shared,
-                expression.creator,
-                expression.createUnixTimeSec,
-                expression.modUnixTimeSec,
-                expression.tags
-            );
-            this.findVariables();
-    
-            this._codeMirror.codeMirror.refresh();
-        })
+        // Make a copy of incoming expression, so we don't edit what's there!
+        this._expr = new DataExpression(this.expression.id, this.expression.name, this.expression.expression, this.expression.type, this.expression.comments, this.expression.shared, this.expression.creator, this.expression.createUnixTimeSec, this.expression.modUnixTimeSec, this.expression.tags);
+        this.findVariables();
     }
 
-    ngOnDestroy()
+    ngAfterViewInit(): void
     {
-        this._subs.unsubscribe();
-        this.clearPreviewReplaceable();
-    }
-
-    ngAfterViewInit()
-    {
-        this._layoutService.notifyNgAfterViewInit();
-
-        this._subs.add(this._viewStateService.analysisViewSelectors$.subscribe(
-            (selectors: analysisLayoutState)=>
-            {
-                if(selectors)
-                {
-                    // Run these after this function finished, else we get ExpressionChangedAfterItHasBeenCheckedError
-                    // See: https://stackoverflow.com/questions/43917940/angular-dynamic-component-loading-expressionchangedafterithasbeencheckederror
-                    // Suggestion is we shouldn't be doing this in ngAfterViewInit, but if we do it in ngOnInit we don't yet have the view child
-                    // refs available
-                    const source = timer(1);
-                    /*const sub =*/ source.subscribe(
-                        ()=>
-                        {
-                            this.createTopRowComponents(selectors.topWidgetSelectors);
-                        }
-                    );
-                }
-                else
-                {
-                    this.previewContainer.clear();
-                    this.clearPreviewReplaceable();
-                }
-            },
-            (err)=>
-            {
-            }
-        ));
-
+        // Get the codemirror object
+        // Vital: https://stackoverflow.com/questions/62097418/how-i-can-add-the-simple-mode-to-codemirror-angular-8
+        // NOTE: As of angular 13 it seems to return a ZoneAwarePromise so we use then to get the object...
         this._codeMirror.codeMirrorGlobal.then((cm: any)=>
         {
             this.setupCodeMirror(cm.default);
@@ -188,7 +114,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             cmObj.setOption("mode", "pixlise");
             cmObj.setOption("lineNumbers", true);
             cmObj.setOption("theme", "pixlise");
-            cmObj.setOption("readOnly", false);
+            cmObj.setOption("readOnly", !this.allowEdit);
 
             // Not sure what codemirror is doing, and why it does it but some ms after creation it has been resetting... we now reset it 2x, once for
             // reducing flicker for user, 2nd time to ensure anything that changed is overwritten with our settings again
@@ -208,83 +134,13 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
             const source2 = timer(100);
             const sub2 = source2.subscribe(setupFunc);
-        });
-    }
-
-    private clearPreviewReplaceable(): void
-    {
-        if(this._previewComponent != null)
-        {
-            this._previewComponent.destroy();
-            this._previewComponent = null;
         }
+        );
     }
 
-    private createTopRowComponents(selectors: string[])
+    ngOnDestroy()
     {
-        let factory = this.makeComponentFactory(selectors[0]);
-
-        // Set this one
-        this.previewContainer.clear();
-        this.clearPreviewReplaceable();
-
-        factory = this.makeComponentFactory(selectors[1]);
-        if(factory)
-        {
-            let comp = this.previewContainer.createComponent(factory);
-            comp.instance.widgetPosition = "preview";
-
-            this._previewComponent = comp;
-        }
-    }
-
-    get editExpression(): string
-    {
-        return this._expression?.expression || "";
-    }
-
-    set editExpression(val: string)
-    {
-        if(this._expression)
-        {
-            this._expression.expression = val;
-        }
-    }
-
-    get selectedTagIDs(): string[]
-    {
-        return this._expression?.tags || [];
-    }
-
-    set selectedTagIDs(tags: string[])
-    {
-        if(this._expression)
-        {
-            this._expression.tags = tags;
-        }
-    }
-
-    get expressionName(): string
-    {
-        return this._expression?.name || "";
-    }
-
-    set expressionName(name: string)
-    {
-        if(this._expression)
-        {
-            this._expression.name = name;
-        }
-    }
-
-    get expressionData(): ExpressionEditorConfig
-    {
-        return new ExpressionEditorConfig(this._expression, true, false, false);
-    }
-
-    onTagSelectionChanged(tags): void
-    {
-        this.selectedTagIDs = tags;
+        this._subs.unsubscribe();
     }
 
     private findVariables(): void
@@ -295,10 +151,76 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         }
         catch (error)
         {
-            SentryHelper.logException(error, "ExpressionEditorComponent.findVariables");
+            SentryHelper.logException(error, "ExpressionTextEditorComponent.findVariables");
             this._exprParts = new ExpressionParts([], [], [], "");
         }
     }
+
+    get expressionName(): string
+    {
+        return this._expr.name;
+    }
+
+    set expressionName(val: string)
+    {
+        this._expr.name = val;
+    }
+
+    get editExpression(): string
+    {
+        return this._expr.expression;
+    }
+
+    set editExpression(val: string)
+    {
+        this._expr.expression = val;
+    }
+
+    get expressionComments(): string
+    {
+        return this._expr.comments;
+    }
+
+    set expressionComments(val: string)
+    {
+        this._expr.comments = val;
+    }
+
+    get isEditable(): boolean
+    {
+        return this.allowEdit;
+    }
+
+    onOK()
+    {
+        // Make sure both have data
+        if(this._expr == null || this._expr.name.length <= 0 || this._expr.expression.length <= 0)
+        {
+            alert("Please enter a name and expression");
+            return;
+        }
+
+        this.onChange.emit(this._expr);
+        // this.dialogRef.close(new ExpressionEditorConfig(this._expr, this.allowEdit));
+    }
+
+    onApplyToChart()
+    {
+        // Make sure both have data
+        if(this._expr == null || this._expr.name.length <= 0 || this._expr.expression.length <= 0)
+        {
+            alert("Please enter a name and expression");
+            return;
+        }
+
+        this.onChange.emit(this._expr);
+        // this.dialogRef.close(new ExpressionEditorConfig(this._expr, this.allowEdit, true));
+    }
+
+    // onCancel()
+    // {
+    //     this.dialogRef.close(null);
+    // }
 
     onKeyDown(event: KeyboardEvent): void
     {
@@ -609,8 +531,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         else
         {
             this.activeHelp = this.getCursorSuggestions(cursor);
-            this._markTextPositions = CodeEditorComponent.findPositionsToMark(this._exprParts, this._expr.expression, cursor);
-            this._markMatchedBracketPositions = CodeEditorComponent.findMatchedBracketPositions(this._expr.expression, cursor);
+            this._markTextPositions = ExpressionTextEditorComponent.findPositionsToMark(this._exprParts, this._expr.expression, cursor);
+            this._markMatchedBracketPositions = ExpressionTextEditorComponent.findMatchedBracketPositions(this._expr.expression, cursor);
         }
 
         //console.log(this);
@@ -775,7 +697,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     {
         // Check if user cursor is on a variable name, if so, find all instances of that variable text to mark
         let lines = expression.split("\n");
-        let varName = CodeEditorComponent.getVariableAtCursor(exprParts, cursor.line, cursor.ch, lines);
+        let varName = ExpressionTextEditorComponent.getVariableAtCursor(exprParts, cursor.line, cursor.ch, lines);
 
         if(varName.length <= 0)
         {
@@ -824,8 +746,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         let endPos = startPos+candidate.length;
         
         return (
-            (startPos == 0 || CodeEditorComponent.acceptableCharsAround.indexOf(line[startPos-1]) > -1) &&
-            (endPos == line.length || CodeEditorComponent.acceptableCharsAround.indexOf(line[endPos]) > -1)
+            (startPos == 0 || ExpressionTextEditorComponent.acceptableCharsAround.indexOf(line[startPos-1]) > -1) &&
+            (endPos == line.length || ExpressionTextEditorComponent.acceptableCharsAround.indexOf(line[endPos]) > -1)
         );
     }
 
@@ -844,7 +766,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         let endPos = -1;
         for(let pos = ch; pos >= 0; pos--)
         {
-            if(CodeEditorComponent.acceptableCharsAround.indexOf(lineStr[pos]) > -1)
+            if(ExpressionTextEditorComponent.acceptableCharsAround.indexOf(lineStr[pos]) > -1)
             {
                 startPos = pos+1;
                 break;
@@ -857,7 +779,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
         for(let pos = ch; pos < lineStr.length; pos++)
         {
-            if(CodeEditorComponent.acceptableCharsAround.indexOf(lineStr[pos]) > -1)
+            if(ExpressionTextEditorComponent.acceptableCharsAround.indexOf(lineStr[pos]) > -1)
             {
                 endPos = pos;
                 break;
@@ -904,109 +826,13 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         return this._widgetDataService.quantificationLoaded;
     }
 
-    
-
-    // NOTE: there are ways to go from selector string to ComponentFactory:
-    //       eg. https://indepth.dev/posts/1400/components-by-selector-name-angular
-    //       but we're only really doing this for 5 components, and don't actually want
-    //       it to work for any number of components, so hard-coding here will suffice
-    private getComponentClassForSelector(selector: string): any
+    get selectedTagIDs(): string[]
     {
-    // Widgets
-        if(selector == ViewStateService.widgetSelectorChordDiagram)
-        {
-            return ChordViewWidgetComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorBinaryPlot)
-        {
-            return BinaryPlotWidgetComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorTernaryPlot)
-        {
-            return TernaryPlotWidgetComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorQuantificationTable)
-        {
-            return QuantificationTableComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorHistogram)
-        {
-            return HistogramViewComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorVariogram)
-        {
-            return VariogramWidgetComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorRGBUPlot)
-        {
-            return RGBUPlotComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorSingleAxisRGBU)
-        {
-            return SingleAxisRGBUComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorRGBUViewer)
-        {
-            return RGBUViewerComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorParallelCoordinates)
-        {
-            return ParallelCoordinatesPlotWidgetComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorSpectrum)
-        {
-            return SpectrumChartWidgetComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorContextImage)
-        {
-            return ContextImageViewWidgetComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorROIQuantCompareTable)
-        {
-            return ROIQuantCompareTableComponent;
-        }
-        // Context image drop-downs
-        else if(selector == ViewStateService.widgetSelectorContextImageLayers)
-        {
-            return LayerControlComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorContextImageOptions)
-        {
-            return ImageOptionsComponent;
-        }
-        // Spectrum drop-downs
-        else if(selector == ViewStateService.widgetSelectorSpectrumPeakID)
-        {
-            return SpectrumPeakIdentificationComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorSpectrumRegions)
-        {
-            return SpectrumRegionPickerComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorSpectrumFit)
-        {
-            return SpectrumFitContainerComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorSpectrumAnnotations)
-        {
-            return AnnotationsComponent;
-        }
-
-        console.error("getComponentClassForSelector unknown selector: "+selector+". Substituting chord diagram");
-        return ChordViewWidgetComponent;
+        return this._expr.tags;
     }
 
-    private makeComponentFactory(selector: string): object
+    onTagSelectionChanged(tags: string[]): void
     {
-        let klass = this.getComponentClassForSelector(selector);
-        let factory = this.resolver.resolveComponentFactory(klass);
-        return factory;
-    }
-
-    @HostListener("window:resize", ["$event"])
-    onResize(event)
-    {
-        // Window resized, notify all canvases
-        this._layoutService.notifyWindowResize();
+        this._expr.tags = tags;
     }
 }

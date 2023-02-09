@@ -31,11 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="row">
     <div class="text-editor">
-        <app-expression-editor
-            [data]="expressionData"
-            [dialogRef]="dialogRef"
-        ></app-expression-editor>
-        <!-- <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
+        <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
             <h1>Expression Editor</h1>
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
                 <div class="label">Expression Name</div>
@@ -49,7 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
             class="separator"
             [(ngModel)]="editExpression"
             (click)='onClickExpression($event)'>
-        </ngx-codemirror> -->
+        </ngx-codemirror>
     </div>
 
     <div class="preview-container">
