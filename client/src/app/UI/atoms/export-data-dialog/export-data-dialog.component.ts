@@ -81,7 +81,7 @@ export class ExportDataDialogComponent implements OnInit
 
     minHeight: number = 0;
 
-    private _selectedROIs: string[] = [];
+    private _selectedROIs: string[] = ["AllPoints", "SelectedPoints"];
 
     quants: ExportQuantChoice[] = [];
     private _selectedQuantId: string = "";
@@ -93,6 +93,8 @@ export class ExportDataDialogComponent implements OnInit
     private _allPeaks: DiffractionPeak[] = [];
 
     private _rois = new Map<string, ROISavedItem>();
+
+    singleCSVPerRegion: boolean = true;
 
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: ExportDataConfig,
@@ -209,7 +211,7 @@ export class ExportDataDialogComponent implements OnInit
 
     checkDisabled(id: string): boolean
     {
-        return (id === "rois" && !this.hasSelectedROIs) || (id === "ui-roi-expressions" && !this.hasExpressions);
+        return (id === "rois" && !this.hasSelectedExportableROIs) || (id === "ui-roi-expressions" && !this.hasExpressions);
     }
 
     get visibleChoices(): ExportDataChoice[]
@@ -228,6 +230,11 @@ export class ExportDataDialogComponent implements OnInit
     onToggleGlobal(): void
     {
         this.isGlobal = !this.isGlobal;
+    }
+
+    onToggleCSVPerRegion(): void
+    {
+        this.singleCSVPerRegion = !this.singleCSVPerRegion;
     }
 
     onCancel(): void
@@ -254,7 +261,7 @@ export class ExportDataDialogComponent implements OnInit
         }
         else
         {
-            return this._selectedROIs.map((roiID) => this._rois.get(roiID).name).join("\n");
+            return this._selectedROIs.map((roiID) => this._rois.get(roiID)?.name || roiID).join("\n");
         }
     }
 
@@ -341,19 +348,20 @@ export class ExportDataDialogComponent implements OnInit
         return csv;
     }
 
-    exportExpressionValues(expressionID: string, roiID: string, datasetId: string): string
+    exportExpressionValues(expressionID: string | string[], roiID: string, datasetId: string): {rgbmix: string[][], expressions: string}
     {
-        let csv = "";
-        if(RGBMixConfigService.isRGBMixID(expressionID))
-        {
-            csv = this.generateExportCSVForRGBMix(expressionID);
-        }
-        else
-        {
-            csv = generateExportCSVForExpression([expressionID], roiID, datasetId, this._widgetDataService);
-        }
+        let expressionIDs = expressionID instanceof Array ? expressionID : [expressionID];
 
-        return csv;
+        let rgbMixExpressionIDs = expressionIDs.filter((expressionID) => RGBMixConfigService.isRGBMixID(expressionID));
+        let nonRGBMixExpressionIDs = expressionIDs.filter((expressionID) => !RGBMixConfigService.isRGBMixID(expressionID));
+
+        let rgbMixCSVs = rgbMixExpressionIDs.map((expressionID) => [this._rgbMixService.getRGBMixes().get(expressionID)?.name, this.generateExportCSVForRGBMix(expressionID)]);
+        let nonRGBMixCSVs = generateExportCSVForExpression(nonRGBMixExpressionIDs, roiID, datasetId, this._widgetDataService);
+
+        return {
+            rgbmix: rgbMixCSVs,
+            expressions: nonRGBMixCSVs
+        };
     }
 
     onExport(): void
@@ -432,9 +440,43 @@ export class ExportDataDialogComponent implements OnInit
             }
             else if(id === "ui-roi-expressions") 
             {
-                this._selectedExpressionIds.forEach((id) =>
+                if(!this.singleCSVPerRegion)
                 {
-                    this._selectedROIs.forEach((roiID) => 
+                    this._selectedExpressionIds.forEach((id) =>
+                    {
+                        this._selectedROIs.forEach((roiID) => 
+                        {
+                            let datasetIds = this._datasetService.datasetLoaded.getSubDatasetIds();
+                            if(datasetIds.length <= 0)
+                            {
+                                datasetIds.push("");
+                            }
+
+                            for(let datasetId of datasetIds)
+                            {
+                                let datasetSuffix = datasetId.length > 0 ? ` - ${datasetId}` : "";
+                                let expression = this._exprService.getExpression(id);
+                                let expressionName = expression ? expression.name.replace(/\//g, "-") : id;
+                                let roi = this._rois.get(roiID);
+                                let roiName = roi ? roi.name.replace(/\//g, "-") : roiID;
+                                let exportCSVs = this.exportExpressionValues(id, roiID, datasetId);
+                                if(exportCSVs.rgbmix.length > 0)
+                                {
+                                    let rgbMix = exportCSVs.rgbmix[0];
+                                    zip.folder("csvs").folder("rgbmixes").file(`${roiName} - ${expressionName} - ${rgbMix[0]}${datasetSuffix}.csv`, rgbMix[1]);
+                                }
+                                else
+                                {
+                                    let contents =  exportCSVs.expressions;
+                                    zip.folder("csvs").file(`${roiName} - ${expressionName}${datasetSuffix}.csv`, contents);
+                                }
+                            }
+                        });
+                    });
+                }
+                else
+                {
+                    this._selectedROIs.forEach((roiID) =>
                     {
                         let datasetIds = this._datasetService.datasetLoaded.getSubDatasetIds();
                         if(datasetIds.length <= 0)
@@ -442,17 +484,22 @@ export class ExportDataDialogComponent implements OnInit
                             datasetIds.push("");
                         }
 
-                        for(let datasetId of datasetIds)
+                        datasetIds.forEach((datasetId) =>
                         {
-                            let expression = this._exprService.getExpression(id);
-                            let expressionName = expression ? expression.name.replace(/\//g, "-") : id;
                             let roi = this._rois.get(roiID);
                             let roiName = roi ? roi.name.replace(/\//g, "-") : roiID;
-                            let contents = this.exportExpressionValues(id, roiID, datasetId);
-                            zip.folder("csvs").file(`${roiName} - ${expressionName} - ${datasetId}.csv`, contents);
-                        }
+                            let exportCSVs = this.exportExpressionValues(this._selectedExpressionIds, roiID, datasetId);
+                            let expressionContents = exportCSVs.expressions;
+                            let datasetSuffix = datasetId.length > 0 ? ` - ${datasetId}` : "";
+                            zip.folder("csvs").file(`${roiName}${datasetSuffix}.csv`, expressionContents);
+                            exportCSVs.rgbmix.forEach((rgbMix) =>
+                            {
+                                zip.folder("csvs").folder("rgbmixes").file(`${roiName} - ${rgbMix[0]}${datasetSuffix}.csv`, rgbMix[1]);    
+                            });
+                        });
+
                     });
-                });
+                }
             }
 
             zip.generateAsync({ type:"blob" }).then((content) =>
@@ -471,6 +518,11 @@ export class ExportDataDialogComponent implements OnInit
 
         if(selectedIds.length > 0) 
         {
+            if(selectedIds.length === 1 && selectedIds[0] === "rois" && !this.hasSelectedExportableROIs)
+            {
+                // Edge case: user wants to export ROIs, but only the "AllPoints" and "SelectedPoints" ROIs are selected, which are not actually ROIs
+                return;
+            }
             this.data.exportGenerator.generateExport(this._datasetService.datasetIDLoaded, this._selectedQuantId, selectedIds, this._selectedROIs, this._selectedExpressionIds, expressionNames, fileName).subscribe(
                 (data: Blob)=>
                 {
@@ -505,7 +557,7 @@ export class ExportDataDialogComponent implements OnInit
     {
         const dialogConfig = new MatDialogConfig();
 
-        dialogConfig.data = new ROIPickerData(false, false, true, false, this._selectedROIs, true, true, null);
+        dialogConfig.data = new ROIPickerData(true, false, true, false, this._selectedROIs, true, true, null);
 
         const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
         dialogRef.componentInstance.isDisplayed = false;
@@ -518,10 +570,6 @@ export class ExportDataDialogComponent implements OnInit
                 {
                     this._selectedROIs = selectedROIs;
                 }
-                else
-                {
-                    this._selectedROIs = [];
-                }
             }
         );
     }
@@ -530,6 +578,13 @@ export class ExportDataDialogComponent implements OnInit
     {
         return this._selectedROIs.length > 0;
     }
+
+    // Returns true if any of the selected ROIs are not the "AllPoints" or "SelectedPoints" ROIs
+    get hasSelectedExportableROIs(): boolean
+    {
+        return this._selectedROIs.filter((roi) => !["AllPoints", "SelectedPoints"].includes(roi)).length > 0;
+    }
+
 
     get selectedQuantId(): string
     {

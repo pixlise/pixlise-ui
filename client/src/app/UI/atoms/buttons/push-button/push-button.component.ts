@@ -42,6 +42,7 @@ export class PushButtonComponent implements OnInit
     @Input() disabled: boolean = false;
     @Input() notificationCount: number = 0;
     @Input() badgeStyle: BadgeStyle = "notification";
+    @Input() tooltipTitle: string = "";
     @Output() onClick = new EventEmitter();
 
     constructor()
