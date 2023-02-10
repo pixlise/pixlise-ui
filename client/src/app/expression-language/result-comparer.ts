@@ -27,7 +27,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { InterpreterDataSource } from "./interpreter-data-source";
 import { PixliseDataQuerier } from "./interpret-pixlise";
 import { LuaDataQuerier } from "./interpret-lua";
 import { PMCDataValues } from "src/app/expression-language/data-values";
@@ -37,7 +36,8 @@ export class ResultComparer
 {
     constructor(
         private _interpretPixlise: PixliseDataQuerier,
-        private _interpretLua: LuaDataQuerier
+        private _interpretLua: LuaDataQuerier,
+        private _allowedDifferenceLuaToPIXLISE: number
         )
     {
     }
@@ -45,6 +45,8 @@ export class ResultComparer
     // Returns -1 if they are the same
     findDifferenceLine(exprLua: string, exprPIXLISE: string, afterLine: number): number
     {
+        let result = -1; // No difference found
+
         // Run each expression up to the line we're checking, take the variable and check the maps generated
         // so we can stop when they differ
         let exprLuaLines = exprLua.split("\n");
@@ -72,6 +74,8 @@ export class ResultComparer
 
             if(c >= afterLine && luaParts.length > 0)
             {
+                console.log("Comparing line "+(c+1)+" of "+exprLuaLines.length+" "+((c+1)/exprLuaLines.length*100)+"%")
+
                 // Check they're the same var assignment
                 if(luaParts[0] != pixParts[0])
                 {
@@ -99,11 +103,15 @@ export class ResultComparer
                         console.log("Lua value for "+luaParts[0]+":");
                         console.log(luaResult);
 
-                        // Run them again for debug purposes
+                        // Run them again so we can step through it in the debugger
                         let luaResult2 = this.runLua(exprLuaToRun);
                         let pixResult2 = this.runPIXLISE(exprPIXLISEToRun);
 
-                        return c+1;
+                        if(result < 0)
+                        {
+                            // We're only returning the first difference line
+                            result = c+1;
+                        }
                     }
                     else
                     {
@@ -120,7 +128,24 @@ export class ResultComparer
             exprPIXLISERan = this.appendTo(exprPIXLISERan, exprPIXLISELines[c]);
         }
 
-        return -1;
+        // Final check
+        if(result == -1 && exprLuaLines.length >= afterLine)
+        {
+            let luaResultFinal = this.runLua(exprLua);
+            let pixResultFinal = this.runPIXLISE(exprPIXLISE);
+            
+            if(!this.isEqual(luaResultFinal, pixResultFinal))
+            {
+                console.log("Expression final values differ!");
+                result = exprLuaLines.length-1;
+            }
+
+            //console.log(JSON.stringify(luaResultFinal, null, 2));
+            //console.log(JSON.stringify(pixResultFinal, null, 2));
+        }
+
+        // Return the first line number we found to differ
+        return result;
     }
 
     private runLua(expression: string): PMCDataValues
@@ -204,9 +229,10 @@ export class ResultComparer
         for(let c = 0; c < a.values.length; c++)
         {
             if( a.values[c].pmc != b.values[c].pmc ||
-                isNaN(a.values[c].value) != isNaN(b.values[c].value) ||
-                isFinite(a.values[c].value) != isFinite(b.values[c].value) ||
-                Math.abs(a.values[c].value - b.values[c].value) > 0.0000001
+                (isNaN(a.values[c].value) || !isFinite(a.values[c].value)) != (isNaN(b.values[c].value) || !isFinite(b.values[c].value)) ||
+                //isNaN(a.values[c].value) != isNaN(b.values[c].value) ||
+                //isFinite(a.values[c].value) != isFinite(b.values[c].value) ||
+                Math.abs(a.values[c].value - b.values[c].value) > this._allowedDifferenceLuaToPIXLISE
                 )
             {
                 console.log(`Difference: ${a.values[c].pmc}, ${a.values[c].value} vs ${b.values[c].pmc}, ${b.values[c].value}`)

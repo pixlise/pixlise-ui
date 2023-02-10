@@ -30,7 +30,6 @@
 import { Observable } from "rxjs";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { DataQuerier } from "./expression-language";
 import { InterpreterDataSource } from "./interpreter-data-source";
 
 const { LuaFactory, LuaLibraries } = require('wasmoon')
@@ -130,7 +129,6 @@ export class LuaDataQuerier
     private static LuaFunctionArgCounts = [3, 2, 2, 3, 3, 1, 1, 2, 0, 1, 1];
     private static LuaFuncs = [LuaDataQuerier.LreadElement, LuaDataQuerier.LreadElementSum, LuaDataQuerier.LreadDataColumn, LuaDataQuerier.LreadSpectrum, LuaDataQuerier.LreadSpectrumDiff, LuaDataQuerier.LreadPseudoIntensity, LuaDataQuerier.LreadHouseKeeping, LuaDataQuerier.LreadDiffractionPeaks, LuaDataQuerier.LreadRoughness, LuaDataQuerier.LreadPosition, LuaDataQuerier.LmakeMap];
 
-
     private static setupLua(pixliseLib: string): void
     {
         LuaDataQuerier._lua.doStringSync(pixliseLib);
@@ -160,71 +158,8 @@ export class LuaDataQuerier
         let t0 = performance.now();
         LuaDataQuerier._makeLuaTableTime = 0;
 
-        // Make it into a function, so if we get called again, we overwrite
         let exprFuncName = "expression";
-        let expression = "local Map = makeMapLib()\n";
-        if(LuaDataQuerier._debug)
-        {
-            expression += `function printMap(m, comment)
-    print(comment.." map size: "..#m[1])
-    for k, v in ipairs(m[1]) do
-        print(v.."="..m[2][k])
-    end
-end\n`
-        }
-
-        expression += "local function "+exprFuncName+"()\n"
-
-        expression += origExpression+"\nend\n";
-
-        if(LuaDataQuerier._debug)
-        {
-            expression += "t0=os.clock()\n";
-            expression += "times = {}\n"
-
-            for(let funcName of LuaDataQuerier.LuaFunctionNames)
-            {
-                expression += `times["${funcName}"] = 0\n`;
-            }
-
-            // Add wrappers for our functions
-            for(let f = 0; f < LuaDataQuerier.LuaFunctionNames.length; f++)
-            {
-                // Add a wrapper with timing code around it that accumulates it
-                let funcName = LuaDataQuerier.LuaFunctionNames[f];
-                expression += "function "+funcName+"(";
-
-                let argList = "";
-                for(let c = 0; c < LuaDataQuerier.LuaFunctionArgCounts[f]; c++)
-                {
-                    if(argList.length > 0)
-                    {
-                        argList += ",";
-                    }
-
-                    argList += "a"+c;
-                }
-                expression += argList+")";
-                expression += `
-  local t0=os.clock()
-  local funcResult = P${funcName}(${argList})
-  local t1=os.clock()
-  times["${funcName}"] = times["${funcName}"]+(t1-t0)
-  return funcResult
-end
-`;
-            }
-        }
-        expression += "result = "+exprFuncName+"()\n";
-
-        if(LuaDataQuerier._debug)
-        {
-            expression += "t1=os.clock()\nprint(\"Code ran for: \"..(t1-t0))\nlocal timesTotal=0\n";
-            // Print out the table too
-            expression += "for k, v in pairs(times) do\n  print(k..\" took: \"..v)\n  timesTotal = timesTotal+v\nend\nprint(\"Total functions: \"..timesTotal)\n"
-        }
-
-        expression += "return result\n";
+        let expression = this.formatLuaCallable(origExpression, exprFuncName);
 
         // Set context for this run
         LuaDataQuerier._context = this;
@@ -282,6 +217,75 @@ console.log(">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms, makeTable 
         }
 
         throw new Error("Expression: "+expression+" did not complete");
+    }
+
+    private formatLuaCallable(origExpression: string, luaExprFuncName: string): string
+    {
+        // Make it into a function, so if we get called again, we overwrite
+        let expression = "local Map = makeMapLib()\n";
+        if(LuaDataQuerier._debug)
+        {
+            expression += `function printMap(m, comment)
+    print(comment.." map size: "..#m[1])
+    for k, v in ipairs(m[1]) do
+        print(v.."="..m[2][k])
+    end
+end\n`
+        }
+
+        expression += "local function "+luaExprFuncName+"()\n"
+
+        expression += origExpression+"\nend\n";
+
+        if(LuaDataQuerier._debug)
+        {
+            expression += "t0=os.clock()\n";
+            expression += "times = {}\n"
+
+            for(let funcName of LuaDataQuerier.LuaFunctionNames)
+            {
+                expression += `times["${funcName}"] = 0\n`;
+            }
+
+            // Add wrappers for our functions
+            for(let f = 0; f < LuaDataQuerier.LuaFunctionNames.length; f++)
+            {
+                // Add a wrapper with timing code around it that accumulates it
+                let funcName = LuaDataQuerier.LuaFunctionNames[f];
+                expression += "function "+funcName+"(";
+
+                let argList = "";
+                for(let c = 0; c < LuaDataQuerier.LuaFunctionArgCounts[f]; c++)
+                {
+                    if(argList.length > 0)
+                    {
+                        argList += ",";
+                    }
+
+                    argList += "a"+c;
+                }
+                expression += argList+")";
+                expression += `
+  local t0=os.clock()
+  local funcResult = P${funcName}(${argList})
+  local t1=os.clock()
+  times["${funcName}"] = times["${funcName}"]+(t1-t0)
+  return funcResult
+end
+`;
+            }
+        }
+        expression += "result = "+luaExprFuncName+"()\n";
+
+        if(LuaDataQuerier._debug)
+        {
+            expression += "t1=os.clock()\nprint(\"Code ran for: \"..(t1-t0))\nlocal timesTotal=0\n";
+            // Print out the table too
+            expression += "for k, v in pairs(times) do\n  print(k..\" took: \"..v)\n  timesTotal = timesTotal+v\nend\nprint(\"Total functions: \"..timesTotal)\n"
+        }
+
+        expression += "return result\n";
+        return expression;
     }
 
     private static LreadElement(symbol, column, detector)
