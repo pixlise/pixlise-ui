@@ -12,6 +12,8 @@ local Map = {
     opAverage = 11
 }
 
+local infinity = 1/0
+
 local function makeAssertReport(var, expType)
     local result = ""
     local caller = debug.getinfo(2, "n")
@@ -34,6 +36,14 @@ local function makeAssertReport(var, expType)
     return result
 end
 
+local function fixBadValue(s)
+    -- Check if it's NaN or infinite
+    if s ~= s then -- or s == infinity or s == -infinity then
+        s = 0
+    end
+    return s
+end
+
 local function opWithScalarRaw(m, s, scalarLeft, op)
     local values = {}
 
@@ -48,11 +58,11 @@ local function opWithScalarRaw(m, s, scalarLeft, op)
     elseif op == Map.opDivide then
         if scalarLeft then
             for k, v in ipairs(m[2]) do
-                values[k] = s / v
+                values[k] = fixBadValue(s / v)
             end
         else
             for k, v in ipairs(m[2]) do
-                values[k] = v / s
+                values[k] = fixBadValue(v / s)
             end
         end
     elseif op == Map.opSubtract then
@@ -132,7 +142,7 @@ local function opWithMaps(m1, m2, op)
         end
     elseif op == Map.opDivide then
         for k, v in ipairs(m1[2]) do
-            values[k] = v / m2[2][k]
+            values[k] = fixBadValue(v / m2[2][k])
         end
     elseif op == Map.opSubtract then
         for k, v in ipairs(m1[2]) do
@@ -283,7 +293,7 @@ function Map.exp(m)
     assert(type(m) == "table", makeAssertReport(m, "table"))
     local values = {}
     for k, v in ipairs(m[2]) do
-        values[k] = math.exp(v[2])
+        values[k] = fixBadValue(math.exp(v[2]))
     end
     return {m[1], values}
 end
@@ -292,7 +302,7 @@ function Map.ln(m)
     assert(type(m) == "table", makeAssertReport(m, "table"))
     local values = {}
     for k, v in ipairs(m[2]) do
-        values[k] = math.log(v[2])
+        values[k] = fixBadValue(math.log(v[2]))
     end
     return {m[1], values}
 end
@@ -302,7 +312,7 @@ function Map.pow(m, exp)
     assert(type(exp) == "number", makeAssertReport(exp, "number"))
     local values = {}
     for k, v in ipairs(m[2]) do
-        values[k] = v ^ exp
+        values[k] = fixBadValue(v ^ exp)
     end
     return {m[1], values}
 end
