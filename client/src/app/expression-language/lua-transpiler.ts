@@ -353,7 +353,10 @@ export class LuaTranspiler
         else if(!leftIsMap && !rightIsMap)
         {
             // Neither side evaluates to a map so we must be simple arithmatic
-            return left+" "+expressionParseTreeNode["operator"]+" "+right;
+            // NOTE: this outputs a lot of brackets! We could probably be smarter and see if the operator above us is of higher
+            // precedence, hence leaving out our brackets, but for the time being this provides reliable code, even if it's
+            // a little uglier.
+            return "("+left+" "+expressionParseTreeNode["operator"]+" "+right+")";
         }
         
         // This will evaluate to a map operation
@@ -377,8 +380,6 @@ export class LuaTranspiler
         throw new Error("Failed to substitute for operator: "+op+" in: "+this._runningExpression);
     }
 
-    //ALLOWED_CALLS = ['normalize', 'data', 'min', 'max', 'threshold'];
-    //CALLER_PARAMS_REQUIRED = [1, 2, 2, 2, 3];
     private callExpression(expressionParseTreeNode: object, variableLookupIsMap: Map<string, boolean>): string
     {
         let callee = expressionParseTreeNode["callee"]["name"];
