@@ -45,6 +45,7 @@
     "moment": "^2.29.4",
     "ngx-dropzone": "^3.0.0",
     "papaparse": "^5.3.2",
+    "patch-package": "^6.5.1",
     "polygon-clipping": "^0.15.3",
     "quickhull": "^1.0.3",
     "roboto-fontface": "^0.10.0",
