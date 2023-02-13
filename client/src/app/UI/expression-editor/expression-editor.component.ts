@@ -82,7 +82,10 @@ export class ExpressionEditorComponent implements OnDestroy
 
     set expressionName(val: string)
     {
-        this.expression.name = val;
+        if(this.isEditable)
+        {
+            this.expression.name = val;
+        }
     }
 
     get editExpression(): string
@@ -92,7 +95,10 @@ export class ExpressionEditorComponent implements OnDestroy
 
     set editExpression(val: string)
     {
-        this.expression.expression = val;
+        if(this.isEditable)
+        {
+            this.expression.expression = val;
+        }
     }
 
     get expressionComments(): string
@@ -102,7 +108,10 @@ export class ExpressionEditorComponent implements OnDestroy
 
     set expressionComments(val: string)
     {
-        this.expression.comments = val;
+        if(this.isEditable)
+        {
+            this.expression.comments = val;
+        }
     }
 
     get isEditable(): boolean

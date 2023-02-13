@@ -36,14 +36,13 @@ POSSIBILITY OF SUCH DAMAGE.
     (keyup)='onKeyUp($event)'
     (click)='onClickDialog($event)'>
     <ngx-codemirror
-        class="separator"
         [(ngModel)]="editExpression"
         (click)='onClickExpression($event)'>
     </ngx-codemirror>
 </div>
 
 <expression-help-dropdown
-    *ngIf="activeHelp"
+    *ngIf="activeHelp && allowEdit"
     class="help-dropdown"
     style="top: {{dropdownTop}}; left: {{dropdownLeft}}"
     [help]="activeHelp"

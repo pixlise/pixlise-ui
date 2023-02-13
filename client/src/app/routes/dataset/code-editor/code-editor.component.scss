@@ -35,3 +35,54 @@
     height: 30vw;
     min-height: 200px;
 }
+
+.text-editor {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+
+    expression-text-editor {
+        height: 100%;
+        display: flex;
+
+        ::ng-deep .cm-s-pixlise.CodeMirror {
+            height: 100vh;
+        }
+    }    
+}
+
+
+.code-editor {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+
+    background-color: #1B1D1E;
+
+    .editor-header {
+        display: flex;
+
+        background-color: #2A3036;
+        box-shadow: 0px 4px 4px 0px #00000040;
+        z-index: 100;
+
+        .text-container {
+            display: flex;
+            flex: 1;
+
+        }
+
+        .viz-container {
+            display: flex;
+            flex: 1;
+            padding-left: 8px;
+        }
+
+        .right-btn-group {
+            margin-left: auto;
+        }
+    }
+}

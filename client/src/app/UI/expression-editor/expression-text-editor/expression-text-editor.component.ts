@@ -38,19 +38,6 @@ import { WidgetRegionDataService } from "src/app/services/widget-region-data.ser
 import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElement, Suggestion } from "../expression-help";
 import { SentryHelper } from "src/app/utils/utils";
 
-
-export class ExpressionEditorConfig
-{
-    constructor(
-        public expr: DataExpression,
-        public allowEdit: boolean,
-        public applyNow: boolean = false,
-        public isImmediatelyAppliable: boolean = true,
-    )
-    {
-    }
-}
-
 export class MarkPosition
 {
     constructor(public line: number, public idxStart: number, public idxEnd: number)

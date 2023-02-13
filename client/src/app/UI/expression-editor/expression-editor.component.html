@@ -38,7 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <h1>Expression Editor</h1>
         <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
             <div class="label">Expression Name</div>
-            <input type="text" placeholder="" [(ngModel)]="expressionName" fxFlex>
+            <input type="text" placeholder="" [(ngModel)]="expressionName" [disabled]="!isEditable" fxFlex>
             <tag-picker
                 type="expression"
                 [selectedTagIDs]="selectedTagIDs"
@@ -50,14 +50,14 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <expression-text-editor
         [expression]="expression"
-        [allowEdit]="data.allowEdit"
+        [allowEdit]="isEditable"
         [isImmediatelyAppliable]="data.isImmediatelyAppliable"
         [applyNow]="data.applyNow"
         (onTextChange)="onExpressionTextChanged($event)"
     >
     </expression-text-editor>
     <div class="label">Expression Description</div>
-    <input type="text" placeholder="" [(ngModel)]="expressionComments" fxFlex>
+    <input type="text" placeholder="" [(ngModel)]="expressionComments" [disabled]="!isEditable" fxFlex>
 
     <div fxLayout="row" fxLayoutAlign="end" class="choice-container gap-separated-horizontal-elements">
         <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>

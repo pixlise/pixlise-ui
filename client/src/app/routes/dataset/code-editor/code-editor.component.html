@@ -29,26 +29,46 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div fxLayout="row">
-    <div class="text-editor">
-        <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
+<div fxLayout="column" class="code-editor">
+    <div class="editor-header">
+        <div class="text-container">
             <h1>Expression Editor</h1>
-            <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
-                <div class="label">Expression Name</div>
-                <input type="text" placeholder="" [(ngModel)]="expressionName" fxFlex>
+            <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
+                <push-button 
+                    (onClick)="onToggleAutocomplete()"
+                >Autocomplete
+                </push-button>
+                <input type="text" placeholder="Expression Name" [(ngModel)]="expressionName" fxFlex>
                 <tag-picker type="expression" [selectedTagIDs]="selectedTagIDs" [showCurrentTagsSection]="true"
                     (onTagSelectionChanged)="onTagSelectionChanged($event)">
                 </tag-picker>
             </div>
         </div>
-        <ngx-codemirror
-            class="separator"
-            [(ngModel)]="editExpression"
-            (click)='onClickExpression($event)'>
-        </ngx-codemirror>
+        <div class="viz-container">
+            <h1>Visualization</h1>
+            <div class="right-btn-group">
+                <icon-button icon='assets/button-icons/close-cross-gray.svg' (click)="onClose()"></icon-button>
+            </div>
+        </div>
     </div>
+    <div fxLayout="row" class="editor-body">
+        <div class="text-editor">
+            <expression-text-editor
+                *ngIf="expression"
+                [expression]="expression"
+                [allowEdit]="editable"
+                [isImmediatelyAppliable]="false"
+                [applyNow]="false"
+                (onTextChange)="onExpressionTextChanged($event)"
+            >
+            </expression-text-editor>
+        </div>
 
-    <div class="preview-container">
-        <template #preview></template>
+        <div class="preview-container">
+            <template #preview></template>
+            <div class="data-grid">
+
+            </div>
+        </div>
     </div>
 </div>
