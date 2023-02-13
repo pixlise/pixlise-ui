@@ -84,7 +84,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     <div *ngIf="level !== null" class="level-dots" title="Level">
                         <div class="level-dot {{hasLevel ? 'filled' : ''}}" *ngFor="let hasLevel of levelIterator"></div>
                     </div>
-                    <div class="date-added" title="Date Added">{{dateAdded|date:'shortDate'}}</div>
+                    <div class="date-added" title="Date Added">{{dateAdded|date:'dd/MMM/yy'}}</div>
                 </div>
                 <div *ngIf="sharedBy" class="obj-creator" title="Shared by this user">{{sharedBy}}</div>
             </div>
