@@ -141,6 +141,7 @@ import { PeriodicTableTabComponent } from "./UI/spectrum-chart-widget/spectrum-p
 import { ExpressionPickerComponent } from "./UI/expression-picker/expression-picker.component";
 import { TagPickerComponent } from "./UI/tag-picker/tag-picker.component";
 import { ROIPickerComponent } from "./UI/roipicker/roipicker.component";
+import { ReferencesPickerComponent } from "./UI/references-picker/references-picker.component";
 import { RegionItemSettingsComponent } from "./UI/roipicker/region-item-settings/region-item-settings.component";
 import { RegionContainerComponent } from "./UI/roipicker/region-container/region-container.component";
 import { SpectrumRegionPickerComponent } from "./UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
@@ -396,6 +397,7 @@ function initLua(): () => Observable<any> {
         BinaryPlotWidgetComponent,
         TernaryPlotWidgetComponent,
         ROIPickerComponent,
+        ReferencesPickerComponent,
         AnnotationEditorComponent,
         AnnotationDisplayComponent,
         RegionItemSettingsComponent,

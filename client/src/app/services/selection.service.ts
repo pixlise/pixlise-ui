@@ -376,7 +376,7 @@ export class SelectionService
     setHoverPMC(pmc: number): void
     {
         // ONLY publish this if there's a real change. It's a costly operation because it will redraw multiple canvases
-        if(this._hoverPMC != pmc)
+        if(this._hoverPMC !== pmc)
         {
             this._hoverPMC = pmc;
 
@@ -384,6 +384,10 @@ export class SelectionService
             if(dataset && this._hoverPMC > DataSet.invalidPMC)
             {
                 this._hoverLocationIdx = dataset.pmcToLocationIndex.get(this._hoverPMC);
+            }
+            else if(this._hoverPMC <= -10)
+            {
+                this._hoverLocationIdx = this._hoverPMC;
             }
             else
             {

@@ -33,7 +33,6 @@
 
 .badge {
     line-height: 125%;
-    background-color: $clr-yellow;
     color: black;
     font-size: 9px;
     font-weight: 600;
@@ -41,4 +40,16 @@
     width: 12px;
     height: 12px;
     text-align: center;
+
+    &.notifcation {
+        background-color: $clr-yellow;
+    }
+
+    &.warning {
+        background-color: $clr-orange;
+    }
+
+    &.error {
+        background-color: $clr-red;
+    }
 }

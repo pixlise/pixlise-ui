@@ -30,7 +30,7 @@
 import { Component, ElementRef, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subject, Subscription } from "rxjs";
-import { PMCDataValues } from "src/app/expression-language/data-values";
+import { PMCDataValues, PMCDataValue } from "src/app/expression-language/data-values";
 import { MinMax } from "src/app/models/BasicTypes";
 import { Point } from "src/app/models/Geometry";
 import { orderVisibleROIs, PredefinedROIID } from "src/app/models/roi";
@@ -45,14 +45,14 @@ import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
 import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.component";
 import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expression-picker/expression-picker.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
-import { RGBA } from "src/app/utils/colours";
+import { Colours, RGBA } from "src/app/utils/colours";
 import { randomString } from "src/app/utils/utils";
-import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { BinaryPlotAxisData, BinaryPlotData, BinaryPlotPointIndex } from "./binary-data";
 import { BinaryDiagramDrawer } from "./drawer";
 import { BinaryInteraction } from "./interaction";
 import { BinaryPlotModel } from "./model";
 import { exportScatterPlot } from "src/app/UI/ternary-plot-widget/export-helper";
+import { ExpressionReferences } from "../references-picker/references-picker.component";
 
 
 @Component({
@@ -73,6 +73,8 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
     private _yAxisExpressionId: string = "";
 
     showMmol: boolean = false;
+
+    private _references: string[] = [];
 
     private _binaryModel: BinaryPlotModel = new BinaryPlotModel();
 
@@ -427,6 +429,67 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             }
         }
 
+        if(this._references.length > 0)
+        {
+            let refXDataValue = new PMCDataValues();
+            let refYDataValue = new PMCDataValues();
+
+            this._references.forEach((referenceName, i) =>
+            {
+                let reference = ExpressionReferences.getByName(referenceName);
+
+                if(!reference)
+                {
+                    console.error(`BinaryPlot prepareData: Couldn't find reference ${referenceName}`);
+                    return;
+                }
+
+                let refXValue = ExpressionReferences.getExpressionValue(reference, exprX.id)?.weightPercentage;
+                let isRefXNull = refXValue == null;
+                let refYValue = ExpressionReferences.getExpressionValue(reference, exprY.id)?.weightPercentage;
+                let isRefYNull = refYValue == null;
+
+                if(isRefXNull && isRefYNull)
+                {
+                    console.warn(`BinaryPlot prepareData: Reference ${referenceName} has undefined values for: ${xLabel}, ${yLabel}`);
+                    return;
+                }
+
+                if(isRefXNull)
+                {
+                    refXValue = 0;
+                    console.warn(`BinaryPlot prepareData: Reference ${referenceName} has undefined ${xLabel} value`);
+                }
+                if(isRefYNull)
+                {
+                    refYValue = 0;
+                    console.warn(`BinaryPlot prepareData: Reference ${referenceName} has undefined ${yLabel} value`);
+                }
+
+                // We don't have a PMC for these, so -10 and below are now reserverd for reference values
+                let referenceIndex = ExpressionReferences.references.findIndex((ref) => ref.name === referenceName);
+                let id = -10 - referenceIndex;
+
+                console.log(`BinaryPlot prepareData: Adding reference ${referenceName} with id ${id} and values (${refXValue}, ${refYValue})`);
+
+                refXDataValue.values.push(new PMCDataValue(id, refXValue, isRefXNull, referenceName));
+                refYDataValue.values.push(new PMCDataValue(id, refYValue, isRefYNull, referenceName));
+                pmcLookup.set(refXDataValue.values[i].pmc, new BinaryPlotPointIndex(xPointGroup.length, i));
+            });
+
+            refXDataValue = PMCDataValues.makeWithValues(refXDataValue.values);
+            refYDataValue = PMCDataValues.makeWithValues(refYDataValue.values);
+            
+            xValueRange.expandByMinMax(refXDataValue.valueRange);
+            yValueRange.expandByMinMax(refYDataValue.valueRange);
+
+            xPointGroup.push(refXDataValue);
+            yPointGroup.push(refYDataValue);
+            coloursRGB.push(Colours.CONTEXT_PURPLE);
+            this.keyItems.push(new KeyItem("references", "Ref Points", Colours.CONTEXT_PURPLE, null, "circle"));
+        }
+
+
         if(queryWarnings.size > 0)
         {
             this.expressionsMissingPMCs = Array.from(queryWarnings).join("\n");
@@ -460,6 +523,11 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         let t2 = performance.now();
 
         console.log("  Binary prepareData took: "+(t1-t0).toLocaleString()+"ms, needsDraw$ took: "+(t2-t1).toLocaleString()+"ms");
+    }
+
+    get axesIDs(): string[]
+    {
+        return [this._xAxisExpressionId, this._yAxisExpressionId];
     }
 
     private setDefaultsIfNeeded(widgetUpdReason: WidgetDataUpdateReason): void
@@ -586,7 +654,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         let hoverPMC = this._selectionService.hoverPMC;
         if(this._binaryModel && this._binaryModel.raw)
         {
-            if(hoverPMC < 0)
+            if(hoverPMC < 0 && hoverPMC > -10)
             {
                 // Clearing, easy case
                 this._binaryModel.hoverPoint = null;
@@ -646,31 +714,10 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         this._binaryModel.selectModeExcludeROI = !this._binaryModel.selectModeExcludeROI;
     }
 
-    exportPlotData(datasetId: string): string
+    onReferences(references)
     {
-        let xAxisLabel = this._binaryModel.raw.xAxisData.axisLabel;
-        let yAxisLabel = this._binaryModel.raw.yAxisData.axisLabel;
-
-        let data = `"PMC","ROI","${xAxisLabel}","${yAxisLabel}"\n`;
-        let dataset = this._datasetService.datasetLoaded;
-
-        Array.from(this._binaryModel.raw.pmcToValueLookup.entries()).forEach(([pmc, idx]) =>
-        {
-            // Check if this PMC is a member of the dataset ID we're exporting for
-            if(dataset.getSubDatasetIdForPMC(pmc) == datasetId)
-            {
-                // Subtract the PMC offset
-                pmc -= dataset.getIdOffsetForSubDataset(datasetId);
-
-                let x = this._binaryModel.raw.xAxisData.pointGroups[idx.pointGroup].values[idx.valueIndex].value;
-                let y = this._binaryModel.raw.yAxisData.pointGroups[idx.pointGroup].values[idx.valueIndex].value;
-                let roiId = this._binaryModel.raw.visibleROIs[idx.pointGroup];
-                let roiName = this._widgetDataService.regions.get(roiId).name;
-                data += `${pmc},${roiName},${x},${y}\n`;
-            }
-        });
-
-        return data;
+        this._references = references;
+        this.prepareData("references-update", null);
     }
 
     onExport()

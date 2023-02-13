@@ -158,12 +158,30 @@ export class TernaryDrawModel
 
     private calcPointForTernary(ternaryPoint: TernaryDataItem): Point
     {
+        let aLabel = ternaryPoint.nullMask[0] ? "null" : ternaryPoint.a;
+        let bLabel = ternaryPoint.nullMask[1] ? "null" : ternaryPoint.b;
+        let cLabel = ternaryPoint.nullMask[2] ? "null" : ternaryPoint.c;
+        let isMissingCoord = ternaryPoint.nullMask.some(x => x);
+        
         // Using https://en.wikipedia.org/wiki/Ternary_plot
-        // "Plotting a ternary plot" formuula
+        // "Plotting a ternary plot" formula
+        let sin60 = Math.sin(60 * Math.PI / 180);
         let sum = ternaryPoint.a+ternaryPoint.b+ternaryPoint.c;
+
+        // If we're missing 1 point, we need to normalize the other two and then make sure the missing
+        // one is much larger so it skews the end point all the way to the missing corner of the triangle
+        // If we're missing 2 points, this is just going to point towards the middle of the 2 missing corners
+        let normalizedA = ternaryPoint.nullMask[0] ? sum * 100 : ternaryPoint.a/sum;
+        let normalizedB = ternaryPoint.nullMask[1] ? sum * 100 : ternaryPoint.b/sum;
+        let normalizedC = ternaryPoint.nullMask[2] ? sum * 100 : ternaryPoint.c/sum;
+        let normalizedSum = normalizedA+normalizedB+normalizedC;
+
         let twoD = new Point(
             0.5*((2*ternaryPoint.b+ternaryPoint.c)/sum),
-            0.866025403784439*(ternaryPoint.c/sum)
+            sin60*(ternaryPoint.c/sum),
+            ternaryPoint.label ? `${ternaryPoint.label} (${aLabel}, ${bLabel}, ${cLabel})` : "",
+            isMissingCoord ? 0.5*((2*normalizedB+normalizedC)/normalizedSum) : null,
+            isMissingCoord ? -sin60*(normalizedC/normalizedSum) : null,
         );
 
         // NOTE: y is flipped for drawing!
@@ -181,6 +199,12 @@ export class TernaryDrawModel
         // Now translate it so it starts where our triangle starts
         result.x += this.dataAreaA.x;
         result.y += this.dataAreaA.y;
+
+        if(isMissingCoord)
+        {
+            result.endX += this.dataAreaA.x;
+            result.endY += this.dataAreaA.y;
+        }
 
         return result;
     }

@@ -28,6 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { BadgeStyle } from "../../badge/badge.component";
 
 
 @Component({
@@ -39,6 +40,9 @@ export class PushButtonComponent implements OnInit
 {
     @Input() buttonStyle: string = "normal";
     @Input() disabled: boolean = false;
+    @Input() notificationCount: number = 0;
+    @Input() badgeStyle: BadgeStyle = "notification";
+    @Input() tooltipTitle: string = "";
     @Output() onClick = new EventEmitter();
 
     constructor()

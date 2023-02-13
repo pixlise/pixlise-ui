@@ -27,73 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Input, OnInit } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ReferencesPickerComponent } from "./references-picker.component";
 
 
-export class TableHeaderItem
+describe("ReferencesPickerComponent", () => 
 {
-    constructor(public label: string, public extra: string)
-    {
-    }
-}
+    let component: ReferencesPickerComponent;
+    let fixture: ComponentFixture<ReferencesPickerComponent>;
 
-export class TableRow
-{
-    constructor(public label: string, public values: number[], public tooltips: string[])
+    beforeEach(async () => 
     {
-    }
+        await TestBed.configureTestingModule({
+            declarations: [ ReferencesPickerComponent ]
+        })
+            .compileComponents();
+    });
 
-    static makeEmpty(): TableRow
+    beforeEach(() => 
     {
-        return new TableRow("", [], []);
-    }
-}
+        fixture = TestBed.createComponent(ReferencesPickerComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-export class TableData
-{
-    constructor(
-        public title: string,
-        public circleColourStr: string,
-        public valueSuffix: string|string[],
-        public headers: TableHeaderItem[],
-        public rows: TableRow[],
-        public totalsRow: TableRow,
-    )
+    it("should create", () => 
     {
-    }
-
-    getSuffix(index: number): string
-    {
-        if(Array.isArray(this.valueSuffix))
-        {
-            return this.valueSuffix[index];
-        }
-        else
-        {
-            return this.valueSuffix;
-        }
-    }
-
-    static makeEmpty(): TableData
-    {
-        return new TableData("", "", "", [], [], TableRow.makeEmpty());
-    }
-}
-
-@Component({
-    selector: "table-view",
-    templateUrl: "./table.component.html",
-    styleUrls: ["./table.component.scss"]
-})
-export class TableComponent implements OnInit 
-{
-    @Input() tables: TableData[] = [];
-
-    constructor()
-    {
-    }
-
-    ngOnInit(): void
-    {
-    }
-}
+        expect(component).toBeTruthy();
+    });
+});
