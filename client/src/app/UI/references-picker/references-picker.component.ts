@@ -108,7 +108,7 @@ export class ExpressionReferences
             let expandedExpressionValues: ExpressionValue[] = [];
             expressionReference.expressionValues.forEach((expressionValue: ExpressionValue) =>
             {
-                ["A", "B"].forEach((detector: string) =>
+                ["A", "B", "Combined"].forEach((detector: string) =>
                 {
                     let name = `expr-elem-${expressionValue.name}-%(${detector})`;
                     expandedExpressionValues.push({ ...expressionValue, name });
