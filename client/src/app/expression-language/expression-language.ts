@@ -37,6 +37,7 @@ import { PixliseDataQuerier } from "./interpret-pixlise";
 import { LuaDataQuerier } from "./interpret-lua";
 import { LuaTranspiler } from "./lua-transpiler";
 import { ResultComparer } from "./result-comparer";
+import { environment } from "./environments/environment";
 
 
 // Helper function to run a query
@@ -52,7 +53,7 @@ export function getQuantifiedDataWithExpression(
 ): PMCDataValues
 {
     //console.log('  getQuantifiedDataWithExpression: "'+expression+'", forPMCs: '+(forPMCs===null ? 'All' : forPMCs.size));
-    let query = new DataQuerier(quantSource, pseudoSource, housekeepingSource, spectrumSource, diffractionSource, dataset);// For Total (wt%) testing: , false, true, true, 1365);
+    let query = new DataQuerier(quantSource, pseudoSource, housekeepingSource, spectrumSource, diffractionSource, dataset);
     let queryResult = query.runQuery(expression);
 
     if(forPMCs === null)
@@ -88,11 +89,6 @@ export class DataQuerier
         spectrumDataSource: SpectrumDataQuerierSource,
         diffractionSource: DiffractionPeakQuerierSource,
         dataset: DataSet,
-        luaDebug: boolean = false, // Enable debug flag on Lua runner which will print timing stats and provide Lua code the printMap() function
-        initTranspiler: boolean = false, // Should we init a PIXLISE->Lua transpiler
-        initComparer: boolean = false, // Should we init a PIXLISE->Lua comparer, implies initTranspiler=true
-        private _compareSkipLines: number = 1, // How many lines to skip when doing line-by-line comparison
-        private _compareDiffAllowed: number = 0.0000001 // Absolute difference allowed between output values of Lua vs PIXLISE expressions
     )
     {
         this._dataSource = new InterpreterDataSource(
@@ -105,14 +101,14 @@ export class DataQuerier
         );
 
         this._interpretPixlise = new PixliseDataQuerier(this._dataSource);
-        this._interpretLua = new LuaDataQuerier(this._dataSource, luaDebug);
-        if(initComparer || initTranspiler)
+        this._interpretLua = new LuaDataQuerier(this._dataSource, environment.luaDebug);
+        if(environment.initExpressionLanguageComparer || environment.initLuaTranspiler)
         {
             this._luaTranspiler = new LuaTranspiler();
         }
-        if(initComparer)
+        if(environment.initExpressionLanguageComparer)
         {
-            this._resultComparer = new ResultComparer(this._interpretPixlise, this._interpretLua, this._compareDiffAllowed);
+            this._resultComparer = new ResultComparer(this._interpretPixlise, this._interpretLua, environment.expressionLanguageCompareDiffAllowed);
         }
     }
 
@@ -136,7 +132,7 @@ export class DataQuerier
                 // If we've got a result comparer, run that
                 if(this._resultComparer)
                 {
-                    let line = this._resultComparer.findDifferenceLine(asLua, expression, this._compareSkipLines);
+                    let line = this._resultComparer.findDifferenceLine(asLua, expression, environment.expressionLanguageCompareSkipLines);
                     if(line < 0)
                     {
                         console.log("No difference between PIXLISE and Lua expressions");

@@ -45,6 +45,7 @@ import { SelectionHistoryItem, SelectionService } from "src/app/services/selecti
 import { ViewState, ViewStateService } from "src/app/services/view-state.service";
 import { RGBA } from "src/app/utils/colours";
 import { httpErrorToString, randomString, SentryHelper } from "src/app/utils/utils";
+import { environment } from "./environments/environment";
 
 
 /* WidgetRegionDataService : The widget data source!
@@ -205,14 +206,17 @@ class QueryResultCache
     private _queryResultCache: Map<string, QueryCacheItem> = new Map<string, QueryCacheItem>();
     private _lastPurgeUnixTimeMs: number = Date.now();
 
-    constructor(public unusedTimeoutMs: number, public purgeFrequencyMs: number)
+    constructor(
+        private _expressionResultCacheThresholdMs,
+        private _unusedTimeoutMs: number,
+        private _purgeFrequencyMs: number)
     {
     }
 
     addCachedResult(params: DataSourceParams, runtimeMs: number, calculatedResult: RegionDataResultItem)
     {
         // Add to the cache if we want to cache it
-        if(runtimeMs < 100)
+        if(runtimeMs < this._expressionResultCacheThresholdMs)
         {
             // We don't cache this one because it runs quick enough, and we prefer not to store more memory
             return;
@@ -277,7 +281,7 @@ class QueryResultCache
     private purgeOldItems()
     {
         let nowUnixMs = Date.now();
-        if(this._lastPurgeUnixTimeMs-nowUnixMs < this.purgeFrequencyMs)
+        if(this._lastPurgeUnixTimeMs-nowUnixMs < this._purgeFrequencyMs)
         {
             // Don't purge, don't need to do this that often...
             return;
@@ -289,7 +293,7 @@ class QueryResultCache
         for(let [key, item] of this._queryResultCache)
         {
             let accessedAgoMs = nowUnixMs-item.lastAccessUnixTimeMs;
-            if(accessedAgoMs > this.unusedTimeoutMs)
+            if(accessedAgoMs > this._unusedTimeoutMs)
             {
                 console.log("  Deleting (timeout) old cache item for: "+key);
                 this._queryResultCache.delete(key);
@@ -328,7 +332,7 @@ export class WidgetRegionDataService
     private _logPrefix = "  >>> WidgetRegionDataService["+randomString(4)+"]";
 
     // Query result cache - for slow queries we cache their result
-    private _resultCache: QueryResultCache = new QueryResultCache(60000, 10000);
+    private _resultCache: QueryResultCache = new QueryResultCache(environment.expressionResultCacheThresholdMs, 60000, 10000);
 
     constructor(
         private _roiService: ROIService,

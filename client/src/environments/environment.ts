@@ -34,7 +34,13 @@
 export const environment = {
     production: false,
     route_dbg: false,
-    configName: "local-development-pixlise-config.json"
+    configName: "local-development-pixlise-config.json",
+    expressionResultCacheThresholdMs: 100, // Don't cache things unless they take over an hour to run
+    luaDebug: false, // Enable debug flag on Lua runner which will print timing stats and provide Lua code the printMap() function
+    initLuaTranspiler: false, // Should we init a PIXLISE->Lua transpiler
+    initExpressionLanguageComparer: false, // Should we init a PIXLISE->Lua comparer, implies initTranspiler=true
+    expressionLanguageCompareSkipLines: 1, // How many lines to skip when doing line-by-line comparison
+    expressionLanguageCompareDiffAllowed: 0.0000001 // Absolute difference allowed between output values of Lua vs PIXLISE expressions 
 };
 
 /*
