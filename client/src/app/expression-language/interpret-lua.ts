@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Observable } from "rxjs";
+import { Observable, combineLatest, from } from "rxjs";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { InterpreterDataSource } from "./interpreter-data-source";
@@ -42,6 +42,8 @@ export class LuaDataQuerier
     private static _loggedTables = [];
     private static _makeLuaTableTime = 0;
     private static _debug = false;
+    private static _luaLibImports = "";
+    private static _luaUseReplay = false;
 
     constructor(
         private _dataSource: InterpreterDataSource,
@@ -87,35 +89,93 @@ export class LuaDataQuerier
                     let t1 = performance.now();
                     console.log("Lua Engine std libs loaded "+(t1-t0).toLocaleString()+"ms...");
 
-                    // Add PIXLISE-lib to Lua
-                    fetch("assets/lua/Map.lua").then(
-                        (response: Response)=>
-                        {
-                            response.text().then(
-                                (lib: string)=>
-                                {
-                                    let t0 = performance.now();
-
-                                    // Set up constants/functions that can be accessed from Lua
-                                    // NOTE: at this point we wrap the Lua module so it looks like a function
-                                    let libAsFunction = "function makeMapLib()\n"+lib+"\nend";
-                                    LuaDataQuerier.setupLua(libAsFunction);
-
-                                    let t1 = performance.now();
-                                    console.log("Lua Engine made ready in "+(t1-t0).toLocaleString()+"ms...");
-                                    observer.complete();
-                                }
-                            )
-                            .catch((err)=>
-                            {
-                                throw new Error("Failed to apply PIXLISE Lua library\n"+err["message"]+"\n"+err["stack"]);
-                            });
-                        }
-                    )
-                    .catch((err)=>
+                    // Set up the functions Lua can call to get data, eg element()
+                    if(!LuaDataQuerier._luaUseReplay)
                     {
-                        throw new Error("Failed to download PIXLISE Lua library\n"+err["message"]+"\n"+err["stack"]);
-                    });
+                        // NOTE: we DON'T do this if we're replaying, because we want Lua implemented
+                        //       functions to hijack these calls instead!
+                        LuaDataQuerier.setupPIXLISELuaFunctions();
+                    }
+
+                    // Add PIXLISE Lua libraries
+                    let libFiles = ["Map.lua"];
+                    if(LuaDataQuerier._luaUseReplay)
+                    {
+                        // Pull in the replay data
+                        libFiles.push("FuncRunner.lua");
+                    }
+                    let libFileResults$ = [];
+
+                    for(let lib of libFiles)
+                    {
+                        libFileResults$.push(from(fetch("assets/lua/"+lib)));
+                    }
+                    
+                    let allFiles$ = combineLatest(libFileResults$);
+                    allFiles$.subscribe(
+                        (responses)=>
+                        {
+                            // At this point we've received all the file responses, now we need to turn them into text
+                            let libFileContents$ = [];
+                            let libNames = [];
+
+                            for(let resp of responses)
+                            {
+                                let respItem = resp as Response;
+                                
+                                let libNameStart = respItem.url.lastIndexOf("/");
+                                let libNameEnd = respItem.url.indexOf(".lua");
+
+                                if(libNameStart < 0 || libNameEnd < libNameStart)
+                                {
+                                    throw new Error("Failed to get lib name from received Lua library: "+respItem.url);
+                                }
+
+                                let libName = respItem.url.substring(libNameStart+1, libNameEnd);
+
+                                if(respItem.status != 200)
+                                {
+                                    throw new Error("Failed to get Lua library: "+libName)
+                                }
+
+                                libFileContents$.push(from(respItem.text()));
+
+                                // Remember the names in the order in which they were received
+                                libNames.push(libName);
+
+                                // Remember this as an import
+                                LuaDataQuerier._luaLibImports += "local "+libName+" = make"+libName+"Lib()\n";
+                            }
+
+                            // Once all have loaded, pass them into Lua
+                            let allFileContents$ = combineLatest(libFileContents$);
+                            allFileContents$.subscribe(
+                                (fileContents)=>
+                                {
+                                    let c = 0;
+                                    for(let lib of fileContents)
+                                    {
+                                        let libName = libNames[c];
+                                        let t0 = performance.now();
+
+                                        // Set up constants/functions that can be accessed from Lua
+                                        // NOTE: at this point we wrap the Lua module so it looks like a function
+                                        let importDef = "function make"+libName+"Lib()\n"+lib+"\nend";
+                                        LuaDataQuerier._lua.doStringSync(importDef);
+
+                                        let t1 = performance.now();
+                                        console.log("  Added PIXLISE Lua library: "+libName+" in "+(t1-t0).toLocaleString()+"ms...");
+                                        c++;
+                                    }
+                                    observer.complete();
+                                },
+                                (err)=>
+                                {
+                                    throw new Error("Failed to download PIXLISE Lua library: "+err+"\n"+err["message"]+"\n"+err["stack"]);
+                                }
+                            );
+                        }
+                    );
                 })
                 .catch((err)=>{
                     console.error(err);
@@ -129,10 +189,8 @@ export class LuaDataQuerier
     private static LuaFunctionArgCounts = [3, 2, 2, 3, 3, 1, 1, 2, 0, 1, 1];
     private static LuaFuncs = [LuaDataQuerier.LreadElement, LuaDataQuerier.LreadElementSum, LuaDataQuerier.LreadDataColumn, LuaDataQuerier.LreadSpectrum, LuaDataQuerier.LreadSpectrumDiff, LuaDataQuerier.LreadPseudoIntensity, LuaDataQuerier.LreadHouseKeeping, LuaDataQuerier.LreadDiffractionPeaks, LuaDataQuerier.LreadRoughness, LuaDataQuerier.LreadPosition, LuaDataQuerier.LmakeMap];
 
-    private static setupLua(pixliseLib: string): void
+    private static setupPIXLISELuaFunctions(): void
     {
-        LuaDataQuerier._lua.doStringSync(pixliseLib);
-
         // Implementing original expression language
         let prefix = "";
         if(LuaDataQuerier._debug)
@@ -222,7 +280,13 @@ console.log(">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms, makeTable 
     private formatLuaCallable(origExpression: string, luaExprFuncName: string): string
     {
         // Make it into a function, so if we get called again, we overwrite
-        let expression = "local Map = makeMapLib()\n";
+        let expression = LuaDataQuerier._luaLibImports+"\n";
+        if(LuaDataQuerier._luaUseReplay)
+        {
+            // Reset replay
+            expression += "FuncRunner.resetReplay()\n";
+        }
+
         if(LuaDataQuerier._debug)
         {
             expression += `function printMap(m, comment)

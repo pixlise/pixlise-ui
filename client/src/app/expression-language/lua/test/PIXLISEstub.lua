@@ -4,7 +4,7 @@
 -- NOTE: resetReplay() needs to be called before the expression is run otherwise we are off the end
 --       of the replay and can't return values
 
-local allTables = require('Data-All')
+local allTables = require('DataAll')
 
 local tableIdx = 1
 
