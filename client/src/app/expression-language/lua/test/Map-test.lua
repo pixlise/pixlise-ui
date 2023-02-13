@@ -13,48 +13,23 @@ TestMap = {}
         local l = {{3,4,7},{3.5,5.5,1.3}}
         local r = {{3,4,7},{11.1,12.1,13.1}}
         local result = Map.add(l, r)
+        local expected = {{3,4,7},{3.5+11.1,5.5+12.1,1.3+13.1}}
 
-        lu.assertEquals(type(result), 'table')
-        lu.assertEquals(#result, 2)
-        lu.assertEquals(#result[1], 3)
-        lu.assertEquals(#result[2], 3)
-        lu.assertEquals(result[1][1], 3)
-        lu.assertEquals(result[1][2], 4)
-        lu.assertEquals(result[1][3], 7)
-        lu.assertEquals(result[2][1], 3.5+11.1)
-        lu.assertEquals(result[2][2], 5.5+12.1)
-        lu.assertEquals(result[2][3], 1.3+13.1)
+        lu.assertItemsEquals(result, expected)
     end
     function TestMap:testAddScalarMap()
         local l = {{3,4,7},{3.5,5.5,1.3}}
         local result = Map.add(l, 12)
+        local expected = {{3,4,7},{3.5+12,5.5+12,1.3+12}}
 
-        lu.assertEquals(type(result), 'table')
-        lu.assertEquals(#result, 2)
-        lu.assertEquals(#result[1], 3)
-        lu.assertEquals(#result[2], 3)
-        lu.assertEquals(result[1][1], 3)
-        lu.assertEquals(result[1][2], 4)
-        lu.assertEquals(result[1][3], 7)
-        lu.assertEquals(result[1][1], 3)
-        lu.assertEquals(result[2][1], 3.5+12)
-        lu.assertEquals(result[2][2], 5.5+12)
-        lu.assertEquals(result[2][3], 1.3+12)
+        lu.assertItemsEquals(result, expected)
     end
     function TestMap:testAddMapScalar()
         local r = {{3,4,7},{3.5,5.5,1.3}}
         local result = Map.add(13, r)
+        local expected = {{3,4,7},{3.5+13,5.5+13,1.3+13}}
 
-        lu.assertEquals(type(result), 'table')
-        lu.assertEquals(#result, 2)
-        lu.assertEquals(#result[1], 3)
-        lu.assertEquals(#result[2], 3)
-        lu.assertEquals(result[1][1], 3)
-        lu.assertEquals(result[1][2], 4)
-        lu.assertEquals(result[1][3], 7)
-        lu.assertEquals(result[2][1], 3.5+13)
-        lu.assertEquals(result[2][2], 5.5+13)
-        lu.assertEquals(result[2][3], 1.3+13)
+        lu.assertItemsEquals(result, expected)
     end
     --[[
     function TestMap:testAddMaps()
