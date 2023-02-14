@@ -32,9 +32,11 @@ POSSIBILITY OF SUCH DAMAGE.
 <div fxLayout="column" class="code-editor">
     <div class="editor-header">
         <div class="text-container">
-            <h1>Expression Editor</h1>
+            <h2>Expression Editor</h2>
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
-                <push-button 
+                <push-button
+                    buttonStyle="gray"
+                    [active]="useAutocomplete"
                     (onClick)="onToggleAutocomplete()"
                 >Autocomplete
                 </push-button>
@@ -45,9 +47,13 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
         </div>
         <div class="viz-container">
-            <h1>Visualization</h1>
+            <h2>Visualization</h2>
             <div class="right-btn-group">
-                <icon-button icon='assets/button-icons/close-cross-gray.svg' (click)="onClose()"></icon-button>
+                <icon-button
+                    icon='assets/button-icons/close-cross-gray.svg'
+                    (click)="onClose()"
+                    [hasBackground]="false"
+                ></icon-button>
             </div>
         </div>
     </div>
@@ -64,11 +70,15 @@ POSSIBILITY OF SUCH DAMAGE.
             </expression-text-editor>
         </div>
 
-        <div class="preview-container">
-            <template #preview></template>
-            <div class="data-grid">
-
+        <div class="viz-panels">
+            <div class="preview-container">
+                <template #preview></template>
             </div>
+            <data-grid
+                title="Numeric Values: Line 1 - 50"
+                [data]="dataPreview"
+                [columnCount]="50"
+            ></data-grid>
         </div>
     </div>
 </div>

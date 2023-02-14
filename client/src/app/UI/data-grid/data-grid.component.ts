@@ -27,50 +27,86 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
-import { BadgeStyle } from "../../badge/badge.component";
-
-export type PushButtonStyle = "normal" | "borderless" | "yellow" | "outline" | "gray" | "light-right-outline";
+import { Component, Input, OnDestroy, OnInit } from "@angular/core";
+import { Subscription } from "rxjs";
+import { ContextImageService } from "src/app/services/context-image.service";
 
 @Component({
-    selector: "push-button",
-    templateUrl: "./push-button.component.html",
-    styleUrls: ["./push-button.component.scss"]
+    selector: "data-grid",
+    templateUrl: "./data-grid.component.html",
+    styleUrls: ["./data-grid.component.scss"],
+    providers: [ContextImageService],
 })
-export class PushButtonComponent implements OnInit
+export class DataGridComponent implements OnInit, OnDestroy
 {
-    @Input() buttonStyle: PushButtonStyle = "normal";
-    @Input() active: boolean = false;
-    @Input() disabled: boolean = false;
-    @Input() notificationCount: number = 0;
-    @Input() badgeStyle: BadgeStyle = "notification";
-    @Input() tooltipTitle: string = "";
-    @Output() onClick = new EventEmitter();
+    private _subs = new Subscription();
 
-    constructor()
+    @Input() title: string = "Data Grid";
+    @Input() data: any[] = [];
+    @Input() columnCount: number = 0;
+
+    constructor(
+    )
     {
     }
+
+    get rowCount(): number
+    {
+        return this.columnCount > 0 ? Math.floor(this.data.length / this.columnCount) : 0;
+    }
+
+    get minDataValue(): number
+    {
+        let minValue = null;
+        this.data.forEach((point) =>
+        {
+            if(typeof point === "number" && (minValue === null || point < minValue))
+            {
+                minValue = point;
+            }
+        });
+
+        return minValue || 0;
+    }
+
+    get maxDataValue(): number
+    {
+        let maxValue = null;
+        this.data.forEach((point) =>
+        {
+            if(typeof point === "number" && (maxValue === null || point > maxValue))
+            {
+                maxValue = point;
+            }
+        });
+
+        return maxValue || 0;
+    }
+
+    get avgDataValue(): number
+    {
+        let avgValue = null;
+        let validPointCount = 0;
+        this.data.forEach((point) =>
+        {
+            if(typeof point === "number")
+            {
+                avgValue += point;
+                validPointCount++;
+            }
+        });
+
+        return avgValue !== null && validPointCount > 0 ? avgValue / validPointCount : 0;
+    }
+
 
     ngOnInit()
     {
-        const validStyles: PushButtonStyle[] = ["normal", "borderless", "yellow", "outline", "gray", "light-right-outline"];
-        if(validStyles.indexOf(this.buttonStyle) == -1)
-        {
-            console.warn("Invalid style for push-button: "+this.buttonStyle);
-            this.buttonStyle = validStyles[0];
-        }
+        
     }
 
-    get styleCSS(): string
+    ngOnDestroy()
     {
-        return `btn-${this.buttonStyle}${this.disabled ? " disabled" : ""}${this.active ? " active" : ""}`;
-    }
-
-    onClickInternal(event): void
-    {
-        if(!this.disabled)
-        {
-            this.onClick.emit(event);
-        }
+        this._subs.unsubscribe();
     }
 }

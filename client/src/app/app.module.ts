@@ -228,6 +228,7 @@ import { AnnotationEditorComponent } from "./UI/annotation-editor/annotation-edi
 import { AnnotationDisplayComponent } from "./UI/annotation-editor/annotation-display/annotation-display.component";
 import { PlotExporterDialogComponent } from "./UI/atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { CodeEditorComponent } from "./routes/dataset/code-editor/code-editor.component";
+import { DataGridComponent } from "./UI/data-grid/data-grid.component";
 
 
 @Injectable()
@@ -472,6 +473,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         AddDatasetDialogComponent,
         LogViewerComponent,
         PlotExporterDialogComponent,
+        DataGridComponent
     ],
     imports: [
         BrowserModule,

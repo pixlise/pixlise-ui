@@ -73,7 +73,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     private _expressionID: string;
 
     private _editable = true;
-    private _useAutocomplete = false;
+    useAutocomplete = false;
 
     public expression: DataExpression;
 
@@ -180,7 +180,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     onToggleAutocomplete(): void
     {
-        this._useAutocomplete = !this._useAutocomplete;
+        this.useAutocomplete = !this.useAutocomplete;
     }
 
     onClose(): void
@@ -230,6 +230,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         {
             this.expression.name = name;
         }
+    }
+
+    get dataPreview(): number[]
+    {
+        return [].constructor(5000).fill(0).map((_, i) => i + 1);
     }
 
     onExpressionTextChanged(text: string): void

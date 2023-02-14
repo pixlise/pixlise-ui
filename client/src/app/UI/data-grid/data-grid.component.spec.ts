@@ -27,86 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-
-.preview-container {
-    width: 50vw;
-    min-width: 300px;
-    height: 30vw;
-    min-height: 200px;
-}
-
-.text-editor {
-    height: calc(100vh - 36px);
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-
-    expression-text-editor {
-        height: 100%;
-        display: flex;
-
-        ::ng-deep .cm-s-pixlise.CodeMirror {
-            height: calc(100vh - 36px);
-        }
-    }    
-}
+import { async, ComponentFixture, TestBed } from "@angular/core/testing";
+import { DataGridComponent } from "./data-grid.component";
 
 
-.code-editor {
-    position: absolute;
-    top: 0;
-    left: 0;
+describe("DataGridComponent", () => 
+{
+    let component: DataGridComponent;
+    let fixture: ComponentFixture<DataGridComponent>;
 
-    width: 100%;
+    beforeEach(async(() => 
+    {
+        TestBed.configureTestingModule({
+            declarations: [ DataGridComponent ]
+        })
+            .compileComponents();
+    }));
 
-    background-color: #1B1D1E;
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(DataGridComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-    .editor-header {
-        display: flex;
-        align-items: center;
-
-        background-color: #2A3036;
-        box-shadow: 0px 4px 4px 0px #00000040;
-        z-index: 100;
-
-        padding: 4px 0;
-
-        .text-container {
-            display: flex;
-            align-items: center;
-            flex: 1;
-            padding: 0 8px;
-        }
-
-        .viz-container {
-            display: flex;
-            align-items: center;
-            flex: 1;
-            padding-left: 8px;
-        }
-
-        .right-btn-group {
-            display: flex;
-            align-items: center;
-
-            margin-left: auto;
-        }
-    }
-
-    .viz-panels {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-
-        .preview-container {
-            flex: 1;
-        }
-
-        data-grid {
-            flex: 1;
-            max-height: 40vh;
-            max-width: 50vw;
-        }
-    }
-}
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

@@ -29,84 +29,71 @@
 
 @import 'variables.scss';
 
-.preview-container {
-    width: 50vw;
-    min-width: 300px;
-    height: 30vw;
-    min-height: 200px;
-}
-
-.text-editor {
-    height: calc(100vh - 36px);
+.data-grid {
     display: flex;
-    flex-direction: column;
-    flex: 1;
-
-    expression-text-editor {
-        height: 100%;
-        display: flex;
-
-        ::ng-deep .cm-s-pixlise.CodeMirror {
-            height: calc(100vh - 36px);
-        }
-    }    
-}
-
-
-.code-editor {
-    position: absolute;
-    top: 0;
-    left: 0;
-
+    height: 100%;
     width: 100%;
 
-    background-color: #1B1D1E;
-
-    .editor-header {
+    .grid-header {
         display: flex;
         align-items: center;
+        background-color: #2B3035;
+        padding: 2px 0;
 
-        background-color: #2A3036;
-        box-shadow: 0px 4px 4px 0px #00000040;
-        z-index: 100;
-
-        padding: 4px 0;
-
-        .text-container {
-            display: flex;
-            align-items: center;
-            flex: 1;
-            padding: 0 8px;
-        }
-
-        .viz-container {
-            display: flex;
-            align-items: center;
-            flex: 1;
+        h2 {
+            margin-right: auto;
             padding-left: 8px;
         }
 
-        .right-btn-group {
-            display: flex;
-            align-items: center;
+        .summary-value {
+            width: 75px;
+            margin-right: 8px;
+            background-color: #232828;
+            border-color: rgb(var(--clr-gray-70));
+        }
 
-            margin-left: auto;
+        .export-btn {
+            margin-right: 8px;
         }
     }
 
-    .viz-panels {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
+    .table-container {
+        overflow: scroll;
 
-        .preview-container {
-            flex: 1;
-        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
 
-        data-grid {
-            flex: 1;
-            max-height: 40vh;
-            max-width: 50vw;
+            tr {
+                background-color: #232828;
+                &:hover {
+                    background-color: lighten(#232828, 5%);
+                }
+
+                &:nth-child(even) {
+                    background-color: #1B1D1E;
+                    &:hover {
+                        background-color: lighten(#1B1D1E, 5%);
+                    }
+
+                    td {
+                        &:hover {
+                            background-color: lighten(#1B1D1E, 10%);
+                        }
+                    }
+                }
+
+                td {
+                    text-align: center;
+                    padding: 6px 4px;
+                    color: rgb(var(--clr-gray-30));
+                    cursor: pointer;
+
+                    &:hover {
+                        background-color: lighten(#232828, 10%);
+                    }
+                }
+            }
         }
     }
 }
