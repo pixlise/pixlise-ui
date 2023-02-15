@@ -33,12 +33,15 @@
     display: flex;
     height: 100%;
     width: 100%;
+    border-radius: 4px;
 
     .grid-header {
         display: flex;
         align-items: center;
         background-color: #2B3035;
         padding: 2px 0;
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
 
         h2 {
             margin-right: auto;
@@ -91,6 +94,7 @@
 
                     &:hover {
                         background-color: lighten(#232828, 10%);
+                        outline: 2px solid $clr-context-purple;
                     }
                 }
             }

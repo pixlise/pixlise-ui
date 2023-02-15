@@ -29,8 +29,10 @@
 
 import { Component, Inject, OnDestroy } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { Router } from "@angular/router";
 import { Subscription } from "rxjs";
 import { DataExpression } from "src/app/services/data-expression.service";
+import { DataSetService } from "src/app/services/data-set.service";
 
 export class ExpressionEditorConfig
 {
@@ -63,6 +65,8 @@ export class ExpressionEditorComponent implements OnDestroy
 
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: ExpressionEditorConfig,
+        private _router: Router,
+        private _datasetService: DataSetService,
         public dialogRef: MatDialogRef<ExpressionEditorComponent>,
     )
     {
@@ -122,6 +126,16 @@ export class ExpressionEditorComponent implements OnDestroy
     onExpressionTextChanged(expressionText: string)
     {
         this.expression.expression = expressionText;
+    }
+
+    onOpenSoloEditorView(): void
+    {
+        let datasetID = this._datasetService.datasetIDLoaded;
+        this._router.navigate(["dataset", datasetID, "code-editor", this.expression.id]);
+
+        // TODO: Save the expression to local storage and pick back up on solo view
+
+        this.dialogRef.close(null);
     }
 
     onOK()

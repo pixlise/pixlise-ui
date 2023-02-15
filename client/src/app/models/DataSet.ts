@@ -791,7 +791,7 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
 
         for(let locCache of this.locationPointCache)
         {
-            if(locCache.source && locCache.source.getRtt() == id)
+            if(locCache.source && locCache.source.getRtt() === id)
             {
                 result.add(locCache.locationIdx);
             }
@@ -1105,7 +1105,6 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
             {
                 scanSource = scanSources[scanSourceIdx];
             }
-
             let locToCache = new DataSetLocation(beamPoint, idx, pmc, hasNormalSpectra, hasDwellSpectra, hasMissingData, [], hasPseudo, scanSource);
             this.locationPointCache.push(locToCache);
 

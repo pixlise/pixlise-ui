@@ -55,6 +55,8 @@ import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/terna
 import { VariogramWidgetComponent } from "src/app/UI/variogram-widget/variogram-widget.component";
 import { SpectrumFitContainerComponent } from "src/app/UI/spectrum-chart-widget/spectrum-fit-container/spectrum-fit-container.component";
 import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataSourceParams, RegionDataResultItem, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { PredefinedROIID } from "src/app/models/roi";
 
 @Component({
     selector: "code-editor",
@@ -73,9 +75,14 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     private _expressionID: string;
 
     private _editable = true;
+
     useAutocomplete = false;
+    isCodeChanged = true;
 
     public expression: DataExpression;
+    public evaluatedExpression: RegionDataResultItem;
+
+    public isPMCDataGridSolo: boolean = false;
 
     constructor(
         private _route: ActivatedRoute,
@@ -85,6 +92,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         private resolver: ComponentFactoryResolver,
         public dialog: MatDialog,
         private _expressionService: DataExpressionService,
+        private _widgetDataService: WidgetRegionDataService,
     )
     {
     }
@@ -92,7 +100,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     ngOnInit()
     {
-        this._datasetID = this._route.snapshot.params["dataset_id"];
+        this._datasetID = this._route.snapshot.parent.params["dataset_id"];
         this._expressionID = this._route.snapshot.params["expression_id"];
         this._expressionService.expressionsUpdated$.subscribe(() =>
         {
@@ -109,6 +117,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 expression.modUnixTimeSec,
                 expression.tags
             );
+            this.runExpression();
         });
     }
 
@@ -136,6 +145,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                         ()=>
                         {
                             this.createTopRowComponents(selectors.topWidgetSelectors);
+                            this.runExpression();
                         }
                     );
                 }
@@ -185,7 +195,16 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     onClose(): void
     {
-        this._router.navigate([`/dataset/${this._datasetID}/analysis`]);
+        this._router.navigate(["dataset", this._datasetID, "analysis"]);
+    }
+
+    runExpression(): void
+    {
+        this.evaluatedExpression = this._widgetDataService.runExpression(new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), this.expression);
+        if(this.evaluatedExpression && this.evaluatedExpression?.values?.values.length > 0)
+        {
+            this.isCodeChanged = false;
+        }
     }
     
     get editable(): boolean
@@ -203,6 +222,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         if(this.expression)
         {
             this.expression.expression = val;
+            this.isCodeChanged = true;
         }
     }
 
@@ -234,6 +254,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     get dataPreview(): number[]
     {
+        // return this.evaluatedExpression.queryResults.map((r) => r.);
         return [].constructor(5000).fill(0).map((_, i) => i + 1);
     }
 
@@ -245,6 +266,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     onTagSelectionChanged(tags): void
     {
         this.selectedTagIDs = tags;
+    }
+
+    onTogglePMCDataGridSolo(isSolo: boolean): void
+    {
+        this.isPMCDataGridSolo = isSolo;
     }
 
     // NOTE: there are ways to go from selector string to ComponentFactory:

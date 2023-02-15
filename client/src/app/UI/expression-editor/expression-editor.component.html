@@ -46,6 +46,11 @@ POSSIBILITY OF SUCH DAMAGE.
                 (onTagSelectionChanged)="onTagSelectionChanged($event)"
             >
             </tag-picker>
+            <icon-button
+                (onClick)="onOpenSoloEditorView()"
+                title="Open Solo Editor View"
+                icon="assets/button-icons/widget-solo.svg"
+            ></icon-button>
         </div>
     </div>
     <expression-text-editor

@@ -31,25 +31,31 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="column" class="data-grid">
   <div class="grid-header">
-    <h2>{{title}}</h2>
-    <input class="summary-value" value="{{avgDataValue}} (avg.)" readonly>
-    <input class="summary-value" value="{{minDataValue}} (min.)" readonly>
-    <input class="summary-value" value="{{maxDataValue}} (max.)" readonly>
+    <h2>{{header}}</h2>
+    <input class="summary-value" value="{{avgDataValue | number:'1.0-2'}} (avg.)" readonly>
+    <input class="summary-value" value="{{minDataValue | number:'1.0-2'}} (min.)" readonly>
+    <input class="summary-value" value="{{maxDataValue | number:'1.0-2'}} (max.)" readonly>
     <icon-button
       title="Solo"
+      (onClick)="onSolo()"
       icon="assets/button-icons/widget-solo.svg"
     ></icon-button>
     <icon-button
         class="export-btn"
         title="Export"
+        (onClick)="onExport()"
         icon="assets/button-icons/export.svg">
     </icon-button>
   </div>
   <div class="table-container">
     <table>
       <tr *ngFor="let _ of [].constructor(rowCount); let i = index;">
-        <td *ngFor="let _ of [].constructor(columnCount); let j = index;">
-          {{columnCount * i + j >= data.length ? "" : data[columnCount * i + j]}}
+        <td 
+          *ngFor="let _ of [].constructor(columnCount); let j = index;"
+          #tooltip="matTooltip"
+          [matTooltip]="getDataTooltip(i, j)"
+        >
+          {{getDataValue(i, j)}}
         </td>
       </tr>
     </table>

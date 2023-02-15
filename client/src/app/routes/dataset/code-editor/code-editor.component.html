@@ -40,6 +40,12 @@ POSSIBILITY OF SUCH DAMAGE.
                     (onClick)="onToggleAutocomplete()"
                 >Autocomplete
                 </push-button>
+                <push-button
+                    buttonStyle="gray"
+                    [disabled]="!isCodeChanged"
+                    (onClick)="runExpression()"
+                >Run
+                </push-button>
                 <input type="text" placeholder="Expression Name" [(ngModel)]="expressionName" fxFlex>
                 <tag-picker type="expression" [selectedTagIDs]="selectedTagIDs" [showCurrentTagsSection]="true"
                     (onTagSelectionChanged)="onTagSelectionChanged($event)">
@@ -71,14 +77,16 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
 
         <div class="viz-panels">
-            <div class="preview-container">
+            <div class="preview-container {{isPMCDataGridSolo ? 'hidden' : ''}}">
                 <template #preview></template>
             </div>
-            <data-grid
-                title="Numeric Values: Line 1 - 50"
-                [data]="dataPreview"
-                [columnCount]="50"
-            ></data-grid>
+            <pmc-data-grid
+                class="{{isPMCDataGridSolo ? 'solo' : ''}}"
+                header="Numeric Values: Line 1 - 50"
+                [evaluatedExpression]="evaluatedExpression"
+                [columnCount]="15"
+                (onToggleSolo)="onTogglePMCDataGridSolo($event)"
+            ></pmc-data-grid>
         </div>
     </div>
 </div>

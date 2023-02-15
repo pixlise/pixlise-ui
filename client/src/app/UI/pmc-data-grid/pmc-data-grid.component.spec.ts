@@ -28,25 +28,25 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { async, ComponentFixture, TestBed } from "@angular/core/testing";
-import { DataGridComponent } from "./data-grid.component";
+import { PMCDataGridComponent } from "./pmc-data-grid.component";
 
 
-describe("DataGridComponent", () => 
+describe("PMCDataGridComponent", () => 
 {
-    let component: DataGridComponent;
-    let fixture: ComponentFixture<DataGridComponent>;
+    let component: PMCDataGridComponent;
+    let fixture: ComponentFixture<PMCDataGridComponent>;
 
     beforeEach(async(() => 
     {
         TestBed.configureTestingModule({
-            declarations: [ DataGridComponent ]
+            declarations: [ PMCDataGridComponent ]
         })
             .compileComponents();
     }));
 
     beforeEach(() => 
     {
-        fixture = TestBed.createComponent(DataGridComponent);
+        fixture = TestBed.createComponent(PMCDataGridComponent);
         component = fixture.componentInstance;
         fixture.detectChanges();
     });

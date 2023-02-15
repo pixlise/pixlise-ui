@@ -482,66 +482,76 @@ export class WidgetRegionDataService
             }
             else
             {
-                try
-                {
-                    // Some expressions run slowly, so we cache their results in case they are re-run frequently
-                    // eg in the case of UI refreshing binary or ternary plots
-                    let t0 = performance.now();
-
-                    // At this point, we have to decide what we're querying for. If we have an ROI specified, we are only querying for its PMCs
-                    // BUT datasetId filters this further, because if we have one specified (in the case of combined datasets), we need to
-                    // only include PMCs for that dataset!
-                    let pmcsToQuery = region ? region.pmcs : null;
-                    let pmcOffset = 0;
-
-                    if(query.datasetId)
-                    {
-                        // Get the offset for this dataset ID
-                        pmcOffset = dataset.getIdOffsetForSubDataset(query.datasetId);
-
-                        // We're filtering down!
-                        if(!pmcsToQuery)
-                        {
-                            // No PMCs given, so just get all for the given dataset ID
-                            pmcsToQuery = this.getPMCsForDatasetId(query.datasetId, dataset)
-                        }
-                        else
-                        {
-                            // Region PMCs are specified, so filter down to only those for the given dataset!
-                            pmcsToQuery = this.filterPMCsForDatasetId(region.pmcs, query.datasetId, dataset);
-                        }
-                    }
-
-                    let data = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
-                    data = this.applyUnitConversion(expr, data, query.units);
-
-                    // Also change the PMC values to be dataset-relative in the case of combined dataset
-                    if(pmcOffset > 0)
-                    {
-                        for(let c = 0; c < data.values.length; c++)
-                        {
-                            data.values[c].pmc -= pmcOffset;
-                        }
-                    }
-
-                    let resultItem = new RegionDataResultItem(data, null, null, data.warning, expr.name);
-                    result.push(resultItem);
-
-                    // Cache if needed
-                    let t1 = performance.now();
-                    this._resultCache.addCachedResult(query, t1-t0, resultItem);
-                }
-                catch (error)
-                {
-                    let errorMsg = httpErrorToString(error, "WidgetRegionDataService.getData");
-                    SentryHelper.logMsg(true, errorMsg);
-                    result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr.name));
-                    //return null;
-                }
+                result.push(this.runExpression(query, expr));
             }
         }
 
         return new RegionDataResults(result, "");
+    }
+
+    public runExpression(query: DataSourceParams, expr: DataExpression): RegionDataResultItem
+    {
+        let result: RegionDataResultItem = null;
+
+        let dataset = this._datasetService.datasetLoaded;
+        let region = this._regions.get(query.roiId);
+
+        try
+        {
+            // Some expressions run slowly, so we cache their results in case they are re-run frequently
+            // eg in the case of UI refreshing binary or ternary plots
+            let t0 = performance.now();
+
+            // At this point, we have to decide what we're querying for. If we have an ROI specified, we are only querying for its PMCs
+            // BUT datasetId filters this further, because if we have one specified (in the case of combined datasets), we need to
+            // only include PMCs for that dataset!
+            let pmcsToQuery = region ? region.pmcs : null;
+            let pmcOffset = 0;
+
+            if(query.datasetId)
+            {
+                // Get the offset for this dataset ID
+                pmcOffset = dataset.getIdOffsetForSubDataset(query.datasetId);
+
+                // We're filtering down!
+                if(!pmcsToQuery)
+                {
+                    // No PMCs given, so just get all for the given dataset ID
+                    pmcsToQuery = this.getPMCsForDatasetId(query.datasetId, dataset);
+                }
+                else
+                {
+                    // Region PMCs are specified, so filter down to only those for the given dataset!
+                    pmcsToQuery = this.filterPMCsForDatasetId(region.pmcs, query.datasetId, dataset);
+                }
+            }
+
+            let data = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
+            data = this.applyUnitConversion(expr, data, query.units);
+
+            // Also change the PMC values to be dataset-relative in the case of combined dataset
+            if(pmcOffset > 0)
+            {
+                for(let c = 0; c < data.values.length; c++)
+                {
+                    data.values[c].pmc -= pmcOffset;
+                }
+            }
+
+            result = new RegionDataResultItem(data, null, null, data.warning, expr.name);
+
+            // Cache if needed
+            let t1 = performance.now();
+            this._resultCache.addCachedResult(query, t1-t0, result);
+        }
+        catch (error)
+        {
+            let errorMsg = httpErrorToString(error, "WidgetRegionDataService.getData");
+            SentryHelper.logMsg(true, errorMsg);
+            result = new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr.name);
+        }
+
+        return result;
     }
 
     private getPMCsForDatasetId(datasetId: string, dataset: DataSet): Set<number>
@@ -577,7 +587,7 @@ export class WidgetRegionDataService
             let locIdx = dataset.pmcToLocationIndex.get(regionPMC);
 
             // See if it exists in the loc idxs for the sub-dataset
-            if(locIdxs.has(locIdx))
+            if(locIdxs.size === 0 || locIdxs.has(locIdx))
             {
                 // We're adding it!
                 pmcsToQuery.add(regionPMC);

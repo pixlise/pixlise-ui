@@ -643,7 +643,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                     for(let datasetId of subDatasetIDs)
                     {
                         csvs.push(new CSVExportItem(
-                            `${name}`+" for dataset"+datasetId,
+                            `${name}${datasetId ? " for dataset"+datasetId : ""}`,
                             generateExportCSVForExpression(elemExprIds, PredefinedROIID.AllPoints, datasetId, this._widgetDataService)
                         ));
                     }
