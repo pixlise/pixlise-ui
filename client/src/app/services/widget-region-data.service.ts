@@ -45,7 +45,7 @@ import { SelectionHistoryItem, SelectionService } from "src/app/services/selecti
 import { ViewState, ViewStateService } from "src/app/services/view-state.service";
 import { RGBA } from "src/app/utils/colours";
 import { httpErrorToString, randomString, SentryHelper } from "src/app/utils/utils";
-import { environment } from "./environments/environment";
+import { environment } from "src/environments/environment";
 
 
 /* WidgetRegionDataService : The widget data source!

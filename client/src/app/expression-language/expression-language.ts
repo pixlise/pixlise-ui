@@ -37,7 +37,7 @@ import { PixliseDataQuerier } from "./interpret-pixlise";
 import { LuaDataQuerier } from "./interpret-lua";
 import { LuaTranspiler } from "./lua-transpiler";
 import { ResultComparer } from "./result-comparer";
-import { environment } from "./environments/environment";
+import { environment } from "src/environments/environment";
 
 
 // Helper function to run a query
