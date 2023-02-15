@@ -30,7 +30,7 @@
 import { Component, ElementRef, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subject, Subscription } from "rxjs";
-import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
+import { PMCDataValues } from "src/app/expression-language/data-values";
 import { MinMax } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
 import { orderVisibleROIs, PredefinedROIID } from "src/app/models/roi";
@@ -47,7 +47,6 @@ import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expr
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { randomString } from "src/app/utils/utils";
-import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { TernaryDiagramDrawer } from "./drawer";
 import { TernaryInteraction } from "./interaction";
 import { TernaryModel } from "./model";

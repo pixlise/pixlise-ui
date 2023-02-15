@@ -1091,7 +1091,7 @@ export class ViewStateService
         // reasons - that came first, this came later and generally want it set to spectrum anyway!
         if(!analysisLayout.topWidgetSelectors || analysisLayout.topWidgetSelectors.length <= 0)
         {
-            analysisLayout.topWidgetSelectors = [ViewStateService.widgetSelectorContextImage, ViewStateService.widgetSelectorSpectrum];
+            analysisLayout.topWidgetSelectors = [ViewStateService.widgetSelectorContextImage, ViewStateService.widgetSelectorSpectrum, ViewStateService.widgetSelectorTernaryPlot];
         }
 
         // Enforce the top left widget is the context image, regardless of what's stored in the user cache
@@ -1269,7 +1269,7 @@ export class ViewStateService
                 ), "underspectrum1");
 
                 // Also set the spectrum to be a parallel coordinates plot
-                this._viewState.analysisLayout.topWidgetSelectors = [ViewStateService.widgetSelectorContextImage, ViewStateService.widgetSelectorParallelCoordinates];
+                this._viewState.analysisLayout.topWidgetSelectors = [ViewStateService.widgetSelectorContextImage, ViewStateService.widgetSelectorParallelCoordinates, ViewStateService.widgetSelectorTernaryPlot];
 
                 // Default show the context image
                 this.showContextImageOptions = true;
@@ -1297,7 +1297,7 @@ export class ViewStateService
                 ), "underspectrum1");
 
                 // Set top widgets to defaults
-                this._viewState.analysisLayout.topWidgetSelectors = [ViewStateService.widgetSelectorContextImage, ViewStateService.widgetSelectorSpectrum];
+                this._viewState.analysisLayout.topWidgetSelectors = [ViewStateService.widgetSelectorContextImage, ViewStateService.widgetSelectorSpectrum, ViewStateService.widgetSelectorTernaryPlot];
             }
         }
 
@@ -1885,15 +1885,17 @@ export class ViewStateService
     // Here position is something that the analysis view understands. See hard codes below to determine what's supported
     setAnalysisViewSelector(position: string, selector: string): void
     {
-        if(position == "top0" || position == "top1")
+        let validTopPositions = ["top0", "top1", "preview"];
+        let validBottomPositions = ["undercontext", "underspectrum0", "underspectrum1", "underspectrum2"];
+
+        if(validTopPositions.includes(position))
         {
-            let idx = (position == "top0") ? 0 : 1;
+            let idx = validTopPositions.indexOf(position);
             this._viewState.analysisLayout.topWidgetSelectors[idx] = selector;
         }
         else
         {
-            const validPositions = ["undercontext", "underspectrum0", "underspectrum1", "underspectrum2"];
-            let idx = validPositions.indexOf(position);
+            let idx = validBottomPositions.indexOf(position);
             if(idx < 0)
             {
                 console.warn("setAnalysisViewSelector failed: bad position "+position+" for: "+selector);
@@ -1901,9 +1903,7 @@ export class ViewStateService
             }
 
             // undercontext refers to first array position, with the rest counting up from there
-            const arrayPositions = [0, 1, 2, 3];
-            
-            this._viewState.analysisLayout.bottomWidgetSelectors[arrayPositions[idx]] = selector;
+            this._viewState.analysisLayout.bottomWidgetSelectors[idx] = selector;
         }
 
         this.save(this._viewState.analysisLayout, "analysisLayout");

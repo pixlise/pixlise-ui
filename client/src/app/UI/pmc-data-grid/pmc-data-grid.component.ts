@@ -34,6 +34,9 @@ import { ContextImageService } from "src/app/services/context-image.service";
 import { RegionDataResultItem } from "src/app/services/widget-region-data.service";
 import { CSVExportItem, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
+import { DataSetService } from "src/app/services/data-set.service";
+import { BeamSelection } from "src/app/models/BeamSelection";
 
 @Component({
     selector: "pmc-data-grid",
@@ -52,26 +55,45 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
 
     private _isSolo: boolean = false;
 
+    selectedPMCs: Set<number> = new Set();
+    currentSelection: SelectionHistoryItem = null;
+
     constructor(
+        private _selectionService: SelectionService,
+        private _datasetService: DataSetService,
         private _dialog: MatDialog
     )
     {
     }
 
+    ngOnInit()
+    {
+        this._selectionService.selection$.subscribe((selection) =>
+        {
+            this.currentSelection = selection;
+            this.selectedPMCs = this._datasetService.datasetLoaded.getPMCsForLocationIndexes(Array.from(selection.beamSelection.locationIndexes), false)
+        });
+    }
+
+    ngOnDestroy()
+    {
+        this._subs.unsubscribe();
+    }
+
     get rowCount(): number
     {
-        let count = this.evaluatedExpression.values.values.length; 
-        return this.columnCount > 0 ? Math.floor(count / this.columnCount) : 0;
+        let count = this.evaluatedExpression?.values?.values.length; 
+        return count && this.columnCount > 0 ? Math.floor(count / this.columnCount) : 0;
     }
 
     get minDataValue(): number
     {
-        return this.evaluatedExpression.values.valueRange.min;
+        return this.evaluatedExpression?.values?.valueRange?.min || 0;
     }
 
     get maxDataValue(): number
     {
-        return this.evaluatedExpression.values.valueRange.max;
+        return this.evaluatedExpression?.values?.valueRange?.max || 0;
     }
 
     get avgDataValue(): number
@@ -92,6 +114,21 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         return avgValue !== null && validPointCount > 0 ? avgValue / validPointCount : 0;
     }
 
+    get hoveredIndex(): number[]
+    {
+        if(this._selectionService.hoverPMC !== -1 && this.evaluatedExpression?.values)
+        {
+            let index = this.evaluatedExpression.values.values.findIndex((point) => point.pmc === this._selectionService.hoverPMC);
+            if(index !== -1)
+            {
+                let row = Math.floor(index / this.columnCount);
+                let col = index % this.columnCount;
+                return [row, col];
+            }
+        }
+        return null;
+    }
+
     getDataPoint(row: number, col: number): PMCDataValue
     {
         let index = row * this.columnCount + col;
@@ -102,8 +139,12 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         
         return this.evaluatedExpression.values.values[index];
     }
-    
 
+    getDataPointPMC(row: number, col: number): number
+    {
+        return this.getDataPoint(row, col)?.pmc || null;
+    }
+    
     getDataValue(row: number, col: number): number|string
     {
         return this.getDataPoint(row, col)?.value || "";
@@ -118,24 +159,53 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         }
         else
         {
-            return `PMC: ${point.pmc}\nValue: ${point.isUndefined ? "Undefined" : point.value}`;
+            let roundedValue = typeof point.value === "number" ? Math.round(point.value * 1000) / 1000 : point.value;
+            return `PMC: ${point.pmc}\nValue: ${point.isUndefined ? "Undefined" : roundedValue}`;
         }
-    }
-
-    ngOnInit()
-    {
-        
-    }
-
-    ngOnDestroy()
-    {
-        this._subs.unsubscribe();
     }
 
     onSolo()
     {
         this._isSolo = !this._isSolo;
         this.onToggleSolo.emit(this._isSolo);
+    }
+
+    onMouseEnter(row: number, col: number)
+    {
+        let point = this.getDataPoint(row, col);
+        if(point !== null)
+        {
+            this._selectionService.setHoverPMC(point.pmc);
+        }
+    }
+
+    onMouseLeave(row: number, col: number)
+    {
+        let point = this.getDataPoint(row, col);
+        if(point !== null && this._selectionService.hoverPMC === point.pmc)
+        {
+            this._selectionService.setHoverPMC(-1);
+        }
+    }
+
+    onClickPMC(row: number, col: number)
+    {
+        let dataset = this._datasetService.datasetLoaded;
+        let pmc = this.getDataPointPMC(row, col);
+        let selectedLocIndex = dataset.pmcToLocationIndex.get(pmc);
+        let { beamSelection, pixelSelection } = this.currentSelection;
+        
+        let locationIndexes = new Set(beamSelection.locationIndexes);
+        if(locationIndexes.has(selectedLocIndex))
+        {
+            locationIndexes.delete(selectedLocIndex);
+        }
+        else
+        {
+            locationIndexes.add(selectedLocIndex);
+        }
+
+        this._selectionService.setSelection(this._datasetService.datasetLoaded, new BeamSelection(dataset, locationIndexes), pixelSelection, true);
     }
 
     onExport()
@@ -163,7 +233,8 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
                 {
                     let data = this.evaluatedExpression.values.values.map((point) =>
                     {
-                        return `"${point.pmc}",${point.isUndefined ? "Undefined" : point.value}`;
+                        let roundedValue = typeof point.value === "number" ? Math.round(point.value * 10000) / 10000 : point.value;
+                        return `"${point.pmc}",${point.isUndefined ? "Undefined" :roundedValue}`;
                     });
                     let csvData = `PMC,Value\n${data.join("\n")}`;
                     csvs.push(new CSVExportItem(`${this.evaluatedExpression.expressionName} Values`, csvData));

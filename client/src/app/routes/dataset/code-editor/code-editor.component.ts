@@ -84,6 +84,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     public isPMCDataGridSolo: boolean = false;
 
+    private _keyPresses: { [key: string]: boolean } = {};
+
     constructor(
         private _route: ActivatedRoute,
         private _router: Router,
@@ -172,13 +174,10 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     private createTopRowComponents(selectors: string[])
     {
-        let factory = this.makeComponentFactory(selectors[0]);
-
         // Set this one
         this.previewContainer.clear();
         this.clearPreviewReplaceable();
-
-        factory = this.makeComponentFactory(selectors[1]);
+        let factory = this.makeComponentFactory(selectors[2]);
         if(factory)
         {
             let comp = this.previewContainer.createComponent(factory);
@@ -200,7 +199,10 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     runExpression(): void
     {
-        this.evaluatedExpression = this._widgetDataService.runExpression(new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), this.expression);
+        if(this._expressionID && this.expression)
+        {
+            this.evaluatedExpression = this._widgetDataService.runExpression(new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), this.expression);
+        }
         if(this.evaluatedExpression && this.evaluatedExpression?.values?.values.length > 0)
         {
             this.isCodeChanged = false;
@@ -252,12 +254,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         }
     }
 
-    get dataPreview(): number[]
-    {
-        // return this.evaluatedExpression.queryResults.map((r) => r.);
-        return [].constructor(5000).fill(0).map((_, i) => i + 1);
-    }
-
     onExpressionTextChanged(text: string): void
     {
         this.editExpression = text;
@@ -271,6 +267,22 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     onTogglePMCDataGridSolo(isSolo: boolean): void
     {
         this.isPMCDataGridSolo = isSolo;
+    }
+
+    @HostListener("window:keydown", ["$event"])
+    onKeydown(event: KeyboardEvent): void
+    {
+        this._keyPresses[event.key] = true;
+        if(this._keyPresses["Meta"] && this._keyPresses["k"])
+        {
+            this.runExpression();
+        }
+    }
+
+    @HostListener("window:keyup", ["$event"])
+    onKeyup(event: KeyboardEvent): void
+    {
+        this._keyPresses[event.key] = false;
     }
 
     // NOTE: there are ways to go from selector string to ComponentFactory:

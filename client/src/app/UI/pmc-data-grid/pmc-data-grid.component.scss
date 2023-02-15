@@ -34,6 +34,7 @@
     height: 100%;
     width: 100%;
     border-radius: 4px;
+    background: #1b1d1e;
 
     .grid-header {
         display: flex;
@@ -80,7 +81,7 @@
                     }
 
                     td {
-                        &:hover {
+                        &.hover, &:hover {
                             background-color: lighten(#1B1D1E, 10%);
                         }
                     }
@@ -92,7 +93,11 @@
                     color: rgb(var(--clr-gray-30));
                     cursor: pointer;
 
-                    &:hover {
+                    &.selected {
+                        outline: 2px solid $ui-color-highlight;
+                    }
+
+                    &.hover, &:hover {
                         background-color: lighten(#232828, 10%);
                         outline: 2px solid $clr-context-purple;
                     }

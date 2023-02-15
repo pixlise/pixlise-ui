@@ -50,12 +50,16 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="table-container">
     <table>
       <tr *ngFor="let _ of [].constructor(rowCount); let i = index;">
-        <td 
+        <td
           *ngFor="let _ of [].constructor(columnCount); let j = index;"
+          class="{{hoveredIndex !== null && hoveredIndex[0] === i && hoveredIndex[1] === j ? 'hover' : selectedPMCs.has(getDataPointPMC(i, j)) ? 'selected' : ''}}"
+          (click)="onClickPMC(i, j)"
+          (mouseenter)="onMouseEnter(i, j)"
+          (mouseleave)="onMouseLeave(i, j)"
           #tooltip="matTooltip"
           [matTooltip]="getDataTooltip(i, j)"
         >
-          {{getDataValue(i, j)}}
+          {{getDataValue(i, j) | number:'1.0-2'}}
         </td>
       </tr>
     </table>
