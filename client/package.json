@@ -9,7 +9,7 @@
     "lint": "ng lint",
     "e2e": "ng e2e",
     "build-prod": "ng build --prod",
-    "postinstall": "node src/version.js",
+    "postinstall": "node src/version.js && patch-package",
     "compodoc": "npx compodoc -p tsconfig.app.json src"
   },
   "private": true,
