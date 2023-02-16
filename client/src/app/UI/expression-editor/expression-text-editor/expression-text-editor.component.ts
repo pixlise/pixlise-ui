@@ -37,6 +37,7 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElement, Suggestion } from "../expression-help";
 import { SentryHelper } from "src/app/utils/utils";
+import { Range } from "codemirror";
 
 export class TextSelection
 {
@@ -45,6 +46,9 @@ export class TextSelection
         public isSingleLineHighlighted: boolean,
         public startLine: number,
         public endLine: number,
+        public range: Range,
+        public markText: () => void,
+        public clearMarkedText: () => void,
     )
     {
     } 
@@ -81,6 +85,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Input() allowEdit: boolean = true;
     @Input() applyNow: boolean = false;
     @Input() isImmediatelyAppliable: boolean = true;
+    
+    @Input() range: Range = null;
 
     @Output() onChange = new EventEmitter<DataExpression>();
     @Output() onTextChange = new EventEmitter<string>();
@@ -400,6 +406,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             this.findVariables();
 
             this.updateHelp();
+            this.range = null;
         });
 
         cm.on("cursorActivity", (instance)=>
@@ -410,6 +417,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         cm.on("focus", (instance)=>
         {
             this.updateHelp();
+            this.markExecutedExpressionRange(cm);
         });
 
         cm.on("beforeSelectionChange", (instance, selection) =>
@@ -432,7 +440,23 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                     {
                         text = document.getSelection().toString();
                     }
-                    this.onTextSelect.emit(new TextSelection(text, isSingleLine, startLine, endLine));
+                    this.onTextSelect.emit(
+                        new TextSelection(text, isSingleLine, startLine, endLine, selection.ranges[0], 
+                            () => this.markExecutedExpressionRange(cm, range),
+                            () =>
+                            {
+                                let rangeEnd = this.range.to();
+                                this.range = null;
+
+                                // We have to set selection twice to clear the marked range because code mirror only
+                                // does an actual selection change (which resets marked text) if the new selection is valid and
+                                // different from the old selection and we can only ensure it is different by setting it twice
+                                cm.setSelection({line: 0, ch: 0}, {line: 0, ch: 0});
+                                cm.setSelection(rangeEnd, rangeEnd);
+                            }
+                        )
+                    );
+                    this.markExecutedExpressionRange(cm);
                 }, 100);
             }
         });
@@ -453,6 +477,31 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         if(this._expr && this._expr.name.length > 0)
         {
             cm.focus();
+        }
+    }
+
+    private markExecutedExpressionRange(cm: CodeMirror.EditorFromTextArea, range: Range = null): void
+    {
+        let executedRange = range ? range : this.range;
+        if(executedRange)
+        {
+            if(executedRange.head.line === executedRange.anchor.line && executedRange.head.ch === executedRange.anchor.ch)
+            {
+                let endLine = executedRange.to().line;
+                cm.markText(
+                    { line: 0, ch: 0 },
+                    { line: endLine, ch: cm.getLine(endLine).length },
+                    { className: "highlight", css: "background-color: black;" }
+                );
+            }
+            else
+            {
+                cm.markText(
+                    executedRange.from(),
+                    executedRange.to(),
+                    { className: "highlight", css: "background-color: black;" }
+                );
+            }
         }
     }
 

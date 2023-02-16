@@ -73,6 +73,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [applyNow]="false"
                 (onTextChange)="onExpressionTextChanged($event)"
                 (onTextSelect)="onTextSelect($event)"
+                [range]="isSubsetExpression ? executedTextSelection.range : null"
             >
             </expression-text-editor>
         </div>

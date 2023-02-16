@@ -81,12 +81,10 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     public isCodeChanged = true;
     public isExpressionSaved = true;
 
-    public textHighlighted: string = "";
-    public startLineHighlighted: number = -1;
-    public endLineHighlighted: number = -1;
-    public isSingleLineHighlighted: boolean = false;
+    public activeTextSelection: TextSelection = null;
+    public executedTextSelection: TextSelection = null;
+    public isSubsetExpression: boolean = false;
 
-    
     public expression: DataExpression;
     public evaluatedExpression: RegionDataResultItem;
     public currentEvaluatedExpressionTitle: string = "";
@@ -215,8 +213,15 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         if(this.evaluatedExpression && this.evaluatedExpression?.values?.values.length > 0)
         {
             this.isCodeChanged = false;
-            this.currentEvaluatedExpressionTitle = "Numeric Values: All";
         }
+
+        this.currentEvaluatedExpressionTitle = "Numeric Values: All";
+        this.isSubsetExpression = false;
+        if(this.executedTextSelection)
+        {
+            this.executedTextSelection.clearMarkedText();
+        }
+        this.executedTextSelection = null;
     }
 
     runHighlightedExpression(): void
@@ -240,19 +245,39 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
         let lineRange = this.isSingleLineHighlighted ? this.startLineHighlighted + 1 : `${this.startLineHighlighted + 1} - ${this.endLineHighlighted + 1}`;
         this.currentEvaluatedExpressionTitle = `Numeric Values: Line ${lineRange}`;
+        this.isSubsetExpression = true;
+
+        this.executedTextSelection = this.activeTextSelection;
+        this.executedTextSelection.markText();
     }
 
     onTextSelect(textSelection: TextSelection): void
     {
-        this.textHighlighted = textSelection.text;
-        this.isSingleLineHighlighted = textSelection.isSingleLineHighlighted;
-        this.startLineHighlighted = textSelection.startLine;
-        this.endLineHighlighted = textSelection.endLine;
+        this.activeTextSelection = textSelection;
+    }
+
+    get textHighlighted(): string
+    {
+        return this.activeTextSelection?.text;
+    }
+
+    get isSingleLineHighlighted(): boolean
+    {
+        return this.activeTextSelection?.isSingleLineHighlighted;
+    }
+
+    get startLineHighlighted(): number
+    {
+        return this.activeTextSelection?.startLine;
+    }
+
+    get endLineHighlighted(): number
+    {
+        return this.activeTextSelection?.endLine;
     }
 
     get dataGridHeaderLabel(): string
     {
-        // Numeric Values: Line 1 - 50
         return this.currentEvaluatedExpressionTitle;
     }
     
