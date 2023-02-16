@@ -83,7 +83,7 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
             <pmc-data-grid
                 class="{{isPMCDataGridSolo ? 'solo' : ''}}"
-                header="Numeric Values: Line 1 - 50"
+                [header]="dataGridHeaderLabel"
                 [evaluatedExpression]="evaluatedExpression"
                 [columnCount]="15"
                 (onToggleSolo)="onTogglePMCDataGridSolo($event)"

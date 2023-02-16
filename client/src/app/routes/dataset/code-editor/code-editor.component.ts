@@ -82,12 +82,14 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     public isExpressionSaved = true;
 
     public textHighlighted: string = "";
-    public lineHighlighted: number = -1;
+    public startLineHighlighted: number = -1;
+    public endLineHighlighted: number = -1;
     public isSingleLineHighlighted: boolean = false;
 
-
+    
     public expression: DataExpression;
     public evaluatedExpression: RegionDataResultItem;
+    public currentEvaluatedExpressionTitle: string = "";
 
     public isPMCDataGridSolo: boolean = false;
 
@@ -213,6 +215,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         if(this.evaluatedExpression && this.evaluatedExpression?.values?.values.length > 0)
         {
             this.isCodeChanged = false;
+            this.currentEvaluatedExpressionTitle = "Numeric Values: All";
         }
     }
 
@@ -225,23 +228,32 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         }
         else if(this.isSingleLineHighlighted)
         {
-            highlightedExpression.expression = this.expression.expression.split("\n").slice(0, this.lineHighlighted + 1).join("\n");
+            highlightedExpression.expression = this.expression.expression.split("\n").slice(0, this.endLineHighlighted + 1).join("\n");
         }
 
-        console.log(highlightedExpression.expression, "|", this.textHighlighted)
         this.evaluatedExpression = this._widgetDataService.runExpression(
             new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), 
             highlightedExpression
         );
 
         this.isCodeChanged = true;
+
+        let lineRange = this.isSingleLineHighlighted ? this.startLineHighlighted + 1 : `${this.startLineHighlighted + 1} - ${this.endLineHighlighted + 1}`;
+        this.currentEvaluatedExpressionTitle = `Numeric Values: Line ${lineRange}`;
     }
 
     onTextSelect(textSelection: TextSelection): void
     {
         this.textHighlighted = textSelection.text;
         this.isSingleLineHighlighted = textSelection.isSingleLineHighlighted;
-        this.lineHighlighted = textSelection.lineHighlighted;
+        this.startLineHighlighted = textSelection.startLine;
+        this.endLineHighlighted = textSelection.endLine;
+    }
+
+    get dataGridHeaderLabel(): string
+    {
+        // Numeric Values: Line 1 - 50
+        return this.currentEvaluatedExpressionTitle;
     }
     
     get editable(): boolean

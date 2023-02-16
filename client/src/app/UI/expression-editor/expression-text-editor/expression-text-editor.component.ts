@@ -43,7 +43,8 @@ export class TextSelection
     constructor(
         public text: string,
         public isSingleLineHighlighted: boolean,
-        public lineHighlighted: number
+        public startLine: number,
+        public endLine: number,
     )
     {
     } 
@@ -417,7 +418,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             {
                 let range = selection.ranges[0];
                 let isSingleLine = range.anchor.line === range.head.line;
-                let highlightedLine = Math.max(range.anchor.line, range.head.line);
+                let startLine = Math.min(range.anchor.line, range.head.line);
+                let endLine = Math.max(range.anchor.line, range.head.line);
                 
                 setTimeout(() =>
                 {
@@ -430,7 +432,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                     {
                         text = document.getSelection().toString();
                     }
-                    this.onTextSelect.emit(new TextSelection(text, isSingleLine, highlightedLine));
+                    this.onTextSelect.emit(new TextSelection(text, isSingleLine, startLine, endLine));
                 }, 100);
             }
         });
