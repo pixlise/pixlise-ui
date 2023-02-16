@@ -57,6 +57,7 @@ import { SpectrumFitContainerComponent } from "src/app/UI/spectrum-chart-widget/
 import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
 import { DataSourceParams, RegionDataResultItem, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
+import { TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
 
 @Component({
     selector: "code-editor",
@@ -76,8 +77,14 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     private _editable = true;
 
-    useAutocomplete = false;
-    isCodeChanged = true;
+    public useAutocomplete = false;
+    public isCodeChanged = true;
+    public isExpressionSaved = true;
+
+    public textHighlighted: string = "";
+    public lineHighlighted: number = -1;
+    public isSingleLineHighlighted: boolean = false;
+
 
     public expression: DataExpression;
     public evaluatedExpression: RegionDataResultItem;
@@ -208,6 +215,34 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             this.isCodeChanged = false;
         }
     }
+
+    runHighlightedExpression(): void
+    {
+        let highlightedExpression = new DataExpression(this._expressionID, this.expression.name, "", this.expression.type, this.expression.comments, this.expression.shared, this.expression.creator, this.expression.createUnixTimeSec, this.expression.modUnixTimeSec, this.expression.tags);
+        if(this.textHighlighted)
+        {
+            highlightedExpression.expression = this.textHighlighted;
+        }
+        else if(this.isSingleLineHighlighted)
+        {
+            highlightedExpression.expression = this.expression.expression.split("\n").slice(0, this.lineHighlighted + 1).join("\n");
+        }
+
+        console.log(highlightedExpression.expression, "|", this.textHighlighted)
+        this.evaluatedExpression = this._widgetDataService.runExpression(
+            new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), 
+            highlightedExpression
+        );
+
+        this.isCodeChanged = true;
+    }
+
+    onTextSelect(textSelection: TextSelection): void
+    {
+        this.textHighlighted = textSelection.text;
+        this.isSingleLineHighlighted = textSelection.isSingleLineHighlighted;
+        this.lineHighlighted = textSelection.lineHighlighted;
+    }
     
     get editable(): boolean
     {
@@ -225,6 +260,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         {
             this.expression.expression = val;
             this.isCodeChanged = true;
+            this.isExpressionSaved = false;
         }
     }
 
@@ -238,6 +274,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         if(this.expression)
         {
             this.expression.tags = tags;
+            this.isExpressionSaved = false;
         }
     }
 
@@ -251,6 +288,21 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         if(this.expression)
         {
             this.expression.name = name;
+            this.isExpressionSaved = false;
+        }
+    }
+
+    get expressionComments(): string
+    {
+        return this.expression?.comments || "";
+    }
+
+    set expressionComments(comments: string)
+    {
+        if(this.expression)
+        {
+            this.expression.comments = comments;
+            this.isExpressionSaved = false;
         }
     }
 
@@ -267,6 +319,28 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     onTogglePMCDataGridSolo(isSolo: boolean): void
     {
         this.isPMCDataGridSolo = isSolo;
+    }
+
+    onSave(): void
+    {
+        this._expressionService.edit(
+            this._expressionID,
+            this.expression.name,
+            this.expression.expression,
+            this.expression.type,
+            this.expression.comments,
+            this.expression.tags
+        ).subscribe(
+            ()=>
+            {
+                this.isCodeChanged = false;
+                this.isExpressionSaved = true;
+            },
+            (err)=>
+            {
+                alert(`Failed to save expression ${this.expression.name}: ${err}`);
+            }
+        );
     }
 
     @HostListener("window:keydown", ["$event"])

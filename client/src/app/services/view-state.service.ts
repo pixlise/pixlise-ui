@@ -1066,6 +1066,11 @@ export class ViewStateService
 
                         this._viewSelectorsAreDefaults = true;
                     }
+                    else if(state.analysisLayout.bottomWidgetSelectors.length > 4)
+                    {
+                        // If we have more than 4 widgets along the bottom, we'll just use the first 4
+                        state.analysisLayout.bottomWidgetSelectors = state.analysisLayout.bottomWidgetSelectors.slice(0, 4);
+                    }
                     else
                     {
                         this._viewSelectorsAreDefaults = false;

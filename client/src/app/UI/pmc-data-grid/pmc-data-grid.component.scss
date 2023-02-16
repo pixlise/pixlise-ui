@@ -94,8 +94,10 @@
                     cursor: pointer;
 
                     &.selected {
-                        outline: 2px solid $ui-color-highlight;
+                        background-color: rgba(106, 208, 219, 0.25) !important;
+                        // outline: 2px solid $ui-color-highlight;
                     }
+
 
                     &.hover, &:hover {
                         background-color: lighten(#232828, 10%);

@@ -37,7 +37,7 @@
 }
 
 .text-editor {
-    height: calc(100vh - 36px);
+    height: calc(100vh - 72px);
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -47,7 +47,7 @@
         display: flex;
 
         ::ng-deep .cm-s-pixlise.CodeMirror {
-            height: calc(100vh - 36px);
+            height: calc(100vh - 72px);
         }
     }    
 }
@@ -71,27 +71,46 @@
         z-index: 100;
 
         padding: 4px 0;
+    }
+    
+    .editor-footer {
+        @extend .editor-header;
+        height: 28px;
 
         .text-container {
-            display: flex;
-            align-items: center;
-            flex: 1;
-            padding: 0 8px;
+            input {
+                margin: 0 8px;
+            }
         }
 
         .viz-container {
-            display: flex;
-            align-items: center;
-            flex: 1;
-            padding-left: 8px;
+            .right-btn-group {
+                push-button:last-of-type {
+                    margin: 0 8px;
+                }
+            }
         }
+    }
 
-        .right-btn-group {
-            display: flex;
-            align-items: center;
+    .text-container {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        padding: 0 8px;
+    }
 
-            margin-left: auto;
-        }
+    .viz-container {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        padding-left: 8px;
+    }
+
+    .right-btn-group {
+        display: flex;
+        align-items: center;
+
+        margin-left: auto;
     }
 
     .viz-panels {
@@ -119,7 +138,7 @@
             &.solo {
                 position: absolute;
                 top: 0;
-                max-height: calc(100vh - 36px);
+                max-height: calc(100vh - 72px);
                 height: 100%;
                 width: 100%;
             }

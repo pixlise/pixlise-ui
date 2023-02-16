@@ -38,6 +38,17 @@ import { WidgetRegionDataService } from "src/app/services/widget-region-data.ser
 import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElement, Suggestion } from "../expression-help";
 import { SentryHelper } from "src/app/utils/utils";
 
+export class TextSelection
+{
+    constructor(
+        public text: string,
+        public isSingleLineHighlighted: boolean,
+        public lineHighlighted: number
+    )
+    {
+    } 
+}
+
 export class MarkPosition
 {
     constructor(public line: number, public idxStart: number, public idxEnd: number)
@@ -72,7 +83,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     @Output() onChange = new EventEmitter<DataExpression>();
     @Output() onTextChange = new EventEmitter<string>();
-
+    @Output() onTextSelect = new EventEmitter<TextSelection>();
+    
     constructor(
         private _datasetService: DataSetService,
         private _widgetDataService: WidgetRegionDataService,
@@ -116,8 +128,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
             const source2 = timer(100);
             const sub2 = source2.subscribe(setupFunc);
-        }
-        );
+        });
     }
 
     ngOnDestroy()
@@ -398,6 +409,30 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         cm.on("focus", (instance)=>
         {
             this.updateHelp();
+        });
+
+        cm.on("beforeSelectionChange", (instance, selection) =>
+        {
+            if(selection.ranges.length === 1)
+            {
+                let range = selection.ranges[0];
+                let isSingleLine = range.anchor.line === range.head.line;
+                let highlightedLine = Math.max(range.anchor.line, range.head.line);
+                
+                setTimeout(() =>
+                {
+                    let text = "";
+                    if(window.getSelection)
+                    {
+                        text = window.getSelection().toString();
+                    }
+                    else if(document.getSelection)
+                    {
+                        text = document.getSelection().toString();
+                    }
+                    this.onTextSelect.emit(new TextSelection(text, isSingleLine, highlightedLine));
+                }, 100);
+            }
         });
 
         // TODO: key map, remove up/down arrow keys so they can be handled outside of codemirror, and we can move up/down help

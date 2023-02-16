@@ -52,7 +52,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <tr *ngFor="let _ of [].constructor(rowCount); let i = index;">
         <td
           *ngFor="let _ of [].constructor(columnCount); let j = index;"
-          class="{{hoveredIndex !== null && hoveredIndex[0] === i && hoveredIndex[1] === j ? 'hover' : selectedPMCs.has(getDataPointPMC(i, j)) ? 'selected' : ''}}"
+          class="{{hoveredIndex !== null && hoveredIndex[0] === i && hoveredIndex[1] === j ? 'hover' : ''}} {{selectedPMCs.has(getDataPointPMC(i, j)) ? 'selected' : ''}}"
           (click)="onClickPMC(i, j)"
           (mouseenter)="onMouseEnter(i, j)"
           (mouseleave)="onMouseLeave(i, j)"

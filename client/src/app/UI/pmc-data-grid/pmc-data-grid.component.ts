@@ -147,7 +147,8 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
     
     getDataValue(row: number, col: number): number|string
     {
-        return this.getDataPoint(row, col)?.value || "";
+        let value = this.getDataPoint(row, col)?.value;
+        return [null, undefined].includes(value) ? "" : value;
     }
 
     getDataTooltip(row: number, col: number): string
@@ -234,7 +235,7 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
                     let data = this.evaluatedExpression.values.values.map((point) =>
                     {
                         let roundedValue = typeof point.value === "number" ? Math.round(point.value * 10000) / 10000 : point.value;
-                        return `"${point.pmc}",${point.isUndefined ? "Undefined" :roundedValue}`;
+                        return `"${point.pmc}",${point.isUndefined ? "Undefined" : roundedValue}`;
                     });
                     let csvData = `PMC,Value\n${data.join("\n")}`;
                     csvs.push(new CSVExportItem(`${this.evaluatedExpression.expressionName} Values`, csvData));

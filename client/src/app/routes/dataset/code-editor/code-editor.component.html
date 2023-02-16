@@ -72,6 +72,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [isImmediatelyAppliable]="false"
                 [applyNow]="false"
                 (onTextChange)="onExpressionTextChanged($event)"
+                (onTextSelect)="onTextSelect($event)"
             >
             </expression-text-editor>
         </div>
@@ -87,6 +88,32 @@ POSSIBILITY OF SUCH DAMAGE.
                 [columnCount]="15"
                 (onToggleSolo)="onTogglePMCDataGridSolo($event)"
             ></pmc-data-grid>
+        </div>
+    </div>
+    <div class="editor-footer">
+        <div class="text-container">
+            <input type="text" placeholder="Expression Description" [(ngModel)]="expressionComments" fxFlex>
+            <push-button
+                buttonStyle="yellow"
+                [disabled]="textHighlighted === '' && !isSingleLineHighlighted"
+                (onClick)="runHighlightedExpression()"
+            >{{textHighlighted === '' ? "Visualize Code Until Line" : "Visualize Selected Code"}}
+            </push-button>
+        </div>
+        <div class="viz-container">
+            <div class="right-btn-group">
+                <push-button
+                    buttonStyle="outline"
+                    (onClick)="onClose()"
+                >Cancel
+                </push-button>
+                <push-button
+                    buttonStyle="yellow"
+                    [disabled]="isExpressionSaved"
+                    (onClick)="onSave()"
+                >Save
+                </push-button>
+            </div>
         </div>
     </div>
 </div>
