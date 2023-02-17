@@ -49,7 +49,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="panel outer-panel" fxLayout="column" fxFill>
     <div fxLayout="row" fxLayoutAlign="space-between center" class="panel-title">
-        <widget-switcher [activeSelector]='thisSelector' [widgetPosition]='widgetPosition'></widget-switcher>
+        <widget-switcher [activeSelector]='thisSelector' [widgetPosition]='widgetPosition' [previewMode]="previewExpressionIDs.length > 0"></widget-switcher>
         <img *ngIf="expressionsMissingPMCs" src="assets/icons/missing-pmcs.svg" [title]="expressionsMissingPMCs">
         <div fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements">
             <references-picker (onChange)="onReferences($event)" [plotIDs]="axesIDs"></references-picker>

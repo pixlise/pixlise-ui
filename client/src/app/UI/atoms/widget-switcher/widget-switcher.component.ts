@@ -48,6 +48,7 @@ export class WidgetSwitcherComponent implements OnInit
 {
     @Input() activeSelector: string = "";
     @Input() widgetPosition: string = "";
+    @Input() previewMode: boolean = false;
 
     selectableOptions: SelectableWidget[] = [
         new SelectableWidget(ViewStateService.widgetSelectorBinaryPlot, "Binary"),
@@ -80,6 +81,17 @@ export class WidgetSwitcherComponent implements OnInit
 
     ngOnInit(): void
     {
+        if(this.previewMode)
+        {
+            this.selectableOptions = [
+                new SelectableWidget(ViewStateService.widgetSelectorContextImage, "Context Image"),
+                new SelectableWidget(ViewStateService.widgetSelectorBinaryPlot, "Binary"),
+                new SelectableWidget(ViewStateService.widgetSelectorTernaryPlot, "Ternary"),
+                new SelectableWidget(ViewStateService.widgetSelectorChordDiagram, "Chord"),
+                new SelectableWidget(ViewStateService.widgetSelectorHistogram, "Histogram"),
+            ];
+        }
+
         this.selectedOption = this.activeSelector;
     }
 

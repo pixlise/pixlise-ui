@@ -45,7 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="panel outer-panel" fxLayout="column" fxFill>
     <div fxLayout="row" fxLayoutAlign="space-between" class="panel-title">
-        <widget-switcher [activeSelector]='thisSelector' [widgetPosition]='widgetPosition'></widget-switcher>
+        <widget-switcher [activeSelector]='thisSelector' [widgetPosition]='widgetPosition' [previewMode]="previewExpressionIDs.length > 0"></widget-switcher>
         <div fxLayout="row" class="gap-separated-horizontal-elements">
             <push-button
                 (onClick)="onClickChooseBars()"
