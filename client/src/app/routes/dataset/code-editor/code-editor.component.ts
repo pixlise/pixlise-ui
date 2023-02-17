@@ -242,7 +242,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         {
             highlightedExpression.expression = this.textHighlighted;
         }
-        else if(this.isSingleLineHighlighted)
+        else if(this.isEmptySelection)
         {
             highlightedExpression.expression = this.expression.expression.split("\n").slice(0, this.endLineHighlighted + 1).join("\n");
         }
@@ -255,7 +255,15 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
         this.isCodeChanged = true;
 
-        let lineRange = this.isSingleLineHighlighted ? this.startLineHighlighted + 1 : `${this.startLineHighlighted + 1} - ${this.endLineHighlighted + 1}`;
+        let lineRange = "";
+        if(this.isEmptySelection)
+        {
+            lineRange = `0 - ${this.endLineHighlighted + 1}`;
+        }
+        else
+        {
+            lineRange = this.startLineHighlighted === this.endLineHighlighted ? `${this.startLineHighlighted + 1}` : `${this.startLineHighlighted + 1} - ${this.endLineHighlighted + 1}`;
+        }
         
         let previewID = `unsaved-${this._expressionID}`;
         this._expressionService.cache(previewID, highlightedExpression, `Unsaved ${this.expression.name} (Lines ${lineRange})`);
@@ -277,9 +285,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         return this.activeTextSelection?.text;
     }
 
-    get isSingleLineHighlighted(): boolean
+    get isEmptySelection(): boolean
     {
-        return this.activeTextSelection?.isSingleLineHighlighted;
+        return this.activeTextSelection?.isEmptySelection;
     }
 
     get startLineHighlighted(): number

@@ -45,7 +45,7 @@ export class TextSelection
 {
     constructor(
         public text: string,
-        public isSingleLineHighlighted: boolean,
+        public isEmptySelection: boolean,
         public startLine: number,
         public endLine: number,
         public range: Range,
@@ -478,7 +478,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             if(selection.ranges.length === 1)
             {
                 let range = selection.ranges[0];
-                let isSingleLine = range.anchor.line === range.head.line;
+                let isSingleLineEmpty = range.anchor.line === range.head.line && range.anchor.ch === range.head.ch;
                 let startLine = Math.min(range.anchor.line, range.head.line);
                 let endLine = Math.max(range.anchor.line, range.head.line);
                 
@@ -494,7 +494,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                         text = document.getSelection().toString();
                     }
                     this.onTextSelect.emit(
-                        new TextSelection(text, isSingleLine, startLine, endLine, selection.ranges[0], 
+                        new TextSelection(text, isSingleLineEmpty, startLine, endLine, selection.ranges[0], 
                             () => this.markExecutedExpressionRange(cm, range),
                             () =>
                             {

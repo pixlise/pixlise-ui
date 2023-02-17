@@ -100,7 +100,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <input type="text" placeholder="Expression Description" [(ngModel)]="expressionComments" fxFlex>
             <push-button
                 buttonStyle="yellow"
-                [disabled]="textHighlighted === '' && !isSingleLineHighlighted"
+                [disabled]="textHighlighted === '' && !isEmptySelection"
                 (onClick)="runHighlightedExpression()"
             >{{textHighlighted === '' ? "Visualize Code Until Line" : "Visualize Selected Code"}}
             </push-button>
