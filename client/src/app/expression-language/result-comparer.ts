@@ -27,6 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { Observable, combineLatest } from "rxjs";
 import { PixliseDataQuerier } from "./interpret-pixlise";
 import { LuaDataQuerier } from "./interpret-lua";
 import { PMCDataValues } from "src/app/expression-language/data-values";
@@ -89,39 +90,52 @@ export class ResultComparer
                 let exprPIXLISEToRun = this.appendTo(exprPIXLISERan, exprPIXLISELines[c]);
                 exprPIXLISEToRun += "\n"+pixParts[0];
 
-                let luaResult = this.runLua(exprLuaToRun);
-                let pixResult = this.runPIXLISE(exprPIXLISEToRun);
+                let luaResult$ = this.runLua(exprLuaToRun);
+                let pixResult$ = this.runPIXLISE(exprPIXLISEToRun);
 
-                if(luaResult && pixResult)
-                {
-                    if(!this.isEqual(luaResult, pixResult))
+                let allResults$ = combineLatest([luaResult$, pixResult$]);
+                allResults$.subscribe(
+                    (results)=>
                     {
-                        console.log("PIXLISE line: "+exprLuaLines[c]);
-                        console.log("PIXLISE value for "+pixParts[0]+":");
-                        console.log(pixResult);
-                        console.log("Lua line: "+exprPIXLISELines[c]);
-                        console.log("Lua value for "+luaParts[0]+":");
-                        console.log(luaResult);
+                        let luaResult = results[0];
+                        let pixResult = results[1];
 
-                        // Run them again so we can step through it in the debugger
-                        let luaResult2 = this.runLua(exprLuaToRun);
-                        let pixResult2 = this.runPIXLISE(exprPIXLISEToRun);
-
-                        if(result < 0)
+                        if(!this.isEqual(luaResult, pixResult))
                         {
-                            // We're only returning the first difference line
-                            result = c+1;
+                            console.log("PIXLISE line: "+exprLuaLines[c]);
+                            console.log("PIXLISE value for "+pixParts[0]+":");
+                            console.log(pixResult);
+                            console.log("Lua line: "+exprPIXLISELines[c]);
+                            console.log("Lua value for "+luaParts[0]+":");
+                            console.log(luaResult);
+
+                            // Run them again so we can step through it in the debugger
+                            let luaResult2$ = this.runLua(exprLuaToRun);
+                            let pixResult2$ = this.runPIXLISE(exprPIXLISEToRun);
+
+                            let allResults$ = combineLatest([luaResult2$, pixResult2$]);
+                            allResults$.subscribe(
+                                (results)=>
+                                {
+                                }
+                            );
+
+                            if(result < 0)
+                            {
+                                // We're only returning the first difference line
+                                result = c+1;
+                            }
+                        }
+                        else
+                        {
+                            // Just check one for weird stuff
+                            this.checkAndWarn(luaResult, c, luaParts[0]);
+
+                            lineResultsLua.set(luaParts[0], luaResult);
+                            lineResultsPIXLISE.set(pixParts[0], pixResult);
                         }
                     }
-                    else
-                    {
-                        // Just check one for weird stuff
-                        this.checkAndWarn(luaResult, c, luaParts[0]);
-
-                        lineResultsLua.set(luaParts[0], luaResult);
-                        lineResultsPIXLISE.set(pixParts[0], pixResult);
-                    }
-                }
+                );
             }
 
             exprLuaRan = this.appendTo(exprLuaRan, exprLuaLines[c]);
@@ -131,14 +145,20 @@ export class ResultComparer
         // Final check
         if(result == -1 && exprLuaLines.length >= afterLine)
         {
-            let luaResultFinal = this.runLua(exprLua);
-            let pixResultFinal = this.runPIXLISE(exprPIXLISE);
-            
-            if(!this.isEqual(luaResultFinal, pixResultFinal))
-            {
-                console.log("Expression final values differ!");
-                result = exprLuaLines.length-1;
-            }
+            let luaResultFinal$ = this.runLua(exprLua);
+            let pixResultFinal$ = this.runPIXLISE(exprPIXLISE);
+
+            let allResults$ = combineLatest([luaResultFinal$, pixResultFinal$]);
+            allResults$.subscribe(
+                (results)=>
+                {
+                    if(!this.isEqual(results[0], results[1]))
+                    {
+                        console.log("Expression final values differ!");
+                        result = exprLuaLines.length-1;
+                    }
+                }
+            );
 
             //console.log(JSON.stringify(luaResultFinal, null, 2));
             //console.log(JSON.stringify(pixResultFinal, null, 2));
@@ -148,10 +168,9 @@ export class ResultComparer
         return result;
     }
 
-    private runLua(expression: string): PMCDataValues
+    private runLua(expression: string): Observable<PMCDataValues>
     {
-        
-        let luaResult: PMCDataValues = null;
+        let luaResult: Observable<PMCDataValues> = null;
 
         try
         {
@@ -168,9 +187,9 @@ export class ResultComparer
         return luaResult;
     }
 
-    private runPIXLISE(expression: string): PMCDataValues
+    private runPIXLISE(expression: string): Observable<PMCDataValues>
     {
-        let pixResult: PMCDataValues = null;
+        let pixResult: Observable<PMCDataValues> = null;
 
         try
         {

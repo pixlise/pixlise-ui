@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Observable, combineLatest, from } from "rxjs";
+import { Observable, combineLatest, from, of } from "rxjs";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { InterpreterDataSource } from "./interpreter-data-source";
@@ -211,7 +211,7 @@ export class LuaDataQuerier
     }
 
     // See: https://github.com/ceifa/wasmoon
-    public runQuery(origExpression: string): PMCDataValues
+    public runQuery(origExpression: string): Observable<PMCDataValues>
     {
         let t0 = performance.now();
         LuaDataQuerier._makeLuaTableTime = 0;
@@ -240,7 +240,7 @@ export class LuaDataQuerier
         {
             console.error(err);
             LuaDataQuerier._lua.global.dumpStack(console.error);
-/*
+/* NOTE: This doesn't print any more than the above...
             // Print out everything...
             for(let c = 1; c < 10; c++)
             {
@@ -271,7 +271,7 @@ export class LuaDataQuerier
 let t1 = performance.now();
 console.log(">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms, makeTable calls took: "+LuaDataQuerier._makeLuaTableTime+"ms");
 
-            return result;
+            return of(result);
         }
 
         throw new Error("Expression: "+expression+" did not complete");

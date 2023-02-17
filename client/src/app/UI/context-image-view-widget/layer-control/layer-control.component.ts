@@ -29,14 +29,15 @@
 
 import { Component, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Observable, Subscription } from "rxjs";
+import { Observable, Subscription, combineLatest } from "rxjs";
+import { map } from "rxjs/operators";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
 import { DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { ViewStateService } from "src/app/services/view-state.service";
-import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
 import { LayerChangeInfo, LayerManager } from "src/app/UI/context-image-view-widget/layer-manager";
 import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
@@ -50,6 +51,7 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { PredefinedROIID } from "src/app/models/roi";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { generateExportCSVForExpression } from "src/app/services/export-data.service";
+import { makeValidFileName } from "src/app/utils/utils";
 
 
 export class LayerDetails
@@ -476,25 +478,6 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         this.regenerateItemList("");
     }
 
-    exportExpressionValues(exprId: string, datasetId: string): string
-    {
-        let queryData: RegionDataResults = this._widgetDataService.getData([new DataSourceParams(exprId, PredefinedROIID.AllPoints, datasetId)], false);
-
-        if(queryData.error)
-        {
-            throw new Error(`Failed to query CSV data for expression: ${exprId}. ${queryData.error}`);
-        }
-
-        let csv: string = "PMC,Value\n";
-
-        queryData.queryResults[0].values.values.forEach(({pmc, value, isUndefined})=>
-        {
-            csv += `${pmc},${isUndefined ? "" : value}\n`;
-        });
-
-        return csv;
-    }
-
     getCanvasOptions(options: PlotExporterDialogOption[], ids: string[]): string[]
     {
         let isColourScaleVisible = options.findIndex((option) => option.label == "Visible Colour Scale") > -1;
@@ -573,7 +556,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
             (options: PlotExporterDialogOption[])=>
             {
                 let canvases: CanvasExportItem[] = [];
-                let csvs: CSVExportItem[] = [];
+                let csvs$: Observable<CSVExportItem>[] = [];
 
                 let drawer = new ExportDrawer(this._contextImageService.mdl, this._contextImageService.mdl.toolHost);
 
@@ -592,7 +575,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                     if(options.findIndex((option) => option.label === "Web Resolution (1200x800)") > -1)
                     {
                         canvases.push(new CanvasExportItem(
-                            `Web Resolution/${name.replace(/\//g, "_")}`,
+                            `Web Resolution/${makeValidFileName(name)}`,
                             generatePlotImage(drawer, this._contextImageService.mdl.transform, [], 1200, 800, false, false, exportIDs)
                         ));   
                     }
@@ -600,7 +583,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                     if(options.findIndex((option) => option.label === "Print Resolution (4096x2160)") > -1)
                     {
                         canvases.push(new CanvasExportItem(
-                            `Print Resolution/${name.replace(/\//g, "_")}`,
+                            `Print Resolution/${makeValidFileName(name)}`,
                             generatePlotImage(drawer, this._contextImageService.mdl.transform, [], 4096, 2160, false, false, exportIDs)
                         ));   
                     }
@@ -642,14 +625,26 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
                     for(let datasetId of subDatasetIDs)
                     {
-                        csvs.push(new CSVExportItem(
-                            `${name}`+" for dataset"+datasetId,
-                            generateExportCSVForExpression(elemExprIds, PredefinedROIID.AllPoints, datasetId, this._widgetDataService)
-                        ));
+                        csvs$.push(
+                            generateExportCSVForExpression(elemExprIds, PredefinedROIID.AllPoints, datasetId, this._widgetDataService).pipe(
+                                map(
+                                    (csvData)=>
+                                    {
+                                        return new CSVExportItem(`${name}`+" for dataset"+datasetId, csvData);
+                                    }
+                                )
+                            )
+                        );
                     }
                 }
 
-                dialogRef.componentInstance.onDownload(canvases, csvs);
+                let csvsFinished$ = combineLatest(csvs$);
+                return csvsFinished$.subscribe(
+                    (csvItems: CSVExportItem[])=>
+                    {
+                        dialogRef.componentInstance.onDownload(canvases, csvItems);
+                    }
+                );
             });
 
         return dialogRef.afterClosed();

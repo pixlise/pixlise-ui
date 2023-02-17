@@ -27,6 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { exp } from "mathjs";
 import {
     DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource
 } from "src/app/expression-language/data-sources";
@@ -177,6 +178,39 @@ const housekeepingSrcData = {
     )
 };
 
+function checkResultOK(querier: PixliseDataQuerier, done: DoneFn, expr: string, expectedResult: any): void
+{
+    querier.runQuery(expr).subscribe(
+        (result)=>
+        {
+            expect(result).toEqual(expectedResult);
+            done();
+        }
+    );
+}
+
+function checkResultError(querier: PixliseDataQuerier, done: DoneFn, expr: string, expectedResult: any): void
+{
+    try
+    {
+        querier.runQuery(expr).subscribe(
+            ()=>
+            {
+                fail("Expected failure");
+            },
+            ()=>
+            {
+                fail("Expected thrown error");
+            }
+        );
+    }
+    catch(e)
+    {
+        expect(e.message).toEqual(expectedResult);
+        done();
+    }
+}
+
 describe("element() call", () =>
 {
     let source: MockSource;
@@ -188,47 +222,43 @@ describe("element() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if non-existant element specified", () => 
+    it("should fail if non-existant element specified", (done) => 
     {
-        expect(()=>querier.runQuery("element(\"Mg\", \"%\", \"B\")")).toThrowError("The currently loaded quantification does not contain column: \"Mg_%_B\". Please select (or create) a quantification with the relevant element.");
+        checkResultError(querier, done, "element(\"Mg\", \"%\", \"B\")", "The currently loaded quantification does not contain column: \"Mg_%_B\". Please select (or create) a quantification with the relevant element.");
     });
 
-    it("should fail if non-existant detector specified", () => 
+    it("should fail if non-existant detector specified", (done)=>
     {
-        expect(()=>querier.runQuery("element(\"Fe\", \"%\", \"C\")")).toThrowError("The currently loaded quantification does not contain column: \"Fe_%_C\". Please select (or create) a quantification with the relevant element.");
+        checkResultError(querier, done, "element(\"Fe\", \"%\", \"C\")", "The currently loaded quantification does not contain column: \"Fe_%_C\". Please select (or create) a quantification with the relevant element.");
     });
 
-    it("should fail if non-existant data specified", () => 
+    it("should fail if non-existant data specified", (done)=>
     {
-        expect(()=>querier.runQuery("element(\"Fe\", \"err\", \"B\")")).toThrowError("The currently loaded quantification does not contain column: \"Fe_err_B\". Please select (or create) a quantification with the relevant element.");
+        checkResultError(querier, done, "element(\"Fe\", \"err\", \"B\")", "The currently loaded quantification does not contain column: \"Fe_err_B\". Please select (or create) a quantification with the relevant element.");
     });
 
-    it("should fail if not enough params to element call", () => 
+    it("should fail if not enough params to element call", (done)=>
     {
-        expect(()=>querier.runQuery("element(\"Fe\", \"%\")")).toThrowError("element() expression expects 3 parameters: element, datatype, detector Id. Received: [\"Fe\",\"%\"]");
+        checkResultError(querier, done, "element(\"Fe\", \"%\")", "element() expression expects 3 parameters: element, datatype, detector Id. Received: [\"Fe\",\"%\"]");
     });
 
-    it("should fail if too many params to element call", () => 
+    it("should fail if too many params to element call", (done)=>
     {
-        expect(()=>querier.runQuery("element(\"Fe\", \"%\", \"A\", \"Hello\")")).toThrowError("element() expression expects 3 parameters: element, datatype, detector Id. Received: [\"Fe\",\"%\",\"A\",\"Hello\"]");
+        checkResultError(querier, done, "element(\"Fe\", \"%\", \"A\", \"Hello\")", "element() expression expects 3 parameters: element, datatype, detector Id. Received: [\"Fe\",\"%\",\"A\",\"Hello\"]");
     });
 
-    it("should return element map Fe_%_A", () => 
+    it("should return element map Fe_%_A", (done) => 
     {
-        let result = querier.runQuery("element(\"Fe\", \"%\", \"A\")");
-        expect(result).toEqual(srcData["Fe_%_A"]);
+        checkResultOK(querier, done, "element(\"Fe\", \"%\", \"A\")", srcData["Fe_%_A"]);
     });
 
-    it("should return element map Ti_%_A", () => 
+    it("should return element map Ti_%_A", (done) => 
     {
-        let result = querier.runQuery("element(\"Ti\", \"%\", \"A\")");
-        expect(result).toEqual(srcData["Ti_%_A"]);
+        checkResultOK(querier, done, "element(\"Ti\", \"%\", \"A\")", srcData["Ti_%_A"]);
     });
 
-    it("%-as-mmol conversion factor Ti_%_A", () => 
+    it("%-as-mmol conversion factor Ti_%_A", (done) => 
     {
-        let result = querier.runQuery("element(\"Ti\", \"%-as-mmol\", \"A\")");
-
         let srcValues = srcData["Ti_%_A"];
         let expValues = [];
         for(let val of srcValues.values)
@@ -237,12 +267,12 @@ describe("element() call", () =>
         }
         let expMmol = PMCDataValues.makeWithValues(expValues);
 
-        expect(result).toEqual(expMmol);
+        checkResultOK(querier, done, "element(\"Ti\", \"%-as-mmol\", \"A\")", expMmol);
     });
 
-    it("should fail for bad syntax", () => 
+    it("should fail for bad syntax", (done) => 
     {
-        expect(()=>querier.runQuery("element(\"Fe\", ")).toThrowError("Expected comma at character 14");
+        checkResultError(querier, done, "element(\"Fe\", ", "Expected comma at character 14");
     });
 
 /*
@@ -274,10 +304,8 @@ describe("element() call FeO-T special case", () =>
     });
 
 
-    it("%-as-mmol conversion factor FeO-T_%_Combined", () => 
+    it("%-as-mmol conversion factor FeO-T_%_Combined", (done)=>
     {
-        let result = querier.runQuery("element(\"FeO-T\", \"%-as-mmol\", \"Combined\")");
-
         let srcValues = srcDataFeO["FeO-T_%_Combined"];
         let expValues = [];
         for(let val of srcValues.values)
@@ -286,7 +314,7 @@ describe("element() call FeO-T special case", () =>
         }
         let expMmol = PMCDataValues.makeWithValues(expValues);
 
-        expect(result).toEqual(expMmol);
+        checkResultOK(querier, done, "element(\"FeO-T\", \"%-as-mmol\", \"Combined\")", expMmol);
     });
 });
 
@@ -301,39 +329,38 @@ describe("elementSum() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if non-existant detector specified", () => 
+    it("should fail if non-existant detector specified", (done)=>
     {
-        expect(()=>querier.runQuery("elementSum(\"%\", \"C\")")).toThrowError("The currently loaded quantification does not contain column: \"Fe_%_C\". Please select (or create) a quantification with the relevant element.");
+        checkResultError(querier, done, "elementSum(\"%\", \"C\")", "The currently loaded quantification does not contain column: \"Fe_%_C\". Please select (or create) a quantification with the relevant element.");
     });
 
-    it("should fail if non-existant data specified", () => 
+    it("should fail if non-existant data specified", (done)=>
     {
-        expect(()=>querier.runQuery("elementSum(\"err\", \"B\")")).toThrowError("The currently loaded quantification does not contain column: \"Fe_err_B\". Please select (or create) a quantification with the relevant element.");
+        checkResultError(querier, done, "elementSum(\"err\", \"B\")", "The currently loaded quantification does not contain column: \"Fe_err_B\". Please select (or create) a quantification with the relevant element.");
     });
 
-    it("should fail if not enough params to element call", () => 
+    it("should fail if not enough params to element call", (done)=>
     {
-        expect(()=>querier.runQuery("elementSum(\"%\")")).toThrowError("elementSum() expression expects 2 parameters: datatype, detector Id. Received: [\"%\"]");
+        checkResultError(querier, done, "elementSum(\"%\")", "elementSum() expression expects 2 parameters: datatype, detector Id. Received: [\"%\"]");
     });
 
-    it("should fail if too many params to element call", () => 
+    it("should fail if too many params to element call", (done)=>
     {
-        expect(()=>querier.runQuery("elementSum(\"%\", \"A\", \"Hello\")")).toThrowError("elementSum() expression expects 2 parameters: datatype, detector Id. Received: [\"%\",\"A\",\"Hello\"]");
+        checkResultError(querier, done, "elementSum(\"%\", \"A\", \"Hello\")", "elementSum() expression expects 2 parameters: datatype, detector Id. Received: [\"%\",\"A\",\"Hello\"]");
     });
 
-    it("should return sum of element map Fe, Ti for _%_A", () => 
+    it("should return sum of element map Fe, Ti for _%_A", (done)=>
     {
-        let result = querier.runQuery("elementSum(\"%\", \"A\")");
         let exp = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 5), new PMCDataValue(643, 7), new PMCDataValue(644, 9)]
         );
 
-        expect(result).toEqual(exp);
+        checkResultOK(querier, done, "elementSum(\"%\", \"A\")", exp);
     });
 
-    it("should fail for bad syntax", () => 
+    it("should fail for bad syntax", (done)=>
     {
-        expect(()=>querier.runQuery("elementSum(\"Fe\", ")).toThrowError("Expected comma at character 17");
+        checkResultError(querier, done, "elementSum(\"Fe\", ", "Expected comma at character 17");
     });
 
 /*
@@ -355,15 +382,14 @@ describe("pseudo() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(null, source, null, null, null, null));
     });
 
-    it("should fail if non-existant pseudo-element specified", () => 
+    it("should fail if non-existant pseudo-element specified", (done)=>
     {
-        expect(()=>querier.runQuery("pseudo(\"Hg\")")).toThrowError("The currently loaded dataset does not include pseudo-intensity data with column name: \"Hg\"");
+        checkResultError(querier, done, "pseudo(\"Hg\")", "The currently loaded dataset does not include pseudo-intensity data with column name: \"Hg\"");
     });
 
-    it("should return pseudo-intensity map Fe", () => 
+    it("should return pseudo-intensity map Fe", (done)=>
     {
-        let result = querier.runQuery("pseudo(\"Fe\")");
-        expect(result).toEqual(pseudoSrcData["Fe"]);
+        checkResultOK(querier, done, "pseudo(\"Fe\")", pseudoSrcData["Fe"]);
     });
 });
 
@@ -379,21 +405,19 @@ describe("housekeeping() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(null, null, source, null, null, null));
     });
 
-    it("should fail if non-existant housekeeping column specified", () => 
+    it("should fail if non-existant housekeeping column specified", (done)=>
     {
-        expect(()=>querier.runQuery("housekeeping(\"Coolant Tmp\")")).toThrowError("The currently loaded dataset does not include housekeeping data with column name: \"Coolant Tmp\"");
+        checkResultError(querier, done, "housekeeping(\"Coolant Tmp\")", "The currently loaded dataset does not include housekeeping data with column name: \"Coolant Tmp\"");
     });
 
-    it("should return housekeeping map Cover Tmp", () => 
+    it("should return housekeeping map Cover Tmp", (done)=>
     {
-        let result = querier.runQuery("housekeeping(\"Cover Tmp\")");
-        expect(result).toEqual(housekeepingSrcData["Cover Tmp"]);
+        checkResultOK(querier, done, "housekeeping(\"Cover Tmp\")", housekeepingSrcData["Cover Tmp"]);
     });
 
-    it("should return housekeeping map for Z height", () => 
+    it("should return housekeeping map for Z height", (done)=>
     {
-        let result = querier.runQuery("position(\"z\")");
-        expect(result).toEqual(housekeepingSrcData["z"]);
+        checkResultOK(querier, done, "position(\"z\")", housekeepingSrcData["z"]);
     });
 });
 
@@ -422,12 +446,9 @@ describe("diffractionPeaks() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(null, null, null, null, source, null));
     });
 
-    it("should return all diffraction peaks", () => 
+    it("should return all diffraction peaks", (done)=>
     {
-        let result = querier.runQuery("diffractionPeaks(0, 4097)");
-        let expected = diffractionSrcData[0];
-
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "diffractionPeaks(0, 4097)", diffractionSrcData[0]);
     });
 /*
     it('should return peaks within channel range', () => {
@@ -454,12 +475,9 @@ describe("roughness() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(null, null, null, null, source, null));
     });
 
-    it("should return all roughness peaks", () => 
+    it("should return all roughness peaks", (done)=>
     {
-        let result = querier.runQuery("roughness()");
-        let expected = diffractionSrcData[0];
-
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "roughness()", diffractionSrcData[0]);
     });
 /*
     it('should return peaks within channel range', () => {
@@ -479,47 +497,39 @@ describe("makeMap() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if no param", () => 
+    it("should fail if no param", (done)=>
     {
-        expect(()=>querier.runQuery("makeMap()")).toThrowError("makeMap() expression expects 1 parameter: map value");
+        checkResultError(querier, done, "makeMap()", "makeMap() expression expects 1 parameter: map value");
     });
 
-    it("should fail if non-number param", () => 
+    it("should fail if non-number param", (done)=>
     {
-        expect(()=>querier.runQuery("makeMap(\"Mg\")")).toThrowError("makeMap() expression expects 1 parameter: map value");
+        checkResultError(querier, done, "makeMap(\"Mg\")", "makeMap() expression expects 1 parameter: map value");
     });
 
-    it("makeMap should work", () => 
+    it("makeMap should work", (done)=>
     {
-        let result = querier.runQuery("makeMap(3.1415926)");
-
         let expValues = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 3.1415926), new PMCDataValue(643, 3.1415926), new PMCDataValue(644, 3.1415926)]
         );
 
-        expect(result).toEqual(expValues);
+        checkResultOK(querier, done, "makeMap(3.1415926)", expValues);
     });
 
-    it("makeMap should work when called with scalar func pow", () => 
+    it("makeMap should work when called with scalar func pow", (done)=>
     {
-        let result = querier.runQuery("makeMap(pow(2, 3))");
-
         let expValues = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 8), new PMCDataValue(643, 8), new PMCDataValue(644, 8)]
         );
-
-        expect(result).toEqual(expValues);
+        checkResultOK(querier, done, "makeMap(pow(2, 3))", expValues);
     });
 
-    it("makeMap should work when called with scalar func sin", () => 
+    it("makeMap should work when called with scalar func sin", (done)=>
     {
-        let result = querier.runQuery("makeMap(sin(2))");
-
         let expValues = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 0.9092974268256817), new PMCDataValue(643, 0.9092974268256817), new PMCDataValue(644, 0.9092974268256817)]
         );
-
-        expect(result).toEqual(expValues);
+        checkResultOK(querier, done, "makeMap(sin(2))", expValues);
     });
 });
 
@@ -542,30 +552,27 @@ describe("math functions", () =>
         let func = trigFunctionNames[c];
         let funcPtr = trigFunctions[c];
 
-        it(func+" should fail if no param", () => 
+        it(func+" should fail if no param", (done)=>
         {
-            expect(()=>querier.runQuery(func+"()")).toThrowError(func+"() expression expects 1 parameter: scalar (radians) OR map of radians");
+            checkResultError(querier, done, func+"()", func+"() expression expects 1 parameter: scalar (radians) OR map of radians");
         });
 
-        it(func+" should fail if non-number param", () => 
+        it(func+" should fail if non-number param", (done)=>
         {
-            expect(()=>querier.runQuery(func+"(\"Mg\")")).toThrowError(func+"() expression expects 1 parameter: scalar (radians) OR map of radians. Arg was wrong type.");
+            checkResultError(querier, done, func+"(\"Mg\")", func+"() expression expects 1 parameter: scalar (radians) OR map of radians. Arg was wrong type.");
         });
 
-        it(func+" should work for scalar (though result wont be map so should print error)", () => 
+        it(func+" should work for scalar (though result wont be map so should print error)", (done)=>
         {
-            expect(()=>querier.runQuery(func+"(1.5)")).toThrowError("Expression: "+func+"(1.5) did not result in usable map data. Result was: "+funcPtr(1.5));
+            checkResultError(querier, done, func+"(1.5)", "Expression: "+func+"(1.5) did not result in usable map data. Result was: "+funcPtr(1.5));
         });
 
-        it(func+" should work for map", () => 
+        it(func+" should work for map", (done)=>
         {
-            let result = querier.runQuery(func+"(element(\"Fe\", \"%\", \"A\"))");
-
             let expValues = PMCDataValues.makeWithValues(
                 [new PMCDataValue(642, funcPtr(1)), new PMCDataValue(643, funcPtr(2)), new PMCDataValue(644, funcPtr(3))]
             );
-
-            expect(result).toEqual(expValues);
+            checkResultOK(querier, done, func+"(element(\"Fe\", \"%\", \"A\"))", expValues);
         });
     }
 });
@@ -579,34 +586,34 @@ describe("atomicMass function", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(null, null, null, null, null, null));
     });
 
-    it("atomicMass should fail if no param", () => 
+    it("atomicMass should fail if no param", (done)=>
     {
-        expect(()=>querier.runQuery("atomicMass()")).toThrowError("atomicMass() expression expects 1 parameters: Atomic symbol. Received: 0 parameters");
+        checkResultError(querier, done, "atomicMass()", "atomicMass() expression expects 1 parameters: Atomic symbol. Received: 0 parameters");
     });
 
-    it("atomicMass should fail if more than 1", () => 
+    it("atomicMass should fail if more than 1", (done)=>
     {
-        expect(()=>querier.runQuery("atomicMass(\"Hi\", 3)")).toThrowError("atomicMass() expression expects 1 parameters: Atomic symbol. Received: 2 parameters");
+        checkResultError(querier, done, "atomicMass(\"Hi\", 3)", "atomicMass() expression expects 1 parameters: Atomic symbol. Received: 2 parameters");
     });
 
-    it("atomicMass should fail not string param", () => 
+    it("atomicMass should fail not string param", (done)=>
     {
-        expect(()=>querier.runQuery("atomicMass(3)")).toThrowError("atomicMass() expression expects 1 parameters: Atomic symbol, eg Fe, O or Fe2O3");
+        checkResultError(querier, done, "atomicMass(3)", "atomicMass() expression expects 1 parameters: Atomic symbol, eg Fe, O or Fe2O3");
     });
 
-    it("atomicMass should fail for invalid formula", () => 
+    it("atomicMass should fail for invalid formula", (done)=>
     {
-        expect(()=>querier.runQuery("atomicMass(\"Hello\")")).toThrowError("atomicMass() Failed to calculate mass for: Hello");
+        checkResultError(querier, done, "atomicMass(\"Hello\")", "atomicMass() Failed to calculate mass for: Hello");
     });
 
-    it("atomicMass should work for element (though result wont be map so should print error)", () => 
+    it("atomicMass should work for element (though result wont be map so should print error)", (done)=>
     {
-        expect(()=>querier.runQuery("atomicMass(\"Fe\")")).toThrowError("Expression: atomicMass(\"Fe\") did not result in usable map data. Result was: 55.847");
+        checkResultError(querier, done, "atomicMass(\"Fe\")", "Expression: atomicMass(\"Fe\") did not result in usable map data. Result was: 55.847");
     });
 
-    it("atomicMass should work for formula (though result wont be map so should print error)", () => 
+    it("atomicMass should work for formula (though result wont be map so should print error)", (done)=>
     {
-        expect(()=>querier.runQuery("atomicMass(\"Fe2O3\")")).toThrowError("Expression: atomicMass(\"Fe2O3\") did not result in usable map data. Result was: "+(55.847*2+15.9994*3));
+        checkResultError(querier, done, "atomicMass(\"Fe2O3\")", "Expression: atomicMass(\"Fe2O3\") did not result in usable map data. Result was: "+(55.847*2+15.9994*3));
     });
 });
 
@@ -619,29 +626,29 @@ describe("Data source NOT set", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(null, null, null, null, null, null));
     });
 
-    it("pseudo() - should fail with cannot find data source error", () => 
+    it("pseudo() - should fail with cannot find data source error", (done)=>
     {
-        expect(()=>querier.runQuery("pseudo(\"Mg\")")).toThrowError("pseudo() failed, no pseudo-intensity data exists in currently loaded data set.");
+        checkResultError(querier, done, "pseudo(\"Mg\")", "pseudo() failed, no pseudo-intensity data exists in currently loaded data set.");
     });
 
-    it("housekeeping() - should fail with cannot find data source error", () => 
+    it("housekeeping() - should fail with cannot find data source error", (done)=>
     {
-        expect(()=>querier.runQuery("housekeeping(\"Mg\")")).toThrowError("housekeeping() data retrieval failed, no housekeeping data exists in currently loaded data set.");
+        checkResultError(querier, done, "housekeeping(\"Mg\")", "housekeeping() data retrieval failed, no housekeeping data exists in currently loaded data set.");
     });
 
-    it("data() - should fail with cannot find data source error", () => 
+    it("data() - should fail with cannot find data source error", (done)=>
     {
-        expect(()=>querier.runQuery("data(\"chisq\", \"A\")")).toThrowError("data() expression failed, no quantification data loaded");
+        checkResultError(querier, done, "data(\"chisq\", \"A\")", "data() expression failed, no quantification data loaded");
     });
 
-    it("element() - should fail with cannot find data source error", () => 
+    it("element() - should fail with cannot find data source error", (done)=>
     {
-        expect(()=>querier.runQuery("element(\"chisq\", \"%\", \"A\")")).toThrowError("element() expression failed, no quantification data loaded");
+        checkResultError(querier, done, "element(\"chisq\", \"%\", \"A\")", "element() expression failed, no quantification data loaded");
     });
 
-    it("makeMap() - should fail with cannot map dimensions error", () => 
+    it("makeMap() - should fail with cannot map dimensions error", (done)=>
     {
-        expect(()=>querier.runQuery("makeMap(123)")).toThrowError("makeMap() expression failed, failed to determine map dimensions");
+        checkResultError(querier, done, "makeMap(123)", "makeMap() expression failed, failed to determine map dimensions");
     });
 });
 
@@ -657,26 +664,24 @@ describe("data() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if non-existant data specified", () => 
+    it("should fail if non-existant data specified", (done)=>
     {
-        expect(()=>querier.runQuery("data(\"livetime\", \"B\")")).toThrowError("The currently loaded quantification does not contain column: \"livetime_B\". Please select (or create) a quantification with the relevant element.");
+        checkResultError(querier, done, "data(\"livetime\", \"B\")", "The currently loaded quantification does not contain column: \"livetime_B\". Please select (or create) a quantification with the relevant element.");
     });
 
-    it("should fail if non-existant detector specified", () => 
+    it("should fail if non-existant detector specified", (done)=>
     {
-        expect(()=>querier.runQuery("data(\"chisq\", \"C\")")).toThrowError("The currently loaded quantification does not contain column: \"chisq_C\". Please select (or create) a quantification with the relevant element.");
+        checkResultError(querier, done, "data(\"chisq\", \"C\")", "The currently loaded quantification does not contain column: \"chisq_C\". Please select (or create) a quantification with the relevant element.");
     });
 
-    it("should return chisq A map", () => 
+    it("should return chisq A map", (done)=>
     {
-        let result = querier.runQuery("data(\"chisq\", \"A\")");
-        expect(result).toEqual(srcData["chisq_A"]);
+        checkResultOK(querier, done, "data(\"chisq\", \"A\")", srcData["chisq_A"]);
     });
     
-    it("should return chisq B map", () => 
+    it("should return chisq B map", (done)=>
     {
-        let result = querier.runQuery("data(\"chisq\", \"B\")");
-        expect(result).toEqual(srcData["chisq_B"]);
+        checkResultOK(querier, done, "data(\"chisq\", \"B\")", srcData["chisq_B"]);
     });
 });
 
@@ -691,49 +696,43 @@ describe("normalize() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if param not a map", () => 
+    it("should fail if param not a map", (done)=>
     {
-        expect(()=>querier.runQuery("normalize(37)")).toThrowError("normalize() expects 1 map parameter. Received: 1 parameters");
+        checkResultError(querier, done, "normalize(37)", "normalize() expects 1 map parameter. Received: 1 parameters");
     });
 
-    it("should fail if > 1 param", () => 
+    it("should fail if > 1 param", (done)=>
     {
-        expect(()=>querier.runQuery("normalize(37, 38)")).toThrowError("normalize() expects 1 map parameter. Received: 2 parameters");
+        checkResultError(querier, done, "normalize(37, 38)", "normalize() expects 1 map parameter. Received: 2 parameters");
     });
 
-    it("should fail if 0 params", () => 
+    it("should fail if 0 params", (done)=>
     {
-        expect(()=>querier.runQuery("normalize()")).toThrowError("normalize() expects 1 map parameter. Received: 0 parameters");
+        checkResultError(querier, done, "normalize()", "normalize() expects 1 map parameter. Received: 0 parameters");
     });
 
-    it("should normalize a data map", () => 
+    it("should normalize a data map", (done)=>
     {
-        let result = querier.runQuery("normalize(data(\"chisq\", \"B\"))");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 0), new PMCDataValue(643, 0.5), new PMCDataValue(644, 1)]
         );
-
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "normalize(data(\"chisq\", \"B\"))", expected);
     });
 
-    it("should work with multiplier", () => 
+    it("should work with multiplier", (done)=>
     {
-        let result = querier.runQuery("5*normalize(data(\"chisq\", \"B\"))");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 0), new PMCDataValue(643, 2.5), new PMCDataValue(644, 5)]
         );
-
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "5*normalize(data(\"chisq\", \"B\"))", expected);
     });
 
-    it("should normalize a element map", () => 
+    it("should normalize a element map", (done)=>
     {
-        let result = querier.runQuery("normalize(element(\"Fe\", \"%\", \"B\"))");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, (4/5)), new PMCDataValue(643, 0), new PMCDataValue(644, 1)]
         );
-
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "normalize(element(\"Fe\", \"%\", \"B\"))", expected);
     });
 });
 
@@ -748,57 +747,55 @@ describe("threshold() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if no params", () => 
+    it("should fail if no params", (done)=>
     {
-        expect(()=>querier.runQuery("threshold()")).toThrowError("threshold() expects 3 parameters: map, scalar(compare), scalar(threshold). Received: 0 parameters");
+        checkResultError(querier, done, "threshold()", "threshold() expects 3 parameters: map, scalar(compare), scalar(threshold). Received: 0 parameters");
     });
 
-    it("should fail if 1 params", () => 
+    it("should fail if 1 params", (done)=>
     {
-        expect(()=>querier.runQuery("threshold(37)")).toThrowError("threshold() expects 3 parameters: map, scalar(compare), scalar(threshold). Received: 1 parameters");
+        checkResultError(querier, done, "threshold(37)", "threshold() expects 3 parameters: map, scalar(compare), scalar(threshold). Received: 1 parameters");
     });
 
-    it("should fail if 2 params", () => 
+    it("should fail if 2 params", (done)=>
     {
-        expect(()=>querier.runQuery("threshold(37, 38)")).toThrowError("threshold() expects 3 parameters: map, scalar(compare), scalar(threshold). Received: 2 parameters");
+        checkResultError(querier, done, "threshold(37, 38)", "threshold() expects 3 parameters: map, scalar(compare), scalar(threshold). Received: 2 parameters");
     });
 
-    it("should fail if 4 params", () => 
+    it("should fail if 4 params", (done)=>
     {
-        expect(()=>querier.runQuery("threshold(37, 38, 49, 50)")).toThrowError("threshold() expects 3 parameters: map, scalar(compare), scalar(threshold). Received: 4 parameters");
+        checkResultError(querier, done, "threshold(37, 38, 49, 50)", "threshold() expects 3 parameters: map, scalar(compare), scalar(threshold). Received: 4 parameters");
     });
 
-    it("should fail if first param not a map", () => 
+    it("should fail if first param not a map", (done)=>
     {
-        expect(()=>querier.runQuery("threshold(33, 18, 3)")).toThrowError("threshold() expects 3 parameters: map, scalar(compare), scalar(threshold). Received: 3 parameters");
+        checkResultError(querier, done, "threshold(33, 18, 3)", "threshold() expects 3 parameters: map, scalar(compare), scalar(threshold). Received: 3 parameters");
     });
 
-    it("should fail if second param not a scalar", () => 
+    it("should fail if second param not a scalar", (done)=>
     {
-        expect(()=>querier.runQuery("threshold(element(\"Ti\", \"%\", \"B\"), element(\"Ti\", \"%\", \"A\"), 3)")).toThrowError("threshold() expects 3 parameters: map, scalar(compare), scalar(threshold). Received: 3 parameters");
+        checkResultError(querier, done, "threshold(element(\"Ti\", \"%\", \"B\"), element(\"Ti\", \"%\", \"A\"), 3)", "threshold() expects 3 parameters: map, scalar(compare), scalar(threshold). Received: 3 parameters");
     });
 
-    it("should fail if third param not a scalar", () => 
+    it("should fail if third param not a scalar", (done)=>
     {
-        expect(()=>querier.runQuery("threshold(element(\"Ti\", \"%\", \"B\"), element(\"Ti\", \"%\", \"A\"), element(\"Fe\", \"%\", \"A\"))")).toThrowError("threshold() expects 3 parameters: map, scalar(compare), scalar(threshold). Received: 3 parameters");
+        checkResultError(querier, done, "threshold(element(\"Ti\", \"%\", \"B\"), element(\"Ti\", \"%\", \"A\"), element(\"Fe\", \"%\", \"A\"))", "threshold() expects 3 parameters: map, scalar(compare), scalar(threshold). Received: 3 parameters");
     });
 
-    it("should threshold element map to 0,1,0", () => 
+    it("should threshold element map to 0,1,0", (done)=>
     {
-        let result = querier.runQuery("threshold(element(\"Ti\", \"%\", \"B\"), 18, 3)");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 0), new PMCDataValue(643, 1), new PMCDataValue(644, 0)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "threshold(element(\"Ti\", \"%\", \"B\"), 18, 3)", expected);
     });
 
-    it("should threshold element map to 0,1,1", () => 
+    it("should threshold element map to 0,1,1", (done)=>
     {
-        let result = querier.runQuery("threshold(element(\"Ti\", \"%\", \"B\"), 18, 10)");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 0), new PMCDataValue(643, 1), new PMCDataValue(644, 1)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "threshold(element(\"Ti\", \"%\", \"B\"), 18, 10)", expected);
     });
 });
 
@@ -813,43 +810,42 @@ describe("pow() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if no params", () => 
+    it("should fail if no params", (done)=>
     {
-        expect(()=>querier.runQuery("pow()")).toThrowError("pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Received: 0 parameters");
+        checkResultError(querier, done, "pow()", "pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Received: 0 parameters");
     });
 
-    it("should fail if 1 params", () => 
+    it("should fail if 1 params", (done)=>
     {
-        expect(()=>querier.runQuery("pow(37)")).toThrowError("pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Received: 1 parameters");
+        checkResultError(querier, done, "pow(37)", "pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Received: 1 parameters");
     });
 
-    it("should fail if 3 params", () => 
+    it("should fail if 3 params", (done)=>
     {
-        expect(()=>querier.runQuery("pow(37, 38, 39)")).toThrowError("pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Received: 3 parameters");
+        checkResultError(querier, done, "pow(37, 38, 39)", "pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Received: 3 parameters");
     });
 
-    it("should fail if second parameter is map", () => 
+    it("should fail if second parameter is map", (done)=>
     {
-        expect(()=>querier.runQuery("pow(37, element(\"Ti\", \"%\", \"B\"))")).toThrowError("pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Arg1 was wrong type");
+        checkResultError(querier, done, "pow(37, element(\"Ti\", \"%\", \"B\"))", "pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Arg1 was wrong type");
     });
 
-    it("should pow for scalars (though result wont be map so should print error)", () => 
+    it("should pow for scalars (though result wont be map so should print error)", (done)=>
     {
-        expect(()=>querier.runQuery("pow(2, 8)")).toThrowError("Expression: pow(2, 8) did not result in usable map data. Result was: 256");
+        checkResultError(querier, done, "pow(2, 8)", "Expression: pow(2, 8) did not result in usable map data. Result was: 256");
     });
 
-    it("should fail if first param is not scalar or map)", () => 
+    it("should fail if first param is not scalar or map)", (done)=>
     {
-        expect(()=>querier.runQuery("pow(\"Ti\", 8)")).toThrowError("pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Arg0 was wrong type");
+        checkResultError(querier, done, "pow(\"Ti\", 8)", "pow() expects 2 parameters: map OR scalar (base), scalar (exponent). Arg0 was wrong type");
     });
 
-    it("should pow for map, scalar", () => 
+    it("should pow for map, scalar", (done)=>
     {
-        let result = querier.runQuery("pow(element(\"Ti\", \"%\", \"B\"), 3)");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 125000), new PMCDataValue(643, 8000), new PMCDataValue(644, 729)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "pow(element(\"Ti\", \"%\", \"B\"), 3)", expected);
     });
 });
 
@@ -864,38 +860,37 @@ describe("avg() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if no params", () => 
+    it("should fail if no params", (done)=>
     {
-        expect(()=>querier.runQuery("avg()")).toThrowError("avg() expects 2 parameters: (map, map). Received: 0 parameters");
+        checkResultError(querier, done, "avg()", "avg() expects 2 parameters: (map, map). Received: 0 parameters");
     });
 
-    it("should fail if 1 params", () => 
+    it("should fail if 1 params", (done)=>
     {
-        expect(()=>querier.runQuery("avg(37)")).toThrowError("avg() expects 2 parameters: (map, map). Received: 1 parameters");
+        checkResultError(querier, done, "avg(37)", "avg() expects 2 parameters: (map, map). Received: 1 parameters");
     });
 
-    it("should fail if 3 params", () => 
+    it("should fail if 3 params", (done)=>
     {
-        expect(()=>querier.runQuery("avg(37, 38, 39)")).toThrowError("avg() expects 2 parameters: (map, map). Received: 3 parameters");
+        checkResultError(querier, done, "avg(37, 38, 39)", "avg() expects 2 parameters: (map, map). Received: 3 parameters");
     });
 
-    it("should fail if first param not a map", () => 
+    it("should fail if first param not a map", (done)=>
     {
-        expect(()=>querier.runQuery("avg(33, element(\"Ti\", \"%\", \"B\"))")).toThrowError("avg() expects 2 parameters: (map, map). Received: 2 parameters");
+        checkResultError(querier, done, "avg(33, element(\"Ti\", \"%\", \"B\"))", "avg() expects 2 parameters: (map, map). Received: 2 parameters");
     });
 
-    it("should fail if second param not a map", () => 
+    it("should fail if second param not a map", (done)=>
     {
-        expect(()=>querier.runQuery("avg(element(\"Ti\", \"%\", \"A\"), 32)")).toThrowError("avg() expects 2 parameters: (map, map). Received: 2 parameters");
+        checkResultError(querier, done, "avg(element(\"Ti\", \"%\", \"A\"), 32)", "avg() expects 2 parameters: (map, map). Received: 2 parameters");
     });
 
-    it("should average 2 maps", () => 
+    it("should average 2 maps", (done)=>
     {
-        let result = querier.runQuery("avg(element(\"Ti\", \"%\", \"A\"), element(\"Ti\", \"%\", \"B\"))");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 27), new PMCDataValue(643, 12.5), new PMCDataValue(644, 7.5)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "avg(element(\"Ti\", \"%\", \"A\"), element(\"Ti\", \"%\", \"B\"))", expected);
     });
 });
 
@@ -910,42 +905,40 @@ describe("min() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if no params", () => 
+    it("should fail if no params", (done)=>
     {
-        expect(()=>querier.runQuery("min()")).toThrowError("min() expects 2 parameters: (map, map or scalar). Received: 0 parameters");
+        checkResultError(querier, done, "min()", "min() expects 2 parameters: (map, map or scalar). Received: 0 parameters");
     });
 
-    it("should fail if 1 params", () => 
+    it("should fail if 1 params", (done)=>
     {
-        expect(()=>querier.runQuery("min(37)")).toThrowError("min() expects 2 parameters: (map, map or scalar). Received: 1 parameters");
+        checkResultError(querier, done, "min(37)", "min() expects 2 parameters: (map, map or scalar). Received: 1 parameters");
     });
 
-    it("should fail if 3 params", () => 
+    it("should fail if 3 params", (done)=>
     {
-        expect(()=>querier.runQuery("min(37, 38, 39)")).toThrowError("min() expects 2 parameters: (map, map or scalar). Received: 3 parameters");
+        checkResultError(querier, done, "min(37, 38, 39)", "min() expects 2 parameters: (map, map or scalar). Received: 3 parameters");
     });
 
-    it("should fail if first param not a map", () => 
+    it("should fail if first param not a map", (done)=>
     {
-        expect(()=>querier.runQuery("min(33, element(\"Ti\", \"%\", \"B\"))")).toThrowError("min() expects 2 parameters: (map, map or scalar). Received: 2 parameters");
+        checkResultError(querier, done, "min(33, element(\"Ti\", \"%\", \"B\"))", "min() expects 2 parameters: (map, map or scalar). Received: 2 parameters");
     });
 
-    it("should take min of 2 maps", () => 
+    it("should take min of 2 maps", (done)=>
     {
-        let result = querier.runQuery("min(element(\"Fe\", \"%\", \"B\"), element(\"Ti\", \"%\", \"A\"))");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 4), new PMCDataValue(643, 1), new PMCDataValue(644, 6)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "min(element(\"Fe\", \"%\", \"B\"), element(\"Ti\", \"%\", \"A\"))", expected);
     });
 
-    it("should take min of map and scalar", () => 
+    it("should take min of map and scalar", (done)=>
     {
-        let result = querier.runQuery("min(element(\"Fe\", \"%\", \"B\"), 4)");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 4), new PMCDataValue(643, 1), new PMCDataValue(644, 4)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "min(element(\"Fe\", \"%\", \"B\"), 4)", expected);
     });
 });
 
@@ -960,42 +953,40 @@ describe("max() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if no params", () => 
+    it("should fail if no params", (done)=>
     {
-        expect(()=>querier.runQuery("max()")).toThrowError("max() expects 2 parameters: (map, map or scalar). Received: 0 parameters");
+        checkResultError(querier, done, "max()", "max() expects 2 parameters: (map, map or scalar). Received: 0 parameters");
     });
 
-    it("should fail if 1 params", () => 
+    it("should fail if 1 params", (done)=>
     {
-        expect(()=>querier.runQuery("max(37)")).toThrowError("max() expects 2 parameters: (map, map or scalar). Received: 1 parameters");
+        checkResultError(querier, done, "max(37)", "max() expects 2 parameters: (map, map or scalar). Received: 1 parameters");
     });
 
-    it("should fail if 3 params", () => 
+    it("should fail if 3 params", (done)=>
     {
-        expect(()=>querier.runQuery("max(37, 38, 39)")).toThrowError("max() expects 2 parameters: (map, map or scalar). Received: 3 parameters");
+        checkResultError(querier, done, "max(37, 38, 39)", "max() expects 2 parameters: (map, map or scalar). Received: 3 parameters");
     });
 
-    it("should fail if first param not a map", () => 
+    it("should fail if first param not a map", (done)=>
     {
-        expect(()=>querier.runQuery("max(33, element(\"Ti\", \"%\", \"B\"))")).toThrowError("max() expects 2 parameters: (map, map or scalar). Received: 2 parameters");
+        checkResultError(querier, done, "max(33, element(\"Ti\", \"%\", \"B\"))", "max() expects 2 parameters: (map, map or scalar). Received: 2 parameters");
     });
 
-    it("should take max of 2 maps", () => 
+    it("should take max of 2 maps", (done)=>
     {
-        let result = querier.runQuery("max(element(\"Fe\", \"%\", \"B\"), element(\"Ti\", \"%\", \"A\"))");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 5), new PMCDataValue(643, 5), new PMCDataValue(644, 6)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "max(element(\"Fe\", \"%\", \"B\"), element(\"Ti\", \"%\", \"A\"))", expected);
     });
 
-    it("should take max of map and scalar", () => 
+    it("should take max of map and scalar", (done)=>
     {
-        let result = querier.runQuery("max(element(\"Fe\", \"%\", \"B\"), 4)");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 5), new PMCDataValue(643, 4), new PMCDataValue(644, 6)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "max(element(\"Fe\", \"%\", \"B\"), 4)", expected);
     });
 });
 
@@ -1010,47 +1001,45 @@ describe("under() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if no params", () => 
+    it("should fail if no params", (done)=>
     {
-        expect(()=>querier.runQuery("under()")).toThrowError("under() expects 2 parameters: (map, scalar). Received: 0 parameters");
+        checkResultError(querier, done, "under()", "under() expects 2 parameters: (map, scalar). Received: 0 parameters");
     });
 
-    it("should fail if 1 params", () => 
+    it("should fail if 1 params", (done)=>
     {
-        expect(()=>querier.runQuery("under(37)")).toThrowError("under() expects 2 parameters: (map, scalar). Received: 1 parameters");
+        checkResultError(querier, done, "under(37)", "under() expects 2 parameters: (map, scalar). Received: 1 parameters");
     });
 
-    it("should fail if 3 params", () => 
+    it("should fail if 3 params", (done)=>
     {
-        expect(()=>querier.runQuery("under(37, 38, 39)")).toThrowError("under() expects 2 parameters: (map, scalar). Received: 3 parameters");
+        checkResultError(querier, done, "under(37, 38, 39)", "under() expects 2 parameters: (map, scalar). Received: 3 parameters");
     });
 
-    it("should fail if params arent map, scalar", () => 
+    it("should fail if params arent map, scalar", (done)=>
     {
-        expect(()=>querier.runQuery("under(33, element(\"Ti\", \"%\", \"B\"))")).toThrowError("under() expects 2 parameters: (map, scalar). Received: 2 parameters");
+        checkResultError(querier, done, "under(33, element(\"Ti\", \"%\", \"B\"))", "under() expects 2 parameters: (map, scalar). Received: 2 parameters");
     });
 
-    it("should fail if second param not a scalar", () => 
+    it("should fail if second param not a scalar", (done)=>
     {
-        expect(()=>querier.runQuery("under(element(\"Ti\", \"%\", \"B\"), element(\"Ti\", \"%\", \"B\"))")).toThrowError("under() expects 2 parameters: (map, scalar). Received: 2 parameters");
+        checkResultError(querier, done, "under(element(\"Ti\", \"%\", \"B\"), element(\"Ti\", \"%\", \"B\"))", "under() expects 2 parameters: (map, scalar). Received: 2 parameters");
     });
 
-    it("should make binary map of 1 where Ti < 40 else 0", () => 
+    it("should make binary map of 1 where Ti < 40 else 0", (done)=>
     {
-        let result = querier.runQuery("under(element(\"Ti\", \"%\", \"B\"), 40)");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 0), new PMCDataValue(643, 1), new PMCDataValue(644, 1)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "under(element(\"Ti\", \"%\", \"B\"), 40)", expected);
     });
 
-    it("should make binary map of 1 where Ti < 15 else 0", () => 
+    it("should make binary map of 1 where Ti < 15 else 0", (done)=>
     {
-        let result = querier.runQuery("under(element(\"Ti\", \"%\", \"B\"), 15)");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 0), new PMCDataValue(643, 0), new PMCDataValue(644, 1)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "under(element(\"Ti\", \"%\", \"B\"), 15)", expected);
     });
 });
 
@@ -1065,47 +1054,45 @@ describe("under_undef() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if no params", () => 
+    it("should fail if no params", (done)=>
     {
-        expect(()=>querier.runQuery("under_undef()")).toThrowError("under_undef() expects 2 parameters: (map, scalar). Received: 0 parameters");
+        checkResultError(querier, done, "under_undef()", "under_undef() expects 2 parameters: (map, scalar). Received: 0 parameters");
     });
 
-    it("should fail if 1 params", () => 
+    it("should fail if 1 params", (done)=>
     {
-        expect(()=>querier.runQuery("under_undef(37)")).toThrowError("under_undef() expects 2 parameters: (map, scalar). Received: 1 parameters");
+        checkResultError(querier, done, "under_undef(37)", "under_undef() expects 2 parameters: (map, scalar). Received: 1 parameters");
     });
 
-    it("should fail if 3 params", () => 
+    it("should fail if 3 params", (done)=>
     {
-        expect(()=>querier.runQuery("under_undef(37, 38, 39)")).toThrowError("under_undef() expects 2 parameters: (map, scalar). Received: 3 parameters");
+        checkResultError(querier, done, "under_undef(37, 38, 39)", "under_undef() expects 2 parameters: (map, scalar). Received: 3 parameters");
     });
 
-    it("should fail if params arent map, scalar", () => 
+    it("should fail if params arent map, scalar", (done)=>
     {
-        expect(()=>querier.runQuery("under_undef(33, element(\"Ti\", \"%\", \"B\"))")).toThrowError("under_undef() expects 2 parameters: (map, scalar). Received: 2 parameters");
+        checkResultError(querier, done, "under_undef(33, element(\"Ti\", \"%\", \"B\"))", "under_undef() expects 2 parameters: (map, scalar). Received: 2 parameters");
     });
 
-    it("should fail if second param not a scalar", () => 
+    it("should fail if second param not a scalar", (done)=>
     {
-        expect(()=>querier.runQuery("under_undef(element(\"Ti\", \"%\", \"B\"), element(\"Ti\", \"%\", \"B\"))")).toThrowError("under_undef() expects 2 parameters: (map, scalar). Received: 2 parameters");
+        checkResultError(querier, done, "under_undef(element(\"Ti\", \"%\", \"B\"), element(\"Ti\", \"%\", \"B\"))", "under_undef() expects 2 parameters: (map, scalar). Received: 2 parameters");
     });
 
-    it("should make binary map of 1 where Ti < 40 else undefined", () => 
+    it("should make binary map of 1 where Ti < 40 else undefined", (done)=>
     {
-        let result = querier.runQuery("under_undef(element(\"Ti\", \"%\", \"B\"), 40)");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 0, true), new PMCDataValue(643, 1), new PMCDataValue(644, 1)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "under_undef(element(\"Ti\", \"%\", \"B\"), 40)", expected);
     });
 
-    it("should make binary map of 1 where Ti < 15 else undefined", () => 
+    it("should make binary map of 1 where Ti < 15 else undefined", (done)=>
     {
-        let result = querier.runQuery("under_undef(element(\"Ti\", \"%\", \"B\"), 15)");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 0, true), new PMCDataValue(643, 0, true), new PMCDataValue(644, 1)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "under_undef(element(\"Ti\", \"%\", \"B\"), 15)", expected);
     });
 });
 
@@ -1120,47 +1107,45 @@ describe("over() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if no params", () => 
+    it("should fail if no params", (done)=>
     {
-        expect(()=>querier.runQuery("over()")).toThrowError("over() expects 2 parameters: (map, scalar). Received: 0 parameters");
+        checkResultError(querier, done, "over()", "over() expects 2 parameters: (map, scalar). Received: 0 parameters");
     });
 
-    it("should fail if 1 params", () => 
+    it("should fail if 1 params", (done)=>
     {
-        expect(()=>querier.runQuery("over(37)")).toThrowError("over() expects 2 parameters: (map, scalar). Received: 1 parameters");
+        checkResultError(querier, done, "over(37)", "over() expects 2 parameters: (map, scalar). Received: 1 parameters");
     });
 
-    it("should fail if 3 params", () => 
+    it("should fail if 3 params", (done)=>
     {
-        expect(()=>querier.runQuery("over(37, 38, 39)")).toThrowError("over() expects 2 parameters: (map, scalar). Received: 3 parameters");
+        checkResultError(querier, done, "over(37, 38, 39)", "over() expects 2 parameters: (map, scalar). Received: 3 parameters");
     });
 
-    it("should fail if params arent map, scalar", () => 
+    it("should fail if params arent map, scalar", (done)=>
     {
-        expect(()=>querier.runQuery("over(33, element(\"Ti\", \"%\", \"B\"))")).toThrowError("over() expects 2 parameters: (map, scalar). Received: 2 parameters");
+        checkResultError(querier, done, "over(33, element(\"Ti\", \"%\", \"B\"))", "over() expects 2 parameters: (map, scalar). Received: 2 parameters");
     });
 
-    it("should fail if second param not a scalar", () => 
+    it("should fail if second param not a scalar", (done)=>
     {
-        expect(()=>querier.runQuery("over(element(\"Ti\", \"%\", \"B\"), element(\"Ti\", \"%\", \"B\"))")).toThrowError("over() expects 2 parameters: (map, scalar). Received: 2 parameters");
+        checkResultError(querier, done, "over(element(\"Ti\", \"%\", \"B\"), element(\"Ti\", \"%\", \"B\"))", "over() expects 2 parameters: (map, scalar). Received: 2 parameters");
     });
 
-    it("should make binary map of 1 where Ti > 40 else 0", () => 
+    it("should make binary map of 1 where Ti > 40 else 0", (done)=>
     {
-        let result = querier.runQuery("over(element(\"Ti\", \"%\", \"B\"), 40)");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 1), new PMCDataValue(643, 0), new PMCDataValue(644, 0)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "over(element(\"Ti\", \"%\", \"B\"), 40)", expected);
     });
 
-    it("should make binary map of 1 where Ti > 15 else 0", () => 
+    it("should make binary map of 1 where Ti > 15 else 0", (done)=>
     {
-        let result = querier.runQuery("over(element(\"Ti\", \"%\", \"B\"), 15)");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 1), new PMCDataValue(643, 1), new PMCDataValue(644, 0)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "over(element(\"Ti\", \"%\", \"B\"), 15)", expected);
     });
 });
 
@@ -1175,47 +1160,45 @@ describe("over_undef() call", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if no params", () => 
+    it("should fail if no params", (done)=>
     {
-        expect(()=>querier.runQuery("over_undef()")).toThrowError("over_undef() expects 2 parameters: (map, scalar). Received: 0 parameters");
+        checkResultError(querier, done, "over_undef()", "over_undef() expects 2 parameters: (map, scalar). Received: 0 parameters");
     });
 
-    it("should fail if 1 params", () => 
+    it("should fail if 1 params", (done)=>
     {
-        expect(()=>querier.runQuery("over_undef(37)")).toThrowError("over_undef() expects 2 parameters: (map, scalar). Received: 1 parameters");
+        checkResultError(querier, done, "over_undef(37)", "over_undef() expects 2 parameters: (map, scalar). Received: 1 parameters");
     });
 
-    it("should fail if 3 params", () => 
+    it("should fail if 3 params", (done)=>
     {
-        expect(()=>querier.runQuery("over_undef(37, 38, 39)")).toThrowError("over_undef() expects 2 parameters: (map, scalar). Received: 3 parameters");
+        checkResultError(querier, done, "over_undef(37, 38, 39)", "over_undef() expects 2 parameters: (map, scalar). Received: 3 parameters");
     });
 
-    it("should fail if params arent map, scalar", () => 
+    it("should fail if params arent map, scalar", (done)=>
     {
-        expect(()=>querier.runQuery("over_undef(33, element(\"Ti\", \"%\", \"B\"))")).toThrowError("over_undef() expects 2 parameters: (map, scalar). Received: 2 parameters");
+        checkResultError(querier, done, "over_undef(33, element(\"Ti\", \"%\", \"B\"))", "over_undef() expects 2 parameters: (map, scalar). Received: 2 parameters");
     });
 
-    it("should fail if second param not a scalar", () => 
+    it("should fail if second param not a scalar", (done)=>
     {
-        expect(()=>querier.runQuery("over_undef(element(\"Ti\", \"%\", \"B\"), element(\"Ti\", \"%\", \"B\"))")).toThrowError("over_undef() expects 2 parameters: (map, scalar). Received: 2 parameters");
+        checkResultError(querier, done, "over_undef(element(\"Ti\", \"%\", \"B\"), element(\"Ti\", \"%\", \"B\"))", "over_undef() expects 2 parameters: (map, scalar). Received: 2 parameters");
     });
 
-    it("should make binary map of 1 where Ti > 40 else undefined", () => 
+    it("should make binary map of 1 where Ti > 40 else undefined", (done)=>
     {
-        let result = querier.runQuery("over_undef(element(\"Ti\", \"%\", \"B\"), 40)");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 1), new PMCDataValue(643, 0, true), new PMCDataValue(644, 0, true)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "over_undef(element(\"Ti\", \"%\", \"B\"), 40)", expected);
     });
 
-    it("should make binary map of 1 where Ti > 15 else undefined", () => 
+    it("should make binary map of 1 where Ti > 15 else undefined", (done)=>
     {
-        let result = querier.runQuery("over_undef(element(\"Ti\", \"%\", \"B\"), 15)");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 1), new PMCDataValue(643, 1), new PMCDataValue(644, 0, true)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "over_undef(element(\"Ti\", \"%\", \"B\"), 15)", expected);
     });
 });
 
@@ -1230,46 +1213,43 @@ describe("+ operator", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should just return the number if unary (though result wont be map so should print error)", () => 
+    it("should just return the number if unary (though result wont be map so should print error)", (done)=>
     {
-        expect(()=>querier.runQuery("+7")).toThrowError("Expression: +7 did not result in usable map data. Result was: 7");
+        checkResultError(querier, done, "+7", "Expression: +7 did not result in usable map data. Result was: 7");
     });
 
-    it("should fail if missing second param", () => 
+    it("should fail if missing second param", (done)=>
     {
-        expect(()=>querier.runQuery("7+")).toThrowError("Expected expression after + at character 2");
+        checkResultError(querier, done, "7+", "Expected expression after + at character 2");
     });
 
-    it("should allow params as scalar+scalar (though result wont be map so should print error)", () => 
+    it("should allow params as scalar+scalar (though result wont be map so should print error)", (done)=>
     {
-        expect(()=>querier.runQuery("7+3")).toThrowError("Expression: 7+3 did not result in usable map data. Result was: 10");
+        checkResultError(querier, done, "7+3", "Expression: 7+3 did not result in usable map data. Result was: 10");
     });
 
-    it("should allow scalar+map", () => 
+    it("should allow scalar+map", (done)=>
     {
-        let result = querier.runQuery("7+element(\"Ti\", \"%\", \"B\")");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 57), new PMCDataValue(643, 27), new PMCDataValue(644, 16)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "7+element(\"Ti\", \"%\", \"B\")", expected);
     });
 
-    it("should allow map+scalar", () => 
+    it("should allow map+scalar", (done)=>
     {
-        let result = querier.runQuery("element(\"Ti\", \"%\", \"B\")+7");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 57), new PMCDataValue(643, 27), new PMCDataValue(644, 16)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "element(\"Ti\", \"%\", \"B\")+7", expected);
     });
 
-    it("should add 2 maps together", () => 
+    it("should add 2 maps together", (done)=>
     {
-        let result = querier.runQuery("element(\"Fe\", \"%\", \"B\")+element(\"Ti\", \"%\", \"A\")");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 9), new PMCDataValue(643, 6), new PMCDataValue(644, 12)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "element(\"Fe\", \"%\", \"B\")+element(\"Ti\", \"%\", \"A\")", expected);
     });
 });
 
@@ -1284,46 +1264,43 @@ describe("- operator", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should just return negative number if unary (though result wont be map so should print error)", () => 
+    it("should just return negative number if unary (though result wont be map so should print error)", (done)=>
     {
-        expect(()=>querier.runQuery("-7")).toThrowError("Expression: -7 did not result in usable map data. Result was: -7");
+        checkResultError(querier, done, "-7", "Expression: -7 did not result in usable map data. Result was: -7");
     });
 
-    it("should fail if missing second param", () => 
+    it("should fail if missing second param", (done)=>
     {
-        expect(()=>querier.runQuery("7-")).toThrowError("Expected expression after - at character 2");
+        checkResultError(querier, done, "7-", "Expected expression after - at character 2");
     });
 
-    it("should allow params as scalar-scalar (though result wont be map so should print error)", () => 
+    it("should allow params as scalar-scalar (though result wont be map so should print error)", (done)=>
     {
-        expect(()=>querier.runQuery("7-3")).toThrowError("Expression: 7-3 did not result in usable map data. Result was: 4");
+        checkResultError(querier, done, "7-3", "Expression: 7-3 did not result in usable map data. Result was: 4");
     });
 
-    it("should allow scalar-map", () => 
+    it("should allow scalar-map", (done)=>
     {
-        let result = querier.runQuery("7-element(\"Ti\", \"%\", \"B\")");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, -43), new PMCDataValue(643, -13), new PMCDataValue(644, -2)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "7-element(\"Ti\", \"%\", \"B\")", expected);
     });
 
-    it("should allow map-scalar", () => 
+    it("should allow map-scalar", (done)=>
     {
-        let result = querier.runQuery("element(\"Ti\", \"%\", \"B\")-7");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 43), new PMCDataValue(643, 13), new PMCDataValue(644, 2)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "element(\"Ti\", \"%\", \"B\")-7", expected);
     });
 
-    it("should add 2 maps together", () => 
+    it("should add 2 maps together", (done)=>
     {
-        let result = querier.runQuery("element(\"Fe\", \"%\", \"B\")-element(\"Ti\", \"%\", \"A\")");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 1), new PMCDataValue(643, -4), new PMCDataValue(644, 0)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "element(\"Fe\", \"%\", \"B\")-element(\"Ti\", \"%\", \"A\")", expected);
     });
 });
 
@@ -1338,46 +1315,43 @@ describe("* operator", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if not binary op", () => 
+    it("should fail if not binary op", (done)=>
     {
-        expect(()=>querier.runQuery("*7")).toThrowError("Unexpected \"*\" at character 0");
+        checkResultError(querier, done, "*7", "Unexpected \"*\" at character 0");
     });
 
-    it("should fail if missing second param", () => 
+    it("should fail if missing second param", (done)=>
     {
-        expect(()=>querier.runQuery("7*")).toThrowError("Expected expression after * at character 2");
+        checkResultError(querier, done, "7*", "Expected expression after * at character 2");
     });
 
-    it("should allow params as scalar*scalar (though result wont be map so should print error)", () => 
+    it("should allow params as scalar*scalar (though result wont be map so should print error)", (done)=>
     {
-        expect(()=>querier.runQuery("7*3")).toThrowError("Expression: 7*3 did not result in usable map data. Result was: 21");
+        checkResultError(querier, done, "7*3", "Expression: 7*3 did not result in usable map data. Result was: 21");
     });
 
-    it("should allow multiplying scalar*map", () => 
+    it("should allow multiplying scalar*map", (done)=>
     {
-        let result = querier.runQuery("7*element(\"Ti\", \"%\", \"B\")");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 350), new PMCDataValue(643, 140), new PMCDataValue(644, 63)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "7*element(\"Ti\", \"%\", \"B\")", expected);
     });
 
-    it("should allow multiplying map*scalar", () => 
+    it("should allow multiplying map*scalar", (done)=>
     {
-        let result = querier.runQuery("element(\"Ti\", \"%\", \"B\")*5");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 250), new PMCDataValue(643, 100), new PMCDataValue(644, 45)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "element(\"Ti\", \"%\", \"B\")*5", expected);
     });
 
-    it("should multiply 2 maps together", () => 
+    it("should multiply 2 maps together", (done)=>
     {
-        let result = querier.runQuery("element(\"Fe\", \"%\", \"A\")*data(\"chisq\", \"B\")");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 50), new PMCDataValue(643, 200), new PMCDataValue(644, 450)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "element(\"Fe\", \"%\", \"A\")*data(\"chisq\", \"B\")", expected);
     });
 });
 
@@ -1392,46 +1366,43 @@ describe("/ operator", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("should fail if not binary op", () => 
+    it("should fail if not binary op", (done)=>
     {
-        expect(()=>querier.runQuery("/7")).toThrowError("Unexpected \"/\" at character 0");
+        checkResultError(querier, done, "/7", "Unexpected \"/\" at character 0");
     });
 
-    it("should fail if missing second param", () => 
+    it("should fail if missing second param", (done)=>
     {
-        expect(()=>querier.runQuery("7/")).toThrowError("Expected expression after / at character 2");
+        checkResultError(querier, done, "7/", "Expected expression after / at character 2");
     });
 
-    it("should allow params as scalar/scalar (though result wont be map so should print error)", () => 
+    it("should allow params as scalar/scalar (though result wont be map so should print error)", (done)=>
     {
-        expect(()=>querier.runQuery("6/3")).toThrowError("Expression: 6/3 did not result in usable map data. Result was: 2");
+        checkResultError(querier, done, "6/3", "Expression: 6/3 did not result in usable map data. Result was: 2");
     });
 
-    it("should allow dividing scalar by map", () => 
+    it("should allow dividing scalar by map", (done)=>
     {
-        let result = querier.runQuery("7/element(\"Ti\", \"%\", \"B\")");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 0.14), new PMCDataValue(643, 0.35), new PMCDataValue(644, 0.7777777777777778)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "7/element(\"Ti\", \"%\", \"B\")", expected);
     });
 
-    it("should allow dividing map by scalar", () => 
+    it("should allow dividing map by scalar", (done)=>
     {
-        let result = querier.runQuery("element(\"Ti\", \"%\", \"B\")/5");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 10), new PMCDataValue(643, 4), new PMCDataValue(644, 1.8)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "element(\"Ti\", \"%\", \"B\")/5", expected);
     });
 
-    it("should divide map by another", () => 
+    it("should divide map by another", (done)=>
     {
-        let result = querier.runQuery("element(\"Fe\", \"%\", \"A\")/data(\"chisq\", \"B\")");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 0.02), new PMCDataValue(643, 0.02), new PMCDataValue(644, 0.02)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "element(\"Fe\", \"%\", \"A\")/data(\"chisq\", \"B\")", expected);
     });
 });
 
@@ -1447,49 +1418,45 @@ describe("more complex operations", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("inv-chisq A", () => 
+    it("inv-chisq A", (done)=>
     {
-        let result = querier.runQuery("1-normalize(data(\"chisq\", \"A\"))");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 1), new PMCDataValue(643, 0.9), new PMCDataValue(644, 0)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "1-normalize(data(\"chisq\", \"A\"))", expected);
     });
 
-    it("inv-avg(chisq A and B)", () => 
+    it("inv-avg(chisq A and B)", (done)=>
     {
         // A [ 200, 210, 300 ], B [ 50, 100, 150 ]
         // Average becomes [ 125, 155, 225 ]
         // Normalised becomes [ 0, 0.3, 1 ]
         // Inverse becomes [ 1, 0.7, 0 ]
-        let result = querier.runQuery("1-normalize(avg(data(\"chisq\", \"A\"), data(\"chisq\", \"B\")))");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 1), new PMCDataValue(643, 0.7), new PMCDataValue(644, 0)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "1-normalize(avg(data(\"chisq\", \"A\"), data(\"chisq\", \"B\")))", expected);
     });
 
-    it("A only where error is low in chisq", () => 
+    it("A only where error is low in chisq", (done)=>
     {
         // chisqB is [ 50, 100, 150 ]
         // min(chisqB, 120) is [ 1, 1, 0 ]
         // Multiplied by Ti%B [ 50, 20, 9 ] is [ 50, 20, 0 ]
-        let result = querier.runQuery("element(\"Ti\", \"%\", \"B\")*under(data(\"chisq\", \"B\"), 105)");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 50), new PMCDataValue(643, 20), new PMCDataValue(644, 0)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "element(\"Ti\", \"%\", \"B\")*under(data(\"chisq\", \"B\"), 105)", expected);
     });
 
-    it("4 terms multiplied where no brackets", () => 
+    it("4 terms multiplied where no brackets", (done)=>
     {
         // chisqA [ 200, 210, 300 ], chisqB [ 50, 100, 150 ], Ti%B [ 50, 20, 9 ]
         // All multiplied: 0.001*[ 500000, 420000, 405000 ] = [ 500, 420, 405 ]
-        let result = querier.runQuery("0.001*element(\"Ti\", \"%\", \"B\")*data(\"chisq\", \"A\")*data(\"chisq\", \"B\")");
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 500), new PMCDataValue(643, 420), new PMCDataValue(644, 405)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, "0.001*element(\"Ti\", \"%\", \"B\")*data(\"chisq\", \"A\")*data(\"chisq\", \"B\")", expected);
     });
 });
 
@@ -1520,38 +1487,38 @@ Al2O3-min(Al2O3, min(NaKCa, Na2O/0.7))
 
 describe("multi-line expression parsing", () =>
 {
-    it("works with single line", () => 
+    it("works with single line", ()=>
     {
         let result = PixliseDataQuerier.breakExpressionIntoParts("1-normalize(data(\"chisq\", \"A\"))");
         expect(result).toEqual(new ExpressionParts([], [], [], "1-normalize(data(\"chisq\", \"A\"))"));
     });
 
-    it("works with single var", () => 
+    it("works with single var", ()=>
     {
         let result = PixliseDataQuerier.breakExpressionIntoParts(`chiSq = data("chisq", "A")
 1-normalize(chiSq)`);
         expect(result).toEqual(new ExpressionParts(["chiSq"], ["data(\"chisq\", \"A\")"], [1], "1-normalize(chiSq)"));
     });
 
-    it("fails on invalid var names", () => 
+    it("fails on invalid var names", ()=>
     {
         expect(()=>PixliseDataQuerier.breakExpressionIntoParts(`2chi$Sq = data("chisq", "A")
 1-normalize(chiSqA$)`)).toThrowError("Line 1: Invalid variable name definition: \"2chi$Sq\"");
     });
 
-    it("fails on missing var names", () => 
+    it("fails on missing var names", ()=>
     {
         expect(()=>PixliseDataQuerier.breakExpressionIntoParts(`= data("chisq", "A")
 1-normalize(chiSqA$)`)).toThrowError("Line 1: Invalid variable name definition: \"\"");
     });
 
-    it("fails on missing var names with whitespace", () => 
+    it("fails on missing var names with whitespace", ()=>
     {
         expect(()=>PixliseDataQuerier.breakExpressionIntoParts(` = data("chisq", "A")
 1-normalize(chiSqA$)`)).toThrowError("Line 1: Invalid variable name definition: \"\"");
     });
 
-    it("works with multi-var", () => 
+    it("works with multi-var", ()=>
     {
         let result = PixliseDataQuerier.breakExpressionIntoParts(`\tchiSqA =\tdata( "chisq" ,"A")
 
@@ -1562,7 +1529,7 @@ describe("multi-line expression parsing", () =>
         expect(result).toEqual(new ExpressionParts(["chiSqA", "chiSqB", "chiSqC"], ["data( \"chisq\" ,\"A\")", "data(\"chisq\", \"B\")", "data(\"chisq\", \"C\")"], [1, 3, 4], "max ( chiSqA, chiSqB)"));
     });
 
-    it("fails if missing expression line", () => 
+    it("fails if missing expression line", ()=>
     {
         let expr = `\tchiSqA =\tdata( "chisq" ,"A")
 
@@ -1570,7 +1537,7 @@ describe("multi-line expression parsing", () =>
         expect(()=>PixliseDataQuerier.breakExpressionIntoParts(expr)).toThrowError("No usable expression found");
     });
 
-    it("fails if missing expression line, ends in blank lines", () => 
+    it("fails if missing expression line, ends in blank lines", ()=>
     {
         let expr = `\tchiSqA =\tdata( "chisq" ,"A")
 
@@ -1581,7 +1548,7 @@ describe("multi-line expression parsing", () =>
         expect(()=>PixliseDataQuerier.breakExpressionIntoParts(expr)).toThrowError("No usable expression found");
     });
 
-    it("fails if var declared after expression line", () => 
+    it("fails if var declared after expression line", ()=>
     {
         let expr = `\tchiSqA =\tdata( "chisq" ,"A")
 max ( chiSqA, chiSqB)
@@ -1597,7 +1564,7 @@ describe("valid variable name check", () =>
 
     for(let name of invalidNames)
     {
-        it("error on "+name, () => 
+        it("error on "+name, ()=>
         {
             let result = PixliseDataQuerier.isValidVariableName(name);
             expect(result).toEqual(false);
@@ -1606,7 +1573,7 @@ describe("valid variable name check", () =>
 
     for(let name of validNames)
     {
-        it("accepts "+name, () => 
+        it("accepts "+name, ()=>
         {
             let result = PixliseDataQuerier.isValidVariableName(name);
             expect(result).toEqual(true);
@@ -1625,255 +1592,49 @@ describe("multi-line expression with variables", () =>
         querier = new PixliseDataQuerier(new InterpreterDataSource(source, null, null, null, null, null));
     });
 
-    it("works with one one var, minimum white space", () => 
+    it("works with one one var, minimum white space", (done)=>
     {
-        let result = querier.runQuery(`chiSq = data("chisq", "A")
-1-normalize(chiSq)`);
         let expected = PMCDataValues.makeWithValues(
             [new PMCDataValue(642, 1), new PMCDataValue(643, 0.9), new PMCDataValue(644, 0)]
         );
-        expect(result).toEqual(expected);
+        checkResultOK(querier, done, `chiSq = data("chisq", "A")
+1-normalize(chiSq)`, expected);
     });
 
-    it("should fail if var name has spaces", () => 
+    it("should fail if var name has spaces", (done)=>
     {
-        let expr = `chi Sq = data("chisq", "A")
-1-normalize(chiSq)`;
-        expect(()=>querier.runQuery(expr)).toThrowError("Line 1: Invalid variable name definition: \"chi Sq\"");
+        checkResultError(querier, done, `chi Sq = data("chisq", "A")
+1-normalize(chiSq)`, "Line 1: Invalid variable name definition: \"chi Sq\"");
     });
 
-    it("should fail if unknown variable used", () => 
+    it("should fail if unknown variable used", (done)=>
     {
-        let expr = `chiSq = data("chisq", "A")
-1-normalize(chiSquared)`;
-        expect(()=>querier.runQuery(expr)).toThrowError("Unknown identifier: \"chiSquared\"");
+        checkResultError(querier, done, `chiSq = data("chisq", "A")
+1-normalize(chiSquared)`, "Unknown identifier: \"chiSquared\"");
     });
 
-    it("should fail if var defined after expression", () => 
+    it("should fail if var defined after expression", (done)=>
     {
-        let expr = `chiSq = data("chisq", "A")
+        checkResultError(querier, done, `chiSq = data("chisq", "A")
 1-normalize(chiSquared)
-something=chiSq`;
-        expect(()=>querier.runQuery(expr)).toThrowError("Line 3: Detected unexpected variable declaration. Expressions should end in a statement which can be split over lines for readability.");
+something=chiSq`, "Line 3: Detected unexpected variable declaration. Expressions should end in a statement which can be split over lines for readability.");
     });
     
-    it("should fail if variable expression is invalid", () => 
+    it("should fail if variable expression is invalid", (done)=>
     {
-        let expr = `chiSq = nonExistantFunction("chisq")+47
-1-normalize(chiSq)`;
-        expect(()=>querier.runQuery(expr)).toThrowError("Line 1: Unknown callee: nonExistantFunction in: \"nonExistantFunction(\"chisq\")+47\"");
+        checkResultError(querier, done, `chiSq = nonExistantFunction("chisq")+47
+1-normalize(chiSq)`, "Line 1: Unknown callee: nonExistantFunction in: \"nonExistantFunction(\"chisq\")+47\"");
     });
 
-    it("works with one var+comments+whitespace", () => 
+    it("works with one var+comments+whitespace", (done)=>
     {
-        let result = querier.runQuery(`  // Start with a comment
+        let expected = PMCDataValues.makeWithValues(
+            [new PMCDataValue(642, 1), new PMCDataValue(643, 0.9), new PMCDataValue(644, 0)]
+        );
+        checkResultOK(querier, done, `  // Start with a comment
  chiSq\t= data("chisq", "A")
 // Another comment
 
-1-normalize(chiSq)`);
-        let expected = PMCDataValues.makeWithValues(
-            [new PMCDataValue(642, 1), new PMCDataValue(643, 0.9), new PMCDataValue(644, 0)]
-        );
-        expect(result).toEqual(expected);
+1-normalize(chiSq)`, expected);
     });
 });
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//min((1/2.7)*element("SiO2", "%-as-mmol", "Combined"), min(0.33*element("SiO2", "%-as-mmol", "Combined")+0.2*(element("Na2O", "%-as-mmol", "Combined")-min(element("Na2O", "%-as-mmol", "Combined"), 0.5*element("Cl", "%-as-mmol", "Combined")))+0.1*( element("CaO", "%-as-mmol", "Combined")-(element("CaO", "%-as-mmol", "Combined")/(element("Ca", "%-as-mmol", "Combined")+element("MgO", "%-as-mmol", "Combined")))*min(element("Ca", "%-as-mmol", "Combined")+element("MgO", "%-as-mmol", "Combined"), element("SO3", "%-as-mmol", "Combined"))), min(2*element("Al2O3", "%-as-mmol", "Combined"), min(element("Na2O", "%-as-mmol", "Combined")-min(element("Na2O", "%-as-mmol", "Combined"), 0.5*element("Cl", "%-as-mmol", "Combined"))+element("K2O", "%-as-mmol", "Combined")+element("Al2O3", "%-as-mmol", "Combined"), min(2*( element("Na2O", "%-as-mmol", "Combined")-min(element("Na2O", "%-as-mmol", "Combined"), 0.5*element("Cl", "%-as-mmol", "Combined")))+2*element("K2O", "%-as-mmol", "Combined")+element("CaO", "%-as-mmol", "Combined")-min(element("CaO", "%-as-mmol", "Combined"), 3.33*element("P2O5", "%-as-mmol", "Combined"))-((element("CaO", "%-as-mmol", "Combined")-min(element("CaO", "%-as-mmol", "Combined"), 3.33*element("P2O5", "%-as-mmol", "Combined")))/(element("CaO", "%-as-mmol", "Combined")-min(element("CaO", "%-as-mmol", "Combined"), 3.33*element("P2O5", "%-as-mmol", "Combined"))+element("MgO", "%-as-mmol", "Combined")))*min(element("CaO", "%-as-mmol", "Combined")-min(element("CaO", "%-as-mmol", "Combined"), 3.33* element("P2O5", "%-as-mmol", "Combined"))+element("MgO", "%-as-mmol", "Combined"), element("SO3", "%-as-mmol", "Combined")), (2/0.7)*( element("Na2O", "%-as-mmol", "Combined")-min(element("Na2O", "%-as-mmol", "Combined"), 0.5*element("Cl", "%-as-mmol", "Combined"))))))))
-
-/* Broken down:
-
-min(
-    (1/2.7)*element("SiO2", "%-as-mmol", "Combined"),
-    min(
-        0.33*element("SiO2", "%-as-mmol", "Combined")+0.2*
-            (element("Na2O", "%-as-mmol", "Combined")-
-                min(
-                    element("Na2O", "%-as-mmol", "Combined"),
-                    0.5*element("Cl", "%-as-mmol", "Combined")
-                )
-            )+
-            0.1*
-            (element("CaO", "%-as-mmol", "Combined")-
-                (element("CaO", "%-as-mmol", "Combined") /
-                    (element("Ca", "%-as-mmol", "Combined")+element("MgO", "%-as-mmol", "Combined"))
-                )*
-                min(
-                    element("Ca", "%-as-mmol", "Combined")+element("MgO", "%-as-mmol", "Combined"),
-                    element("SO3", "%-as-mmol", "Combined")
-                )
-            ),
-        min(
-            2*element("Al2O3", "%-as-mmol", "Combined"),
-            min(
-                element("Na2O", "%-as-mmol", "Combined")-
-                    min(
-                        element("Na2O", "%-as-mmol", "Combined"),
-                        0.5*element("Cl", "%-as-mmol", "Combined")
-                    )+
-                    element("K2O", "%-as-mmol", "Combined")+
-                    element("Al2O3", "%-as-mmol", "Combined"),
-                min(
-                    2*(
-                        element("Na2O", "%-as-mmol", "Combined")-
-                            min(
-                                element("Na2O", "%-as-mmol", "Combined"),
-                                0.5*element("Cl", "%-as-mmol", "Combined")
-                            )
-                        )+
-                        2*element("K2O", "%-as-mmol", "Combined")+
-                        element("CaO", "%-as-mmol", "Combined")-
-                        min(
-                            element("CaO", "%-as-mmol", "Combined"),
-                            3.33*element("P2O5", "%-as-mmol", "Combined")
-                        )-(
-                            (element("CaO", "%-as-mmol", "Combined")-
-                                min(
-                                    element("CaO", "%-as-mmol", "Combined"),
-                                    3.33*element("P2O5", "%-as-mmol", "Combined")
-                                )
-                            )/
-                                (element("CaO", "%-as-mmol", "Combined")-
-                                    min(
-                                        element("CaO", "%-as-mmol", "Combined"),
-                                        3.33*element("P2O5", "%-as-mmol", "Combined")
-                                    )+
-                                    element("MgO", "%-as-mmol", "Combined")
-                                )
-                        )*
-                        min(
-                            element("CaO", "%-as-mmol", "Combined")-
-                            min(
-                                element("CaO", "%-as-mmol", "Combined"),
-                                3.33* element("P2O5", "%-as-mmol", "Combined")
-                            )+
-                            element("MgO", "%-as-mmol", "Combined"),
-                            element("SO3", "%-as-mmol", "Combined")),
-                        (2/0.7)*
-                        (
-                            element("Na2O", "%-as-mmol", "Combined")-
-                            min(
-                                element("Na2O", "%-as-mmol", "Combined"),
-                                0.5*element("Cl", "%-as-mmol", "Combined")
-                            )
-                        )
-                )
-            )
-        )
-    )
-)
-*/
-
-/* With variables:
-
-SiO2 = element("SiO2", "%-as-mmol", "Combined")
-Na2O = element("Na2O", "%-as-mmol", "Combined")
-CaO = element("CaO", "%-as-mmol", "Combined")
-Al2O3 = element("Al2O3", "%-as-mmol", "Combined")
-Cl = element("Cl", "%-as-mmol", "Combined")
-P2O5 = element("P2O5", "%-as-mmol", "Combined")
-MgO = element("MgO", "%-as-mmol", "Combined")
-SO3 = element("SO3", "%-as-mmol", "Combined")
-Ca = element("Ca", "%-as-mmol", "Combined")
-K2O = element("K2O", "%-as-mmol", "Combined")
-
-minCaOP2O5 = min(CaO, 3.33*P2O5)
-remainingCaO = CaO-minCaOP2O5
-minNa2OCl = min(Na2O, 0.5*Cl)
-remainingNa = Na2O-minNa2OCl
-minCavsS = min(Ca+MgO, SO3)
-minRemainingCaOvsS = min(remainingCaO+MgO, SO3)
-
-min(
-    (1/2.7)*SiO2,
-    min(
-        0.33*SiO2 + 0.2*remainingNa + 0.1 * (CaO - (CaO / (Ca+MgO)) * minCavsS),
-        min(
-            2*Al2O3,
-            min(
-                remainingNa + K2O + Al2O3,
-                min(
-                    2 * (remainingNa + K2O) + remainingCaO - (remainingCaO / (remainingCaO + MgO)) * minRemainingCaOvsS,
-                    (2/0.7)*remainingNa
-                )
-            )
-        )
-    )
-)
-*/
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//pow(pow(element("P2O5", "err", "Combined")*33.3/142,2)+pow(element("CaO", "err", "Combined")*10/56.1,2)+pow(element("SO3", "err", "Combined")*10*((element("CaO", "%-as-mmol", "Combined")-min(element("CaO", "%-as-mmol", "Combined"), 3.33*element("P2O5", "%-as-mmol", "Combined")))/( element("CaO", "%-as-mmol", "Combined")-min(element("CaO", "%-as-mmol", "Combined"), 3.33*element("P2O5", "%-as-mmol", "Combined"))+element("MgO", "%-as-mmol", "Combined")))/80.1,2)+pow(element("K2O", "err", "Combined")*10/94.2,2)+pow(element("Na2O", "err", "Combined")*10/62,2)+pow(element("Cl", "err", "Combined")*5/35.5,2),0.5)
-
-/* Broken down:
-
-pow(
-    pow(
-        element("P2O5", "err", "Combined")*33.3/142,
-        2
-    )+pow(
-        element("CaO", "err", "Combined")*10/56.1,
-        2
-    )+pow(
-        element("SO3", "err", "Combined")*10*
-        (
-            (
-                element("CaO", "%-as-mmol", "Combined")-
-                min(
-                    element("CaO", "%-as-mmol", "Combined"),
-                    3.33*element("P2O5", "%-as-mmol", "Combined")
-                )
-            )/
-            (
-                element("CaO", "%-as-mmol", "Combined")-
-                min(
-                    element("CaO", "%-as-mmol", "Combined"),
-                    3.33*element("P2O5", "%-as-mmol", "Combined")
-                )+element("MgO", "%-as-mmol", "Combined")
-            )
-        )/80.1,
-        2
-    )+pow(
-        element("K2O", "err", "Combined")*10/94.2,
-        2
-    )+pow(
-        element("Na2O", "err", "Combined")*10/62,
-        2
-    )+pow(
-        element("Cl", "err", "Combined")*5/35.5,
-        2
-    ),
-    0.5
-)
-*/
-
-/* With variables:
-
-CaO = element("CaO", "%-as-mmol", "Combined")
-CaOminusMinCaOP = CaO-min(CaO, 3.33*element("P2O5", "%-as-mmol", "Combined"))
-
-pow(
-    pow(
-        element("P2O5", "err", "Combined") * 33.3/142,
-        2
-    )+pow(
-        element("CaO", "err", "Combined") * 10/56.1,
-        2
-    )+pow(
-        element("SO3", "err", "Combined")* 10 * (CaOminusMinCaOP/CaOminusMinCaOP+element("MgO", "%-as-mmol", "Combined"))/80.1,
-        2
-    )+pow(
-        element("K2O", "err", "Combined") * 10/94.2,
-        2
-    )+pow(
-        element("Na2O", "err", "Combined") * 10/62,
-        2
-    )+pow(
-        element("Cl", "err", "Combined") * 5/35.5,
-        2
-    ),
-    0.5
-)
-*/

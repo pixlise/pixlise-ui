@@ -107,8 +107,13 @@ export class SpectrumChartService
         let quant = this._widgetDataService.quantificationLoaded;
         if(quant)
         {
-            let calib = quant.getAverageEnergyCalibration();
-            this._mdl.setQuantificationeVCalibration(calib);
+            let calib$ = quant.getAverageEnergyCalibration();
+            calib$.subscribe(
+                (calib)=>
+                {
+                    this._mdl.setQuantificationeVCalibration(calib);
+                }
+            );
         }
     }
 

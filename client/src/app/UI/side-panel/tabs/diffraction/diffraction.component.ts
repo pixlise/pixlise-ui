@@ -766,37 +766,40 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
 
         // Get the map data
         let query: DataSourceParams[] = [new DataSourceParams(DataExpressionService.predefinedDiffractionCountDataExpression, PredefinedROIID.AllPoints, "")];
-        let queryData: RegionDataResults = this._widgetDataService.getData(query, false);
-
-        // If we have valid data, we select all PMCs where value >= 1
-        if(queryData.error)
-        {
-            alert("Error while querying diffraction peaks: "+queryData.error);
-            return;
-        }
-
-        if(queryData.hasQueryErrors() || queryData.queryResults.length != 1)
-        {
-            alert("Error encountered while querying diffraction peaks");
-            return;
-        }
-
-        let selectedLocIdxs = new Set<number>();
-        for(let item of queryData.queryResults[0].values.values)
-        {
-            if(item.value >= 1)
+        this._widgetDataService.getData(query, false).subscribe(
+            (queryData: RegionDataResults)=>
             {
-                // Look up the location index
-                let idx = dataset.pmcToLocationIndex.get(item.pmc);
-                if(idx != undefined)
+                // If we have valid data, we select all PMCs where value >= 1
+                if(queryData.error)
                 {
-                    selectedLocIdxs.add(idx);
+                    alert("Error while querying diffraction peaks: "+queryData.error);
+                    return;
                 }
-            }
-        }
 
-        // Select them!
-        this._selectionService.setSelection(dataset, new BeamSelection(dataset, selectedLocIdxs), null, true);
+                if(queryData.hasQueryErrors() || queryData.queryResults.length != 1)
+                {
+                    alert("Error encountered while querying diffraction peaks");
+                    return;
+                }
+
+                let selectedLocIdxs = new Set<number>();
+                for(let item of queryData.queryResults[0].values.values)
+                {
+                    if(item.value >= 1)
+                    {
+                        // Look up the location index
+                        let idx = dataset.pmcToLocationIndex.get(item.pmc);
+                        if(idx != undefined)
+                        {
+                            selectedLocIdxs.add(idx);
+                        }
+                    }
+                }
+
+                // Select them!
+                this._selectionService.setSelection(dataset, new BeamSelection(dataset, selectedLocIdxs), null, true);
+            }
+        );
     }
 
     // CanvasDrawer

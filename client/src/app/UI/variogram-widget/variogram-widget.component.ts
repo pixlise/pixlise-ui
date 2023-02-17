@@ -399,7 +399,6 @@ export class VariogramWidgetComponent implements OnInit
         this.setDefaultsIfNeeded(widgetUpdReason);
 
         // Use widget data service to rebuild our data model
-        let queryData: RegionDataResults = null;
         let query: DataSourceParams[] = [];
 
         // Query each region for both expressions if we have any...
@@ -413,7 +412,24 @@ export class VariogramWidgetComponent implements OnInit
                 }
             }
 
-            queryData = this._widgetDataService.getData(query, false);
+            this._widgetDataService.getData(query, false).subscribe(
+                (queryData=>
+                {
+                    this.processQueryResult(t0, query, queryData);
+                })
+            )
+        }
+        else
+        {
+            this.processQueryResult(t0, query, null);
+        }
+    }
+
+    private processQueryResult(t0: number, query: DataSourceParams[], queryData: RegionDataResults)
+    {
+        if(queryData.error)
+        {
+            throw new Error(queryData.error);
         }
 
         let title = "";

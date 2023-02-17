@@ -28,6 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, ElementRef, Input, OnDestroy, OnInit } from "@angular/core";
+import { Observable, of, combineLatest } from "rxjs";
+import { map } from "rxjs/operators";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subject, Subscription } from "rxjs";
 import { PMCDataValues } from "src/app/expression-language/data-values";
@@ -39,7 +41,7 @@ import { QuantificationService } from "src/app/services/quantification.service";
 import { ROIService } from "src/app/services/roi.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { histogramState, ViewStateService } from "src/app/services/view-state.service";
-import { DataSourceParams, WidgetDataUpdateReason, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { DataSourceParams, WidgetDataUpdateReason, WidgetRegionDataService, RegionDataResults } from "src/app/services/widget-region-data.service";
 import { CanvasDrawer, CanvasDrawParameters, CanvasInteractionHandler } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
 import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.component";
@@ -324,6 +326,7 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
         let exprPseudointensityCount = 0;
         let exprWeightPctCount = 0;
         let query: DataSourceParams[] = [];
+        let errorCols$: Observable<PMCDataValues>[] = [];
         for(let exprId of this._displayExpressionIDs)
         {
             for(let roiId of this._visibleROIs)
@@ -332,6 +335,9 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
                 if(roiId != PredefinedROIID.SelectedPoints || this._selectionService.getCurrentSelection().beamSelection.locationIndexes.size > 0)
                 {
                     query.push(new DataSourceParams(exprId, roiId, ""));
+
+                    // Query error column (if there is one, otherwise returns null)
+                    errorCols$.push(this.getErrorColForExpression(exprId, roiId));
                 }
             }
 
@@ -346,13 +352,29 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
             }
         }
 
-        let queryData = this._widgetDataService.getData(query, true);
-        if(queryData.error)
-        {
-            console.error("Failed to query data for histogram: " + queryData.error);
-            return;
-        }
+        this._widgetDataService.getData(query, true).subscribe(
+            (queryData)=>
+            {
+                if(queryData.error)
+                {
+                    console.error("Failed to query data for histogram: " + queryData.error);
+                    return;
+                }
 
+                // Wait for the error columns too
+                let errorColResults$ = combineLatest(errorCols$);
+                errorColResults$.subscribe(
+                    (errCols)=>
+                    {
+                        this.processQueryResult(t0, exprWeightPctCount, exprPseudointensityCount, query, queryData, errCols);
+                    }
+                );
+            }
+        );
+    }
+
+    private processQueryResult(t0: number, exprWeightPctCount: number, exprPseudointensityCount: number, query: DataSourceParams[], queryData: RegionDataResults, errCols: PMCDataValues[])
+    {
         this._mdl = new HistogramModel(this._showStdDeviation, this._logScale, this._showWhiskers);
 
         let histogramBars: HistogramBars[] = [];
@@ -387,7 +409,7 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
             }
 
             // Calc sum of concentrations and read out column into an array
-            let errorCol = this.getErrorColForExpression(exprId, roiId);
+            const errorCol = errCols[queryIdx];
 
             // TODO: Should this and chord diagram be common code?
             let concentrationSum = 0;
@@ -522,13 +544,13 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
         console.log("  Histogram prepareData took: " + (t1 - t0).toLocaleString() + "ms, needsDraw$ took: " + (t2 - t1).toLocaleString() + "ms");
     }
 
-    protected getErrorColForExpression(exprId: string, roiId: string): PMCDataValues
+    protected getErrorColForExpression(exprId: string, roiId: string): Observable<PMCDataValues>
     {
         // If we've got a corresponding error column, use that, otherwise return null
         let elem = DataExpressionService.getPredefinedQuantExpressionElement(exprId);
         if(elem.length <= 0)
         {
-            return null;
+            return of(null);
         }
 
         // Get the detector too. If not specified, it will be '' which will mean some defaulting will happen
@@ -537,13 +559,19 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
         // Try query it
         let errExprId = DataExpressionService.makePredefinedQuantElementExpression(elem, "err", detector);
         let query: DataSourceParams[] = [new DataSourceParams(errExprId, roiId, "")];
-        let queryData = this._widgetDataService.getData(query, false);
-        if(queryData.error || queryData.hasQueryErrors() || queryData.queryResults.length != 1)
-        {
-            return null;
-        }
-
-        return queryData.queryResults[0].values;
+        return this._widgetDataService.getData(query, false).pipe(
+            map(
+                (queryData)=>
+                {
+                    if(queryData.error || queryData.hasQueryErrors() || queryData.queryResults.length != 1)
+                    {
+                        return null;
+                    }
+            
+                    return queryData.queryResults[0].values;
+                }
+            )
+        );
     }
 
     protected makeKeyItems(roiIDs: string[]): KeyItem[]

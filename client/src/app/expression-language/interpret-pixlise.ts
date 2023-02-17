@@ -27,6 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { Observable, of } from "rxjs";
 import jsep from "jsep";
 import { PMCDataValues, QuantOp } from "src/app/expression-language/data-values";
 import { InterpreterDataSource } from "./interpreter-data-source";
@@ -49,7 +50,7 @@ export class PixliseDataQuerier
     {
     }
 
-    public runQuery(expression: string): PMCDataValues
+    public runQuery(expression: string): Observable<PMCDataValues>
     {
         let t0 = performance.now();
 
@@ -65,7 +66,7 @@ export class PixliseDataQuerier
 let t1 = performance.now();
 console.log(">>> PIXLISE expression took: "+(t1-t0).toLocaleString()+"ms");
 
-            return result as PMCDataValues;
+            return of(result as PMCDataValues);
         }
 
         throw new Error("Expression: "+expression+" did not result in usable map data. Result was: "+result);

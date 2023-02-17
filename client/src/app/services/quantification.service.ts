@@ -653,8 +653,7 @@ export class QuantificationService
                     result["roiID"],
                     tables
                 );
-            }
-            )
+            })
         );
     }
 
@@ -690,8 +689,7 @@ export class QuantificationService
                     result.weightPercents.set(key, item);
                 }
                 return result;
-            }
-            )
+            })
         );                  
     }
 

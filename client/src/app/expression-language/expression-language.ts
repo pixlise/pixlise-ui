@@ -27,6 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { Observable } from "rxjs";
+import { map } from "rxjs/operators";
 import {
     DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
 } from "src/app/expression-language/data-sources";
@@ -50,9 +52,8 @@ export function getQuantifiedDataWithExpression(
     diffractionSource: DiffractionPeakQuerierSource,
     dataset: DataSet,
     forPMCs: Set<number> = null
-): PMCDataValues
+): Observable<PMCDataValues>
 {
-    //console.log('  getQuantifiedDataWithExpression: "'+expression+'", forPMCs: '+(forPMCs===null ? 'All' : forPMCs.size));
     let query = new DataQuerier(quantSource, pseudoSource, housekeepingSource, spectrumSource, diffractionSource, dataset);
     let queryResult = query.runQuery(expression);
 
@@ -61,17 +62,22 @@ export function getQuantifiedDataWithExpression(
         return queryResult;
     }
 
-    // Build a new result only containing PMCs specified
-    let resultValues: PMCDataValue[] = [];
-    for(let item of queryResult.values)
-    {
-        if(forPMCs.has(item.pmc))
+    return queryResult.pipe(
+        map((result: PMCDataValues)=>
         {
-            resultValues.push(item);
-        }
-    }
+            // Build a new result only containing PMCs specified
+            let resultValues: PMCDataValue[] = [];
+            for(let item of result.values)
+            {
+                if(forPMCs.has(item.pmc))
+                {
+                    resultValues.push(item);
+                }
+            }
 
-    return PMCDataValues.makeWithValues(resultValues);
+            return PMCDataValues.makeWithValues(resultValues);
+        }
+    ));
 }
 
 export class DataQuerier
@@ -112,7 +118,7 @@ export class DataQuerier
         }
     }
 
-    public runQuery(expression: string): PMCDataValues
+    public runQuery(expression: string): Observable<PMCDataValues>
     {
         // Decide which interperter to run it in
         if(this.isLUA(expression))

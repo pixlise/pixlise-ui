@@ -37,7 +37,7 @@ import { DataExpressionService } from "src/app/services/data-expression.service"
 import { DataSetService } from "src/app/services/data-set.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { chordState, ViewStateService } from "src/app/services/view-state.service";
-import { DataSourceParams, WidgetDataUpdateReason, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { DataSourceParams, WidgetDataUpdateReason, WidgetRegionDataService, RegionDataResults } from "src/app/services/widget-region-data.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
 import { SliderValue } from "src/app/UI/atoms/slider/slider.component";
 import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expression-picker/expression-picker.component";
@@ -441,13 +441,22 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
             }
         }
 
-        let queryData = this._widgetDataService.getData(query, false);
-        if(queryData.error)
-        {
-            this.helpMessage = HelpMessage.ROI_QUERY_FAILED;
-            return;
-        }
+        this._widgetDataService.getData(query, false).subscribe(
+            (queryData: RegionDataResults)=>
+            {
+                if(queryData.error)
+                {
+                    this.helpMessage = HelpMessage.ROI_QUERY_FAILED;
+                    return;
+                }
 
+                this.processQueryResult(t0, queryROI, query, queryData);
+            }
+        )
+    }
+ 
+    private processQueryResult(t0: number, queryROI: string, query: DataSourceParams[], queryData: RegionDataResults)
+    {
         let region = this._widgetDataService.regions.get(queryROI);
         if(region)
         {

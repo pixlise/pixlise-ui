@@ -29,7 +29,8 @@
 
 import { Component, ElementRef, Input, OnInit, Output, EventEmitter } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Subscription } from "rxjs";
+import { Observable, Subscription, combineLatest } from "rxjs";
+import { map } from "rxjs/operators";
 import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
@@ -44,7 +45,7 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
-import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
 import { TaggingService } from "src/app/services/tagging.service";
 import { generateExportCSVForExpression } from "src/app/services/export-data.service";
@@ -696,7 +697,7 @@ export class LayerSettingsComponent implements OnInit
             (options: PlotExporterDialogOption[])=>
             {
                 let canvases: CanvasExportItem[] = [];
-                let csvs: CSVExportItem[] = [];
+                let csvs$: Observable<CSVExportItem>[] = [];
 
                 let drawer = new ExportDrawer(this._contextImageService.mdl, this._contextImageService.mdl.toolHost);
                 let exportIDs = this.getCanvasOptions(options);
@@ -730,14 +731,26 @@ export class LayerSettingsComponent implements OnInit
 
                     for(let datasetId of subDatasetIDs)
                     {
-                        csvs.push(new CSVExportItem(
-                            "Expression Values for dataset "+datasetId,
-                            generateExportCSVForExpression([this.layerInfo.layer.id], PredefinedROIID.AllPoints, datasetId, this._widgetDataService)
-                        ));
-                    }  
+                        csvs$.push(
+                            generateExportCSVForExpression([this.layerInfo.layer.id], PredefinedROIID.AllPoints, datasetId, this._widgetDataService).pipe(
+                                map(
+                                    (csvData)=>
+                                    {
+                                        return new CSVExportItem("Expression Values for dataset "+datasetId, csvData);
+                                    }
+                                )
+                            )
+                        );
+                    }
                 }
 
-                dialogRef.componentInstance.onDownload(canvases, csvs);
+                let csvsFinished$ = combineLatest(csvs$);
+                return csvsFinished$.subscribe(
+                    (csvItems: CSVExportItem[])=>
+                    {
+                        dialogRef.componentInstance.onDownload(canvases, csvItems);
+                    }
+                );
             });
 
         return dialogRef.afterClosed();

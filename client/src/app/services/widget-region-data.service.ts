@@ -28,7 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Injectable } from "@angular/core";
-import { ReplaySubject, Subject, Subscription } from "rxjs";
+import { ReplaySubject, Subject, Subscription, Observable, combineLatest, of } from "rxjs";
+import { map } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
 import { ObjectCreator } from "src/app/models/BasicTypes";
@@ -422,23 +423,32 @@ export class WidgetRegionDataService
     // should equal "what.length". There are also error values that can be returned.
     // NOTE: If a dataset ID is specified (in case of combined datasets), the output PMCs will be relative to that dataset
     //       so they won't be unique against the PMCs for the overall dataset anymore!
-    getData(what: DataSourceParams[], continueOnError: boolean): RegionDataResults
+    getData(what: DataSourceParams[], continueOnError: boolean): Observable<RegionDataResults>
     {
         let dataset = this._datasetService.datasetLoaded;
 
         if(!dataset)
         {
             console.error("getData: No dataset");
-            return new RegionDataResults([], "No dataset");
+            return of(new RegionDataResults([], "No dataset"));
         }
 
-        let result: RegionDataResultItem[] = [];
+        let result$: Observable<RegionDataResultItem>[] = [];
 
         for(let query of what)
         {
+            // If we have a dataset ID specified, and it doesn't match our dataset ID we error out if the dataset is not a "combined" one.
             if(query.datasetId && !dataset.isCombinedDataset())
             {
-                return new RegionDataResults([], "Queried for dataset ID: "+query.datasetId+" when not in combined dataset!");
+                if(query.datasetId == dataset.getId())
+                {
+                    // It matches our dataset ID: someone was just silly so we clear it to create less confusion later when the expression runs
+                    query.datasetId = "";
+                }
+                else
+                {
+                    return of(new RegionDataResults([], "Queried for dataset ID: "+query.datasetId+" when not in combined dataset!"));
+                }
             }
 
             // Get region info (allow NULL in request because context image doesn't need to be slowed by this)
@@ -453,11 +463,11 @@ export class WidgetRegionDataService
                     if(continueOnError)
                     {
                         console.error("getData: "+errorMsg+". Ignored...");
-                        result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null, ""));
+                        result$.push(of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null, "")));
                         continue;
                     }
                     console.error("getData: "+errorMsg);
-                    return new RegionDataResults([], errorMsg);
+                    return of(new RegionDataResults([], errorMsg));
                 }
             }
 
@@ -471,18 +481,18 @@ export class WidgetRegionDataService
                 {
                     
                     console.error("getData: "+errorMsg+". Ignored...");
-                    result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_EXPR, errorMsg, null, expr.name));
+                    result$.push(of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_EXPR, errorMsg, null, expr.name)));
                     continue;
                 }
                 console.error("getData: "+errorMsg);
-                return new RegionDataResults([], errorMsg);
+                return of(new RegionDataResults([], errorMsg));
             }
 
             // If we have a cached value for this, return that
             let cachedResult = this._resultCache.getCachedResult(query, expr.modUnixTimeSec, region ? region.modUnixTimeSec : 0);
             if(cachedResult != null)
             {
-                result.push(cachedResult);
+                result$.push(of(cachedResult));
             }
             else
             {
@@ -516,36 +526,48 @@ export class WidgetRegionDataService
                         }
                     }
 
-                    let data = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
-                    data = this.applyUnitConversion(expr, data, query.units);
-
-                    // Also change the PMC values to be dataset-relative in the case of combined dataset
-                    if(pmcOffset > 0)
-                    {
-                        for(let c = 0; c < data.values.length; c++)
+                    let data$ = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
+                    result$.push(data$.pipe(
+                        map((result: PMCDataValues)=>
                         {
-                            data.values[c].pmc -= pmcOffset;
-                        }
-                    }
+                            let unitConverted = this.applyUnitConversion(expr, result, query.units);
 
-                    let resultItem = new RegionDataResultItem(data, null, null, data.warning, expr.name);
-                    result.push(resultItem);
+                            // Also change the PMC values to be dataset-relative in the case of combined dataset
+                            if(pmcOffset > 0)
+                            {
+                                for(let c = 0; c < unitConverted.values.length; c++)
+                                {
+                                    unitConverted.values[c].pmc -= pmcOffset;
+                                }
+                            }
 
-                    // Cache if needed
-                    let t1 = performance.now();
-                    this._resultCache.addCachedResult(query, t1-t0, resultItem);
+                            let resultItem = new RegionDataResultItem(unitConverted, null, null, unitConverted.warning, expr.name);
+
+                            // Cache if needed
+                            let t1 = performance.now();
+                            this._resultCache.addCachedResult(query, t1-t0, resultItem);
+
+                            return resultItem;
+                        })
+                    ));
                 }
                 catch (error)
                 {
                     let errorMsg = httpErrorToString(error, "WidgetRegionDataService.getData");
                     SentryHelper.logMsg(true, errorMsg);
-                    result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr.name));
-                    //return null;
+                    result$.push(of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr.name)));
                 }
             }
         }
 
-        return new RegionDataResults(result, "");
+        // Wait for all of them and complete
+        let finalResult$ = combineLatest(result$);
+        return finalResult$.pipe(
+            map((resultItems: RegionDataResultItem[])=>
+            {
+                return new RegionDataResults(resultItems, "");
+            })
+        ); 
     }
 
     private getPMCsForDatasetId(datasetId: string, dataset: DataSet): Set<number>
