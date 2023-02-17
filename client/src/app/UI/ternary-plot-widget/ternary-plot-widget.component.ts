@@ -63,6 +63,7 @@ import { ExpressionReferences } from "../references-picker/references-picker.com
 export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
 {
     @Input() widgetPosition: string = "";
+    @Input() previewExpressionIDs: string[] = [];
 
     private id = randomString(4);
     private _subs = new Subscription();
@@ -110,6 +111,33 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
 
     ngOnInit()
     {
+        // Only subscribe to expressions if we have preview expressions passed
+        if(this.previewExpressionIDs && this.previewExpressionIDs.length > 0)
+        {
+            this._subs.add(this._exprService.expressionsUpdated$.subscribe(() =>
+            {
+                // If user has changed axes, but still has unsaved expression showing, dont reset
+                if(!this._aExpressionId.startsWith("unsaved-") && !this._bExpressionId.startsWith("unsaved-") && !this._cExpressionId.startsWith("unsaved-"))
+                {
+                    // Default set axes to first three preview expressions passed
+                    if(this._exprService.getExpression(this.previewExpressionIDs[0]))
+                    {
+                        this._aExpressionId = this.previewExpressionIDs[0];
+                    }
+                    if(this.previewExpressionIDs.length > 1 && this._exprService.getExpression(this.previewExpressionIDs[0]))
+                    {
+                        this._bExpressionId = this.previewExpressionIDs[1];
+                    }
+                    if(this.previewExpressionIDs.length > 2 && this._exprService.getExpression(this.previewExpressionIDs[0]))
+                    {
+                        this._cExpressionId = this.previewExpressionIDs[2];
+                    }
+                }
+
+                this.prepareData("preview-expression-refresh", null);
+            }));
+        }
+
         this._subs.add(this._selectionService.hoverChangedReplaySubject$.subscribe(
             ()=>
             {
