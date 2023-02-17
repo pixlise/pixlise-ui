@@ -376,6 +376,12 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     onSave(): void
     {
+        if(this.isExpressionSaved)
+        {
+            // Nothing to save
+            return;
+        }
+        
         this._expressionService.edit(
             this._expressionID,
             this.expression.name,

@@ -97,6 +97,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Output() onTextSelect = new EventEmitter<TextSelection>();
     @Output() runExpression = new EventEmitter();
     @Output() runHighlightedExpression = new EventEmitter();
+    @Output() saveExpression = new EventEmitter();
     
     constructor(
         private _datasetService: DataSetService,
@@ -144,6 +145,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                 cm.setSelection(cursor, cursor);
             };
 
+            // navigator.appVersion.indexOf('Win')
+
             cmObj.setOption("extraKeys", {
                 "Cmd-/": toggleComment,
                 "Ctrl-/": toggleComment,
@@ -167,7 +170,9 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                 {
                     resetMarks(cm);
                     this.runHighlightedExpression.emit();
-                }
+                },
+                "Cmd-S": () => this.saveExpression.emit(),
+                "Ctrl-S": () => this.saveExpression.emit(),
             });
 
             // Not sure what codemirror is doing, and why it does it but some ms after creation it has been resetting... we now reset it 2x, once for

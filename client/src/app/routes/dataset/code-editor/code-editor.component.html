@@ -75,6 +75,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 (onTextSelect)="onTextSelect($event)"
                 (runExpression)="runExpression()"
                 (runHighlightedExpression)="runHighlightedExpression()"
+                (saveExpression)="onSave()"
                 [range]="isSubsetExpression ? executedTextSelection.range : null"
                 [showHelp]="useAutocomplete"
             >

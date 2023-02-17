@@ -124,11 +124,11 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                     {
                         this._aExpressionId = this.previewExpressionIDs[0];
                     }
-                    if(this.previewExpressionIDs.length > 1 && this._exprService.getExpression(this.previewExpressionIDs[0]))
+                    if(this.previewExpressionIDs.length > 1 && this._exprService.getExpression(this.previewExpressionIDs[1]))
                     {
                         this._bExpressionId = this.previewExpressionIDs[1];
                     }
-                    if(this.previewExpressionIDs.length > 2 && this._exprService.getExpression(this.previewExpressionIDs[0]))
+                    if(this.previewExpressionIDs.length > 2 && this._exprService.getExpression(this.previewExpressionIDs[2]))
                     {
                         this._cExpressionId = this.previewExpressionIDs[2];
                     }
