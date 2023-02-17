@@ -381,7 +381,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             // Nothing to save
             return;
         }
-        
+
         this._expressionService.edit(
             this._expressionID,
             this.expression.name,
@@ -397,7 +397,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             },
             (err)=>
             {
-                alert(`Failed to save expression ${this.expression.name}: ${err}`);
+                console.error(`Failed to save expression ${this.expression.name}`, err);
+                alert(`Failed to save expression ${this.expression.name}: ${err?.message}`);
             }
         );
     }
@@ -412,6 +413,16 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             this._keyPresses["Meta"] = false;
             this._keyPresses["Control"] = false;
             this._keyPresses["Enter"] = false;
+        }
+        else if((this._keyPresses["Meta"] && this._keyPresses["s"]) || (this._keyPresses["Control"] && this._keyPresses["s"]))
+        {
+            this.onSave();
+            this._keyPresses["Meta"] = false;
+            this._keyPresses["Control"] = false;
+            this._keyPresses["s"] = false;
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            event.preventDefault();
         }
     }
 
