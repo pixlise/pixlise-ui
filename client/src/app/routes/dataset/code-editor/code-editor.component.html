@@ -42,7 +42,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 </push-button>
                 <push-button
                     buttonStyle="gray"
-                    [disabled]="!isCodeChanged"
+                    [disabled]="!isCodeChanged && !isSubsetExpression"
                     (onClick)="runExpression()"
                 >Run
                 </push-button>
@@ -53,7 +53,16 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
         </div>
         <div class="viz-container">
-            <h2>Visualization</h2>
+            <span fxLayout="row" fxLayoutAlign="center center">
+                <h2>Visualization{{displayExpressionTitle ? ": " + displayExpressionTitle : ""}}</h2>
+                <icon-button 
+                    *ngIf="isCodeChanged"
+                    icon='assets/button-icons/disabled-orange.svg'
+                    [hasBackground]="false"
+                    #tooltip="matTooltip"
+                    matTooltip="Expression has changed since last run"
+                ></icon-button>
+            </span>
             <div class="right-btn-group">
                 <icon-button
                     icon='assets/button-icons/close-cross-gray.svg'
@@ -88,7 +97,7 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
             <pmc-data-grid
                 class="{{isPMCDataGridSolo ? 'solo' : ''}}"
-                [header]="dataGridHeaderLabel"
+                [header]="pmcGridExpressionTitle"
                 [evaluatedExpression]="evaluatedExpression"
                 [columnCount]="15"
                 (onToggleSolo)="onTogglePMCDataGridSolo($event)"

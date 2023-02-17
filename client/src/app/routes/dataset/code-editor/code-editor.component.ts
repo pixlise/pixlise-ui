@@ -38,22 +38,10 @@ import { BinaryPlotWidgetComponent } from "src/app/UI/binary-plot-widget/binary-
 // Components we can create dynamically
 import { ChordViewWidgetComponent } from "src/app/UI/chord-view-widget/chord-view-widget.component";
 import { ContextImageViewWidgetComponent } from "src/app/UI/context-image-view-widget/context-image-view-widget.component";
-import { ImageOptionsComponent } from "src/app/UI/context-image-view-widget/image-options/image-options.component";
-import { LayerControlComponent } from "src/app/UI/context-image-view-widget/layer-control/layer-control.component";
 import { HistogramViewComponent } from "src/app/UI/histogram-view/histogram-view.component";
-import { ParallelCoordinatesPlotWidgetComponent } from "src/app/UI/parallel-coordinates-plot-widget/parallel-coordinates-plot-widget.component";
-import { QuantificationTableComponent } from "src/app/UI/quantification-table/quantification-table.component";
-import { RGBUPlotComponent } from "src/app/UI/rgbuplot/rgbuplot.component";
-import { SingleAxisRGBUComponent } from "src/app/UI/single-axis-rgbu/single-axis-rgbu.component";
-import { RGBUViewerComponent } from "src/app/UI/rgbuviewer/rgbuviewer.component";
-import { ROIQuantCompareTableComponent } from "src/app/UI/roiquant-compare-table/roiquant-compare-table.component";
 import { SpectrumChartWidgetComponent } from "src/app/UI/spectrum-chart-widget/spectrum-chart-widget.component";
-import { AnnotationsComponent } from "src/app/UI/spectrum-chart-widget/spectrum-peak-identification/annotations/annotations.component";
-import { SpectrumPeakIdentificationComponent } from "src/app/UI/spectrum-chart-widget/spectrum-peak-identification/spectrum-peak-identification.component";
 import { SpectrumRegionPickerComponent } from "src/app/UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
 import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/ternary-plot-widget.component";
-import { VariogramWidgetComponent } from "src/app/UI/variogram-widget/variogram-widget.component";
-import { SpectrumFitContainerComponent } from "src/app/UI/spectrum-chart-widget/spectrum-fit-container/spectrum-fit-container.component";
 import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
 import { DataSourceParams, RegionDataResultItem, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
@@ -87,7 +75,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     public expression: DataExpression;
     public evaluatedExpression: RegionDataResultItem;
-    public currentEvaluatedExpressionTitle: string = "";
+    public pmcGridExpressionTitle: string = "";
+    public displayExpressionTitle: string = "";
 
     public isPMCDataGridSolo: boolean = false;
 
@@ -223,10 +212,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         {
             this.isCodeChanged = false;
             let previewID = `unsaved-${this._expressionID}`;
-            this._expressionService.cache(previewID, this.expression, `Unsaved ${this.expression.name}`);
+            this.displayExpressionTitle = `Unsaved ${this.expression.name}`;
+            this._expressionService.cache(previewID, this.expression, this.displayExpressionTitle);
         }
 
-        this.currentEvaluatedExpressionTitle = "Numeric Values: All";
+        this.pmcGridExpressionTitle = "Numeric Values: All";
         this.isSubsetExpression = false;
         if(this.executedTextSelection)
         {
@@ -253,7 +243,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             false
         );
 
-        this.isCodeChanged = true;
+        // this.isCodeChanged = true;
 
         let lineRange = "";
         if(this.isEmptySelection)
@@ -266,9 +256,10 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         }
         
         let previewID = `unsaved-${this._expressionID}`;
-        this._expressionService.cache(previewID, highlightedExpression, `Unsaved ${this.expression.name} (Lines ${lineRange})`);
+        this.displayExpressionTitle = `Unsaved ${this.expression.name} (Lines ${lineRange})`;
+        this._expressionService.cache(previewID, highlightedExpression, this.displayExpressionTitle);
 
-        this.currentEvaluatedExpressionTitle = `Numeric Values: Line ${lineRange}`;
+        this.pmcGridExpressionTitle = `Numeric Values: Line ${lineRange}`;
         this.isSubsetExpression = true;
 
         this.executedTextSelection = this.activeTextSelection;
@@ -300,11 +291,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         return this.activeTextSelection?.endLine;
     }
 
-    get dataGridHeaderLabel(): string
-    {
-        return this.currentEvaluatedExpressionTitle;
-    }
-    
     get editable(): boolean
     {
         return this._editable;
@@ -446,7 +432,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     //       it to work for any number of components, so hard-coding here will suffice
     private getComponentClassForSelector(selector: string): any
     {
-    // Widgets
+        // Limited Preview Mode Widgets
         if(selector == ViewStateService.widgetSelectorChordDiagram)
         {
             return ChordViewWidgetComponent;
@@ -459,33 +445,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         {
             return TernaryPlotWidgetComponent;
         }
-        else if(selector == ViewStateService.widgetSelectorQuantificationTable)
-        {
-            return QuantificationTableComponent;
-        }
         else if(selector == ViewStateService.widgetSelectorHistogram)
         {
             return HistogramViewComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorVariogram)
-        {
-            return VariogramWidgetComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorRGBUPlot)
-        {
-            return RGBUPlotComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorSingleAxisRGBU)
-        {
-            return SingleAxisRGBUComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorRGBUViewer)
-        {
-            return RGBUViewerComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorParallelCoordinates)
-        {
-            return ParallelCoordinatesPlotWidgetComponent;
         }
         else if(selector == ViewStateService.widgetSelectorSpectrum)
         {
@@ -494,36 +456,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         else if(selector == ViewStateService.widgetSelectorContextImage)
         {
             return ContextImageViewWidgetComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorROIQuantCompareTable)
-        {
-            return ROIQuantCompareTableComponent;
-        }
-        // Context image drop-downs
-        else if(selector == ViewStateService.widgetSelectorContextImageLayers)
-        {
-            return LayerControlComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorContextImageOptions)
-        {
-            return ImageOptionsComponent;
-        }
-        // Spectrum drop-downs
-        else if(selector == ViewStateService.widgetSelectorSpectrumPeakID)
-        {
-            return SpectrumPeakIdentificationComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorSpectrumRegions)
-        {
-            return SpectrumRegionPickerComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorSpectrumFit)
-        {
-            return SpectrumFitContainerComponent;
-        }
-        else if(selector == ViewStateService.widgetSelectorSpectrumAnnotations)
-        {
-            return AnnotationsComponent;
         }
 
         console.error("getComponentClassForSelector unknown selector: "+selector+". Substituting chord diagram");
