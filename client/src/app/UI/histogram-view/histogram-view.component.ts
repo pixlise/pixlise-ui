@@ -59,6 +59,7 @@ import { HistogramModel, HistogramBar, HistogramBars, HistogramData, Concentrati
 export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
 {
     @Input() widgetPosition: string = "";
+    @Input() previewExpressionIDs: string[] = [];
 
     private _subs = new Subscription();
 
@@ -99,6 +100,27 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
 
     ngOnInit()
     {
+        // Only subscribe to expressions if we have preview expressions passed
+        if(this.previewExpressionIDs && this.previewExpressionIDs.length > 0)
+        {
+            this._subs.add(this._exprService.expressionsUpdated$.subscribe(() =>
+            {
+                let unsavedExpressions = this._displayExpressionIDs.filter(id => this.previewExpressionIDs.includes(id));
+
+                // If user has changed axes, but still has unsaved expression showing, dont reset
+                if(unsavedExpressions.length < this.previewExpressionIDs.length)
+                {
+                    let validPreviewExpressions = this.previewExpressionIDs.filter(id => this._exprService.getExpression(id));
+                    if(validPreviewExpressions.length > 0)
+                    {
+                        this._displayExpressionIDs = validPreviewExpressions;
+                    }
+                }
+
+                this.recalcHistogram("preview-expression-refresh", null);
+            }));
+        }
+
         this._subs.add(this._widgetDataService.widgetData$.subscribe(
             (updReason: WidgetDataUpdateReason) =>
             {
