@@ -108,6 +108,8 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
         {
             this._subs.add(this._exprService.expressionsUpdated$.subscribe(() =>
             {
+                this.setStartingExpressions();
+
                 let unsavedExpressions = this._displayExpressionIDs.filter(id => this.previewExpressionIDs.includes(id));
 
                 // If user has changed axes, but still has unsaved expression showing, dont reset
