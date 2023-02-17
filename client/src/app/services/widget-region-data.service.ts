@@ -489,7 +489,21 @@ export class WidgetRegionDataService
         return new RegionDataResults(result, "");
     }
 
-    public runExpression(query: DataSourceParams, expr: DataExpression): RegionDataResultItem
+    public cacheExpression(query: DataSourceParams, expr: DataExpression, result: PMCDataValues, warning: string = ""): void
+    {
+        this._resultCache.addCachedResult(
+            query,
+            expr.modUnixTimeSec,
+            new RegionDataResultItem(result,
+                null,
+                null,
+                warning,
+                expr.name
+            )
+        );
+    }
+
+    public runExpression(query: DataSourceParams, expr: DataExpression, shouldCache: boolean = true): RegionDataResultItem
     {
         let result: RegionDataResultItem = null;
 
@@ -542,7 +556,10 @@ export class WidgetRegionDataService
 
             // Cache if needed
             let t1 = performance.now();
-            this._resultCache.addCachedResult(query, t1-t0, result);
+            if(shouldCache)
+            {
+                this._resultCache.addCachedResult(query, t1-t0, result);
+            }
         }
         catch (error)
         {

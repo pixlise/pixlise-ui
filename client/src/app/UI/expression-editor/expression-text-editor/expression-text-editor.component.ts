@@ -39,6 +39,8 @@ import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElem
 import { SentryHelper } from "src/app/utils/utils";
 import { Range } from "codemirror";
 
+require("codemirror/addon/comment/comment.js");
+
 export class TextSelection
 {
     constructor(
@@ -85,12 +87,16 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Input() allowEdit: boolean = true;
     @Input() applyNow: boolean = false;
     @Input() isImmediatelyAppliable: boolean = true;
+
+    @Input() showHelp: boolean = true;
     
     @Input() range: Range = null;
 
     @Output() onChange = new EventEmitter<DataExpression>();
     @Output() onTextChange = new EventEmitter<string>();
     @Output() onTextSelect = new EventEmitter<TextSelection>();
+    @Output() runExpression = new EventEmitter();
+    @Output() runHighlightedExpression = new EventEmitter();
     
     constructor(
         private _datasetService: DataSetService,
@@ -121,6 +127,48 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             cmObj.setOption("lineNumbers", true);
             cmObj.setOption("theme", "pixlise");
             cmObj.setOption("readOnly", !this.allowEdit);
+
+            const toggleComment = (cm) =>
+            {
+                cm.toggleComment({
+                    indent: true,
+                    lineComment: "//"
+                });
+            };
+
+            const resetMarks = (cm) =>
+            {
+                this.range = null;
+                let cursor = cm.getCursor();
+                cm.setSelection({line: 0, ch: 0}, {line: 0, ch: 0});
+                cm.setSelection(cursor, cursor);
+            };
+
+            cmObj.setOption("extraKeys", {
+                "Cmd-/": toggleComment,
+                "Ctrl-/": toggleComment,
+                "Cmd-Enter": (cm) =>
+                {
+                    resetMarks(cm);
+                    this.runExpression.emit();
+                },
+                "Ctrl-Enter": (cm) =>
+                {
+                    resetMarks(cm);
+                    this.runExpression.emit();
+                },
+                "Cmd-Alt-Enter": (cm) =>
+                {
+                    resetMarks(cm);
+                    this.runHighlightedExpression.emit();
+
+                },
+                "Ctrl-Alt-Enter": (cm) =>
+                {
+                    resetMarks(cm);
+                    this.runHighlightedExpression.emit();
+                }
+            });
 
             // Not sure what codemirror is doing, and why it does it but some ms after creation it has been resetting... we now reset it 2x, once for
             // reducing flicker for user, 2nd time to ensure anything that changed is overwritten with our settings again
@@ -445,7 +493,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                             () => this.markExecutedExpressionRange(cm, range),
                             () =>
                             {
-                                let rangeEnd = this.range.to();
+                                let rangeEnd = this.range?.to() || {line: 0, ch: 0};
                                 this.range = null;
 
                                 // We have to set selection twice to clear the marked range because code mirror only

@@ -41,11 +41,11 @@ POSSIBILITY OF SUCH DAMAGE.
     </ngx-codemirror>
 </div>
 
-<!-- <expression-help-dropdown
-    *ngIf="activeHelp && allowEdit"
+<expression-help-dropdown
+    *ngIf="activeHelp && allowEdit && showHelp"
     class="help-dropdown"
     style="top: {{dropdownTop}}; left: {{dropdownLeft}}"
     [help]="activeHelp"
     (escEvent)="onHelpEscape($event)"
     (clickEvent)="onHelpClick($event)">
-</expression-help-dropdown> -->
+</expression-help-dropdown>

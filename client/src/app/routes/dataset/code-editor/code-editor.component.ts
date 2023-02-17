@@ -92,6 +92,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     public isPMCDataGridSolo: boolean = false;
 
     private _keyPresses: { [key: string]: boolean } = {};
+    
+    private _fetchedExpression: boolean = false;
 
     constructor(
         private _route: ActivatedRoute,
@@ -113,6 +115,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         this._expressionID = this._route.snapshot.params["expression_id"];
         this._expressionService.expressionsUpdated$.subscribe(() =>
         {
+            if(this._fetchedExpression)
+            {
+                return;
+            }
+
             let expression = this._expressionService.getExpression(this._expressionID);
             this.expression = new DataExpression(
                 expression.id,
@@ -126,6 +133,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 expression.modUnixTimeSec,
                 expression.tags
             );
+            this._fetchedExpression = true;
             this.runExpression();
         });
     }
@@ -189,6 +197,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         {
             let comp = this.previewContainer.createComponent(factory);
             comp.instance.widgetPosition = "preview";
+            comp.instance.previewExpressionIDs = [`unsaved-${this._expressionID}`];
 
             this._previewComponent = comp;
         }
@@ -208,11 +217,13 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     {
         if(this._expressionID && this.expression)
         {
-            this.evaluatedExpression = this._widgetDataService.runExpression(new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), this.expression);
+            this.evaluatedExpression = this._widgetDataService.runExpression(new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), this.expression, false);
         }
         if(this.evaluatedExpression && this.evaluatedExpression?.values?.values.length > 0)
         {
             this.isCodeChanged = false;
+            let previewID = `unsaved-${this._expressionID}`;
+            this._expressionService.cache(previewID, this.expression, `Unsaved ${this.expression.name}`);
         }
 
         this.currentEvaluatedExpressionTitle = "Numeric Values: All";
@@ -238,12 +249,17 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
         this.evaluatedExpression = this._widgetDataService.runExpression(
             new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), 
-            highlightedExpression
+            highlightedExpression,
+            false
         );
 
         this.isCodeChanged = true;
 
         let lineRange = this.isSingleLineHighlighted ? this.startLineHighlighted + 1 : `${this.startLineHighlighted + 1} - ${this.endLineHighlighted + 1}`;
+        
+        let previewID = `unsaved-${this._expressionID}`;
+        this._expressionService.cache(previewID, highlightedExpression, `Unsaved ${this.expression.name} (Lines ${lineRange})`);
+
         this.currentEvaluatedExpressionTitle = `Numeric Values: Line ${lineRange}`;
         this.isSubsetExpression = true;
 
@@ -384,9 +400,12 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     onKeydown(event: KeyboardEvent): void
     {
         this._keyPresses[event.key] = true;
-        if(this._keyPresses["Meta"] && this._keyPresses["k"])
+        if((this._keyPresses["Meta"] && this._keyPresses["Enter"]) || (this._keyPresses["Control"] && this._keyPresses["Enter"]))
         {
             this.runExpression();
+            this._keyPresses["Meta"] = false;
+            this._keyPresses["Control"] = false;
+            this._keyPresses["Enter"] = false;
         }
     }
 

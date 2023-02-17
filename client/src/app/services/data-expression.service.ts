@@ -715,6 +715,24 @@ export class DataExpressionService
         return result;
     }
 
+    cache(id: string, expr: DataExpression, name?: string): void
+    {
+        let receivedDataExpression = new DataExpression(
+            id,
+            name || expr.name,
+            expr.expression,
+            expr.type,
+            expr.comments || "",
+            false,
+            null,
+            -1,
+            new Date().getUTCSeconds(),
+            expr.tags || []
+        );
+        this._expressions.set(id, receivedDataExpression);
+        this._expressionsUpdated$.next();
+    }
+
     add(name: string, expression: string, type: string, comments: string, tags: string[] = []): Observable<object>
     {
         let loadID = this._loadingSvc.add("Saving new expression...");

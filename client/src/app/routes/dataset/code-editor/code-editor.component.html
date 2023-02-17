@@ -73,7 +73,10 @@ POSSIBILITY OF SUCH DAMAGE.
                 [applyNow]="false"
                 (onTextChange)="onExpressionTextChanged($event)"
                 (onTextSelect)="onTextSelect($event)"
+                (runExpression)="runExpression()"
+                (runHighlightedExpression)="runHighlightedExpression()"
                 [range]="isSubsetExpression ? executedTextSelection.range : null"
+                [showHelp]="useAutocomplete"
             >
             </expression-text-editor>
         </div>

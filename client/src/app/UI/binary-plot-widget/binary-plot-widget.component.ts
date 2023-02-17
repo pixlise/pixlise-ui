@@ -63,6 +63,7 @@ import { ExpressionReferences } from "../references-picker/references-picker.com
 export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
 {
     @Input() widgetPosition: string = "";
+    @Input() previewExpressionIDs: string[] = [];
 
     private id = randomString(4);
     private _subs = new Subscription();
@@ -102,6 +103,29 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
 
     ngOnInit()
     {
+        // Only subscribe to expressions if we have preview expressions passed
+        if(this.previewExpressionIDs && this.previewExpressionIDs.length > 0)
+        {
+            this._subs.add(this._exprService.expressionsUpdated$.subscribe(() =>
+            {
+                // If user has changed axes, but still has unsaved expression showing, dont reset
+                if(!this._xAxisExpressionId.startsWith("unsaved-") && !this._yAxisExpressionId.startsWith("unsaved-"))
+                {
+                    // Default set axes to first two preview expressions passed
+                    if(this._exprService.getExpression(this.previewExpressionIDs[0]))
+                    {
+                        this._xAxisExpressionId = this.previewExpressionIDs[0];
+                    }
+                    if(this.previewExpressionIDs.length > 1 && this._exprService.getExpression(this.previewExpressionIDs[0]))
+                    {
+                        this._yAxisExpressionId = this.previewExpressionIDs[1];
+                    }
+                }
+
+                this.prepareData("preview-expression-refresh", null);
+            }));
+        }
+
         this._subs.add(this._selectionService.chordClicks$.subscribe(
             (chordExprIds: string[])=>
             {
@@ -151,7 +175,15 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                         if(loadedState.expressionIDs.length == 2)
                         {
                             this._xAxisExpressionId = loadedState.expressionIDs[0];
+                            if(this._xAxisExpressionId.startsWith("unsaved-"))
+                            {
+                                this._xAxisExpressionId = "";
+                            }
                             this._yAxisExpressionId = loadedState.expressionIDs[1];
+                            if(this._yAxisExpressionId.startsWith("unsaved-"))
+                            {
+                                this._yAxisExpressionId = "";
+                            }
                         }
                         else
                         {
