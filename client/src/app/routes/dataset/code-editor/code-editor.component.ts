@@ -243,23 +243,22 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             false
         );
 
-        // this.isCodeChanged = true;
-
         let lineRange = "";
+        let isMultiLine = this.startLineHighlighted !== this.endLineHighlighted || this.isEmptySelection;
         if(this.isEmptySelection)
         {
             lineRange = `0 - ${this.endLineHighlighted + 1}`;
         }
         else
         {
-            lineRange = this.startLineHighlighted === this.endLineHighlighted ? `${this.startLineHighlighted + 1}` : `${this.startLineHighlighted + 1} - ${this.endLineHighlighted + 1}`;
+            lineRange = !isMultiLine ? `${this.startLineHighlighted + 1}` : `${this.startLineHighlighted + 1} - ${this.endLineHighlighted + 1}`;
         }
         
         let previewID = `unsaved-${this._expressionID}`;
-        this.displayExpressionTitle = `Unsaved ${this.expression.name} (Lines ${lineRange})`;
+        this.displayExpressionTitle = `Unsaved ${this.expression.name} (Line${isMultiLine ? "s": ""} ${lineRange})`;
         this._expressionService.cache(previewID, highlightedExpression, this.displayExpressionTitle);
 
-        this.pmcGridExpressionTitle = `Numeric Values: Line ${lineRange}`;
+        this.pmcGridExpressionTitle = `Numeric Values: Line${isMultiLine ? "s": ""} ${lineRange}`;
         this.isSubsetExpression = true;
 
         this.executedTextSelection = this.activeTextSelection;
