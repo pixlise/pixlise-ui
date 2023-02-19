@@ -702,7 +702,7 @@ export class LayerManager
                     {
                         if(channelResult.error)
                         {
-                            throw new Error("Failed to find expression: "+query[ch].exprId+" for channel: "+RGBUImage.channels[ch]);
+                            throw new Error("Expression: "+query[ch].exprId+" for channel: "+RGBUImage.channels[ch]+" had error: "+channelResult.error);
                         }
 
                         perElemData.push(channelResult.values);
