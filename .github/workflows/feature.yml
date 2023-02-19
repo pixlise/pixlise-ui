@@ -1,4 +1,4 @@
-name: UI Feature
+name: UI Build & Test (Feature branch)
 
 on:
   push:
@@ -18,29 +18,37 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  test:
+  setup:
     runs-on: ubuntu-latest
-
+    container:
+      image: ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16
+      volumes:
+          - client:/build
     defaults:
       run:
-        working-directory: client 
-
-    strategy:
-      matrix:
-        node-version: [18.x]
-
+        working-directory: build
     steps:
-      - uses: actions/checkout@v2
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
-        with:
-          node-version: ${{ matrix.node-version }}
-      - run: npm ci
-      #- run: echo "{\"version\": \"${{ steps.version.outputs.version }}\" }" > ./client/src/version.json
-      - run: npm version ${{ steps.version.outputs.version }}
-      - run: npm run postinstall ${{ steps.version.outputs.version }}
-      - run: npm run test
-      - run: npm run lint
+      - name: "Setup build environment"
+        run: ls -al / && ls -al /build && ls -al /build/client
+
+  # test:
+  #   runs-on: ubuntu-latest
+
+  #   defaults:
+  #     run:
+  #       working-directory: client 
+
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: actions/setup-node@v3
+  #       with:
+  #         node-version: 18
+  #     - run: npm ci
+  #     #- run: echo "{\"version\": \"${{ steps.version.outputs.version }}\" }" > ./client/src/version.json
+  #     - run: npm version ${{ steps.version.outputs.version }}
+  #     - run: npm run postinstall ${{ steps.version.outputs.version }}
+  #     - run: npm run test
+  #     - run: npm run lint
 
   build:
     runs-on: ubuntu-latest
