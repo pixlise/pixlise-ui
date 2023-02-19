@@ -29,7 +29,15 @@ jobs:
         working-directory: build
     steps:
       - name: "Setup build environment"
-        run: ls -al / && ls -al /build && ls -al /build/client
+        run: ls -al /
+        run: ls -al /__w
+        run: ls -al /__w/pixlise-ui
+        run: ls -al /__w/pixlise-ui/pixlise-ui
+        run: ls -al /__w/pixlise-ui/pixlise-ui/client
+        run: ls -al /__w/pixlise-ui/pixlise-ui/build
+        run: ls -al /__w/pixlise-ui/pixlise-ui/client/build
+        run: ls -al /build
+        run: ls -al /build/client
 
   # test:
   #   runs-on: ubuntu-latest
