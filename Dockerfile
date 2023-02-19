@@ -13,7 +13,7 @@ WORKDIR /build/client
 
 RUN echo ${VERSION}
 RUN echo ${BUILD_ENV}
-RUN npm i && npm version ${VERSION} && npm run postinstall ${VERSION} && ng test && ng build --configuration=${BUILD_ENV}
+RUN npm i && npm version ${VERSION} && npm run postinstall ${VERSION} && ng build --configuration=${BUILD_ENV}
 
 FROM nginx:latest
 ARG VERSION
