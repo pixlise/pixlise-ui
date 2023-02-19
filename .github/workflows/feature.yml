@@ -22,11 +22,11 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16
-      volumes:
-          - client:/build
+      #volumes:
+      #    - client:/build
     defaults:
       run:
-        working-directory: build
+        #working-directory: build
     steps:
       #- name: "Setup build environment"
       #  run: ls -al /
