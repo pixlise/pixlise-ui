@@ -86,6 +86,8 @@ jobs:
       - run: ls -al /__w
       - run: ls -al /__w/pixlise-ui
       - run: ls -al /__w/pixlise-ui/pixlise-ui
+      - run: ls -al /home
+      - run: ls -al /home/runner
       - run: ls -al /home/runner/work
       - run: ls -al /home/runner/work/pixlise-ui
       - run: ls -al /home/runner/work/pixlise-ui/pixlise-ui
