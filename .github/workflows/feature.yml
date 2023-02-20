@@ -137,3 +137,18 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
+
+  test-lua:
+    runs-on: ubuntu-latest
+    container:
+      image: nickblah/lua:5.4
+    steps:
+      # Checkout the repo
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - name: Run Lua unit tests
+        run: |
+          cd client/src/app/expression-language/lua/
+          ./test.sh
