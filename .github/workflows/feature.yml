@@ -88,7 +88,10 @@ jobs:
             #npm run lint
       - name: Build UI
         run: |
-          cd client
+          pwd
+          ls -al ./
+          ls -al /
+          #cd client
           ng build --prod
           ls -al ./
           ls -al ./dist/
