@@ -148,7 +148,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
-        uses: addnab/docker-run-action@v3
+      - uses: addnab/docker-run-action@v3
         with:
           image: nickblah/lua:5.4
           options: -v ${{ github.workspace }}:/work
