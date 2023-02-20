@@ -64,4 +64,4 @@ TestUtils = {}
         lu.assertEquals(comment, "")
     end
 
-lu.LuaUnit.run()
+os.exit(lu.LuaUnit.run())

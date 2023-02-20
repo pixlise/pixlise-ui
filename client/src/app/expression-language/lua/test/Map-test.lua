@@ -75,4 +75,4 @@ runner:setOutputType("text")
 os.exit( runner:runSuite() )
 ]]--
 
-lu.LuaUnit.run()
+os.exit(lu.LuaUnit.run())
