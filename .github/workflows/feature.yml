@@ -90,9 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: setup
     steps:
-      - run: pwd
-      - run: ls -al /
-      - run: ls -al /${{ github.workspace }}
+      - run: ls -al ${{ github.workspace }}
       - name: Build PIXLISE Docker container
         uses: addnab/docker-run-action@v3
         with:
