@@ -152,5 +152,4 @@ jobs:
           options: -v ${{ github.workspace }}:/work
           run: |
             cd /work/client/src/app/expression-language/lua/test
-            ls -al .
             ./test.sh
