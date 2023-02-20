@@ -1,5 +1,5 @@
-local lu = require('.\\luaunit')
-package.path = package.path..";..\\?.lua"
+local lu = require('./luaunit')
+package.path = package.path..";../?.lua"
 local Map = require("Map")
 
 

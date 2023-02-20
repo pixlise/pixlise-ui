@@ -1,10 +1,10 @@
-package.path = package.path..";..\\?.lua"
+package.path = package.path..";../?.lua"
 local Map = require('Map')
 local PIXLISEstub = require('PIXLISEstub') -- To stub out functions like element()
 local MikesLib = require('MikesLib')
 local CSV = require("CSV")
 local Utils = require("Utils")
-local lu = require('.\\luaunit')
+local lu = require('luaunit')
 
 
 TestMikesLib = {}
