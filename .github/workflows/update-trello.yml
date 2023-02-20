@@ -8,7 +8,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
       - uses: dalezak/github-commit-to-trello-card@v3
         with:
           trello-api-key: ${{ secrets.TRELLO_KEY }}

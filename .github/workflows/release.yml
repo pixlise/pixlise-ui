@@ -1,4 +1,4 @@
-name: UI Release
+name: UI Build & Test (Release)
 
 on:
   push:
@@ -12,23 +12,18 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  docker:
+  ui-test-and-build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      # This is used to complete the identity challenge
-      # with sigstore/fulcio when running outside of PRs.
-      id-token: write
-
     steps:
-
+      # Checkout the repo
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
           submodules: recursive
-      - uses: paulhatch/semantic-version@v5.0.0-alpha2
-        name: version
+
+      # Up the build version
+      - uses: paulhatch/semantic-version@v5.0.3
+        name: Determine Build Version
         id: version
         with:
           # The prefix to use to identify tags
@@ -52,28 +47,66 @@ jobs:
           # The output method used to generate list of users, 'csv' or 'json'.
           user_format_type: "csv"
 
-      - name: print version
-        id: taggen
+      # Create version source file using version just generated
+      - name: Create version file
+        id: makever
         run: |
           echo "BUILDING VERSION ${{ steps.version.outputs.version }}"
-          echo "::set-output name=semverbranch::${{ steps.version.outputs.version}}"
-      # Install the cosign tool except on PR
-      # https://github.com/sigstore/cosign-installer
-      - name: Install cosign
-        if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@7e0881f8fe90b25e305bbf0309761e9314607e25
-        with:
-          cosign-release: 'v1.9.0'
+          # For some reason, release builds didn't do these steps in past...
+          #echo "{\"version\": \"${{ steps.version.outputs.version }}\" }" > ./client/src/version.json
+          #cat ./client/src/version.json
+          echo "semverslug=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
 
-      # Workaround: https://github.com/docker/build-push-action/issues/461
-      - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@79abd3f86f79a9d68a23c75a09a9a85889262adf
+      # Release build doesn't do this
+      # - uses: gacts/github-slug@v1
+      #   id: slug
+      #   with:
+      #     # replace value in "to-slug" this on your choice
+      #     to-slug: ${{ steps.makever.outputs.semverslug }}
+
+      # Install dependencies and generate version file
+      - name: NPM dependencies & version
+        run: |
+          cd client
+          npm ci
+          npm version ${{ steps.version.outputs.version }}
+          npm run postinstall ${{ steps.version.outputs.version }}
+
+      # Protobuf code generation using our build docker container (this is pretty slow, should replace with just an npm package for protobuf??)
+      - name: Generate protobuf code
+        uses: addnab/docker-run-action@v3
+        with:
+          image: ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16
+          options: -v ${{ github.workspace }}:/work
+          run: |
+            cd /work
+            ./genproto.sh
+
+      # Run Angular UI unit tests
+      - name: Run UI Tests
+        uses: addnab/docker-run-action@v3
+        with:
+          image: atlassianlabs/docker-node-jdk-chrome-firefox:node-16-npm-8
+          options: -v ${{ github.workspace }}:/work
+          run: |
+            cd /work/client
+            npm i -g @angular/cli@13.1.2
+            ng test --watch=false --browsers ChromeHeadless
+            # This was failing, don't use it locally either, so turned off for now
+            #npm run lint
+
+      # Run the Angular build
+      - name: Build UI
+        run: |
+          cd client
+          npm i -g @angular/cli@13.1.2
+          ng build --configuration production
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
       - name: Log into registry ${{ env.REGISTRY }}
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@28218f9b04b4f3f62068d7b6ce6ca5b26e35336c
+        uses: docker/login-action@v2.1.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -83,47 +116,40 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        uses: docker/metadata-action@v4.3.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: type=raw,value=${{ steps.taggen.outputs.semverbranch }}
+          # Feature branch does this:
+          # tags: type=raw,value=${{ steps.version.outputs.version}}-${{ steps.slug.outputs.slug }}
+          # But we do:
+          tags: type=raw,value=${{ steps.makever.outputs.semverbranch}}
+
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
         id: build-and-push
-        uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
+        uses: docker/build-push-action@v4.0.0
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            BUILD_ENV=production
             VERSION=${{ steps.version.outputs.version }}
 
-      # Sign the resulting Docker image digest except on PRs.
-      # This will only write to the public Rekor transparency log when the Docker
-      # repository is public to avoid leaking data.  If you would like to publish
-      # transparency data even for private images, pass --force to cosign below.
-      # https://github.com/sigstore/cosign
-      # - name: Sign the published Docker image
-      #   if: ${{ github.event_name != 'pull_request' }}
-      #   env:
-      #     COSIGN_EXPERIMENTAL: "true"
-      #   # This step uses the identity token to provision an ephemeral certificate
-      #   # against the sigstore community Fulcio instance.
-      #   run: echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign {}@${{ steps.build-and-push.outputs.digest }}
-
-#  infratrigger:
-#    needs:
-#      - docker
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Trigger Job
-#        run: |
-#          curl -X POST \
-#               --fail \
-#               -F token=${{ secrets.GITLABTOKEN }} \
-#               -F ref="main" \
-#               -F "variables[STACK_NAME]=dev" \
-#               https://gitlab.com/api/v4/projects/18114496/trigger/pipeline
+  lua-test:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repo
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: addnab/docker-run-action@v3
+        with:
+          image: nickblah/lua:5.4
+          options: -v ${{ github.workspace }}:/work
+          run: |
+            set -e
+            cd /work/client/src/app/expression-language/lua/test
+            ./test.sh
