@@ -95,13 +95,8 @@ jobs:
           npm ci
           npm version ${{ steps.version.outputs.version }}
           npm run postinstall ${{ steps.version.outputs.version }}
-  test:
-    runs-on: ubuntu-latest
-    needs: setup
-    container:
-      image: atlassianlabs/docker-node-jdk-chrome-firefox:node-16-npm-8
-    steps:
       - name: Run UI Tests
+        uses: atlassianlabs/docker-node-jdk-chrome-firefox:node-16-npm-8
         run: |
           pwd
           ls -al
