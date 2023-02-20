@@ -69,7 +69,7 @@ jobs:
       - name: Run UI Tests
         uses: addnab/docker-run-action@v3
         with:
-          image: ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16
+          image: atlassianlabs/docker-node-jdk-chrome-firefox:node-16-npm-8
           options: -v ${{ github.workspace }}:/work
           run: |
             cd /work/client
