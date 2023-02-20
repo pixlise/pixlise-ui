@@ -86,19 +86,12 @@ jobs:
             ng test --watch=false --browsers ChromeHeadless
             # This was failing, don't use it locally either, so turned off for now
             #npm run lint
-  build:
-    runs-on: ubuntu-latest
-    needs: setup
-    steps:
-      - run: ls -al ${{ github.workspace }}
-      - name: Build PIXLISE Docker container
-        uses: addnab/docker-run-action@v3
-        with:
-          image: ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16
-          options: -v ${{ github.workspace }}:/work
-          run: |
-            cd /work/client
-            ng build --prod
+      - name: Build UI
+        run: |
+          cd client
+          ng build --prod
+          ls -al ./
+          ls -al ./dist/
 
   # test:
   #   runs-on: ubuntu-latest
