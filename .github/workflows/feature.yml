@@ -100,6 +100,7 @@ jobs:
     needs: setup
     container:
       image: atlassianlabs/docker-node-jdk-chrome-firefox:node-16-npm-8
+    steps:
       - name: Run UI Tests
         run: |
           pwd
