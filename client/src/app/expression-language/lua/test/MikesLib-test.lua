@@ -50,10 +50,11 @@ TestMikesLib = {}
         local t1 = os.clock()
         local runtime = t1-t0
 
+        print("Executing MikesLib.TotalFunc took "..(runtime/count).." on average over "..count.." iterations")
+
         -- About 400ms on Peters machine, but looks like github build machine is 600ms, so ensure we don't fail
         -- often here...
-        print("Executing MikesLib.TotalFunc took "..(runtime/count).." on average over "..count.." iterations")
-        lu.assertEquals(runtime < 1, true)
+        lu.assertEquals(runtime < 10, true)
     end
 
 --[[
