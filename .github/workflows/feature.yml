@@ -151,5 +151,7 @@ jobs:
           image: nickblah/lua:5.4
           options: -v ${{ github.workspace }}:/work
           run: |
+            set -e
             cd /work/client/src/app/expression-language/lua/test
             ./test.sh
+            echo $?

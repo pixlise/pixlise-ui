@@ -3,7 +3,7 @@ name: GitHub Commit To Trello Comment
 on: [push, pull_request]
 
 jobs:
-  build:
+  update-trello:
     runs-on: ubuntu-latest
 
     steps:
