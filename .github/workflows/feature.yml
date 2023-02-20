@@ -18,41 +18,8 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  checkout:
+  test-and-build:
     runs-on: ubuntu-latest
-    steps:
-      # This will check out the repo to: /home/runner/work/pixlise-ui/pixlise-ui
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          submodules: recursive
-      - uses: paulhatch/semantic-version@v5.0.3
-        name: version
-        id: version
-        with:
-          # The prefix to use to identify tags
-          tag_prefix: "v"
-          # A string which, if present in a git commit, indicates that a change represents a
-          # major (breaking) change, supports regular expressions wrapped with '/'
-          major_pattern: "(MAJOR)"
-          # Same as above except indicating a minor change, supports regular expressions wrapped with '/'
-          minor_pattern: "(MINOR)"
-          # A string to determine the format of the version output
-          version_format: "${major}.${minor}.${patch}-prerelease"
-          # Optional path to check for changes. If any changes are detected in the path the
-          # 'changed' output will true. Enter multiple paths separated by spaces.
-          #change_path: "src/my-service"
-          # Named version, will be used as suffix for name version tag
-          namespace: ui
-          # If this is set to true, *every* commit will be treated as a new version.
-          bump_each_commit: false
-          # If true, the body of commits will also be searched for major/minor patterns to determine the version type.
-          search_commit_body: false
-          # The output method used to generate list of users, 'csv' or 'json'.
-          user_format_type: "csv"
-  setup:
-    runs-on: ubuntu-latest
-    needs: checkout
     container:
       image: ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16
     # Docker container starts like this:
@@ -80,6 +47,36 @@ jobs:
     #   run:
     #     working-directory: build
     steps:
+      - run: ls -al /__w/pixlise-ui/pixlise-ui
+      # This will check out the repo to: /home/runner/work/pixlise-ui/pixlise-ui
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: paulhatch/semantic-version@v5.0.3
+        name: Determine Build Version
+        id: version
+        with:
+          # The prefix to use to identify tags
+          tag_prefix: "v"
+          # A string which, if present in a git commit, indicates that a change represents a
+          # major (breaking) change, supports regular expressions wrapped with '/'
+          major_pattern: "(MAJOR)"
+          # Same as above except indicating a minor change, supports regular expressions wrapped with '/'
+          minor_pattern: "(MINOR)"
+          # A string to determine the format of the version output
+          version_format: "${major}.${minor}.${patch}-prerelease"
+          # Optional path to check for changes. If any changes are detected in the path the
+          # 'changed' output will true. Enter multiple paths separated by spaces.
+          #change_path: "src/my-service"
+          # Named version, will be used as suffix for name version tag
+          namespace: ui
+          # If this is set to true, *every* commit will be treated as a new version.
+          bump_each_commit: false
+          # If true, the body of commits will also be searched for major/minor patterns to determine the version type.
+          search_commit_body: false
+          # The output method used to generate list of users, 'csv' or 'json'.
+          user_format_type: "csv"
       #- name: "Setup build environment"
       #  run: ls -al /
       - run: ls -al /
