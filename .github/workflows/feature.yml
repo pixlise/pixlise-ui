@@ -21,11 +21,12 @@ jobs:
   checkout:
     runs-on: ubuntu-latest
     steps:
+      # This will check out the repo to: /home/runner/work/pixlise-ui/pixlise-ui
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
           submodules: recursive
-      - uses: paulhatch/semantic-version@v5.0.0-alpha2
+      - uses: paulhatch/semantic-version@v5.0.3
         name: version
         id: version
         with:
@@ -54,6 +55,25 @@ jobs:
     needs: checkout
     container:
       image: ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16
+    # Docker container starts like this:
+    # /usr/bin/docker create --name 41be305e56be459782bdb0db9a1f3e3c_ghcriopixlisebuildcontainergolang118protoc371protobuf3114angular1312nodejs16_9c0bcb
+    #    --label 49859c
+    #    --workdir /__w/pixlise-ui/pixlise-ui
+    #    --network github_network_4bf3f9d5f04d4d35bd723b7938fbd4f3
+    #    -e "HOME=/github/home"
+    #    -e GITHUB_ACTIONS=true
+    #    -e CI=true
+    #    -v "/var/run/docker.sock":"/var/run/docker.sock"
+    #    -v "/home/runner/work":"/__w"
+    #    -v "/home/runner/runners/2.301.1/externals":"/__e":ro
+    #    -v "/home/runner/work/_temp":"/__w/_temp"
+    #    -v "/home/runner/work/_actions":"/__w/_actions"
+    #    -v "/opt/hostedtoolcache":"/__t"
+    #    -v "/home/runner/work/_temp/_github_home":"/github/home"
+    #    -v "/home/runner/work/_temp/_github_workflow":"/github/workflow"
+    #    --entrypoint "tail" ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16
+    #    "-f" "/dev/null"
+
     #   volumes:
     #       - client:/build
     # defaults:
@@ -65,6 +85,11 @@ jobs:
       - run: ls -al /
       - run: ls -al /__w
       - run: ls -al /__w/pixlise-ui
+      - run: ls -al /__w/pixlise-ui/pixlise-ui
+      - run: ls -al /home/runner/work
+      - run: ls -al /home/runner/work/pixlise-ui
+      - run: ls -al /home/runner/work/pixlise-ui/pixlise-ui
+      - run: ls -al /__w/pixlise-ui/pixlise-ui
       - run: ls -al /__w/pixlise-ui/pixlise-ui
       - run: ls -al /__w/pixlise-ui/pixlise-ui/client
       - run: ls -al /__w/pixlise-ui/pixlise-ui/build
