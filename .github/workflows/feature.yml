@@ -70,9 +70,12 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16
+          options: -v ${{ github.workspace }}:/work
           run: |
             ls -al
             pwd
+            ls -al /
+            ls -al /work
             #cd client
             #npm run postinstall ${{ steps.version.outputs.version }}
             #ng test --watch=false --browsers ChromeHeadless
