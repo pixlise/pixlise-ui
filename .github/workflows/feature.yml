@@ -148,7 +148,10 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
-      - name: Run Lua unit tests
-        run: |
-          cd client/src/app/expression-language/lua/
+        uses: addnab/docker-run-action@v3
+        with:
+          image: nickblah/lua:5.4
+          options: -v ${{ github.workspace }}:/work
+          run: |
+            cd /work/client/src/app/expression-language/lua/
           ./test.sh
