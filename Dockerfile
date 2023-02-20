@@ -1,7 +1,12 @@
 FROM nginx:latest
 ARG VERSION
 
-RUN pwd && ls -al / && ls -al /work
+RUN pwd
+RUN echo pwd
+RUN ls -al /
+RUN echo ls -al /
+RUN ls -al /work
+RUN echo ls -al /work
 
 # Copy the build output to replace the default nginx contents
 COPY /work/client/dist/pixlise /usr/share/nginx/html
