@@ -88,10 +88,10 @@ jobs:
             #npm run lint
       - name: Build UI
         run: |
-          pwd
           ls -al ./
-          ls -al /
-          #cd client
+          ls -al ./client
+          cd client
+          npm i -g @angular/cli@13.1.2
           ng build --prod
           ls -al ./
           ls -al ./dist/
