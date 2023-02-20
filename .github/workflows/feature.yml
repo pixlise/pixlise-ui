@@ -17,7 +17,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  test-and-build:
+  ui-test-and-build:
     runs-on: ubuntu-latest
     steps:
       # Checkout the repo
@@ -138,7 +138,7 @@ jobs:
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
 
-  test-lua:
+  lua-test:
     runs-on: ubuntu-latest
     steps:
       # Checkout the repo
