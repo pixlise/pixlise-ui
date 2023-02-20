@@ -59,9 +59,7 @@ jobs:
           echo "BUILDING VERSION ${{ steps.version.outputs.version }}"
           echo "{\"version\": \"${{ steps.version.outputs.version }}\" }" > ./client/src/version.json
           cat ./client/src/version.json
-          echo "{semverslug}={${GITHUB_REF_NAME}}" >> $GITHUB_OUTPUT
-          echo $GITHUB_OUTPUT
-          echo "::set-output name=semverslug::${GITHUB_REF_NAME}"
+          echo "semverslug=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
 
       # Not sure what this does but it was in the old build...
       - uses: gacts/github-slug@v1
