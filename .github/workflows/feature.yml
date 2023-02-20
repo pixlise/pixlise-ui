@@ -55,7 +55,7 @@ jobs:
           echo "BUILDING VERSION ${{ steps.version.outputs.version }}"
           echo "{\"version\": \"${{ steps.version.outputs.version }}\" }" > ./client/src/version.json
           cat ./client/src/version.json
-          echo "::set-output name=semverslug::${GITHUB_REF_NAME}"
+          echo "{semverslug}={${GITHUB_REF_NAME}}" >> $GITHUB_OUTPUT
       - uses: gacts/github-slug@v1
         id: slug
         with:
@@ -72,14 +72,10 @@ jobs:
           image: ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16
           options: -v ${{ github.workspace }}:/work
           run: |
-            ls -al
-            pwd
-            ls -al /
-            ls -al /work
-            #cd client
-            #npm run postinstall ${{ steps.version.outputs.version }}
-            #ng test --watch=false --browsers ChromeHeadless
-            #npm run lint
+            cd /work/client
+            npm run postinstall ${{ steps.version.outputs.version }}
+            ng test --watch=false --browsers ChromeHeadless
+            npm run lint
 
   # test:
   #   runs-on: ubuntu-latest
