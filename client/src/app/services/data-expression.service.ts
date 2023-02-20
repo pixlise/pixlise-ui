@@ -384,11 +384,11 @@ export class DataExpressionService
         return changeCount;
     }
 
-    getExpressions(type: string): Map<string, DataExpression>
+    getExpressions(type: string = DataExpressionService.DataExpressionTypeAll): Map<string, DataExpression>
     {
         // This used to take a type field because we thought we'd have "types" of expressions specific to a given widget
         // but this never eventuated. type field is deprecated and currently we expect it to be set to all...
-        if(type != DataExpressionService.DataExpressionTypeAll)
+        if(type !== DataExpressionService.DataExpressionTypeAll)
         {
             throw new Error("getExpressions called with unexpected type: "+type);
         }
