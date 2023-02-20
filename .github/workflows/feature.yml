@@ -47,8 +47,8 @@ jobs:
     #   run:
     #     working-directory: build
     steps:
-      - run: ls -al /__w/pixlise-ui/pixlise-ui
       # This will check out the repo to: /home/runner/work/pixlise-ui/pixlise-ui
+      # NOTE: in our docker container this will be in: /__w/pixlise-ui/pixlise-ui
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -77,24 +77,27 @@ jobs:
           search_commit_body: false
           # The output method used to generate list of users, 'csv' or 'json'.
           user_format_type: "csv"
-      #- name: "Setup build environment"
-      #  run: ls -al /
-      - run: ls -al /
-      - run: ls -al /__w
-      - run: ls -al /__w/pixlise-ui
-      - run: ls -al /__w/pixlise-ui/pixlise-ui
-      - run: ls -al /home
-      - run: ls -al /home/runner
-      - run: ls -al /home/runner/work
-      - run: ls -al /home/runner/work/pixlise-ui
-      - run: ls -al /home/runner/work/pixlise-ui/pixlise-ui
-      - run: ls -al /__w/pixlise-ui/pixlise-ui
-      - run: ls -al /__w/pixlise-ui/pixlise-ui
-      - run: ls -al /__w/pixlise-ui/pixlise-ui/client
-      - run: ls -al /__w/pixlise-ui/pixlise-ui/build
-      - run: ls -al /__w/pixlise-ui/pixlise-ui/client/build
-      - run: ls -al /build
-      - run: ls -al /build/client
+      - name: Create version file
+        id: makever
+        run: |
+          echo "BUILDING VERSION ${{ steps.version.outputs.version }}"
+          echo "{\"version\": \"${{ steps.version.outputs.version }}\" }" > ./client/src/version.json
+          cat ./client/src/version.json
+          echo "::set-output name=semverslug::${GITHUB_REF_NAME}"
+      - uses: gacts/github-slug@v1
+        id: slug
+        with:
+          # replace value in "to-slug" this on your choice
+          to-slug: ${{ steps.makever.outputs.semverslug }}
+      - name: NPM setup
+        run: |
+          npm ci
+          npm version ${{ steps.version.outputs.version }}
+          npm run postinstall ${{ steps.version.outputs.version }}
+      - name: Run UI Tests
+        run: |
+          npm run test
+          npm run lint
 
   # test:
   #   runs-on: ubuntu-latest
