@@ -140,8 +140,6 @@ jobs:
 
   test-lua:
     runs-on: ubuntu-latest
-    container:
-      image: nickblah/lua:5.4
     steps:
       # Checkout the repo
       - uses: actions/checkout@v3
