@@ -91,11 +91,13 @@ jobs:
           to-slug: ${{ steps.makever.outputs.semverslug }}
       - name: NPM setup
         run: |
+          cd client
           npm ci
           npm version ${{ steps.version.outputs.version }}
           npm run postinstall ${{ steps.version.outputs.version }}
       - name: Run UI Tests
         run: |
+          cd client
           npm run test
           npm run lint
 
