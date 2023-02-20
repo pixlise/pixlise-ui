@@ -20,35 +20,7 @@ env:
 jobs:
   setup:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16
-    # Docker container starts like this:
-    # /usr/bin/docker create --name 41be305e56be459782bdb0db9a1f3e3c_ghcriopixlisebuildcontainergolang118protoc371protobuf3114angular1312nodejs16_9c0bcb
-    #    --label 49859c
-    #    --workdir /__w/pixlise-ui/pixlise-ui
-    #    --network github_network_4bf3f9d5f04d4d35bd723b7938fbd4f3
-    #    -e "HOME=/github/home"
-    #    -e GITHUB_ACTIONS=true
-    #    -e CI=true
-    #    -v "/var/run/docker.sock":"/var/run/docker.sock"
-    #    -v "/home/runner/work":"/__w"
-    #    -v "/home/runner/runners/2.301.1/externals":"/__e":ro
-    #    -v "/home/runner/work/_temp":"/__w/_temp"
-    #    -v "/home/runner/work/_actions":"/__w/_actions"
-    #    -v "/opt/hostedtoolcache":"/__t"
-    #    -v "/home/runner/work/_temp/_github_home":"/github/home"
-    #    -v "/home/runner/work/_temp/_github_workflow":"/github/workflow"
-    #    --entrypoint "tail" ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16
-    #    "-f" "/dev/null"
-
-    #   volumes:
-    #       - client:/build
-    # defaults:
-    #   run:
-    #     working-directory: build
     steps:
-      # This will check out the repo to: /home/runner/work/pixlise-ui/pixlise-ui
-      # NOTE: in our docker container this will be in: /__w/pixlise-ui/pixlise-ui
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -94,15 +66,14 @@ jobs:
           cd client
           npm ci
           npm version ${{ steps.version.outputs.version }}
-          npm run postinstall ${{ steps.version.outputs.version }}
       - name: Run UI Tests
-        uses: atlassianlabs/docker-node-jdk-chrome-firefox:node-16-npm-8
-        run: |
-          pwd
-          ls -al
-          cd client
-          ng test --watch=false --browsers ChromeHeadless
-          npm run lint
+          uses: addnab/docker-run-action@v3
+          with:
+            image: ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16
+            run: |
+              npm run postinstall ${{ steps.version.outputs.version }}
+              ng test --watch=false --browsers ChromeHeadless
+              npm run lint
 
   # test:
   #   runs-on: ubuntu-latest
