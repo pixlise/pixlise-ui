@@ -154,4 +154,3 @@ jobs:
             set -e
             cd /work/client/src/app/expression-language/lua/test
             ./test.sh
-            echo $?
