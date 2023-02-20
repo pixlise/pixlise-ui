@@ -66,6 +66,7 @@ jobs:
           cd client
           npm ci
           npm version ${{ steps.version.outputs.version }}
+          npm run postinstall ${{ steps.version.outputs.version }}
       - name: Run UI Tests
         uses: addnab/docker-run-action@v3
         with:
@@ -73,7 +74,7 @@ jobs:
           options: -v ${{ github.workspace }}:/work
           run: |
             cd /work/client
-            npm run postinstall ${{ steps.version.outputs.version }}
+            npm i -g @angular/cli@13.1.2
             ng test --watch=false --browsers ChromeHeadless
             npm run lint
 
