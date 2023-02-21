@@ -99,10 +99,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
     constructor(
         private _selectionService: SelectionService,
         private _datasetService: DataSetService,
-        //private _quantService: QuantificationService,
-        //private _layoutService: LayoutService,
         private _exprService: DataExpressionService,
-        //private _roiService: ROIService,
         private _viewStateService: ViewStateService,
         private _widgetDataService: WidgetRegionDataService,
         public dialog: MatDialog
@@ -258,8 +255,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
         this.setDefaultsIfNeeded(widgetUpdReason);
 
         // Use widget data service to rebuild our data model
-        // Query each region for both expressions
-        let expressions: DataExpression[] = [];
+        let expressions: DataExpression[] = []; // TODO: Remove this and refactor to rely on the result from getData()
 
         let exprIds = [this._aExpressionId, this._bExpressionId, this._cExpressionId];
 
@@ -320,7 +316,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                     }
                     else
                     {
-                        this.processQueryResult(t0, exprIds, query, queryData, corners);
+                        this.processQueryResult(t0, exprIds, queryData, corners);
                     }
                 },
                 (err)=>
@@ -332,19 +328,19 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
         }
     }
 
-    private processQueryResult(t0: number, exprIds: string[], query: DataSourceParams[], queryData: RegionDataResults, corners: TernaryCorner[])
+    private processQueryResult(t0: number, exprIds: string[], queryData: RegionDataResults, corners: TernaryCorner[])
     {
         let pointGroups: TernaryDataColour[] = [];
         let pmcLookup: Map<number, TernaryPlotPointIndex> = new Map<number, TernaryPlotPointIndex>();
 
         let queryWarnings: string[] = [];
 
-        for(let queryIdx = 0; queryIdx < query.length; queryIdx+=exprIds.length)
+        for(let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx+=exprIds.length)
         {
             // Set up storage for our data first
-            const roiId = query[queryIdx].roiId;
+            const roiId = queryData.queryResults[queryIdx].query.roiId;
 
-            let region = this._widgetDataService.regions.get(roiId);
+            let region = queryData.queryResults[queryIdx].region;
             if(!region || !region.colour)
             {
                 if(!region)
@@ -380,14 +376,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                     corners[c].errorMsgShort = queryData.queryResults[queryIdx+c].errorType;
                     corners[c].errorMsgLong = queryData.queryResults[queryIdx+c].error;
 
-                    let expr = exprIds[c];
-/*
-                    if(expressions[c])
-                    {
-                        expr = expressions[c].expression;
-                    }
-*/
-                    console.log("Ternary encountered error with expression: "+expr+", on region: "+roiId+", corner: "+(c == 0 ? "left" : (c == 1 ? "top": "right")));
+                    console.log("Ternary encountered error with expression: "+exprIds[c]+", on region: "+roiId+", corner: "+(c == 0 ? "left" : (c == 1 ? "top": "right")));
                     continue;
                 }
 

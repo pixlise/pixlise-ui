@@ -89,10 +89,7 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
 
     constructor(
         private _selectionService: SelectionService,
-        private _datasetService: DataSetService,
-        private _quantService: QuantificationService,
         private _exprService: DataExpressionService,
-        private _roiService: ROIService,
         private _viewStateService: ViewStateService,
         private _widgetDataService: WidgetRegionDataService,
         public dialog: MatDialog,
@@ -343,14 +340,14 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
                 errorColResults$.subscribe(
                     (errCols)=>
                     {
-                        this.processQueryResult(t0, exprWeightPctCount, exprPseudointensityCount, query, queryData, errCols);
+                        this.processQueryResult(t0, exprWeightPctCount, exprPseudointensityCount, queryData, errCols);
                     }
                 );
             }
         );
     }
 
-    private processQueryResult(t0: number, exprWeightPctCount: number, exprPseudointensityCount: number, query: DataSourceParams[], queryData: RegionDataResults, errCols: PMCDataValues[])
+    private processQueryResult(t0: number, exprWeightPctCount: number, exprPseudointensityCount: number, queryData: RegionDataResults, errCols: PMCDataValues[])
     {
         this._mdl = new HistogramModel(this._showStdDeviation, this._logScale, this._showWhiskers);
 
@@ -359,12 +356,12 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
         let overallValueRange: MinMax = new MinMax();
         let barGroupValueRange: MinMax = new MinMax();
 
-        for(let queryIdx = 0; queryIdx < query.length; queryIdx++)
+        for(let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx++)
         {
-            const exprId = query[queryIdx].exprId;
-            const roiId = query[queryIdx].roiId;
-
             const colData = queryData.queryResults[queryIdx];
+            const exprId = colData.query.exprId;
+            const roiId = colData.query.roiId;
+
             if(colData.error)
             {
                 console.error("Failed to get data for roi: " + roiId + ", expr: " + exprId + ". Error: " + colData.error);
@@ -464,20 +461,20 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
 
             // Find the next one (that we actually got data for!)
             let nextExprId = "";
-            for(let c = queryIdx + 1; c < query.length; c++)
+            for(let c = queryIdx + 1; c < queryData.queryResults.length; c++)
             {
                 if(queryData.queryResults[c] != null)
                 {
-                    nextExprId = query[c].exprId;
+                    nextExprId = queryData.queryResults[c].query.exprId;
                     break;
                 }
             }
 
             // If we have a "next" column, or are the last column we have to finish this bar group up
-            if(queryIdx >= query.length - 1 ||
-                queryIdx < (query.length - 1) && exprId != nextExprId)
+            if(queryIdx >= queryData.queryResults.length - 1 ||
+                queryIdx < (queryData.queryResults.length - 1) && exprId != nextExprId)
             {
-                let shortName = this._exprService.getExpressionShortDisplayName(exprId, 10);
+                let shortName = colData.expression.getExpressionShortDisplayName(10);
                 histogramBars.push(
                     new HistogramBars(
                         bars,

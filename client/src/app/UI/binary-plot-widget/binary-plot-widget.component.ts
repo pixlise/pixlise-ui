@@ -263,9 +263,6 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         this.setDefaultsIfNeeded(widgetUpdReason);
 
         // We've got data, create a model!
-        let exprX = null;
-        let exprY = null;
-
         this.keyItems = [];
         this.expressionsMissingPMCs = "";
 
@@ -280,9 +277,6 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         }
         else
         {
-            exprX = this._exprService.getExpression(this._xAxisExpressionId);
-            exprY = this._exprService.getExpression(this._yAxisExpressionId);
-
             // NOTE: we need the selected points to be last in this list, so they are drawn last, and are always visible
             for(let roiId of this._visibleROIs)
             {
@@ -300,7 +294,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                     }
                     else
                     {
-                        this.processQueryResult(t0, query, queryData, exprX, exprY);
+                        this.processQueryResult(t0, queryData);
                     }
                 },
                 (err)=>
@@ -312,8 +306,10 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         }
     }
 
-    private processQueryResult(t0: number, query: DataSourceParams[], queryData: RegionDataResults, exprX: DataExpression, exprY: DataExpression)
+    private processQueryResult(t0: number, queryData: RegionDataResults)
     {
+        let exprIdX = "";
+        let exprIdY = "";
         let xLabel = "";
         let yLabel = "";
 
@@ -337,13 +333,15 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
 
         let labelMaxChars = this.showMmol ? 18 : 24;
 
-        if(exprX)
+        if(queryData.queryResults.length > 0)
         {
-            xLabel = exprX.getExpressionShortDisplayName(labelMaxChars).shortName;
+            exprIdX = queryData.queryResults[0].query.exprId;
+            xLabel = queryData.queryResults[0].expression.getExpressionShortDisplayName(labelMaxChars).shortName;
         }
-        if(exprY)
+        if(queryData.queryResults.length > 1)
         {
-            yLabel = exprY.getExpressionShortDisplayName(labelMaxChars).shortName;
+            exprIdY = queryData.queryResults[1].query.exprId;
+            yLabel = queryData.queryResults[1].expression.getExpressionShortDisplayName(labelMaxChars).shortName;
         }
 
         if(this.showMmol)
@@ -361,7 +359,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         }
 
         // Read data for each region
-        for(let queryIdx = 0; queryIdx < query.length; queryIdx+=2)
+        for(let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx+=2)
         {
             let resultX = queryData.queryResults[queryIdx];
             let resultY = queryData.queryResults[queryIdx+1];
@@ -422,7 +420,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             xPointGroup.push(valuesX);
             yPointGroup.push(valuesY);
 
-            let region = this._widgetDataService.regions.get(query[queryIdx].roiId);
+            let region = resultX.region;
             if(region.colour)
             {
                 coloursRGB.push(RGBA.fromWithA(region.colour, 1));
@@ -447,8 +445,8 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
 
         this.assignQueryResult(
             t0,
-            exprX.id,
-            exprY.id,
+            exprIdX,
+            exprIdY,
             xLabel,
             yLabel,
             xValueRange,

@@ -356,11 +356,11 @@ export class RGBMixLayerSettingsComponent implements OnInit
                 {
                     if(channelResult.error)
                     {
-                        throw new Error("Failed to find expression: "+query[ch].exprId+" for channel: "+RGBUImage.channels[ch]);
+                        throw new Error("Failed to find expression: "+channelResult.query.exprId+" for channel: "+RGBUImage.channels[ch]);
                     }
 
                     perChanData.push(channelResult.values);
-                    csv += ","+channelResult.expressionName;
+                    csv += ","+channelResult.expression.name;
 
                     ch++;
                 }

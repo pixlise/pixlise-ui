@@ -71,13 +71,13 @@ export function generateExportCSVForExpression(
     datasetId: string,
     widgetRegionDataService: WidgetRegionDataService): Observable<string>
 {
-    let queryParams = [];
+    let query = [];
     for(let exprId of expressionIDs)
     {
-        queryParams.push(new DataSourceParams(exprId, roiID || PredefinedROIID.AllPoints, datasetId));
+        query.push(new DataSourceParams(exprId, roiID || PredefinedROIID.AllPoints, datasetId));
     }
 
-    return widgetRegionDataService.getData(queryParams, false).pipe(
+    return widgetRegionDataService.getData(query, false).pipe(
         map((queryData: RegionDataResults)=>
         {
             if(queryData.error)
@@ -90,7 +90,7 @@ export function generateExportCSVForExpression(
             {
                 if(result.error)
                 {
-                    throw new Error(`Failed to generate CSV, expression "${result.expressionName}" failed: ${result.error}`)
+                    throw new Error(`Failed to generate CSV, expression "${result.expression.name}" failed: ${result.error}`)
                 }
             }
 
@@ -109,7 +109,7 @@ export function generateExportCSVForExpression(
                     // If it's our first time here, add to the header
                     if(rowIdx == 0)
                     {
-                        header += ",\""+queryResult.expressionName+"\"";
+                        header += ",\""+queryResult.expression.name+"\"";
                     }
 
                     if(exprIdx == 0)

@@ -91,12 +91,10 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
 
     constructor(
         private _selectionService: SelectionService,
-        private _datasetService: DataSetService,
         private _exprService: DataExpressionService,
         private _viewStateService: ViewStateService,
         private _widgetDataService: WidgetRegionDataService,
         public dialog: MatDialog,
-        private router: Router
     )
     {
     }
@@ -434,14 +432,14 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
                     return;
                 }
 
-                this.processQueryResult(t0, queryROI, query, queryData);
+                this.processQueryResult(t0, queryData);
             }
         )
     }
  
-    private processQueryResult(t0: number, queryROI: string, query: DataSourceParams[], queryData: RegionDataResults)
+    private processQueryResult(t0: number, queryData: RegionDataResults)
     {
-        let region = this._widgetDataService.regions.get(queryROI);
+        let region = queryData?.queryResults[0]?.region;
         if(region)
         {
             this.currentRegionName = region.name;
@@ -460,13 +458,13 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
             // If we've been instructed to view selected points, but none are available, show a specific
             // error so user can diagnose this easily. If this wasn't here we'd show NO_QUANT_FOR_SELECTION
             // which is a bit misleading
-            if(region.locationIndexes.length <= 0 && queryROI == PredefinedROIID.SelectedPoints)
+            if(region.locationIndexes.length <= 0 && region.id == PredefinedROIID.SelectedPoints)
             {
                 this.helpMessage = HelpMessage.SELECTION_EMPTY;
                 return;
             }
             // As above, for remaining points
-            if(region.locationIndexes.length <= 0 && queryROI == PredefinedROIID.RemainingPoints)
+            if(region.locationIndexes.length <= 0 && region.id == PredefinedROIID.RemainingPoints)
             {
                 this.helpMessage = HelpMessage.REMAINING_POINTS_EMPTY;
                 return;
@@ -485,10 +483,10 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
         let allTotals = 0;
         let rowCount = 0;
 
-        for(let queryIdx = 0; queryIdx < query.length; queryIdx++)
+        for(let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx++)
         {
             const colData = queryData.queryResults[queryIdx];
-            const exprId = query[queryIdx].exprId;
+            const exprId = colData.query.exprId;
 
             // TODO: David says we can probably average A and B values here
             if(queryData.queryResults[queryIdx].errorType)

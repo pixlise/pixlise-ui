@@ -416,23 +416,18 @@ export class VariogramWidgetComponent implements OnInit
             this._widgetDataService.getData(query, false).subscribe(
                 (queryData=>
                 {
-                    this.processQueryResult(t0, query, queryData);
+                    this.processQueryResult(t0, queryData);
                 })
             )
         }
         else
         {
-            this.processQueryResult(t0, query, null);
+            this.processQueryResult(t0, null);
         }
     }
 
-    private processQueryResult(t0: number, query: DataSourceParams[], queryData: RegionDataResults)
+    private processQueryResult(t0: number, queryData: RegionDataResults)
     {
-        if(queryData.error)
-        {
-            throw new Error(queryData.error);
-        }
-
         let title = "";
         if(queryData && !queryData.hasQueryErrors() && this._expressionIds.length > 0)
         {
@@ -497,8 +492,7 @@ export class VariogramWidgetComponent implements OnInit
         let queryIdx = 0;
         for(let pts of varioPoints)
         {
-            const roiId = query[queryIdx].roiId;
-            let region = this._widgetDataService.regions.get(roiId);
+            let region = queryData.queryResults[queryIdx].region;
             if(!region.colour)
             {
                 continue;

@@ -164,10 +164,8 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
 
         const formulae = this.getFormulaeToQuery(quantification);
 
-        let queries: DataSourceParams[][] = [];
         let allFormulaeQueried: string[][] = [];
         let allResults$: Observable<RegionDataResults>[] = [];
-        let regions: RegionData[] = [];
 
         for(let roiId of this._visibleROIs)
         {
@@ -197,8 +195,6 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
             }
 
             // Query these
-            queries.push(query);
-            regions.push(region);
             allFormulaeQueried.push(formulaeQueried);
             allResults$.push(this._widgetDataService.getData(query, false));
         }
@@ -210,7 +206,7 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
                 let c = 0;
                 for(let roiResult of resultsByROI)
                 {
-                    this.processROIColumns(queries[c], this._visibleROIs[c], regions[c], roiResult, detectors, allFormulaeQueried[c]);
+                    this.processROIColumns(roiResult, detectors, allFormulaeQueried[c]);
                     c++;
                 }
 
@@ -220,8 +216,9 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
         );
     }
 
-    private processROIColumns(query: DataSourceParams[], roiId: string, region: RegionData, queryData: RegionDataResults, detectors: string[], formulaeQueried: string[])
+    private processROIColumns(queryData: RegionDataResults, detectors: string[], formulaeQueried: string[])
     {
+        let region: RegionData = null;
         let rows: TableRow[] = [];
         let totalValues: number[] = [];
         let headers: TableHeaderItem[] = [new TableHeaderItem("Element", "")];
@@ -248,6 +245,9 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
                 let data = queryData.queryResults[c];
                 if(data)
                 {
+                    // Save this for later... it should be the same one in all queryResults
+                    region = data.region;
+
                     if(!row || (c % detectors.length) == 0)
                     {
                         if(row)
@@ -265,7 +265,7 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
                     if(!data.values || !data.values.values)
                     {
                         // We've seen this in Sentry a few times and it's not obvious why, so alert about it
-                        SentryHelper.logMsg(false, "Table data.values null for region: "+roiId+", elem: "+formulaeQueried[c]+", for quant: "+(this._widgetDataService.quantificationLoaded ? this._widgetDataService.quantificationLoaded.quantId : "no-quant"));
+                        SentryHelper.logMsg(false, "Table data.values null for region: "+data.query.roiId+", elem: "+formulaeQueried[c]+", for quant: "+(this._widgetDataService.quantificationLoaded ? this._widgetDataService.quantificationLoaded.quantId : "no-quant"));
                     }
 
                     if(data.values && data.values.values && data.values.values.length > 0)
@@ -278,7 +278,7 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
                         weightAvg = weightTotal / data.values.values.length;
                         totalValues[row.values.length] += weightAvg;
                     }
-                    else if(region.locationIndexes.length <= 0)
+                    else if(data.region.locationIndexes.length <= 0)
                     {
                         weightAvg = null;
                     }
@@ -289,7 +289,7 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
                 else
                 {
                     // Remember that we got errors here
-                    const err = "Table failed to retrieve data for expr: "+query[c].exprId+", roi: "+query[c].roiId;
+                    const err = "Table failed to retrieve data for expr: "+data.query.exprId+", roi: "+data.query.roiId;
                     this.helpMessage = err;
                     console.error(err);
                 }

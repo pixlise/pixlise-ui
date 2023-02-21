@@ -703,7 +703,7 @@ export class LayerManager
                     {
                         if(channelResult.error)
                         {
-                            throw new Error("Expression: "+query[ch].exprId+" for channel: "+RGBUImage.channels[ch]+" had error: "+channelResult.error);
+                            throw new Error("Expression: "+channelResult.query.exprId+" for channel: "+RGBUImage.channels[ch]+" had error: "+channelResult.error);
                         }
 
                         perElemData.push(channelResult.values);

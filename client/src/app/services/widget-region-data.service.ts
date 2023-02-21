@@ -77,7 +77,12 @@ export enum DataUnit
 
 export class DataSourceParams
 {
-    constructor(public exprId: string, public roiId: string, public datasetId: string, public units: DataUnit = DataUnit.UNIT_DEFAULT)
+    constructor(
+        public exprId: string,
+        public roiId: string,
+        public datasetId: string,
+        public units: DataUnit = DataUnit.UNIT_DEFAULT
+        )
     {
     }
 }
@@ -160,7 +165,14 @@ export enum WidgetDataErrorType
 
 export class RegionDataResultItem
 {
-    constructor(public values: PMCDataValues, public errorType: WidgetDataErrorType, public error: string, public warning: string, public expressionName: string)
+    constructor(
+        public values: PMCDataValues,
+        public errorType: WidgetDataErrorType,
+        public error: string,
+        public warning: string,
+        public expression: DataExpression,
+        public region: RegionData,
+        public query: DataSourceParams)
     {
     }
 }
@@ -464,7 +476,7 @@ export class WidgetRegionDataService
                     if(continueOnError)
                     {
                         console.error("getData: "+errorMsg+". Ignored...");
-                        result$.push(of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null, "")));
+                        result$.push(of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null, null, null, query)));
                         continue;
                     }
                     console.error("getData: "+errorMsg);
@@ -482,7 +494,7 @@ export class WidgetRegionDataService
                 {
                     
                     console.error("getData: "+errorMsg+". Ignored...");
-                    result$.push(of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_EXPR, errorMsg, null, expr.name)));
+                    result$.push(of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_EXPR, errorMsg, null, null, region, query)));
                     continue;
                 }
                 console.error("getData: "+errorMsg);
@@ -493,7 +505,18 @@ export class WidgetRegionDataService
             let cachedResult = this._resultCache.getCachedResult(query, expr.modUnixTimeSec, region ? region.modUnixTimeSec : 0);
             if(cachedResult != null)
             {
-                result$.push(of(cachedResult));
+                // Return a result with cached values but this query+expression, just in case it changed!
+                let cachedResultReturn = new RegionDataResultItem(
+                    cachedResult.values,
+                    cachedResult.errorType,
+                    cachedResult.error,
+                    cachedResult.warning,
+                    expr,
+                    region,
+                    query
+                );
+
+                result$.push(of(cachedResultReturn));
             }
             else
             {
@@ -542,7 +565,7 @@ export class WidgetRegionDataService
                                 }
                             }
 
-                            let resultItem = new RegionDataResultItem(unitConverted, null, null, unitConverted.warning, expr.name);
+                            let resultItem = new RegionDataResultItem(unitConverted, null, null, unitConverted.warning, expr, region, query);
 
                             // Cache if needed
                             let t1 = performance.now();
@@ -556,7 +579,7 @@ export class WidgetRegionDataService
                 {
                     let errorMsg = httpErrorToString(error, "WidgetRegionDataService.getData");
                     SentryHelper.logMsg(true, errorMsg);
-                    result$.push(of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr.name)));
+                    result$.push(of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr, region, query)));
                 }
             }
         }
