@@ -46,6 +46,7 @@ import { DataExpression, DataExpressionService } from "src/app/services/data-exp
 import { DataSourceParams, RegionDataResultItem, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
 import { TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
+import { AuthenticationService } from "src/app/services/authentication.service";
 
 @Component({
     selector: "code-editor",
@@ -87,6 +88,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     constructor(
         private _route: ActivatedRoute,
         private _router: Router,
+        private _authService: AuthenticationService,
         private _layoutService: LayoutService,
         private _viewStateService: ViewStateService,
         private resolver: ComponentFactoryResolver,
@@ -194,7 +196,10 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     onToggleAutocomplete(): void
     {
-        this.useAutocomplete = !this.useAutocomplete;
+        if(!this.isSharedByOtherUser)
+        {
+            this.useAutocomplete = !this.useAutocomplete;
+        }
     }
 
     onClose(): void
@@ -313,7 +318,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     get editable(): boolean
     {
-        return this._editable;
+        return this._editable && !this.isSharedByOtherUser;
     }
 
     get editExpression(): string
@@ -373,6 +378,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         }
     }
 
+    get isSharedByOtherUser(): boolean
+    {
+        return this.expression?.shared && this.expression.creator.user_id !== this._authService.getUserID();
+    }
+
     onExpressionTextChanged(text: string): void
     {
         this.editExpression = text;
@@ -390,7 +400,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     onSave(): void
     {
-        if(this.isExpressionSaved)
+        if(this.isExpressionSaved || this.isSharedByOtherUser)
         {
             // Nothing to save
             return;
