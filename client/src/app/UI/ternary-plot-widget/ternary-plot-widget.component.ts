@@ -34,7 +34,8 @@ import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-va
 import { MinMax } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
 import { orderVisibleROIs, PredefinedROIID } from "src/app/models/roi";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { ternaryState, ViewStateService } from "src/app/services/view-state.service";
@@ -291,7 +292,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                 let expr = expressions[c];
                 if(expr)
                 {
-                    corners[c].label = this._exprService.getExpressionShortDisplayName(expr.id, 18).shortName;
+                    corners[c].label = expr.getExpressionShortDisplayName(18).shortName;
 
                     const mmolAppend = "(mmol)";
                     if(this.showMmol && !corners[c].label.endsWith(mmolAppend)) // Note this won't detect if (mmol) was modified by short name to be (mm...
@@ -582,7 +583,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
             this._cExpressionId.length <= 0 ||
             (
                 widgetUpdReason == WidgetDataUpdateReason.WUPD_QUANT &&
-                DataExpressionService.hasPseudoIntensityExpressions(
+                DataExpressionId.hasPseudoIntensityExpressions(
                     [this._aExpressionId, this._bExpressionId, this._cExpressionId]
                 )
             )
@@ -712,7 +713,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
             exprIds = [this._cExpressionId];
         }
 
-        dialogConfig.data = new ExpressionPickerData("Vertex", DataExpressionService.DataExpressionTypeAll, exprIds, true, false, false);
+        dialogConfig.data = new ExpressionPickerData("Vertex", DataExpressionId.DataExpressionTypeAll, exprIds, true, false, false);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

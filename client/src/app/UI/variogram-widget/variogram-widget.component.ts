@@ -35,6 +35,7 @@ import { MinMax } from "src/app/models/BasicTypes";
 import { distanceBetweenPoints, Point } from "src/app/models/Geometry";
 import { orderVisibleROIs, PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { variogramState, ViewStateService } from "src/app/services/view-state.service";
@@ -360,7 +361,7 @@ export class VariogramWidgetComponent implements OnInit
         //dialogConfig.autoFocus = true;
         //dialogConfig.width = '1200px';
 
-        dialogConfig.data = new ExpressionPickerData("Plot Axis", DataExpressionService.DataExpressionTypeAll, this._expressionIds, false, false, false);
+        dialogConfig.data = new ExpressionPickerData("Plot Axis", DataExpressionId.DataExpressionTypeAll, this._expressionIds, false, false, false);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 
@@ -439,7 +440,7 @@ export class VariogramWidgetComponent implements OnInit
             for(let exprId of this._expressionIds)
             {
                 let expr = this._exprService.getExpression(exprId);
-                let label = this._exprService.getExpressionShortDisplayName(expr.id, 12).shortName;
+                let label = expr.getExpressionShortDisplayName(12).shortName;
                 this.expressionNames.push(expr.name);
 
                 if(title.length > 0)
@@ -539,7 +540,7 @@ export class VariogramWidgetComponent implements OnInit
             this._expressionIds.length <= 0 ||
             (
                 widgetUpdReason == WidgetDataUpdateReason.WUPD_QUANT &&
-                DataExpressionService.hasPseudoIntensityExpressions(this._expressionIds)
+                DataExpressionId.hasPseudoIntensityExpressions(this._expressionIds)
             )
         )
         {

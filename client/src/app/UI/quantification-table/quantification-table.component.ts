@@ -34,6 +34,7 @@ import { QuantificationLayer } from "src/app/models/Quantifications";
 import { PredefinedROIID } from "src/app/models/roi";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { tableState, ViewStateService } from "src/app/services/view-state.service";
 import { DataSourceParams, RegionDataResults, WidgetDataUpdateReason, WidgetRegionDataService, RegionData } from "src/app/services/widget-region-data.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
@@ -189,7 +190,7 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
             {
                 for(let detector of detectors)
                 {
-                    let exprId = DataExpressionService.makePredefinedQuantElementExpression(formula, "%", detector);
+                    let exprId = DataExpressionId.makePredefinedQuantElementExpression(formula, "%", detector);
                     query.push(new DataSourceParams(exprId, roiId, ""));
                     formulaeQueried.push(formula);
                 }

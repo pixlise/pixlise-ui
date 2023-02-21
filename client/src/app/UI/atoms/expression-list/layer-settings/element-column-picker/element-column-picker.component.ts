@@ -31,6 +31,7 @@ import { Component, ElementRef, Inject, OnInit, ViewContainerRef } from "@angula
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { positionDialogNearParent } from "src/app/utils/utils";
 import { QuantificationService } from "src/app/services/quantification.service";
 
@@ -105,10 +106,10 @@ export class ElementColumnPickerComponent implements OnInit
 
         for(let id of this.data.columns)
         {
-            const column = DataExpressionService.getPredefinedQuantExpressionElementColumn(id);
+            const column = DataExpressionId.getPredefinedQuantExpressionElementColumn(id);
             const niceName = QuantificationService.getPrintableColumnName(column);
 
-            const formula = DataExpressionService.getPredefinedQuantExpressionElement(id);
+            const formula = DataExpressionId.getPredefinedQuantExpressionElement(id);
             let state = periodicTableDB.getElementOxidationState(formula);
             if(state && state.isElement)
             {

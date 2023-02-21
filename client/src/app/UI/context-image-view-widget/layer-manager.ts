@@ -35,7 +35,8 @@ import { DataSet } from "src/app/models/DataSet";
 import { LocationDataLayer, LocationDataLayerProperties } from "src/app/models/LocationData2D";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { RGBUImage } from "src/app/models/RGBUImage"; // for channel names, probably shouldn't be linking this though :(
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { RGBMixConfigService, RGBMix } from "src/app/services/rgbmix-config.service";
 import { mapLayerVisibility } from "src/app/services/view-state.service";
 import { WidgetRegionDataService, DataSourceParams } from "src/app/services/widget-region-data.service";
@@ -125,7 +126,7 @@ export class LayerManager
         this._listBuilder.notifyDataArrived(
             this._dataset.getPseudoIntensityElementsList(),
             data[1] as QuantificationLayer,
-            this._exprService.getExpressions(DataExpressionService.DataExpressionTypeAll),
+            this._exprService.getExpressions(DataExpressionId.DataExpressionTypeAll),
             this._rgbMixService.getRGBMixes()
         );
 
@@ -163,9 +164,9 @@ export class LayerManager
                 layer.visible &&
                 layer.isPredefinedLayer &&
                 (
-                    DataExpressionService.getPredefinedQuantExpressionElement(layer.id).length > 0 ||
-                    layer.id.startsWith(DataExpressionService.makePredefinedQuantDataExpression("chisq", "")) ||
-                    layer.id.startsWith(DataExpressionService.predefinedUnquantifiedPercentDataExpression)
+                    DataExpressionId.getPredefinedQuantExpressionElement(layer.id).length > 0 ||
+                    layer.id.startsWith(DataExpressionId.makePredefinedQuantDataExpression("chisq", "")) ||
+                    layer.id.startsWith(DataExpressionId.predefinedUnquantifiedPercentDataExpression)
                 )
             )
             {
@@ -227,8 +228,8 @@ export class LayerManager
                 // Element default visibility in map building mode is VISIBLE so we can turn it off later as needed
                 if(isMapBuilding)
                 {
-                    let elem = DataExpressionService.getPredefinedQuantExpressionElement(source.id);
-                    if(DataExpressionService.getPredefinedQuantExpressionElementColumn(source.id) == "%" && !lastAddedElem.startsWith(elem))
+                    let elem = DataExpressionId.getPredefinedQuantExpressionElement(source.id);
+                    if(DataExpressionId.getPredefinedQuantExpressionElementColumn(source.id) == "%" && !lastAddedElem.startsWith(elem))
                     {
                         // If we're in map mode, set it to visible initially, so we can then decide to show the most abundant ones
                         // ALSO, note that if this is a "pure element" of the previous one, we aren't enabling it to be visible
@@ -251,9 +252,9 @@ export class LayerManager
                     "",
                     source,
                     [
-                        source.red.expressionName, // this._exprService.getExpressionShortDisplayName(source.red.expressionID, 15).shortName,
-                        source.green.expressionName, // this._exprService.getExpressionShortDisplayName(source.green.expressionID, 15).shortName,
-                        source.blue.expressionName, // this._exprService.getExpressionShortDisplayName(source.blue.expressionID, 15).shortName
+                        source.red.expressionName,
+                        source.green.expressionName,
+                        source.blue.expressionName,
                     ]
                 );
 
@@ -305,7 +306,7 @@ export class LayerManager
         let maps: LocationDataLayer[] = [];
         for(let layer of this._layers.getLayerArray())
         {
-            if(DataExpressionService.getPredefinedQuantExpressionElement(layer.expressionID).length > 0)
+            if(DataExpressionId.getPredefinedQuantExpressionElement(layer.expressionID).length > 0)
             {
                 maps.push(layer);
             }
@@ -752,7 +753,7 @@ export class LayerManager
         // if we've got it turned on, and this is NOT the weight % layer, turn it off still...
         if(visible)
         {
-            let elemColumn = DataExpressionService.getPredefinedQuantExpressionElementColumn(id);
+            let elemColumn = DataExpressionId.getPredefinedQuantExpressionElementColumn(id);
             if(elemColumn.length > 0)
             {
                 if(elemColumn != '%')

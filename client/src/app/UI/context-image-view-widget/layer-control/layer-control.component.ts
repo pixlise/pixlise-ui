@@ -33,7 +33,8 @@ import { Observable, Subscription, combineLatest } from "rxjs";
 import { map } from "rxjs/operators";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { ContextImageService } from "src/app/services/context-image.service";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { ViewStateService } from "src/app/services/view-state.service";
@@ -286,7 +287,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     onAddExpression(): void
     {
-        this.showExpressionEditor(new DataExpression("", "", "", DataExpressionService.DataExpressionTypeAll, "", false, null, 0, 0)).subscribe(
+        this.showExpressionEditor(new DataExpression("", "", "", DataExpressionId.DataExpressionTypeAll, "", false, null, 0, 0)).subscribe(
             ({ expression, applyNow })=>
             {
                 if(expression)
@@ -600,14 +601,14 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                     {
                         let id = element?.content?.layer?.source?.id;
 
-                        let elem = DataExpressionService.getPredefinedQuantExpressionElement(id);
+                        let elem = DataExpressionId.getPredefinedQuantExpressionElement(id);
                         if(elem.length > 0)
                         {
                             if(!first)
                             {
                                 name += ",";
                             }
-                            name += elem +"("+DataExpressionService.getPredefinedQuantExpressionDetector(id)+")";
+                            name += elem +"("+DataExpressionId.getPredefinedQuantExpressionDetector(id)+")";
                         }
 
                         elemExprIds.push(id);

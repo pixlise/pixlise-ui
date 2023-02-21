@@ -34,7 +34,8 @@ import { PMCDataValues, PMCDataValue } from "src/app/expression-language/data-va
 import { MinMax } from "src/app/models/BasicTypes";
 import { Point } from "src/app/models/Geometry";
 import { orderVisibleROIs, PredefinedROIID } from "src/app/models/roi";
-import { DataExpressionService, DataExpression } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { binaryState, ViewStateService } from "src/app/services/view-state.service";
@@ -338,11 +339,11 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
 
         if(exprX)
         {
-            xLabel = this._exprService.getExpressionShortDisplayName(exprX.id, labelMaxChars).shortName;
+            xLabel = exprX.getExpressionShortDisplayName(labelMaxChars).shortName;
         }
         if(exprY)
         {
-            yLabel = this._exprService.getExpressionShortDisplayName(exprY.id, labelMaxChars).shortName;
+            yLabel = exprY.getExpressionShortDisplayName(labelMaxChars).shortName;
         }
 
         if(this.showMmol)
@@ -628,7 +629,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             this._yAxisExpressionId.length <= 0 ||
             (
                 widgetUpdReason == WidgetDataUpdateReason.WUPD_QUANT &&
-                DataExpressionService.hasPseudoIntensityExpressions([this._xAxisExpressionId, this._yAxisExpressionId])
+                DataExpressionId.hasPseudoIntensityExpressions([this._xAxisExpressionId, this._yAxisExpressionId])
             )
         )
         {
@@ -710,7 +711,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             exprIds = [this._yAxisExpressionId];
         }
 
-        dialogConfig.data = new ExpressionPickerData("Plot Axis", DataExpressionService.DataExpressionTypeAll, exprIds, true, false, false);
+        dialogConfig.data = new ExpressionPickerData("Plot Axis", DataExpressionId.DataExpressionTypeAll, exprIds, true, false, false);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

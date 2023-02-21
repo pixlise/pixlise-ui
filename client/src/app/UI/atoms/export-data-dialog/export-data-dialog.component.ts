@@ -38,6 +38,7 @@ import { QuantificationLayer, QuantificationSummary } from "src/app/models/Quant
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { ROISavedItem } from "src/app/models/roi";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { DiffractionPeak, DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { QuantificationService } from "src/app/services/quantification.service";
@@ -735,7 +736,7 @@ export class ExportDataDialogComponent implements OnInit
     {
         const dialogConfig = new MatDialogConfig();
 
-        dialogConfig.data = new ExpressionPickerData("Expression", DataExpressionService.DataExpressionTypeAll, this._selectedExpressionIds, false, true, true);
+        dialogConfig.data = new ExpressionPickerData("Expression", DataExpressionId.DataExpressionTypeAll, this._selectedExpressionIds, false, true, true);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

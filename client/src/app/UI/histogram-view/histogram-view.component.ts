@@ -36,6 +36,7 @@ import { PMCDataValues } from "src/app/expression-language/data-values";
 import { MinMax } from "src/app/models/BasicTypes";
 import { PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationService } from "src/app/services/quantification.service";
 import { ROIService } from "src/app/services/roi.service";
@@ -213,7 +214,7 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
         //dialogConfig.disableClose = true;
         //dialogConfig.autoFocus = true;
         //dialogConfig.width = '1200px';
-        dialogConfig.data = new ExpressionPickerData("Bars", DataExpressionService.DataExpressionTypeAll, this._displayExpressionIDs, false, false, false);
+        dialogConfig.data = new ExpressionPickerData("Bars", DataExpressionId.DataExpressionTypeAll, this._displayExpressionIDs, false, false, false);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 
@@ -260,32 +261,6 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
         );
     }
 
-    // Copied from chord, can this be made into common code?
-    private removeInvalidElements(): void
-    {
-        const exprList = this._exprService.getAllExpressionIds(DataExpressionService.DataExpressionTypeAll, this._widgetDataService.quantificationLoaded);
-        let newDisplayExprIds: string[] = [];
-
-        for(let exprId of this._displayExpressionIDs)
-        {
-            if(exprList.indexOf(exprId) !== -1)
-            {
-                // We found a valid one, use it
-                newDisplayExprIds.push(exprId);
-            }
-        }
-
-        this._displayExpressionIDs = newDisplayExprIds;
-    }
-
-    // Copied from chord, can this be made into common code?
-    private setStartingExpressions()
-    {
-        // Pick all elements/pseudointensities, don't pick expressions randomly!
-        this._displayExpressionIDs = this._exprService.getStartingExpressions(this._widgetDataService.quantificationLoaded);
-        console.log("Histogram view: Starting expression set to: " + this._displayExpressionIDs.join(","));
-    }
-
     private recalcHistogram(reason: string, widgetUpdReason: WidgetDataUpdateReason): void
     {
         console.log("Histogram recalcHistogram reason: " + reason);//+', regions: '+JSON.stringify(this._visibleROIs)+', exprs: '+JSON.stringify(this._displayExpressionIDs));
@@ -298,15 +273,17 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
         if(this._displayExpressionIDs.length <= 0 ||
             (
                 widgetUpdReason == WidgetDataUpdateReason.WUPD_QUANT &&
-                DataExpressionService.hasPseudoIntensityExpressions(this._displayExpressionIDs)
+                DataExpressionId.hasPseudoIntensityExpressions(this._displayExpressionIDs)
             )
         )
         {
-            this.setStartingExpressions();
+            // Pick all elements/pseudointensities, don't pick expressions randomly!
+            this._displayExpressionIDs = this._exprService.getStartingExpressions(this._widgetDataService.quantificationLoaded);
+            console.log("Histogram view: Starting expression set to: " + this._displayExpressionIDs.join(","));
         }
         else
         {
-            this.removeInvalidElements();
+            this._displayExpressionIDs = this._exprService.filterInvalidElements(this._displayExpressionIDs, this._widgetDataService.quantificationLoaded);
         }
 
         // If we still can't display...
@@ -342,11 +319,11 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
             }
 
             // Also check if it's a pseudointensity expression
-            if(DataExpressionService.getPredefinedPseudoIntensityExpressionElement(exprId).length > 0)
+            if(DataExpressionId.getPredefinedPseudoIntensityExpressionElement(exprId).length > 0)
             {
                 exprPseudointensityCount++;
             }
-            else if(DataExpressionService.getPredefinedQuantExpressionElementColumn(exprId) == "%")
+            else if(DataExpressionId.getPredefinedQuantExpressionElementColumn(exprId) == "%")
             {
                 exprWeightPctCount++;
             }
@@ -547,17 +524,17 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
     protected getErrorColForExpression(exprId: string, roiId: string): Observable<PMCDataValues>
     {
         // If we've got a corresponding error column, use that, otherwise return null
-        let elem = DataExpressionService.getPredefinedQuantExpressionElement(exprId);
+        let elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
         if(elem.length <= 0)
         {
             return of(null);
         }
 
         // Get the detector too. If not specified, it will be '' which will mean some defaulting will happen
-        let detector = DataExpressionService.getPredefinedQuantExpressionDetector(exprId);
+        let detector = DataExpressionId.getPredefinedQuantExpressionDetector(exprId);
 
         // Try query it
-        let errExprId = DataExpressionService.makePredefinedQuantElementExpression(elem, "err", detector);
+        let errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
         let query: DataSourceParams[] = [new DataSourceParams(errExprId, roiId, "")];
         return this._widgetDataService.getData(query, false).pipe(
             map(

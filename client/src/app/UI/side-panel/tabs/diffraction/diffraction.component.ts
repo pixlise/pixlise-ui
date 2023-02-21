@@ -37,6 +37,7 @@ import { PredefinedROIID } from "src/app/models/roi";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { DiffractionPeak, DiffractionPeakService, UserDiffractionPeak } from "src/app/services/diffraction-peak.service";
 import { SelectionService } from "src/app/services/selection.service";
@@ -228,7 +229,7 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
         let layerMan = this.getLayerManager();
         if(layerMan)
         {
-            this._diffractionMapLayer = layerMan.getLayerProperties(DataExpressionService.predefinedDiffractionCountDataExpression);
+            this._diffractionMapLayer = layerMan.getLayerProperties(DataExpressionId.predefinedDiffractionCountDataExpression);
         }
     }
 
@@ -262,10 +263,10 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
             // We're making it visible now... Hide the roughness expression otherwise it looks
             // like showing the map failed because users dont see the layers concept in this view
             // (roughness would be "on top" and can't see our map)
-            layerMan.setLayerVisibility(DataExpressionService.predefinedRoughnessDataExpression, 1, false, []);
+            layerMan.setLayerVisibility(DataExpressionId.predefinedRoughnessDataExpression, 1, false, []);
         }
 
-        layerMan.setLayerVisibility(DataExpressionService.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, !this._diffractionMapLayer.visible, []);
+        layerMan.setLayerVisibility(DataExpressionId.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, !this._diffractionMapLayer.visible, []);
         
         this.refreshLayerInfo();
     }
@@ -281,8 +282,8 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
         }
 
         // Force it to hide then show, this will recalculate it
-        layerMan.setLayerVisibility(DataExpressionService.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, false, []);
-        layerMan.setLayerVisibility(DataExpressionService.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, true, []);
+        layerMan.setLayerVisibility(DataExpressionId.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, false, []);
+        layerMan.setLayerVisibility(DataExpressionId.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, true, []);
 
         //this.refreshLayerInfo();
     }
@@ -415,7 +416,7 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
         this._exprService.add(
             exprData[0],
             exprData[1],
-            DataExpressionService.DataExpressionTypeAll,
+            DataExpressionId.DataExpressionTypeAll,
             exprData[2]
         ).subscribe(
             ()=>
@@ -765,7 +766,7 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
         }
 
         // Get the map data
-        let query: DataSourceParams[] = [new DataSourceParams(DataExpressionService.predefinedDiffractionCountDataExpression, PredefinedROIID.AllPoints, "")];
+        let query: DataSourceParams[] = [new DataSourceParams(DataExpressionId.predefinedDiffractionCountDataExpression, PredefinedROIID.AllPoints, "")];
         this._widgetDataService.getData(query, false).subscribe(
             (queryData: RegionDataResults)=>
             {

@@ -36,7 +36,8 @@ import { degToRad } from "src/app/utils/utils";
 import { MinMax } from "./BasicTypes";
 import { IColourScaleDataSource } from "./ColourScaleDataSource";
 import { DataSet } from "./DataSet";
-import { DataExpressionService, DataExpression } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 
 // A class to represent a point and colour. These can be used to draw anything
 // on top of our context images
@@ -136,7 +137,7 @@ export class LocationDataLayerProperties
         this._expressionID = expressionID;
         this._source = source;
 
-        this._isPredefinedLayer = DataExpressionService.isPredefinedExpression(this._id);
+        this._isPredefinedLayer = DataExpressionId.isPredefinedExpression(this._id);
     }
 
     get id(): string

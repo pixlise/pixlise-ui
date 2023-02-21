@@ -37,7 +37,8 @@ import { DataSet } from "src/app/models/DataSet";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { MistROIItem, PredefinedROIID, ROIItem, ROISavedItem } from "src/app/models/roi";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { QuantificationService, ZStackItem } from "src/app/services/quantification.service";
@@ -619,7 +620,7 @@ export class WidgetRegionDataService
 
         // Run through all points and apply the units requested. NOTE: This may not work, eg if we're not in the right source units, we can't
         // convert, so in those cases we do nothing
-        let col = DataExpressionService.getPredefinedQuantExpressionElementColumn(sourceExpression.id);
+        let col = DataExpressionId.getPredefinedQuantExpressionElementColumn(sourceExpression.id);
         if(col === "%")
         {
             // We allow conversions here...
@@ -627,7 +628,7 @@ export class WidgetRegionDataService
             if(unitsRequested == DataUnit.UNIT_MMOL)
             {
                 // Need to parse the elements out of the expression to calculate molecular mass and form a conversion factor
-                let formula = DataExpressionService.getPredefinedQuantExpressionElement(sourceExpression.id);
+                let formula = DataExpressionId.getPredefinedQuantExpressionElement(sourceExpression.id);
                 if(formula.length > 0)
                 {
                     let mass = periodicTableDB.getMolecularMass(formula);
