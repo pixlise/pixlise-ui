@@ -41,9 +41,11 @@ POSSIBILITY OF SUCH DAMAGE.
                 >Autocomplete
                 </push-button>
                 <push-button
-                    buttonStyle="gray"
+                    buttonStyle="yellow"
                     [disabled]="!isCodeChanged && !isSubsetExpression"
                     (onClick)="runExpression()"
+                    #tooltip="matTooltip"
+                    [matTooltip]="runCodeTooltip"
                 >Run
                 </push-button>
                 <input type="text" placeholder="Expression Name" [(ngModel)]="expressionName" fxFlex>
@@ -111,6 +113,8 @@ POSSIBILITY OF SUCH DAMAGE.
                 buttonStyle="yellow"
                 [disabled]="textHighlighted === '' && !isEmptySelection"
                 (onClick)="runHighlightedExpression()"
+                #tooltip="matTooltip"
+                [matTooltip]="runHighlightedCodeTooltip"
             >{{textHighlighted === '' ? "Visualize Code Until Line" : "Visualize Selected Code"}}
             </push-button>
         </div>
@@ -125,6 +129,8 @@ POSSIBILITY OF SUCH DAMAGE.
                     buttonStyle="yellow"
                     [disabled]="isExpressionSaved"
                     (onClick)="onSave()"
+                    #tooltip="matTooltip"
+                    [matTooltip]="saveExpressionTooltip"
                 >Save
                 </push-button>
             </div>

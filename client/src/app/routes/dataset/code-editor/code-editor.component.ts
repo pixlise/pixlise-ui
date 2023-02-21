@@ -275,6 +275,27 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         return this.activeTextSelection?.text;
     }
 
+    get saveExpressionTooltip(): string
+    {
+        return this.isWindows ? "Save Expression (Ctrl+S)" : "Save Expression (Cmd+S)";
+    }
+
+    get runCodeTooltip(): string
+    {
+        return this.isWindows ? "Run Full Expression (Ctrl+Enter)" : "Run Full Expression (Cmd+Enter)";
+    }
+
+    get runHighlightedCodeTooltip(): string
+    {
+        let targetText = this.textHighlighted === "" ? "Expression Until Line" : "Highlighted Expression";
+        return this.isWindows ? `Run ${targetText} (Ctrl+Alt+Enter)` : `Run ${targetText} (Cmd+Option+Enter)`;
+    }
+
+    get isWindows(): boolean
+    {
+        return navigator.userAgent.search("Windows") !== -1;
+    }
+
     get isEmptySelection(): boolean
     {
         return this.activeTextSelection?.isEmptySelection;
