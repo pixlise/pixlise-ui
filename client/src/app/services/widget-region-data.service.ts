@@ -465,7 +465,7 @@ export class WidgetRegionDataService
             }
 
             // Get region info (allow NULL in request because context image doesn't need to be slowed by this)
-            let region = null;
+            let region: RegionData = null;
             if(query.roiId != null)
             {
                 region = this._regions.get(query.roiId);
@@ -550,28 +550,48 @@ export class WidgetRegionDataService
                         }
                     }
 
-                    let data$ = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
+                    // At this point if we don't have the expression text, we query for it and return it as part of a chain of observables
+                    let data$: Observable<PMCDataValues> = null;
+
+                    if(expr.expression.length <= 0)
+                    {
+                        data$ = new Observable<PMCDataValues>(
+                            (observer)=>
+                            {
+                                this._exprService.getExpressionAsync(query.exprId).subscribe(
+                                    (exprQueried: DataExpression)=>
+                                    {
+                                        let query$ = getQuantifiedDataWithExpression(exprQueried.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
+                                        query$.subscribe(
+                                            (values: PMCDataValues)=>
+                                            {
+                                                observer.next(values);
+                                                observer.complete();
+                                            },
+                                            (err)=>
+                                            {
+                                                observer.error(err);
+                                            }
+                                        );
+                                    },
+                                    (err)=>
+                                    {
+                                        observer.error(err);
+                                    }
+                                );
+                            }
+                        );
+                    }
+                    else
+                    {
+                        // We do have the expression text already, so just run normally
+                        data$ = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
+                    }
+
                     result$.push(data$.pipe(
                         map((result: PMCDataValues)=>
                         {
-                            let unitConverted = this.applyUnitConversion(expr, result, query.units);
-
-                            // Also change the PMC values to be dataset-relative in the case of combined dataset
-                            if(pmcOffset > 0)
-                            {
-                                for(let c = 0; c < unitConverted.values.length; c++)
-                                {
-                                    unitConverted.values[c].pmc -= pmcOffset;
-                                }
-                            }
-
-                            let resultItem = new RegionDataResultItem(unitConverted, null, null, unitConverted.warning, expr, region, query);
-
-                            // Cache if needed
-                            let t1 = performance.now();
-                            this._resultCache.addCachedResult(query, t1-t0, resultItem);
-
-                            return resultItem;
+                            return this.processQuantResult(t0, result, query, expr, region, pmcOffset);
                         })
                     ));
                 }
@@ -592,6 +612,28 @@ export class WidgetRegionDataService
                 return new RegionDataResults(resultItems, "");
             })
         ); 
+    }
+
+    private processQuantResult(t0: number, result: PMCDataValues, query: DataSourceParams, expr: DataExpression, region: RegionData, pmcOffset: number): RegionDataResultItem
+    {
+        let unitConverted = this.applyUnitConversion(expr, result, query.units);
+
+        // Also change the PMC values to be dataset-relative in the case of combined dataset
+        if(pmcOffset > 0)
+        {
+            for(let c = 0; c < unitConverted.values.length; c++)
+            {
+                unitConverted.values[c].pmc -= pmcOffset;
+            }
+        }
+
+        let resultItem = new RegionDataResultItem(unitConverted, null, null, unitConverted.warning, expr, region, query);
+
+        // Cache if needed
+        let t1 = performance.now();
+        this._resultCache.addCachedResult(query, t1-t0, resultItem);
+
+        return resultItem;
     }
 
     private getPMCsForDatasetId(datasetId: string, dataset: DataSet): Set<number>

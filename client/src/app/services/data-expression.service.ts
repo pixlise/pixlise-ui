@@ -184,7 +184,19 @@ export class DataExpressionService
             }
             else
             {
-                let receivedDataExpression = expression.makeExpression(id);
+                // NOTE: JS doesn't _actually_ return a DataExpressionWire
+                let wireExpr = new DataExpressionWire(
+                    expression["name"],
+                    expression["expression"],
+                    expression["type"],
+                    expression["comments"],
+                    expression["shared"],
+                    expression["creator"],
+                    expression["create_unix_time_sec"],
+                    expression["mod_unix_time_sec"],
+                    expression["tags"]
+                );
+                let receivedDataExpression = wireExpr.makeExpression(id);
                 this._expressions.set(id, receivedDataExpression);
             }
         });
@@ -375,9 +387,22 @@ export class DataExpressionService
         let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
         return this.http.get<DataExpressionWire>(apiURL, makeHeaders())
             .pipe(
-                map((result: DataExpressionWire)=>
+                map((expression: DataExpressionWire)=>
                     {
-                        return result.makeExpression(id);
+                        // NOTE: JS doesn't _actually_ return a DataExpressionWire
+                        let wireExpr = new DataExpressionWire(
+                            expression["name"],
+                            expression["expression"],
+                            expression["type"],
+                            expression["comments"],
+                            expression["shared"],
+                            expression["creator"],
+                            expression["create_unix_time_sec"],
+                            expression["mod_unix_time_sec"],
+                            expression["tags"]
+                        );
+                        let receivedDataExpression = wireExpr.makeExpression(id);
+                        return receivedDataExpression;
                     }
                 )
             );
