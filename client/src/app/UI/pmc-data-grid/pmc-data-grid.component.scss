@@ -95,7 +95,6 @@
 
                     &.selected {
                         background-color: rgba(106, 208, 219, 0.25) !important;
-                        // outline: 2px solid $ui-color-highlight;
                     }
 
 
@@ -104,6 +103,26 @@
                         outline: 2px solid $clr-context-purple;
                     }
                 }
+            }
+        }
+
+        .invalid-input {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+
+            img {
+                width: 24px;
+                filter: brightness(0) invert(0.75);
+            }
+
+            h5 {
+                margin-top: 8px;
+                color: rgb(var(--clr-gray-50));
+                text-transform: uppercase;
             }
         }
     }

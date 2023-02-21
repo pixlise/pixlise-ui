@@ -86,6 +86,11 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         return count && this.columnCount > 0 ? Math.floor(count / this.columnCount) : 0;
     }
 
+    get isValidData(): boolean
+    {
+        return this.evaluatedExpression?.values?.values.length > 0;
+    }
+
     get minDataValue(): number
     {
         return this.evaluatedExpression?.values?.valueRange?.min || 0;

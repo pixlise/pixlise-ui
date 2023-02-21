@@ -47,8 +47,8 @@ POSSIBILITY OF SUCH DAMAGE.
         icon="assets/button-icons/export.svg">
     </icon-button>
   </div>
-  <div class="table-container">
-    <table>
+  <div class="table-container" [style.height]="!isValidData ? '100%' : 'auto'">
+    <table *ngIf="isValidData">
       <tr *ngFor="let _ of [].constructor(rowCount); let i = index;">
         <td
           *ngFor="let _ of [].constructor(columnCount); let j = index;"
@@ -63,5 +63,9 @@ POSSIBILITY OF SUCH DAMAGE.
         </td>
       </tr>
     </table>
+    <div *ngIf="!isValidData" class="invalid-input">
+      <img src="assets/icons/error-triangle-dark.svg"/>
+      <h5>No Valid Input</h5>
+    </div>
   </div>
 </div>
