@@ -35,6 +35,7 @@ import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { DiffractionPeak, DiffractionPeakService, RoughnessItem, UserDiffractionPeak, UserRoughnessItem } from "src/app/services/diffraction-peak.service";
 import { SelectionService } from "src/app/services/selection.service";
@@ -42,11 +43,6 @@ import { SpectrumChartService } from "src/app/services/spectrum-chart.service";
 import { UserPromptDialogComponent, UserPromptDialogParams, UserPromptDialogResult, UserPromptDialogStringItem } from "src/app/UI/atoms/user-prompt-dialog/user-prompt-dialog.component";
 import { LayerManager } from "src/app/UI/context-image-view-widget/layer-manager";
 import { DiffractionComponent } from "../diffraction/diffraction.component";
-
-
-
-
-
 
 
 @Component({
@@ -157,7 +153,7 @@ export class RoughnessComponent implements OnInit
         let layerMan = this.getLayerManager();
         if(layerMan)
         {
-            this._roughnessLayer = layerMan.getLayerProperties(DataExpressionService.predefinedRoughnessDataExpression);
+            this._roughnessLayer = layerMan.getLayerProperties(DataExpressionId.predefinedRoughnessDataExpression);
         }
     }
 
@@ -184,7 +180,7 @@ export class RoughnessComponent implements OnInit
             }
         }
 
-        this.getLayerManager().setLayerVisibility(DataExpressionService.predefinedRoughnessDataExpression, this._roughnessLayer.opacity, !this._roughnessLayer.visible, []);
+        this.getLayerManager().setLayerVisibility(DataExpressionId.predefinedRoughnessDataExpression, this._roughnessLayer.opacity, !this._roughnessLayer.visible, []);
         this.refreshLayerInfo();
     }
 

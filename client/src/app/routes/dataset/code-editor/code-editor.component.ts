@@ -42,7 +42,8 @@ import { HistogramViewComponent } from "src/app/UI/histogram-view/histogram-view
 import { SpectrumChartWidgetComponent } from "src/app/UI/spectrum-chart-widget/spectrum-chart-widget.component";
 import { SpectrumRegionPickerComponent } from "src/app/UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
 import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/ternary-plot-widget.component";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression } from "src/app/models/Expression";
 import { DataSourceParams, RegionDataResultItem, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
 import { TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
@@ -211,16 +212,19 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     {
         if(this._expressionID && this.expression)
         {
-            this.evaluatedExpression = this._widgetDataService.runExpression(new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), this.expression, false);
+            // this.evaluatedExpression = this._widgetDataService.runExpression(new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), this.expression, false);
+            this._widgetDataService.runAsyncExpression(new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), this.expression, false).toPromise().then((result)=>
+            {
+                this.evaluatedExpression = result;
+                if(this.evaluatedExpression && this.evaluatedExpression?.values?.values.length > 0)
+                {
+                    this.isCodeChanged = false;
+                    let previewID = `unsaved-${this._expressionID}`;
+                    this.displayExpressionTitle = `Unsaved ${this.expression.name}`;
+                    this._expressionService.cache(previewID, this.expression, this.displayExpressionTitle);
+                }
+            });
         }
-        if(this.evaluatedExpression && this.evaluatedExpression?.values?.values.length > 0)
-        {
-            this.isCodeChanged = false;
-            let previewID = `unsaved-${this._expressionID}`;
-            this.displayExpressionTitle = `Unsaved ${this.expression.name}`;
-            this._expressionService.cache(previewID, this.expression, this.displayExpressionTitle);
-        }
-
         this.pmcGridExpressionTitle = "Numeric Values: All";
         this.isSubsetExpression = false;
         if(this.executedTextSelection)
@@ -242,11 +246,20 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             highlightedExpression.expression = this.expression.expression.split("\n").slice(0, this.endLineHighlighted + 1).join("\n");
         }
 
-        this.evaluatedExpression = this._widgetDataService.runExpression(
-            new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), 
+        // this.evaluatedExpression = this._widgetDataService.runExpression(
+        //     new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), 
+        //     highlightedExpression,
+        //     false
+        // );
+
+        this._widgetDataService.runAsyncExpression(
+            new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID),
             highlightedExpression,
             false
-        );
+        ).toPromise().then((result)=>
+        {
+            this.evaluatedExpression = result;
+        });
 
         let lineRange = "";
         let isMultiLine = this.startLineHighlighted !== this.endLineHighlighted || this.isEmptySelection;

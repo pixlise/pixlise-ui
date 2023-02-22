@@ -31,7 +31,8 @@ import { combineLatest, Observable } from "rxjs";
 
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { DataExpressionService, DataExpression } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { RGBMix, RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { LocationDataLayerProperties, LocationDataLayer } from "src/app/models/LocationData2D";
 import { DataSetService } from "../services/data-set.service";
@@ -136,7 +137,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
 
         for(let elem of pseudoIntensities)
         {
-            let id = DataExpressionService.makePredefinedPseudoIntensityExpression(elem);
+            let id = DataExpressionId.makePredefinedPseudoIntensityExpression(elem);
             let expression = this._exprService.getExpression(id);
             this._pseudointensities.push(expression);
         }
@@ -175,7 +176,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                     
                     for(let det of detectors)
                     {
-                        let id = DataExpressionService.makePredefinedQuantElementExpression(formula, col, det);
+                        let id = DataExpressionId.makePredefinedQuantElementExpression(formula, col, det);
                         let expression = this._exprService.getExpression(id);
                         this._elementsFromQuant.push(expression);
                     }
@@ -195,7 +196,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
             {
                 for(let det of detectors)
                 {
-                    let id = DataExpressionService.makePredefinedQuantDataExpression(chisqColName, det);
+                    let id = DataExpressionId.makePredefinedQuantDataExpression(chisqColName, det);
                     let expression = this._exprService.getExpression(id);
                     this._elementRelatedBuiltIn.push(expression);
                 }
@@ -206,7 +207,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         {
             for(let det of detectors)
             {
-                let id = DataExpressionService.predefinedUnquantifiedPercentDataExpression+"("+det+")";
+                let id = DataExpressionId.predefinedUnquantifiedPercentDataExpression+"("+det+")";
                 let expression = this._exprService.getExpression(id);
                 this._elementRelatedBuiltIn.push(expression);
             }
@@ -269,9 +270,9 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
     {
         // Anomalies are pre-defined...
         let anomalyIDs = [
-            DataExpressionService.predefinedRoughnessDataExpression,
-            DataExpressionService.predefinedDiffractionCountDataExpression,
-            DataExpressionService.predefinedHeightZDataExpression
+            DataExpressionId.predefinedRoughnessDataExpression,
+            DataExpressionId.predefinedDiffractionCountDataExpression,
+            DataExpressionId.predefinedHeightZDataExpression
         ];
 
         this._anomalies = [];
@@ -553,7 +554,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         {
             exprLookup.set(expr.id, expr);
 
-            let element = DataExpressionService.getPredefinedQuantExpressionElement(expr.id);
+            let element = DataExpressionId.getPredefinedQuantExpressionElement(expr.id);
             if(!element)
             {
                 throw new Error("extractMainExpressionsWithSubLayers called for non-element expression: "+expr.id);
@@ -645,7 +646,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
 
         for(let expr of this._elementRelatedBuiltIn)
         {
-            let detector = DataExpressionService.getPredefinedQuantExpressionDetector(expr.id);
+            let detector = DataExpressionId.getPredefinedQuantExpressionDetector(expr.id);
             let id = expr.id.substring(0, expr.id.length-detector.length-2); // (-2 for the bracket characters)
 
             uniqueIDs.add(id);

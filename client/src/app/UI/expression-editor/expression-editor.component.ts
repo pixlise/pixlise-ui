@@ -31,7 +31,7 @@ import { Component, Inject, OnDestroy } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { Subscription } from "rxjs";
-import { DataExpression } from "src/app/services/data-expression.service";
+import { DataExpression } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 
 export class ExpressionEditorConfig

@@ -29,16 +29,16 @@
 
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable, ReplaySubject, Subject, Subscription } from "rxjs";
-import { tap } from "rxjs/operators";
+import { Observable, ReplaySubject, Subject, of } from "rxjs";
+import { tap, map } from "rxjs/operators";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { DataSetService } from "src/app/services/data-set.service";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
-import { UNICODE_GREEK_LOWERCASE_PSI } from "src/app/utils/utils";
-import { QuantificationService } from "./quantification.service";
+import { QuantificationService } from "src/app/services/quantification.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
+import { DataExpression, DataExpressionId, ShortName } from "src/app/models/Expression";
 
 
 class DataExpressionInput
@@ -70,192 +70,31 @@ class DataExpressionWire
     )
     {
     }
-}
 
-// What we provide to the rest of the app
-export class DataExpression
-{
-    private _requiredElementFormulae = new Set<string>();
-    private _requiredDetectors = new Set<string>();
-
-    private _isCompatibleWithQuantification: boolean = true;
-
-    constructor(
-        public id: string,
-        public name: string,
-        public expression: string,
-        public type: string,
-        public comments: string,
-        public shared: boolean,
-        public creator: ObjectCreator,
-        public createUnixTimeSec: number,
-        public modUnixTimeSec: number,
-        public tags: string[] = [],
-    )
+    makeExpression(id: string): DataExpression
     {
-        this.parseRequiredQuantificationData();
-    }
-
-    get isCompatibleWithQuantification(): boolean
-    {
-        return this._isCompatibleWithQuantification;
-    }
-
-    // Checks compatibility with passed in params, returns true if flag was changed
-    // otherwise false.
-    checkQuantCompatibility(elementList: string[], detectors: string[]): boolean
-    {
-        let wasCompatible = this._isCompatibleWithQuantification;
-
-        // Check if the quant would have the data we're requiring...
-        for(let elem of this._requiredElementFormulae)
-        {
-            if(elementList.indexOf(elem) <= -1)
-            {
-                // NOTE: quant element list returns both pure and oxide/carbonate, so this check is enough
-                this._isCompatibleWithQuantification = false;
-                return wasCompatible != this._isCompatibleWithQuantification;
-            }
-        }
-
-        for(let detector of this._requiredDetectors)
-        {
-            if(detectors.indexOf(detector) <= -1)
-            {
-                // Expression contains a detector that doesn't exist in the quantification
-                this._isCompatibleWithQuantification = false;
-                return wasCompatible != this._isCompatibleWithQuantification;
-            }
-        }
-
-        // If we made it this far, it's compatible
-        this._isCompatibleWithQuantification = true;
-        return wasCompatible != this._isCompatibleWithQuantification;
-    }
-
-    private parseRequiredQuantificationData()
-    {
-        this._requiredElementFormulae.clear();
-        this._requiredDetectors.clear();
-
-        // Find all occurances of element() in expression and determine what element formulae (eg element or oxide/carbonate)
-        // are used, and what detectors are referenced
-        // This can be used elsewhere to show if this expression is compatible with the currently loaded quantification
-        const element = "element";
-        let elemPos = this.expression.indexOf(element);
-
-        while(elemPos > -1)
-        {
-            let nextSearchStart = elemPos+element.length;
-
-            // Make sure it's not elementSum()
-            if(this.expression.substring(elemPos, elemPos+element.length+3) != "elementSum")
-            {
-                // Find (
-                let openBracketPos = this.expression.indexOf("(", elemPos+element.length);
-                let closeBracketPos = openBracketPos;
-                if(openBracketPos > -1)
-                {
-                    // Find )
-                    closeBracketPos = this.expression.indexOf(")", openBracketPos);
-
-                    if(closeBracketPos > -1)
-                    {
-                        // We've now got the start and end of the expression parameters. Break this into tokens
-                        let params = this.getExpressionParameters(this.expression.substring(openBracketPos+1, closeBracketPos));
-                        if(params.length == 3)
-                        {
-                            this._requiredElementFormulae.add(params[0]);
-                            this._requiredDetectors.add(params[2]);
-                        }
-
-                        nextSearchStart = closeBracketPos;
-                    }
-                }
-            }
-
-            elemPos = this.expression.indexOf(element, nextSearchStart);
-        }
-    }
-
-    // Expects strings like:
-    // "FeO-T", "%", "A"
-    // Returns each of the above in a string array
-    private getExpressionParameters(code: string): string[]
-    {
-        let inParam = false;
-        let params = [];
-        let currParam = "";
-        let commaCount = 0;
-
-        for(let c = 0; c < code.length; c++)
-        {
-            const ch = code[c];
-
-            if(ch == "\"" || ch == "'")
-            {
-                if(!inParam)
-                {
-                    inParam = true;
-                }
-                else
-                {
-                    // Finished up reading a param
-                    params.push(currParam);
-                    currParam = "";
-                    inParam = false;
-                }
-            }
-            else
-            {
-                if(inParam)
-                {
-                    currParam += ch;
-                }
-                else if(ch == ",")
-                {
-                    commaCount++;
-                }
-            }
-        }
-
-        if(commaCount != 2 || params.length != 3)
-        {
-            // We failed to get the element requested from the element() function. This is mostly going to happen
-            // if the expression defines a string variable to store the name of the element, and passes that to
-            // the element() function. The side-effect of this is that the function won't be properly checked for
-            // being "crossed-out", so the user won't know that this expression is valid against their loaded quant
-            console.warn("Failed to parse parameters for expression("+code+")");
-            return [];
-        }
-
-        return params;
+        let result = new DataExpression(
+            id,
+            this.name,
+            this.expression,
+            this.type,
+            this.comments || "",
+            this.shared,
+            this.creator,
+            this.create_unix_time_sec,
+            this.mod_unix_time_sec,
+            this.tags || []
+        );
+        return result;
     }
 }
 
-export class ShortName
-{
-    constructor(public shortName: string, public name: string)
-    {
-    }
-}
-
-const PredefinedPseudoIntensityLayerPrefix = "pseudo-";
-const PredefinedQuantDataLayerPrefix = "data-";
-const PredefinedQuantElementLayerPrefix = "elem-";
-const PredefinedLayerPrefix = "expr-";
-const PredefinedLayerRoughness = "roughness";
-const PredefinedLayerDiffractionCounts = "diffraction";
-const SuffixUnquantified = "unquantified";
-const SuffixZHeight = "zheight";
 
 @Injectable({
     providedIn: "root"
 })
 export class DataExpressionService
 {
-    private subs = new Subscription();
-
     private _expressionsUpdated$ = new ReplaySubject<void>(1);
     private _expressions: Map<string, DataExpression> = new Map<string, DataExpression>();
 
@@ -314,7 +153,7 @@ export class DataExpressionService
         this._expressionsUpdated$.next();
     }
 
-    refreshExpressions()
+    private refreshExpressions()
     {
         let loadID = this._loadingSvc.add("Refreshing expressions...");
         let apiURL = APIPaths.getWithHost(APIPaths.api_data_expression);
@@ -345,19 +184,19 @@ export class DataExpressionService
             }
             else
             {
-                let receivedDataExpression = new DataExpression(
-                    id,
-                    expression.name,
-                    expression.expression,
-                    expression.type,
-                    expression.comments || "",
-                    expression.shared,
-                    expression.creator,
-                    expression.create_unix_time_sec,
-                    expression.mod_unix_time_sec,
-                    expression.tags || []
+                // NOTE: JS doesn't _actually_ return a DataExpressionWire
+                let wireExpr = new DataExpressionWire(
+                    expression["name"],
+                    expression["expression"],
+                    expression["type"],
+                    expression["comments"],
+                    expression["shared"],
+                    expression["creator"],
+                    expression["create_unix_time_sec"],
+                    expression["mod_unix_time_sec"],
+                    expression["tags"]
                 );
-
+                let receivedDataExpression = wireExpr.makeExpression(id);
                 this._expressions.set(id, receivedDataExpression);
             }
         });
@@ -384,11 +223,11 @@ export class DataExpressionService
         return changeCount;
     }
 
-    getExpressions(type: string = DataExpressionService.DataExpressionTypeAll): Map<string, DataExpression>
+    getExpressions(type: string = DataExpressionId.DataExpressionTypeAll): Map<string, DataExpression>
     {
         // This used to take a type field because we thought we'd have "types" of expressions specific to a given widget
         // but this never eventuated. type field is deprecated and currently we expect it to be set to all...
-        if(type !== DataExpressionService.DataExpressionTypeAll)
+        if(type !== DataExpressionId.DataExpressionTypeAll)
         {
             throw new Error("getExpressions called with unexpected type: "+type);
         }
@@ -396,7 +235,24 @@ export class DataExpressionService
         return this._expressions;
     }
 
-    getAllExpressionIds(type: string, quantification: QuantificationLayer): string[]
+    filterInvalidElements(exprIdList: string[], quantification: QuantificationLayer): string[]
+    {
+        const exprList = this.getAllExpressionIds(DataExpressionId.DataExpressionTypeAll, quantification);
+        let newDisplayExprIds: string[] = [];
+
+        for(let exprId of exprIdList)
+        {
+            if(exprList.indexOf(exprId) !== -1)
+            {
+                // We found a valid one, use it
+                newDisplayExprIds.push(exprId);
+            }
+        }
+
+        return newDisplayExprIds;
+    }
+
+    private getAllExpressionIds(type: string, quantification: QuantificationLayer): string[]
     {
         let ids = this.getPredefinedExpressionIds(type, quantification);
         let exprs = this.getExpressions(type);
@@ -413,7 +269,7 @@ export class DataExpressionService
     // and its elements - the data are related so it makes plots look wonky
     getStartingExpressions(quantification: QuantificationLayer): string[]
     {
-        const exprList = this.getAllExpressionIds(DataExpressionService.DataExpressionTypeAll, quantification);
+        const exprList = this.getAllExpressionIds(DataExpressionId.DataExpressionTypeAll, quantification);
 
         let result = [];
 
@@ -422,13 +278,13 @@ export class DataExpressionService
 
         for(let expr of exprList)
         {
-            let pseudoElem = DataExpressionService.getPredefinedPseudoIntensityExpressionElement(expr);
+            let pseudoElem = DataExpressionId.getPredefinedPseudoIntensityExpressionElement(expr);
             if(pseudoElem.length > 0)
             {
                 pseudoStarters.push(expr);
             }
 
-            let elem = DataExpressionService.getPredefinedQuantExpressionElement(expr);
+            let elem = DataExpressionId.getPredefinedQuantExpressionElement(expr);
             if(elem.length > 0)
             {
                 elemStarters.push(elem);
@@ -449,7 +305,7 @@ export class DataExpressionService
             {
                 for(let det of this._validDetectors)
                 {
-                    complexElemExpressions.push(DataExpressionService.makePredefinedQuantElementExpression(elem, "%", det));
+                    complexElemExpressions.push(DataExpressionId.makePredefinedQuantElementExpression(elem, "%", det));
                 }
             }
             result = complexElemExpressions;
@@ -479,7 +335,7 @@ export class DataExpressionService
         {
             for(let det of this._validDetectors)
             {
-                result.push(DataExpressionService.makePredefinedQuantElementExpression(item, "%", det));
+                result.push(DataExpressionId.makePredefinedQuantElementExpression(item, "%", det));
             }
         }
 
@@ -488,7 +344,7 @@ export class DataExpressionService
             items = this._datasetService.datasetLoaded.getPseudoIntensityElementsList();
             for(let item of items)
             {
-                result.push(DataExpressionService.makePredefinedPseudoIntensityExpression(item));
+                result.push(DataExpressionId.makePredefinedPseudoIntensityExpression(item));
             }
         }
 
@@ -501,75 +357,7 @@ export class DataExpressionService
         let expr = this.getExpression(id);
         if(expr)
         {
-            result.shortName = expr.name;
-            result.name = expr.name;
-
-            let elem = DataExpressionService.getPredefinedQuantExpressionElement(id);
-            if(elem.length > 0)
-            {
-                if(elem.endsWith("-T"))
-                {
-                    result.shortName = elem.substring(0, elem.length-2)+"ᴛ";
-                }
-                /* Replaced with the above to make this more generic in case other element are quantified as totals
-                if(elem == "FeO-T")
-                {
-                    result.shortName = "FeOᴛ";
-                }*/
-                else
-                {
-                    result.shortName = elem;
-                }
-
-                // Add the detector if there is one specified!
-                let det = DataExpressionService.getPredefinedQuantExpressionDetector(id);
-                if(det.length > 0)
-                {
-                    // If it's combined, we show something shorter...
-                    if(det == "Combined")
-                    {
-                        det = "A&B";
-                    }
-                    result.shortName += "-"+det;
-                }
-            }
-            else
-            {
-                elem = DataExpressionService.getPredefinedPseudoIntensityExpressionElement(id);
-                if(elem.length > 0)
-                {
-                    result.shortName = UNICODE_GREEK_LOWERCASE_PSI+elem;
-                }
-                else
-                {
-                    // If it's too long, show f(elem)
-                    if(result.shortName.length > charLimit)
-                    {
-                        // Cut it short
-                        result.shortName = result.shortName.substring(0, charLimit)+"...";
-                        /*
-                        const elemSearch = "element(";
-                        let elemPos = expr.expression.indexOf(elemSearch);
-                        if(elemPos > -1)
-                        {
-                            elemPos += elemSearch.length;
-
-                            // Find the element after this
-                            let commaPos = expr.expression.indexOf(",", elemPos+1);
-                            let elem = expr.expression.substring(elemPos, commaPos);
-                            elem = elem.replace(/['"]+/g, "");
-
-                            // Was limiting to 2 chars, but we now deal a lot in oxides/carbonates
-                            // so this wasn't triggering often!
-                            //if(elem.length <= 2)
-                            {
-                                //result = 'f('+elem+')';
-                                result.shortName = UNICODE_MATHEMATICAL_F+elem;
-                            }
-                        }*/
-                    }
-                }
-            }
+            result = expr.getExpressionShortDisplayName(charLimit);
         }
 
         return result;
@@ -579,12 +367,44 @@ export class DataExpressionService
     {
         // Check if it's one of the predefined expressions that we only supply to the UI for showing/hiding
         // layers on context image
-        if(DataExpressionService.isPredefinedExpression(id))
+        if(DataExpressionId.isPredefinedExpression(id))
         {
             return this.getPredefinedExpression(id);
         }
 
         return this._expressions.get(id);
+    }
+
+    getExpressionAsync(id: string): Observable<DataExpression>
+    {
+        let expr = this.getExpression(id);
+        if(expr.expression.length > 0)
+        {
+            // We already have the text, so just return it as-is
+            return of(expr);
+        }
+
+        let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
+        return this.http.get<DataExpressionWire>(apiURL, makeHeaders())
+            .pipe(
+                map((expression: DataExpressionWire)=>
+                {
+                    // NOTE: JS doesn't _actually_ return a DataExpressionWire
+                    let wireExpr = new DataExpressionWire(
+                        expression["name"],
+                        expression["expression"],
+                        expression["type"],
+                        expression["comments"],
+                        expression["shared"],
+                        expression["creator"],
+                        expression["create_unix_time_sec"],
+                        expression["mod_unix_time_sec"],
+                        expression["tags"]
+                    );
+                    let receivedDataExpression = wireExpr.makeExpression(id);
+                    return receivedDataExpression;
+                })
+            );
     }
 
     private getPredefinedExpression(id: string): DataExpression
@@ -597,7 +417,7 @@ export class DataExpressionService
         // due to backwards compatibility, so we may end up using a default
         let detectorId = this._validDetectors[0];
 
-        let exprDetector = DataExpressionService.getPredefinedQuantExpressionDetector(id);
+        let exprDetector = DataExpressionId.getPredefinedQuantExpressionDetector(id);
         if(exprDetector.length > 0)
         {
             if(this._validDetectors.indexOf(exprDetector) < 0)
@@ -611,10 +431,10 @@ export class DataExpressionService
             detectorId = exprDetector;
         }
 
-        let elem = DataExpressionService.getPredefinedQuantExpressionElement(id);
+        let elem = DataExpressionId.getPredefinedQuantExpressionElement(id);
         if(elem.length > 0)
         {
-            let column = DataExpressionService.getPredefinedQuantExpressionElementColumn(id);
+            let column = DataExpressionId.getPredefinedQuantExpressionElementColumn(id);
 
             if(column.length > 0)
             {
@@ -629,7 +449,7 @@ export class DataExpressionService
         else
         {
             // If the element is actually saying we want the unquantified expression, return that
-            if(id.startsWith(DataExpressionService.predefinedUnquantifiedPercentDataExpression))
+            if(id.startsWith(DataExpressionId.predefinedUnquantifiedPercentDataExpression))
             {
                 expr = "100-elementSum(\"%\",\""+detectorId+"\")";
                 name = "Unquantified Weight %";
@@ -638,17 +458,17 @@ export class DataExpressionService
                     name += "-"+detectorId;
                 }
             }
-            else if(id == DataExpressionService.predefinedHeightZDataExpression)
+            else if(id == DataExpressionId.predefinedHeightZDataExpression)
             {
                 expr = "position(\"z\")";
                 name = "Height in Z";
             }
-            else if(id == DataExpressionService.predefinedRoughnessDataExpression)
+            else if(id == DataExpressionId.predefinedRoughnessDataExpression)
             {
                 expr = "roughness()";
                 name = "Roughness";
             }
-            else if(id == DataExpressionService.predefinedDiffractionCountDataExpression)
+            else if(id == DataExpressionId.predefinedDiffractionCountDataExpression)
             {
                 expr = "diffractionPeaks(0,4096)";
                 if(this._diffractionCountExpression.length > 0)
@@ -663,16 +483,16 @@ export class DataExpressionService
             }
             else
             {
-                let pseudoElem = DataExpressionService.getPredefinedPseudoIntensityExpressionElement(id);
+                let pseudoElem = DataExpressionId.getPredefinedPseudoIntensityExpressionElement(id);
                 if(pseudoElem.length > 0)
                 {
                     expr = "pseudo('"+pseudoElem+"')";
                     name = "Pseudo "+pseudoElem;
                 }
-                else if(id.startsWith(PredefinedLayerPrefix+PredefinedQuantDataLayerPrefix))
+                else if(id.startsWith(DataExpressionId.predefinedQuantDataExpression))
                 {
                     // Now get the column (sans detector in case it's specified)
-                    let idWithoutDetector = DataExpressionService.getExpressionWithoutDetector(id);
+                    let idWithoutDetector = DataExpressionId.getExpressionWithoutDetector(id);
 
                     let bits = idWithoutDetector.split("-");
                     let col = bits[2];
@@ -701,7 +521,7 @@ export class DataExpressionService
             id,
             name,
             expr,
-            DataExpressionService.DataExpressionTypeAll, // TODO: bad hard code here! Should be a param for this func
+            DataExpressionId.DataExpressionTypeAll, // TODO: bad hard code here! Should be a param for this func
             "Built-in expression",
             false,
             null,
@@ -846,200 +666,5 @@ export class DataExpressionService
                     }
                 )
             );
-    }
-    /*
-    setContextImageExpressions(contextImageExpressions: DataExpression[])
-    {
-        this._expressions = contextImageExpressions;
-    }*/
-
-    // Static functions for getting/accessing/parsing predefined expression IDs
-    // TODO: remove this if the whole concept of expression types
-    // goes unused... this is already a hack to get them to all show up
-    public static get DataExpressionTypeAll(): string { return "All"; }
-    /*
-    public static get DataExpressionTypeContextImage(): string { return "ContextImage"; }
-    public static get DataExpressionTypeChordDiagram(): string { return "ChordDiagram"; }
-    public static get DataExpressionTypeBinaryPlot(): string { return "BinaryPlot"; }
-    public static get DataExpressionTypeTernaryPlot(): string { return "TernaryPlot"; }
-*/
-    public static isPredefinedExpression(id: string): boolean
-    {
-        return id.startsWith(PredefinedLayerPrefix);
-    }
-    public static isPredefinedQuantExpression(id: string): boolean
-    {
-        return id.startsWith(PredefinedLayerPrefix+PredefinedQuantElementLayerPrefix);
-    }
-    public static getPredefinedPseudoIntensityExpressionElement(id: string): string
-    {
-        let prefix = PredefinedLayerPrefix+PredefinedPseudoIntensityLayerPrefix;
-        if(!id.startsWith(prefix))
-        {
-            return "";
-        }
-
-        return id.substring(prefix.length);
-    }
-
-    // Returns '' if it's not the right kind of id
-    public static getPredefinedQuantExpressionElement(id: string): string
-    {
-        let prefix = PredefinedLayerPrefix+PredefinedQuantElementLayerPrefix;
-
-        // expecting prefix-<elem info: 1-2 chars OR FeO-T>-<column, eg %, int, err, %-as-mmol>
-        if(!id.startsWith(prefix))
-        {
-            return "";
-        }
-
-        // Check for column
-        let remainder = id.substring(prefix.length);
-        let lastDash = remainder.lastIndexOf("-");
-
-        // If it ends with %-as-mmol we have to use a different idx here
-        let asMmolIdx = remainder.indexOf("-%-as-mmol");
-        if(asMmolIdx > 0)
-        {
-            lastDash = asMmolIdx;
-        }
-
-        if(lastDash < 0)
-        {
-            return "";
-        }
-
-        return remainder.substring(0, lastDash);
-    }
-
-    // Returns '' if it's not the right kind of id
-    public static getPredefinedQuantExpressionElementColumn(id: string): string
-    {
-        let prefix = PredefinedLayerPrefix+PredefinedQuantElementLayerPrefix;
-
-        // expecting prefix-<elem info: 1-2 chars OR FeO-T>-<column, eg %, int, err>
-        if(!id.startsWith(prefix))
-        {
-            return "";
-        }
-
-        // Check for column
-        let remainder = id.substring(prefix.length);
-        let lastDash = remainder.lastIndexOf("-");
-
-        // If it ends with %-as-mmol we have to use a different idx here
-        let asMmolIdx = remainder.indexOf("-%-as-mmol");
-        if(asMmolIdx > 0)
-        {
-            lastDash = asMmolIdx;
-        }
-
-        if(lastDash < 0)
-        {
-            return "";
-        }
-
-        let result = remainder.substring(lastDash+1);
-
-        // If result has (A), (B) or (Combined), snip that off
-        if(result.endsWith("(A)") || result.endsWith("(B)") || result.endsWith("(Combined)"))
-        {
-            let bracketIdx = result.lastIndexOf("(");
-            result = result.substring(0, bracketIdx);
-        }
-
-        return result;
-    }
-
-    // Returns detector part of a predefiend expression id:
-    // expr-elem-
-    public static getPredefinedQuantExpressionDetector(id: string): string
-    {
-        let elemPrefix = PredefinedLayerPrefix+PredefinedQuantElementLayerPrefix;
-        let dataPrefix = PredefinedLayerPrefix+PredefinedQuantDataLayerPrefix;
-
-        // expecting prefix-<elem info: 1-2 chars OR FeO-T>-<column, eg %, int, err> OR a data column
-        if(!id.startsWith(elemPrefix) && !id.startsWith(dataPrefix))
-        {
-            return "";
-        }
-
-        // Check end
-        let detectorPossibilities = DataExpressionService.getPossibleDetectors();
-        for(let det of detectorPossibilities)
-        {
-            if(id.endsWith("("+det+")"))
-            {
-                let bracketIdx = id.lastIndexOf("(");
-                id = id.substring(bracketIdx);
-
-                // Snip off the brackets
-                return id.substring(1, id.length-1);
-            }
-        }
-
-        // None specified
-        return "";
-    }
-
-    public static getExpressionWithoutDetector(id: string): string
-    {
-        // If the detector is specified, this removes it... bit ugly/hacky but needed in case of comparing
-        // active expression IDs where we don't want the selected detector to confuse things
-        let detectorPossibilities = DataExpressionService.getPossibleDetectors();
-
-        for(let det of detectorPossibilities)
-        {
-            if(id.endsWith("("+det+")"))
-            {
-                return id.substring(0, id.length-2-det.length);
-            }
-        }
-        return id;
-    }
-
-    // Instead of hard-coding it in multiple places...
-    private static getPossibleDetectors(): string[]
-    {
-        return ["A", "B", "Combined"];
-    }
-
-    public static makePredefinedQuantElementExpression(element: string, column: string, detector: string = null): string
-    {
-        let result = PredefinedLayerPrefix+PredefinedQuantElementLayerPrefix+element+"-"+column;
-        if(detector)
-        {
-            result += "("+detector+")";
-        }
-        return result;
-    }
-    public static makePredefinedPseudoIntensityExpression(pseudoElem: string): string
-    {
-        return PredefinedLayerPrefix+PredefinedPseudoIntensityLayerPrefix+pseudoElem;
-    }
-    public static makePredefinedQuantDataExpression(column: string, detector: string): string
-    {
-        let result = PredefinedLayerPrefix+PredefinedQuantDataLayerPrefix+column;
-        if(detector)
-        {
-            result += "("+detector+")";
-        }
-        return result;
-    }
-    public static readonly predefinedUnquantifiedPercentDataExpression = PredefinedLayerPrefix+PredefinedQuantElementLayerPrefix+SuffixUnquantified;
-    public static readonly predefinedRoughnessDataExpression = PredefinedLayerPrefix+PredefinedLayerRoughness;
-    public static readonly predefinedDiffractionCountDataExpression = PredefinedLayerPrefix+PredefinedLayerDiffractionCounts;
-    public static readonly predefinedHeightZDataExpression = PredefinedLayerPrefix+SuffixZHeight;
-
-    public static hasPseudoIntensityExpressions(exprIds: string[]): boolean
-    {
-        for(let exprId of exprIds)
-        {
-            if(DataExpressionService.getPredefinedPseudoIntensityExpressionElement(exprId).length > 0)
-            {
-                return true;
-            }
-        }
-        return false;
     }
 }

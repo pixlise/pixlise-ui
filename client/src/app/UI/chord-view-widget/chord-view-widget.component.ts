@@ -34,10 +34,11 @@ import { Subject, Subscription } from "rxjs";
 import { PMCDataValues } from "src/app/expression-language/data-values";
 import { PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { chordState, ViewStateService } from "src/app/services/view-state.service";
-import { DataSourceParams, WidgetDataUpdateReason, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { DataSourceParams, WidgetDataUpdateReason, WidgetRegionDataService, RegionDataResults } from "src/app/services/widget-region-data.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
 import { SliderValue } from "src/app/UI/atoms/slider/slider.component";
 import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expression-picker/expression-picker.component";
@@ -91,12 +92,10 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
 
     constructor(
         private _selectionService: SelectionService,
-        private _datasetService: DataSetService,
         private _exprService: DataExpressionService,
         private _viewStateService: ViewStateService,
         private _widgetDataService: WidgetRegionDataService,
         public dialog: MatDialog,
-        private router: Router
     )
     {
     }
@@ -309,7 +308,7 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
         //dialogConfig.disableClose = true;
         //dialogConfig.autoFocus = true;
         //dialogConfig.width = '1200px';
-        dialogConfig.data = new ExpressionPickerData("Nodes", DataExpressionService.DataExpressionTypeAll, this._displayExpressionIDs, false, false, false);
+        dialogConfig.data = new ExpressionPickerData("Nodes", DataExpressionId.DataExpressionTypeAll, this._displayExpressionIDs, false, false, false);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 
@@ -354,23 +353,6 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
                 }
             }
         );
-    }
-
-    private removeInvalidElements(): void
-    {
-        const exprList = this._exprService.getAllExpressionIds(DataExpressionService.DataExpressionTypeAll, this._widgetDataService.quantificationLoaded);
-        let newDisplayExprIds: string[] = [];
-
-        for(let exprId of this._displayExpressionIDs)
-        {
-            if(exprList.indexOf(exprId) !== -1)
-            {
-                // We found a valid one, use it
-                newDisplayExprIds.push(exprId);
-            }
-        }
-
-        this._displayExpressionIDs = newDisplayExprIds;
     }
 
     private setStartingExpressions()
@@ -418,7 +400,7 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
         if(this._displayExpressionIDs.length <= 0 ||
             (
                 widgetUpdReason == WidgetDataUpdateReason.WUPD_QUANT &&
-                DataExpressionService.hasPseudoIntensityExpressions(this._displayExpressionIDs)
+                DataExpressionId.hasPseudoIntensityExpressions(this._displayExpressionIDs)
             )
         )
         {
@@ -426,7 +408,7 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
         }
         else
         {
-            this.removeInvalidElements();
+            this._displayExpressionIDs = this._exprService.filterInvalidElements(this._displayExpressionIDs, this._widgetDataService.quantificationLoaded);
         }
 
         // If we still can't display...
@@ -455,24 +437,33 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
             query.push(new DataSourceParams(exprId, queryROI, ""));
 
             // If we just added a request for an element expression, also add one for the corresponding error column value
-            let elem = DataExpressionService.getPredefinedQuantExpressionElement(exprId);
+            let elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
             if(elem.length)
             {
-                let detector = DataExpressionService.getPredefinedQuantExpressionDetector(exprId);
+                let detector = DataExpressionId.getPredefinedQuantExpressionDetector(exprId);
 
-                let errExprId = DataExpressionService.makePredefinedQuantElementExpression(elem, "err", detector);
+                let errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
                 query.push(new DataSourceParams(errExprId, queryROI, ""));
             }
         }
 
-        let queryData = this._widgetDataService.getData(query, false);
-        if(queryData.error)
-        {
-            this.helpMessage = HelpMessage.ROI_QUERY_FAILED;
-            return;
-        }
+        this._widgetDataService.getData(query, false).subscribe(
+            (queryData: RegionDataResults)=>
+            {
+                if(queryData.error)
+                {
+                    this.helpMessage = HelpMessage.ROI_QUERY_FAILED;
+                    return;
+                }
 
-        let region = this._widgetDataService.regions.get(queryROI);
+                this.processQueryResult(t0, queryData);
+            }
+        )
+    }
+ 
+    private processQueryResult(t0: number, queryData: RegionDataResults)
+    {
+        let region = queryData?.queryResults[0]?.region;
         if(region)
         {
             this.currentRegionName = region.name;
@@ -491,13 +482,13 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
             // If we've been instructed to view selected points, but none are available, show a specific
             // error so user can diagnose this easily. If this wasn't here we'd show NO_QUANT_FOR_SELECTION
             // which is a bit misleading
-            if(region.locationIndexes.length <= 0 && queryROI == PredefinedROIID.SelectedPoints)
+            if(region.locationIndexes.length <= 0 && region.id == PredefinedROIID.SelectedPoints)
             {
                 this.helpMessage = HelpMessage.SELECTION_EMPTY;
                 return;
             }
             // As above, for remaining points
-            if(region.locationIndexes.length <= 0 && queryROI == PredefinedROIID.RemainingPoints)
+            if(region.locationIndexes.length <= 0 && region.id == PredefinedROIID.RemainingPoints)
             {
                 this.helpMessage = HelpMessage.REMAINING_POINTS_EMPTY;
                 return;
@@ -516,10 +507,10 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
         let allTotals = 0;
         let rowCount = 0;
 
-        for(let queryIdx = 0; queryIdx < query.length; queryIdx++)
+        for(let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx++)
         {
             const colData = queryData.queryResults[queryIdx];
-            const exprId = query[queryIdx].exprId;
+            const exprId = colData.query.exprId;
 
             // TODO: David says we can probably average A and B values here
             if(queryData.queryResults[queryIdx].errorType)
@@ -542,7 +533,7 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
 
             let errorCol: PMCDataValues = null;
 
-            let elem = DataExpressionService.getPredefinedQuantExpressionElement(exprId);
+            let elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
             if(elem.length)
             {
                 errorCol = queryData.queryResults[queryIdx+1].values;

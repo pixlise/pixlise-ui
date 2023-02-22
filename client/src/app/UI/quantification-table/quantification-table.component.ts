@@ -29,13 +29,14 @@
 
 import { Component, ElementRef, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Subscription } from "rxjs";
+import { Subscription, combineLatest, Observable } from "rxjs";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { PredefinedROIID } from "src/app/models/roi";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { tableState, ViewStateService } from "src/app/services/view-state.service";
-import { DataSourceParams, RegionDataResults, WidgetDataUpdateReason, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { DataSourceParams, RegionDataResults, WidgetDataUpdateReason, WidgetRegionDataService, RegionData } from "src/app/services/widget-region-data.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
 import { TableData, TableHeaderItem, TableRow } from "src/app/UI/atoms/table/table.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
@@ -163,6 +164,9 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
 
         const formulae = this.getFormulaeToQuery(quantification);
 
+        let allFormulaeQueried: string[][] = [];
+        let allResults$: Observable<RegionDataResults>[] = [];
+
         for(let roiId of this._visibleROIs)
         {
             // Query the data as columns
@@ -184,115 +188,142 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
             {
                 for(let detector of detectors)
                 {
-                    let exprId = DataExpressionService.makePredefinedQuantElementExpression(formula, "%", detector);
+                    let exprId = DataExpressionId.makePredefinedQuantElementExpression(formula, "%", detector);
                     query.push(new DataSourceParams(exprId, roiId, ""));
                     formulaeQueried.push(formula);
                 }
             }
 
-            // Build a table
-            let queryData: RegionDataResults = this._widgetDataService.getData(query, false);
+            // Query these
+            allFormulaeQueried.push(formulaeQueried);
+            allResults$.push(this._widgetDataService.getData(query, false));
+        }
 
-            let rows: TableRow[] = [];
-            let totalValues: number[] = [];
-            let headers: TableHeaderItem[] = [new TableHeaderItem("Element", "")];
-
-            if(queryData.error)
+        // Wait for them all
+        combineLatest(allResults$).subscribe(
+            (resultsByROI: RegionDataResults[])=>
             {
-                const err = "Error: "+queryData.error;
-                this.helpMessage = err;
-                console.error(err);
+                let c = 0;
+                for(let roiResult of resultsByROI)
+                {
+                    this.processROIColumns(roiResult, detectors, allFormulaeQueried[c]);
+                    c++;
+                }
+
+                // Finally we update references...
+                this.updateReferences();
             }
-            else
+        );
+    }
+
+    private processROIColumns(queryData: RegionDataResults, detectors: string[], formulaeQueried: string[])
+    {
+        let region: RegionData = null;
+        let rows: TableRow[] = [];
+        let totalValues: number[] = [];
+        let headers: TableHeaderItem[] = [new TableHeaderItem("Element", "")];
+
+        if(queryData.error)
+        {
+            const err = "Error: "+queryData.error;
+            this.helpMessage = err;
+            console.error(err);
+        }
+        else
+        {
+            // Loop through all of them...
+            let row: TableRow = null;
+
+            for(let det of detectors)
             {
-                // Loop through all of them...
-                let row: TableRow = null;
-
-                for(let det of detectors)
-                {
-                    totalValues.push(0);
-                    headers.push(new TableHeaderItem("Weight %", "("+det+")"));
-                }
-
-                for(let c = 0; c < queryData.queryResults.length; c++)
-                {
-                    let data = queryData.queryResults[c];
-                    if(data)
-                    {
-                        if(!row || (c % detectors.length) == 0)
-                        {
-                            if(row)
-                            {
-                                rows.push(row);
-                            }
-
-                            row = new TableRow(formulaeQueried[c], [], []);
-                        }
-
-                        // Calculate the average/total for this row value (combination of element+detector)
-                        let weightTotal = 0;
-                        let weightAvg = 0;
-
-                        if(!data.values || !data.values.values)
-                        {
-                            // We've seen this in Sentry a few times and it's not obvious why, so alert about it
-                            SentryHelper.logMsg(false, "Table data.values null for region: "+roiId+", elem: "+formulaeQueried[c]+", for quant: "+(this._widgetDataService.quantificationLoaded ? this._widgetDataService.quantificationLoaded.quantId : "no-quant"));
-                        }
-
-                        if(data.values && data.values.values && data.values.values.length > 0)
-                        {
-                            for(let value of data.values.values)
-                            {
-                                weightTotal += value.value;
-                            }
-
-                            weightAvg = weightTotal / data.values.values.length;
-                            totalValues[row.values.length] += weightAvg;
-                        }
-                        else if(region.locationIndexes.length <= 0)
-                        {
-                            weightAvg = null;
-                        }
-
-                        // Save in the row
-                        row.values.push(weightAvg);
-                    }
-                    else
-                    {
-                        // Remember that we got errors here
-                        const err = "Table failed to retrieve data for expr: "+query[c].exprId+", roi: "+query[c].roiId;
-                        this.helpMessage = err;
-                        console.error(err);
-                    }
-                }
-
-                // Save the last one
-                if(row)
-                {
-                    rows.push(row);
-                }
+                totalValues.push(0);
+                headers.push(new TableHeaderItem("Weight %", "("+det+")"));
             }
 
-            if(rows.length > 0)
+            for(let c = 0; c < queryData.queryResults.length; c++)
             {
-                if(this._orderByAbundance)
+                let data = queryData.queryResults[c];
+                if(data)
                 {
-                    this.orderRowsByWeightPct(rows);
-                }
+                    // Save this for later... it should be the same one in all queryResults
+                    region = data.region;
 
-                this.regionDataTables.push(
-                    new TableData(
-                        region.name,
-                        region.colour ? RGBA.fromWithA(region.colour, 1).asString() : "",
-                        " Wt.%",
-                        headers,
-                        rows,
-                        new TableRow("Totals:", totalValues, [])
-                    )
-                );
+                    if(!row || (c % detectors.length) == 0)
+                    {
+                        if(row)
+                        {
+                            rows.push(row);
+                        }
+
+                        row = new TableRow(formulaeQueried[c], [], []);
+                    }
+
+                    // Calculate the average/total for this row value (combination of element+detector)
+                    let weightTotal = 0;
+                    let weightAvg = 0;
+
+                    if(!data.values || !data.values.values)
+                    {
+                        // We've seen this in Sentry a few times and it's not obvious why, so alert about it
+                        SentryHelper.logMsg(false, "Table data.values null for region: "+data.query.roiId+", elem: "+formulaeQueried[c]+", for quant: "+(this._widgetDataService.quantificationLoaded ? this._widgetDataService.quantificationLoaded.quantId : "no-quant"));
+                    }
+
+                    if(data.values && data.values.values && data.values.values.length > 0)
+                    {
+                        for(let value of data.values.values)
+                        {
+                            weightTotal += value.value;
+                        }
+
+                        weightAvg = weightTotal / data.values.values.length;
+                        totalValues[row.values.length] += weightAvg;
+                    }
+                    else if(data.region.locationIndexes.length <= 0)
+                    {
+                        weightAvg = null;
+                    }
+
+                    // Save in the row
+                    row.values.push(weightAvg);
+                }
+                else
+                {
+                    // Remember that we got errors here
+                    const err = "Table failed to retrieve data for expr: "+data.query.exprId+", roi: "+data.query.roiId;
+                    this.helpMessage = err;
+                    console.error(err);
+                }
+            }
+
+            // Save the last one
+            if(row)
+            {
+                rows.push(row);
             }
         }
 
+        if(rows.length > 0)
+        {
+            if(this._orderByAbundance)
+            {
+                this.orderRowsByWeightPct(rows);
+            }
+
+            this.regionDataTables.push(
+                new TableData(
+                    region.name,
+                    region.colour ? RGBA.fromWithA(region.colour, 1).asString() : "",
+                    " Wt.%",
+                    headers,
+                    rows,
+                    new TableRow("Totals:", totalValues, [])
+                )
+            );
+        }
+    }
+
+    private updateReferences()
+    {
         this._references.forEach((referenceName) =>
         {
             let headers: TableHeaderItem[] = [new TableHeaderItem("Element", "")];

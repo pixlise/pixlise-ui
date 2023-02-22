@@ -32,7 +32,8 @@ import { Clipboard } from "@angular/cdk/clipboard";
 
 import { Subscription } from "rxjs";
 import { Rect } from "src/app/models/Geometry";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { SnackEvent } from "src/app/services/snack.service";
 import { CursorId } from "src/app/UI/atoms/interactive-canvas/cursor-id";
 import { CanvasDrawParameters, CanvasInteractionResult, CanvasKeyEvent, CanvasMouseEvent, CanvasMouseEventId } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
@@ -215,7 +216,7 @@ export class RangeSelect extends BaseSpectrumTool
         );
         const dialogRef = this.dialog.open(UserPromptDialogComponent, dialogConfig);
         
-        this._ctx.expressionService.add(name, expr, DataExpressionService.DataExpressionTypeAll, expressionComment).subscribe(
+        this._ctx.expressionService.add(name, expr, DataExpressionId.DataExpressionTypeAll, expressionComment).subscribe(
             (expressions)=>
             {
                 console.log("Added expression: "+name);

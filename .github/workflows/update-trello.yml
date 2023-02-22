@@ -3,12 +3,11 @@ name: GitHub Commit To Trello Comment
 on: [push, pull_request]
 
 jobs:
-  build:
+  update-trello:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
-
       - uses: dalezak/github-commit-to-trello-card@v3
         with:
           trello-api-key: ${{ secrets.TRELLO_KEY }}

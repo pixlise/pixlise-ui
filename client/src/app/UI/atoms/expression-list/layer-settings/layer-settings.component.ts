@@ -29,10 +29,12 @@
 
 import { Component, ElementRef, Input, OnInit, Output, EventEmitter } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Subscription } from "rxjs";
+import { Observable, Subscription, combineLatest } from "rxjs";
+import { map } from "rxjs/operators";
 import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
 import { AuthenticationService } from "src/app/services/authentication.service";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "src/app/UI/atoms/picker-dialog/picker-dialog.component";
 import { SliderValue } from "src/app/UI/atoms/slider/slider.component";
 import { ElementColumnPickerComponent, ElementColumnPickerDialogData } from "src/app/UI/atoms/expression-list/layer-settings/element-column-picker/element-column-picker.component";
@@ -44,7 +46,7 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
-import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
 import { TaggingService } from "src/app/services/tagging.service";
 import { generateExportCSVForExpression } from "src/app/services/export-data.service";
@@ -67,7 +69,7 @@ export class LayerInfo
         let filteredIDs = [];
         for(let id of allIDs)
         {
-            if(DataExpressionService.getPredefinedQuantExpressionDetector(id) == detectorFilter)
+            if(DataExpressionId.getPredefinedQuantExpressionDetector(id) == detectorFilter)
             {
                 filteredIDs.push(id);
             }
@@ -147,7 +149,7 @@ export class LayerSettingsComponent implements OnInit
     ngOnInit()
     {
         this._isPureElement = false;
-        this._expressionElement = DataExpressionService.getPredefinedQuantExpressionElement(this.layerInfo.layer.id);
+        this._expressionElement = DataExpressionId.getPredefinedQuantExpressionElement(this.layerInfo.layer.id);
         let state = periodicTableDB.getElementOxidationState(this._expressionElement);
         if(state && state.isElement)
         {
@@ -169,7 +171,7 @@ export class LayerSettingsComponent implements OnInit
 
         // If we are a predefined expression and NOT an element, we don't show this
         // this is for things like chisq and unquantified weight%
-        if(DataExpressionService.isPredefinedExpression(this.layerInfo.layer.id) && this._expressionElement.length <= 0)
+        if(DataExpressionId.isPredefinedExpression(this.layerInfo.layer.id) && this._expressionElement.length <= 0)
         {
             return false;
         }
@@ -307,17 +309,17 @@ export class LayerSettingsComponent implements OnInit
     onTogglePureElement(): void
     {
         // Find the expression in the sub-list that we need to mark as visible...
-        let detector = DataExpressionService.getPredefinedQuantExpressionDetector(this.layerInfo.layer.id);
+        let detector = DataExpressionId.getPredefinedQuantExpressionDetector(this.layerInfo.layer.id);
 
         let allIDs = [this.layerInfo.layer.id, ...this.layerInfo.subLayerIDs];
         for(let id of allIDs)
         {
             // Select if it has the right ID and the inverse pure state that we (still) have stored
-            let elem = DataExpressionService.getPredefinedQuantExpressionElement(id);
+            let elem = DataExpressionId.getPredefinedQuantExpressionElement(id);
             let state = periodicTableDB.getElementOxidationState(elem);
             if(
                 state &&
-                DataExpressionService.getPredefinedQuantExpressionDetector(id) === detector &&
+                DataExpressionId.getPredefinedQuantExpressionDetector(id) === detector &&
                 this._isPureElement !== state.isElement
             )
             {
@@ -578,7 +580,7 @@ export class LayerSettingsComponent implements OnInit
  
     get selectedDetector(): string
     {
-        return DataExpressionService.getPredefinedQuantExpressionDetector(this.layerInfo.layer.id);
+        return DataExpressionId.getPredefinedQuantExpressionDetector(this.layerInfo.layer.id);
     }
 
     get layerButtons(): string[]
@@ -614,11 +616,11 @@ export class LayerSettingsComponent implements OnInit
     onChangeDetector(detector: string)
     {
         // Work out the ID to show. Note if we're already showing this detector, we switch to the other one
-        let showLayerID = DataExpressionService.getExpressionWithoutDetector(this.layerInfo.layer.id)+"("+detector+")";
+        let showLayerID = DataExpressionId.getExpressionWithoutDetector(this.layerInfo.layer.id)+"("+detector+")";
         if(this.layerInfo.layer.id == showLayerID && this.layerInfo.subLayerIDs.length > 0)
         {
             // Find one that matches without detector... that's the one to show
-            let idWithoutDetector = DataExpressionService.getExpressionWithoutDetector(showLayerID);
+            let idWithoutDetector = DataExpressionId.getExpressionWithoutDetector(showLayerID);
             for(let subLayerID of this.layerInfo.subLayerIDs)
             {
                 if(subLayerID.startsWith(idWithoutDetector))
@@ -696,7 +698,7 @@ export class LayerSettingsComponent implements OnInit
             (options: PlotExporterDialogOption[])=>
             {
                 let canvases: CanvasExportItem[] = [];
-                let csvs: CSVExportItem[] = [];
+                let csvs$: Observable<CSVExportItem>[] = [];
 
                 let drawer = new ExportDrawer(this._contextImageService.mdl, this._contextImageService.mdl.toolHost);
                 let exportIDs = this.getCanvasOptions(options);
@@ -730,14 +732,26 @@ export class LayerSettingsComponent implements OnInit
 
                     for(let datasetId of subDatasetIDs)
                     {
-                        csvs.push(new CSVExportItem(
-                            "Expression Values for dataset "+datasetId,
-                            generateExportCSVForExpression([this.layerInfo.layer.id], PredefinedROIID.AllPoints, datasetId, this._widgetDataService)
-                        ));
-                    }  
+                        csvs$.push(
+                            generateExportCSVForExpression([this.layerInfo.layer.id], PredefinedROIID.AllPoints, datasetId, this._widgetDataService).pipe(
+                                map(
+                                    (csvData)=>
+                                    {
+                                        return new CSVExportItem("Expression Values for dataset "+datasetId, csvData);
+                                    }
+                                )
+                            )
+                        );
+                    }
                 }
 
-                dialogRef.componentInstance.onDownload(canvases, csvs);
+                let csvsFinished$ = combineLatest(csvs$);
+                return csvsFinished$.subscribe(
+                    (csvItems: CSVExportItem[])=>
+                    {
+                        dialogRef.componentInstance.onDownload(canvases, csvItems);
+                    }
+                );
             });
 
         return dialogRef.afterClosed();

@@ -33,9 +33,6 @@ import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { Experiment } from "src/app/protolibs/experiment_pb";
 
 
-//import { DataExpression } from 'src/app/services/data-expression.service';
-
-
 export class LabelElement
 {
     // IDs for specific menus that we made, so we know what the user is clicking on

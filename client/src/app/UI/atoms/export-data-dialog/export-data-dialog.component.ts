@@ -31,23 +31,24 @@ import { Component, ElementRef, Inject, OnInit, ViewChild } from "@angular/core"
 import { MatDialog, MatDialogConfig, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { saveAs } from "file-saver";
 import * as JSZip from "jszip";
-import { Subscription } from "rxjs";
+import { Observable, Subscription, combineLatest, of } from "rxjs";
+import { map } from "rxjs/operators";
 import { PMCDataValues } from "src/app/expression-language/data-values";
-import { getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
 import { QuantificationLayer, QuantificationSummary } from "src/app/models/Quantifications";
 import { RGBUImage } from "src/app/models/RGBUImage";
-import { PredefinedROIID, ROISavedItem } from "src/app/models/roi";
+import { ROISavedItem } from "src/app/models/roi";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { DiffractionPeak, DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { QuantificationService } from "src/app/services/quantification.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { ROIService } from "src/app/services/roi.service";
-import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { DataSourceParams, RegionData, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { ExportDataChoice, ExportDataConfig } from "src/app/UI/atoms/export-data-dialog/export-models";
 import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expression-picker/expression-picker.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
-import { httpErrorToString } from "src/app/utils/utils";
+import { httpErrorToString, makeValidFileName } from "src/app/utils/utils";
 import { generateExportCSVForExpression } from "src/app/services/export-data.service";
 
 
@@ -243,12 +244,30 @@ export class ExportDataDialogComponent implements OnInit
         this._closed = true;
     }
 
-    _generateDiffractionFeaturesCSV(): string
+    private generateDiffractionFeaturesCSV(): string
     {
         let headers = ["id", "pmc", "effectSize", "channel", "keV", "kevStart", "kevEnd"];
         return this._allPeaks.reduce((prev, curr) => 
         {
-            let currentLine = headers.map(field => curr[field]).join(",");
+            // Doesn't put " around first item...
+            //let currentLine = headers.map(field => curr[field]).join(",");
+
+            let currentLine = "\"";
+            for(let c = 0; c < headers.length; c++)
+            {
+                if(c > 0)
+                {
+                    currentLine += ",";
+                }
+
+                currentLine += curr[headers[c]];
+
+                // First one is a string
+                if(c == 0)
+                {
+                    currentLine += "\"";
+                }
+            }
             return `${prev}\n${currentLine}`;
         }, headers.join(","));
     }
@@ -314,66 +333,74 @@ export class ExportDataDialogComponent implements OnInit
         return count;
     }
 
-    generateExportCSVForRGBMix(expressionID: string): string
+    private generateExportCSVForRGBMix(rgbMixExpressionID: string): Observable<string>
     {
-        let rgbMix = this._rgbMixService.getRGBMixes().get(expressionID);
+        let rgbMix = this._rgbMixService.getRGBMixes().get(rgbMixExpressionID);
         if(!rgbMix)
         {
-            throw new Error("RGB mix info not found for: "+expressionID);
+            throw new Error("RGB mix info not found for: "+rgbMixExpressionID);
         }
+
+        let datasetId = this._datasetService.datasetIDLoaded;
         
-        let csv = "PMC";
-
         let expressionIDs = [rgbMix.red.expressionID, rgbMix.green.expressionID, rgbMix.blue.expressionID];
-        expressionIDs.forEach((expressionID)=>
-        {
-            csv += `,${this._exprService.getExpressionShortDisplayName(expressionID, 15).name}`;
-        });
+        let query = [
+            new DataSourceParams(rgbMix.red.expressionID, null, datasetId),
+            new DataSourceParams(rgbMix.green.expressionID, null, datasetId),
+            new DataSourceParams(rgbMix.blue.expressionID, null, datasetId)
+        ];
 
-        let perElemAndPMCData: PMCDataValues[] = PMCDataValues.filterToCommonPMCsOnly(expressionIDs.map((expressionID, i)=>
-        {
-            let expression = this._exprService.getExpression(expressionID);
-            if(!expression)
-            {
-                throw new Error(`Failed to find expression: ${expressionID} for channel: ${RGBUImage.channels[i]}`);
-            }
-            
-            return getQuantifiedDataWithExpression(expression.expression, this._widgetDataService.quantificationLoaded, this._datasetService.datasetLoaded, this._datasetService.datasetLoaded, this._datasetService.datasetLoaded, this._diffractionSource, this._datasetService.datasetLoaded);
-        }));
+        // Form CSV header
+        let csv = "\"PMC\"";
 
-        // If we didn't get 3 channels, stop here
-        if(perElemAndPMCData.length !== 3)
+        for(let expressionID of expressionIDs)
         {
-            throw new Error("Failed to generate RGB columns for RGB expression: "+expressionID);
+            csv += `,"${this._exprService.getExpressionShortDisplayName(expressionID, 15).name}"`;
         }
 
-        perElemAndPMCData[0].values.forEach((pmcData, i)=>
-        {
-            if(pmcData.pmc !== perElemAndPMCData[1].values[i].pmc || pmcData.pmc !== perElemAndPMCData[2].values[i].pmc)
+        return this._widgetDataService.getData(query, false).pipe(
+            map((queryResults: RegionDataResults)=>
             {
-                throw new Error(`Failed to generate RGB CSV for rgb mix ID: ${expressionID}, mismatched PMC returned for item: ${i}`);
-            }
+                if(queryResults.error)
+                {
+                    throw new Error(`Failed to query RGB Mix: ${rgbMixExpressionID}. Error was: ${queryResults.error}`);
+                }
 
-            csv += `\n${pmcData.pmc},${pmcData.value},${perElemAndPMCData[1].values[i].value},${perElemAndPMCData[2].values[i].value}`;
-        });
+                let allResults: PMCDataValues[] = [];
+                let c = 0;
+                for(let queryResult of queryResults.queryResults)
+                {
+                    if(queryResult.error)
+                    {
+                        let expressionID = expressionIDs[c];
+                        throw new Error(`Failed to query for: expression: ${expressionID} for channel: ${RGBUImage.channels[c]}. Error wass: ${queryResult.error}`);
+                    }
 
-        return csv;
-    }
+                    allResults.push(queryResult.values);
+                    c++;
+                }
 
-    exportExpressionValues(expressionID: string | string[], roiID: string, datasetId: string): {rgbmix: string[][], expressions: string}
-    {
-        let expressionIDs = expressionID instanceof Array ? expressionID : [expressionID];
+                let perElemAndPMCData: PMCDataValues[] = PMCDataValues.filterToCommonPMCsOnly(allResults);
 
-        let rgbMixExpressionIDs = expressionIDs.filter((expressionID) => RGBMixConfigService.isRGBMixID(expressionID));
-        let nonRGBMixExpressionIDs = expressionIDs.filter((expressionID) => !RGBMixConfigService.isRGBMixID(expressionID));
+                // If we didn't get 3 channels, stop here
+                if(perElemAndPMCData.length !== 3)
+                {
+                    throw new Error("Failed to generate RGB columns for RGB expression: "+rgbMixExpressionID);
+                }
 
-        let rgbMixCSVs = rgbMixExpressionIDs.map((expressionID) => [this._rgbMixService.getRGBMixes().get(expressionID)?.name, this.generateExportCSVForRGBMix(expressionID)]);
-        let nonRGBMixCSVs = generateExportCSVForExpression(nonRGBMixExpressionIDs, roiID, datasetId, this._widgetDataService);
+                perElemAndPMCData[0].values.forEach((pmcData, i)=>
+                {
+                    if(pmcData.pmc !== perElemAndPMCData[1].values[i].pmc || pmcData.pmc !== perElemAndPMCData[2].values[i].pmc)
+                    {
+                        throw new Error(`Failed to generate RGB CSV for rgb mix ID: ${rgbMixExpressionID}, mismatched PMC returned for item: ${i}`);
+                    }
 
-        return {
-            rgbmix: rgbMixCSVs,
-            expressions: nonRGBMixCSVs
-        };
+                    csv += `\n${pmcData.pmc},${pmcData.value},${perElemAndPMCData[1].values[i].value},${perElemAndPMCData[2].values[i].value}`;
+                });
+
+                return csv;
+            })
+        );
     }
 
     onExport(): void
@@ -444,88 +471,159 @@ export class ExportDataDialogComponent implements OnInit
 
         locallyComputedIds.forEach((id) => 
         {
+            let datasetIds = this._datasetService.datasetLoaded.getSubDatasetIds();
+            if(datasetIds.length <= 0)
+            {
+                datasetIds.push("");
+            }
+
+            let csvNames: string[] = [];
+            let isRGBMix: boolean[] = [];
+            let csvData$: Observable<string>[] = [];
+
             let zip = new JSZip();
             if(id === "ui-diffraction-peak") 
             {
-                let contents = this._generateDiffractionFeaturesCSV();
-                zip.folder("csvs").file("anomaly-features.csv", contents);
+                let contents = this.generateDiffractionFeaturesCSV();
+
+                csvNames.push("anomaly-features.csv");
+                isRGBMix.push(false);
+                csvData$.push(of(contents));
             }
             else if(id === "ui-roi-expressions") 
             {
+                let exprIds = [];
+                let perExprNames = [];
+
                 if(!this.singleCSVPerRegion)
                 {
-                    this._selectedExpressionIds.forEach((id) =>
+                    // Loop through and generate once for each ID
+                    let c = 0;
+                    for(let exprId of this._selectedExpressionIds)
                     {
-                        this._selectedROIs.forEach((roiID) => 
-                        {
-                            let datasetIds = this._datasetService.datasetLoaded.getSubDatasetIds();
-                            if(datasetIds.length <= 0)
-                            {
-                                datasetIds.push("");
-                            }
-
-                            for(let datasetId of datasetIds)
-                            {
-                                let datasetSuffix = datasetId.length > 0 ? ` - ${datasetId}` : "";
-                                let expression = this._exprService.getExpression(id);
-                                let expressionName = expression ? expression.name.replace(/\//g, "-") : id;
-                                let roi = this._rois.get(roiID);
-                                let roiName = roi ? roi.name.replace(/\//g, "-") : roiID;
-                                let exportCSVs = this.exportExpressionValues(id, roiID, datasetId);
-                                if(exportCSVs.rgbmix.length > 0)
-                                {
-                                    let rgbMix = exportCSVs.rgbmix[0];
-                                    zip.folder("csvs").folder("rgbmixes").file(`${roiName} - ${expressionName} - ${rgbMix[0]}${datasetSuffix}.csv`, rgbMix[1]);
-                                }
-                                else
-                                {
-                                    let contents =  exportCSVs.expressions;
-                                    zip.folder("csvs").file(`${roiName} - ${expressionName}${datasetSuffix}.csv`, contents);
-                                }
-                            }
-                        });
-                    });
+                        exprIds.push([exprId]);
+                        perExprNames.push(expressionNames[c]);
+                        c++;
+                    }
                 }
                 else
                 {
-                    this._selectedROIs.forEach((roiID) =>
-                    {
-                        let datasetIds = this._datasetService.datasetLoaded.getSubDatasetIds();
-                        if(datasetIds.length <= 0)
-                        {
-                            datasetIds.push("");
-                        }
+                    // We will loop once and export for all IDs
+                    exprIds = [this._selectedExpressionIds];
+                }
 
-                        datasetIds.forEach((datasetId) =>
+                let c = 0;
+                for(let idList of exprIds)
+                {
+                    this._selectedROIs.forEach((roiID) => 
+                    {
+                        for(let datasetId of datasetIds)
                         {
                             let roi = this._rois.get(roiID);
-                            let roiName = roi ? roi.name.replace(/\//g, "-") : roiID;
-                            let exportCSVs = this.exportExpressionValues(this._selectedExpressionIds, roiID, datasetId);
-                            let expressionContents = exportCSVs.expressions;
+                            let roiName = roi ? roi.name : roiID;
                             let datasetSuffix = datasetId.length > 0 ? ` - ${datasetId}` : "";
-                            zip.folder("csvs").file(`${roiName}${datasetSuffix}.csv`, expressionContents);
-                            exportCSVs.rgbmix.forEach((rgbMix) =>
-                            {
-                                zip.folder("csvs").folder("rgbmixes").file(`${roiName} - ${rgbMix[0]}${datasetSuffix}.csv`, rgbMix[1]);    
-                            });
-                        });
+                            let expressionName = perExprNames[c];
 
+                            // Separate out the 2 kinds of expression IDs
+                            // First, deal with RGB mixes
+                            let rgbMixExpressionIDs = idList.filter((expressionID) => RGBMixConfigService.isRGBMixID(expressionID));
+
+                            let csvName = "";
+                            for(let rgbMixId of rgbMixExpressionIDs)
+                            {
+                                let rgbMixName = this._rgbMixService.getRGBMixes().get(rgbMixId)?.name;
+
+                                if(!this.singleCSVPerRegion)
+                                {
+                                    csvName = `${roiName} - ${expressionName} - ${rgbMixName}${datasetSuffix}.csv`;
+                                }
+                                else
+                                {
+                                    csvName = `${roiName} - ${rgbMixName}${datasetSuffix}.csv`;
+                                }
+
+                                csvNames.push(makeValidFileName(csvName));
+                                isRGBMix.push(true);
+                                csvData$.push(this.generateExportCSVForRGBMix(rgbMixId));
+                            }
+
+                            // Now expressions
+                            let nonRGBMixExpressionIDs = idList.filter((expressionID) => !RGBMixConfigService.isRGBMixID(expressionID));
+
+                            if(nonRGBMixExpressionIDs.length > 0)
+                            {
+                                if(!this.singleCSVPerRegion)
+                                {
+                                    csvName = `${roiName} - ${expressionName}${datasetSuffix}.csv`;
+                                }
+                                else
+                                {
+                                    csvName = `${roiName}${datasetSuffix}.csv`;
+                                }
+
+                                csvNames.push(makeValidFileName(csvName));
+                                isRGBMix.push(false);
+                                csvData$.push(generateExportCSVForExpression(nonRGBMixExpressionIDs, roiID, datasetId, this._widgetDataService));
+                            }
+                        }
                     });
+
+                    c++;
                 }
             }
 
-            zip.generateAsync({ type:"blob" }).then((content) =>
-            {
-                let fileName = this.fileName ? this.fileName : this.fileNamePlaceholder;
-                saveAs(content, `${fileName}-ui-data.zip`);
-                this.state = "download";
-                this.prompt = "";
-            }).catch((err) =>
-            {
-                console.error(err);
-                this.prompt = `Failed to generate zip file: "${err}"`;
-                this.state = "error";
-            });
+            combineLatest(csvData$).subscribe(
+                (csvDataStrings: string[])=>
+                {
+                    for(let c = 0; c < csvDataStrings.length; c++)
+                    {
+                        let csvName = csvNames[c];
+                        let isRGB = isRGBMix[c];
+                        let csvDataString = csvDataStrings[c];
+
+                        if(!this.singleCSVPerRegion)
+                        {
+                            if(isRGB)
+                            {
+                                zip.folder("csvs").folder("rgbmixes").file(csvName, csvDataString);
+                            }
+                            else
+                            {
+                                zip.folder("csvs").file(csvName, csvDataString);
+                            }
+                        }
+                        else
+                        {
+                            if(isRGB)
+                            {
+                                zip.folder("csvs").folder("rgbmixes").file(csvName, csvDataString);
+                            }
+                            else
+                            {
+                                zip.folder("csvs").file(csvName, csvDataString);
+                            }
+                        }
+                    }
+
+                    zip.generateAsync({ type:"blob" }).then((content) =>
+                    {
+                        let fileName = this.fileName ? this.fileName : this.fileNamePlaceholder;
+                        saveAs(content, `${fileName}-ui-data.zip`);
+                        this.state = "download";
+                        this.prompt = "";
+                    }).catch((err) =>
+                    {
+                        console.error(err);
+                        this.prompt = `Failed to generate zip file: "${err}"`;
+                        this.state = "error";
+                    });
+                },
+                (err)=>
+                {
+                    console.error(err);
+                    alert(err);
+                }
+            );
         });
 
         if(selectedIds.length > 0) 
@@ -535,6 +633,7 @@ export class ExportDataDialogComponent implements OnInit
                 // Edge case: user wants to export ROIs, but only the "AllPoints" and "SelectedPoints" ROIs are selected, which are not actually ROIs
                 return;
             }
+
             this.data.exportGenerator.generateExport(this._datasetService.datasetIDLoaded, this._selectedQuantId, selectedIds, this._selectedROIs, this._selectedExpressionIds, expressionNames, fileName).subscribe(
                 (data: Blob)=>
                 {
@@ -637,7 +736,7 @@ export class ExportDataDialogComponent implements OnInit
     {
         const dialogConfig = new MatDialogConfig();
 
-        dialogConfig.data = new ExpressionPickerData("Expression", DataExpressionService.DataExpressionTypeAll, this._selectedExpressionIds, false, true, true);
+        dialogConfig.data = new ExpressionPickerData("Expression", DataExpressionId.DataExpressionTypeAll, this._selectedExpressionIds, false, true, true);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

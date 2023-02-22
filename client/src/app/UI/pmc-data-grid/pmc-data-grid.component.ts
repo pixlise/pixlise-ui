@@ -226,7 +226,7 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         ];
 
         const dialogConfig = new MatDialogConfig();
-        dialogConfig.data = new PlotExporterDialogData(`${this.evaluatedExpression.expressionName}`, `Export ${this.evaluatedExpression.expressionName} Data`, exportOptions);
+        dialogConfig.data = new PlotExporterDialogData(`${this.evaluatedExpression.expression.name}`, `Export ${this.evaluatedExpression.expression.name} Data`, exportOptions);
 
         const dialogRef = this._dialog.open(PlotExporterDialogComponent, dialogConfig);
         dialogRef.componentInstance.onConfirmOptions.subscribe(
@@ -243,7 +243,7 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
                         return `"${point.pmc}",${point.isUndefined ? "Undefined" : roundedValue}`;
                     });
                     let csvData = `PMC,Value\n${data.join("\n")}`;
-                    csvs.push(new CSVExportItem(`${this.evaluatedExpression.expressionName} Values`, csvData));
+                    csvs.push(new CSVExportItem(`${this.evaluatedExpression.expression.name} Values`, csvData));
                 }
 
                 dialogRef.componentInstance.onDownload([], csvs);

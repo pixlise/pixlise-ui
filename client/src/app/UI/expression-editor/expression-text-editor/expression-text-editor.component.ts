@@ -30,9 +30,9 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
 import { CodemirrorComponent } from "@ctrl/ngx-codemirror";
 import { Subscription, timer } from "rxjs";
-import { DataQuerier, ExpressionParts } from "src/app/expression-language/expression-language";
+import { ExpressionParts, PixliseDataQuerier } from "src/app/expression-language/interpret-pixlise";
 import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications";
-import { DataExpression } from "src/app/services/data-expression.service";
+import { DataExpression } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElement, Suggestion } from "../expression-help";
@@ -206,7 +206,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
         try
         {
-            this._exprParts = DataQuerier.breakExpressionIntoParts(this._expr.expression);
+            this._exprParts = PixliseDataQuerier.breakExpressionIntoParts(this._expr.expression);
         }
         catch (error)
         {
