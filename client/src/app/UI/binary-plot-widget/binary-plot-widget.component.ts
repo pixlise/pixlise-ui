@@ -368,12 +368,12 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         if(queryData.queryResults.length > 0)
         {
             exprIdX = queryData.queryResults[0].query.exprId;
-            xLabel = queryData.queryResults[0].expression.getExpressionShortDisplayName(labelMaxChars).shortName;
+            xLabel = queryData.queryResults[0].expression?.getExpressionShortDisplayName(labelMaxChars).shortName;
         }
         if(queryData.queryResults.length > 1)
         {
             exprIdY = queryData.queryResults[1].query.exprId;
-            yLabel = queryData.queryResults[1].expression.getExpressionShortDisplayName(labelMaxChars).shortName;
+            yLabel = queryData.queryResults[1].expression?.getExpressionShortDisplayName(labelMaxChars).shortName;
         }
 
         if(this.showMmol)

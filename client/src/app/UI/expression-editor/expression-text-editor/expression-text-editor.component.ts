@@ -40,6 +40,8 @@ import { SentryHelper } from "src/app/utils/utils";
 import { Range } from "codemirror";
 
 require("codemirror/addon/comment/comment.js");
+require("codemirror/mode/lua/lua");
+
 
 export class TextSelection
 {
@@ -83,13 +85,15 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     dropdownTop: string = "";
     dropdownLeft: string = "";
 
+    private _initAsLua: boolean = false;
+
+    @Input() isLua: boolean = false;
     @Input() expression: DataExpression = null;
     @Input() allowEdit: boolean = true;
     @Input() applyNow: boolean = false;
     @Input() isImmediatelyAppliable: boolean = true;
 
     @Input() showHelp: boolean = true;
-    
     @Input() range: Range = null;
 
     @Output() onChange = new EventEmitter<DataExpression>();
@@ -124,56 +128,58 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
             let cmObj = this._codeMirror.codeMirror;
 
-            cmObj.setOption("mode", "pixlise");
+            this._initAsLua = this.isLua;
+
+            cmObj.setOption("mode", this.isLua ? "lua" : "pixlise");
             cmObj.setOption("lineNumbers", true);
             cmObj.setOption("theme", "pixlise");
             cmObj.setOption("readOnly", !this.allowEdit);
 
-            const toggleComment = (cm) =>
-            {
-                cm.toggleComment({
-                    indent: true,
-                    lineComment: "//"
-                });
-            };
+            this.setUpKeyBindings(cmObj);
 
-            const resetMarks = (cm) =>
-            {
-                this.range = null;
-                let cursor = cm.getCursor();
-                cm.setSelection({line: 0, ch: 0}, {line: 0, ch: 0});
-                cm.setSelection(cursor, cursor);
-            };
+            // const toggleComment = (cm) =>
+            // {
+            //     cm.toggleComment({
+            //         indent: true,
+            //         lineComment: this.isLua ? "--" : "//"
+            //     });
+            // };
 
-            // navigator.appVersion.indexOf('Win')
+            // const resetMarks = (cm) =>
+            // {
+            //     this.range = null;
+            //     let cursor = cm.getCursor();
+            //     cm.setSelection({line: 0, ch: 0}, {line: 0, ch: 0});
+            //     cm.setSelection(cursor, cursor);
+            // };
 
-            cmObj.setOption("extraKeys", {
-                "Cmd-/": toggleComment,
-                "Ctrl-/": toggleComment,
-                "Cmd-Enter": (cm) =>
-                {
-                    resetMarks(cm);
-                    this.runExpression.emit();
-                },
-                "Ctrl-Enter": (cm) =>
-                {
-                    resetMarks(cm);
-                    this.runExpression.emit();
-                },
-                "Cmd-Alt-Enter": (cm) =>
-                {
-                    resetMarks(cm);
-                    this.runHighlightedExpression.emit();
+            // cmObj.setOption("extraKeys", {
+            //     "Cmd-/": toggleComment,
+            //     "Ctrl-/": toggleComment,
+            //     "Cmd-Enter": (cm) =>
+            //     {
+            //         resetMarks(cm);
+            //         this.runExpression.emit();
+            //     },
+            //     "Ctrl-Enter": (cm) =>
+            //     {
+            //         resetMarks(cm);
+            //         this.runExpression.emit();
+            //     },
+            //     "Cmd-Alt-Enter": (cm) =>
+            //     {
+            //         resetMarks(cm);
+            //         this.runHighlightedExpression.emit();
 
-                },
-                "Ctrl-Alt-Enter": (cm) =>
-                {
-                    resetMarks(cm);
-                    this.runHighlightedExpression.emit();
-                },
-                "Cmd-S": () => this.saveExpression.emit(),
-                "Ctrl-S": () => this.saveExpression.emit(),
-            });
+            //     },
+            //     "Ctrl-Alt-Enter": (cm) =>
+            //     {
+            //         resetMarks(cm);
+            //         this.runHighlightedExpression.emit();
+            //     },
+            //     "Cmd-S": () => this.saveExpression.emit(),
+            //     "Ctrl-S": () => this.saveExpression.emit(),
+            // });
 
             // Not sure what codemirror is doing, and why it does it but some ms after creation it has been resetting... we now reset it 2x, once for
             // reducing flicker for user, 2nd time to ensure anything that changed is overwritten with our settings again
@@ -194,6 +200,53 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     ngOnDestroy()
     {
         this._subs.unsubscribe();
+    }
+
+    private setUpKeyBindings(cmObj: any): void
+    {
+        const toggleComment = (cm) =>
+        {
+            cm.toggleComment({
+                indent: true,
+                lineComment: this.isLua ? "--" : "//"
+            });
+        };
+
+        const resetMarks = (cm) =>
+        {
+            this.range = null;
+            let cursor = cm.getCursor();
+            cm.setSelection({line: 0, ch: 0}, {line: 0, ch: 0});
+            cm.setSelection(cursor, cursor);
+        };
+
+        cmObj.setOption("extraKeys", {
+            "Cmd-/": toggleComment,
+            "Ctrl-/": toggleComment,
+            "Cmd-Enter": (cm) =>
+            {
+                resetMarks(cm);
+                this.runExpression.emit();
+            },
+            "Ctrl-Enter": (cm) =>
+            {
+                resetMarks(cm);
+                this.runExpression.emit();
+            },
+            "Cmd-Alt-Enter": (cm) =>
+            {
+                resetMarks(cm);
+                this.runHighlightedExpression.emit();
+
+            },
+            "Ctrl-Alt-Enter": (cm) =>
+            {
+                resetMarks(cm);
+                this.runHighlightedExpression.emit();
+            },
+            "Cmd-S": () => this.saveExpression.emit(),
+            "Ctrl-S": () => this.saveExpression.emit(),
+        });
     }
 
     private findVariables(): void
@@ -227,12 +280,38 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     get editExpression(): string
     {
+        // If lua mode switched after init, then we need to strip/add lua and refresh code mirror
+        if(this._initAsLua !== this.isLua && this._codeMirror?.codeMirrorGlobal)
+        {
+            if(this._initAsLua && !this.isLua)
+            {
+                this._expr.expression = this.stripLua(this._expr.expression);
+            }
+            else if(!this._initAsLua && this.isLua)
+            {
+                this._expr.expression = this.addLua(this._expr.expression);
+            }
+            this._initAsLua = this.isLua;
+            this._codeMirror.codeMirrorGlobal.then((cm: any)=>
+            {
+                this.setupCodeMirror(cm.default);
+                let cmObj = this._codeMirror.codeMirror;
+                cmObj.setOption("mode", this.isLua ? "lua" : "pixlise");
+                this.setUpKeyBindings(cmObj);
+                cmObj.refresh();
+            });
+        }
+
+        if(this.isLua)
+        {
+            return this.stripLua(this._expr.expression);
+        }
         return this._expr.expression;
     }
 
     set editExpression(val: string)
     {
-        this._expr.expression = val;
+        this._expr.expression = this.isLua ? this.addLua(val) : this.stripLua(val);
         this.onTextChange.emit(this._expr.expression || "");
     }
 
@@ -249,6 +328,26 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     get isEditable(): boolean
     {
         return this.allowEdit;
+    }
+
+    stripLua(text: string): string
+    {
+        if(text.startsWith("LUA\n"))
+        {
+            return text.substring(4);
+        }
+
+        return text;
+    }
+
+    addLua(text: string): string
+    {
+        if(!text.startsWith("LUA\n"))
+        {
+            return "LUA\n" + text;
+        }
+
+        return text;
     }
 
     onKeyDown(event: KeyboardEvent): void
@@ -394,50 +493,55 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         let help: ExpressionHelp = new ExpressionHelp();
         let funcs = help.listFunctions();
 
-        cm.defineSimpleMode("pixlise", {
-            // The start state contains the rules that are intially used
-            start: [
-            // The regex matches the token, the token property contains the type
-                {regex: /"(?:[^\\]|\\.)*?(?:"|$)/, token: "string"},
-                // You can match multiple tokens at once. Note that the captured
-                // groups must span the whole string in this case
-                //{regex: /(function)(\s+)([a-z$][\w$]*)/, token: ["keyword", null, "variable-2"]},
-                // Rules are matched in the order in which they appear, so there is
-                // no ambiguity between this one and the one above
-                {regex: new RegExp("(?:"+funcs.join("|")+")\\b"), token: "function"},
-                //{regex: /true|false|null|undefined/, token: "atom"},
-                //{regex: /0x[a-f\d]+|[-+]?(?:\.\d+|\d+\.?\d*)(?:e[-+]?\d+)?/i, token: "number"},
-                {regex: /0x[a-f\d]+|(?:\.\d+|\d+\.?\d*)(?:e[-+]?\d+)?/i, token: "number"},
-                {regex: /\/\/.*/, token: "comment"},
-                //{regex: /\/(?:[^\\]|\\.)*?\//, token: "variable-3"},
-                // A next property will cause the mode to move to a different state
-                {regex: /\/\*/, token: "comment", next: "comment"},
-                //{regex: /[-+\/*=<>!]+/, token: "operator"},
-                {regex: /[-+\/*]+/, token: "operator"},
-                // indent and dedent properties guide autoindentation
-                //{regex: /[\{\[\(]/, indent: true},
-                //{regex: /[\}\]\)]/, dedent: true},
-                {regex: /[A-Za-z$][\w$]*/, token: "variable"},
-            // You can embed other modes with the mode property. This rule
-            // causes all code between << and >> to be highlighted with the XML
-            // mode.
-            //{regex: /<</, token: "meta", mode: {spec: "xml", end: />>/}}
-            ],
+        if(!this.isLua)
+        {
+            cm.defineSimpleMode("pixlise", {
+                // The start state contains the rules that are intially used
+                start: [
+                // The regex matches the token, the token property contains the type
+                    {regex: /"(?:[^\\]|\\.)*?(?:"|$)/, token: "string"},
+                    // You can match multiple tokens at once. Note that the captured
+                    // groups must span the whole string in this case
+                    //{regex: /(function)(\s+)([a-z$][\w$]*)/, token: ["keyword", null, "variable-2"]},
+                    // Rules are matched in the order in which they appear, so there is
+                    // no ambiguity between this one and the one above
+                    {regex: new RegExp("(?:"+funcs.join("|")+")\\b"), token: "function"},
+                    //{regex: /true|false|null|undefined/, token: "atom"},
+                    //{regex: /0x[a-f\d]+|[-+]?(?:\.\d+|\d+\.?\d*)(?:e[-+]?\d+)?/i, token: "number"},
+                    {regex: /0x[a-f\d]+|(?:\.\d+|\d+\.?\d*)(?:e[-+]?\d+)?/i, token: "number"},
+                    {regex: /\/\/.*/, token: "comment"},
+                    //{regex: /\/(?:[^\\]|\\.)*?\//, token: "variable-3"},
+                    // A next property will cause the mode to move to a different state
+                    {regex: /\/\*/, token: "comment", next: "comment"},
+                    //{regex: /[-+\/*=<>!]+/, token: "operator"},
+                    {regex: /[-+\/*]+/, token: "operator"},
+                    // indent and dedent properties guide autoindentation
+                    //{regex: /[\{\[\(]/, indent: true},
+                    //{regex: /[\}\]\)]/, dedent: true},
+                    {regex: /[A-Za-z$][\w$]*/, token: "variable"},
+                // You can embed other modes with the mode property. This rule
+                // causes all code between << and >> to be highlighted with the XML
+                // mode.
+                //{regex: /<</, token: "meta", mode: {spec: "xml", end: />>/}}
+                ],
 
-            // The multi-line comment state.
-            comment: [
-                {regex: /.*?\*\//, token: "comment", next: "start"},
-                {regex: /.* /, token: "comment"}
-            ],
-            // // The meta property contains global information about the mode. It
-            // // can contain properties like lineComment, which are supported by
-            // // all modes, and also directives like dontIndentStates, which are
-            // // specific to simple modes.
-            meta: {
-                dontIndentStates: ["comment"],
-                lineComment: "//"
-            }
-        });
+                // The multi-line comment state.
+                comment: [
+                    {regex: /.*?\*\//, token: "comment", next: "start"},
+                    {regex: /.* /, token: "comment"}
+                ],
+                // // The meta property contains global information about the mode. It
+                // // can contain properties like lineComment, which are supported by
+                // // all modes, and also directives like dontIndentStates, which are
+                // // specific to simple modes.
+                meta: {
+                    dontIndentStates: ["comment"],
+                    lineComment: "//"
+                }
+            });
+        }
+        // Use LUA code mirror mode
+
     }
 
     private setupCodeMirrorEventHandlers(cm: CodeMirror.EditorFromTextArea): void

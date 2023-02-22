@@ -96,6 +96,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 (saveExpression)="onSave()"
                 [range]="isSubsetExpression ? executedTextSelection.range : null"
                 [showHelp]="useAutocomplete && !isSharedByOtherUser"
+                [isLua]="isLua"
             >
             </expression-text-editor>
         </div>
@@ -115,6 +116,10 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div class="editor-footer">
         <div class="text-container">
+            <mat-select [(ngModel)]="isLua">
+                <mat-option [value]="true">Lua</mat-option>
+                <mat-option [value]="false">Pixlise Expression Language</mat-option>
+            </mat-select>
             <input
                 [disabled]="isSharedByOtherUser"
                 type="text"

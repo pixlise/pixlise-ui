@@ -70,6 +70,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     public useAutocomplete = false;
     public isCodeChanged = true;
     public isExpressionSaved = true;
+    public isLua = false;
 
     public activeTextSelection: TextSelection = null;
     public executedTextSelection: TextSelection = null;
@@ -113,10 +114,14 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             }
 
             let expression = this._expressionService.getExpression(this._expressionID);
+
+            let expressionText = expression.expression;
+            this.isLua = this.checkLua(expressionText);
+
             this.expression = new DataExpression(
                 expression.id,
                 expression.name,
-                expression.expression,
+                expressionText,
                 expression.type,
                 expression.comments,
                 expression.shared,
@@ -128,6 +133,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             this._fetchedExpression = true;
             this.runExpression();
         });
+    }
+
+    checkLua(text: string): boolean
+    {
+        return text.startsWith("LUA\n");
     }
 
     ngOnDestroy()
@@ -212,16 +222,17 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     {
         if(this._expressionID && this.expression)
         {
-            // this.evaluatedExpression = this._widgetDataService.runExpression(new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), this.expression, false);
-            this._widgetDataService.runAsyncExpression(new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), this.expression, false).toPromise().then((result)=>
+            let expressionText = this.isLua ? this.addLuaHighlight(this.expression.expression) : this.expression.expression;
+            let expression = new DataExpression(this._expressionID, this.expression.name, expressionText, this.expression.type, this.expression.comments, this.expression.shared, this.expression.creator, this.expression.createUnixTimeSec, this.expression.modUnixTimeSec, this.expression.tags);
+            this._widgetDataService.runAsyncExpression(new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), expression, false).toPromise().then((result)=>
             {
                 this.evaluatedExpression = result;
                 if(this.evaluatedExpression && this.evaluatedExpression?.values?.values.length > 0)
                 {
                     this.isCodeChanged = false;
                     let previewID = `unsaved-${this._expressionID}`;
-                    this.displayExpressionTitle = `Unsaved ${this.expression.name}`;
-                    this._expressionService.cache(previewID, this.expression, this.displayExpressionTitle);
+                    this.displayExpressionTitle = `Unsaved ${expression.name}`;
+                    this._expressionService.cache(previewID, expression, this.displayExpressionTitle);
                 }
             });
         }
@@ -232,6 +243,27 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             this.executedTextSelection.clearMarkedText();
         }
         this.executedTextSelection = null;
+    }
+
+    addLuaHighlight(text: string): string
+    {
+        let changedText = text;
+        if(!changedText.includes("return"))
+        {
+            let textLines = changedText.trim().split("\n");
+            if(textLines.length > 0)
+            {
+                textLines[textLines.length - 1] = "return " + textLines[textLines.length - 1];
+            }
+            changedText = textLines.join("\n");
+        }
+
+        if(!changedText.startsWith("LUA\n"))
+        {
+            return "LUA\n" + changedText;
+        }
+
+        return changedText;
     }
 
     runHighlightedExpression(): void
@@ -246,11 +278,10 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             highlightedExpression.expression = this.expression.expression.split("\n").slice(0, this.endLineHighlighted + 1).join("\n");
         }
 
-        // this.evaluatedExpression = this._widgetDataService.runExpression(
-        //     new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), 
-        //     highlightedExpression,
-        //     false
-        // );
+        if(this.isLua)
+        {
+            highlightedExpression.expression = this.addLuaHighlight(highlightedExpression.expression);
+        }
 
         this._widgetDataService.runAsyncExpression(
             new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID),
