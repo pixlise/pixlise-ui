@@ -26,6 +26,21 @@
             "assets": [
               "src/favicon.ico",
               "src/assets",
+              {
+                "glob": "glue.wasm",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "Map.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "FuncRunner.lua",
+                "input": "src/app/expression-language/lua/test",
+                "output": "assets/lua"
+              },
               "src/local-development-pixlise-config.json",
               "src/agreement-version.json",
               "src/version.json"
@@ -69,58 +84,6 @@
                 }
               ]
             },
-            "staging": {
-              "fileReplacements": [
-                {
-                  "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment.staging.ts"
-                }
-              ],
-              "optimization": true,
-              "outputHashing": "all",
-              "sourceMap": true,
-              "namedChunks": false,
-              "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "2mb",
-                  "maximumError": "5mb"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "6kb"
-                }
-              ]
-            },
-            "devenv": {
-              "fileReplacements": [
-                {
-                  "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment.devenv.ts"
-                }
-              ],
-              "optimization": true,
-              "outputHashing": "all",
-              "sourceMap": true,
-              "namedChunks": false,
-              "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "2mb",
-                  "maximumError": "5mb"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "6kb"
-                }
-              ]
-            },
             "development": {
               "buildOptimizer": false,
               "optimization": false,
@@ -138,12 +101,6 @@
           },
           "configurations": {
             "production": {
-              "browserTarget": "pixlise:build:production"
-            },
-            "staging": {
-              "browserTarget": "pixlise:build:production"
-            },
-            "devenv": {
               "browserTarget": "pixlise:build:production"
             },
             "development": {

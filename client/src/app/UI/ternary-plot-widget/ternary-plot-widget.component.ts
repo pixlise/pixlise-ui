@@ -34,11 +34,12 @@ import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-va
 import { MinMax } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
 import { orderVisibleROIs, PredefinedROIID } from "src/app/models/roi";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { ternaryState, ViewStateService } from "src/app/services/view-state.service";
-import { DataSourceParams, DataUnit, WidgetDataUpdateReason, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { DataSourceParams, DataUnit, RegionDataResults, WidgetDataErrorType, WidgetDataUpdateReason, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
 import { CanvasDrawer, CanvasDrawParameters, CanvasInteractionHandler } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
@@ -46,13 +47,13 @@ import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.
 import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expression-picker/expression-picker.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
 import { Colours, RGBA } from "src/app/utils/colours";
-import { randomString } from "src/app/utils/utils";
+import { httpErrorToString, randomString } from "src/app/utils/utils";
 import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { TernaryDiagramDrawer } from "./drawer";
 import { TernaryInteraction } from "./interaction";
 import { TernaryModel } from "./model";
 import { TernaryCorner, TernaryData, TernaryDataColour, TernaryDataItem, TernaryPlotPointIndex } from "./ternary-data";
-import { exportScatterPlot } from "src/app/UI/ternary-plot-widget/export-helper";
+import { exportScatterPlot, ExportPlotCaller } from "src/app/UI/ternary-plot-widget/export-helper";
 import { ExpressionReferences } from "../references-picker/references-picker.component";
 
 
@@ -61,7 +62,7 @@ import { ExpressionReferences } from "../references-picker/references-picker.com
     templateUrl: "./ternary-plot-widget.component.html",
     styleUrls: ["./ternary-plot-widget.component.scss"]
 })
-export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
+export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawer, ExportPlotCaller
 {
     @Input() widgetPosition: string = "";
 
@@ -98,10 +99,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
     constructor(
         private _selectionService: SelectionService,
         private _datasetService: DataSetService,
-        //private _quantService: QuantificationService,
-        //private _layoutService: LayoutService,
         private _exprService: DataExpressionService,
-        //private _roiService: ROIService,
         private _viewStateService: ViewStateService,
         private _widgetDataService: WidgetRegionDataService,
         public dialog: MatDialog
@@ -257,8 +255,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
         this.setDefaultsIfNeeded(widgetUpdReason);
 
         // Use widget data service to rebuild our data model
-        // Query each region for both expressions
-        let expressions: DataExpression[] = [];
+        let expressions: DataExpression[] = []; // TODO: Remove this and refactor to rely on the result from getData()
 
         let exprIds = [this._aExpressionId, this._bExpressionId, this._cExpressionId];
 
@@ -277,21 +274,21 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
             new TernaryCorner("", "", "", new MinMax()),
         ];
 
-        let pointGroups: TernaryDataColour[] = [];
-        let pmcLookup: Map<number, TernaryPlotPointIndex> = new Map<number, TernaryPlotPointIndex>();
-
         this.keyItems = [];
         this.expressionsMissingPMCs = "";
-        let queryWarnings: string[] = [];
 
-        if(expressions.length == 3)
+        if(expressions.length != 3)
+        {
+            this.assignEmptyQuery(t0);
+        }
+        else
         {
             for(let c = 0; c < expressions.length; c++)
             {
                 let expr = expressions[c];
                 if(expr)
                 {
-                    corners[c].label = this._exprService.getExpressionShortDisplayName(expr.id, 18).shortName;
+                    corners[c].label = expr.getExpressionShortDisplayName(18).shortName;
 
                     const mmolAppend = "(mmol)";
                     if(this.showMmol && !corners[c].label.endsWith(mmolAppend)) // Note this won't detect if (mmol) was modified by short name to be (mm...
@@ -310,176 +307,210 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                 }
             }
 
-            let queryData = this._widgetDataService.getData(query, true);
-
-            if(queryData.error)
-            {
-                console.error("Ternary prepareData failed: "+queryData.error);
-            }
-            else
-            {
-                for(let queryIdx = 0; queryIdx < query.length; queryIdx+=exprIds.length)
+            this._widgetDataService.getData(query, true).subscribe(
+                (queryData)=>
                 {
-                    // Set up storage for our data first
-                    const roiId = query[queryIdx].roiId;
-
-                    let region = this._widgetDataService.regions.get(roiId);
-                    if(!region || !region.colour)
+                    if(queryData.error)
                     {
-                        if(!region)
+                        console.error("Ternary prepareData failed: "+queryData.error);
+                    }
+                    else
+                    {
+                        this.processQueryResult(t0, exprIds, queryData, corners);
+                    }
+                },
+                (err)=>
+                {
+                    console.error(httpErrorToString(err, "Ternary prepareData error"));
+                    this.assignEmptyQuery(t0);
+                }
+            );
+        }
+    }
+
+    private processQueryResult(t0: number, exprIds: string[], queryData: RegionDataResults, corners: TernaryCorner[])
+    {
+        let pointGroups: TernaryDataColour[] = [];
+        let pmcLookup: Map<number, TernaryPlotPointIndex> = new Map<number, TernaryPlotPointIndex>();
+
+        let queryWarnings: string[] = [];
+
+        for(let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx+=exprIds.length)
+        {
+            // Set up storage for our data first
+            const roiId = queryData.queryResults[queryIdx].query.roiId;
+
+            let region = queryData.queryResults[queryIdx].region;
+            if(!region || !region.colour)
+            {
+                if(!region)
+                {
+                    console.log("Ternary failed to find region: "+roiId+". Skipped.");
+                }
+
+                continue;
+            }
+
+            let pointGroup: TernaryDataColour = new TernaryDataColour(RGBA.fromWithA(region.colour, 1), region.shape, []);
+
+            // Filter out PMCs that don't exist in the data for all 3 corners
+            let toFilter: PMCDataValues[] = [];
+            for(let c = 0; c < exprIds.length; c++)
+            {
+                toFilter.push(queryData.queryResults[queryIdx+c].values);
+
+                if(queryData.queryResults[queryIdx+c].warning)
+                {
+                    queryWarnings.push(queryData.queryResults[queryIdx+c].warning);
+                }
+            }
+
+            let filteredValues = PMCDataValues.filterToCommonPMCsOnly(toFilter);
+
+            // Read for each expression
+            for(let c = 0; c < exprIds.length; c++)
+            {
+            // Did we find an error with this query?
+                if(queryData.queryResults[queryIdx+c].error)
+                {
+                    corners[c].errorMsgShort = queryData.queryResults[queryIdx+c].errorType;
+                    corners[c].errorMsgLong = queryData.queryResults[queryIdx+c].error;
+
+                    console.log("Ternary encountered error with expression: "+exprIds[c]+", on region: "+roiId+", corner: "+(c == 0 ? "left" : (c == 1 ? "top": "right")));
+                    continue;
+                }
+
+                let roiValues: PMCDataValues = filteredValues[c];
+
+                // Update corner min/max
+                corners[c].valueRange.expandByMinMax(roiValues.valueRange);
+
+                // Store the A/B/C values
+                for(let i = 0; i < roiValues.values.length; i++)
+                {
+                    let value = roiValues.values[i];
+
+                    // Save it in A, B or C - A also is creating the value...
+                    if(c == 0)
+                    {
+                        pointGroup.values.push(new TernaryDataItem(value.pmc, value.value, 0, 0));
+                    }
+                    else
+                    {
+                        // Ensure we're writing to the right PMC
+                        // Should always be the right order because we run 3 queries with the same ROI
+                        if(pointGroup.values[i].pmc != value.pmc)
                         {
-                            console.log("Ternary failed to find region: "+roiId+". Skipped.");
+                            throw new Error("Received PMCs in unexpected order for ternary corner: "+c+", got PMC: "+value.pmc+", expected: "+pointGroup.values[i].pmc);
                         }
 
-                        continue;
-                    }
-
-                    let pointGroup: TernaryDataColour = new TernaryDataColour(RGBA.fromWithA(region.colour, 1), region.shape, []);
-
-                    // Filter out PMCs that don't exist in the data for all 3 corners
-                    let toFilter: PMCDataValues[] = [];
-                    for(let c = 0; c < exprIds.length; c++)
-                    {
-                        toFilter.push(queryData.queryResults[queryIdx+c].values);
-
-                        if(queryData.queryResults[queryIdx+c].warning)
+                        if(c == 1)
                         {
-                            queryWarnings.push(queryData.queryResults[queryIdx+c].warning);
+                            pointGroup.values[i].b = value.value;
                         }
-                    }
-
-                    let filteredValues = PMCDataValues.filterToCommonPMCsOnly(toFilter);
-
-                    // Read for each expression
-                    for(let c = 0; c < exprIds.length; c++)
-                    {
-                    // Did we find an error with this query?
-                        if(queryData.queryResults[queryIdx+c].error)
+                        else // exprIds is an array of 3 so can only be: if(c == 2)
                         {
-                            corners[c].errorMsgShort = queryData.queryResults[queryIdx+c].errorType;
-                            corners[c].errorMsgLong = queryData.queryResults[queryIdx+c].error;
-
-                            let expr = exprIds[c];
-                            if(expressions[c])
-                            {
-                                expr = expressions[c].expression;
-                            }
-
-                            console.log("Ternary encountered error with expression: "+expr+", on region: "+roiId+", corner: "+(c == 0 ? "left" : (c == 1 ? "top": "right")));
-                            continue;
+                            pointGroup.values[i].c = value.value;
                         }
-
-                        let roiValues: PMCDataValues = filteredValues[c];
-
-                        // Update corner min/max
-                        corners[c].valueRange.expandByMinMax(roiValues.valueRange);
-
-                        // Store the A/B/C values
-                        for(let i = 0; i < roiValues.values.length; i++)
-                        {
-                            let value = roiValues.values[i];
-
-                            // Save it in A, B or C - A also is creating the value...
-                            if(c == 0)
-                            {
-                                pointGroup.values.push(new TernaryDataItem(value.pmc, value.value, 0, 0));
-                            }
-                            else
-                            {
-                                // Ensure we're writing to the right PMC
-                                // Should always be the right order because we run 3 queries with the same ROI
-                                if(pointGroup.values[i].pmc != value.pmc)
-                                {
-                                    throw new Error("Received PMCs in unexpected order for ternary corner: "+c+", got PMC: "+value.pmc+", expected: "+pointGroup.values[i].pmc);
-                                }
-
-                                if(c == 1)
-                                {
-                                    pointGroup.values[i].b = value.value;
-                                }
-                                else // exprIds is an array of 3 so can only be: if(c == 2)
-                                {
-                                    pointGroup.values[i].c = value.value;
-                                }
-                            }
-                        }
-                    }
-
-                    // Add to key too. We only specify an ID if it can be brought to front - all points & selection
-                    // are fixed in their draw order, so don't supply for those
-                    let roiIdForKey = region.id;
-                    if(PredefinedROIID.isPredefined(roiIdForKey))
-                    {
-                        roiIdForKey = "";
-                    }
-
-                    this.keyItems.push(new KeyItem(roiIdForKey, region.name, region.colour, null, region.shape));
-
-                    for(let c = 0; c < pointGroup.values.length; c++)
-                    {
-                        pmcLookup.set(pointGroup.values[c].pmc, new TernaryPlotPointIndex(pointGroups.length, c));
-                    }
-
-                    if(pointGroup.values.length > 0)
-                    {
-                        pointGroups.push(pointGroup);
                     }
                 }
             }
 
-            if(this._references.length > 0)
+            // Add to key too. We only specify an ID if it can be brought to front - all points & selection
+            // are fixed in their draw order, so don't supply for those
+            let roiIdForKey = region.id;
+            if(PredefinedROIID.isPredefined(roiIdForKey))
             {
-                let pointGroup: TernaryDataColour = new TernaryDataColour(Colours.CONTEXT_PURPLE, "circle", []);
-
-                this._references.forEach((referenceName, i) =>
-                {
-                    let reference = ExpressionReferences.getByName(referenceName);
-
-                    if(!reference)
-                    {
-                        console.error(`TernaryPlot prepareData: Couldn't find reference ${referenceName}`);
-                        return;
-                    }
-
-                    let refAValue = ExpressionReferences.getExpressionValue(reference, this._aExpressionId)?.weightPercentage;
-                    let refBValue = ExpressionReferences.getExpressionValue(reference, this._bExpressionId)?.weightPercentage;
-                    let refCValue = ExpressionReferences.getExpressionValue(reference, this._cExpressionId)?.weightPercentage;
-                    let nullMask = [refAValue == null, refBValue == null, refCValue == null];
-
-                    // If we have more than one null value, we can't plot this reference on a ternary plot
-                    if(nullMask.filter(isNull => isNull).length > 1)
-                    {
-                        console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this._aExpressionId},${this._bExpressionId},${this._cExpressionId} values`);
-                        return;
-                    }
-
-                    if(refAValue == null)
-                    {
-                        refAValue = 0;
-                        console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this._aExpressionId} value`);
-                    }
-                    if(refBValue == null)
-                    {
-                        refBValue = 0;
-                        console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this._bExpressionId} value`);
-                    }
-                    if(refCValue == null)
-                    {
-                        refCValue = 0;
-                        console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this._cExpressionId} value`);
-                    }
-
-                    // We don't have a PMC for these, so -10 and below are now reserverd for reference values
-                    let referenceIndex = ExpressionReferences.references.findIndex((ref) => ref.name === referenceName);
-                    let id = -10 - referenceIndex;
-
-                    pointGroup.values.push(new TernaryDataItem(id, refAValue, refBValue, refCValue, referenceName, nullMask));
-                    pmcLookup.set(id, new TernaryPlotPointIndex(this._references.length, i));
-                });
-
-                pointGroups.push(pointGroup);
-                this.keyItems.push(new KeyItem("references", "Ref Points", Colours.CONTEXT_PURPLE, null, "circle"));
+                roiIdForKey = "";
             }
+
+            this.keyItems.push(new KeyItem(roiIdForKey, region.name, region.colour, null, region.shape));
+
+            for(let c = 0; c < pointGroup.values.length; c++)
+            {
+                pmcLookup.set(pointGroup.values[c].pmc, new TernaryPlotPointIndex(pointGroups.length, c));
+            }
+
+            if(pointGroup.values.length > 0)
+            {
+                pointGroups.push(pointGroup);
+            }
+        }
+
+        this.assignQueryResult(t0, pointGroups, corners, pmcLookup, queryWarnings);
+    }
+
+    private assignEmptyQuery(t0: number)
+    {
+        this.assignQueryResult(
+            t0,
+            [],
+            [],
+            new Map<number, TernaryPlotPointIndex>(),
+            [],
+        );
+    }
+
+    private assignQueryResult(
+        t0: number,
+        pointGroups: TernaryDataColour[] = [],
+        corners: TernaryCorner[],
+        pmcLookup: Map<number, TernaryPlotPointIndex>,
+        queryWarnings: string[]
+    )
+    {
+        if(this._references.length > 0)
+        {
+            let pointGroup: TernaryDataColour = new TernaryDataColour(Colours.CONTEXT_PURPLE, "circle", []);
+
+            this._references.forEach((referenceName, i) =>
+            {
+                let reference = ExpressionReferences.getByName(referenceName);
+
+                if(!reference)
+                {
+                    console.error(`TernaryPlot prepareData: Couldn't find reference ${referenceName}`);
+                    return;
+                }
+
+                let refAValue = ExpressionReferences.getExpressionValue(reference, this._aExpressionId)?.weightPercentage;
+                let refBValue = ExpressionReferences.getExpressionValue(reference, this._bExpressionId)?.weightPercentage;
+                let refCValue = ExpressionReferences.getExpressionValue(reference, this._cExpressionId)?.weightPercentage;
+                let nullMask = [refAValue == null, refBValue == null, refCValue == null];
+
+                // If we have more than one null value, we can't plot this reference on a ternary plot
+                if(nullMask.filter(isNull => isNull).length > 1)
+                {
+                    console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this._aExpressionId},${this._bExpressionId},${this._cExpressionId} values`);
+                    return;
+                }
+
+                if(refAValue == null)
+                {
+                    refAValue = 0;
+                    console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this._aExpressionId} value`);
+                }
+                if(refBValue == null)
+                {
+                    refBValue = 0;
+                    console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this._bExpressionId} value`);
+                }
+                if(refCValue == null)
+                {
+                    refCValue = 0;
+                    console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this._cExpressionId} value`);
+                }
+
+                // We don't have a PMC for these, so -10 and below are now reserverd for reference values
+                let referenceIndex = ExpressionReferences.references.findIndex((ref) => ref.name === referenceName);
+                let id = -10 - referenceIndex;
+
+                pointGroup.values.push(new TernaryDataItem(id, refAValue, refBValue, refCValue, referenceName, nullMask));
+                pmcLookup.set(id, new TernaryPlotPointIndex(this._references.length, i));
+            });
+
+            pointGroups.push(pointGroup);
+            this.keyItems.push(new KeyItem("references", "Ref Points", Colours.CONTEXT_PURPLE, null, "circle"));
         }
 
         if(queryWarnings.length > 0)
@@ -541,7 +572,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
             this._cExpressionId.length <= 0 ||
             (
                 widgetUpdReason == WidgetDataUpdateReason.WUPD_QUANT &&
-                DataExpressionService.hasPseudoIntensityExpressions(
+                DataExpressionId.hasPseudoIntensityExpressions(
                     [this._aExpressionId, this._bExpressionId, this._cExpressionId]
                 )
             )
@@ -633,7 +664,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
 
                 let roiId = this._ternaryModel.raw.visibleROIs[idx.pointGroup];
                 let roiName = this._widgetDataService.regions.get(roiId).name;
-                data += `${pmc},${roiName},${cornerAValue},${cornerBValue},${cornerCValue}\n`;
+                data += `${pmc},"${roiName}",${cornerAValue},${cornerBValue},${cornerCValue}\n`;
             }
         });
 
@@ -671,7 +702,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
             exprIds = [this._cExpressionId];
         }
 
-        dialogConfig.data = new ExpressionPickerData("Vertex", DataExpressionService.DataExpressionTypeAll, exprIds, true, false, false);
+        dialogConfig.data = new ExpressionPickerData("Vertex", DataExpressionId.DataExpressionTypeAll, exprIds, true, false, false);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

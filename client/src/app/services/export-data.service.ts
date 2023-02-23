@@ -69,64 +69,77 @@ export function generateExportCSVForExpression(
     expressionIDs: string[],
     roiID: string,
     datasetId: string,
-    widgetRegionDataService: WidgetRegionDataService): string
+    widgetRegionDataService: WidgetRegionDataService): Observable<string>
 {
-    let queryParams = [];
+    let query = [];
     for(let exprId of expressionIDs)
     {
-        queryParams.push(new DataSourceParams(exprId, roiID || PredefinedROIID.AllPoints, datasetId));
-    }
-    let queryData: RegionDataResults = widgetRegionDataService.getData(queryParams, false);
-
-    if(queryData.error)
-    {
-        throw new Error(`Failed to query CSV data: ${queryData.error}`);
+        query.push(new DataSourceParams(exprId, roiID || PredefinedROIID.AllPoints, datasetId));
     }
 
-    let header = "PMC";
-    let csv = "";
-
-    // PMCs should be in the same order, but we're not 100% sure on that, check here that it is the case
-    for(let rowIdx = 0; rowIdx < queryData.queryResults[0].values.values.length; rowIdx++)
-    {
-        let pmc = -1;
-
-        for(let exprIdx = 0; exprIdx < queryData.queryResults.length; exprIdx++)
+    return widgetRegionDataService.getData(query, false).pipe(
+        map((queryData: RegionDataResults)=>
         {
-            let queryResult = queryData.queryResults[exprIdx];
-
-            // If it's our first time here, add to the header
-            if(rowIdx == 0)
+            if(queryData.error)
             {
-                header += ","+queryResult.expressionName;
+                throw new Error(`Failed to query CSV data: ${queryData.error}`);
             }
 
-            if(exprIdx == 0)
+            // Check for any errors in other results
+            for(let result of queryData.queryResults)
             {
-                // First expression, add the PMC directly
-                pmc = queryResult.values.values[rowIdx].pmc;
-                csv += `\n${pmc}`;
-            }
-            else
-            {
-                // Not the first expression, ensure PMC is the same
-                if(exprIdx > 0 && queryResult.values.values[rowIdx].pmc != pmc)
+                if(result.error)
                 {
-                    throw new Error(`CSV data PMC mismatch on row ${rowIdx}`);
+                    throw new Error(`Failed to generate CSV, expression "${result.expression.name}" failed: ${result.error}`)
                 }
             }
 
-            // Add the value
-            csv += ",";
-            let val = queryResult.values.values[rowIdx];
-            if(!val.isUndefined)
-            {
-                csv += `${val.value}`
-            }
-        }
-    }
+            let header = "\"PMC\"";
+            let csv = "";
 
-    return header+csv;
+            // PMCs should be in the same order, but we're not 100% sure on that, check here that it is the case
+            for(let rowIdx = 0; rowIdx < queryData.queryResults[0].values.values.length; rowIdx++)
+            {
+                let pmc = -1;
+
+                for(let exprIdx = 0; exprIdx < queryData.queryResults.length; exprIdx++)
+                {
+                    let queryResult = queryData.queryResults[exprIdx];
+
+                    // If it's our first time here, add to the header
+                    if(rowIdx == 0)
+                    {
+                        header += ",\""+queryResult.expression.name+"\"";
+                    }
+
+                    if(exprIdx == 0)
+                    {
+                        // First expression, add the PMC directly
+                        pmc = queryResult.values.values[rowIdx].pmc;
+                        csv += `\n${pmc}`;
+                    }
+                    else
+                    {
+                        // Not the first expression, ensure PMC is the same
+                        if(exprIdx > 0 && queryResult.values.values[rowIdx].pmc != pmc)
+                        {
+                            throw new Error(`CSV data PMC mismatch on row ${rowIdx}`);
+                        }
+                    }
+
+                    // Add the value
+                    csv += ",";
+                    let val = queryResult.values.values[rowIdx];
+                    if(!val.isUndefined)
+                    {
+                        csv += `${val.value}`
+                    }
+                }
+            }
+
+            return header+csv;
+        })
+    );
 }
 
 @Injectable({

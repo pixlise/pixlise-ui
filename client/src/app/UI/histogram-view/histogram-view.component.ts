@@ -28,18 +28,21 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, ElementRef, Input, OnDestroy, OnInit } from "@angular/core";
+import { Observable, of, combineLatest } from "rxjs";
+import { map } from "rxjs/operators";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subject, Subscription } from "rxjs";
 import { PMCDataValues } from "src/app/expression-language/data-values";
 import { MinMax } from "src/app/models/BasicTypes";
 import { PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationService } from "src/app/services/quantification.service";
 import { ROIService } from "src/app/services/roi.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { histogramState, ViewStateService } from "src/app/services/view-state.service";
-import { DataSourceParams, WidgetDataUpdateReason, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { DataSourceParams, WidgetDataUpdateReason, WidgetRegionDataService, RegionDataResults } from "src/app/services/widget-region-data.service";
 import { CanvasDrawer, CanvasDrawParameters, CanvasInteractionHandler } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
 import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.component";
@@ -86,10 +89,7 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
 
     constructor(
         private _selectionService: SelectionService,
-        private _datasetService: DataSetService,
-        private _quantService: QuantificationService,
         private _exprService: DataExpressionService,
-        private _roiService: ROIService,
         private _viewStateService: ViewStateService,
         private _widgetDataService: WidgetRegionDataService,
         public dialog: MatDialog,
@@ -211,7 +211,7 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
         //dialogConfig.disableClose = true;
         //dialogConfig.autoFocus = true;
         //dialogConfig.width = '1200px';
-        dialogConfig.data = new ExpressionPickerData("Bars", DataExpressionService.DataExpressionTypeAll, this._displayExpressionIDs, false, false, false);
+        dialogConfig.data = new ExpressionPickerData("Bars", DataExpressionId.DataExpressionTypeAll, this._displayExpressionIDs, false, false, false);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 
@@ -258,32 +258,6 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
         );
     }
 
-    // Copied from chord, can this be made into common code?
-    private removeInvalidElements(): void
-    {
-        const exprList = this._exprService.getAllExpressionIds(DataExpressionService.DataExpressionTypeAll, this._widgetDataService.quantificationLoaded);
-        let newDisplayExprIds: string[] = [];
-
-        for(let exprId of this._displayExpressionIDs)
-        {
-            if(exprList.indexOf(exprId) !== -1)
-            {
-                // We found a valid one, use it
-                newDisplayExprIds.push(exprId);
-            }
-        }
-
-        this._displayExpressionIDs = newDisplayExprIds;
-    }
-
-    // Copied from chord, can this be made into common code?
-    private setStartingExpressions()
-    {
-        // Pick all elements/pseudointensities, don't pick expressions randomly!
-        this._displayExpressionIDs = this._exprService.getStartingExpressions(this._widgetDataService.quantificationLoaded);
-        console.log("Histogram view: Starting expression set to: " + this._displayExpressionIDs.join(","));
-    }
-
     private recalcHistogram(reason: string, widgetUpdReason: WidgetDataUpdateReason): void
     {
         console.log("Histogram recalcHistogram reason: " + reason);//+', regions: '+JSON.stringify(this._visibleROIs)+', exprs: '+JSON.stringify(this._displayExpressionIDs));
@@ -296,15 +270,17 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
         if(this._displayExpressionIDs.length <= 0 ||
             (
                 widgetUpdReason == WidgetDataUpdateReason.WUPD_QUANT &&
-                DataExpressionService.hasPseudoIntensityExpressions(this._displayExpressionIDs)
+                DataExpressionId.hasPseudoIntensityExpressions(this._displayExpressionIDs)
             )
         )
         {
-            this.setStartingExpressions();
+            // Pick all elements/pseudointensities, don't pick expressions randomly!
+            this._displayExpressionIDs = this._exprService.getStartingExpressions(this._widgetDataService.quantificationLoaded);
+            console.log("Histogram view: Starting expression set to: " + this._displayExpressionIDs.join(","));
         }
         else
         {
-            this.removeInvalidElements();
+            this._displayExpressionIDs = this._exprService.filterInvalidElements(this._displayExpressionIDs, this._widgetDataService.quantificationLoaded);
         }
 
         // If we still can't display...
@@ -324,6 +300,7 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
         let exprPseudointensityCount = 0;
         let exprWeightPctCount = 0;
         let query: DataSourceParams[] = [];
+        let errorCols$: Observable<PMCDataValues>[] = [];
         for(let exprId of this._displayExpressionIDs)
         {
             for(let roiId of this._visibleROIs)
@@ -332,27 +309,46 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
                 if(roiId != PredefinedROIID.SelectedPoints || this._selectionService.getCurrentSelection().beamSelection.locationIndexes.size > 0)
                 {
                     query.push(new DataSourceParams(exprId, roiId, ""));
+
+                    // Query error column (if there is one, otherwise returns null)
+                    errorCols$.push(this.getErrorColForExpression(exprId, roiId));
                 }
             }
 
             // Also check if it's a pseudointensity expression
-            if(DataExpressionService.getPredefinedPseudoIntensityExpressionElement(exprId).length > 0)
+            if(DataExpressionId.getPredefinedPseudoIntensityExpressionElement(exprId).length > 0)
             {
                 exprPseudointensityCount++;
             }
-            else if(DataExpressionService.getPredefinedQuantExpressionElementColumn(exprId) == "%")
+            else if(DataExpressionId.getPredefinedQuantExpressionElementColumn(exprId) == "%")
             {
                 exprWeightPctCount++;
             }
         }
 
-        let queryData = this._widgetDataService.getData(query, true);
-        if(queryData.error)
-        {
-            console.error("Failed to query data for histogram: " + queryData.error);
-            return;
-        }
+        this._widgetDataService.getData(query, true).subscribe(
+            (queryData)=>
+            {
+                if(queryData.error)
+                {
+                    console.error("Failed to query data for histogram: " + queryData.error);
+                    return;
+                }
 
+                // Wait for the error columns too
+                let errorColResults$ = combineLatest(errorCols$);
+                errorColResults$.subscribe(
+                    (errCols)=>
+                    {
+                        this.processQueryResult(t0, exprWeightPctCount, exprPseudointensityCount, queryData, errCols);
+                    }
+                );
+            }
+        );
+    }
+
+    private processQueryResult(t0: number, exprWeightPctCount: number, exprPseudointensityCount: number, queryData: RegionDataResults, errCols: PMCDataValues[])
+    {
         this._mdl = new HistogramModel(this._showStdDeviation, this._logScale, this._showWhiskers);
 
         let histogramBars: HistogramBars[] = [];
@@ -360,12 +356,12 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
         let overallValueRange: MinMax = new MinMax();
         let barGroupValueRange: MinMax = new MinMax();
 
-        for(let queryIdx = 0; queryIdx < query.length; queryIdx++)
+        for(let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx++)
         {
-            const exprId = query[queryIdx].exprId;
-            const roiId = query[queryIdx].roiId;
-
             const colData = queryData.queryResults[queryIdx];
+            const exprId = colData.query.exprId;
+            const roiId = colData.query.roiId;
+
             if(colData.error)
             {
                 console.error("Failed to get data for roi: " + roiId + ", expr: " + exprId + ". Error: " + colData.error);
@@ -387,7 +383,7 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
             }
 
             // Calc sum of concentrations and read out column into an array
-            let errorCol = this.getErrorColForExpression(exprId, roiId);
+            const errorCol = errCols[queryIdx];
 
             // TODO: Should this and chord diagram be common code?
             let concentrationSum = 0;
@@ -465,20 +461,20 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
 
             // Find the next one (that we actually got data for!)
             let nextExprId = "";
-            for(let c = queryIdx + 1; c < query.length; c++)
+            for(let c = queryIdx + 1; c < queryData.queryResults.length; c++)
             {
                 if(queryData.queryResults[c] != null)
                 {
-                    nextExprId = query[c].exprId;
+                    nextExprId = queryData.queryResults[c].query.exprId;
                     break;
                 }
             }
 
             // If we have a "next" column, or are the last column we have to finish this bar group up
-            if(queryIdx >= query.length - 1 ||
-                queryIdx < (query.length - 1) && exprId != nextExprId)
+            if(queryIdx >= queryData.queryResults.length - 1 ||
+                queryIdx < (queryData.queryResults.length - 1) && exprId != nextExprId)
             {
-                let shortName = this._exprService.getExpressionShortDisplayName(exprId, 10);
+                let shortName = colData.expression.getExpressionShortDisplayName(10);
                 histogramBars.push(
                     new HistogramBars(
                         bars,
@@ -522,28 +518,34 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
         console.log("  Histogram prepareData took: " + (t1 - t0).toLocaleString() + "ms, needsDraw$ took: " + (t2 - t1).toLocaleString() + "ms");
     }
 
-    protected getErrorColForExpression(exprId: string, roiId: string): PMCDataValues
+    protected getErrorColForExpression(exprId: string, roiId: string): Observable<PMCDataValues>
     {
         // If we've got a corresponding error column, use that, otherwise return null
-        let elem = DataExpressionService.getPredefinedQuantExpressionElement(exprId);
+        let elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
         if(elem.length <= 0)
         {
-            return null;
+            return of(null);
         }
 
         // Get the detector too. If not specified, it will be '' which will mean some defaulting will happen
-        let detector = DataExpressionService.getPredefinedQuantExpressionDetector(exprId);
+        let detector = DataExpressionId.getPredefinedQuantExpressionDetector(exprId);
 
         // Try query it
-        let errExprId = DataExpressionService.makePredefinedQuantElementExpression(elem, "err", detector);
+        let errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
         let query: DataSourceParams[] = [new DataSourceParams(errExprId, roiId, "")];
-        let queryData = this._widgetDataService.getData(query, false);
-        if(queryData.error || queryData.hasQueryErrors() || queryData.queryResults.length != 1)
-        {
-            return null;
-        }
-
-        return queryData.queryResults[0].values;
+        return this._widgetDataService.getData(query, false).pipe(
+            map(
+                (queryData)=>
+                {
+                    if(queryData.error || queryData.hasQueryErrors() || queryData.queryResults.length != 1)
+                    {
+                        return null;
+                    }
+            
+                    return queryData.queryResults[0].values;
+                }
+            )
+        );
     }
 
     protected makeKeyItems(roiIDs: string[]): KeyItem[]

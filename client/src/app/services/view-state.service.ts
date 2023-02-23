@@ -724,8 +724,7 @@ export class ViewStateService
                     result["create_unix_time_sec"],
                     result["mod_unix_time_sec"]
                 );
-            }
-            )
+            })
         );
     }
 

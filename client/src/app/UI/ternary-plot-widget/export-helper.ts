@@ -38,9 +38,20 @@ import {
     PlotExporterDialogOption
 } from "src/app/UI/atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { DataSet } from "src/app/models/DataSet";
+import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.component";
+import { CanvasDrawer } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
+import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
 
 
-export function exportScatterPlot(dialogSvc: MatDialog, plotName: string, dataset: DataSet, scatterPlotCaller: any)
+export interface ExportPlotCaller
+{
+    transform: PanZoom;
+    drawer: CanvasDrawer;
+    keyItems: KeyItem[];
+    exportPlotData(datasetID: string): string;
+}
+
+export function exportScatterPlot(dialogSvc: MatDialog, plotName: string, dataset: DataSet, scatterPlotCaller: ExportPlotCaller)
 {
     let exportOptions = [
         new PlotExporterDialogOption("Color", true, true, { type: "switch", options: ["Dark Mode", "Light Mode"] }),

@@ -27,6 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { Observable, combineLatest, of } from "rxjs";
+import { map } from "rxjs/operators";
 import { QuantifiedDataQuerierSource } from "src/app/expression-language/data-sources";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
@@ -491,13 +493,11 @@ export class QuantificationLayer implements QuantifiedDataQuerierSource
         return resultData;
     }
 
-    getAverageEnergyCalibration(): SpectrumEnergyCalibration[]
+    getAverageEnergyCalibration(): Observable<SpectrumEnergyCalibration[]>
     {
-        let result: SpectrumEnergyCalibration[] = [];
-
         if(this._dataColumns.indexOf("eVstart") < 0 || this._dataColumns.indexOf("eV/ch") < 0)
         {
-            return result;
+            return of([]);
         }
 
         // Average all of them, per detector
@@ -513,34 +513,49 @@ export class QuantificationLayer implements QuantifiedDataQuerierSource
             }
         }
 
+        let columns$ = [];
         for(let detector of detectors)
         {
-            let eVStartSum = 0;
-            let eVPerChannelSum = 0;
-
-            let eVStartValues = getQuantifiedDataWithExpression("data(\"eVstart\", \""+detector+"\")", this, null, null, null, null, null, null);
-            let eVPerChannelValues = getQuantifiedDataWithExpression("data(\"eV/ch\", \""+detector+"\")", this, null, null, null, null, null, null);
-
-            for(let evStartItem of eVStartValues.values)
-            {
-                eVStartSum += evStartItem.value;
-            }
-
-            for(let evPerChannelItem of eVPerChannelValues.values)
-            {
-                eVPerChannelSum += evPerChannelItem.value;
-            }
-
-            // Save these (we may need them later for "reset to defaults" features)
-            result.push(
-                new SpectrumEnergyCalibration(
-                    eVStartSum/eVStartValues.values.length,
-                    eVPerChannelSum/eVPerChannelValues.values.length,
-                    detector
-                )
-            );
+            columns$.push(getQuantifiedDataWithExpression("data(\"eVstart\", \""+detector+"\")", this, null, null, null, null, null, null));
+            columns$.push(getQuantifiedDataWithExpression("data(\"eV/ch\", \""+detector+"\")", this, null, null, null, null, null, null));
         }
 
-        return result;
+        return combineLatest(columns$).pipe(
+            map((results)=>
+            {
+                let result: SpectrumEnergyCalibration[] = [];
+
+                let c = 0;
+                for(let detector of detectors)
+                {
+                    let eVStartValues = results[c++] as PMCDataValues;
+                    let eVPerChannelValues = results[c++] as PMCDataValues;
+
+                    let eVStartSum = 0;
+                    let eVPerChannelSum = 0;
+
+                    for(let evStartItem of eVStartValues.values)
+                    {
+                        eVStartSum += evStartItem.value;
+                    }
+
+                    for(let evPerChannelItem of eVPerChannelValues.values)
+                    {
+                        eVPerChannelSum += evPerChannelItem.value;
+                    }
+
+                    // Save these (we may need them later for "reset to defaults" features)
+                    result.push(
+                        new SpectrumEnergyCalibration(
+                            eVStartSum/eVStartValues.values.length,
+                            eVPerChannelSum/eVPerChannelValues.values.length,
+                            detector
+                        )
+                    );
+                }
+
+                return result;
+            })
+        );
     }
 }

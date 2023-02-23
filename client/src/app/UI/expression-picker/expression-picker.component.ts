@@ -32,7 +32,8 @@ import { MatDialog, MatDialogConfig, MatDialogRef, MAT_DIALOG_DATA } from "@angu
 import { Subscription } from "rxjs";
 import { DataSet } from "src/app/models/DataSet";
 import { QuantificationLayer } from "src/app/models/Quantifications";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
@@ -124,14 +125,14 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
         // Open whatever category we're showing:
         for(let id of this.data.activeExpressionIDs)
         {
-            if(DataExpressionService.getPredefinedQuantExpressionElement(id))
+            if(DataExpressionId.getPredefinedQuantExpressionElement(id))
             {
                 this.headerSectionsOpen.add(this.elementsHeaderName);
             }
             else if(
-                id == DataExpressionService.predefinedHeightZDataExpression ||
-                id == DataExpressionService.predefinedRoughnessDataExpression ||
-                id == DataExpressionService.predefinedDiffractionCountDataExpression
+                id == DataExpressionId.predefinedHeightZDataExpression ||
+                id == DataExpressionId.predefinedRoughnessDataExpression ||
+                id == DataExpressionId.predefinedDiffractionCountDataExpression
             )
             {
                 this.headerSectionsOpen.add(this.anomalyHeaderName);
@@ -140,7 +141,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
             {
                 this.headerSectionsOpen.add(this.rgbMixHeaderName);
             }
-            else if(DataExpressionService.getPredefinedPseudoIntensityExpressionElement(id))
+            else if(DataExpressionId.getPredefinedPseudoIntensityExpressionElement(id))
             {
                 this.headerSectionsOpen.add(this.pseudoIntensityHeaderName);
             }
@@ -164,7 +165,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
                 this._listBuilder.notifyDataArrived(
                     (data[0] as DataSet).getPseudoIntensityElementsList(),
                     data[1] as QuantificationLayer,
-                    this._exprService.getExpressions(DataExpressionService.DataExpressionTypeAll),
+                    this._exprService.getExpressions(DataExpressionId.DataExpressionTypeAll),
                     this._rgbMixService.getRGBMixes()
                 );
 
@@ -295,7 +296,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
     {
         for(let activeId of this._activeIDs)
         {
-            let activeIdNoDet = DataExpressionService.getExpressionWithoutDetector(activeId);
+            let activeIdNoDet = DataExpressionId.getExpressionWithoutDetector(activeId);
             if(activeIdNoDet == id)
             {
                 return activeId;
