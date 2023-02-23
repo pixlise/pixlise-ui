@@ -427,9 +427,19 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         return this.expression?.shared && this.expression.creator.user_id !== this._authService.getUserID();
     }
 
+    addLua(text: string): string
+    {
+        if(!text.startsWith("LUA\n"))
+        {
+            return "LUA\n" + text;
+        }
+
+        return text;
+    }
+
     onExpressionTextChanged(text: string): void
     {
-        this.editExpression = text;
+        this.editExpression = this.isLua ? this.addLua(text) : text;
     }
 
     onTagSelectionChanged(tags): void

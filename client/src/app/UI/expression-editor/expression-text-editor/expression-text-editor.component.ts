@@ -112,8 +112,11 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     ngOnInit()
     {
+        // If we're in lua mode, strip out the lua start, this will be added back before save
+        let strippedExpression = this.isLua ? this.stripLua(this.expression.expression) : this.expression.expression;
+
         // Make a copy of incoming expression, so we don't edit what's there!
-        this._expr = new DataExpression(this.expression.id, this.expression.name, this.expression.expression, this.expression.type, this.expression.comments, this.expression.shared, this.expression.creator, this.expression.createUnixTimeSec, this.expression.modUnixTimeSec, this.expression.tags);
+        this._expr = new DataExpression(this.expression.id, this.expression.name, strippedExpression, this.expression.type, this.expression.comments, this.expression.shared, this.expression.creator, this.expression.createUnixTimeSec, this.expression.modUnixTimeSec, this.expression.tags);
         this.findVariables();
     }
 
@@ -252,14 +255,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         // If lua mode switched after init, then we need to strip/add lua and refresh code mirror
         if(this._initAsLua !== this.isLua && this._codeMirror?.codeMirrorGlobal)
         {
-            if(this._initAsLua && !this.isLua)
-            {
-                this._expr.expression = this.stripLua(this._expr.expression);
-            }
-            else if(!this._initAsLua && this.isLua)
-            {
-                this._expr.expression = this.addLua(this._expr.expression);
-            }
             this._initAsLua = this.isLua;
             this._codeMirror.codeMirrorGlobal.then((cm: any)=>
             {
@@ -271,16 +266,11 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             });
         }
 
-        if(this.isLua)
-        {
-            return this.stripLua(this._expr.expression);
-        }
         return this._expr.expression;
     }
 
     set editExpression(val: string)
     {
-        this._expr.expression = this.isLua ? this.addLua(val) : val;
         this.onTextChange.emit(this._expr.expression || "");
     }
 
@@ -303,17 +293,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     {
         if(text.startsWith("LUA\n"))
         {
-            return text.substring(4);
-        }
-
-        return text;
-    }
-
-    addLua(text: string): string
-    {
-        if(!text.startsWith("LUA\n"))
-        {
-            return "LUA\n" + text;
+            text = text.substring(4);
         }
 
         return text;
