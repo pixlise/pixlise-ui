@@ -35,7 +35,7 @@ import { MinMax } from "src/app/models/BasicTypes";
 import { Point } from "src/app/models/Geometry";
 import { orderVisibleROIs, PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionService } from "src/app/services/data-expression.service";
-import { DataExpression, DataExpressionId } from "src/app/models/Expression";
+import { DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { binaryState, ViewStateService } from "src/app/services/view-state.service";

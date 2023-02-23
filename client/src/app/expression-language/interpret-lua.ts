@@ -474,7 +474,7 @@ end
                 {
                     if(!first)
                     {
-                        luaTableText += ","
+                        luaTableText += ",";
                     }
                     luaTableText += col;
                     first = false;
@@ -486,7 +486,7 @@ end
             luaTableText += " },\n";
         }
 
-        luaTableText += "}"
+        luaTableText += "}";
         console.log(luaTableText);
     }
 }
