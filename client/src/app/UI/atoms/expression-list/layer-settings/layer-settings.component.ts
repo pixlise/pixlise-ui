@@ -128,6 +128,8 @@ export class LayerSettingsComponent implements OnInit
     @Input() activeIcon: string;
     @Input() inactiveIcon: string;
 
+    @Input() isPreviewMode: boolean = false;
+
     @Output() visibilityChange = new EventEmitter();
     @Output() onLayerImmediateSelection = new EventEmitter();
     @Output() colourChange = new EventEmitter();
@@ -135,7 +137,6 @@ export class LayerSettingsComponent implements OnInit
     private _isPureElement: boolean = false;
     private _expressionElement: string = "";
 
-    isCodeEditorPage: boolean = false;
 
     constructor(
         private _router: Router,
@@ -148,7 +149,6 @@ export class LayerSettingsComponent implements OnInit
         public dialog: MatDialog,
     )
     {
-        this.isCodeEditorPage = this._router.url.includes("/code-editor");
     }
 
     ngOnInit()
@@ -457,7 +457,7 @@ export class LayerSettingsComponent implements OnInit
         dialogConfig.disableClose = true;
         //dialogConfig.backdropClass = "panel";
 
-        let allowEdit = this.showSettings && !this.layerInfo.layer.source.shared && !this.isSharedByOtherUser  && !this.isCodeEditorPage;
+        let allowEdit = this.showSettings && !this.layerInfo.layer.source.shared && !this.isSharedByOtherUser && !this.isPreviewMode;
 
         let toEdit = this._exprService.getExpression(this.layerInfo.layer.id);
         if(toEdit && allowEdit)
@@ -467,7 +467,7 @@ export class LayerSettingsComponent implements OnInit
         }
 
         // We only allow editing if we were allowed to, AND if expression is NOT shared AND if it was created by our user
-        dialogConfig.data = new ExpressionEditorConfig(toEdit, allowEdit, false, false, !this.isCodeEditorPage);
+        dialogConfig.data = new ExpressionEditorConfig(toEdit, allowEdit, false, false, !this.isPreviewMode);
 
         const dialogRef = this.dialog.open(ExpressionEditorComponent, dialogConfig);
 

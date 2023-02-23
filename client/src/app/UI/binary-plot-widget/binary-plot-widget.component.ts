@@ -105,7 +105,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
     ngOnInit()
     {
         // Only subscribe to expressions if we have preview expressions passed
-        if(this.previewExpressionIDs && this.previewExpressionIDs.length > 0)
+        if(this.isPreviewMode)
         {
             this._subs.add(this._exprService.expressionsUpdated$.subscribe(() =>
             {
@@ -232,6 +232,11 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
     get thisSelector(): string
     {
         return ViewStateService.widgetSelectorBinaryPlot;
+    }
+
+    get isPreviewMode(): boolean
+    {
+        return this.previewExpressionIDs && this.previewExpressionIDs.length > 0;
     }
 
     get isSolo(): IconButtonState
@@ -741,7 +746,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             exprIds = [this._yAxisExpressionId];
         }
 
-        dialogConfig.data = new ExpressionPickerData("Plot Axis", DataExpressionId.DataExpressionTypeAll, exprIds, true, false, false);
+        dialogConfig.data = new ExpressionPickerData("Plot Axis", DataExpressionId.DataExpressionTypeAll, exprIds, true, false, false, this.isPreviewMode);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

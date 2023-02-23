@@ -101,7 +101,7 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
     ngOnInit()
     {
         // Only subscribe to expressions if we have preview expressions passed
-        if(this.previewExpressionIDs && this.previewExpressionIDs.length > 0)
+        if(this.isPreviewMode)
         {
             this._subs.add(this._exprService.expressionsUpdated$.subscribe(() =>
             {
@@ -156,6 +156,11 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
     get thisSelector(): string
     {
         return ViewStateService.widgetSelectorHistogram;
+    }
+
+    get isPreviewMode(): boolean
+    {
+        return this.previewExpressionIDs && this.previewExpressionIDs.length > 0;
     }
 
     get showStdDeviation(): boolean
@@ -233,7 +238,7 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
         //dialogConfig.disableClose = true;
         //dialogConfig.autoFocus = true;
         //dialogConfig.width = '1200px';
-        dialogConfig.data = new ExpressionPickerData("Bars", DataExpressionId.DataExpressionTypeAll, this._displayExpressionIDs, false, false, false);
+        dialogConfig.data = new ExpressionPickerData("Bars", DataExpressionId.DataExpressionTypeAll, this._displayExpressionIDs, false, false, false, this.isPreviewMode);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

@@ -221,6 +221,11 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
         return ViewStateService.widgetSelectorTernaryPlot;
     }
 
+    get isPreviewMode(): boolean
+    {
+        return this.previewExpressionIDs && this.previewExpressionIDs.length > 0;
+    }
+
     get isSolo(): IconButtonState
     {
         return this._viewStateService.isSoloView(this.thisSelector, this.widgetPosition) ? IconButtonState.ACTIVE : IconButtonState.OFF;
@@ -729,7 +734,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
             exprIds = [this._cExpressionId];
         }
 
-        dialogConfig.data = new ExpressionPickerData("Vertex", DataExpressionId.DataExpressionTypeAll, exprIds, true, false, false);
+        dialogConfig.data = new ExpressionPickerData("Vertex", DataExpressionId.DataExpressionTypeAll, exprIds, true, false, false, this.isPreviewMode);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

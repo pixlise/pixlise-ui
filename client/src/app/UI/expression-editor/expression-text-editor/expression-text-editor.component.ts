@@ -271,6 +271,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     set editExpression(val: string)
     {
+        this._expr.expression = val;
         this.onTextChange.emit(this._expr.expression || "");
     }
 

@@ -196,6 +196,11 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
         return ViewStateService.widgetSelectorChordDiagram;
     }
 
+    get isPreviewMode(): boolean
+    {
+        return this.previewExpressionIDs && this.previewExpressionIDs.length > 0;
+    }
+
     get isSolo(): IconButtonState
     {
         return this._viewStateService.isSoloView(this.thisSelector, this.widgetPosition) ? IconButtonState.ACTIVE : IconButtonState.OFF;
@@ -308,7 +313,7 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
         //dialogConfig.disableClose = true;
         //dialogConfig.autoFocus = true;
         //dialogConfig.width = '1200px';
-        dialogConfig.data = new ExpressionPickerData("Nodes", DataExpressionId.DataExpressionTypeAll, this._displayExpressionIDs, false, false, false);
+        dialogConfig.data = new ExpressionPickerData("Nodes", DataExpressionId.DataExpressionTypeAll, this._displayExpressionIDs, false, false, false, this.isPreviewMode);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

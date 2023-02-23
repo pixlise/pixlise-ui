@@ -54,7 +54,8 @@ export class ExpressionPickerData
         public activeExpressionIDs: string[],
         public singleSelection: boolean,
         public showRGBMixes: boolean,
-        public showAnomalyExpressions: boolean
+        public showAnomalyExpressions: boolean,
+        public isPreviewMode: boolean = false
     )
     {
     }
