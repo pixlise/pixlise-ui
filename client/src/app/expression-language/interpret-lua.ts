@@ -32,7 +32,7 @@ import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-va
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { InterpreterDataSource } from "./interpreter-data-source";
 
-const { LuaFactory, LuaLibraries } = require('wasmoon')
+const { LuaFactory, LuaLibraries } = require("wasmoon");
 
 
 export class LuaDataQuerier
@@ -75,7 +75,8 @@ export class LuaDataQuerier
                     traceAllocations: false
                 };
                 let lua = factory.createEngine(luaOpts);
-                lua.then((eng)=>{
+                lua.then((eng)=>
+                {
                     console.log("Lua Engine created...");
 
                     // Save this for later
@@ -176,8 +177,8 @@ export class LuaDataQuerier
                             );
                         }
                     );
-                })
-                .catch((err)=>{
+                }).catch((err)=>
+                {
                     console.error(err);
                     observer.error(err);
                 });
@@ -240,14 +241,14 @@ export class LuaDataQuerier
         {
             console.error(err);
             LuaDataQuerier._lua.global.dumpStack(console.error);
-/* NOTE: This doesn't print any more than the above...
-            // Print out everything...
-            for(let c = 1; c < 10; c++)
-            {
-                const traceback = LuaDataQuerier._lua.global.lua.lua_tolstring(LuaDataQuerier._lua.global.address, -c, null);
-                console.log(traceback);
-            }
-*/
+            /* NOTE: This doesn't print any more than the above...
+                // Print out everything...
+                for(let c = 1; c < 10; c++)
+                {
+                    const traceback = LuaDataQuerier._lua.global.lua.lua_tolstring(LuaDataQuerier._lua.global.address, -c, null);
+                    console.log(traceback);
+                }
+            */
             throw new Error(err);
         }
         finally
@@ -473,7 +474,7 @@ end
                 {
                     if(!first)
                     {
-                        luaTableText += ","
+                        luaTableText += ",";
                     }
                     luaTableText += col;
                     first = false;
@@ -485,7 +486,7 @@ end
             luaTableText += " },\n";
         }
 
-        luaTableText += "}"
+        luaTableText += "}";
         console.log(luaTableText);
     }
 }

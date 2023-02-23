@@ -32,36 +32,40 @@ POSSIBILITY OF SUCH DAMAGE.
 <div
     fxLayout="column"
     class="dlg-border-with-backdrop gap-separated-vertical-elements"
-    (keydown)='onKeyDown($event)'
-    (keyup)='onKeyUp($event)'
-    (click)='onClickDialog($event)'>
+>
 
     <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
         <h1>Expression Editor</h1>
         <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
             <div class="label">Expression Name</div>
-            <input type="text" placeholder="" [(ngModel)]="expressionName" fxFlex>
+            <input type="text" placeholder="" [(ngModel)]="expressionName" [disabled]="!isEditable" fxFlex>
             <tag-picker
                 type="expression"
                 [selectedTagIDs]="selectedTagIDs"
                 [showCurrentTagsSection]="true"
                 (onTagSelectionChanged)="onTagSelectionChanged($event)"
+                [editable]="isEditable"
             >
             </tag-picker>
+            <icon-button
+                *ngIf="data.showSoloEditorButton"
+                (onClick)="onOpenSoloEditorView()"
+                title="Open Solo Editor View"
+                icon="assets/button-icons/widget-solo.svg"
+            ></icon-button>
         </div>
     </div>
-
-    <ngx-codemirror
-        class="separator"
-        [(ngModel)]="editExpression"
-        (click)='onClickExpression($event)'>
-    </ngx-codemirror>
-<!--
-    #codeMirror
-    [options]="codeMirrorOptions"
--->
+    <expression-text-editor
+        [expression]="expression"
+        [allowEdit]="isEditable"
+        [isImmediatelyAppliable]="data.isImmediatelyAppliable"
+        [applyNow]="data.applyNow"
+        (onTextChange)="onExpressionTextChanged($event)"
+        [isLua]="isLua"
+    >
+    </expression-text-editor>
     <div class="label">Expression Description</div>
-    <input type="text" placeholder="" [(ngModel)]="expressionComments" fxFlex>
+    <input type="text" placeholder="" [(ngModel)]="expressionComments" [disabled]="!isEditable" fxFlex>
 
     <div fxLayout="row" fxLayoutAlign="end" class="choice-container gap-separated-horizontal-elements">
         <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
@@ -69,12 +73,3 @@ POSSIBILITY OF SUCH DAMAGE.
         <push-button buttonStyle="yellow" [disabled]="!isEditable" (onClick)="onOK()">Apply</push-button>
     </div>
 </div>
-
-<expression-help-dropdown
-    *ngIf="activeHelp"
-    class="help-dropdown"
-    style="top: {{dropdownTop}}; left: {{dropdownLeft}}"
-    [help]="activeHelp"
-    (escEvent)="onHelpEscape($event)"
-    (clickEvent)="onHelpClick($event)">
-</expression-help-dropdown>

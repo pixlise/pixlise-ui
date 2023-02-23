@@ -63,6 +63,8 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     @Input() showPureSwitchOnElements: boolean;
     @Input() initialScrollToIdx: number = -1;
     @Input() downloadable: boolean = true;
+    
+    @Input() isPreviewMode: boolean = false;
 
     @Input() selectedIcon: string = "assets/button-icons/check-on.svg";
     @Input() unselectedIcon: string = "assets/button-icons/check-off.svg";

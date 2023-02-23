@@ -99,7 +99,7 @@
   color: $clr-purple;
 }
 
-/*
+
 .cm-s-pixlise .cm-keyword {
   color: #C792EA;
 }
@@ -160,7 +160,7 @@
 .cm-s-pixlise .cm-qualifier {
   color: #DECB6B;
 }
-*/
+
 
 .cm-s-pixlise .cm-comment {
   color: #549E7A;
@@ -189,4 +189,8 @@
 .cm-s-pixlise .CodeMirror-matchingbracket {
   text-decoration: underline;
   color: white !important;
+}
+
+span.highlight {
+    background-color: black;
 }

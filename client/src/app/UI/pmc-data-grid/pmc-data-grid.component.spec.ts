@@ -27,35 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+import { async, ComponentFixture, TestBed } from "@angular/core/testing";
+import { PMCDataGridComponent } from "./pmc-data-grid.component";
 
-// To edit code mirror styling, look at pixlise-codemirror-theme.scss
 
-.dlg-border-with-backdrop {
-    min-width: 50vw;
-    max-width: 90vw;
-//    max-height: 80vh;
-}
+describe("PMCDataGridComponent", () => 
+{
+    let component: PMCDataGridComponent;
+    let fixture: ComponentFixture<PMCDataGridComponent>;
 
-h3 {
-    margin-top: $sz-unit;
-    margin-bottom: 0px;
-}
+    beforeEach(async(() => 
+    {
+        TestBed.configureTestingModule({
+            declarations: [ PMCDataGridComponent ]
+        })
+            .compileComponents();
+    }));
 
-.choice-container {
-    margin: $sz-double 0px $sz-unit;
-}
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(PMCDataGridComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-expression-text-editor {
-    margin: $sz-double 0px;
-}
-
-.label {
-    color: $clr-gray-30;
-}
-
-// Need dropdown to have a large z index so it draws on top of codemirror text blocks
-.help-dropdown {
-    position: absolute;
-    z-index: 100;
-}
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

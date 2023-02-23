@@ -30,7 +30,7 @@
 import { Component, ElementRef, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subject, Subscription } from "rxjs";
-import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
+import { PMCDataValues } from "src/app/expression-language/data-values";
 import { MinMax } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
 import { orderVisibleROIs, PredefinedROIID } from "src/app/models/roi";
@@ -39,7 +39,7 @@ import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { ternaryState, ViewStateService } from "src/app/services/view-state.service";
-import { DataSourceParams, DataUnit, RegionDataResults, WidgetDataErrorType, WidgetDataUpdateReason, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { DataSourceParams, DataUnit, RegionDataResults, WidgetDataUpdateReason, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
 import { CanvasDrawer, CanvasDrawParameters, CanvasInteractionHandler } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
@@ -48,7 +48,6 @@ import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expr
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { httpErrorToString, randomString } from "src/app/utils/utils";
-import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { TernaryDiagramDrawer } from "./drawer";
 import { TernaryInteraction } from "./interaction";
 import { TernaryModel } from "./model";
@@ -65,6 +64,7 @@ import { ExpressionReferences } from "../references-picker/references-picker.com
 export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawer, ExportPlotCaller
 {
     @Input() widgetPosition: string = "";
+    @Input() previewExpressionIDs: string[] = [];
 
     private id = randomString(4);
     private _subs = new Subscription();
@@ -109,6 +109,33 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
 
     ngOnInit()
     {
+        // Only subscribe to expressions if we have preview expressions passed
+        if(this.previewExpressionIDs && this.previewExpressionIDs.length > 0)
+        {
+            this._subs.add(this._exprService.expressionsUpdated$.subscribe(() =>
+            {
+                // If user has changed axes, but still has unsaved expression showing, dont reset
+                if(!this._aExpressionId.startsWith("unsaved-") && !this._bExpressionId.startsWith("unsaved-") && !this._cExpressionId.startsWith("unsaved-"))
+                {
+                    // Default set axes to first three preview expressions passed
+                    if(this._exprService.getExpression(this.previewExpressionIDs[0]))
+                    {
+                        this._aExpressionId = this.previewExpressionIDs[0];
+                    }
+                    if(this.previewExpressionIDs.length > 1 && this._exprService.getExpression(this.previewExpressionIDs[1]))
+                    {
+                        this._bExpressionId = this.previewExpressionIDs[1];
+                    }
+                    if(this.previewExpressionIDs.length > 2 && this._exprService.getExpression(this.previewExpressionIDs[2]))
+                    {
+                        this._cExpressionId = this.previewExpressionIDs[2];
+                    }
+                }
+
+                this.prepareData("preview-expression-refresh", null);
+            }));
+        }
+
         this._subs.add(this._selectionService.hoverChangedReplaySubject$.subscribe(
             ()=>
             {
@@ -192,6 +219,11 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
     get thisSelector(): string
     {
         return ViewStateService.widgetSelectorTernaryPlot;
+    }
+
+    get isPreviewMode(): boolean
+    {
+        return this.previewExpressionIDs && this.previewExpressionIDs.length > 0;
     }
 
     get isSolo(): IconButtonState
@@ -702,7 +734,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
             exprIds = [this._cExpressionId];
         }
 
-        dialogConfig.data = new ExpressionPickerData("Vertex", DataExpressionId.DataExpressionTypeAll, exprIds, true, false, false);
+        dialogConfig.data = new ExpressionPickerData("Vertex", DataExpressionId.DataExpressionTypeAll, exprIds, true, false, false, this.isPreviewMode);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

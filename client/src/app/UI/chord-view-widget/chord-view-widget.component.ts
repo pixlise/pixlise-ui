@@ -61,6 +61,7 @@ import { ChordDrawMode, ChordNodeData, ChordViewModel } from "./model";
 export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
 {
     @Input() widgetPosition: string = "";
+    @Input() previewExpressionIDs: string[] = [];
 
     //    private id = randomString(4);
     private _subs = new Subscription();
@@ -101,6 +102,29 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
 
     ngOnInit()
     {
+        // Only subscribe to expressions if we have preview expressions passed
+        if(this.previewExpressionIDs && this.previewExpressionIDs.length > 0)
+        {
+            this._subs.add(this._exprService.expressionsUpdated$.subscribe(() =>
+            {
+                this.setStartingExpressions();
+
+                let unsavedExpressions = this._displayExpressionIDs.filter(id => this.previewExpressionIDs.includes(id));
+
+                // If user has changed axes, but still has unsaved expression showing, dont reset
+                if(unsavedExpressions.length < this.previewExpressionIDs.length)
+                {
+                    let validPreviewExpressions = this.previewExpressionIDs.filter(id => this._exprService.getExpression(id));
+                    if(validPreviewExpressions.length > 0)
+                    {
+                        this._displayExpressionIDs = this._displayExpressionIDs.concat(validPreviewExpressions);
+                    }
+                }
+
+                this.recalcCorrelationData("preview-expression-refresh", null);
+            }));
+        }
+
         this._subs.add(this._widgetDataService.widgetData$.subscribe(
             (updReason: WidgetDataUpdateReason)=>
             {
@@ -170,6 +194,11 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
     get thisSelector(): string
     {
         return ViewStateService.widgetSelectorChordDiagram;
+    }
+
+    get isPreviewMode(): boolean
+    {
+        return this.previewExpressionIDs && this.previewExpressionIDs.length > 0;
     }
 
     get isSolo(): IconButtonState
@@ -284,7 +313,7 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
         //dialogConfig.disableClose = true;
         //dialogConfig.autoFocus = true;
         //dialogConfig.width = '1200px';
-        dialogConfig.data = new ExpressionPickerData("Nodes", DataExpressionId.DataExpressionTypeAll, this._displayExpressionIDs, false, false, false);
+        dialogConfig.data = new ExpressionPickerData("Nodes", DataExpressionId.DataExpressionTypeAll, this._displayExpressionIDs, false, false, false, this.isPreviewMode);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

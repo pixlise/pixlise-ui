@@ -63,8 +63,8 @@ export class PixliseDataQuerier
 
         if(result instanceof PMCDataValues)
         {            
-let t1 = performance.now();
-console.log(">>> PIXLISE expression took: "+(t1-t0).toLocaleString()+"ms");
+            let t1 = performance.now();
+            console.log(">>> PIXLISE expression took: "+(t1-t0).toLocaleString()+"ms");
 
             return of(result as PMCDataValues);
         }

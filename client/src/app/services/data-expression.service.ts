@@ -388,23 +388,22 @@ export class DataExpressionService
         return this.http.get<DataExpressionWire>(apiURL, makeHeaders())
             .pipe(
                 map((expression: DataExpressionWire)=>
-                    {
-                        // NOTE: JS doesn't _actually_ return a DataExpressionWire
-                        let wireExpr = new DataExpressionWire(
-                            expression["name"],
-                            expression["expression"],
-                            expression["type"],
-                            expression["comments"],
-                            expression["shared"],
-                            expression["creator"],
-                            expression["create_unix_time_sec"],
-                            expression["mod_unix_time_sec"],
-                            expression["tags"]
-                        );
-                        let receivedDataExpression = wireExpr.makeExpression(id);
-                        return receivedDataExpression;
-                    }
-                )
+                {
+                    // NOTE: JS doesn't _actually_ return a DataExpressionWire
+                    let wireExpr = new DataExpressionWire(
+                        expression["name"],
+                        expression["expression"],
+                        expression["type"],
+                        expression["comments"],
+                        expression["shared"],
+                        expression["creator"],
+                        expression["create_unix_time_sec"],
+                        expression["mod_unix_time_sec"],
+                        expression["tags"]
+                    );
+                    let receivedDataExpression = wireExpr.makeExpression(id);
+                    return receivedDataExpression;
+                })
             );
     }
 
@@ -534,6 +533,24 @@ export class DataExpressionService
         result.checkQuantCompatibility(this._elementFormulae, this._validDetectors);
 
         return result;
+    }
+
+    cache(id: string, expr: DataExpression, name?: string): void
+    {
+        let receivedDataExpression = new DataExpression(
+            id,
+            name || expr.name,
+            expr.expression,
+            expr.type,
+            expr.comments || "",
+            false,
+            null,
+            -1,
+            new Date().getUTCSeconds(),
+            expr.tags || []
+        );
+        this._expressions.set(id, receivedDataExpression);
+        this._expressionsUpdated$.next();
     }
 
     add(name: string, expression: string, type: string, comments: string, tags: string[] = []): Observable<object>

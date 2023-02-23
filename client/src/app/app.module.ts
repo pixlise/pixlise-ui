@@ -92,6 +92,7 @@ import { VersionDisplayComponent } from "./routes/about/version-display/version-
 
 import { QuantSelectorPanelComponent } from "./UI/quantification-selector/quant-selector-panel/quant-selector-panel.component";
 import { ExpressionEditorComponent } from "./UI/expression-editor/expression-editor.component";
+import { ExpressionTextEditorComponent } from "./UI/expression-editor/expression-text-editor/expression-text-editor.component";
 
 import { Base64ImagePipe } from "./utils/base64-image.pipe";
 import { AddBearerPipe } from "./utils/add-bearer-header.pipe";
@@ -227,6 +228,8 @@ import { LogViewerComponent } from "./UI/log-viewer/log-viewer.component";
 import { AnnotationEditorComponent } from "./UI/annotation-editor/annotation-editor.component";
 import { AnnotationDisplayComponent } from "./UI/annotation-editor/annotation-display/annotation-display.component";
 import { PlotExporterDialogComponent } from "./UI/atoms/plot-exporter-dialog/plot-exporter-dialog.component";
+import { CodeEditorComponent } from "./routes/dataset/code-editor/code-editor.component";
+import { PMCDataGridComponent } from "./UI/pmc-data-grid/pmc-data-grid.component";
 
 import { LuaDataQuerier } from "src/app/expression-language/interpret-lua";
 
@@ -320,6 +323,7 @@ function initLua(): () => Observable<any> {
     declarations: [
         AppComponent,
         AnalysisComponent,
+        CodeEditorComponent,
         QuantificationsComponent,
         DatasetsComponent,
         PageNotFoundComponent,
@@ -353,6 +357,7 @@ function initLua(): () => Observable<any> {
         PeriodicTableTabComponent,
         QuantSelectorPanelComponent,
         ExpressionEditorComponent,
+        ExpressionTextEditorComponent,
         Base64ImagePipe,
         MapBrowserComponent,
         DatasetLoadingProgressComponent,
@@ -475,6 +480,7 @@ function initLua(): () => Observable<any> {
         AddDatasetDialogComponent,
         LogViewerComponent,
         PlotExporterDialogComponent,
+        PMCDataGridComponent
     ],
     imports: [
         BrowserModule,
@@ -534,6 +540,7 @@ function initLua(): () => Observable<any> {
         LayerControlComponent,
         ExpressionPickerComponent,
         ExpressionEditorComponent,
+        ExpressionTextEditorComponent,
         QuantSelectorPanelComponent,
         UserMenuPanelComponent,
         AnnotationOptionsComponent,

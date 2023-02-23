@@ -1,0 +1,148 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+@import 'variables.scss';
+
+.preview-container {
+    width: 50vw;
+    min-width: 300px;
+    height: 30vw;
+    min-height: 200px;
+}
+
+.text-editor {
+    height: calc(100vh - 72px);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    max-width: 50vw;
+
+    expression-text-editor {
+        height: 100%;
+        display: flex;
+
+        ::ng-deep .cm-s-pixlise.CodeMirror {
+            height: calc(100vh - 72px);
+        }
+    }    
+}
+
+
+.code-editor {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+
+    background-color: #1B1D1E;
+
+    .editor-header {
+        display: flex;
+        align-items: center;
+
+        background-color: #2A3036;
+        box-shadow: 0px 4px 4px 0px #00000040;
+        z-index: 100;
+
+        padding: 4px 0;
+    }
+    
+    .editor-footer {
+        @extend .editor-header;
+        height: 28px;
+
+        .text-container {
+            input {
+                margin: 0 8px;
+            }
+        }
+
+        .viz-container {
+            .right-btn-group {
+                push-button:last-of-type {
+                    margin: 0 8px;
+                }
+            }
+        }
+    }
+
+    .text-container {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        padding: 0 8px;
+    }
+
+    .viz-container {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        padding-left: 8px;
+    }
+
+    .right-btn-group {
+        display: flex;
+        align-items: center;
+
+        margin-left: auto;
+    }
+
+    .viz-panels {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        background-color: #222829;
+        position: relative;
+
+        .preview-container {
+            flex: 1;
+            max-height: 60vh;
+
+            &.hidden {
+                z-index: -1;
+            }
+        }
+
+       pmc-data-grid {
+            flex: 1;
+            min-height: 200px;
+            max-height: 40vh;
+            max-width: 50vw;
+
+            &.solo {
+                position: absolute;
+                top: 0;
+                max-height: calc(100vh - 72px);
+                height: 100%;
+                width: 100%;
+            }
+        }
+    }
+}

@@ -327,9 +327,13 @@ export class AnalysisComponent implements OnInit, OnDestroy
     private createTopRowComponents(selectors: string[])
     {
         // Should be 2 components... if not, show the default 2
-        if(selectors.length != 2)
+        if(selectors.length < 2)
         {
             selectors = [ViewStateService.widgetSelectorContextImage, ViewStateService.widgetSelectorSpectrum];
+        }
+        else if(selectors.length > 2)
+        {
+            selectors = selectors.slice(0, 2);
         }
         
         // Set this one

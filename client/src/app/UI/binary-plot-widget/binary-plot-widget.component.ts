@@ -35,7 +35,7 @@ import { MinMax } from "src/app/models/BasicTypes";
 import { Point } from "src/app/models/Geometry";
 import { orderVisibleROIs, PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionService } from "src/app/services/data-expression.service";
-import { DataExpression, DataExpressionId } from "src/app/models/Expression";
+import { DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { binaryState, ViewStateService } from "src/app/services/view-state.service";
@@ -64,6 +64,7 @@ import { ExpressionReferences } from "../references-picker/references-picker.com
 export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawer, ExportPlotCaller
 {
     @Input() widgetPosition: string = "";
+    @Input() previewExpressionIDs: string[] = [];
 
     private id = randomString(4);
     private _subs = new Subscription();
@@ -103,6 +104,29 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
 
     ngOnInit()
     {
+        // Only subscribe to expressions if we have preview expressions passed
+        if(this.isPreviewMode)
+        {
+            this._subs.add(this._exprService.expressionsUpdated$.subscribe(() =>
+            {
+                // If user has changed axes, but still has unsaved expression showing, dont reset
+                if(!this._xAxisExpressionId.startsWith("unsaved-") && !this._yAxisExpressionId.startsWith("unsaved-"))
+                {
+                    // Default set axes to first two preview expressions passed
+                    if(this._exprService.getExpression(this.previewExpressionIDs[0]))
+                    {
+                        this._xAxisExpressionId = this.previewExpressionIDs[0];
+                    }
+                    if(this.previewExpressionIDs.length > 1 && this._exprService.getExpression(this.previewExpressionIDs[1]))
+                    {
+                        this._yAxisExpressionId = this.previewExpressionIDs[1];
+                    }
+                }
+
+                this.prepareData("preview-expression-refresh", null);
+            }));
+        }
+
         this._subs.add(this._selectionService.chordClicks$.subscribe(
             (chordExprIds: string[])=>
             {
@@ -152,7 +176,15 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                         if(loadedState.expressionIDs.length == 2)
                         {
                             this._xAxisExpressionId = loadedState.expressionIDs[0];
+                            if(this._xAxisExpressionId.startsWith("unsaved-"))
+                            {
+                                this._xAxisExpressionId = "";
+                            }
                             this._yAxisExpressionId = loadedState.expressionIDs[1];
+                            if(this._yAxisExpressionId.startsWith("unsaved-"))
+                            {
+                                this._yAxisExpressionId = "";
+                            }
                         }
                         else
                         {
@@ -200,6 +232,11 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
     get thisSelector(): string
     {
         return ViewStateService.widgetSelectorBinaryPlot;
+    }
+
+    get isPreviewMode(): boolean
+    {
+        return this.previewExpressionIDs && this.previewExpressionIDs.length > 0;
     }
 
     get isSolo(): IconButtonState
@@ -336,12 +373,12 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         if(queryData.queryResults.length > 0)
         {
             exprIdX = queryData.queryResults[0].query.exprId;
-            xLabel = queryData.queryResults[0].expression.getExpressionShortDisplayName(labelMaxChars).shortName;
+            xLabel = queryData.queryResults[0].expression?.getExpressionShortDisplayName(labelMaxChars).shortName;
         }
         if(queryData.queryResults.length > 1)
         {
             exprIdY = queryData.queryResults[1].query.exprId;
-            yLabel = queryData.queryResults[1].expression.getExpressionShortDisplayName(labelMaxChars).shortName;
+            yLabel = queryData.queryResults[1].expression?.getExpressionShortDisplayName(labelMaxChars).shortName;
         }
 
         if(this.showMmol)
@@ -709,7 +746,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             exprIds = [this._yAxisExpressionId];
         }
 
-        dialogConfig.data = new ExpressionPickerData("Plot Axis", DataExpressionId.DataExpressionTypeAll, exprIds, true, false, false);
+        dialogConfig.data = new ExpressionPickerData("Plot Axis", DataExpressionId.DataExpressionTypeAll, exprIds, true, false, false, this.isPreviewMode);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

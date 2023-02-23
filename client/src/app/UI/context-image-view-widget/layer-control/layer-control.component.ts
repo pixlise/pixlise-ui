@@ -631,7 +631,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                                 map(
                                     (csvData)=>
                                     {
-                                        return new CSVExportItem(`${name}`+" for dataset"+datasetId, csvData);
+                                        return new CSVExportItem(`${name}${datasetId ? " for dataset"+datasetId : ""}`, csvData);
                                     }
                                 )
                             )

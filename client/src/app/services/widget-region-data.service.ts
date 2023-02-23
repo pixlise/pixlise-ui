@@ -124,7 +124,7 @@ export class RegionData extends ROISavedItem
         );
     }
 
-    // TODO: this is pretty dodgy, there must be a better way. Quickly tried casting RegoinData as ROISavedItem and assignment
+    // TODO: this is pretty dodgy, there must be a better way. Quickly tried casting RegionData as ROISavedItem and assignment
     // operator but that probably copied the object because the values never made it into the map storing RegionData...
     setROISavedItemFields(roi: ROISavedItem): void
     {
@@ -520,87 +520,7 @@ export class WidgetRegionDataService
             }
             else
             {
-                try
-                {
-                    // Some expressions run slowly, so we cache their results in case they are re-run frequently
-                    // eg in the case of UI refreshing binary or ternary plots
-                    let t0 = performance.now();
-
-                    // At this point, we have to decide what we're querying for. If we have an ROI specified, we are only querying for its PMCs
-                    // BUT datasetId filters this further, because if we have one specified (in the case of combined datasets), we need to
-                    // only include PMCs for that dataset!
-                    let pmcsToQuery = region ? region.pmcs : null;
-                    let pmcOffset = 0;
-
-                    if(query.datasetId)
-                    {
-                        // Get the offset for this dataset ID
-                        pmcOffset = dataset.getIdOffsetForSubDataset(query.datasetId);
-
-                        // We're filtering down!
-                        if(!pmcsToQuery)
-                        {
-                            // No PMCs given, so just get all for the given dataset ID
-                            pmcsToQuery = this.getPMCsForDatasetId(query.datasetId, dataset)
-                        }
-                        else
-                        {
-                            // Region PMCs are specified, so filter down to only those for the given dataset!
-                            pmcsToQuery = this.filterPMCsForDatasetId(region.pmcs, query.datasetId, dataset);
-                        }
-                    }
-
-                    // At this point if we don't have the expression text, we query for it and return it as part of a chain of observables
-                    let data$: Observable<PMCDataValues> = null;
-
-                    if(expr.expression.length <= 0)
-                    {
-                        data$ = new Observable<PMCDataValues>(
-                            (observer)=>
-                            {
-                                this._exprService.getExpressionAsync(query.exprId).subscribe(
-                                    (exprQueried: DataExpression)=>
-                                    {
-                                        let query$ = getQuantifiedDataWithExpression(exprQueried.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
-                                        query$.subscribe(
-                                            (values: PMCDataValues)=>
-                                            {
-                                                observer.next(values);
-                                                observer.complete();
-                                            },
-                                            (err)=>
-                                            {
-                                                observer.error(err);
-                                            }
-                                        );
-                                    },
-                                    (err)=>
-                                    {
-                                        observer.error(err);
-                                    }
-                                );
-                            }
-                        );
-                    }
-                    else
-                    {
-                        // We do have the expression text already, so just run normally
-                        data$ = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
-                    }
-
-                    result$.push(data$.pipe(
-                        map((result: PMCDataValues)=>
-                        {
-                            return this.processQuantResult(t0, result, query, expr, region, pmcOffset);
-                        })
-                    ));
-                }
-                catch (error)
-                {
-                    let errorMsg = httpErrorToString(error, "WidgetRegionDataService.getData");
-                    SentryHelper.logMsg(true, errorMsg);
-                    result$.push(of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr, region, query)));
-                }
+                result$.push(this.runAsyncExpression(query, expr));
             }
         }
 
@@ -614,7 +534,7 @@ export class WidgetRegionDataService
         ); 
     }
 
-    private processQuantResult(t0: number, result: PMCDataValues, query: DataSourceParams, expr: DataExpression, region: RegionData, pmcOffset: number): RegionDataResultItem
+    private processQuantResult(t0: number, result: PMCDataValues, query: DataSourceParams, expr: DataExpression, region: RegionData, pmcOffset: number, shouldCache: boolean = true): RegionDataResultItem
     {
         let unitConverted = this.applyUnitConversion(expr, result, query.units);
 
@@ -629,11 +549,122 @@ export class WidgetRegionDataService
 
         let resultItem = new RegionDataResultItem(unitConverted, null, null, unitConverted.warning, expr, region, query);
 
-        // Cache if needed
-        let t1 = performance.now();
-        this._resultCache.addCachedResult(query, t1-t0, resultItem);
+        if(shouldCache)
+        {
+            // Cache if needed
+            let t1 = performance.now();
+            this._resultCache.addCachedResult(query, t1-t0, resultItem);
+        }
 
         return resultItem;
+    }
+
+    public cacheExpression(query: DataSourceParams, expr: DataExpression, result: PMCDataValues, warning: string = ""): void
+    {
+        this._resultCache.addCachedResult(
+            query,
+            expr.modUnixTimeSec,
+            new RegionDataResultItem(
+                result,
+                null,
+                null,
+                warning,
+                expr,
+                this._regions.get(query.roiId),
+                query
+            )
+        );
+    }
+
+    public runAsyncExpression(query: DataSourceParams, expr: DataExpression, shouldCache: boolean = true): Observable<RegionDataResultItem>
+    {
+        let dataset = this._datasetService.datasetLoaded;
+        let region = this._regions.get(query.roiId);
+        let result$: Observable<RegionDataResultItem> = null;
+
+        try
+        {
+            // Some expressions run slowly, so we cache their results in case they are re-run frequently
+            // eg in the case of UI refreshing binary or ternary plots
+            let t0 = performance.now();
+
+            // At this point, we have to decide what we're querying for. If we have an ROI specified, we are only querying for its PMCs
+            // BUT datasetId filters this further, because if we have one specified (in the case of combined datasets), we need to
+            // only include PMCs for that dataset!
+            let pmcsToQuery = region ? region.pmcs : null;
+            let pmcOffset = 0;
+
+            if(query.datasetId)
+            {
+                // Get the offset for this dataset ID
+                pmcOffset = dataset.getIdOffsetForSubDataset(query.datasetId);
+
+                // We're filtering down!
+                if(!pmcsToQuery)
+                {
+                    // No PMCs given, so just get all for the given dataset ID
+                    pmcsToQuery = this.getPMCsForDatasetId(query.datasetId, dataset)
+                }
+                else
+                {
+                    // Region PMCs are specified, so filter down to only those for the given dataset!
+                    pmcsToQuery = this.filterPMCsForDatasetId(region.pmcs, query.datasetId, dataset);
+                }
+            }
+
+            // At this point if we don't have the expression text, we query for it and return it as part of a chain of observables
+            let data$: Observable<PMCDataValues> = null;
+
+            if(expr.expression.length <= 0)
+            {
+                data$ = new Observable<PMCDataValues>(
+                    (observer)=>
+                    {
+                        this._exprService.getExpressionAsync(query.exprId).subscribe(
+                            (exprQueried: DataExpression)=>
+                            {
+                                let query$ = getQuantifiedDataWithExpression(exprQueried.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
+                                query$.subscribe(
+                                    (values: PMCDataValues)=>
+                                    {
+                                        observer.next(values);
+                                        observer.complete();
+                                    },
+                                    (err)=>
+                                    {
+                                        observer.error(err);
+                                    }
+                                );
+                            },
+                            (err)=>
+                            {
+                                observer.error(err);
+                            }
+                        );
+                    }
+                );
+            }
+            else
+            {
+                // We do have the expression text already, so just run normally
+                data$ = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
+            }
+
+            result$ = data$.pipe(
+                map((result: PMCDataValues)=>
+                {
+                    return this.processQuantResult(t0, result, query, expr, region, pmcOffset, shouldCache);
+                })
+            );
+        }
+        catch (error)
+        {
+            let errorMsg = httpErrorToString(error, "WidgetRegionDataService.getData");
+            SentryHelper.logMsg(true, errorMsg);
+            result$ = of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr, region, query));
+        }
+
+        return result$;
     }
 
     private getPMCsForDatasetId(datasetId: string, dataset: DataSet): Set<number>
@@ -669,7 +700,7 @@ export class WidgetRegionDataService
             let locIdx = dataset.pmcToLocationIndex.get(regionPMC);
 
             // See if it exists in the loc idxs for the sub-dataset
-            if(locIdxs.has(locIdx))
+            if(locIdxs.size === 0 || locIdxs.has(locIdx))
             {
                 // We're adding it!
                 pmcsToQuery.add(regionPMC);

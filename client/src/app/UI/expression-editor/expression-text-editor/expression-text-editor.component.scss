@@ -34,7 +34,7 @@
 .dlg-border-with-backdrop {
     min-width: 50vw;
     max-width: 90vw;
-//    max-height: 80vh;
+    padding: 0;
 }
 
 h3 {
@@ -44,10 +44,6 @@ h3 {
 
 .choice-container {
     margin: $sz-double 0px $sz-unit;
-}
-
-expression-text-editor {
-    margin: $sz-double 0px;
 }
 
 .label {

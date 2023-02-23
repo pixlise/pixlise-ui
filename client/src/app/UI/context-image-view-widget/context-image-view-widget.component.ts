@@ -77,6 +77,7 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
 
     @Input() widgetPosition: string = "";
     @Input() mode: string = "analysis";
+    @Input() previewExpressionIDs: string[] = [];
 
     soloView: boolean = false;
     showBottomToolbar: boolean = true;
@@ -146,8 +147,9 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
             return;
         }
 
-        // NOTE: no matter what, if we're showing as a solo view, we hide any buttons that open fold-down panels under the context image
-        if(this.soloView)
+        // NOTE: no matter what, if we're showing as a solo view or in preview mode, we hide any buttons that open 
+        // fold-down panels under the context image
+        if(this.soloView || this.isPreviewMode)
         {
             this.showFoldDownPanelButtons = false;
         }
@@ -267,6 +269,18 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
         this._modelSubs.add(all$.subscribe(
             (data: unknown[])=>
             {
+                // Only subscribe to expressions if we have preview expressions passed
+                if(this.isPreviewMode)
+                {
+                    let validPreviewExpressions = this.previewExpressionIDs.filter(id => this.exprService.getExpression(id));
+                    if(validPreviewExpressions.length > 0)
+                    {
+                        validPreviewExpressions.forEach(id =>
+                        {
+                            this.mdl.layerManager.setLayerVisibility(id, 1, true, []);
+                        });
+                    }
+                }
                 this.mdl.regionManager.setDataset(data[0] as DataSet);
 
                 // Process widget data update reason with the rest. Previously this was received either before or after notifyDataArrived causing
@@ -410,6 +424,11 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
     get thisSelector(): string
     {
         return ViewStateService.widgetSelectorContextImage;
+    }
+
+    get isPreviewMode(): boolean 
+    {
+        return this.previewExpressionIDs && this.previewExpressionIDs.length > 0;
     }
 
     private saveState(reason: string): void

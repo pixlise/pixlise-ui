@@ -76,7 +76,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <icon-button
                 *ngIf="layerButton === 'showSettingsButton'"
                 title="Edit expression"
-                icon="{{isPredefined ? 'assets/button-icons/gear.svg' : isSharedByOtherUser ? 'assets/button-icons/code.svg' : 'assets/button-icons/edit.svg'}}"
+                icon="{{isPredefined ? 'assets/button-icons/gear.svg' : (isSharedByOtherUser || isPreviewMode) ? 'assets/button-icons/code.svg' : 'assets/button-icons/edit.svg'}}"
                 (click)="onSettings($event)">
             </icon-button>
             <icon-button
@@ -180,7 +180,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 <icon-button
                     *ngIf="layerButton === 'showSettingsButton'"
                     title="Edit expression"
-                    icon="{{isPredefined ? 'assets/button-icons/gear.svg' : isSharedByOtherUser ? 'assets/button-icons/code.svg' : 'assets/button-icons/edit.svg'}}"
+                    icon="{{isPredefined ? 'assets/button-icons/gear.svg' : (isSharedByOtherUser || isPreviewMode) ? 'assets/button-icons/code.svg' : 'assets/button-icons/edit.svg'}}"
                     (click)="onSettings($event)">
                 </icon-button>
                 <icon-button

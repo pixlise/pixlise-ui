@@ -1,0 +1,162 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div fxLayout="column" class="code-editor">
+    <div class="editor-header">
+        <div class="text-container">
+            <h2>Expression Editor</h2>
+            <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
+                <push-button
+                    buttonStyle="gray"
+                    [disabled]="isSharedByOtherUser"
+                    [active]="useAutocomplete"
+                    (onClick)="onToggleAutocomplete()"
+                >Autocomplete
+                </push-button>
+                <push-button
+                    buttonStyle="yellow"
+                    [disabled]="!isCodeChanged && !isSubsetExpression"
+                    (onClick)="runExpression()"
+                    #tooltip="matTooltip"
+                    [matTooltip]="runCodeTooltip"
+                >Run
+                </push-button>
+                <input
+                    [disabled]="isSharedByOtherUser"
+                    type="text"
+                    placeholder="Expression Name"
+                    [(ngModel)]="expressionName"
+                    fxFlex
+                >
+                <tag-picker
+                    type="expression"
+                    [selectedTagIDs]="selectedTagIDs"
+                    [showCurrentTagsSection]="true"
+                    (onTagSelectionChanged)="onTagSelectionChanged($event)"
+                    [editable]="editable"
+                >
+                </tag-picker>
+            </div>
+        </div>
+        <div class="viz-container">
+            <span fxLayout="row" fxLayoutAlign="center center">
+                <h2>Visualization{{displayExpressionTitle ? ": " + displayExpressionTitle : ""}}</h2>
+                <icon-button 
+                    *ngIf="isCodeChanged"
+                    icon='assets/button-icons/disabled-orange.svg'
+                    [hasBackground]="false"
+                    #tooltip="matTooltip"
+                    matTooltip="Expression has changed since last run"
+                ></icon-button>
+            </span>
+            <div class="right-btn-group">
+                <icon-button
+                    icon='assets/button-icons/close-cross-gray.svg'
+                    (click)="onClose()"
+                    [hasBackground]="false"
+                ></icon-button>
+            </div>
+        </div>
+    </div>
+    <div fxLayout="row" class="editor-body">
+        <div class="text-editor">
+            <expression-text-editor
+                *ngIf="expression"
+                [expression]="expression"
+                [allowEdit]="editable"
+                [isImmediatelyAppliable]="false"
+                [applyNow]="false"
+                (onTextChange)="onExpressionTextChanged($event)"
+                (onTextSelect)="onTextSelect($event)"
+                (runExpression)="runExpression()"
+                (runHighlightedExpression)="runHighlightedExpression()"
+                (saveExpression)="onSave()"
+                [range]="isSubsetExpression ? executedTextSelection.range : null"
+                [showHelp]="useAutocomplete && !isSharedByOtherUser"
+                [isLua]="isLua"
+            >
+            </expression-text-editor>
+        </div>
+
+        <div class="viz-panels">
+            <div class="preview-container {{isPMCDataGridSolo ? 'hidden' : ''}}">
+                <template #preview></template>
+            </div>
+            <pmc-data-grid
+                class="{{isPMCDataGridSolo ? 'solo' : ''}}"
+                [header]="pmcGridExpressionTitle"
+                [evaluatedExpression]="evaluatedExpression"
+                [columnCount]="15"
+                (onToggleSolo)="onTogglePMCDataGridSolo($event)"
+            ></pmc-data-grid>
+        </div>
+    </div>
+    <div class="editor-footer">
+        <div class="text-container">
+            <mat-select [(ngModel)]="isLua">
+                <mat-option [value]="true">Lua</mat-option>
+                <mat-option [value]="false">Pixlang</mat-option>
+            </mat-select>
+            <input
+                [disabled]="isSharedByOtherUser"
+                type="text"
+                placeholder="Expression Description"
+                [(ngModel)]="expressionComments"
+                fxFlex
+            >
+            <push-button
+                buttonStyle="yellow"
+                [disabled]="textHighlighted === '' && !isEmptySelection"
+                (onClick)="runHighlightedExpression()"
+                #tooltip="matTooltip"
+                [matTooltip]="runHighlightedCodeTooltip"
+            >{{textHighlighted === '' ? "Visualize Code Until Line" : "Visualize Selected Code"}}
+            </push-button>
+        </div>
+        <div class="viz-container">
+            <div class="right-btn-group">
+                <push-button
+                    buttonStyle="outline"
+                    (onClick)="onClose()"
+                >Cancel
+                </push-button>
+                <push-button
+                    buttonStyle="yellow"
+                    [disabled]="isSharedByOtherUser || isExpressionSaved"
+                    (onClick)="onSave()"
+                    #tooltip="matTooltip"
+                    [matTooltip]="saveExpressionTooltip"
+                >Save
+                </push-button>
+            </div>
+        </div>
+    </div>
+</div>
