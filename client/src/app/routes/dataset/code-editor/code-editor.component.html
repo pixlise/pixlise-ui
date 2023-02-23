@@ -56,8 +56,13 @@ POSSIBILITY OF SUCH DAMAGE.
                     [(ngModel)]="expressionName"
                     fxFlex
                 >
-                <tag-picker type="expression" [selectedTagIDs]="selectedTagIDs" [showCurrentTagsSection]="true"
-                    (onTagSelectionChanged)="onTagSelectionChanged($event)">
+                <tag-picker
+                    type="expression"
+                    [selectedTagIDs]="selectedTagIDs"
+                    [showCurrentTagsSection]="true"
+                    (onTagSelectionChanged)="onTagSelectionChanged($event)"
+                    [editable]="editable"
+                >
                 </tag-picker>
             </div>
         </div>
@@ -118,7 +123,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="text-container">
             <mat-select [(ngModel)]="isLua">
                 <mat-option [value]="true">Lua</mat-option>
-                <mat-option [value]="false">Pixlise Expression Language</mat-option>
+                <mat-option [value]="false">Pixlang</mat-option>
             </mat-select>
             <input
                 [disabled]="isSharedByOtherUser"

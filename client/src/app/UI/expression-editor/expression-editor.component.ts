@@ -41,6 +41,7 @@ export class ExpressionEditorConfig
         public allowEdit: boolean,
         public applyNow: boolean = false,
         public isImmediatelyAppliable: boolean = true,
+        public showSoloEditorButton: boolean = true,
     )
     {
     }
@@ -77,6 +78,11 @@ export class ExpressionEditorComponent implements OnDestroy
     ngOnDestroy()
     {
         this._subs.unsubscribe();
+    }
+
+    get isLua(): boolean
+    {
+        return this.expression.expression.startsWith("LUA\n");
     }
 
     get expressionName(): string

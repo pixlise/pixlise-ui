@@ -50,6 +50,7 @@ import { WidgetRegionDataService } from "src/app/services/widget-region-data.ser
 import { PredefinedROIID } from "src/app/models/roi";
 import { TaggingService } from "src/app/services/tagging.service";
 import { generateExportCSVForExpression } from "src/app/services/export-data.service";
+import { Router } from "@angular/router";
 
 
 export class LayerInfo
@@ -134,7 +135,10 @@ export class LayerSettingsComponent implements OnInit
     private _isPureElement: boolean = false;
     private _expressionElement: string = "";
 
+    isCodeEditorPage: boolean = false;
+
     constructor(
+        private _router: Router,
         private _exprService: DataExpressionService,
         private _authService: AuthenticationService,
         private _datasetService: DataSetService,
@@ -144,6 +148,7 @@ export class LayerSettingsComponent implements OnInit
         public dialog: MatDialog,
     )
     {
+        this.isCodeEditorPage = this._router.url.includes("/code-editor");
     }
 
     ngOnInit()
@@ -452,10 +457,17 @@ export class LayerSettingsComponent implements OnInit
         dialogConfig.disableClose = true;
         //dialogConfig.backdropClass = "panel";
 
+        let allowEdit = this.showSettings && !this.layerInfo.layer.source.shared && !this.isSharedByOtherUser  && !this.isCodeEditorPage;
+
         let toEdit = this._exprService.getExpression(this.layerInfo.layer.id);
+        if(toEdit && allowEdit)
+        {
+            this._router.navigate(["dataset", this._datasetService.datasetIDLoaded, "code-editor", this.layerInfo.layer.id]);
+            return;
+        }
 
         // We only allow editing if we were allowed to, AND if expression is NOT shared AND if it was created by our user
-        dialogConfig.data = new ExpressionEditorConfig(toEdit, this.showSettings && !this.layerInfo.layer.source.shared && !this.isSharedByOtherUser);
+        dialogConfig.data = new ExpressionEditorConfig(toEdit, allowEdit, false, false, !this.isCodeEditorPage);
 
         const dialogRef = this.dialog.open(ExpressionEditorComponent, dialogConfig);
 

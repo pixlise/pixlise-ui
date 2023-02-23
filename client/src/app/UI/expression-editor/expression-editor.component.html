@@ -44,9 +44,11 @@ POSSIBILITY OF SUCH DAMAGE.
                 [selectedTagIDs]="selectedTagIDs"
                 [showCurrentTagsSection]="true"
                 (onTagSelectionChanged)="onTagSelectionChanged($event)"
+                [editable]="isEditable"
             >
             </tag-picker>
             <icon-button
+                *ngIf="data.showSoloEditorButton"
                 (onClick)="onOpenSoloEditorView()"
                 title="Open Solo Editor View"
                 icon="assets/button-icons/widget-solo.svg"
@@ -59,6 +61,7 @@ POSSIBILITY OF SUCH DAMAGE.
         [isImmediatelyAppliable]="data.isImmediatelyAppliable"
         [applyNow]="data.applyNow"
         (onTextChange)="onExpressionTextChanged($event)"
+        [isLua]="isLua"
     >
     </expression-text-editor>
     <div class="label">Expression Description</div>

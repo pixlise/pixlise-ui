@@ -137,50 +137,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
             this.setUpKeyBindings(cmObj);
 
-            // const toggleComment = (cm) =>
-            // {
-            //     cm.toggleComment({
-            //         indent: true,
-            //         lineComment: this.isLua ? "--" : "//"
-            //     });
-            // };
-
-            // const resetMarks = (cm) =>
-            // {
-            //     this.range = null;
-            //     let cursor = cm.getCursor();
-            //     cm.setSelection({line: 0, ch: 0}, {line: 0, ch: 0});
-            //     cm.setSelection(cursor, cursor);
-            // };
-
-            // cmObj.setOption("extraKeys", {
-            //     "Cmd-/": toggleComment,
-            //     "Ctrl-/": toggleComment,
-            //     "Cmd-Enter": (cm) =>
-            //     {
-            //         resetMarks(cm);
-            //         this.runExpression.emit();
-            //     },
-            //     "Ctrl-Enter": (cm) =>
-            //     {
-            //         resetMarks(cm);
-            //         this.runExpression.emit();
-            //     },
-            //     "Cmd-Alt-Enter": (cm) =>
-            //     {
-            //         resetMarks(cm);
-            //         this.runHighlightedExpression.emit();
-
-            //     },
-            //     "Ctrl-Alt-Enter": (cm) =>
-            //     {
-            //         resetMarks(cm);
-            //         this.runHighlightedExpression.emit();
-            //     },
-            //     "Cmd-S": () => this.saveExpression.emit(),
-            //     "Ctrl-S": () => this.saveExpression.emit(),
-            // });
-
             // Not sure what codemirror is doing, and why it does it but some ms after creation it has been resetting... we now reset it 2x, once for
             // reducing flicker for user, 2nd time to ensure anything that changed is overwritten with our settings again
             let setupFunc = ()=>
@@ -202,6 +158,11 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         this._subs.unsubscribe();
     }
 
+    get isWindows(): boolean
+    {
+        return navigator.userAgent.search("Windows") !== -1;
+    }
+
     private setUpKeyBindings(cmObj: any): void
     {
         const toggleComment = (cm) =>
@@ -219,34 +180,42 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             cm.setSelection({line: 0, ch: 0}, {line: 0, ch: 0});
             cm.setSelection(cursor, cursor);
         };
+        
+        if(this.isWindows)
+        {
+            cmObj.setOption("extraKeys", {
+                "Ctrl-/": toggleComment,
+                "Ctrl-Enter": (cm) =>
+                {
+                    resetMarks(cm);
+                    this.runExpression.emit();
+                },
+                "Ctrl-Alt-Enter": (cm) =>
+                {
+                    resetMarks(cm);
+                    this.runHighlightedExpression.emit();
+                },
+                "Ctrl-S": () => this.saveExpression.emit(),
+            });
+        }
+        else
+        {
+            cmObj.setOption("extraKeys", {
+                "Cmd-/": toggleComment,
+                "Cmd-Enter": (cm) =>
+                {
+                    resetMarks(cm);
+                    this.runExpression.emit();
+                },
+                "Cmd-Alt-Enter": (cm) =>
+                {
+                    resetMarks(cm);
+                    this.runHighlightedExpression.emit();
 
-        cmObj.setOption("extraKeys", {
-            "Cmd-/": toggleComment,
-            "Ctrl-/": toggleComment,
-            "Cmd-Enter": (cm) =>
-            {
-                resetMarks(cm);
-                this.runExpression.emit();
-            },
-            "Ctrl-Enter": (cm) =>
-            {
-                resetMarks(cm);
-                this.runExpression.emit();
-            },
-            "Cmd-Alt-Enter": (cm) =>
-            {
-                resetMarks(cm);
-                this.runHighlightedExpression.emit();
-
-            },
-            "Ctrl-Alt-Enter": (cm) =>
-            {
-                resetMarks(cm);
-                this.runHighlightedExpression.emit();
-            },
-            "Cmd-S": () => this.saveExpression.emit(),
-            "Ctrl-S": () => this.saveExpression.emit(),
-        });
+                },
+                "Cmd-S": () => this.saveExpression.emit(),
+            });
+        }
     }
 
     private findVariables(): void
@@ -311,7 +280,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     set editExpression(val: string)
     {
-        this._expr.expression = this.isLua ? this.addLua(val) : this.stripLua(val);
+        this._expr.expression = this.isLua ? this.addLua(val) : val;
         this.onTextChange.emit(this._expr.expression || "");
     }
 
