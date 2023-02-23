@@ -215,6 +215,10 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     onClose(): void
     {
+        if(!this.isExpressionSaved && !confirm("Are you sure you want to close this expression? Any unsaved changes will be lost."))
+        {
+            return;
+        }
         this._router.navigate(["dataset", this._datasetID, "analysis"]);
     }
 
