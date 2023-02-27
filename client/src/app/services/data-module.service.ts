@@ -1,0 +1,252 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+import { HttpClient } from "@angular/common/http";
+import { Injectable } from "@angular/core";
+import { Observable, ReplaySubject, Subject, of } from "rxjs";
+import { tap, map, catchError } from "rxjs/operators";
+import { ObjectCreator } from "src/app/models/BasicTypes";
+import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
+import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
+
+
+// What we send in POST or PUT
+class DataModuleInput
+{
+    constructor(
+        public name: string, // Editable name
+        public sourceCode: string, // The module executable code
+        public comments: string, // Editable comments
+        public tags: string[], // Any tags for this version
+    )
+    {
+    }
+}
+
+class APIObjectOrigin
+{
+    constructor(
+        public shared: boolean,
+        public creator: ObjectCreator,
+        public create_unix_time_sec: number,
+        public mod_unix_time_sec: number
+    )
+    {
+    }
+}
+
+class DataModuleVersionSourceWire
+{
+    constructor(
+        public version: string,
+        public tags: string[],
+        public comments: string,
+        public mod_unix_time_sec: number,
+        public sourceCode: string,
+    )
+    {
+    }
+}
+
+export class DataModuleWire
+{
+    constructor(
+        public id: string,
+        public name: string,
+        public comments: string,
+        public origin: APIObjectOrigin,
+        public versions: DataModuleVersionSourceWire[], // Technically this is wrong, we don't get the sourceCode field in listings
+    )
+    {
+    }
+}
+
+class DataModuleSpecificVersionWire
+{
+    constructor(
+        public id: string,
+        public name: string,
+        public comments: string,
+        public origin: APIObjectOrigin,
+        public version: DataModuleVersionSourceWire,
+    )
+    {
+    }
+}
+
+@Injectable({
+    providedIn: "root"
+})
+export class DataModuleService
+{
+    private _modulesUpdated$ = new ReplaySubject<void>(1);
+    private _modules: Map<string, DataModuleWire> = new Map<string, DataModuleWire>();
+
+    constructor(
+        private _loadingSvc: LoadingIndicatorService,
+        private http: HttpClient
+    )
+    {
+        this.refresh();
+    }
+
+    get modulesUpdated$(): Subject<void>
+    {
+        return this._modulesUpdated$;
+    }
+
+    refresh()
+    {
+        let loadID = this._loadingSvc.add("Refreshing modules...");
+        let apiURL = APIPaths.getWithHost(APIPaths.api_data_module);
+        this.http.get<Map<string, DataModuleWire>>(apiURL, makeHeaders()).subscribe(
+            (resp: object)=>
+            {
+                this.processReceivedList(resp);
+                this._loadingSvc.remove(loadID);
+            },
+            (err)=>
+            {
+                this._loadingSvc.remove(loadID);
+                console.error("Failed to refresh data expressions!");
+            }
+        );
+    }
+
+    private processReceivedList(receivedDataModules: object): void
+    {
+        let t0 = performance.now();
+
+        // Only update changed expressions
+        Object.entries(receivedDataModules).forEach(([id, m]: [string, DataModuleWire])=>
+        {
+            // NOTE: JS doesn't _actually_ return a DataModuleWire
+            let vers: DataModuleVersionSourceWire[] = [];
+            for(let v of m["versions"])
+            {
+                vers.push(new DataModuleVersionSourceWire(v["version"], v["tags"], v["comments"], v["mod_unix_time_sec"], ""));
+            }
+            
+            let wireMod = new DataModuleWire(
+                m["id"],
+                m["name"],
+                m["comments"],
+                new APIObjectOrigin(
+                    m["shared"],
+                    m["creator"],
+                    m["create_unix_time_sec"],
+                    m["mod_unix_time_sec"],
+                ),
+                vers,
+            );
+
+            this._modules.set(id, wireMod);
+        });
+
+        let t1 = performance.now();
+        console.log("Module list processed in "+(t1 - t0).toLocaleString() + "ms");
+
+        // Always update in this case
+        this._modulesUpdated$.next();
+    }
+
+    addModule(name: string, sourceCode: string, comments: string, tags: string[]): Observable<object>
+    {
+        let loadID = this._loadingSvc.add("Saving new module...");
+        let apiURL = APIPaths.getWithHost(APIPaths.api_data_module);
+        let toSave = new DataModuleInput(name, sourceCode, comments, tags);
+        return this.http.post<object>(apiURL, toSave, makeHeaders())
+            .pipe(
+                tap(
+                    (resp: object)=>
+                    {
+                        if(resp) 
+                        {
+                            //this.processReceivedList(resp);
+                        }
+                        else 
+                        {
+                            console.error("Invalid Module List returned while saving:", resp);
+                        }
+                        this._loadingSvc.remove(loadID);
+                    },
+                    (err)=>
+                    {
+                        this._loadingSvc.remove(loadID);
+                    }
+                )
+            );
+    }
+
+    addModuleVersion(moduleId: string, sourceCode: string, comments: string, tags: string[]): Observable<object>
+    {
+        return of();
+    }
+
+    getModule(moduleId: string, version: string): Observable<DataModuleSpecificVersionWire>
+    {
+        let loadID = this._loadingSvc.add("Getting module: "+moduleId+"...");
+        let apiURL = APIPaths.getWithHost(APIPaths.api_data_module+"/"+moduleId+"/"+version);
+        return this.http.get<object>(apiURL, makeHeaders()).pipe(
+            map((m: object)=>
+            {
+                this._loadingSvc.remove(loadID);
+
+                let recvd = new DataModuleSpecificVersionWire(
+                    m["id"],
+                    m["name"],
+                    m["comments"],
+                    new APIObjectOrigin(
+                        m["shared"],
+                        m["creator"],
+                        m["create_unix_time_sec"],
+                        m["mod_unix_time_sec"],
+                    ),
+                    new DataModuleVersionSourceWire(
+                        m["version"]["version"],
+                        m["version"]["tags"],
+                        m["version"]["comment"],
+                        m["version"]["mod_unix_time_sec"],
+                        m["version"]["sourceCode"],
+                    ),
+                );
+
+                // Overwrite whatever we have cached
+                this._modules[recvd.id] = recvd;
+                return recvd;
+            }),
+            catchError((err)=>
+            {
+                // Make sure we hide our loading display...
+                this._loadingSvc.remove(loadID);
+                throw err;
+            })
+        );
+    }
+}
