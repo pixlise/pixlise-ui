@@ -48,6 +48,7 @@ import { DataSourceParams, RegionDataResultItem, WidgetRegionDataService } from 
 import { PredefinedROIID } from "src/app/models/roi";
 import { TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
 import { AuthenticationService } from "src/app/services/authentication.service";
+import { LuaTranspiler } from "src/app/expression-language/lua-transpiler";
 
 @Component({
     selector: "code-editor",
@@ -86,6 +87,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     private _keyPresses: { [key: string]: boolean } = {};
     
     private _fetchedExpression: boolean = false;
+
+    updateText: (text: string) => void;
 
     constructor(
         private _route: ActivatedRoute,
@@ -316,6 +319,24 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
         this.executedTextSelection = this.activeTextSelection;
         this.executedTextSelection.markText();
+    }
+
+    convertToLua(): void
+    {
+        let transpiler = new LuaTranspiler();
+        let luaExpression = transpiler.transpile(this.editExpression);
+
+        this.editExpression = luaExpression;
+        if(this.updateText)
+        {
+            this.isLua = true;
+            this.updateText(luaExpression);
+        }
+    }
+
+    changeExpression(updateText: ((text: string) => void)): void
+    {
+        this.updateText = updateText;
     }
 
     onTextSelect(textSelection: TextSelection): void
