@@ -36,7 +36,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                 <push-button
                     *ngIf="!isLua"
-                    buttonStyle="gray"
+                    buttonStyle="yellow"
                     [disabled]="isSharedByOtherUser"
                     [active]="useAutocomplete"
                     (onClick)="convertToLua()"
@@ -132,7 +132,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div class="editor-footer">
         <div class="text-container">
-            <mat-select [(ngModel)]="isLua">
+            <mat-select [(ngModel)]="isLua" [disabled]="true">
                 <mat-option [value]="true">Lua</mat-option>
                 <mat-option [value]="false">PIXLang</mat-option>
             </mat-select>
