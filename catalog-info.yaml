@@ -14,6 +14,7 @@ metadata:
   annotations:
     github.com/project-slug: pixlise/pixlise-ui
     backstage.io/techdocs-ref: dir:.
+    backstage.io/kubernetes-id: prod-pixlise-ui-public
 spec:
   type: service
   owner: default/developers
