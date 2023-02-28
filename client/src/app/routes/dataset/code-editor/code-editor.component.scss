@@ -73,6 +73,19 @@
 
         padding: 4px 0;
     }
+
+    .run-btn {
+        ::ng-deep > div {
+            display: flex;
+            align-items: center;
+        }
+
+        img {
+            filter: brightness(0);
+            width: 10px;
+            margin-right: 4px;
+        }
+    }
     
     .editor-footer {
         @extend .editor-header;

@@ -52,12 +52,14 @@ POSSIBILITY OF SUCH DAMAGE.
                 >Autocomplete
                 </push-button>
                 <push-button
+                    class="run-btn"
                     buttonStyle="yellow"
                     [disabled]="!isCodeChanged && !isSubsetExpression"
                     (onClick)="runExpression()"
                     #tooltip="matTooltip"
                     [matTooltip]="runCodeTooltip"
-                >Run
+                >
+                    <img src="assets/button-icons/play.svg"/>Run
                 </push-button>
                 <input
                     [disabled]="isSharedByOtherUser"
@@ -169,7 +171,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 (onClick)="runHighlightedExpression()"
                 #tooltip="matTooltip"
                 [matTooltip]="runHighlightedCodeTooltip"
-            >{{textHighlighted === '' ? "Visualize Code Until Line" : "Visualize Selected Code"}}
+            >{{textHighlighted === '' ? "Run Code Until Line" : "Run Selected Code"}}
             </push-button>
         </div>
         <div class="viz-container">
