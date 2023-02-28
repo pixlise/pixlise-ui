@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div fxLayout="column" class="code-editor">
-    <div class="editor-header">
+    <div class="editor-header {{isSidebarOpen ? 'sidebar-open' : ''}}">
         <div class="text-container">
             <h2>Expression Editor</h2>
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
@@ -96,7 +96,27 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
         </div>
     </div>
-    <div fxLayout="row" class="editor-body">
+    <div fxLayout="row" class="editor-body {{isSidebarOpen ? 'sidebar-open' : ''}}">
+        <div class="sidebar">
+            <expression-list
+                [headerSectionsOpen]="headerSectionsOpen"
+                [items]="items"
+                [downloadable]="false"
+                [showOpacitySliders]="false"
+                [showColourOptions]="false"
+                [showPureSwitchOnElements]="true"
+                [selectedIcon]="activeIcon"
+                [unselectedIcon]="inactiveIcon"
+                [initialScrollToIdx]="initialScrollToIdx"
+                (headerSectionToggle)="onToggleLayerSectionOpen($event)"
+                (visibilityChange)="onLayerVisibilityChange($event)"
+                (onLayerImmediateSelection)="onLayerImmediateSelection($event)"
+                [isPreviewMode]="true"
+                fxFlex="100%"
+            >
+                <icon-button icon='assets/button-icons/plus-white.svg' (click)="onAddExpression()" expressionHeader></icon-button>
+            </expression-list>
+        </div>
         <div class="text-editor">
             <expression-text-editor
                 *ngIf="expression"
@@ -130,7 +150,7 @@ POSSIBILITY OF SUCH DAMAGE.
             ></pmc-data-grid>
         </div>
     </div>
-    <div class="editor-footer">
+    <div class="editor-footer {{isSidebarOpen ? 'sidebar-open' : ''}}">
         <div class="text-container">
             <mat-select [(ngModel)]="isLua" [disabled]="true">
                 <mat-option [value]="true">Lua</mat-option>

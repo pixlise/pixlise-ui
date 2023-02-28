@@ -43,12 +43,22 @@ import { SpectrumChartWidgetComponent } from "src/app/UI/spectrum-chart-widget/s
 import { SpectrumRegionPickerComponent } from "src/app/UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
 import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/ternary-plot-widget.component";
 import { DataExpressionService } from "src/app/services/data-expression.service";
-import { DataExpression } from "src/app/models/Expression";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DataSourceParams, RegionDataResultItem, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
 import { TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { LuaTranspiler } from "src/app/expression-language/lua-transpiler";
+import { ExpressionListBuilder, ExpressionListItems, LocationDataLayerPropertiesWithVisibility, makeDataForExpressionList } from "src/app/models/ExpressionList";
+import { ExpressionListHeaderToggleEvent } from "src/app/UI/atoms/expression-list/expression-list.component";
+import { LayerVisibilityChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
+import { ObjectCreator } from "src/app/models/BasicTypes";
+import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
+import { RGBMix } from "src/app/services/rgbmix-config.service";
+import { DataSetService } from "src/app/services/data-set.service";
+import { QuantificationLayer } from "src/app/models/Quantifications";
+import { DataSet } from "src/app/models/DataSet";
+import { LUA_MARKER } from "src/app/expression-language/expression-language";
 
 @Component({
     selector: "code-editor",
@@ -73,6 +83,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     public isExpressionSaved = true;
     public isLua = false;
 
+    public isSidebarOpen = true;
+
     public activeTextSelection: TextSelection = null;
     public executedTextSelection: TextSelection = null;
     public isSubsetExpression: boolean = false;
@@ -90,6 +102,24 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     updateText: (text: string) => void;
 
+    private _filterText: string = "";
+
+    private _authors: ObjectCreator[] = [];
+    private _filteredAuthors: string[] = [];
+    
+    private _activeIDs: Set<string> = new Set<string>();
+
+    // Icons to display
+    activeIcon="assets/button-icons/check-on.svg";
+    inactiveIcon="assets/button-icons/check-off.svg";
+
+    // What we display in the virtual-scroll capable list
+    headerSectionsOpen: Set<string> = new Set<string>();
+    items: ExpressionListItems = null;
+    initialScrollToIdx: number = -1;
+
+    _listBuilder: ExpressionListBuilder;
+
     constructor(
         private _route: ActivatedRoute,
         private _router: Router,
@@ -100,6 +130,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         public dialog: MatDialog,
         private _expressionService: DataExpressionService,
         private _widgetDataService: WidgetRegionDataService,
+        private _datasetService: DataSetService,
     )
     {
     }
@@ -107,6 +138,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     ngOnInit()
     {
+        this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, false, false, this._expressionService);
         this._datasetID = this._route.snapshot.parent.params["dataset_id"];
         this._expressionID = this._route.snapshot.params["expression_id"];
         this._expressionService.expressionsUpdated$.subscribe(() =>
@@ -136,11 +168,38 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             this._fetchedExpression = true;
             this.runExpression();
         });
+
+        let all$ = makeDataForExpressionList(
+            this._datasetService,
+            this._widgetDataService,
+            this._expressionService,
+            null
+        );
+        this._subs.add(all$.subscribe(
+            (data: unknown[])=>
+            {
+                this._listBuilder.notifyDataArrived(
+                    (data[0] as DataSet).getPseudoIntensityElementsList(),
+                    data[1] as QuantificationLayer,
+                    this._expressionService.getExpressions(DataExpressionId.DataExpressionTypeAll),
+                    null
+                );
+
+                // All have arrived, the taps above would've saved their contents in a way that we like, so
+                // now we can regenerate our item list
+                this.regenerateItemList();
+            }
+        ));
+    }
+
+    onAddExpression(): void
+    {
+        // TODO: Add expression
     }
 
     checkLua(text: string): boolean
     {
-        return text.startsWith("LUA\n");
+        return text.startsWith(LUA_MARKER);
     }
 
     ngOnDestroy()
@@ -181,6 +240,101 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             {
             }
         ));
+    }
+
+    private regenerateItemList(): void
+    {
+        this.items = this._listBuilder.makeExpressionList(
+            this.headerSectionsOpen,
+            this._activeIDs,
+            new Set<string>(),
+            this._filterText,
+            this._filteredAuthors,
+            this.selectedTagIDs,
+            false, // We never show the exploratory RGB mix item
+            (source: DataExpression|RGBMix): LocationDataLayerProperties=>
+            {
+                let layer = new LocationDataLayerPropertiesWithVisibility(source.id, source.name, source.id, source);
+                layer.visible = (this._activeIDs.has(source.id));
+                return layer;
+            }
+        );
+
+        this.authors = this._listBuilder.getAuthors();
+    }
+
+    get authors(): ObjectCreator[]
+    {
+        return this._authors;
+    }
+
+    set authors(authors: ObjectCreator[])
+    {
+        this._authors = authors;
+    }
+
+    get authorsTooltip(): string
+    {
+        let authorNames = this._authors.filter((author) => this._filteredAuthors.includes(author.user_id)).map((author) => author.name);
+        return this._filteredAuthors.length > 0 ? `Authors:\n${authorNames.join("\n")}` : "No Authors Selected";
+    }
+
+    get filteredAuthors(): string[]
+    {
+        return this._filteredAuthors;
+    }
+
+    set filteredAuthors(authors: string[])
+    {
+        this._filteredAuthors = authors;
+
+        this.regenerateItemList();
+    }
+
+    private toggleLayerSectionOpenNoRegen(itemType: string, open: boolean): void
+    {
+        if(open)
+        {
+            // It was opened, ensure it's in the set of open sections
+            this.headerSectionsOpen.add(itemType);
+        }
+        else
+        {
+            // It's closed, ensure it's not in the open list
+            this.headerSectionsOpen.delete(itemType);
+        }
+    }
+
+    onToggleLayerSectionOpen(event: ExpressionListHeaderToggleEvent): void
+    {
+        this.toggleLayerSectionOpenNoRegen(event.itemType, event.open);
+
+        // Now that one of our sections has toggled, regenerate the whole list of what to show
+        this.regenerateItemList();
+    }
+
+    onLayerImmediateSelection(event: LayerVisibilityChange): void
+    {
+        this.onLayerVisibilityChange(event);
+    }
+
+    onLayerVisibilityChange(event: LayerVisibilityChange): void
+    {
+        // We handle this by saving the ID in our list of "active" ids, if it's marked visible...
+        // if(event.visible)
+        // {
+        //     if(this.data.singleSelection)
+        //     {
+        //         this._activeIDs.clear();
+        //     }
+        //     this._activeIDs.add(event.layerID);
+        // }
+        // else
+        // {
+        //     this._activeIDs.delete(event.layerID);
+        // }
+
+        this.regenerateItemList();
     }
 
     private clearPreviewReplaceable(): void
@@ -265,9 +419,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             changedText = textLines.join("\n");
         }
 
-        if(!changedText.startsWith("LUA\n"))
+        if(!changedText.startsWith(LUA_MARKER))
         {
-            return "LUA\n" + changedText;
+            return LUA_MARKER + changedText;
         }
 
         return changedText;
@@ -454,9 +608,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     addLua(text: string): string
     {
-        if(!text.startsWith("LUA\n"))
+        if(!text.startsWith(LUA_MARKER))
         {
-            return "LUA\n" + text;
+            return LUA_MARKER + text;
         }
 
         return text;

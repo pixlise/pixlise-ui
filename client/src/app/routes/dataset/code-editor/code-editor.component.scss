@@ -146,3 +146,25 @@
         }
     }
 }
+
+.sidebar {
+
+}
+
+.sidebar-open {
+    .sidebar {
+        min-width: 300px;
+    }
+
+    .preview-container, .viz-panels, pmc-data-grid {
+        max-width: calc(50vw - 300px);
+    }
+
+    .text-container {
+        width: calc(50vw + 300px);
+    }
+
+    .viz-container {
+        max-width: calc(50vw - 300px);
+    }
+}
