@@ -38,6 +38,7 @@ import { WidgetRegionDataService } from "src/app/services/widget-region-data.ser
 import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElement, Suggestion } from "../expression-help";
 import { SentryHelper } from "src/app/utils/utils";
 import { Range } from "codemirror";
+import { LUA_MARKER } from "src/app/expression-language/expression-language";
 
 require("codemirror/addon/comment/comment.js");
 require("codemirror/mode/lua/lua");
@@ -309,9 +310,9 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     stripLua(text: string): string
     {
-        if(text.startsWith("LUA\n"))
+        if(text.startsWith(LUA_MARKER))
         {
-            text = text.substring(4);
+            text = text.substring(LUA_MARKER.length);
         }
 
         return text;
