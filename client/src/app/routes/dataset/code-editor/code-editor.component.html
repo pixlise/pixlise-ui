@@ -31,6 +31,17 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="column" class="code-editor">
     <div class="editor-header {{isSidebarOpen ? 'sidebar-open' : ''}}">
+        <div class="{{isSidebarOpen ? 'sidebar-header' : 'sidebar-header-closed'}}">
+            <h2 *ngIf="isSidebarOpen">Modules</h2>
+            <div
+                class="sidebar-header-toggle-btn"
+                (click)="onToggleSidebar()"
+                #tooltip="matTooltip"
+                [matTooltip]="moduleSidebarTooltip"
+            >
+                <img src="assets/button-icons/double-arrow-left.svg"/>
+            </div>
+        </div>
         <div class="text-container">
             <h2>Expression Editor</h2>
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
@@ -132,6 +143,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 (runExpression)="runExpression()"
                 (runHighlightedExpression)="runHighlightedExpression()"
                 (saveExpression)="onSave()"
+                (toggleSidebar)="onToggleSidebar()"
                 [range]="isSubsetExpression ? executedTextSelection.range : null"
                 [showHelp]="useAutocomplete && !isSharedByOtherUser"
                 [isLua]="isLua"

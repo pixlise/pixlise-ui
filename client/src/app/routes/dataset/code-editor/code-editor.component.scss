@@ -92,6 +92,7 @@
         height: 28px;
 
         .text-container {
+            margin-left: 16px;
             input {
                 margin: 0 8px;
             }
@@ -160,11 +161,53 @@
     }
 }
 
-.sidebar {
+.sidebar-header {
+    display: flex;
+    align-items: center;
 
+    h2 {
+        margin-left: 8px;
+    }
+
+    .sidebar-header-toggle-btn {
+        display: flex;
+        margin-left: auto;
+        margin-right: 8px;
+        cursor: pointer;
+
+        img {
+            transition: all 0.5s ease;
+        }
+    }
+}
+
+.sidebar-header-closed {
+    .sidebar-header-toggle-btn {
+        display: flex;
+        margin-left: 8px;
+        cursor: pointer;
+
+        img {
+            transition: all 0.5s ease;
+            transform: rotate(180deg);
+        }
+    }
+}
+
+.sidebar {
+    background: #222829;
+    margin-bottom: -35px;
 }
 
 .sidebar-open {
+    .sidebar-header {
+        width: 300px;
+    }
+
+    &.editor-footer {
+        margin-left: 300px;
+    }
+
     .sidebar {
         min-width: 300px;
     }
@@ -180,4 +223,12 @@
     .viz-container {
         max-width: calc(50vw - 300px);
     }
+}
+
+expression-list {
+    margin-right: 1px;
+}
+
+::ng-deep expression-list div.closable-section {
+    background-color: #2B3136;
 }

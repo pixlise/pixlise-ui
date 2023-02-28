@@ -102,6 +102,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Output() runExpression = new EventEmitter();
     @Output() runHighlightedExpression = new EventEmitter();
     @Output() saveExpression = new EventEmitter();
+    @Output() toggleSidebar = new EventEmitter();
     @Output() changeExpression = new EventEmitter<(text: string) => void>();
     
     constructor(
@@ -213,6 +214,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                     this.runHighlightedExpression.emit();
                 },
                 "Ctrl-S": () => this.saveExpression.emit(),
+                "Ctrl-B": () => this.toggleSidebar.emit(),
             });
         }
         else
@@ -231,6 +233,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
                 },
                 "Cmd-S": () => this.saveExpression.emit(),
+                "Cmd-B": () => this.toggleSidebar.emit(),
             });
         }
     }
