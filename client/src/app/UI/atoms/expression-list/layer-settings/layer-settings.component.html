@@ -99,7 +99,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="column" class="setting-row" [ngClass]="{'setting-row-visible': visible}">
     <div fxLayout="row" fxLayoutAlign="space-between center">
-        <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements labels-container">
+        <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements labels-container" [ngStyle]="{'max-width': labelsWidth}">
             <div 
                 class="setting-label label-text"
                 #tooltip="matTooltip"
@@ -210,6 +210,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <div 
             *ngIf="expressionComments.length > 0" 
             class="comment"
+            [ngStyle]="{'max-width': commentWidth}"
             #tooltip="matTooltip"
             [matTooltip]="expressionComments"
         >{{expressionComments}}</div>

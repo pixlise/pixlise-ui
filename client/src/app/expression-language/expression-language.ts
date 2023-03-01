@@ -125,7 +125,7 @@ export class DataQuerier
         if(this.isLUA(expression))
         {
             // Trim the marker
-            expression = expression.substring(3);
+            expression = expression.substring(LUA_MARKER.length);
 
             return this._interpretLua.runQuery(expression);
         }

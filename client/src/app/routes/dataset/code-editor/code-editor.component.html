@@ -33,6 +33,32 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="editor-header {{isSidebarOpen ? 'sidebar-open' : ''}}">
         <div class="{{isSidebarOpen ? 'sidebar-header' : 'sidebar-header-closed'}}">
             <h2 *ngIf="isSidebarOpen">Modules</h2>
+            <div *ngIf="isSidebarOpen" fxLayout="row" class="filter-container">
+                <filter-box
+                    placeholder="Filter Name..."
+                    (onFilterChanged)="onFilterExpressions($event)">
+                </filter-box>
+                <tag-picker
+                    type="expression"
+                    [selectedTagIDs]="filteredTagIDs"
+                    [showCurrentTagsSection]="false"
+                    (onTagSelectionChanged)="onFilterTagSelectionChanged($event)"
+                    [additionalVisibleTagType]="['module']"
+                >
+                </tag-picker>
+                <mat-select
+                    #tooltip="matTooltip"
+                    [matTooltip]="authorsTooltip"
+                    multiple
+                    [(ngModel)]="filteredAuthors"
+                    class="authors-filter"
+                    placeholder="Author ..."
+                >
+                    <mat-option *ngFor="let author of authors;"
+                        [value]="author.user_id">{{author.name}}
+                    </mat-option>
+                </mat-select>
+            </div>
             <div
                 class="sidebar-header-toggle-btn"
                 (click)="onToggleSidebar()"

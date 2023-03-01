@@ -31,7 +31,7 @@
 
 .preview-container {
     width: 50vw;
-    min-width: 300px;
+    min-width: 450px;
     height: 30vw;
     min-height: 200px;
 }
@@ -78,6 +78,12 @@
         ::ng-deep > div {
             display: flex;
             align-items: center;
+
+            &.disabled {
+                img {
+                    filter: brightness(0.4);
+                }
+            }
         }
 
         img {
@@ -171,8 +177,7 @@
 
     .sidebar-header-toggle-btn {
         display: flex;
-        margin-left: auto;
-        margin-right: 8px;
+        margin: 0 8px;
         cursor: pointer;
 
         img {
@@ -201,27 +206,27 @@
 
 .sidebar-open {
     .sidebar-header {
-        width: 300px;
+        width: 450px;
     }
 
     &.editor-footer {
-        margin-left: 300px;
+        margin-left: 450px;
     }
 
     .sidebar {
-        min-width: 300px;
+        min-width: 450px;
     }
 
     .preview-container, .viz-panels, pmc-data-grid {
-        max-width: calc(50vw - 300px);
+        max-width: calc(50vw - 450px);
     }
 
     .text-container {
-        width: calc(50vw + 300px);
+        width: calc(50vw + 450px);
     }
 
     .viz-container {
-        max-width: calc(50vw - 300px);
+        max-width: calc(50vw - 450px);
     }
 }
 
@@ -231,4 +236,8 @@ expression-list {
 
 ::ng-deep expression-list div.closable-section {
     background-color: #2B3136;
+}
+
+.filter-container {
+    margin-left: auto;
 }

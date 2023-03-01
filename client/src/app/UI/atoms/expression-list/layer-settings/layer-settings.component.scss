@@ -77,7 +77,7 @@ input {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    max-width: calc(35vw - 48px - 230px);
+    // max-width: calc(35vw - 48px - 230px);
     flex: 1;
 }
 
@@ -104,7 +104,7 @@ input {
 
 .labels-container {
     display: flex;
-    max-width: calc(35vw - 48px - 230px);
+    // max-width: calc(35vw - 48px - 230px);
 
     .label-text {
         flex: 1;

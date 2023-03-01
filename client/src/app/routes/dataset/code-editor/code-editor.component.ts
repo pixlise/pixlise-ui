@@ -106,7 +106,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     private _authors: ObjectCreator[] = [];
     private _filteredAuthors: string[] = [];
-    
+    private _filteredTagIDs: string[] = [];
+
     private _activeIDs: Set<string> = new Set<string>();
 
     // Icons to display
@@ -255,14 +256,16 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             new Set<string>(),
             this._filterText,
             this._filteredAuthors,
-            this.selectedTagIDs,
+            this._filteredTagIDs,
             false, // We never show the exploratory RGB mix item
             (source: DataExpression|RGBMix): LocationDataLayerProperties=>
             {
                 let layer = new LocationDataLayerPropertiesWithVisibility(source.id, source.name, source.id, source);
                 layer.visible = (this._activeIDs.has(source.id));
                 return layer;
-            }
+            },
+            false,
+            false
         );
 
         this.authors = this._listBuilder.getAuthors();
@@ -292,7 +295,23 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     set filteredAuthors(authors: string[])
     {
         this._filteredAuthors = authors;
+        this.regenerateItemList();
+    }
 
+    get filteredTagIDs(): string[]
+    {
+        return this._filteredTagIDs;
+    }
+
+    onFilterExpressions(filter: string)
+    {
+        this._filterText = filter;
+        this.regenerateItemList();
+    }
+
+    onFilterTagSelectionChanged(tags: string[]): void
+    {
+        this._filteredTagIDs = tags;
         this.regenerateItemList();
     }
 

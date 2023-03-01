@@ -329,7 +329,9 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         expressionAuthorsFilter: string[],
         filterTagIDs: string[],
         includeExploratoryRGBMix: boolean,
-        makeLayer: (source: DataExpression | RGBMix)=>LocationDataLayerProperties
+        makeLayer: (source: DataExpression | RGBMix)=>LocationDataLayerProperties,
+        includeQuantifiedElements: boolean=true,
+        includePseudointensities: boolean=true,
     ): ExpressionListItems
     {
         let groups: ExpressionListGroupItems[] = [];
@@ -339,23 +341,26 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
 
         // Pad the list with element related (eg chisq, unquantified %)
         this.includeElementRelatedBuiltInExpressions(elements, chosenElementIDs, recentChosenElementIDs, makeLayer, subLayerOwnerIDs);
-
-        groups.push(
-            new ExpressionListGroupItems(
-                this.elementsHeaderName,
-                "Quantified Elements",
-                headerSectionsOpen.has(this.elementsHeaderName),
-                "element-map",
-                expressionNameFilter,
-                expressionAuthorsFilter,
-                filterTagIDs,
-                elements,
-                "No quantified elements - have you loaded a quantification?",
-                null,
-                "",
-                0 
-            )
-        );
+        
+        if(includeQuantifiedElements)
+        {
+            groups.push(
+                new ExpressionListGroupItems(
+                    this.elementsHeaderName,
+                    "Quantified Elements",
+                    headerSectionsOpen.has(this.elementsHeaderName),
+                    "element-map",
+                    expressionNameFilter,
+                    expressionAuthorsFilter,
+                    filterTagIDs,
+                    elements,
+                    "No quantified elements - have you loaded a quantification?",
+                    null,
+                    "",
+                    0 
+                )
+            );
+        }
 
         if(this._includeRGBMix)
         {
@@ -372,7 +377,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                     "No user RGB mixes to view",
                     this.getRGBItems(this._sharedRGBMixes, makeLayer),
                     "No shared RGB mixes to view",
-                    groups[groups.length-1].items.length
+                    groups[groups.length-1]?.items.length || 0
                 )
             );
         }
@@ -390,7 +395,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                 "No user expressions to view",
                 this.getItems(this._sharedExpressions, makeLayer),
                 "No shared expressions to view",
-                groups[groups.length-1].items.length
+                groups[groups.length-1]?.items.length || 0
             )
         );
 
@@ -409,27 +414,30 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                     "No anomalies to view",
                     null,
                     "",
-                    groups[groups.length-1].items.length
+                    groups[groups.length-1]?.items.length || 0
                 )
             );
         }
 
-        groups.push(
-            new ExpressionListGroupItems(
-                this.pseudoIntensityHeaderName,
-                "Pseudo-Intensities",
-                headerSectionsOpen.has(this.pseudoIntensityHeaderName),
-                "pseudointensity",
-                expressionNameFilter,
-                expressionAuthorsFilter,
-                filterTagIDs,
-                this.getItems(this._pseudointensities, makeLayer),
-                "No pseudo-intensity data available",
-                null,
-                "",
-                groups[groups.length-1].items.length
-            )
-        );
+        if(includePseudointensities)
+        {
+            groups.push(
+                new ExpressionListGroupItems(
+                    this.pseudoIntensityHeaderName,
+                    "Pseudo-Intensities",
+                    headerSectionsOpen.has(this.pseudoIntensityHeaderName),
+                    "pseudointensity",
+                    expressionNameFilter,
+                    expressionAuthorsFilter,
+                    filterTagIDs,
+                    this.getItems(this._pseudointensities, makeLayer),
+                    "No pseudo-intensity data available",
+                    null,
+                    "",
+                    groups[groups.length-1]?.items.length || 0
+                )
+            );
+        }
 
         // Form the final data structure
         let groupLookup = new Map<string, ExpressionListGroupItems>();
