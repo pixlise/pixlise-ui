@@ -76,7 +76,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     private _datasetID: string;
     private _expressionID: string;
 
-    public isSidebarOpen = true;
+    public isSidebarOpen = false;
+    // What we display in the virtual-scroll capable list
+    headerSectionsOpen: Set<string> = new Set<string>(["currently-open-header"]);
+    items: ExpressionListItems = null;
+    initialScrollToIdx: number = -1;
     public sidebarTopSections: Record<string, CustomExpressionGroup> = {
         "currently-open": {
             type: "currently-open-header",
@@ -144,11 +148,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     // Icons to display
     activeIcon="assets/button-icons/check-on.svg";
     inactiveIcon="assets/button-icons/check-off.svg";
-
-    // What we display in the virtual-scroll capable list
-    headerSectionsOpen: Set<string> = new Set<string>();
-    items: ExpressionListItems = null;
-    initialScrollToIdx: number = -1;
 
     _listBuilder: ExpressionListBuilder;
 
