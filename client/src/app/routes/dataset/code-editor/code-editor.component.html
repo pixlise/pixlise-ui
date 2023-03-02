@@ -45,23 +45,6 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="text-container">
             <h2>LUA Expression Editor</h2>
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
-                <push-button
-                    *ngIf="!isLua"
-                    buttonStyle="yellow"
-                    [disabled]="isSharedByOtherUser"
-                    [active]="useAutocomplete"
-                    (onClick)="convertToLua()"
-                    #tooltip="matTooltip"
-                    matTooltip="WARNING: This is a one way operation"
-                >Convert to LUA
-                </push-button>
-                <!-- <push-button
-                    buttonStyle="gray"
-                    [disabled]="isSharedByOtherUser"
-                    [active]="useAutocomplete"
-                    (onClick)="onToggleAutocomplete()"
-                >Autocomplete
-                </push-button> -->
                 <input
                     [disabled]="isSharedByOtherUser"
                     type="text"
@@ -186,8 +169,55 @@ POSSIBILITY OF SUCH DAMAGE.
             </expression-list>
         </div>
         <div class="text-editor">
+            <div class="installed-modules-text">
+                <div *ngIf="isTopHeaderOpen" class="imports">
+                    <div 
+                        *ngFor="let module of topModules; index as i"
+                        class="module-import-line"
+                    >
+                        <div class="line-gutter" [ngStyle]="{'width': topExpressionGutterWidth}">
+                            <span class="line-number">{{i+1}}</span>
+                        </div>
+                        <span class="header-code cm-s-pixlise">
+                            <span class="cm-keyword">local </span>
+                            <span class="cm-variable">{{module.name}}</span> = <span class="cm-builtin">require </span>
+                            <mat-select
+                                #tooltip="matTooltip"
+                                matTooltip="Select a version for this module"
+                                [(ngModel)]="module.version"
+                                class="module-version"
+                                placeholder="Version"
+                            >
+                                <mat-option
+                                    class="cm-string"
+                                    *ngFor="let version of module.allVersions;"
+                                    [value]="version"
+                                >{{module.name}}@{{version}}
+                                </mat-option>
+                            </mat-select>
+                        </span>
+                    </div>
+                </div>
+                <div class="header-divider">
+                    <div class="line-gutter" [ngStyle]="{'width': topExpressionGutterWidth}">
+                        <icon-button
+                            #tooltip="matTooltip"
+                            class="{{isTopHeaderOpen ? 'open' : 'closed'}}"
+                            matTooltip="Toggle Installed Module Section"
+                            icon='assets/button-icons/arrow-right.svg'
+                            [size]="16"
+                            (click)="onToggleTopHeader()"
+                        >
+                        </icon-button>
+                    </div>
+                    <div class="dots"></div>
+                    <h2>{{isTopHeaderOpen ? "^ Installed Modules ^" : "Installed Modules"}}</h2>
+                    <div class="dots"></div>
+                </div>
+            </div>
             <expression-text-editor
                 *ngIf="expression"
+                class="top-expression"
                 [expression]="expression"
                 [allowEdit]="editable"
                 [isImmediatelyAppliable]="false"
@@ -225,13 +255,17 @@ POSSIBILITY OF SUCH DAMAGE.
                 <mat-option [value]="true">Lua</mat-option>
                 <mat-option [value]="false">PIXLang</mat-option>
             </mat-select>
-            <!-- <input
+            <push-button
+                *ngIf="!isLua"
+                class="convert-to-lua-btn"
+                buttonStyle="yellow"
                 [disabled]="isSharedByOtherUser"
-                type="text"
-                placeholder="Expression Description"
-                [(ngModel)]="expressionComments"
-                fxFlex
-            > -->
+                [active]="useAutocomplete"
+                (onClick)="convertToLua()"
+                #tooltip="matTooltip"
+                matTooltip="WARNING: This is a one way operation"
+            >Convert to LUA
+            </push-button>
             <push-button
                 class="run-highlighted-btn"
                 buttonStyle="yellow"

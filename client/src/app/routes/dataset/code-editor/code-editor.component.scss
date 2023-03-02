@@ -271,3 +271,109 @@ expression-list {
         margin-left: 6px;
     }
 }
+
+.convert-to-lua-btn {
+    margin-left: 8px;
+}
+
+.installed-modules-text {
+    background-color: #222829;
+
+    .line-gutter {
+        background-color: #263238;
+        padding: 4px 0;
+    }
+
+    .imports {
+        display: flex;
+        flex-direction: column;
+
+        .module-import-line {
+            display: flex;
+            align-items: center;
+
+            .line-gutter {
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                height: 30px;
+
+                .line-number {
+                    color: #546E7A;
+                    font-family: monospace;
+                    margin-right: 4px;
+                }
+            }
+
+            .header-code {
+                margin-left: 4px;
+                font-family: monospace;
+                font-size: 14px;
+                
+                height: 30px;
+                display: flex;
+                align-items: center;
+                white-space: pre;
+
+                .module-version {
+                    border: 2px dashed #444C50;
+                    border-radius: 4px;
+                    padding: 2px 4px;
+                    background-color: transparent !important;
+                    margin-left: 0;
+
+                    .cm-string.mat-selected {
+                        color: #C3E88D !important;
+                    }
+
+                    ::ng-deep .mat-select-value-text {
+                        color: #C3E88D !important;
+                        line-height: 16px;
+                    }
+                }
+            }
+        }
+    }
+
+    .header-divider {
+        display: flex;
+        align-items: center;
+
+        .line-gutter {
+            icon-button {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                transition: all 0.25s ease;
+
+                &.open {
+                    transition: all 0.25s ease;
+                    transform: rotate(90deg);
+                }
+            }
+        }
+
+        .dots {
+            flex: 1;
+            border-top: 4px dotted #444C50;
+        }
+
+        .dots:first-of-type {
+            margin-left: 4px;
+        }
+
+        .dots:last-of-type {
+            margin-right: 4px;
+        }
+
+        h2 {
+            font-size: 12px;
+            color: #969696;
+            margin: 0 4px;
+        }
+    }
+}
+
+::ng-deep .mat-select-panel {
+    background-color: rgb(var(--clr-gray-90)) !important;
+}

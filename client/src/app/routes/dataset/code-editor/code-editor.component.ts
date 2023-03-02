@@ -60,6 +60,17 @@ import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
 import { LUA_MARKER } from "src/app/expression-language/expression-language";
 
+export class DataExpressionModule
+{
+    constructor(
+        public name: string,
+        public description: string="",
+        public version: string="",
+        public author: string="",
+        public allVersions: string[]=[],
+    ){}
+}
+
 @Component({
     selector: "code-editor",
     templateUrl: "./code-editor.component.html",
@@ -117,11 +128,22 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     public isSplitScreen = false;
 
     private _editable = true;
+    public isTopHeaderOpen = true;
     public useAutocomplete = false;
     public isCodeChanged = true;
     public isExpressionSaved = true;
     public isLua = false;
     public expression: DataExpression;
+    public topModules: DataExpressionModule[];
+
+    private _bottomEditable = true;
+    public isBottomHeaderOpen = true;
+    public useBottomAutocomplete = false;
+    public isBottomCodeChanged = true;
+    public isBottomExpressionSaved = true;
+    public isBottomLua = false;
+    public bottomExpression: DataExpression;
+    public bottomModules: DataExpressionModule[];
 
     public activeTextSelection: TextSelection = null;
     public executedTextSelection: TextSelection = null;
@@ -205,6 +227,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             this.sidebarTopSections["currently-open"].items = [
                 this.expression
             ];
+            this.topModules = [
+                new DataExpressionModule("test", "test", "3.7", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"])
+            ];
         });
 
         let all$ = makeDataForExpressionList(
@@ -248,6 +273,28 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     onToggleSplitScreen(): void
     {
         this.isSplitScreen = !this.isSplitScreen;
+    }
+
+    onToggleTopHeader(): void
+    {
+        this.isTopHeaderOpen = !this.isTopHeaderOpen;
+    }
+
+    onToggleBottomHeader(): void
+    {
+        this.isBottomHeaderOpen = !this.isBottomHeaderOpen;
+    }
+
+    get topExpressionGutterWidth(): string
+    {
+        let width = document.querySelector("expression-text-editor.top-expression .CodeMirror-gutter")?.clientWidth;
+        return `${width || 29}px`;
+    }
+
+    get bottomExpressionGutterWidth(): string
+    {
+        let width = document.querySelector("expression-text-editor.bottom-expression .CodeMirror-gutter")?.clientWidth;
+        return `${width || 29}px`;
     }
 
     checkLua(text: string): boolean

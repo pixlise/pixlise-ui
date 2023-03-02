@@ -50,6 +50,7 @@ export class IconButtonComponent implements OnInit
     @Input() hasBackground: boolean = true;
     @Input() loading: boolean = false;
     @Input() notificationCount: number = 0;
+    @Input() size: number = 24;
 
     @Output() onClick = new EventEmitter();
 
@@ -67,5 +68,10 @@ export class IconButtonComponent implements OnInit
         {
             this.onClick.emit(event);
         }
+    }
+
+    get sizeStr(): string
+    {
+        return `${this.size}px`;
     }
 }
