@@ -177,7 +177,8 @@
 
     .sidebar-header-toggle-btn {
         display: flex;
-        margin: 0 8px;
+        margin-right: 8px;
+        margin-left: auto;
         cursor: pointer;
 
         img {
@@ -202,6 +203,9 @@
 .sidebar {
     background: #222829;
     margin-bottom: -35px;
+
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar-open {
@@ -239,5 +243,21 @@ expression-list {
 }
 
 .filter-container {
-    margin-left: auto;
+    padding: 8px;
+
+    .authors-filter {
+        flex: 1;
+        height: 19px;
+
+        padding-top: 5px;
+        padding-bottom: 0;
+
+        background: #454c50 !important;
+        border-radius: $sz-half !important;
+        border: 2px solid rgb(var(--clr-gray-60));
+    }
+
+    tag-picker {
+        margin-left: 6px;
+    }
 }

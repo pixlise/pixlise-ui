@@ -332,6 +332,8 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         makeLayer: (source: DataExpression | RGBMix)=>LocationDataLayerProperties,
         includeQuantifiedElements: boolean=true,
         includePseudointensities: boolean=true,
+        customStartSections: CustomExpressionGroup[]=[],
+        customEndSections: CustomExpressionGroup[]=[]
     ): ExpressionListItems
     {
         let groups: ExpressionListGroupItems[] = [];
@@ -342,6 +344,26 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         // Pad the list with element related (eg chisq, unquantified %)
         this.includeElementRelatedBuiltInExpressions(elements, chosenElementIDs, recentChosenElementIDs, makeLayer, subLayerOwnerIDs);
         
+        customStartSections.forEach(section =>
+        {
+            groups.push(
+                new ExpressionListGroupItems(
+                    section.type,
+                    section.label,
+                    headerSectionsOpen.has(section.type),
+                    section.childType,
+                    expressionNameFilter,
+                    expressionAuthorsFilter,
+                    filterTagIDs,
+                    this.getItems(section.items, makeLayer),
+                    section.emptyMessage,
+                    null,
+                    "",
+                    0
+                )
+            );
+        });
+
         if(includeQuantifiedElements)
         {
             groups.push(
@@ -438,6 +460,26 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                 )
             );
         }
+
+        customEndSections.forEach(section =>
+        {
+            groups.push(
+                new ExpressionListGroupItems(
+                    section.type,
+                    section.label,
+                    headerSectionsOpen.has(section.type),
+                    section.childType,
+                    expressionNameFilter,
+                    expressionAuthorsFilter,
+                    filterTagIDs,
+                    this.getItems(section.items, makeLayer),
+                    section.emptyMessage,
+                    null,
+                    "",
+                    0
+                )
+            );
+        });
 
         // Form the final data structure
         let groupLookup = new Map<string, ExpressionListGroupItems>();
@@ -919,6 +961,14 @@ export class ExpressionListItems
     {
     }
 }
+
+export type CustomExpressionGroup = {
+    type: string;
+    childType: string;
+    label: string;
+    items: DataExpression[];
+    emptyMessage: string;
+};
 
 // Helper for building groups with the right side-effects of having an empty entry or a shared section, and counting the
 // total items/visible items for display correctly in the header

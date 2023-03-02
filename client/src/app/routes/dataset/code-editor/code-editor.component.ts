@@ -49,12 +49,12 @@ import { PredefinedROIID } from "src/app/models/roi";
 import { TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { LuaTranspiler } from "src/app/expression-language/lua-transpiler";
-import { ExpressionListBuilder, ExpressionListItems, LocationDataLayerPropertiesWithVisibility, makeDataForExpressionList } from "src/app/models/ExpressionList";
+import { CustomExpressionGroup, ExpressionListBuilder, ExpressionListItems, LocationDataLayerPropertiesWithVisibility, makeDataForExpressionList } from "src/app/models/ExpressionList";
 import { ExpressionListHeaderToggleEvent } from "src/app/UI/atoms/expression-list/expression-list.component";
 import { LayerVisibilityChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
-import { RGBMix } from "src/app/services/rgbmix-config.service";
+import { RGBMix } from "src/app/services/rgbmix-config.service"
 import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
@@ -76,20 +76,51 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     private _datasetID: string;
     private _expressionID: string;
 
-    private _editable = true;
+    public isSidebarOpen = true;
+    public sidebarTopSections: Record<string, CustomExpressionGroup> = {
+        "currently-open": {
+            type: "currently-open-header",
+            childType: "expression",
+            label: "Currently Open",
+            items: [],
+            emptyMessage: "No expressions are currently open.",
+        },
+        "installed-modules": {
+            type: "installed-modules-header",
+            childType: "module",
+            label: "Installed Modules",
+            items: [],
+            emptyMessage: "No modules are installed.",
+        },
+        "modules": {
+            type: "modules-header",
+            childType: "module",
+            label: "Modules",
+            items: [],
+            emptyMessage: "No modules are available.",
+        }
+    };
+    public sidebarBottomSections: Record<string, CustomExpressionGroup> = {
+        "examples": {
+            type: "examples-header",
+            childType: "expression",
+            label: "Examples",
+            items: [],
+            emptyMessage: "No examples are available.",
+        }
+    };
 
+    private _editable = true;
     public useAutocomplete = false;
     public isCodeChanged = true;
     public isExpressionSaved = true;
     public isLua = false;
-
-    public isSidebarOpen = true;
+    public expression: DataExpression;
 
     public activeTextSelection: TextSelection = null;
     public executedTextSelection: TextSelection = null;
     public isSubsetExpression: boolean = false;
 
-    public expression: DataExpression;
     public evaluatedExpression: RegionDataResultItem;
     public pmcGridExpressionTitle: string = "";
     public displayExpressionTitle: string = "";
@@ -140,7 +171,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     ngOnInit()
     {
         this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, false, false, this._expressionService);
-        this._datasetID = this._route.snapshot.parent.params["dataset_id"];
+        this._datasetID = this._route.snapshot.parent?.params["dataset_id"];
         this._expressionID = this._route.snapshot.params["expression_id"];
         this._expressionService.expressionsUpdated$.subscribe(() =>
         {
@@ -168,6 +199,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             );
             this._fetchedExpression = true;
             this.runExpression();
+
+            // Add the current expression to the currently-open list
+            this.sidebarTopSections["currently-open"].items = [
+                this.expression
+            ];
         });
 
         let all$ = makeDataForExpressionList(
@@ -196,6 +232,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     onAddExpression(): void
     {
         // TODO: Add expression
+    }
+
+    onAddModule(): void
+    {
+        // TODO: Add module
     }
 
     onToggleSidebar(): void
@@ -250,6 +291,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     private regenerateItemList(): void
     {
+        let customStartSections = Object.values(this.sidebarTopSections);
+        let customEndSections = Object.values(this.sidebarBottomSections);
+
         this.items = this._listBuilder.makeExpressionList(
             this.headerSectionsOpen,
             this._activeIDs,
@@ -265,7 +309,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 return layer;
             },
             false,
-            false
+            false,
+            customStartSections,
+            customEndSections
         );
 
         this.authors = this._listBuilder.getAuthors();

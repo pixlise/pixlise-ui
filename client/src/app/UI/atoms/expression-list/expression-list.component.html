@@ -41,6 +41,15 @@ POSSIBILITY OF SUCH DAMAGE.
 <cdk-virtual-scroll-viewport *ngIf="items" itemSize="{{itemSize}}" fxFlex="100%" (scroll)="onScroll($event)">
     <ng-container *cdkVirtualFor="let item of items.items; templateCacheSize: 0">
         <ng-container [ngSwitch]="item.itemType">
+            <!-- currently-open-header -->
+            <ng-container *ngSwitchCase="'currently-open-header'">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
+                </context-visibility-header>
+            </ng-container>
             <ng-container *ngSwitchCase="elementsHeaderName">
                 <context-visibility-header
                     [content]="item.content"
@@ -100,6 +109,23 @@ POSSIBILITY OF SUCH DAMAGE.
                     (visibilityChange)="onLayerVisibilityChange($event)">
                 </rgbmix-layer-settings>
             </ng-container>
+            <ng-container *ngSwitchCase="'installed-modules-header'">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
+                </context-visibility-header>
+            </ng-container>
+            <ng-container *ngSwitchCase="'modules-header'">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
+                    <ng-content select="[modulesHeader]" header></ng-content>
+                </context-visibility-header>
+            </ng-container>
             <ng-container *ngSwitchCase="expressionsHeaderName">
                 <context-visibility-header
                     [content]="item.content"
@@ -107,6 +133,14 @@ POSSIBILITY OF SUCH DAMAGE.
                     (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
                     (onScrollToItem)="onScrollToItem(item.itemType, $event)">
                     <ng-content select="[expressionHeader]" header></ng-content>
+                </context-visibility-header>
+            </ng-container>
+            <ng-container *ngSwitchCase="'examples-header'">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
                 </context-visibility-header>
             </ng-container>
             <ng-container *ngSwitchCase="'expression'">
