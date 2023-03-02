@@ -31,7 +31,7 @@
 
 .preview-container {
     width: 50vw;
-    min-width: 450px;
+    min-width: 300px;
     height: 30vw;
     min-height: 200px;
 }
@@ -72,6 +72,10 @@
         z-index: 100;
 
         padding: 4px 0;
+
+        .split-screen-btn {
+            min-width: 115px;
+        }
     }
 
     .run-btn {
@@ -91,6 +95,11 @@
             width: 10px;
             margin-right: 4px;
         }
+    }
+
+    .run-highlighted-btn {
+        margin-left: auto;
+        margin-right: 8px;
     }
     
     .editor-footer {
@@ -210,27 +219,27 @@
 
 .sidebar-open {
     .sidebar-header {
-        width: 450px;
+        width: 300px;
     }
 
     &.editor-footer {
-        margin-left: 450px;
+        margin-left: 300px;
     }
 
     .sidebar {
-        min-width: 450px;
+        min-width: 300px;
     }
 
     .preview-container, .viz-panels, pmc-data-grid {
-        max-width: calc(50vw - 450px);
+        max-width: calc(50vw - 300px);
     }
 
     .text-container {
-        width: calc(50vw + 450px);
+        width: calc(50vw + 300px);
     }
 
     .viz-container {
-        max-width: calc(50vw - 450px);
+        max-width: calc(50vw - 300px);
     }
 }
 
@@ -248,6 +257,7 @@ expression-list {
     .authors-filter {
         flex: 1;
         height: 19px;
+        min-width: 100px;
 
         padding-top: 5px;
         padding-bottom: 0;

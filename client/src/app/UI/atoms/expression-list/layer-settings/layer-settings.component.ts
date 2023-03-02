@@ -288,12 +288,12 @@ export class LayerSettingsComponent implements OnInit
 
     get labelsWidth(): string
     {
-        return this.isPreviewMode ? "200px" : "calc(35vw - 48px - 230px)";
+        return this.isPreviewMode ? "175px" : "calc(35vw - 48px - 230px)";
     }
 
     get commentWidth(): string
     {
-        return this.isPreviewMode ? "250px" : "calc(35vw - 48px - 230px)";
+        return this.isPreviewMode ? "180px" : "calc(35vw - 48px - 230px)";
     }
 
     /*

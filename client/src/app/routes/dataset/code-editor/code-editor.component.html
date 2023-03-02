@@ -43,7 +43,7 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
         </div>
         <div class="text-container">
-            <h2>Expression Editor</h2>
+            <h2>LUA Expression Editor</h2>
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                 <push-button
                     *ngIf="!isLua"
@@ -55,13 +55,29 @@ POSSIBILITY OF SUCH DAMAGE.
                     matTooltip="WARNING: This is a one way operation"
                 >Convert to LUA
                 </push-button>
-                <push-button
+                <!-- <push-button
                     buttonStyle="gray"
                     [disabled]="isSharedByOtherUser"
                     [active]="useAutocomplete"
                     (onClick)="onToggleAutocomplete()"
                 >Autocomplete
-                </push-button>
+                </push-button> -->
+                <input
+                    [disabled]="isSharedByOtherUser"
+                    type="text"
+                    placeholder="Expression Description"
+                    [(ngModel)]="expressionComments"
+                    fxFlex
+                >
+                <multi-switch-button
+                    #tooltip="matTooltip"
+                    matTooltip="Toggle between a single code editor and a splitscreen code view"
+                    class="split-screen-btn"
+                    [options]="['Single', 'Split']"
+                    [value]="isSplitScreen ? 'Split' : 'Single'"
+                    [disabled]="false"
+                    (onChange)="onToggleSplitScreen()">
+                </multi-switch-button>
                 <push-button
                     class="run-btn"
                     buttonStyle="yellow"
@@ -153,8 +169,20 @@ POSSIBILITY OF SUCH DAMAGE.
                 [isPreviewMode]="true"
                 fxFlex="100%"
             >
-                <icon-button icon='assets/button-icons/plus-white.svg' (click)="onAddExpression()" expressionHeader></icon-button>
-                <icon-button icon='assets/button-icons/plus-white.svg' (click)="onAddModule()" modulesHeader></icon-button>
+                <icon-button
+                    #tooltip="matTooltip"
+                    matTooltip="Create a new expression"
+                    icon='assets/button-icons/plus-white.svg'
+                    (click)="onAddExpression()"
+                    expressionHeader
+                ></icon-button>
+                <icon-button
+                    #tooltip="matTooltip"
+                    matTooltip="Create a new module"
+                    icon='assets/button-icons/plus-white.svg'
+                    (click)="onAddModule()"
+                    modulesHeader
+                ></icon-button>
             </expression-list>
         </div>
         <div class="text-editor">
@@ -197,14 +225,15 @@ POSSIBILITY OF SUCH DAMAGE.
                 <mat-option [value]="true">Lua</mat-option>
                 <mat-option [value]="false">PIXLang</mat-option>
             </mat-select>
-            <input
+            <!-- <input
                 [disabled]="isSharedByOtherUser"
                 type="text"
                 placeholder="Expression Description"
                 [(ngModel)]="expressionComments"
                 fxFlex
-            >
+            > -->
             <push-button
+                class="run-highlighted-btn"
                 buttonStyle="yellow"
                 [disabled]="textHighlighted === '' && !isEmptySelection"
                 (onClick)="runHighlightedExpression()"

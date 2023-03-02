@@ -114,6 +114,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         }
     };
 
+    public isSplitScreen = false;
+
     private _editable = true;
     public useAutocomplete = false;
     public isCodeChanged = true;
@@ -241,6 +243,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     onToggleSidebar(): void
     {
         this.isSidebarOpen = !this.isSidebarOpen;
+    }
+
+    onToggleSplitScreen(): void
+    {
+        this.isSplitScreen = !this.isSplitScreen;
     }
 
     checkLua(text: string): boolean
