@@ -46,7 +46,7 @@ import { DataExpressionService } from "src/app/services/data-expression.service"
 import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DataSourceParams, RegionDataResultItem, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
-import { TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
+import { DataExpressionModule, TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { LuaTranspiler } from "src/app/expression-language/lua-transpiler";
 import { CustomExpressionGroup, ExpressionListBuilder, ExpressionListItems, LocationDataLayerPropertiesWithVisibility, makeDataForExpressionList } from "src/app/models/ExpressionList";
@@ -59,17 +59,6 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
 import { LUA_MARKER } from "src/app/expression-language/expression-language";
-
-export class DataExpressionModule
-{
-    constructor(
-        public name: string,
-        public description: string="",
-        public version: string="",
-        public author: string="",
-        public allVersions: string[]=[],
-    ){}
-}
 
 @Component({
     selector: "code-editor",
@@ -132,18 +121,18 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     public useAutocomplete = false;
     public isCodeChanged = true;
     public isExpressionSaved = true;
-    public isLua = false;
+    public isLua = true;
     public expression: DataExpression;
-    public topModules: DataExpressionModule[];
+    public topModules: DataExpressionModule[] = [];
 
     private _bottomEditable = true;
-    public isBottomHeaderOpen = true;
+    public isBottomHeaderOpen = false;
     public useBottomAutocomplete = false;
     public isBottomCodeChanged = true;
     public isBottomExpressionSaved = true;
-    public isBottomLua = false;
+    public isBottomLua = true;
     public bottomExpression: DataExpression;
-    public bottomModules: DataExpressionModule[];
+    public bottomModules: DataExpressionModule[] = [];
 
     public activeTextSelection: TextSelection = null;
     public executedTextSelection: TextSelection = null;
@@ -220,6 +209,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 expression.modUnixTimeSec,
                 expression.tags
             );
+
+            this.bottomExpression = this.expression;
+
             this._fetchedExpression = true;
             this.runExpression();
 
@@ -228,7 +220,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 this.expression
             ];
 
-            // TODO: Move all the header stuff to the expression-text-editor to better support split screen
             this.topModules = [
                 new DataExpressionModule("test", "description", "3.7", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
                 new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
@@ -289,18 +280,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     onToggleBottomHeader(): void
     {
         this.isBottomHeaderOpen = !this.isBottomHeaderOpen;
-    }
-
-    get topExpressionGutterWidth(): string
-    {
-        let width = document.querySelector("expression-text-editor.top-expression .CodeMirror-gutter")?.clientWidth;
-        return `${width || 29}px`;
-    }
-
-    get bottomExpressionGutterWidth(): string
-    {
-        let width = document.querySelector("expression-text-editor.bottom-expression .CodeMirror-gutter")?.clientWidth;
-        return `${width || 29}px`;
     }
 
     checkLua(text: string): boolean
@@ -677,6 +656,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     get editable(): boolean
     {
         return this._editable && !this.isSharedByOtherUser;
+    }
+
+    get bottomEditable(): boolean
+    {
+        return this._bottomEditable && !this.isSharedByOtherUser;
     }
 
     get editExpression(): string

@@ -168,55 +168,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 ></icon-button>
             </expression-list>
         </div>
-        <div class="text-editor {{isTopHeaderOpen ? 'top-open' : ''}} {{isSplitScreen ? 'split-screen-mode' : ''}}">
-            <div *ngIf="expression" class="installed-modules-text">
-                <div *ngIf="isTopHeaderOpen" class="imports">
-                    <div 
-                        *ngFor="let module of topModules; index as i"
-                        class="module-import-line"
-                    >
-                        <div class="line-gutter" [ngStyle]="{'width': topExpressionGutterWidth}">
-                            <span class="line-number">{{i+1}}</span>
-                        </div>
-                        <span class="header-code cm-s-pixlise">
-                            <span class="cm-keyword">local </span>
-                            <span class="cm-variable">{{module.name}}</span> = <span class="cm-builtin">require </span>
-                            <div class="module-container">
-                                <mat-select
-                                    #tooltip="matTooltip"
-                                    matTooltip="Select a version for this module"
-                                    [(ngModel)]="module.version"
-                                    class="module-version"
-                                    placeholder="Version"
-                                >
-                                    <mat-option
-                                        class="cm-string"
-                                        *ngFor="let version of module.allVersions;"
-                                        [value]="version"
-                                    >{{module.name}}@{{version}}
-                                    </mat-option>
-                                </mat-select>
-                            </div>
-                        </span>
-                    </div>
-                </div>
-                <div class="header-divider" [ngStyle]="{'margin-top': isTopHeaderOpen ? '-12px' : '0px'}">
-                    <div class="line-gutter" [ngStyle]="{'width': topExpressionGutterWidth, 'padding-bottom': isTopHeaderOpen ? '12px' : '0px'}">
-                        <icon-button
-                            #tooltip="matTooltip"
-                            class="{{isTopHeaderOpen ? 'open' : 'closed'}}"
-                            matTooltip="Toggle Installed Module Section"
-                            icon='assets/button-icons/arrow-right.svg'
-                            [size]="16"
-                            (click)="onToggleTopHeader()"
-                        >
-                        </icon-button>
-                    </div>
-                    <div class="dots" [ngStyle]="{'padding-bottom': isTopHeaderOpen ? '12px' : '0px'}"></div>
-                    <h2 [ngStyle]="{'padding-bottom': isTopHeaderOpen ? '12px' : '0px'}">{{isTopHeaderOpen ? "^ Installed Modules ^" : "Installed Modules"}}</h2>
-                    <div class="dots" [ngStyle]="{'padding-bottom': isTopHeaderOpen ? '12px' : '0px'}"></div>
-                </div>
-            </div>
+        <div class="text-editor {{isTopHeaderOpen ? 'top-open' : ''}} {{isBottomHeaderOpen ? 'bottom-open' : ''}} {{isSplitScreen ? 'split-screen-mode' : ''}}">
             <expression-text-editor
                 *ngIf="expression"
                 class="top-expression"
@@ -234,6 +186,59 @@ POSSIBILITY OF SUCH DAMAGE.
                 [range]="isSubsetExpression ? executedTextSelection.range : null"
                 [showHelp]="useAutocomplete && !isSharedByOtherUser"
                 [isLua]="isLua"
+                [isHeaderOpen]="isTopHeaderOpen"
+                (toggleHeader)="onToggleTopHeader()"
+                [installedModules]="topModules"
+            >
+            </expression-text-editor>
+            <div *ngIf="isSplitScreen" class="split-screen-header">
+                <h2>Module Editor</h2>
+                <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
+                    <input
+                        [disabled]="isSharedByOtherUser"
+                        type="text"
+                        placeholder="Expression Description"
+                        [(ngModel)]="expressionComments"
+                        fxFlex
+                    >
+                    <input
+                        [disabled]="isSharedByOtherUser"
+                        type="text"
+                        placeholder="Expression Name"
+                        [(ngModel)]="expressionName"
+                        fxFlex
+                    >
+                    <tag-picker
+                        type="expression"
+                        [selectedTagIDs]="selectedTagIDs"
+                        [showCurrentTagsSection]="true"
+                        (onTagSelectionChanged)="onTagSelectionChanged($event)"
+                        [editable]="editable"
+                    >
+                    </tag-picker>
+                </div>
+            </div>
+            <expression-text-editor
+                *ngIf="bottomExpression && isSplitScreen"
+                class="bottom-expression"
+                [expression]="bottomExpression"
+                [allowEdit]="bottomEditable"
+                [isImmediatelyAppliable]="false"
+                [applyNow]="false"
+                (onTextChange)="onExpressionTextChanged($event)"
+                (onTextSelect)="onTextSelect($event)"
+                (changeExpression)="changeExpression($event)"
+                (runExpression)="runExpression()"
+                (runHighlightedExpression)="runHighlightedExpression()"
+                (saveExpression)="onSave()"
+                (toggleSidebar)="onToggleSidebar()"
+                [range]="isSubsetExpression ? executedTextSelection.range : null"
+                [showHelp]="useBottomAutocomplete && !isSharedByOtherUser"
+                [isLua]="isBottomLua"
+                [isHeaderOpen]="isBottomHeaderOpen"
+                (toggleHeader)="onToggleBottomHeader()"
+                [installedModules]="bottomModules"
+                [showInstalledModules]="false"
             >
             </expression-text-editor>
         </div>

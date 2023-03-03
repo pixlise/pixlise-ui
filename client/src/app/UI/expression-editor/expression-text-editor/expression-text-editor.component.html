@@ -28,19 +28,71 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
-
-<div
-    fxLayout="column"
-    class="dlg-border-with-backdrop gap-separated-vertical-elements"
-    (keydown)='onKeyDown($event)'
-    (keyup)='onKeyUp($event)'
-    (click)='onClickDialog($event)'>
-    <ngx-codemirror
-        [(ngModel)]="editExpression"
-        (click)='onClickExpression($event)'>
-    </ngx-codemirror>
+<div class="code-container">
+  <div *ngIf="expression && showInstalledModules" class="installed-modules-text">
+      <div *ngIf="isHeaderOpen" class="imports">
+          <div 
+              *ngFor="let module of installedModules; index as i"
+              class="module-import-line"
+          >
+              <div class="line-gutter" [ngStyle]="{'width': gutterWidth}">
+                  <span class="line-number">{{i+1}}</span>
+              </div>
+              <span class="header-code cm-s-pixlise">
+                  <span class="cm-keyword">local </span>
+                  <span class="cm-variable">{{module.name}}</span> = <span class="cm-builtin">require </span>
+                  <div class="module-container">
+                      <mat-select
+                          #tooltip="matTooltip"
+                          matTooltip="Select a version for this module"
+                          [(ngModel)]="module.version"
+                          class="module-version"
+                          placeholder="Version"
+                      >
+                          <mat-option
+                              class="cm-string"
+                              *ngFor="let version of module.allVersions;"
+                              [value]="version"
+                          >{{module.name}}@{{version}}
+                          </mat-option>
+                      </mat-select>
+                  </div>
+              </span>
+          </div>
+          <div class="empty-line">
+            <div class="line-gutter" [ngStyle]="{'width': gutterWidth}">
+            </div>
+          </div>
+      </div>
+      <div class="header-divider" [ngStyle]="{'margin-top': isHeaderNonEmptyAndOpen ? '-12px' : '0px'}">
+          <div class="line-gutter" [ngStyle]="{'width': gutterWidth, 'padding-bottom': isHeaderNonEmptyAndOpen ? '12px' : '0px'}">
+              <icon-button
+                  #tooltip="matTooltip"
+                  class="{{isHeaderOpen ? 'open' : 'closed'}}"
+                  matTooltip="Toggle Installed Module Section"
+                  icon='assets/button-icons/arrow-right.svg'
+                  [size]="16"
+                  (click)="onToggleHeader()"
+              >
+              </icon-button>
+          </div>
+          <div class="dots" [ngStyle]="{'padding-bottom': isHeaderNonEmptyAndOpen ? '12px' : '0px'}"></div>
+          <h2 [ngStyle]="{'padding-bottom': isHeaderNonEmptyAndOpen ? '12px' : '0px'}">{{isHeaderOpen ? "^ Installed Modules ^" : "Installed Modules"}}</h2>
+          <div class="dots" [ngStyle]="{'padding-bottom': isHeaderNonEmptyAndOpen ? '12px' : '0px'}"></div>
+      </div>
+  </div>
+  <div
+      fxLayout="column"
+      class="dlg-border-with-backdrop gap-separated-vertical-elements"
+      (keydown)='onKeyDown($event)'
+      (keyup)='onKeyUp($event)'
+      (click)='onClickDialog($event)'>
+      <ngx-codemirror
+          [(ngModel)]="editExpression"
+          (click)='onClickExpression($event)'>
+      </ngx-codemirror>
+  </div>
 </div>
-
 <expression-help-dropdown
     *ngIf="activeHelp && allowEdit && showHelp"
     class="help-dropdown"

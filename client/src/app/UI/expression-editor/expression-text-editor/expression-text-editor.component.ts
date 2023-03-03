@@ -43,6 +43,16 @@ import { LUA_MARKER } from "src/app/expression-language/expression-language";
 require("codemirror/addon/comment/comment.js");
 require("codemirror/mode/lua/lua");
 
+export class DataExpressionModule
+{
+    constructor(
+        public name: string,
+        public description: string="",
+        public version: string="",
+        public author: string="",
+        public allVersions: string[]=[],
+    ){}
+}
 
 export class TextSelection
 {
@@ -97,6 +107,10 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Input() showHelp: boolean = true;
     @Input() range: Range = null;
 
+    @Input() installedModules: DataExpressionModule[] = [];
+    @Input() isHeaderOpen: boolean = false;
+    @Input() showInstalledModules: boolean = true;
+
     @Output() onChange = new EventEmitter<DataExpression>();
     @Output() onTextChange = new EventEmitter<string>();
     @Output() onTextSelect = new EventEmitter<TextSelection>();
@@ -105,6 +119,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Output() saveExpression = new EventEmitter();
     @Output() toggleSidebar = new EventEmitter();
     @Output() changeExpression = new EventEmitter<(text: string) => void>();
+    @Output() toggleHeader = new EventEmitter();
     
     constructor(
         private _datasetService: DataSetService,
@@ -175,6 +190,21 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     ngOnDestroy()
     {
         this._subs.unsubscribe();
+    }
+
+    onToggleHeader(): void
+    {
+        this.toggleHeader.emit();
+    }
+
+    get isHeaderNonEmptyAndOpen(): boolean
+    {
+        return this.isHeaderOpen && this.installedModules.length > 0;
+    }
+
+    get gutterWidth(): string
+    {
+        return this._codeMirror?.codeMirror?.getGutterElement()?.style?.width || "29px";
     }
 
     get isWindows(): boolean
