@@ -50,7 +50,31 @@
         ::ng-deep .cm-s-pixlise.CodeMirror {
             height: calc(100vh - 72px);
         }
-    }    
+    }
+
+    &.top-open {
+        expression-text-editor {
+            ::ng-deep .cm-s-pixlise.CodeMirror {
+                height: calc(100vh - 72px - 100px);
+            }
+        }
+    }
+
+    &.split-screen-mode {
+        expression-text-editor {
+            ::ng-deep .cm-s-pixlise.CodeMirror {
+                height: calc(50vh - 72px);
+            }
+        }
+
+        &.top-open {
+            expression-text-editor {
+                ::ng-deep .cm-s-pixlise.CodeMirror {
+                    height: calc(50vh - 72px - 100px);
+                }
+            }
+        }
+    }
 }
 
 
@@ -287,16 +311,30 @@ expression-list {
     .imports {
         display: flex;
         flex-direction: column;
+        max-height: 100px;
+        overflow: scroll;
 
         .module-import-line {
             display: flex;
             align-items: center;
 
+            &:first-of-type {
+                .line-gutter, .header-code {
+                    padding-top: 8px;
+                }
+            }
+
+            &:last-of-type {
+                .line-gutter, .header-code {
+                    padding-bottom: 16px;
+                }
+            }
+
             .line-gutter {
                 display: flex;
                 align-items: center;
                 justify-content: flex-end;
-                height: 30px;
+                height: 18px;
 
                 .line-number {
                     color: #546E7A;
@@ -310,12 +348,13 @@ expression-list {
                 font-family: monospace;
                 font-size: 14px;
                 
-                height: 30px;
+                height: 18px;
                 display: flex;
                 align-items: center;
                 white-space: pre;
 
                 .module-version {
+                    width: calc(100% - 15px) !important;
                     border: 2px dashed #444C50;
                     border-radius: 4px;
                     padding: 2px 4px;
@@ -329,6 +368,10 @@ expression-list {
                     ::ng-deep .mat-select-value-text {
                         color: #C3E88D !important;
                         line-height: 16px;
+                    }
+
+                    &:hover {
+                        border-color: lighten(#444C50, 20%);
                     }
                 }
             }
@@ -370,10 +413,24 @@ expression-list {
             font-size: 12px;
             color: #969696;
             margin: 0 4px;
+
+            background-color: #222829;
+            border-radius: 8px;
+            z-index: 100;
+            padding: 0 4px;
         }
     }
 }
 
 ::ng-deep .mat-select-panel {
     background-color: rgb(var(--clr-gray-90)) !important;
+}
+
+::ng-deep .module-container {
+    width: auto !important;
+
+    .mat-select-value {
+        max-width: 100%;
+        width: auto;
+    }  
 }

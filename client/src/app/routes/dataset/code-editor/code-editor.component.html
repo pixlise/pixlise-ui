@@ -168,8 +168,8 @@ POSSIBILITY OF SUCH DAMAGE.
                 ></icon-button>
             </expression-list>
         </div>
-        <div class="text-editor">
-            <div class="installed-modules-text">
+        <div class="text-editor {{isTopHeaderOpen ? 'top-open' : ''}} {{isSplitScreen ? 'split-screen-mode' : ''}}">
+            <div *ngIf="expression" class="installed-modules-text">
                 <div *ngIf="isTopHeaderOpen" class="imports">
                     <div 
                         *ngFor="let module of topModules; index as i"
@@ -181,24 +181,26 @@ POSSIBILITY OF SUCH DAMAGE.
                         <span class="header-code cm-s-pixlise">
                             <span class="cm-keyword">local </span>
                             <span class="cm-variable">{{module.name}}</span> = <span class="cm-builtin">require </span>
-                            <mat-select
-                                #tooltip="matTooltip"
-                                matTooltip="Select a version for this module"
-                                [(ngModel)]="module.version"
-                                class="module-version"
-                                placeholder="Version"
-                            >
-                                <mat-option
-                                    class="cm-string"
-                                    *ngFor="let version of module.allVersions;"
-                                    [value]="version"
-                                >{{module.name}}@{{version}}
-                                </mat-option>
-                            </mat-select>
+                            <div class="module-container">
+                                <mat-select
+                                    #tooltip="matTooltip"
+                                    matTooltip="Select a version for this module"
+                                    [(ngModel)]="module.version"
+                                    class="module-version"
+                                    placeholder="Version"
+                                >
+                                    <mat-option
+                                        class="cm-string"
+                                        *ngFor="let version of module.allVersions;"
+                                        [value]="version"
+                                    >{{module.name}}@{{version}}
+                                    </mat-option>
+                                </mat-select>
+                            </div>
                         </span>
                     </div>
                 </div>
-                <div class="header-divider">
+                <div class="header-divider" [ngStyle]="{'margin-top': isTopHeaderOpen ? '-12px' : '0px'}">
                     <div class="line-gutter" [ngStyle]="{'width': topExpressionGutterWidth}">
                         <icon-button
                             #tooltip="matTooltip"
