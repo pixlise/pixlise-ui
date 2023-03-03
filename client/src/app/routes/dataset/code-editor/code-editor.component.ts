@@ -227,6 +227,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             this.sidebarTopSections["currently-open"].items = [
                 this.expression
             ];
+
+            // TODO: Move all the header stuff to the expression-text-editor to better support split screen
             this.topModules = [
                 new DataExpressionModule("test", "description", "3.7", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
                 new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
