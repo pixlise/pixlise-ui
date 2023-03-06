@@ -161,6 +161,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     private _newExpression: boolean = false;
 
+    public emptyName: boolean = false;
+    public emptySourceCode: boolean = false;
+
     // Icons to display
     activeIcon="assets/button-icons/check-on.svg";
     inactiveIcon="assets/button-icons/check-off.svg";
@@ -667,7 +670,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     get saveExpressionTooltip(): string
     {
-        return this.isWindows ? "Save Expression (Ctrl+S)" : "Save Expression (Cmd+S)";
+        let saveTooltip = this.isWindows ? "Save Expression (Ctrl+S)" : "Save Expression (Cmd+S)";
+
+        return this.emptyName || this.emptySourceCode ? `${saveTooltip}\nError: Cannot save with an empty name or source code` : saveTooltip;
     }
 
     get runCodeTooltip(): string
@@ -723,6 +728,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             this.expression.sourceCode = val;
             this.isCodeChanged = true;
             this.isExpressionSaved = false;
+            this.emptySourceCode = val === "";
         }
     }
 
@@ -751,6 +757,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         {
             this.expression.name = name;
             this.isExpressionSaved = false;
+            this.emptyName = name === "";
         }
     }
 
@@ -793,6 +800,14 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         if(this.isExpressionSaved || this.isSharedByOtherUser)
         {
             // Nothing to save
+            return;
+        }
+
+        this.emptyName = this.expression.name === "";
+        this.emptySourceCode = this.expression.sourceCode === "";
+        if(this.emptyName || this.emptySourceCode)
+        {
+            // Don't save if name or source code is empty
             return;
         }
 

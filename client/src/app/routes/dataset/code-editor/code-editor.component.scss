@@ -328,3 +328,7 @@ expression-list {
     background-color: #2a3036;
     box-shadow: 0px 4px 4px 0px #00000040;
 }
+
+input.invalid-input {
+    border: 2px solid #fb8d59;
+}

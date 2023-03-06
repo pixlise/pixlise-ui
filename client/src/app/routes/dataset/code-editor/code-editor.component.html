@@ -72,6 +72,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     <img src="assets/button-icons/play.svg"/>Run
                 </push-button>
                 <input
+                    class="emptyName ? 'invalid-input' : ''"
                     [disabled]="isSharedByOtherUser"
                     type="text"
                     placeholder="Expression Name"
@@ -291,8 +292,8 @@ POSSIBILITY OF SUCH DAMAGE.
                 >Cancel
                 </push-button>
                 <push-button
-                    buttonStyle="yellow"
-                    [disabled]="isSharedByOtherUser || isExpressionSaved"
+                    [buttonStyle]="emptyName || emptySourceCode ? 'orange' : 'yellow'"
+                    [disabled]="isSharedByOtherUser || isExpressionSaved || emptyName || emptySourceCode"
                     (onClick)="onSave()"
                     #tooltip="matTooltip"
                     [matTooltip]="saveExpressionTooltip"
