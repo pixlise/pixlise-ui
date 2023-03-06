@@ -65,7 +65,7 @@ POSSIBILITY OF SUCH DAMAGE.
           </div>
       </div>
       <div class="header-divider" [ngStyle]="{'margin-top': isHeaderNonEmptyAndOpen ? '-12px' : '0px'}">
-          <div class="line-gutter" [ngStyle]="{'width': gutterWidth, 'padding-bottom': isHeaderNonEmptyAndOpen ? '12px' : '0px'}">
+          <div class="line-gutter" [ngStyle]="{'width': gutterWidth}">
               <icon-button
                   #tooltip="matTooltip"
                   class="{{isHeaderOpen ? 'open' : 'closed'}}"
@@ -76,9 +76,9 @@ POSSIBILITY OF SUCH DAMAGE.
               >
               </icon-button>
           </div>
-          <div class="dots" [ngStyle]="{'padding-bottom': isHeaderNonEmptyAndOpen ? '12px' : '0px'}"></div>
-          <h2 [ngStyle]="{'padding-bottom': isHeaderNonEmptyAndOpen ? '12px' : '0px'}">{{isHeaderOpen ? "^ Installed Modules ^" : "Installed Modules"}}</h2>
-          <div class="dots" [ngStyle]="{'padding-bottom': isHeaderNonEmptyAndOpen ? '12px' : '0px'}"></div>
+          <div class="dots"></div>
+          <h2>{{isHeaderOpen ? "^ Installed Modules ^" : "Installed Modules"}}</h2>
+          <div class="dots"></div>
       </div>
   </div>
   <div

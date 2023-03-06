@@ -54,6 +54,7 @@ import { ObjectCreator } from "src/app/models/BasicTypes";
 import { generateExportCSVForExpression } from "src/app/services/export-data.service";
 import { makeValidFileName } from "src/app/utils/utils";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { Router } from "@angular/router";
 
 
 export class LayerDetails
@@ -102,11 +103,9 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     constructor(
         private _contextImageService: ContextImageService,
-        private _exprService: DataExpressionService,
-        private _rgbMixService: RGBMixConfigService,
+        private _router: Router,
         private _widgetDataService: WidgetRegionDataService,
         private _authService: AuthenticationService,
-        private _diffractionService: DiffractionPeakService,
         private _datasetService: DataSetService,
         public dialog: MatDialog
     )
@@ -288,35 +287,36 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     onAddExpression(): void
     {
-        this.showExpressionEditor(new DataExpression("", "", "", EXPR_LANGUAGE_LUA, "", false, null, 0, 0, [], [], null)).subscribe(
-            ({ expression, applyNow })=>
-            {
-                if(expression)
-                {
-                    // User has defined a new one, upload it
-                    this._exprService.add(expression.name, expression.sourceCode, expression.sourceLanguage, expression.comments, expression.tags).subscribe(
-                        (response)=>
-                        {
-                            if(applyNow)
-                            {
-                                // If save and apply now is selected, turn on the layer
-                                let layerID = Object.keys(response || {})[0] || "";
-                                this._contextImageService.mdl.layerManager.setLayerVisibility(layerID, 1, true, []);
-                            }
-                        },
-                        (err)=>
-                        {
-                            alert("Failed to add data expression: "+expression.name);
-                        }
-                    );
-                }
-                // Else user probably cancelled...
-            },
-            (err)=>
-            {
-                console.error(err);
-            }
-        );
+        this._router.navigate(["dataset", this._datasetService.datasetIDLoaded, "code-editor", "create"]);
+        // this.showExpressionEditor(new DataExpression("", "", "", EXPR_LANGUAGE_LUA, "", false, null, 0, 0, [], [], null)).subscribe(
+        //     ({ expression, applyNow })=>
+        //     {
+        //         if(expression)
+        //         {
+        //             // User has defined a new one, upload it
+        //             this._exprService.add(expression.name, expression.sourceCode, expression.sourceLanguage, expression.comments, expression.tags).subscribe(
+        //                 (response)=>
+        //                 {
+        //                     if(applyNow)
+        //                     {
+        //                         // If save and apply now is selected, turn on the layer
+        //                         let layerID = Object.keys(response || {})[0] || "";
+        //                         this._contextImageService.mdl.layerManager.setLayerVisibility(layerID, 1, true, []);
+        //                     }
+        //                 },
+        //                 (err)=>
+        //                 {
+        //                     alert("Failed to add data expression: "+expression.name);
+        //                 }
+        //             );
+        //         }
+        //         // Else user probably cancelled...
+        //     },
+        //     (err)=>
+        //     {
+        //         console.error(err);
+        //     }
+        // );
     }
 
     private showExpressionEditor(toEdit: DataExpression): Observable<{expression: DataExpression; applyNow: boolean;}>

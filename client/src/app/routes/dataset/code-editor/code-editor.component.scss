@@ -48,14 +48,14 @@
         display: flex;
 
         ::ng-deep .cm-s-pixlise.CodeMirror {
-            height: calc(100vh - 60px);
+            height: calc(100vh - 48px);
         }
     }
 
     &.top-open {
         expression-text-editor.top-expression {
             ::ng-deep .cm-s-pixlise.CodeMirror {
-                height: calc(100vh - 60px - 100px);
+                height: calc(100vh - 48px - 100px);
             }
         }
     }
@@ -63,7 +63,7 @@
      &.bottom-open {
         expression-text-editor.bottom-expression {
             ::ng-deep .cm-s-pixlise.CodeMirror {
-                height: calc(100vh - 60px - 100px);
+                height: calc(100vh - 48px - 100px);
             }
         }
     }
@@ -71,14 +71,14 @@
     &.split-screen-mode {
         expression-text-editor {
             ::ng-deep .cm-s-pixlise.CodeMirror {
-                height: calc(50vh - 60px);
+                height: calc(50vh - 48px);
             }
         }
 
         &.top-open {
             expression-text-editor.top-expression {
                 ::ng-deep .cm-s-pixlise.CodeMirror {
-                    height: calc(50vh - 60px - 100px);
+                    height: calc(50vh - 48px - 100px);
                 }
             }
         }
@@ -86,7 +86,7 @@
         &.bottom-open {
             expression-text-editor.bottom-expression {
                 ::ng-deep .cm-s-pixlise.CodeMirror {
-                    height: calc(50vh - 60px - 100px);
+                    height: calc(50vh - 48px - 100px);
                 }
             }
         }

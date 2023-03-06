@@ -67,8 +67,8 @@ function sortByNameAndCompatibility(a: DataExpression | RGBMix, b: DataExpressio
     }
     // Else we go alphabetical
 
-    let aU = a.name.toUpperCase();
-    let bU = b.name.toUpperCase();
+    let aU = a?.name?.toUpperCase() || "";
+    let bU = b?.name?.toUpperCase() || "";
     if(aU < bU) { return -1; }
     if(aU > bU) { return 1; }
     return 0;

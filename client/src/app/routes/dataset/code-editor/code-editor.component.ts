@@ -42,7 +42,7 @@ import { HistogramViewComponent } from "src/app/UI/histogram-view/histogram-view
 import { SpectrumChartWidgetComponent } from "src/app/UI/spectrum-chart-widget/spectrum-chart-widget.component";
 import { SpectrumRegionPickerComponent } from "src/app/UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
 import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/ternary-plot-widget.component";
-import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService, DataExpressionWire } from "src/app/services/data-expression.service";
 import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DataSourceParams, RegionDataResultItem, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
@@ -159,6 +159,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     private _activeIDs: Set<string> = new Set<string>();
 
+    private _newExpression: boolean = false;
+
     // Icons to display
     activeIcon="assets/button-icons/check-on.svg";
     inactiveIcon="assets/button-icons/check-off.svg";
@@ -193,64 +195,94 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 return;
             }
 
-            let expression = this._expressionService.getExpression(this._expressionID);
-            this.isLua = expression.sourceLanguage == EXPR_LANGUAGE_LUA;
+            this._newExpression = this._expressionID === "create";
 
-            this.expression = new DataExpression(
-                expression.id,
-                expression.name,
-                expression.sourceCode,
-                expression.sourceLanguage,
-                expression.comments,
-                expression.shared,
-                expression.creator,
-                expression.createUnixTimeSec,
-                expression.modUnixTimeSec,
-                expression.tags,
-                expression.moduleReferences,
-                expression.recentExecStats
-            );
-
-            this.bottomExpression = this.expression;
-
-            this._fetchedExpression = true;
-            this.runExpression();
-
-            // Add the current expression to the currently-open list
-            this.sidebarTopSections["currently-open"].items = [
-                this.expression
-            ];
-
-            this.topModules = [
-                new DataExpressionModule("test", "description", "3.7", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                new DataExpressionModule("testing", "description", "3.1", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-            ];
-        });
-
-        let all$ = makeDataForExpressionList(
-            this._datasetService,
-            this._widgetDataService,
-            this._expressionService,
-            null
-        );
-        this._subs.add(all$.subscribe(
-            (data: unknown[])=>
+            // If we're creating a new expression, create a blank one
+            if(this._newExpression)
             {
-                this._listBuilder.notifyDataArrived(
-                    (data[0] as DataSet).getPseudoIntensityElementsList(),
-                    data[1] as QuantificationLayer,
-                    this._expressionService.getExpressions(),
+                this.expression = new DataExpression(
+                    "",
+                    "",
+                    "",
+                    EXPR_LANGUAGE_LUA,
+                    "",
+                    false,
+                    new ObjectCreator("", "", ""),
+                    0,
+                    0,
+                    [],
+                    [],
                     null
                 );
 
-                // All have arrived, the taps above would've saved their contents in a way that we like, so
-                // now we can regenerate our item list
-                this.regenerateItemList();
+                this._fetchedExpression = true;
+                // Add the current expression to the currently-open list
+                this.sidebarTopSections["currently-open"].items = [
+                    this.expression
+                ];
+                return;
             }
-        ));
+
+            this._expressionService.getExpressionAsync(this._expressionID).subscribe(expression =>
+            {
+                this.isLua = expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
+
+                this.expression = new DataExpression(
+                    expression.id,
+                    expression.name,
+                    expression.sourceCode,
+                    expression.sourceLanguage,
+                    expression.comments,
+                    expression.shared,
+                    expression.creator,
+                    expression.createUnixTimeSec,
+                    expression.modUnixTimeSec,
+                    expression.tags,
+                    expression.moduleReferences,
+                    expression.recentExecStats,
+                );
+
+                this.bottomExpression = this.expression;
+
+                this._fetchedExpression = true;
+                this.runExpression();
+
+                // Add the current expression to the currently-open list
+                this.sidebarTopSections["currently-open"].items = [
+                    this.expression
+                ];
+
+                this.topModules = [
+                    new DataExpressionModule("test", "description", "3.7", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                    new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                    new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                    new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                    new DataExpressionModule("testing", "description", "3.1", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                ];
+
+                let all$ = makeDataForExpressionList(
+                    this._datasetService,
+                    this._widgetDataService,
+                    this._expressionService,
+                    null
+                );
+                this._subs.add(all$.subscribe(
+                    (data: unknown[])=>
+                    {
+                        this._listBuilder.notifyDataArrived(
+                            (data[0] as DataSet).getPseudoIntensityElementsList(),
+                            data[1] as QuantificationLayer,
+                            this._expressionService.getExpressions(),
+                            null
+                        );
+
+                        // All have arrived, the taps above would've saved their contents in a way that we like, so
+                        // now we can regenerate our item list
+                        this.regenerateItemList();
+                    }
+                ));
+            });
+        });
     }
 
     onAddExpression(): void
@@ -764,25 +796,59 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             return;
         }
 
-        this._expressionService.edit(
-            this._expressionID,
-            this.expression.name,
-            this.expression.sourceCode,
-            this.expression.sourceLanguage,
-            this.expression.comments,
-            this.expression.tags
-        ).subscribe(
-            ()=>
+        if(this._newExpression)
+        {
+            this._expressionService.add(
+                this.expression.name,
+                this.expression.sourceCode,
+                this.expression.sourceLanguage,
+                this.expression.comments,
+                this.expression.tags
+            ).subscribe((newExpression: DataExpressionWire) =>
             {
+                this._newExpression = false;
+                this._expressionID = newExpression.id;
+                this.expression = new DataExpression(
+                    this._expressionID,
+                    newExpression.name,
+                    newExpression.sourceCode,
+                    newExpression.sourceLanguage,
+                    newExpression.comments,
+                    newExpression.shared,
+                    newExpression.creator,
+                    newExpression.create_unix_time_sec,
+                    newExpression.mod_unix_time_sec,
+                    newExpression.tags,
+                    newExpression.moduleReferences || this.expression.moduleReferences,
+                    newExpression.recentExecStats || this.expression.recentExecStats
+                );
                 this.isCodeChanged = false;
                 this.isExpressionSaved = true;
-            },
-            (err)=>
-            {
-                console.error(`Failed to save expression ${this.expression.name}`, err);
-                alert(`Failed to save expression ${this.expression.name}: ${err?.message}`);
-            }
-        );
+                this._router.navigate(["dataset", this._datasetID, "code-editor", this.expression.id]);
+            });
+        }
+        else
+        {
+            this._expressionService.edit(
+                this._expressionID,
+                this.expression.name,
+                this.expression.sourceCode,
+                this.expression.sourceLanguage,
+                this.expression.comments,
+                this.expression.tags
+            ).subscribe(
+                ()=>
+                {
+                    this.isCodeChanged = false;
+                    this.isExpressionSaved = true;
+                },
+                (err)=>
+                {
+                    console.error(`Failed to save expression ${this.expression.name}`, err);
+                    alert(`Failed to save expression ${this.expression.name}: ${err?.message}`);
+                }
+            );
+        }
     }
 
     @HostListener("window:keydown", ["$event"])

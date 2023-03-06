@@ -56,9 +56,10 @@ class DataExpressionInput
 }
 
 // What we receive
-class DataExpressionWire
+export class DataExpressionWire
 {
     constructor(
+        public id: string,
         public name: string,
         public sourceCode: string,
         public sourceLanguage: string,
@@ -191,6 +192,7 @@ export class DataExpressionService
             {
                 // NOTE: JS doesn't _actually_ return a DataExpressionWire
                 let wireExpr = new DataExpressionWire(
+                    id,
                     expression["name"],
                     expression["sourceCode"],
                     expression["sourceLanguage"],
@@ -391,16 +393,17 @@ export class DataExpressionService
                 {
                     // NOTE: JS doesn't _actually_ return a DataExpressionWire
                     let wireExpr = new DataExpressionWire(
+                        id,
                         expression["name"],
-                        expression["expression"],
-                        expression["type"],
+                        expression["sourceCode"],
+                        expression["sourceLanguage"],
                         expression["comments"],
                         expression["shared"],
                         expression["creator"],
                         expression["create_unix_time_sec"],
                         expression["mod_unix_time_sec"],
                         expression["tags"],
-                        expression["moduleReferences"],
+                        expression["moduleReferences"], 
                         expression["recentExecStats"]
                     );
                     let receivedDataExpression = wireExpr.makeExpression(id);
@@ -560,15 +563,15 @@ export class DataExpressionService
         this._expressionsUpdated$.next();
     }
 
-    add(name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = []): Observable<object>
+    add(name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = []): Observable<DataExpressionWire>
     {
         let loadID = this._loadingSvc.add("Saving new expression...");
         let apiURL = APIPaths.getWithHost(APIPaths.api_data_expression);
         let toSave = new DataExpressionInput(name, sourceCode, sourceLanguage, comments, tags);
-        return this.http.post<object>(apiURL, toSave, makeHeaders())
+        return this.http.post<DataExpressionWire>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(
-                    (resp: object)=>
+                    (resp: DataExpressionWire)=>
                     {
                         if(resp) 
                         {
