@@ -38,10 +38,21 @@ import { WidgetRegionDataService } from "src/app/services/widget-region-data.ser
 import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElement, Suggestion } from "../expression-help";
 import { SentryHelper } from "src/app/utils/utils";
 import { Range } from "codemirror";
+import { LUA_MARKER } from "src/app/expression-language/expression-language";
 
 require("codemirror/addon/comment/comment.js");
 require("codemirror/mode/lua/lua");
 
+export class DataExpressionModule
+{
+    constructor(
+        public name: string,
+        public description: string="",
+        public version: string="",
+        public author: string="",
+        public allVersions: string[]=[],
+    ){}
+}
 
 export class TextSelection
 {
@@ -96,13 +107,19 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Input() showHelp: boolean = true;
     @Input() range: Range = null;
 
+    @Input() installedModules: DataExpressionModule[] = [];
+    @Input() isHeaderOpen: boolean = false;
+    @Input() showInstalledModules: boolean = true;
+
     @Output() onChange = new EventEmitter<DataExpression>();
     @Output() onTextChange = new EventEmitter<string>();
     @Output() onTextSelect = new EventEmitter<TextSelection>();
     @Output() runExpression = new EventEmitter();
     @Output() runHighlightedExpression = new EventEmitter();
     @Output() saveExpression = new EventEmitter();
+    @Output() toggleSidebar = new EventEmitter();
     @Output() changeExpression = new EventEmitter<(text: string) => void>();
+    @Output() toggleHeader = new EventEmitter();
     
     constructor(
         private _datasetService: DataSetService,
@@ -175,6 +192,21 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         this._subs.unsubscribe();
     }
 
+    onToggleHeader(): void
+    {
+        this.toggleHeader.emit();
+    }
+
+    get isHeaderNonEmptyAndOpen(): boolean
+    {
+        return this.isHeaderOpen && this.installedModules.length > 0;
+    }
+
+    get gutterWidth(): string
+    {
+        return this._codeMirror?.codeMirror?.getGutterElement()?.style?.width || "29px";
+    }
+
     get isWindows(): boolean
     {
         return navigator.userAgent.search("Windows") !== -1;
@@ -213,6 +245,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                     this.runHighlightedExpression.emit();
                 },
                 "Ctrl-S": () => this.saveExpression.emit(),
+                "Ctrl-B": () => this.toggleSidebar.emit(),
             });
         }
         else
@@ -231,6 +264,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
                 },
                 "Cmd-S": () => this.saveExpression.emit(),
+                "Cmd-B": () => this.toggleSidebar.emit(),
             });
         }
     }
@@ -306,9 +340,9 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     stripLua(text: string): string
     {
-        if(text.startsWith("LUA\n"))
+        if(text.startsWith(LUA_MARKER))
         {
-            text = text.substring(4);
+            text = text.substring(LUA_MARKER.length);
         }
 
         return text;

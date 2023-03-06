@@ -41,6 +41,7 @@ import { LuaTranspiler } from "./lua-transpiler";
 import { ResultComparer } from "./result-comparer";
 import { environment } from "src/environments/environment";
 
+export const LUA_MARKER = "-- LUA\n";
 
 // Helper function to run a query
 export function getQuantifiedDataWithExpression(
@@ -124,7 +125,7 @@ export class DataQuerier
         if(this.isLUA(expression))
         {
             // Trim the marker
-            expression = expression.substring(3);
+            expression = expression.substring(LUA_MARKER.length);
 
             return this._interpretLua.runQuery(expression);
         }
@@ -160,6 +161,6 @@ export class DataQuerier
 
     private isLUA(expression: string): boolean
     {
-        return expression.startsWith("LUA");
+        return expression.startsWith(LUA_MARKER);
     }
 }

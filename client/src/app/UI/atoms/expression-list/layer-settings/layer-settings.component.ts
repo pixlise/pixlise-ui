@@ -285,6 +285,17 @@ export class LayerSettingsComponent implements OnInit
 
         return comments;
     }
+
+    get labelsWidth(): string
+    {
+        return this.isPreviewMode ? "175px" : "calc(35vw - 48px - 230px)";
+    }
+
+    get commentWidth(): string
+    {
+        return this.isPreviewMode ? "180px" : "calc(35vw - 48px - 230px)";
+    }
+
     /*
     get expressionErrorMessage(): string
     {

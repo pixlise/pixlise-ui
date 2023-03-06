@@ -43,12 +43,22 @@ import { SpectrumChartWidgetComponent } from "src/app/UI/spectrum-chart-widget/s
 import { SpectrumRegionPickerComponent } from "src/app/UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
 import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/ternary-plot-widget.component";
 import { DataExpressionService } from "src/app/services/data-expression.service";
-import { DataExpression } from "src/app/models/Expression";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DataSourceParams, RegionDataResultItem, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
-import { TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
+import { DataExpressionModule, TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { LuaTranspiler } from "src/app/expression-language/lua-transpiler";
+import { CustomExpressionGroup, ExpressionListBuilder, ExpressionListItems, LocationDataLayerPropertiesWithVisibility, makeDataForExpressionList } from "src/app/models/ExpressionList";
+import { ExpressionListHeaderToggleEvent } from "src/app/UI/atoms/expression-list/expression-list.component";
+import { LayerVisibilityChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
+import { ObjectCreator } from "src/app/models/BasicTypes";
+import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
+import { RGBMix } from "src/app/services/rgbmix-config.service"
+import { DataSetService } from "src/app/services/data-set.service";
+import { QuantificationLayer } from "src/app/models/Quantifications";
+import { DataSet } from "src/app/models/DataSet";
+import { LUA_MARKER } from "src/app/expression-language/expression-language";
 
 @Component({
     selector: "code-editor",
@@ -66,18 +76,68 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     private _datasetID: string;
     private _expressionID: string;
 
-    private _editable = true;
+    public isSidebarOpen = false;
+    // What we display in the virtual-scroll capable list
+    headerSectionsOpen: Set<string> = new Set<string>(["currently-open-header"]);
+    items: ExpressionListItems = null;
+    initialScrollToIdx: number = -1;
+    public sidebarTopSections: Record<string, CustomExpressionGroup> = {
+        "currently-open": {
+            type: "currently-open-header",
+            childType: "expression",
+            label: "Currently Open",
+            items: [],
+            emptyMessage: "No expressions are currently open.",
+        },
+        "installed-modules": {
+            type: "installed-modules-header",
+            childType: "module",
+            label: "Installed Modules",
+            items: [],
+            emptyMessage: "No modules are installed.",
+        },
+        "modules": {
+            type: "modules-header",
+            childType: "module",
+            label: "Modules",
+            items: [],
+            emptyMessage: "No modules are available.",
+        }
+    };
+    public sidebarBottomSections: Record<string, CustomExpressionGroup> = {
+        "examples": {
+            type: "examples-header",
+            childType: "expression",
+            label: "Examples",
+            items: [],
+            emptyMessage: "No examples are available.",
+        }
+    };
 
+    public isSplitScreen = false;
+
+    private _editable = true;
+    public isTopHeaderOpen = true;
     public useAutocomplete = false;
     public isCodeChanged = true;
     public isExpressionSaved = true;
-    public isLua = false;
+    public isLua = true;
+    public expression: DataExpression;
+    public topModules: DataExpressionModule[] = [];
+
+    private _bottomEditable = true;
+    public isBottomHeaderOpen = false;
+    public useBottomAutocomplete = false;
+    public isBottomCodeChanged = true;
+    public isBottomExpressionSaved = true;
+    public isBottomLua = true;
+    public bottomExpression: DataExpression;
+    public bottomModules: DataExpressionModule[] = [];
 
     public activeTextSelection: TextSelection = null;
     public executedTextSelection: TextSelection = null;
     public isSubsetExpression: boolean = false;
 
-    public expression: DataExpression;
     public evaluatedExpression: RegionDataResultItem;
     public pmcGridExpressionTitle: string = "";
     public displayExpressionTitle: string = "";
@@ -90,6 +150,20 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     updateText: (text: string) => void;
 
+    private _filterText: string = "";
+
+    private _authors: ObjectCreator[] = [];
+    private _filteredAuthors: string[] = [];
+    private _filteredTagIDs: string[] = [];
+
+    private _activeIDs: Set<string> = new Set<string>();
+
+    // Icons to display
+    activeIcon="assets/button-icons/check-on.svg";
+    inactiveIcon="assets/button-icons/check-off.svg";
+
+    _listBuilder: ExpressionListBuilder;
+
     constructor(
         private _route: ActivatedRoute,
         private _router: Router,
@@ -100,6 +174,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         public dialog: MatDialog,
         private _expressionService: DataExpressionService,
         private _widgetDataService: WidgetRegionDataService,
+        private _datasetService: DataSetService,
     )
     {
     }
@@ -107,7 +182,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     ngOnInit()
     {
-        this._datasetID = this._route.snapshot.parent.params["dataset_id"];
+        this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, false, false, this._expressionService);
+        this._datasetID = this._route.snapshot.parent?.params["dataset_id"];
         this._expressionID = this._route.snapshot.params["expression_id"];
         this._expressionService.expressionsUpdated$.subscribe(() =>
         {
@@ -133,14 +209,82 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 expression.modUnixTimeSec,
                 expression.tags
             );
+
+            this.bottomExpression = this.expression;
+
             this._fetchedExpression = true;
             this.runExpression();
+
+            // Add the current expression to the currently-open list
+            this.sidebarTopSections["currently-open"].items = [
+                this.expression
+            ];
+
+            this.topModules = [
+                new DataExpressionModule("test", "description", "3.7", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                new DataExpressionModule("testing", "description", "3.1", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+            ];
         });
+
+        let all$ = makeDataForExpressionList(
+            this._datasetService,
+            this._widgetDataService,
+            this._expressionService,
+            null
+        );
+        this._subs.add(all$.subscribe(
+            (data: unknown[])=>
+            {
+                this._listBuilder.notifyDataArrived(
+                    (data[0] as DataSet).getPseudoIntensityElementsList(),
+                    data[1] as QuantificationLayer,
+                    this._expressionService.getExpressions(DataExpressionId.DataExpressionTypeAll),
+                    null
+                );
+
+                // All have arrived, the taps above would've saved their contents in a way that we like, so
+                // now we can regenerate our item list
+                this.regenerateItemList();
+            }
+        ));
+    }
+
+    onAddExpression(): void
+    {
+        // TODO: Add expression
+    }
+
+    onAddModule(): void
+    {
+        // TODO: Add module
+    }
+
+    onToggleSidebar(): void
+    {
+        this.isSidebarOpen = !this.isSidebarOpen;
+    }
+
+    onToggleSplitScreen(): void
+    {
+        this.isSplitScreen = !this.isSplitScreen;
+    }
+
+    onToggleTopHeader(): void
+    {
+        this.isTopHeaderOpen = !this.isTopHeaderOpen;
+    }
+
+    onToggleBottomHeader(): void
+    {
+        this.isBottomHeaderOpen = !this.isBottomHeaderOpen;
     }
 
     checkLua(text: string): boolean
     {
-        return text.startsWith("LUA\n");
+        return text.startsWith(LUA_MARKER);
     }
 
     ngOnDestroy()
@@ -181,6 +325,124 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             {
             }
         ));
+    }
+
+    private regenerateItemList(): void
+    {
+        let customStartSections = Object.values(this.sidebarTopSections);
+        let customEndSections = Object.values(this.sidebarBottomSections);
+
+        this.items = this._listBuilder.makeExpressionList(
+            this.headerSectionsOpen,
+            this._activeIDs,
+            new Set<string>(),
+            this._filterText,
+            this._filteredAuthors,
+            this._filteredTagIDs,
+            false, // We never show the exploratory RGB mix item
+            (source: DataExpression|RGBMix): LocationDataLayerProperties=>
+            {
+                let layer = new LocationDataLayerPropertiesWithVisibility(source.id, source.name, source.id, source);
+                layer.visible = (this._activeIDs.has(source.id));
+                return layer;
+            },
+            false,
+            false,
+            customStartSections,
+            customEndSections
+        );
+
+        this.authors = this._listBuilder.getAuthors();
+    }
+
+    get authors(): ObjectCreator[]
+    {
+        return this._authors;
+    }
+
+    set authors(authors: ObjectCreator[])
+    {
+        this._authors = authors;
+    }
+
+    get authorsTooltip(): string
+    {
+        let authorNames = this._authors.filter((author) => this._filteredAuthors.includes(author.user_id)).map((author) => author.name);
+        return this._filteredAuthors.length > 0 ? `Authors:\n${authorNames.join("\n")}` : "No Authors Selected";
+    }
+
+    get filteredAuthors(): string[]
+    {
+        return this._filteredAuthors;
+    }
+
+    set filteredAuthors(authors: string[])
+    {
+        this._filteredAuthors = authors;
+        this.regenerateItemList();
+    }
+
+    get filteredTagIDs(): string[]
+    {
+        return this._filteredTagIDs;
+    }
+
+    onFilterExpressions(filter: string)
+    {
+        this._filterText = filter;
+        this.regenerateItemList();
+    }
+
+    onFilterTagSelectionChanged(tags: string[]): void
+    {
+        this._filteredTagIDs = tags;
+        this.regenerateItemList();
+    }
+
+    private toggleLayerSectionOpenNoRegen(itemType: string, open: boolean): void
+    {
+        if(open)
+        {
+            // It was opened, ensure it's in the set of open sections
+            this.headerSectionsOpen.add(itemType);
+        }
+        else
+        {
+            // It's closed, ensure it's not in the open list
+            this.headerSectionsOpen.delete(itemType);
+        }
+    }
+
+    onToggleLayerSectionOpen(event: ExpressionListHeaderToggleEvent): void
+    {
+        this.toggleLayerSectionOpenNoRegen(event.itemType, event.open);
+
+        // Now that one of our sections has toggled, regenerate the whole list of what to show
+        this.regenerateItemList();
+    }
+
+    onLayerImmediateSelection(event: LayerVisibilityChange): void
+    {
+        this.onLayerVisibilityChange(event);
+    }
+
+    onLayerVisibilityChange(event: LayerVisibilityChange): void
+    {
+        // We handle this by saving the ID in our list of "active" ids, if it's marked visible...
+        // if(event.visible)
+        // {
+        //     if(this.data.singleSelection)
+        //     {
+        //         this._activeIDs.clear();
+        //     }
+        //     this._activeIDs.add(event.layerID);
+        // }
+        // else
+        // {
+        //     this._activeIDs.delete(event.layerID);
+        // }
+
+        this.regenerateItemList();
     }
 
     private clearPreviewReplaceable(): void
@@ -265,9 +527,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             changedText = textLines.join("\n");
         }
 
-        if(!changedText.startsWith("LUA\n"))
+        if(!changedText.startsWith(LUA_MARKER))
         {
-            return "LUA\n" + changedText;
+            return LUA_MARKER + changedText;
         }
 
         return changedText;
@@ -349,6 +611,12 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         return this.activeTextSelection?.text;
     }
 
+    get moduleSidebarTooltip(): string
+    {
+        let tooltip = this.isSidebarOpen ? "Close Modules Sidebar" : "Open Modules Sidebar";
+        return tooltip + (this.isWindows ? " (Ctrl+B)" : " (Cmd+B)");
+    }
+
     get saveExpressionTooltip(): string
     {
         return this.isWindows ? "Save Expression (Ctrl+S)" : "Save Expression (Cmd+S)";
@@ -388,6 +656,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     get editable(): boolean
     {
         return this._editable && !this.isSharedByOtherUser;
+    }
+
+    get bottomEditable(): boolean
+    {
+        return this._bottomEditable && !this.isSharedByOtherUser;
     }
 
     get editExpression(): string
@@ -454,9 +727,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     addLua(text: string): string
     {
-        if(!text.startsWith("LUA\n"))
+        if(!text.startsWith(LUA_MARKER))
         {
-            return "LUA\n" + text;
+            return LUA_MARKER + text;
         }
 
         return text;
@@ -513,19 +786,38 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         if((this._keyPresses["Meta"] && this._keyPresses["Enter"]) || (this._keyPresses["Control"] && this._keyPresses["Enter"]))
         {
             this.runExpression();
-            this._keyPresses["Meta"] = false;
-            this._keyPresses["Control"] = false;
-            this._keyPresses["Enter"] = false;
+            if(event.key === "Meta" || event.key === "Control")
+            {
+                this._keyPresses["Meta"] = false;
+                this._keyPresses["Control"] = false;
+                this._keyPresses["Enter"] = false;
+            }
+            this._keyPresses[event.key] = false;
         }
         else if((this._keyPresses["Meta"] && this._keyPresses["s"]) || (this._keyPresses["Control"] && this._keyPresses["s"]))
         {
             this.onSave();
-            this._keyPresses["Meta"] = false;
-            this._keyPresses["Control"] = false;
-            this._keyPresses["s"] = false;
+            this._keyPresses[event.key] = false;
+            if(event.key === "Meta" || event.key === "Control")
+            {
+                this._keyPresses["Meta"] = false;
+                this._keyPresses["Control"] = false;
+                this._keyPresses["s"] = false;
+            }
             event.stopPropagation();
             event.stopImmediatePropagation();
             event.preventDefault();
+        }
+        else if((this._keyPresses["Meta"] && this._keyPresses["b"]) || (this._keyPresses["Control"] && this._keyPresses["b"]))
+        {
+            this.onToggleSidebar();
+            this._keyPresses[event.key] = false;
+            if(event.key === "Meta" || event.key === "Control")
+            {
+                this._keyPresses["Meta"] = false;
+                this._keyPresses["Control"] = false;
+                this._keyPresses["b"] = false;
+            }
         }
     }
 

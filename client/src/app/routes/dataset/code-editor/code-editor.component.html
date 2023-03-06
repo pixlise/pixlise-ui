@@ -30,34 +30,46 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div fxLayout="column" class="code-editor">
-    <div class="editor-header">
+    <div class="editor-header {{isSidebarOpen ? 'sidebar-open' : ''}}">
+        <div class="{{isSidebarOpen ? 'sidebar-header' : 'sidebar-header-closed'}}">
+            <h2 *ngIf="isSidebarOpen">Modules</h2>
+            <div
+                class="sidebar-header-toggle-btn"
+                (click)="onToggleSidebar()"
+                #tooltip="matTooltip"
+                [matTooltip]="moduleSidebarTooltip"
+            >
+                <img src="assets/button-icons/double-arrow-left.svg"/>
+            </div>
+        </div>
         <div class="text-container">
-            <h2>Expression Editor</h2>
+            <h2>LUA Expression Editor</h2>
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
-                <push-button
-                    *ngIf="!isLua"
-                    buttonStyle="yellow"
+                <input
                     [disabled]="isSharedByOtherUser"
-                    [active]="useAutocomplete"
-                    (onClick)="convertToLua()"
+                    type="text"
+                    placeholder="Expression Description"
+                    [(ngModel)]="expressionComments"
+                    fxFlex
+                >
+                <multi-switch-button
                     #tooltip="matTooltip"
-                    matTooltip="WARNING: This is a one way operation"
-                >Convert to LUA
-                </push-button>
+                    matTooltip="Toggle between a single code editor and a splitscreen code view"
+                    class="split-screen-btn"
+                    [options]="['Single', 'Split']"
+                    [value]="isSplitScreen ? 'Split' : 'Single'"
+                    [disabled]="false"
+                    (onChange)="onToggleSplitScreen()">
+                </multi-switch-button>
                 <push-button
-                    buttonStyle="gray"
-                    [disabled]="isSharedByOtherUser"
-                    [active]="useAutocomplete"
-                    (onClick)="onToggleAutocomplete()"
-                >Autocomplete
-                </push-button>
-                <push-button
+                    class="run-btn"
                     buttonStyle="yellow"
                     [disabled]="!isCodeChanged && !isSubsetExpression"
                     (onClick)="runExpression()"
                     #tooltip="matTooltip"
                     [matTooltip]="runCodeTooltip"
-                >Run
+                >
+                    <img src="assets/button-icons/play.svg"/>Run
                 </push-button>
                 <input
                     [disabled]="isSharedByOtherUser"
@@ -96,10 +108,70 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
         </div>
     </div>
-    <div fxLayout="row" class="editor-body">
-        <div class="text-editor">
+    <div fxLayout="row" class="editor-body {{isSidebarOpen ? 'sidebar-open' : ''}}">
+        <div class="sidebar">
+            <div *ngIf="isSidebarOpen" fxLayout="row" class="filter-container">
+                <filter-box
+                    placeholder="Filter Name..."
+                    (onFilterChanged)="onFilterExpressions($event)">
+                </filter-box>
+                <tag-picker
+                    type="expression"
+                    [selectedTagIDs]="filteredTagIDs"
+                    [showCurrentTagsSection]="false"
+                    (onTagSelectionChanged)="onFilterTagSelectionChanged($event)"
+                    [additionalVisibleTagType]="['module']"
+                >
+                </tag-picker>
+                <mat-select
+                    #tooltip="matTooltip"
+                    [matTooltip]="authorsTooltip"
+                    multiple
+                    [(ngModel)]="filteredAuthors"
+                    class="authors-filter"
+                    placeholder="Author ..."
+                >
+                    <mat-option *ngFor="let author of authors;"
+                        [value]="author.user_id">{{author.name}}
+                    </mat-option>
+                </mat-select>
+            </div>
+            <expression-list
+                [headerSectionsOpen]="headerSectionsOpen"
+                [items]="items"
+                [downloadable]="false"
+                [showOpacitySliders]="false"
+                [showColourOptions]="false"
+                [showPureSwitchOnElements]="true"
+                [selectedIcon]="activeIcon"
+                [unselectedIcon]="inactiveIcon"
+                [initialScrollToIdx]="initialScrollToIdx"
+                (headerSectionToggle)="onToggleLayerSectionOpen($event)"
+                (visibilityChange)="onLayerVisibilityChange($event)"
+                (onLayerImmediateSelection)="onLayerImmediateSelection($event)"
+                [isPreviewMode]="true"
+                fxFlex="100%"
+            >
+                <icon-button
+                    #tooltip="matTooltip"
+                    matTooltip="Create a new expression"
+                    icon='assets/button-icons/plus-white.svg'
+                    (click)="onAddExpression()"
+                    expressionHeader
+                ></icon-button>
+                <icon-button
+                    #tooltip="matTooltip"
+                    matTooltip="Create a new module"
+                    icon='assets/button-icons/plus-white.svg'
+                    (click)="onAddModule()"
+                    modulesHeader
+                ></icon-button>
+            </expression-list>
+        </div>
+        <div class="text-editor {{isTopHeaderOpen ? 'top-open' : ''}} {{isBottomHeaderOpen ? 'bottom-open' : ''}} {{isSplitScreen ? 'split-screen-mode' : ''}}">
             <expression-text-editor
                 *ngIf="expression"
+                class="top-expression"
                 [expression]="expression"
                 [allowEdit]="editable"
                 [isImmediatelyAppliable]="false"
@@ -110,9 +182,63 @@ POSSIBILITY OF SUCH DAMAGE.
                 (runExpression)="runExpression()"
                 (runHighlightedExpression)="runHighlightedExpression()"
                 (saveExpression)="onSave()"
+                (toggleSidebar)="onToggleSidebar()"
                 [range]="isSubsetExpression ? executedTextSelection.range : null"
                 [showHelp]="useAutocomplete && !isSharedByOtherUser"
                 [isLua]="isLua"
+                [isHeaderOpen]="isTopHeaderOpen"
+                (toggleHeader)="onToggleTopHeader()"
+                [installedModules]="topModules"
+            >
+            </expression-text-editor>
+            <div *ngIf="isSplitScreen" class="split-screen-header">
+                <h2>Module Editor</h2>
+                <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
+                    <input
+                        [disabled]="isSharedByOtherUser"
+                        type="text"
+                        placeholder="Expression Description"
+                        [(ngModel)]="expressionComments"
+                        fxFlex
+                    >
+                    <input
+                        [disabled]="isSharedByOtherUser"
+                        type="text"
+                        placeholder="Expression Name"
+                        [(ngModel)]="expressionName"
+                        fxFlex
+                    >
+                    <tag-picker
+                        type="expression"
+                        [selectedTagIDs]="selectedTagIDs"
+                        [showCurrentTagsSection]="true"
+                        (onTagSelectionChanged)="onTagSelectionChanged($event)"
+                        [editable]="editable"
+                    >
+                    </tag-picker>
+                </div>
+            </div>
+            <expression-text-editor
+                *ngIf="bottomExpression && isSplitScreen"
+                class="bottom-expression"
+                [expression]="bottomExpression"
+                [allowEdit]="bottomEditable"
+                [isImmediatelyAppliable]="false"
+                [applyNow]="false"
+                (onTextChange)="onExpressionTextChanged($event)"
+                (onTextSelect)="onTextSelect($event)"
+                (changeExpression)="changeExpression($event)"
+                (runExpression)="runExpression()"
+                (runHighlightedExpression)="runHighlightedExpression()"
+                (saveExpression)="onSave()"
+                (toggleSidebar)="onToggleSidebar()"
+                [range]="isSubsetExpression ? executedTextSelection.range : null"
+                [showHelp]="useBottomAutocomplete && !isSharedByOtherUser"
+                [isLua]="isBottomLua"
+                [isHeaderOpen]="isBottomHeaderOpen"
+                (toggleHeader)="onToggleBottomHeader()"
+                [installedModules]="bottomModules"
+                [showInstalledModules]="false"
             >
             </expression-text-editor>
         </div>
@@ -130,26 +256,31 @@ POSSIBILITY OF SUCH DAMAGE.
             ></pmc-data-grid>
         </div>
     </div>
-    <div class="editor-footer">
+    <div class="editor-footer {{isSidebarOpen ? 'sidebar-open' : ''}}">
         <div class="text-container">
             <mat-select [(ngModel)]="isLua" [disabled]="true">
                 <mat-option [value]="true">Lua</mat-option>
                 <mat-option [value]="false">PIXLang</mat-option>
             </mat-select>
-            <input
-                [disabled]="isSharedByOtherUser"
-                type="text"
-                placeholder="Expression Description"
-                [(ngModel)]="expressionComments"
-                fxFlex
-            >
             <push-button
+                *ngIf="!isLua"
+                class="convert-to-lua-btn"
+                buttonStyle="yellow"
+                [disabled]="isSharedByOtherUser"
+                [active]="useAutocomplete"
+                (onClick)="convertToLua()"
+                #tooltip="matTooltip"
+                matTooltip="WARNING: This is a one way operation"
+            >Convert to LUA
+            </push-button>
+            <push-button
+                class="run-highlighted-btn"
                 buttonStyle="yellow"
                 [disabled]="textHighlighted === '' && !isEmptySelection"
                 (onClick)="runHighlightedExpression()"
                 #tooltip="matTooltip"
                 [matTooltip]="runHighlightedCodeTooltip"
-            >{{textHighlighted === '' ? "Visualize Code Until Line" : "Visualize Selected Code"}}
+            >{{textHighlighted === '' ? "Run Code Until Line" : "Run Selected Code"}}
             </push-button>
         </div>
         <div class="viz-container">
