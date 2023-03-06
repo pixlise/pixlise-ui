@@ -77,7 +77,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <!-- NOTE: we don't listen for layer colour change as we don't show the colour picker -->
 
         <!-- Show add button for expressions -->
-        <icon-button icon='assets/button-icons/plus-white.svg' (click)="onAddExpression()" expressionHeader></icon-button>
+        <icon-button *ngIf="!data.isPreviewMode" icon='assets/button-icons/plus-white.svg' (click)="onAddExpression()" expressionHeader></icon-button>
     </expression-list>
     <div fxLayout="row" fxLayoutAlign="end center" class="card-toolbar gap-separated-horizontal-elements">
         <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
