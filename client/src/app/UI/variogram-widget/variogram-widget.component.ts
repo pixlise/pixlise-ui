@@ -361,7 +361,7 @@ export class VariogramWidgetComponent implements OnInit
         //dialogConfig.autoFocus = true;
         //dialogConfig.width = '1200px';
 
-        dialogConfig.data = new ExpressionPickerData("Plot Axis", DataExpressionId.DataExpressionTypeAll, this._expressionIds, false, false, false);
+        dialogConfig.data = new ExpressionPickerData("Plot Axis", this._expressionIds, false, false, false);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

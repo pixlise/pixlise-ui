@@ -41,11 +41,13 @@ import { LuaTranspiler } from "./lua-transpiler";
 import { ResultComparer } from "./result-comparer";
 import { environment } from "src/environments/environment";
 
-export const LUA_MARKER = "-- LUA\n";
+export const EXPR_LANGUAGE_LUA = "LUA";
+export const EXPR_LANGUAGE_PIXLANG = "PIXLANG";
 
 // Helper function to run a query
 export function getQuantifiedDataWithExpression(
     expression: string,
+    expressionLanguage: string,
     quantSource: QuantifiedDataQuerierSource,
     pseudoSource: PseudoIntensityDataQuerierSource,
     housekeepingSource: HousekeepingDataQuerierSource,
@@ -56,7 +58,7 @@ export function getQuantifiedDataWithExpression(
 ): Observable<PMCDataValues>
 {
     let query = new DataQuerier(quantSource, pseudoSource, housekeepingSource, spectrumSource, diffractionSource, dataset);
-    let queryResult = query.runQuery(expression);
+    let queryResult = query.runQuery(expression, expressionLanguage);
 
     if(forPMCs === null)
     {
@@ -119,14 +121,11 @@ export class DataQuerier
         }
     }
 
-    public runQuery(expression: string): Observable<PMCDataValues>
+    public runQuery(expression: string, expressionLanguage: string): Observable<PMCDataValues>
     {
         // Decide which interperter to run it in
-        if(this.isLUA(expression))
+        if(expressionLanguage == EXPR_LANGUAGE_LUA)
         {
-            // Trim the marker
-            expression = expression.substring(LUA_MARKER.length);
-
             return this._interpretLua.runQuery(expression);
         }
         else
@@ -157,10 +156,5 @@ export class DataQuerier
 
             return this._interpretPixlise.runQuery(expression);
         }
-    }
-
-    private isLUA(expression: string): boolean
-    {
-        return expression.startsWith(LUA_MARKER);
     }
 }

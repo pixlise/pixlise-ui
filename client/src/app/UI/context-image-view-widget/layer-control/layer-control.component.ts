@@ -53,6 +53,7 @@ import { PredefinedROIID } from "src/app/models/roi";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { generateExportCSVForExpression } from "src/app/services/export-data.service";
 import { makeValidFileName } from "src/app/utils/utils";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 
 
 export class LayerDetails
@@ -287,13 +288,13 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     onAddExpression(): void
     {
-        this.showExpressionEditor(new DataExpression("", "", "", DataExpressionId.DataExpressionTypeAll, "", false, null, 0, 0)).subscribe(
+        this.showExpressionEditor(new DataExpression("", "", "", EXPR_LANGUAGE_LUA, "", false, null, 0, 0, [], [], null)).subscribe(
             ({ expression, applyNow })=>
             {
                 if(expression)
                 {
                     // User has defined a new one, upload it
-                    this._exprService.add(expression.name, expression.expression, expression.type, expression.comments, expression.tags).subscribe(
+                    this._exprService.add(expression.name, expression.sourceCode, expression.sourceLanguage, expression.comments, expression.tags).subscribe(
                         (response)=>
                         {
                             if(applyNow)
@@ -337,7 +338,20 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                         let toReturn: DataExpression = null;
                         if(dlgResult)
                         {
-                            toReturn = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec, dlgResult.expr.tags);
+                            toReturn = new DataExpression(
+                                toEdit.id,
+                                dlgResult.expr.name,
+                                dlgResult.expr.sourceCode,
+                                dlgResult.expr.sourceLanguage,
+                                dlgResult.expr.comments,
+                                toEdit.shared,
+                                toEdit.creator,
+                                toEdit.createUnixTimeSec,
+                                toEdit.modUnixTimeSec,
+                                dlgResult.expr.tags,
+                                dlgResult.expr.moduleReferences,
+                                dlgResult.expr.recentExecStats
+                            );
                         }
 
                         observer.next({ expression: toReturn, applyNow: dlgResult.applyNow });

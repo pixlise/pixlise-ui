@@ -42,6 +42,7 @@ import { Colours } from "src/app/utils/colours";
 import { UserPromptDialogComponent, UserPromptDialogParams, UserPromptDialogResult } from "../../atoms/user-prompt-dialog/user-prompt-dialog.component";
 import { BaseSpectrumTool, ISpectrumToolHost, SpectrumToolId } from "./base-tool";
 import { ExpressionEditorComponent, ExpressionEditorConfig } from "../../expression-editor/expression-editor.component";
+import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 
 
 
@@ -172,8 +173,21 @@ export class RangeSelect extends BaseSpectrumTool
             {
                 if(dlgResult)
                 {
-                    let expr = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec);
-                    this._ctx.expressionService.edit(expressionID, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, []).subscribe(
+                    let expr = new DataExpression(
+                        toEdit.id,
+                        dlgResult.expr.name,
+                        dlgResult.expr.sourceCode,
+                        dlgResult.expr.sourceLanguage,
+                        dlgResult.expr.comments,
+                        toEdit.shared,
+                        toEdit.creator,
+                        toEdit.createUnixTimeSec,
+                        toEdit.modUnixTimeSec,
+                        [],
+                        [],
+                        null
+                    );
+                    this._ctx.expressionService.edit(expressionID, dlgResult.expr.name, dlgResult.expr.sourceCode, dlgResult.expr.sourceLanguage, dlgResult.expr.comments, []).subscribe(
                         ()=> null,
                         ()=>
                         {
@@ -216,7 +230,7 @@ export class RangeSelect extends BaseSpectrumTool
         );
         const dialogRef = this.dialog.open(UserPromptDialogComponent, dialogConfig);
         
-        this._ctx.expressionService.add(name, expr, DataExpressionId.DataExpressionTypeAll, expressionComment).subscribe(
+        this._ctx.expressionService.add(name, expr, EXPR_LANGUAGE_PIXLANG, expressionComment).subscribe(
             (expressions)=>
             {
                 console.log("Added expression: "+name);

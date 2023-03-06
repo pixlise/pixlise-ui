@@ -58,7 +58,8 @@ import { RGBMix } from "src/app/services/rgbmix-config.service"
 import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
-import { LUA_MARKER } from "src/app/expression-language/expression-language";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+
 
 @Component({
     selector: "code-editor",
@@ -193,21 +194,20 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             }
 
             let expression = this._expressionService.getExpression(this._expressionID);
-
-            let expressionText = expression.expression;
-            this.isLua = this.checkLua(expressionText);
+            this.isLua = expression.sourceLanguage == EXPR_LANGUAGE_LUA;
 
             this.expression = new DataExpression(
                 expression.id,
                 expression.name,
-                expressionText,
-                expression.type,
+                expression.sourceCode,
+                expression.sourceLanguage,
                 expression.comments,
                 expression.shared,
                 expression.creator,
                 expression.createUnixTimeSec,
                 expression.modUnixTimeSec,
-                expression.tags
+                expression.tags,
+                null
             );
 
             this.bottomExpression = this.expression;
@@ -241,7 +241,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 this._listBuilder.notifyDataArrived(
                     (data[0] as DataSet).getPseudoIntensityElementsList(),
                     data[1] as QuantificationLayer,
-                    this._expressionService.getExpressions(DataExpressionId.DataExpressionTypeAll),
+                    this._expressionService.getExpressions(),
                     null
                 );
 
@@ -280,11 +280,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     onToggleBottomHeader(): void
     {
         this.isBottomHeaderOpen = !this.isBottomHeaderOpen;
-    }
-
-    checkLua(text: string): boolean
-    {
-        return text.startsWith(LUA_MARKER);
     }
 
     ngOnDestroy()
@@ -491,8 +486,21 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     {
         if(this._expressionID && this.expression)
         {
-            let expressionText = this.isLua ? this.addLuaHighlight(this.expression.expression) : this.expression.expression;
-            let expression = new DataExpression(this._expressionID, this.expression.name, expressionText, this.expression.type, this.expression.comments, this.expression.shared, this.expression.creator, this.expression.createUnixTimeSec, this.expression.modUnixTimeSec, this.expression.tags);
+            let expressionText = this.isLua ? this.addLuaHighlight(this.expression.sourceCode) : this.expression.sourceCode;
+            let expression = new DataExpression(
+                this._expressionID,
+                this.expression.name,
+                expressionText,
+                this.expression.sourceLanguage,
+                this.expression.comments,
+                this.expression.shared,
+                this.expression.creator,
+                this.expression.createUnixTimeSec,
+                this.expression.modUnixTimeSec,
+                this.expression.tags,
+                [],
+                null,
+            );
             this._widgetDataService.runAsyncExpression(new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), expression, false).toPromise().then((result)=>
             {
                 this.evaluatedExpression = result;
@@ -526,30 +534,37 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             }
             changedText = textLines.join("\n");
         }
-
-        if(!changedText.startsWith(LUA_MARKER))
-        {
-            return LUA_MARKER + changedText;
-        }
-
         return changedText;
     }
 
     runHighlightedExpression(): void
     {
-        let highlightedExpression = new DataExpression(this._expressionID, this.expression.name, "", this.expression.type, this.expression.comments, this.expression.shared, this.expression.creator, this.expression.createUnixTimeSec, this.expression.modUnixTimeSec, this.expression.tags);
+        let highlightedExpression = new DataExpression(
+            this._expressionID,
+            this.expression.name,
+            "",
+            this.expression.sourceLanguage,
+            this.expression.comments,
+            this.expression.shared,
+            this.expression.creator,
+            this.expression.createUnixTimeSec,
+            this.expression.modUnixTimeSec,
+            this.expression.tags,
+            [],
+            null
+        );
         if(this.textHighlighted)
         {
-            highlightedExpression.expression = this.textHighlighted;
+            highlightedExpression.sourceCode = this.textHighlighted;
         }
         else if(this.isEmptySelection)
         {
-            highlightedExpression.expression = this.expression.expression.split("\n").slice(0, this.endLineHighlighted + 1).join("\n");
+            highlightedExpression.sourceCode = this.expression.sourceCode.split("\n").slice(0, this.endLineHighlighted + 1).join("\n");
         }
 
         if(this.isLua)
         {
-            highlightedExpression.expression = this.addLuaHighlight(highlightedExpression.expression);
+            highlightedExpression.sourceCode = this.addLuaHighlight(highlightedExpression.sourceCode);
         }
 
         this._widgetDataService.runAsyncExpression(
@@ -665,14 +680,14 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     get editExpression(): string
     {
-        return this.expression?.expression || "";
+        return this.expression?.sourceCode || "";
     }
 
     set editExpression(val: string)
     {
         if(this.expression)
         {
-            this.expression.expression = val;
+            this.expression.sourceCode = val;
             this.isCodeChanged = true;
             this.isExpressionSaved = false;
         }
@@ -725,19 +740,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         return this.expression?.shared && this.expression.creator.user_id !== this._authService.getUserID();
     }
 
-    addLua(text: string): string
-    {
-        if(!text.startsWith(LUA_MARKER))
-        {
-            return LUA_MARKER + text;
-        }
-
-        return text;
-    }
-
     onExpressionTextChanged(text: string): void
     {
-        this.editExpression = this.isLua ? this.addLua(text) : text;
+        this.editExpression = text;
     }
 
     onTagSelectionChanged(tags): void
@@ -761,8 +766,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         this._expressionService.edit(
             this._expressionID,
             this.expression.name,
-            this.expression.expression,
-            this.expression.type,
+            this.expression.sourceCode,
+            this.expression.sourceLanguage,
             this.expression.comments,
             this.expression.tags
         ).subscribe(

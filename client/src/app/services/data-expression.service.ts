@@ -38,15 +38,16 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { QuantificationService } from "src/app/services/quantification.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
-import { DataExpression, DataExpressionId, ShortName } from "src/app/models/Expression";
+import { DataExpression, DataExpressionId, ShortName, ExpressionExecStats, ModuleReference } from "src/app/models/Expression";
+import { EXPR_LANGUAGE_PIXLANG } from "../expression-language/expression-language";
 
 
 class DataExpressionInput
 {
     constructor(
         public name: string,
-        public expression: string,
-        public type: string,
+        public sourceCode: string,
+        public sourceLanguage: string,
         public comments: string,
         public tags: string[] = [],
     )
@@ -59,14 +60,16 @@ class DataExpressionWire
 {
     constructor(
         public name: string,
-        public expression: string,
-        public type: string,
+        public sourceCode: string,
+        public sourceLanguage: string,
         public comments: string,
         public shared: boolean,
         public creator: ObjectCreator,
         public create_unix_time_sec: number,
         public mod_unix_time_sec: number,
         public tags: string[] = [],
+        public moduleReferences: ModuleReference[],
+        public recentExecStats: ExpressionExecStats
     )
     {
     }
@@ -76,14 +79,16 @@ class DataExpressionWire
         let result = new DataExpression(
             id,
             this.name,
-            this.expression,
-            this.type,
+            this.sourceCode,
+            this.sourceLanguage,
             this.comments || "",
             this.shared,
             this.creator,
             this.create_unix_time_sec,
             this.mod_unix_time_sec,
-            this.tags || []
+            this.tags || [],
+            this.moduleReferences || [],
+            this.recentExecStats || null
         );
         return result;
     }
@@ -187,8 +192,8 @@ export class DataExpressionService
                 // NOTE: JS doesn't _actually_ return a DataExpressionWire
                 let wireExpr = new DataExpressionWire(
                     expression["name"],
-                    expression["expression"],
-                    expression["type"],
+                    expression["sourceCode"],
+                    expression["sourceLanguage"],
                     expression["comments"],
                     expression["shared"],
                     expression["creator"],
@@ -223,21 +228,14 @@ export class DataExpressionService
         return changeCount;
     }
 
-    getExpressions(type: string = DataExpressionId.DataExpressionTypeAll): Map<string, DataExpression>
+    getExpressions(): Map<string, DataExpression>
     {
-        // This used to take a type field because we thought we'd have "types" of expressions specific to a given widget
-        // but this never eventuated. type field is deprecated and currently we expect it to be set to all...
-        if(type !== DataExpressionId.DataExpressionTypeAll)
-        {
-            throw new Error("getExpressions called with unexpected type: "+type);
-        }
-
         return this._expressions;
     }
 
     filterInvalidElements(exprIdList: string[], quantification: QuantificationLayer): string[]
     {
-        const exprList = this.getAllExpressionIds(DataExpressionId.DataExpressionTypeAll, quantification);
+        const exprList = this.getAllExpressionIds(quantification);
         let newDisplayExprIds: string[] = [];
 
         for(let exprId of exprIdList)
@@ -252,11 +250,10 @@ export class DataExpressionService
         return newDisplayExprIds;
     }
 
-    private getAllExpressionIds(type: string, quantification: QuantificationLayer): string[]
+    private getAllExpressionIds(quantification: QuantificationLayer): string[]
     {
-        let ids = this.getPredefinedExpressionIds(type, quantification);
-        let exprs = this.getExpressions(type);
-        for(let id of exprs.keys())
+        let ids = this.getPredefinedExpressionIds(quantification);
+        for(let id of this._expressions.keys())
         {
             ids.push(id);
         }
@@ -269,7 +266,7 @@ export class DataExpressionService
     // and its elements - the data are related so it makes plots look wonky
     getStartingExpressions(quantification: QuantificationLayer): string[]
     {
-        const exprList = this.getAllExpressionIds(DataExpressionId.DataExpressionTypeAll, quantification);
+        const exprList = this.getAllExpressionIds(quantification);
 
         let result = [];
 
@@ -318,7 +315,7 @@ export class DataExpressionService
         return result;
     }
 
-    private getPredefinedExpressionIds(type: string, quantification: QuantificationLayer): string[]
+    private getPredefinedExpressionIds(quantification: QuantificationLayer): string[]
     {
         let result: string[] = [];
 
@@ -378,7 +375,7 @@ export class DataExpressionService
     getExpressionAsync(id: string): Observable<DataExpression>
     {
         let expr = this.getExpression(id);
-        if(expr.expression.length > 0)
+        if(expr.sourceCode.length > 0)
         {
             // We already have the text, so just return it as-is
             return of(expr);
@@ -399,7 +396,9 @@ export class DataExpressionService
                         expression["creator"],
                         expression["create_unix_time_sec"],
                         expression["mod_unix_time_sec"],
-                        expression["tags"]
+                        expression["tags"],
+                        expression["moduleReferences"],
+                        expression["recentExecStats"]
                     );
                     let receivedDataExpression = wireExpr.makeExpression(id);
                     return receivedDataExpression;
@@ -521,12 +520,15 @@ export class DataExpressionService
             id,
             name,
             expr,
-            DataExpressionId.DataExpressionTypeAll, // TODO: bad hard code here! Should be a param for this func
+            EXPR_LANGUAGE_PIXLANG,
             "Built-in expression",
             false,
             null,
             0,
-            0
+            0,
+            [],
+            [],
+            null
         );
 
         // Run the compatibility checker on this
@@ -540,24 +542,26 @@ export class DataExpressionService
         let receivedDataExpression = new DataExpression(
             id,
             name || expr.name,
-            expr.expression,
-            expr.type,
+            expr.sourceCode,
+            expr.sourceLanguage,
             expr.comments || "",
             false,
             null,
             -1,
             new Date().getUTCSeconds(),
-            expr.tags || []
+            expr.tags || [],
+            expr.moduleReferences,
+            expr.recentExecStats
         );
         this._expressions.set(id, receivedDataExpression);
         this._expressionsUpdated$.next();
     }
 
-    add(name: string, expression: string, type: string, comments: string, tags: string[] = []): Observable<object>
+    add(name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = []): Observable<object>
     {
         let loadID = this._loadingSvc.add("Saving new expression...");
         let apiURL = APIPaths.getWithHost(APIPaths.api_data_expression);
-        let toSave = new DataExpressionInput(name, expression, type, comments, tags);
+        let toSave = new DataExpressionInput(name, sourceCode, sourceLanguage, comments, tags);
         return this.http.post<object>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(
@@ -581,12 +585,12 @@ export class DataExpressionService
             );
     }
 
-    edit(id: string, name: string, expression: string, type: string, comments: string, tags: string[] = []): Observable<object>
+    edit(id: string, name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = []): Observable<object>
     {
         let loadID = this._loadingSvc.add("Saving changed expression...");
         let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
 
-        let toSave = new DataExpressionInput(name, expression, type, comments, tags);
+        let toSave = new DataExpressionInput(name, sourceCode, sourceLanguage, comments, tags);
         return this.http.put<object>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(
@@ -609,7 +613,7 @@ export class DataExpressionService
         let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
 
         let expression = this.getExpression(id);
-        let toSave = new DataExpressionInput(expression.name, expression.expression, expression.type, expression.comments, tags);
+        let toSave = new DataExpressionInput(expression.name, expression.sourceCode, expression.sourceLanguage, expression.comments, tags);
 
         return this.http.put<object>(apiURL, toSave, makeHeaders())
             .pipe(

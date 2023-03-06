@@ -38,7 +38,6 @@ import { WidgetRegionDataService } from "src/app/services/widget-region-data.ser
 import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElement, Suggestion } from "../expression-help";
 import { SentryHelper } from "src/app/utils/utils";
 import { Range } from "codemirror";
-import { LUA_MARKER } from "src/app/expression-language/expression-language";
 
 require("codemirror/addon/comment/comment.js");
 require("codemirror/mode/lua/lua");
@@ -130,16 +129,26 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     ngOnInit()
     {
-        // If we're in lua mode, strip out the lua start, this will be added back before save
-        let strippedExpression = this.isLua ? this.stripLua(this.expression.expression) : this.expression.expression;
-
         // Make a copy of incoming expression, so we don't edit what's there!
-        this._expr = new DataExpression(this.expression.id, this.expression.name, strippedExpression, this.expression.type, this.expression.comments, this.expression.shared, this.expression.creator, this.expression.createUnixTimeSec, this.expression.modUnixTimeSec, this.expression.tags);
+        this._expr = new DataExpression(
+            this.expression.id,
+            this.expression.name,
+            this.expression.sourceCode,
+            this.expression.sourceLanguage,
+            this.expression.comments,
+            this.expression.shared,
+            this.expression.creator,
+            this.expression.createUnixTimeSec,
+            this.expression.modUnixTimeSec,
+            this.expression.tags,
+            this.expression.moduleReferences,
+            this.expression.recentExecStats
+        );
         this.findVariables();
 
         this.changeExpression.emit((text: string) =>
         {
-            this._expr.expression = text;
+            this._expr.sourceCode = text;
             this._codeMirror.codeMirrorGlobal.then((cm: any)=>
             {
                 this.setupCodeMirror(cm.default);
@@ -271,7 +280,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     private findVariables(): void
     {
-        if(this._expr.expression == null || this._expr.expression.length == 0)
+        if(this._expr.sourceCode == null || this._expr.sourceCode.length == 0)
         {
             this._exprParts = new ExpressionParts([], [], [], "");
             return;
@@ -279,7 +288,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
         try
         {
-            this._exprParts = PixliseDataQuerier.breakExpressionIntoParts(this._expr.expression);
+            this._exprParts = PixliseDataQuerier.breakExpressionIntoParts(this._expr.sourceCode);
         }
         catch (error)
         {
@@ -314,13 +323,13 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             });
         }
 
-        return this._expr.expression;
+        return this._expr.sourceCode;
     }
 
     set editExpression(val: string)
     {
-        this._expr.expression = val;
-        this.onTextChange.emit(this._expr.expression || "");
+        this._expr.sourceCode = val;
+        this.onTextChange.emit(this._expr.sourceCode || "");
     }
 
     get expressionComments(): string
@@ -336,16 +345,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     get isEditable(): boolean
     {
         return this.allowEdit;
-    }
-
-    stripLua(text: string): string
-    {
-        if(text.startsWith(LUA_MARKER))
-        {
-            text = text.substring(LUA_MARKER.length);
-        }
-
-        return text;
     }
 
     onKeyDown(event: KeyboardEvent): void
@@ -389,7 +388,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         let cursor = doc.getCursor();
 
         // Work out what the cursor is over, need to consider multi-line!
-        let lines = this._expr.expression.split("\n");
+        let lines = this._expr.sourceCode.split("\n");
         let cursorIdx = ExpressionHelp.getIndexInExpression(cursor.line, cursor.ch, lines);
 
         // Do whatever the action id suggests
@@ -461,7 +460,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     private replaceExpressionPart(startIdx: number, endIdx: number, replaceWith: string)
     {
         // Apply the suggestion picked
-        let prefix = this._expr.expression.substring(0, startIdx);
+        let prefix = this._expr.sourceCode.substring(0, startIdx);
 
         // Check if it ends in a , we add a space for niceness
         if(prefix.length > 0 && prefix[prefix.length-1] == ",")
@@ -469,9 +468,9 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             prefix += " ";
         }
 
-        let postfix = this._expr.expression.substring(endIdx);
+        let postfix = this._expr.sourceCode.substring(endIdx);
 
-        this._expr.expression = prefix+replaceWith+postfix;
+        this._expr.sourceCode = prefix+replaceWith+postfix;
     }
 
     onClickDialog(event): void
@@ -677,8 +676,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         else
         {
             this.activeHelp = this.getCursorSuggestions(cursor);
-            this._markTextPositions = ExpressionTextEditorComponent.findPositionsToMark(this._exprParts, this._expr.expression, cursor);
-            this._markMatchedBracketPositions = ExpressionTextEditorComponent.findMatchedBracketPositions(this._expr.expression, cursor);
+            this._markTextPositions = ExpressionTextEditorComponent.findPositionsToMark(this._exprParts, this._expr.sourceCode, cursor);
+            this._markMatchedBracketPositions = ExpressionTextEditorComponent.findMatchedBracketPositions(this._expr.sourceCode, cursor);
         }
 
         if(this.activeHelp && cm)

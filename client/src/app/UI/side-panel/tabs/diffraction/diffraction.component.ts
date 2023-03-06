@@ -54,6 +54,7 @@ import { DiffractionHistogramModel, HistogramBar, HistogramData, HistogramSelect
 import { EnergyCalibrationManager } from "src/app/UI/spectrum-chart-widget/energy-calibration-manager";
 import { Colours } from "src/app/utils/colours";
 import { httpErrorToString } from "src/app/utils/utils";
+import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 
 
 @Component({
@@ -416,7 +417,7 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
         this._exprService.add(
             exprData[0],
             exprData[1],
-            DataExpressionId.DataExpressionTypeAll,
+            EXPR_LANGUAGE_PIXLANG,
             exprData[2]
         ).subscribe(
             ()=>

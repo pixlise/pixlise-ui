@@ -49,6 +49,17 @@ class DataModuleInput
     }
 }
 
+class DataModuleVersionInput
+{
+    constructor(
+        public sourceCode: string, // The module executable code
+        public comments: string, // Editable comments
+        public tags: string[], // Any tags for this version
+    )
+    {
+    }
+}
+
 class APIObjectOrigin
 {
     constructor(
@@ -74,14 +85,14 @@ class DataModuleVersionSourceWire
     }
 }
 
-export class DataModuleWire
+export class DataModule
 {
     constructor(
         public id: string,
         public name: string,
         public comments: string,
         public origin: APIObjectOrigin,
-        public versions: DataModuleVersionSourceWire[], // Technically this is wrong, we don't get the sourceCode field in listings
+        public versions: Map<string, DataModuleVersionSourceWire>,
     )
     {
     }
@@ -100,13 +111,124 @@ class DataModuleSpecificVersionWire
     }
 }
 
+class DataModuleStore
+{
+    private _modules: Map<string, DataModule> = new Map<string, DataModule>();
+
+    constructor()
+    {
+    }
+
+    ensureModuleExists(m: DataModule)
+    {
+        // Add/overwrite but if we have source code, preserve it
+        let existing = this._modules.get(m.id);
+        if(existing)
+        {
+            // copy source code from existing versions if we have any
+            for(let [ver, existingVersion] of existing.versions)
+            {
+                if(existingVersion.sourceCode.length > 0)
+                {
+                    let gotVer = m.versions.get(ver);
+                    if(gotVer.sourceCode.length <= 0)
+                    {
+                        gotVer.sourceCode = existingVersion.sourceCode;
+                    }
+                }
+            }
+        }
+
+        // Add/Overwrite
+        this._modules.set(m.id, m);
+    }
+
+    ensureModuleVersionExists(m: DataModuleSpecificVersionWire)
+    {
+        let toStore = new DataModule(
+            m.id,
+            m.name,
+            m.comments,
+            m.origin,
+            new Map<string, DataModuleVersionSourceWire>()
+        );
+
+        let existing = this._modules.get(m.id);
+        if(existing)
+        {
+            toStore.versions = existing.versions;
+        }
+
+        // Store the version in question (keep source code if we had it before)
+        let verToStore = m.version;
+
+        let existingVer = toStore.versions.get(m.version.version);
+        if(existingVer && existingVer.sourceCode.length > 0 && verToStore.sourceCode.length <= 0)
+        {
+            verToStore.sourceCode = existingVer.sourceCode;
+        }
+
+        toStore.versions.set(verToStore.version, verToStore);
+
+        // Add/Overwrite
+        this._modules.set(m.id, toStore);
+    }
+
+    // Ensure only the IDs in the list provided are what we store
+    pruneModules(validIDs: Set<string>): void
+    {
+        let toDelete = [];
+
+        for(let id of this._modules.keys())
+        {
+            if(!validIDs.has(id))
+            {
+                toDelete.push(id);
+            }
+        }
+
+        for(let id of toDelete)
+        {
+            this._modules.delete(id)
+        }
+    }
+
+    getModuleVersion(id: string, version: string): DataModuleSpecificVersionWire
+    {
+        let module = this._modules.get(id);
+        if(!module)
+        {
+            return null;
+        }
+        let ver = module.versions.get(version);
+        if(!ver)
+        {
+            return null;
+        }
+
+        return new DataModuleSpecificVersionWire(
+            module.id,
+            module.name,
+            module.comments,
+            module.origin,
+            new DataModuleVersionSourceWire(
+                ver.version,
+                ver.tags,
+                ver.comments,
+                ver.mod_unix_time_sec,
+                ver.sourceCode
+            )
+        );
+    }
+}
+
 @Injectable({
     providedIn: "root"
 })
 export class DataModuleService
 {
     private _modulesUpdated$ = new ReplaySubject<void>(1);
-    private _modules: Map<string, DataModuleWire> = new Map<string, DataModuleWire>();
+    private _modules: DataModuleStore = new DataModuleStore();
 
     constructor(
         private _loadingSvc: LoadingIndicatorService,
@@ -125,7 +247,7 @@ export class DataModuleService
     {
         let loadID = this._loadingSvc.add("Refreshing modules...");
         let apiURL = APIPaths.getWithHost(APIPaths.api_data_module);
-        this.http.get<Map<string, DataModuleWire>>(apiURL, makeHeaders()).subscribe(
+        this.http.get<object>(apiURL, makeHeaders()).subscribe(
             (resp: object)=>
             {
                 this.processReceivedList(resp);
@@ -139,21 +261,46 @@ export class DataModuleService
         );
     }
 
+    private readSpecificVersionModule(m: object): DataModuleSpecificVersionWire
+    {
+        let wireMod = new DataModuleSpecificVersionWire(
+            m["id"],
+            m["name"],
+            m["comments"],
+            new APIObjectOrigin(
+                m["shared"],
+                m["creator"],
+                m["create_unix_time_sec"],
+                m["mod_unix_time_sec"],
+            ),
+            new DataModuleVersionSourceWire(
+                m["version"]["version"],
+                m["version"]["tags"],
+                m["version"]["comments"],
+                m["version"]["mod_unix_time_sec"],
+                m["version"]["sourceCode"],
+            ),
+        );
+
+        return wireMod;
+    }
+
     private processReceivedList(receivedDataModules: object): void
     {
         let t0 = performance.now();
 
-        // Only update changed expressions
-        Object.entries(receivedDataModules).forEach(([id, m]: [string, DataModuleWire])=>
+        let recvdIDs = new Set<string>(); 
+        Object.entries(receivedDataModules).forEach(([id, m]: [string, object])=>
         {
-            // NOTE: JS doesn't _actually_ return a DataModuleWire
-            let vers: DataModuleVersionSourceWire[] = [];
+            recvdIDs.add(id);
+
+            let versMap = new Map<string, DataModuleVersionSourceWire>();
             for(let v of m["versions"])
             {
-                vers.push(new DataModuleVersionSourceWire(v["version"], v["tags"], v["comments"], v["mod_unix_time_sec"], ""));
+                versMap.set(v["version"], new DataModuleVersionSourceWire(v["version"], v["tags"], v["comments"], v["mod_unix_time_sec"], ""));
             }
             
-            let wireMod = new DataModuleWire(
+            let wireMod = new DataModule(
                 m["id"],
                 m["name"],
                 m["comments"],
@@ -163,11 +310,13 @@ export class DataModuleService
                     m["create_unix_time_sec"],
                     m["mod_unix_time_sec"],
                 ),
-                vers,
+                versMap,
             );
 
-            this._modules.set(id, wireMod);
+            this._modules.ensureModuleExists(wireMod);
         });
+
+        this._modules.pruneModules(recvdIDs);
 
         let t1 = performance.now();
         console.log("Module list processed in "+(t1 - t0).toLocaleString() + "ms");
@@ -188,11 +337,15 @@ export class DataModuleService
                     {
                         if(resp) 
                         {
-                            //this.processReceivedList(resp);
+                            // Add this to our list of modules
+                            let recvdModule = this.readSpecificVersionModule(resp);
+
+                            // NOTE that this is a creation, so the version received is the only one!
+                            this._modules.ensureModuleVersionExists(recvdModule);
                         }
                         else 
                         {
-                            console.error("Invalid Module List returned while saving:", resp);
+                            console.error("addModule: empty response received");
                         }
                         this._loadingSvc.remove(loadID);
                     },
@@ -206,7 +359,34 @@ export class DataModuleService
 
     addModuleVersion(moduleId: string, sourceCode: string, comments: string, tags: string[]): Observable<object>
     {
-        return of();
+        let loadID = this._loadingSvc.add("Adding new module version...");
+        let apiURL = APIPaths.getWithHost(APIPaths.api_data_module+"/"+moduleId);
+        let toSave = new DataModuleVersionInput(sourceCode, comments, tags);
+        return this.http.put<object>(apiURL, toSave, makeHeaders())
+            .pipe(
+                tap(
+                    (resp: object)=>
+                    {
+                        if(resp) 
+                        {
+                            // Add this to our list of modules
+                            let recvdModule = this.readSpecificVersionModule(resp);
+
+                            // NOTE that this is adding a module to existing version map
+                            this._modules.ensureModuleVersionExists(recvdModule);
+                        }
+                        else 
+                        {
+                            console.error("addModuleVersion: empty response received");
+                        }
+                        this._loadingSvc.remove(loadID);
+                    },
+                    (err)=>
+                    {
+                        this._loadingSvc.remove(loadID);
+                    }
+                )
+            );
     }
 
     getModule(moduleId: string, version: string): Observable<DataModuleSpecificVersionWire>
@@ -218,24 +398,7 @@ export class DataModuleService
             {
                 this._loadingSvc.remove(loadID);
 
-                let recvd = new DataModuleSpecificVersionWire(
-                    m["id"],
-                    m["name"],
-                    m["comments"],
-                    new APIObjectOrigin(
-                        m["shared"],
-                        m["creator"],
-                        m["create_unix_time_sec"],
-                        m["mod_unix_time_sec"],
-                    ),
-                    new DataModuleVersionSourceWire(
-                        m["version"]["version"],
-                        m["version"]["tags"],
-                        m["version"]["comment"],
-                        m["version"]["mod_unix_time_sec"],
-                        m["version"]["sourceCode"],
-                    ),
-                );
+                let recvd = this.readSpecificVersionModule(m)
 
                 // Overwrite whatever we have cached
                 this._modules[recvd.id] = recvd;

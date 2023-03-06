@@ -31,7 +31,7 @@ import { Observable, combineLatest, of } from "rxjs";
 import { map } from "rxjs/operators";
 import { QuantifiedDataQuerierSource } from "src/app/expression-language/data-sources";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
-import { getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
+import { EXPR_LANGUAGE_PIXLANG, getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { Quantification } from "src/app/protolibs/quantification_pb";
@@ -516,8 +516,8 @@ export class QuantificationLayer implements QuantifiedDataQuerierSource
         let columns$ = [];
         for(let detector of detectors)
         {
-            columns$.push(getQuantifiedDataWithExpression("data(\"eVstart\", \""+detector+"\")", this, null, null, null, null, null, null));
-            columns$.push(getQuantifiedDataWithExpression("data(\"eV/ch\", \""+detector+"\")", this, null, null, null, null, null, null));
+            columns$.push(getQuantifiedDataWithExpression("data(\"eVstart\", \""+detector+"\")", EXPR_LANGUAGE_PIXLANG, this, null, null, null, null, null, null));
+            columns$.push(getQuantifiedDataWithExpression("data(\"eV/ch\", \""+detector+"\")", EXPR_LANGUAGE_PIXLANG, this, null, null, null, null, null, null));
         }
 
         return combineLatest(columns$).pipe(

@@ -38,6 +38,27 @@ export class ShortName
     }
 }
 
+export class ModuleReference
+{
+    constructor(
+        public moduleID: string,
+        public version: string,
+    )
+    {
+    }
+}
+
+export class ExpressionExecStats
+{
+    constructor(
+        public dataRequired: string[],
+        public runtimeMs: number,
+        public mod_unix_time_sec: number
+    )
+    {
+    }
+}
+
 export class DataExpression
 {
     private _requiredElementFormulae = new Set<string>();
@@ -48,17 +69,20 @@ export class DataExpression
     constructor(
         public id: string,
         public name: string,
-        public expression: string,
-        public type: string,
+        public sourceCode: string,
+        public sourceLanguage: string,
         public comments: string,
         public shared: boolean,
         public creator: ObjectCreator,
         public createUnixTimeSec: number,
         public modUnixTimeSec: number,
-        public tags: string[] = [],
+        public tags: string[],
+        public moduleReferences: ModuleReference[],
+        public recentExecStats: ExpressionExecStats
     )
     {
-        this.parseRequiredQuantificationData();
+        // TODO: Need to interpret recentExecStats.dataRequired and store in _requiredElementFormulae/_requiredDetectors
+        // to be able to give valid results for: checkQuantCompatibility()
     }
 
     get isCompatibleWithQuantification(): boolean
@@ -150,14 +174,14 @@ export class DataExpression
                     result.shortName = result.shortName.substring(0, charLimit)+"...";
                     /*
                     const elemSearch = "element(";
-                    let elemPos = expr.expression.indexOf(elemSearch);
+                    let elemPos = expr.sourceCode.indexOf(elemSearch);
                     if(elemPos > -1)
                     {
                         elemPos += elemSearch.length;
 
                         // Find the element after this
-                        let commaPos = expr.expression.indexOf(",", elemPos+1);
-                        let elem = expr.expression.substring(elemPos, commaPos);
+                        let commaPos = expr.sourceCode.indexOf(",", elemPos+1);
+                        let elem = expr.sourceCode.substring(elemPos, commaPos);
                         elem = elem.replace(/['"]+/g, "");
 
                         // Was limiting to 2 chars, but we now deal a lot in oxides/carbonates
@@ -173,51 +197,6 @@ export class DataExpression
         }
 
         return result;
-    }
-
-    private parseRequiredQuantificationData()
-    {
-        this._requiredElementFormulae.clear();
-        this._requiredDetectors.clear();
-
-        // Find all occurances of element() in expression and determine what element formulae (eg element or oxide/carbonate)
-        // are used, and what detectors are referenced
-        // This can be used elsewhere to show if this expression is compatible with the currently loaded quantification
-        const element = "element";
-        let elemPos = this.expression.indexOf(element);
-
-        while(elemPos > -1)
-        {
-            let nextSearchStart = elemPos+element.length;
-
-            // Make sure it's not elementSum()
-            if(this.expression.substring(elemPos, elemPos+element.length+3) != "elementSum")
-            {
-                // Find (
-                let openBracketPos = this.expression.indexOf("(", elemPos+element.length);
-                let closeBracketPos = openBracketPos;
-                if(openBracketPos > -1)
-                {
-                    // Find )
-                    closeBracketPos = this.expression.indexOf(")", openBracketPos);
-
-                    if(closeBracketPos > -1)
-                    {
-                        // We've now got the start and end of the expression parameters. Break this into tokens
-                        let params = this.getExpressionParameters(this.expression.substring(openBracketPos+1, closeBracketPos));
-                        if(params.length == 3)
-                        {
-                            this._requiredElementFormulae.add(params[0]);
-                            this._requiredDetectors.add(params[2]);
-                        }
-
-                        nextSearchStart = closeBracketPos;
-                    }
-                }
-            }
-
-            elemPos = this.expression.indexOf(element, nextSearchStart);
-        }
     }
 
     // Expects strings like:
@@ -288,15 +267,6 @@ export class DataExpressionId
     private static SuffixZHeight = "zheight";
 
     // Static functions for getting/accessing/parsing predefined expression IDs
-    // TODO: remove this if the whole concept of expression types
-    // goes unused... this is already a hack to get them to all show up
-    public static get DataExpressionTypeAll(): string { return "All"; }
-    /*
-    public static get DataExpressionTypeContextImage(): string { return "ContextImage"; }
-    public static get DataExpressionTypeChordDiagram(): string { return "ChordDiagram"; }
-    public static get DataExpressionTypeBinaryPlot(): string { return "BinaryPlot"; }
-    public static get DataExpressionTypeTernaryPlot(): string { return "TernaryPlot"; }
-*/
     public static isPredefinedExpression(id: string): boolean
     {
         return id.startsWith(DataExpressionId.PredefinedLayerPrefix);

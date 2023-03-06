@@ -126,7 +126,7 @@ export class LayerManager
         this._listBuilder.notifyDataArrived(
             this._dataset.getPseudoIntensityElementsList(),
             data[1] as QuantificationLayer,
-            this._exprService.getExpressions(DataExpressionId.DataExpressionTypeAll),
+            this._exprService.getExpressions(),
             this._rgbMixService.getRGBMixes()
         );
 

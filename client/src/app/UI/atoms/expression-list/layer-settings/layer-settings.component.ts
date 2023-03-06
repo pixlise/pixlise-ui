@@ -264,7 +264,7 @@ export class LayerSettingsComponent implements OnInit
                     return "Expression is incompatible with currently loaded quantification. Elements or detectors are mismatched";
                 }
 
-                return expr.expression;
+                return expr.sourceCode;
             }
         }
         return "";
@@ -494,16 +494,18 @@ export class LayerSettingsComponent implements OnInit
                     let expr = new DataExpression(
                         toEdit.id,
                         dlgResult.expr.name,
-                        dlgResult.expr.expression,
-                        toEdit.type,
+                        dlgResult.expr.sourceCode,
+                        dlgResult.expr.sourceLanguage,
                         dlgResult.expr.comments,
                         toEdit.shared,
                         toEdit.creator,
                         toEdit.createUnixTimeSec,
                         toEdit.modUnixTimeSec,
-                        dlgResult.expr.tags
+                        dlgResult.expr.tags,
+                        dlgResult.expr.moduleReferences,
+                        dlgResult.expr.recentExecStats
                     );
-                    this._exprService.edit(this.layerInfo.layer.id, expr.name, expr.expression, expr.type, expr.comments, expr.tags).subscribe(
+                    this._exprService.edit(this.layerInfo.layer.id, expr.name, expr.sourceCode, expr.sourceLanguage, expr.comments, expr.tags).subscribe(
                         ()=>
                         {
                             if(dlgResult.applyNow)

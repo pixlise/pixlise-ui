@@ -374,11 +374,19 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         {
             exprIdX = queryData.queryResults[0].query.exprId;
             xLabel = queryData.queryResults[0].expression?.getExpressionShortDisplayName(labelMaxChars).shortName;
+            if(!xLabel)
+            {
+                xLabel = "";
+            }
         }
         if(queryData.queryResults.length > 1)
         {
             exprIdY = queryData.queryResults[1].query.exprId;
             yLabel = queryData.queryResults[1].expression?.getExpressionShortDisplayName(labelMaxChars).shortName;
+            if(!yLabel)
+            {
+                yLabel = "";
+            }
         }
 
         if(this.showMmol)
@@ -746,7 +754,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             exprIds = [this._yAxisExpressionId];
         }
 
-        dialogConfig.data = new ExpressionPickerData("Plot Axis", DataExpressionId.DataExpressionTypeAll, exprIds, true, false, false, this.isPreviewMode);
+        dialogConfig.data = new ExpressionPickerData("Plot Axis", exprIds, true, false, false, this.isPreviewMode);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

@@ -238,7 +238,7 @@ export class HistogramViewComponent implements OnInit, OnDestroy, CanvasDrawer
         //dialogConfig.disableClose = true;
         //dialogConfig.autoFocus = true;
         //dialogConfig.width = '1200px';
-        dialogConfig.data = new ExpressionPickerData("Bars", DataExpressionId.DataExpressionTypeAll, this._displayExpressionIDs, false, false, false, this.isPreviewMode);
+        dialogConfig.data = new ExpressionPickerData("Bars", this._displayExpressionIDs, false, false, false, this.isPreviewMode);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

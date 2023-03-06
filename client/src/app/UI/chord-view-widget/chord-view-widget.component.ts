@@ -313,7 +313,7 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
         //dialogConfig.disableClose = true;
         //dialogConfig.autoFocus = true;
         //dialogConfig.width = '1200px';
-        dialogConfig.data = new ExpressionPickerData("Nodes", DataExpressionId.DataExpressionTypeAll, this._displayExpressionIDs, false, false, false, this.isPreviewMode);
+        dialogConfig.data = new ExpressionPickerData("Nodes", this._displayExpressionIDs, false, false, false, this.isPreviewMode);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

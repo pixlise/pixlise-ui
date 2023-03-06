@@ -736,7 +736,7 @@ export class ExportDataDialogComponent implements OnInit
     {
         const dialogConfig = new MatDialogConfig();
 
-        dialogConfig.data = new ExpressionPickerData("Expression", DataExpressionId.DataExpressionTypeAll, this._selectedExpressionIds, false, true, true);
+        dialogConfig.data = new ExpressionPickerData("Expression", this._selectedExpressionIds, false, true, true);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

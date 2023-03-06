@@ -615,7 +615,7 @@ export class WidgetRegionDataService
             // At this point if we don't have the expression text, we query for it and return it as part of a chain of observables
             let data$: Observable<PMCDataValues> = null;
 
-            if(expr.expression.length <= 0)
+            if(expr.sourceCode.length <= 0)
             {
                 data$ = new Observable<PMCDataValues>(
                     (observer)=>
@@ -623,7 +623,7 @@ export class WidgetRegionDataService
                         this._exprService.getExpressionAsync(query.exprId).subscribe(
                             (exprQueried: DataExpression)=>
                             {
-                                let query$ = getQuantifiedDataWithExpression(exprQueried.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
+                                let query$ = getQuantifiedDataWithExpression(exprQueried.sourceCode, exprQueried.sourceLanguage, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
                                 query$.subscribe(
                                     (values: PMCDataValues)=>
                                     {
@@ -647,7 +647,7 @@ export class WidgetRegionDataService
             else
             {
                 // We do have the expression text already, so just run normally
-                data$ = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
+                data$ = getQuantifiedDataWithExpression(expr.sourceCode, expr.sourceLanguage, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
             }
 
             result$ = data$.pipe(
