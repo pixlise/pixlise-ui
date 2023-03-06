@@ -35,6 +35,16 @@ POSSIBILITY OF SUCH DAMAGE.
             <h2>Expression Editor</h2>
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                 <push-button
+                    *ngIf="!isLua"
+                    buttonStyle="yellow"
+                    [disabled]="isSharedByOtherUser"
+                    [active]="useAutocomplete"
+                    (onClick)="convertToLua()"
+                    #tooltip="matTooltip"
+                    matTooltip="WARNING: This is a one way operation"
+                >Convert to LUA
+                </push-button>
+                <push-button
                     buttonStyle="gray"
                     [disabled]="isSharedByOtherUser"
                     [active]="useAutocomplete"
@@ -96,6 +106,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [applyNow]="false"
                 (onTextChange)="onExpressionTextChanged($event)"
                 (onTextSelect)="onTextSelect($event)"
+                (changeExpression)="changeExpression($event)"
                 (runExpression)="runExpression()"
                 (runHighlightedExpression)="runHighlightedExpression()"
                 (saveExpression)="onSave()"
@@ -121,9 +132,9 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div class="editor-footer">
         <div class="text-container">
-            <mat-select [(ngModel)]="isLua">
+            <mat-select [(ngModel)]="isLua" [disabled]="true">
                 <mat-option [value]="true">Lua</mat-option>
-                <mat-option [value]="false">Pixlang</mat-option>
+                <mat-option [value]="false">PIXLang</mat-option>
             </mat-select>
             <input
                 [disabled]="isSharedByOtherUser"

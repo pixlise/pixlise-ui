@@ -102,6 +102,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Output() runExpression = new EventEmitter();
     @Output() runHighlightedExpression = new EventEmitter();
     @Output() saveExpression = new EventEmitter();
+    @Output() changeExpression = new EventEmitter<(text: string) => void>();
     
     constructor(
         private _datasetService: DataSetService,
@@ -118,6 +119,19 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         // Make a copy of incoming expression, so we don't edit what's there!
         this._expr = new DataExpression(this.expression.id, this.expression.name, strippedExpression, this.expression.type, this.expression.comments, this.expression.shared, this.expression.creator, this.expression.createUnixTimeSec, this.expression.modUnixTimeSec, this.expression.tags);
         this.findVariables();
+
+        this.changeExpression.emit((text: string) =>
+        {
+            this._expr.expression = text;
+            this._codeMirror.codeMirrorGlobal.then((cm: any)=>
+            {
+                this.setupCodeMirror(cm.default);
+                let cmObj = this._codeMirror.codeMirror;
+                cmObj.setOption("mode", this.isLua ? "lua" : "pixlise");
+                this.setUpKeyBindings(cmObj);
+                cmObj.refresh();
+            });
+        });
     }
 
     ngAfterViewInit(): void
