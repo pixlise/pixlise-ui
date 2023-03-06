@@ -199,7 +199,10 @@ export class DataExpressionService
                     expression["creator"],
                     expression["create_unix_time_sec"],
                     expression["mod_unix_time_sec"],
-                    expression["tags"]
+                    expression["tags"],
+                    expression["moduleReferences"],
+                    expression["recentExecStats"],
+
                 );
                 let receivedDataExpression = wireExpr.makeExpression(id);
                 this._expressions.set(id, receivedDataExpression);

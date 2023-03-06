@@ -207,7 +207,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 expression.createUnixTimeSec,
                 expression.modUnixTimeSec,
                 expression.tags,
-                null
+                expression.moduleReferences,
+                expression.recentExecStats
             );
 
             this.bottomExpression = this.expression;
