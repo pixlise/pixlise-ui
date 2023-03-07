@@ -94,6 +94,34 @@ export class EditorConfig
         return this.emptyName || this.emptySourceCode;
     }
 
+    get errorTooltip(): string
+    {
+        if(this.emptyName)
+        {
+            return "Name cannot be empty";
+        }
+        else if(this.emptySourceCode)
+        {
+            return "Source code cannot be empty";
+        }
+        else if(this.name.match(/[^a-zA-Z0-9_]/))
+        {
+            return "Name must be alphanumeric and cannot contain special characters";
+        }
+        else if(this.name.match(/^[0-9]/))
+        {
+            return "Name cannot start with a number";
+        }
+        else if(this.name.match(/\s/))
+        {
+            return "Name cannot contain spaces";
+        }
+        else
+        {
+            return "";
+        }
+    }
+
     get editable(): boolean
     {
         return this.editMode && !this.isSharedByOtherUser;
@@ -158,6 +186,11 @@ export class EditorConfig
 
     get modules(): DataExpressionModule[]
     {
+        if(!this.expression || !this.expression.moduleReferences)
+        {
+            return [];
+        }
+
         return this.expression.moduleReferences.map(ref =>
         {
             return new DataExpressionModule(ref.moduleID, "", ref.version);
@@ -302,34 +335,132 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 return;
             }
 
-            this._newExpression = this._expressionID === "create";
+            this.resetEditors();
+            // this._newExpression = this._expressionID === "create";
 
-            // If we're creating a new expression, create a blank one
-            if(this._newExpression)
-            {
-                this.topEditor.expression = new DataExpression(
-                    "",
-                    "",
-                    "",
-                    EXPR_LANGUAGE_LUA,
-                    "",
-                    false,
-                    new ObjectCreator("", "", ""),
-                    0,
-                    0,
-                    [],
-                    [],
-                    null
-                );
+            // // If we're creating a new expression, create a blank one
+            // if(this._newExpression)
+            // {
+            //     this.topEditor.expression = new DataExpression(
+            //         "",
+            //         "",
+            //         "",
+            //         EXPR_LANGUAGE_LUA,
+            //         "",
+            //         false,
+            //         new ObjectCreator("", "", ""),
+            //         0,
+            //         0,
+            //         [],
+            //         [],
+            //         null
+            //     );
 
-                this._fetchedExpression = true;
-                // Add the current expression to the currently-open list
-                this.sidebarTopSections["currently-open"].items = [
-                    this.topEditor.expression
-                ];
-                return;
-            }
+            //     this._fetchedExpression = true;
+            //     return;
+            // }
 
+            // this._expressionService.getExpressionAsync(this._expressionID).subscribe(expression =>
+            // {
+            //     this.topEditor.isLua = expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
+
+            //     this.topEditor.expression = new DataExpression(
+            //         expression.id,
+            //         expression.name,
+            //         expression.sourceCode,
+            //         expression.sourceLanguage,
+            //         expression.comments,
+            //         expression.shared,
+            //         expression.creator,
+            //         expression.createUnixTimeSec,
+            //         expression.modUnixTimeSec,
+            //         expression.tags,
+            //         expression.moduleReferences,
+            //         expression.recentExecStats,
+            //     );
+
+            //     // this.bottomEditor.expression = this.topEditor.expression;
+
+            //     this._fetchedExpression = true;
+            //     this.runExpression();
+
+            //     // Add the current expression to the currently-open list
+            //     this.sidebarTopSections["currently-open"].items = [
+            //         this.topEditor.expression
+            //     ];
+
+            //     // this.topModules = [
+            //     //     new DataExpressionModule("test", "description", "3.7", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+            //     //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+            //     //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+            //     //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+            //     //     new DataExpressionModule("testing", "description", "3.1", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+            //     // ];
+
+            //     let all$ = makeDataForExpressionList(
+            //         this._datasetService,
+            //         this._widgetDataService,
+            //         this._expressionService,
+            //         null
+            //     );
+            //     this._subs.add(all$.subscribe(
+            //         (data: unknown[])=>
+            //         {
+            //             this._listBuilder.notifyDataArrived(
+            //                 (data[0] as DataSet).getPseudoIntensityElementsList(),
+            //                 data[1] as QuantificationLayer,
+            //                 this._expressionService.getExpressions(),
+            //                 null
+            //             );
+
+            //             // All have arrived, the taps above would've saved their contents in a way that we like, so
+            //             // now we can regenerate our item list
+            //             this.regenerateItemList();
+            //         }
+            //     ));
+            // });
+        });
+    }
+
+    resetEditors(): void
+    {
+        this._expressionID = this._route.snapshot.params["expression_id"];
+
+        this.topEditor = new EditorConfig();
+        this.topEditor.userID = this._authService.getUserID();
+
+        this.bottomEditor = new EditorConfig();
+        this.bottomEditor.userID = this._authService.getUserID();
+
+        this._newExpression = this._expressionID === "new-expression" || this._expressionID === "new-module";
+        if(this._newExpression)
+        {
+            this.topEditor.isModule = this._expressionID === "new-module";
+        }
+
+        // If we're creating a new expression, create a blank one
+        if(this._newExpression)
+        {
+            this.topEditor.expression = new DataExpression(
+                "",
+                "",
+                "",
+                EXPR_LANGUAGE_LUA,
+                "",
+                false,
+                new ObjectCreator("", "", ""),
+                0,
+                0,
+                [],
+                [],
+                null
+            );
+
+            this.sidebarTopSections["currently-open"].items = [];
+            this._fetchedExpression = true;
+        }
+        else
+        {
             this._expressionService.getExpressionAsync(this._expressionID).subscribe(expression =>
             {
                 this.topEditor.isLua = expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
@@ -349,8 +480,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     expression.recentExecStats,
                 );
 
-                // this.bottomEditor.expression = this.topEditor.expression;
-
                 this._fetchedExpression = true;
                 this.runExpression();
 
@@ -366,40 +495,56 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
                 //     new DataExpressionModule("testing", "description", "3.1", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
                 // ];
+            });
+        }
 
-                let all$ = makeDataForExpressionList(
-                    this._datasetService,
-                    this._widgetDataService,
-                    this._expressionService,
+        let all$ = makeDataForExpressionList(
+            this._datasetService,
+            this._widgetDataService,
+            this._expressionService,
+            null
+        );
+        this._subs.add(all$.subscribe(
+            (data: unknown[])=>
+            {
+                this._listBuilder.notifyDataArrived(
+                    (data[0] as DataSet).getPseudoIntensityElementsList(),
+                    data[1] as QuantificationLayer,
+                    this._expressionService.getExpressions(),
                     null
                 );
-                this._subs.add(all$.subscribe(
-                    (data: unknown[])=>
-                    {
-                        this._listBuilder.notifyDataArrived(
-                            (data[0] as DataSet).getPseudoIntensityElementsList(),
-                            data[1] as QuantificationLayer,
-                            this._expressionService.getExpressions(),
-                            null
-                        );
 
-                        // All have arrived, the taps above would've saved their contents in a way that we like, so
-                        // now we can regenerate our item list
-                        this.regenerateItemList();
-                    }
-                ));
-            });
-        });
+                // All have arrived, the taps above would've saved their contents in a way that we like, so
+                // now we can regenerate our item list
+                this.regenerateItemList();
+            }
+        ));
     }
 
     onAddExpression(): void
     {
-        // TODO: Add expression
+        let unsavedChanges = !this.topEditor.isExpressionSaved || (this.isSplitScreen && !this.bottomEditor.isExpressionSaved);
+        if(unsavedChanges && !confirm("Are you sure you want to create a new expression? Any unsaved changes will be lost."))
+        {
+            return;
+        }
+
+        this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=>
+            this._router.navigate(["dataset", this._datasetID, "code-editor", "new-expression"])
+        );
     }
 
     onAddModule(): void
     {
-        // TODO: Add module
+        let unsavedChanges = !this.topEditor.isExpressionSaved || (this.isSplitScreen && !this.bottomEditor.isExpressionSaved);
+        if(unsavedChanges && !confirm("Are you sure you want to create a new expression? Any unsaved changes will be lost."))
+        {
+            return;
+        }
+
+        this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=>
+            this._router.navigate(["dataset", this._datasetID, "code-editor", "new-module"])
+        );
     }
 
     onToggleSidebar(): void
@@ -762,6 +907,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         return this.activeTextSelection?.text;
     }
 
+    get moduleNameTooltip(): string
+    {
+        return "Module Name Requirements:\n- Must be unique\n- Must be alphanumeric\n- Cannot contain spaces\n- Cannot contain special characters\n- Cannot start with a number";
+    }
+
     get splitScreenTooltip(): string
     {
         let tooltip = "Toggle between a single editor and a splitscreen view";
@@ -778,7 +928,16 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     {
         let saveTooltip = this.isWindows ? "Save Expression (Ctrl+S)" : "Save Expression (Cmd+S)";
 
-        return this.topEditor.invalidExpression || this.bottomEditor.invalidExpression ? `${saveTooltip}\nError: Cannot save with an empty name or source code` : saveTooltip;
+        if(this.topEditor.invalidExpression)
+        {
+            saveTooltip += `\n${this.isSplitScreen ? "Top Editor " : ""}Error: ${this.topEditor.errorTooltip}`;
+        }
+        if(this.isSplitScreen && this.bottomEditor.invalidExpression)
+        {
+            saveTooltip += `\nBottom Editor Error: ${this.bottomEditor.errorTooltip}`;
+        }
+
+        return saveTooltip;
     }
 
     get runCodeTooltip(): string

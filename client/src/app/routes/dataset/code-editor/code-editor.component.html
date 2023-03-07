@@ -43,12 +43,12 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
         </div>
         <div class="text-container">
-            <h2>LUA Expression Editor</h2>
+            <h2>{{topEditor.isModule ? "Module" : "LUA Expression"}} Editor</h2>
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                 <input
                     [disabled]="!topEditor.editable"
                     type="text"
-                    placeholder="Expression Description"
+                    placeholder="{{topEditor.isModule ? 'Module' : 'Expression'}} Description"
                     [(ngModel)]="topEditor.comments"
                     fxFlex
                 >
@@ -72,15 +72,17 @@ POSSIBILITY OF SUCH DAMAGE.
                     <img src="assets/button-icons/play.svg"/>Run
                 </push-button>
                 <input
-                    class="emptyName ? 'invalid-input' : ''"
+                    #tooltip="matTooltip"
+                    [matTooltip]="topEditor.isModule ? moduleNameTooltip : ''"
+                    class="topEditor.invalidExpression ? 'invalid-input' : ''"
                     [disabled]="!topEditor.editable"
                     type="text"
-                    placeholder="Expression Name"
+                    placeholder="{{topEditor.isModule ? 'Module' : 'Expression'}} Name"
                     [(ngModel)]="topEditor.name"
                     fxFlex
                 >
                 <tag-picker
-                    type="expression"
+                    type="{{topEditor.isModule ? 'module' : 'expression'}}"
                     [selectedTagIDs]="topEditor.selectedTagIDs"
                     [showCurrentTagsSection]="true"
                     (onTagSelectionChanged)="topEditor.onTagSelectionChanged($event)"
@@ -169,9 +171,9 @@ POSSIBILITY OF SUCH DAMAGE.
                 ></icon-button>
             </expression-list>
         </div>
-        <div class="text-editor {{topEditor.isHeaderOpen ? 'top-open' : ''}} {{bottomEditor.isHeaderOpen ? 'bottom-open' : ''}} {{isSplitScreen ? 'split-screen-mode' : ''}}">
+        <div class="text-editor {{topEditor?.isHeaderOpen ? 'top-open' : ''}} {{bottomEditor?.isHeaderOpen ? 'bottom-open' : ''}} {{isSplitScreen ? 'split-screen-mode' : ''}}">
             <expression-text-editor
-                *ngIf="topEditor.expression"
+                *ngIf="topEditor && topEditor.expression"
                 class="top-expression"
                 [expression]="topEditor.expression"
                 [allowEdit]="topEditor.editable"
@@ -194,19 +196,21 @@ POSSIBILITY OF SUCH DAMAGE.
             >
             </expression-text-editor>
             <div *ngIf="bottomEditor.expression && isSplitScreen" class="split-screen-header">
-                <h2>Module Editor</h2>
+                <h2>{{bottomEditor.isModule ? "Module" : "LUA Expression"}} Editor</h2>
                 <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                     <input
                         [disabled]="!bottomEditor.editable"
                         type="text"
-                        placeholder="Expression Description"
+                        placeholder="{{bottomEditor.isModule ? 'Module' : 'Expression'}} Description"
                         [(ngModel)]="bottomEditor.comments"
                         fxFlex
                     >
                     <input
+                        #tooltip="matTooltip"
+                        [matTooltip]="bottomEditor.isModule ? moduleNameTooltip : ''"
                         [disabled]="!bottomEditor.editable"
                         type="text"
-                        placeholder="Expression Name"
+                        placeholder="{{bottomEditor.isModule ? 'Module' : 'Expression'}} Name"
                         [(ngModel)]="bottomEditor.name"
                         fxFlex
                     >
@@ -221,7 +225,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 </div>
             </div>
             <expression-text-editor
-                *ngIf="bottomEditor.expression && isSplitScreen"
+                *ngIf="bottomEditor && bottomEditor.expression && isSplitScreen"
                 class="bottom-expression"
                 [expression]="bottomEditor.expression"
                 [allowEdit]="bottomEditor.editable"
