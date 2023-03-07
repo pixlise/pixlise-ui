@@ -46,25 +46,25 @@ POSSIBILITY OF SUCH DAMAGE.
             <h2>LUA Expression Editor</h2>
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                 <input
-                    [disabled]="isSharedByOtherUser"
+                    [disabled]="!topEditor.editable"
                     type="text"
                     placeholder="Expression Description"
-                    [(ngModel)]="expressionComments"
+                    [(ngModel)]="topEditor.comments"
                     fxFlex
                 >
                 <multi-switch-button
                     #tooltip="matTooltip"
-                    matTooltip="Toggle between a single code editor and a splitscreen code view"
+                    [matTooltip]="splitScreenTooltip"
                     class="split-screen-btn"
                     [options]="['Single', 'Split']"
                     [value]="isSplitScreen ? 'Split' : 'Single'"
-                    [disabled]="false"
+                    [disabled]="topEditor.modules.length === 0"
                     (onChange)="onToggleSplitScreen()">
                 </multi-switch-button>
                 <push-button
                     class="run-btn"
                     buttonStyle="yellow"
-                    [disabled]="!isCodeChanged && !isSubsetExpression"
+                    [disabled]="!topEditor.isCodeChanged && !bottomEditor.isCodeChanged && !isSubsetExpression"
                     (onClick)="runExpression()"
                     #tooltip="matTooltip"
                     [matTooltip]="runCodeTooltip"
@@ -73,18 +73,18 @@ POSSIBILITY OF SUCH DAMAGE.
                 </push-button>
                 <input
                     class="emptyName ? 'invalid-input' : ''"
-                    [disabled]="isSharedByOtherUser"
+                    [disabled]="!topEditor.editable"
                     type="text"
                     placeholder="Expression Name"
-                    [(ngModel)]="expressionName"
+                    [(ngModel)]="topEditor.name"
                     fxFlex
                 >
                 <tag-picker
                     type="expression"
-                    [selectedTagIDs]="selectedTagIDs"
+                    [selectedTagIDs]="topEditor.selectedTagIDs"
                     [showCurrentTagsSection]="true"
-                    (onTagSelectionChanged)="onTagSelectionChanged($event)"
-                    [editable]="editable"
+                    (onTagSelectionChanged)="topEditor.onTagSelectionChanged($event)"
+                    [editable]="topEditor.editable"
                 >
                 </tag-picker>
             </div>
@@ -93,7 +93,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <span fxLayout="row" fxLayoutAlign="center center">
                 <h2>Visualization{{displayExpressionTitle ? ": " + displayExpressionTitle : ""}}</h2>
                 <icon-button 
-                    *ngIf="isCodeChanged"
+                    *ngIf="topEditor.isCodeChanged || bottomEditor.isCodeChanged"
                     icon='assets/button-icons/disabled-orange.svg'
                     [hasBackground]="false"
                     #tooltip="matTooltip"
@@ -169,77 +169,78 @@ POSSIBILITY OF SUCH DAMAGE.
                 ></icon-button>
             </expression-list>
         </div>
-        <div class="text-editor {{isTopHeaderOpen ? 'top-open' : ''}} {{isBottomHeaderOpen ? 'bottom-open' : ''}} {{isSplitScreen ? 'split-screen-mode' : ''}}">
+        <div class="text-editor {{topEditor.isHeaderOpen ? 'top-open' : ''}} {{bottomEditor.isHeaderOpen ? 'bottom-open' : ''}} {{isSplitScreen ? 'split-screen-mode' : ''}}">
             <expression-text-editor
-                *ngIf="expression"
+                *ngIf="topEditor.expression"
                 class="top-expression"
-                [expression]="expression"
-                [allowEdit]="editable"
+                [expression]="topEditor.expression"
+                [allowEdit]="topEditor.editable"
                 [isImmediatelyAppliable]="false"
                 [applyNow]="false"
-                (onTextChange)="onExpressionTextChanged($event)"
+                (onTextChange)="topEditor.onExpressionTextChanged($event)"
                 (onTextSelect)="onTextSelect($event)"
                 (changeExpression)="changeExpression($event)"
-                (runExpression)="runExpression()"
+                (runExpression)="runExpression(true)"
                 (runHighlightedExpression)="runHighlightedExpression()"
-                (saveExpression)="onSave()"
+                (saveExpression)="onSave(true)"
                 (toggleSidebar)="onToggleSidebar()"
                 [range]="isSubsetExpression ? executedTextSelection.range : null"
-                [showHelp]="useAutocomplete && !isSharedByOtherUser"
-                [isLua]="isLua"
-                [isHeaderOpen]="isTopHeaderOpen"
-                (toggleHeader)="onToggleTopHeader()"
-                [installedModules]="topModules"
+                [showHelp]="topEditor.useAutocomplete && topEditor.editable"
+                [isLua]="topEditor.isLua"
+                [isHeaderOpen]="topEditor.isHeaderOpen"
+                (toggleHeader)="topEditor.onToggleHeader()"
+                [installedModules]="topEditor.modules"
+                [showInstalledModules]="!topEditor.isModule"
             >
             </expression-text-editor>
-            <div *ngIf="isSplitScreen" class="split-screen-header">
+            <div *ngIf="bottomEditor.expression && isSplitScreen" class="split-screen-header">
                 <h2>Module Editor</h2>
                 <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                     <input
-                        [disabled]="isSharedByOtherUser"
+                        [disabled]="!bottomEditor.editable"
                         type="text"
                         placeholder="Expression Description"
-                        [(ngModel)]="expressionComments"
+                        [(ngModel)]="bottomEditor.comments"
                         fxFlex
                     >
                     <input
-                        [disabled]="isSharedByOtherUser"
+                        [disabled]="!bottomEditor.editable"
                         type="text"
                         placeholder="Expression Name"
-                        [(ngModel)]="expressionName"
+                        [(ngModel)]="bottomEditor.name"
                         fxFlex
                     >
                     <tag-picker
                         type="expression"
-                        [selectedTagIDs]="selectedTagIDs"
+                        [selectedTagIDs]="bottomEditor.selectedTagIDs"
                         [showCurrentTagsSection]="true"
-                        (onTagSelectionChanged)="onTagSelectionChanged($event)"
-                        [editable]="editable"
+                        (onTagSelectionChanged)="bottomEditor.onTagSelectionChanged($event)"
+                        [editable]="bottomEditor.editable"
                     >
                     </tag-picker>
                 </div>
             </div>
             <expression-text-editor
-                *ngIf="bottomExpression && isSplitScreen"
+                *ngIf="bottomEditor.expression && isSplitScreen"
                 class="bottom-expression"
-                [expression]="bottomExpression"
-                [allowEdit]="bottomEditable"
+                [expression]="bottomEditor.expression"
+                [allowEdit]="bottomEditor.editable"
                 [isImmediatelyAppliable]="false"
                 [applyNow]="false"
-                (onTextChange)="onExpressionTextChanged($event)"
+                (onTextChange)="bottomEditor.onExpressionTextChanged($event)"
                 (onTextSelect)="onTextSelect($event)"
                 (changeExpression)="changeExpression($event)"
-                (runExpression)="runExpression()"
+                (runExpression)="runExpression(false)"
                 (runHighlightedExpression)="runHighlightedExpression()"
-                (saveExpression)="onSave()"
+                (saveExpression)="onSave(false)"
                 (toggleSidebar)="onToggleSidebar()"
                 [range]="isSubsetExpression ? executedTextSelection.range : null"
-                [showHelp]="useBottomAutocomplete && !isSharedByOtherUser"
-                [isLua]="isBottomLua"
-                [isHeaderOpen]="isBottomHeaderOpen"
-                (toggleHeader)="onToggleBottomHeader()"
-                [installedModules]="bottomModules"
-                [showInstalledModules]="false"
+                [showHelp]="bottomEditor.useAutocomplete && bottomEditor.editable"
+                [isLua]="bottomEditor.isLua"
+                [isHeaderOpen]="bottomEditor.isHeaderOpen"
+                (toggleHeader)="bottomEditor.onToggleHeader()"
+                [installedModules]="bottomEditor.modules"
+                [showInstalledModules]="!bottomEditor.isModule"
             >
             </expression-text-editor>
         </div>
@@ -259,16 +260,16 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div class="editor-footer {{isSidebarOpen ? 'sidebar-open' : ''}}">
         <div class="text-container">
-            <mat-select [(ngModel)]="isLua" [disabled]="true">
+            <mat-select [(ngModel)]="topEditor.isLua" [disabled]="true">
                 <mat-option [value]="true">Lua</mat-option>
                 <mat-option [value]="false">PIXLang</mat-option>
             </mat-select>
             <push-button
-                *ngIf="!isLua"
+                *ngIf="!topEditor.isLua"
                 class="convert-to-lua-btn"
                 buttonStyle="yellow"
-                [disabled]="isSharedByOtherUser"
-                [active]="useAutocomplete"
+                [disabled]="!topEditor.editable"
+                [active]="topEditor.useAutocomplete"
                 (onClick)="convertToLua()"
                 #tooltip="matTooltip"
                 matTooltip="WARNING: This is a one way operation"
@@ -292,8 +293,8 @@ POSSIBILITY OF SUCH DAMAGE.
                 >Cancel
                 </push-button>
                 <push-button
-                    [buttonStyle]="emptyName || emptySourceCode ? 'orange' : 'yellow'"
-                    [disabled]="isSharedByOtherUser || isExpressionSaved || emptyName || emptySourceCode"
+                    [buttonStyle]="topEditor.invalidExpression ? 'orange' : 'yellow'"
+                    [disabled]="!topEditor.editable || topEditor.isExpressionSaved || topEditor.invalidExpression"
                     (onClick)="onSave()"
                     #tooltip="matTooltip"
                     [matTooltip]="saveExpressionTooltip"

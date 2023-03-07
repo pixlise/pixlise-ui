@@ -60,6 +60,125 @@ import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 
+export class EditorConfig
+{
+    constructor(
+        public expression: DataExpression = null,
+        public userID: string = "",
+        public editMode: boolean = true,
+        public isCodeChanged: boolean = false,
+        public isExpressionSaved: boolean = true,
+        public isModule: boolean = false,
+        public isHeaderOpen: boolean = false,
+        public useAutocomplete: boolean = false,
+        public isLua: boolean = true,
+    ){}
+
+    get isSharedByOtherUser(): boolean
+    {
+        return this.expression?.shared && this.expression.creator.user_id !== this.userID;
+    }
+
+    get emptyName(): boolean
+    {
+        return !this.expression?.name || this.expression.name === "";
+    }
+
+    get emptySourceCode(): boolean
+    {
+        return !this.expression?.sourceCode || this.expression.sourceCode === "";
+    }
+
+    get invalidExpression(): boolean
+    {
+        return this.emptyName || this.emptySourceCode;
+    }
+
+    get editable(): boolean
+    {
+        return this.editMode && !this.isSharedByOtherUser;
+    }
+
+    get editExpression(): string
+    {
+        return this.expression?.sourceCode || "";
+    }
+
+    set editExpression(val: string)
+    {
+        if(this.expression)
+        {
+            this.expression.sourceCode = val;
+            this.isCodeChanged = true;
+            this.isExpressionSaved = false;
+        }
+    }
+
+    get selectedTagIDs(): string[]
+    {
+        return this.expression?.tags || [];
+    }
+
+    set selectedTagIDs(tags: string[])
+    {
+        if(this.expression)
+        {
+            this.expression.tags = tags;
+            this.isExpressionSaved = false;
+        }
+    }
+
+    get name(): string
+    {
+        return this.expression?.name || "";
+    }
+
+    set name(name: string)
+    {
+        if(this.expression)
+        {
+            this.expression.name = name;
+            this.isExpressionSaved = false;
+        }
+    }
+
+    get comments(): string
+    {
+        return this.expression?.comments || "";
+    }
+
+    set comments(comments: string)
+    {
+        if(this.expression)
+        {
+            this.expression.comments = comments;
+            this.isExpressionSaved = false;
+        }
+    }
+
+    get modules(): DataExpressionModule[]
+    {
+        return this.expression.moduleReferences.map(ref =>
+        {
+            return new DataExpressionModule(ref.moduleID, "", ref.version);
+        });
+    }
+
+    onExpressionTextChanged(text: string): void
+    {
+        this.editExpression = text;
+    }
+
+    onTagSelectionChanged(tags): void
+    {
+        this.selectedTagIDs = tags;
+    }
+
+    onToggleHeader(): void
+    {
+        this.isHeaderOpen = !this.isHeaderOpen;
+    }
+}
 
 @Component({
     selector: "code-editor",
@@ -116,24 +235,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     };
 
     public isSplitScreen = false;
-
-    private _editable = true;
-    public isTopHeaderOpen = true;
-    public useAutocomplete = false;
-    public isCodeChanged = true;
-    public isExpressionSaved = true;
-    public isLua = true;
-    public expression: DataExpression;
-    public topModules: DataExpressionModule[] = [];
-
-    private _bottomEditable = true;
-    public isBottomHeaderOpen = false;
-    public useBottomAutocomplete = false;
-    public isBottomCodeChanged = true;
-    public isBottomExpressionSaved = true;
-    public isBottomLua = true;
-    public bottomExpression: DataExpression;
-    public bottomModules: DataExpressionModule[] = [];
+    
+    public topEditor: EditorConfig = new EditorConfig();
+    public bottomEditor: EditorConfig = new EditorConfig();
 
     public activeTextSelection: TextSelection = null;
     public executedTextSelection: TextSelection = null;
@@ -161,9 +265,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     private _newExpression: boolean = false;
 
-    public emptyName: boolean = false;
-    public emptySourceCode: boolean = false;
-
     // Icons to display
     activeIcon="assets/button-icons/check-on.svg";
     inactiveIcon="assets/button-icons/check-off.svg";
@@ -188,6 +289,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     ngOnInit()
     {
+        this.topEditor.userID = this._authService.getUserID();
+        this.bottomEditor.userID = this._authService.getUserID();
+
         this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, false, false, this._expressionService);
         this._datasetID = this._route.snapshot.parent?.params["dataset_id"];
         this._expressionID = this._route.snapshot.params["expression_id"];
@@ -203,7 +307,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             // If we're creating a new expression, create a blank one
             if(this._newExpression)
             {
-                this.expression = new DataExpression(
+                this.topEditor.expression = new DataExpression(
                     "",
                     "",
                     "",
@@ -221,16 +325,16 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 this._fetchedExpression = true;
                 // Add the current expression to the currently-open list
                 this.sidebarTopSections["currently-open"].items = [
-                    this.expression
+                    this.topEditor.expression
                 ];
                 return;
             }
 
             this._expressionService.getExpressionAsync(this._expressionID).subscribe(expression =>
             {
-                this.isLua = expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
+                this.topEditor.isLua = expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
 
-                this.expression = new DataExpression(
+                this.topEditor.expression = new DataExpression(
                     expression.id,
                     expression.name,
                     expression.sourceCode,
@@ -245,23 +349,23 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     expression.recentExecStats,
                 );
 
-                this.bottomExpression = this.expression;
+                // this.bottomEditor.expression = this.topEditor.expression;
 
                 this._fetchedExpression = true;
                 this.runExpression();
 
                 // Add the current expression to the currently-open list
                 this.sidebarTopSections["currently-open"].items = [
-                    this.expression
+                    this.topEditor.expression
                 ];
 
-                this.topModules = [
-                    new DataExpressionModule("test", "description", "3.7", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                    new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                    new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                    new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                    new DataExpressionModule("testing", "description", "3.1", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                ];
+                // this.topModules = [
+                //     new DataExpressionModule("test", "description", "3.7", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                //     new DataExpressionModule("testing", "description", "3.1", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                // ];
 
                 let all$ = makeDataForExpressionList(
                     this._datasetService,
@@ -306,16 +410,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     onToggleSplitScreen(): void
     {
         this.isSplitScreen = !this.isSplitScreen;
-    }
-
-    onToggleTopHeader(): void
-    {
-        this.isTopHeaderOpen = !this.isTopHeaderOpen;
-    }
-
-    onToggleBottomHeader(): void
-    {
-        this.isBottomHeaderOpen = !this.isBottomHeaderOpen;
     }
 
     ngOnDestroy()
@@ -503,46 +597,50 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     onToggleAutocomplete(): void
     {
-        if(!this.isSharedByOtherUser)
+        if(this.topEditor.editable)
         {
-            this.useAutocomplete = !this.useAutocomplete;
+            this.topEditor.useAutocomplete = !this.topEditor.useAutocomplete;
         }
     }
 
     onClose(): void
     {
-        if(!this.isExpressionSaved && !confirm("Are you sure you want to close this expression? Any unsaved changes will be lost."))
+        let unsavedChanges = !this.topEditor.isExpressionSaved || (this.isSplitScreen && !this.bottomEditor.isExpressionSaved);
+        if(unsavedChanges && !confirm("Are you sure you want to close this expression? Any unsaved changes will be lost."))
         {
             return;
         }
         this._router.navigate(["dataset", this._datasetID, "analysis"]);
     }
 
-    runExpression(): void
+    runExpression(runTop: boolean = true): void
     {
-        if(this._expressionID && this.expression)
+        let editor = runTop ? this.topEditor : this.bottomEditor;
+        if(this._expressionID && editor.expression)
         {
-            let expressionText = this.isLua ? this.addLuaHighlight(this.expression.sourceCode) : this.expression.sourceCode;
+            let expressionText = editor.isLua ? this.addLuaHighlight(editor.expression.sourceCode) : editor.expression.sourceCode;
             let expression = new DataExpression(
                 this._expressionID,
-                this.expression.name,
+                editor.expression.name,
                 expressionText,
-                this.expression.sourceLanguage,
-                this.expression.comments,
-                this.expression.shared,
-                this.expression.creator,
-                this.expression.createUnixTimeSec,
-                this.expression.modUnixTimeSec,
-                this.expression.tags,
+                editor.expression.sourceLanguage,
+                editor.expression.comments,
+                editor.expression.shared,
+                editor.expression.creator,
+                editor.expression.createUnixTimeSec,
+                editor.expression.modUnixTimeSec,
+                editor.expression.tags,
                 [],
                 null,
             );
-            this._widgetDataService.runAsyncExpression(new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), expression, false).toPromise().then((result)=>
+            this._widgetDataService.runAsyncExpression(
+                new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), expression, false
+            ).toPromise().then((result)=>
             {
                 this.evaluatedExpression = result;
                 if(this.evaluatedExpression && this.evaluatedExpression?.values?.values.length > 0)
                 {
-                    this.isCodeChanged = false;
+                    editor.isCodeChanged = false;
                     let previewID = `unsaved-${this._expressionID}`;
                     this.displayExpressionTitle = `Unsaved ${expression.name}`;
                     this._expressionService.cache(previewID, expression, this.displayExpressionTitle);
@@ -575,17 +673,18 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     runHighlightedExpression(): void
     {
+        // Highlighted expressions always use the top editor info so only 1 unsaved expression ID is injected into the cache
         let highlightedExpression = new DataExpression(
             this._expressionID,
-            this.expression.name,
+            this.topEditor.expression.name,
             "",
-            this.expression.sourceLanguage,
-            this.expression.comments,
-            this.expression.shared,
-            this.expression.creator,
-            this.expression.createUnixTimeSec,
-            this.expression.modUnixTimeSec,
-            this.expression.tags,
+            this.topEditor.expression.sourceLanguage,
+            this.topEditor.expression.comments,
+            this.topEditor.expression.shared,
+            this.topEditor.expression.creator,
+            this.topEditor.expression.createUnixTimeSec,
+            this.topEditor.expression.modUnixTimeSec,
+            this.topEditor.expression.tags,
             [],
             null
         );
@@ -595,10 +694,10 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         }
         else if(this.isEmptySelection)
         {
-            highlightedExpression.sourceCode = this.expression.sourceCode.split("\n").slice(0, this.endLineHighlighted + 1).join("\n");
+            highlightedExpression.sourceCode = this.topEditor.expression.sourceCode.split("\n").slice(0, this.endLineHighlighted + 1).join("\n");
         }
 
-        if(this.isLua)
+        if(this.topEditor.isLua)
         {
             highlightedExpression.sourceCode = this.addLuaHighlight(highlightedExpression.sourceCode);
         }
@@ -624,7 +723,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         }
         
         let previewID = `unsaved-${this._expressionID}`;
-        this.displayExpressionTitle = `Unsaved ${this.expression.name} (Line${isMultiLine ? "s": ""} ${lineRange})`;
+        this.displayExpressionTitle = `Unsaved ${this.topEditor.expression.name} (Line${isMultiLine ? "s": ""} ${lineRange})`;
         this._expressionService.cache(previewID, highlightedExpression, this.displayExpressionTitle);
 
         this.pmcGridExpressionTitle = `Numeric Values: Line${isMultiLine ? "s": ""} ${lineRange}`;
@@ -636,13 +735,14 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     convertToLua(): void
     {
+        // Bottom editor is always the lua editor
         let transpiler = new LuaTranspiler();
-        let luaExpression = transpiler.transpile(this.editExpression);
+        let luaExpression = transpiler.transpile(this.topEditor.editExpression);
+        this.topEditor.editExpression = luaExpression;
 
-        this.editExpression = luaExpression;
         if(this.updateText)
         {
-            this.isLua = true;
+            this.topEditor.isLua = true;
             this.updateText(luaExpression);
         }
     }
@@ -662,6 +762,12 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         return this.activeTextSelection?.text;
     }
 
+    get splitScreenTooltip(): string
+    {
+        let tooltip = "Toggle between a single editor and a splitscreen view";
+        return this.topEditor.modules.length > 0 ? tooltip : `${tooltip}\nCannot splitscreen with no installed modules`;
+    }
+
     get moduleSidebarTooltip(): string
     {
         let tooltip = this.isSidebarOpen ? "Close Modules Sidebar" : "Open Modules Sidebar";
@@ -672,7 +778,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     {
         let saveTooltip = this.isWindows ? "Save Expression (Ctrl+S)" : "Save Expression (Cmd+S)";
 
-        return this.emptyName || this.emptySourceCode ? `${saveTooltip}\nError: Cannot save with an empty name or source code` : saveTooltip;
+        return this.topEditor.invalidExpression || this.bottomEditor.invalidExpression ? `${saveTooltip}\nError: Cannot save with an empty name or source code` : saveTooltip;
     }
 
     get runCodeTooltip(): string
@@ -706,124 +812,34 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         return this.activeTextSelection?.endLine;
     }
 
-    get editable(): boolean
-    {
-        return this._editable && !this.isSharedByOtherUser;
-    }
-
-    get bottomEditable(): boolean
-    {
-        return this._bottomEditable && !this.isSharedByOtherUser;
-    }
-
-    get editExpression(): string
-    {
-        return this.expression?.sourceCode || "";
-    }
-
-    set editExpression(val: string)
-    {
-        if(this.expression)
-        {
-            this.expression.sourceCode = val;
-            this.isCodeChanged = true;
-            this.isExpressionSaved = false;
-            this.emptySourceCode = val === "";
-        }
-    }
-
-    get selectedTagIDs(): string[]
-    {
-        return this.expression?.tags || [];
-    }
-
-    set selectedTagIDs(tags: string[])
-    {
-        if(this.expression)
-        {
-            this.expression.tags = tags;
-            this.isExpressionSaved = false;
-        }
-    }
-
-    get expressionName(): string
-    {
-        return this.expression?.name || "";
-    }
-
-    set expressionName(name: string)
-    {
-        if(this.expression)
-        {
-            this.expression.name = name;
-            this.isExpressionSaved = false;
-            this.emptyName = name === "";
-        }
-    }
-
-    get expressionComments(): string
-    {
-        return this.expression?.comments || "";
-    }
-
-    set expressionComments(comments: string)
-    {
-        if(this.expression)
-        {
-            this.expression.comments = comments;
-            this.isExpressionSaved = false;
-        }
-    }
-
-    get isSharedByOtherUser(): boolean
-    {
-        return this.expression?.shared && this.expression.creator.user_id !== this._authService.getUserID();
-    }
-
-    onExpressionTextChanged(text: string): void
-    {
-        this.editExpression = text;
-    }
-
-    onTagSelectionChanged(tags): void
-    {
-        this.selectedTagIDs = tags;
-    }
-
     onTogglePMCDataGridSolo(isSolo: boolean): void
     {
         this.isPMCDataGridSolo = isSolo;
     }
 
-    onSave(): void
+    onSave(saveTop: boolean = true): void
     {
-        if(this.isExpressionSaved || this.isSharedByOtherUser)
+        let editor = saveTop ? this.topEditor : this.bottomEditor;
+        if(editor.isExpressionSaved || !editor.editable || editor.invalidExpression)
         {
-            // Nothing to save
+            // Nothing valid to save
             return;
         }
 
-        this.emptyName = this.expression.name === "";
-        this.emptySourceCode = this.expression.sourceCode === "";
-        if(this.emptyName || this.emptySourceCode)
-        {
-            // Don't save if name or source code is empty
-            return;
-        }
-
-        if(this._newExpression)
+        // New expressions are always going to be on top
+        if(this._newExpression && saveTop)
         {
             this._expressionService.add(
-                this.expression.name,
-                this.expression.sourceCode,
-                this.expression.sourceLanguage,
-                this.expression.comments,
-                this.expression.tags
+                editor.expression.name,
+                editor.expression.sourceCode,
+                editor.expression.sourceLanguage,
+                editor.expression.comments,
+                editor.expression.tags
             ).subscribe((newExpression: DataExpressionWire) =>
             {
                 this._newExpression = false;
                 this._expressionID = newExpression.id;
-                this.expression = new DataExpression(
+                editor.expression = new DataExpression(
                     this._expressionID,
                     newExpression.name,
                     newExpression.sourceCode,
@@ -834,33 +850,33 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     newExpression.create_unix_time_sec,
                     newExpression.mod_unix_time_sec,
                     newExpression.tags,
-                    newExpression.moduleReferences || this.expression.moduleReferences,
-                    newExpression.recentExecStats || this.expression.recentExecStats
+                    newExpression.moduleReferences || editor.expression.moduleReferences,
+                    newExpression.recentExecStats || editor.expression.recentExecStats
                 );
-                this.isCodeChanged = false;
-                this.isExpressionSaved = true;
-                this._router.navigate(["dataset", this._datasetID, "code-editor", this.expression.id]);
+                editor.isCodeChanged = false;
+                editor.isExpressionSaved = true;
+                this._router.navigate(["dataset", this._datasetID, "code-editor", editor.expression.id]);
             });
         }
         else
         {
             this._expressionService.edit(
-                this._expressionID,
-                this.expression.name,
-                this.expression.sourceCode,
-                this.expression.sourceLanguage,
-                this.expression.comments,
-                this.expression.tags
+                editor.expression.id,
+                editor.expression.name,
+                editor.expression.sourceCode,
+                editor.expression.sourceLanguage,
+                editor.expression.comments,
+                editor.expression.tags
             ).subscribe(
                 ()=>
                 {
-                    this.isCodeChanged = false;
-                    this.isExpressionSaved = true;
+                    editor.isCodeChanged = false;
+                    editor.isExpressionSaved = true;
                 },
                 (err)=>
                 {
-                    console.error(`Failed to save expression ${this.expression.name}`, err);
-                    alert(`Failed to save expression ${this.expression.name}: ${err?.message}`);
+                    console.error(`Failed to save expression ${editor.expression.name}`, err);
+                    alert(`Failed to save expression ${editor.expression.name}: ${err?.message}`);
                 }
             );
         }
