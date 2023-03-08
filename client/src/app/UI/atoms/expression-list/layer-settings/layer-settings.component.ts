@@ -515,7 +515,7 @@ export class LayerSettingsComponent implements OnInit
         {
             this._exprService.getExpressionAsync(this.layerInfo.layer.id).subscribe(expression =>
             {
-                if(expression && this.isPreviewMode)
+                if(allowEdit || this.isPreviewMode)
                 {
                     this._navigateToCodeEditor(this.layerInfo.layer.id);
                     return;

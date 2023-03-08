@@ -50,6 +50,7 @@ class DataExpressionInput
         public sourceLanguage: string,
         public comments: string,
         public tags: string[] = [],
+        public moduleReferences: ModuleReference[] = [],
     )
     {
     }
@@ -591,12 +592,12 @@ export class DataExpressionService
             );
     }
 
-    edit(id: string, name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = []): Observable<object>
+    edit(id: string, name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = [], moduleReferences: ModuleReference[] = []): Observable<object>
     {
         let loadID = this._loadingSvc.add("Saving changed expression...");
         let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
 
-        let toSave = new DataExpressionInput(name, sourceCode, sourceLanguage, comments, tags);
+        let toSave = new DataExpressionInput(name, sourceCode, sourceLanguage, comments, tags, moduleReferences);
         return this.http.put<object>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(

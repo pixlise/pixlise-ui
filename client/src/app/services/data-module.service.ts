@@ -422,16 +422,28 @@ export class DataModuleService
         );
     }
 
-    getLatestModuleVersion(moduleId: string): Observable<DataModuleSpecificVersionWire>
+    getSourceDataModule(moduleId: string): DataModule
     {
         let modules = this.getModules();
         let module = modules.find((module: DataModule) => module.id === moduleId);
+        return module;
+    }
+
+    getLatestCachedModuleVersion(moduleId: string): DataModuleVersionSourceWire
+    {
+        let module = this.getSourceDataModule(moduleId);
         if(!module)
         {
             return null;
         }
 
         let latestVersion = Array.from(module.versions.values()).pop();
+        return latestVersion;
+    }
+
+    getLatestModuleVersion(moduleId: string): Observable<DataModuleSpecificVersionWire>
+    {
+        let latestVersion = this.getLatestCachedModuleVersion(moduleId);
         return this.getModule(moduleId, latestVersion.version);
     }
 

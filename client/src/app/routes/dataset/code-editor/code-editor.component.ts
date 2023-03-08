@@ -30,7 +30,7 @@
 import { Component, ComponentFactoryResolver, HostListener, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { MatDialog } from "@angular/material/dialog";
-import { ReplaySubject, Subject, Subscription, combineLatest, timer } from "rxjs";
+import { ReplaySubject, Subject, Subscription, combineLatest, of, timer } from "rxjs";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { LayoutService } from "src/app/services/layout.service";
 import { analysisLayoutState, ViewStateService } from "src/app/services/view-state.service";
@@ -43,7 +43,7 @@ import { SpectrumChartWidgetComponent } from "src/app/UI/spectrum-chart-widget/s
 import { SpectrumRegionPickerComponent } from "src/app/UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
 import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/ternary-plot-widget.component";
 import { DataExpressionService, DataExpressionWire } from "src/app/services/data-expression.service";
-import { DataExpression, DataExpressionId } from "src/app/models/Expression";
+import { DataExpression, DataExpressionId, ModuleReference } from "src/app/models/Expression";
 import { DataSourceParams, RegionDataResultItem, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionModule, TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
@@ -63,6 +63,8 @@ import { DataModule, DataModuleService, DataModuleSpecificVersionWire, DataModul
 
 export class EditorConfig
 {
+    public modules: DataExpressionModule[] = [];
+
     constructor(
         public expression: DataExpression = null,
         public userID: string = "",
@@ -187,18 +189,15 @@ export class EditorConfig
         }
     }
 
-    get modules(): DataExpressionModule[]
-    {
-        if(!this.expression || !this.expression.moduleReferences)
-        {
-            return [];
-        }
+    // get modules(): DataExpressionModule[]
+    // {
+    //     if(!this.expression || !this.expression.moduleReferences)
+    //     {
+    //         return [];
+    //     }
 
-        return this.expression.moduleReferences.map(ref =>
-        {
-            return new DataExpressionModule(ref.moduleID, "", ref.version);
-        });
-    }
+    //     return this.expression.moduleReferences;
+    // }
 
     onExpressionTextChanged(text: string): void
     {
@@ -270,6 +269,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         }
     };
 
+    public openModules: Record<string, DataModuleSpecificVersionWire> = {};
+
     public isSplitScreen = false;
     
     public topEditor: EditorConfig = new EditorConfig();
@@ -296,8 +297,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     private _authors: ObjectCreator[] = [];
     private _filteredAuthors: string[] = [];
     private _filteredTagIDs: string[] = [];
-
-    private _activeIDs: Set<string> = new Set<string>();
 
     private _newExpression: boolean = false;
 
@@ -363,6 +362,58 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         });
     }
 
+    makeInstalledModulesGroup(items: DataExpression[] = []): CustomExpressionGroup
+    {
+        return {
+            type: "installed-modules-header",
+            childType: "module",
+            label: "Installed Modules",
+            items,
+            emptyMessage: "No modules are installed.",
+        };
+    }
+
+    loadInstalledModules(): void
+    {
+        let installedModules = this.topEditor.expression.moduleReferences.map((moduleRef) =>
+        {
+            let existingModule = this.openModules[`${moduleRef.moduleID}-${moduleRef.version}`];
+            if(existingModule)
+            {
+                return of(existingModule);
+            }
+            else
+            {
+                return this._moduleService.getModule(moduleRef.moduleID, moduleRef.version);
+            }
+        });
+
+        if(installedModules.length > 0)
+        {
+            combineLatest(installedModules).subscribe((modules) =>
+            {
+                let installedModuleExpressions = [];
+                this.topEditor.modules = [];
+                modules.forEach((module) => 
+                {
+                    let sourceModule = this._moduleService.getSourceDataModule(module.id);
+                    this.topEditor.modules.push(new DataExpressionModule(module.id, module.name, module.comments, module.version.version, module.origin.creator, Array.from(sourceModule.versions.keys())));
+                    installedModuleExpressions.push(this.convertModuleToExpression(module));
+                    this.openModules[`${module.id}-${module.version}`] = module;
+                });
+
+                console.log("TE", this.topEditor)
+
+                this.sidebarTopSections["installed-modules"] = this.makeInstalledModulesGroup(installedModuleExpressions);
+                this.regenerateItemList();
+            });
+        }
+        else
+        {
+            this.sidebarTopSections["installed-modules"] = this.makeInstalledModulesGroup();
+        }
+    }
+
     resetEditors(): void
     {
         this._expressionID = this._route.snapshot.params["expression_id"];
@@ -401,6 +452,17 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
             this.sidebarTopSections["currently-open"].childType = this.topEditor.isModule ? "module" : "expression";
             this.sidebarTopSections["currently-open"].items = [];
+            if(this.topEditor.isModule)
+            {
+                if(this.sidebarTopSections["installed-modules"])
+                {
+                    delete this.sidebarTopSections["installed-modules"];
+                }
+            }
+            else
+            {
+                this.sidebarTopSections["installed-modules"] = this.makeInstalledModulesGroup();
+            }
             this._fetchedExpression = true;
             this.regenerateItemList();
         }
@@ -436,6 +498,9 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     this.sidebarTopSections["currently-open"].items = [
                         this.topEditor.expression
                     ];
+
+                    this.loadInstalledModules();
+
                     this.regenerateItemList();
 
                     // this.topModules = [
@@ -459,6 +524,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     this.sidebarTopSections["currently-open"].items = [
                         this.topEditor.expression
                     ];
+
+                    if(this.sidebarTopSections["installed-modules"])
+                    {
+                        delete this.sidebarTopSections["installed-modules"];
+                    }
 
                     this.regenerateItemList();
                 });
@@ -623,6 +693,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         ));
     }
 
+    private get _activeIDs(): Set<string>
+    {
+        return new Set(this.topEditor.expression.moduleReferences.map((ref) => ref.moduleID));
+    }
+
     private regenerateItemList(): void
     {
         let customStartSections = Object.values(this.sidebarTopSections);
@@ -724,20 +799,24 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     onLayerVisibilityChange(event: LayerVisibilityChange): void
     {
-        // We handle this by saving the ID in our list of "active" ids, if it's marked visible...
-        // if(event.visible)
-        // {
-        //     if(this.data.singleSelection)
-        //     {
-        //         this._activeIDs.clear();
-        //     }
-        //     this._activeIDs.add(event.layerID);
-        // }
-        // else
-        // {
-        //     this._activeIDs.delete(event.layerID);
-        // }
+        if(this.topEditor.isModule)
+        {
+            // We don't allow modules to have installed modules
+            return;
+        }
 
+        if(event.visible)
+        {
+            let latestVersion = this._moduleService.getLatestCachedModuleVersion(event.layerID);
+            this.topEditor.expression.moduleReferences.push(new ModuleReference(event.layerID, latestVersion.version));
+        }
+        else
+        {
+            this.topEditor.expression.moduleReferences = this.topEditor.expression.moduleReferences.filter((ref) => ref.moduleID !== event.layerID);
+        }
+
+        this.topEditor.isExpressionSaved = false;
+        this.loadInstalledModules();
         this.regenerateItemList();
     }
 
@@ -1120,7 +1199,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     editor.expression.sourceCode,
                     editor.expression.sourceLanguage,
                     editor.expression.comments,
-                    editor.expression.tags
+                    editor.expression.tags,
+                    editor.expression.moduleReferences
                 ).subscribe(
                     ()=>
                     {

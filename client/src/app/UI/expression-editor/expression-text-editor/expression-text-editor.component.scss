@@ -92,6 +92,11 @@ h3 {
                 }
             }
 
+            .line-gutter, .header-code {
+                padding-top: 8px;
+                padding-bottom: 0;
+            }
+
             .line-gutter {
                 display: flex;
                 align-items: center;

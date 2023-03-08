@@ -29,7 +29,7 @@
 
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
 import { CodemirrorComponent } from "@ctrl/ngx-codemirror";
-import { ReplaySubject, Subject, Subscription, timer } from "rxjs";
+import { Subscription, timer } from "rxjs";
 import { ExpressionParts, PixliseDataQuerier } from "src/app/expression-language/interpret-pixlise";
 import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications";
 import { DataExpression } from "src/app/models/Expression";
@@ -38,6 +38,7 @@ import { WidgetRegionDataService } from "src/app/services/widget-region-data.ser
 import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElement, Suggestion } from "../expression-help";
 import { SentryHelper } from "src/app/utils/utils";
 import { Range } from "codemirror";
+import { ObjectCreator } from "src/app/models/BasicTypes";
 
 require("codemirror/addon/comment/comment.js");
 require("codemirror/mode/lua/lua");
@@ -45,11 +46,12 @@ require("codemirror/mode/lua/lua");
 export class DataExpressionModule
 {
     constructor(
+        public id: string,
         public name: string,
-        public description: string="",
-        public version: string="",
-        public author: string="",
-        public allVersions: string[]=[],
+        public description: string = "",
+        public version: string = "",
+        public author: ObjectCreator= new ObjectCreator("", ""),
+        public allVersions: string[] = [],
     ){}
 }
 
