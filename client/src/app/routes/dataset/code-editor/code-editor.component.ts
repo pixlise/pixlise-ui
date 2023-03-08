@@ -408,6 +408,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         }
         else
         {
+            this.topEditor.modules = [];
             this.sidebarTopSections["installed-modules"] = this.makeInstalledModulesGroup();
         }
     }
