@@ -73,6 +73,7 @@ export class ExpressionEditorComponent implements OnDestroy
         public dialogRef: MatDialogRef<ExpressionEditorComponent>,
     )
     {
+        console.log("INIT")
         // Make a copy of incoming expression, so we don't edit what's there!
         this.expression = new DataExpression(
             data.expr.id,
@@ -88,6 +89,8 @@ export class ExpressionEditorComponent implements OnDestroy
             data.expr.moduleReferences,
             data.expr.recentExecStats
         );
+
+        console.log("MODAL", this.expression)
     }
 
     ngOnDestroy()

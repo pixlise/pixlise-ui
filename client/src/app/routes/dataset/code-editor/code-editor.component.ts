@@ -30,7 +30,7 @@
 import { Component, ComponentFactoryResolver, HostListener, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { MatDialog } from "@angular/material/dialog";
-import { Subscription, timer } from "rxjs";
+import { ReplaySubject, Subject, Subscription, combineLatest, timer } from "rxjs";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { LayoutService } from "src/app/services/layout.service";
 import { analysisLayoutState, ViewStateService } from "src/app/services/view-state.service";
@@ -59,6 +59,7 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { DataModule, DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 
 export class EditorConfig
 {
@@ -72,6 +73,8 @@ export class EditorConfig
         public isHeaderOpen: boolean = false,
         public useAutocomplete: boolean = false,
         public isLua: boolean = true,
+        public version: DataModuleVersionSourceWire = null,
+        public versions: Map<string, DataModuleVersionSourceWire> = null,
     ){}
 
     get isSharedByOtherUser(): boolean
@@ -313,6 +316,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         private resolver: ComponentFactoryResolver,
         public dialog: MatDialog,
         private _expressionService: DataExpressionService,
+        private _moduleService: DataModuleService,
         private _widgetDataService: WidgetRegionDataService,
         private _datasetService: DataSetService,
     )
@@ -328,106 +332,45 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, false, false, this._expressionService);
         this._datasetID = this._route.snapshot.parent?.params["dataset_id"];
         this._expressionID = this._route.snapshot.params["expression_id"];
-        this._expressionService.expressionsUpdated$.subscribe(() =>
+
+        combineLatest([this._expressionService.expressionsUpdated$, this._moduleService.modulesUpdated$]).subscribe(() =>
         {
             if(this._fetchedExpression)
             {
                 return;
             }
 
+            this.sidebarTopSections["modules"].items = this._moduleService.getModules().map((module) =>
+            {
+                let latestVersion = Array.from(module.versions.values()).pop();
+                return new DataExpression(
+                    module.id,
+                    module.name,
+                    latestVersion.sourceCode,
+                    EXPR_LANGUAGE_LUA,
+                    module.comments,
+                    module.origin.shared,
+                    module.origin.creator,
+                    module.origin.create_unix_time_sec,
+                    latestVersion.mod_unix_time_sec,
+                    latestVersion.tags,
+                    [],
+                    null
+                );
+            });
+
             this.resetEditors();
-            // this._newExpression = this._expressionID === "create";
-
-            // // If we're creating a new expression, create a blank one
-            // if(this._newExpression)
-            // {
-            //     this.topEditor.expression = new DataExpression(
-            //         "",
-            //         "",
-            //         "",
-            //         EXPR_LANGUAGE_LUA,
-            //         "",
-            //         false,
-            //         new ObjectCreator("", "", ""),
-            //         0,
-            //         0,
-            //         [],
-            //         [],
-            //         null
-            //     );
-
-            //     this._fetchedExpression = true;
-            //     return;
-            // }
-
-            // this._expressionService.getExpressionAsync(this._expressionID).subscribe(expression =>
-            // {
-            //     this.topEditor.isLua = expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
-
-            //     this.topEditor.expression = new DataExpression(
-            //         expression.id,
-            //         expression.name,
-            //         expression.sourceCode,
-            //         expression.sourceLanguage,
-            //         expression.comments,
-            //         expression.shared,
-            //         expression.creator,
-            //         expression.createUnixTimeSec,
-            //         expression.modUnixTimeSec,
-            //         expression.tags,
-            //         expression.moduleReferences,
-            //         expression.recentExecStats,
-            //     );
-
-            //     // this.bottomEditor.expression = this.topEditor.expression;
-
-            //     this._fetchedExpression = true;
-            //     this.runExpression();
-
-            //     // Add the current expression to the currently-open list
-            //     this.sidebarTopSections["currently-open"].items = [
-            //         this.topEditor.expression
-            //     ];
-
-            //     // this.topModules = [
-            //     //     new DataExpressionModule("test", "description", "3.7", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-            //     //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-            //     //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-            //     //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-            //     //     new DataExpressionModule("testing", "description", "3.1", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-            //     // ];
-
-            //     let all$ = makeDataForExpressionList(
-            //         this._datasetService,
-            //         this._widgetDataService,
-            //         this._expressionService,
-            //         null
-            //     );
-            //     this._subs.add(all$.subscribe(
-            //         (data: unknown[])=>
-            //         {
-            //             this._listBuilder.notifyDataArrived(
-            //                 (data[0] as DataSet).getPseudoIntensityElementsList(),
-            //                 data[1] as QuantificationLayer,
-            //                 this._expressionService.getExpressions(),
-            //                 null
-            //             );
-
-            //             // All have arrived, the taps above would've saved their contents in a way that we like, so
-            //             // now we can regenerate our item list
-            //             this.regenerateItemList();
-            //         }
-            //     ));
-            // });
         });
     }
 
     resetEditors(): void
     {
         this._expressionID = this._route.snapshot.params["expression_id"];
+        let version = this._route.snapshot.queryParams["version"];
 
         this.topEditor = new EditorConfig();
         this.topEditor.userID = this._authService.getUserID();
+        this.topEditor.isModule = !!version;
 
         this.bottomEditor = new EditorConfig();
         this.bottomEditor.userID = this._authService.getUserID();
@@ -438,7 +381,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             this.topEditor.isModule = this._expressionID === "new-module";
         }
 
-        // If we're creating a new expression, create a blank one
+        // If we're creating a new expression or module, create a blank expression first
         if(this._newExpression)
         {
             this.topEditor.expression = new DataExpression(
@@ -456,46 +399,70 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 null
             );
 
+            this.sidebarTopSections["currently-open"].childType = this.topEditor.isModule ? "module" : "expression";
             this.sidebarTopSections["currently-open"].items = [];
             this._fetchedExpression = true;
+            this.regenerateItemList();
         }
         else
         {
-            this._expressionService.getExpressionAsync(this._expressionID).subscribe(expression =>
+            // Check to make sure this is an expression and not a module
+            if(!this.topEditor.isModule)
             {
-                this.topEditor.isLua = expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
+                this._expressionService.getExpressionAsync(this._expressionID).subscribe(expression =>
+                {
+                    this.topEditor.isLua = expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
 
-                this.topEditor.expression = new DataExpression(
-                    expression.id,
-                    expression.name,
-                    expression.sourceCode,
-                    expression.sourceLanguage,
-                    expression.comments,
-                    expression.shared,
-                    expression.creator,
-                    expression.createUnixTimeSec,
-                    expression.modUnixTimeSec,
-                    expression.tags,
-                    expression.moduleReferences,
-                    expression.recentExecStats,
-                );
+                    this.topEditor.expression = new DataExpression(
+                        expression.id,
+                        expression.name,
+                        expression.sourceCode,
+                        expression.sourceLanguage,
+                        expression.comments,
+                        expression.shared,
+                        expression.creator,
+                        expression.createUnixTimeSec,
+                        expression.modUnixTimeSec,
+                        expression.tags,
+                        expression.moduleReferences,
+                        expression.recentExecStats,
+                    );
 
-                this._fetchedExpression = true;
-                this.runExpression();
+                    this._fetchedExpression = true;
+                    this.runExpression();
 
-                // Add the current expression to the currently-open list
-                this.sidebarTopSections["currently-open"].items = [
-                    this.topEditor.expression
-                ];
+                    // Add the current expression to the currently-open list
+                    this.sidebarTopSections["currently-open"].childType = "expression";
+                    this.sidebarTopSections["currently-open"].items = [
+                        this.topEditor.expression
+                    ];
+                    this.regenerateItemList();
 
-                // this.topModules = [
-                //     new DataExpressionModule("test", "description", "3.7", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                //     new DataExpressionModule("testing", "description", "3.1", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                // ];
-            });
+                    // this.topModules = [
+                    //     new DataExpressionModule("test", "description", "3.7", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                    //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                    //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                    //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                    //     new DataExpressionModule("testing", "description", "3.1", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
+                    // ];
+                });
+            }
+            else
+            {
+                this._moduleService.getModule(this._expressionID, version).subscribe((module) =>
+                {
+                    this.topEditor.expression = this.convertModuleToExpression(module);
+
+                    this._fetchedExpression = true;
+
+                    this.sidebarTopSections["currently-open"].childType = "module";
+                    this.sidebarTopSections["currently-open"].items = [
+                        this.topEditor.expression
+                    ];
+
+                    this.regenerateItemList();
+                });
+            }
         }
 
         let all$ = makeDataForExpressionList(
@@ -519,6 +486,65 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 this.regenerateItemList();
             }
         ));
+    }
+
+    convertModuleToExpression(module: DataModuleSpecificVersionWire): DataExpression
+    {
+        return new DataExpression(
+            module.id,
+            module.name,
+            module.version.sourceCode,
+            EXPR_LANGUAGE_LUA,
+            module.comments,
+            module.origin.shared,
+            module.origin.creator,
+            module.origin.create_unix_time_sec,
+            module.version.mod_unix_time_sec,
+            module.version.tags,
+            [],
+            null
+        );
+    }
+
+    onOpenSplitScreen({id, version}: {id: string; version: string;}): void
+    {
+        if(this.bottomEditor?.expression && this.bottomEditor.expression.id === id && this.bottomEditor.version.version === version)
+        {
+            // Don't reopen the same module
+            return;
+        }
+
+        if(this.topEditor?.expression && this.topEditor.expression.id === id && this.topEditor.version.version === version)
+        {
+            // Don't open the same module twice
+            return;
+        }
+
+        this._moduleService.getModule(id, version).subscribe((module) =>
+        {
+            if(this.bottomEditor.expression)
+            {
+                // This is a hack to remove code mirrors internal cached copy of the code and replace with the new code
+                // by re-rendering the text editor component
+                this.bottomEditor.expression = null;
+                setTimeout(() =>
+                {
+                    this.bottomEditor = new EditorConfig();
+                    this.bottomEditor.userID = this._authService.getUserID();
+                    this.bottomEditor.isModule = true;
+                    this.bottomEditor.expression = this.convertModuleToExpression(module);
+                    this.isSplitScreen = true;
+                }, 1);
+            }
+            else
+            {
+                this.bottomEditor = new EditorConfig();
+                this.bottomEditor.userID = this._authService.getUserID();
+                this.bottomEditor.isModule = true;
+                this.bottomEditor.expression = this.convertModuleToExpression(module);
+                this.isSplitScreen = true;
+            }
+        });
     }
 
     onAddExpression(): void
@@ -988,56 +1014,126 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         // New expressions are always going to be on top
         if(this._newExpression && saveTop)
         {
-            this._expressionService.add(
-                editor.expression.name,
-                editor.expression.sourceCode,
-                editor.expression.sourceLanguage,
-                editor.expression.comments,
-                editor.expression.tags
-            ).subscribe((newExpression: DataExpressionWire) =>
+            if(editor.isModule)
             {
-                this._newExpression = false;
-                this._expressionID = newExpression.id;
-                editor.expression = new DataExpression(
-                    this._expressionID,
-                    newExpression.name,
-                    newExpression.sourceCode,
-                    newExpression.sourceLanguage,
-                    newExpression.comments,
-                    newExpression.shared,
-                    newExpression.creator,
-                    newExpression.create_unix_time_sec,
-                    newExpression.mod_unix_time_sec,
-                    newExpression.tags,
-                    newExpression.moduleReferences || editor.expression.moduleReferences,
-                    newExpression.recentExecStats || editor.expression.recentExecStats
-                );
-                editor.isCodeChanged = false;
-                editor.isExpressionSaved = true;
-                this._router.navigate(["dataset", this._datasetID, "code-editor", editor.expression.id]);
-            });
+                this._moduleService.addModule(
+                    editor.expression.name,
+                    editor.expression.sourceCode,
+                    editor.expression.comments,
+                    editor.expression.tags
+                ).subscribe((newModule: DataModuleSpecificVersionWire) =>
+                {
+                    if(!newModule)
+                    {
+                        // An error occurred and the module wasn't saved
+                        console.error("Error saving module", editor);
+                        alert(`Error saving module ${editor.expression.name}}`);
+                        return;
+                    }
+                    this._newExpression = false;
+                    this._expressionID = newModule.id;
+
+                    // Treat module as expression so we can visualize it in the same way
+                    editor.expression = new DataExpression(
+                        this._expressionID,
+                        newModule.name,
+                        editor.expression.sourceCode,
+                        EXPR_LANGUAGE_LUA,
+                        newModule.comments,
+                        newModule.origin.shared,
+                        newModule.origin.creator,
+                        newModule.origin.create_unix_time_sec,
+                        newModule.origin.mod_unix_time_sec,
+                        editor.expression.tags,
+                        [],
+                        null
+                    );
+                    editor.version = newModule.version;
+                    editor.versions = new Map([[newModule.version.version, newModule.version]]);
+
+                    editor.isCodeChanged = false;
+                    editor.isExpressionSaved = true;
+                    this._router.navigate(["dataset", this._datasetID, "code-editor", this._expressionID], { queryParams: { version: editor.version.version } });
+                });
+            }
+            else
+            {
+                this._expressionService.add(
+                    editor.expression.name,
+                    editor.expression.sourceCode,
+                    editor.expression.sourceLanguage,
+                    editor.expression.comments,
+                    editor.expression.tags
+                ).subscribe((newExpression: DataExpressionWire) =>
+                {
+                    this._newExpression = false;
+                    this._expressionID = newExpression.id;
+                    editor.expression = new DataExpression(
+                        this._expressionID,
+                        newExpression.name,
+                        newExpression.sourceCode,
+                        newExpression.sourceLanguage,
+                        newExpression.comments,
+                        newExpression.shared,
+                        newExpression.creator,
+                        newExpression.create_unix_time_sec,
+                        newExpression.mod_unix_time_sec,
+                        newExpression.tags,
+                        newExpression.moduleReferences || editor.expression.moduleReferences,
+                        newExpression.recentExecStats || editor.expression.recentExecStats
+                    );
+                    editor.isCodeChanged = false;
+                    editor.isExpressionSaved = true;
+                    this._router.navigate(["dataset", this._datasetID, "code-editor", editor.expression.id]);
+                });
+            }
         }
         else
         {
-            this._expressionService.edit(
-                editor.expression.id,
-                editor.expression.name,
-                editor.expression.sourceCode,
-                editor.expression.sourceLanguage,
-                editor.expression.comments,
-                editor.expression.tags
-            ).subscribe(
-                ()=>
+            if(editor.isModule)
+            {
+                this._moduleService.addModuleVersion(
+                    editor.expression.id,
+                    editor.expression.sourceCode,
+                    editor.expression.comments,
+                    editor.expression.tags
+                ).subscribe((newModule: DataModuleSpecificVersionWire) =>
                 {
+                    if(!newModule)
+                    {
+                        // An error occurred and the module wasn't saved
+                        console.error("Error saving module", editor);
+                        alert(`Error saving module ${editor.expression.name}}`);
+                        return;
+                    }
+                    editor.version = newModule.version;
+                    editor.versions.set(newModule.version.version, newModule.version);
                     editor.isCodeChanged = false;
                     editor.isExpressionSaved = true;
-                },
-                (err)=>
-                {
-                    console.error(`Failed to save expression ${editor.expression.name}`, err);
-                    alert(`Failed to save expression ${editor.expression.name}: ${err?.message}`);
-                }
-            );
+                });
+            }
+            else
+            {
+                this._expressionService.edit(
+                    editor.expression.id,
+                    editor.expression.name,
+                    editor.expression.sourceCode,
+                    editor.expression.sourceLanguage,
+                    editor.expression.comments,
+                    editor.expression.tags
+                ).subscribe(
+                    ()=>
+                    {
+                        editor.isCodeChanged = false;
+                        editor.isExpressionSaved = true;
+                    },
+                    (err)=>
+                    {
+                        console.error(`Failed to save expression ${editor.expression.name}`, err);
+                        alert(`Failed to save expression ${editor.expression.name}: ${err?.message}`);
+                    }
+                );
+            }
         }
     }
 

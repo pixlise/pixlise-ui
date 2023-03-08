@@ -51,6 +51,8 @@ import { PredefinedROIID } from "src/app/models/roi";
 import { TaggingService } from "src/app/services/tagging.service";
 import { generateExportCSVForExpression } from "src/app/services/export-data.service";
 import { Router } from "@angular/router";
+import { DataModuleService } from "src/app/services/data-module.service";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 
 
 export class LayerInfo
@@ -113,6 +115,8 @@ export class LayerSettingsComponent implements OnInit
 
     @Input() layerInfo: LayerInfo;
 
+    @Input() isModule: boolean = false;
+
     @Input() showSlider: boolean;
     @Input() showSettings: boolean;
     @Input() showShare: boolean;
@@ -122,6 +126,7 @@ export class LayerSettingsComponent implements OnInit
     @Input() showVisible: boolean;
     @Input() showPureSwitch: boolean;
     @Input() showTagPicker: boolean;
+    @Input() showSplitScreenButton: boolean;
     
     @Input() detectors: string[] = [];
     
@@ -133,6 +138,7 @@ export class LayerSettingsComponent implements OnInit
     @Output() visibilityChange = new EventEmitter();
     @Output() onLayerImmediateSelection = new EventEmitter();
     @Output() colourChange = new EventEmitter();
+    @Output() openSplitScreen = new EventEmitter();
 
     private _isPureElement: boolean = false;
     private _expressionElement: string = "";
@@ -141,6 +147,7 @@ export class LayerSettingsComponent implements OnInit
     constructor(
         private _router: Router,
         private _exprService: DataExpressionService,
+        private _moduleService: DataModuleService,
         private _authService: AuthenticationService,
         private _datasetService: DataSetService,
         private _contextImageService: ContextImageService,
@@ -461,73 +468,63 @@ export class LayerSettingsComponent implements OnInit
         this.visibilityChange.emit(new LayerVisibilityChange(visibleLayerID, true, this.layerInfo.layer.opacity, idsToHide));
     }
 
+    onSplitScreen(event): void
+    {
+        if(this.isModule)
+        {
+            this._moduleService.getLatestModuleVersion(this.layerInfo.layer.id).subscribe((latestVersion) =>
+            {
+                this.openSplitScreen.emit({id: this.layerInfo.layer.id, version: latestVersion.version.version});
+            });
+        }
+    }
+
+    private _navigateToCodeEditor(id: string, version: string = null): void
+    {
+        if(version)
+        {
+            this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=>
+                this._router.navigate(["dataset", this._datasetService.datasetIDLoaded, "code-editor", id], {queryParams: { version }})
+            );
+        }
+        else
+        {
+            this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=>
+                this._router.navigate(["dataset", this._datasetService.datasetIDLoaded, "code-editor", id])
+            );
+        }
+    }
+
     protected onExpressionSettings(event): void
     {
         const dialogConfig = new MatDialogConfig();
         dialogConfig.panelClass = "panel";
-        dialogConfig.disableClose = true;
+        // dialogConfig.disableClose = true;
         //dialogConfig.backdropClass = "panel";
 
         let allowEdit = this.showSettings && !this.layerInfo.layer.source.shared && !this.isSharedByOtherUser && !this.isPreviewMode;
 
-        let toEdit = this._exprService.getExpression(this.layerInfo.layer.id);
-        if(toEdit && allowEdit)
+        if(this.isModule)
         {
-            this._router.navigate(["dataset", this._datasetService.datasetIDLoaded, "code-editor", this.layerInfo.layer.id]);
-            return;
+            this._moduleService.getLatestModuleVersion(this.layerInfo.layer.id).subscribe((latestVersion) =>
+            {
+                this._navigateToCodeEditor(this.layerInfo.layer.id, latestVersion.version.version);
+            });
         }
-
-        // We only allow editing if we were allowed to, AND if expression is NOT shared AND if it was created by our user
-        dialogConfig.data = new ExpressionEditorConfig(toEdit, allowEdit, false, false, !this.isPreviewMode);
-
-        const dialogRef = this.dialog.open(ExpressionEditorComponent, dialogConfig);
-
-        dialogRef.afterClosed().subscribe(
-            (dlgResult: ExpressionEditorConfig)=>
+        else
+        {
+            this._exprService.getExpressionAsync(this.layerInfo.layer.id).subscribe(expression =>
             {
-                if(!dlgResult)
+                if(expression && this.isPreviewMode)
                 {
-                    // User probably cancelled
+                    this._navigateToCodeEditor(this.layerInfo.layer.id);
+                    return;
                 }
-                else
-                {
-                    let expr = new DataExpression(
-                        toEdit.id,
-                        dlgResult.expr.name,
-                        dlgResult.expr.sourceCode,
-                        dlgResult.expr.sourceLanguage,
-                        dlgResult.expr.comments,
-                        toEdit.shared,
-                        toEdit.creator,
-                        toEdit.createUnixTimeSec,
-                        toEdit.modUnixTimeSec,
-                        dlgResult.expr.tags,
-                        dlgResult.expr.moduleReferences,
-                        dlgResult.expr.recentExecStats
-                    );
-                    this._exprService.edit(this.layerInfo.layer.id, expr.name, expr.sourceCode, expr.sourceLanguage, expr.comments, expr.tags).subscribe(
-                        ()=>
-                        {
-                            if(dlgResult.applyNow)
-                            {
-                                let visibilityChange = new LayerVisibilityChange(this.layerInfo.layer.id, true, this.layerInfo.layer.opacity, []);
-                                this.visibilityChange.emit(visibilityChange);
-                                this.onLayerImmediateSelection.emit(visibilityChange);
-                            }
-                            // Don't need to do anything, service refreshes
-                        },
-                        (err)=>
-                        {
-                            alert("Failed to save edit data expression: "+expr.name);
-                        }
-                    );
-                }
-            },
-            (err)=>
-            {
-                alert("Error while editing data expression: "+toEdit.name);
-            }
-        );
+
+                dialogConfig.data = new ExpressionEditorConfig(expression, allowEdit, false, false, !this.isPreviewMode);
+                this.dialog.open(ExpressionEditorComponent, dialogConfig);
+            });
+        }
     }
 
     onColours(event): void
@@ -616,6 +613,7 @@ export class LayerSettingsComponent implements OnInit
             showDelete: this.showDelete && !this.isSharedByOtherUser,
             showDownload: this.showDownload,
             showTagPicker: this.showTagPicker,
+            showSplitScreenButton: this.showSplitScreenButton,
             showSettingsButton: this.showSettingsButton,
             showColours: this.showColours,
             showVisible: this.showVisible,

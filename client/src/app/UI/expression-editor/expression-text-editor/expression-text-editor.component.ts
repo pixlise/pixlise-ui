@@ -29,7 +29,7 @@
 
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
 import { CodemirrorComponent } from "@ctrl/ngx-codemirror";
-import { Subscription, timer } from "rxjs";
+import { ReplaySubject, Subject, Subscription, timer } from "rxjs";
 import { ExpressionParts, PixliseDataQuerier } from "src/app/expression-language/interpret-pixlise";
 import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications";
 import { DataExpression } from "src/app/models/Expression";
@@ -83,7 +83,7 @@ export class MarkPosition
 export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 {
     @ViewChild(CodemirrorComponent, {static: false}) private _codeMirror: CodemirrorComponent;
-
+    
     private _subs = new Subscription();
     private _expr: DataExpression = null;
     private _exprParts: ExpressionParts = null;
@@ -130,20 +130,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     ngOnInit()
     {
         // Make a copy of incoming expression, so we don't edit what's there!
-        this._expr = new DataExpression(
-            this.expression.id,
-            this.expression.name,
-            this.expression.sourceCode,
-            this.expression.sourceLanguage,
-            this.expression.comments,
-            this.expression.shared,
-            this.expression.creator,
-            this.expression.createUnixTimeSec,
-            this.expression.modUnixTimeSec,
-            this.expression.tags,
-            this.expression.moduleReferences,
-            this.expression.recentExecStats
-        );
+        this._expr = this.copyExpression(this.expression);
         this.findVariables();
 
         this.changeExpression.emit((text: string) =>
@@ -158,6 +145,24 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                 cmObj.refresh();
             });
         });
+    }
+
+    copyExpression(expression: DataExpression): DataExpression
+    {
+        return new DataExpression(
+            expression.id,
+            expression.name,
+            expression.sourceCode,
+            expression.sourceLanguage,
+            expression.comments,
+            expression.shared,
+            expression.creator,
+            expression.createUnixTimeSec,
+            expression.modUnixTimeSec,
+            expression.tags,
+            expression.moduleReferences,
+            expression.recentExecStats
+        );
     }
 
     ngAfterViewInit(): void

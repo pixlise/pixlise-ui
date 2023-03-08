@@ -58,7 +58,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     class="split-screen-btn"
                     [options]="['Single', 'Split']"
                     [value]="isSplitScreen ? 'Split' : 'Single'"
-                    [disabled]="topEditor.modules.length === 0"
+                    [disabled]="topEditor.modules.length === 0 && !isSplitScreen && bottomEditor.isExpressionSaved"
                     (onChange)="onToggleSplitScreen()">
                 </multi-switch-button>
                 <push-button
@@ -152,6 +152,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 (headerSectionToggle)="onToggleLayerSectionOpen($event)"
                 (visibilityChange)="onLayerVisibilityChange($event)"
                 (onLayerImmediateSelection)="onLayerImmediateSelection($event)"
+                (openSplitScreen)="onOpenSplitScreen($event)"
                 [isPreviewMode]="true"
                 fxFlex="100%"
             >

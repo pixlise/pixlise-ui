@@ -163,6 +163,29 @@ POSSIBILITY OF SUCH DAMAGE.
                 >
                 </context-layer-settings>
             </ng-container>
+            <ng-container *ngSwitchCase="'module'">
+                <context-layer-settings
+                    [layerInfo]="item.content"
+                    [isModule]="true"
+                    [showSlider]="false"
+                    [showSettings]="true"
+                    [showSplitScreenButton]="true"
+                    [showDelete]="false"
+                    [showShare]="false"
+                    [showColours]="false"
+                    [showVisible]="true"
+                    [showDownload]="downloadable"
+                    [showTagPicker]="true"
+                    [activeIcon]="selectedIcon"
+                    [inactiveIcon]="unselectedIcon"
+                    (visibilityChange)="onLayerVisibilityChange($event)"
+                    (onLayerImmediateSelection)="onLayerImmediateSelectionEvent($event)"
+                    (colourChange)="onLayerColourChange($event)"
+                    [isPreviewMode]="isPreviewMode"
+                    (openSplitScreen)="onOpenSplitScreen($event)"
+                >
+                </context-layer-settings>
+            </ng-container>
             <ng-container *ngSwitchCase="anomalyHeaderName">
                 <context-visibility-header
                     [content]="item.content"

@@ -73,6 +73,7 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     @Output() visibilityChange = new EventEmitter();
     @Output() onLayerImmediateSelection = new EventEmitter();
     @Output() colourChange = new EventEmitter();
+    @Output() openSplitScreen = new EventEmitter();
 
     stickyItemHeaderName: string = "";
     stickyItem: LayerViewItem = null;
@@ -192,6 +193,11 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     onLayerColourChange(event: LayerColourChange): void
     {
         this.colourChange.emit(event);
+    }
+
+    onOpenSplitScreen(event): void
+    {
+        this.openSplitScreen.emit(event);
     }
 
     // Scroll to item, triggered by clicking on a badge on a group header

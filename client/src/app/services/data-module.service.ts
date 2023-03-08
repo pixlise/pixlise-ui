@@ -72,7 +72,7 @@ class APIObjectOrigin
     }
 }
 
-class DataModuleVersionSourceWire
+export class DataModuleVersionSourceWire
 {
     constructor(
         public version: string,
@@ -98,7 +98,7 @@ export class DataModule
     }
 }
 
-class DataModuleSpecificVersionWire
+export class DataModuleSpecificVersionWire
 {
     constructor(
         public id: string,
@@ -220,6 +220,11 @@ class DataModuleStore
             )
         );
     }
+
+    getModules(): DataModule[]
+    {
+        return Array.from(this._modules.values());
+    }
 }
 
 @Injectable({
@@ -325,15 +330,15 @@ export class DataModuleService
         this._modulesUpdated$.next();
     }
 
-    addModule(name: string, sourceCode: string, comments: string, tags: string[]): Observable<object>
+    addModule(name: string, sourceCode: string, comments: string, tags: string[]): Observable<DataModuleSpecificVersionWire>
     {
         let loadID = this._loadingSvc.add("Saving new module...");
         let apiURL = APIPaths.getWithHost(APIPaths.api_data_module);
         let toSave = new DataModuleInput(name, sourceCode, comments, tags);
-        return this.http.post<object>(apiURL, toSave, makeHeaders())
+        return this.http.post<DataModuleSpecificVersionWire>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(
-                    (resp: object)=>
+                    (resp: DataModuleSpecificVersionWire)=>
                     {
                         if(resp) 
                         {
@@ -348,24 +353,26 @@ export class DataModuleService
                             console.error("addModule: empty response received");
                         }
                         this._loadingSvc.remove(loadID);
+                        return resp;
                     },
                     (err)=>
                     {
                         this._loadingSvc.remove(loadID);
+                        return null;
                     }
                 )
             );
     }
 
-    addModuleVersion(moduleId: string, sourceCode: string, comments: string, tags: string[]): Observable<object>
+    addModuleVersion(moduleId: string, sourceCode: string, comments: string, tags: string[]): Observable<DataModuleSpecificVersionWire>
     {
         let loadID = this._loadingSvc.add("Adding new module version...");
         let apiURL = APIPaths.getWithHost(APIPaths.api_data_module+"/"+moduleId);
         let toSave = new DataModuleVersionInput(sourceCode, comments, tags);
-        return this.http.put<object>(apiURL, toSave, makeHeaders())
+        return this.http.put<DataModuleSpecificVersionWire>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(
-                    (resp: object)=>
+                    (resp: DataModuleSpecificVersionWire)=>
                     {
                         if(resp) 
                         {
@@ -380,10 +387,12 @@ export class DataModuleService
                             console.error("addModuleVersion: empty response received");
                         }
                         this._loadingSvc.remove(loadID);
+                        return resp;
                     },
                     (err)=>
                     {
                         this._loadingSvc.remove(loadID);
+                        return null;
                     }
                 )
             );
@@ -398,7 +407,7 @@ export class DataModuleService
             {
                 this._loadingSvc.remove(loadID);
 
-                let recvd = this.readSpecificVersionModule(m)
+                let recvd = this.readSpecificVersionModule(m);
 
                 // Overwrite whatever we have cached
                 this._modules[recvd.id] = recvd;
@@ -411,5 +420,23 @@ export class DataModuleService
                 throw err;
             })
         );
+    }
+
+    getLatestModuleVersion(moduleId: string): Observable<DataModuleSpecificVersionWire>
+    {
+        let modules = this.getModules();
+        let module = modules.find((module: DataModule) => module.id === moduleId);
+        if(!module)
+        {
+            return null;
+        }
+
+        let latestVersion = Array.from(module.versions.values()).pop();
+        return this.getModule(moduleId, latestVersion.version);
+    }
+
+    getModules(): DataModule[]
+    {
+        return this._modules.getModules();
     }
 }
