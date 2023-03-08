@@ -402,8 +402,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     this.openModules[`${module.id}-${module.version}`] = module;
                 });
 
-                console.log("TE", this.topEditor)
-
                 this.sidebarTopSections["installed-modules"] = this.makeInstalledModulesGroup(installedModuleExpressions);
                 this.regenerateItemList();
             });
@@ -422,6 +420,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         this.topEditor = new EditorConfig();
         this.topEditor.userID = this._authService.getUserID();
         this.topEditor.isModule = !!version;
+        if(this.topEditor.isModule)
+        {
+            this.topEditor.version = version;
+            this.topEditor.versions = this._moduleService.getSourceDataModule(this._expressionID).versions;
+        }
 
         this.bottomEditor = new EditorConfig();
         this.bottomEditor.userID = this._authService.getUserID();
@@ -603,6 +606,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     this.bottomEditor.userID = this._authService.getUserID();
                     this.bottomEditor.isModule = true;
                     this.bottomEditor.expression = this.convertModuleToExpression(module);
+                    this.bottomEditor.version = module.version;
+                    this.bottomEditor.versions = this._moduleService.getSourceDataModule(id).versions;
                     this.isSplitScreen = true;
                 }, 1);
             }
@@ -612,6 +617,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 this.bottomEditor.userID = this._authService.getUserID();
                 this.bottomEditor.isModule = true;
                 this.bottomEditor.expression = this.convertModuleToExpression(module);
+                this.bottomEditor.version = module.version;
+                this.bottomEditor.versions = this._moduleService.getSourceDataModule(id).versions;
                 this.isSplitScreen = true;
             }
         });
@@ -650,7 +657,15 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     onToggleSplitScreen(): void
     {
-        this.isSplitScreen = !this.isSplitScreen;
+        if(!this.bottomEditor.expression && !this.isSplitScreen && this.topEditor.modules.length > 0)
+        {
+            let firstInstalledModule = this.topEditor.modules[0];
+            this.onOpenSplitScreen({id: firstInstalledModule.id, version: firstInstalledModule.version});
+        }
+        else
+        {
+            this.isSplitScreen = !this.isSplitScreen;
+        }
     }
 
     ngOnDestroy()
@@ -1029,15 +1044,31 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         return tooltip + (this.isWindows ? " (Ctrl+B)" : " (Cmd+B)");
     }
 
+    get saveModuleTooltip(): string
+    {
+        let saveTooltip = this.isWindows ? "Save Module (Ctrl+S)" : "Save Module (Cmd+S)";
+
+        if(this.topEditor.invalidExpression && this.topEditor.isModule)
+        {
+            saveTooltip += `\n${this.isSplitScreen ? "Top Editor " : ""}Error: ${this.topEditor.errorTooltip}`;
+        }
+        if(this.isSplitScreen && this.bottomEditor.invalidExpression && this.bottomEditor.isModule)
+        {
+            saveTooltip += `\nBottom Editor Error: ${this.bottomEditor.errorTooltip}`;
+        }
+
+        return saveTooltip;
+    }
+
     get saveExpressionTooltip(): string
     {
         let saveTooltip = this.isWindows ? "Save Expression (Ctrl+S)" : "Save Expression (Cmd+S)";
 
-        if(this.topEditor.invalidExpression)
+        if(this.topEditor.invalidExpression && !this.topEditor.isModule)
         {
             saveTooltip += `\n${this.isSplitScreen ? "Top Editor " : ""}Error: ${this.topEditor.errorTooltip}`;
         }
-        if(this.isSplitScreen && this.bottomEditor.invalidExpression)
+        if(this.isSplitScreen && this.bottomEditor.invalidExpression && !this.bottomEditor.isModule)
         {
             saveTooltip += `\nBottom Editor Error: ${this.bottomEditor.errorTooltip}`;
         }
@@ -1127,6 +1158,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                         [],
                         null
                     );
+
                     editor.version = newModule.version;
                     editor.versions = new Map([[newModule.version.version, newModule.version]]);
 

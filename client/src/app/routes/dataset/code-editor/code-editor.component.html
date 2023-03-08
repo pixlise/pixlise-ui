@@ -290,6 +290,36 @@ POSSIBILITY OF SUCH DAMAGE.
                 [matTooltip]="runHighlightedCodeTooltip"
             >{{textHighlighted === '' ? "Run Code Until Line" : "Run Selected Code"}}
             </push-button>
+            <push-button
+                *ngIf="isSplitScreen"
+                class="save-btn"
+                [buttonStyle]="bottomEditor.invalidExpression ? 'orange' : 'yellow'"
+                [disabled]="!bottomEditor.editable || bottomEditor.isExpressionSaved || bottomEditor.invalidExpression"
+                (onClick)="onSave(false)"
+                #tooltip="matTooltip"
+                [matTooltip]="saveModuleTooltip"
+            >Save Module
+            </push-button>
+            <push-button
+                *ngIf="topEditor.isModule"
+                class="save-btn"
+                [buttonStyle]="topEditor.invalidExpression ? 'orange' : 'yellow'"
+                [disabled]="!topEditor.editable || topEditor.isExpressionSaved || topEditor.invalidExpression"
+                (onClick)="onSave(false)"
+                #tooltip="matTooltip"
+                [matTooltip]="saveModuleTooltip"
+            >Save Module
+            </push-button>
+            <push-button
+                *ngIf="!topEditor.isModule"
+                class="save-btn"
+                [buttonStyle]="topEditor.invalidExpression ? 'orange' : 'yellow'"
+                [disabled]="!topEditor.editable || topEditor.isExpressionSaved || topEditor.invalidExpression"
+                (onClick)="onSave(true)"
+                #tooltip="matTooltip"
+                [matTooltip]="saveExpressionTooltip"
+            >Save Expression
+            </push-button>
         </div>
         <div class="viz-container">
             <div class="right-btn-group">
