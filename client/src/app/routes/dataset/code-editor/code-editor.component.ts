@@ -63,7 +63,7 @@ import { DataModule, DataModuleService, DataModuleSpecificVersionWire, DataModul
 
 export class EditorConfig
 {
-    public modules: DataExpressionModule[] = [];
+    private _modules: DataExpressionModule[] = [];
 
     constructor(
         public expression: DataExpression = null,
@@ -189,15 +189,16 @@ export class EditorConfig
         }
     }
 
-    // get modules(): DataExpressionModule[]
-    // {
-    //     if(!this.expression || !this.expression.moduleReferences)
-    //     {
-    //         return [];
-    //     }
+    get modules(): DataExpressionModule[]
+    {
+        return this._modules;
+    }
 
-    //     return this.expression.moduleReferences;
-    // }
+    set modules(modules: DataExpressionModule[])
+    {
+        this._modules = modules;
+        this.isExpressionSaved = false;
+    }
 
     onExpressionTextChanged(text: string): void
     {
@@ -373,9 +374,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         };
     }
 
-    loadInstalledModules(): void
+    loadInstalledModules(position: string = "top"): void
     {
-        let installedModules = this.topEditor.expression.moduleReferences.map((moduleRef) =>
+        let editor = position === "top" ? this.topEditor : this.bottomEditor;
+
+        let installedModules = editor.expression.moduleReferences.map((moduleRef) =>
         {
             let existingModule = this.openModules[`${moduleRef.moduleID}-${moduleRef.version}`];
             if(existingModule)
@@ -393,11 +396,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             combineLatest(installedModules).subscribe((modules) =>
             {
                 let installedModuleExpressions = [];
-                this.topEditor.modules = [];
+                editor.modules = [];
                 modules.forEach((module) => 
                 {
                     let sourceModule = this._moduleService.getSourceDataModule(module.id);
-                    this.topEditor.modules.push(new DataExpressionModule(module.id, module.name, module.comments, module.version.version, module.origin.creator, Array.from(sourceModule.versions.keys())));
+                    editor.modules.push(new DataExpressionModule(module.id, module.name, module.comments, module.version.version, module.origin.creator, Array.from(sourceModule.versions.keys())));
                     installedModuleExpressions.push(this.convertModuleToExpression(module));
                     this.openModules[`${module.id}-${module.version}`] = module;
                 });
@@ -408,7 +411,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         }
         else
         {
-            this.topEditor.modules = [];
+            editor.modules = [];
             this.sidebarTopSections["installed-modules"] = this.makeInstalledModulesGroup();
         }
     }
@@ -506,14 +509,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     this.loadInstalledModules();
 
                     this.regenerateItemList();
-
-                    // this.topModules = [
-                    //     new DataExpressionModule("test", "description", "3.7", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                    //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                    //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                    //     new DataExpressionModule("some_other_module", "description", "2.1", "author", ["2.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                    //     new DataExpressionModule("testing", "description", "3.1", "author", ["3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7"]),
-                    // ];
                 });
             }
             else
@@ -578,6 +573,13 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             [],
             null
         );
+    }
+
+    onModuleChange(modules: DataExpressionModule[], position: string = "top"): void
+    {
+        let editor = position === "top" ? this.topEditor : this.bottomEditor;
+        editor.expression.moduleReferences = modules.map((module) => new ModuleReference(module.id, module.version));
+        this.loadInstalledModules();
     }
 
     onOpenSplitScreen({id, version}: {id: string; version: string;}): void

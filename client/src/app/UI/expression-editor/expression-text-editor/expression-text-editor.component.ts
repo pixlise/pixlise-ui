@@ -115,6 +115,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Output() onChange = new EventEmitter<DataExpression>();
     @Output() onTextChange = new EventEmitter<string>();
     @Output() onTextSelect = new EventEmitter<TextSelection>();
+    @Output() onModuleChange = new EventEmitter<DataExpressionModule[]>();
     @Output() runExpression = new EventEmitter();
     @Output() runHighlightedExpression = new EventEmitter();
     @Output() saveExpression = new EventEmitter();
@@ -211,6 +212,12 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     onToggleHeader(): void
     {
         this.toggleHeader.emit();
+    }
+
+    onModuleVersionChange(event, i): void
+    {
+        this.installedModules[i].version = event.value;
+        this.onModuleChange.emit(this.installedModules);
     }
 
     get isHeaderNonEmptyAndOpen(): boolean

@@ -45,7 +45,8 @@ POSSIBILITY OF SUCH DAMAGE.
                       <mat-select
                           #tooltip="matTooltip"
                           matTooltip="Select a version for this module"
-                          [(ngModel)]="module.version"
+                          [value]="module.version"
+                          (selectionChange)="onModuleVersionChange($event, i)"
                           class="module-version"
                           placeholder="Version"
                       >
