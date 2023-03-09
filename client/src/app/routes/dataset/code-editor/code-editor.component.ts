@@ -433,10 +433,10 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         this.bottomEditor = new EditorConfig();
         this.bottomEditor.userID = this._authService.getUserID();
 
-        this._newExpression = this._expressionID === "new-expression" || this._expressionID === "new-module";
+        this._newExpression = DataExpressionId.isPredefinedNewID(this._expressionID);
         if(this._newExpression)
         {
-            this.topEditor.isModule = this._expressionID === "new-module";
+            this.topEditor.isModule = this._expressionID === DataExpressionId.NewModule;
         }
 
         // If we're creating a new expression or module, create a blank expression first
@@ -478,24 +478,17 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             // Check to make sure this is an expression and not a module
             if(!this.topEditor.isModule)
             {
-                this._expressionService.getExpressionAsync(this._expressionID).subscribe(expression =>
+                this._expressionService.getExpressionAsync(this._expressionID).subscribe((expression) =>
                 {
-                    this.topEditor.isLua = expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
+                    if(!expression)
+                    {
+                        console.error(`Empty expression: ${this._expressionID}`);
+                        this.regenerateItemList();
+                        return;
+                    }
 
-                    this.topEditor.expression = new DataExpression(
-                        expression.id,
-                        expression.name,
-                        expression.sourceCode,
-                        expression.sourceLanguage,
-                        expression.comments,
-                        expression.shared,
-                        expression.creator,
-                        expression.createUnixTimeSec,
-                        expression.modUnixTimeSec,
-                        expression.tags,
-                        expression.moduleReferences,
-                        expression.recentExecStats,
-                    );
+                    this.topEditor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
+                    this.topEditor.expression = expression.copy();
 
                     this._fetchedExpression = true;
                     this.runExpression();
@@ -507,7 +500,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     ];
 
                     this.loadInstalledModules();
-
+                    this.regenerateItemList();
+                },
+                (error) =>
+                {
+                    console.error(`Failed to fetch expression: ${this._expressionID}`, error);
                     this.regenerateItemList();
                 });
             }
@@ -515,6 +512,13 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             {
                 this._moduleService.getModule(this._expressionID, version).subscribe((module) =>
                 {
+                    if(!module)
+                    {
+                        console.error(`Empty module: ${this._expressionID}`);
+                        this.regenerateItemList();
+                        return;
+                    }
+
                     this.topEditor.expression = this.convertModuleToExpression(module);
 
                     this._fetchedExpression = true;
@@ -529,6 +533,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                         delete this.sidebarTopSections["installed-modules"];
                     }
 
+                    this.regenerateItemList();
+                },
+                (error) =>
+                {
+                    console.error(`Failed to fetch module: ${this._expressionID}`, error);
                     this.regenerateItemList();
                 });
             }
