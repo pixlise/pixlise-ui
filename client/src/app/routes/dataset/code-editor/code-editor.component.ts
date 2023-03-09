@@ -866,7 +866,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         {
             let comp = this.previewContainer.createComponent(factory);
             comp.instance.widgetPosition = "preview";
-            comp.instance.previewExpressionIDs = [`unsaved-${this._expressionID}`];
+            comp.instance.previewExpressionIDs = [this.previewID];
 
             this._previewComponent = comp;
         }
@@ -887,7 +887,14 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         {
             return;
         }
+
+        this._expressionService.removeFromCache(this.previewID);
         this._router.navigate(["dataset", this._datasetID, "analysis"]);
+    }
+
+    get previewID(): string
+    {
+        return `unsaved-${this._expressionID}`;
     }
 
     runExpression(runTop: boolean = true): void
@@ -918,9 +925,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 if(this.evaluatedExpression && this.evaluatedExpression?.values?.values.length > 0)
                 {
                     editor.isCodeChanged = false;
-                    let previewID = `unsaved-${this._expressionID}`;
                     this.displayExpressionTitle = `Unsaved ${expression.name}`;
-                    this._expressionService.cache(previewID, expression, this.displayExpressionTitle);
+                    this._expressionService.cache(this.previewID, expression, this.displayExpressionTitle);
                 }
             });
         }
@@ -999,9 +1005,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             lineRange = !isMultiLine ? `${this.startLineHighlighted + 1}` : `${this.startLineHighlighted + 1} - ${this.endLineHighlighted + 1}`;
         }
         
-        let previewID = `unsaved-${this._expressionID}`;
         this.displayExpressionTitle = `Unsaved ${this.topEditor.expression.name} (Line${isMultiLine ? "s": ""} ${lineRange})`;
-        this._expressionService.cache(previewID, highlightedExpression, this.displayExpressionTitle);
+        this._expressionService.cache(this.previewID, highlightedExpression, this.displayExpressionTitle);
 
         this.pmcGridExpressionTitle = `Numeric Values: Line${isMultiLine ? "s": ""} ${lineRange}`;
         this.isSubsetExpression = true;

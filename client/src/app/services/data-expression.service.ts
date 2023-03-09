@@ -576,6 +576,12 @@ export class DataExpressionService
         this._expressionsUpdated$.next();
     }
 
+    removeFromCache(id: string): void
+    {
+        this._expressions.delete(id);
+        this._expressionsUpdated$.next();
+    }
+
     add(name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = []): Observable<DataExpressionWire>
     {
         let loadID = this._loadingSvc.add("Saving new expression...");
