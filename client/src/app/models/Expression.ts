@@ -85,6 +85,34 @@ export class DataExpression
         // to be able to give valid results for: checkQuantCompatibility()
     }
 
+    copy(): DataExpression
+    {
+        // We need to instantiate new versions of all complex objects to prevent javascript from passing by reference
+        let creator = new ObjectCreator(this.creator?.user_id, this.creator?.name, this.creator?.email);
+        let tags = Array.from(this.tags || []);
+        let moduleReferences = Array.from(this.moduleReferences || []).map((ref) => new ModuleReference(ref.moduleID, ref.version));
+        let recentExecStats = new ExpressionExecStats(
+            this.recentExecStats?.dataRequired,
+            this.recentExecStats?.runtimeMs,
+            this.recentExecStats?.mod_unix_time_sec
+        );
+
+        return new DataExpression(
+            this.id,
+            this.name,
+            this.sourceCode,
+            this.sourceLanguage,
+            this.comments,
+            this.shared,
+            creator,
+            this.createUnixTimeSec,
+            this.modUnixTimeSec,
+            tags,
+            moduleReferences,
+            recentExecStats,
+        );
+    }
+
     get isCompatibleWithQuantification(): boolean
     {
         return this._isCompatibleWithQuantification;
@@ -257,6 +285,9 @@ export class DataExpression
 
 export class DataExpressionId
 {
+    public static NewExpression = "new-expression";
+    public static NewModule = "new-module";
+
     private static PredefinedPseudoIntensityLayerPrefix = "pseudo-";
     private static PredefinedQuantDataLayerPrefix = "data-";
     private static PredefinedQuantElementLayerPrefix = "elem-";
@@ -267,6 +298,12 @@ export class DataExpressionId
     private static SuffixZHeight = "zheight";
 
     // Static functions for getting/accessing/parsing predefined expression IDs
+    public static isPredefinedNewID(id: string): boolean
+    {
+        id = id ? id.toLowerCase() : "";
+        return [DataExpressionId.NewExpression, DataExpressionId.NewModule].includes(id);
+    }
+
     public static isPredefinedExpression(id: string): boolean
     {
         return id.startsWith(DataExpressionId.PredefinedLayerPrefix);

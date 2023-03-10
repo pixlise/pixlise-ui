@@ -180,6 +180,18 @@ export class DataExpressionService
 
     private processReceivedExpressionList(receivedDataExpressions: object, deleteReceived: boolean = false): void
     {
+        // This is very hacky, but some endpoints return just the JSON of the object, others
+        // return a map of id->object. This is done to standardize the response.
+        if(
+            receivedDataExpressions &&
+            receivedDataExpressions["id"] &&
+            receivedDataExpressions["name"] &&
+            receivedDataExpressions["sourceCode"]
+        )
+        {
+            receivedDataExpressions = {[receivedDataExpressions["id"]]: receivedDataExpressions};
+        }
+
         let t0 = performance.now();
 
         // Only update changed expressions
@@ -566,6 +578,12 @@ export class DataExpressionService
             expr.recentExecStats
         );
         this._expressions.set(id, receivedDataExpression);
+        this._expressionsUpdated$.next();
+    }
+
+    removeFromCache(id: string): void
+    {
+        this._expressions.delete(id);
         this._expressionsUpdated$.next();
     }
 

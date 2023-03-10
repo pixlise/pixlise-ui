@@ -44,6 +44,21 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div class="text-container">
             <h2>{{topEditor.isModule ? "Module" : "LUA Expression"}} Editor</h2>
+            <mat-select
+                *ngIf="topEditor.isModule"
+                [(ngModel)]="topEditor.version.version"
+            >
+                <mat-option
+                    *ngFor="let version of topEditor.versionList;"
+                    [value]="version.version">v{{version.version}}
+                </mat-option>
+            </mat-select>
+            <status-indicator
+                *ngIf="topEditor.isModule"
+                [valid]="topEditor.isLatestVersionReleased"
+                [status]="topEditor.isLatestVersionReleased ? 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
+            ></status-indicator>
+
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                 <input
                     [disabled]="!topEditor.editable"
@@ -195,10 +210,25 @@ POSSIBILITY OF SUCH DAMAGE.
                 (toggleHeader)="topEditor.onToggleHeader()"
                 [installedModules]="topEditor.modules"
                 [showInstalledModules]="!topEditor.isModule"
+                (onModuleChange)="onModuleChange($event, 'top')"
             >
             </expression-text-editor>
             <div *ngIf="bottomEditor.expression && isSplitScreen" class="split-screen-header">
                 <h2>{{bottomEditor.isModule ? "Module" : "LUA Expression"}} Editor</h2>
+                <mat-select
+                    *ngIf="bottomEditor.isModule"
+                    [(ngModel)]="bottomEditor.version.version"
+                >
+                    <mat-option
+                        *ngFor="let version of bottomEditor.versionList;"
+                        [value]="version.version">v{{version.version}}
+                    </mat-option>
+                </mat-select>
+                <status-indicator
+                    *ngIf="bottomEditor.isModule"
+                    [valid]="bottomEditor.isLatestVersionReleased"
+                    [status]="bottomEditor.isLatestVersionReleased ? 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
+                ></status-indicator>
                 <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                     <input
                         [disabled]="!bottomEditor.editable"
@@ -247,6 +277,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 (toggleHeader)="bottomEditor.onToggleHeader()"
                 [installedModules]="bottomEditor.modules"
                 [showInstalledModules]="!bottomEditor.isModule"
+                (onModuleChange)="onModuleChange($event, 'bottom')"
             >
             </expression-text-editor>
         </div>
@@ -327,14 +358,6 @@ POSSIBILITY OF SUCH DAMAGE.
                     buttonStyle="outline"
                     (onClick)="onClose()"
                 >Cancel
-                </push-button>
-                <push-button
-                    [buttonStyle]="topEditor.invalidExpression ? 'orange' : 'yellow'"
-                    [disabled]="!topEditor.editable || topEditor.isExpressionSaved || topEditor.invalidExpression"
-                    (onClick)="onSave()"
-                    #tooltip="matTooltip"
-                    [matTooltip]="saveExpressionTooltip"
-                >Save
                 </push-button>
             </div>
         </div>
