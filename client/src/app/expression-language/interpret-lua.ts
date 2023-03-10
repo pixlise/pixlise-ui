@@ -145,7 +145,7 @@ export class LuaDataQuerier
                                 libNames.push(libName);
 
                                 // Remember this as an import
-                                LuaDataQuerier._luaLibImports += "local "+libName+" = make"+libName+"Lib()\n";
+                                LuaDataQuerier._luaLibImports += LuaDataQuerier.makeLuaModuleImportStatement(libName);
                             }
 
                             // Once all have loaded, pass them into Lua
@@ -161,7 +161,7 @@ export class LuaDataQuerier
 
                                         // Set up constants/functions that can be accessed from Lua
                                         // NOTE: at this point we wrap the Lua module so it looks like a function
-                                        let importDef = "function make"+libName+"Lib()\n"+lib+"\nend";
+                                        let importDef = LuaDataQuerier.makeLuaModuleImport(libName, lib as string);
                                         LuaDataQuerier._lua.doStringSync(importDef);
 
                                         let t1 = performance.now();
@@ -184,6 +184,17 @@ export class LuaDataQuerier
                 });
             }
         );
+    }
+
+    public static makeLuaModuleImport(moduleName: string, sourceCode: string): string
+    {
+        let importDef = "function make"+moduleName+"Lib()\n"+sourceCode+"\nend";
+        return importDef;
+    }
+
+    public static makeLuaModuleImportStatement(moduleName: string): string
+    {
+        return "local "+moduleName+" = make"+moduleName+"Lib()\n";
     }
 
     private static LuaFunctionNames = ["element", "elementSum", "data", "spectrum", "spectrumDiff", "pseudo", "housekeeping", "diffractionPeaks", "roughness", "position", "makeMap"];

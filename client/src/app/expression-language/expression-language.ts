@@ -28,11 +28,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Observable } from "rxjs";
-import { map } from "rxjs/operators";
 import {
     DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
 } from "src/app/expression-language/data-sources";
-import { PMCDataValue, PMCDataValues, QuantOp } from "src/app/expression-language/data-values";
+import { PMCDataValues } from "src/app/expression-language/data-values";
 import { DataSet } from "src/app/models/DataSet";
 import { InterpreterDataSource } from "./interpreter-data-source";
 import { PixliseDataQuerier } from "./interpret-pixlise";
@@ -41,47 +40,10 @@ import { LuaTranspiler } from "./lua-transpiler";
 import { ResultComparer } from "./result-comparer";
 import { environment } from "src/environments/environment";
 
+
 export const EXPR_LANGUAGE_LUA = "LUA";
 export const EXPR_LANGUAGE_PIXLANG = "PIXLANG";
 
-// Helper function to run a query
-export function getQuantifiedDataWithExpression(
-    expression: string,
-    expressionLanguage: string,
-    quantSource: QuantifiedDataQuerierSource,
-    pseudoSource: PseudoIntensityDataQuerierSource,
-    housekeepingSource: HousekeepingDataQuerierSource,
-    spectrumSource: SpectrumDataQuerierSource,
-    diffractionSource: DiffractionPeakQuerierSource,
-    dataset: DataSet,
-    forPMCs: Set<number> = null
-): Observable<PMCDataValues>
-{
-    let query = new DataQuerier(quantSource, pseudoSource, housekeepingSource, spectrumSource, diffractionSource, dataset);
-    let queryResult = query.runQuery(expression, expressionLanguage);
-
-    if(forPMCs === null)
-    {
-        return queryResult;
-    }
-
-    return queryResult.pipe(
-        map((result: PMCDataValues)=>
-        {
-            // Build a new result only containing PMCs specified
-            let resultValues: PMCDataValue[] = [];
-            for(let item of result.values)
-            {
-                if(forPMCs.has(item.pmc))
-                {
-                    resultValues.push(item);
-                }
-            }
-
-            return PMCDataValues.makeWithValues(resultValues);
-        }
-    ));
-}
 
 export class DataQuerier
 {

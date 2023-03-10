@@ -400,6 +400,15 @@ export class DataModuleService
 
     getModule(moduleId: string, version: string): Observable<DataModuleSpecificVersionWire>
     {
+        // If we have this one loaded already (we can tell by the sourceCode field not being empty)
+        // then we can resolve this from cache too!
+        let existingItem = this._modules.getModuleVersion(moduleId, version);
+        if(existingItem && existingItem.version.sourceCode.length > 0)
+        {
+            return of(existingItem);
+        }
+
+        // Don't have it, query from API
         let loadID = this._loadingSvc.add("Getting module: "+moduleId+"...");
         let apiURL = APIPaths.getWithHost(APIPaths.api_data_module+"/"+moduleId+"/"+version);
         return this.http.get<object>(apiURL, makeHeaders()).pipe(
@@ -410,7 +419,7 @@ export class DataModuleService
                 let recvd = this.readSpecificVersionModule(m);
 
                 // Overwrite whatever we have cached
-                this._modules[recvd.id] = recvd;
+                this._modules.ensureModuleVersionExists(recvd);
                 return recvd;
             }),
             catchError((err)=>

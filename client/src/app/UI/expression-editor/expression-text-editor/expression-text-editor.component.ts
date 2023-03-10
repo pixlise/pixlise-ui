@@ -39,6 +39,7 @@ import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElem
 import { SentryHelper } from "src/app/utils/utils";
 import { Range } from "codemirror";
 import { ObjectCreator } from "src/app/models/BasicTypes";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 
 require("codemirror/addon/comment/comment.js");
 require("codemirror/mode/lua/lua");
@@ -294,6 +295,12 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     private findVariables(): void
     {
+        // NOTE: this is confusing, we have isLua input and expression also has a source language
+        if(this._expr.sourceLanguage != EXPR_LANGUAGE_LUA || this.isLua)
+        {
+            return;
+        }
+
         if(this._expr.sourceCode == null || this._expr.sourceCode.length == 0)
         {
             this._exprParts = new ExpressionParts([], [], [], "");
@@ -570,6 +577,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
         cm.on("change", (instance, event)=>
         {
+            
             // User may have created/deleted variables
             this.findVariables();
 
@@ -675,6 +683,12 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     private updateHelp(): void
     {
+        // NOTE: this is confusing, we have isLua input and expression also has a source language
+        if(this._expr.sourceLanguage != EXPR_LANGUAGE_LUA || this.isLua)
+        {
+            return;
+        }
+
         let cm = this._codeMirror.codeMirror;
 
         let doc = cm.getDoc();

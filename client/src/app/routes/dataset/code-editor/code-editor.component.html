@@ -45,7 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="text-container">
             <h2>{{topEditor.isModule ? "Module" : "LUA Expression"}} Editor</h2>
             <mat-select
-                *ngIf="topEditor.isModule"
+                *ngIf="topEditor.isModule && topEditor.version"
                 [(ngModel)]="topEditor.version.version"
             >
                 <mat-option

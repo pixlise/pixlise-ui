@@ -946,7 +946,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 editor.expression.createUnixTimeSec,
                 editor.expression.modUnixTimeSec,
                 editor.expression.tags,
-                [],
+                editor.expression.moduleReferences,
                 null,
             );
             this._widgetDataService.runAsyncExpression(

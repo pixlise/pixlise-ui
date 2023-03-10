@@ -31,7 +31,7 @@ import { Injectable } from "@angular/core";
 import { ReplaySubject, Subject, Subscription, Observable, combineLatest, of } from "rxjs";
 import { map } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
-import { getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
+import { ExpressionRunnerService } from "src/app/services/expression-runner.service";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
 import { QuantificationLayer } from "src/app/models/Quantifications";
@@ -356,6 +356,7 @@ export class WidgetRegionDataService
         private _datasetService: DataSetService,
         private _quantService: QuantificationService,
         private _diffractionService: DiffractionPeakService,
+        private _exprRunnerService: ExpressionRunnerService,
     )
     {
         // Subscribe for things that aren't dataset dependent...
@@ -612,43 +613,8 @@ export class WidgetRegionDataService
                 }
             }
 
-            // At this point if we don't have the expression text, we query for it and return it as part of a chain of observables
-            let data$: Observable<PMCDataValues> = null;
-
-            if(expr.sourceCode.length <= 0)
-            {
-                data$ = new Observable<PMCDataValues>(
-                    (observer)=>
-                    {
-                        this._exprService.getExpressionAsync(query.exprId).subscribe(
-                            (exprQueried: DataExpression)=>
-                            {
-                                let query$ = getQuantifiedDataWithExpression(exprQueried.sourceCode, exprQueried.sourceLanguage, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
-                                query$.subscribe(
-                                    (values: PMCDataValues)=>
-                                    {
-                                        observer.next(values);
-                                        observer.complete();
-                                    },
-                                    (err)=>
-                                    {
-                                        observer.error(err);
-                                    }
-                                );
-                            },
-                            (err)=>
-                            {
-                                observer.error(err);
-                            }
-                        );
-                    }
-                );
-            }
-            else
-            {
-                // We do have the expression text already, so just run normally
-                data$ = getQuantifiedDataWithExpression(expr.sourceCode, expr.sourceLanguage, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
-            }
+            // At this point if we don't have the expression source code, we query for it and return it as part of a chain of observables
+            let data$: Observable<PMCDataValues> = this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, pmcsToQuery);
 
             result$ = data$.pipe(
                 map((result: PMCDataValues)=>
