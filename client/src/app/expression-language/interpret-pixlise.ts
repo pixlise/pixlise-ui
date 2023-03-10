@@ -520,7 +520,7 @@ export class PixliseDataQuerier
     }
 
     // Expects PMCDataValues and a scalar
-    private mapOperation(allowMap: boolean, allowScalar: boolean, callee, argList): PMCDataValues
+    private mapOperation(allowMap: boolean, allowScalar: boolean, callee: string, argList): PMCDataValues
     {
         let op = this.getEnumForCallIfExists(callee);
         if(op == null)
