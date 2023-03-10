@@ -59,7 +59,7 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
-import { DataModule, DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
+import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 
 export class EditorConfig
 {
@@ -81,7 +81,7 @@ export class EditorConfig
 
     get isSharedByOtherUser(): boolean
     {
-        return this.expression?.shared && this.expression.creator.user_id !== this.userID;
+        return this.expression?.shared && this.expression?.creator?.user_id !== this.userID;
     }
 
     get emptyName(): boolean
@@ -213,6 +213,38 @@ export class EditorConfig
     onToggleHeader(): void
     {
         this.isHeaderOpen = !this.isHeaderOpen;
+    }
+
+    get majorMinorVersion(): string
+    {
+        if(!this.version?.version)
+        {
+            return "0.0";
+        }
+
+        let versionParts = this.version.version.split(".");
+        return versionParts.slice(0, 2).join(".");
+    }
+
+    // TODO: Only show major/minor versions to users who don't own the module
+    get versionList(): DataModuleVersionSourceWire[]
+    {
+        if(!this.isModule || !this.versions)
+        {
+            return [];
+        }
+
+        return Array.from(this.versions.values());
+    }
+
+    get isLatestVersionReleased(): boolean
+    {
+        if(!this.isModule || !this.version?.version)
+        {
+            return false;
+        }
+
+        return this.version.version.endsWith(".0");
     }
 }
 
@@ -426,7 +458,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         this.topEditor.isModule = !!version;
         if(this.topEditor.isModule)
         {
-            this.topEditor.version = version;
             this.topEditor.versions = this._moduleService.getSourceDataModule(this._expressionID).versions;
         }
 
@@ -518,7 +549,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                         this.regenerateItemList();
                         return;
                     }
-
+                    
+                    this.topEditor.version = module.version;
                     this.topEditor.expression = this.convertModuleToExpression(module);
 
                     this._fetchedExpression = true;

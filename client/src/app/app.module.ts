@@ -232,6 +232,7 @@ import { CodeEditorComponent } from "./routes/dataset/code-editor/code-editor.co
 import { PMCDataGridComponent } from "./UI/pmc-data-grid/pmc-data-grid.component";
 
 import { LuaDataQuerier } from "src/app/expression-language/interpret-lua";
+import { StatusIndicatorComponent } from './UI/atoms/status-indicator/status-indicator.component';
 
 
 @Injectable()
@@ -480,7 +481,8 @@ function initLua(): () => Observable<any> {
         AddDatasetDialogComponent,
         LogViewerComponent,
         PlotExporterDialogComponent,
-        PMCDataGridComponent
+        PMCDataGridComponent,
+        StatusIndicatorComponent
     ],
     imports: [
         BrowserModule,
