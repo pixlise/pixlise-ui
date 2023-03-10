@@ -122,6 +122,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Output() toggleSidebar = new EventEmitter();
     @Output() changeExpression = new EventEmitter<(text: string) => void>();
     @Output() toggleHeader = new EventEmitter();
+    @Output() onClick = new EventEmitter();
     
     constructor(
         private _datasetService: DataSetService,
@@ -212,6 +213,11 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     onToggleHeader(): void
     {
         this.toggleHeader.emit();
+    }
+
+    onSetActive(): void
+    {
+        this.onClick.emit();
     }
 
     onModuleVersionChange(event, i): void
@@ -584,6 +590,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
         cm.on("focus", (instance)=>
         {
+            this.onSetActive();
             this.updateHelp();
             this.markExecutedExpressionRange(cm);
         });

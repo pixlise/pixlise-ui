@@ -191,7 +191,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="text-editor {{topEditor?.isHeaderOpen ? 'top-open' : ''}} {{bottomEditor?.isHeaderOpen ? 'bottom-open' : ''}} {{isSplitScreen ? 'split-screen-mode' : ''}}">
             <expression-text-editor
                 *ngIf="topEditor && topEditor.expression"
-                class="top-expression"
+                class="top-expression {{isTopEditorActive && isSplitScreen ? 'active' : ''}}"
                 [expression]="topEditor.expression"
                 [allowEdit]="topEditor.editable"
                 [isImmediatelyAppliable]="false"
@@ -211,6 +211,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [installedModules]="topEditor.modules"
                 [showInstalledModules]="!topEditor.isModule"
                 (onModuleChange)="onModuleChange($event, 'top')"
+                (onClick)="setTopEditorActive()"
             >
             </expression-text-editor>
             <div *ngIf="bottomEditor.expression && isSplitScreen" class="split-screen-header">
@@ -258,7 +259,7 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
             <expression-text-editor
                 *ngIf="bottomEditor && bottomEditor.expression && isSplitScreen"
-                class="bottom-expression"
+                class="bottom-expression {{!isTopEditorActive && isSplitScreen ? 'active' : ''}}"
                 [expression]="bottomEditor.expression"
                 [allowEdit]="bottomEditor.editable"
                 [isImmediatelyAppliable]="false"
@@ -278,6 +279,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [installedModules]="bottomEditor.modules"
                 [showInstalledModules]="!bottomEditor.isModule"
                 (onModuleChange)="onModuleChange($event, 'bottom')"
+                (onClick)="setBottomEditorActive()"
             >
             </expression-text-editor>
         </div>

@@ -309,6 +309,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     public topEditor: EditorConfig = new EditorConfig();
     public bottomEditor: EditorConfig = new EditorConfig();
 
+    public isTopEditorActive = false;
+
     public activeTextSelection: TextSelection = null;
     public executedTextSelection: TextSelection = null;
     public isSubsetExpression: boolean = false;
@@ -448,6 +450,16 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         }
     }
 
+    setTopEditorActive(): void
+    {
+        this.isTopEditorActive = true;
+    }
+
+    setBottomEditorActive(): void
+    {
+        this.isTopEditorActive = false;
+    }
+
     resetEditors(): void
     {
         this._expressionID = this._route.snapshot.params["expression_id"];
@@ -549,7 +561,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                         this.regenerateItemList();
                         return;
                     }
-                    
+
                     this.topEditor.version = module.version;
                     this.topEditor.expression = this.convertModuleToExpression(module);
 
@@ -708,7 +720,17 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         }
         else
         {
+            if(this.isSplitScreen && this.bottomEditor.expression && this.bottomEditor.isExpressionSaved && this.topEditor.modules.length === 0)
+            {
+                this.bottomEditor = new EditorConfig();
+            }
             this.isSplitScreen = !this.isSplitScreen;
+        }
+
+        // If we're not in split screen, make sure the top editor is active
+        if(!this.isSplitScreen)
+        {
+            this.setTopEditorActive();
         }
     }
 

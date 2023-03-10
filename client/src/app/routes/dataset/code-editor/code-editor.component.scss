@@ -48,14 +48,14 @@
         display: flex;
 
         ::ng-deep .cm-s-pixlise.CodeMirror {
-            height: calc(100vh - 48px);
+            height: calc(100vh - 48px - 26px - 28px);
         }
     }
 
     &.top-open {
         expression-text-editor.top-expression {
             ::ng-deep .cm-s-pixlise.CodeMirror {
-                height: calc(100vh - 48px - 100px);
+                height: calc(100vh - 48px - 100px - 26px - 28px);
             }
         }
     }
@@ -63,7 +63,7 @@
      &.bottom-open {
         expression-text-editor.bottom-expression {
             ::ng-deep .cm-s-pixlise.CodeMirror {
-                height: calc(100vh - 48px - 100px);
+                height: calc(100vh - 48px - 100px - 26px - 28px);
             }
         }
     }
@@ -71,14 +71,20 @@
     &.split-screen-mode {
         expression-text-editor {
             ::ng-deep .cm-s-pixlise.CodeMirror {
-                height: calc(50vh - 48px);
+                height: calc(50vh - 48px - 16px);
             }
         }
 
         &.top-open {
             expression-text-editor.top-expression {
                 ::ng-deep .cm-s-pixlise.CodeMirror {
-                    height: calc(50vh - 48px - 100px);
+                    height: calc(50vh - 48px - 16px - 100px);
+                }
+            }
+
+            expression-text-editor.bottom-expression {
+                ::ng-deep .cm-s-pixlise.CodeMirror {
+                    height: calc(50vh - 48px - 4px);
                 }
             }
         }
@@ -86,7 +92,7 @@
         &.bottom-open {
             expression-text-editor.bottom-expression {
                 ::ng-deep .cm-s-pixlise.CodeMirror {
-                    height: calc(50vh - 48px - 100px);
+                    height: calc(50vh - 48px - 100px - 26px);
                 }
             }
         }
@@ -335,4 +341,10 @@ expression-list {
 
 input.invalid-input {
     border: 2px solid #fb8d59;
+}
+
+expression-text-editor.active
+{
+    outline: 1px solid #FFFF8D;
+    z-index: 10000;
 }
