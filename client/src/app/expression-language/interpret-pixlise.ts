@@ -43,15 +43,17 @@ export class ExpressionParts
 export class PixliseDataQuerier
 {
     private _runningExpression: string = "";
+    private _dataSource: InterpreterDataSource = null;
 
     constructor(
-        private _dataSource: InterpreterDataSource
     )
     {
     }
 
-    public runQuery(expression: string): Observable<PMCDataValues>
+    public runQuery(expression: string, dataSource: InterpreterDataSource): Observable<PMCDataValues>
     {
+        this._dataSource = dataSource;
+
         let t0 = performance.now();
 
         // Parse the expression

@@ -31,6 +31,7 @@ import { Observable, combineLatest } from "rxjs";
 import { PixliseDataQuerier } from "./interpret-pixlise";
 import { LuaDataQuerier } from "./interpret-lua";
 import { PMCDataValues } from "src/app/expression-language/data-values";
+import { InterpreterDataSource } from "./interpreter-data-source";
 
 
 export class ResultComparer
@@ -44,7 +45,7 @@ export class ResultComparer
     }
 
     // Returns -1 if they are the same
-    findDifferenceLine(exprLua: string, exprPIXLISE: string, afterLine: number): number
+    findDifferenceLine(exprLua: string, exprPIXLISE: string, afterLine: number, dataSource: InterpreterDataSource): number
     {
         let result = -1; // No difference found
 
@@ -90,8 +91,8 @@ export class ResultComparer
                 let exprPIXLISEToRun = this.appendTo(exprPIXLISERan, exprPIXLISELines[c]);
                 exprPIXLISEToRun += "\n"+pixParts[0];
 
-                let luaResult$ = this.runLua(exprLuaToRun);
-                let pixResult$ = this.runPIXLISE(exprPIXLISEToRun);
+                let luaResult$ = this.runLua(exprLuaToRun, dataSource);
+                let pixResult$ = this.runPIXLISE(exprPIXLISEToRun, dataSource);
 
                 let allResults$ = combineLatest([luaResult$, pixResult$]);
                 allResults$.subscribe(
@@ -110,8 +111,8 @@ export class ResultComparer
                             console.log(luaResult);
 
                             // Run them again so we can step through it in the debugger
-                            let luaResult2$ = this.runLua(exprLuaToRun);
-                            let pixResult2$ = this.runPIXLISE(exprPIXLISEToRun);
+                            let luaResult2$ = this.runLua(exprLuaToRun, dataSource);
+                            let pixResult2$ = this.runPIXLISE(exprPIXLISEToRun, dataSource);
 
                             let allResults$ = combineLatest([luaResult2$, pixResult2$]);
                             allResults$.subscribe(
@@ -145,8 +146,8 @@ export class ResultComparer
         // Final check
         if(result == -1 && exprLuaLines.length >= afterLine)
         {
-            let luaResultFinal$ = this.runLua(exprLua);
-            let pixResultFinal$ = this.runPIXLISE(exprPIXLISE);
+            let luaResultFinal$ = this.runLua(exprLua, dataSource);
+            let pixResultFinal$ = this.runPIXLISE(exprPIXLISE, dataSource);
 
             let allResults$ = combineLatest([luaResultFinal$, pixResultFinal$]);
             allResults$.subscribe(
@@ -168,13 +169,13 @@ export class ResultComparer
         return result;
     }
 
-    private runLua(expression: string): Observable<PMCDataValues>
+    private runLua(expression: string, dataSource: InterpreterDataSource): Observable<PMCDataValues>
     {
         let luaResult: Observable<PMCDataValues> = null;
 
         try
         {
-            luaResult = this._interpretLua.runQuery(expression);
+            luaResult = this._interpretLua.runQuery(expression, dataSource);
         }
         catch(err)
         {
@@ -187,13 +188,13 @@ export class ResultComparer
         return luaResult;
     }
 
-    private runPIXLISE(expression: string): Observable<PMCDataValues>
+    private runPIXLISE(expression: string, dataSource: InterpreterDataSource): Observable<PMCDataValues>
     {
         let pixResult: Observable<PMCDataValues> = null;
 
         try
         {
-            pixResult = this._interpretPixlise.runQuery(expression);
+            pixResult = this._interpretPixlise.runQuery(expression, dataSource);
         }
         catch(err)
         {

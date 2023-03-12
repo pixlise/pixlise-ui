@@ -71,8 +71,8 @@ export class DataQuerier
             dataset
         );
 
-        this._interpretPixlise = new PixliseDataQuerier(this._dataSource);
-        this._interpretLua = new LuaDataQuerier(this._dataSource, environment.luaDebug);
+        this._interpretPixlise = new PixliseDataQuerier();
+        this._interpretLua = new LuaDataQuerier(environment.luaDebug);
         if(environment.initExpressionLanguageComparer || environment.initLuaTranspiler)
         {
             this._luaTranspiler = new LuaTranspiler();
@@ -88,7 +88,7 @@ export class DataQuerier
         // Decide which interperter to run it in
         if(expressionLanguage == EXPR_LANGUAGE_LUA)
         {
-            return this._interpretLua.runQuery(expression);
+            return this._interpretLua.runQuery(expression, this._dataSource);
         }
         else
         {
@@ -100,7 +100,7 @@ export class DataQuerier
                 // If we've got a result comparer, run that
                 if(this._resultComparer)
                 {
-                    let line = this._resultComparer.findDifferenceLine(asLua, expression, environment.expressionLanguageCompareSkipLines);
+                    let line = this._resultComparer.findDifferenceLine(asLua, expression, environment.expressionLanguageCompareSkipLines, this._dataSource);
                     if(line < 0)
                     {
                         console.log("No difference between PIXLISE and Lua expressions");
@@ -116,7 +116,7 @@ export class DataQuerier
                 }
             }
 
-            return this._interpretPixlise.runQuery(expression);
+            return this._interpretPixlise.runQuery(expression, this._dataSource);
         }
     }
 }

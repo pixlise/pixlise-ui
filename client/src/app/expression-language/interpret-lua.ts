@@ -45,8 +45,9 @@ export class LuaDataQuerier
     private static _luaLibImports = "";
     private static _luaUseReplay = false;
 
+    private _dataSource: InterpreterDataSource = null;
+
     constructor(
-        private _dataSource: InterpreterDataSource,
         private _logTables: boolean = false
     )
     {
@@ -223,8 +224,10 @@ export class LuaDataQuerier
     }
 
     // See: https://github.com/ceifa/wasmoon
-    public runQuery(origExpression: string): Observable<PMCDataValues>
+    public runQuery(origExpression: string, dataSource: InterpreterDataSource): Observable<PMCDataValues>
     {
+        this._dataSource = dataSource;
+
         let t0 = performance.now();
         LuaDataQuerier._makeLuaTableTime = 0;
 
