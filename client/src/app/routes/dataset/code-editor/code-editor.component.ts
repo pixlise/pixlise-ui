@@ -951,16 +951,23 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             );
             this._widgetDataService.runAsyncExpression(
                 new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), expression, false
-            ).toPromise().then((result)=>
-            {
-                this.evaluatedExpression = result;
-                if(this.evaluatedExpression && this.evaluatedExpression?.values?.values.length > 0)
+            ).subscribe(
+                (result)=>
                 {
-                    editor.isCodeChanged = false;
-                    this.displayExpressionTitle = `Unsaved ${expression.name}`;
-                    this._expressionService.cache(this.previewID, expression, this.displayExpressionTitle);
+                    this.evaluatedExpression = result;
+                    if(this.evaluatedExpression && this.evaluatedExpression?.values?.values.length > 0)
+                    {
+                        editor.isCodeChanged = false;
+                        this.displayExpressionTitle = `Unsaved ${expression.name}`;
+                        this._expressionService.cache(this.previewID, expression, this.displayExpressionTitle);
+                    }
+                },
+                (err)=>
+                {
+                    // TODO: Handle errors better somehow
+                    alert(err);
                 }
-            });
+            );
         }
         this.pmcGridExpressionTitle = "Numeric Values: All";
         this.isSubsetExpression = false;
@@ -1021,10 +1028,17 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID),
             highlightedExpression,
             false
-        ).toPromise().then((result)=>
-        {
-            this.evaluatedExpression = result;
-        });
+        ).subscribe(
+            (result)=>
+            {
+                this.evaluatedExpression = result;
+            },
+            (err)=>
+            {
+                // TODO: Handle errors better somehow
+                alert(err);
+            }
+        );
 
         let lineRange = "";
         let isMultiLine = this.startLineHighlighted !== this.endLineHighlighted || this.isEmptySelection;
