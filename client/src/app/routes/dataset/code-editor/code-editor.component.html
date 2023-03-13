@@ -44,6 +44,10 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div class="text-container">
             <h2>{{topEditor.isModule ? "Module" : "LUA Expression"}} Editor</h2>
+            <status-indicator
+                [valid]="topEditor.isExpressionSaved"
+                [status]="topEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"
+            ></status-indicator>
             <mat-select
                 *ngIf="topEditor.isModule"
                 [(ngModel)]="topEditor.version.version"
@@ -216,6 +220,10 @@ POSSIBILITY OF SUCH DAMAGE.
             </expression-text-editor>
             <div *ngIf="bottomEditor.expression && isSplitScreen" class="split-screen-header">
                 <h2>{{bottomEditor.isModule ? "Module" : "LUA Expression"}} Editor</h2>
+                <status-indicator
+                [valid]="bottomEditor.isExpressionSaved"
+                [status]="bottomEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"
+            ></status-indicator>
                 <mat-select
                     *ngIf="bottomEditor.isModule"
                     [(ngModel)]="bottomEditor.version.version"
