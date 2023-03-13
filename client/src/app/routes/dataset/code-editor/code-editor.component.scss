@@ -48,14 +48,14 @@
         display: flex;
 
         ::ng-deep .cm-s-pixlise.CodeMirror {
-            height: calc(100vh - 48px - 26px - 28px);
+            height: calc(100vh - 48px - 26px - 26px);
         }
     }
 
     &.top-open {
         expression-text-editor.top-expression {
             ::ng-deep .cm-s-pixlise.CodeMirror {
-                height: calc(100vh - 48px - 100px - 26px - 28px);
+                height: calc(100vh - 48px - 100px - 26px - 14px);
             }
         }
     }
@@ -63,7 +63,7 @@
      &.bottom-open {
         expression-text-editor.bottom-expression {
             ::ng-deep .cm-s-pixlise.CodeMirror {
-                height: calc(100vh - 48px - 100px - 26px - 28px);
+                height: calc(100vh - 48px - 100px - 26px - 26px);
             }
         }
     }
