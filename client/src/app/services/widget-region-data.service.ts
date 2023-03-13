@@ -29,7 +29,7 @@
 
 import { Injectable } from "@angular/core";
 import { ReplaySubject, Subject, Subscription, Observable, combineLatest, of } from "rxjs";
-import { map } from "rxjs/operators";
+import { map, catchError } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { ExpressionRunnerService } from "src/app/services/expression-runner.service";
 import { ObjectCreator } from "src/app/models/BasicTypes";
@@ -521,17 +521,39 @@ export class WidgetRegionDataService
             }
             else
             {
-                result$.push(this.runAsyncExpression(query, expr));
+                // Run the expression and handle any errors in our own way here. This function is intended to be called by
+                // consumers of the data that will show a visualisation, so we want to provide a specific consistant error message
+                result$.push(
+                    this.runAsyncExpression(query, expr).pipe(
+                        catchError(
+                            (err)=>
+                            {
+                                let errorMsg = httpErrorToString(err, "WidgetRegionDataService.getData catchError");
+                                SentryHelper.logMsg(true, errorMsg);
+                                return of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr, region, query));
+                            }
+                        )
+                    )
+                );
             }
         }
 
         // Wait for all of them and complete
         let finalResult$ = combineLatest(result$);
         return finalResult$.pipe(
-            map((resultItems: RegionDataResultItem[])=>
-            {
-                return new RegionDataResults(resultItems, "");
-            })
+            map(
+                (resultItems: RegionDataResultItem[])=>
+                {
+                    return new RegionDataResults(resultItems, "");
+                }
+            ),
+            catchError(
+                (err)=>
+                {
+                    console.error(err);
+                    throw new Error(err);
+                }
+            )
         ); 
     }
 
@@ -577,60 +599,51 @@ export class WidgetRegionDataService
         );
     }
 
+    // Runs an expression with given parameters.
+    // This was private, is only public now so the code editor window can run expressions directly with some control over
+    // caching and a more "raw" experience. If errors are encountered, they will be returned as part of the Observables own
+    // error handling interface.
     public runAsyncExpression(query: DataSourceParams, expr: DataExpression, shouldCache: boolean = true): Observable<RegionDataResultItem>
     {
         let dataset = this._datasetService.datasetLoaded;
         let region = this._regions.get(query.roiId);
-        let result$: Observable<RegionDataResultItem> = null;
 
-        try
+        // Some expressions run slowly, so we cache their results in case they are re-run frequently
+        // eg in the case of UI refreshing binary or ternary plots
+        let t0 = performance.now();
+
+        // At this point, we have to decide what we're querying for. If we have an ROI specified, we are only querying for its PMCs
+        // BUT datasetId filters this further, because if we have one specified (in the case of combined datasets), we need to
+        // only include PMCs for that dataset!
+        let pmcsToQuery = region ? region.pmcs : null;
+        let pmcOffset = 0;
+
+        if(query.datasetId)
         {
-            // Some expressions run slowly, so we cache their results in case they are re-run frequently
-            // eg in the case of UI refreshing binary or ternary plots
-            let t0 = performance.now();
+            // Get the offset for this dataset ID
+            pmcOffset = dataset.getIdOffsetForSubDataset(query.datasetId);
 
-            // At this point, we have to decide what we're querying for. If we have an ROI specified, we are only querying for its PMCs
-            // BUT datasetId filters this further, because if we have one specified (in the case of combined datasets), we need to
-            // only include PMCs for that dataset!
-            let pmcsToQuery = region ? region.pmcs : null;
-            let pmcOffset = 0;
-
-            if(query.datasetId)
+            // We're filtering down!
+            if(!pmcsToQuery)
             {
-                // Get the offset for this dataset ID
-                pmcOffset = dataset.getIdOffsetForSubDataset(query.datasetId);
-
-                // We're filtering down!
-                if(!pmcsToQuery)
-                {
-                    // No PMCs given, so just get all for the given dataset ID
-                    pmcsToQuery = this.getPMCsForDatasetId(query.datasetId, dataset)
-                }
-                else
-                {
-                    // Region PMCs are specified, so filter down to only those for the given dataset!
-                    pmcsToQuery = this.filterPMCsForDatasetId(region.pmcs, query.datasetId, dataset);
-                }
+                // No PMCs given, so just get all for the given dataset ID
+                pmcsToQuery = this.getPMCsForDatasetId(query.datasetId, dataset)
             }
+            else
+            {
+                // Region PMCs are specified, so filter down to only those for the given dataset!
+                pmcsToQuery = this.filterPMCsForDatasetId(region.pmcs, query.datasetId, dataset);
+            }
+        }
 
-            // At this point if we don't have the expression source code, we query for it and return it as part of a chain of observables
-            let data$: Observable<PMCDataValues> = this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, pmcsToQuery);
-
-            result$ = data$.pipe(
-                map((result: PMCDataValues)=>
+        return this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, pmcsToQuery).pipe(
+            map(
+                (result: PMCDataValues)=>
                 {
                     return this.processQuantResult(t0, result, query, expr, region, pmcOffset, shouldCache);
-                })
-            );
-        }
-        catch (error)
-        {
-            let errorMsg = httpErrorToString(error, "WidgetRegionDataService.getData");
-            SentryHelper.logMsg(true, errorMsg);
-            result$ = of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr, region, query));
-        }
-
-        return result$;
+                }
+            )
+        );
     }
 
     private getPMCsForDatasetId(datasetId: string, dataset: DataSet): Set<number>
@@ -849,11 +862,11 @@ export class WidgetRegionDataService
 
         console.log(logmsg+": Generated "+this._regions.size+" regions.");
 
-        console.log(logmsg+": Region build finished, notifying subscribers...");
-        let t0 = performance.now();
+        //console.log(logmsg+": Region build finished, notifying subscribers...");
+        //let t0 = performance.now();
         this.widgetData$.next(reason);
-        let t1 = performance.now();
-        console.log(logmsg+": Subscribers notified in "+(t1-t0).toLocaleString()+"ms");
+        //let t1 = performance.now();
+        //console.log(logmsg+": Subscribers notified in "+(t1-t0).toLocaleString()+"ms");
     }
 
     getRemainingPMCs(): number[]

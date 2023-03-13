@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Observable, combineLatest, from, of } from "rxjs";
-import { map, mergeMap, concatMap } from "rxjs/operators";
+import { map, mergeMap, concatMap, catchError, finalize } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { InterpreterDataSource } from "./interpreter-data-source";
@@ -42,6 +42,7 @@ export class LuaDataQuerier
     // An id we use for logging about this Lua runner
     private _id = randomString(4);
     private _logId: string = "";
+    private _execCount: number = -1; // start here, gets incremented before first use
 
     private _lua = null;
     private _loggedTables = [];
@@ -251,8 +252,9 @@ export class LuaDataQuerier
     }
 
     // See: https://github.com/ceifa/wasmoon
-    public runQuery(origExpression: string, modules: Map<string, string>, dataSource: InterpreterDataSource, cleanupLua: boolean): Observable<PMCDataValues>
+    public runQuery(sourceCode: string, modules: Map<string, string>, dataSource: InterpreterDataSource, cleanupLua: boolean): Observable<PMCDataValues>
     {
+        this._execCount++;
         this._dataSource = dataSource;
 
         let t0 = performance.now();
@@ -260,7 +262,7 @@ export class LuaDataQuerier
 
         // Run our code in a unique function name for this runner. This is in case there is any possibility of clashing with
         // another Lua runner (there shouldn't be!)
-        let exprFuncName = "expr_"+this._id;
+        let exprFuncName = "expr_"+this._id+"_"+this._execCount;
 
         this._loggedTables = [];
 
@@ -283,83 +285,194 @@ export class LuaDataQuerier
                     }
 
                     // We're inited, now run!
-                    let expression = this.formatLuaCallable(origExpression, exprFuncName, imports);
-                    return this.runQueryInternal(expression, exprFuncName, cleanupLua, t0);
+                    let codeParts = this.formatLuaCallable(sourceCode, exprFuncName, imports);
+                    return this.runQueryInternal(codeParts.join(""), exprFuncName, cleanupLua, t0);
                 }
             )
         )
     }
 
-    private runQueryInternal(expression: string, exprFuncName: string, cleanupLua: boolean, t0: number): Observable<PMCDataValues>
+    private runQueryInternal(sourceCode: string, exprFuncName: string, cleanupLua: boolean, t0: number): Observable<PMCDataValues>
     {
-        let result = null;
-        try
-        {
-            // Run a lua string
-            result = this._lua.doStringSync(expression);
-
-            // Log the tables
-            if(this._logTables)
-            {
-                this.logTables();
-            }
-            
-            if(result)
-            {
-                // We got an object back that represents a table in Lua. Here we assume this is a PMCDataValue[] effectively
-                // so lets convert it to something we'll use here (PMCDataValues)
-                result = this.readLuaTable(result);
-
-                let t1 = performance.now();
-                console.log(this._logId+">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms, makeTable calls took: "+this._makeLuaTableTime+"ms");
-
-                return of(result);
-            }
-        }
-        catch (err)
-        {
-            console.error(err);
-            this._lua.global.dumpStack(console.error);
-            /* NOTE: This doesn't print any more than the above...
-                // Print out everything...
-                for(let c = 1; c < 10; c++)
+        return from(this._lua.doString(sourceCode)).pipe(
+            map(
+                (result)=>
                 {
-                    const traceback = LuaDataQuerier._lua.global.lua.lua_tolstring(LuaDataQuerier._lua.global.address, -c, null);
-                    console.log(traceback);
+                    // Log the tables
+                    if(this._logTables)
+                    {
+                        this.logTables();
+                    }
+                    
+                    if(result)
+                    {
+                        // We got an object back that represents a table in Lua. Here we assume this is a PMCDataValue[] effectively
+                        // so lets convert it to something we'll use here (PMCDataValues)
+                        let pmcDataResult = this.readLuaTable(result);
+
+                        let t1 = performance.now();
+                        console.log(this._logId+">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms, makeTable calls took: "+this._makeLuaTableTime+"ms");
+
+                        return pmcDataResult;
+                    }
+
+                    throw new Error("Expression: "+sourceCode+" did not complete");
                 }
-            */
-            throw new Error(err);
-        }
-        finally
-        {
-            // Clear the function code that just ran
-            this._lua.global.set(exprFuncName, null);
+            ),
+            catchError(
+                (err)=>
+                {
+                    let parsedErr = this.parseLuaError(err, sourceCode);
 
-            // Close the lua environment, so it can be freed
-            if(cleanupLua)
-            {
-                this._lua.global.close();
-                this._lua = null;
-                console.log(this._logId+"Lua interpreter shut down");
-            }
-        }
+                    console.error(parsedErr);
+                    this._lua.global.dumpStack(console.error);
+                    /* NOTE: This doesn't print any more than the above...
+                        // Print out everything...
+                        for(let c = 1; c < 10; c++)
+                        {
+                            const traceback = LuaDataQuerier._lua.global.lua.lua_tolstring(LuaDataQuerier._lua.global.address, -c, null);
+                            console.log(traceback);
+                        }
+                    */
+                    throw parsedErr;
+                }
+            ),
+            finalize(
+                ()=>
+                {
+                    // Clear the function code that just ran
+                    this._lua.global.set(exprFuncName, null);
 
-        throw new Error("Expression: "+expression+" did not complete");
+                    // Close the lua environment, so it can be freed
+                    if(cleanupLua)
+                    {
+                        this._lua.global.close();
+                        this._lua = null;
+                        console.log(this._logId+"Lua interpreter shut down");
+                    }
+                }
+            )
+        );
     }
 
-    private formatLuaCallable(origExpression: string, luaExprFuncName: string, moduleImports: string): string
+    // Examples:
+    // message: "element() expression expects 3 parameters: element, datatype, detector Id. Received: [\"Fe\",\"%\",null]\nstack traceback:\n\t[string \"local Map = makeMapLib()...\"]:7: in local 'expr_4fab_5'\n\t[string \"local Map = makeMapLib()...\"]:9: in main chunk"
+    // stack: "Error: element() expression expects 3 parameters: element, datatype, detector Id. Received: [\"Fe\",\"%\",null]\n    at InterpreterDataSource.readElement (http://localhost:4200/main.js:54096:19) [<root>]\n    at LuaDataQuerier.LreadElement (http://localhost:4200/main.js:53475:51) [<root>]\n    at http://localhost:4200/main.js:53144:52 [<root>]\n    at http://localhost:4200/vendor.js:142222:33 [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[322]:0x207fd [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[260]:0x1a6a8 [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[219]:0x15ccc [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[620]:0x38c42 [<root>]\n    at lb (http://localhost:4200/vendor.js:146145:18) [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[146]:0xbb10 [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[433]:0x2e938 [<root>]\n    at c.ccall (http://localhost:4200/vendor.js:146183:17) [<root>]\n    at LuaWasm.pointersToBeFreed [as lua_resume] (http://localhost:4200/vendor.js:146660:41) [<root>]\n    at Thread.resume (http://localhost:4200/vendor.js:141522:36) [<root>]"
+
+    // message: "[string \"local Map = makeMapLib()...\"]:7: unfinished string near '\"A)'"
+    // stack: "Error: Lua Error(ErrorSyntax/3)\n    at Thread.assertOk (http://localhost:4200/vendor.js:141840:23) [<root>]\n    at Thread.loadString (http://localhost:4200/vendor.js:141507:14) [<root>]\n    at http://localhost:4200/vendor.js:142799:49 [<root>]\n    at http://localhost:4200/vendor.js:142827:11 [<root>]\n    at Generator.next (<anonymous>) [<root>]\n    at asyncGeneratorStep (http://localhost:4200/vendor.js:149744:24) [<root>]\n    at _next (http://localhost:4200/vendor.js:149766:9) [<root>]\n    at http://localhost:4200/vendor.js:149773:7 [<root>]\n    at new ZoneAwarePromise (http://localhost:4200/polyfills.js:5756:33) [<root>]\n    at http://localhost:4200/vendor.js:149762:12 [<root>]\n    at LuaEngine.callByteCode (http://localhost:4200/vendor.js:142838:9) [<root>]\n    at LuaEngine.doString (http://localhost:4200/vendor.js:142799:19) [<root>]\n    at LuaDataQuerier.runQueryInternal (http://localhost:4200/main.js:53302:69) [<root>]\n    at MergeMapSubscriber.project (http://localhost:4200/main.js:53298:25) [<root>]"
+
+    // message: "[string \"local Map = makeMapLib()...\"]:7: 'end' expected (to close 'function' at line 4) near ')'"
+    // stack: "Error: Lua Error(ErrorSyntax/3)\n    at Thread.assertOk (http://localhost:4200/vendor.js:141840:23) [<root>]\n    at Thread.loadString (http://localhost:4200/vendor.js:141507:14) [<root>]\n    at http://localhost:4200/vendor.js:142799:49 [<root>]\n    at http://localhost:4200/vendor.js:142827:11 [<root>]\n    at Generator.next (<anonymous>) [<root>]\n    at asyncGeneratorStep (http://localhost:4200/vendor.js:149744:24) [<root>]\n    at _next (http://localhost:4200/vendor.js:149766:9) [<root>]\n    at http://localhost:4200/vendor.js:149773:7 [<root>]\n    at new ZoneAwarePromise (http://localhost:4200/polyfills.js:5756:33) [<root>]\n    at http://localhost:4200/vendor.js:149762:12 [<root>]\n    at LuaEngine.callByteCode (http://localhost:4200/vendor.js:142838:9) [<root>]\n    at LuaEngine.doString (http://localhost:4200/vendor.js:142799:19) [<root>]\n    at LuaDataQuerier.runQueryInternal (http://localhost:4200/main.js:53302:69) [<root>]\n    at MergeMapSubscriber.project (http://localhost:4200/main.js:53298:25) [<root>]"
+
+    private parseLuaError(err, sourceCode: string): Error
     {
+        // At this point, we can look at the error Lua returned and maybe form a more useful error message for users
+        // because we supply multi-line source code to Lua, but all its error msgs print out a segment of the first line!
+        let errType = "";
+        let errMsg = "";
+        let errLine = -1;
+        let errSourceLine = "";
+
+        if(err?.stack)
+        {
+            // We expect: "Error: Lua Error(<error type>/<error number>)\n"
+            const errToken = "Error: Lua Error(";
+            let startPos = err.stack.indexOf(errToken);
+            if(startPos > -1)
+            {
+                startPos += errToken.length;
+                let endPos = err.stack.indexOf("/", startPos+1);
+                if(endPos > -1)
+                {
+                    errType = err.stack.substring(startPos, endPos);
+                }
+            }
+        }
+
+        if(err?.message)
+        {
+            // Now find the line it's on
+            // We expect: "[<some source code>]:<number>: <msg>"
+            const lineNumToken = "]:";
+            const lineNumEndToken = ": ";
+            let startPos = err.message.indexOf(lineNumToken);
+            if(startPos > -1)
+            {
+                startPos += lineNumToken.length;
+                let endPos = err.message.indexOf(lineNumEndToken, startPos+1);
+                if(endPos > -1)
+                {
+                    let errLineStr = err.message.substring(startPos, endPos);
+                    errLine = Number.parseInt(errLineStr);
+                    errMsg = err.message.substring(endPos+lineNumEndToken.length);
+                }
+            }
+        }
+
+        // Try to retrieve the source line
+        if(errLine > -1)
+        {
+            // Now snip out the line from our code, assuming errLine is 1-based!!
+            let errLineIdx = errLine-1;
+            let sourceLines = sourceCode.split("\n");
+            if(errLineIdx < sourceLines.length)
+            {
+                errSourceLine = sourceLines[errLineIdx];
+            }
+        }
+
+
+        // If we failed to even work out an error type, stop here
+        // At time of writing, these are the possibilities Lua can return
+        /*
+        Ok = 0,
+        Yield = 1,
+        ErrorRun = 2,
+        ErrorSyntax = 3,
+        ErrorMem = 4,
+        ErrorErr = 5,
+        ErrorFile = 6
+        */
+        if(errType == "ErrorSyntax" && errLine > -1)
+        {
+            // Process this as a syntax error, including the relevant fields pointing to source code
+            let result = new Error(`Syntax error on line ${errLine}: ${errMsg}`);
+            result["stack"] = err?.stack;
+            result["line"] = errLine;
+            result["errType"] = errType;
+            if(errSourceLine.length >= 0)
+            {
+                result["sourceLine"] = errSourceLine;
+            }
+
+            return result;
+        }
+        // else
+        
+        // Didn't know how to process it, so stop here
+        return err;
+    } 
+
+    // Returns multiple strings:
+    // - Generated code we insert before source is run
+    // - The source code itself
+    // - Inserted code after source 
+    private formatLuaCallable(origExpression: string, luaExprFuncName: string, moduleImports: string): string[]
+    {
+        let result = [];
+
         // Make it into a function, so if we get called again, we overwrite
-        let expression = this._luaLibImports+moduleImports+"\n";
+        let genStart = this._luaLibImports+moduleImports+"\n";
         if(this._luaUseReplay)
         {
             // Reset replay
-            expression += "FuncRunner.resetReplay()\n";
+            genStart += "FuncRunner.resetReplay()\n";
         }
 
         if(this._debug)
         {
-            expression += `function printMap(m, comment)
+            genStart += `function printMap(m, comment)
     print(comment.." map size: "..#m[1])
     for k, v in ipairs(m[1]) do
         print(v.."="..m[2][k])
@@ -367,19 +480,22 @@ export class LuaDataQuerier
 end\n`
         }
 
-        expression += "local function "+luaExprFuncName+"()\n"
+        genStart += "local function "+luaExprFuncName+"()\n";
+        result.push(genStart);
 
-        expression += origExpression+"\nend\n";
+        result.push(origExpression+"\n");
+
+        let genEnd = "end\n";
 
         if(this._debug)
         {
-            expression += "t0=os.clock()\n";
-            expression += "times = {}\n"
+            genEnd += "t0=os.clock()\n";
+            genEnd += "times = {}\n"
 
             let luaFunctionNames = Array.from(this.LuaCallableFunctions.keys());
             for(let funcName of luaFunctionNames)
             {
-                expression += `times["${funcName}"] = 0\n`;
+                genEnd += `times["${funcName}"] = 0\n`;
             }
 
             // Add wrappers for our functions
@@ -388,7 +504,7 @@ end\n`
             {
                 // Add a wrapper with timing code around it that accumulates it
                 let funcName = luaFunctionNames[f];
-                expression += "function "+funcName+"(";
+                genEnd += "function "+funcName+"(";
 
                 let argList = "";
                 for(let c = 0; c < this.LuaFunctionArgCounts[f]; c++)
@@ -400,8 +516,8 @@ end\n`
 
                     argList += "a"+c;
                 }
-                expression += argList+")";
-                expression += `
+                genEnd += argList+")";
+                genEnd += `
   local t0=os.clock()
   local funcResult = P${funcName}(${argList})
   local t1=os.clock()
@@ -411,17 +527,18 @@ end
 `;
             }
         }
-        expression += "result = "+luaExprFuncName+"()\n";
+        genEnd += "result = "+luaExprFuncName+"()\n";
 
         if(this._debug)
         {
-            expression += "t1=os.clock()\nprint(\"Code ran for: \"..(t1-t0))\nlocal timesTotal=0\n";
+            genEnd += "t1=os.clock()\nprint(\"Code ran for: \"..(t1-t0))\nlocal timesTotal=0\n";
             // Print out the table too
-            expression += "for k, v in pairs(times) do\n  print(k..\" took: \"..v)\n  timesTotal = timesTotal+v\nend\nprint(\"Total functions: \"..timesTotal)\n"
+            genEnd += "for k, v in pairs(times) do\n  print(k..\" took: \"..v)\n  timesTotal = timesTotal+v\nend\nprint(\"Total functions: \"..timesTotal)\n"
         }
 
-        expression += "return result\n";
-        return expression;
+        genEnd += "return result\n";
+        result.push(genEnd);
+        return result;
     }
 
     private LreadElement(symbol, column, detector)
