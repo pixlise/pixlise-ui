@@ -29,7 +29,7 @@
 
 import { Injectable } from "@angular/core";
 import { Observable, of, combineLatest } from "rxjs";
-import { map } from "rxjs/operators";
+import { map, concatMap } from "rxjs/operators";
 
 import { DataExpressionService } from "./data-expression.service";
 import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
@@ -83,41 +83,33 @@ export class ExpressionRunnerService
             );
         }
 
-        return new Observable<PMCDataValues>(
-            (observer)=>
-            {
-                this.loadCodeForExpression(expression).subscribe(
-                    (sources: Map<string, string>)=>
+        let load$ = this.loadCodeForExpression(expression);
+        
+        return load$.pipe(
+            concatMap(
+                (sources: Map<string, string>)=>
+                {
+                    // We now have the ready-to-go source code, run the query
+                    // At this point we should have the expression source and 0 or more modules
+                    let exprSource = sources.get(this._exprKey);
+                    if(!exprSource)
                     {
-                        // We now have the ready-to-go source code, run the query
-                        // At this point we should have the expression source and 0 or more modules
-                        let exprSource = sources.get(this._exprKey);
-                        if(!exprSource)
-                        {
-                            throw new Error("loadCodeForExpression did not return expression source code for: "+expression.id)
-                        }
-                        sources.delete(this._exprKey);
+                        throw new Error("loadCodeForExpression did not return expression source code for: "+expression.id)
+                    }
+                    sources.delete(this._exprKey);
 
-                        // Pass in the source and module sources separately
-                        this._querier.runQuery(exprSource, sources, expression.sourceLanguage).subscribe(
+                    // Pass in the source and module sources separately
+                    return this._querier.runQuery(exprSource, sources, expression.sourceLanguage).pipe(
+                        map(
                             (queryResult: PMCDataValues)=>
                             {
                                 let finalResult = this.filterForPMCs(queryResult, forPMCs);
-                                observer.next(finalResult);
-                                observer.complete();
-                            },
-                            (err)=>
-                            {
-                                observer.error(err);
+                                return finalResult;
                             }
                         )
-                    },
-                    (err)=>
-                    {
-                        observer.error(err);
-                    }
-                );
-            }
+                    )
+                }
+            )
         );
     }
 
