@@ -45,7 +45,7 @@ export class ResultComparer
     }
 
     // Returns -1 if they are the same
-    findDifferenceLine(exprLua: string, exprPIXLISE: string, afterLine: number, dataSource: InterpreterDataSource): number
+    findDifferenceLine(exprLua: string, modulesLua: Map<string, string>, exprPIXLISE: string, afterLine: number, dataSource: InterpreterDataSource): number
     {
         let result = -1; // No difference found
 
@@ -91,7 +91,7 @@ export class ResultComparer
                 let exprPIXLISEToRun = this.appendTo(exprPIXLISERan, exprPIXLISELines[c]);
                 exprPIXLISEToRun += "\n"+pixParts[0];
 
-                let luaResult$ = this.runLua(exprLuaToRun, dataSource);
+                let luaResult$ = this.runLua(exprLuaToRun, modulesLua, dataSource);
                 let pixResult$ = this.runPIXLISE(exprPIXLISEToRun, dataSource);
 
                 let allResults$ = combineLatest([luaResult$, pixResult$]);
@@ -111,7 +111,7 @@ export class ResultComparer
                             console.log(luaResult);
 
                             // Run them again so we can step through it in the debugger
-                            let luaResult2$ = this.runLua(exprLuaToRun, dataSource);
+                            let luaResult2$ = this.runLua(exprLuaToRun, modulesLua, dataSource);
                             let pixResult2$ = this.runPIXLISE(exprPIXLISEToRun, dataSource);
 
                             let allResults$ = combineLatest([luaResult2$, pixResult2$]);
@@ -146,7 +146,7 @@ export class ResultComparer
         // Final check
         if(result == -1 && exprLuaLines.length >= afterLine)
         {
-            let luaResultFinal$ = this.runLua(exprLua, dataSource);
+            let luaResultFinal$ = this.runLua(exprLua, modulesLua, dataSource);
             let pixResultFinal$ = this.runPIXLISE(exprPIXLISE, dataSource);
 
             let allResults$ = combineLatest([luaResultFinal$, pixResultFinal$]);
@@ -169,13 +169,13 @@ export class ResultComparer
         return result;
     }
 
-    private runLua(expression: string, dataSource: InterpreterDataSource): Observable<PMCDataValues>
+    private runLua(expression: string, modules: Map<string, string>, dataSource: InterpreterDataSource): Observable<PMCDataValues>
     {
         let luaResult: Observable<PMCDataValues> = null;
 
         try
         {
-            luaResult = this._interpretLua.runQuery(expression, dataSource);
+            luaResult = this._interpretLua.runQuery(expression, modules, dataSource, false);
         }
         catch(err)
         {

@@ -72,7 +72,7 @@ export class DataQuerier
         );
 
         this._interpretPixlise = new PixliseDataQuerier();
-        this._interpretLua = new LuaDataQuerier(environment.luaDebug);
+        this._interpretLua = new LuaDataQuerier(environment.luaDebug, false, environment.luaDebug);
         if(environment.initExpressionLanguageComparer || environment.initLuaTranspiler)
         {
             this._luaTranspiler = new LuaTranspiler();
@@ -83,12 +83,12 @@ export class DataQuerier
         }
     }
 
-    public runQuery(expression: string, expressionLanguage: string): Observable<PMCDataValues>
+    public runQuery(expression: string, modules: Map<string, string>, expressionLanguage: string): Observable<PMCDataValues>
     {
         // Decide which interperter to run it in
         if(expressionLanguage == EXPR_LANGUAGE_LUA)
         {
-            return this._interpretLua.runQuery(expression, this._dataSource);
+            return this._interpretLua.runQuery(expression, modules, this._dataSource, environment.newLuaPerExpression);
         }
         else
         {
@@ -100,7 +100,7 @@ export class DataQuerier
                 // If we've got a result comparer, run that
                 if(this._resultComparer)
                 {
-                    let line = this._resultComparer.findDifferenceLine(asLua, expression, environment.expressionLanguageCompareSkipLines, this._dataSource);
+                    let line = this._resultComparer.findDifferenceLine(asLua, modules, expression, environment.expressionLanguageCompareSkipLines, this._dataSource);
                     if(line < 0)
                     {
                         console.log("No difference between PIXLISE and Lua expressions");
@@ -114,6 +114,12 @@ export class DataQuerier
                 {
                     console.log(asLua);
                 }
+            }
+
+            if(modules.size > 0)
+            {
+                //throw new Error("PIXLANG expression called with modules defined");
+                console.warn("Ignoring modules: "+modules.keys()+" specified for PIXLANG expression")
             }
 
             return this._interpretPixlise.runQuery(expression, this._dataSource);

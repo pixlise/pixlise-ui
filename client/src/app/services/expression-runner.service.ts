@@ -46,14 +46,14 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { DataExpression } from "src/app/models/Expression";
 import { DataQuerier, EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 
-import { LuaDataQuerier } from "src/app/expression-language/interpret-lua";
-
 
 @Injectable({
     providedIn: "root"
 })
 export class ExpressionRunnerService
 {
+    private _querier: DataQuerier = null;
+
     constructor(
         private _datasetService: DataSetService,
         private _moduleService: DataModuleService,
@@ -69,25 +69,37 @@ export class ExpressionRunnerService
         forPMCs: Set<number> = null
     ): Observable<PMCDataValues>
     {
-        let query = new DataQuerier(
-            quantSource,
-            // NOTE: all of these come from the dataset. At one point we weren't sure how they would be available at runtime so we have separate
-            // interfaces for each. In future we could still modify this further and break these out again!
-            this._datasetService.datasetLoaded, // pseudoSource
-            this._datasetService.datasetLoaded, // housekeepingSource
-            this._datasetService.datasetLoaded, // spectrumSource
-            diffractionSource,
-            this._datasetService.datasetLoaded
-        );
+        if(!this._querier)
+        {
+            this._querier = new DataQuerier(
+                quantSource,
+                // NOTE: all of these come from the dataset. At one point we weren't sure how they would be available at runtime so we have separate
+                // interfaces for each. In future we could still modify this further and break these out again!
+                this._datasetService.datasetLoaded, // pseudoSource
+                this._datasetService.datasetLoaded, // housekeepingSource
+                this._datasetService.datasetLoaded, // spectrumSource
+                diffractionSource,
+                this._datasetService.datasetLoaded
+            );
+        }
 
         return new Observable<PMCDataValues>(
             (observer)=>
             {
                 this.loadCodeForExpression(expression).subscribe(
-                    (sourceCode: string)=>
+                    (sources: Map<string, string>)=>
                     {
                         // We now have the ready-to-go source code, run the query
-                        query.runQuery(sourceCode, expression.sourceLanguage).subscribe(
+                        // At this point we should have the expression source and 0 or more modules
+                        let exprSource = sources.get(this._exprKey);
+                        if(!exprSource)
+                        {
+                            throw new Error("loadCodeForExpression did not return expression source code for: "+expression.id)
+                        }
+                        sources.delete(this._exprKey);
+
+                        // Pass in the source and module sources separately
+                        this._querier.runQuery(exprSource, sources, expression.sourceLanguage).subscribe(
                             (queryResult: PMCDataValues)=>
                             {
                                 let finalResult = this.filterForPMCs(queryResult, forPMCs);
@@ -109,7 +121,9 @@ export class ExpressionRunnerService
         );
     }
 
-    private loadCodeForExpression(expression: DataExpression): Observable<string>
+    private _exprKey = "";
+
+    private loadCodeForExpression(expression: DataExpression): Observable<Map<string, string>>
     {
         // Filter out crazy cases
         if(expression.moduleReferences.length > 0 && expression.sourceLanguage != EXPR_LANGUAGE_LUA)
@@ -118,9 +132,10 @@ export class ExpressionRunnerService
         }
 
         // If we are a simple loaded expression that doesn't have references, early out!
+        let result = new Map<string, string>([[this._exprKey, expression.sourceCode]]);
         if(expression.sourceCode.length > 0 && expression.moduleReferences.length <= 0)
         {
-            return of(expression.sourceCode);
+            return of(result);
         }
 
         // This can have blank source code because it was retrieved from the API listing call - in which case we need to query it specifically
@@ -149,39 +164,29 @@ export class ExpressionRunnerService
         let allResults$ = combineLatest(toWait$);
         return allResults$.pipe(
             map(
-                (results: unknown[])=>
+                (sources: unknown[])=>
                 {
-                    let sourceCode = expression.sourceCode;
-
                     // Check if we loaded source - if we did, it'll be the first item and has a different data type
                     let readOffset = 0;
                     if(waitSource$ != null)
                     {
-                        let expr = results[0] as DataExpression;
+                        let expr = sources[0] as DataExpression;
 
                         // Use the loaded one
-                        sourceCode = expr.sourceCode;
+                        result.set(this._exprKey, expr.sourceCode);
 
                         // Look at the next ones...
                         readOffset = 1;
                     }
 
                     // At this point, we should have all the source code we're interested in. Combine them!
-                    let moduleSources = "";
-                    let importLines = "";
-                    for(let c = 0; c < results.length; c++)
+                    for(let c = 0; c < sources.length; c++)
                     {
-                        let moduleVersion = results[c+readOffset] as DataModuleSpecificVersionWire;
-                        let moduleDef = LuaDataQuerier.makeLuaModuleImport(moduleVersion.name, moduleVersion.version.sourceCode);
-                        moduleSources += moduleDef+"\n";
-
-                        let moduleImport = LuaDataQuerier.makeLuaModuleImportStatement(moduleVersion.name);
-                        importLines += moduleImport+"\n";
+                        let moduleVersion = sources[c+readOffset] as DataModuleSpecificVersionWire;
+                        result.set(moduleVersion.name, moduleVersion.version.sourceCode);
                     }
 
-                    sourceCode = moduleSources+importLines+sourceCode;
-
-                    return sourceCode;
+                    return result;
                 }
             )
         );
