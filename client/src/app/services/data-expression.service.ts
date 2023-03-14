@@ -393,6 +393,11 @@ export class DataExpressionService
     getExpressionAsync(id: string): Observable<DataExpression>
     {
         let expr = this.getExpression(id);
+        if(!expr)
+        {
+            throw new Error("Expression: "+id+" not found!");
+        }
+
         if(expr.sourceCode.length > 0)
         {
             // We already have the text, so just return it as-is

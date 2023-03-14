@@ -49,7 +49,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [status]="topEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"
             ></status-indicator>
             <mat-select
-                *ngIf="topEditor.isModule"
+                *ngIf="topEditor.isModule && topEditor.version"
                 [(ngModel)]="topEditor.version.version"
             >
                 <mat-option

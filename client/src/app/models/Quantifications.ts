@@ -27,11 +27,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Observable, combineLatest, of } from "rxjs";
-import { map } from "rxjs/operators";
+import { Observable, of } from "rxjs";
 import { QuantifiedDataQuerierSource } from "src/app/expression-language/data-sources";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
-import { EXPR_LANGUAGE_PIXLANG, getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { Quantification } from "src/app/protolibs/quantification_pb";
@@ -513,49 +511,44 @@ export class QuantificationLayer implements QuantifiedDataQuerierSource
             }
         }
 
-        let columns$ = [];
+        let columns = [];
         for(let detector of detectors)
         {
-            columns$.push(getQuantifiedDataWithExpression("data(\"eVstart\", \""+detector+"\")", EXPR_LANGUAGE_PIXLANG, this, null, null, null, null, null, null));
-            columns$.push(getQuantifiedDataWithExpression("data(\"eV/ch\", \""+detector+"\")", EXPR_LANGUAGE_PIXLANG, this, null, null, null, null, null, null));
+            columns.push(this.getQuantifiedDataForDetector(detector, "eVstart"));
+            columns.push(this.getQuantifiedDataForDetector(detector, "eV/ch"));
         }
 
-        return combineLatest(columns$).pipe(
-            map((results)=>
+        let result: SpectrumEnergyCalibration[] = [];
+
+        let c = 0;
+        for(let detector of detectors)
+        {
+            let eVStartValues = columns[c++] as PMCDataValues;
+            let eVPerChannelValues = columns[c++] as PMCDataValues;
+
+            let eVStartSum = 0;
+            let eVPerChannelSum = 0;
+
+            for(let evStartItem of eVStartValues.values)
             {
-                let result: SpectrumEnergyCalibration[] = [];
+                eVStartSum += evStartItem.value;
+            }
 
-                let c = 0;
-                for(let detector of detectors)
-                {
-                    let eVStartValues = results[c++] as PMCDataValues;
-                    let eVPerChannelValues = results[c++] as PMCDataValues;
+            for(let evPerChannelItem of eVPerChannelValues.values)
+            {
+                eVPerChannelSum += evPerChannelItem.value;
+            }
 
-                    let eVStartSum = 0;
-                    let eVPerChannelSum = 0;
+            // Save these (we may need them later for "reset to defaults" features)
+            result.push(
+                new SpectrumEnergyCalibration(
+                    eVStartSum/eVStartValues.values.length,
+                    eVPerChannelSum/eVPerChannelValues.values.length,
+                    detector
+                )
+            );
+        }
 
-                    for(let evStartItem of eVStartValues.values)
-                    {
-                        eVStartSum += evStartItem.value;
-                    }
-
-                    for(let evPerChannelItem of eVPerChannelValues.values)
-                    {
-                        eVPerChannelSum += evPerChannelItem.value;
-                    }
-
-                    // Save these (we may need them later for "reset to defaults" features)
-                    result.push(
-                        new SpectrumEnergyCalibration(
-                            eVStartSum/eVStartValues.values.length,
-                            eVPerChannelSum/eVPerChannelValues.values.length,
-                            detector
-                        )
-                    );
-                }
-
-                return result;
-            })
-        );
+        return of(result);
     }
 }

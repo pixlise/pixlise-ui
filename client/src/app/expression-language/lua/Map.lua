@@ -417,4 +417,11 @@ function Map.threshold(m, compare, threshold)
     return r
 end
 
+function printDebugMap(m, comment)
+    print(comment.." map size: "..#m[1])
+    for k, v in ipairs(m[1]) do
+        print(v.."="..m[2][k])
+    end
+end
+
 return Map

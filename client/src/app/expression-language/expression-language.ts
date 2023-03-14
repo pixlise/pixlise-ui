@@ -28,11 +28,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Observable } from "rxjs";
-import { map } from "rxjs/operators";
 import {
     DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
 } from "src/app/expression-language/data-sources";
-import { PMCDataValue, PMCDataValues, QuantOp } from "src/app/expression-language/data-values";
+import { PMCDataValues } from "src/app/expression-language/data-values";
 import { DataSet } from "src/app/models/DataSet";
 import { InterpreterDataSource } from "./interpreter-data-source";
 import { PixliseDataQuerier } from "./interpret-pixlise";
@@ -41,47 +40,10 @@ import { LuaTranspiler } from "./lua-transpiler";
 import { ResultComparer } from "./result-comparer";
 import { environment } from "src/environments/environment";
 
+
 export const EXPR_LANGUAGE_LUA = "LUA";
 export const EXPR_LANGUAGE_PIXLANG = "PIXLANG";
 
-// Helper function to run a query
-export function getQuantifiedDataWithExpression(
-    expression: string,
-    expressionLanguage: string,
-    quantSource: QuantifiedDataQuerierSource,
-    pseudoSource: PseudoIntensityDataQuerierSource,
-    housekeepingSource: HousekeepingDataQuerierSource,
-    spectrumSource: SpectrumDataQuerierSource,
-    diffractionSource: DiffractionPeakQuerierSource,
-    dataset: DataSet,
-    forPMCs: Set<number> = null
-): Observable<PMCDataValues>
-{
-    let query = new DataQuerier(quantSource, pseudoSource, housekeepingSource, spectrumSource, diffractionSource, dataset);
-    let queryResult = query.runQuery(expression, expressionLanguage);
-
-    if(forPMCs === null)
-    {
-        return queryResult;
-    }
-
-    return queryResult.pipe(
-        map((result: PMCDataValues)=>
-        {
-            // Build a new result only containing PMCs specified
-            let resultValues: PMCDataValue[] = [];
-            for(let item of result.values)
-            {
-                if(forPMCs.has(item.pmc))
-                {
-                    resultValues.push(item);
-                }
-            }
-
-            return PMCDataValues.makeWithValues(resultValues);
-        }
-    ));
-}
 
 export class DataQuerier
 {
@@ -109,8 +71,8 @@ export class DataQuerier
             dataset
         );
 
-        this._interpretPixlise = new PixliseDataQuerier(this._dataSource);
-        this._interpretLua = new LuaDataQuerier(this._dataSource, environment.luaDebug);
+        this._interpretPixlise = new PixliseDataQuerier();
+        this._interpretLua = new LuaDataQuerier(environment.luaDebug, false);
         if(environment.initExpressionLanguageComparer || environment.initLuaTranspiler)
         {
             this._luaTranspiler = new LuaTranspiler();
@@ -121,12 +83,12 @@ export class DataQuerier
         }
     }
 
-    public runQuery(expression: string, expressionLanguage: string): Observable<PMCDataValues>
+    public runQuery(expression: string, modules: Map<string, string>, expressionLanguage: string): Observable<PMCDataValues>
     {
         // Decide which interperter to run it in
         if(expressionLanguage == EXPR_LANGUAGE_LUA)
         {
-            return this._interpretLua.runQuery(expression);
+            return this._interpretLua.runQuery(expression, modules, this._dataSource, environment.newLuaPerExpression);
         }
         else
         {
@@ -138,7 +100,7 @@ export class DataQuerier
                 // If we've got a result comparer, run that
                 if(this._resultComparer)
                 {
-                    let line = this._resultComparer.findDifferenceLine(asLua, expression, environment.expressionLanguageCompareSkipLines);
+                    let line = this._resultComparer.findDifferenceLine(asLua, modules, expression, environment.expressionLanguageCompareSkipLines, this._dataSource);
                     if(line < 0)
                     {
                         console.log("No difference between PIXLISE and Lua expressions");
@@ -154,7 +116,13 @@ export class DataQuerier
                 }
             }
 
-            return this._interpretPixlise.runQuery(expression);
+            if(modules.size > 0)
+            {
+                //throw new Error("PIXLANG expression called with modules defined");
+                console.warn("Ignoring modules: "+modules.keys()+" specified for PIXLANG expression")
+            }
+
+            return this._interpretPixlise.runQuery(expression, this._dataSource);
         }
     }
 }

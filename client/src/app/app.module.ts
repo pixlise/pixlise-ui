@@ -231,7 +231,6 @@ import { PlotExporterDialogComponent } from "./UI/atoms/plot-exporter-dialog/plo
 import { CodeEditorComponent } from "./routes/dataset/code-editor/code-editor.component";
 import { PMCDataGridComponent } from "./UI/pmc-data-grid/pmc-data-grid.component";
 
-import { LuaDataQuerier } from "src/app/expression-language/interpret-lua";
 import { StatusIndicatorComponent } from './UI/atoms/status-indicator/status-indicator.component';
 import { ModuleReleaseDialogComponent } from './UI/module-release-dialog/module-release-dialog.component';
 
@@ -317,9 +316,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
     };
 };
 
-function initLua(): () => Observable<any> {
-    return ()=>LuaDataQuerier.initLua();
-}
 
 @NgModule({
     declarations: [
@@ -507,12 +503,6 @@ function initLua(): () => Observable<any> {
         {
             provide: APP_INITIALIZER,
             useFactory: appInitializerFn,
-            multi: true,
-            deps: [EnvConfigurationInitService]
-        },
-        {
-            provide: APP_INITIALIZER,
-            useFactory: initLua,
             multi: true,
             deps: [EnvConfigurationInitService]
         },

@@ -566,7 +566,7 @@ export class LocationDataLayerChannel
                 if(stepSize != 0)
                 {
                     let idx = Math.floor(value / stepSize);
-                    this._histogram[idx]++;
+                    this._histogram.increment(idx);
                 }
             }
         }
