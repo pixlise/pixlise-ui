@@ -27,8 +27,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Inject, OnInit } from "@angular/core";
+import { Component, Inject } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { DataModuleService } from "src/app/services/data-module.service";
 
 export class ModuleReleaseDialogData
 {
@@ -36,6 +37,8 @@ export class ModuleReleaseDialogData
         public id: string,
         public title: string,
         public currentVersion: string,
+        public sourceCode: string,
+        public tags: string[]
     )
     {
     }
@@ -56,6 +59,7 @@ export class ModuleReleaseDialogComponent
         @Inject(MAT_DIALOG_DATA) public data: ModuleReleaseDialogData,
         public dialogRef: MatDialogRef<ModuleReleaseDialogComponent>,
         public dialog: MatDialog,
+        private _moduleService: DataModuleService,
     )
     {
       
@@ -67,7 +71,34 @@ export class ModuleReleaseDialogComponent
 
     onRelease(): void
     {
-        console.log(this.data.id, this.data.title, this.newVersion, this.releaseNotes)
+        if(this.isMinorRelease)
+        {
+            this._moduleService.releaseMinorVersion(this.data.id, this.data.sourceCode, this.releaseNotes, this.data.tags).subscribe(
+                (result) =>
+                {
+                    this.dialogRef.close();
+                },
+                (error) =>
+                {
+                    alert("Failed to release minor version");
+                    console.error("Failed to release minor version", this.data.id, error);
+                }
+            );
+        }
+        else
+        {
+            this._moduleService.releaseMajorVersion(this.data.id, this.data.sourceCode, this.releaseNotes, this.data.tags).subscribe(
+                (result) =>
+                {
+                    this.dialogRef.close();
+                },
+                (error) =>
+                {
+                    alert("Failed to release major version");
+                    console.error("Failed to release major version", this.data.id, error);
+                }
+            );
+        }
     }
 
     get newVersion(): string

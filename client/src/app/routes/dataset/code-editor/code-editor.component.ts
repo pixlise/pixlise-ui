@@ -238,14 +238,46 @@ export class EditorConfig
         return Array.from(this.versions.values());
     }
 
-    get isLatestVersionReleased(): boolean
+    get latestVersion(): DataModuleVersionSourceWire
     {
-        if(!this.isModule || !this.version?.version)
+        if(!this.isModule || !this.version?.version || !this.versionList.length)
         {
-            return false;
+            return null;
         }
 
-        return this.version.version.endsWith(".0");
+        let latestVersion = this.versionList[0];
+        this.versionList.forEach(version =>
+        {
+            if(!version?.version || !version.version.match(/^[0-9]+\.[0-9]+\.[0-9]+$/))
+            {
+                return;
+            }
+
+            let [latestMajor, latestMinor, latestPatch] = latestVersion.version.split(".").map(version => parseInt(version));
+            let [major, minor, patch] = version.version.split(".").map(version => parseInt(version));
+            if(
+                major > latestMajor || 
+                (major === latestMajor && minor > latestMinor) || 
+                (major === latestMajor && minor === latestMinor && patch > latestPatch)
+            )
+            {
+                latestVersion = version;
+            }
+        });
+
+        return latestVersion;
+    }
+
+    get isLoadedVersionLatest(): boolean
+    {
+        let latestVersion = this.latestVersion?.version;
+        return latestVersion && latestVersion === this.version?.version;
+    }
+
+    get isLatestVersionReleased(): boolean
+    {
+        let latestVersion = this.latestVersion?.version;
+        return latestVersion && latestVersion.endsWith(".0");
     }
 }
 
@@ -650,35 +682,76 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             return;
         }
 
+        this.onModuleVersionChange(version, "bottom", id, true);
+    }
+
+    onModuleVersionChange(version: string, position: string = "top", id: string = "", showSplit: boolean = false): void
+    {
+        let editor = position === "top" ? this.topEditor : this.bottomEditor;
+        id = id && id.length > 0 ? id : editor.expression.id;
+
         this._moduleService.getModule(id, version).subscribe((module) =>
         {
-            if(this.bottomEditor.expression)
+            editor.expression = this.convertModuleToExpression(module);
+            editor.version = module.version;
+
+            if(editor.expression)
             {
                 // This is a hack to remove code mirrors internal cached copy of the code and replace with the new code
                 // by re-rendering the text editor component
-                this.bottomEditor.expression = null;
+                editor.expression = null;
                 setTimeout(() =>
                 {
-                    this.bottomEditor = new EditorConfig();
-                    this.bottomEditor.userID = this._authService.getUserID();
-                    this.bottomEditor.isModule = true;
-                    this.bottomEditor.expression = this.convertModuleToExpression(module);
-                    this.bottomEditor.version = module.version;
-                    this.bottomEditor.versions = this._moduleService.getSourceDataModule(id).versions;
-                    this.isSplitScreen = true;
+                    editor = new EditorConfig();
+                    editor.userID = this._authService.getUserID();
+                    editor.isModule = true;
+                    editor.expression = this.convertModuleToExpression(module);
+                    editor.version = module.version;
+                    editor.versions = this._moduleService.getSourceDataModule(id).versions;
+                    if(showSplit)
+                    {
+                        this.isSplitScreen = true;
+                    }
+
+                    if(position === "top")
+                    {
+                        this.topEditor = editor;
+                    }
+                    else
+                    {
+                        this.bottomEditor = editor;
+                    }
                 }, 1);
             }
             else
             {
-                this.bottomEditor = new EditorConfig();
-                this.bottomEditor.userID = this._authService.getUserID();
-                this.bottomEditor.isModule = true;
-                this.bottomEditor.expression = this.convertModuleToExpression(module);
-                this.bottomEditor.version = module.version;
-                this.bottomEditor.versions = this._moduleService.getSourceDataModule(id).versions;
-                this.isSplitScreen = true;
+                editor = new EditorConfig();
+                editor.userID = this._authService.getUserID();
+                editor.isModule = true;
+                editor.expression = this.convertModuleToExpression(module);
+                editor.version = module.version;
+                editor.versions = this._moduleService.getSourceDataModule(id).versions;
+                if(showSplit)
+                {
+                    this.isSplitScreen = true;
+                }
+
+                if(position === "top")
+                {
+                    this.topEditor = editor;
+                }
+                else
+                {
+                    this.bottomEditor = editor;
+                }
             }
-        });
+        },
+        (error) =>
+        {
+            alert(`Failed to fetch module: ${id} v${version}`);
+            console.error(`Failed to fetch module: ${id} v${version}`, error);
+        }
+        );
     }
 
     onAddExpression(): void
@@ -728,10 +801,24 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             this.isSplitScreen = !this.isSplitScreen;
         }
 
-        // If we're not in split screen, make sure the top editor is active
+        // If we're not in split screen, make sure the top editor is active and the currently open list is updated
         if(!this.isSplitScreen)
         {
             this.setTopEditorActive();
+            this.sidebarTopSections["currently-open"].items = [
+                this.topEditor.expression,
+            ];
+
+            this.regenerateItemList();
+        }
+        else
+        {
+            this.sidebarTopSections["currently-open"].items = [
+                this.topEditor.expression,
+                this.bottomEditor.expression
+            ];
+
+            this.regenerateItemList();
         }
     }
 
@@ -1310,7 +1397,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         {
             if(editor.isModule)
             {
-                this._moduleService.addModuleVersion(
+                this._moduleService.savePatchVersion(
                     editor.expression.id,
                     editor.expression.sourceCode,
                     editor.expression.comments,
@@ -1371,7 +1458,14 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             return;
         }
 
-        dialogConfig.data = new ModuleReleaseDialogData(id, title, version);
+        dialogConfig.data = new ModuleReleaseDialogData(
+            id,
+            title,
+            version,
+            this.visibleModuleCodeEditor.editExpression,
+            this.visibleModuleCodeEditor.expression.tags
+        );
+
         this.dialog.open(ModuleReleaseDialogComponent, dialogConfig);
     }
 

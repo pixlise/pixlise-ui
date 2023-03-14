@@ -50,7 +50,8 @@ POSSIBILITY OF SUCH DAMAGE.
             ></status-indicator>
             <mat-select
                 *ngIf="topEditor.isModule && topEditor.version"
-                [(ngModel)]="topEditor.version.version"
+                [value]="topEditor.version.version"
+                (selectionChange)="onModuleVersionChange($event.value, 'top')"
             >
                 <mat-option
                     *ngFor="let version of topEditor.versionList;"
@@ -226,7 +227,8 @@ POSSIBILITY OF SUCH DAMAGE.
             ></status-indicator>
                 <mat-select
                     *ngIf="bottomEditor.isModule"
-                    [(ngModel)]="bottomEditor.version.version"
+                    [value]="bottomEditor.version.version"
+                    (selectionChange)="onModuleVersionChange($event.value, 'bottom')"
                 >
                     <mat-option
                         *ngFor="let version of bottomEditor.versionList;"
@@ -316,7 +318,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     *ngIf="hasVisibleModule"
                     class="save-btn"
                     buttonStyle="yellow"
-                    [disabled]="!isVisibleModuleEditable"
+                    [disabled]="!isVisibleModuleEditable || !visibleModuleCodeEditor?.isLoadedVersionLatest"
                     (onClick)="onRelease()"
                     #tooltip="matTooltip"
                     [matTooltip]="releaseModuleTooltip"
