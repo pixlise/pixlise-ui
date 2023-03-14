@@ -302,7 +302,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     private findVariables(): void
     {
         // NOTE: this is confusing, we have isLua input and expression also has a source language
-        if(this._expr.sourceLanguage != EXPR_LANGUAGE_LUA || this.isLua)
+        if(this._expr.sourceLanguage !== EXPR_LANGUAGE_LUA || this.isLua)
         {
             return;
         }
@@ -625,9 +625,15 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                     }
                     this.onTextSelect.emit(
                         new TextSelection(text, isSingleLineEmpty, startLine, endLine, selection.ranges[0], 
-                            () => this.markExecutedExpressionRange(cm, range),
                             () =>
                             {
+                                this.clearMarkedText(cm);
+                                this.markExecutedExpressionRange(cm, range);
+                            },
+                            () =>
+                            {
+                                this.clearMarkedText(cm);
+
                                 let rangeEnd = this.range?.to() || {line: 0, ch: 0};
                                 this.range = null;
 
@@ -661,6 +667,11 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         {
             cm.focus();
         }
+    }
+
+    private clearMarkedText(cm: CodeMirror.EditorFromTextArea): void
+    {
+        cm.getAllMarks().forEach(marker => marker.clear());
     }
 
     private markExecutedExpressionRange(cm: CodeMirror.EditorFromTextArea, range: Range = null): void

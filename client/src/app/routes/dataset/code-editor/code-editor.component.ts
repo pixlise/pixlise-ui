@@ -1105,6 +1105,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     runHighlightedExpression(): void
     {
+        if(this.executedTextSelection)
+        {
+            this.executedTextSelection.clearMarkedText();
+        }
+
         // Highlighted expressions always use the top editor info so only 1 unsaved expression ID is injected into the cache
         let highlightedExpression = new DataExpression(
             this._expressionID,
