@@ -47,13 +47,13 @@ export class LuaDataQuerier
     private _lua = null;
     private _loggedTables = [];
     private _makeLuaTableTime = 0; // Total time spent returning Tables to Lua from things like element() Lua call
-    private _luaLibImports = "";
+    //private _luaLibImports = "";
 
     private _dataSource: InterpreterDataSource = null;
 
     constructor(
         private _debug: boolean,
-        private _luaUseReplay: boolean,
+        //private _luaUseReplay: boolean,
         private _logTables: boolean
     )
     {
@@ -100,7 +100,7 @@ export class LuaDataQuerier
                     console.log(this._logId+"Lua Engine std libs loaded "+(t1-t0).toLocaleString()+"ms...");
 
                     // Set up the functions Lua can call to get data, eg element()
-                    if(!this._luaUseReplay)
+                    //if(!this._luaUseReplay)
                     {
                         // NOTE: we DON'T do this if we're replaying, because we want Lua implemented
                         //       functions to hijack these calls instead!
@@ -109,11 +109,11 @@ export class LuaDataQuerier
 
                     // Add PIXLISE Lua libraries
                     let libFiles = ["Map.lua"];
-                    if(this._luaUseReplay)
+                    /*if(this._luaUseReplay)
                     {
                         // Pull in the replay data
                         libFiles.push("FuncRunner.lua");
-                    }
+                    }*/
                     let libFileResults$ = [];
 
                     for(let lib of libFiles)
@@ -154,7 +154,7 @@ export class LuaDataQuerier
                                 libNames.push(libName);
 
                                 // Remember this as an import
-                                this._luaLibImports += this.makeLuaModuleImportStatement(libName);
+                                //this._luaLibImports += this.makeLuaModuleImportStatement(libName);
                             }
 
                             // Once all have loaded, pass them into Lua
@@ -198,6 +198,7 @@ export class LuaDataQuerier
         let t0 = performance.now();
 
         let importDef = this.makeLuaModuleImport(moduleName, sourceCode);
+        importDef += "\n"+this.makeLuaModuleImportStatement(moduleName);
         this._lua.doStringSync(importDef);
 
         let t1 = performance.now();
@@ -206,28 +207,28 @@ export class LuaDataQuerier
 
     private makeLuaModuleImport(moduleName: string, sourceCode: string): string
     {
-        let importDef = "function make"+moduleName+"Lib()\n"+sourceCode+"\nend";
+        let importDef = "function make"+moduleName+"Module()\n"+sourceCode+"\nend";
         return importDef;
     }
 
     private makeLuaModuleImportStatement(moduleName: string): string
     {
-        return "local "+moduleName+" = make"+moduleName+"Lib()\n";
+        return moduleName+" = make"+moduleName+"Module()\n";
     }
 
     private LuaFunctionArgCounts = [3, 2, 2, 3, 3, 1, 1, 2, 0, 1, 1];
     private LuaCallableFunctions = new Map<string, any>([
-        ["element", (a,b,c)=>{return this.LreadElement(a,b,c)}],
-        ["elementSum", (a,b)=>{return this.LreadElementSum(a,b)}],
-        ["data", (a,b)=>{return this.LreadDataColumn(a,b)}],
-        ["spectrum", (a,b,c)=>{return this.LreadSpectrum(a,b,c)}],
-        ["spectrumDiff", (a,b,c)=>{return this.LreadSpectrumDiff(a,b,c)}],
-        ["pseudo", (a)=>{return this.LreadPseudoIntensity(a)}],
-        ["housekeeping", (a)=>{return this.LreadHouseKeeping(a)}],
-        ["diffractionPeaks", (a,b)=>{return this.LreadDiffractionPeaks(a,b)}],
-        ["roughness", ()=>{return this.LreadRoughness()}],
-        ["position", (a)=>{return this.LreadPosition(a)}],
-        ["makeMap", (a)=>{return this.LmakeMap(a)}],
+        ["element", (a,b,c)=>{return this.makeLuaTable(this._dataSource.readElement([a, b, c]))}],
+        ["elementSum", (a,b)=>{return this.makeLuaTable(this._dataSource.readElementSum([a, b]))}],
+        ["data", (a,b)=>{return this.makeLuaTable(this._dataSource.readMap([a, b]))}],
+        ["spectrum", (a,b,c)=>{return this.makeLuaTable(this._dataSource.readSpectrum([a, b, c]))}],
+        ["spectrumDiff", (a,b,c)=>{return this.makeLuaTable(this._dataSource.readSpectrumDifferences([a, b, c]))}],
+        ["pseudo", (a)=>{return this.makeLuaTable(this._dataSource.readPseudoIntensity([a]))}],
+        ["housekeeping", (a)=>{return this.makeLuaTable(this._dataSource.readHousekeepingData([a]))}],
+        ["diffractionPeaks", (a,b)=>{return this.makeLuaTable(this._dataSource.readDiffractionData([a, b]))}],
+        ["roughness", ()=>{return this.makeLuaTable(this._dataSource.readRoughnessData([]))}],
+        ["position", (a)=>{return this.makeLuaTable(this._dataSource.readPosition([a]))}],
+        ["makeMap", (a)=>{return this.makeLuaTable(this._dataSource.makeMap([a]))}],
     ]);
 
     private setupPIXLISELuaFunctions(): void
@@ -277,15 +278,15 @@ export class LuaDataQuerier
                 ()=>
                 {
                     // Install any modules supplied
-                    let imports = "";
+                    //let imports = "";
                     for(let [moduleName, moduleSource] of modules)
                     {
-                        imports += this.makeLuaModuleImportStatement(moduleName);
+                        //imports += this.makeLuaModuleImportStatement(moduleName);
                         this.installModule(moduleName, moduleSource);
                     }
 
                     // We're inited, now run!
-                    let codeParts = this.formatLuaCallable(sourceCode, exprFuncName, imports);
+                    let codeParts = this.formatLuaCallable(sourceCode, exprFuncName/*, imports*/);
                     return this.runQueryInternal(codeParts.join(""), exprFuncName, cleanupLua, t0);
                 }
             )
@@ -449,38 +450,37 @@ export class LuaDataQuerier
     // Returns multiple strings:
     // - Generated code we insert before source is run
     // - The source code itself
-    // - Inserted code after source 
-    private formatLuaCallable(origExpression: string, luaExprFuncName: string, moduleImports: string): string[]
+    // - Inserted code after source
+
+    private formatLuaCallable(sourceCode: string, luaExprFuncName: string/*, moduleImports: string*/): string[]
     {
         let result = [];
 
         // Make it into a function, so if we get called again, we overwrite
-        let genStart = this._luaLibImports+moduleImports+"\n";
+        let genStart = "";
+        /*genStart = this._luaLibImports+moduleImports+"\n";
         if(this._luaUseReplay)
         {
             // Reset replay
             genStart += "FuncRunner.resetReplay()\n";
         }
+        */
 
         if(this._debug)
         {
-            genStart += `function printMap(m, comment)
-    print(comment.." map size: "..#m[1])
-    for k, v in ipairs(m[1]) do
-        print(v.."="..m[2][k])
-    end
-end\n`
+            // If we're debugging, we wrap the user code in a function and call that, return its result
+            // and this makes us able to put some debugging/profiling around it
+            genStart += "local function "+luaExprFuncName+"()\n";
         }
 
-        genStart += "local function "+luaExprFuncName+"()\n";
         result.push(genStart);
 
-        result.push(origExpression+"\n");
-
-        let genEnd = "end\n";
+        result.push(sourceCode+"\n");
 
         if(this._debug)
         {
+            let genEnd = "end\n";
+
             genEnd += "t0=os.clock()\n";
             genEnd += "times = {}\n"
 
@@ -518,64 +518,19 @@ end\n`
 end
 `;
             }
-        }
-        genEnd += "result = "+luaExprFuncName+"()\n";
 
-        if(this._debug)
-        {
+            genEnd += "result = "+luaExprFuncName+"()\n";
+
             genEnd += "t1=os.clock()\nprint(\"Code ran for: \"..(t1-t0))\nlocal timesTotal=0\n";
             // Print out the table too
             genEnd += "for k, v in pairs(times) do\n  print(k..\" took: \"..v)\n  timesTotal = timesTotal+v\nend\nprint(\"Total functions: \"..timesTotal)\n"
+
+            genEnd += "return result\n";
+            
+            result.push(genEnd);
         }
 
-        genEnd += "return result\n";
-        result.push(genEnd);
         return result;
-    }
-
-    private LreadElement(symbol, column, detector)
-    {
-        return this.makeLuaTable(this._dataSource.readElement([symbol, column, detector]));
-    }
-    private LreadElementSum(column, detector)
-    {
-        return this.makeLuaTable(this._dataSource.readElementSum([column, detector]));
-    }
-    private LreadDataColumn(column, detector)
-    {
-        return this.makeLuaTable(this._dataSource.readMap([column, detector]));
-    }
-    private LreadSpectrum(startChannel, endChannel, detector)
-    {
-        return this.makeLuaTable(this._dataSource.readSpectrum([startChannel, endChannel, detector]));
-    }
-    private LreadSpectrumDiff(startChannel, endChannel, op)
-    {
-        return this.makeLuaTable(this._dataSource.readSpectrumDifferences([startChannel, endChannel, op]));
-    }
-    private LreadPseudoIntensity(elem)
-    {
-        return this.makeLuaTable(this._dataSource.readPseudoIntensity([elem]));
-    }
-    private LreadHouseKeeping(column)
-    {
-        return this.makeLuaTable(this._dataSource.readHousekeepingData([column]));
-    }
-    private LreadDiffractionPeaks(eVstart, eVend)
-    {
-        return this.makeLuaTable(this._dataSource.readDiffractionData([eVstart, eVend]));
-    }
-    private LreadRoughness()
-    {
-        return this.makeLuaTable(this._dataSource.readRoughnessData([]));
-    }
-    private LreadPosition(axis)
-    {
-        return this.makeLuaTable(this._dataSource.readPosition([axis]));
-    }
-    private LmakeMap(value)
-    {
-        return this.makeLuaTable(this._dataSource.makeMap([value]));
     }
 
     // Expecting results to come back as table with 2 arrays in it, one for pmc, one for values

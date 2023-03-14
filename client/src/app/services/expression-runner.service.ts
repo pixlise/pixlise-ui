@@ -159,7 +159,7 @@ export class ExpressionRunnerService
                 (sources: unknown[])=>
                 {
                     // Check if we loaded source - if we did, it'll be the first item and has a different data type
-                    let readOffset = 0;
+                    let firstModuleIdx = 0;
                     if(waitSource$ != null)
                     {
                         let expr = sources[0] as DataExpression;
@@ -168,13 +168,13 @@ export class ExpressionRunnerService
                         result.set(this._exprKey, expr.sourceCode);
 
                         // Look at the next ones...
-                        readOffset = 1;
+                        firstModuleIdx = 1;
                     }
 
                     // At this point, we should have all the source code we're interested in. Combine them!
-                    for(let c = 0; c < sources.length; c++)
+                    for(let c = firstModuleIdx; c < sources.length; c++)
                     {
-                        let moduleVersion = sources[c+readOffset] as DataModuleSpecificVersionWire;
+                        let moduleVersion = sources[c] as DataModuleSpecificVersionWire;
                         result.set(moduleVersion.name, moduleVersion.version.sourceCode);
                     }
 

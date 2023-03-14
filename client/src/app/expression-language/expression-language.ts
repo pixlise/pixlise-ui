@@ -72,7 +72,7 @@ export class DataQuerier
         );
 
         this._interpretPixlise = new PixliseDataQuerier();
-        this._interpretLua = new LuaDataQuerier(environment.luaDebug, false, environment.luaDebug);
+        this._interpretLua = new LuaDataQuerier(environment.luaDebug, false);
         if(environment.initExpressionLanguageComparer || environment.initLuaTranspiler)
         {
             this._luaTranspiler = new LuaTranspiler();
