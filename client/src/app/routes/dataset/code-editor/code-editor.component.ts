@@ -29,7 +29,7 @@
 
 import { Component, ComponentFactoryResolver, HostListener, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
-import { MatDialog } from "@angular/material/dialog";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ReplaySubject, Subject, Subscription, combineLatest, of, timer } from "rxjs";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { LayoutService } from "src/app/services/layout.service";
@@ -60,6 +60,7 @@ import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
+import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
 
 export class EditorConfig
 {
@@ -1158,6 +1159,12 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         return this.isWindows ? `Run ${targetText} (Ctrl+Alt+Enter)` : `Run ${targetText} (Cmd+Option+Enter)`;
     }
 
+    get releaseModuleTooltip(): string
+    {
+        return "Open Release Module Dialog";
+    }
+
+
     get isWindows(): boolean
     {
         return navigator.userAgent.search("Windows") !== -1;
@@ -1176,6 +1183,21 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     get endLineHighlighted(): number
     {
         return this.activeTextSelection?.endLine;
+    }
+
+    get hasVisibleModule(): boolean
+    {
+        return this.topEditor.isModule || this.bottomEditor.isModule;
+    }
+
+    get visibleModuleCodeEditor(): EditorConfig
+    {
+        return this.hasVisibleModule ? this.topEditor.isModule ? this.topEditor : this.bottomEditor : null;
+    }
+
+    get isVisibleModuleEditable(): boolean
+    {
+        return this.visibleModuleCodeEditor?.editable && !this.visibleModuleCodeEditor.invalidExpression;
     }
 
     onTogglePMCDataGridSolo(isSolo: boolean): void
@@ -1318,6 +1340,25 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 );
             }
         }
+    }
+
+    onRelease(): void
+    {
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.panelClass = "panel";
+
+        let id = this.visibleModuleCodeEditor?.expression?.id;
+        let title = this.visibleModuleCodeEditor.expression?.name;
+        let version = this.visibleModuleCodeEditor?.version?.version;
+        if(!id || !title || !version)
+        {
+            console.error("Failed to release module", title, version, id);
+            alert("Failed to release module");
+            return;
+        }
+
+        dialogConfig.data = new ModuleReleaseDialogData(id, title, version);
+        this.dialog.open(ModuleReleaseDialogComponent, dialogConfig);
     }
 
     @HostListener("window:keydown", ["$event"])
