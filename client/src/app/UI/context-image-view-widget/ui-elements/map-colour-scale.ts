@@ -27,7 +27,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { SentryErrorHandler } from "src/app/app.module";
 import { MinMax } from "src/app/models/BasicTypes";
 import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
 import { getVectorBetweenPoints, Point, Rect } from "src/app/models/Geometry";
@@ -35,7 +34,7 @@ import { Histogram, LocationDataPointState } from "src/app/models/LocationData2D
 import { CanvasDrawParameters, CanvasInteractionResult, CanvasMouseEvent, CanvasMouseEventId, CanvasParams, CanvasWorldTransform } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { IContextImageModel } from "src/app/UI/context-image-view-widget/model-interface";
 import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
-import { Colours, RGBA } from "src/app/utils/colours";
+import { Colours } from "src/app/utils/colours";
 import { CANVAS_FONT_WIDTH_PERCENT, drawTextWithBackground } from "src/app/utils/drawing";
 import { getValueDecimals } from "src/app/utils/utils";
 import { BaseUIElement, drawStrokedText } from "./base-ui-element";
@@ -681,12 +680,10 @@ OOOO
             showAtStep = showRanges.reduce((prev, curr) => (Math.abs(curr - showAtStep) < Math.abs(prev - showAtStep) ? curr : prev));
         }
 
-
         // Min box (bottom) to Max box (top) in steps
         let lastState: LocationDataPointState = null;
         for(let c = 0; c < pos.stepsShown; c++)
         {
-            
             // Draw the rect
             let rep = layer.getDrawParamsForRawValue(this._channel, rawValue, layer.getDisplayValueRange(this._channel));
             if(rep.state == LocationDataPointState.IN_RANGE)
