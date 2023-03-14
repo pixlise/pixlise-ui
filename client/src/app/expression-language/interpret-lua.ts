@@ -355,16 +355,7 @@ export class LuaDataQuerier
         );
     }
 
-    // Examples:
-    // message: "element() expression expects 3 parameters: element, datatype, detector Id. Received: [\"Fe\",\"%\",null]\nstack traceback:\n\t[string \"local Map = makeMapLib()...\"]:7: in local 'expr_4fab_5'\n\t[string \"local Map = makeMapLib()...\"]:9: in main chunk"
-    // stack: "Error: element() expression expects 3 parameters: element, datatype, detector Id. Received: [\"Fe\",\"%\",null]\n    at InterpreterDataSource.readElement (http://localhost:4200/main.js:54096:19) [<root>]\n    at LuaDataQuerier.LreadElement (http://localhost:4200/main.js:53475:51) [<root>]\n    at http://localhost:4200/main.js:53144:52 [<root>]\n    at http://localhost:4200/vendor.js:142222:33 [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[322]:0x207fd [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[260]:0x1a6a8 [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[219]:0x15ccc [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[620]:0x38c42 [<root>]\n    at lb (http://localhost:4200/vendor.js:146145:18) [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[146]:0xbb10 [<root>]\n    at http://localhost:4200/assets/lua/glue.wasm:wasm-function[433]:0x2e938 [<root>]\n    at c.ccall (http://localhost:4200/vendor.js:146183:17) [<root>]\n    at LuaWasm.pointersToBeFreed [as lua_resume] (http://localhost:4200/vendor.js:146660:41) [<root>]\n    at Thread.resume (http://localhost:4200/vendor.js:141522:36) [<root>]"
-
-    // message: "[string \"local Map = makeMapLib()...\"]:7: unfinished string near '\"A)'"
-    // stack: "Error: Lua Error(ErrorSyntax/3)\n    at Thread.assertOk (http://localhost:4200/vendor.js:141840:23) [<root>]\n    at Thread.loadString (http://localhost:4200/vendor.js:141507:14) [<root>]\n    at http://localhost:4200/vendor.js:142799:49 [<root>]\n    at http://localhost:4200/vendor.js:142827:11 [<root>]\n    at Generator.next (<anonymous>) [<root>]\n    at asyncGeneratorStep (http://localhost:4200/vendor.js:149744:24) [<root>]\n    at _next (http://localhost:4200/vendor.js:149766:9) [<root>]\n    at http://localhost:4200/vendor.js:149773:7 [<root>]\n    at new ZoneAwarePromise (http://localhost:4200/polyfills.js:5756:33) [<root>]\n    at http://localhost:4200/vendor.js:149762:12 [<root>]\n    at LuaEngine.callByteCode (http://localhost:4200/vendor.js:142838:9) [<root>]\n    at LuaEngine.doString (http://localhost:4200/vendor.js:142799:19) [<root>]\n    at LuaDataQuerier.runQueryInternal (http://localhost:4200/main.js:53302:69) [<root>]\n    at MergeMapSubscriber.project (http://localhost:4200/main.js:53298:25) [<root>]"
-
-    // message: "[string \"local Map = makeMapLib()...\"]:7: 'end' expected (to close 'function' at line 4) near ')'"
-    // stack: "Error: Lua Error(ErrorSyntax/3)\n    at Thread.assertOk (http://localhost:4200/vendor.js:141840:23) [<root>]\n    at Thread.loadString (http://localhost:4200/vendor.js:141507:14) [<root>]\n    at http://localhost:4200/vendor.js:142799:49 [<root>]\n    at http://localhost:4200/vendor.js:142827:11 [<root>]\n    at Generator.next (<anonymous>) [<root>]\n    at asyncGeneratorStep (http://localhost:4200/vendor.js:149744:24) [<root>]\n    at _next (http://localhost:4200/vendor.js:149766:9) [<root>]\n    at http://localhost:4200/vendor.js:149773:7 [<root>]\n    at new ZoneAwarePromise (http://localhost:4200/polyfills.js:5756:33) [<root>]\n    at http://localhost:4200/vendor.js:149762:12 [<root>]\n    at LuaEngine.callByteCode (http://localhost:4200/vendor.js:142838:9) [<root>]\n    at LuaEngine.doString (http://localhost:4200/vendor.js:142799:19) [<root>]\n    at LuaDataQuerier.runQueryInternal (http://localhost:4200/main.js:53302:69) [<root>]\n    at MergeMapSubscriber.project (http://localhost:4200/main.js:53298:25) [<root>]"
-
+    // For examples, see unit tests
     private parseLuaError(err, sourceCode: string): Error
     {
         // At this point, we can look at the error Lua returned and maybe form a more useful error message for users
@@ -430,14 +421,15 @@ export class LuaDataQuerier
         Yield = 1,
         ErrorRun = 2,
         ErrorSyntax = 3,
-        ErrorMem = 4,
-        ErrorErr = 5,
-        ErrorFile = 6
+        ErrorMem = 4, <-- Did not see an example of this while deving
+        ErrorErr = 5, <-- Did not see an example of this while deving
+        ErrorFile = 6 <-- Did not see an example of this while deving
         */
-        if(errType == "ErrorSyntax" && errLine > -1)
+        if((errType == "ErrorSyntax" || errType == "ErrorRun") && errLine > -1)
         {
             // Process this as a syntax error, including the relevant fields pointing to source code
-            let result = new Error(`Syntax error on line ${errLine}: ${errMsg}`);
+            let errTypeStr = errType == "ErrorSyntax" ? "Syntax" : "Runtime";
+            let result = new Error(`${errTypeStr} error on line ${errLine}: ${errMsg}`);
             result["stack"] = err?.stack;
             result["line"] = errLine;
             result["errType"] = errType;
@@ -452,7 +444,7 @@ export class LuaDataQuerier
         
         // Didn't know how to process it, so stop here
         return err;
-    } 
+    }
 
     // Returns multiple strings:
     // - Generated code we insert before source is run
