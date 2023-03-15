@@ -84,7 +84,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 <push-button
                     class="run-btn"
                     buttonStyle="yellow"
-                    [disabled]="!topEditor.isCodeChanged && !bottomEditor.isCodeChanged && !isSubsetExpression"
+                    [disabled]="!isRunable"
                     (onClick)="runExpression()"
                     #tooltip="matTooltip"
                     [matTooltip]="runCodeTooltip"

@@ -65,6 +65,7 @@ import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/U
 export class EditorConfig
 {
     private _modules: DataExpressionModule[] = [];
+    public isSaveableOutput: boolean = true;
 
     constructor(
         public expression: DataExpression = null,
@@ -97,7 +98,7 @@ export class EditorConfig
 
     get invalidExpression(): boolean
     {
-        return this.emptyName || this.emptySourceCode;
+        return this.emptyName || this.emptySourceCode || !this.isSaveableOutput;
     }
 
     get errorTooltip(): string
@@ -203,6 +204,7 @@ export class EditorConfig
 
     onExpressionTextChanged(text: string): void
     {
+        this.isSaveableOutput = true;
         this.editExpression = text;
     }
 
@@ -343,6 +345,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     public bottomEditor: EditorConfig = new EditorConfig();
 
     public isTopEditorActive = false;
+    public lastRunEditor: "top" | "bottom" = null;
 
     public activeTextSelection: TextSelection = null;
     public executedTextSelection: TextSelection = null;
@@ -1051,6 +1054,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     runExpression(runTop: boolean = true): void
     {
+        this.lastRunEditor = runTop ? "top" : "bottom";
         let editor = runTop ? this.topEditor : this.bottomEditor;
         if(this._expressionID && editor.expression)
         {
@@ -1079,7 +1083,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 {
                     this.evaluatedExpression = result;
                     this.stderr = "";
-                    if(this.evaluatedExpression && this.evaluatedExpression?.values?.values.length > 0)
+                    editor.isSaveableOutput = editor.isModule || result.isPMCTable;
+                    if(this.evaluatedExpression && (!result.isPMCTable || this.evaluatedExpression?.values?.values?.length > 0))
                     {
                         editor.isCodeChanged = false;
                         this.displayExpressionTitle = `Unsaved ${expression.name}`;
@@ -1090,6 +1095,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 {
                     this.evaluatedExpression = null;
                     this.stderr = `${err}`;
+                    editor.isSaveableOutput = false;
                 }
             );
         }
@@ -1119,6 +1125,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     runHighlightedExpression(): void
     {
+        this.lastRunEditor = null;
         if(this.executedTextSelection)
         {
             this.executedTextSelection.clearMarkedText();
@@ -1214,6 +1221,13 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     onTextSelect(textSelection: TextSelection): void
     {
         this.activeTextSelection = textSelection;
+    }
+
+    get isRunable(): boolean
+    {
+        let otherEditorActive = this.isTopEditorActive && this.lastRunEditor !== "top" || !this.isTopEditorActive && this.lastRunEditor !== "bottom";
+        let isCodeChanged = this.isTopEditorActive ? this.topEditor.isCodeChanged : this.bottomEditor.isCodeChanged;
+        return otherEditorActive || isCodeChanged;
     }
 
     get textHighlighted(): string

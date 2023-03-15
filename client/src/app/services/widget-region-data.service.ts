@@ -172,7 +172,9 @@ export class RegionDataResultItem
         public warning: string,
         public expression: DataExpression,
         public region: RegionData,
-        public query: DataSourceParams)
+        public query: DataSourceParams,
+        public isPMCTable: boolean = true,
+    )
     {
     }
 }
@@ -561,7 +563,7 @@ export class WidgetRegionDataService
     {
         if(!Array.isArray(result?.values) || (result.values.length > 0 && !(result.values[0] instanceof PMCDataValue)))
         {
-            return new RegionDataResultItem(result, WidgetDataErrorType.WERR_QUERY, "Result is not a PMC array!", null, expr, region, query);
+            return new RegionDataResultItem(result, WidgetDataErrorType.WERR_QUERY, "Result is not a PMC array!", null, expr, region, query, false);
         }
 
         let unitConverted = this.applyUnitConversion(expr, result, query.units);
