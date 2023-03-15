@@ -55,6 +55,8 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
 
     private _isSolo: boolean = false;
 
+    public isOutputView: boolean = true;
+
     selectedPMCs: Set<number> = new Set();
     currentSelection: SelectionHistoryItem = null;
 
@@ -174,6 +176,11 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
     {
         this._isSolo = !this._isSolo;
         this.onToggleSolo.emit(this._isSolo);
+    }
+
+    onChangeOutputMode(): void
+    {
+        this.isOutputView = !this.isOutputView;
     }
 
     onMouseEnter(row: number, col: number)

@@ -721,6 +721,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     {
                         this.bottomEditor = editor;
                     }
+
+                    this.updateCurrentlyOpenList(true);
                 }, 1);
             }
             else
@@ -744,6 +746,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 {
                     this.bottomEditor = editor;
                 }
+
+                this.updateCurrentlyOpenList(true);
             }
         },
         (error) =>
@@ -799,27 +803,31 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 this.bottomEditor = new EditorConfig();
             }
             this.isSplitScreen = !this.isSplitScreen;
+
+            if(this.isSplitScreen)
+            {
+                this.updateCurrentlyOpenList(true);
+            }
         }
 
         // If we're not in split screen, make sure the top editor is active and the currently open list is updated
         if(!this.isSplitScreen)
         {
             this.setTopEditorActive();
-            this.sidebarTopSections["currently-open"].items = [
-                this.topEditor.expression,
-            ];
-
-            this.regenerateItemList();
+            this.updateCurrentlyOpenList(false);
         }
-        else
-        {
-            this.sidebarTopSections["currently-open"].items = [
-                this.topEditor.expression,
-                this.bottomEditor.expression
-            ];
+    }
 
-            this.regenerateItemList();
-        }
+    updateCurrentlyOpenList(includeBottomExpression: boolean = false): void
+    {
+        this.sidebarTopSections["currently-open"].items = includeBottomExpression ? [
+            this.topEditor.expression,
+            this.bottomEditor.expression
+        ] : [
+            this.topEditor.expression
+        ];
+
+        this.regenerateItemList();
     }
 
     ngOnDestroy()
@@ -1074,6 +1082,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 },
                 (err)=>
                 {
+                    this.evaluatedExpression = null;
                     // TODO: Handle errors better somehow
                     alert(err);
                 }
@@ -1146,10 +1155,12 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         ).subscribe(
             (result)=>
             {
+                console.log("HIGHLIGHT", result)
                 this.evaluatedExpression = result;
             },
             (err)=>
             {
+                this.evaluatedExpression = null;
                 // TODO: Handle errors better somehow
                 alert(err);
             }
@@ -1261,7 +1272,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     get runHighlightedCodeTooltip(): string
     {
-        let targetText = this.textHighlighted === "" ? "Expression Until Line" : "Highlighted Expression";
+        let targetText = this.textHighlighted === "" ? "Code Until Line" : "Selected Code";
         return this.isWindows ? `Run ${targetText} (Ctrl+Alt+Enter)` : `Run ${targetText} (Cmd+Option+Enter)`;
     }
 

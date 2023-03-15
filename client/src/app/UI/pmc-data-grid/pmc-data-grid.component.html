@@ -32,9 +32,17 @@ POSSIBILITY OF SUCH DAMAGE.
 <div fxLayout="column" class="data-grid">
   <div class="grid-header">
     <h2>{{header}}</h2>
-    <input class="summary-value" value="{{avgDataValue | number:'1.0-2'}} (avg.)" readonly>
-    <input class="summary-value" value="{{minDataValue | number:'1.0-2'}} (min.)" readonly>
-    <input class="summary-value" value="{{maxDataValue | number:'1.0-2'}} (max.)" readonly>
+    <multi-switch-button
+        #tooltip="matTooltip"
+        matTooltip="Switch between code return output and log view"
+        class="log-toggle-btn"
+        [options]="['Output', 'Logs']"
+        [value]="isOutputView ? 'Output' : 'Logs'"
+        (onChange)="onChangeOutputMode()">
+    </multi-switch-button>
+    <input class="summary-value" value="{{!isValidData ? ' --' : avgDataValue | number:'1.0-2'}} (avg.)" readonly>
+    <input class="summary-value" value="{{!isValidData ? ' --' : minDataValue | number:'1.0-2'}} (min.)" readonly>
+    <input class="summary-value" value="{{!isValidData ? ' --' : maxDataValue | number:'1.0-2'}} (max.)" readonly>
     <icon-button
       title="Solo"
       (onClick)="onSolo()"
@@ -66,6 +74,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div *ngIf="!isValidData" class="invalid-input">
       <img src="assets/icons/error-triangle-dark.svg"/>
       <h5>No Valid Input</h5>
+      <h6>Run an expression or highlight<br>a selection of code to run</h6>
     </div>
   </div>
 </div>
