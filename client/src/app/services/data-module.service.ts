@@ -55,6 +55,7 @@ class DataModuleVersionInput
         public sourceCode: string, // The module executable code
         public comments: string, // Editable comments
         public tags: string[], // Any tags for this version
+        public versionupdate: string = "patch" // "major", "minor", "patch"
     )
     {
     }
@@ -189,7 +190,7 @@ class DataModuleStore
 
         for(let id of toDelete)
         {
-            this._modules.delete(id)
+            this._modules.delete(id);
         }
     }
 
@@ -364,11 +365,26 @@ export class DataModuleService
             );
     }
 
-    addModuleVersion(moduleId: string, sourceCode: string, comments: string, tags: string[]): Observable<DataModuleSpecificVersionWire>
+    savePatchVersion(moduleId: string, sourceCode: string, comments: string, tags: string[]): Observable<DataModuleSpecificVersionWire>
     {
-        let loadID = this._loadingSvc.add("Adding new module version...");
+        return this.addModuleVersion(moduleId, sourceCode, comments, tags, "patch", "Saving new patch version...");
+    }
+
+    releaseMinorVersion(moduleId: string, sourceCode: string, comments: string, tags: string[]): Observable<DataModuleSpecificVersionWire>
+    {
+        return this.addModuleVersion(moduleId, sourceCode, comments, tags, "minor", "Releasing minor version...");
+    }
+
+    releaseMajorVersion(moduleId: string, sourceCode: string, comments: string, tags: string[]): Observable<DataModuleSpecificVersionWire>
+    {
+        return this.addModuleVersion(moduleId, sourceCode, comments, tags, "major", "Releasing major version...");
+    }
+    
+    addModuleVersion(moduleId: string, sourceCode: string, comments: string, tags: string[], type: string = "patch", loadingText: string = "Saving new module version..."): Observable<DataModuleSpecificVersionWire>
+    {
+        let loadID = this._loadingSvc.add(loadingText);
         let apiURL = APIPaths.getWithHost(APIPaths.api_data_module+"/"+moduleId);
-        let toSave = new DataModuleVersionInput(sourceCode, comments, tags);
+        let toSave = new DataModuleVersionInput(sourceCode, comments, tags, type);
         return this.http.put<DataModuleSpecificVersionWire>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(

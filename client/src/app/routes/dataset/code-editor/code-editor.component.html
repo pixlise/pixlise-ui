@@ -44,9 +44,14 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div class="text-container">
             <h2>{{topEditor.isModule ? "Module" : "LUA Expression"}} Editor</h2>
+            <status-indicator
+                [valid]="topEditor.isExpressionSaved"
+                [status]="topEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"
+            ></status-indicator>
             <mat-select
                 *ngIf="topEditor.isModule && topEditor.version"
-                [(ngModel)]="topEditor.version.version"
+                [value]="topEditor.version.version"
+                (selectionChange)="onModuleVersionChange($event.value, 'top')"
             >
                 <mat-option
                     *ngFor="let version of topEditor.versionList;"
@@ -191,7 +196,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="text-editor {{topEditor?.isHeaderOpen ? 'top-open' : ''}} {{bottomEditor?.isHeaderOpen ? 'bottom-open' : ''}} {{isSplitScreen ? 'split-screen-mode' : ''}}">
             <expression-text-editor
                 *ngIf="topEditor && topEditor.expression"
-                class="top-expression"
+                class="top-expression {{isTopEditorActive && isSplitScreen ? 'active' : ''}}"
                 [expression]="topEditor.expression"
                 [allowEdit]="topEditor.editable"
                 [isImmediatelyAppliable]="false"
@@ -211,13 +216,19 @@ POSSIBILITY OF SUCH DAMAGE.
                 [installedModules]="topEditor.modules"
                 [showInstalledModules]="!topEditor.isModule"
                 (onModuleChange)="onModuleChange($event, 'top')"
+                (onClick)="setTopEditorActive()"
             >
             </expression-text-editor>
             <div *ngIf="bottomEditor.expression && isSplitScreen" class="split-screen-header">
                 <h2>{{bottomEditor.isModule ? "Module" : "LUA Expression"}} Editor</h2>
+                <status-indicator
+                [valid]="bottomEditor.isExpressionSaved"
+                [status]="bottomEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"
+            ></status-indicator>
                 <mat-select
                     *ngIf="bottomEditor.isModule"
-                    [(ngModel)]="bottomEditor.version.version"
+                    [value]="bottomEditor.version.version"
+                    (selectionChange)="onModuleVersionChange($event.value, 'bottom')"
                 >
                     <mat-option
                         *ngFor="let version of bottomEditor.versionList;"
@@ -258,7 +269,7 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
             <expression-text-editor
                 *ngIf="bottomEditor && bottomEditor.expression && isSplitScreen"
-                class="bottom-expression"
+                class="bottom-expression {{!isTopEditorActive && isSplitScreen ? 'active' : ''}}"
                 [expression]="bottomEditor.expression"
                 [allowEdit]="bottomEditor.editable"
                 [isImmediatelyAppliable]="false"
@@ -278,6 +289,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [installedModules]="bottomEditor.modules"
                 [showInstalledModules]="!bottomEditor.isModule"
                 (onModuleChange)="onModuleChange($event, 'bottom')"
+                (onClick)="setBottomEditorActive()"
             >
             </expression-text-editor>
         </div>
@@ -301,56 +313,68 @@ POSSIBILITY OF SUCH DAMAGE.
                 <mat-option [value]="true">Lua</mat-option>
                 <mat-option [value]="false">PIXLang</mat-option>
             </mat-select>
-            <push-button
-                *ngIf="!topEditor.isLua"
-                class="convert-to-lua-btn"
-                buttonStyle="yellow"
-                [disabled]="!topEditor.editable"
-                [active]="topEditor.useAutocomplete"
-                (onClick)="convertToLua()"
-                #tooltip="matTooltip"
-                matTooltip="WARNING: This is a one way operation"
-            >Convert to LUA
-            </push-button>
-            <push-button
-                class="run-highlighted-btn"
-                buttonStyle="yellow"
-                [disabled]="textHighlighted === '' && !isEmptySelection"
-                (onClick)="runHighlightedExpression()"
-                #tooltip="matTooltip"
-                [matTooltip]="runHighlightedCodeTooltip"
-            >{{textHighlighted === '' ? "Run Code Until Line" : "Run Selected Code"}}
-            </push-button>
-            <push-button
-                *ngIf="isSplitScreen"
-                class="save-btn"
-                [buttonStyle]="bottomEditor.invalidExpression ? 'orange' : 'yellow'"
-                [disabled]="!bottomEditor.editable || bottomEditor.isExpressionSaved || bottomEditor.invalidExpression"
-                (onClick)="onSave(false)"
-                #tooltip="matTooltip"
-                [matTooltip]="saveModuleTooltip"
-            >Save Module
-            </push-button>
-            <push-button
-                *ngIf="topEditor.isModule"
-                class="save-btn"
-                [buttonStyle]="topEditor.invalidExpression ? 'orange' : 'yellow'"
-                [disabled]="!topEditor.editable || topEditor.isExpressionSaved || topEditor.invalidExpression"
-                (onClick)="onSave(false)"
-                #tooltip="matTooltip"
-                [matTooltip]="saveModuleTooltip"
-            >Save Module
-            </push-button>
-            <push-button
-                *ngIf="!topEditor.isModule"
-                class="save-btn"
-                [buttonStyle]="topEditor.invalidExpression ? 'orange' : 'yellow'"
-                [disabled]="!topEditor.editable || topEditor.isExpressionSaved || topEditor.invalidExpression"
-                (onClick)="onSave(true)"
-                #tooltip="matTooltip"
-                [matTooltip]="saveExpressionTooltip"
-            >Save Expression
-            </push-button>
+            <div class="right-btn-group">
+                <push-button
+                    *ngIf="hasVisibleModule"
+                    class="save-btn"
+                    buttonStyle="yellow"
+                    [disabled]="!isVisibleModuleEditable || !visibleModuleCodeEditor?.isLoadedVersionLatest"
+                    (onClick)="onRelease()"
+                    #tooltip="matTooltip"
+                    [matTooltip]="releaseModuleTooltip"
+                >Release Module
+                </push-button>
+                <push-button
+                    *ngIf="!topEditor.isLua"
+                    class="convert-to-lua-btn"
+                    buttonStyle="yellow"
+                    [disabled]="!topEditor.editable"
+                    [active]="topEditor.useAutocomplete"
+                    (onClick)="convertToLua()"
+                    #tooltip="matTooltip"
+                    matTooltip="WARNING: This is a one way operation"
+                >Convert to LUA
+                </push-button>
+                <push-button
+                    class="run-highlighted-btn"
+                    buttonStyle="yellow"
+                    [disabled]="textHighlighted === '' && !isEmptySelection"
+                    (onClick)="runHighlightedExpression()"
+                    #tooltip="matTooltip"
+                    [matTooltip]="runHighlightedCodeTooltip"
+                >{{textHighlighted === '' ? "Run Code Until Line" : "Run Selected Code"}}
+                </push-button>
+                <push-button
+                    *ngIf="isSplitScreen"
+                    class="save-btn"
+                    [buttonStyle]="bottomEditor.invalidExpression ? 'orange' : 'yellow'"
+                    [disabled]="!bottomEditor.editable || bottomEditor.isExpressionSaved || bottomEditor.invalidExpression"
+                    (onClick)="onSave(false)"
+                    #tooltip="matTooltip"
+                    [matTooltip]="saveModuleTooltip"
+                >Save Module
+                </push-button>
+                <push-button
+                    *ngIf="topEditor.isModule"
+                    class="save-btn"
+                    [buttonStyle]="topEditor.invalidExpression ? 'orange' : 'yellow'"
+                    [disabled]="!topEditor.editable || topEditor.isExpressionSaved || topEditor.invalidExpression"
+                    (onClick)="onSave(false)"
+                    #tooltip="matTooltip"
+                    [matTooltip]="saveModuleTooltip"
+                >Save Module
+                </push-button>
+                <push-button
+                    *ngIf="!topEditor.isModule"
+                    class="save-btn"
+                    [buttonStyle]="topEditor.invalidExpression ? 'orange' : 'yellow'"
+                    [disabled]="!topEditor.editable || topEditor.isExpressionSaved || topEditor.invalidExpression"
+                    (onClick)="onSave(true)"
+                    #tooltip="matTooltip"
+                    [matTooltip]="saveExpressionTooltip"
+                >Save Expression
+                </push-button>
+            </div>
         </div>
         <div class="viz-container">
             <div class="right-btn-group">

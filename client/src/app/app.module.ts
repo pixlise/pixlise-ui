@@ -232,6 +232,7 @@ import { CodeEditorComponent } from "./routes/dataset/code-editor/code-editor.co
 import { PMCDataGridComponent } from "./UI/pmc-data-grid/pmc-data-grid.component";
 
 import { StatusIndicatorComponent } from './UI/atoms/status-indicator/status-indicator.component';
+import { ModuleReleaseDialogComponent } from './UI/module-release-dialog/module-release-dialog.component';
 
 
 @Injectable()
@@ -478,7 +479,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         LogViewerComponent,
         PlotExporterDialogComponent,
         PMCDataGridComponent,
-        StatusIndicatorComponent
+        StatusIndicatorComponent,
+        ModuleReleaseDialogComponent
     ],
     imports: [
         BrowserModule,
