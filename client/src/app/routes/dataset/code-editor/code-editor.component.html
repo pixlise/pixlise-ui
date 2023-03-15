@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <div fxLayout="column" class="code-editor">
     <div class="editor-header {{isSidebarOpen ? 'sidebar-open' : ''}}">
         <div class="{{isSidebarOpen ? 'sidebar-header' : 'sidebar-header-closed'}}">
-            <h2 *ngIf="isSidebarOpen">Modules</h2>
+            <h2 *ngIf="isSidebarOpen">Explorer</h2>
             <div
                 class="sidebar-header-toggle-btn"
                 (click)="onToggleSidebar()"
@@ -43,7 +43,7 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
         </div>
         <div class="text-container">
-            <h2>{{topEditor.isModule ? "Module" : "LUA Expression"}} Editor</h2>
+            <h2>{{topEditor.isModule ? "Module" : "Expression"}} Editor</h2>
             <status-indicator
                 [valid]="topEditor.isExpressionSaved"
                 [status]="topEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"
@@ -304,6 +304,8 @@ POSSIBILITY OF SUCH DAMAGE.
                 [evaluatedExpression]="evaluatedExpression"
                 [columnCount]="15"
                 (onToggleSolo)="onTogglePMCDataGridSolo($event)"
+                [stdout]="stdout"
+                [stderr]="stderr"
             ></pmc-data-grid>
         </div>
     </div>
@@ -342,7 +344,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     (onClick)="runHighlightedExpression()"
                     #tooltip="matTooltip"
                     [matTooltip]="runHighlightedCodeTooltip"
-                >{{textHighlighted === '' ? "Run Code Until Line" : "Run Selected Code"}}
+                >{{textHighlighted === '' ? "Run Code To Line #" : "Run Selected Code"}}
                 </push-button>
                 <push-button
                     *ngIf="isSplitScreen"

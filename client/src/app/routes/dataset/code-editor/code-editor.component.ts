@@ -349,6 +349,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     public isSubsetExpression: boolean = false;
 
     public evaluatedExpression: RegionDataResultItem;
+    public stdout: string = "";
+    public stderr: string = "";
     public pmcGridExpressionTitle: string = "";
     public displayExpressionTitle: string = "";
 
@@ -1076,6 +1078,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 (result)=>
                 {
                     this.evaluatedExpression = result;
+                    this.stderr = "";
                     if(this.evaluatedExpression && this.evaluatedExpression?.values?.values.length > 0)
                     {
                         editor.isCodeChanged = false;
@@ -1086,8 +1089,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 (err)=>
                 {
                     this.evaluatedExpression = null;
-                    // TODO: Handle errors better somehow
-                    alert(err);
+                    this.stderr = `${err}`;
                 }
             );
         }
@@ -1160,12 +1162,12 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             (result)=>
             {
                 this.evaluatedExpression = result;
+                this.stderr = "";
             },
             (err)=>
             {
                 this.evaluatedExpression = null;
-                // TODO: Handle errors better somehow
-                alert(err);
+                this.stderr = `${err}`;
             }
         );
 

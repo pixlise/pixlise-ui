@@ -34,11 +34,13 @@ POSSIBILITY OF SUCH DAMAGE.
     <h2>{{header}}</h2>
     <multi-switch-button
         #tooltip="matTooltip"
-        matTooltip="Switch between code return output and log view"
+        [matTooltip]="toggleTooltip"
         class="log-toggle-btn"
         [options]="['Output', 'Logs']"
         [value]="isOutputView ? 'Output' : 'Logs'"
-        (onChange)="onChangeOutputMode()">
+        [disabled]="!isOutputView && !!stderr"
+        (onChange)="onChangeOutputMode()"
+      >
     </multi-switch-button>
     <input class="summary-value" value="{{!isValidTableData || !isOutputView ? ' --' : avgDataValue | number:'1.0-2'}} (avg.)" readonly>
     <input class="summary-value" value="{{!isValidTableData || !isOutputView ? ' --' : minDataValue | number:'1.0-2'}} (min.)" readonly>
@@ -80,6 +82,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <h6>Run an expression or highlight<br>a selection of code to run</h6>
     </div>
 
-    <div *ngIf="!isOutputView" class="log-text">{{logText || "No log output"}}</div>
+    <div *ngIf="!isOutputView && !stderr" class="log-text">{{stdout || "No log output"}}</div>
+    <div *ngIf="!isOutputView && stderr" class="error-text">{{stderr || "No log output"}}</div>
   </div>
 </div>

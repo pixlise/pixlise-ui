@@ -111,13 +111,17 @@
             }
         }
 
-        .result-text, .log-text {
+        .result-text, .log-text, .error-text {
             background: black;
             border-radius: 8px;
             border: 1px solid #222829;
             margin: 4px;
             padding: 8px;
             white-space: pre;
+        }
+
+        .error-text {
+            color: red;
         }
 
         .invalid-input {

@@ -51,12 +51,14 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
     @Input() header: string = "Data Grid";
     @Input() evaluatedExpression: RegionDataResultItem = null;
     @Input() columnCount: number = 0;
-    @Input() logs: string[] = [];
+    @Input() stdout: string = "";
+    @Input() stderr: string = "";
+
     @Output() onToggleSolo = new EventEmitter();
 
     private _isSolo: boolean = false;
 
-    public isOutputView: boolean = true;
+    private _isOutputView: boolean = true;
 
     selectedPMCs: Set<number> = new Set();
     currentSelection: SelectionHistoryItem = null;
@@ -83,9 +85,19 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         this._subs.unsubscribe();
     }
 
-    get logText(): string
+    get isOutputView(): boolean
     {
-        return this.logs.join("\n");
+        return !this.stderr && this._isOutputView;
+    }
+
+    set isOutputView(value: boolean)
+    {
+        this._isOutputView = value;
+    }
+
+    get toggleTooltip(): string
+    {
+        return this.stderr ? "Fix the errors below to enable output view" : "Switch between code return output and log view";
     }
 
     get rowCount(): number
