@@ -40,6 +40,7 @@ import { QuantificationService } from "src/app/services/quantification.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
 import { DataExpression, DataExpressionId, ShortName, ExpressionExecStats, ModuleReference } from "src/app/models/Expression";
 import { EXPR_LANGUAGE_PIXLANG } from "../expression-language/expression-language";
+import { environment } from "src/environments/environment";
 
 
 class DataExpressionInput
@@ -700,5 +701,54 @@ export class DataExpressionService
                     }
                 )
             );
+    }
+
+    // Call this to save runtime stats. Internally this saves them in local cache and sends to API, subscribing
+    // for the result, but does nothing with it except print errors if needed
+    saveExecutionStats(id: string, dataRequired: string[], runtimeMs: number): void
+    {
+        // Don't send for ids that are "special"
+        if(id.startsWith("unsaved"))
+        {
+            return;
+        }
+
+        // Check if we have a recent cache time, if so, don't send, no point flooding API with this
+        let expr = this._expressions.get(id);
+        let nowSec = Math.floor(Date.now() / 1000);
+
+        if(expr && expr.recentExecStats && nowSec-expr.recentExecStats.mod_unix_time_sec < environment.expressionExecStatSaveIntervalSec)
+        {
+            // Don't save too often
+            return;
+        }
+
+        let toSave = new ExpressionExecStats(dataRequired, runtimeMs, null);
+        // Don't send blank timestamps...
+        if(!toSave.mod_unix_time_sec)
+        {
+            delete toSave["mod_unix_time_sec"];
+        }
+
+        let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/execution-stat/${id}`;
+        this.http.put<object>(apiURL, toSave, makeHeaders()).subscribe(
+            (result: object)=>
+            {
+                // Save to our local copy at this point
+                if(expr)
+                {
+                    let recvd = new ExpressionExecStats(result["dataRequired"], result["runtimeMs"], result["mod_unix_time_sec"]);
+                    expr.recentExecStats = recvd;
+                }
+                else
+                {
+                    console.warn("Failed to find expression: "+id+" when saving execution stats. Ignored.")
+                }
+            },
+            (err)=>
+            {
+                console.error(err);
+            }
+        );
     }
 }

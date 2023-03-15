@@ -41,7 +41,7 @@ import {
     QuantifiedDataQuerierSource,
     //SpectrumDataQuerierSource
 } from "src/app/expression-language/data-sources";
-import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
+import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { DataSetService } from "src/app/services/data-set.service";
 import { DataExpression } from "src/app/models/Expression";
 import { DataQuerier, EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
@@ -101,9 +101,13 @@ export class ExpressionRunnerService
                     // Pass in the source and module sources separately
                     return this._querier.runQuery(exprSource, sources, expression.sourceLanguage).pipe(
                         map(
-                            (queryResult: PMCDataValues)=>
+                            (queryResult: DataQueryResult)=>
                             {
-                                let finalResult = this.filterForPMCs(queryResult, forPMCs);
+                                // Save runtime stats for this expression
+                                this._exprService.saveExecutionStats(expression.id, queryResult.dataRequired, queryResult.runtimeMs);
+
+                                // Return the results
+                                let finalResult = this.filterForPMCs(queryResult.resultValues, forPMCs);
                                 return finalResult;
                             }
                         )
@@ -113,7 +117,7 @@ export class ExpressionRunnerService
         );
     }
 
-    private _exprKey = "";
+    private _exprKey = ""; // The key name for the expression source code as returned by loadCodeForExpression()
 
     private loadCodeForExpression(expression: DataExpression): Observable<Map<string, string>>
     {

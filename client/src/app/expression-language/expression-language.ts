@@ -31,7 +31,7 @@ import { Observable } from "rxjs";
 import {
     DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
 } from "src/app/expression-language/data-sources";
-import { PMCDataValues } from "src/app/expression-language/data-values";
+import { DataQueryResult } from "src/app/expression-language/data-values";
 import { DataSet } from "src/app/models/DataSet";
 import { InterpreterDataSource } from "./interpreter-data-source";
 import { PixliseDataQuerier } from "./interpret-pixlise";
@@ -83,7 +83,7 @@ export class DataQuerier
         }
     }
 
-    public runQuery(expression: string, modules: Map<string, string>, expressionLanguage: string): Observable<PMCDataValues>
+    public runQuery(expression: string, modules: Map<string, string>, expressionLanguage: string): Observable<DataQueryResult>
     {
         // Decide which interperter to run it in
         if(expressionLanguage == EXPR_LANGUAGE_LUA)

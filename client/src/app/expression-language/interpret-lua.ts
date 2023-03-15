@@ -29,10 +29,11 @@
 
 import { Observable, combineLatest, from, of } from "rxjs";
 import { map, mergeMap, concatMap, catchError, finalize } from "rxjs/operators";
-import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
+import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { InterpreterDataSource } from "./interpreter-data-source";
 import { randomString } from "src/app/utils/utils";
+import { DataExpressionId } from "../models/Expression";
 
 const { LuaFactory, LuaLibraries } = require("wasmoon");
 
@@ -48,6 +49,8 @@ export class LuaDataQuerier
     private _loggedTables = [];
     private _makeLuaTableTime = 0; // Total time spent returning Tables to Lua from things like element() Lua call
     //private _luaLibImports = "";
+
+    private _runtimeDataRequired: Set<string> = new Set<string>();
 
     private _dataSource: InterpreterDataSource = null;
 
@@ -218,16 +221,16 @@ export class LuaDataQuerier
 
     private LuaFunctionArgCounts = [3, 2, 2, 3, 3, 1, 1, 2, 0, 1, 1];
     private LuaCallableFunctions = new Map<string, any>([
-        ["element", (a,b,c)=>{return this.makeLuaTable(this._dataSource.readElement([a, b, c]))}],
-        ["elementSum", (a,b)=>{return this.makeLuaTable(this._dataSource.readElementSum([a, b]))}],
-        ["data", (a,b)=>{return this.makeLuaTable(this._dataSource.readMap([a, b]))}],
-        ["spectrum", (a,b,c)=>{return this.makeLuaTable(this._dataSource.readSpectrum([a, b, c]))}],
-        ["spectrumDiff", (a,b,c)=>{return this.makeLuaTable(this._dataSource.readSpectrumDifferences([a, b, c]))}],
-        ["pseudo", (a)=>{return this.makeLuaTable(this._dataSource.readPseudoIntensity([a]))}],
-        ["housekeeping", (a)=>{return this.makeLuaTable(this._dataSource.readHousekeepingData([a]))}],
-        ["diffractionPeaks", (a,b)=>{return this.makeLuaTable(this._dataSource.readDiffractionData([a, b]))}],
-        ["roughness", ()=>{return this.makeLuaTable(this._dataSource.readRoughnessData([]))}],
-        ["position", (a)=>{return this.makeLuaTable(this._dataSource.readPosition([a]))}],
+        ["element", (a,b,c)=>{this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantElementExpression(a, b, c)); return this.makeLuaTable(this._dataSource.readElement([a, b, c]))}],
+        ["elementSum", (a,b)=>{/*Dont save runtime stat here, this works for any quant*/ return this.makeLuaTable(this._dataSource.readElementSum([a, b]))}],
+        ["data", (a,b)=>{this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantDataExpression(a, b)); return this.makeLuaTable(this._dataSource.readMap([a, b]))}],
+        ["spectrum", (a,b,c)=>{this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum); return this.makeLuaTable(this._dataSource.readSpectrum([a, b, c]))}],
+        ["spectrumDiff", (a,b,c)=>{this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum); return this.makeLuaTable(this._dataSource.readSpectrumDifferences([a, b, c]))}],
+        ["pseudo", (a)=>{this._runtimeDataRequired.add(DataExpressionId.makePredefinedPseudoIntensityExpression(a)); return this.makeLuaTable(this._dataSource.readPseudoIntensity([a]))}],
+        ["housekeeping", (a)=>{this._runtimeDataRequired.add(DataQueryResult.DataTypeHousekeeping+"-"+a); return this.makeLuaTable(this._dataSource.readHousekeepingData([a]))}],
+        ["diffractionPeaks", (a,b)=>{this._runtimeDataRequired.add(DataQueryResult.DataTypeDiffraction); return this.makeLuaTable(this._dataSource.readDiffractionData([a, b]))}],
+        ["roughness", ()=>{this._runtimeDataRequired.add(DataQueryResult.DataTypeRoughness); return this.makeLuaTable(this._dataSource.readRoughnessData([]))}],
+        ["position", (a)=>{this._runtimeDataRequired.add(DataQueryResult.DataTypePosition); return this.makeLuaTable(this._dataSource.readPosition([a]))}],
         ["makeMap", (a)=>{return this.makeLuaTable(this._dataSource.makeMap([a]))}],
     ]);
 
@@ -253,7 +256,7 @@ export class LuaDataQuerier
     }
 
     // See: https://github.com/ceifa/wasmoon
-    public runQuery(sourceCode: string, modules: Map<string, string>, dataSource: InterpreterDataSource, cleanupLua: boolean): Observable<PMCDataValues>
+    public runQuery(sourceCode: string, modules: Map<string, string>, dataSource: InterpreterDataSource, cleanupLua: boolean): Observable<DataQueryResult>
     {
         this._execCount++;
         this._dataSource = dataSource;
@@ -293,8 +296,11 @@ export class LuaDataQuerier
         )
     }
 
-    private runQueryInternal(sourceCode: string, exprFuncName: string, cleanupLua: boolean, t0: number): Observable<PMCDataValues>
+    private runQueryInternal(sourceCode: string, exprFuncName: string, cleanupLua: boolean, t0: number): Observable<DataQueryResult>
     {
+        // Ensure the list of data required is cleared, from here on we're logging what the expression required to run!
+        this._runtimeDataRequired.clear();
+
         return from(this._lua.doString(sourceCode)).pipe(
             map(
                 (result)=>
@@ -304,17 +310,17 @@ export class LuaDataQuerier
                     {
                         this.logTables();
                     }
-                    
+
                     if(result)
                     {
                         // We got an object back that represents a table in Lua. Here we assume this is a PMCDataValue[] effectively
                         // so lets convert it to something we'll use here (PMCDataValues)
                         let pmcDataResult = this.readLuaTable(result);
 
-                        let t1 = performance.now();
-                        console.log(this._logId+">>> Lua expression took: "+(t1-t0).toLocaleString()+"ms, makeTable calls took: "+this._makeLuaTableTime+"ms");
+                        let runtimeMs = performance.now()-t0;
+                        console.log(this._logId+">>> Lua expression took: "+runtimeMs.toLocaleString()+"ms, makeTable calls took: "+this._makeLuaTableTime+"ms");
 
-                        return pmcDataResult;
+                        return new DataQueryResult(pmcDataResult, Array.from(this._runtimeDataRequired.keys()), runtimeMs);
                     }
 
                     throw new Error("Expression: "+sourceCode+" did not complete");
