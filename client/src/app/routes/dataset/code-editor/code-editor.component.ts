@@ -792,6 +792,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     onToggleSidebar(): void
     {
         this.isSidebarOpen = !this.isSidebarOpen;
+        this._layoutService.resizeCanvas$.next();
     }
 
     onToggleSplitScreen(): void
