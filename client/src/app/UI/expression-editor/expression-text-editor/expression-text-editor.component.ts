@@ -227,6 +227,12 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         this.onModuleChange.emit(this.installedModules);
     }
 
+    deleteModule(i): void
+    {
+        this.installedModules.splice(i, 1);
+        this.onModuleChange.emit(this.installedModules);
+    }
+
     get isHeaderNonEmptyAndOpen(): boolean
     {
         return this.isHeaderOpen && this.installedModules.length > 0;

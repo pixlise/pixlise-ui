@@ -36,7 +36,9 @@ POSSIBILITY OF SUCH DAMAGE.
               class="module-import-line"
           >
               <div class="line-gutter" [ngStyle]="{'width': gutterWidth}">
-                  <span class="line-number">{{i+1}}</span>
+                  <span class="line-number">
+                    <img src="assets/button-icons/x.svg" (click)="deleteModule(i)">
+                  </span>
               </div>
               <span class="header-code cm-s-pixlise">
                   <span class="cm-keyword">local </span>

@@ -107,6 +107,17 @@ h3 {
                     color: #546E7A;
                     font-family: monospace;
                     margin-right: 4px;
+                    cursor: pointer;
+
+                    img {
+                        filter: brightness(0.5);
+                    }
+
+                    &:hover {
+                        img {
+                            filter: brightness(1);
+                        }
+                    }
                 }
             }
 
