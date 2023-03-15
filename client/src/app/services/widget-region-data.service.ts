@@ -1101,41 +1101,21 @@ export class WidgetRegionDataService
                                 this._exprService.setQuantDataAvailable(quant.getElementList(), quant.getDetectors());
 
                                 // Remember that we've loaded this...
-                                this._quantIdLastLoaded = this._quantId/*quant.summary.jobId*/; // Remember that we've loaded this one!
-                                this._quantificationLoaded = quant;
-
-                                this.rebuildData(WidgetDataUpdateReason.WUPD_QUANT);
-
-                                // Also notify that there is a new quantification loaded
-                                this.quantificationLoaded$.next(quant);
+                                this.onQuantChange(this._quantId, quant);
                             },
                             (err)=>
                             {
                                 console.error(this._logPrefix+": "+httpErrorToString(err, "Quant failed to load"));
-                                // Failed to load a quant, set our state that way
-                                this._quantIdLastLoaded = this._quantId/*quant.summary.jobId*/; // Remember that we've failed to load this one!
-                                this._quantificationLoaded = null;
 
-                                this.rebuildData(WidgetDataUpdateReason.WUPD_QUANT);
-
-                                // Notify out that we don't have a quant loaded
-                                this.quantificationLoaded$.next(null);
+                                // Saving the ID so we remember that we've failed to load this one!
+                                this.onQuantChange(this._quantId, null);
                             }
                         );
                     }
                 }
                 else
                 {
-                    // No quant to load!
-                    this._quantificationLoaded = null;
-
-                    // Don't strictly need to clear this here but might as well...
-                    this._quantIdLastLoaded = null;
-
-                    this.rebuildData(WidgetDataUpdateReason.WUPD_QUANT);
-
-                    // Notify out that we don't have a quant loaded
-                    this.quantificationLoaded$.next(null);
+                    this.onQuantChange(null, null);
                 }
             },
             (err)=>
@@ -1147,6 +1127,22 @@ export class WidgetRegionDataService
                 this.resubscribeViewStateQuantLoaded();
             }
         ));
+    }
+
+    // Handles a quant change
+    private onQuantChange(quantId: string, quant: QuantificationLayer): void
+    {
+        // With a new quant loading anything we have cached is invalidated
+        this._resultCache.clear();
+        
+        // Save stuff
+        this._quantificationLoaded = quant;
+        this._quantIdLastLoaded = quantId;
+
+        this.rebuildData(WidgetDataUpdateReason.WUPD_QUANT);
+
+        // Notify about this quant
+        this.quantificationLoaded$.next(quant);
     }
 
     private resubscribeMultiQuantROIs()
