@@ -106,7 +106,7 @@ export class DataExpressionService
     private _expressionsUpdated$ = new ReplaySubject<void>(1);
     private _expressions: Map<string, DataExpression> = new Map<string, DataExpression>();
 
-    private _elementFormulae: string[] = [];
+    private _elementFormulae: Set<string> = new Set<string>();
     private _validDetectors: string[] = [QuantModes.quantModeCombined];
 
     private _diffractionCountExpression = "";
@@ -128,7 +128,11 @@ export class DataExpressionService
 
     setQuantDataAvailable(elementFormulae: string[], detectors: string[]): void
     {
-        this._elementFormulae = elementFormulae;
+        this._elementFormulae.clear();
+        for(let e of elementFormulae)
+        {
+            this._elementFormulae.add(e);
+        }
         this._validDetectors = detectors;
 
         // If we have expressions, run their compatibility check against these
@@ -708,7 +712,11 @@ export class DataExpressionService
     saveExecutionStats(id: string, dataRequired: string[], runtimeMs: number): void
     {
         // Don't send for ids that are "special"
-        if(id.startsWith("unsaved"))
+        if(
+            DataExpressionId.isPredefinedExpression(id) ||
+            DataExpressionId.isPredefinedNewID(id) ||
+            DataExpressionId.isPredefinedQuantExpression(id)
+            )
         {
             return;
         }

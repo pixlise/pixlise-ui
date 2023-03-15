@@ -61,8 +61,8 @@ export class ExpressionExecStats
 
 export class DataExpression
 {
-    private _requiredElementFormulae = new Set<string>();
-    private _requiredDetectors = new Set<string>();
+    private _requiredElementFormulae: string[] = [];
+    private _requiredDetectors: string[] = [];
 
     private _isCompatibleWithQuantification: boolean = true;
 
@@ -81,8 +81,31 @@ export class DataExpression
         public recentExecStats: ExpressionExecStats
     )
     {
-        // TODO: Need to interpret recentExecStats.dataRequired and store in _requiredElementFormulae/_requiredDetectors
-        // to be able to give valid results for: checkQuantCompatibility()
+        // Read in the required elements and detectors from the recent exec stats (if any)
+        // NOTE: These lists are assembled in the expression language interpreter code
+        //       so look there to see what the possibilities are
+        if(recentExecStats && recentExecStats.dataRequired)
+        {
+            let elems = new Set<string>();
+            let dets = new Set<string>();
+            for(let item of recentExecStats.dataRequired)
+            {
+                let elem = DataExpressionId.getPredefinedQuantExpressionElement(item);
+                if(elem)
+                {
+                    elems.add(elem);
+                }
+
+                let detector = DataExpressionId.getPredefinedQuantExpressionDetector(item);
+                if(detector)
+                {
+                    dets.add(detector);
+                }
+            }
+
+            this._requiredElementFormulae = Array.from(elems.keys());
+            this._requiredDetectors = Array.from(dets.keys());
+        }
     }
 
     copy(): DataExpression
@@ -120,14 +143,14 @@ export class DataExpression
 
     // Checks compatibility with passed in params, returns true if flag was changed
     // otherwise false.
-    checkQuantCompatibility(elementList: string[], detectors: string[]): boolean
+    checkQuantCompatibility(elementList: Set<string>, detectors: string[]): boolean
     {
         let wasCompatible = this._isCompatibleWithQuantification;
 
         // Check if the quant would have the data we're requiring...
         for(let elem of this._requiredElementFormulae)
         {
-            if(elementList.indexOf(elem) <= -1)
+            if(elementList.has(elem))
             {
                 // NOTE: quant element list returns both pure and oxide/carbonate, so this check is enough
                 this._isCompatibleWithQuantification = false;
@@ -137,6 +160,8 @@ export class DataExpression
 
         for(let detector of this._requiredDetectors)
         {
+            // This is likely a list of 1-2 items so indexOf is fast enough. If we end up with more detectors in future
+            // we may need to use a Set for this too
             if(detectors.indexOf(detector) <= -1)
             {
                 // Expression contains a detector that doesn't exist in the quantification
