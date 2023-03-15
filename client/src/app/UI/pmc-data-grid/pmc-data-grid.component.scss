@@ -66,7 +66,7 @@
         }
     }
 
-    .table-container {
+    .result-container {
         overflow: scroll;
 
         table {
@@ -109,6 +109,15 @@
                     }
                 }
             }
+        }
+
+        .result-text, .log-text {
+            background: black;
+            border-radius: 8px;
+            border: 1px solid #222829;
+            margin: 4px;
+            padding: 8px;
+            white-space: pre;
         }
 
         .invalid-input {

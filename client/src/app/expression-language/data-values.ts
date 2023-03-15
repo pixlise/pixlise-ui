@@ -80,7 +80,8 @@ export enum QuantOp
 export class DataQueryResult
 {
     constructor(
-        public resultValues: PMCDataValues,
+        public resultValues: PMCDataValues | any, // PMCDataValues if the query was for PMC data, otherwise it's whatever the query returned
+        public isPMCTable: boolean,
         public dataRequired: string[],
         public runtimeMs: number
     )

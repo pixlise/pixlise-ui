@@ -29,7 +29,7 @@
 
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from "@angular/core";
 import { Subscription } from "rxjs";
-import { PMCDataValue } from "src/app/expression-language/data-values";
+import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { RegionDataResultItem } from "src/app/services/widget-region-data.service";
 import { CSVExportItem, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
@@ -51,6 +51,7 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
     @Input() header: string = "Data Grid";
     @Input() evaluatedExpression: RegionDataResultItem = null;
     @Input() columnCount: number = 0;
+    @Input() logs: string[] = [];
     @Output() onToggleSolo = new EventEmitter();
 
     private _isSolo: boolean = false;
@@ -82,15 +83,50 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         this._subs.unsubscribe();
     }
 
+    get logText(): string
+    {
+        return this.logs.join("\n");
+    }
+
     get rowCount(): number
     {
         let count = this.evaluatedExpression?.values?.values.length; 
         return count && this.columnCount > 0 ? Math.floor(count / this.columnCount) : 0;
     }
 
+    get printableResultValue(): string
+    {
+        let values = this.evaluatedExpression?.values;
+        if(this.isValidTableData)
+        {
+            return values.values.map((point) => point.value).join(", ");
+        }
+        
+        if(Array.isArray(values))
+        {
+            return values.map(value => JSON.stringify(value)).join("\n");
+        }
+        else if(typeof values === "object")
+        {
+            // Pretty print JSON
+            return JSON.stringify(values, null, 2);
+        }
+        else
+        {
+            return `${values}`;
+        }
+    }
+
     get isValidData(): boolean
     {
-        return this.evaluatedExpression?.values?.values.length > 0;
+        let values = this.evaluatedExpression?.values;
+        return typeof values !== "undefined" && values !== null && (!Array.isArray(values?.values) || values.values.length > 0);
+    }
+
+    get isValidTableData(): boolean
+    {
+        let values = this.evaluatedExpression?.values;
+        return values instanceof PMCDataValues && values?.values.length > 0;
     }
 
     get minDataValue(): number
@@ -123,7 +159,7 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
 
     get hoveredIndex(): number[]
     {
-        if(this._selectionService.hoverPMC !== -1 && this.evaluatedExpression?.values)
+        if(this.isValidTableData && this._selectionService.hoverPMC !== -1 && this.evaluatedExpression?.values)
         {
             let index = this.evaluatedExpression.values.values.findIndex((point) => point.pmc === this._selectionService.hoverPMC);
             if(index !== -1)

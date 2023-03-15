@@ -66,12 +66,17 @@ export class DataQuerier
         }
     }
 
-    public runQuery(expression: string, modules: Map<string, string>, expressionLanguage: string, dataSource: InterpreterDataSource): Observable<DataQueryResult>
+    static isPMCArray(result: any): boolean
+    {
+        return Array.isArray(result) && result.length == 2 && result.every((resultArray) => Array.isArray(resultArray));
+    }
+
+    public runQuery(expression: string, modules: Map<string, string>, expressionLanguage: string, dataSource: InterpreterDataSource, allowAnyResponse: boolean = false): Observable<DataQueryResult>
     {
         // Decide which interperter to run it in
         if(expressionLanguage == EXPR_LANGUAGE_LUA)
         {
-            return this._interpretLua.runQuery(expression, modules, dataSource, environment.newLuaPerExpression);
+            return this._interpretLua.runQuery(expression, modules, dataSource, environment.newLuaPerExpression, allowAnyResponse);
         }
         else
         {

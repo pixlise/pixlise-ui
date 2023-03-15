@@ -40,9 +40,9 @@ POSSIBILITY OF SUCH DAMAGE.
         [value]="isOutputView ? 'Output' : 'Logs'"
         (onChange)="onChangeOutputMode()">
     </multi-switch-button>
-    <input class="summary-value" value="{{!isValidData ? ' --' : avgDataValue | number:'1.0-2'}} (avg.)" readonly>
-    <input class="summary-value" value="{{!isValidData ? ' --' : minDataValue | number:'1.0-2'}} (min.)" readonly>
-    <input class="summary-value" value="{{!isValidData ? ' --' : maxDataValue | number:'1.0-2'}} (max.)" readonly>
+    <input class="summary-value" value="{{!isValidTableData || !isOutputView ? ' --' : avgDataValue | number:'1.0-2'}} (avg.)" readonly>
+    <input class="summary-value" value="{{!isValidTableData || !isOutputView ? ' --' : minDataValue | number:'1.0-2'}} (min.)" readonly>
+    <input class="summary-value" value="{{!isValidTableData || !isOutputView ? ' --' : maxDataValue | number:'1.0-2'}} (max.)" readonly>
     <icon-button
       title="Solo"
       (onClick)="onSolo()"
@@ -55,8 +55,8 @@ POSSIBILITY OF SUCH DAMAGE.
         icon="assets/button-icons/export.svg">
     </icon-button>
   </div>
-  <div class="table-container" [style.height]="!isValidData ? '100%' : 'auto'">
-    <table *ngIf="isValidData">
+  <div class="result-container" [style.height]="!isValidTableData ? '100%' : 'auto'">
+    <table *ngIf="isValidTableData && isOutputView">
       <tr *ngFor="let _ of [].constructor(rowCount); let i = index;">
         <td
           *ngFor="let _ of [].constructor(columnCount); let j = index;"
@@ -71,10 +71,15 @@ POSSIBILITY OF SUCH DAMAGE.
         </td>
       </tr>
     </table>
-    <div *ngIf="!isValidData" class="invalid-input">
+
+    <div *ngIf="!isValidTableData && isValidData && isOutputView" class="result-text">{{printableResultValue}}</div>
+
+    <div *ngIf="!isValidData && isOutputView" class="invalid-input">
       <img src="assets/icons/error-triangle-dark.svg"/>
       <h5>No Valid Input</h5>
       <h6>Run an expression or highlight<br>a selection of code to run</h6>
     </div>
+
+    <div *ngIf="!isOutputView" class="log-text">{{logText || "No log output"}}</div>
   </div>
 </div>

@@ -559,6 +559,11 @@ export class WidgetRegionDataService
 
     private processQuantResult(t0: number, result: PMCDataValues, query: DataSourceParams, expr: DataExpression, region: RegionData, pmcOffset: number, shouldCache: boolean = true): RegionDataResultItem
     {
+        if(!Array.isArray(result?.values) || (result.values.length > 0 && !(result.values[0] instanceof PMCDataValue)))
+        {
+            return new RegionDataResultItem(result, WidgetDataErrorType.WERR_QUERY, "Result is not a PMC array!", null, expr, region, query);
+        }
+
         let unitConverted = this.applyUnitConversion(expr, result, query.units);
 
         // Also change the PMC values to be dataset-relative in the case of combined dataset
@@ -603,7 +608,7 @@ export class WidgetRegionDataService
     // This was private, is only public now so the code editor window can run expressions directly with some control over
     // caching and a more "raw" experience. If errors are encountered, they will be returned as part of the Observables own
     // error handling interface.
-    public runAsyncExpression(query: DataSourceParams, expr: DataExpression, shouldCache: boolean = true): Observable<RegionDataResultItem>
+    public runAsyncExpression(query: DataSourceParams, expr: DataExpression, shouldCache: boolean = true, allowAnyResponse: boolean = false): Observable<RegionDataResultItem>
     {
         let dataset = this._datasetService.datasetLoaded;
         let region = this._regions.get(query.roiId);
@@ -627,7 +632,7 @@ export class WidgetRegionDataService
             if(!pmcsToQuery)
             {
                 // No PMCs given, so just get all for the given dataset ID
-                pmcsToQuery = this.getPMCsForDatasetId(query.datasetId, dataset)
+                pmcsToQuery = this.getPMCsForDatasetId(query.datasetId, dataset);
             }
             else
             {
@@ -636,7 +641,7 @@ export class WidgetRegionDataService
             }
         }
 
-        return this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, pmcsToQuery).pipe(
+        return this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, pmcsToQuery, allowAnyResponse).pipe(
             map(
                 (result: PMCDataValues)=>
                 {

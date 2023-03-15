@@ -1068,7 +1068,10 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 null,
             );
             this._widgetDataService.runAsyncExpression(
-                new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID), expression, false
+                new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID),
+                expression,
+                false,
+                true
             ).subscribe(
                 (result)=>
                 {
@@ -1151,11 +1154,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         this._widgetDataService.runAsyncExpression(
             new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID),
             highlightedExpression,
-            false
+            false,
+            true
         ).subscribe(
             (result)=>
             {
-                console.log("HIGHLIGHT", result)
                 this.evaluatedExpression = result;
             },
             (err)=>

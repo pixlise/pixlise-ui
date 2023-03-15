@@ -67,7 +67,8 @@ export class ExpressionRunnerService
         expression: DataExpression,
         quantSource: QuantifiedDataQuerierSource,
         diffractionSource: DiffractionPeakQuerierSource,
-        forPMCs: Set<number> = null
+        forPMCs: Set<number> = null,
+        allowAnyResponse: boolean = false
     ): Observable<PMCDataValues>
     {
         if(!this._querier)
@@ -98,12 +99,12 @@ export class ExpressionRunnerService
                     let exprSource = sources.get(this._exprKey);
                     if(!exprSource)
                     {
-                        throw new Error("loadCodeForExpression did not return expression source code for: "+expression.id)
+                        throw new Error("loadCodeForExpression did not return expression source code for: "+expression.id);
                     }
                     sources.delete(this._exprKey);
 
                     // Pass in the source and module sources separately
-                    return this._querier.runQuery(exprSource, sources, expression.sourceLanguage, dataSource).pipe(
+                    return this._querier.runQuery(exprSource, sources, expression.sourceLanguage, dataSource, allowAnyResponse).pipe(
                         map(
                             (queryResult: DataQueryResult)=>
                             {
@@ -111,11 +112,11 @@ export class ExpressionRunnerService
                                 this._exprService.saveExecutionStats(expression.id, queryResult.dataRequired, queryResult.runtimeMs);
 
                                 // Return the results
-                                let finalResult = this.filterForPMCs(queryResult.resultValues, forPMCs);
+                                let finalResult = queryResult.isPMCTable ? this.filterForPMCs(queryResult.resultValues, forPMCs) : queryResult.resultValues;
                                 return finalResult;
                             }
                         )
-                    )
+                    );
                 }
             )
         );
