@@ -77,6 +77,23 @@ export enum QuantOp
     OVER_UNDEFINED,
 }
 
+export class DataQueryResult
+{
+    constructor(
+        public resultValues: PMCDataValues,
+        public dataRequired: string[],
+        public runtimeMs: number
+    )
+    {
+    }
+
+    public static get DataTypeSpectrum() { return "spectrum" }
+    public static get DataTypeHousekeeping() { return "housekeeping" }
+    public static get DataTypeDiffraction() { return "diffraction" }
+    public static get DataTypeRoughness() { return "roughness" }
+    public static get DataTypePosition() { return "position" }
+}
+
 export class PMCDataValues
 {
     private _valueRange: MinMax = new MinMax();

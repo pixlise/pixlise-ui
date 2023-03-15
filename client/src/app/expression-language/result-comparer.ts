@@ -30,7 +30,7 @@
 import { Observable, combineLatest } from "rxjs";
 import { PixliseDataQuerier } from "./interpret-pixlise";
 import { LuaDataQuerier } from "./interpret-lua";
-import { PMCDataValues } from "src/app/expression-language/data-values";
+import { PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { InterpreterDataSource } from "./interpreter-data-source";
 
 
@@ -101,7 +101,7 @@ export class ResultComparer
                         let luaResult = results[0];
                         let pixResult = results[1];
 
-                        if(!this.isEqual(luaResult, pixResult))
+                        if(!this.isEqual(luaResult.resultValues, pixResult.resultValues))
                         {
                             console.log("PIXLISE line: "+exprLuaLines[c]);
                             console.log("PIXLISE value for "+pixParts[0]+":");
@@ -130,10 +130,10 @@ export class ResultComparer
                         else
                         {
                             // Just check one for weird stuff
-                            this.checkAndWarn(luaResult, c, luaParts[0]);
+                            this.checkAndWarn(luaResult.resultValues, c, luaParts[0]);
 
-                            lineResultsLua.set(luaParts[0], luaResult);
-                            lineResultsPIXLISE.set(pixParts[0], pixResult);
+                            lineResultsLua.set(luaParts[0], luaResult.resultValues);
+                            lineResultsPIXLISE.set(pixParts[0], pixResult.resultValues);
                         }
                     }
                 );
@@ -153,7 +153,7 @@ export class ResultComparer
             allResults$.subscribe(
                 (results)=>
                 {
-                    if(!this.isEqual(results[0], results[1]))
+                    if(!this.isEqual(results[0].resultValues, results[1].resultValues))
                     {
                         console.log("Expression final values differ!");
                         result = exprLuaLines.length-1;
@@ -169,9 +169,9 @@ export class ResultComparer
         return result;
     }
 
-    private runLua(expression: string, modules: Map<string, string>, dataSource: InterpreterDataSource): Observable<PMCDataValues>
+    private runLua(expression: string, modules: Map<string, string>, dataSource: InterpreterDataSource): Observable<DataQueryResult>
     {
-        let luaResult: Observable<PMCDataValues> = null;
+        let luaResult: Observable<DataQueryResult> = null;
 
         try
         {
@@ -188,9 +188,9 @@ export class ResultComparer
         return luaResult;
     }
 
-    private runPIXLISE(expression: string, dataSource: InterpreterDataSource): Observable<PMCDataValues>
+    private runPIXLISE(expression: string, dataSource: InterpreterDataSource): Observable<DataQueryResult>
     {
-        let pixResult: Observable<PMCDataValues> = null;
+        let pixResult: Observable<DataQueryResult> = null;
 
         try
         {

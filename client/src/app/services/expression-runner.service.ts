@@ -41,10 +41,11 @@ import {
     QuantifiedDataQuerierSource,
     //SpectrumDataQuerierSource
 } from "src/app/expression-language/data-sources";
-import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
+import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { DataSetService } from "src/app/services/data-set.service";
 import { DataExpression } from "src/app/models/Expression";
 import { DataQuerier, EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { InterpreterDataSource } from "src/app/expression-language/interpreter-data-source";
 
 
 @Injectable({
@@ -71,17 +72,20 @@ export class ExpressionRunnerService
     {
         if(!this._querier)
         {
-            this._querier = new DataQuerier(
-                quantSource,
-                // NOTE: all of these come from the dataset. At one point we weren't sure how they would be available at runtime so we have separate
-                // interfaces for each. In future we could still modify this further and break these out again!
-                this._datasetService.datasetLoaded, // pseudoSource
-                this._datasetService.datasetLoaded, // housekeepingSource
-                this._datasetService.datasetLoaded, // spectrumSource
-                diffractionSource,
-                this._datasetService.datasetLoaded
-            );
+            this._querier = new DataQuerier();
         }
+
+        // Set up data source for this query. This just holds stuff, doesn't cost much to create it, but needs to
+        // be done for every query because quants, diffraction, could change between runs. Dataset is not likely
+        // to but here we do it all at once
+        let dataSource = new InterpreterDataSource(
+            quantSource,
+            this._datasetService.datasetLoaded, // pseudoSource
+            this._datasetService.datasetLoaded, // housekeepingSource
+            this._datasetService.datasetLoaded, // spectrumSource
+            diffractionSource,
+            this._datasetService.datasetLoaded
+        );
 
         let load$ = this.loadCodeForExpression(expression);
         
@@ -99,11 +103,15 @@ export class ExpressionRunnerService
                     sources.delete(this._exprKey);
 
                     // Pass in the source and module sources separately
-                    return this._querier.runQuery(exprSource, sources, expression.sourceLanguage).pipe(
+                    return this._querier.runQuery(exprSource, sources, expression.sourceLanguage, dataSource).pipe(
                         map(
-                            (queryResult: PMCDataValues)=>
+                            (queryResult: DataQueryResult)=>
                             {
-                                let finalResult = this.filterForPMCs(queryResult, forPMCs);
+                                // Save runtime stats for this expression
+                                this._exprService.saveExecutionStats(expression.id, queryResult.dataRequired, queryResult.runtimeMs);
+
+                                // Return the results
+                                let finalResult = this.filterForPMCs(queryResult.resultValues, forPMCs);
                                 return finalResult;
                             }
                         )
@@ -113,7 +121,7 @@ export class ExpressionRunnerService
         );
     }
 
-    private _exprKey = "";
+    private _exprKey = ""; // The key name for the expression source code as returned by loadCodeForExpression()
 
     private loadCodeForExpression(expression: DataExpression): Observable<Map<string, string>>
     {

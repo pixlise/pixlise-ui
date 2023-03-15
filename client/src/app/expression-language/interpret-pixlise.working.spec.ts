@@ -182,7 +182,7 @@ function checkResultOK(querier: PixliseDataQuerier, dataSource: InterpreterDataS
     querier.runQuery(expr, dataSource).subscribe(
         (result)=>
         {
-            expect(result).toEqual(expectedResult);
+            expect(result.resultValues).toEqual(expectedResult);
             done();
         }
     );
