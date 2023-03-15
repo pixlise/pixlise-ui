@@ -150,7 +150,7 @@ export class DataExpression
         // Check if the quant would have the data we're requiring...
         for(let elem of this._requiredElementFormulae)
         {
-            if(elementList.has(elem))
+            if(!elementList.has(elem))
             {
                 // NOTE: quant element list returns both pure and oxide/carbonate, so this check is enough
                 this._isCompatibleWithQuantification = false;

@@ -730,8 +730,15 @@ OOOO
                     else
                     {
                         // Draw the min vs max of the value range
-                        // NOTE: This seems pointless as an element map of 1 and 2's was not detected as a binary map!
-                        printValue = this.getScaleValueStr(Math.round(c == 0 ? scaleRange.min : scaleRange.max), scaleRange);
+                        // NOTE: This needs to be limited to the top & bottom of the range, otherwise we end up drawing
+                        //       the same value going up the entire chart
+                        if(
+                            c == 0 || // bottom
+                            c == (pos.stepsShown-1) // top
+                        )
+                        {
+                            printValue = this.getScaleValueStr(Math.round(c == 0 ? scaleRange.min : scaleRange.max), scaleRange);
+                        }
                     }
 
                     // Draw these labels next to the 2 boxes we show in case of a binary map

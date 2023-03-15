@@ -47,30 +47,13 @@ export const EXPR_LANGUAGE_PIXLANG = "PIXLANG";
 
 export class DataQuerier
 {
-    private _dataSource: InterpreterDataSource = null;
     private _interpretPixlise: PixliseDataQuerier = null;
     private _interpretLua: LuaDataQuerier = null;
     private _luaTranspiler: LuaTranspiler = null;
     private _resultComparer: ResultComparer = null;
 
-    constructor(
-        quantDataSource: QuantifiedDataQuerierSource,
-        pseudoDataSource: PseudoIntensityDataQuerierSource,
-        housekeepingDataSource: HousekeepingDataQuerierSource,
-        spectrumDataSource: SpectrumDataQuerierSource,
-        diffractionSource: DiffractionPeakQuerierSource,
-        dataset: DataSet,
-    )
+    constructor()
     {
-        this._dataSource = new InterpreterDataSource(
-            quantDataSource,
-            pseudoDataSource,
-            housekeepingDataSource,
-            spectrumDataSource,
-            diffractionSource,
-            dataset
-        );
-
         this._interpretPixlise = new PixliseDataQuerier();
         this._interpretLua = new LuaDataQuerier(environment.luaDebug, false);
         if(environment.initExpressionLanguageComparer || environment.initLuaTranspiler)
@@ -83,12 +66,12 @@ export class DataQuerier
         }
     }
 
-    public runQuery(expression: string, modules: Map<string, string>, expressionLanguage: string): Observable<DataQueryResult>
+    public runQuery(expression: string, modules: Map<string, string>, expressionLanguage: string, dataSource: InterpreterDataSource): Observable<DataQueryResult>
     {
         // Decide which interperter to run it in
         if(expressionLanguage == EXPR_LANGUAGE_LUA)
         {
-            return this._interpretLua.runQuery(expression, modules, this._dataSource, environment.newLuaPerExpression);
+            return this._interpretLua.runQuery(expression, modules, dataSource, environment.newLuaPerExpression);
         }
         else
         {
@@ -100,7 +83,7 @@ export class DataQuerier
                 // If we've got a result comparer, run that
                 if(this._resultComparer)
                 {
-                    let line = this._resultComparer.findDifferenceLine(asLua, modules, expression, environment.expressionLanguageCompareSkipLines, this._dataSource);
+                    let line = this._resultComparer.findDifferenceLine(asLua, modules, expression, environment.expressionLanguageCompareSkipLines, dataSource);
                     if(line < 0)
                     {
                         console.log("No difference between PIXLISE and Lua expressions");
@@ -122,7 +105,7 @@ export class DataQuerier
                 console.warn("Ignoring modules: "+modules.keys()+" specified for PIXLANG expression")
             }
 
-            return this._interpretPixlise.runQuery(expression, this._dataSource);
+            return this._interpretPixlise.runQuery(expression, dataSource);
         }
     }
 }

@@ -548,7 +548,13 @@ export class LocationDataLayerChannel
         // Check if it's a non-binary value
         if(value != 0 && value != 1)// || this._valueRange.min == this._valueRange.max)
         {
-            this._isBinary = false;
+            if(this._isBinary)
+            {
+                this._isBinary = false;
+                // We just changed our binary flag to false, so we should force histogram steps to regen
+                this._histogramSteps = 0; 
+                this._histogram.clear(this._histogramSteps);
+            }
         }
 
         // Also add it to our histogram counts
