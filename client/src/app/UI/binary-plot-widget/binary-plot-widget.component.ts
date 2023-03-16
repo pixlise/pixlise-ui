@@ -110,7 +110,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             this._subs.add(this._exprService.expressionsUpdated$.subscribe(() =>
             {
                 // If user has changed axes, but still has unsaved expression showing, dont reset
-                if(!this._xAxisExpressionId.startsWith("unsaved-") && !this._yAxisExpressionId.startsWith("unsaved-"))
+                if(!DataExpressionId.isUnsavedExpressionId(this._xAxisExpressionId) && !DataExpressionId.isUnsavedExpressionId(this._yAxisExpressionId))
                 {
                     // Default set axes to first two preview expressions passed
                     if(this._exprService.getExpression(this.previewExpressionIDs[0]))
@@ -176,12 +176,12 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                         if(loadedState.expressionIDs.length == 2)
                         {
                             this._xAxisExpressionId = loadedState.expressionIDs[0];
-                            if(this._xAxisExpressionId.startsWith("unsaved-"))
+                            if(DataExpressionId.isUnsavedExpressionId(this._xAxisExpressionId))
                             {
                                 this._xAxisExpressionId = "";
                             }
                             this._yAxisExpressionId = loadedState.expressionIDs[1];
-                            if(this._yAxisExpressionId.startsWith("unsaved-"))
+                            if(DataExpressionId.isUnsavedExpressionId(this._yAxisExpressionId))
                             {
                                 this._yAxisExpressionId = "";
                             }

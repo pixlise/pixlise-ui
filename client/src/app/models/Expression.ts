@@ -312,6 +312,7 @@ export class DataExpressionId
 {
     public static NewExpression = "new-expression";
     public static NewModule = "new-module";
+    public static UnsavedExpressionPrefix = "unsaved-";
 
     private static PredefinedPseudoIntensityLayerPrefix = "pseudo-";
     private static PredefinedQuantDataLayerPrefix = "data-";
@@ -327,6 +328,11 @@ export class DataExpressionId
     {
         id = id ? id.toLowerCase() : "";
         return [DataExpressionId.NewExpression, DataExpressionId.NewModule].includes(id);
+    }
+
+    public static isUnsavedExpressionId(id: string): boolean
+    {
+        return id.startsWith(DataExpressionId.UnsavedExpressionPrefix);
     }
 
     public static isPredefinedExpression(id: string): boolean

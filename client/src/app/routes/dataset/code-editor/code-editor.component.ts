@@ -1051,7 +1051,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     get previewID(): string
     {
-        return `unsaved-${this._expressionID}`;
+        return DataExpressionId.UnsavedExpressionPrefix+this._expressionID;
     }
 
     runExpression(runTop: boolean = true): void

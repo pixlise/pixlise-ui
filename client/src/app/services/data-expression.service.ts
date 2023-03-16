@@ -715,7 +715,8 @@ export class DataExpressionService
         if(
             DataExpressionId.isPredefinedExpression(id) ||
             DataExpressionId.isPredefinedNewID(id) ||
-            DataExpressionId.isPredefinedQuantExpression(id)
+            DataExpressionId.isPredefinedQuantExpression(id) ||
+            DataExpressionId.isUnsavedExpressionId(id)
             )
         {
             return;
