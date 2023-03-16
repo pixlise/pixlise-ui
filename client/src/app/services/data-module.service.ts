@@ -30,7 +30,7 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Observable, ReplaySubject, Subject, of, from, combineLatest } from "rxjs";
-import { tap, map, catchError, share, mergeMap } from "rxjs/operators";
+import { tap, map, catchError, share, mergeMap, shareReplay } from "rxjs/operators";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
@@ -261,7 +261,7 @@ export class DataModuleService
                             return from(resp.text());
                         }
                     ),
-                    share()
+                    shareReplay(1)
                 )
             );
         }

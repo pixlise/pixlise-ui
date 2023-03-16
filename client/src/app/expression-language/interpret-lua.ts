@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Observable, combineLatest, from, of } from "rxjs";
-import { map, mergeMap, concatMap, catchError, finalize } from "rxjs/operators";
+import { map, mergeMap, concatMap, catchError, finalize, shareReplay } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { InterpreterDataSource } from "./interpreter-data-source";
@@ -139,7 +139,8 @@ export class LuaDataQuerier
                         )
                     );
                 }
-            )
+            ),
+            shareReplay(1)
         );
     }
 
