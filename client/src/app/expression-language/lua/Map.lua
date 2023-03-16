@@ -417,10 +417,28 @@ function Map.threshold(m, compare, threshold)
     return r
 end
 
-function printDebugMap(m, comment)
+function Map.printDebugMap(m, comment)
     print(comment.." map size: "..#m[1])
     for k, v in ipairs(m[1]) do
         print(v.."="..m[2][k])
+    end
+end
+
+-- This is slow! PMC doesn't match index but surely we could skip and start looping from near it!
+function Map.getPMCValue(m, pmc)
+    for idx, mapPMC in ipairs(m[1]) do
+        if mapPMC == pmc then
+            return m[2][idx]
+        end
+    end
+end
+
+function Map.setPMCValue(m, pmc, v)
+    for idx, mapPMC in ipairs(m[1]) do
+        if mapPMC == pmc then
+            m[2][idx] = v
+            return
+        end
     end
 end
 
