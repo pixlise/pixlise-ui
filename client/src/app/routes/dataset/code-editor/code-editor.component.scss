@@ -30,7 +30,7 @@
 @import 'variables.scss';
 
 ::ng-deep body.mat-app-background.mat-typography {
-    ::-webkit-scrollbar {
+    &::-webkit-scrollbar {
         display: none;
     }
     -ms-overflow-style: none;
