@@ -66,11 +66,6 @@ export class DataQuerier
         }
     }
 
-    static isPMCArray(result: any): boolean
-    {
-        return Array.isArray(result) && result.length == 2 && result.every((resultArray) => Array.isArray(resultArray));
-    }
-
     public runQuery(expression: string, modules: Map<string, string>, expressionLanguage: string, dataSource: InterpreterDataSource, allowAnyResponse: boolean = false): Observable<DataQueryResult>
     {
         // Decide which interperter to run it in

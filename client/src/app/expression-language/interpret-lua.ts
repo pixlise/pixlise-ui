@@ -34,7 +34,6 @@ import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { InterpreterDataSource } from "./interpreter-data-source";
 import { randomString } from "src/app/utils/utils";
 import { DataExpressionId } from "../models/Expression";
-import { DataQuerier } from "./expression-language";
 
 const { LuaFactory, LuaLibraries } = require("wasmoon");
 
@@ -349,7 +348,7 @@ export class LuaDataQuerier
                         // We still want to return non-PMC table values, so we need to check if we got a table back before transforming it
                         let formattedData: any = result;
                         let isPMCTable = false;
-                        if(!allowAnyResponse || DataQuerier.isPMCArray(result))
+                        if(!allowAnyResponse || this.isPMCArray(result))
                         {
                             // We got an object back that represents a table in Lua. Here we assume this is a PMCDataValue[] effectively
                             // so lets convert it to something we'll use here (PMCDataValues)
@@ -400,6 +399,11 @@ export class LuaDataQuerier
                 }
             )
         );
+    }
+
+    private  isPMCArray(result: any): boolean
+    {
+        return Array.isArray(result) && result.length == 2 && result.every((resultArray) => Array.isArray(resultArray));
     }
 
     // For examples, see unit tests
