@@ -115,7 +115,9 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
             this._subs.add(this._exprService.expressionsUpdated$.subscribe(() =>
             {
                 // If user has changed axes, but still has unsaved expression showing, dont reset
-                if(!this._aExpressionId.startsWith("unsaved-") && !this._bExpressionId.startsWith("unsaved-") && !this._cExpressionId.startsWith("unsaved-"))
+                if( !DataExpressionId.isUnsavedExpressionId(this._aExpressionId) &&
+                    !DataExpressionId.isUnsavedExpressionId(this._bExpressionId) &&
+                    !DataExpressionId.isUnsavedExpressionId(this._cExpressionId) )
                 {
                     // Default set axes to first three preview expressions passed
                     if(this._exprService.getExpression(this.previewExpressionIDs[0]))

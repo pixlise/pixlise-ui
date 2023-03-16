@@ -28,13 +28,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Observable, combineLatest, from, of } from "rxjs";
-import { map, mergeMap, concatMap, catchError, finalize } from "rxjs/operators";
+import { map, mergeMap, concatMap, catchError, finalize, shareReplay } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { InterpreterDataSource } from "./interpreter-data-source";
 import { randomString } from "src/app/utils/utils";
 import { DataExpressionId } from "../models/Expression";
-import { DataQuerier } from "./expression-language";
+import { DataModuleService } from "src/app/services/data-module.service";
 
 const { LuaFactory, LuaLibraries } = require("wasmoon");
 
@@ -73,23 +73,23 @@ export class LuaDataQuerier
         let luat0 = performance.now();
 
         console.log(this._logId+"Initializing Lua...");
-        return new Observable<void>(
-            (observer)=>
-            {
-                // Initialize a new lua environment factory
-                // Pass our hosted wasm file location in here. Simplest method is relative path to served location
-                let wasmURI = "assets/lua/glue.wasm";
-                console.log(this._logId+"Loading WASM from: "+wasmURI);
+        
+        // Initialize a new lua environment factory
+        // Pass our hosted wasm file location in here. Simplest method is relative path to served location
+        let wasmURI = "assets/lua/glue.wasm";
+        console.log(this._logId+"Loading WASM from: "+wasmURI);
 
-                const factory = new LuaFactory(wasmURI);
-                const luaOpts = {
-                    openStandardLibs: true,
-                    injectObjects: false,
-                    enableProxy: false,
-                    traceAllocations: false
-                };
-                let lua = factory.createEngine(luaOpts);
-                lua.then((eng)=>
+        const factory = new LuaFactory(wasmURI);
+        const luaOpts = {
+            openStandardLibs: true,
+            injectObjects: false,
+            enableProxy: false,
+            traceAllocations: false
+        };
+        let lua$ = from(factory.createEngine(luaOpts));
+        return lua$.pipe(
+            mergeMap(
+                (eng)=>
                 {
                     this._lua = eng;
 
@@ -112,88 +112,35 @@ export class LuaDataQuerier
                     }
 
                     // Add PIXLISE Lua libraries
-                    let libFiles = ["Map.lua"];
-                    /*if(this._luaUseReplay)
-                    {
-                        // Pull in the replay data
-                        libFiles.push("FuncRunner.lua");
-                    }*/
+                    let builtInLibNames = DataModuleService.getBuiltInModuleNames();
                     let libFileResults$ = [];
 
-                    for(let lib of libFiles)
+                    for(let lib of builtInLibNames)
                     {
-                        libFileResults$.push(from(fetch("assets/lua/"+lib)));
+                        libFileResults$.push(DataModuleService.getBuiltInModuleSource(lib));
                     }
                     
                     let allFiles$ = combineLatest(libFileResults$);
-                    allFiles$.subscribe(
-                        (responses)=>
-                        {
-                            // At this point we've received all the file responses, now we need to turn them into text
-                            let libFileContents$ = [];
-                            let libNames = [];
-
-                            for(let resp of responses)
+                    return allFiles$.pipe(
+                        map(
+                            (responses)=>
                             {
-                                let respItem = resp as Response;
-                                
-                                let libNameStart = respItem.url.lastIndexOf("/");
-                                let libNameEnd = respItem.url.indexOf(".lua");
-
-                                if(libNameStart < 0 || libNameEnd < libNameStart)
+                                for(let c = 0; c < responses.length; c++)
                                 {
-                                    throw new Error("Failed to get lib name from received Lua module: "+respItem.url);
+                                    let module = builtInLibNames[c];
+                                    let source = responses[c] as string;
+
+                                    this.installModule(module, source);
                                 }
 
-                                let libName = respItem.url.substring(libNameStart+1, libNameEnd);
-
-                                if(respItem.status != 200)
-                                {
-                                    throw new Error("Failed to get Lua module: "+libName);
-                                }
-
-                                libFileContents$.push(from(respItem.text()));
-
-                                // Remember the names in the order in which they were received
-                                libNames.push(libName);
-
-                                // Remember this as an import
-                                //this._luaLibImports += this.makeLuaModuleImportStatement(libName);
+                                let luat1 = performance.now();
+                                console.log(this._logId+"Lua Initialisation took: "+(luat1-luat0).toLocaleString()+"ms...");
                             }
-
-                            // Once all have loaded, pass them into Lua
-                            let allFileContents$ = combineLatest(libFileContents$);
-                            allFileContents$.subscribe(
-                                (fileContents)=>
-                                {
-                                    let c = 0;
-                                    for(let lib of fileContents)
-                                    {
-                                        let libName = libNames[c];
-                                        let libSource = lib as string;
-
-                                        this.installModule(libName, libSource);
-                                        c++;
-                                    }
-
-                                    let luat1 = performance.now();
-                                    console.log(this._logId+"Lua Initialisation took: "+(luat1-luat0).toLocaleString()+"ms...");
-                                    observer.next();
-                                    observer.complete();
-                                },
-                                (err)=>
-                                {
-                                    throw new Error("Failed to download PIXLISE Lua module: "+err+"\n"+err["message"]+"\n"+err["stack"]);
-                                }
-                            );
-                        }
+                        )
                     );
-                }).catch((err)=>
-                {
-                    console.error(err);
-                    observer.error(err);
-                });
-            }
+                }
+            ),
+            shareReplay(1)
         );
     }
 
@@ -325,6 +272,15 @@ export class LuaDataQuerier
                     let codeParts = this.formatLuaCallable(sourceCode, exprFuncName/*, imports*/);
                     return this.runQueryInternal(codeParts.join(""), exprFuncName, cleanupLua, t0, allowAnyResponse);
                 }
+            ),
+            catchError(
+                (err)=>
+                {
+                    // We failed within init$, cleaer our lua variable so we re-init in future
+                    this._lua = null;
+                    console.error(err);
+                    throw err;
+                }
             )
         );
     }
@@ -349,7 +305,7 @@ export class LuaDataQuerier
                         // We still want to return non-PMC table values, so we need to check if we got a table back before transforming it
                         let formattedData: any = result;
                         let isPMCTable = false;
-                        if(!allowAnyResponse || DataQuerier.isPMCArray(result))
+                        if(!allowAnyResponse || this.isPMCArray(result))
                         {
                             // We got an object back that represents a table in Lua. Here we assume this is a PMCDataValue[] effectively
                             // so lets convert it to something we'll use here (PMCDataValues)
@@ -400,6 +356,11 @@ export class LuaDataQuerier
                 }
             )
         );
+    }
+
+    private  isPMCArray(result: any): boolean
+    {
+        return Array.isArray(result) && result.length == 2 && result.every((resultArray) => Array.isArray(resultArray));
     }
 
     // For examples, see unit tests

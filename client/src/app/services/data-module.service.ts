@@ -29,8 +29,8 @@
 
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable, ReplaySubject, Subject, of } from "rxjs";
-import { tap, map, catchError } from "rxjs/operators";
+import { Observable, ReplaySubject, Subject, of, from, combineLatest } from "rxjs";
+import { tap, map, catchError, share, mergeMap, shareReplay } from "rxjs/operators";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
@@ -235,6 +235,38 @@ export class DataModuleService
 {
     private _modulesUpdated$ = new ReplaySubject<void>(1);
     private _modules: DataModuleStore = new DataModuleStore();
+
+    // List of built in modules - static so other things can access it without a pointer to our instance
+    private static _builtInModuleNames = ["Map"];
+    // List of downloaded modules as observables - we store the first one, in theory it shouldn't download
+    // again but just be served from this static cache
+    private static _builtInModules = DataModuleService.fetchBuiltInModules();
+
+    private static fetchBuiltInModules(): Map<string, Observable<string>>
+    {
+        let result = new Map<string, Observable<string>>();
+        for(let mod of DataModuleService._builtInModuleNames)
+        {
+            result.set(mod,
+                from(
+                    fetch("assets/lua/"+mod+".lua")
+                ).pipe(
+                    mergeMap(
+                        (resp)=>
+                        {
+                            if(resp.status != 200)
+                            {
+                                throw new Error("Failed to download built-in module: "+mod+": "+resp.statusText);
+                            }
+                            return from(resp.text());
+                        }
+                    ),
+                    shareReplay(1)
+                )
+            );
+        }
+        return result;
+    }
 
     constructor(
         private _loadingSvc: LoadingIndicatorService,
@@ -475,5 +507,54 @@ export class DataModuleService
     getModules(): DataModule[]
     {
         return this._modules.getModules();
+    }
+
+    // NOTE: these are static so the code can be shared with LuaDataQuerier. We want these to look the same
+    // modules up, and not download them too often.
+    static getBuiltInModuleNames(): string[]
+    {
+        // NOTE: we also have FuncRunner for running replay data... bit of a hack for testing
+        return DataModuleService._builtInModuleNames;
+    }
+
+    static getBuiltInModuleSource(name: string): Observable<string>
+    {
+        return DataModuleService._builtInModules.get(name);
+    }
+
+    getBuiltInModules(): Observable<DataModule[]>
+    {
+        let modules = DataModuleService.getBuiltInModuleNames();
+
+        let waitFor$ = [];
+        for(let module of modules)
+        {
+            waitFor$.push(DataModuleService.getBuiltInModuleSource(module));
+        }
+
+        return combineLatest(waitFor$).pipe(
+            map(
+                (items)=>
+                {
+                    let result: DataModule[] = [];
+
+                    for(let c = 0; c < items.length; c++)
+                    {
+                        let item = items[c] as string;
+                        let module = modules[c];
+
+                        result.push(
+                            new DataModule(module, module, "Built-in module "+module, null,
+                                new Map<string, DataModuleVersionSourceWire>([
+                                    [module, new DataModuleVersionSourceWire("0.0.0", [], "", 0, item)]
+                                ])
+                            )
+                        );
+                    }
+
+                    return result;
+                }
+            )
+        );
     }
 }
