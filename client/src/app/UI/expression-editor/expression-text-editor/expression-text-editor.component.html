@@ -60,6 +60,23 @@ POSSIBILITY OF SUCH DAMAGE.
                           </mat-option>
                       </mat-select>
                   </div>
+                  <!-- <div class="compare-container">
+                     <mat-select
+                          #tooltip="matTooltip"
+                          matTooltip="Select a version for this module"
+                          [value]="module.version"
+                          (selectionChange)="onModuleVersionChange($event, i)"
+                          class="module-version"
+                          placeholder="Version"
+                      >
+                          <mat-option
+                              class="cm-string"
+                              *ngFor="let version of module.allVersions;"
+                              [value]="version"
+                          >v{{version}}
+                          </mat-option>
+                      </mat-select>
+                  </div> -->
               </span>
           </div>
           <div class="empty-line">

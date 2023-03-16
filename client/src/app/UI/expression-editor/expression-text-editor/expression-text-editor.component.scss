@@ -208,7 +208,7 @@ h3 {
     }
 }
 
-::ng-deep .module-container {
+::ng-deep .module-container, ::ng-deep .compare-container {
     width: auto !important;
 
     .mat-select-value {
