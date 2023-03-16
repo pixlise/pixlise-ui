@@ -29,6 +29,22 @@
 
 @import 'variables.scss';
 
+::ng-deep body.mat-app-background.mat-typography {
+    ::-webkit-scrollbar {
+        display: none;
+    }
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.code-editor {
+    &::-webkit-scrollbar {
+        display: none;
+    }
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
 .preview-container {
     width: 50vw;
     min-width: 300px;

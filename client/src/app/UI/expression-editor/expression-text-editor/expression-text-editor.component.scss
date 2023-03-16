@@ -70,6 +70,12 @@ h3 {
     }
 
     .imports {
+        &::-webkit-scrollbar {
+            display: none;
+        }
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+
         display: flex;
         flex-direction: column;
         height: 100px;
