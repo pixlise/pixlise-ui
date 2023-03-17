@@ -40,9 +40,13 @@ import { SentryHelper } from "src/app/utils/utils";
 import { Range } from "codemirror";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import * as CodeMirror from "codemirror";
 
 require("codemirror/addon/comment/comment.js");
 require("codemirror/mode/lua/lua");
+require("codemirror/addon/hint/show-hint.js");
+require("codemirror/addon/hint/anyword-hint.js");
+require("codemirror/addon/lint/lint.js");
 
 export class DataExpressionModule
 {
@@ -146,10 +150,29 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                 this.setupCodeMirror(cm.default);
                 let cmObj = this._codeMirror.codeMirror;
                 cmObj.setOption("mode", this.isLua ? "lua" : "pixlise");
+                // enable hint
+                // cmObj.setOption("hint", {
+                //     hint: (cm: any) =>
+                //     {
+                //         let cur = cm.getCursor();
+                //         let token = cm.getTokenAt(cur);
+                //         let start = token.start;
+                //         let end = cur.ch;
+                //         let curWord = token.string.slice(0, end - start);
+                //         let list = this.getHintList(curWord);
+                //         return {list: list, from: CodeMirror.Pos(cur.line, start), to: CodeMirror.Pos(cur.line, end)};
+                //     }
+                // });
                 this.setUpKeyBindings(cmObj);
                 cmObj.refresh();
             });
         });
+    }
+
+    getHintList(curWord: string): string[]
+    {
+        let list = [];
+        return ["test", "abc"];
     }
 
     copyExpression(expression: DataExpression): DataExpression
@@ -589,7 +612,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
         cm.on("change", (instance, event)=>
         {
-            
             // User may have created/deleted variables
             this.findVariables();
 

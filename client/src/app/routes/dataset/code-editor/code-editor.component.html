@@ -46,7 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <input
                 #tooltip="matTooltip"
                 [matTooltip]="topEditor.isModule ? moduleNameTooltip : ''"
-                class="expression-name {{topEditor.invalidExpression ? 'invalid-input' : ''}}"
+                class="expression-name {{topEditor.emptyName ? 'invalid-input' : ''}}"
                 [disabled]="!topEditor.editable"
                 type="text"
                 placeholder="{{topEditor.isModule ? 'Module' : 'Expression'}} Name"
@@ -90,14 +90,13 @@ POSSIBILITY OF SUCH DAMAGE.
                     [disabled]="topEditor.modules.length === 0 && !isSplitScreen && bottomEditor.isExpressionSaved"
                     (onChange)="onToggleSplitScreen()">
                 </multi-switch-button>
-                <push-button
-                    class="run-btn"
-                    buttonStyle="gray"
-                    (onClick)="runExpression()"
-                    #tooltip="matTooltip"
-                    [matTooltip]="runCodeTooltip"
-                >Metadata
-                </push-button>
+                <expression-metadata-editor
+                    [expression]="topEditor.expression"
+                    [isModule]="topEditor.isModule"
+                    [currentVersion]="topEditor.version"
+                    [versions]="topEditor.versionList"
+                >
+                </expression-metadata-editor>
                 <push-button
                     class="run-btn"
                     buttonStyle="yellow"
@@ -219,7 +218,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 ></icon-button>
             </expression-list>
         </div>
-        <div class="text-editor {{topEditor?.isHeaderOpen ? 'top-open' : ''}} {{bottomEditor?.isHeaderOpen ? 'bottom-open' : ''}} {{isSplitScreen ? 'split-screen-mode' : ''}}">
+        <div class="text-editor {{topEditor?.isModule ? 'module' : ''}} {{topEditor?.isHeaderOpen ? 'top-open' : ''}} {{bottomEditor?.isHeaderOpen ? 'bottom-open' : ''}} {{isSplitScreen ? 'split-screen-mode' : ''}}">
             <expression-text-editor
                 *ngIf="topEditor && topEditor.expression"
                 class="top-expression {{isTopEditorActive && isSplitScreen ? 'active' : ''}}"
@@ -414,6 +413,9 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
         </div>
         <div class="viz-container">
+            <div *ngIf="runtimeSeconds" class="runtime-container">
+                <span class="runtime-seconds"> Runtime: {{runtimeSeconds}} seconds</span>
+            </div>
             <div class="right-btn-group">
                 <push-button
                     buttonStyle="outline"

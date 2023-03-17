@@ -32,23 +32,6 @@
   Name:       pixlise
 */
 
-.CodeMirror-scroll {
-  &::-webkit-scrollbar {
-      display: none;
-  }
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
-
-.CodeMirror-vscrollbar {
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
-}
-
 .cm-s-pixlise.CodeMirror {
   background-color: $clr-gray-90;
   color: #EEFFFF;

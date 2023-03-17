@@ -573,7 +573,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     this.topEditor.expression = expression.copy();
 
                     this._fetchedExpression = true;
-                    this.runExpression();
 
                     // Add the current expression to the currently-open list
                     this.sidebarTopSections["currently-open"].childType = "expression";
@@ -583,6 +582,10 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
                     this.loadInstalledModules();
                     this.regenerateItemList();
+                    setTimeout(() =>
+                    {
+                        this.runExpression(true, true);
+                    }, 5000);
                 },
                 (error) =>
                 {
@@ -861,7 +864,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                         ()=>
                         {
                             this.createTopRowComponents(selectors.topWidgetSelectors);
-                            this.runExpression();
+                            // this.runExpression();
                         }
                     );
                 }
@@ -1054,8 +1057,13 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         return DataExpressionId.UnsavedExpressionPrefix+this._expressionID;
     }
 
-    runExpression(runTop: boolean = true): void
+    runExpression(runTop: boolean = true, forceRun: boolean = false): void
     {
+        if(!this.isRunable && !forceRun)
+        {
+            return;
+        }
+
         this.lastRunEditor = runTop ? "top" : "bottom";
         let editor = runTop ? this.topEditor : this.bottomEditor;
         if(this._expressionID && editor.expression)
@@ -1085,10 +1093,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     this.evaluatedExpression = result;
                     this.stdout = result.exprResult.stdout;
                     this.stderr = result.exprResult.stderr;
-
-                    // TODO: Use these somewhere in the UI
-                    //result.exprResult.runtimeMs;
-                    //result.exprResult.dataRequired;
 
                     editor.isSaveableOutput = editor.isModule || result.isPMCTable;
                     if(this.evaluatedExpression && (!result.isPMCTable || this.evaluatedExpression?.values?.values?.length > 0))
@@ -1243,7 +1247,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     {
         let otherEditorActive = this.isTopEditorActive && this.lastRunEditor !== "top" || !this.isTopEditorActive && this.lastRunEditor !== "bottom";
         let isCodeChanged = this.isTopEditorActive ? this.topEditor.isCodeChanged : this.bottomEditor.isCodeChanged;
-        return otherEditorActive || isCodeChanged;
+        return otherEditorActive || isCodeChanged || !this.isEvaluatedDataValid;
     }
 
     get textHighlighted(): string
@@ -1350,6 +1354,18 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     get isVisibleModuleEditable(): boolean
     {
         return this.visibleModuleCodeEditor?.editable && !this.visibleModuleCodeEditor.invalidExpression;
+    }
+
+    get isEvaluatedDataValid(): boolean
+    {
+        let values = this.evaluatedExpression?.values;
+        return typeof values !== "undefined" && values !== null && (!Array.isArray(values?.values) || values.values.length > 0);
+    }
+
+    get runtimeSeconds(): string
+    {
+        let msTime = this.evaluatedExpression?.exprResult?.runtimeMs;
+        return msTime && this.isEvaluatedDataValid ? Number(msTime / 1000).toPrecision(2) : "";
     }
 
     onTogglePMCDataGridSolo(isSolo: boolean): void
