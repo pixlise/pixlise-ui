@@ -43,7 +43,16 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
         </div>
         <div class="text-container">
-            <h2>{{topEditor.isModule ? "Module" : "Expression"}} Editor</h2>
+            <input
+                #tooltip="matTooltip"
+                [matTooltip]="topEditor.isModule ? moduleNameTooltip : ''"
+                class="expression-name {{topEditor.invalidExpression ? 'invalid-input' : ''}}"
+                [disabled]="!topEditor.editable"
+                type="text"
+                placeholder="{{topEditor.isModule ? 'Module' : 'Expression'}} Name"
+                [(ngModel)]="topEditor.name"
+            >
+            <!-- <h2>{{topEditor.isModule ? "Module" : "Expression"}} Editor</h2> -->
             <status-indicator
                 [valid]="topEditor.isExpressionSaved"
                 [status]="topEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"
@@ -65,13 +74,13 @@ POSSIBILITY OF SUCH DAMAGE.
             ></status-indicator>
 
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
-                <input
+                <!-- <input
                     [disabled]="!topEditor.editable"
                     type="text"
                     placeholder="{{topEditor.isModule ? 'Module' : 'Expression'}} Description"
                     [(ngModel)]="topEditor.comments"
                     fxFlex
-                >
+                > -->
                 <multi-switch-button
                     #tooltip="matTooltip"
                     [matTooltip]="splitScreenTooltip"
@@ -83,6 +92,14 @@ POSSIBILITY OF SUCH DAMAGE.
                 </multi-switch-button>
                 <push-button
                     class="run-btn"
+                    buttonStyle="gray"
+                    (onClick)="runExpression()"
+                    #tooltip="matTooltip"
+                    [matTooltip]="runCodeTooltip"
+                >Metadata
+                </push-button>
+                <push-button
+                    class="run-btn"
                     buttonStyle="yellow"
                     [disabled]="!isRunable"
                     (onClick)="runExpression()"
@@ -91,7 +108,16 @@ POSSIBILITY OF SUCH DAMAGE.
                 >
                     <img src="assets/button-icons/play.svg"/>Run
                 </push-button>
-                <input
+                <push-button
+                    class="run-highlighted-btn"
+                    buttonStyle="yellow"
+                    [disabled]="textHighlighted === '' && !isEmptySelection"
+                    (onClick)="runHighlightedExpression()"
+                    #tooltip="matTooltip"
+                    [matTooltip]="runHighlightedCodeTooltip"
+                >{{textHighlighted === '' ? "Run Code To Line #" : "Run Selected Code"}}
+                </push-button>
+                <!-- <input
                     #tooltip="matTooltip"
                     [matTooltip]="topEditor.isModule ? moduleNameTooltip : ''"
                     class="topEditor.invalidExpression ? 'invalid-input' : ''"
@@ -100,15 +126,15 @@ POSSIBILITY OF SUCH DAMAGE.
                     placeholder="{{topEditor.isModule ? 'Module' : 'Expression'}} Name"
                     [(ngModel)]="topEditor.name"
                     fxFlex
-                >
-                <tag-picker
+                > -->
+                <!-- <tag-picker
                     type="{{topEditor.isModule ? 'module' : 'expression'}}"
                     [selectedTagIDs]="topEditor.selectedTagIDs"
                     [showCurrentTagsSection]="true"
                     (onTagSelectionChanged)="topEditor.onTagSelectionChanged($event)"
                     [editable]="topEditor.editable"
                 >
-                </tag-picker>
+                </tag-picker> -->
             </div>
         </div>
         <div class="viz-container">
@@ -220,7 +246,16 @@ POSSIBILITY OF SUCH DAMAGE.
             >
             </expression-text-editor>
             <div *ngIf="bottomEditor.expression && isSplitScreen" class="split-screen-header">
-                <h2>{{bottomEditor.isModule ? "Module" : "LUA Expression"}} Editor</h2>
+                <!-- <h2>{{bottomEditor.isModule ? "Module" : "LUA Expression"}} Editor</h2> -->
+                <input
+                    #tooltip="matTooltip"
+                    class="expression-name {{bottomEditor.invalidExpression ? 'invalid-input' : ''}} {{isNewID ? '' : 'confirmed-module'}}"
+                    [matTooltip]="bottomEditor.isModule ? moduleNameTooltip : ''"
+                    [disabled]="!bottomEditor.editable || !isNewID"
+                    type="text"
+                    placeholder="{{bottomEditor.isModule ? 'Module' : 'Expression'}} Name"
+                    [(ngModel)]="bottomEditor.name"
+                >
                 <status-indicator
                 [valid]="bottomEditor.isExpressionSaved"
                 [status]="bottomEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"
@@ -248,15 +283,15 @@ POSSIBILITY OF SUCH DAMAGE.
                         [(ngModel)]="bottomEditor.comments"
                         fxFlex
                     >
-                    <input
+                    <!-- <input
                         #tooltip="matTooltip"
+                        class="expression-name {{bottomEditor.invalidExpression ? 'invalid-input' : ''}}"
                         [matTooltip]="bottomEditor.isModule ? moduleNameTooltip : ''"
                         [disabled]="!bottomEditor.editable"
                         type="text"
                         placeholder="{{bottomEditor.isModule ? 'Module' : 'Expression'}} Name"
                         [(ngModel)]="bottomEditor.name"
-                        fxFlex
-                    >
+                    > -->
                     <tag-picker
                         type="expression"
                         [selectedTagIDs]="bottomEditor.selectedTagIDs"
@@ -337,7 +372,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     matTooltip="WARNING: This is a one way operation"
                 >Convert to LUA
                 </push-button>
-                <push-button
+                <!-- <push-button
                     class="run-highlighted-btn"
                     buttonStyle="yellow"
                     [disabled]="textHighlighted === '' && !isEmptySelection"
@@ -345,7 +380,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     #tooltip="matTooltip"
                     [matTooltip]="runHighlightedCodeTooltip"
                 >{{textHighlighted === '' ? "Run Code To Line #" : "Run Selected Code"}}
-                </push-button>
+                </push-button> -->
                 <push-button
                     *ngIf="isSplitScreen"
                     class="save-btn"

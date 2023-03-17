@@ -1225,6 +1225,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         this.activeTextSelection = textSelection;
     }
 
+    get isNewID(): boolean
+    {
+        return this._newExpression;
+    }
+
     get isRunable(): boolean
     {
         let otherEditorActive = this.isTopEditorActive && this.lastRunEditor !== "top" || !this.isTopEditorActive && this.lastRunEditor !== "bottom";
