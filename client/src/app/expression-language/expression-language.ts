@@ -28,11 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Observable } from "rxjs";
-import {
-    DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
-} from "src/app/expression-language/data-sources";
 import { DataQueryResult } from "src/app/expression-language/data-values";
-import { DataSet } from "src/app/models/DataSet";
 import { InterpreterDataSource } from "./interpreter-data-source";
 import { PixliseDataQuerier } from "./interpret-pixlise";
 import { LuaDataQuerier } from "./interpret-lua";
