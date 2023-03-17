@@ -27,7 +27,7 @@
 -- ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 -- POSSIBILITY OF SUCH DAMAGE.
 
-local Map = {
+Map = {
     opMultiply = 1,
     opDivide = 2,
     opAdd = 3,

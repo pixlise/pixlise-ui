@@ -68,7 +68,7 @@ export class PixliseDataQuerier
             let runtimeMs = performance.now()-t0;
             console.log(">>> PIXLISE expression took: "+runtimeMs.toLocaleString()+"ms");
 
-            return of(new DataQueryResult(result as PMCDataValues, true, [], runtimeMs));
+            return of(new DataQueryResult(result as PMCDataValues, true, [], runtimeMs, "", ""));
         }
 
         throw new Error("Expression: "+expression+" did not result in usable map data. Result was: "+result);

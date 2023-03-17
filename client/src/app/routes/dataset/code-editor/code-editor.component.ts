@@ -1078,13 +1078,18 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             this._widgetDataService.runAsyncExpression(
                 new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID),
                 expression,
-                false,
                 true
             ).subscribe(
-                (result)=>
+                (result: RegionDataResultItem)=>
                 {
                     this.evaluatedExpression = result;
-                    this.stderr = "";
+                    this.stdout = result.exprResult.stdout;
+                    this.stderr = result.exprResult.stderr;
+
+                    // TODO: Use these somewhere in the UI
+                    //result.exprResult.runtimeMs;
+                    //result.exprResult.dataRequired;
+
                     editor.isSaveableOutput = editor.isModule || result.isPMCTable;
                     if(this.evaluatedExpression && (!result.isPMCTable || this.evaluatedExpression?.values?.values?.length > 0))
                     {
@@ -1165,13 +1170,17 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         this._widgetDataService.runAsyncExpression(
             new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID),
             highlightedExpression,
-            false,
             true
         ).subscribe(
-            (result)=>
+            (result: RegionDataResultItem)=>
             {
                 this.evaluatedExpression = result;
-                this.stderr = "";
+                this.stdout = result.exprResult.stdout;
+                this.stderr = result.exprResult.stderr;
+
+                // TODO: Use these somewhere in the UI
+                //result.exprResult.runtimeMs;
+                //result.exprResult.dataRequired;
             },
             (err)=>
             {

@@ -37,6 +37,11 @@
                 "output": "assets/lua"
               },
               {
+                "glob": "DebugHelp.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
                 "glob": "FuncRunner.lua",
                 "input": "src/app/expression-language/lua/test",
                 "output": "assets/lua"

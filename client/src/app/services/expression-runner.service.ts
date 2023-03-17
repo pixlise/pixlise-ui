@@ -69,7 +69,7 @@ export class ExpressionRunnerService
         diffractionSource: DiffractionPeakQuerierSource,
         forPMCs: Set<number> = null,
         allowAnyResponse: boolean = false
-    ): Observable<PMCDataValues>
+    ): Observable<DataQueryResult>
     {
         if(!this._querier)
         {
@@ -111,9 +111,12 @@ export class ExpressionRunnerService
                                 // Save runtime stats for this expression
                                 this._exprService.saveExecutionStats(expression.id, queryResult.dataRequired, queryResult.runtimeMs);
 
-                                // Return the results
-                                let finalResult = queryResult.isPMCTable ? this.filterForPMCs(queryResult.resultValues, forPMCs) : queryResult.resultValues;
-                                return finalResult;
+                                // Return the results, but filter for PMCs requested, if need be
+                                if(queryResult.isPMCTable)
+                                {
+                                    queryResult.resultValues = this.filterForPMCs(queryResult.resultValues, forPMCs);
+                                }
+                                return queryResult;
                             }
                         )
                     );

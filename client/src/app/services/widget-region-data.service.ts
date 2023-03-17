@@ -29,8 +29,8 @@
 
 import { Injectable } from "@angular/core";
 import { ReplaySubject, Subject, Subscription, Observable, combineLatest, of } from "rxjs";
-import { map, catchError } from "rxjs/operators";
-import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
+import { map, catchError, tap } from "rxjs/operators";
+import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { ExpressionRunnerService } from "src/app/services/expression-runner.service";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
@@ -166,7 +166,7 @@ export enum WidgetDataErrorType
 export class RegionDataResultItem
 {
     constructor(
-        public values: PMCDataValues,
+        public exprResult: DataQueryResult,
         public errorType: WidgetDataErrorType,
         public error: string,
         public warning: string,
@@ -176,6 +176,11 @@ export class RegionDataResultItem
         public isPMCTable: boolean = true,
     )
     {
+    }
+
+    get values(): PMCDataValues
+    {
+        return this.exprResult?.resultValues;
     }
 }
 
@@ -510,7 +515,7 @@ export class WidgetRegionDataService
             {
                 // Return a result with cached values but this query+expression, just in case it changed!
                 let cachedResultReturn = new RegionDataResultItem(
-                    cachedResult.values,
+                    cachedResult.exprResult,
                     cachedResult.errorType,
                     cachedResult.error,
                     cachedResult.warning,
@@ -525,8 +530,21 @@ export class WidgetRegionDataService
             {
                 // Run the expression and handle any errors in our own way here. This function is intended to be called by
                 // consumers of the data that will show a visualisation, so we want to provide a specific consistant error message
+
+                // Some expressions run slowly, so we cache their results in case they are re-run frequently
+                // eg in the case of UI refreshing binary or ternary plots
+                let t0 = performance.now();
+                
                 result$.push(
-                    this.runAsyncExpression(query, expr).pipe(
+                    this.runAsyncExpression(query, expr, false).pipe(
+                        tap(
+                            (result: RegionDataResultItem)=>
+                            {
+                                // Cache if needed
+                                let t1 = performance.now();
+                                this._resultCache.addCachedResult(query, t1-t0, result);
+                            }
+                        ),
                         catchError(
                             (err)=>
                             {
@@ -559,14 +577,15 @@ export class WidgetRegionDataService
         ); 
     }
 
-    private processQuantResult(t0: number, result: PMCDataValues, query: DataSourceParams, expr: DataExpression, region: RegionData, pmcOffset: number, shouldCache: boolean = true): RegionDataResultItem
+    private processQuantResult(result: DataQueryResult, query: DataSourceParams, expr: DataExpression, region: RegionData, pmcOffset: number): RegionDataResultItem
     {
-        if(!Array.isArray(result?.values) || (result.values.length > 0 && !(result.values[0] instanceof PMCDataValue)))
+        let pmcValues = result?.resultValues as PMCDataValues;
+        if(!Array.isArray(pmcValues?.values) || (pmcValues.values.length > 0 && !(pmcValues.values[0] instanceof PMCDataValue)))
         {
             return new RegionDataResultItem(result, WidgetDataErrorType.WERR_QUERY, "Result is not a PMC array!", null, expr, region, query, false);
         }
 
-        let unitConverted = this.applyUnitConversion(expr, result, query.units);
+        let unitConverted = this.applyUnitConversion(expr, pmcValues, query.units);
 
         // Also change the PMC values to be dataset-relative in the case of combined dataset
         if(pmcOffset > 0)
@@ -577,18 +596,14 @@ export class WidgetRegionDataService
             }
         }
 
-        let resultItem = new RegionDataResultItem(unitConverted, null, null, unitConverted.warning, expr, region, query);
-
-        if(shouldCache)
-        {
-            // Cache if needed
-            let t1 = performance.now();
-            this._resultCache.addCachedResult(query, t1-t0, resultItem);
-        }
+        // Put this back in the result
+        result.resultValues = unitConverted;
+        let resultItem = new RegionDataResultItem(result, null, null, unitConverted.warning, expr, region, query);
 
         return resultItem;
     }
 
+/* Seems to have gone unused
     public cacheExpression(query: DataSourceParams, expr: DataExpression, result: PMCDataValues, warning: string = ""): void
     {
         this._resultCache.addCachedResult(
@@ -605,19 +620,14 @@ export class WidgetRegionDataService
             )
         );
     }
+*/
 
-    // Runs an expression with given parameters.
-    // This was private, is only public now so the code editor window can run expressions directly with some control over
-    // caching and a more "raw" experience. If errors are encountered, they will be returned as part of the Observables own
+    // Runs an expression with given parameters. If errors are encountered, they will be returned as part of the Observables own
     // error handling interface.
-    public runAsyncExpression(query: DataSourceParams, expr: DataExpression, shouldCache: boolean = true, allowAnyResponse: boolean = false): Observable<RegionDataResultItem>
+    public runAsyncExpression(query: DataSourceParams, expr: DataExpression, allowAnyResponse: boolean): Observable<RegionDataResultItem>
     {
         let dataset = this._datasetService.datasetLoaded;
         let region = this._regions.get(query.roiId);
-
-        // Some expressions run slowly, so we cache their results in case they are re-run frequently
-        // eg in the case of UI refreshing binary or ternary plots
-        let t0 = performance.now();
 
         // At this point, we have to decide what we're querying for. If we have an ROI specified, we are only querying for its PMCs
         // BUT datasetId filters this further, because if we have one specified (in the case of combined datasets), we need to
@@ -645,9 +655,9 @@ export class WidgetRegionDataService
 
         return this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, pmcsToQuery, allowAnyResponse).pipe(
             map(
-                (result: PMCDataValues)=>
+                (result: DataQueryResult)=>
                 {
-                    return this.processQuantResult(t0, result, query, expr, region, pmcOffset, shouldCache);
+                    return this.processQuantResult(result, query, expr, region, pmcOffset);
                 }
             )
         );

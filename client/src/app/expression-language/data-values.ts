@@ -83,7 +83,9 @@ export class DataQueryResult
         public resultValues: PMCDataValues | any, // PMCDataValues if the query was for PMC data, otherwise it's whatever the query returned
         public isPMCTable: boolean,
         public dataRequired: string[],
-        public runtimeMs: number
+        public runtimeMs: number,
+        public stdout: string,
+        public stderr: string,
     )
     {
     }

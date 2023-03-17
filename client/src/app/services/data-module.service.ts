@@ -237,7 +237,7 @@ export class DataModuleService
     private _modules: DataModuleStore = new DataModuleStore();
 
     // List of built in modules - static so other things can access it without a pointer to our instance
-    private static _builtInModuleNames = ["Map"];
+    private static _builtInModuleNames = ["Map", "DebugHelp"];
     // List of downloaded modules as observables - we store the first one, in theory it shouldn't download
     // again but just be served from this static cache
     private static _builtInModules = DataModuleService.fetchBuiltInModules();
