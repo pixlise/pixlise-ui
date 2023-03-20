@@ -208,6 +208,16 @@ export class EditorConfig
         this.editExpression = text;
     }
 
+    onNameChange(name: string): void
+    {
+        this.name = name;
+    }
+
+    onDescriptionChange(description: string): void
+    {
+        this.comments = description;
+    }
+
     onTagSelectionChanged(tags): void
     {
         this.selectedTagIDs = tags;

@@ -42,9 +42,9 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div class="metadata-fields">
             <h5 class="metadata-label">Description</h5>
-            <textarea>{{description}}</textarea>
+            <textarea [(ngModel)]="description">{{description}}</textarea>
         </div>
-        <div class="release-notes">
+        <div *ngIf="isModule" class="release-notes">
             <div
                 *ngFor="let release of releaseNotes"
                 class="grouped-release"

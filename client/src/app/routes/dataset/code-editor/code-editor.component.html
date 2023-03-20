@@ -52,7 +52,6 @@ POSSIBILITY OF SUCH DAMAGE.
                 placeholder="{{topEditor.isModule ? 'Module' : 'Expression'}} Name"
                 [(ngModel)]="topEditor.name"
             >
-            <!-- <h2>{{topEditor.isModule ? "Module" : "Expression"}} Editor</h2> -->
             <status-indicator
                 [valid]="topEditor.isExpressionSaved"
                 [status]="topEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"
@@ -74,13 +73,6 @@ POSSIBILITY OF SUCH DAMAGE.
             ></status-indicator>
 
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
-                <!-- <input
-                    [disabled]="!topEditor.editable"
-                    type="text"
-                    placeholder="{{topEditor.isModule ? 'Module' : 'Expression'}} Description"
-                    [(ngModel)]="topEditor.comments"
-                    fxFlex
-                > -->
                 <multi-switch-button
                     #tooltip="matTooltip"
                     [matTooltip]="splitScreenTooltip"
@@ -95,6 +87,9 @@ POSSIBILITY OF SUCH DAMAGE.
                     [isModule]="topEditor.isModule"
                     [currentVersion]="topEditor.version"
                     [versions]="topEditor.versionList"
+                    (changeName)="topEditor.onNameChange($event)"
+                    (changeDescription)="topEditor.onDescriptionChange($event)"
+                    (changeTags)="topEditor.onTagSelectionChanged($event)"
                 >
                 </expression-metadata-editor>
                 <push-button
@@ -263,6 +258,9 @@ POSSIBILITY OF SUCH DAMAGE.
                         [isModule]="bottomEditor.isModule"
                         [currentVersion]="bottomEditor.version"
                         [versions]="bottomEditor.versionList"
+                        (changeName)="bottomEditor.onNameChange($event)"
+                        (changeDescription)="bottomEditor.onDescriptionChange($event)"
+                        (changeTags)="bottomEditor.onTagSelectionChanged($event)"
                     >
                     </expression-metadata-editor>
                 </div>

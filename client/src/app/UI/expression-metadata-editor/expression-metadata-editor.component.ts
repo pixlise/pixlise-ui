@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Input, OnInit } from "@angular/core";
+import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { DataExpression } from "src/app/models/Expression";
 import { DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 
@@ -48,6 +48,10 @@ export class ExpressionMetadataEditorComponent implements OnInit
     @Input() isModule: boolean = false;
     @Input() currentVersion: DataModuleVersionSourceWire = null;
     @Input() versions: DataModuleVersionSourceWire[] = [];
+
+    @Output() changeName: EventEmitter<string> = new EventEmitter<string>();
+    @Output() changeDescription: EventEmitter<string> = new EventEmitter<string>();
+    @Output() changeTags: EventEmitter<string[]> = new EventEmitter<string[]>();
 
     private _fetched: boolean = false;
     private _releaseNotes: MajorGroupedRelease[] = [];
@@ -70,6 +74,7 @@ export class ExpressionMetadataEditorComponent implements OnInit
     set name(value: string)
     {
         this.expression.name = value;
+        this.changeName.emit(this.expression.name);
     }
 
     get description(): string
@@ -80,6 +85,7 @@ export class ExpressionMetadataEditorComponent implements OnInit
     set description(value: string)
     {
         this.expression.comments = value;
+        this.changeDescription.emit(this.expression.comments);
     }
 
     get tags(): string[]
@@ -95,6 +101,7 @@ export class ExpressionMetadataEditorComponent implements OnInit
     onTagSelectionChanged(tags: string[]): void
     {
         this.tags = tags;
+        this.changeTags.emit(this.tags);
     }
 
     get releaseNotes(): MajorGroupedRelease[]
