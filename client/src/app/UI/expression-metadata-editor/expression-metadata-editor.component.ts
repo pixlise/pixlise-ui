@@ -33,6 +33,7 @@ import { DataModuleVersionSourceWire } from "src/app/services/data-module.servic
 
 type MajorGroupedRelease = {
     majorVersion: DataModuleVersionSourceWire;
+    majorVersionGroup: string;
     minorVersions: DataModuleVersionSourceWire[];
 }
 
@@ -128,6 +129,7 @@ export class ExpressionMetadataEditorComponent implements OnInit
             {
                 majorRelease[majorVersionGroup] = {
                     majorVersion: specificVersion,
+                    majorVersionGroup,
                     minorVersions: majorRelease[majorVersionGroup]?.minorVersions || []
                 };
             }
@@ -139,6 +141,7 @@ export class ExpressionMetadataEditorComponent implements OnInit
             {
                 majorRelease[majorVersionGroup] = {
                     majorVersion: null,
+                    majorVersionGroup,
                     minorVersions: [specificVersion]
                 };
             }
@@ -146,8 +149,8 @@ export class ExpressionMetadataEditorComponent implements OnInit
 
         this.releaseNotes = Object.values(majorRelease).sort((a, b) =>
         {
-            let aMajorVersion = a.majorVersion?.version.split(".")[0];
-            let bMajorVersion = b.majorVersion?.version.split(".")[0];
+            let aMajorVersion = a.majorVersionGroup;
+            let bMajorVersion = b.majorVersionGroup;
             return Number(bMajorVersion) - Number(aMajorVersion);
         });
     }

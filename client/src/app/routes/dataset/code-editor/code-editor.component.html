@@ -116,24 +116,6 @@ POSSIBILITY OF SUCH DAMAGE.
                     [matTooltip]="runHighlightedCodeTooltip"
                 >{{textHighlighted === '' ? "Run Code To Line #" : "Run Selected Code"}}
                 </push-button>
-                <!-- <input
-                    #tooltip="matTooltip"
-                    [matTooltip]="topEditor.isModule ? moduleNameTooltip : ''"
-                    class="topEditor.invalidExpression ? 'invalid-input' : ''"
-                    [disabled]="!topEditor.editable"
-                    type="text"
-                    placeholder="{{topEditor.isModule ? 'Module' : 'Expression'}} Name"
-                    [(ngModel)]="topEditor.name"
-                    fxFlex
-                > -->
-                <!-- <tag-picker
-                    type="{{topEditor.isModule ? 'module' : 'expression'}}"
-                    [selectedTagIDs]="topEditor.selectedTagIDs"
-                    [showCurrentTagsSection]="true"
-                    (onTagSelectionChanged)="topEditor.onTagSelectionChanged($event)"
-                    [editable]="topEditor.editable"
-                >
-                </tag-picker> -->
             </div>
         </div>
         <div class="viz-container">
@@ -233,6 +215,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 (runHighlightedExpression)="runHighlightedExpression()"
                 (saveExpression)="onSave(true)"
                 (toggleSidebar)="onToggleSidebar()"
+                (toggleSplitView)="onToggleSplitScreen()"
                 [range]="isSubsetExpression ? executedTextSelection.range : null"
                 [showHelp]="topEditor.useAutocomplete && topEditor.editable"
                 [isLua]="topEditor.isLua"
@@ -245,7 +228,6 @@ POSSIBILITY OF SUCH DAMAGE.
             >
             </expression-text-editor>
             <div *ngIf="bottomEditor.expression && isSplitScreen" class="split-screen-header">
-                <!-- <h2>{{bottomEditor.isModule ? "Module" : "LUA Expression"}} Editor</h2> -->
                 <input
                     #tooltip="matTooltip"
                     class="expression-name {{bottomEditor.invalidExpression ? 'invalid-input' : ''}} {{isNewID ? '' : 'confirmed-module'}}"
@@ -275,30 +257,14 @@ POSSIBILITY OF SUCH DAMAGE.
                     [status]="bottomEditor.isLatestVersionReleased ? 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
                 ></status-indicator>
                 <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
-                    <input
-                        [disabled]="!bottomEditor.editable"
-                        type="text"
-                        placeholder="{{bottomEditor.isModule ? 'Module' : 'Expression'}} Description"
-                        [(ngModel)]="bottomEditor.comments"
-                        fxFlex
+                    <expression-metadata-editor
+                        class="bottom-metadata-editor"
+                        [expression]="bottomEditor.expression"
+                        [isModule]="bottomEditor.isModule"
+                        [currentVersion]="bottomEditor.version"
+                        [versions]="bottomEditor.versionList"
                     >
-                    <!-- <input
-                        #tooltip="matTooltip"
-                        class="expression-name {{bottomEditor.invalidExpression ? 'invalid-input' : ''}}"
-                        [matTooltip]="bottomEditor.isModule ? moduleNameTooltip : ''"
-                        [disabled]="!bottomEditor.editable"
-                        type="text"
-                        placeholder="{{bottomEditor.isModule ? 'Module' : 'Expression'}} Name"
-                        [(ngModel)]="bottomEditor.name"
-                    > -->
-                    <tag-picker
-                        type="expression"
-                        [selectedTagIDs]="bottomEditor.selectedTagIDs"
-                        [showCurrentTagsSection]="true"
-                        (onTagSelectionChanged)="bottomEditor.onTagSelectionChanged($event)"
-                        [editable]="bottomEditor.editable"
-                    >
-                    </tag-picker>
+                    </expression-metadata-editor>
                 </div>
             </div>
             <expression-text-editor
@@ -315,6 +281,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 (runHighlightedExpression)="runHighlightedExpression()"
                 (saveExpression)="onSave(false)"
                 (toggleSidebar)="onToggleSidebar()"
+                (toggleSplitView)="onToggleSplitScreen()"
                 [range]="isSubsetExpression ? executedTextSelection.range : null"
                 [showHelp]="bottomEditor.useAutocomplete && bottomEditor.editable"
                 [isLua]="bottomEditor.isLua"

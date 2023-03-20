@@ -125,6 +125,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Output() runHighlightedExpression = new EventEmitter();
     @Output() saveExpression = new EventEmitter();
     @Output() toggleSidebar = new EventEmitter();
+    @Output() toggleSplitView = new EventEmitter();
     @Output() changeExpression = new EventEmitter<(text: string) => void>();
     @Output() toggleHeader = new EventEmitter();
     @Output() onClick = new EventEmitter();
@@ -150,19 +151,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                 this.setupCodeMirror(cm.default);
                 let cmObj = this._codeMirror.codeMirror;
                 cmObj.setOption("mode", this.isLua ? "lua" : "pixlise");
-                // enable hint
-                // cmObj.setOption("hint", {
-                //     hint: (cm: any) =>
-                //     {
-                //         let cur = cm.getCursor();
-                //         let token = cm.getTokenAt(cur);
-                //         let start = token.start;
-                //         let end = cur.ch;
-                //         let curWord = token.string.slice(0, end - start);
-                //         let list = this.getHintList(curWord);
-                //         return {list: list, from: CodeMirror.Pos(cur.line, start), to: CodeMirror.Pos(cur.line, end)};
-                //     }
-                // });
                 this.setUpKeyBindings(cmObj);
                 cmObj.refresh();
             });
@@ -171,8 +159,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     getHintList(curWord: string): string[]
     {
-        let list = [];
-        return ["test", "abc"];
+        return [];
     }
 
     copyExpression(expression: DataExpression): DataExpression
@@ -305,6 +292,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                 },
                 "Ctrl-S": () => this.saveExpression.emit(),
                 "Ctrl-B": () => this.toggleSidebar.emit(),
+                "Ctrl-\\": () => this.toggleSplitView.emit(),
             });
         }
         else
@@ -324,6 +312,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                 },
                 "Cmd-S": () => this.saveExpression.emit(),
                 "Cmd-B": () => this.toggleSidebar.emit(),
+                "Cmd-\\": () => this.toggleSplitView.emit(),
             });
         }
     }

@@ -55,9 +55,13 @@
     }
 
     .release-notes {
+        margin: 0 -8px;
         margin-top: 8px;
+        padding: 8px;
+        max-height: 300px;
+        overflow-y: scroll;
 
-        .release-title {
+        .release-title, .minor-release-title {
             margin-left: -8px;
             width: calc(100% + 16px);
             background-color: #222829;
@@ -72,7 +76,13 @@
                 background: #232828;
                 border: 1px solid rgb(var(--clr-gray-60));
                 border-radius: 4px;
+                color: rgb(var(--clr-gray-30));
             }
+        }
+
+        .minor-release-title {
+            font-size: 14px;
+            font-weight: 500;
         }
 
         .minor-releases {
@@ -81,7 +91,7 @@
 
                 h3 {
                     margin-left: 8px;
-                    font-size: 14px;
+                    font-size: 12px;
                 }
 
                 .release-comments {
@@ -91,6 +101,8 @@
                     background: #232828;
                     border: 1px solid rgb(var(--clr-gray-60));
                     border-radius: 4px;
+                    font-size: 12px;
+                    color: rgb(var(--clr-gray-30));
                 }
             }
         }

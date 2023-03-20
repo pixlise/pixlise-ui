@@ -1262,7 +1262,13 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     get splitScreenTooltip(): string
     {
-        let tooltip = "Toggle between a single editor and a splitscreen view";
+        if(this.topEditor.isModule)
+        {
+            return "Cannot splitscreen from module editor";
+        }
+
+        let tooltip = "Toggle between single and splitscreen view";
+        tooltip += this.isWindows ? " (Ctrl+\\)" : " (Cmd+\\)";
         return this.topEditor.modules.length > 0 ? tooltip : `${tooltip}\nCannot splitscreen with no installed modules`;
     }
 
@@ -1574,6 +1580,17 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 this._keyPresses["Meta"] = false;
                 this._keyPresses["Control"] = false;
                 this._keyPresses["b"] = false;
+            }
+        }
+        else if((this._keyPresses["Meta"] && this._keyPresses["\\"]) || (this._keyPresses["Control"] && this._keyPresses["\\"]))
+        {
+            this.onToggleSplitScreen();
+            this._keyPresses[event.key] = false;
+            if(event.key === "Meta" || event.key === "Control")
+            {
+                this._keyPresses["Meta"] = false;
+                this._keyPresses["Control"] = false;
+                this._keyPresses["\\"] = false;
             }
         }
     }

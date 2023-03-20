@@ -49,13 +49,13 @@ POSSIBILITY OF SUCH DAMAGE.
                 *ngFor="let release of releaseNotes"
                 class="grouped-release"
             >
-                <h2 class="release-title">Major Release ({{getVersionDisplayName(release.majorVersion)}})</h2>
-                <div class="release-comments-container">
+                <h2 *ngIf="release.majorVersion" class="release-title">Major Release ({{getVersionDisplayName(release.majorVersion)}})</h2>
+                <div *ngIf="release.majorVersion" class="release-comments-container">
                     <div class="release-comments">
-                        {{release.majorVersion.comments}}
+                        {{release.majorVersion.comments || "No release notes"}}
                     </div>
                 </div>
-                <h2 class="release-title">Minor Releases</h2>
+                <h2 class="minor-release-title">Minor Releases</h2>
                 <div class="minor-releases">
                     <div
                         *ngFor="let minorRelease of release.minorVersions"
@@ -63,7 +63,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     >
                         <h3><b>{{getVersionDisplayName(minorRelease)}}</b> ({{getVersionReleaseDate(minorRelease)}})</h3>
                         <div class="release-comments">
-                            {{minorRelease.comments}}
+                            {{minorRelease.comments || "No release notes"}}
                         </div>
                     </div>
                 </div>
