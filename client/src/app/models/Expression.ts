@@ -111,7 +111,7 @@ export class DataExpression
     copy(): DataExpression
     {
         // We need to instantiate new versions of all complex objects to prevent javascript from passing by reference
-        let creator = new ObjectCreator(this.creator?.user_id, this.creator?.name, this.creator?.email);
+        let creator = new ObjectCreator(this.creator?.name, this.creator?.user_id, this.creator?.email);
         let tags = Array.from(this.tags || []);
         let moduleReferences = Array.from(this.moduleReferences || []).map((ref) => new ModuleReference(ref.moduleID, ref.version));
         let recentExecStats = new ExpressionExecStats(
