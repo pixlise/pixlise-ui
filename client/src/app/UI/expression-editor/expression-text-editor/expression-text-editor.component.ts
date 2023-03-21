@@ -102,6 +102,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     dropdownTop: string = "";
     dropdownLeft: string = "";
 
+    private _gutterWidth: number = 0;
+
     private _initAsLua: boolean = false;
 
     @Input() isLua: boolean = false;
@@ -213,6 +215,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
             const source2 = timer(100);
             const sub2 = source2.subscribe(setupFunc);
+
+            this.updateGutter();
         });
     }
 
@@ -250,7 +254,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     get gutterWidth(): string
     {
-        return this._codeMirror?.codeMirror?.getGutterElement()?.style?.width || "29px";
+        return `${this._gutterWidth}px`;
     }
 
     get isWindows(): boolean
@@ -271,9 +275,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         const resetMarks = (cm) =>
         {
             this.range = null;
-            let cursor = cm.getCursor();
-            cm.setSelection({line: 0, ch: 0}, {line: 0, ch: 0});
-            cm.setSelection(cursor, cursor);
         };
         
         if(this.isWindows)
@@ -320,7 +321,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     private findVariables(): void
     {
         // NOTE: this is confusing, we have isLua input and expression also has a source language
-        if(this._expr.sourceLanguage !== EXPR_LANGUAGE_LUA || this.isLua)
+        if(this._expr.sourceLanguage === EXPR_LANGUAGE_LUA || this.isLua)
         {
             return;
         }
@@ -586,6 +587,12 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     }
 
+    private updateGutter(): void
+    {
+        let gutterWidth = document.querySelector(".CodeMirror-gutters")?.getBoundingClientRect()?.width;
+        this._gutterWidth = gutterWidth ? gutterWidth : 29;
+    }
+
     private setupCodeMirrorEventHandlers(cm: CodeMirror.EditorFromTextArea): void
     {
         cm.on("beforeChange", (instance, event)=>
@@ -603,6 +610,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         {
             // User may have created/deleted variables
             this.findVariables();
+            this.updateGutter();
 
             this.updateHelp();
             this.range = null;
@@ -650,15 +658,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                             () =>
                             {
                                 this.clearMarkedText(cm);
-
-                                let rangeEnd = this.range?.to() || {line: 0, ch: 0};
                                 this.range = null;
-
-                                // We have to set selection twice to clear the marked range because code mirror only
-                                // does an actual selection change (which resets marked text) if the new selection is valid and
-                                // different from the old selection and we can only ensure it is different by setting it twice
-                                cm.setSelection({line: 0, ch: 0}, {line: 0, ch: 0});
-                                cm.setSelection(rangeEnd, rangeEnd);
                             }
                         )
                     );
@@ -1000,7 +1000,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         let potentialVarName = lineStr.substring(startPos, endPos);
 
         // Check if it's a variable we know of
-        if(exprParts.variableNames.indexOf(potentialVarName) >= 0)
+        if(exprParts?.variableNames.indexOf(potentialVarName) >= 0)
         {
             return potentialVarName;
         }

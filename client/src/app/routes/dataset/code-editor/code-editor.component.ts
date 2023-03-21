@@ -58,7 +58,7 @@ import { RGBMix } from "src/app/services/rgbmix-config.service"
 import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
-import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
 
@@ -76,10 +76,23 @@ export class EditorConfig
         public isModule: boolean = false,
         public isHeaderOpen: boolean = false,
         public useAutocomplete: boolean = false,
-        public isLua: boolean = true,
+        // public isLua: boolean = true,
         public version: DataModuleVersionSourceWire = null,
         public versions: Map<string, DataModuleVersionSourceWire> = null,
     ){}
+
+    get isLua(): boolean
+    {
+        return this.expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
+    }
+
+    set isLua(value: boolean)
+    {
+        if(this.expression)
+        {
+            this.expression.sourceLanguage = value ? EXPR_LANGUAGE_LUA : EXPR_LANGUAGE_PIXLANG;
+        }
+    }
 
     get isSharedByOtherUser(): boolean
     {
@@ -579,8 +592,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                         return;
                     }
 
-                    this.topEditor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
                     this.topEditor.expression = expression.copy();
+                    this.topEditor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
 
                     this._fetchedExpression = true;
 
@@ -892,7 +905,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     private get _activeIDs(): Set<string>
     {
-        return new Set(this.topEditor.expression.moduleReferences.map((ref) => ref.moduleID));
+        let references = this.topEditor?.expression?.moduleReferences || [];
+        return new Set(references.map((ref) => ref.moduleID));
     }
 
     private regenerateItemList(): void
@@ -1093,6 +1107,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 editor.expression.moduleReferences,
                 null,
             );
+            console.log("Running expression: ", expression)
             this._widgetDataService.runAsyncExpression(
                 new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID),
                 expression,

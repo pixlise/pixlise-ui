@@ -310,7 +310,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div class="editor-footer {{isSidebarOpen ? 'sidebar-open' : ''}}">
         <div class="text-container">
-            <mat-select [(ngModel)]="topEditor.isLua" [disabled]="true">
+            <mat-select [(ngModel)]="topEditor.isLua" [disabled]="false">
                 <mat-option [value]="true">Lua</mat-option>
                 <mat-option [value]="false">PIXLang</mat-option>
             </mat-select>
