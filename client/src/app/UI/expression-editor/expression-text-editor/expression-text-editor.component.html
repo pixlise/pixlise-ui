@@ -89,7 +89,7 @@ POSSIBILITY OF SUCH DAMAGE.
               <icon-button
                   #tooltip="matTooltip"
                   class="{{isHeaderOpen ? 'open' : 'closed'}}"
-                  matTooltip="Toggle Installed Module Section"
+                  [matTooltip]="toggleHeaderTooltip"
                   icon='assets/button-icons/arrow-right.svg'
                   [size]="16"
                   (click)="onToggleHeader()"

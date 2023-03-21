@@ -39,7 +39,7 @@ import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElem
 import { SentryHelper } from "src/app/utils/utils";
 import { Range } from "codemirror";
 import { ObjectCreator } from "src/app/models/BasicTypes";
-import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 import * as CodeMirror from "codemirror";
 
 require("codemirror/addon/comment/comment.js");
@@ -225,9 +225,23 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         this._subs.unsubscribe();
     }
 
+    get isSourceLanguageLua(): boolean
+    {
+        return this.expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
+    }
+
+    get toggleHeaderTooltip(): string
+    {
+        let tooltip = this.isHeaderOpen ? "Hide installed modules" : "Show installed modules";
+        return this.isSourceLanguageLua ? tooltip : "Modules are only available in Lua";
+    }
+
     onToggleHeader(): void
     {
-        this.toggleHeader.emit();
+        if(this.isSourceLanguageLua)
+        {
+            this.toggleHeader.emit();
+        }
     }
 
     onSetActive(): void
