@@ -104,12 +104,12 @@ export class LuaDataQuerier
             {},
             (str)=>
             {
-                this._runtimeStdOut += str;
+                this._runtimeStdOut += str+"\n";
                 console.log(str);
             },
             (str)=>
             {
-                this._runtimeStdErr += str;
+                this._runtimeStdErr += str+"\n";
                 console.error(str);
             }
         );
