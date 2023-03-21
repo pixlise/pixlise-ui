@@ -56,6 +56,8 @@ export class LuaDataQuerier
     //private _luaLibImports = "";
 
     private _runtimeDataRequired: Set<string> = new Set<string>();
+    private _runtimeStdOut = "";
+    private _runtimeStdErr = "";
 
     private _dataSource: InterpreterDataSource = null;
 
@@ -97,7 +99,20 @@ export class LuaDataQuerier
         let wasmURI = "assets/lua/glue.wasm";
         console.log(this._logId+"Loading WASM from: "+wasmURI);
 
-        const factory = new LuaFactory(wasmURI);
+        const factory = new LuaFactory(
+            wasmURI,
+            {},
+            (str)=>
+            {
+                this._runtimeStdOut += str;
+                console.log(str);
+            },
+            (str)=>
+            {
+                this._runtimeStdErr += str;
+                console.error(str);
+            }
+        );
         const luaOpts = {
             openStandardLibs: true,
             injectObjects: false,
@@ -341,6 +356,10 @@ export class LuaDataQuerier
         // Ensure the list of data required is cleared, from here on we're logging what the expression required to run!
         this._runtimeDataRequired.clear();
 
+        // Also clear stdout and stderr here
+        this._runtimeStdOut = "";
+        this._runtimeStdErr = "";
+
         return this.runLuaCode(sourceCode, environment.luaTimeoutMs).pipe(
             map(
                 (result)=>
@@ -369,7 +388,7 @@ export class LuaDataQuerier
 
                         //this.dumpLua("Post expression run");
 
-                        return new DataQueryResult(formattedData, isPMCTable, Array.from(this._runtimeDataRequired.keys()), runtimeMs, "", "");
+                        return new DataQueryResult(formattedData, isPMCTable, Array.from(this._runtimeDataRequired.keys()), runtimeMs, this._runtimeStdOut, this._runtimeStdErr);
                     }
 
                     throw new Error("Expression: did not return a value");

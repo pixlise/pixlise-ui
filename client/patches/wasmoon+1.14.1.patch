@@ -8,11 +8,21 @@ index 0000000..bb9f3d6
 +Mode=
 +Vid=
 +FolderType=Generic
-diff --git a/node_modules/wasmoon/dist/glue.wasm b/node_modules/wasmoon/dist/glue.wasm
-index 262b693..c28edef 100644
-Binary files a/node_modules/wasmoon/dist/glue.wasm and b/node_modules/wasmoon/dist/glue.wasm differ
+diff --git a/node_modules/wasmoon/dist/factory.d.ts b/node_modules/wasmoon/dist/factory.d.ts
+index 55d5591..2381825 100644
+--- a/node_modules/wasmoon/dist/factory.d.ts
++++ b/node_modules/wasmoon/dist/factory.d.ts
+@@ -3,7 +3,7 @@ import LuaEngine from './engine';
+ import LuaWasm from './luawasm';
+ export default class LuaFactory {
+     private luaWasmPromise;
+-    constructor(customWasmUri?: string, environmentVariables?: EnvironmentVariables);
++    constructor(customWasmUri: string, environmentVariables: EnvironmentVariables, stdOutFunc, stdErrFunc);
+     mountFile(path: string, content: string | ArrayBufferView): Promise<void>;
+     mountFileSync(luaWasm: LuaWasm, path: string, content: string | ArrayBufferView): void;
+     createEngine(options?: ConstructorParameters<typeof LuaEngine>[1]): Promise<LuaEngine>;
 diff --git a/node_modules/wasmoon/dist/index.js b/node_modules/wasmoon/dist/index.js
-index c538595..52eb3a9 100644
+index c538595..b096069 100644
 --- a/node_modules/wasmoon/dist/index.js
 +++ b/node_modules/wasmoon/dist/index.js
 @@ -98,7 +98,16 @@
@@ -349,7 +359,7 @@ index c538595..52eb3a9 100644
  
  
        return initWasmModule.ready
-@@ -1284,160 +1303,6 @@
+@@ -1284,164 +1303,10 @@
      })();
  
      class LuaWasm {
@@ -507,9 +517,16 @@ index c538595..52eb3a9 100644
 -            this.luaopen_package = this.module.cwrap('luaopen_package', 'number', ['number']);
 -            this.luaL_openlibs = this.module.cwrap('luaL_openlibs', null, ['number']);
 -        }
-         static async initialize(customWasmFileLocation, environmentVariables) {
+-        static async initialize(customWasmFileLocation, environmentVariables) {
++        static async initialize(customWasmFileLocation, environmentVariables, stdOutFunc, stdErrFunc) {
              const module = await initWasmModule({
-                 print: console.log,
+-                print: console.log,
+-                printErr: console.error,
++                print: stdOutFunc,
++                printErr: stdErrFunc,
+                 locateFile: (path, scriptDirectory) => {
+                     return customWasmFileLocation || scriptDirectory + path;
+                 },
 @@ -1453,6 +1318,160 @@
              });
              return new LuaWasm(module);
@@ -671,7 +688,7 @@ index c538595..52eb3a9 100644
          lua_remove(luaState, index) {
              this.lua_rotate(luaState, index, -1);
              this.lua_pop(luaState, 1);
-@@ -1514,6 +1533,43 @@
+@@ -1514,22 +1533,59 @@
                  console.log(key, value);
              }
          }
@@ -715,7 +732,13 @@ index c538595..52eb3a9 100644
      }
  
      var version = '1.14.1';
-@@ -1526,7 +1582,7 @@
+ 
+     class LuaFactory {
+-        constructor(customWasmUri, environmentVariables) {
++        constructor(customWasmUri, environmentVariables, stdOutFunc, stdErrFunc) {
+             var _a;
+             if (customWasmUri === undefined) {
+                 const isBrowser = (typeof window === 'object' && typeof window.document !== 'undefined') ||
                      (typeof self === 'object' && ((_a = self === null || self === void 0 ? void 0 : self.constructor) === null || _a === void 0 ? void 0 : _a.name) === 'DedicatedWorkerGlobalScope');
                  if (isBrowser) {
                      const majorminor = version.slice(0, version.lastIndexOf('.'));
@@ -723,7 +746,11 @@ index c538595..52eb3a9 100644
 +                    customWasmUri = `https://unpkg.com/wasmoon@${majorminor}/dist/glue.wasm`;
                  }
              }
-             this.luaWasmPromise = LuaWasm.initialize(customWasmUri, environmentVariables);
+-            this.luaWasmPromise = LuaWasm.initialize(customWasmUri, environmentVariables);
++            this.luaWasmPromise = LuaWasm.initialize(customWasmUri, environmentVariables, stdOutFunc, stdErrFunc);
+         }
+         async mountFile(path, content) {
+             this.mountFileSync(await this.getLuaModule(), path, content);
 @@ -1584,6 +1640,4 @@
      exports.decorateProxy = decorateProxy;
      exports.decorateUserdata = decorateUserdata;
@@ -732,7 +759,7 @@ index c538595..52eb3a9 100644
 -
  }));
 diff --git a/node_modules/wasmoon/dist/luawasm.d.ts b/node_modules/wasmoon/dist/luawasm.d.ts
-index d143751..7819051 100644
+index d143751..0dfdb28 100644
 --- a/node_modules/wasmoon/dist/luawasm.d.ts
 +++ b/node_modules/wasmoon/dist/luawasm.d.ts
 @@ -1,12 +1,15 @@
@@ -780,7 +807,7 @@ index d143751..7819051 100644
  }
  export {};
 diff --git a/node_modules/wasmoon/dist/thread.d.ts b/node_modules/wasmoon/dist/thread.d.ts
-index 0f2f58b..c1cf90f 100644
+index 0f2f58b..b932f98 100644
 --- a/node_modules/wasmoon/dist/thread.d.ts
 +++ b/node_modules/wasmoon/dist/thread.d.ts
 @@ -29,7 +29,7 @@ export default class Thread {
@@ -793,7 +820,7 @@ index 0f2f58b..c1cf90f 100644
      pushValue(rawValue: unknown, userdata?: unknown): void;
      setMetatable(index: number, metatable: Record<any, any>): void;
 diff --git a/node_modules/wasmoon/dist/type-extensions/function.d.ts b/node_modules/wasmoon/dist/type-extensions/function.d.ts
-index 18a07f9..c2f2237 100644
+index 18a07f9..988376f 100644
 --- a/node_modules/wasmoon/dist/type-extensions/function.d.ts
 +++ b/node_modules/wasmoon/dist/type-extensions/function.d.ts
 @@ -6,6 +6,6 @@ export interface FunctionDecoration extends BaseDecorationOptions {
@@ -805,7 +832,7 @@ index 18a07f9..c2f2237 100644
  export declare function decorateFunction(target: FunctionType, options: FunctionDecoration): Decoration<FunctionType, FunctionDecoration>;
  export default function createTypeExtension(thread: Global): TypeExtension<FunctionType, FunctionDecoration>;
 diff --git a/node_modules/wasmoon/dist/type-extensions/table.d.ts b/node_modules/wasmoon/dist/type-extensions/table.d.ts
-index bd34e16..e632118 100644
+index bd34e16..15d2d80 100644
 --- a/node_modules/wasmoon/dist/type-extensions/table.d.ts
 +++ b/node_modules/wasmoon/dist/type-extensions/table.d.ts
 @@ -1,4 +1,4 @@
@@ -815,7 +842,7 @@ index bd34e16..e632118 100644
 +export type TableType = Record<any, any> | any[];
  export default function createTypeExtension(thread: Global): TypeExtension<any>;
 diff --git a/node_modules/wasmoon/dist/types.d.ts b/node_modules/wasmoon/dist/types.d.ts
-index 0dafbdf..c93c689 100644
+index 0dafbdf..bb61e78 100644
 --- a/node_modules/wasmoon/dist/types.d.ts
 +++ b/node_modules/wasmoon/dist/types.d.ts
 @@ -1,5 +1,5 @@
