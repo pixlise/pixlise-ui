@@ -189,14 +189,14 @@ POSSIBILITY OF SUCH DAMAGE.
                     *ngIf="layerButton === 'showSplitScreenButton'"
                     #tooltip="matTooltip"
                     matTooltip="Open {{isModule ? 'module' : 'expression'}} in split screen"
-                    icon="assets/button-icons/code.svg"
+                    icon="assets/button-icons/layout-split-view.svg"
                     (click)="onSplitScreen($event)">
                 </icon-button>
                 <icon-button
                     *ngIf="layerButton === 'showSettingsButton'"
                     #tooltip="matTooltip"
-                    matTooltip="Open {{isModule ? 'module' : 'expression'}}"
-                    icon="{{isPredefined ? 'assets/button-icons/gear.svg' : (isSharedByOtherUser) ? 'assets/button-icons/code.svg' : 'assets/button-icons/edit.svg'}}"
+                    matTooltip="{{isSharedByOtherUser || isPredefined ? 'Show' : 'Open' }} {{isModule ? 'module' : 'expression'}}"
+                    icon="{{isPredefined ? 'assets/button-icons/gear.svg' : (isSharedByOtherUser) ? 'assets/button-icons/code.svg' : 'assets/button-icons/layout-single-view.svg'}}"
                     (click)="onSettings($event)">
                 </icon-button>
                 <icon-button
