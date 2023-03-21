@@ -40,9 +40,13 @@ import { SentryHelper } from "src/app/utils/utils";
 import { Range } from "codemirror";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import * as CodeMirror from "codemirror";
 
 require("codemirror/addon/comment/comment.js");
 require("codemirror/mode/lua/lua");
+require("codemirror/addon/hint/show-hint.js");
+require("codemirror/addon/hint/anyword-hint.js");
+require("codemirror/addon/lint/lint.js");
 
 export class DataExpressionModule
 {
@@ -121,6 +125,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Output() runHighlightedExpression = new EventEmitter();
     @Output() saveExpression = new EventEmitter();
     @Output() toggleSidebar = new EventEmitter();
+    @Output() toggleSplitView = new EventEmitter();
     @Output() changeExpression = new EventEmitter<(text: string) => void>();
     @Output() toggleHeader = new EventEmitter();
     @Output() onClick = new EventEmitter();
@@ -150,6 +155,11 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                 cmObj.refresh();
             });
         });
+    }
+
+    getHintList(curWord: string): string[]
+    {
+        return [];
     }
 
     copyExpression(expression: DataExpression): DataExpression
@@ -282,6 +292,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                 },
                 "Ctrl-S": () => this.saveExpression.emit(),
                 "Ctrl-B": () => this.toggleSidebar.emit(),
+                "Ctrl-\\": () => this.toggleSplitView.emit(),
             });
         }
         else
@@ -301,6 +312,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                 },
                 "Cmd-S": () => this.saveExpression.emit(),
                 "Cmd-B": () => this.toggleSidebar.emit(),
+                "Cmd-\\": () => this.toggleSplitView.emit(),
             });
         }
     }
@@ -589,7 +601,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
         cm.on("change", (instance, event)=>
         {
-            
             // User may have created/deleted variables
             this.findVariables();
 

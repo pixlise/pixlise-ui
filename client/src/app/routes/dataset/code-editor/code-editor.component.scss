@@ -62,9 +62,18 @@
     expression-text-editor {
         height: 100%;
         display: flex;
+        overflow: scroll;
 
         ::ng-deep .cm-s-pixlise.CodeMirror {
             height: calc(100vh - 48px - 26px - 26px);
+        }
+    }
+
+    &.module {
+        expression-text-editor {
+            ::ng-deep .cm-s-pixlise.CodeMirror {
+                height: calc(100vh - 48px - 24px);
+            }
         }
     }
 
@@ -87,7 +96,7 @@
     &.split-screen-mode {
         expression-text-editor {
             ::ng-deep .cm-s-pixlise.CodeMirror {
-                height: calc(50vh - 48px - 16px);
+                height: calc(50vh - 48px - 4px)
             }
         }
 
@@ -133,7 +142,7 @@
         box-shadow: 0px 4px 4px 0px #00000040;
         z-index: 100;
 
-        padding: 4px 0;
+        padding: 5px 0;
 
         .split-screen-btn {
             min-width: 115px;
@@ -352,6 +361,10 @@ expression-list {
     padding: 0 4px;
     background-color: #2a3036;
     box-shadow: 0px 4px 4px 0px #00000040;
+
+    .bottom-metadata-editor {
+        margin: 4px;
+    }
 }
 
 input.invalid-input {
@@ -362,4 +375,19 @@ expression-text-editor.active
 {
     outline: 1px solid #FFFF8D;
     z-index: 1000;
+}
+
+.expression-name {
+    width: 25ch;
+
+    &.confirmed-module {
+        background: rgb(var(--clr-gray-90));
+        color: white;
+    }
+}
+
+.runtime-container {
+    .runtime-seconds {
+        color: rgb(var(--clr-gray-30));
+    }
 }
