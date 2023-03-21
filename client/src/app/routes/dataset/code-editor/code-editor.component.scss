@@ -62,7 +62,6 @@
     expression-text-editor {
         height: 100%;
         display: flex;
-        overflow: scroll;
 
         ::ng-deep .cm-s-pixlise.CodeMirror {
             height: calc(100vh - 48px - 26px - 26px);
@@ -96,7 +95,7 @@
     &.split-screen-mode {
         expression-text-editor {
             ::ng-deep .cm-s-pixlise.CodeMirror {
-                height: calc(50vh - 48px - 4px)
+                height: calc(50vh - 48px - 18px)
             }
         }
 
@@ -146,6 +145,10 @@
 
         .split-screen-btn {
             min-width: 115px;
+        }
+
+        .confirm-name-btn {
+            margin-left: 8px;
         }
     }
 
@@ -348,6 +351,7 @@ expression-list {
 
 .convert-to-lua-btn {
     margin-left: 8px;
+    margin-right: 8px;
 }
 
 ::ng-deep .mat-select-panel {
@@ -379,6 +383,11 @@ expression-text-editor.active
 
 .expression-name {
     width: 25ch;
+
+    &:disabled {
+        background-color: #222829;
+        color: #F8F8F8;
+    }    
 
     &.confirmed-module {
         background: rgb(var(--clr-gray-90));

@@ -44,7 +44,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <h5 class="metadata-label">Description</h5>
             <textarea [(ngModel)]="description">{{description}}</textarea>
         </div>
-        <div *ngIf="isModule" class="release-notes">
+        <div *ngIf="isModule && releaseNotes.length > 0" class="release-notes">
             <div
                 *ngFor="let release of releaseNotes"
                 class="grouped-release"
@@ -55,8 +55,8 @@ POSSIBILITY OF SUCH DAMAGE.
                         {{release.majorVersion.comments || "No release notes"}}
                     </div>
                 </div>
-                <h2 class="minor-release-title">Minor Releases</h2>
-                <div class="minor-releases">
+                <h2 *ngIf="release?.minorVersions?.length > 0" class="minor-release-title">Minor Releases</h2>
+                <div *ngIf="release?.minorVersions?.length > 0" class="minor-releases">
                     <div
                         *ngFor="let minorRelease of release.minorVersions"
                         class="minor-release"
@@ -75,7 +75,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <widget-settings-menu [settingsDialog]="metadataMenu">
     <push-button
         class="metadata-btn"
-        buttonStyle="gray"
+        buttonStyle="normal"
         #tooltip="matTooltip"
         matTooltip="Edit Metadata"
     >Metadata

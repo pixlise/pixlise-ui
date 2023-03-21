@@ -47,12 +47,22 @@ POSSIBILITY OF SUCH DAMAGE.
                 #tooltip="matTooltip"
                 [matTooltip]="topEditor.isModule ? moduleNameTooltip : ''"
                 class="expression-name {{topEditor.emptyName ? 'invalid-input' : ''}}"
-                [disabled]="!topEditor.editable"
+                [disabled]="!topEditor.editable || (topEditor.isModule && !isNewID)"
                 type="text"
                 placeholder="{{topEditor.isModule ? 'Module' : 'Expression'}} Name"
                 [(ngModel)]="topEditor.name"
             >
+            <push-button
+                *ngIf="isNewID && topEditor.isModule"
+                class="confirm-name-btn"
+                buttonStyle="yellow"
+                (onClick)="onConfirmNewModuleName()"
+                #tooltip="matTooltip"
+                matTooltip="Confirm the name of your module. This can't be changed later."
+            >Confirm
+            </push-button>
             <status-indicator
+                *ngIf="!isNewID"
                 [valid]="topEditor.isExpressionSaved"
                 [status]="topEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"
             ></status-indicator>
@@ -67,9 +77,9 @@ POSSIBILITY OF SUCH DAMAGE.
                 </mat-option>
             </mat-select>
             <status-indicator
-                *ngIf="topEditor.isModule"
-                [valid]="topEditor.isLatestVersionReleased"
-                [status]="topEditor.isLatestVersionReleased ? 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
+                *ngIf="!isNewID && topEditor.isModule"
+                [valid]="topEditor.isLatestVersionReleased && (!topEditor.isModule || topEditor.isLoadedVersionLatest)"
+                [status]="topEditor.isLatestVersionReleased ? !topEditor.isLoadedVersionLatest ? 'Switch to latest version to edit' : 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
             ></status-indicator>
 
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
@@ -197,10 +207,10 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div class="text-editor {{topEditor?.isModule ? 'module' : ''}} {{topEditor?.isHeaderOpen ? 'top-open' : ''}} {{bottomEditor?.isHeaderOpen ? 'bottom-open' : ''}} {{isSplitScreen ? 'split-screen-mode' : ''}}">
             <expression-text-editor
-                *ngIf="topEditor && topEditor.expression"
+                *ngIf="topEditor && topEditor.expression && (!topEditor.isModule || (topEditor.isModule && !isNewID))"
                 class="top-expression {{isTopEditorActive && isSplitScreen ? 'active' : ''}}"
                 [expression]="topEditor.expression"
-                [allowEdit]="topEditor.editable"
+                [allowEdit]="topEditor.editable && (!topEditor.isModule || (topEditor.isModule && topEditor.isLoadedVersionLatest))"
                 [isImmediatelyAppliable]="false"
                 [applyNow]="false"
                 (onTextChange)="topEditor.onExpressionTextChanged($event)"
@@ -227,7 +237,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     #tooltip="matTooltip"
                     class="expression-name {{bottomEditor.invalidExpression ? 'invalid-input' : ''}} {{isNewID ? '' : 'confirmed-module'}}"
                     [matTooltip]="bottomEditor.isModule ? moduleNameTooltip : ''"
-                    [disabled]="!bottomEditor.editable || !isNewID"
+                    [disabled]="!bottomEditor.editable || (bottomEditor.isModule && !isNewID)"
                     type="text"
                     placeholder="{{bottomEditor.isModule ? 'Module' : 'Expression'}} Name"
                     [(ngModel)]="bottomEditor.name"
@@ -248,8 +258,8 @@ POSSIBILITY OF SUCH DAMAGE.
                 </mat-select>
                 <status-indicator
                     *ngIf="bottomEditor.isModule"
-                    [valid]="bottomEditor.isLatestVersionReleased"
-                    [status]="bottomEditor.isLatestVersionReleased ? 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
+                    [valid]="bottomEditor.isLatestVersionReleased && (!bottomEditor.isModule || bottomEditor.isLoadedVersionLatest)"
+                    [status]="bottomEditor.isLatestVersionReleased ? !bottomEditor.isLoadedVersionLatest ? 'Switch to latest version to edit' : 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
                 ></status-indicator>
                 <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                     <expression-metadata-editor
@@ -269,7 +279,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 *ngIf="bottomEditor && bottomEditor.expression && isSplitScreen"
                 class="bottom-expression {{!isTopEditorActive && isSplitScreen ? 'active' : ''}}"
                 [expression]="bottomEditor.expression"
-                [allowEdit]="bottomEditor.editable"
+                [allowEdit]="bottomEditor.editable && (!bottomEditor.isModule || bottomEditor.isLoadedVersionLatest)"
                 [isImmediatelyAppliable]="false"
                 [applyNow]="false"
                 (onTextChange)="bottomEditor.onExpressionTextChanged($event)"
@@ -310,7 +320,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div class="editor-footer {{isSidebarOpen ? 'sidebar-open' : ''}}">
         <div class="text-container">
-            <mat-select [(ngModel)]="topEditor.isLua" [disabled]="true">
+            <mat-select [(ngModel)]="topEditor.isLua" [disabled]="topEditor.isModule">
                 <mat-option [value]="true">Lua</mat-option>
                 <mat-option [value]="false">PIXLang</mat-option>
             </mat-select>

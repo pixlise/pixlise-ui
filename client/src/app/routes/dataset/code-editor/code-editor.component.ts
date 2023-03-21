@@ -58,7 +58,7 @@ import { RGBMix } from "src/app/services/rgbmix-config.service"
 import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
-import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
 
@@ -76,10 +76,22 @@ export class EditorConfig
         public isModule: boolean = false,
         public isHeaderOpen: boolean = false,
         public useAutocomplete: boolean = false,
-        public isLua: boolean = true,
         public version: DataModuleVersionSourceWire = null,
         public versions: Map<string, DataModuleVersionSourceWire> = null,
     ){}
+
+    get isLua(): boolean
+    {
+        return this.expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
+    }
+
+    set isLua(value: boolean)
+    {
+        if(this.expression)
+        {
+            this.expression.sourceLanguage = value ? EXPR_LANGUAGE_LUA : EXPR_LANGUAGE_PIXLANG;
+        }
+    }
 
     get isSharedByOtherUser(): boolean
     {
@@ -579,8 +591,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                         return;
                     }
 
-                    this.topEditor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
                     this.topEditor.expression = expression.copy();
+                    this.topEditor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
 
                     this._fetchedExpression = true;
 
@@ -735,6 +747,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     if(position === "top")
                     {
                         this.topEditor = editor;
+                        this._router.navigate(["dataset", this._datasetID, "code-editor", module.id], {queryParams: {version: module.version.version}});
                     }
                     else
                     {
@@ -760,6 +773,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 if(position === "top")
                 {
                     this.topEditor = editor;
+                    this._router.navigate(["dataset", this._datasetID, "code-editor", module.id], {queryParams: {version: module.version.version}});
                 }
                 else
                 {
@@ -892,7 +906,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     private get _activeIDs(): Set<string>
     {
-        return new Set(this.topEditor.expression.moduleReferences.map((ref) => ref.moduleID));
+        let references = this.topEditor?.expression?.moduleReferences || [];
+        return new Set(references.map((ref) => ref.moduleID));
     }
 
     private regenerateItemList(): void
@@ -910,8 +925,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             false, // We never show the exploratory RGB mix item
             (source: DataExpression|RGBMix): LocationDataLayerProperties=>
             {
-                let layer = new LocationDataLayerPropertiesWithVisibility(source.id, source.name, source.id, source);
-                layer.visible = (this._activeIDs.has(source.id));
+                let layer = new LocationDataLayerPropertiesWithVisibility(source?.id, source?.name, source?.id, source);
+                layer.visible = (this._activeIDs.has(source?.id));
                 return layer;
             },
             false,
@@ -1389,6 +1404,33 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         this.isPMCDataGridSolo = isSolo;
     }
 
+    onConfirmNewModuleName(): void
+    {
+        let moduleName = this.topEditor.expression.name;
+        this.topEditor.expression.sourceCode = `
+        -- Modules must all start like this:
+        ${moduleName} = {}
+
+        ---- START EXAMPLE CODE (feel free to delete) ----
+
+        -- A module can contain constants like so:
+        ${moduleName}.ExampleConstant = 3.1415926
+
+        -- A module can also contain functions. This can be called from an expression like: 
+        --  ${moduleName}.ExampleFunction(1, 2)
+        -- it would return 3
+        function ${moduleName}.ExampleFunction(a, b)
+            return a+b
+        end
+
+        ---- END EXAMPLE CODE ----------------------------
+
+        -- Modules must return themselves as their last line
+        return ${moduleName}
+        `.replace(/ {8,}/g, "").trim();
+        this.onSave(true);
+    }
+
     onSave(saveTop: boolean = true): void
     {
         let editor = saveTop ? this.topEditor : this.bottomEditor;
@@ -1549,7 +1591,19 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             this.visibleModuleCodeEditor.expression.tags
         );
 
-        this.dialog.open(ModuleReleaseDialogComponent, dialogConfig);
+        let dialogRef = this.dialog.open(ModuleReleaseDialogComponent, dialogConfig);
+        dialogRef.afterClosed().subscribe((result: DataModuleSpecificVersionWire) =>
+        {
+            let convertedModule = this.convertModuleToExpression(result);
+            this.visibleModuleCodeEditor.expression = convertedModule;
+            this.visibleModuleCodeEditor.version = result.version;
+            let moduleID = this.visibleModuleCodeEditor.expression.id;
+            if(this.topEditor.isModule)
+            {
+                this._router.navigate(["dataset", this._datasetID, "code-editor", moduleID], {queryParams: {version: result.version.version}});
+            }
+            console.log("Module release dialog closed", result, convertedModule, this.topEditor.expression);
+        });
     }
 
     @HostListener("window:keydown", ["$event"])

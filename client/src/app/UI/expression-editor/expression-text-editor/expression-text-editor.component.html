@@ -89,7 +89,7 @@ POSSIBILITY OF SUCH DAMAGE.
               <icon-button
                   #tooltip="matTooltip"
                   class="{{isHeaderOpen ? 'open' : 'closed'}}"
-                  matTooltip="Toggle Installed Module Section"
+                  [matTooltip]="toggleHeaderTooltip"
                   icon='assets/button-icons/arrow-right.svg'
                   [size]="16"
                   (click)="onToggleHeader()"
@@ -103,7 +103,7 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
   <div
       fxLayout="column"
-      class="dlg-border-with-backdrop gap-separated-vertical-elements"
+      class="dlg-border-with-backdrop gap-separated-vertical-elements code-mirror-container"
       (keydown)='onKeyDown($event)'
       (keyup)='onKeyUp($event)'
       (click)='onClickDialog($event)'>
