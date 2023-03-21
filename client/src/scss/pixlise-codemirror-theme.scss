@@ -32,6 +32,44 @@
   Name:       pixlise
 */
 
+.CodeMirror-scroll, .CodeMirror-vscrollbar, .CodeMirror-hscrollbar {
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-button {
+    background-color: #565F63;
+  }
+
+  &::-webkit-scrollbar-track {
+    background-color: #565F63;
+  }
+
+  &::-webkit-scrollbar-track-piece {
+    background-color: #000;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    height: 50px;
+    background-color: #565F63;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-corner {
+    background-color: #565F63;
+  }
+  
+  &::-webkit-resizer {
+    background-color: #565F63;
+  }
+}
+
+.CodeMirror-scrollbar-filler {
+  background-color: black;
+}
+
+
 .cm-s-pixlise.CodeMirror {
   background-color: $clr-gray-90;
   color: #EEFFFF;

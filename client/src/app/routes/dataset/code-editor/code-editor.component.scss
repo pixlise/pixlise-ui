@@ -62,7 +62,6 @@
     expression-text-editor {
         height: 100%;
         display: flex;
-        overflow: scroll;
 
         ::ng-deep .cm-s-pixlise.CodeMirror {
             height: calc(100vh - 48px - 26px - 26px);

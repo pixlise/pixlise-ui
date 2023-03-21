@@ -52,7 +52,6 @@ import { TaggingService } from "src/app/services/tagging.service";
 import { generateExportCSVForExpression } from "src/app/services/export-data.service";
 import { Router } from "@angular/router";
 import { DataModuleService } from "src/app/services/data-module.service";
-import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 
 
 export class LayerInfo
@@ -134,6 +133,7 @@ export class LayerSettingsComponent implements OnInit
     @Input() inactiveIcon: string;
 
     @Input() isPreviewMode: boolean = false;
+    @Input() isSidePanel: boolean = false;
 
     @Output() visibilityChange = new EventEmitter();
     @Output() onLayerImmediateSelection = new EventEmitter();
@@ -295,12 +295,12 @@ export class LayerSettingsComponent implements OnInit
 
     get labelsWidth(): string
     {
-        return this.isPreviewMode ? "175px" : "calc(35vw - 48px - 230px)";
+        return this.isSidePanel ? "124px" : "calc(35vw - 48px - 230px)";
     }
 
     get commentWidth(): string
     {
-        return this.isPreviewMode ? "180px" : "calc(35vw - 48px - 230px)";
+        return this.isSidePanel ? "180px" : "calc(35vw - 48px - 230px)";
     }
 
     /*
