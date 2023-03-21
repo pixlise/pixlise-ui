@@ -78,8 +78,8 @@ POSSIBILITY OF SUCH DAMAGE.
             </mat-select>
             <status-indicator
                 *ngIf="!isNewID && topEditor.isModule"
-                [valid]="topEditor.isLatestVersionReleased"
-                [status]="topEditor.isLatestVersionReleased ? 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
+                [valid]="topEditor.isLatestVersionReleased && (!topEditor.isModule || topEditor.isLoadedVersionLatest)"
+                [status]="topEditor.isLatestVersionReleased ? !topEditor.isLoadedVersionLatest ? 'Switch to latest version to edit' : 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
             ></status-indicator>
 
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
@@ -210,7 +210,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 *ngIf="topEditor && topEditor.expression && (!topEditor.isModule || (topEditor.isModule && !isNewID))"
                 class="top-expression {{isTopEditorActive && isSplitScreen ? 'active' : ''}}"
                 [expression]="topEditor.expression"
-                [allowEdit]="topEditor.editable"
+                [allowEdit]="topEditor.editable && (!topEditor.isModule || (topEditor.isModule && topEditor.isLoadedVersionLatest))"
                 [isImmediatelyAppliable]="false"
                 [applyNow]="false"
                 (onTextChange)="topEditor.onExpressionTextChanged($event)"
@@ -258,8 +258,8 @@ POSSIBILITY OF SUCH DAMAGE.
                 </mat-select>
                 <status-indicator
                     *ngIf="bottomEditor.isModule"
-                    [valid]="bottomEditor.isLatestVersionReleased"
-                    [status]="bottomEditor.isLatestVersionReleased ? 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
+                    [valid]="bottomEditor.isLatestVersionReleased && (!bottomEditor.isModule || bottomEditor.isLoadedVersionLatest)"
+                    [status]="bottomEditor.isLatestVersionReleased ? !bottomEditor.isLoadedVersionLatest ? 'Switch to latest version to edit' : 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
                 ></status-indicator>
                 <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                     <expression-metadata-editor
@@ -279,7 +279,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 *ngIf="bottomEditor && bottomEditor.expression && isSplitScreen"
                 class="bottom-expression {{!isTopEditorActive && isSplitScreen ? 'active' : ''}}"
                 [expression]="bottomEditor.expression"
-                [allowEdit]="bottomEditor.editable"
+                [allowEdit]="bottomEditor.editable && (!bottomEditor.isModule || bottomEditor.isLoadedVersionLatest)"
                 [isImmediatelyAppliable]="false"
                 [applyNow]="false"
                 (onTextChange)="bottomEditor.onExpressionTextChanged($event)"
