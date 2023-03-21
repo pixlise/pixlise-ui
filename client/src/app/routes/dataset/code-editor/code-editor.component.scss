@@ -95,7 +95,7 @@
     &.split-screen-mode {
         expression-text-editor {
             ::ng-deep .cm-s-pixlise.CodeMirror {
-                height: calc(50vh - 48px - 4px)
+                height: calc(50vh - 48px - 18px)
             }
         }
 
@@ -145,6 +145,10 @@
 
         .split-screen-btn {
             min-width: 115px;
+        }
+
+        .confirm-name-btn {
+            margin-left: 8px;
         }
     }
 
@@ -379,6 +383,11 @@ expression-text-editor.active
 
 .expression-name {
     width: 25ch;
+
+    &:disabled {
+        background-color: #222829;
+        color: #F8F8F8;
+    }    
 
     &.confirmed-module {
         background: rgb(var(--clr-gray-90));

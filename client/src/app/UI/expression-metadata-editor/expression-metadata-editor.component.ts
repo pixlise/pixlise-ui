@@ -29,7 +29,7 @@
 
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { DataExpression } from "src/app/models/Expression";
-import { DataModuleVersionSourceWire } from "src/app/services/data-module.service";
+import { DataModuleService, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 
 type MajorGroupedRelease = {
     majorVersion: DataModuleVersionSourceWire;
@@ -56,7 +56,9 @@ export class ExpressionMetadataEditorComponent implements OnInit
     private _fetched: boolean = false;
     private _releaseNotes: MajorGroupedRelease[] = [];
 
-    constructor()
+    constructor(
+      private _moduleService: DataModuleService
+    )
     {
         this.groupReleaseNotes();
     }
@@ -64,6 +66,11 @@ export class ExpressionMetadataEditorComponent implements OnInit
     ngOnInit(): void
     {
         this.groupReleaseNotes();
+        this._moduleService.modulesUpdated$.subscribe(() =>
+        {
+            console.log("modules updated");
+            this.groupReleaseNotes();
+        });
     }
 
     get name(): string

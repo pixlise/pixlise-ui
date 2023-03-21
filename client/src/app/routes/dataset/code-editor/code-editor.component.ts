@@ -76,7 +76,6 @@ export class EditorConfig
         public isModule: boolean = false,
         public isHeaderOpen: boolean = false,
         public useAutocomplete: boolean = false,
-        // public isLua: boolean = true,
         public version: DataModuleVersionSourceWire = null,
         public versions: Map<string, DataModuleVersionSourceWire> = null,
     ){}
@@ -748,6 +747,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     if(position === "top")
                     {
                         this.topEditor = editor;
+                        this._router.navigate(["dataset", this._datasetID, "code-editor", module.id], {queryParams: {version: module.version.version}});
                     }
                     else
                     {
@@ -773,6 +773,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 if(position === "top")
                 {
                     this.topEditor = editor;
+                    this._router.navigate(["dataset", this._datasetID, "code-editor", module.id], {queryParams: {version: module.version.version}});
                 }
                 else
                 {
@@ -924,6 +925,11 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             false, // We never show the exploratory RGB mix item
             (source: DataExpression|RGBMix): LocationDataLayerProperties=>
             {
+                if(!source)
+                {
+                    return;
+                }
+
                 let layer = new LocationDataLayerPropertiesWithVisibility(source.id, source.name, source.id, source);
                 layer.visible = (this._activeIDs.has(source.id));
                 return layer;
@@ -1107,7 +1113,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 editor.expression.moduleReferences,
                 null,
             );
-            console.log("Running expression: ", expression)
             this._widgetDataService.runAsyncExpression(
                 new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID),
                 expression,
@@ -1404,6 +1409,33 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         this.isPMCDataGridSolo = isSolo;
     }
 
+    onConfirmNewModuleName(): void
+    {
+        let moduleName = this.topEditor.expression.name;
+        this.topEditor.expression.sourceCode = `
+        -- Modules must all start like this:
+        ${moduleName} = {}
+
+        ---- START EXAMPLE CODE (feel free to delete) ----
+
+        -- A module can contain constants like so:
+        ${moduleName}.ExampleConstant = 3.1415926
+
+        -- A module can also contain functions. This can be called from an expression like: 
+        --  ${moduleName}.ExampleFunction(1, 2)
+        -- it would return 3
+        function ${moduleName}.ExampleFunction(a, b)
+            return a+b
+        end
+
+        ---- END EXAMPLE CODE ----------------------------
+
+        -- Modules must return themselves as their last line
+        return ${moduleName}
+        `.replace(/ {8,}/g, "").trim();
+        this.onSave(true);
+    }
+
     onSave(saveTop: boolean = true): void
     {
         let editor = saveTop ? this.topEditor : this.bottomEditor;
@@ -1564,7 +1596,19 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             this.visibleModuleCodeEditor.expression.tags
         );
 
-        this.dialog.open(ModuleReleaseDialogComponent, dialogConfig);
+        let dialogRef = this.dialog.open(ModuleReleaseDialogComponent, dialogConfig);
+        dialogRef.afterClosed().subscribe((result: DataModuleSpecificVersionWire) =>
+        {
+            let convertedModule = this.convertModuleToExpression(result);
+            this.visibleModuleCodeEditor.expression = convertedModule;
+            this.visibleModuleCodeEditor.version = result.version;
+            let moduleID = this.visibleModuleCodeEditor.expression.id;
+            if(this.topEditor.isModule)
+            {
+                this._router.navigate(["dataset", this._datasetID, "code-editor", moduleID], {queryParams: {version: result.version.version}});
+            }
+            console.log("Module release dialog closed", result, convertedModule, this.topEditor.expression);
+        });
     }
 
     @HostListener("window:keydown", ["$event"])

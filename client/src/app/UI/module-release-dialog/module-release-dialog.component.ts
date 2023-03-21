@@ -66,7 +66,7 @@ export class ModuleReleaseDialogComponent
     }
     onCancel(): void
     {
-        this.dialogRef.close();
+        this.dialogRef.close(null);
     }
 
     onRelease(): void
@@ -76,7 +76,7 @@ export class ModuleReleaseDialogComponent
             this._moduleService.releaseMinorVersion(this.data.id, this.data.sourceCode, this.releaseNotes, this.data.tags).subscribe(
                 (result) =>
                 {
-                    this.dialogRef.close();
+                    this.dialogRef.close(result);
                 },
                 (error) =>
                 {
@@ -90,7 +90,7 @@ export class ModuleReleaseDialogComponent
             this._moduleService.releaseMajorVersion(this.data.id, this.data.sourceCode, this.releaseNotes, this.data.tags).subscribe(
                 (result) =>
                 {
-                    this.dialogRef.close();
+                    this.dialogRef.close(result);
                 },
                 (error) =>
                 {
