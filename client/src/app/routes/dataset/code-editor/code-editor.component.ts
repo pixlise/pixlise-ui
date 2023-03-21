@@ -925,13 +925,8 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             false, // We never show the exploratory RGB mix item
             (source: DataExpression|RGBMix): LocationDataLayerProperties=>
             {
-                if(!source)
-                {
-                    return;
-                }
-
-                let layer = new LocationDataLayerPropertiesWithVisibility(source.id, source.name, source.id, source);
-                layer.visible = (this._activeIDs.has(source.id));
+                let layer = new LocationDataLayerPropertiesWithVisibility(source?.id, source?.name, source?.id, source);
+                layer.visible = (this._activeIDs.has(source?.id));
                 return layer;
             },
             false,
