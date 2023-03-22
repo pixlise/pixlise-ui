@@ -328,25 +328,25 @@ export class DataModuleService
         let t0 = performance.now();
 
         let recvdIDs = new Set<string>(); 
-        Object.entries(receivedDataModules).forEach(([id, m]: [string, object])=>
+        Object.entries(receivedDataModules).forEach(([id, module]: [string, object])=>
         {
             recvdIDs.add(id);
 
             let versMap = new Map<string, DataModuleVersionSourceWire>();
-            for(let v of m["versions"])
+            for(let moduleVersion of module["versions"])
             {
-                versMap.set(v["version"], new DataModuleVersionSourceWire(v["version"], v["tags"], v["comments"], v["mod_unix_time_sec"], ""));
+                versMap.set(moduleVersion["version"], new DataModuleVersionSourceWire(moduleVersion["version"], moduleVersion["tags"], moduleVersion["comments"], moduleVersion["mod_unix_time_sec"], ""));
             }
             
             let wireMod = new DataModule(
-                m["id"],
-                m["name"],
-                m["comments"],
+                module["id"],
+                module["name"],
+                module["comments"],
                 new APIObjectOrigin(
-                    m["shared"],
-                    m["creator"],
-                    m["create_unix_time_sec"],
-                    m["mod_unix_time_sec"],
+                    module["origin"]["shared"],
+                    module["origin"]["creator"],
+                    module["origin"]["create_unix_time_sec"],
+                    module["origin"]["mod_unix_time_sec"],
                 ),
                 versMap,
             );
