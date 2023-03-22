@@ -1630,7 +1630,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             {
                 this._router.navigate(["dataset", this._datasetID, "code-editor", moduleID], {queryParams: {version: result.version.version}});
             }
-            console.log("Module release dialog closed", result, convertedModule, this.topEditor.expression);
         });
     }
 
