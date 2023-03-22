@@ -186,6 +186,13 @@ POSSIBILITY OF SUCH DAMAGE.
                     (click)="onDownload()">
                 </icon-button>
                 <icon-button
+                    *ngIf="layerButton === 'showPixlangConvert'"
+                    #tooltip="matTooltip"
+                    matTooltip="Convert expression to Lua"
+                    icon="assets/button-icons/lua-language.svg"
+                    (click)="onConvertToLua()">
+                </icon-button>
+                <icon-button
                     *ngIf="layerButton === 'showSplitScreenButton'"
                     #tooltip="matTooltip"
                     matTooltip="Open {{isModule ? 'module' : 'expression'}} in split screen"

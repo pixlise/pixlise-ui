@@ -1241,16 +1241,26 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     convertToLua(): void
     {
-        // Bottom editor is always the lua editor
-        let transpiler = new LuaTranspiler();
-        let luaExpression = transpiler.transpile(this.topEditor.editExpression);
-        this.topEditor.editExpression = luaExpression;
-
-        if(this.updateText)
+        // Bottom editor is always the lua editor, so pixlang will only be in the top
+        this._expressionService.convertToLua(this.topEditor.expression.id, false).subscribe((luaExpression: object)=>
         {
-            this.topEditor.isLua = true;
-            this.updateText(luaExpression);
-        }
+            if(!luaExpression)
+            {
+                return;
+            }
+
+            this.topEditor.editExpression = (luaExpression as DataExpression).sourceCode;
+            if(this.updateText)
+            {
+                this.topEditor.isLua = true;
+                this.updateText((luaExpression as DataExpression).sourceCode);
+            }
+        },
+        (err)=>
+        {
+            this.stderr = `${err}`;
+        });
+
     }
 
     changeExpression(updateText: ((text: string) => void)): void
@@ -1498,6 +1508,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     editor.isCodeChanged = false;
                     editor.isExpressionSaved = true;
                     this._router.navigate(["dataset", this._datasetID, "code-editor", this._expressionID], { queryParams: { version: editor.version.version } });
+                    this.updateCurrentlyOpenList(true);
                 });
             }
             else
@@ -1529,6 +1540,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     editor.isCodeChanged = false;
                     editor.isExpressionSaved = true;
                     this._router.navigate(["dataset", this._datasetID, "code-editor", editor.expression.id]);
+                    this.updateCurrentlyOpenList(false);
                 });
             }
         }
