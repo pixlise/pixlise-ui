@@ -53,6 +53,12 @@ export class ExpressionListGroupNames
     readonly anomalyHeaderName = "anomaly-header";
     readonly pseudoIntensityHeaderName = "pseudointensity-header";
     readonly settingHeaderName = "setting-header";
+
+    // Code editor sidebar-only sections
+    readonly currentlyOpenHeaderName = "currently-open-header";
+    readonly installedModulesHeaderName = "installed-modules-header";
+    readonly modulesHeaderName = "modules-header";
+    readonly examplesHeaderName = "examples-header";
 }
 
 function sortByNameAndCompatibility(a: DataExpression | RGBMix, b: DataExpression | RGBMix)
@@ -94,8 +100,9 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         private _includeChiSq: boolean,
         private _includeUnquantifiedWeight: boolean,
         private _includeRGBMix: boolean,
-        includeAnomalies: boolean,
-        protected _exprService: DataExpressionService
+        public includeAnomalies: boolean,
+        protected _exprService: DataExpressionService,
+        public showUnsavedExpressions: boolean = true,
     )
     {
         super();
@@ -487,7 +494,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         for(let group of groups)
         {
             groupLookup.set(group.headerItemType, group);
-            items.push(...group.items);
+            items.push(...group.items.map(item => new LayerViewItem(item.itemType, item.shared, item.content, group.headerItemType)));
         }
 
         // Add exploratory RGB mix if needed
@@ -801,6 +808,11 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         let layers: LayerInfo[] = [];
         for(let item of items)
         {
+            if(!this.showUnsavedExpressions && item?.id?.startsWith("unsaved-"))
+            {
+                continue;
+            }
+
             let layer = makeLayer(item);
             layers.push(new LayerInfo(layer, []));
         }
@@ -810,10 +822,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
             return layerB.layer.source.createUnixTimeSec - layerA.layer.source.createUnixTimeSec;
         });
 
-        let visibleLayers = layers.filter(layer => layer.layer.visible);
-        let hiddenLayers = layers.filter(layer => !layer.layer.visible);
-        
-        return [...visibleLayers, ...hiddenLayers];
+        return layers;
     }
 
     protected getRGBItems(items: RGBMix[], makeLayer: (source: DataExpression | RGBMix)=>LocationDataLayerProperties): RGBLayerInfo[]
@@ -950,7 +959,7 @@ export function makeDataForExpressionList(
 
 export class LayerViewItem
 {
-    constructor(public itemType: string, public shared: boolean, public content)
+    constructor(public itemType: string, public shared: boolean, public content, public groupHeaderType?: string)
     {
     }
 }

@@ -49,7 +49,7 @@ import { PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionModule, TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { LuaTranspiler } from "src/app/expression-language/lua-transpiler";
-import { CustomExpressionGroup, ExpressionListBuilder, ExpressionListItems, LocationDataLayerPropertiesWithVisibility, makeDataForExpressionList } from "src/app/models/ExpressionList";
+import { CustomExpressionGroup, ExpressionListBuilder, ExpressionListGroupNames, ExpressionListItems, LocationDataLayerPropertiesWithVisibility, makeDataForExpressionList } from "src/app/models/ExpressionList";
 import { ExpressionListHeaderToggleEvent } from "src/app/UI/atoms/expression-list/expression-list.component";
 import { LayerVisibilityChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ObjectCreator } from "src/app/models/BasicTypes";
@@ -311,7 +311,7 @@ export class EditorConfig
     styleUrls: ["./code-editor.component.scss"],
     providers: [ContextImageService],
 })
-export class CodeEditorComponent implements OnInit, OnDestroy
+export class CodeEditorComponent extends ExpressionListGroupNames implements OnInit, OnDestroy
 {
     @ViewChild("preview", { read: ViewContainerRef }) previewContainer;
 
@@ -323,26 +323,26 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     public isSidebarOpen = false;
     // What we display in the virtual-scroll capable list
-    headerSectionsOpen: Set<string> = new Set<string>(["currently-open-header"]);
+    headerSectionsOpen: Set<string> = new Set<string>([this.currentlyOpenHeaderName]);
     items: ExpressionListItems = null;
     initialScrollToIdx: number = -1;
     public sidebarTopSections: Record<string, CustomExpressionGroup> = {
         "currently-open": {
-            type: "currently-open-header",
+            type: this.currentlyOpenHeaderName,
             childType: "expression",
             label: "Currently Open",
             items: [],
             emptyMessage: "No expressions are currently open.",
         },
         "installed-modules": {
-            type: "installed-modules-header",
+            type:  this.installedModulesHeaderName,
             childType: "module",
             label: "Installed Modules",
             items: [],
             emptyMessage: "No modules are installed.",
         },
         "modules": {
-            type: "modules-header",
+            type:  this.modulesHeaderName,
             childType: "module",
             label: "Modules",
             items: [],
@@ -351,7 +351,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     };
     public sidebarBottomSections: Record<string, CustomExpressionGroup> = {
         "examples": {
-            type: "examples-header",
+            type:  this.examplesHeaderName,
             childType: "expression",
             label: "Examples",
             items: [],
@@ -415,6 +415,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         private _datasetService: DataSetService,
     )
     {
+        super();
     }
 
 
@@ -423,7 +424,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         this.topEditor.userID = this._authService.getUserID();
         this.bottomEditor.userID = this._authService.getUserID();
 
-        this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, false, false, this._expressionService);
+        this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, false, false, this._expressionService, false);
         this._datasetID = this._route.snapshot.parent?.params["dataset_id"];
         this._expressionID = this._route.snapshot.params["expression_id"];
 
@@ -453,6 +454,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 );
             });
 
+            this._expressionService.clearAllUnsavedFromCache();
             this.resetEditors();
         });
     }

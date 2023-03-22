@@ -117,6 +117,7 @@ export class LayerSettingsComponent implements OnInit
 
     @Input() isModule: boolean = false;
 
+    @Input() isCurrentlyOpen: boolean = false;
     @Input() showSlider: boolean;
     @Input() showSettings: boolean;
     @Input() showShare: boolean;
@@ -621,8 +622,8 @@ export class LayerSettingsComponent implements OnInit
             showShare: this.showShare && !this.sharedBy,
             showTagPicker: this.showTagPicker,
             showPixlangConvert: this.isPixlangExpression,
-            showSplitScreenButton: this.showSplitScreenButton,
-            showSettingsButton: this.showSettingsButton,
+            showSplitScreenButton: this.showSplitScreenButton && !this.isCurrentlyOpen,
+            showSettingsButton: this.showSettingsButton && !this.isCurrentlyOpen,
             showColours: this.showColours,
             showVisible: this.showVisible,
         };

@@ -587,6 +587,17 @@ export class DataExpressionService
         this._expressionsUpdated$.next();
     }
 
+    clearAllUnsavedFromCache(): void
+    {
+        this._expressions.forEach((expr, id) =>
+        {
+            if(id.startsWith("unsaved-"))
+            {
+                this._expressions.delete(id);
+            }
+        });
+    }
+
     removeFromCache(id: string): void
     {
         this._expressions.delete(id);
@@ -630,7 +641,7 @@ export class DataExpressionService
                             }
                         );
                     }
-                    
+
                     return expression;
                 },
                 (err)=>

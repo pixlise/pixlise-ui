@@ -187,6 +187,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 (openSplitScreen)="onOpenSplitScreen($event)"
                 [isPreviewMode]="true"
                 [isSidePanel]="true"
+                [isSelectable]="!topEditor.isModule && topEditor.isLua"
                 fxFlex="100%"
             >
                 <icon-button
