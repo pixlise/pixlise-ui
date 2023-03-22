@@ -1396,7 +1396,21 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     get runtimeSeconds(): string
     {
         let msTime = this.evaluatedExpression?.exprResult?.runtimeMs;
-        return msTime && this.isEvaluatedDataValid ? Number(msTime / 1000).toPrecision(2) : "";
+        if(!msTime || !this.isEvaluatedDataValid)
+        {
+            return "";
+        }
+
+        let formattedTime: string | number = Number(msTime / 1000);
+        if(formattedTime < 1 && formattedTime > -1)
+        {
+            formattedTime = formattedTime.toPrecision(2);
+        }
+        else 
+        {
+            formattedTime = Math.round(formattedTime * 100) / 100;
+        }
+        return `${formattedTime}`;
     }
 
     onTogglePMCDataGridSolo(isSolo: boolean): void
