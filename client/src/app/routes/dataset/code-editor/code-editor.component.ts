@@ -702,6 +702,11 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             {
                 this.bottomEditor = new EditorConfig();
             }
+            else if(!this.isSplitScreen && !this.bottomEditor.expression && this.topEditor.modules.length === 0)
+            {
+                return;
+            }
+
             this.isSplitScreen = !this.isSplitScreen;
 
             if(this.isSplitScreen)
@@ -735,13 +740,12 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             isSidePanelChanged = true;
         }
 
-        let isTopSharedByOther = this.topEditor.expression && this.topEditor.expression.shared && this.topEditor.expression.creator.user_id !== this._authService.getUserID();
-        isSidePanelChanged = this.updateSidePanelLayer(this.topEditor.expression.id, this.topEditor.isExpressionSaved, isTopSharedByOther, this.topEditor.isModule);
+        let topChanged = this.updateSidePanelLayer(this.topEditor.expression.id, this.topEditor.isExpressionSaved, this.topEditor.isSharedByOtherUser, this.topEditor.isModule);
+        isSidePanelChanged = isSidePanelChanged || topChanged;
 
         if(includeBottomExpression)
         {
-            let isBottomSharedByOther = this.bottomEditor.expression && this.bottomEditor.expression.shared && this.bottomEditor.expression.creator.user_id !== this._authService.getUserID();
-            let bottomChanged = this.updateSidePanelLayer(this.bottomEditor.expression.id, this.bottomEditor.isExpressionSaved, isBottomSharedByOther, this.bottomEditor.isModule);
+            let bottomChanged = this.updateSidePanelLayer(this.bottomEditor.expression.id, this.bottomEditor.isExpressionSaved, this.bottomEditor.isSharedByOtherUser, this.bottomEditor.isModule);
             isSidePanelChanged = isSidePanelChanged || bottomChanged;
         }
 

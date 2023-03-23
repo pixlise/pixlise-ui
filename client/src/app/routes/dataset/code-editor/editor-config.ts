@@ -192,7 +192,6 @@ class EditorConfig
         return versionParts.slice(0, 2).join(".");
     }
 
-    // TODO: Only show major/minor versions to users who don't own the module
     get versionList(): DataModuleVersionSourceWire[]
     {
         if(!this.isModule || !this.versions)
@@ -200,7 +199,16 @@ class EditorConfig
             return [];
         }
 
-        return Array.from(this.versions.values());
+        // Only show major/minor versions to users who don't own the module
+        if(this.isSharedByOtherUser)
+        {
+            return Array.from(this.versions.values()).filter((version: DataModuleVersionSourceWire) => version.version.endsWith(".0"));
+        }
+        else
+        {
+            return Array.from(this.versions.values());
+        }
+
     }
 
     get latestVersion(): DataModuleVersionSourceWire
