@@ -303,24 +303,24 @@ export class DataModuleService
         );
     }
 
-    private readSpecificVersionModule(m: object): DataModuleSpecificVersionWire
+    private readSpecificVersionModule(module: object): DataModuleSpecificVersionWire
     {
         let wireMod = new DataModuleSpecificVersionWire(
-            m["id"],
-            m["name"],
-            m["comments"],
+            module["id"],
+            module["name"],
+            module["comments"],
             new APIObjectOrigin(
-                m["shared"],
-                m["creator"],
-                m["create_unix_time_sec"],
-                m["mod_unix_time_sec"],
+                module["origin"]["shared"],
+                module["origin"]["creator"],
+                module["origin"]["create_unix_time_sec"],
+                module["origin"]["mod_unix_time_sec"],
             ),
             new DataModuleVersionSourceWire(
-                m["version"]["version"],
-                m["version"]["tags"],
-                m["version"]["comments"],
-                m["version"]["mod_unix_time_sec"],
-                m["version"]["sourceCode"],
+                module["version"]["version"],
+                module["version"]["tags"],
+                module["version"]["comments"],
+                module["version"]["mod_unix_time_sec"],
+                module["version"]["sourceCode"],
             ),
         );
 
@@ -332,25 +332,25 @@ export class DataModuleService
         let t0 = performance.now();
 
         let recvdIDs = new Set<string>(); 
-        Object.entries(receivedDataModules).forEach(([id, m]: [string, object])=>
+        Object.entries(receivedDataModules).forEach(([id, module]: [string, object])=>
         {
             recvdIDs.add(id);
 
             let versMap = new Map<string, DataModuleVersionSourceWire>();
-            for(let v of m["versions"])
+            for(let moduleVersion of module["versions"])
             {
-                versMap.set(v["version"], new DataModuleVersionSourceWire(v["version"], v["tags"], v["comments"], v["mod_unix_time_sec"], ""));
+                versMap.set(moduleVersion["version"], new DataModuleVersionSourceWire(moduleVersion["version"], moduleVersion["tags"], moduleVersion["comments"], moduleVersion["mod_unix_time_sec"], ""));
             }
             
             let wireMod = new DataModule(
-                m["id"],
-                m["name"],
-                m["comments"],
+                module["id"],
+                module["name"],
+                module["comments"],
                 new APIObjectOrigin(
-                    m["shared"],
-                    m["creator"],
-                    m["create_unix_time_sec"],
-                    m["mod_unix_time_sec"],
+                    module["origin"]["shared"],
+                    module["origin"]["creator"],
+                    module["origin"]["create_unix_time_sec"],
+                    module["origin"]["mod_unix_time_sec"],
                 ),
                 versMap,
             );
@@ -469,7 +469,6 @@ export class DataModuleService
                 this._loadingSvc.remove(loadID);
 
                 let recvd = this.readSpecificVersionModule(m);
-
                 // Overwrite whatever we have cached
                 this._modules.ensureModuleVersionExists(recvd);
                 return recvd;

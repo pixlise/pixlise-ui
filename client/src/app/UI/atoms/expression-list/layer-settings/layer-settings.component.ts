@@ -52,6 +52,7 @@ import { TaggingService } from "src/app/services/tagging.service";
 import { generateExportCSVForExpression } from "src/app/services/export-data.service";
 import { Router } from "@angular/router";
 import { DataModuleService } from "src/app/services/data-module.service";
+import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 
 
 export class LayerInfo
@@ -116,6 +117,7 @@ export class LayerSettingsComponent implements OnInit
 
     @Input() isModule: boolean = false;
 
+    @Input() isCurrentlyOpen: boolean = false;
     @Input() showSlider: boolean;
     @Input() showSettings: boolean;
     @Input() showShare: boolean;
@@ -301,6 +303,12 @@ export class LayerSettingsComponent implements OnInit
     get commentWidth(): string
     {
         return this.isSidePanel ? "180px" : "calc(35vw - 48px - 230px)";
+    }
+
+    get isPixlangExpression(): boolean
+    {
+        let isDataExpression = this.layerInfo?.layer?.source && this.layerInfo.layer.source instanceof DataExpression;
+        return isDataExpression && (this.layerInfo.layer.source as DataExpression).sourceLanguage === EXPR_LANGUAGE_PIXLANG;
     }
 
     /*
@@ -609,12 +617,13 @@ export class LayerSettingsComponent implements OnInit
     {
         let buttons: Record<string, boolean> = {
             showDetectorPicker: this.showDetectorPicker,
-            showShare: this.showShare && !this.sharedBy,
             showDelete: this.showDelete && !this.isSharedByOtherUser,
             showDownload: this.showDownload,
+            showShare: this.showShare && !this.sharedBy,
             showTagPicker: this.showTagPicker,
-            showSplitScreenButton: this.showSplitScreenButton,
-            showSettingsButton: this.showSettingsButton,
+            showPixlangConvert: this.isPixlangExpression,
+            showSplitScreenButton: this.showSplitScreenButton && !this.isCurrentlyOpen,
+            showSettingsButton: this.showSettingsButton && !this.isCurrentlyOpen,
             showColours: this.showColours,
             showVisible: this.showVisible,
         };
@@ -634,6 +643,21 @@ export class LayerSettingsComponent implements OnInit
     get hiddenLayerButtons(): string[]
     {
         return this.layerButtons.slice(0, this.layerButtons.length - 3);
+    }
+
+    onConvertToLua(): void
+    {
+        this._exprService.convertToLua(this.layerInfo.layer.id, true).subscribe(
+            (luaExpression: object)=>
+            {
+                console.log(`Successfully Converted to Lua: ${(luaExpression as DataExpression)?.id}}`);
+                return;
+            },
+            (err)=>
+            {
+                alert("Failed to convert to Lua");
+            }
+        );
     }
     
     onChangeDetector(detector: string)

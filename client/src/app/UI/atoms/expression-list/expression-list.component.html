@@ -65,7 +65,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [showSlider]="showOpacitySliders"
                     [showSettings]="!showPureSwitchOnElements"
                     [showColours]="showColourOptions"
-                    [showVisible]="true"
+                    [showVisible]="isSelectable"
                     [showPureSwitch]="showPureSwitchOnElements"
                     [detectors]="detectors"
                     [activeIcon]="selectedIcon"
@@ -146,13 +146,14 @@ POSSIBILITY OF SUCH DAMAGE.
             </ng-container>
             <ng-container *ngSwitchCase="'expression'">
                 <context-layer-settings
+                    [isCurrentlyOpen]="item.groupHeaderType === currentlyOpenHeaderName"
                     [layerInfo]="item.content"
                     [showSlider]="showOpacitySliders"
                     [showSettings]="item.shared || !item.content.isPredefinedLayer"
                     [showDelete]="!item.content.isPredefinedLayer"
                     [showShare]="!item.content.isPredefinedLayer"
                     [showColours]="showColourOptions"
-                    [showVisible]="!isSidePanel"
+                    [showVisible]="!isSidePanel && isSelectable"
                     [showDownload]="downloadable"
                     [showTagPicker]="true"
                     [activeIcon]="selectedIcon"
@@ -167,6 +168,7 @@ POSSIBILITY OF SUCH DAMAGE.
             </ng-container>
             <ng-container *ngSwitchCase="'module'">
                 <context-layer-settings
+                    [isCurrentlyOpen]="item.groupHeaderType === currentlyOpenHeaderName"
                     [layerInfo]="item.content"
                     [isModule]="true"
                     [showSlider]="false"
@@ -175,7 +177,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [showDelete]="false"
                     [showShare]="false"
                     [showColours]="false"
-                    [showVisible]="true"
+                    [showVisible]="isSelectable"
                     [showDownload]="downloadable"
                     [showTagPicker]="true"
                     [activeIcon]="selectedIcon"
@@ -204,7 +206,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [showSlider]="false"
                     [showSettings]="false"
                     [showColours]="false"
-                    [showVisible]="true"
+                    [showVisible]="isSelectable"
                     [showDownload]="downloadable"
                     [activeIcon]="selectedIcon"
                     [inactiveIcon]="unselectedIcon"
@@ -229,7 +231,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [showSlider]="showOpacitySliders"
                     [showSettings]="false"
                     [showColours]="showColourOptions"
-                    [showVisible]="true"
+                    [showVisible]="isSelectable"
                     [showDownload]="downloadable"
                     [activeIcon]="selectedIcon"
                     [inactiveIcon]="unselectedIcon"

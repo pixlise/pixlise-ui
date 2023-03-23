@@ -39,8 +39,9 @@ import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { QuantificationService } from "src/app/services/quantification.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
 import { DataExpression, DataExpressionId, ShortName, ExpressionExecStats, ModuleReference } from "src/app/models/Expression";
-import { EXPR_LANGUAGE_PIXLANG } from "../expression-language/expression-language";
+import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "../expression-language/expression-language";
 import { environment } from "src/environments/environment";
+import { LuaTranspiler } from "../expression-language/lua-transpiler";
 
 
 class DataExpressionInput
@@ -586,10 +587,72 @@ export class DataExpressionService
         this._expressionsUpdated$.next();
     }
 
+    clearAllUnsavedFromCache(): void
+    {
+        this._expressions.forEach((expr, id) =>
+        {
+            if(id.startsWith("unsaved-"))
+            {
+                this._expressions.delete(id);
+            }
+        });
+    }
+
     removeFromCache(id: string): void
     {
         this._expressions.delete(id);
         this._expressionsUpdated$.next();
+    }
+
+    convertToLua(id: string, saveExpression: boolean = false): Observable<object>
+    {
+        let expression = this.getExpressionAsync(id).pipe(
+            tap(
+                async (expression: DataExpression)=>
+                {
+                    if(!expression || expression.sourceLanguage === EXPR_LANGUAGE_LUA)
+                    {
+                        return;
+                    }
+
+                    let loadID = null;
+                    if(saveExpression)
+                    {
+                        loadID = this._loadingSvc.add("Converting expression to Lua...");
+                    }
+
+                    let transpiler = new LuaTranspiler();
+                    expression.sourceCode = transpiler.transpile(expression.sourceCode);
+                    expression.sourceLanguage = EXPR_LANGUAGE_LUA;
+                    expression.moduleReferences = [];
+
+                    if(saveExpression)
+                    {
+                        await this.edit(expression.id, expression.name, expression.sourceCode, expression.sourceLanguage, expression.comments, expression.tags, expression.moduleReferences).subscribe(
+                            ()=>
+                            {
+                                this._loadingSvc.remove(loadID);
+                            },
+                            (err)=>
+                            {
+                                alert("Error converting expression to Lua: "+err);
+                                console.error("Error converting expression to Lua:", err);
+                                this._loadingSvc.remove(loadID);
+                            }
+                        );
+                    }
+
+                    return expression;
+                },
+                (err)=>
+                {
+                    alert("Error converting expression to Lua: "+err);
+                    console.error("Error converting expression to Lua:", err);
+                }
+            )
+        );
+
+        return expression;
     }
 
     add(name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = []): Observable<DataExpressionWire>

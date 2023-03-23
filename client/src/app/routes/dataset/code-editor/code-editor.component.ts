@@ -49,7 +49,7 @@ import { PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionModule, TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { LuaTranspiler } from "src/app/expression-language/lua-transpiler";
-import { CustomExpressionGroup, ExpressionListBuilder, ExpressionListItems, LocationDataLayerPropertiesWithVisibility, makeDataForExpressionList } from "src/app/models/ExpressionList";
+import { CustomExpressionGroup, ExpressionListBuilder, ExpressionListGroupNames, ExpressionListItems, LocationDataLayerPropertiesWithVisibility, makeDataForExpressionList } from "src/app/models/ExpressionList";
 import { ExpressionListHeaderToggleEvent } from "src/app/UI/atoms/expression-list/expression-list.component";
 import { LayerVisibilityChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ObjectCreator } from "src/app/models/BasicTypes";
@@ -312,7 +312,7 @@ export class EditorConfig
     styleUrls: ["./code-editor.component.scss"],
     providers: [ContextImageService],
 })
-export class CodeEditorComponent implements OnInit, OnDestroy
+export class CodeEditorComponent extends ExpressionListGroupNames implements OnInit, OnDestroy
 {
     @ViewChild("preview", { read: ViewContainerRef }) previewContainer;
 
@@ -324,26 +324,26 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     public isSidebarOpen = false;
     // What we display in the virtual-scroll capable list
-    headerSectionsOpen: Set<string> = new Set<string>(["currently-open-header"]);
+    headerSectionsOpen: Set<string> = new Set<string>([this.currentlyOpenHeaderName]);
     items: ExpressionListItems = null;
     initialScrollToIdx: number = -1;
     public sidebarTopSections: Record<string, CustomExpressionGroup> = {
         "currently-open": {
-            type: "currently-open-header",
+            type: this.currentlyOpenHeaderName,
             childType: "expression",
             label: "Currently Open",
             items: [],
             emptyMessage: "No expressions are currently open.",
         },
         "installed-modules": {
-            type: "installed-modules-header",
+            type:  this.installedModulesHeaderName,
             childType: "module",
             label: "Installed Modules",
             items: [],
             emptyMessage: "No modules are installed.",
         },
         "modules": {
-            type: "modules-header",
+            type:  this.modulesHeaderName,
             childType: "module",
             label: "Modules",
             items: [],
@@ -352,7 +352,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     };
     public sidebarBottomSections: Record<string, CustomExpressionGroup> = {
         "examples": {
-            type: "examples-header",
+            type:  this.examplesHeaderName,
             childType: "expression",
             label: "Examples",
             items: [],
@@ -416,6 +416,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         private _datasetService: DataSetService,
     )
     {
+        super();
     }
 
 
@@ -424,7 +425,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
         this.topEditor.userID = this._authService.getUserID();
         this.bottomEditor.userID = this._authService.getUserID();
 
-        this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, false, false, this._expressionService);
+        this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, false, false, this._expressionService, false);
         this._datasetID = this._route.snapshot.parent?.params["dataset_id"];
         this._expressionID = this._route.snapshot.params["expression_id"];
 
@@ -454,6 +455,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                 );
             });
 
+            this._expressionService.clearAllUnsavedFromCache();
             this.resetEditors();
         });
     }
@@ -1242,16 +1244,26 @@ export class CodeEditorComponent implements OnInit, OnDestroy
 
     convertToLua(): void
     {
-        // Bottom editor is always the lua editor
-        let transpiler = new LuaTranspiler();
-        let luaExpression = transpiler.transpile(this.topEditor.editExpression);
-        this.topEditor.editExpression = luaExpression;
-
-        if(this.updateText)
+        // Bottom editor is always the lua editor, so pixlang will only be in the top
+        this._expressionService.convertToLua(this.topEditor.expression.id, false).subscribe((luaExpression: object)=>
         {
-            this.topEditor.isLua = true;
-            this.updateText(luaExpression);
-        }
+            if(!luaExpression)
+            {
+                return;
+            }
+
+            this.topEditor.editExpression = (luaExpression as DataExpression).sourceCode;
+            if(this.updateText)
+            {
+                this.topEditor.isLua = true;
+                this.updateText((luaExpression as DataExpression).sourceCode);
+            }
+        },
+        (err)=>
+        {
+            this.stderr = `${err}`;
+        });
+
     }
 
     changeExpression(updateText: ((text: string) => void)): void
@@ -1397,7 +1409,21 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     get runtimeSeconds(): string
     {
         let msTime = this.evaluatedExpression?.exprResult?.runtimeMs;
-        return msTime && this.isEvaluatedDataValid ? Number(msTime / 1000).toPrecision(2) : "";
+        if(!msTime || !this.isEvaluatedDataValid)
+        {
+            return "";
+        }
+
+        let formattedTime: string | number = Number(msTime / 1000);
+        if(formattedTime < 1 && formattedTime > -1)
+        {
+            formattedTime = formattedTime.toPrecision(2);
+        }
+        else 
+        {
+            formattedTime = Math.round(formattedTime * 100) / 100;
+        }
+        return `${formattedTime}`;
     }
 
     onTogglePMCDataGridSolo(isSolo: boolean): void
@@ -1485,6 +1511,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     editor.isCodeChanged = false;
                     editor.isExpressionSaved = true;
                     this._router.navigate(["dataset", this._datasetID, "code-editor", this._expressionID], { queryParams: { version: editor.version.version } });
+                    this.updateCurrentlyOpenList(true);
                 });
             }
             else
@@ -1516,6 +1543,7 @@ export class CodeEditorComponent implements OnInit, OnDestroy
                     editor.isCodeChanged = false;
                     editor.isExpressionSaved = true;
                     this._router.navigate(["dataset", this._datasetID, "code-editor", editor.expression.id]);
+                    this.updateCurrentlyOpenList(false);
                 });
             }
         }
@@ -1603,7 +1631,6 @@ export class CodeEditorComponent implements OnInit, OnDestroy
             {
                 this._router.navigate(["dataset", this._datasetID, "code-editor", moduleID], {queryParams: {version: result.version.version}});
             }
-            console.log("Module release dialog closed", result, convertedModule, this.topEditor.expression);
         });
     }
 

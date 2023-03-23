@@ -123,12 +123,11 @@
             border: 1px solid #222829;
             margin: 4px;
             padding: 8px;
-            white-space: pre;
+            white-space: pre-wrap;
         }
 
         .error-text {
             color: red;
-            white-space: break-spaces;
         }
 
         .invalid-input {

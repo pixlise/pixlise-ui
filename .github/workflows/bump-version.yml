@@ -1,0 +1,35 @@
+name: Bump Version
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+      - development
+jobs:
+  tag:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: ${{ github.sha }}
+        fetch-depth: '0'
+    - name: Github Tag Bump
+      uses: anothrNick/github-tag-action@1.61.0
+      if: github.event.pull_request.base.ref == 'main'
+      env:
+        # NOTE: Using the GITHUB_TOKEN will prevent this workflow's actions from
+        #   triggering subsequent actions (like the Core Release workflow); to
+        #   allow these tags to dispatch new workflows, you must pass in a PAT
+        #   see: https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WITH_V: true
+        DEFAULT_BUMP: minor
+    - name: Github Tag Bump
+      if: github.event.pull_request.base.ref == 'development'
+      uses: anothrNick/github-tag-action@1.61.0
+      env:
+        # NOTE: see above
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WITH_V: true
+        DEFAULT_BUMP: patch

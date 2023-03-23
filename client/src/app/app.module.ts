@@ -231,9 +231,9 @@ import { PlotExporterDialogComponent } from "./UI/atoms/plot-exporter-dialog/plo
 import { CodeEditorComponent } from "./routes/dataset/code-editor/code-editor.component";
 import { PMCDataGridComponent } from "./UI/pmc-data-grid/pmc-data-grid.component";
 
-import { StatusIndicatorComponent } from './UI/atoms/status-indicator/status-indicator.component';
-import { ModuleReleaseDialogComponent } from './UI/module-release-dialog/module-release-dialog.component';
-import { ExpressionMetadataEditorComponent } from './UI/expression-metadata-editor/expression-metadata-editor.component';
+import { StatusIndicatorComponent } from "./UI/atoms/status-indicator/status-indicator.component";
+import { ModuleReleaseDialogComponent } from "./UI/module-release-dialog/module-release-dialog.component";
+import { ExpressionMetadataEditorComponent } from "./UI/expression-metadata-editor/expression-metadata-editor.component";
 
 
 @Injectable()
