@@ -119,6 +119,7 @@ export class LayerSettingsComponent implements OnInit
     @Input() isModule: boolean = false;
 
     @Input() isCurrentlyOpen: boolean = false;
+    @Input() isInstalledModule: boolean = false;
     @Input() showSlider: boolean;
     @Input() showSettings: boolean;
     @Input() showShare: boolean;

@@ -121,7 +121,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div 
     fxLayout="column"
-    class="setting-row {{isCurrentlyOpen ? 'open-row' : ''}} {{isModule ? 'module' : 'expression'}}"
+    class="setting-row {{isCurrentlyOpen || isInstalledModule ? 'open-row' : ''}} {{isModule ? 'module' : 'expression'}}"
     [ngClass]="{'setting-row-visible': visible}"
     [ngStyle]="customSideColour ? {'border-left': '2px solid ' + customSideColour} : {}"
 >
