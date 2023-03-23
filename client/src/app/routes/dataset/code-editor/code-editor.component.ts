@@ -253,7 +253,18 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 modules.forEach((module) => 
                 {
                     let sourceModule = this._moduleService.getSourceDataModule(module.id);
-                    editor.modules.push(new DataExpressionModule(module.id, module.name, module.comments, module.version.version, module.origin.creator, Array.from(sourceModule.versions.keys())));
+                    let allVersions = [];
+
+                    // If the user is not the creator of the module, only show the released versions
+                    if(sourceModule.origin.creator.user_id !== this._authService.getUserID())
+                    {
+                        allVersions = Array.from(sourceModule.versions.values()).filter((version) => version.version.endsWith(".0"));
+                    }
+                    else
+                    {
+                        allVersions = Array.from(sourceModule.versions.keys());
+                    }
+                    editor.modules.push(new DataExpressionModule(module.id, module.name, module.comments, module.version.version, module.origin.creator, allVersions));
                     installedModuleExpressions.push(module.convertToExpression());
                     this.openModules[`${module.id}-${module.version}`] = module;
                 });

@@ -36,6 +36,7 @@ import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
 import { DataExpression } from "../models/Expression";
 import { EXPR_LANGUAGE_LUA } from "../expression-language/expression-language";
+import { AuthenticationService } from "./authentication.service";
 
 
 // What we send in POST or PUT
@@ -294,7 +295,8 @@ export class DataModuleService
 
     constructor(
         private _loadingSvc: LoadingIndicatorService,
-        private http: HttpClient
+        private http: HttpClient,
+        private _authService: AuthenticationService,
     )
     {
         this.refresh();
@@ -520,7 +522,17 @@ export class DataModuleService
             return null;
         }
 
-        let latestVersion = Array.from(module.versions.values()).pop();
+        let latestVersion = null;
+        if(module?.origin?.creator?.user_id !== this._authService?.getUserID())
+        {
+            let releasedVersions = Array.from(module.versions.values()).filter((version: DataModuleVersionSourceWire) => version.version.endsWith(".0"));
+            latestVersion = releasedVersions.pop();
+        }
+        else
+        {
+            latestVersion = Array.from(module.versions.values()).pop();
+        }
+
         return latestVersion;
     }
 

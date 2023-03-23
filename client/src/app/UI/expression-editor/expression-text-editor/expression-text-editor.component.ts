@@ -39,7 +39,7 @@ import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElem
 import { SentryHelper } from "src/app/utils/utils";
 import { Range } from "codemirror";
 import { ObjectCreator } from "src/app/models/BasicTypes";
-import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import * as CodeMirror from "codemirror";
 
 require("codemirror/addon/comment/comment.js");
