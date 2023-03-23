@@ -57,7 +57,7 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
-import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
+import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
 import EditorConfig from "./editor-config";
 
@@ -253,17 +253,18 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 modules.forEach((module) => 
                 {
                     let sourceModule = this._moduleService.getSourceDataModule(module.id);
-                    let allVersions = [];
+                    let allVersions: string[] = [];
 
                     // If the user is not the creator of the module, only show the released versions
                     if(sourceModule.origin.creator.user_id !== this._authService.getUserID())
                     {
-                        allVersions = Array.from(sourceModule.versions.values()).filter((version) => version.version.endsWith(".0"));
+                        allVersions = Array.from(sourceModule.versions.values()).filter((version) => version.version.endsWith(".0")).map((version) => version.version);
                     }
                     else
                     {
                         allVersions = Array.from(sourceModule.versions.keys());
                     }
+
                     editor.modules.push(new DataExpressionModule(module.id, module.name, module.comments, module.version.version, module.origin.creator, allVersions));
                     installedModuleExpressions.push(module.convertToExpression());
                     this.openModules[`${module.id}-${module.version}`] = module;
