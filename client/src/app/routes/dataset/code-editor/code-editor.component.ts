@@ -1163,14 +1163,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     {
         let editor = position === "top" ? this.topEditor : this.bottomEditor;
         
-        let previouslySaved = editor.isExpressionSaved;
         editor.onExpressionTextChanged(text);
-        console.log(previouslySaved, editor.isExpressionSaved)
-        // Only update the current open list if there is a status change
-        // if(previouslySaved !== editor.isExpressionSaved)
-        // {
-            this.updateCurrentlyOpenList(this.isSplitScreen);
-        // }
+        this.updateCurrentlyOpenList(this.isSplitScreen);
     }
 
     onTextSelect(textSelection: TextSelection): void

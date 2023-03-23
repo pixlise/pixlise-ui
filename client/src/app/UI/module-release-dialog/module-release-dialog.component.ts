@@ -29,7 +29,7 @@
 
 import { Component, Inject } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { DataModuleService } from "src/app/services/data-module.service";
+import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
 
 export class ModuleReleaseDialogData
 {
@@ -76,7 +76,8 @@ export class ModuleReleaseDialogComponent
             this._moduleService.releaseMinorVersion(this.data.id, this.data.sourceCode, this.releaseNotes, this.data.tags).subscribe(
                 (result) =>
                 {
-                    this.dialogRef.close(result);
+                    let module = this._moduleService.readSpecificVersionModule(result);
+                    this.dialogRef.close(module);
                 },
                 (error) =>
                 {
@@ -90,7 +91,8 @@ export class ModuleReleaseDialogComponent
             this._moduleService.releaseMajorVersion(this.data.id, this.data.sourceCode, this.releaseNotes, this.data.tags).subscribe(
                 (result) =>
                 {
-                    this.dialogRef.close(result);
+                    let module = this._moduleService.readSpecificVersionModule(result);
+                    this.dialogRef.close(module);
                 },
                 (error) =>
                 {

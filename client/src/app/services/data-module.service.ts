@@ -140,10 +140,10 @@ class DataModuleStore
     {
     }
 
-    ensureModuleExists(m: DataModule)
+    ensureModuleExists(module: DataModule)
     {
         // Add/overwrite but if we have source code, preserve it
-        let existing = this._modules.get(m.id);
+        let existing = this._modules.get(module.id);
         if(existing)
         {
             // copy source code from existing versions if we have any
@@ -151,7 +151,7 @@ class DataModuleStore
             {
                 if(existingVersion.sourceCode.length > 0)
                 {
-                    let gotVer = m.versions.get(ver);
+                    let gotVer = module.versions.get(ver);
                     if(gotVer.sourceCode.length <= 0)
                     {
                         gotVer.sourceCode = existingVersion.sourceCode;
@@ -161,29 +161,29 @@ class DataModuleStore
         }
 
         // Add/Overwrite
-        this._modules.set(m.id, m);
+        this._modules.set(module.id, module);
     }
 
-    ensureModuleVersionExists(m: DataModuleSpecificVersionWire)
+    ensureModuleVersionExists(module: DataModuleSpecificVersionWire)
     {
         let toStore = new DataModule(
-            m.id,
-            m.name,
-            m.comments,
-            m.origin,
+            module.id,
+            module.name,
+            module.comments,
+            module.origin,
             new Map<string, DataModuleVersionSourceWire>()
         );
 
-        let existing = this._modules.get(m.id);
+        let existing = this._modules.get(module.id);
         if(existing)
         {
             toStore.versions = existing.versions;
         }
 
         // Store the version in question (keep source code if we had it before)
-        let verToStore = m.version;
+        let verToStore = module.version;
 
-        let existingVer = toStore.versions.get(m.version.version);
+        let existingVer = toStore.versions.get(module.version.version);
         if(existingVer && existingVer.sourceCode.length > 0 && verToStore.sourceCode.length <= 0)
         {
             verToStore.sourceCode = existingVer.sourceCode;
@@ -192,7 +192,7 @@ class DataModuleStore
         toStore.versions.set(verToStore.version, verToStore);
 
         // Add/Overwrite
-        this._modules.set(m.id, toStore);
+        this._modules.set(module.id, toStore);
     }
 
     // Ensure only the IDs in the list provided are what we store
@@ -323,7 +323,7 @@ export class DataModuleService
         );
     }
 
-    private readSpecificVersionModule(module: object): DataModuleSpecificVersionWire
+    public readSpecificVersionModule(module: object): DataModuleSpecificVersionWire
     {
         let wireMod = new DataModuleSpecificVersionWire(
             module["id"],
@@ -453,13 +453,16 @@ export class DataModuleService
 
                             // NOTE that this is adding a module to existing version map
                             this._modules.ensureModuleVersionExists(recvdModule);
+
+                            this._loadingSvc.remove(loadID);
+                            return this.readSpecificVersionModule(recvdModule);
                         }
                         else 
                         {
                             console.error("addModuleVersion: empty response received");
+                            this._loadingSvc.remove(loadID);
+                            return null;
                         }
-                        this._loadingSvc.remove(loadID);
-                        return resp;
                     },
                     (err)=>
                     {
