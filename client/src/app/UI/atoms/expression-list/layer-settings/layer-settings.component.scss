@@ -104,14 +104,13 @@ input {
 
 .labels-container {
     display: flex;
-    // max-width: calc(35vw - 48px - 230px);
 
     .label-text {
         flex: 1;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        min-width: 30px;
+        min-width: 10ch;
     }
 
     .obj-creator {

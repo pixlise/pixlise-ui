@@ -294,7 +294,7 @@ export class LayerSettingsComponent implements OnInit
                     return "Expression is incompatible with currently loaded quantification. Elements or detectors are mismatched";
                 }
 
-                return expr.sourceCode;
+                return expr.comments;
             }
         }
         return "";
@@ -319,7 +319,12 @@ export class LayerSettingsComponent implements OnInit
     get labelsWidth(): string
     {
         let layerWidth = 273;
-        let buttonIconsWidth = this.layerButtons.length * 33;
+        let buttonIconsWidth = this.visibleLayerButtons.length * 33;
+        if(this.hiddenLayerButtons.length > 0)
+        {
+            buttonIconsWidth += 33;
+        }
+
         let availableSpace = layerWidth - buttonIconsWidth;
 
         return this.isSidePanel ? `${availableSpace > 0 ? availableSpace : 50}px` : "calc(35vw - 48px - 230px)";
