@@ -68,7 +68,6 @@ export class ExpressionMetadataEditorComponent implements OnInit
         this.groupReleaseNotes();
         this._moduleService.modulesUpdated$.subscribe(() =>
         {
-            console.log("modules updated");
             this.groupReleaseNotes();
         });
     }

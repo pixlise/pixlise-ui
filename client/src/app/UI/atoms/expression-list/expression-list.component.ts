@@ -67,7 +67,7 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     
     @Input() isPreviewMode: boolean = false;
     @Input() isSidePanel: boolean = false;
-
+    @Input() isSplitScreen: boolean = false;
 
     @Input() selectedIcon: string = "assets/button-icons/check-on.svg";
     @Input() unselectedIcon: string = "assets/button-icons/check-off.svg";

@@ -30,10 +30,12 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Observable, ReplaySubject, Subject, of, from, combineLatest } from "rxjs";
-import { tap, map, catchError, share, mergeMap, shareReplay } from "rxjs/operators";
+import { tap, map, catchError, mergeMap, shareReplay } from "rxjs/operators";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
+import { DataExpression } from "../models/Expression";
+import { EXPR_LANGUAGE_LUA } from "../expression-language/expression-language";
 
 
 // What we send in POST or PUT
@@ -109,6 +111,24 @@ export class DataModuleSpecificVersionWire
         public version: DataModuleVersionSourceWire,
     )
     {
+    }
+
+    convertToExpression(): DataExpression
+    {
+        return new DataExpression(
+            this.id,
+            this.name,
+            this.version.sourceCode,
+            EXPR_LANGUAGE_LUA,
+            this.comments,
+            this.origin.shared,
+            this.origin.creator,
+            this.origin.create_unix_time_sec,
+            this.version.mod_unix_time_sec,
+            this.version.tags,
+            [],
+            null
+        );
     }
 }
 

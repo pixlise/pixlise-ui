@@ -128,6 +128,7 @@ export class LayerSettingsComponent implements OnInit
     @Input() showPureSwitch: boolean;
     @Input() showTagPicker: boolean;
     @Input() showSplitScreenButton: boolean;
+    @Input() showPreviewButton: boolean;
     
     @Input() detectors: string[] = [];
     
@@ -136,6 +137,7 @@ export class LayerSettingsComponent implements OnInit
 
     @Input() isPreviewMode: boolean = false;
     @Input() isSidePanel: boolean = false;
+    @Input() isSplitScreen: boolean = false;
 
     @Output() visibilityChange = new EventEmitter();
     @Output() onLayerImmediateSelection = new EventEmitter();
@@ -482,8 +484,12 @@ export class LayerSettingsComponent implements OnInit
         {
             this._moduleService.getLatestModuleVersion(this.layerInfo.layer.id).subscribe((latestVersion) =>
             {
-                this.openSplitScreen.emit({id: this.layerInfo.layer.id, version: latestVersion.version.version});
+                this.openSplitScreen.emit({ id: this.layerInfo.layer.id, version: latestVersion.version.version, isModule: true });
             });
+        }
+        else
+        {
+            this.openSplitScreen.emit({ id: this.layerInfo.layer.id, version: null, isModule: false });
         }
     }
 
@@ -503,15 +509,38 @@ export class LayerSettingsComponent implements OnInit
         }
     }
 
-    protected onExpressionSettings(event): void
+    private openCodeModal(allowEdit: boolean): void
     {
         const dialogConfig = new MatDialogConfig();
         dialogConfig.panelClass = "panel";
-        // dialogConfig.disableClose = true;
-        //dialogConfig.backdropClass = "panel";
 
+        if(this.isModule)
+        {
+            this._moduleService.getLatestModuleVersion(this.layerInfo.layer.id).subscribe((latestVersion) =>
+            {
+                let convertedModule = latestVersion.convertToExpression();   
+                dialogConfig.data = new ExpressionEditorConfig(convertedModule, allowEdit, false, false, !this.isPreviewMode);
+                this.dialog.open(ExpressionEditorComponent, dialogConfig);
+            });
+        }
+        else
+        {
+            this._exprService.getExpressionAsync(this.layerInfo.layer.id).subscribe(expression =>
+            {
+                dialogConfig.data = new ExpressionEditorConfig(expression, allowEdit, false, false, !this.isPreviewMode);
+                this.dialog.open(ExpressionEditorComponent, dialogConfig);
+            });
+        }
+    }
+
+    onPreview(event): void
+    {
+        this.openCodeModal(!this.isSharedByOtherUser);
+    }
+
+    protected onExpressionSettings(event): void
+    {
         let allowEdit = this.showSettings && !this.layerInfo.layer.source.shared && !this.isSharedByOtherUser && !this.isPreviewMode;
-
         if(this.isModule)
         {
             this._moduleService.getLatestModuleVersion(this.layerInfo.layer.id).subscribe((latestVersion) =>
@@ -519,19 +548,13 @@ export class LayerSettingsComponent implements OnInit
                 this._navigateToCodeEditor(this.layerInfo.layer.id, latestVersion.version.version);
             });
         }
+        else if(allowEdit || this.isPreviewMode)
+        {
+            this._navigateToCodeEditor(this.layerInfo.layer.id);
+        }
         else
         {
-            this._exprService.getExpressionAsync(this.layerInfo.layer.id).subscribe(expression =>
-            {
-                if(allowEdit || this.isPreviewMode)
-                {
-                    this._navigateToCodeEditor(this.layerInfo.layer.id);
-                    return;
-                }
-
-                dialogConfig.data = new ExpressionEditorConfig(expression, allowEdit, false, false, !this.isPreviewMode);
-                this.dialog.open(ExpressionEditorComponent, dialogConfig);
-            });
+            this.openCodeModal(allowEdit);
         }
     }
 
@@ -622,7 +645,8 @@ export class LayerSettingsComponent implements OnInit
             showShare: this.showShare && !this.sharedBy,
             showTagPicker: this.showTagPicker,
             showPixlangConvert: this.isPixlangExpression,
-            showSplitScreenButton: this.showSplitScreenButton && !this.isCurrentlyOpen,
+            showPreviewButton: this.showPreviewButton && !this.isCurrentlyOpen,
+            showSplitScreenButton: this.showSplitScreenButton && !this.isCurrentlyOpen && (this.isModule || this.isSplitScreen),
             showSettingsButton: this.showSettingsButton && !this.isCurrentlyOpen,
             showColours: this.showColours,
             showVisible: this.showVisible,

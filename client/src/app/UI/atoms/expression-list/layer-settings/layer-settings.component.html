@@ -74,17 +74,31 @@ POSSIBILITY OF SUCH DAMAGE.
                 (click)="onDownload()">
             </icon-button>
             <icon-button
+                *ngIf="layerButton === 'showPixlangConvert'"
+                #tooltip="matTooltip"
+                matTooltip="Convert expression to Lua"
+                icon="assets/button-icons/lua-language.svg"
+                (click)="onConvertToLua()">
+            </icon-button>
+            <icon-button
                 *ngIf="layerButton === 'showSplitScreenButton'"
                 #tooltip="matTooltip"
                 matTooltip="Open {{isModule ? 'module' : 'expression'}} in split screen"
-                icon="assets/button-icons/code.svg"
+                [icon]="isModule ? 'assets/button-icons/layout-split-bottom-view.svg' : 'assets/button-icons/layout-split-top-view.svg'"
                 (click)="onSplitScreen($event)">
+            </icon-button>
+            <icon-button
+                *ngIf="layerButton === 'showPreviewButton'"
+                #tooltip="matTooltip"
+                matTooltip="Show {{isModule ? 'module' : 'expression'}} preview"
+                icon="assets/button-icons/code.svg"
+                (click)="onPreview($event)">
             </icon-button>
             <icon-button
                 *ngIf="layerButton === 'showSettingsButton'"
                 #tooltip="matTooltip"
                 matTooltip="Open {{isModule ? 'module' : 'expression'}}"
-                icon="{{isPredefined ? 'assets/button-icons/gear.svg' : (isSharedByOtherUser) ? 'assets/button-icons/code.svg' : 'assets/button-icons/edit.svg'}}"
+                icon="{{isPredefined ? 'assets/button-icons/gear.svg' : (isSharedByOtherUser) ? 'assets/button-icons/code.svg' : 'assets/button-icons/layout-single-view.svg'}}"
                 (click)="onSettings($event)">
             </icon-button>
             <icon-button
@@ -196,8 +210,15 @@ POSSIBILITY OF SUCH DAMAGE.
                     *ngIf="layerButton === 'showSplitScreenButton'"
                     #tooltip="matTooltip"
                     matTooltip="Open {{isModule ? 'module' : 'expression'}} in split screen"
-                    icon="assets/button-icons/layout-split-view.svg"
+                    [icon]="isModule ? 'assets/button-icons/layout-split-bottom-view.svg' : 'assets/button-icons/layout-split-top-view.svg'"
                     (click)="onSplitScreen($event)">
+                </icon-button>
+                <icon-button
+                    *ngIf="layerButton === 'showPreviewButton'"
+                    #tooltip="matTooltip"
+                    matTooltip="Show {{isModule ? 'module' : 'expression'}} preview"
+                    icon="assets/button-icons/code.svg"
+                    (click)="onPreview($event)">
                 </icon-button>
                 <icon-button
                     *ngIf="layerButton === 'showSettingsButton'"

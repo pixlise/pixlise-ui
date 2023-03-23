@@ -150,6 +150,8 @@ POSSIBILITY OF SUCH DAMAGE.
                     [layerInfo]="item.content"
                     [showSlider]="showOpacitySliders"
                     [showSettings]="item.shared || !item.content.isPredefinedLayer"
+                    [showPreviewButton]="true"
+                    [showSplitScreenButton]="isSidePanel"
                     [showDelete]="!item.content.isPredefinedLayer"
                     [showShare]="!item.content.isPredefinedLayer"
                     [showColours]="showColourOptions"
@@ -163,6 +165,8 @@ POSSIBILITY OF SUCH DAMAGE.
                     (colourChange)="onLayerColourChange($event)"
                     [isPreviewMode]="isPreviewMode"
                     [isSidePanel]="isSidePanel"
+                    [isSplitScreen]="isSplitScreen"
+                    (openSplitScreen)="onOpenSplitScreen($event)"
                 >
                 </context-layer-settings>
             </ng-container>
@@ -173,6 +177,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [isModule]="true"
                     [showSlider]="false"
                     [showSettings]="true"
+                    [showPreviewButton]="true"
                     [showSplitScreenButton]="true"
                     [showDelete]="false"
                     [showShare]="false"
@@ -187,6 +192,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     (colourChange)="onLayerColourChange($event)"
                     [isPreviewMode]="isPreviewMode"
                     [isSidePanel]="isSidePanel"
+                    [isSplitScreen]="isSplitScreen"
                     (openSplitScreen)="onOpenSplitScreen($event)"
                 >
                 </context-layer-settings>
