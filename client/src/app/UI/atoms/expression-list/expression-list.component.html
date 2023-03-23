@@ -167,6 +167,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [isSidePanel]="isSidePanel"
                     [isSplitScreen]="isSplitScreen"
                     (openSplitScreen)="onOpenSplitScreen($event)"
+                    [customOptions]="getCustomLayerConfig(item.content?.layer?.id)"
                 >
                 </context-layer-settings>
             </ng-container>
@@ -194,6 +195,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [isSidePanel]="isSidePanel"
                     [isSplitScreen]="isSplitScreen"
                     (openSplitScreen)="onOpenSplitScreen($event)"
+                    [customOptions]="getCustomLayerConfig(item.content?.layer?.id)"
                 >
                 </context-layer-settings>
             </ng-container>

@@ -30,7 +30,7 @@
 import { Component, ComponentFactoryResolver, HostListener, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { ReplaySubject, Subject, Subscription, combineLatest, of, timer } from "rxjs";
+import { Subscription, combineLatest, of, timer } from "rxjs";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { LayoutService } from "src/app/services/layout.service";
 import { analysisLayoutState, ViewStateService } from "src/app/services/view-state.service";
@@ -40,7 +40,6 @@ import { ChordViewWidgetComponent } from "src/app/UI/chord-view-widget/chord-vie
 import { ContextImageViewWidgetComponent } from "src/app/UI/context-image-view-widget/context-image-view-widget.component";
 import { HistogramViewComponent } from "src/app/UI/histogram-view/histogram-view.component";
 import { SpectrumChartWidgetComponent } from "src/app/UI/spectrum-chart-widget/spectrum-chart-widget.component";
-import { SpectrumRegionPickerComponent } from "src/app/UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
 import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/ternary-plot-widget.component";
 import { DataExpressionService, DataExpressionWire } from "src/app/services/data-expression.service";
 import { DataExpression, DataExpressionId, ModuleReference } from "src/app/models/Expression";
@@ -48,9 +47,8 @@ import { DataSourceParams, RegionDataResultItem, WidgetRegionDataService } from 
 import { PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionModule, TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
 import { AuthenticationService } from "src/app/services/authentication.service";
-import { LuaTranspiler } from "src/app/expression-language/lua-transpiler";
 import { CustomExpressionGroup, ExpressionListBuilder, ExpressionListGroupNames, ExpressionListItems, LocationDataLayerPropertiesWithVisibility, makeDataForExpressionList } from "src/app/models/ExpressionList";
-import { ExpressionListHeaderToggleEvent } from "src/app/UI/atoms/expression-list/expression-list.component";
+import { ExpressionListHeaderToggleEvent, LiveLayerConfig } from "src/app/UI/atoms/expression-list/expression-list.component";
 import { LayerVisibilityChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
@@ -58,253 +56,10 @@ import { RGBMix } from "src/app/services/rgbmix-config.service"
 import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
-import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
-import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
-
-
-export class EditorConfig
-{
-    private _modules: DataExpressionModule[] = [];
-    public isSaveableOutput: boolean = true;
-
-    constructor(
-        public expression: DataExpression = null,
-        public userID: string = "",
-        public editMode: boolean = true,
-        public isCodeChanged: boolean = false,
-        public isExpressionSaved: boolean = true,
-        public isModule: boolean = false,
-        public isHeaderOpen: boolean = false,
-        public useAutocomplete: boolean = false,
-        public version: DataModuleVersionSourceWire = null,
-        public versions: Map<string, DataModuleVersionSourceWire> = null,
-    ){}
-
-    get isLua(): boolean
-    {
-        return this.expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
-    }
-
-    set isLua(value: boolean)
-    {
-        if(this.expression)
-        {
-            this.expression.sourceLanguage = value ? EXPR_LANGUAGE_LUA : EXPR_LANGUAGE_PIXLANG;
-        }
-    }
-
-    get isSharedByOtherUser(): boolean
-    {
-        return this.expression?.shared && this.expression?.creator?.user_id !== this.userID;
-    }
-
-    get emptyName(): boolean
-    {
-        return !this.expression?.name || this.expression.name === "";
-    }
-
-    get emptySourceCode(): boolean
-    {
-        return !this.expression?.sourceCode || this.expression.sourceCode === "";
-    }
-
-    get invalidExpression(): boolean
-    {
-        return this.emptyName || this.emptySourceCode || !this.isSaveableOutput;
-    }
-
-    get errorTooltip(): string
-    {
-        if(this.emptyName)
-        {
-            return "Name cannot be empty";
-        }
-        else if(this.emptySourceCode)
-        {
-            return "Source code cannot be empty";
-        }
-        else if(this.name.match(/[^a-zA-Z0-9_]/))
-        {
-            return "Name must be alphanumeric and cannot contain special characters";
-        }
-        else if(this.name.match(/^[0-9]/))
-        {
-            return "Name cannot start with a number";
-        }
-        else if(this.name.match(/\s/))
-        {
-            return "Name cannot contain spaces";
-        }
-        else
-        {
-            return "";
-        }
-    }
-
-    get editable(): boolean
-    {
-        return this.editMode && !this.isSharedByOtherUser;
-    }
-
-    get editExpression(): string
-    {
-        return this.expression?.sourceCode || "";
-    }
-
-    set editExpression(val: string)
-    {
-        if(this.expression)
-        {
-            this.expression.sourceCode = val;
-            this.isCodeChanged = true;
-            this.isExpressionSaved = false;
-        }
-    }
-
-    get selectedTagIDs(): string[]
-    {
-        return this.expression?.tags || [];
-    }
-
-    set selectedTagIDs(tags: string[])
-    {
-        if(this.expression)
-        {
-            this.expression.tags = tags;
-            this.isExpressionSaved = false;
-        }
-    }
-
-    get name(): string
-    {
-        return this.expression?.name || "";
-    }
-
-    set name(name: string)
-    {
-        if(this.expression)
-        {
-            this.expression.name = name;
-            this.isExpressionSaved = false;
-        }
-    }
-
-    get comments(): string
-    {
-        return this.expression?.comments || "";
-    }
-
-    set comments(comments: string)
-    {
-        if(this.expression)
-        {
-            this.expression.comments = comments;
-            this.isExpressionSaved = false;
-        }
-    }
-
-    get modules(): DataExpressionModule[]
-    {
-        return this._modules;
-    }
-
-    set modules(modules: DataExpressionModule[])
-    {
-        this._modules = modules;
-        this.isExpressionSaved = false;
-    }
-
-    onExpressionTextChanged(text: string): void
-    {
-        this.isSaveableOutput = true;
-        this.editExpression = text;
-    }
-
-    onNameChange(name: string): void
-    {
-        this.name = name;
-    }
-
-    onDescriptionChange(description: string): void
-    {
-        this.comments = description;
-    }
-
-    onTagSelectionChanged(tags): void
-    {
-        this.selectedTagIDs = tags;
-    }
-
-    onToggleHeader(): void
-    {
-        this.isHeaderOpen = !this.isHeaderOpen;
-    }
-
-    get majorMinorVersion(): string
-    {
-        if(!this.version?.version)
-        {
-            return "0.0";
-        }
-
-        let versionParts = this.version.version.split(".");
-        return versionParts.slice(0, 2).join(".");
-    }
-
-    // TODO: Only show major/minor versions to users who don't own the module
-    get versionList(): DataModuleVersionSourceWire[]
-    {
-        if(!this.isModule || !this.versions)
-        {
-            return [];
-        }
-
-        return Array.from(this.versions.values());
-    }
-
-    get latestVersion(): DataModuleVersionSourceWire
-    {
-        if(!this.isModule || !this.version?.version || !this.versionList.length)
-        {
-            return null;
-        }
-
-        let latestVersion = this.versionList[0];
-        this.versionList.forEach(version =>
-        {
-            if(!version?.version || !version.version.match(/^[0-9]+\.[0-9]+\.[0-9]+$/))
-            {
-                return;
-            }
-
-            let [latestMajor, latestMinor, latestPatch] = latestVersion.version.split(".").map(version => parseInt(version));
-            let [major, minor, patch] = version.version.split(".").map(version => parseInt(version));
-            if(
-                major > latestMajor || 
-                (major === latestMajor && minor > latestMinor) || 
-                (major === latestMajor && minor === latestMinor && patch > latestPatch)
-            )
-            {
-                latestVersion = version;
-            }
-        });
-
-        return latestVersion;
-    }
-
-    get isLoadedVersionLatest(): boolean
-    {
-        let latestVersion = this.latestVersion?.version;
-        return latestVersion && latestVersion === this.version?.version;
-    }
-
-    get isLatestVersionReleased(): boolean
-    {
-        let latestVersion = this.latestVersion?.version;
-        return latestVersion && latestVersion.endsWith(".0");
-    }
-}
+import EditorConfig from "./editor-config";
 
 @Component({
     selector: "code-editor",
@@ -401,6 +156,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     inactiveIcon="assets/button-icons/check-off.svg";
 
     _listBuilder: ExpressionListBuilder;
+    public sidePanelLayerConfigs: LiveLayerConfig[] = [];
 
     constructor(
         private _route: ActivatedRoute,
@@ -528,6 +284,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     {
         this._expressionID = this._route.snapshot.params["expression_id"];
         let version = this._route.snapshot.queryParams["version"];
+        this.resetSidePanelConfigs();
 
         this.topEditor = new EditorConfig();
         this.topEditor.userID = this._authService.getUserID();
@@ -604,6 +361,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.sidebarTopSections["currently-open"].items = [
                         this.topEditor.expression
                     ];
+                    this.updateSidePanelLayer(this.topEditor.expression.id, true);
 
                     this.loadInstalledModules();
                     this.regenerateItemList();
@@ -638,6 +396,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.sidebarTopSections["currently-open"].items = [
                         this.topEditor.expression
                     ];
+                    this.updateSidePanelLayer(this.topEditor.expression.id, true, false, true);
 
                     if(this.sidebarTopSections["installed-modules"])
                     {
@@ -677,6 +436,50 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         ));
     }
 
+    removeSidePanelConfig(id: string): void
+    {
+        let existingIndex = this.sidePanelLayerConfigs.findIndex((config) => config.layerID === id);
+        if(existingIndex >= 0)
+        {
+            this.sidePanelLayerConfigs.splice(existingIndex, 1);
+        }
+    }
+
+    resetSidePanelConfigs(): void
+    {
+        this.sidePanelLayerConfigs = [];
+    }
+
+    updateSidePanelLayer(id: string, isUpToDate: boolean = true, isLocked: boolean = false, isModule: boolean = false): void
+    {
+        let icon = "";
+        let iconTooltip = "";
+
+        let nameOfLayer = isModule ? "module" : "expression";
+        if(isLocked)
+        {
+            icon = "assets/button-icons/lock.svg";
+            iconTooltip = `This ${nameOfLayer} is locked and cannot be edited`;
+        }
+        else
+        {
+            icon = isUpToDate ? "assets/button-icons/blue-circle-check.svg" : "assets/button-icons/red-circle-x.svg";
+            iconTooltip = isUpToDate ? `This ${nameOfLayer} is saved` : `This ${nameOfLayer} has unsaved changes`;
+        }
+
+        let newLayerConfig = new LiveLayerConfig(id, icon, iconTooltip, isModule ? "#FFFF8D" : "");
+
+        let existingIndex = this.sidePanelLayerConfigs.findIndex((config) => config.layerID === id);
+        if(existingIndex >= 0)
+        {
+            this.sidePanelLayerConfigs[existingIndex] = newLayerConfig;
+        }
+        else
+        {
+            this.sidePanelLayerConfigs.push(newLayerConfig);
+        }
+    }
+
     onModuleChange(modules: DataExpressionModule[], position: string = "top"): void
     {
         let editor = position === "top" ? this.topEditor : this.bottomEditor;
@@ -686,15 +489,17 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
     onOpenSplitScreen({id, version, isModule}: {id: string; version: string; isModule: boolean;}): void
     {
+        // Don't reopen the same module or expression
         if(this.bottomEditor?.expression && this.bottomEditor.expression.id === id && (!isModule || this.bottomEditor.version.version === version))
         {
-            // Don't reopen the same module or expression
+            this.isSplitScreen = true;
             return;
         }
 
+        // Don't open the same module or expression twice
         if(this.topEditor?.expression && this.topEditor.expression.id === id && (!isModule || this.topEditor.version.version === version))
         {
-            // Don't open the same module or expression twice
+            this.isSplitScreen = true;
             return;
         }
 
@@ -727,6 +532,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             this.sidebarTopSections["currently-open"].items = [
                 editor.expression
             ];
+            this.removeSidePanelConfig(editor.expression.id);
+            this.updateSidePanelLayer(id, true);
 
             this.loadInstalledModules();
             this.regenerateItemList();
@@ -903,12 +710,21 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
     updateCurrentlyOpenList(includeBottomExpression: boolean = false): void
     {
-        this.sidebarTopSections["currently-open"].items = includeBottomExpression ? [
+        this.sidebarTopSections["currently-open"].items = includeBottomExpression && this.bottomEditor.expression ? [
             this.topEditor.expression,
             this.bottomEditor.expression
         ] : [
             this.topEditor.expression
         ];
+
+        let isTopSharedByOther = this.topEditor.expression && this.topEditor.expression.shared && this.topEditor.expression.creator.user_id !== this._authService.getUserID();
+        this.updateSidePanelLayer(this.topEditor.expression.id, this.topEditor.isExpressionSaved, isTopSharedByOther, this.topEditor.isModule);
+
+        if(includeBottomExpression)
+        {
+            let isBottomSharedByOther = this.bottomEditor.expression && this.bottomEditor.expression.shared && this.bottomEditor.expression.creator.user_id !== this._authService.getUserID();
+            this.updateSidePanelLayer(this.bottomEditor.expression.id, this.bottomEditor.isExpressionSaved, isBottomSharedByOther, this.bottomEditor.isModule);
+        }
 
         this.regenerateItemList();
     }
@@ -1317,6 +1133,13 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.updateText = updateText;
     }
 
+    onTextChange(text: string, position: string = "top"): void
+    {
+        let editor = position === "top" ? this.topEditor : this.bottomEditor;
+        editor.onExpressionTextChanged(text);
+        this.updateCurrentlyOpenList(this.isSplitScreen);
+    }
+
     onTextSelect(textSelection: TextSelection): void
     {
         this.activeTextSelection = textSelection;
@@ -1603,6 +1426,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     editor.versions.set(newModule.version.version, newModule.version);
                     editor.isCodeChanged = false;
                     editor.isExpressionSaved = true;
+                    this.updateCurrentlyOpenList(this.isSplitScreen);
                 });
             }
             else
@@ -1620,6 +1444,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     {
                         editor.isCodeChanged = false;
                         editor.isExpressionSaved = true;
+                        this.updateCurrentlyOpenList(this.isSplitScreen);
                     },
                     (err)=>
                     {
@@ -1670,6 +1495,11 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         let dialogRef = this.dialog.open(ModuleReleaseDialogComponent, dialogConfig);
         dialogRef.afterClosed().subscribe((result: DataModuleSpecificVersionWire) =>
         {
+            if(!result)
+            {
+                return;
+            }
+
             let convertedModule = result.convertToExpression();
             this.visibleModuleCodeEditor.expression = convertedModule;
             this.visibleModuleCodeEditor.version = result.version;

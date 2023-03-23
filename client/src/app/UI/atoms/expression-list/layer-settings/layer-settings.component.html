@@ -119,7 +119,12 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
 </ng-template>
 
-<div fxLayout="column" class="setting-row" [ngClass]="{'setting-row-visible': visible}">
+<div 
+    fxLayout="column"
+    class="setting-row {{isCurrentlyOpen ? 'open-row' : ''}} {{isModule ? 'module' : 'expression'}}"
+    [ngClass]="{'setting-row-visible': visible}"
+    [ngStyle]="customSideColour ? {'border-left': '2px solid ' + customSideColour} : {}"
+>
     <div fxLayout="row" fxLayoutAlign="space-between center">
         <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements labels-container" [ngStyle]="{'max-width': labelsWidth}">
             <div 
@@ -128,6 +133,15 @@ POSSIBILITY OF SUCH DAMAGE.
                 [matTooltip]="tooltipText"
                 [ngClass]='{"incompatible": incompatibleWithQuant}'
             >{{labelToShow}}</div>
+            <div
+                *ngIf="customIcon"
+                class="custom-icon"
+                #tooltip="matTooltip"
+                [matTooltip]="customIconTooltip"
+                [matTooltipDisabled]="!customIconTooltip"
+            >
+                <img class="custom-icon" [src]="customIcon" />
+            </div>
             <div 
                 *ngIf="sharedBy" 
                 class="obj-creator"

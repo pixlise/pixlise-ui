@@ -189,6 +189,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [isSidePanel]="true"
                 [isSplitScreen]="isSplitScreen"
                 [isSelectable]="!topEditor.isModule && topEditor.isLua"
+                [liveLayerConfigs]="sidePanelLayerConfigs"
                 fxFlex="100%"
             >
                 <icon-button
@@ -215,7 +216,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [allowEdit]="topEditor.editable && (!topEditor.isModule || (topEditor.isModule && topEditor.isLoadedVersionLatest))"
                 [isImmediatelyAppliable]="false"
                 [applyNow]="false"
-                (onTextChange)="topEditor.onExpressionTextChanged($event)"
+                (onTextChange)="onTextChange($event, 'top')"
                 (onTextSelect)="onTextSelect($event)"
                 (changeExpression)="changeExpression($event)"
                 (runExpression)="runExpression(true)"
@@ -284,7 +285,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [allowEdit]="bottomEditor.editable && (!bottomEditor.isModule || bottomEditor.isLoadedVersionLatest)"
                 [isImmediatelyAppliable]="false"
                 [applyNow]="false"
-                (onTextChange)="bottomEditor.onExpressionTextChanged($event)"
+                (onTextChange)="onTextChange($event, 'bottom')"
                 (onTextSelect)="onTextSelect($event)"
                 (changeExpression)="changeExpression($event)"
                 (runExpression)="runExpression(false)"

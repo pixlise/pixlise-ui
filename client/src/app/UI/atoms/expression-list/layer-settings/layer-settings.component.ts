@@ -53,6 +53,7 @@ import { generateExportCSVForExpression } from "src/app/services/export-data.ser
 import { Router } from "@angular/router";
 import { DataModuleService } from "src/app/services/data-module.service";
 import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
+import { LiveLayerConfig } from "../expression-list.component";
 
 
 export class LayerInfo
@@ -139,6 +140,8 @@ export class LayerSettingsComponent implements OnInit
     @Input() isSidePanel: boolean = false;
     @Input() isSplitScreen: boolean = false;
 
+    @Input() customOptions: LiveLayerConfig = null;
+
     @Output() visibilityChange = new EventEmitter();
     @Output() onLayerImmediateSelection = new EventEmitter();
     @Output() colourChange = new EventEmitter();
@@ -176,6 +179,21 @@ export class LayerSettingsComponent implements OnInit
     ngOnDestroy()
     {
         this._subs.unsubscribe();
+    }
+
+    get customIcon(): string
+    {
+        return this.customOptions?.icon || "";
+    }
+
+    get customIconTooltip(): string
+    {
+        return this.customOptions?.iconTooltip || "";
+    }
+
+    get customSideColour(): string
+    {
+        return this.customOptions?.sideColour || "";
     }
 
     get showSettingsButton(): boolean

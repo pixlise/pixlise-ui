@@ -46,6 +46,20 @@ export class ExpressionListHeaderToggleEvent
     }
 }
 
+// This serves as a way to inject custom styling for items in the expression list without changing type
+export class LiveLayerConfig
+{
+    constructor(
+        public layerID: string,
+        public icon: string = null,
+        public iconTooltip: string = null,
+        public sideColour: string = null,
+    )
+    {
+
+    }
+}
+
 @Component({
     selector: "expression-list",
     templateUrl: "./expression-list.component.html",
@@ -68,6 +82,8 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     @Input() isPreviewMode: boolean = false;
     @Input() isSidePanel: boolean = false;
     @Input() isSplitScreen: boolean = false;
+
+    @Input() liveLayerConfigs: LiveLayerConfig[] = [];
 
     @Input() selectedIcon: string = "assets/button-icons/check-on.svg";
     @Input() unselectedIcon: string = "assets/button-icons/check-off.svg";
@@ -115,6 +131,16 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     get detectors(): string[]
     {
         return this._exprService.validDetectors;
+    }
+
+    getCustomLayerConfig(layerID: string): LiveLayerConfig
+    {
+        if(!layerID)
+        {
+            return null;
+        }
+
+        return this.liveLayerConfigs.find((config) => config.layerID === layerID);
     }
 
     // Header section opening/closing

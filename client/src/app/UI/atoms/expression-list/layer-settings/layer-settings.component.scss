@@ -121,3 +121,17 @@ input {
         text-overflow: ellipsis;
     }
 }
+
+.open-row {
+    background-color: #222829;
+}
+
+.module {
+    border-left: 2px solid #FFFF8D;
+}
+
+.custom-icon {
+    display: flex;
+    align-items: center;
+    margin-left: 2px !important;
+}
