@@ -160,6 +160,16 @@ export class ExpressionMetadataEditorComponent implements OnInit
             }
         });
 
+        Object.entries(majorRelease).forEach(([majorVersionGroup, majorRelease]) =>
+        {
+            majorRelease.minorVersions = majorRelease.minorVersions.sort((a, b) =>
+            {
+                let aMinorVersion = a.version.split(".")[1];
+                let bMinorVersion = b.version.split(".")[1];
+                return Number(bMinorVersion) - Number(aMinorVersion);
+            });
+        });
+
         this.releaseNotes = Object.values(majorRelease).sort((a, b) =>
         {
             let aMajorVersion = a.majorVersionGroup;
