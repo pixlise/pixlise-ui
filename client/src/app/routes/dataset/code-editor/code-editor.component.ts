@@ -450,7 +450,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.sidePanelLayerConfigs = [];
     }
 
-    updateSidePanelLayer(id: string, isUpToDate: boolean = true, isLocked: boolean = false, isModule: boolean = false): void
+    updateSidePanelLayer(id: string, isUpToDate: boolean = true, isLocked: boolean = false, isModule: boolean = false): boolean
     {
         let icon = "";
         let iconTooltip = "";
@@ -472,12 +472,22 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         let existingIndex = this.sidePanelLayerConfigs.findIndex((config) => config.layerID === id);
         if(existingIndex >= 0)
         {
-            this.sidePanelLayerConfigs[existingIndex] = newLayerConfig;
+            let existingConfig = this.sidePanelLayerConfigs[existingIndex];
+
+            // Only update if the config has changed to prevent unnecessary re-renders
+            if(!existingConfig.equals(newLayerConfig))
+            {
+                this.sidePanelLayerConfigs[existingIndex] = newLayerConfig;
+                return true;
+            }
         }
         else
         {
             this.sidePanelLayerConfigs.push(newLayerConfig);
+            return true;
         }
+
+        return false;
     }
 
     onModuleChange(modules: DataExpressionModule[], position: string = "top"): void
@@ -710,6 +720,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
     updateCurrentlyOpenList(includeBottomExpression: boolean = false): void
     {
+        let oldIDs = this.sidebarTopSections["currently-open"].items.map((item) => item.id);
         this.sidebarTopSections["currently-open"].items = includeBottomExpression && this.bottomEditor.expression ? [
             this.topEditor.expression,
             this.bottomEditor.expression
@@ -717,16 +728,27 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             this.topEditor.expression
         ];
 
+        let isSidePanelChanged = false;
+        let newIDs = this.sidebarTopSections["currently-open"].items.map((item) => item.id);
+        if(newIDs.length !== oldIDs.length || newIDs.every((id) => oldIDs.includes(id)))
+        {
+            isSidePanelChanged = true;
+        }
+
         let isTopSharedByOther = this.topEditor.expression && this.topEditor.expression.shared && this.topEditor.expression.creator.user_id !== this._authService.getUserID();
-        this.updateSidePanelLayer(this.topEditor.expression.id, this.topEditor.isExpressionSaved, isTopSharedByOther, this.topEditor.isModule);
+        isSidePanelChanged = this.updateSidePanelLayer(this.topEditor.expression.id, this.topEditor.isExpressionSaved, isTopSharedByOther, this.topEditor.isModule);
 
         if(includeBottomExpression)
         {
             let isBottomSharedByOther = this.bottomEditor.expression && this.bottomEditor.expression.shared && this.bottomEditor.expression.creator.user_id !== this._authService.getUserID();
-            this.updateSidePanelLayer(this.bottomEditor.expression.id, this.bottomEditor.isExpressionSaved, isBottomSharedByOther, this.bottomEditor.isModule);
+            let bottomChanged = this.updateSidePanelLayer(this.bottomEditor.expression.id, this.bottomEditor.isExpressionSaved, isBottomSharedByOther, this.bottomEditor.isModule);
+            isSidePanelChanged = isSidePanelChanged || bottomChanged;
         }
 
-        this.regenerateItemList();
+        if(isSidePanelChanged)
+        {
+            this.regenerateItemList();
+        }
     }
 
     ngOnDestroy()
@@ -1136,8 +1158,15 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     onTextChange(text: string, position: string = "top"): void
     {
         let editor = position === "top" ? this.topEditor : this.bottomEditor;
+        
+        let previouslySaved = editor.isExpressionSaved;
         editor.onExpressionTextChanged(text);
-        this.updateCurrentlyOpenList(this.isSplitScreen);
+        console.log(previouslySaved, editor.isExpressionSaved)
+        // Only update the current open list if there is a status change
+        // if(previouslySaved !== editor.isExpressionSaved)
+        // {
+            this.updateCurrentlyOpenList(this.isSplitScreen);
+        // }
     }
 
     onTextSelect(textSelection: TextSelection): void

@@ -318,7 +318,11 @@ export class LayerSettingsComponent implements OnInit
 
     get labelsWidth(): string
     {
-        return this.isSidePanel ? "124px" : "calc(35vw - 48px - 230px)";
+        let layerWidth = 273;
+        let buttonIconsWidth = this.layerButtons.length * 33;
+        let availableSpace = layerWidth - buttonIconsWidth;
+
+        return this.isSidePanel ? `${availableSpace > 0 ? availableSpace : 50}px` : "calc(35vw - 48px - 230px)";
     }
 
     get commentWidth(): string

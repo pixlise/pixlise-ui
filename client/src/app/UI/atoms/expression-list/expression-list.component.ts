@@ -55,8 +55,11 @@ export class LiveLayerConfig
         public iconTooltip: string = null,
         public sideColour: string = null,
     )
-    {
+    {}
 
+    equals(other: LiveLayerConfig): boolean
+    {
+        return this.layerID === other.layerID && this.icon === other.icon && this.iconTooltip === other.iconTooltip && this.sideColour === other.sideColour;
     }
 }
 
