@@ -86,6 +86,7 @@ export class DataQueryResult
         public runtimeMs: number,
         public stdout: string,
         public stderr: string,
+        public recordedExpressionInputs: Map<string, PMCDataValues>
     )
     {
     }

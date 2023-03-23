@@ -238,6 +238,9 @@ export class DataModuleService
 
     // List of built in modules - static so other things can access it without a pointer to our instance
     private static _builtInModuleNames = ["Map", "DebugHelp"];
+    // Built-in modules that are only required for export
+    private static _exportedBuiltInModuleNames = ["PixliseRuntime", "CSV"];
+
     // List of downloaded modules as observables - we store the first one, in theory it shouldn't download
     // again but just be served from this static cache
     private static _builtInModules = DataModuleService.fetchBuiltInModules();
@@ -245,7 +248,8 @@ export class DataModuleService
     private static fetchBuiltInModules(): Map<string, Observable<string>>
     {
         let result = new Map<string, Observable<string>>();
-        for(let mod of DataModuleService._builtInModuleNames)
+        let allMods = [...DataModuleService._builtInModuleNames, ...DataModuleService._exportedBuiltInModuleNames];
+        for(let mod of allMods)
         {
             result.set(mod,
                 from(
@@ -522,9 +526,13 @@ export class DataModuleService
         return DataModuleService._builtInModules.get(name);
     }
 
-    getBuiltInModules(): Observable<DataModule[]>
+    getBuiltInModules(includeExported: boolean): Observable<DataModule[]>
     {
-        let modules = DataModuleService.getBuiltInModuleNames();
+        let modules = [...DataModuleService._builtInModuleNames];
+        if(includeExported)
+        {
+            modules = [...modules, ...DataModuleService._exportedBuiltInModuleNames];
+        }
 
         let waitFor$ = [];
         for(let module of modules)

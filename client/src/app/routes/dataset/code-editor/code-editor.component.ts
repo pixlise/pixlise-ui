@@ -62,6 +62,7 @@ import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-lan
 import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
 
+
 export class EditorConfig
 {
     private _modules: DataExpressionModule[] = [];
@@ -1713,5 +1714,21 @@ export class CodeEditorComponent implements OnInit, OnDestroy
     {
         // Window resized, notify all canvases
         this._layoutService.notifyWindowResize();
+    }
+
+    onExportLuaCode()
+    {
+        let expr = this?.topEditor?.expression;
+        if(!expr)
+        {
+            return; // should we show an alert or something?
+        }
+
+        this._widgetDataService.exportExpressionCode(expr).subscribe(
+            (exportData: Blob)=>
+            {
+                saveAs(exportData, expr.name+".zip");
+            }
+        );
     }
 }

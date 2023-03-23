@@ -37,8 +37,6 @@ import { DataExpressionId } from "../models/Expression";
 import { DataModuleService } from "src/app/services/data-module.service";
 import { environment } from "src/environments/environment";
 
-
-//const { LuaFactory, LuaLibraries, LuaEngine } = require("wasmoon");
 import { LuaFactory, LuaLibraries, LuaEngine } from "wasmoon";
 
 
@@ -51,7 +49,8 @@ export class LuaDataQuerier
 
     private _luaInit$: Observable<void> = null;
     private _lua: LuaEngine = null;
-    private _loggedTables = [];
+    private _logTables: boolean = false;
+    private _loggedTables = new Map<string, PMCDataValues>();
     private _makeLuaTableTime = 0; // Total time spent returning Tables to Lua from things like element() Lua call
     //private _luaLibImports = "";
 
@@ -64,7 +63,6 @@ export class LuaDataQuerier
     constructor(
         private _debug: boolean,
         //private _luaUseReplay: boolean,
-        private _logTables: boolean
     )
     {
         this._logId = "["+this._id+"] ";
@@ -209,46 +207,46 @@ export class LuaDataQuerier
     private LuaCallableFunctions = new Map<string, any>([
         ["element", (a,b,c)=>{
             this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantElementExpression(a, b, c));
-            return this.makeLuaTable(this._dataSource.readElement([a, b, c]));
+            return this.makeLuaTable(`elem-${a}-${b}-${c}`, this._dataSource.readElement([a, b, c]));
         }],
         ["elementSum", (a,b)=>{
             // Dont save runtime stat here, this works for any quant
-            return this.makeLuaTable(this._dataSource.readElementSum([a, b]));
+            return this.makeLuaTable(`elemSum-${a}-${b}`, this._dataSource.readElementSum([a, b]));
         }],
         ["data", (a,b)=>{
             this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantDataExpression(a, b));
-            return this.makeLuaTable(this._dataSource.readMap([a, b]));
+            return this.makeLuaTable(`data-${a}-${b}`, this._dataSource.readMap([a, b]));
         }],
         ["spectrum", (a,b,c)=>{
             this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
-            return this.makeLuaTable(this._dataSource.readSpectrum([a, b, c]));
+            return this.makeLuaTable(`spectrum-${a}-${b}-${c}`, this._dataSource.readSpectrum([a, b, c]));
         }],
         ["spectrumDiff", (a,b,c)=>{
             this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
-            return this.makeLuaTable(this._dataSource.readSpectrumDifferences([a, b, c]));
+            return this.makeLuaTable(`spectrumDiff-${a}-${b}-${c}`, this._dataSource.readSpectrumDifferences([a, b, c]));
         }],
         ["pseudo", (a)=>{
             this._runtimeDataRequired.add(DataExpressionId.makePredefinedPseudoIntensityExpression(a));
-            return this.makeLuaTable(this._dataSource.readPseudoIntensity([a]));
+            return this.makeLuaTable(`pseudo-${a}`, this._dataSource.readPseudoIntensity([a]));
         }],
         ["housekeeping", (a)=>{
             this._runtimeDataRequired.add(DataQueryResult.DataTypeHousekeeping+"-"+a);
-            return this.makeLuaTable(this._dataSource.readHousekeepingData([a]));
+            return this.makeLuaTable(`housekeeping-${a}`, this._dataSource.readHousekeepingData([a]));
         }],
         ["diffractionPeaks", (a,b)=>{
             this._runtimeDataRequired.add(DataQueryResult.DataTypeDiffraction);
-            return this.makeLuaTable(this._dataSource.readDiffractionData([a, b]));
+            return this.makeLuaTable(`diffractionPeaks-${a}-${b}`, this._dataSource.readDiffractionData([a, b]));
         }],
         ["roughness", ()=>{
             this._runtimeDataRequired.add(DataQueryResult.DataTypeRoughness);
-            return this.makeLuaTable(this._dataSource.readRoughnessData([]));
+            return this.makeLuaTable("roughness", this._dataSource.readRoughnessData([]));
         }],
         ["position", (a)=>{
             this._runtimeDataRequired.add(DataQueryResult.DataTypePosition);
-            return this.makeLuaTable(this._dataSource.readPosition([a]));
+            return this.makeLuaTable(`position-${a}`, this._dataSource.readPosition([a]));
         }],
         ["makeMap", (a)=>{
-            return this.makeLuaTable(this._dataSource.makeMap([a]));
+            return this.makeLuaTable(`makeMap-${a}`, this._dataSource.makeMap([a]));
         }],
     ]);
 
@@ -274,7 +272,7 @@ export class LuaDataQuerier
     }
 
     // See: https://github.com/ceifa/wasmoon
-    public runQuery(sourceCode: string, modules: Map<string, string>, dataSource: InterpreterDataSource, cleanupLua: boolean, allowAnyResponse: boolean = false): Observable<DataQueryResult>
+    public runQuery(sourceCode: string, modules: Map<string, string>, dataSource: InterpreterDataSource, cleanupLua: boolean, allowAnyResponse: boolean, recordExpressionInputs: boolean): Observable<DataQueryResult>
     {
         this._execCount++;
         this._dataSource = dataSource;
@@ -285,8 +283,6 @@ export class LuaDataQuerier
         // Run our code in a unique function name for this runner. This is in case there is any possibility of clashing with
         // another Lua runner (there shouldn't be!)
         let exprFuncName = "expr_"+this._id+"_"+this._execCount;
-
-        this._loggedTables = [];
 
         if(!this._luaInit$)
         {
@@ -321,7 +317,7 @@ export class LuaDataQuerier
 
                     // We're inited, now run!
                     let codeParts = this.formatLuaCallable(sourceCode, exprFuncName/*, imports*/);
-                    return this.runQueryInternal(codeParts.join(""), cleanupLua, t0, allowAnyResponse);
+                    return this.runQueryInternal(codeParts.join(""), cleanupLua, t0, allowAnyResponse, recordExpressionInputs);
                 }
             )
         );
@@ -351,7 +347,7 @@ export class LuaDataQuerier
         return result;
     }
 
-    private runQueryInternal(sourceCode: string, cleanupLua: boolean, t0: number, allowAnyResponse: boolean = false): Observable<DataQueryResult>
+    private runQueryInternal(sourceCode: string, cleanupLua: boolean, t0: number, allowAnyResponse: boolean, recordExpressionInputs: boolean): Observable<DataQueryResult>
     {
         // Ensure the list of data required is cleared, from here on we're logging what the expression required to run!
         this._runtimeDataRequired.clear();
@@ -360,16 +356,14 @@ export class LuaDataQuerier
         this._runtimeStdOut = "";
         this._runtimeStdErr = "";
 
+        // If we want to record tables (well, any inputs) that the expression requires to run, remember this
+        this._logTables = recordExpressionInputs;
+        this._loggedTables.clear();
+
         return this.runLuaCode(sourceCode, environment.luaTimeoutMs).pipe(
             map(
                 (result)=>
                 {
-                    // Log the tables
-                    if(this._logTables)
-                    {
-                        this.logTables();
-                    }
-
                     if(result)
                     {
                         // We still want to return non-PMC table values, so we need to check if we got a table back before transforming it
@@ -388,7 +382,7 @@ export class LuaDataQuerier
 
                         //this.dumpLua("Post expression run");
 
-                        return new DataQueryResult(formattedData, isPMCTable, Array.from(this._runtimeDataRequired.keys()), runtimeMs, this._runtimeStdOut, this._runtimeStdErr);
+                        return new DataQueryResult(formattedData, isPMCTable, Array.from(this._runtimeDataRequired.keys()), runtimeMs, this._runtimeStdOut, this._runtimeStdErr, this._loggedTables);
                     }
 
                     throw new Error("Expression: did not return a value");
@@ -666,7 +660,7 @@ end
         return PMCDataValues.makeWithValues(values);
     }
 
-    private makeLuaTable(data: PMCDataValues): any
+    private makeLuaTable(tableSource: string, data: PMCDataValues): any
     {
         let t0 = performance.now();
         let pmcs = [];
@@ -682,7 +676,7 @@ end
         if(this._logTables)
         {
             // Save table for later
-            this._loggedTables.push(luaTable);
+            this._loggedTables.set(tableSource, data);
         }
 
         let t1 = performance.now();
@@ -690,7 +684,7 @@ end
         this._makeLuaTableTime += t1-t0;
         return luaTable;
     }
-
+/*
     private logTables()
     {
         let luaTableText = "allTables = {";
@@ -723,4 +717,5 @@ end
         luaTableText += "}";
         console.log(luaTableText);
     }
+*/
 }

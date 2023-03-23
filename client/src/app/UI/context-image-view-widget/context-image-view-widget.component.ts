@@ -69,7 +69,6 @@ import { ROIService } from "src/app/services/roi.service";
 })
 export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
 {
-    private id = randomString(4);
     private _subs = new Subscription();
     private _modelSubs = new Subscription();
 

@@ -325,6 +325,13 @@ POSSIBILITY OF SUCH DAMAGE.
                 <mat-option [value]="false">PIXLang</mat-option>
             </mat-select>
             <div class="right-btn-group">
+                <icon-button
+                    *ngIf="topEditor.isLua && !topEditor.isModule"
+                    class="export-btn"
+                    title="Export Code"
+                    (onClick)="onExportLuaCode()"
+                    icon="assets/button-icons/export.svg">
+                </icon-button>
                 <push-button
                     *ngIf="hasVisibleModule"
                     class="save-btn"

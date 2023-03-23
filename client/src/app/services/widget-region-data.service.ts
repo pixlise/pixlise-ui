@@ -663,6 +663,11 @@ export class WidgetRegionDataService
         );
     }
 
+    public exportExpressionCode(expr: DataExpression): Observable<Blob>
+    {
+        return this._exprRunnerService.exportExpressionCode(expr, this._quantificationLoaded, this._diffractionService);
+    }
+
     private getPMCsForDatasetId(datasetId: string, dataset: DataSet): Set<number>
     {
         let locIdxs = dataset.getLocationIdxsForSubDataset(datasetId);

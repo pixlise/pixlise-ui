@@ -28,11 +28,15 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Injectable } from "@angular/core";
-import { Observable, of, combineLatest } from "rxjs";
+import { DatePipe } from '@angular/common';
+
+import { Observable, of, combineLatest, from } from "rxjs";
 import { map, concatMap } from "rxjs/operators";
 
+import * as JSZip from "jszip";
+
 import { DataExpressionService } from "./data-expression.service";
-import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
+import { DataModuleService, DataModuleSpecificVersionWire, DataModule } from "src/app/services/data-module.service";
 
 import {
     DiffractionPeakQuerierSource,
@@ -47,6 +51,13 @@ import { DataExpression } from "src/app/models/Expression";
 import { DataQuerier, EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { InterpreterDataSource } from "src/app/expression-language/interpreter-data-source";
 
+
+class LoadedSources
+{
+    constructor(public expressionSrc: string, public modules: Map<string, DataModuleSpecificVersionWire>)
+    {
+    }
+}
 
 @Injectable({
     providedIn: "root"
@@ -92,19 +103,19 @@ export class ExpressionRunnerService
         
         return load$.pipe(
             concatMap(
-                (sources: Map<string, string>)=>
+                (sources: LoadedSources)=>
                 {
                     // We now have the ready-to-go source code, run the query
                     // At this point we should have the expression source and 0 or more modules
-                    let exprSource = sources.get(this._exprKey);
-                    if(!exprSource)
+                    if(!sources.expressionSrc)
                     {
                         throw new Error("loadCodeForExpression did not return expression source code for: "+expression.id);
                     }
-                    sources.delete(this._exprKey);
+
+                    let modSources = this.makeRunnableModules(sources.modules);
 
                     // Pass in the source and module sources separately
-                    return this._querier.runQuery(exprSource, sources, expression.sourceLanguage, dataSource, allowAnyResponse).pipe(
+                    return this._querier.runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, dataSource, allowAnyResponse, false).pipe(
                         map(
                             (queryResult: DataQueryResult)=>
                             {
@@ -125,9 +136,18 @@ export class ExpressionRunnerService
         );
     }
 
-    private _exprKey = ""; // The key name for the expression source code as returned by loadCodeForExpression()
+    private makeRunnableModules(loadedmodules: Map<string, DataModuleSpecificVersionWire>): Map<string, string>
+    {
+        // Build the map required by runQuery. NOTE: here we pass the module name, not the ID!
+        let modSources = new Map<string, string>();
+        for(let [modId, mod] of loadedmodules)
+        {
+            modSources.set(mod.name, mod.version.sourceCode);
+        }
+        return modSources;
+    }
 
-    private loadCodeForExpression(expression: DataExpression): Observable<Map<string, string>>
+    private loadCodeForExpression(expression: DataExpression): Observable<LoadedSources>
     {
         // Filter out crazy cases
         if(expression.moduleReferences.length > 0 && expression.sourceLanguage != EXPR_LANGUAGE_LUA)
@@ -136,7 +156,7 @@ export class ExpressionRunnerService
         }
 
         // If we are a simple loaded expression that doesn't have references, early out!
-        let result = new Map<string, string>([[this._exprKey, expression.sourceCode]]);
+        let result = new LoadedSources(expression.sourceCode, new Map<string, DataModuleSpecificVersionWire>());
         if(expression.sourceCode.length > 0 && expression.moduleReferences.length <= 0)
         {
             return of(result);
@@ -177,7 +197,7 @@ export class ExpressionRunnerService
                         let expr = sources[0] as DataExpression;
 
                         // Use the loaded one
-                        result.set(this._exprKey, expr.sourceCode);
+                        result.expressionSrc = expr.sourceCode;
 
                         // Look at the next ones...
                         firstModuleIdx = 1;
@@ -187,7 +207,7 @@ export class ExpressionRunnerService
                     for(let c = firstModuleIdx; c < sources.length; c++)
                     {
                         let moduleVersion = sources[c] as DataModuleSpecificVersionWire;
-                        result.set(moduleVersion.name, moduleVersion.version.sourceCode);
+                        result.modules.set(moduleVersion.id, moduleVersion);
                     }
 
                     return result;
@@ -216,5 +236,304 @@ export class ExpressionRunnerService
         }
 
         return PMCDataValues.makeWithValues(resultValues);
+    }
+
+    exportExpressionCode(
+        expression: DataExpression,
+        quantSource: QuantifiedDataQuerierSource,
+        diffractionSource: DiffractionPeakQuerierSource,
+        ): Observable<Blob>
+    {
+        if(!this._querier)
+        {
+            this._querier = new DataQuerier();
+        }
+
+        // We need a data source because we'll be executing the expression to record results
+        // which are then saved in separate CSV files. This allows us to export exactly what
+        // goes into an expression as opposed to exporting everything and writing some import
+        // code in Lua that knows how to get the required column
+        let dataSource = new InterpreterDataSource(
+            quantSource,
+            this._datasetService.datasetLoaded, // pseudoSource
+            this._datasetService.datasetLoaded, // housekeepingSource
+            this._datasetService.datasetLoaded, // spectrumSource
+            diffractionSource,
+            this._datasetService.datasetLoaded
+        );
+
+        let loadSrc$ = this.loadCodeForExpression(expression);
+        let builtIns$ = this._moduleService.getBuiltInModules(true);
+        
+        return combineLatest([loadSrc$, builtIns$]).pipe(
+            concatMap(
+                (allSources)=>
+                {
+                    let sources: LoadedSources = allSources[0];
+                    let builtInModules: DataModule[] = allSources[1];
+
+                    let zip = new JSZip();
+
+                    // Built-in modules
+                    for(let mod of builtInModules)
+                    {
+                        let ver = mod.versions.get(mod.name);
+                        if(!ver)
+                        {
+                            throw new Error("Failed to get source code for built-in module: "+mod.name);
+                        }
+                        zip.file(mod.name+".lua", this.makeExportableModule(mod.name, "", "", ver.sourceCode));
+                    }
+
+                    // Each module referenced
+                    for(let modRef of expression.moduleReferences)
+                    {
+                        let mod = sources.modules.get(modRef.moduleID);
+                        if(!mod)
+                        {
+                            throw new Error("Failed to get source code for module: "+modRef.moduleID+"-v"+modRef.version);
+                        }
+
+                        zip.file(mod.name+"-v"+this.makeSourceCompatibleVersionString(mod.version.version)+".lua", this.makeExportableModule(
+                            mod.name, mod.version.version, mod.id, mod.version.sourceCode
+                        ));
+                    }
+
+                    // Exporting: The source of the expression
+                    if(!sources.expressionSrc)
+                    {
+                        throw new Error("Failed to get source code for expression: "+expression.name);
+                    }
+
+                    zip.file(expression.name+".lua", this.makeExportableExpression(expression, sources));
+
+                    // The main file
+                    zip.file("Main.lua", this.makeExportableMainFile(expression.name));
+
+                    // The readme file
+                    zip.file("README.md", this.makeReadme(expression));
+
+                    // Now execute the expression to record all the data it requires
+                    let modSources = this.makeRunnableModules(sources.modules);
+
+                    // Pass in the source and module sources separately
+                    return this._querier.runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, dataSource, true, true).pipe(
+                        concatMap(
+                            (queryResult: DataQueryResult)=>
+                            {
+                                // NOTE: we save the final result in a CSV so it can be diffed against what is executed by running our exported
+                                // source code outside PIXLISE.
+                                // NOTE2: we do save the required data that the expression requested to individual CSV files. Write those to zip file
+                                for(let [name, data] of queryResult.recordedExpressionInputs)
+                                {
+                                    zip.folder("input-data").file(name+".csv", this.makeCSVData(data));
+                                }
+
+                                if(queryResult.isPMCTable)
+                                {
+                                    zip.folder("output-data").file("PIXLISE_output.csv", this.makeCSVData(queryResult.resultValues));
+                                }
+
+                                // And return the ready to be saved zip
+                                return from(zip.generateAsync({type: "blob"})) as Observable<Blob>;
+                            }
+                        )
+                    );
+                }
+            )
+        );
+    }
+
+    private makeReadme(expr: DataExpression): string
+    {
+        let creator = expr.creator?.name || "unknown";
+
+        const datepipe: DatePipe = new DatePipe('en-US');
+        let createTime = datepipe.transform(expr.createUnixTimeSec*1000, 'dd-MMM-YYYY HH:mm:ss');
+        let modTime = datepipe.transform(expr.modUnixTimeSec*1000, 'dd-MMM-YYYY HH:mm:ss');
+        let nowTime = datepipe.transform(Date.now(), 'dd-MMM-YYYY HH:mm:ss');
+
+        return `# PIXLISE Expression: ${expr.name}
+
+## What is this?
+
+This is an export of the source code for a PIXLISE expression written in the Lua
+programming language. You should be able to execute this by running your lua
+interpreter on the Main.lua function included in this directory.
+
+## Where did it come from?
+It was exported from PIXLISE, likely at www.pixlise.org.
+
+### Expression details:
+- Name: ${expr.name}
+- Programming Language: ${expr.sourceLanguage}
+- Creator: ${creator}
+- Created Time: ${createTime}
+- Modified Time: ${modTime}
+- Exported Time: ${nowTime}
+- PIXLISE id: ${expr.id}
+
+## How to run it
+Make sure you have a Lua interpreter installed and available in your terminal
+or command prompt window. At time of writing, we are using Lua 5.4 and have
+been able to execute this on Windows using the lua.exe downloaded from:
+
+### Windows download
+https://sourceforge.net/projects/luabinaries/files/5.4.2/Tools%20Executables/lua-5.4.2_Win64_bin.zip/download
+
+### Linux download
+https://sourceforge.net/projects/luabinaries/files/5.4.2/Tools%20Executables/lua-5.4.2_Linux54_64_bin.tar.gz/download
+
+### Mac installation
+\`brew install lua\` if you use homebrew (https://brew.sh), otherwise you may have to build from source.
+
+To run this expression, for example on a Windows machine where the lua
+executable is called lua54.exe:
+\`lua54 Main.lua\`
+
+This will not show any output because by default we run the expression and it
+returns the map generated, but your terminal doesn't do anything with it. To
+do something more sustancial with the output see the comments at the bottom of
+Main.lua showing how to access the returned value and do something with it!
+
+## Export contents
+
+The files exported are:
+- \`Main.lua\` - To run the expression
+- \`PixliseRuntime.lua\` - Emulates functions available in PIXLISE Lua runtime, but
+  re-implemented to read data from CSV files included in ./input-data
+- All the built-in modules that are included in the runtime provided to any
+  expression in PIXLISE, eg Map
+- \`${expr.name}.lua\` - The source code of the expression
+- All the user-defined modules "required" by the expression
+- \`./input-data/\` - Contains all CSV files required to run this expression, loaded
+  by code in PixliseRuntime.lua
+- \`./output-data/\` - Contains last output from PIXLISE (NOTE: May not exist if
+  the expression did not generated valid output)
+`
+    }
+
+    // Passing src separately because it may have just been looked up, could still be empty in expr...
+    private makeExportableExpression(expr: DataExpression, sources: LoadedSources): string
+    {
+        let creator = expr.creator?.name || "unknown";
+
+        const datepipe: DatePipe = new DatePipe('en-US');
+        let createTime = datepipe.transform(expr.createUnixTimeSec*1000, 'dd-MMM-YYYY HH:mm:ss');
+        let modTime = datepipe.transform(expr.modUnixTimeSec*1000, 'dd-MMM-YYYY HH:mm:ss');
+        let nowTime = datepipe.transform(Date.now(), 'dd-MMM-YYYY HH:mm:ss');
+
+        let result = `-- Expression exported from PIXLISE (www.pixlise.org)
+-- Details:
+--     Expression name: ${expr.name}
+--     Language: ${expr.sourceLanguage}
+--     Creator: ${creator}
+--     Created Time: ${createTime}
+--     Modified Time: ${modTime}
+--     Exported Time: ${nowTime}
+--     PIXLISE id: ${expr.id}
+`;
+        if(expr.moduleReferences.length > 0)
+        {
+            result += "\n-- User module imports:\n";
+        }
+
+        // We need to put in the import statements
+        for(let ref of expr.moduleReferences)
+        {
+            let mod = sources.modules.get(ref.moduleID);
+            if(mod)
+            {
+                result += "local "+mod.name+" = require(\""+mod.name+"-v"+this.makeSourceCompatibleVersionString(mod.version.version)+"\")\n";
+            }
+        }
+
+        result += "\n-- The expression code starts here:\n";
+
+        result += sources.expressionSrc;
+
+        result += "\n";
+        return result;
+    }
+
+    private makeExportableModule(modName: string, modVersion: string, modID: string, modSource: string): string
+    {
+        // For now, we just put in some comments at the start
+        let result = `-- Module exported from PIXLISE (www.pixlise.org)
+--     Module name: ${modName}
+`
+        if(modVersion)
+        {
+            result += `--     Version: ${modVersion}
+`;
+        }
+
+        if(modID)
+        {
+            result += `--     PIXLISE id: ${modID}
+`;
+        }
+
+        result += modSource;
+        return result;
+    }
+
+    private makeExportableMainFile(exprName: string): string
+    {
+        let builtInRequireLines = "";
+
+        let builtInMods = DataModuleService.getBuiltInModuleNames();
+        for(let builtInMod of builtInMods)
+        {
+            builtInRequireLines += `${builtInMod} = require("${builtInMod}")\n`;
+        }
+
+        return `-- The main file to execute when running a PIXLISE-exported expression
+
+-- Allow loading local modules
+package.path = package.path..";../?.lua"
+
+-- PIXLISE runtime emulation:
+require("PixliseRuntime")
+
+-- Built-in module imports:
+${builtInRequireLines}
+
+-- We define a function around the expression code, so we can execute it at will and store its return value as needed
+function TheExpression()
+
+-- Include the actual expression
+return require("${exprName}")
+
+end
+
+-- Run the expression
+TheExpression()
+-- NOTE: This could easily be modified to do something with the value, for example:
+-- print(TheExpression()[2][1]) may return the value for the first PMC returned
+-- Outputting as CSV:
+-- writeCSV("output.csv", TheExpression())
+`;
+    }
+
+    private makeCSVData(pmcData: PMCDataValues): string
+    {
+        let result = "";
+
+        for(let item of pmcData.values)
+        {
+            if(result.length > 0)
+            {
+                result += "\n";
+            }
+
+            result += item.pmc+","+item.value
+        }
+        return result;
+    }
+
+    private makeSourceCompatibleVersionString(version: string): string
+    {
+        return version.replace(/\./g, "_");
     }
 }

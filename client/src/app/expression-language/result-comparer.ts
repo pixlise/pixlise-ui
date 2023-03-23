@@ -175,7 +175,7 @@ export class ResultComparer
 
         try
         {
-            luaResult = this._interpretLua.runQuery(expression, modules, dataSource, false);
+            luaResult = this._interpretLua.runQuery(expression, modules, dataSource, false, false, false);
         }
         catch(err)
         {
