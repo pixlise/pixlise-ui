@@ -197,6 +197,11 @@ export class LayerSettingsComponent implements OnInit
         return this.customOptions?.sideColour || "";
     }
 
+    get tagType(): string
+    {
+        return this.customOptions?.tagType || "expression";
+    }
+
     get showSettingsButton(): boolean
     {
         if(!this.showSettings)

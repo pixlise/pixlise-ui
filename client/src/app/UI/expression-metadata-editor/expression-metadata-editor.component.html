@@ -72,7 +72,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
 </ng-template>
 
-<widget-settings-menu [settingsDialog]="metadataMenu">
+<widget-settings-menu [settingsDialog]="metadataMenu" (onClose)="onClose()">
     <push-button
         class="metadata-btn"
         buttonStyle="normal"

@@ -467,7 +467,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             iconTooltip = isUpToDate ? `This ${nameOfLayer} is saved` : `This ${nameOfLayer} has unsaved changes`;
         }
 
-        let newLayerConfig = new LiveLayerConfig(id, icon, iconTooltip, isModule ? "#FFFF8D" : "");
+        let newLayerConfig = new LiveLayerConfig(id, icon, iconTooltip, isModule ? "#FFFF8D" : "", isModule ? "module" : "expression");
 
         let existingIndex = this.sidePanelLayerConfigs.findIndex((config) => config.layerID === id);
         if(existingIndex >= 0)
@@ -721,6 +721,11 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             this.setTopEditorActive();
             this.updateCurrentlyOpenList(false);
         }
+    }
+
+    onUpdateMetadata(): void
+    {
+        this.updateCurrentlyOpenList(this.isSplitScreen);
     }
 
     updateCurrentlyOpenList(includeBottomExpression: boolean = false): void

@@ -53,6 +53,8 @@ export class ExpressionMetadataEditorComponent implements OnInit
     @Output() changeDescription: EventEmitter<string> = new EventEmitter<string>();
     @Output() changeTags: EventEmitter<string[]> = new EventEmitter<string[]>();
 
+    @Output() updateMetadata: EventEmitter<void> = new EventEmitter<void>();
+
     private _fetched: boolean = false;
     private _releaseNotes: MajorGroupedRelease[] = [];
 
@@ -70,6 +72,11 @@ export class ExpressionMetadataEditorComponent implements OnInit
         {
             this.groupReleaseNotes();
         });
+    }
+
+    onClose(): void
+    {
+        this.updateMetadata.emit();
     }
 
     get name(): string
