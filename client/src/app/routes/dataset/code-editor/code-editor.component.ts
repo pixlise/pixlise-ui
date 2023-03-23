@@ -75,7 +75,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
     private _previewComponent = null;
     private _datasetID: string;
-    private _expressionID: string;
+    private _expressionID: string = "unsaved-new-expression";
 
     public isSidebarOpen = false;
     // What we display in the virtual-scroll capable list
