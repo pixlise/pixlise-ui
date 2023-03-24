@@ -710,7 +710,7 @@ export class VariogramWidgetComponent implements OnInit
         {
             // Start off with some reasonable defaults
             this._variogramModel.maxDistance = (this.distanceSliderMin+this.distanceSliderMax)/2;
-            this._variogramModel.binCount = (this.binSliderMin+this.binSliderMax)/2;
+            this._variogramModel.binCount = Math.floor((this.binSliderMin+this.binSliderMax)/2);
         }
     }
 }
