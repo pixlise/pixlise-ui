@@ -262,13 +262,13 @@ export class QuantificationTableComponent implements OnInit, OnDestroy
                     let weightTotal = 0;
                     let weightAvg = 0;
 
-                    if(!data.values || !data.values.values)
-                    {
-                        // We've seen this in Sentry a few times and it's not obvious why, so alert about it
-                        SentryHelper.logMsg(false, "Table data.values null for region: "+data.query.roiId+", elem: "+formulaeQueried[c]+", for quant: "+(this._widgetDataService.quantificationLoaded ? this._widgetDataService.quantificationLoaded.quantId : "no-quant"));
-                    }
-
-                    if(data.values && data.values.values && data.values.values.length > 0)
+                    // NOTE: We were often getting crashes where data.values.values was null, turned out it was because
+                    //       user switched between A/B vs Combined quant and we were called to regenerate for old quant
+                    //       before regen later for the new quant, so all our expressions failed the first time because
+                    //       of detector incompatibility. This was causing sentry errors, which should now go away due
+                    //       to checking for data.error here. In future, the order of subscriptions updated for a quant
+                    //       switch will need to be looked at.
+                    if(!data.error && data.values)
                     {
                         for(let value of data.values.values)
                         {
