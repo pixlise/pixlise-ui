@@ -50,6 +50,7 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { DataExpression } from "src/app/models/Expression";
 import { DataQuerier, EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { InterpreterDataSource } from "src/app/expression-language/interpreter-data-source";
+import { expression } from "mathjs";
 
 
 class LoadedSources
@@ -357,9 +358,9 @@ export class ExpressionRunnerService
 
 ## What is this?
 
-This is an export of the source code for a PIXLISE expression written in the Lua
-programming language. You should be able to execute this by running your lua
-interpreter on the Main.lua function included in this directory.
+This is an export of the source code for a PIXLISE expression written in the
+Lua programming language. You should be able to execute this by running your
+Lua interpreter on the Main.lua function included in this directory.
 
 ## Where did it come from?
 It was exported from PIXLISE, likely at www.pixlise.org.
@@ -391,10 +392,10 @@ To run this expression, for example on a Windows machine where the lua
 executable is called lua54.exe:
 \`lua54 Main.lua\`
 
-This will not show any output because by default we run the expression and it
-returns the map generated, but your terminal doesn't do anything with it. To
-do something more sustancial with the output see the comments at the bottom of
-Main.lua showing how to access the returned value and do something with it!
+If the expression executes successfully and returns map data, it will be printed
+to stdout in CSV format (as rows of PMCs,values). To do something more substancial
+with the output see the comments at the bottom of Main.lua showing how to access
+the returned value and do something with it!
 
 ## Export contents
 
@@ -499,7 +500,8 @@ require("PixliseRuntime")
 -- Built-in module imports:
 ${builtInRequireLines}
 
--- We define a function around the expression code, so we can execute it at will and store its return value as needed
+-- We define a function around the expression code, so we can execute it at will
+-- and store its return value as needed
 function TheExpression()
 
 -- Include the actual expression
@@ -507,10 +509,14 @@ return require("${exprName}")
 
 end
 
--- Run the expression
-TheExpression()
+-- Run the expression, write the results to stdout as CSV
+local r = TheExpression()
+for idx, mapPMC in ipairs(r[1]) do
+    print(mapPMC..","..r[2][idx])
+end
+
 -- NOTE: This could easily be modified to do something with the value, for example:
--- print(TheExpression()[2][1]) may return the value for the first PMC returned
+-- Map.getPMCValue(TheExpression(), 4) would return the value for PMC 4
 -- Outputting as CSV:
 -- writeCSV("output.csv", TheExpression())
 `;
