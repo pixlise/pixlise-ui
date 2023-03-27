@@ -475,6 +475,12 @@ export class LayerManager
         }
     }
 
+    setSingleLayerVisible(id: string): void
+    {
+        this.regenerateLayers("setSingleLayerVisible");
+        this.setLayerVisibility(id, 1, true, []);
+    }
+
     private finishSetLayerVisibility(opacityOnly: boolean, idsToHide: string[])
     {
         // If there are any to hide, do that in one hit here
