@@ -57,7 +57,7 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
-import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
+import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
 import EditorConfig from "./editor-config";
 
@@ -187,6 +187,39 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
         combineLatest([this._expressionService.expressionsUpdated$, this._moduleService.modulesUpdated$]).subscribe(() =>
         {
+            this.sidebarTopSections["currently-open"].items.forEach((item, i) =>
+            {
+                if(!this._expressionService.getExpression(item.id) && !this._newExpression)
+                {
+                    this.sidebarTopSections["currently-open"].items.splice(i, 1);
+                    if(this.topEditor.expression.id === item.id)
+                    {
+                        if(this.topEditor.isExpressionSaved)
+                        {
+                            this.forceNavigateToNew("expression");
+                        }
+                        else
+                        {
+                            let shouldClose = confirm("Your currently open expression has been deleted! Do you want to close it?");
+                            if(shouldClose)
+                            {
+                                this.forceNavigateToNew("expression");
+                            }
+                            else
+                            {
+                                this.topEditor.expression.id = "unsaved-new-expression";
+                                this._expressionID = "unsaved-new-expression";
+                                this._newExpression = true;
+                                this.navigateToNew("expression");
+                            }
+                        }
+                    }
+                    else if(this.bottomEditor.expression.id === item.id)
+                    {
+                        this.isSplitScreen = false;
+                    }
+                }
+            });
             if(this._fetchedExpression)
             {
                 return;
@@ -677,9 +710,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             return;
         }
 
-        this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=>
-            this._router.navigate(["dataset", this._datasetID, "code-editor", "new-expression"])
-        );
+        this.forceNavigateToNew("expression");
     }
 
     onAddModule(): void
@@ -690,9 +721,17 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             return;
         }
 
-        this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=>
-            this._router.navigate(["dataset", this._datasetID, "code-editor", "new-module"])
-        );
+        this.forceNavigateToNew("module");
+    }
+
+    navigateToNew(type: string = "expression"): void
+    {
+        this._router.navigate(["dataset", this._datasetID, "code-editor", `new-${type}`]);
+    }
+
+    forceNavigateToNew(type: string = "expression"): void
+    {
+        this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=> this.navigateToNew(type));
     }
 
     onToggleSidebar(): void
@@ -760,7 +799,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         let topChanged = this.updateSidePanelLayer(this.topEditor.expression.id, this.topEditor.isExpressionSaved, this.topEditor.isSharedByOtherUser, this.topEditor.isModule);
         isSidePanelChanged = isSidePanelChanged || topChanged;
 
-        if(includeBottomExpression)
+        if(includeBottomExpression && this.bottomEditor?.expression?.id)
         {
             let bottomChanged = this.updateSidePanelLayer(this.bottomEditor.expression.id, this.bottomEditor.isExpressionSaved, this.bottomEditor.isSharedByOtherUser, this.bottomEditor.isModule);
             isSidePanelChanged = isSidePanelChanged || bottomChanged;
@@ -1033,7 +1072,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                         editor.isCodeChanged = false;
                         this.displayExpressionTitle = `Unsaved ${expression.name}`;
                         this._expressionService.cache(this.previewID, expression, this.displayExpressionTitle);
-                        console.log("CACHED", this._expressionService)
                     }
                 },
                 (err)=>
@@ -1368,7 +1406,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
         -- Modules must return themselves as their last line
         return ${moduleName}
-        `.replace(/ {8,}/g, "").trim();
+        `.replace(/\n {8,8}/g, "\n").trim();
         this.onSave(true);
     }
 
@@ -1401,6 +1439,11 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                         return;
                     }
                     this._newExpression = false;
+
+                    if(!(newModule instanceof DataModuleSpecificVersionWire))
+                    {
+                        newModule = this._moduleService.readSpecificVersionModule(newModule);
+                    }
 
                     // Treat module as expression so we can visualize it in the same way
                     let convertedModule = newModule.convertToExpression();
