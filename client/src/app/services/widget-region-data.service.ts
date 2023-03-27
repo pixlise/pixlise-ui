@@ -549,7 +549,16 @@ export class WidgetRegionDataService
                             (err)=>
                             {
                                 let errorMsg = httpErrorToString(err, "WidgetRegionDataService.getData catchError");
-                                SentryHelper.logMsg(true, errorMsg);
+
+                                // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
+                                if(
+                                    errorMsg.indexOf("The currently loaded quantification does not contain data for detector") < 0 &&
+                                    errorMsg.indexOf("The currently loaded quantification does not contain column") < 0
+                                    )
+                                {
+                                    SentryHelper.logMsg(true, errorMsg);
+                                }
+
                                 return of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr, region, query));
                             }
                         )
