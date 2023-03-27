@@ -275,6 +275,7 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
                     {
                         // We can only show one visible layer on the context image, so we just show the first one
                         this.mdl.layerManager.setSingleLayerVisible(validPreviewExpressions[0]);
+                        this.reDraw();
                     }
                 }
                 this.mdl.regionManager.setDataset(data[0] as DataSet);

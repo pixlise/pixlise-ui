@@ -446,7 +446,7 @@ export class LayerManager
             let prevOpacity = layer.opacity;
             let prevVis = layer.visible;
 
-            if(layer.visible != visible)
+            if(layer.visible !== visible)
             {
                 opacityOnly = false;
             }
@@ -478,7 +478,8 @@ export class LayerManager
     setSingleLayerVisible(id: string): void
     {
         this.regenerateLayers("setSingleLayerVisible");
-        this.setLayerVisibility(id, 1, true, []);
+        let otherVisibleIDs = this.getVisibleLayers().map((layer) => layer.id).filter((layerID) => layerID !== id);
+        this.setLayerVisibility(id, 1, true, otherVisibleIDs);
     }
 
     private finishSetLayerVisibility(opacityOnly: boolean, idsToHide: string[])
@@ -520,17 +521,14 @@ export class LayerManager
         this.publishLayerChange(true, "setLayerDisplayValueShading");
     }
 
+    getVisibleLayers(): LocationDataLayer[]
+    {
+        return this._layers.getLayerArray().filter((layer: LocationDataLayer) => layer.visible);
+    }
+
     visibleLayerCount(): number
     {
-        let count = 0;
-        for(let layer of this._layers.getLayerArray())
-        {
-            if(layer.visible)
-            {
-                count++;
-            }
-        }
-        return count;
+        return this.getVisibleLayers().length;
     }
 
     getLayerProperties(id: string): LocationDataLayerProperties

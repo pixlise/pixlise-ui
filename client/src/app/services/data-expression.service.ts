@@ -578,7 +578,7 @@ export class DataExpressionService
             false,
             null,
             -1,
-            new Date().getUTCSeconds(),
+            Math.round(Date.now() / 1000),
             expr.tags || [],
             expr.moduleReferences,
             expr.recentExecStats

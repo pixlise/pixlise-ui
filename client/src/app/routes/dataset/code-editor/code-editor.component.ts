@@ -1033,6 +1033,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                         editor.isCodeChanged = false;
                         this.displayExpressionTitle = `Unsaved ${expression.name}`;
                         this._expressionService.cache(this.previewID, expression, this.displayExpressionTitle);
+                        console.log("CACHED", this._expressionService)
                     }
                 },
                 (err)=>
