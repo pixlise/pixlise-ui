@@ -167,6 +167,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [isSidePanel]="isSidePanel"
                     [isSplitScreen]="isSplitScreen"
                     (openSplitScreen)="onOpenSplitScreen($event)"
+                    (onDeleteEvent)="onDeleteEvent($event)"
                     [customOptions]="getCustomLayerConfig(item.content?.layer?.id)"
                 >
                 </context-layer-settings>

@@ -187,8 +187,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
         combineLatest([this._expressionService.expressionsUpdated$, this._moduleService.modulesUpdated$]).subscribe(() =>
         {
-            this.syncCurrentlyOpenSection();
-
             if(this._fetchedExpression)
             {
                 return;
@@ -781,6 +779,22 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             this.setTopEditorActive();
             this.updateCurrentlyOpenList(false);
         }
+    }
+
+    onDeleteExpression(id: string): void
+    {
+        this._expressionService.del(id).subscribe(
+            ()=>
+            {
+                this.syncCurrentlyOpenSection();
+                console.log(`Deleted expression: ${id}`);
+            },
+            (err)=>
+            {
+                console.error(`Failed to delete expression: ${id}`, err);
+                alert("Failed to delete data expression!");
+            }
+        );
     }
 
     onUpdateMetadata(): void

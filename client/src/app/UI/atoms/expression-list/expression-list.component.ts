@@ -101,6 +101,7 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     @Output() onLayerImmediateSelection = new EventEmitter();
     @Output() colourChange = new EventEmitter();
     @Output() openSplitScreen = new EventEmitter();
+    @Output() onDelete = new EventEmitter();
 
     stickyItemHeaderName: string = "";
     stickyItem: LayerViewItem = null;
@@ -320,6 +321,11 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
         }
 
         return activeHeader;
+    }
+
+    onDeleteEvent(id: string): void
+    {
+        this.onDelete.emit(id);
     }
 
     onScroll(event): void

@@ -147,6 +147,7 @@ export class LayerSettingsComponent implements OnInit
     @Output() onLayerImmediateSelection = new EventEmitter();
     @Output() colourChange = new EventEmitter();
     @Output() openSplitScreen = new EventEmitter();
+    @Output() onDeleteEvent = new EventEmitter();
 
     private _isPureElement: boolean = false;
     private _expressionElement: string = "";
@@ -424,16 +425,23 @@ export class LayerSettingsComponent implements OnInit
     {
         if(confirm("Are you sure you want to delete this expression?"))
         {
-            this._exprService.del(this.layerInfo.layer.id).subscribe(
-                ()=>
-                {
-                    console.log("Deleted data expression: "+this.layerInfo.layer.expressionID);
-                },
-                (err)=>
-                {
-                    alert("Failed to delete data expression: "+this.layerInfo.layer.expressionID+" named: "+this.layerInfo.layer.name);
-                }
-            );
+            if(this.isSidePanel)
+            {
+                this.onDeleteEvent.emit(this.layerInfo.layer.id);
+            }
+            else
+            {
+                this._exprService.del(this.layerInfo.layer.id).subscribe(
+                    ()=>
+                    {
+                        console.log("Deleted data expression: "+this.layerInfo.layer.expressionID);
+                    },
+                    (err)=>
+                    {
+                        alert("Failed to delete data expression: "+this.layerInfo.layer.expressionID+" named: "+this.layerInfo.layer.name);
+                    }
+                );
+            }
         }
     }
 
