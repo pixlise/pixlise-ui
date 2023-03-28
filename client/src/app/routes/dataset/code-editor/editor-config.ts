@@ -82,6 +82,11 @@ class EditorConfig
         }
     }
 
+    get isBuiltIn(): boolean
+    {
+        return this.expression?.id.startsWith("builtin-");
+    }
+
     get editable(): boolean
     {
         return this.editMode && !this.isSharedByOtherUser;

@@ -98,7 +98,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 *ngIf="layerButton === 'showSettingsButton'"
                 #tooltip="matTooltip"
                 matTooltip="Open {{isModule ? 'module' : 'expression'}}"
-                icon="{{isPredefined ? 'assets/button-icons/gear.svg' : (isSharedByOtherUser) ? 'assets/button-icons/code.svg' : isSidePanel ? 'assets/button-icons/layout-single-view.svg' : 'assets/button-icons/edit.svg'}}"
+                icon="{{isPredefined ? 'assets/button-icons/gear.svg' : isSidePanel ? 'assets/button-icons/layout-single-view.svg' : isSharedByOtherUser ? 'assets/button-icons/code.svg' : 'assets/button-icons/edit.svg'}}"
                 (click)="onSettings($event)">
             </icon-button>
             <icon-button
@@ -121,7 +121,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div 
     fxLayout="column"
-    class="setting-row {{isCurrentlyOpen || isInstalledModule ? 'open-row' : ''}} {{isModule ? 'module' : 'expression'}}"
+    class="setting-row {{isCurrentlyOpen || isInstalledModule ? 'open-row' : ''}} {{isModule && !isBuiltIn ? 'module' : ''}} {{isBuiltIn ? 'built-in' : ''}}"
     [ngClass]="{'setting-row-visible': visible}"
     [ngStyle]="customSideColour ? {'border-left': '2px solid ' + customSideColour} : {}"
 >
@@ -132,6 +132,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 #tooltip="matTooltip"
                 [matTooltip]="tooltipText"
                 [ngClass]='{"incompatible": incompatibleWithQuant}'
+                [ngStyle]="{'min-width': minLabelTextWidth}"
             >{{labelToShow}}</div>
             <div
                 *ngIf="customIcon"
@@ -238,7 +239,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     *ngIf="layerButton === 'showSettingsButton'"
                     #tooltip="matTooltip"
                     matTooltip="{{isSharedByOtherUser || isPredefined ? 'Show' : 'Open' }} {{isModule ? 'module' : 'expression'}}"
-                    icon="{{isPredefined ? 'assets/button-icons/gear.svg' : (isSharedByOtherUser) ? 'assets/button-icons/code.svg' : isSidePanel ? 'assets/button-icons/layout-single-view.svg' : 'assets/button-icons/edit.svg'}}"
+                    icon="{{isPredefined ? 'assets/button-icons/gear.svg' : isSidePanel ? 'assets/button-icons/layout-single-view.svg' : isSharedByOtherUser ? 'assets/button-icons/code.svg' : 'assets/button-icons/edit.svg'}}"
                     (click)="onSettings($event)">
                 </icon-button>
                 <icon-button

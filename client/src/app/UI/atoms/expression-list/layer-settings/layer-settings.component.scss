@@ -110,7 +110,6 @@ input {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        min-width: 10ch;
     }
 
     .obj-creator {
@@ -127,6 +126,10 @@ input {
 
 .module {
     border-left: 2px solid #FFFF8D;
+}
+
+.built-in {
+    border-left: 2px solid #91BFDB;   
 }
 
 .custom-icon {

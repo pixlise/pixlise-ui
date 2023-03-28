@@ -272,7 +272,7 @@ export class DataModuleService
         let allMods = [...DataModuleService._builtInModuleNames, ...DataModuleService._exportedBuiltInModuleNames];
         for(let mod of allMods)
         {
-            result.set(mod,
+            result.set(`builtin-${mod}`,
                 from(
                     fetch("assets/lua/"+mod+".lua")
                 ).pipe(
@@ -314,13 +314,32 @@ export class DataModuleService
         this.http.get<object>(apiURL, makeHeaders()).subscribe(
             (resp: object)=>
             {
-                this.processReceivedList(resp);
-                this._loadingSvc.remove(loadID);
+                // Once we receive the list of modules, we need to fetch the built-in modules and add them in
+                this.getBuiltInModules().subscribe(
+                    (builtInModules)=>
+                    {   
+                        builtInModules.forEach((module)=>
+                        {
+                            resp[module.id] = module;
+                            resp[module.id].versions = [module.versions.get("0.0.0")];
+                        });
+
+                        this.processReceivedList(resp);
+                        this._loadingSvc.remove(loadID);
+                    },
+                    (err)=>
+                    {
+                        this.processReceivedList(resp);
+                        this._loadingSvc.remove(loadID);
+
+                        console.error("Failed to refresh built-in modules!", err);
+                    }
+                );
             },
             (err)=>
             {
                 this._loadingSvc.remove(loadID);
-                console.error("Failed to refresh data expressions!");
+                console.error("Failed to refresh data expressions!", err);
             }
         );
     }
@@ -485,26 +504,47 @@ export class DataModuleService
             return of(existingItem);
         }
 
-        // Don't have it, query from API
-        let loadID = this._loadingSvc.add("Getting module: "+moduleId+"...");
-        let apiURL = APIPaths.getWithHost(APIPaths.api_data_module+"/"+moduleId+"/"+version);
-        return this.http.get<object>(apiURL, makeHeaders()).pipe(
-            map((m: object)=>
-            {
-                this._loadingSvc.remove(loadID);
+        if(moduleId.startsWith("builtin-"))
+        {
+            return this.getBuiltInModule(moduleId).pipe(
+                map((module) =>
+                {
+                    let specificVersion = new DataModuleSpecificVersionWire(
+                        module.id,
+                        module.name,
+                        module.comments,
+                        module.origin,
+                        module.versions.get("0.0.0")
+                    );
+                    this._modules.ensureModuleVersionExists(specificVersion);
 
-                let recvd = this.readSpecificVersionModule(m);
-                // Overwrite whatever we have cached
-                this._modules.ensureModuleVersionExists(recvd);
-                return recvd;
-            }),
-            catchError((err)=>
-            {
-                // Make sure we hide our loading display...
-                this._loadingSvc.remove(loadID);
-                throw err;
-            })
-        );
+                    return specificVersion;
+                })
+            );
+        }
+        else
+        {
+            // Don't have it, query from API
+            let loadID = this._loadingSvc.add("Getting module: "+moduleId+"...");
+            let apiURL = APIPaths.getWithHost(APIPaths.api_data_module+"/"+moduleId+"/"+version);
+            return this.http.get<object>(apiURL, makeHeaders()).pipe(
+                map((m: object)=>
+                {
+                    this._loadingSvc.remove(loadID);
+    
+                    let recvd = this.readSpecificVersionModule(m);
+                    // Overwrite whatever we have cached
+                    this._modules.ensureModuleVersionExists(recvd);
+                    return recvd;
+                }),
+                catchError((err)=>
+                {
+                    // Make sure we hide our loading display...
+                    this._loadingSvc.remove(loadID);
+                    throw err;
+                })
+            );
+        }
     }
 
     getSourceDataModule(moduleId: string): DataModule
@@ -539,6 +579,11 @@ export class DataModuleService
     getLatestModuleVersion(moduleId: string): Observable<DataModuleSpecificVersionWire>
     {
         let latestVersion = this.getLatestCachedModuleVersion(moduleId);
+        if(!latestVersion)
+        {
+            return of(null);
+        }
+
         return this.getModule(moduleId, latestVersion.version);
     }
 
@@ -557,10 +602,39 @@ export class DataModuleService
 
     static getBuiltInModuleSource(name: string): Observable<string>
     {
-        return DataModuleService._builtInModules.get(name);
+        let cachedModule = DataModuleService._builtInModules.get(name);
+        if(cachedModule)
+        {
+            return cachedModule;
+        }
+        else
+        {
+            return DataModuleService.getBuiltInModuleSource(`builtin-${name}`);
+        }
     }
 
-    getBuiltInModules(includeExported: boolean): Observable<DataModule[]>
+    getBuiltInModule(id: string): Observable<DataModule>
+    {
+        return DataModuleService.getBuiltInModuleSource(id).pipe(
+            map(sourceCode =>
+            {
+                let moduleName = id.replace("builtin-", "");
+
+                return new DataModule(
+                    id,
+                    moduleName,
+                    `Built-in module: ${moduleName}`, 
+                    new APIObjectOrigin(true, new ObjectCreator("BUILTIN", "builtin"), 0, 0),
+                    new Map<string, DataModuleVersionSourceWire>([
+                        ["0.0.0", new DataModuleVersionSourceWire("0.0.0", [], "", 0, sourceCode)]
+                    ])
+                );
+
+            })
+        );
+    }
+
+    getBuiltInModules(includeExported: boolean = false): Observable<DataModule[]>
     {
         let modules = [...DataModuleService._builtInModuleNames];
         if(includeExported)
@@ -576,23 +650,28 @@ export class DataModuleService
 
         return combineLatest(waitFor$).pipe(
             map(
-                (items)=>
+                (builtInModules)=>
                 {
                     let result: DataModule[] = [];
-
-                    for(let c = 0; c < items.length; c++)
+                    builtInModules.forEach((moduleSourceCode, i) => 
                     {
-                        let item = items[c] as string;
-                        let module = modules[c];
+                        let sourceCode = String(moduleSourceCode);
 
-                        result.push(
-                            new DataModule(module, module, "Built-in module "+module, null,
-                                new Map<string, DataModuleVersionSourceWire>([
-                                    [module, new DataModuleVersionSourceWire("0.0.0", [], "", 0, item)]
-                                ])
-                            )
+                        let moduleName = modules[i];
+                        let moduleId = `builtin-${moduleName}`;
+
+                        let builtInModule = new DataModule(
+                            moduleId,
+                            moduleName,
+                            `Built-in module: ${moduleName}`,
+                            new APIObjectOrigin(true, new ObjectCreator("Built-In", "builtin"), 0, 0),
+                            new Map<string, DataModuleVersionSourceWire>([
+                                ["0.0.0", new DataModuleVersionSourceWire("0.0.0", [], "", 0, sourceCode)]
+                            ])
                         );
-                    }
+
+                        result.push(builtInModule);
+                    });
 
                     return result;
                 }

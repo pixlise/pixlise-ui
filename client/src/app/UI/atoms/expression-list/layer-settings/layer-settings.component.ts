@@ -182,6 +182,11 @@ export class LayerSettingsComponent implements OnInit
         this._subs.unsubscribe();
     }
 
+    get isBuiltIn(): boolean
+    {
+        return this.layerInfo?.layer?.id?.startsWith("builtin-") || false;
+    }
+
     get customIcon(): string
     {
         return this.customOptions?.icon || "";
@@ -319,6 +324,11 @@ export class LayerSettingsComponent implements OnInit
         }
 
         return comments;
+    }
+
+    get minLabelTextWidth(): string
+    {
+        return Math.min(this.labelToShow.length, 10) + "ch";
     }
 
     get labelsWidth(): string
