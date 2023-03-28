@@ -29,7 +29,7 @@
 
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { Subscription } from "rxjs";
-import { ItemTag } from "src/app/models/tags";
+import { BuiltInTags, ItemTag } from "src/app/models/tags";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { TaggingService } from "src/app/services/tagging.service";
 
@@ -114,7 +114,7 @@ export class TagPickerComponent implements OnInit
                 !this.filterToTagType
                 || tag.type === this.type
                 || this.additionalVisibleTagType.includes(tag.type)
-                || (isAdmin && this.allowAdminBuiltin && tag.type === "builtin")
+                || (isAdmin && this.allowAdminBuiltin && tag.type === BuiltInTags.type)
             );
 
             this.groupTags();

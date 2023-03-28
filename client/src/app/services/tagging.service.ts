@@ -37,7 +37,7 @@ import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { arraysEqual, httpErrorToString } from "src/app/utils/utils";
 import { DataSetService } from "./data-set.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
-import { ItemTag, ItemTagWire } from "../models/tags";
+import { BuiltInTags, ItemTag, ItemTagWire } from "../models/tags";
 import { ObjectCreator } from "../models/BasicTypes";
 
 @Injectable({ providedIn: "root" })
@@ -182,7 +182,7 @@ export class TaggingService
 
         let tags = new Map<string, ItemTag>(
             [
-                ["builtin-example", new ItemTag("builtin-example", "Example", builtInCreator, null, "builtin")]
+                [BuiltInTags.exampleTag, new ItemTag(BuiltInTags.exampleTag, "Example", builtInCreator, null, BuiltInTags.type)]
             ]
         );
 

@@ -60,6 +60,7 @@ import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-langua
 import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
 import EditorConfig from "./editor-config";
+import { BuiltInTags } from "src/app/models/tags";
 
 @Component({
     selector: "code-editor",
@@ -106,13 +107,13 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         }
     };
     public sidebarBottomSections: Record<string, CustomExpressionGroup> = {
-        "examples": {
-            type:  this.examplesHeaderName,
-            childType: "expression",
-            label: "Examples",
-            items: [],
-            emptyMessage: "No examples are available.",
-        }
+        // "examples": {
+        //     type:  this.examplesHeaderName,
+        //     childType: "expression",
+        //     label: "Examples",
+        //     items: [],
+        //     emptyMessage: "No examples are available.",
+        // }
     };
 
     public openModules: Record<string, DataModuleSpecificVersionWire> = {};
@@ -185,17 +186,15 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this._datasetID = this._route.snapshot.parent?.params["dataset_id"];
         this._expressionID = this._route.snapshot.params["expression_id"];
 
-        combineLatest([this._expressionService.expressionsUpdated$, this._moduleService.modulesUpdated$]).subscribe(() =>
+        this._subs.add(this._moduleService.modulesUpdated$.subscribe(() =>
         {
-            if(this._fetchedExpression)
-            {
-                return;
-            }
-
-            this.sidebarTopSections["modules"].items = this._moduleService.getModules().map((module) =>
+            // Regenerate modules list on change
+            this.sidebarTopSections["modules"].items = [];
+            
+            this._moduleService.getModules().forEach((module) =>
             {
                 let latestVersion = Array.from(module.versions.values()).pop();
-                return new DataExpression(
+                let latestModuleExpression = new DataExpression(
                     module.id,
                     module.name,
                     latestVersion.sourceCode,
@@ -209,11 +208,22 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     [],
                     null
                 );
+
+                this.sidebarTopSections["modules"].items.push(latestModuleExpression);
             });
+
+            this.regenerateItemList();
+        }));
+
+        combineLatest([this._expressionService.expressionsUpdated$, this._moduleService.modulesUpdated$]).subscribe(() =>
+        {
+            if(this._fetchedExpression)
+            {
+                return;
+            }
 
             this._expressionService.clearAllUnsavedFromCache();
             this.resetEditors();
-
         });
     }
 
@@ -902,7 +912,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             false,
             false,
             customStartSections,
-            customEndSections
+            customEndSections,
+            true
         );
 
         this.authors = this._listBuilder.getAuthors();

@@ -442,6 +442,24 @@ export class DataModuleService
             );
     }
 
+    updateTags(moduleId: string, tags: string[]): Observable<DataModuleSpecificVersionWire>
+    {
+        return this.getLatestModuleVersion(moduleId).pipe(
+            tap(async (latestVersion) =>
+            {
+                let { sourceCode, comments } = latestVersion.version;
+                let specificVersion = await this.addModuleVersion(moduleId, sourceCode, comments, tags, "patch", "Updating tags...").toPromise().then((resp)=>
+                {
+                    return resp;
+                });
+
+                this._modulesUpdated$.next();
+                return specificVersion;
+            })
+        );
+
+    }
+
     savePatchVersion(moduleId: string, sourceCode: string, comments: string, tags: string[]): Observable<DataModuleSpecificVersionWire>
     {
         return this.addModuleVersion(moduleId, sourceCode, comments, tags, "patch", "Saving new patch version...");

@@ -41,6 +41,7 @@ import { RGBLayerInfo } from "src/app/UI/atoms/expression-list/layer-settings/rg
 import { LayerInfo } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ExpressionListHeaderInfo } from "src/app/UI/atoms/expression-list/layer-settings/header.component";
 import { ObjectCreator } from "./BasicTypes";
+import { BuiltInTags } from "./tags";
 
 
 // Not all static vars so we can use this from HTML if the component "extends" this class
@@ -86,6 +87,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
     // The stuff we query, when all of these are NOT null, we regenerate the list of items to display
     protected _userExpressions: DataExpression[] = [];
     protected _sharedExpressions: DataExpression[] = [];
+    protected _exampleExpressions: DataExpression[] = [];
     protected _elementsFromQuant: DataExpression[] = [];
     protected _elementRelatedBuiltIn: DataExpression[] = [];
     protected _pseudointensities: DataExpression[] = [];
@@ -225,10 +227,15 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
     {
         this._userExpressions = [];
         this._sharedExpressions = [];
+        this._exampleExpressions = [];
 
         for(let expr of expressions.values())
         {
-            if(expr.shared)
+            if(expr.tags.includes(BuiltInTags.exampleTag))
+            {
+                this._exampleExpressions.push(expr);
+            }
+            else if(expr.shared)
             {
                 this._sharedExpressions.push(expr);
             }
@@ -340,7 +347,8 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         includeQuantifiedElements: boolean=true,
         includePseudointensities: boolean=true,
         customStartSections: CustomExpressionGroup[]=[],
-        customEndSections: CustomExpressionGroup[]=[]
+        customEndSections: CustomExpressionGroup[]=[],
+        includeExamples: boolean=false
     ): ExpressionListItems
     {
         let groups: ExpressionListGroupItems[] = [];
@@ -366,7 +374,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                     section.emptyMessage,
                     null,
                     "",
-                    0
+                    groups[groups.length-1]?.items.length || 0
                 )
             );
         });
@@ -483,10 +491,30 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                     section.emptyMessage,
                     null,
                     "",
-                    0
+                    groups[groups.length-1]?.items.length || 0
                 )
             );
         });
+
+        if(includeExamples)
+        {
+            groups.push(
+                new ExpressionListGroupItems(
+                    this.examplesHeaderName,
+                    "Examples",
+                    headerSectionsOpen.has(this.examplesHeaderName),
+                    "expression",
+                    expressionNameFilter,
+                    expressionAuthorsFilter,
+                    filterTagIDs,
+                    this.getItems(this._exampleExpressions, makeLayer),
+                    "No examples to view",
+                    null,
+                    "",
+                    groups[groups.length-1]?.items.length || 0
+                )
+            );
+        }
 
         // Form the final data structure
         let groupLookup = new Map<string, ExpressionListGroupItems>();

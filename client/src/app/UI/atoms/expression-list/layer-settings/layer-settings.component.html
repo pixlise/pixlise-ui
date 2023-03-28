@@ -65,7 +65,8 @@ POSSIBILITY OF SUCH DAMAGE.
                 [showCurrentTagsSection]="true"
                 [editable]="!isSharedByOtherUser"
                 (onTagSelectionChanged)="onTagSelectionChanged($event)"
-                [allowAdminBuiltin]="true"
+                [allowAdminBuiltin]="!isModule"
+                [ngStyle]="{'z-index': '100'}"
             >
             </tag-picker>
             <icon-button
@@ -207,7 +208,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [showCurrentTagsSection]="true"
                     [editable]="!isSharedByOtherUser"
                     (onTagSelectionChanged)="onTagSelectionChanged($event)"
-                    [allowAdminBuiltin]="true"
+                    [allowAdminBuiltin]="!isModule"
                 >
                 </tag-picker>
                 <icon-button

@@ -41,6 +41,14 @@ export class ItemTagWire
     ) {}
 }
 
+export class BuiltInTags
+{
+    // Special type reserved for built-in tags
+    static readonly type = "builtin";
+
+    static readonly exampleTag = "builtin-example";
+}
+
 export class ItemTag
 {
     constructor(

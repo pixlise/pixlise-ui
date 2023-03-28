@@ -669,9 +669,18 @@ export class LayerSettingsComponent implements OnInit
 
     onTagSelectionChanged(tagIDs: string[]): void
     {
-        this._exprService.updateTags(this.layerInfo.layer.id, tagIDs).subscribe(() => null,
-            () => alert("Failed to update tags")
-        );
+        if(this.isModule)
+        {
+            this._moduleService.updateTags(this.layerInfo.layer.id, tagIDs).subscribe(() => null,
+                () => alert("Failed to update module tags")
+            );
+        }
+        else
+        {
+            this._exprService.updateTags(this.layerInfo.layer.id, tagIDs).subscribe(() => null,
+                () => alert("Failed to update expression tags")
+            );
+        }
     }
 
     get showDetectorPicker(): boolean
