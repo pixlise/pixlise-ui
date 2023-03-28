@@ -38,6 +38,7 @@ import { arraysEqual, httpErrorToString } from "src/app/utils/utils";
 import { DataSetService } from "./data-set.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
 import { ItemTag, ItemTagWire } from "../models/tags";
+import { ObjectCreator } from "../models/BasicTypes";
 
 @Injectable({ providedIn: "root" })
 export class TaggingService
@@ -148,7 +149,7 @@ export class TaggingService
 
         this.http.get<Map<string, ItemTagWire>>(this.makeURL(), makeHeaders()).subscribe((response: Map<string, ItemTagWire>)=>
         {
-            let tags = new Map<string, ItemTag>();
+            let tags = this._getBuiltInTags();
             Object.entries(response).forEach(([tagID, tag]) =>
             {
                 let fullTag = new ItemTag(tag.id, tag.name, tag.creator, new Date(tag.dateCreated * 1000), tag.type);
@@ -172,6 +173,20 @@ export class TaggingService
             this._tags$.next(new Map<string, ItemTag>());
         }
         );
+    }
+
+    // Fixed list of built-in tags that can be assigned by users with privilege, but not edited
+    private _getBuiltInTags(): Map<string, ItemTag>
+    {
+        let builtInCreator = new ObjectCreator("Built-in", "builtin");
+
+        let tags = new Map<string, ItemTag>(
+            [
+                ["builtin-example", new ItemTag("builtin-example", "Example", builtInCreator, null, "builtin")]
+            ]
+        );
+
+        return tags;
     }
 
     createNewTag(name: string, type: string): Observable<{ id: string; }>

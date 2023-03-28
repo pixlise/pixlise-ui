@@ -714,23 +714,20 @@ export class DataExpressionService
         let loadID = this._loadingSvc.add("Saving new expression tags...");
         let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
 
-        let expression = this.getExpression(id);
-        let toSave = new DataExpressionInput(expression.name, expression.sourceCode, expression.sourceLanguage, expression.comments, tags);
-
-        return this.http.put<object>(apiURL, toSave, makeHeaders())
-            .pipe(
-                tap(
-                    (resp: object)=>
-                    {
-                        this.processReceivedExpressionList(resp);
-                        this._loadingSvc.remove(loadID);
-                    },
-                    (err)=>
-                    {
-                        this._loadingSvc.remove(loadID);
-                    }
-                )
-            );
+        return this.getExpressionAsync(id).pipe(tap(
+            async (expression: DataExpression)=>
+            {
+                let toSave = new DataExpressionInput(expression.name, expression.sourceCode, expression.sourceLanguage, expression.comments, tags);
+                await this.http.put<object>(apiURL, toSave, makeHeaders()).toPromise().then((resp: object)=>
+                {
+                    this.processReceivedExpressionList(resp);
+                    this._loadingSvc.remove(loadID);
+                }).catch(() =>
+                {
+                    this._loadingSvc.remove(loadID);
+                });
+            })
+        );
     }
 
     del(id: string): Observable<object>

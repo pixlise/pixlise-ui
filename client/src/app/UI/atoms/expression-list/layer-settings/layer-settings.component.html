@@ -65,6 +65,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [showCurrentTagsSection]="true"
                 [editable]="!isSharedByOtherUser"
                 (onTagSelectionChanged)="onTagSelectionChanged($event)"
+                [allowAdminBuiltin]="true"
             >
             </tag-picker>
             <icon-button
@@ -206,6 +207,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [showCurrentTagsSection]="true"
                     [editable]="!isSharedByOtherUser"
                     (onTagSelectionChanged)="onTagSelectionChanged($event)"
+                    [allowAdminBuiltin]="true"
                 >
                 </tag-picker>
                 <icon-button

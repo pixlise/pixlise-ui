@@ -152,7 +152,6 @@ export class LayerSettingsComponent implements OnInit
     private _isPureElement: boolean = false;
     private _expressionElement: string = "";
 
-
     constructor(
         private _router: Router,
         private _exprService: DataExpressionService,

@@ -54,7 +54,7 @@ export class ItemTag
 
     public static equals(a: ItemTag, b: ItemTag): boolean
     {
-        return a.id === b.id && a.name === b.name && a.creator.user_id === b.creator.user_id 
-        && a.dateCreated.getTime() === b.dateCreated.getTime() && a.type === b.type;
+        return a.id === b.id && a.name === b.name && a.creator?.user_id === b.creator?.user_id 
+        && a.dateCreated?.getTime() === b.dateCreated?.getTime() && a.type === b.type;
     }
 }
