@@ -40,8 +40,6 @@ import { DragDropModule } from "@angular/cdk/drag-drop";
 
 import * as Sentry from "@sentry/browser";
 
-import { CodemirrorModule } from "@ctrl/ngx-codemirror";
-
 import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
 
@@ -495,7 +493,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         FlexLayoutModule,
         OverlayModule,
         CdkAccordionModule,
-        CodemirrorModule,
         NgxDropzoneModule,
         DragDropModule,
         MatTooltipModule,

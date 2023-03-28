@@ -103,14 +103,11 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
   <div
       fxLayout="column"
-      class="dlg-border-with-backdrop gap-separated-vertical-elements code-mirror-container"
+      class="dlg-border-with-backdrop gap-separated-vertical-elements code-edit-container"
       (keydown)='onKeyDown($event)'
       (keyup)='onKeyUp($event)'
       (click)='onClickDialog($event)'>
-      <ngx-codemirror
-          [(ngModel)]="editExpression"
-          (click)='onClickExpression($event)'>
-      </ngx-codemirror>
+      <div class="editor-container" #editorContainer></div>
   </div>
 </div>
 <expression-help-dropdown

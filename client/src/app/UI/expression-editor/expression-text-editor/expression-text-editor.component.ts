@@ -27,8 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
-import { CodemirrorComponent } from "@ctrl/ngx-codemirror";
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ElementRef } from "@angular/core";
 import { Subscription, timer } from "rxjs";
 import { ExpressionParts, PixliseDataQuerier } from "src/app/expression-language/interpret-pixlise";
 import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications";
@@ -37,16 +36,10 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElement, Suggestion } from "../expression-help";
 import { SentryHelper } from "src/app/utils/utils";
-import { Range } from "codemirror";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
-import * as CodeMirror from "codemirror";
+import { MonacoEditorService } from "src/app/services/monaco-editor.service";
 
-require("codemirror/addon/comment/comment.js");
-require("codemirror/mode/lua/lua");
-require("codemirror/addon/hint/show-hint.js");
-require("codemirror/addon/hint/anyword-hint.js");
-require("codemirror/addon/lint/lint.js");
 
 export class DataExpressionModule
 {
@@ -89,8 +82,6 @@ export class MarkPosition
 })
 export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 {
-    @ViewChild(CodemirrorComponent, {static: false}) private _codeMirror: CodemirrorComponent;
-    
     private _subs = new Subscription();
     private _expr: DataExpression = null;
     private _exprParts: ExpressionParts = null;
@@ -132,11 +123,17 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Output() toggleHeader = new EventEmitter();
     @Output() onClick = new EventEmitter();
     
+    @ViewChild('editorContainer', { static: true }) _editorContainer: ElementRef;
+    private _editor: any = null;
+    //editorOptions = {theme: 'vs-dark', language: 'javascript'};
+
     constructor(
         private _datasetService: DataSetService,
         private _widgetDataService: WidgetRegionDataService,
+        private _monacoService: MonacoEditorService,
     )
     {
+        this._monacoService.load();
     }
 
     ngOnInit()
@@ -148,14 +145,14 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         this.changeExpression.emit((text: string) =>
         {
             this._expr.sourceCode = text;
-            this._codeMirror.codeMirrorGlobal.then((cm: any)=>
-            {
-                this.setupCodeMirror(cm.default);
-                let cmObj = this._codeMirror.codeMirror;
-                cmObj.setOption("mode", this.isLua ? "lua" : "pixlise");
-                this.setUpKeyBindings(cmObj);
-                cmObj.refresh();
-            });
+            // this._codeMirror.codeMirrorGlobal.then((cm: any)=>
+            // {
+            //     this.setupCodeMirror(cm.default);
+            //     let cmObj = this._codeMirror.codeMirror;
+            //     cmObj.setOption("mode", this.isLua ? "lua" : "pixlise");
+            //     this.setUpKeyBindings(cmObj);
+            //     cmObj.refresh();
+            // });
         });
     }
 
@@ -184,40 +181,64 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     ngAfterViewInit(): void
     {
+        this._monacoService.loadingFinished.subscribe(
+            ()=>
+            {
+                // At this point monaco is loaded and part of our window, so we can access it like this:
+                let monaco = (<any>window).monaco;
+
+                // Set up options and create a monaco editor:
+                let options = {
+                    value: this.editExpression,
+                    language: "lua", // Needs to be set-able :-/
+                    automaticLayout: true,
+                    theme: 'vs-dark' // I think this takes away some of the colouring unfortunately
+                };
+
+                this._editor = monaco.editor.create(this._editorContainer.nativeElement, options);
+
+                // At this point I assume we can listen for events on this._editor and control it through there, haven't got that far yet
+                // We will also need to re-implement force resizing of the editor, seems temperamental like code-mirror because setting
+                // its container to 100% height (div looks correct) resulted in child editor being 5px high. This is probably fixable in
+                // the scss that was commented out due to references to CodeMirror, see code-editor.component.scss starting line 64.
+                // Also NOTE: I haven't delved into any docs/setup examples though, there are likely glaring missing things!
+            }
+        );
+
         // Get the codemirror object
         // Vital: https://stackoverflow.com/questions/62097418/how-i-can-add-the-simple-mode-to-codemirror-angular-8
         // NOTE: As of angular 13 it seems to return a ZoneAwarePromise so we use then to get the object...
-        this._codeMirror.codeMirrorGlobal.then((cm: any)=>
-        {
-            this.setupCodeMirror(cm.default);
+        // this._codeMirror.codeMirrorGlobal.then((cm: any)=>
+        // {
+        //     this.setupCodeMirror(cm.default);
 
-            let cmObj = this._codeMirror.codeMirror;
+        //     let cmObj = this._codeMirror.codeMirror;
 
-            this._initAsLua = this.isLua;
+        //     this._initAsLua = this.isLua;
 
-            cmObj.setOption("mode", this.isLua ? "lua" : "pixlise");
-            cmObj.setOption("lineNumbers", true);
-            cmObj.setOption("theme", "pixlise");
-            cmObj.setOption("readOnly", !this.allowEdit);
+        //     cmObj.setOption("mode", this.isLua ? "lua" : "pixlise");
+        //     cmObj.setOption("lineNumbers", true);
+        //     cmObj.setOption("theme", "pixlise");
+        //     cmObj.setOption("readOnly", !this.allowEdit);
 
-            this.setUpKeyBindings(cmObj);
+        //     this.setUpKeyBindings(cmObj);
 
-            // Not sure what codemirror is doing, and why it does it but some ms after creation it has been resetting... we now reset it 2x, once for
-            // reducing flicker for user, 2nd time to ensure anything that changed is overwritten with our settings again
-            let setupFunc = ()=>
-            {
-                this.setupCodeMirrorEventHandlers(cmObj);
-                cmObj.refresh();
-            };
+        //     // Not sure what codemirror is doing, and why it does it but some ms after creation it has been resetting... we now reset it 2x, once for
+        //     // reducing flicker for user, 2nd time to ensure anything that changed is overwritten with our settings again
+        //     let setupFunc = ()=>
+        //     {
+        //         this.setupCodeMirrorEventHandlers(cmObj);
+        //         cmObj.refresh();
+        //     };
 
-            const source1 = timer(1);
-            const sub1 = source1.subscribe(setupFunc);
+        //     const source1 = timer(1);
+        //     const sub1 = source1.subscribe(setupFunc);
 
-            const source2 = timer(100);
-            const sub2 = source2.subscribe(setupFunc);
+        //     const source2 = timer(100);
+        //     const sub2 = source2.subscribe(setupFunc);
 
-            this.updateGutter();
-        });
+        //     this.updateGutter();
+        // });
     }
 
     ngOnDestroy()
@@ -370,18 +391,18 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     get editExpression(): string
     {
         // If lua mode switched after init, then we need to strip/add lua and refresh code mirror
-        if(this._initAsLua !== this.isLua && this._codeMirror?.codeMirrorGlobal)
-        {
-            this._initAsLua = this.isLua;
-            this._codeMirror.codeMirrorGlobal.then((cm: any)=>
-            {
-                this.setupCodeMirror(cm.default);
-                let cmObj = this._codeMirror.codeMirror;
-                cmObj.setOption("mode", this.isLua ? "lua" : "pixlise");
-                this.setUpKeyBindings(cmObj);
-                cmObj.refresh();
-            });
-        }
+        // if(this._initAsLua !== this.isLua && this._codeMirror?.codeMirrorGlobal)
+        // {
+        //     this._initAsLua = this.isLua;
+        //     this._codeMirror.codeMirrorGlobal.then((cm: any)=>
+        //     {
+        //         this.setupCodeMirror(cm.default);
+        //         let cmObj = this._codeMirror.codeMirror;
+        //         cmObj.setOption("mode", this.isLua ? "lua" : "pixlise");
+        //         this.setUpKeyBindings(cmObj);
+        //         cmObj.refresh();
+        //     });
+        // }
 
         return this._expr.sourceCode;
     }
@@ -443,65 +464,65 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         }
 
         // User clicked on a function, put that in at the cursor
-        let cm = this._codeMirror.codeMirror;
-        let doc = cm.getDoc();
-        let cursor = doc.getCursor();
+        // let cm = this._codeMirror.codeMirror;
+        // let doc = cm.getDoc();
+        // let cursor = doc.getCursor();
 
-        // Work out what the cursor is over, need to consider multi-line!
-        let lines = this._expr.sourceCode.split("\n");
-        let cursorIdx = ExpressionHelp.getIndexInExpression(cursor.line, cursor.ch, lines);
+        // // Work out what the cursor is over, need to consider multi-line!
+        // let lines = this._expr.sourceCode.split("\n");
+        // let cursorIdx = ExpressionHelp.getIndexInExpression(cursor.line, cursor.ch, lines);
 
-        // Do whatever the action id suggests
-        if(actionId == LabelElement.idElementFunction)
-        {
-            // User clicked an element function, insert it into the expression at current cursor
-            let quant = this.getLoadedQuant();
-            let dets = [];
-            if(quant)
-            {
-                dets = quant.getDetectors();
-            }
-            let det = QuantModes.quantModeCombined;
-            if(dets.length > 0)
-            {
-                det = dets[0];
-            }
+        // // Do whatever the action id suggests
+        // if(actionId == LabelElement.idElementFunction)
+        // {
+        //     // User clicked an element function, insert it into the expression at current cursor
+        //     let quant = this.getLoadedQuant();
+        //     let dets = [];
+        //     if(quant)
+        //     {
+        //         dets = quant.getDetectors();
+        //     }
+        //     let det = QuantModes.quantModeCombined;
+        //     if(dets.length > 0)
+        //     {
+        //         det = dets[0];
+        //     }
 
-            let elemFunc = "element("+suggestionSelected.labelElements[0].txt+", \"%\", \""+det+"\")";
-            this.replaceExpressionPart(cursorIdx, cursorIdx, elemFunc);
-            doc.setCursor(cursorIdx+elemFunc.length);
+        //     let elemFunc = "element("+suggestionSelected.labelElements[0].txt+", \"%\", \""+det+"\")";
+        //     this.replaceExpressionPart(cursorIdx, cursorIdx, elemFunc);
+        //     doc.setCursor(cursorIdx+elemFunc.length);
 
-            this.activeHelp = this.makeSuggestionMenu(LabelElement.idRoot);
-        }
-        else if(actionId == LabelElement.idSpecificFunction)
-        {
-            // User clicked a function, insert "name(" at cursor
-            let funcInsert = suggestionSelected.labelElements[0].txt+"(";
-            this.replaceExpressionPart(cursorIdx, cursorIdx, funcInsert);
-            doc.setCursor(cursorIdx+funcInsert.length);
+        //     this.activeHelp = this.makeSuggestionMenu(LabelElement.idRoot);
+        // }
+        // else if(actionId == LabelElement.idSpecificFunction)
+        // {
+        //     // User clicked a function, insert "name(" at cursor
+        //     let funcInsert = suggestionSelected.labelElements[0].txt+"(";
+        //     this.replaceExpressionPart(cursorIdx, cursorIdx, funcInsert);
+        //     doc.setCursor(cursorIdx+funcInsert.length);
 
-            this.activeHelp = this.getCursorSuggestions(cursor);
-        }
-        else if(actionId == LabelElement.idOperator)
-        {
-            // User clicked an operator, insert it at cursor (or position if specified)
-            let operatorInsert = suggestionSelected.labelElements[0].txt;
-            this.replaceExpressionPartWithFallback(suggestionSelected.positionInfo, cursorIdx, operatorInsert);
-            doc.setCursor(cursorIdx+operatorInsert.length);
+        //     this.activeHelp = this.getCursorSuggestions(cursor);
+        // }
+        // else if(actionId == LabelElement.idOperator)
+        // {
+        //     // User clicked an operator, insert it at cursor (or position if specified)
+        //     let operatorInsert = suggestionSelected.labelElements[0].txt;
+        //     this.replaceExpressionPartWithFallback(suggestionSelected.positionInfo, cursorIdx, operatorInsert);
+        //     doc.setCursor(cursorIdx+operatorInsert.length);
 
-            this.activeHelp = this.makeSuggestionMenu(LabelElement.idRoot);
-        }
-        else if(actionId == LabelElement.idParameterOption)
-        {
-            // Replace the parameter with the chosen value
-            // If we have no position info, do it at the cursor!
-            this.replaceExpressionPartWithFallback(suggestionSelected.positionInfo, cursorIdx, suggestionSelected.labelElements[0].txt);
-        }
-        else
-        {
-            // Show menu for whatever they clicked
-            this.activeHelp = this.makeSuggestionMenu(actionId);
-        }
+        //     this.activeHelp = this.makeSuggestionMenu(LabelElement.idRoot);
+        // }
+        // else if(actionId == LabelElement.idParameterOption)
+        // {
+        //     // Replace the parameter with the chosen value
+        //     // If we have no position info, do it at the cursor!
+        //     this.replaceExpressionPartWithFallback(suggestionSelected.positionInfo, cursorIdx, suggestionSelected.labelElements[0].txt);
+        // }
+        // else
+        // {
+        //     // Show menu for whatever they clicked
+        //     this.activeHelp = this.makeSuggestionMenu(actionId);
+        // }
     }
 
     private replaceExpressionPartWithFallback(posInfoOptional: FunctionParameterPosition, cursorIdxFallback: number, toReplace: string)
@@ -606,7 +627,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         let gutterWidth = document.querySelector(".CodeMirror-gutters")?.getBoundingClientRect()?.width;
         this._gutterWidth = gutterWidth ? gutterWidth : 29;
     }
-
+/*
     private setupCodeMirrorEventHandlers(cm: CodeMirror.EditorFromTextArea): void
     {
         cm.on("beforeChange", (instance, event)=>
@@ -729,7 +750,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             }
         }
     }
-
+*/
     private updateHelp(): void
     {
         // NOTE: this is confusing, we have isLua input and expression also has a source language
@@ -738,56 +759,56 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             return;
         }
 
-        let cm = this._codeMirror.codeMirror;
+        // let cm = this._codeMirror.codeMirror;
 
-        let doc = cm.getDoc();
-        let cursor = doc.getCursor();
+        // let doc = cm.getDoc();
+        // let cursor = doc.getCursor();
 
-        if(!cm.hasFocus())
-        {
-            // Not focused, so don't show any help
-            this.activeHelp = null;
-            this._markTextPositions = [];
-            this._markMatchedBracketPositions = [];
-        }
-        else
-        {
-            this.activeHelp = this.getCursorSuggestions(cursor);
-            this._markTextPositions = ExpressionTextEditorComponent.findPositionsToMark(this._exprParts, this._expr.sourceCode, cursor);
-            this._markMatchedBracketPositions = ExpressionTextEditorComponent.findMatchedBracketPositions(this._expr.sourceCode, cursor);
-        }
+        // if(!cm.hasFocus())
+        // {
+        //     // Not focused, so don't show any help
+        //     this.activeHelp = null;
+        //     this._markTextPositions = [];
+        //     this._markMatchedBracketPositions = [];
+        // }
+        // else
+        // {
+        //     this.activeHelp = this.getCursorSuggestions(cursor);
+        //     this._markTextPositions = ExpressionTextEditorComponent.findPositionsToMark(this._exprParts, this._expr.sourceCode, cursor);
+        //     this._markMatchedBracketPositions = ExpressionTextEditorComponent.findMatchedBracketPositions(this._expr.sourceCode, cursor);
+        // }
 
-        if(this.activeHelp && cm)
-        {
-            let cursorCoord = cm.cursorCoords(true, "page");
+        // if(this.activeHelp && cm)
+        // {
+        //     let cursorCoord = cm.cursorCoords(true, "page");
 
-            //let helpPos = positionDialogNearParent(
-            this.dropdownTop = Math.floor(cursorCoord.bottom+3)+"px";//elem.clientTop;
-            this.dropdownLeft = Math.floor(cursorCoord.left)+"px";//elem.clientLeft;
-        }
+        //     //let helpPos = positionDialogNearParent(
+        //     this.dropdownTop = Math.floor(cursorCoord.bottom+3)+"px";//elem.clientTop;
+        //     this.dropdownLeft = Math.floor(cursorCoord.left)+"px";//elem.clientLeft;
+        // }
 
-        if(cm)
-        {
-            // Set the text marks
-            let marks = cm.getAllMarks();
-            for(let mark of marks)
-            {
-                mark.clear();
-            }
+        // if(cm)
+        // {
+        //     // Set the text marks
+        //     let marks = cm.getAllMarks();
+        //     for(let mark of marks)
+        //     {
+        //         mark.clear();
+        //     }
 
-            if(this._markTextPositions.length > 0)
-            {
-                for(let mark of this._markTextPositions)
-                {
-                    cm.markText({"line": mark.line, "ch": mark.idxStart}, {"line": mark.line, "ch": mark.idxEnd}, {className:"var-highlight"});
-                }
-            }
+        //     if(this._markTextPositions.length > 0)
+        //     {
+        //         for(let mark of this._markTextPositions)
+        //         {
+        //             cm.markText({"line": mark.line, "ch": mark.idxStart}, {"line": mark.line, "ch": mark.idxEnd}, {className:"var-highlight"});
+        //         }
+        //     }
 
-            for(let mark of this._markMatchedBracketPositions)
-            {
-                cm.markText({"line": mark.line, "ch": mark.idxStart}, {"line": mark.line, "ch": mark.idxEnd}, {className:"var-match-bracket"});
-            }
-        }
+        //     for(let mark of this._markMatchedBracketPositions)
+        //     {
+        //         cm.markText({"line": mark.line, "ch": mark.idxStart}, {"line": mark.line, "ch": mark.idxEnd}, {className:"var-match-bracket"});
+        //     }
+        // }
     }
 
     private static findMatchedBracketPositions(expression: string, cursor: any/*Position*/): MarkPosition[]

@@ -37,7 +37,7 @@
     padding: 0;
 }
 
-.code-mirror-container {
+.code-edit-container {
     max-width: 50vw;
 }
 
@@ -63,6 +63,10 @@ h3 {
 .code-container {
     display: flex;
     flex-direction: column;
+}
+
+.editor-container {
+    height: 700px;// This resulted in 5px high editor... 100%;
 }
 
 .installed-modules-text {
