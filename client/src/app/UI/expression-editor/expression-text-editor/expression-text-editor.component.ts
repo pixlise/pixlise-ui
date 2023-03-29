@@ -28,16 +28,16 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ElementRef } from "@angular/core";
-import { Subscription, timer } from "rxjs";
+import { Subscription } from "rxjs";
 import { ExpressionParts, PixliseDataQuerier } from "src/app/expression-language/interpret-pixlise";
-import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications";
+import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataExpression } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElement, Suggestion } from "../expression-help";
 import { SentryHelper } from "src/app/utils/utils";
 import { ObjectCreator } from "src/app/models/BasicTypes";
-import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { MonacoEditorService } from "src/app/services/monaco-editor.service";
 
 
@@ -124,7 +124,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Output() onClick = new EventEmitter();
     
     @ViewChild('editorContainer', { static: true }) _editorContainer: ElementRef;
-    private _editor: any = null;
+    private _editor: any/*IStandaloneCodeEditor*/ = null;
     //editorOptions = {theme: 'vs-dark', language: 'javascript'};
 
     constructor(
@@ -133,7 +133,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         private _monacoService: MonacoEditorService,
     )
     {
-        this._monacoService.load();
     }
 
     ngOnInit()
@@ -181,21 +180,56 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     ngAfterViewInit(): void
     {
+        this.refreshMonaco();
+    }
+
+    private get monaco(): any
+    {
+        // At this point monaco should be loaded and part of our window, so we can access it like this:
+        return (<any>window).monaco;
+    }
+
+    private createMonaco(): any/*IStandaloneCodeEditor*/
+    {
+        // Set up options and create a monaco editor:
+        let options = {
+            model: null,
+            automaticLayout: true,
+            theme: "vs-dark", // I think this takes away some of the colouring unfortunately
+            scrollBeyondLastLine: false,
+            //roundedSelection: false,
+            readOnly: !this.allowEdit,
+            minimap: { enabled: false },
+        };
+
+        // Create a blank monaco editor
+        return this.monaco.editor.create(this._editorContainer.nativeElement, options);
+    }
+
+    refreshMonaco(): void
+    {
         this._monacoService.loadingFinished.subscribe(
             ()=>
             {
-                // At this point monaco is loaded and part of our window, so we can access it like this:
-                let monaco = (<any>window).monaco;
+                if(!this._editor)
+                {
+                    this._editor = this.createMonaco()
+                }
 
-                // Set up options and create a monaco editor:
-                let options = {
-                    value: this.editExpression,
-                    language: "lua", // Needs to be set-able :-/
-                    automaticLayout: true,
-                    theme: 'vs-dark' // I think this takes away some of the colouring unfortunately
-                };
+                // Add expressions/modules to edit
+                let mdl/*: ITextModel*/ = this.monaco.editor.createModel(this._expr.sourceCode, "lua");
 
-                this._editor = monaco.editor.create(this._editorContainer.nativeElement, options);
+                mdl.onDidChangeContent(
+                    (e/*: IModelContentChangedEvent*/)=>
+                    {
+                        // Something changed in the text editor, save the entire thing in our source code
+                        // variable
+                        this._expr.sourceCode = mdl.getValue();
+                        this.onTextChange.emit(this._expr.sourceCode || "");
+                    }
+                );
+
+                this._editor.setModel(mdl);
 
                 // At this point I assume we can listen for events on this._editor and control it through there, haven't got that far yet
                 // We will also need to re-implement force resizing of the editor, seems temperamental like code-mirror because setting

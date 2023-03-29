@@ -30,7 +30,7 @@
 // This was inspired by a post here: https://stackoverflow.com/questions/71072724/implement-monaco-editor-in-angular-13
 
 import { Injectable } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Subject, ReplaySubject } from 'rxjs';
 
 
 @Injectable({
@@ -38,15 +38,12 @@ import { Subject } from 'rxjs';
 })
 export class MonacoEditorService
 {
-    loaded: boolean = false;
-
-    public loadingFinished: Subject<void> = new Subject<void>();
+    public loadingFinished: Subject<void> = new ReplaySubject<void>();
 
     constructor() {}
 
     private finishLoading()
     {
-        this.loaded = true;
         this.loadingFinished.next();
     }
 

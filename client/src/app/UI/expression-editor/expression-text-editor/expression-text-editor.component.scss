@@ -30,7 +30,7 @@
 @import 'variables.scss';
 
 // To edit code mirror styling, look at pixlise-codemirror-theme.scss
-
+/*
 .dlg-border-with-backdrop {
     min-width: 50vw;
     max-width: 90vw;
@@ -40,7 +40,7 @@
 .code-edit-container {
     max-width: 50vw;
 }
-
+*/
 h3 {
     margin-top: $sz-unit;
     margin-bottom: 0px;
@@ -63,10 +63,7 @@ h3 {
 .code-container {
     display: flex;
     flex-direction: column;
-}
-
-.editor-container {
-    height: 700px;// This resulted in 5px high editor... 100%;
+    width: 100%;
 }
 
 .installed-modules-text {

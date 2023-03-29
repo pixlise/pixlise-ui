@@ -101,15 +101,22 @@ POSSIBILITY OF SUCH DAMAGE.
           <div class="dots"></div>
       </div>
   </div>
+  <div 
+    fxFlex="100%"
+    class="editor-container"
+    #editorContainer>
+  </div>
+<!--
   <div
       fxLayout="column"
       class="dlg-border-with-backdrop gap-separated-vertical-elements code-edit-container"
       (keydown)='onKeyDown($event)'
       (keyup)='onKeyUp($event)'
       (click)='onClickDialog($event)'>
-      <div class="editor-container" #editorContainer></div>
   </div>
+-->
 </div>
+<!--
 <expression-help-dropdown
     *ngIf="activeHelp && allowEdit && showHelp"
     class="help-dropdown"
@@ -118,3 +125,4 @@ POSSIBILITY OF SUCH DAMAGE.
     (escEvent)="onHelpEscape($event)"
     (clickEvent)="onHelpClick($event)">
 </expression-help-dropdown>
+-->
