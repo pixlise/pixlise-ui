@@ -64,6 +64,8 @@ export class ExpressionMetadataEditorComponent implements OnInit
     private _fetched: boolean = false;
     private _releaseNotes: MajorGroupedRelease[] = [];
 
+    public latestRelease: DataModuleVersionSourceWire = null;
+
     constructor(
       private _moduleService: DataModuleService
     )
@@ -189,6 +191,18 @@ export class ExpressionMetadataEditorComponent implements OnInit
             let bMajorVersion = b.majorVersionGroup;
             return Number(bMajorVersion) - Number(aMajorVersion);
         });
+
+        if(this.releaseNotes.length > 0)
+        {
+            if(this.releaseNotes[0].majorVersion)
+            {
+                this.latestRelease = this.releaseNotes[0].majorVersion;
+            }
+            else
+            {
+                this.latestRelease = this.releaseNotes[0].minorVersions[0];
+            }
+        }
     }
 
     getVersionDisplayName(version: DataModuleVersionSourceWire): string

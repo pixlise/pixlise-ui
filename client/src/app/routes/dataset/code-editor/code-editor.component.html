@@ -81,7 +81,6 @@ POSSIBILITY OF SUCH DAMAGE.
                 [valid]="topEditor.isLatestVersionReleased && (!topEditor.isModule || topEditor.isLoadedVersionLatest)"
                 [status]="topEditor.isLatestVersionReleased ? !topEditor.isLoadedVersionLatest ? 'Switch to latest version to edit' : 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
             ></status-indicator>
-
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                 <multi-switch-button
                     #tooltip="matTooltip"
@@ -101,6 +100,8 @@ POSSIBILITY OF SUCH DAMAGE.
                     (changeDescription)="topEditor.onDescriptionChange($event)"
                     (changeTags)="topEditor.onTagSelectionChanged($event)"
                     (updateMetadata)="onUpdateMetadata()"
+                    [buttonStyle]="topEditor.isModule && !topEditor.isLoadedVersionLatest ? 'orange' : 'normal'"
+                    [showDiff]="topEditor.isModule && !topEditor.isLoadedVersionLatest"
                 >
                 </expression-metadata-editor>
                 <push-button
