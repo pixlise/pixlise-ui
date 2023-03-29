@@ -266,6 +266,22 @@ POSSIBILITY OF SUCH DAMAGE.
                     [valid]="bottomEditor.isLatestVersionReleased && (!bottomEditor.isModule || bottomEditor.isLoadedVersionLatest)"
                     [status]="bottomEditor.isLatestVersionReleased ? !bottomEditor.isLoadedVersionLatest ? 'Switch to latest version to edit' : 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
                 ></status-indicator>
+                <expression-metadata-editor
+                    *ngIf="bottomEditor.isModule && !bottomEditor.isLoadedVersionLatest"
+                    class="bottom-metadata-editor"
+                    [expression]="bottomEditor.expression"
+                    [isModule]="bottomEditor.isModule"
+                    [currentVersion]="bottomEditor.version"
+                    [versions]="bottomEditor.versionList"
+                    (changeName)="bottomEditor.onNameChange($event)"
+                    (changeDescription)="bottomEditor.onDescriptionChange($event)"
+                    (changeTags)="bottomEditor.onTagSelectionChanged($event)"
+                    (updateMetadata)="onUpdateMetadata()"
+                    title="View Updates"
+                    buttonStyle="orange"
+                    [showDiff]="true"
+                >
+                </expression-metadata-editor>
                 <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                     <expression-metadata-editor
                         class="bottom-metadata-editor"
@@ -359,15 +375,6 @@ POSSIBILITY OF SUCH DAMAGE.
                     matTooltip="WARNING: This is a one way operation"
                 >Convert to LUA
                 </push-button>
-                <!-- <push-button
-                    class="run-highlighted-btn"
-                    buttonStyle="yellow"
-                    [disabled]="textHighlighted === '' && !isEmptySelection"
-                    (onClick)="runHighlightedExpression()"
-                    #tooltip="matTooltip"
-                    [matTooltip]="runHighlightedCodeTooltip"
-                >{{textHighlighted === '' ? "Run Code To Line #" : "Run Selected Code"}}
-                </push-button> -->
                 <push-button
                     *ngIf="isSplitScreen"
                     class="save-btn"

@@ -30,6 +30,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { DataExpression } from "src/app/models/Expression";
 import { DataModuleService, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
+import { PushButtonStyle } from "../atoms/buttons/push-button/push-button.component";
 
 type MajorGroupedRelease = {
     majorVersion: DataModuleVersionSourceWire;
@@ -44,10 +45,15 @@ type MajorGroupedRelease = {
 })
 export class ExpressionMetadataEditorComponent implements OnInit
 {
+    @Input() title: string = "Metadata";
+    @Input() buttonStyle: PushButtonStyle = "normal";
+
     @Input() expression: DataExpression = null;
     @Input() isModule: boolean = false;
     @Input() currentVersion: DataModuleVersionSourceWire = null;
     @Input() versions: DataModuleVersionSourceWire[] = [];
+
+    @Input() showDiff: boolean = false;
 
     @Output() changeName: EventEmitter<string> = new EventEmitter<string>();
     @Output() changeDescription: EventEmitter<string> = new EventEmitter<string>();

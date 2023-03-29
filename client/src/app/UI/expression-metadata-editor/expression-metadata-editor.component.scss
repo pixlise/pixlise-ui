@@ -59,7 +59,12 @@
         margin-top: 8px;
         padding: 8px;
         max-height: 250px;
+        height: 20vh;
         overflow-y: scroll;
+
+        .release-title {
+            display: flex;
+        }
 
         .release-title, .minor-release-title {
             margin-left: -8px;
@@ -106,5 +111,31 @@
                 }
             }
         }
+    }
+}
+
+.latest-release {
+    font-weight: 400;
+    color: #FFFF8D;
+    font-size: 12px;
+    margin-left: 4px;
+}
+
+.current-release {
+    font-weight: 400;
+    color: #FC8D59;
+    font-size: 12px;
+    margin-left: 4px;
+}
+
+.bottom-container {
+    display: flex;
+    padding: 4px;
+    box-shadow: 0px -4px 4px 0px #00000040;
+    margin-left: -8px;
+    width: calc(100% + 8px);
+
+    .code-diff-btn {
+        margin-left: auto;
     }
 }
