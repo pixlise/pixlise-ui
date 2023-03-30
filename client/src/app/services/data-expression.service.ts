@@ -720,6 +720,7 @@ export class DataExpressionService
                     {
                         this.processReceivedExpressionList(resp);
                         this._loadingSvc.remove(loadID);
+                        return resp;
                     },
                     (err)=>
                     {
@@ -729,11 +730,11 @@ export class DataExpressionService
             );
     }
 
-    updateAllExpressions(): Observable<object>
+    updateAllExpressions(): Observable<object[]>
     {
         let loadID = this._loadingSvc.add("Updating modules for all expressions...");
 
-        let updatePromises = [];
+        let updatePromises: Observable<object>[] = [];
         this._expressions.forEach((expression, id) =>
         {
             if(!expression.isModuleListUpToDate)
@@ -759,19 +760,22 @@ export class DataExpressionService
                     }
                 });
 
-                updatePromises.push(this.getExpressionAsync(id).pipe(tap(
-                    async (expression: DataExpression)=>
+                updatePromises.push(this.getExpressionAsync(id).pipe(map(
+                    async (oldExpression: DataExpression)=>
                     {
-                        await this.edit(
-                            expression.id,
-                            expression.name,
-                            expression.sourceCode,
-                            expression.sourceLanguage,
-                            expression.comments,
-                            expression.tags,
+                        return await this.edit(
+                            oldExpression.id,
+                            oldExpression.name,
+                            oldExpression.sourceCode,
+                            oldExpression.sourceLanguage,
+                            oldExpression.comments,
+                            oldExpression.tags,
                             moduleReferences
-                        ).subscribe(
-                            ()=>null,
+                        ).toPromise().then(
+                            (response)=>
+                            {
+                                return response;
+                            },
                             (err)=>
                             {
                                 alert("Error updating expression: "+err);

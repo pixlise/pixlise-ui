@@ -193,6 +193,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [isSplitScreen]="isSplitScreen"
                 [isSelectable]="!topEditor.isModule && topEditor.isLua"
                 [liveLayerConfigs]="sidePanelLayerConfigs"
+                (onAllExpressionsUpdated)="onAllExpressionsUpdated($event)"
                 fxFlex="100%"
             >
                 <icon-button

@@ -586,6 +586,24 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         }
     }
 
+    onAllExpressionsUpdated(expressionsUpdated): void
+    {
+        if(expressionsUpdated && expressionsUpdated.length > 0)
+        {
+            expressionsUpdated.forEach((expression) =>
+            {
+                // Only need to check the top editor, because bottom is always a module
+                if(!this.topEditor.isModule && expression.id === this.topEditor.expression.id)
+                {
+                    this.topEditor.expression.moduleReferences = expression.moduleReferences.map(
+                        (module) => new ModuleReference(module.moduleID, module.version)
+                    );
+                    this.loadInstalledModules();
+                }
+            });
+        }
+    }
+
     onExpressionChange(id: string, position: string = "top", showSplit: boolean = false): void
     {
         let editor = position === "top" ? this.topEditor : this.bottomEditor;

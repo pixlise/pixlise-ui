@@ -29,7 +29,7 @@
 
 import { Component, Input, OnInit, Output, EventEmitter, ViewChild } from "@angular/core";
 import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
-import { iif, timer } from "rxjs";
+import { PartialObserver, combineLatest, iif, timer } from "rxjs";
 
 import { DataExpressionService } from "src/app/services/data-expression.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
@@ -37,6 +37,8 @@ import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { RGBChannelsEvent } from "src/app/UI/atoms/expression-list/rgbmix-selector/rgbmix-selector.component";
 import { LayerVisibilityChange, LayerColourChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ExpressionListGroupNames, ExpressionListItems, LayerViewItem } from "src/app/models/ExpressionList";
+import { DataExpression } from "src/app/models/Expression";
+import { combineAll } from "rxjs/operators";
 
 
 export class ExpressionListHeaderToggleEvent
@@ -102,6 +104,7 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     @Output() colourChange = new EventEmitter();
     @Output() openSplitScreen = new EventEmitter();
     @Output() onDelete = new EventEmitter();
+    @Output() onAllExpressionsUpdated = new EventEmitter();
 
     stickyItemHeaderName: string = "";
     stickyItem: LayerViewItem = null;
@@ -208,9 +211,13 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
 
     onUpdateAllExpressions(): void
     {
-        this._exprService.updateAllExpressions().subscribe(() =>
+        this._exprService.updateAllExpressions().toPromise().then((updatedExpressions) =>
         {
-            console.log("Updated all expressions");
+            combineLatest(updatedExpressions).subscribe((resolvedExpressions) =>
+            {
+                this.onAllExpressionsUpdated.emit(resolvedExpressions);
+                console.log("Updated all expressions", resolvedExpressions);
+            });
         });
     }
 
