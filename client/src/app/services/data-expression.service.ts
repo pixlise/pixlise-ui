@@ -43,6 +43,8 @@ import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "../expression-language
 import { environment } from "src/environments/environment";
 import { LuaTranspiler } from "../expression-language/lua-transpiler";
 import { DataModuleService } from "./data-module.service";
+import { NotificationItem, NotificationService } from "./notification.service";
+import { NotificationSubscriptions, UserOptionsService } from "./user-options.service";
 
 
 class DataExpressionInput
@@ -84,9 +86,26 @@ export class DataExpressionWire
         let moduleReferences = this.moduleReferences || [];
         moduleReferences = moduleReferences.map((ref) => new ModuleReference(ref.moduleID, ref.version));
         let isModuleListUpToDate = true;
+        let hasMinorOutdatedModuleReferences = false;
+        let hasMajorOutdatedModuleReferences = false;
         if(moduleService && this.sourceLanguage === EXPR_LANGUAGE_LUA && moduleReferences.length > 0)
         {
-            isModuleListUpToDate = moduleReferences.some((ref) => ref.checkIsLatest(moduleService));
+            moduleReferences.forEach((ref) =>
+            {
+                if(!ref.checkIsLatest(moduleService))
+                {
+                    isModuleListUpToDate = false;
+                    if(ref.isLatestMajorRelease)
+                    {
+                        hasMinorOutdatedModuleReferences = true;
+                    }
+                    else
+                    {
+                        hasMinorOutdatedModuleReferences = true;
+                        hasMajorOutdatedModuleReferences = true;
+                    }
+                }
+            });
         }
 
         let result = new DataExpression(
@@ -104,6 +123,10 @@ export class DataExpressionWire
             this.recentExecStats || null,
             isModuleListUpToDate
         );
+
+        result.hasMinorOutdatedModuleReferences = hasMinorOutdatedModuleReferences;
+        result.hasMajorOutdatedModuleReferences = hasMajorOutdatedModuleReferences;
+
         return result;
     }
 }
@@ -123,10 +146,18 @@ export class DataExpressionService
     private _diffractionCountExpression = "";
     private _diffractionCountExpressionName = "";
 
+    private _minorUpdatesAvailable = false;
+    private _majorUpdatesAvailable = false;
+
+    private _isSubscribedToMinorReleases = false;
+    private _isSubscribedToMajorReleases = false;
+
     constructor(
         private _datasetService: DataSetService, // just for getting pseudointensity predefined expression ids
         private _loadingSvc: LoadingIndicatorService,
         private _moduleService: DataModuleService,
+        private _notifcationService: NotificationService,
+        private _userOptionsService: UserOptionsService,
         private http: HttpClient
     )
     {
@@ -136,8 +167,36 @@ export class DataExpressionService
         // This also ensures that we have the latest module list when we first load expressions
         this._moduleService.modulesUpdated$.subscribe(() =>
         {
-            console.log("INIT OF EXPRESSIONS: module list updated, checking expressions")
             this.refreshExpressions();
+        });
+
+        this._userOptionsService.userOptionsChanged$.subscribe(() =>
+        {
+            this._userOptionsService.notificationSubscriptions.topics.forEach((topic) =>
+            {
+                if(topic.name === NotificationSubscriptions.notificationMinorModuleRelease && topic.config.method.ui)
+                {
+                    this._isSubscribedToMinorReleases = true;
+                }
+                else if(topic.name === NotificationSubscriptions.notificationMajorModuleRelease && topic.config.method.ui)
+                {
+                    this._isSubscribedToMajorReleases = true;
+                }
+            });
+
+            // These conditionals will fire if the expression list loaded before the user options. If not, we handle this
+            // when first processing the expressions
+            if(this._isSubscribedToMajorReleases && this._majorUpdatesAvailable)
+            {
+                this._notifcationService.addNotification("New Major Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+                this._majorUpdatesAvailable = false;
+                this._minorUpdatesAvailable = false;
+            }
+            else if(this._isSubscribedToMinorReleases && this._minorUpdatesAvailable)
+            {
+                this._notifcationService.addNotification("New Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+                this._minorUpdatesAvailable = false;
+            }
         });
     }
 
@@ -223,6 +282,11 @@ export class DataExpressionService
 
         let t0 = performance.now();
 
+        let firstTimeProcessed = true;
+        let expressionsNeedUpdating = false;
+        let majorModuleVersionsOutdated = false;
+        let minorModuleVersionsOutdated = false;
+
         // Only update changed expressions
         Object.entries(receivedDataExpressions).forEach(([id, expression]: [string, DataExpressionWire])=>
         {
@@ -245,15 +309,62 @@ export class DataExpressionService
                     expression["mod_unix_time_sec"],
                     expression["tags"],
                     expression["moduleReferences"],
-                    expression["recentExecStats"],
-
+                    expression["recentExecStats"]
                 );
                 // We're passing in the module service here so we can make sure all modules are up to date
                 // and cache this once
                 let receivedDataExpression = wireExpr.makeExpression(id, this._moduleService);
+                if(this._expressions.get(id))
+                {
+                    firstTimeProcessed = false;
+                }
+                else if(!receivedDataExpression.isModuleListUpToDate)
+                {
+                    expressionsNeedUpdating = true;
+                    if(receivedDataExpression.hasMajorOutdatedModuleReferences)
+                    {
+                        majorModuleVersionsOutdated = true;
+                        minorModuleVersionsOutdated = true;
+                    }
+                    else if(receivedDataExpression.hasMinorOutdatedModuleReferences)
+                    {
+                        minorModuleVersionsOutdated = true;
+                    }
+                }
+
                 this._expressions.set(id, receivedDataExpression);
             }
         });
+
+        // If this is the first time we're processing expressions and some have ouotdated modules, notify the user
+        // Expressions can load quick so sometimes this is loaded before user options. If this is the case, track
+        // them as needing updating and notify when the user options are loaded
+        if(firstTimeProcessed && expressionsNeedUpdating)
+        {
+            if(majorModuleVersionsOutdated && !this._majorUpdatesAvailable)
+            {
+                if(this._isSubscribedToMajorReleases)
+                {
+                    this._notifcationService.addNotification("New Major Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+                }
+                else
+                {
+                    this._majorUpdatesAvailable = true;
+                    this._minorUpdatesAvailable = true;
+                }
+            }
+            else if(minorModuleVersionsOutdated && !this._minorUpdatesAvailable)
+            {
+                if(this._isSubscribedToMinorReleases)
+                {
+                    this._notifcationService.addNotification("New Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+                }
+                else
+                {
+                    this._minorUpdatesAvailable = true;
+                }
+            }
+        }
 
         this.checkQuantCompatibleExpressions();
 

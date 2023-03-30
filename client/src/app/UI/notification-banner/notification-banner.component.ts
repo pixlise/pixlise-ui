@@ -33,6 +33,10 @@ import { LayoutService } from "src/app/services/layout.service";
 import { NotificationItem, NotificationService } from "src/app/services/notification.service";
 import { VersionUpdateCheckerService } from "src/app/services/version-update-checker.service";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { Router } from "@angular/router";
+import { DataSetService } from "src/app/services/data-set.service";
+import { DataExpressionId } from "src/app/models/Expression";
 
 
 @Component({
@@ -50,7 +54,10 @@ export class NotificationBannerComponent implements OnInit
     constructor(
         private _notificationService: NotificationService,
         private _versionCheckService: VersionUpdateCheckerService,
+        private _expressionService: DataExpressionService,
+        private _datasetService: DataSetService,
         private _layoutService: LayoutService,
+        private _router: Router
     )
     {
     }
@@ -91,6 +98,26 @@ export class NotificationBannerComponent implements OnInit
     onRefresh(): void
     {
         location.reload();
+    }
+
+    onUpdateAll(): void
+    {
+        this._expressionService.updateAllExpressions().subscribe((expressions) =>
+        {
+            console.log("Updated all expressions: " + expressions.length);
+        },
+        (error) =>
+        {
+            alert("Error updating all expressions: " + error);
+            console.log("Error updating all expressions: ", error);
+        });
+        this.onClose();
+    }
+
+    onOpenCodeEditor(): void
+    {
+        this._router.navigate(["dataset", this._datasetService.datasetIDLoaded, "code-editor", DataExpressionId.NewExpression]);
+        this.onClose();
     }
 
     protected getLatestNotification(): void
