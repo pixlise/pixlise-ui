@@ -116,7 +116,7 @@ export class NotificationBannerComponent implements OnInit
 
     onOpenCodeEditor(): void
     {
-        this._router.navigate(["dataset", this._datasetService.datasetIDLoaded, "code-editor", DataExpressionId.NewExpression]);
+        this._router.navigate(["dataset", this._datasetService.datasetIDLoaded, "code-editor", DataExpressionId.NewExpression], { queryParams: { outdated: "true" } });
         this.onClose();
     }
 

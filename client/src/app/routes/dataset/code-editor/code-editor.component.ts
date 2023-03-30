@@ -179,6 +179,13 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this._datasetID = this._route.snapshot.parent?.params["dataset_id"];
         this._expressionID = this._route.snapshot.params["expression_id"];
 
+        let showOutdatedModulesSection = this._route.snapshot.queryParams["outdated"] === "true";
+        if(showOutdatedModulesSection)
+        {
+            this.headerSectionsOpen = new Set<string>([this.expressionsUpdateHeaderName]);
+            this.isSidebarOpen = true;
+        }
+
         this._subs.add(this._moduleService.modulesUpdated$.subscribe(() =>
         {
             // Regenerate modules list on change
