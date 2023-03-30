@@ -50,6 +50,7 @@ export class ExpressionListGroupNames
     // Names of header sections
     readonly elementsHeaderName = "elements-header";
     readonly rgbMixHeaderName = "rgbmix-header";
+    readonly expressionsUpdateHeaderName = "expression-updates-header";
     readonly expressionsHeaderName = "expressions-header";
     readonly anomalyHeaderName = "anomaly-header";
     readonly pseudoIntensityHeaderName = "pseudointensity-header";
@@ -88,6 +89,8 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
     protected _userExpressions: DataExpression[] = [];
     protected _sharedExpressions: DataExpression[] = [];
     protected _exampleExpressions: DataExpression[] = [];
+    protected _userExpressionsWithUpdates: DataExpression[] = [];
+
     protected _elementsFromQuant: DataExpression[] = [];
     protected _elementRelatedBuiltIn: DataExpression[] = [];
     protected _pseudointensities: DataExpression[] = [];
@@ -104,7 +107,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         private _includeRGBMix: boolean,
         public includeAnomalies: boolean,
         protected _exprService: DataExpressionService,
-        public showUnsavedExpressions: boolean = true,
+        public showUnsavedExpressions: boolean = true
     )
     {
         super();
@@ -226,6 +229,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
     protected processExpressions(expressions: Map<string, DataExpression>): void
     {
         this._userExpressions = [];
+        this._userExpressionsWithUpdates = [];
         this._sharedExpressions = [];
         this._exampleExpressions = [];
 
@@ -243,11 +247,18 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
             {
                 this._userExpressions.push(expr);
             }
+
+            if(!expr.isModuleListUpToDate)
+            {
+                this._userExpressionsWithUpdates.push(expr);
+            }
         }
 
         // Sort by name
         this._userExpressions.sort(sortByNameAndCompatibility);
         this._sharedExpressions.sort(sortByNameAndCompatibility);
+        this._exampleExpressions.sort(sortByNameAndCompatibility);
+        this._userExpressionsWithUpdates.sort(sortByNameAndCompatibility);
     }
 
     protected processRGBMixes(mixes: Map<string, RGBMix>): void
@@ -414,6 +425,26 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                     "No user RGB mixes to view",
                     this.getRGBItems(this._sharedRGBMixes, makeLayer),
                     "No shared RGB mixes to view",
+                    groups[groups.length-1]?.items.length || 0
+                )
+            );
+        }
+
+        if(this._userExpressionsWithUpdates.length > 0)
+        {
+            groups.push(
+                new ExpressionListGroupItems(
+                    this.expressionsUpdateHeaderName,
+                    "Outdated Code",
+                    headerSectionsOpen.has(this.expressionsUpdateHeaderName),
+                    "expression",
+                    expressionNameFilter,
+                    expressionAuthorsFilter,
+                    filterTagIDs,
+                    this.getItems(this._userExpressionsWithUpdates, makeLayer),
+                    "No expressions need updating",
+                    null,
+                    "",
                     groups[groups.length-1]?.items.length || 0
                 )
             );

@@ -29,7 +29,7 @@
 
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable, ReplaySubject, Subject, of } from "rxjs";
+import { Observable, ReplaySubject, Subject, forkJoin, of } from "rxjs";
 import { tap, map } from "rxjs/operators";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications";
@@ -42,6 +42,7 @@ import { DataExpression, DataExpressionId, ShortName, ExpressionExecStats, Modul
 import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "../expression-language/expression-language";
 import { environment } from "src/environments/environment";
 import { LuaTranspiler } from "../expression-language/lua-transpiler";
+import { DataModuleService } from "./data-module.service";
 
 
 class DataExpressionInput
@@ -78,8 +79,16 @@ export class DataExpressionWire
     {
     }
 
-    makeExpression(id: string): DataExpression
+    makeExpression(id: string, moduleService: DataModuleService = null): DataExpression
     {
+        let moduleReferences = this.moduleReferences || [];
+        moduleReferences = moduleReferences.map((ref) => new ModuleReference(ref.moduleID, ref.version));
+        let isModuleListUpToDate = true;
+        if(moduleService && this.sourceLanguage === EXPR_LANGUAGE_LUA && moduleReferences.length > 0)
+        {
+            isModuleListUpToDate = moduleReferences.some((ref) => ref.checkIsLatest(moduleService));
+        }
+
         let result = new DataExpression(
             id,
             this.name,
@@ -87,12 +96,13 @@ export class DataExpressionWire
             this.sourceLanguage,
             this.comments || "",
             this.shared,
-            this.creator,
+            new ObjectCreator(this.creator.name, this.creator.user_id, this.creator.email),
             this.create_unix_time_sec,
             this.mod_unix_time_sec,
             this.tags || [],
-            this.moduleReferences || [],
-            this.recentExecStats || null
+            moduleReferences,
+            this.recentExecStats || null,
+            isModuleListUpToDate
         );
         return result;
     }
@@ -116,10 +126,18 @@ export class DataExpressionService
     constructor(
         private _datasetService: DataSetService, // just for getting pseudointensity predefined expression ids
         private _loadingSvc: LoadingIndicatorService,
+        private _moduleService: DataModuleService,
         private http: HttpClient
     )
     {
-        this.refreshExpressions();
+        this._moduleService.refresh();
+
+        // When the module list changes, we need to check our expressions to see if they're still up to date
+        // This also ensures that we have the latest module list when we first load expressions
+        this._moduleService.modulesUpdated$.subscribe(() =>
+        {
+            this.refreshExpressions();
+        });
     }
 
     get expressionsUpdated$(): Subject<void>
@@ -229,7 +247,9 @@ export class DataExpressionService
                     expression["recentExecStats"],
 
                 );
-                let receivedDataExpression = wireExpr.makeExpression(id);
+                // We're passing in the module service here so we can make sure all modules are up to date
+                // and cache this once
+                let receivedDataExpression = wireExpr.makeExpression(id, this._moduleService);
                 this._expressions.set(id, receivedDataExpression);
             }
         });
@@ -707,6 +727,73 @@ export class DataExpressionService
                     }
                 )
             );
+    }
+
+    updateAllExpressions(): Observable<object>
+    {
+        let loadID = this._loadingSvc.add("Updating modules for all expressions...");
+
+        let updatePromises = [];
+        this._expressions.forEach((expression, id) =>
+        {
+            if(!expression.isModuleListUpToDate)
+            {
+                let moduleReferences = [];
+                expression.moduleReferences.forEach((moduleRef) =>
+                {
+                    if(!moduleRef.checkIsLatest(this._moduleService))
+                    {
+                        if(moduleRef.latestVersion)
+                        {
+                            moduleReferences.push(new ModuleReference(moduleRef.moduleID, moduleRef.latestVersion));
+                        }
+                        else
+                        {
+                            moduleReferences.push(moduleRef);
+                            console.error(`Could not find latest version of module ${moduleRef.moduleID} for expression ${expression.name} (${expression.id}).`);
+                        }
+                    }
+                    else
+                    {
+                        moduleReferences.push(moduleRef);
+                    }
+                });
+
+                updatePromises.push(this.getExpressionAsync(id).pipe(tap(
+                    async (expression: DataExpression)=>
+                    {
+                        await this.edit(
+                            expression.id,
+                            expression.name,
+                            expression.sourceCode,
+                            expression.sourceLanguage,
+                            expression.comments,
+                            expression.tags,
+                            moduleReferences
+                        ).subscribe(
+                            ()=>null,
+                            (err)=>
+                            {
+                                alert("Error updating expression: "+err);
+                                console.error("Error updating expression:", err);
+                            }
+                        );
+                    }
+                )));
+            }
+        });
+
+        return forkJoin(updatePromises).pipe(tap(
+            ()=>
+            {
+                this._loadingSvc.remove(loadID);
+            },
+            (err)=>
+            {
+                alert("Error updating all expressions: "+err);
+                this._loadingSvc.remove(loadID);
+            }
+        ));
     }
 
     updateTags(id: string, tags: string[]): Observable<object>

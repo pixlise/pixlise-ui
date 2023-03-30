@@ -29,6 +29,7 @@
 
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { UNICODE_GREEK_LOWERCASE_PSI } from "src/app/utils/utils";
+import { DataModuleService } from "../services/data-module.service";
 
 
 export class ShortName
@@ -40,11 +41,41 @@ export class ShortName
 
 export class ModuleReference
 {
+    latestVersion: string = null;
+
     constructor(
         public moduleID: string,
         public version: string,
     )
     {
+    }
+
+    checkIsLatest(moduleService: DataModuleService): boolean
+    {
+        if(!moduleService)
+        {
+            return true;
+        }
+
+        let latest = moduleService.getLatestCachedModuleVersion(this.moduleID, true);
+        if(latest)
+        {
+            this.latestVersion = latest.version;
+        }
+
+        let isAheadOfRelease = false;
+        let isLatestVersion = latest.version === this.version;
+        if(latest && !isLatestVersion && !this.version.endsWith(".0"))
+        {
+            let [latestMajor, latestMinor] = latest.version.split(".").map((part) => parseInt(part));
+            let [thisMajor, thisMinor] = this.version.split(".").map((part) => parseInt(part));
+
+            // If the first 2 parts are equal, we know it's ahead of the release because it doesn't end in ".0"
+            isAheadOfRelease = latestMajor === thisMajor && latestMinor === thisMinor;
+        }
+
+        // If we can't get the latest version, assume it's the latest, else check if it's at least as new as the latest
+        return !latest || isLatestVersion || isAheadOfRelease;
     }
 }
 
@@ -78,7 +109,8 @@ export class DataExpression
         public modUnixTimeSec: number,
         public tags: string[],
         public moduleReferences: ModuleReference[],
-        public recentExecStats: ExpressionExecStats
+        public recentExecStats: ExpressionExecStats,
+        public isModuleListUpToDate: boolean = true
     )
     {
         // Read in the required elements and detectors from the recent exec stats (if any)

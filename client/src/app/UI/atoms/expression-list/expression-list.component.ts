@@ -206,6 +206,14 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
         }
     }
 
+    onUpdateAllExpressions(): void
+    {
+        this._exprService.updateAllExpressions().subscribe(() =>
+        {
+            console.log("Updated all expressions");
+        });
+    }
+
     onExploratoryRGBChanged(event: RGBChannelsEvent): void
     {
         // User changed the experimental ones, set the channels if we can

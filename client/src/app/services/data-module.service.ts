@@ -572,7 +572,7 @@ export class DataModuleService
         return module;
     }
 
-    getLatestCachedModuleVersion(moduleId: string): DataModuleVersionSourceWire
+    getLatestCachedModuleVersion(moduleId: string, releasedOnly: boolean = false): DataModuleVersionSourceWire
     {
         let module = this.getSourceDataModule(moduleId);
         if(!module)
@@ -581,7 +581,7 @@ export class DataModuleService
         }
 
         let latestVersion = null;
-        if(module?.origin?.creator?.user_id !== this._authService?.getUserID())
+        if(releasedOnly || module?.origin?.creator?.user_id !== this._authService?.getUserID())
         {
             let releasedVersions = Array.from(module.versions.values()).filter((version: DataModuleVersionSourceWire) => version.version.endsWith(".0"));
             latestVersion = releasedVersions.pop();

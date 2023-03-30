@@ -144,6 +144,22 @@ POSSIBILITY OF SUCH DAMAGE.
                     (onScrollToItem)="onScrollToItem(item.itemType, $event)">
                 </context-visibility-header>
             </ng-container>
+            <ng-container *ngSwitchCase="'expression-updates-header'">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
+                    <push-button
+                        header
+                        buttonStyle="outline"
+                        #tooltip="matTooltip"
+                        matTooltip="Update all expressions to the latest version"
+                        (click)="onUpdateAllExpressions()"
+                    >Update All
+                    </push-button>
+                </context-visibility-header>
+            </ng-container>
             <ng-container *ngSwitchCase="'expression'">
                 <context-layer-settings
                     [isCurrentlyOpen]="item.groupHeaderType === currentlyOpenHeaderName"
