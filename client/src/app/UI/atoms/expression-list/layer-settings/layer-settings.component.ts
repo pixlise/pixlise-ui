@@ -665,7 +665,7 @@ export class LayerSettingsComponent implements OnInit
 
     get tooltipText(): string
     {
-        let outOfDateWarning = this.layerInfo.layer.isOutOfDate ? "\n\n***Modules in use by this expression are out of date***" : "";
+        let outOfDateWarning = this.layerInfo.layer.isOutOfDate ? "\n\n***Expression has module updates available***" : "";
         return `${this.labelToShow}:\n\t${this.expressionCommentsHover}${outOfDateWarning}`;
     }
 
