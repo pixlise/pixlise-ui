@@ -184,8 +184,8 @@ export class DataExpressionService
                 }
             });
 
-            // These conditionals will fire if the expression list loaded before the user options. If not, we handle this
-            // when first processing the expressions
+            // These conditionals will fire either if the expression list loaded before the user options or if there were updates 
+            // available and the user toggled on the notifications. If not, we handle this when first processing the expressions.
             if(this._isSubscribedToMajorReleases && this._majorUpdatesAvailable)
             {
                 this._notifcationService.addNotification("New Major Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
@@ -341,28 +341,22 @@ export class DataExpressionService
         // them as needing updating and notify when the user options are loaded
         if(firstTimeProcessed && expressionsNeedUpdating)
         {
-            if(majorModuleVersionsOutdated && !this._majorUpdatesAvailable)
+            if(majorModuleVersionsOutdated && this._isSubscribedToMajorReleases)
             {
-                if(this._isSubscribedToMajorReleases)
-                {
-                    this._notifcationService.addNotification("New Major Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
-                }
-                else
-                {
-                    this._majorUpdatesAvailable = true;
-                    this._minorUpdatesAvailable = true;
-                }
+                this._notifcationService.addNotification("New Major Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
             }
-            else if(minorModuleVersionsOutdated && !this._minorUpdatesAvailable)
+            else if(minorModuleVersionsOutdated && this._isSubscribedToMinorReleases)
             {
-                if(this._isSubscribedToMinorReleases)
-                {
-                    this._notifcationService.addNotification("New Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
-                }
-                else
-                {
-                    this._minorUpdatesAvailable = true;
-                }
+                this._notifcationService.addNotification("New Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+            }
+            else if(majorModuleVersionsOutdated)
+            {
+                this._majorUpdatesAvailable = true;
+                this._minorUpdatesAvailable = true;
+            }
+            else if(minorModuleVersionsOutdated)
+            {
+                this._minorUpdatesAvailable = true;
             }
         }
 
