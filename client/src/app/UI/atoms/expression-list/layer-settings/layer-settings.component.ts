@@ -207,6 +207,12 @@ export class LayerSettingsComponent implements OnInit
         return this.customOptions?.tagType || "expression";
     }
 
+    get labelColour(): string
+    {
+        let colour = this.customOptions?.labelColour || "$clr-gray-10";
+        return this.layerInfo?.layer?.isOutOfDate ? "#FC8D59" : colour;
+    }
+
     get showSettingsButton(): boolean
     {
         if(!this.showSettings)
@@ -290,7 +296,7 @@ export class LayerSettingsComponent implements OnInit
         return t;
     }
 
-    get expressionHover(): string
+    get expressionCommentsHover(): string
     {
         if(this.layerInfo.layer.source)
         {
@@ -659,7 +665,8 @@ export class LayerSettingsComponent implements OnInit
 
     get tooltipText(): string
     {
-        return `${this.labelToShow}:\n\n${this.expressionHover}`;
+        let outOfDateWarning = this.layerInfo.layer.isOutOfDate ? "\n\n***Modules in use by this expression are out of date***" : "";
+        return `${this.labelToShow}:\n\t${this.expressionCommentsHover}${outOfDateWarning}`;
     }
 
     get selectedTagIDs(): string[]

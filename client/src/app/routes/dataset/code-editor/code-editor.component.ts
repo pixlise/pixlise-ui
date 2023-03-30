@@ -106,15 +106,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             emptyMessage: "No modules are available.",
         }
     };
-    public sidebarBottomSections: Record<string, CustomExpressionGroup> = {
-        // "examples": {
-        //     type:  this.examplesHeaderName,
-        //     childType: "expression",
-        //     label: "Examples",
-        //     items: [],
-        //     emptyMessage: "No examples are available.",
-        // }
-    };
+    public sidebarBottomSections: Record<string, CustomExpressionGroup> = {};
 
     public openModules: Record<string, DataModuleSpecificVersionWire> = {};
 
@@ -213,6 +205,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 this.sidebarTopSections["modules"].items.push(latestModuleExpression);
             });
 
+            this.topEditor.checkIfModulesAreLatest(this._moduleService);
             this.regenerateItemList();
         }));
 
@@ -414,6 +407,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     }
 
                     this.topEditor.expression = expression.copy();
+                    this.topEditor.checkIfModulesAreLatest(this._moduleService);
+
                     this.topEditor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
 
                     this._fetchedExpression = true;
@@ -557,6 +552,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     {
         let editor = position === "top" ? this.topEditor : this.bottomEditor;
         editor.expression.moduleReferences = modules.map((module) => new ModuleReference(module.id, module.version));
+        editor.checkIfModulesAreLatest(this._moduleService);
         this.loadInstalledModules();
     }
 
@@ -598,6 +594,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.topEditor.expression.moduleReferences = expression.moduleReferences.map(
                         (module) => new ModuleReference(module.moduleID, module.version)
                     );
+                    this.topEditor.checkIfModulesAreLatest(this._moduleService);
                     this.loadInstalledModules();
                 }
             });
@@ -1209,10 +1206,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 this.evaluatedExpression = result;
                 this.stdout = result.exprResult.stdout;
                 this.stderr = result.exprResult.stderr;
-
-                // TODO: Use these somewhere in the UI
-                //result.exprResult.runtimeMs;
-                //result.exprResult.dataRequired;
             },
             (err)=>
             {

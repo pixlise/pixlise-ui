@@ -130,6 +130,8 @@ export class LocationDataLayerProperties
 
     protected _source: DataExpression | RGBMix;
 
+    public isOutOfDate: boolean = false;
+
     constructor(id: string, name: string, expressionID: string, source: DataExpression | RGBMix)
     {
         this._id = id;

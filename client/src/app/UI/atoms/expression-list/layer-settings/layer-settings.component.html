@@ -134,7 +134,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 #tooltip="matTooltip"
                 [matTooltip]="tooltipText"
                 [ngClass]='{"incompatible": incompatibleWithQuant}'
-                [ngStyle]="{'min-width': minLabelTextWidth}"
+                [ngStyle]="{'min-width': minLabelTextWidth, 'color': labelColour}"
             >{{labelToShow}}</div>
             <div
                 *ngIf="customIcon"

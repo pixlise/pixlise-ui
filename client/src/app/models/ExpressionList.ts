@@ -385,7 +385,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                     section.emptyMessage,
                     null,
                     "",
-                    groups[groups.length-1]?.items.length || 0
+                    groups.length - 1 >= 0 ? groups[groups.length-1]?.items.length || 0 : 0
                 )
             );
         });
@@ -873,6 +873,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
             }
 
             let layer = makeLayer(item);
+            layer.isOutOfDate = !item?.isModuleListUpToDate || false;
             layers.push(new LayerInfo(layer, []));
         }
 

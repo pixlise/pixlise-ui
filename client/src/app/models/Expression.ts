@@ -165,6 +165,7 @@ export class DataExpression
             tags,
             moduleReferences,
             recentExecStats,
+            this.isModuleListUpToDate
         );
     }
 

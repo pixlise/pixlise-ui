@@ -1,7 +1,7 @@
 import { DataExpressionModule } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
 import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 import { DataExpression } from "src/app/models/Expression";
-import { DataModuleVersionSourceWire } from "src/app/services/data-module.service";
+import { DataModuleService, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 
 class EditorConfig
 {
@@ -158,6 +158,13 @@ class EditorConfig
     {
         this._modules = modules;
         this.isExpressionSaved = false;
+    }
+
+    checkIfModulesAreLatest(moduleService: DataModuleService): void
+    {
+        // We have to check this separately since we're making a copy
+        let isModuleListUpToDate = this.expression.moduleReferences.some(ref => ref.checkIsLatest(moduleService));
+        this.expression.isModuleListUpToDate = isModuleListUpToDate;
     }
 
     onExpressionTextChanged(text: string): void

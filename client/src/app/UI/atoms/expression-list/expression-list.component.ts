@@ -57,6 +57,7 @@ export class LiveLayerConfig
         public iconTooltip: string = null,
         public sideColour: string = null,
         public tagType: string = null,
+        public labelColour: string = null,
     )
     {}
 
@@ -66,7 +67,8 @@ export class LiveLayerConfig
             this.icon === other.icon &&
             this.iconTooltip === other.iconTooltip &&
             this.sideColour === other.sideColour &&
-            this.tagType === other.tagType;
+            this.tagType === other.tagType &&
+            this.labelColour === other.labelColour;
     }
 }
 
@@ -211,7 +213,7 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
 
     onUpdateAllExpressions(): void
     {
-        this._exprService.updateAllExpressions().toPromise().then((updatedExpressions) =>
+        this._exprService.updateAllExpressions().subscribe((updatedExpressions: any[]) =>
         {
             combineLatest(updatedExpressions).subscribe((resolvedExpressions) =>
             {
