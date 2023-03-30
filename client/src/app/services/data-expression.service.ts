@@ -136,6 +136,7 @@ export class DataExpressionService
         // This also ensures that we have the latest module list when we first load expressions
         this._moduleService.modulesUpdated$.subscribe(() =>
         {
+            console.log("INIT OF EXPRESSIONS: module list updated, checking expressions")
             this.refreshExpressions();
         });
     }

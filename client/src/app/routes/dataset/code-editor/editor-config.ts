@@ -162,9 +162,12 @@ class EditorConfig
 
     checkIfModulesAreLatest(moduleService: DataModuleService): void
     {
-        // We have to check this separately since we're making a copy
-        let isModuleListUpToDate = this.expression.moduleReferences.some(ref => ref.checkIsLatest(moduleService));
-        this.expression.isModuleListUpToDate = isModuleListUpToDate;
+        if(this.expression)
+        {
+            // We have to check this separately since we're making a copy
+            let isModuleListUpToDate = this.expression.moduleReferences?.some(ref => ref.checkIsLatest(moduleService));
+            this.expression.isModuleListUpToDate = isModuleListUpToDate;
+        }
     }
 
     onExpressionTextChanged(text: string): void
