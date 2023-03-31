@@ -1617,17 +1617,18 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     onLinkModule(moduleID: string): void
     {
         this.topEditor.linkedModuleID = moduleID;
-        if(!this.isSplitScreen || this.bottomEditor?.isModule && this.bottomEditor?.expression?.id !== moduleID)
+        let latestVersion = this._moduleService.getLatestCachedModuleVersion(moduleID);
+
+        if(!this.isSplitScreen || this.bottomEditor?.expression?.id !== moduleID || this.bottomEditor?.version?.version !== latestVersion.version)
         {
-            let latestVersion = this._moduleService.getLatestCachedModuleVersion(moduleID);
             this.onOpenSplitScreen({ id: moduleID, version: latestVersion.version, isModule: true });
-            
-            let linkedIndex = this.topEditor.expression.moduleReferences.findIndex(ref => ref.moduleID === moduleID);
-            if(linkedIndex >= 0)
-            {
-                this.topEditor.expression.moduleReferences[linkedIndex] = new ModuleReference(moduleID, latestVersion.version);
-                this.loadInstalledModules();
-            }
+        }
+
+        let linkedIndex = this.topEditor.expression.moduleReferences.findIndex(ref => ref.moduleID === moduleID);
+        if(linkedIndex >= 0)
+        {
+            this.topEditor.expression.moduleReferences[linkedIndex] = new ModuleReference(moduleID, latestVersion.version);
+            this.loadInstalledModules();
         }
     }
 
