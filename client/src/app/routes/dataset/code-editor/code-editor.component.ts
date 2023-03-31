@@ -1571,6 +1571,20 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     editor.isCodeChanged = false;
                     editor.isExpressionSaved = true;
                     this.updateCurrentlyOpenList(this.isSplitScreen);
+
+                    // If sync, update top editor
+                    if(!saveTop && this.topEditor.linkedModuleID === editor.expression.id)
+                    {
+                        let linkedModuleIndex = this.topEditor.expression.moduleReferences.findIndex(ref => ref.moduleID === editor.expression.id);
+                        if(linkedModuleIndex >= 0)
+                        {
+                            this.topEditor.expression.moduleReferences[linkedModuleIndex] = new ModuleReference(editor.expression.id, editor.version.version);
+                            this.topEditor.isCodeChanged = true;
+                        }
+
+                        this.topEditor.checkIfModulesAreLatest(this._moduleService);
+                        this.loadInstalledModules();
+                    }
                 });
             }
             else
@@ -1596,6 +1610,23 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                         alert(`Failed to save expression ${editor.expression.name}: ${err?.message}`);
                     }
                 );
+            }
+        }
+    }
+
+    onLinkModule(moduleID: string): void
+    {
+        this.topEditor.linkedModuleID = moduleID;
+        if(!this.isSplitScreen || this.bottomEditor?.isModule && this.bottomEditor?.expression?.id !== moduleID)
+        {
+            let latestVersion = this._moduleService.getLatestCachedModuleVersion(moduleID);
+            this.onOpenSplitScreen({ id: moduleID, version: latestVersion.version, isModule: true });
+            
+            let linkedIndex = this.topEditor.expression.moduleReferences.findIndex(ref => ref.moduleID === moduleID);
+            if(linkedIndex >= 0)
+            {
+                this.topEditor.expression.moduleReferences[linkedIndex] = new ModuleReference(moduleID, latestVersion.version);
+                this.loadInstalledModules();
             }
         }
     }

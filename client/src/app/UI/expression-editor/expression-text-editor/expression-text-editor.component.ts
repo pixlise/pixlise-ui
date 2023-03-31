@@ -119,6 +119,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Input() isHeaderOpen: boolean = false;
     @Input() showInstalledModules: boolean = true;
 
+    @Input() linkedModuleID: string = null;
+
     @Output() onChange = new EventEmitter<DataExpression>();
     @Output() onTextChange = new EventEmitter<string>();
     @Output() onTextSelect = new EventEmitter<TextSelection>();
@@ -131,6 +133,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Output() changeExpression = new EventEmitter<(text: string) => void>();
     @Output() toggleHeader = new EventEmitter();
     @Output() onClick = new EventEmitter();
+    @Output() linkModule = new EventEmitter<string>();
     
     constructor(
         private _datasetService: DataSetService,
@@ -242,6 +245,11 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         {
             this.toggleHeader.emit();
         }
+    }
+
+    onLinkModule(moduleID: string): void
+    {
+        this.linkModule.emit(moduleID);
     }
 
     onSetActive(): void

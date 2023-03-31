@@ -8,6 +8,8 @@ class EditorConfig
     private _modules: DataExpressionModule[] = [];
     public isSaveableOutput: boolean = true;
 
+    public linkedModuleID: string = null;
+
     constructor(
         public expression: DataExpression = null,
         public userID: string = "",

@@ -158,7 +158,11 @@ h3 {
                         line-height: 16px;
                     }
 
-                    &:hover {
+                    &.linked {
+                        border-color: #ffff8d;
+                    }
+
+                    &.unlinked:hover {
                         border-color: lighten(#444C50, 20%);
                     }
                 }
@@ -225,4 +229,18 @@ h3 {
         max-width: 100%;
         width: auto;
     }  
+}
+
+mat-icon {
+    &.linked {
+        margin-left: 4px;
+        color: #ffff8d;
+        cursor: pointer;
+    }
+    
+    &.unlinked {
+        margin-left: 4px;
+        color: #546E7A;
+        cursor: pointer;
+    }
 }
