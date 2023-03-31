@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, SimpleChanges } from "@angular/core";
 import { Subscription } from "rxjs";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { ContextImageService } from "src/app/services/context-image.service";
@@ -60,6 +60,8 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
 
     private _isOutputView: boolean = true;
 
+    private _pmcToValueIdx = new Map<number, number>();
+
     selectedPMCs: Set<number> = new Set();
     currentSelection: SelectionHistoryItem = null;
 
@@ -78,6 +80,19 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
             this.currentSelection = selection;
             this.selectedPMCs = this._datasetService.datasetLoaded.getPMCsForLocationIndexes(Array.from(selection.beamSelection.locationIndexes), false)
         });
+    }
+
+    ngOnChanges(changes: SimpleChanges): void
+    {
+        // Rebuild our PMC->value index lookup
+        if(changes["evaluatedExpression"])
+        {
+            this._pmcToValueIdx.clear();
+            for(let c = 0; c < this.evaluatedExpression.values.values.length; c++)
+            {
+                this._pmcToValueIdx.set(this.evaluatedExpression.values.values[c].pmc, c);
+            }
+        }
     }
 
     ngOnDestroy()
@@ -173,18 +188,19 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
     {
         if(this.isValidTableData && this._selectionService.hoverPMC !== -1 && this.evaluatedExpression?.values)
         {
-            let index = this.evaluatedExpression.values.values.findIndex((point) => point.pmc === this._selectionService.hoverPMC);
-            if(index !== -1)
+            // Find the idx of hovered PMC value
+            let valIdx = this._pmcToValueIdx.get(this._selectionService.hoverPMC);
+            if(valIdx !== undefined)
             {
-                let row = Math.floor(index / this.columnCount);
-                let col = index % this.columnCount;
+                let row = Math.floor(valIdx / this.columnCount);
+                let col = valIdx % this.columnCount;
                 return [row, col];
             }
         }
         return null;
     }
 
-    getDataPoint(row: number, col: number): PMCDataValue
+    private getDataPoint(row: number, col: number): PMCDataValue
     {
         let index = row * this.columnCount + col;
         if(index >= this.evaluatedExpression.values.values.length)
