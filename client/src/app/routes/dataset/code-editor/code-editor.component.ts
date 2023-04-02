@@ -30,7 +30,7 @@
 import { Component, ComponentFactoryResolver, HostListener, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { ReplaySubject, Subject, Subscription, combineLatest, of, timer } from "rxjs";
+import { Subscription, combineLatest, of, timer } from "rxjs";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { LayoutService } from "src/app/services/layout.service";
 import { analysisLayoutState, ViewStateService } from "src/app/services/view-state.service";
@@ -40,7 +40,6 @@ import { ChordViewWidgetComponent } from "src/app/UI/chord-view-widget/chord-vie
 import { ContextImageViewWidgetComponent } from "src/app/UI/context-image-view-widget/context-image-view-widget.component";
 import { HistogramViewComponent } from "src/app/UI/histogram-view/histogram-view.component";
 import { SpectrumChartWidgetComponent } from "src/app/UI/spectrum-chart-widget/spectrum-chart-widget.component";
-import { SpectrumRegionPickerComponent } from "src/app/UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
 import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/ternary-plot-widget.component";
 import { DataExpressionService, DataExpressionWire } from "src/app/services/data-expression.service";
 import { DataExpression, DataExpressionId, ModuleReference } from "src/app/models/Expression";
@@ -48,9 +47,8 @@ import { DataSourceParams, RegionDataResultItem, WidgetRegionDataService } from 
 import { PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionModule, TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
 import { AuthenticationService } from "src/app/services/authentication.service";
-import { LuaTranspiler } from "src/app/expression-language/lua-transpiler";
 import { CustomExpressionGroup, ExpressionListBuilder, ExpressionListGroupNames, ExpressionListItems, LocationDataLayerPropertiesWithVisibility, makeDataForExpressionList } from "src/app/models/ExpressionList";
-import { ExpressionListHeaderToggleEvent } from "src/app/UI/atoms/expression-list/expression-list.component";
+import { ExpressionListHeaderToggleEvent, LiveLayerConfig } from "src/app/UI/atoms/expression-list/expression-list.component";
 import { LayerVisibilityChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
@@ -58,253 +56,11 @@ import { RGBMix } from "src/app/services/rgbmix-config.service"
 import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
-import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
-import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
-
-
-export class EditorConfig
-{
-    private _modules: DataExpressionModule[] = [];
-    public isSaveableOutput: boolean = true;
-
-    constructor(
-        public expression: DataExpression = null,
-        public userID: string = "",
-        public editMode: boolean = true,
-        public isCodeChanged: boolean = false,
-        public isExpressionSaved: boolean = true,
-        public isModule: boolean = false,
-        public isHeaderOpen: boolean = false,
-        public useAutocomplete: boolean = false,
-        public version: DataModuleVersionSourceWire = null,
-        public versions: Map<string, DataModuleVersionSourceWire> = null,
-    ){}
-
-    get isLua(): boolean
-    {
-        return this.expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
-    }
-
-    set isLua(value: boolean)
-    {
-        if(this.expression)
-        {
-            this.expression.sourceLanguage = value ? EXPR_LANGUAGE_LUA : EXPR_LANGUAGE_PIXLANG;
-        }
-    }
-
-    get isSharedByOtherUser(): boolean
-    {
-        return this.expression?.shared && this.expression?.creator?.user_id !== this.userID;
-    }
-
-    get emptyName(): boolean
-    {
-        return !this.expression?.name || this.expression.name === "";
-    }
-
-    get emptySourceCode(): boolean
-    {
-        return !this.expression?.sourceCode || this.expression.sourceCode === "";
-    }
-
-    get invalidExpression(): boolean
-    {
-        return this.emptyName || this.emptySourceCode || !this.isSaveableOutput;
-    }
-
-    get errorTooltip(): string
-    {
-        if(this.emptyName)
-        {
-            return "Name cannot be empty";
-        }
-        else if(this.emptySourceCode)
-        {
-            return "Source code cannot be empty";
-        }
-        else if(this.name.match(/[^a-zA-Z0-9_]/))
-        {
-            return "Name must be alphanumeric and cannot contain special characters";
-        }
-        else if(this.name.match(/^[0-9]/))
-        {
-            return "Name cannot start with a number";
-        }
-        else if(this.name.match(/\s/))
-        {
-            return "Name cannot contain spaces";
-        }
-        else
-        {
-            return "";
-        }
-    }
-
-    get editable(): boolean
-    {
-        return this.editMode && !this.isSharedByOtherUser;
-    }
-
-    get editExpression(): string
-    {
-        return this.expression?.sourceCode || "";
-    }
-
-    set editExpression(val: string)
-    {
-        if(this.expression)
-        {
-            this.expression.sourceCode = val;
-            this.isCodeChanged = true;
-            this.isExpressionSaved = false;
-        }
-    }
-
-    get selectedTagIDs(): string[]
-    {
-        return this.expression?.tags || [];
-    }
-
-    set selectedTagIDs(tags: string[])
-    {
-        if(this.expression)
-        {
-            this.expression.tags = tags;
-            this.isExpressionSaved = false;
-        }
-    }
-
-    get name(): string
-    {
-        return this.expression?.name || "";
-    }
-
-    set name(name: string)
-    {
-        if(this.expression)
-        {
-            this.expression.name = name;
-            this.isExpressionSaved = false;
-        }
-    }
-
-    get comments(): string
-    {
-        return this.expression?.comments || "";
-    }
-
-    set comments(comments: string)
-    {
-        if(this.expression)
-        {
-            this.expression.comments = comments;
-            this.isExpressionSaved = false;
-        }
-    }
-
-    get modules(): DataExpressionModule[]
-    {
-        return this._modules;
-    }
-
-    set modules(modules: DataExpressionModule[])
-    {
-        this._modules = modules;
-        this.isExpressionSaved = false;
-    }
-
-    onExpressionTextChanged(text: string): void
-    {
-        this.isSaveableOutput = true;
-        this.editExpression = text;
-    }
-
-    onNameChange(name: string): void
-    {
-        this.name = name;
-    }
-
-    onDescriptionChange(description: string): void
-    {
-        this.comments = description;
-    }
-
-    onTagSelectionChanged(tags): void
-    {
-        this.selectedTagIDs = tags;
-    }
-
-    onToggleHeader(): void
-    {
-        this.isHeaderOpen = !this.isHeaderOpen;
-    }
-
-    get majorMinorVersion(): string
-    {
-        if(!this.version?.version)
-        {
-            return "0.0";
-        }
-
-        let versionParts = this.version.version.split(".");
-        return versionParts.slice(0, 2).join(".");
-    }
-
-    // TODO: Only show major/minor versions to users who don't own the module
-    get versionList(): DataModuleVersionSourceWire[]
-    {
-        if(!this.isModule || !this.versions)
-        {
-            return [];
-        }
-
-        return Array.from(this.versions.values());
-    }
-
-    get latestVersion(): DataModuleVersionSourceWire
-    {
-        if(!this.isModule || !this.version?.version || !this.versionList.length)
-        {
-            return null;
-        }
-
-        let latestVersion = this.versionList[0];
-        this.versionList.forEach(version =>
-        {
-            if(!version?.version || !version.version.match(/^[0-9]+\.[0-9]+\.[0-9]+$/))
-            {
-                return;
-            }
-
-            let [latestMajor, latestMinor, latestPatch] = latestVersion.version.split(".").map(version => parseInt(version));
-            let [major, minor, patch] = version.version.split(".").map(version => parseInt(version));
-            if(
-                major > latestMajor || 
-                (major === latestMajor && minor > latestMinor) || 
-                (major === latestMajor && minor === latestMinor && patch > latestPatch)
-            )
-            {
-                latestVersion = version;
-            }
-        });
-
-        return latestVersion;
-    }
-
-    get isLoadedVersionLatest(): boolean
-    {
-        let latestVersion = this.latestVersion?.version;
-        return latestVersion && latestVersion === this.version?.version;
-    }
-
-    get isLatestVersionReleased(): boolean
-    {
-        let latestVersion = this.latestVersion?.version;
-        return latestVersion && latestVersion.endsWith(".0");
-    }
-}
+import EditorConfig from "./editor-config";
+import { BuiltInTags } from "src/app/models/tags";
 
 @Component({
     selector: "code-editor",
@@ -320,7 +76,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
     private _previewComponent = null;
     private _datasetID: string;
-    private _expressionID: string;
+    private _expressionID: string = "unsaved-new-expression";
 
     public isSidebarOpen = false;
     // What we display in the virtual-scroll capable list
@@ -350,15 +106,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             emptyMessage: "No modules are available.",
         }
     };
-    public sidebarBottomSections: Record<string, CustomExpressionGroup> = {
-        "examples": {
-            type:  this.examplesHeaderName,
-            childType: "expression",
-            label: "Examples",
-            items: [],
-            emptyMessage: "No examples are available.",
-        }
-    };
+    public sidebarBottomSections: Record<string, CustomExpressionGroup> = {};
 
     public openModules: Record<string, DataModuleSpecificVersionWire> = {};
 
@@ -401,6 +149,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     inactiveIcon="assets/button-icons/check-off.svg";
 
     _listBuilder: ExpressionListBuilder;
+    public sidePanelLayerConfigs: LiveLayerConfig[] = [];
 
     constructor(
         private _route: ActivatedRoute,
@@ -422,24 +171,30 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
     ngOnInit()
     {
-        this.topEditor.userID = this._authService.getUserID();
-        this.bottomEditor.userID = this._authService.getUserID();
+        let userID = this._authService.getUserID();
+        this.topEditor.userID = userID;
+        this.bottomEditor.userID = userID;
 
         this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, false, false, this._expressionService, false);
         this._datasetID = this._route.snapshot.parent?.params["dataset_id"];
         this._expressionID = this._route.snapshot.params["expression_id"];
 
-        combineLatest([this._expressionService.expressionsUpdated$, this._moduleService.modulesUpdated$]).subscribe(() =>
+        let showOutdatedModulesSection = this._route.snapshot.queryParams["outdated"] === "true";
+        if(showOutdatedModulesSection)
         {
-            if(this._fetchedExpression)
-            {
-                return;
-            }
+            this.headerSectionsOpen = new Set<string>([this.expressionsUpdateHeaderName]);
+            this.isSidebarOpen = true;
+        }
 
-            this.sidebarTopSections["modules"].items = this._moduleService.getModules().map((module) =>
+        this._subs.add(this._moduleService.modulesUpdated$.subscribe(() =>
+        {
+            // Regenerate modules list on change
+            this.sidebarTopSections["modules"].items = [];
+            
+            this._moduleService.getModules().forEach((module) =>
             {
                 let latestVersion = Array.from(module.versions.values()).pop();
-                return new DataExpression(
+                let latestModuleExpression = new DataExpression(
                     module.id,
                     module.name,
                     latestVersion.sourceCode,
@@ -453,10 +208,61 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     [],
                     null
                 );
+
+                this.sidebarTopSections["modules"].items.push(latestModuleExpression);
             });
+
+            this.topEditor.checkIfModulesAreLatest(this._moduleService);
+            this.regenerateItemList();
+        }));
+
+        combineLatest([this._expressionService.expressionsUpdated$, this._moduleService.modulesUpdated$]).subscribe(() =>
+        {
+            if(this._fetchedExpression)
+            {
+                return;
+            }
 
             this._expressionService.clearAllUnsavedFromCache();
             this.resetEditors();
+        });
+    }
+
+    syncCurrentlyOpenSection(): void
+    {
+        // If one of the currently open expressions isn't new and doesn't exist anymore, close it
+        this.sidebarTopSections["currently-open"].items.forEach((item, i) =>
+        {
+            if(!this._expressionService.getExpression(item.id) && !this._newExpression)
+            {
+                this.sidebarTopSections["currently-open"].items.splice(i, 1);
+                if(this.topEditor.expression.id === item.id)
+                {
+                    if(this.topEditor.isExpressionSaved)
+                    {
+                        this.forceNavigateToNew("expression");
+                    }
+                    else
+                    {
+                        let shouldClose = confirm("Your currently open expression has been deleted! Do you want to close it?");
+                        if(shouldClose)
+                        {
+                            this.forceNavigateToNew("expression");
+                        }
+                        else
+                        {
+                            this.topEditor.expression.id = "unsaved-new-expression";
+                            this._expressionID = "unsaved-new-expression";
+                            this._newExpression = true;
+                            this.navigateToNew("expression");
+                        }
+                    }
+                }
+                else if(this.bottomEditor.expression.id === item.id)
+                {
+                    this.isSplitScreen = false;
+                }
+            }
         });
     }
 
@@ -497,8 +303,20 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 modules.forEach((module) => 
                 {
                     let sourceModule = this._moduleService.getSourceDataModule(module.id);
-                    editor.modules.push(new DataExpressionModule(module.id, module.name, module.comments, module.version.version, module.origin.creator, Array.from(sourceModule.versions.keys())));
-                    installedModuleExpressions.push(this.convertModuleToExpression(module));
+                    let allVersions: string[] = [];
+
+                    // If the user is not the creator of the module, only show the released versions
+                    if(sourceModule.origin.creator.user_id !== this._authService.getUserID())
+                    {
+                        allVersions = Array.from(sourceModule.versions.values()).filter((version) => version.version.endsWith(".0")).map((version) => version.version);
+                    }
+                    else
+                    {
+                        allVersions = Array.from(sourceModule.versions.keys());
+                    }
+
+                    editor.modules.push(new DataExpressionModule(module.id, module.name, module.comments, module.version.version, module.origin.creator, allVersions));
+                    installedModuleExpressions.push(module.convertToExpression());
                     this.openModules[`${module.id}-${module.version}`] = module;
                 });
 
@@ -528,6 +346,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     {
         this._expressionID = this._route.snapshot.params["expression_id"];
         let version = this._route.snapshot.queryParams["version"];
+        this.resetSidePanelConfigs();
 
         this.topEditor = new EditorConfig();
         this.topEditor.userID = this._authService.getUserID();
@@ -595,6 +414,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     }
 
                     this.topEditor.expression = expression.copy();
+                    this.topEditor.checkIfModulesAreLatest(this._moduleService);
+
                     this.topEditor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
 
                     this._fetchedExpression = true;
@@ -604,6 +425,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.sidebarTopSections["currently-open"].items = [
                         this.topEditor.expression
                     ];
+                    this.updateSidePanelLayer(this.topEditor.expression.id, true);
 
                     this.loadInstalledModules();
                     this.regenerateItemList();
@@ -630,7 +452,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     }
 
                     this.topEditor.version = module.version;
-                    this.topEditor.expression = this.convertModuleToExpression(module);
+                    this.topEditor.expression = module.convertToExpression();
 
                     this._fetchedExpression = true;
 
@@ -638,6 +460,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.sidebarTopSections["currently-open"].items = [
                         this.topEditor.expression
                     ];
+                    this.updateSidePanelLayer(this.topEditor.expression.id, true, false, true, this.topEditor.isBuiltIn);
 
                     if(this.sidebarTopSections["installed-modules"])
                     {
@@ -677,58 +500,183 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         ));
     }
 
-    convertModuleToExpression(module: DataModuleSpecificVersionWire): DataExpression
+    removeSidePanelConfig(id: string): void
     {
-        return new DataExpression(
-            module.id,
-            module.name,
-            module.version.sourceCode,
-            EXPR_LANGUAGE_LUA,
-            module.comments,
-            module.origin.shared,
-            module.origin.creator,
-            module.origin.create_unix_time_sec,
-            module.version.mod_unix_time_sec,
-            module.version.tags,
-            [],
-            null
-        );
+        let existingIndex = this.sidePanelLayerConfigs.findIndex((config) => config.layerID === id);
+        if(existingIndex >= 0)
+        {
+            this.sidePanelLayerConfigs.splice(existingIndex, 1);
+        }
+    }
+
+    resetSidePanelConfigs(): void
+    {
+        this.sidePanelLayerConfigs = [];
+    }
+
+    updateSidePanelLayer(id: string, isUpToDate: boolean = true, isLocked: boolean = false, isModule: boolean = false, isBuiltin: boolean = false): boolean
+    {
+        let icon = "";
+        let iconTooltip = "";
+
+        let nameOfLayer = isModule ? "module" : "expression";
+        if(isLocked)
+        {
+            icon = "assets/button-icons/lock.svg";
+            iconTooltip = `This ${nameOfLayer} is locked and cannot be edited`;
+        }
+        else
+        {
+            icon = isUpToDate ? "assets/button-icons/blue-circle-check.svg" : "assets/button-icons/red-circle-x.svg";
+            iconTooltip = isUpToDate ? `This ${nameOfLayer} is saved` : `This ${nameOfLayer} has unsaved changes`;
+        }
+
+        let sideColour = isModule ? isBuiltin ? "#91BFDB" : "#FFFF8D" : "";
+        let newLayerConfig = new LiveLayerConfig(id, icon, iconTooltip, sideColour, isModule ? "module" : "expression");
+
+        let existingIndex = this.sidePanelLayerConfigs.findIndex((config) => config.layerID === id);
+        if(existingIndex >= 0)
+        {
+            let existingConfig = this.sidePanelLayerConfigs[existingIndex];
+
+            // Only update if the config has changed to prevent unnecessary re-renders
+            if(!existingConfig.equals(newLayerConfig))
+            {
+                this.sidePanelLayerConfigs[existingIndex] = newLayerConfig;
+                return true;
+            }
+        }
+        else
+        {
+            this.sidePanelLayerConfigs.push(newLayerConfig);
+            return true;
+        }
+
+        return false;
     }
 
     onModuleChange(modules: DataExpressionModule[], position: string = "top"): void
     {
         let editor = position === "top" ? this.topEditor : this.bottomEditor;
         editor.expression.moduleReferences = modules.map((module) => new ModuleReference(module.id, module.version));
+        editor.checkIfModulesAreLatest(this._moduleService);
         this.loadInstalledModules();
     }
 
-    onOpenSplitScreen({id, version}: {id: string; version: string;}): void
+    onOpenSplitScreen({id, version, isModule}: {id: string; version: string; isModule: boolean;}): void
     {
-        if(this.bottomEditor?.expression && this.bottomEditor.expression.id === id && this.bottomEditor.version.version === version)
+        // Don't reopen the same module or expression
+        if(this.bottomEditor?.expression && this.bottomEditor.expression.id === id && (!isModule || this.bottomEditor.version.version === version))
         {
-            // Don't reopen the same module
+            this.isSplitScreen = true;
             return;
         }
 
-        if(this.topEditor?.expression && this.topEditor.expression.id === id && this.topEditor.version.version === version)
+        // Don't open the same module or expression twice
+        if(this.topEditor?.expression && this.topEditor.expression.id === id && (!isModule || this.topEditor.version.version === version))
         {
-            // Don't open the same module twice
+            this.isSplitScreen = true;
             return;
         }
 
-        this.onModuleVersionChange(version, "bottom", id, true);
+        if(isModule)
+        {
+            this.onModuleVersionChange(version, "bottom", id, true);
+        }
+        else
+        {
+            this.onExpressionChange(id, "top", true);
+        }
+    }
+
+    onAllExpressionsUpdated(expressionsUpdated): void
+    {
+        if(expressionsUpdated && expressionsUpdated.length > 0)
+        {
+            expressionsUpdated.forEach((expression) =>
+            {
+                // Only need to check the top editor, because bottom is always a module
+                if(!this.topEditor.isModule && expression.id === this.topEditor.expression.id)
+                {
+                    this.topEditor.expression.moduleReferences = expression.moduleReferences.map(
+                        (module) => new ModuleReference(module.moduleID, module.version)
+                    );
+                    this.topEditor.checkIfModulesAreLatest(this._moduleService);
+                    this.loadInstalledModules();
+                }
+            });
+        }
+    }
+
+    onExpressionChange(id: string, position: string = "top", showSplit: boolean = false): void
+    {
+        let editor = position === "top" ? this.topEditor : this.bottomEditor;
+        this._expressionService.getExpressionAsync(id).subscribe((expression) =>
+        {
+            this._expressionID = id;
+            if(!expression)
+            {
+                console.error(`Empty expression: ${this._expressionID}`);
+                this.regenerateItemList();
+                return;
+            }
+            this._fetchedExpression = true;
+
+            // Add the current expression to the currently-open list
+            this.sidebarTopSections["currently-open"].childType = "expression";
+            this.sidebarTopSections["currently-open"].items = [
+                editor.expression
+            ];
+            this.removeSidePanelConfig(editor.expression.id);
+            this.updateSidePanelLayer(id, true);
+
+            this.loadInstalledModules();
+            this.regenerateItemList();
+            setTimeout(() =>
+            {
+                this.runExpression(true, true);
+            }, 5000);
+
+            editor.expression = null;
+            setTimeout(() =>
+            {
+                editor = new EditorConfig();
+                editor.userID = this._authService.getUserID();
+                editor.isModule = false;
+                editor.expression = expression.copy();
+                editor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
+                
+                if(position === "top")
+                {
+                    this.topEditor = editor;
+                    this.updateMainExpressionID(id);
+                }
+                else
+                {
+                    this.bottomEditor = editor;
+                }
+            }, 1);
+
+            if(!showSplit && this.isSplitScreen)
+            {
+                this.isSplitScreen = false;
+                this.bottomEditor = new EditorConfig();
+            }
+        },
+        (error) =>
+        {
+            console.error(`Failed to fetch expression: ${this._expressionID}`, error);
+            this.regenerateItemList();
+        });
     }
 
     onModuleVersionChange(version: string, position: string = "top", id: string = "", showSplit: boolean = false): void
-    {
+    {   
         let editor = position === "top" ? this.topEditor : this.bottomEditor;
         id = id && id.length > 0 ? id : editor.expression.id;
 
         this._moduleService.getModule(id, version).subscribe((module) =>
         {
-            editor.expression = this.convertModuleToExpression(module);
-            editor.version = module.version;
-
             if(editor.expression)
             {
                 // This is a hack to remove code mirrors internal cached copy of the code and replace with the new code
@@ -739,7 +687,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     editor = new EditorConfig();
                     editor.userID = this._authService.getUserID();
                     editor.isModule = true;
-                    editor.expression = this.convertModuleToExpression(module);
+                    editor.expression = module.convertToExpression();
                     editor.version = module.version;
                     editor.versions = this._moduleService.getSourceDataModule(id).versions;
                     if(showSplit)
@@ -750,7 +698,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     if(position === "top")
                     {
                         this.topEditor = editor;
-                        this._router.navigate(["dataset", this._datasetID, "code-editor", module.id], {queryParams: {version: module.version.version}});
+                        this.updateMainExpressionID(module.id, module.version.version);
                     }
                     else
                     {
@@ -765,7 +713,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 editor = new EditorConfig();
                 editor.userID = this._authService.getUserID();
                 editor.isModule = true;
-                editor.expression = this.convertModuleToExpression(module);
+                editor.expression = module.convertToExpression();
                 editor.version = module.version;
                 editor.versions = this._moduleService.getSourceDataModule(id).versions;
                 if(showSplit)
@@ -802,9 +750,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             return;
         }
 
-        this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=>
-            this._router.navigate(["dataset", this._datasetID, "code-editor", "new-expression"])
-        );
+        this.forceNavigateToNew("expression");
     }
 
     onAddModule(): void
@@ -815,9 +761,17 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             return;
         }
 
-        this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=>
-            this._router.navigate(["dataset", this._datasetID, "code-editor", "new-module"])
-        );
+        this.forceNavigateToNew("module");
+    }
+
+    navigateToNew(type: string = "expression"): void
+    {
+        this._router.navigate(["dataset", this._datasetID, "code-editor", `new-${type}`]);
+    }
+
+    forceNavigateToNew(type: string = "expression"): void
+    {
+        this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=> this.navigateToNew(type));
     }
 
     onToggleSidebar(): void
@@ -831,7 +785,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         if(!this.bottomEditor.expression && !this.isSplitScreen && this.topEditor.modules.length > 0)
         {
             let firstInstalledModule = this.topEditor.modules[0];
-            this.onOpenSplitScreen({id: firstInstalledModule.id, version: firstInstalledModule.version});
+            this.onOpenSplitScreen({ id: firstInstalledModule.id, version: firstInstalledModule.version, isModule: true });
         }
         else
         {
@@ -839,6 +793,11 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             {
                 this.bottomEditor = new EditorConfig();
             }
+            else if(!this.isSplitScreen && !this.bottomEditor.expression && this.topEditor.modules.length === 0)
+            {
+                return;
+            }
+
             this.isSplitScreen = !this.isSplitScreen;
 
             if(this.isSplitScreen)
@@ -855,16 +814,57 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         }
     }
 
+    onDeleteExpression(id: string): void
+    {
+        this._expressionService.del(id).subscribe(
+            ()=>
+            {
+                this.syncCurrentlyOpenSection();
+                console.log(`Deleted expression: ${id}`);
+            },
+            (err)=>
+            {
+                console.error(`Failed to delete expression: ${id}`, err);
+                alert("Failed to delete data expression!");
+            }
+        );
+    }
+
+    onUpdateMetadata(): void
+    {
+        this.updateCurrentlyOpenList(this.isSplitScreen);
+    }
+
     updateCurrentlyOpenList(includeBottomExpression: boolean = false): void
     {
-        this.sidebarTopSections["currently-open"].items = includeBottomExpression ? [
+        let oldIDs = this.sidebarTopSections["currently-open"].items.map((item) => item.id);
+        this.sidebarTopSections["currently-open"].items = includeBottomExpression && this.bottomEditor.expression ? [
             this.topEditor.expression,
             this.bottomEditor.expression
         ] : [
             this.topEditor.expression
         ];
 
-        this.regenerateItemList();
+        let isSidePanelChanged = false;
+        let newIDs = this.sidebarTopSections["currently-open"].items.map((item) => item.id);
+        if(newIDs.length !== oldIDs.length || newIDs.every((id) => oldIDs.includes(id)))
+        {
+            isSidePanelChanged = true;
+        }
+
+        let topChanged = this.updateSidePanelLayer(this.topEditor.expression.id, this.topEditor.isExpressionSaved, this.topEditor.isSharedByOtherUser, this.topEditor.isModule, this.topEditor.isBuiltIn);
+        isSidePanelChanged = isSidePanelChanged || topChanged;
+
+        if(includeBottomExpression && this.bottomEditor?.expression?.id)
+        {
+            let bottomChanged = this.updateSidePanelLayer(this.bottomEditor.expression.id, this.bottomEditor.isExpressionSaved, this.bottomEditor.isSharedByOtherUser, this.bottomEditor.isModule, this.bottomEditor.isBuiltIn);
+            isSidePanelChanged = isSidePanelChanged || bottomChanged;
+        }
+
+        if(isSidePanelChanged)
+        {
+            this.regenerateItemList();
+        }
     }
 
     ngOnDestroy()
@@ -935,7 +935,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             false,
             false,
             customStartSections,
-            customEndSections
+            customEndSections,
+            true
         );
 
         this.authors = this._listBuilder.getAuthors();
@@ -1023,7 +1024,10 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         if(event.visible)
         {
             let latestVersion = this._moduleService.getLatestCachedModuleVersion(event.layerID);
-            this.topEditor.expression.moduleReferences.push(new ModuleReference(event.layerID, latestVersion.version));
+            if(latestVersion)
+            {
+                this.topEditor.expression.moduleReferences.push(new ModuleReference(event.layerID, latestVersion.version));
+            }
         }
         else
         {
@@ -1209,10 +1213,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 this.evaluatedExpression = result;
                 this.stdout = result.exprResult.stdout;
                 this.stderr = result.exprResult.stderr;
-
-                // TODO: Use these somewhere in the UI
-                //result.exprResult.runtimeMs;
-                //result.exprResult.dataRequired;
             },
             (err)=>
             {
@@ -1269,6 +1269,14 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     changeExpression(updateText: ((text: string) => void)): void
     {
         this.updateText = updateText;
+    }
+
+    onTextChange(text: string, position: string = "top"): void
+    {
+        let editor = position === "top" ? this.topEditor : this.bottomEditor;
+        
+        editor.onExpressionTextChanged(text);
+        this.updateCurrentlyOpenList(this.isSplitScreen);
     }
 
     onTextSelect(textSelection: TextSelection): void
@@ -1454,7 +1462,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
         -- Modules must return themselves as their last line
         return ${moduleName}
-        `.replace(/ {8,}/g, "").trim();
+        `.replace(/\n {8,8}/g, "\n").trim();
         this.onSave(true);
     }
 
@@ -1487,30 +1495,24 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                         return;
                     }
                     this._newExpression = false;
-                    this._expressionID = newModule.id;
+
+                    if(!(newModule instanceof DataModuleSpecificVersionWire))
+                    {
+                        newModule = this._moduleService.readSpecificVersionModule(newModule);
+                    }
 
                     // Treat module as expression so we can visualize it in the same way
-                    editor.expression = new DataExpression(
-                        this._expressionID,
-                        newModule.name,
-                        editor.expression.sourceCode,
-                        EXPR_LANGUAGE_LUA,
-                        newModule.comments,
-                        newModule.origin.shared,
-                        newModule.origin.creator,
-                        newModule.origin.create_unix_time_sec,
-                        newModule.origin.mod_unix_time_sec,
-                        editor.expression.tags,
-                        [],
-                        null
-                    );
+                    let convertedModule = newModule.convertToExpression();
+                    convertedModule.sourceCode = editor.expression.sourceCode;
+                    convertedModule.tags = editor.expression.tags;
+                    editor.expression = convertedModule;
 
                     editor.version = newModule.version;
                     editor.versions = new Map([[newModule.version.version, newModule.version]]);
 
                     editor.isCodeChanged = false;
                     editor.isExpressionSaved = true;
-                    this._router.navigate(["dataset", this._datasetID, "code-editor", this._expressionID], { queryParams: { version: editor.version.version } });
+                    this.updateMainExpressionID(editor.expression.id, editor.version.version);
                     this.updateCurrentlyOpenList(true);
                 });
             }
@@ -1525,9 +1527,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 ).subscribe((newExpression: DataExpressionWire) =>
                 {
                     this._newExpression = false;
-                    this._expressionID = newExpression.id;
                     editor.expression = new DataExpression(
-                        this._expressionID,
+                        newExpression.id,
                         newExpression.name,
                         newExpression.sourceCode,
                         newExpression.sourceLanguage,
@@ -1542,7 +1543,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     );
                     editor.isCodeChanged = false;
                     editor.isExpressionSaved = true;
-                    this._router.navigate(["dataset", this._datasetID, "code-editor", editor.expression.id]);
+                    this.updateMainExpressionID(editor.expression.id);
                     this.updateCurrentlyOpenList(false);
                 });
             }
@@ -1569,6 +1570,21 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     editor.versions.set(newModule.version.version, newModule.version);
                     editor.isCodeChanged = false;
                     editor.isExpressionSaved = true;
+                    this.updateCurrentlyOpenList(this.isSplitScreen);
+
+                    // If sync, update top editor
+                    if(!saveTop && this.topEditor.linkedModuleID === editor.expression.id)
+                    {
+                        let linkedModuleIndex = this.topEditor.expression.moduleReferences.findIndex(ref => ref.moduleID === editor.expression.id);
+                        if(linkedModuleIndex >= 0)
+                        {
+                            this.topEditor.expression.moduleReferences[linkedModuleIndex] = new ModuleReference(editor.expression.id, editor.version.version);
+                            this.topEditor.isCodeChanged = true;
+                        }
+
+                        this.topEditor.checkIfModulesAreLatest(this._moduleService);
+                        this.loadInstalledModules();
+                    }
                 });
             }
             else
@@ -1586,6 +1602,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     {
                         editor.isCodeChanged = false;
                         editor.isExpressionSaved = true;
+                        this.updateCurrentlyOpenList(this.isSplitScreen);
                     },
                     (err)=>
                     {
@@ -1594,6 +1611,37 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     }
                 );
             }
+        }
+    }
+
+    onLinkModule(moduleID: string): void
+    {
+        this.topEditor.linkedModuleID = moduleID;
+        let latestVersion = this._moduleService.getLatestCachedModuleVersion(moduleID);
+
+        if(!this.isSplitScreen || this.bottomEditor?.expression?.id !== moduleID || this.bottomEditor?.version?.version !== latestVersion.version)
+        {
+            this.onOpenSplitScreen({ id: moduleID, version: latestVersion.version, isModule: true });
+        }
+
+        let linkedIndex = this.topEditor.expression.moduleReferences.findIndex(ref => ref.moduleID === moduleID);
+        if(linkedIndex >= 0)
+        {
+            this.topEditor.expression.moduleReferences[linkedIndex] = new ModuleReference(moduleID, latestVersion.version);
+            this.loadInstalledModules();
+        }
+    }
+
+    updateMainExpressionID(id: string, version: string = null): void
+    {
+        this._expressionID = id;
+        if(!version)
+        {
+            this._router.navigate(["dataset", this._datasetID, "code-editor", id]);
+        }
+        else
+        {
+            this._router.navigate(["dataset", this._datasetID, "code-editor", id], { queryParams: { version } });
         }
     }
 
@@ -1623,7 +1671,12 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         let dialogRef = this.dialog.open(ModuleReleaseDialogComponent, dialogConfig);
         dialogRef.afterClosed().subscribe((result: DataModuleSpecificVersionWire) =>
         {
-            let convertedModule = this.convertModuleToExpression(result);
+            if(!result)
+            {
+                return;
+            }
+
+            let convertedModule = result.convertToExpression();
             this.visibleModuleCodeEditor.expression = convertedModule;
             this.visibleModuleCodeEditor.version = result.version;
             let moduleID = this.visibleModuleCodeEditor.expression.id;

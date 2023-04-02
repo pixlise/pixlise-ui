@@ -46,11 +46,12 @@ POSSIBILITY OF SUCH DAMAGE.
                   <div class="module-container">
                       <mat-select
                           #tooltip="matTooltip"
-                          matTooltip="Select a version for this module"
+                          matTooltip="{{module.id === linkedModuleID ? 'Linked to latest version' : 'Select a version for this module'}}"
                           [value]="module.version"
                           (selectionChange)="onModuleVersionChange($event, i)"
-                          class="module-version"
+                          class="module-version {{module.id === linkedModuleID ? 'linked' : 'unlinked'}}"
                           placeholder="Version"
+                          [disabled]="module.id === linkedModuleID"
                       >
                           <mat-option
                               class="cm-string"
@@ -60,23 +61,12 @@ POSSIBILITY OF SUCH DAMAGE.
                           </mat-option>
                       </mat-select>
                   </div>
-                  <!-- <div class="compare-container">
-                     <mat-select
-                          #tooltip="matTooltip"
-                          matTooltip="Select a version for this module"
-                          [value]="module.version"
-                          (selectionChange)="onModuleVersionChange($event, i)"
-                          class="module-version"
-                          placeholder="Version"
-                      >
-                          <mat-option
-                              class="cm-string"
-                              *ngFor="let version of module.allVersions;"
-                              [value]="version"
-                          >v{{version}}
-                          </mat-option>
-                      </mat-select>
-                  </div> -->
+                  <mat-icon
+                      class="{{module.id === linkedModuleID ? 'linked' : 'unlinked'}}"
+                      #tooltip="matTooltip"
+                      matTooltip="{{module.id === linkedModuleID ? 'Unlink Expression and Module' : 'Link expression to the latest version of the module'}}"
+                      (click)="onLinkModule(module.id === linkedModuleID ? '' : module.id)"
+                  >{{module.id === linkedModuleID ? 'link' : 'link_off'}}</mat-icon>
               </span>
           </div>
           <div class="empty-line">
@@ -90,7 +80,7 @@ POSSIBILITY OF SUCH DAMAGE.
                   #tooltip="matTooltip"
                   class="{{isHeaderOpen ? 'open' : 'closed'}}"
                   [matTooltip]="toggleHeaderTooltip"
-                  icon='assets/button-icons/arrow-right.svg'
+                  icon="assets/button-icons/arrow-right.svg"
                   [size]="16"
                   (click)="onToggleHeader()"
               >

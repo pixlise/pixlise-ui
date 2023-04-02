@@ -53,6 +53,7 @@ import { generateExportCSVForExpression } from "src/app/services/export-data.ser
 import { Router } from "@angular/router";
 import { DataModuleService } from "src/app/services/data-module.service";
 import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
+import { LiveLayerConfig } from "../expression-list.component";
 
 
 export class LayerInfo
@@ -118,6 +119,7 @@ export class LayerSettingsComponent implements OnInit
     @Input() isModule: boolean = false;
 
     @Input() isCurrentlyOpen: boolean = false;
+    @Input() isInstalledModule: boolean = false;
     @Input() showSlider: boolean;
     @Input() showSettings: boolean;
     @Input() showShare: boolean;
@@ -128,6 +130,7 @@ export class LayerSettingsComponent implements OnInit
     @Input() showPureSwitch: boolean;
     @Input() showTagPicker: boolean;
     @Input() showSplitScreenButton: boolean;
+    @Input() showPreviewButton: boolean;
     
     @Input() detectors: string[] = [];
     
@@ -136,15 +139,18 @@ export class LayerSettingsComponent implements OnInit
 
     @Input() isPreviewMode: boolean = false;
     @Input() isSidePanel: boolean = false;
+    @Input() isSplitScreen: boolean = false;
+
+    @Input() customOptions: LiveLayerConfig = null;
 
     @Output() visibilityChange = new EventEmitter();
     @Output() onLayerImmediateSelection = new EventEmitter();
     @Output() colourChange = new EventEmitter();
     @Output() openSplitScreen = new EventEmitter();
+    @Output() onDeleteEvent = new EventEmitter();
 
     private _isPureElement: boolean = false;
     private _expressionElement: string = "";
-
 
     constructor(
         private _router: Router,
@@ -174,6 +180,37 @@ export class LayerSettingsComponent implements OnInit
     ngOnDestroy()
     {
         this._subs.unsubscribe();
+    }
+
+    get isBuiltIn(): boolean
+    {
+        return this.layerInfo?.layer?.id?.startsWith("builtin-") || false;
+    }
+
+    get customIcon(): string
+    {
+        return this.customOptions?.icon || "";
+    }
+
+    get customIconTooltip(): string
+    {
+        return this.customOptions?.iconTooltip || "";
+    }
+
+    get customSideColour(): string
+    {
+        return this.customOptions?.sideColour || "";
+    }
+
+    get tagType(): string
+    {
+        return this.customOptions?.tagType || "expression";
+    }
+
+    get labelColour(): string
+    {
+        let colour = this.customOptions?.labelColour || "$clr-gray-10";
+        return this.layerInfo?.layer?.isOutOfDate ? "#FC8D59" : colour;
     }
 
     get showSettingsButton(): boolean
@@ -259,7 +296,7 @@ export class LayerSettingsComponent implements OnInit
         return t;
     }
 
-    get expressionHover(): string
+    get expressionCommentsHover(): string
     {
         if(this.layerInfo.layer.source)
         {
@@ -273,7 +310,7 @@ export class LayerSettingsComponent implements OnInit
                     return "Expression is incompatible with currently loaded quantification. Elements or detectors are mismatched";
                 }
 
-                return expr.sourceCode;
+                return expr.comments;
             }
         }
         return "";
@@ -295,9 +332,23 @@ export class LayerSettingsComponent implements OnInit
         return comments;
     }
 
+    get minLabelTextWidth(): string
+    {
+        return Math.min(this.labelToShow.length, 10) + "ch";
+    }
+
     get labelsWidth(): string
     {
-        return this.isSidePanel ? "124px" : "calc(35vw - 48px - 230px)";
+        let layerWidth = 273;
+        let buttonIconsWidth = this.visibleLayerButtons.length * 33;
+        if(this.hiddenLayerButtons.length > 0)
+        {
+            buttonIconsWidth += 33;
+        }
+
+        let availableSpace = layerWidth - buttonIconsWidth;
+
+        return this.isSidePanel ? `${availableSpace > 0 ? availableSpace : 50}px` : "calc(35vw - 48px - 230px)";
     }
 
     get commentWidth(): string
@@ -379,16 +430,23 @@ export class LayerSettingsComponent implements OnInit
     {
         if(confirm("Are you sure you want to delete this expression?"))
         {
-            this._exprService.del(this.layerInfo.layer.id).subscribe(
-                ()=>
-                {
-                    console.log("Deleted data expression: "+this.layerInfo.layer.expressionID);
-                },
-                (err)=>
-                {
-                    alert("Failed to delete data expression: "+this.layerInfo.layer.expressionID+" named: "+this.layerInfo.layer.name);
-                }
-            );
+            if(this.isSidePanel)
+            {
+                this.onDeleteEvent.emit(this.layerInfo.layer.id);
+            }
+            else
+            {
+                this._exprService.del(this.layerInfo.layer.id).subscribe(
+                    ()=>
+                    {
+                        console.log("Deleted data expression: "+this.layerInfo.layer.expressionID);
+                    },
+                    (err)=>
+                    {
+                        alert("Failed to delete data expression: "+this.layerInfo.layer.expressionID+" named: "+this.layerInfo.layer.name);
+                    }
+                );
+            }
         }
     }
 
@@ -482,8 +540,12 @@ export class LayerSettingsComponent implements OnInit
         {
             this._moduleService.getLatestModuleVersion(this.layerInfo.layer.id).subscribe((latestVersion) =>
             {
-                this.openSplitScreen.emit({id: this.layerInfo.layer.id, version: latestVersion.version.version});
+                this.openSplitScreen.emit({ id: this.layerInfo.layer.id, version: latestVersion.version.version, isModule: true });
             });
+        }
+        else
+        {
+            this.openSplitScreen.emit({ id: this.layerInfo.layer.id, version: null, isModule: false });
         }
     }
 
@@ -503,15 +565,38 @@ export class LayerSettingsComponent implements OnInit
         }
     }
 
-    protected onExpressionSettings(event): void
+    private openCodeModal(allowEdit: boolean): void
     {
         const dialogConfig = new MatDialogConfig();
         dialogConfig.panelClass = "panel";
-        // dialogConfig.disableClose = true;
-        //dialogConfig.backdropClass = "panel";
 
+        if(this.isModule)
+        {
+            this._moduleService.getLatestModuleVersion(this.layerInfo.layer.id).subscribe((latestVersion) =>
+            {
+                let convertedModule = latestVersion.convertToExpression();   
+                dialogConfig.data = new ExpressionEditorConfig(convertedModule, allowEdit, false, false, !this.isPreviewMode);
+                this.dialog.open(ExpressionEditorComponent, dialogConfig);
+            });
+        }
+        else
+        {
+            this._exprService.getExpressionAsync(this.layerInfo.layer.id).subscribe(expression =>
+            {
+                dialogConfig.data = new ExpressionEditorConfig(expression, allowEdit, false, false, !this.isPreviewMode);
+                this.dialog.open(ExpressionEditorComponent, dialogConfig);
+            });
+        }
+    }
+
+    onPreview(event): void
+    {
+        this.openCodeModal(!this.isSharedByOtherUser);
+    }
+
+    protected onExpressionSettings(event): void
+    {
         let allowEdit = this.showSettings && !this.layerInfo.layer.source.shared && !this.isSharedByOtherUser && !this.isPreviewMode;
-
         if(this.isModule)
         {
             this._moduleService.getLatestModuleVersion(this.layerInfo.layer.id).subscribe((latestVersion) =>
@@ -519,19 +604,13 @@ export class LayerSettingsComponent implements OnInit
                 this._navigateToCodeEditor(this.layerInfo.layer.id, latestVersion.version.version);
             });
         }
+        else if(allowEdit || this.isPreviewMode)
+        {
+            this._navigateToCodeEditor(this.layerInfo.layer.id);
+        }
         else
         {
-            this._exprService.getExpressionAsync(this.layerInfo.layer.id).subscribe(expression =>
-            {
-                if(allowEdit || this.isPreviewMode)
-                {
-                    this._navigateToCodeEditor(this.layerInfo.layer.id);
-                    return;
-                }
-
-                dialogConfig.data = new ExpressionEditorConfig(expression, allowEdit, false, false, !this.isPreviewMode);
-                this.dialog.open(ExpressionEditorComponent, dialogConfig);
-            });
+            this.openCodeModal(allowEdit);
         }
     }
 
@@ -586,7 +665,8 @@ export class LayerSettingsComponent implements OnInit
 
     get tooltipText(): string
     {
-        return `${this.labelToShow}:\n\n${this.expressionHover}`;
+        let outOfDateWarning = this.layerInfo.layer.isOutOfDate ? "\n\n***Expression has module updates available***" : "";
+        return `${this.labelToShow}:\n\t${this.expressionCommentsHover}${outOfDateWarning}`;
     }
 
     get selectedTagIDs(): string[]
@@ -596,9 +676,18 @@ export class LayerSettingsComponent implements OnInit
 
     onTagSelectionChanged(tagIDs: string[]): void
     {
-        this._exprService.updateTags(this.layerInfo.layer.id, tagIDs).subscribe(() => null,
-            () => alert("Failed to update tags")
-        );
+        if(this.isModule)
+        {
+            this._moduleService.updateTags(this.layerInfo.layer.id, tagIDs).subscribe(() => null,
+                () => alert("Failed to update module tags")
+            );
+        }
+        else
+        {
+            this._exprService.updateTags(this.layerInfo.layer.id, tagIDs).subscribe(() => null,
+                () => alert("Failed to update expression tags")
+            );
+        }
     }
 
     get showDetectorPicker(): boolean
@@ -622,7 +711,8 @@ export class LayerSettingsComponent implements OnInit
             showShare: this.showShare && !this.sharedBy,
             showTagPicker: this.showTagPicker,
             showPixlangConvert: this.isPixlangExpression,
-            showSplitScreenButton: this.showSplitScreenButton && !this.isCurrentlyOpen,
+            showPreviewButton: this.showPreviewButton && !this.isCurrentlyOpen,
+            showSplitScreenButton: this.showSplitScreenButton && !this.isCurrentlyOpen && (this.isModule || this.isSplitScreen),
             showSettingsButton: this.showSettingsButton && !this.isCurrentlyOpen,
             showColours: this.showColours,
             showVisible: this.showVisible,

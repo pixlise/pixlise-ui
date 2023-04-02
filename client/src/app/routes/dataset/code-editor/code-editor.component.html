@@ -81,7 +81,6 @@ POSSIBILITY OF SUCH DAMAGE.
                 [valid]="topEditor.isLatestVersionReleased && (!topEditor.isModule || topEditor.isLoadedVersionLatest)"
                 [status]="topEditor.isLatestVersionReleased ? !topEditor.isLoadedVersionLatest ? 'Switch to latest version to edit' : 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
             ></status-indicator>
-
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                 <multi-switch-button
                     #tooltip="matTooltip"
@@ -100,6 +99,9 @@ POSSIBILITY OF SUCH DAMAGE.
                     (changeName)="topEditor.onNameChange($event)"
                     (changeDescription)="topEditor.onDescriptionChange($event)"
                     (changeTags)="topEditor.onTagSelectionChanged($event)"
+                    (updateMetadata)="onUpdateMetadata()"
+                    [buttonStyle]="topEditor.isModule && !topEditor.isLoadedVersionLatest ? 'orange' : 'normal'"
+                    [showDiff]="topEditor.isModule && !topEditor.isLoadedVersionLatest"
                 >
                 </expression-metadata-editor>
                 <push-button
@@ -155,7 +157,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [selectedTagIDs]="filteredTagIDs"
                     [showCurrentTagsSection]="false"
                     (onTagSelectionChanged)="onFilterTagSelectionChanged($event)"
-                    [additionalVisibleTagType]="['module']"
+                    [additionalVisibleTagType]="['module', 'builtin']"
                 >
                 </tag-picker>
                 <mat-select
@@ -185,9 +187,13 @@ POSSIBILITY OF SUCH DAMAGE.
                 (visibilityChange)="onLayerVisibilityChange($event)"
                 (onLayerImmediateSelection)="onLayerImmediateSelection($event)"
                 (openSplitScreen)="onOpenSplitScreen($event)"
+                (onDelete)="onDeleteExpression($event)"
                 [isPreviewMode]="true"
                 [isSidePanel]="true"
+                [isSplitScreen]="isSplitScreen"
                 [isSelectable]="!topEditor.isModule && topEditor.isLua"
+                [liveLayerConfigs]="sidePanelLayerConfigs"
+                (onAllExpressionsUpdated)="onAllExpressionsUpdated($event)"
                 fxFlex="100%"
             >
                 <icon-button
@@ -214,7 +220,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [allowEdit]="topEditor.editable && (!topEditor.isModule || (topEditor.isModule && topEditor.isLoadedVersionLatest))"
                 [isImmediatelyAppliable]="false"
                 [applyNow]="false"
-                (onTextChange)="topEditor.onExpressionTextChanged($event)"
+                (onTextChange)="onTextChange($event, 'top')"
                 (onTextSelect)="onTextSelect($event)"
                 (changeExpression)="changeExpression($event)"
                 (runExpression)="runExpression(true)"
@@ -231,6 +237,8 @@ POSSIBILITY OF SUCH DAMAGE.
                 [showInstalledModules]="!topEditor.isModule"
                 (onModuleChange)="onModuleChange($event, 'top')"
                 (onClick)="setTopEditorActive()"
+                [linkedModuleID]="topEditor.linkedModuleID"
+                (linkModule)="onLinkModule($event)"
             >
             </expression-text-editor>
             <div *ngIf="bottomEditor.expression && isSplitScreen" class="split-screen-header">
@@ -262,6 +270,22 @@ POSSIBILITY OF SUCH DAMAGE.
                     [valid]="bottomEditor.isLatestVersionReleased && (!bottomEditor.isModule || bottomEditor.isLoadedVersionLatest)"
                     [status]="bottomEditor.isLatestVersionReleased ? !bottomEditor.isLoadedVersionLatest ? 'Switch to latest version to edit' : 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
                 ></status-indicator>
+                <expression-metadata-editor
+                    *ngIf="bottomEditor.isModule && !bottomEditor.isLoadedVersionLatest"
+                    class="bottom-metadata-editor"
+                    [expression]="bottomEditor.expression"
+                    [isModule]="bottomEditor.isModule"
+                    [currentVersion]="bottomEditor.version"
+                    [versions]="bottomEditor.versionList"
+                    (changeName)="bottomEditor.onNameChange($event)"
+                    (changeDescription)="bottomEditor.onDescriptionChange($event)"
+                    (changeTags)="bottomEditor.onTagSelectionChanged($event)"
+                    (updateMetadata)="onUpdateMetadata()"
+                    title="View Updates"
+                    buttonStyle="orange"
+                    [showDiff]="true"
+                >
+                </expression-metadata-editor>
                 <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                     <expression-metadata-editor
                         class="bottom-metadata-editor"
@@ -272,6 +296,7 @@ POSSIBILITY OF SUCH DAMAGE.
                         (changeName)="bottomEditor.onNameChange($event)"
                         (changeDescription)="bottomEditor.onDescriptionChange($event)"
                         (changeTags)="bottomEditor.onTagSelectionChanged($event)"
+                        (updateMetadata)="onUpdateMetadata()"
                     >
                     </expression-metadata-editor>
                 </div>
@@ -283,7 +308,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [allowEdit]="bottomEditor.editable && (!bottomEditor.isModule || bottomEditor.isLoadedVersionLatest)"
                 [isImmediatelyAppliable]="false"
                 [applyNow]="false"
-                (onTextChange)="bottomEditor.onExpressionTextChanged($event)"
+                (onTextChange)="onTextChange($event, 'bottom')"
                 (onTextSelect)="onTextSelect($event)"
                 (changeExpression)="changeExpression($event)"
                 (runExpression)="runExpression(false)"
@@ -354,15 +379,6 @@ POSSIBILITY OF SUCH DAMAGE.
                     matTooltip="WARNING: This is a one way operation"
                 >Convert to LUA
                 </push-button>
-                <!-- <push-button
-                    class="run-highlighted-btn"
-                    buttonStyle="yellow"
-                    [disabled]="textHighlighted === '' && !isEmptySelection"
-                    (onClick)="runHighlightedExpression()"
-                    #tooltip="matTooltip"
-                    [matTooltip]="runHighlightedCodeTooltip"
-                >{{textHighlighted === '' ? "Run Code To Line #" : "Run Selected Code"}}
-                </push-button> -->
                 <push-button
                     *ngIf="isSplitScreen"
                     class="save-btn"

@@ -41,6 +41,7 @@ import { RGBLayerInfo } from "src/app/UI/atoms/expression-list/layer-settings/rg
 import { LayerInfo } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ExpressionListHeaderInfo } from "src/app/UI/atoms/expression-list/layer-settings/header.component";
 import { ObjectCreator } from "./BasicTypes";
+import { BuiltInTags } from "./tags";
 
 
 // Not all static vars so we can use this from HTML if the component "extends" this class
@@ -49,6 +50,7 @@ export class ExpressionListGroupNames
     // Names of header sections
     readonly elementsHeaderName = "elements-header";
     readonly rgbMixHeaderName = "rgbmix-header";
+    readonly expressionsUpdateHeaderName = "expression-updates-header";
     readonly expressionsHeaderName = "expressions-header";
     readonly anomalyHeaderName = "anomaly-header";
     readonly pseudoIntensityHeaderName = "pseudointensity-header";
@@ -86,6 +88,9 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
     // The stuff we query, when all of these are NOT null, we regenerate the list of items to display
     protected _userExpressions: DataExpression[] = [];
     protected _sharedExpressions: DataExpression[] = [];
+    protected _exampleExpressions: DataExpression[] = [];
+    protected _userExpressionsWithUpdates: DataExpression[] = [];
+
     protected _elementsFromQuant: DataExpression[] = [];
     protected _elementRelatedBuiltIn: DataExpression[] = [];
     protected _pseudointensities: DataExpression[] = [];
@@ -102,7 +107,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         private _includeRGBMix: boolean,
         public includeAnomalies: boolean,
         protected _exprService: DataExpressionService,
-        public showUnsavedExpressions: boolean = true,
+        public showUnsavedExpressions: boolean = true
     )
     {
         super();
@@ -224,11 +229,17 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
     protected processExpressions(expressions: Map<string, DataExpression>): void
     {
         this._userExpressions = [];
+        this._userExpressionsWithUpdates = [];
         this._sharedExpressions = [];
+        this._exampleExpressions = [];
 
         for(let expr of expressions.values())
         {
-            if(expr.shared)
+            if(expr.tags.includes(BuiltInTags.exampleTag))
+            {
+                this._exampleExpressions.push(expr);
+            }
+            else if(expr.shared)
             {
                 this._sharedExpressions.push(expr);
             }
@@ -236,11 +247,18 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
             {
                 this._userExpressions.push(expr);
             }
+
+            if(!expr.isModuleListUpToDate)
+            {
+                this._userExpressionsWithUpdates.push(expr);
+            }
         }
 
         // Sort by name
         this._userExpressions.sort(sortByNameAndCompatibility);
         this._sharedExpressions.sort(sortByNameAndCompatibility);
+        this._exampleExpressions.sort(sortByNameAndCompatibility);
+        this._userExpressionsWithUpdates.sort(sortByNameAndCompatibility);
     }
 
     protected processRGBMixes(mixes: Map<string, RGBMix>): void
@@ -340,7 +358,8 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         includeQuantifiedElements: boolean=true,
         includePseudointensities: boolean=true,
         customStartSections: CustomExpressionGroup[]=[],
-        customEndSections: CustomExpressionGroup[]=[]
+        customEndSections: CustomExpressionGroup[]=[],
+        includeExamples: boolean=false
     ): ExpressionListItems
     {
         let groups: ExpressionListGroupItems[] = [];
@@ -366,7 +385,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                     section.emptyMessage,
                     null,
                     "",
-                    0
+                    groups.length - 1 >= 0 ? groups[groups.length-1]?.items.length || 0 : 0
                 )
             );
         });
@@ -406,6 +425,26 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                     "No user RGB mixes to view",
                     this.getRGBItems(this._sharedRGBMixes, makeLayer),
                     "No shared RGB mixes to view",
+                    groups[groups.length-1]?.items.length || 0
+                )
+            );
+        }
+
+        if(this._userExpressionsWithUpdates.length > 0)
+        {
+            groups.push(
+                new ExpressionListGroupItems(
+                    this.expressionsUpdateHeaderName,
+                    "Outdated Code",
+                    headerSectionsOpen.has(this.expressionsUpdateHeaderName),
+                    "expression",
+                    expressionNameFilter,
+                    expressionAuthorsFilter,
+                    filterTagIDs,
+                    this.getItems(this._userExpressionsWithUpdates, makeLayer),
+                    "No expressions need updating",
+                    null,
+                    "",
                     groups[groups.length-1]?.items.length || 0
                 )
             );
@@ -483,10 +522,30 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                     section.emptyMessage,
                     null,
                     "",
-                    0
+                    groups[groups.length-1]?.items.length || 0
                 )
             );
         });
+
+        if(includeExamples)
+        {
+            groups.push(
+                new ExpressionListGroupItems(
+                    this.examplesHeaderName,
+                    "Examples",
+                    headerSectionsOpen.has(this.examplesHeaderName),
+                    "expression",
+                    expressionNameFilter,
+                    expressionAuthorsFilter,
+                    filterTagIDs,
+                    this.getItems(this._exampleExpressions, makeLayer),
+                    "No examples to view",
+                    null,
+                    "",
+                    groups[groups.length-1]?.items.length || 0
+                )
+            );
+        }
 
         // Form the final data structure
         let groupLookup = new Map<string, ExpressionListGroupItems>();
@@ -814,6 +873,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
             }
 
             let layer = makeLayer(item);
+            layer.isOutOfDate = !item?.isModuleListUpToDate || false;
             layers.push(new LayerInfo(layer, []));
         }
 

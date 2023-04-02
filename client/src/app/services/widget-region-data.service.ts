@@ -511,7 +511,7 @@ export class WidgetRegionDataService
 
             // If we have a cached value for this, return that
             let cachedResult = this._resultCache.getCachedResult(query, expr.modUnixTimeSec, region ? region.modUnixTimeSec : 0);
-            if(cachedResult != null)
+            if(cachedResult !== null)
             {
                 // Return a result with cached values but this query+expression, just in case it changed!
                 let cachedResultReturn = new RegionDataResultItem(

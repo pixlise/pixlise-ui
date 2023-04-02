@@ -30,6 +30,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { DataExpression } from "src/app/models/Expression";
 import { DataModuleService, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
+import { PushButtonStyle } from "../atoms/buttons/push-button/push-button.component";
 
 type MajorGroupedRelease = {
     majorVersion: DataModuleVersionSourceWire;
@@ -44,17 +45,26 @@ type MajorGroupedRelease = {
 })
 export class ExpressionMetadataEditorComponent implements OnInit
 {
+    @Input() title: string = "Metadata";
+    @Input() buttonStyle: PushButtonStyle = "normal";
+
     @Input() expression: DataExpression = null;
     @Input() isModule: boolean = false;
     @Input() currentVersion: DataModuleVersionSourceWire = null;
     @Input() versions: DataModuleVersionSourceWire[] = [];
 
+    @Input() showDiff: boolean = false;
+
     @Output() changeName: EventEmitter<string> = new EventEmitter<string>();
     @Output() changeDescription: EventEmitter<string> = new EventEmitter<string>();
     @Output() changeTags: EventEmitter<string[]> = new EventEmitter<string[]>();
 
+    @Output() updateMetadata: EventEmitter<void> = new EventEmitter<void>();
+
     private _fetched: boolean = false;
     private _releaseNotes: MajorGroupedRelease[] = [];
+
+    public latestRelease: DataModuleVersionSourceWire = null;
 
     constructor(
       private _moduleService: DataModuleService
@@ -68,9 +78,13 @@ export class ExpressionMetadataEditorComponent implements OnInit
         this.groupReleaseNotes();
         this._moduleService.modulesUpdated$.subscribe(() =>
         {
-            console.log("modules updated");
             this.groupReleaseNotes();
         });
+    }
+
+    onClose(): void
+    {
+        this.updateMetadata.emit();
     }
 
     get name(): string
@@ -161,12 +175,34 @@ export class ExpressionMetadataEditorComponent implements OnInit
             }
         });
 
+        Object.entries(majorRelease).forEach(([majorVersionGroup, majorRelease]) =>
+        {
+            majorRelease.minorVersions = majorRelease.minorVersions.sort((a, b) =>
+            {
+                let aMinorVersion = a.version.split(".")[1];
+                let bMinorVersion = b.version.split(".")[1];
+                return Number(bMinorVersion) - Number(aMinorVersion);
+            });
+        });
+
         this.releaseNotes = Object.values(majorRelease).sort((a, b) =>
         {
             let aMajorVersion = a.majorVersionGroup;
             let bMajorVersion = b.majorVersionGroup;
             return Number(bMajorVersion) - Number(aMajorVersion);
         });
+
+        if(this.releaseNotes.length > 0)
+        {
+            if(this.releaseNotes[0].majorVersion)
+            {
+                this.latestRelease = this.releaseNotes[0].majorVersion;
+            }
+            else
+            {
+                this.latestRelease = this.releaseNotes[0].minorVersions[0];
+            }
+        }
     }
 
     getVersionDisplayName(version: DataModuleVersionSourceWire): string

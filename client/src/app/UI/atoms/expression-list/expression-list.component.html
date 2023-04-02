@@ -144,12 +144,30 @@ POSSIBILITY OF SUCH DAMAGE.
                     (onScrollToItem)="onScrollToItem(item.itemType, $event)">
                 </context-visibility-header>
             </ng-container>
+            <ng-container *ngSwitchCase="'expression-updates-header'">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
+                    <push-button
+                        header
+                        buttonStyle="outline"
+                        #tooltip="matTooltip"
+                        matTooltip="Update all modules used by expressions to latest"
+                        (click)="onUpdateAllExpressions()"
+                    >Update All
+                    </push-button>
+                </context-visibility-header>
+            </ng-container>
             <ng-container *ngSwitchCase="'expression'">
                 <context-layer-settings
                     [isCurrentlyOpen]="item.groupHeaderType === currentlyOpenHeaderName"
                     [layerInfo]="item.content"
                     [showSlider]="showOpacitySliders"
                     [showSettings]="item.shared || !item.content.isPredefinedLayer"
+                    [showPreviewButton]="true"
+                    [showSplitScreenButton]="isSidePanel"
                     [showDelete]="!item.content.isPredefinedLayer"
                     [showShare]="!item.content.isPredefinedLayer"
                     [showColours]="showColourOptions"
@@ -163,16 +181,22 @@ POSSIBILITY OF SUCH DAMAGE.
                     (colourChange)="onLayerColourChange($event)"
                     [isPreviewMode]="isPreviewMode"
                     [isSidePanel]="isSidePanel"
+                    [isSplitScreen]="isSplitScreen"
+                    (openSplitScreen)="onOpenSplitScreen($event)"
+                    (onDeleteEvent)="onDeleteEvent($event)"
+                    [customOptions]="getCustomLayerConfig(item.content?.layer?.id)"
                 >
                 </context-layer-settings>
             </ng-container>
             <ng-container *ngSwitchCase="'module'">
                 <context-layer-settings
                     [isCurrentlyOpen]="item.groupHeaderType === currentlyOpenHeaderName"
+                    [isInstalledModule]="item.groupHeaderType === installedModulesHeaderName"
                     [layerInfo]="item.content"
                     [isModule]="true"
                     [showSlider]="false"
                     [showSettings]="true"
+                    [showPreviewButton]="true"
                     [showSplitScreenButton]="true"
                     [showDelete]="false"
                     [showShare]="false"
@@ -187,7 +211,9 @@ POSSIBILITY OF SUCH DAMAGE.
                     (colourChange)="onLayerColourChange($event)"
                     [isPreviewMode]="isPreviewMode"
                     [isSidePanel]="isSidePanel"
+                    [isSplitScreen]="isSplitScreen"
                     (openSplitScreen)="onOpenSplitScreen($event)"
+                    [customOptions]="getCustomLayerConfig(item.content?.layer?.id)"
                 >
                 </context-layer-settings>
             </ng-container>

@@ -307,7 +307,8 @@ export class DataSetService
                 all$.subscribe(
                     (data)=>
                     {
-                        this._notificationService.clear();
+                        // TODO: Should we clear all dataset notifcations here?
+                        // this._notificationService.clear();
 
                         // At this point, if we have all 3, we can continue. NOTE that the dataset can report null
                         // because that's how it signifies that the load has begun above...

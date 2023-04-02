@@ -29,6 +29,7 @@
 
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { UNICODE_GREEK_LOWERCASE_PSI } from "src/app/utils/utils";
+import { DataModuleService } from "../services/data-module.service";
 
 
 export class ShortName
@@ -40,11 +41,44 @@ export class ShortName
 
 export class ModuleReference
 {
+    latestVersion: string = null;
+    isLatestMajorRelease: boolean = false;
+
     constructor(
         public moduleID: string,
         public version: string,
     )
     {
+    }
+
+    checkIsLatest(moduleService: DataModuleService): boolean
+    {
+        if(!moduleService)
+        {
+            return true;
+        }
+
+        let latest = moduleService.getLatestCachedModuleVersion(this.moduleID, true);
+        if(latest)
+        {
+            this.latestVersion = latest.version;
+        }
+
+        let isAheadOfRelease = false;
+        let isLatestVersion = latest.version === this.version;
+        if(latest && !isLatestVersion)
+        {
+            let [latestMajor, latestMinor] = latest.version.split(".").map((part) => parseInt(part));
+            let [thisMajor, thisMinor] = this.version.split(".").map((part) => parseInt(part));
+
+            this.isLatestMajorRelease = latestMajor === thisMajor;
+
+            // If the first 2 parts are equal, we know it's ahead of the release because it doesn't end in ".0"
+            isAheadOfRelease = this.isLatestMajorRelease && latestMinor === thisMinor && !this.version.endsWith(".0");
+        }
+
+        // If we can't get the latest version, assume it's the latest, else check if it's at least as new as the latest
+        return !latest || isLatestVersion || isAheadOfRelease;
     }
 }
 
@@ -66,6 +100,9 @@ export class DataExpression
 
     private _isCompatibleWithQuantification: boolean = true;
 
+    public hasMinorOutdatedModuleReferences: boolean = false;
+    public hasMajorOutdatedModuleReferences: boolean = false;
+
     constructor(
         public id: string,
         public name: string,
@@ -78,7 +115,10 @@ export class DataExpression
         public modUnixTimeSec: number,
         public tags: string[],
         public moduleReferences: ModuleReference[],
-        public recentExecStats: ExpressionExecStats
+        public recentExecStats: ExpressionExecStats,
+
+        // This flag is used to indicate that the module references are up to date and isn't stored with the expression
+        public isModuleListUpToDate: boolean = true
     )
     {
         // Read in the required elements and detectors from the recent exec stats (if any)
@@ -133,6 +173,7 @@ export class DataExpression
             tags,
             moduleReferences,
             recentExecStats,
+            this.isModuleListUpToDate
         );
     }
 

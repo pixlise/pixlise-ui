@@ -37,6 +37,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [selectedTagIDs]="tags"
                 [showCurrentTagsSection]="true"
                 (onTagSelectionChanged)="onTagSelectionChanged($event)"
+                [allowAdminBuiltin]="true"
             >
             </tag-picker>
         </div>
@@ -46,10 +47,13 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div *ngIf="isModule && releaseNotes.length > 0" class="release-notes">
             <div
-                *ngFor="let release of releaseNotes"
+                *ngFor="let release of releaseNotes; let i = index"
                 class="grouped-release"
             >
-                <h2 *ngIf="release.majorVersion" class="release-title">Major Release ({{getVersionDisplayName(release.majorVersion)}})</h2>
+                <h2 *ngIf="release.majorVersion" class="release-title">Major Release ({{getVersionDisplayName(release.majorVersion)}})
+                    <span *ngIf="showDiff && i === 0" class="latest-release">Latest Release</span>
+                    <span *ngIf="showDiff && currentVersion?.version === release.majorVersion.version" class="current-release">Current Release</span>
+                </h2>
                 <div *ngIf="release.majorVersion" class="release-comments-container">
                     <div class="release-comments">
                         {{release.majorVersion.comments || "No release notes"}}
@@ -58,10 +62,13 @@ POSSIBILITY OF SUCH DAMAGE.
                 <h2 *ngIf="release?.minorVersions?.length > 0" class="minor-release-title">Minor Releases</h2>
                 <div *ngIf="release?.minorVersions?.length > 0" class="minor-releases">
                     <div
-                        *ngFor="let minorRelease of release.minorVersions"
+                        *ngFor="let minorRelease of release.minorVersions; let j = index"
                         class="minor-release"
                     >
-                        <h3><b>{{getVersionDisplayName(minorRelease)}}</b> ({{getVersionReleaseDate(minorRelease)}})</h3>
+                        <h3><b>{{getVersionDisplayName(minorRelease)}}</b> ({{getVersionReleaseDate(minorRelease)}})
+                            <span *ngIf="showDiff && i === 0 && !release.majorVersion && j === 0" class="latest-release">Latest Release</span>
+                            <span *ngIf="showDiff && currentVersion?.version === minorRelease.version" class="current-release">Current Release</span>
+                        </h3>
                         <div class="release-comments">
                             {{minorRelease.comments || "No release notes"}}
                         </div>
@@ -69,15 +76,24 @@ POSSIBILITY OF SUCH DAMAGE.
                 </div>
             </div>
         </div>
+        <div *ngIf="showDiff" class="bottom-container">
+            <push-button
+                class="code-diff-btn"
+                [buttonStyle]="buttonStyle"
+                #tooltip="matTooltip"
+                matTooltip="Show Code Difference between v{{currentVersion?.version}} and v{{latestRelease?.version}}"
+            >Show Difference
+            </push-button>
+        </div>
     </div>
 </ng-template>
 
-<widget-settings-menu [settingsDialog]="metadataMenu">
+<widget-settings-menu [settingsDialog]="metadataMenu" (onClose)="onClose()">
     <push-button
         class="metadata-btn"
-        buttonStyle="normal"
+        [buttonStyle]="buttonStyle"
         #tooltip="matTooltip"
         matTooltip="Edit Metadata"
-    >Metadata
+    >{{title}}
     </push-button>
 </widget-settings-menu>

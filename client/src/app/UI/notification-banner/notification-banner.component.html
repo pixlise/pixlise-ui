@@ -50,4 +50,18 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <img class='clickable' src="assets/button-icons/refresh.svg" (click)="onRefresh()">
      </div>
+     <div
+        *ngSwitchCase="'typeOutdatedModules'"
+        class="banner"
+        fxLayout="row"
+        fxLayoutAlign="start center">
+        <div fxLayout="row" fxLayoutAlign="space-around center" fxFlex>
+            <div fxLayout="row" fxLayoutAlign="start center" >
+                <span fxFlex="100%">{{notification.message}}</span>
+                <push-button class="update-btn" buttonStyle="dark-outline" (onClick)="onUpdateAll()">Update All</push-button>
+                <push-button class="code-editor" buttonStyle="dark-outline" (onClick)="onOpenCodeEditor()">Code Editor</push-button>
+            </div>
+        </div>
+        <img class='clickable' src="assets/button-icons/close-cross-black.svg" (click)="onClose()">
+     </div>
 </ng-container>
