@@ -88,9 +88,12 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         if(changes["evaluatedExpression"])
         {
             this._pmcToValueIdx.clear();
-            for(let c = 0; c < this.evaluatedExpression.values.values.length; c++)
+            if(this.evaluatedExpression?.values?.values)
             {
-                this._pmcToValueIdx.set(this.evaluatedExpression.values.values[c].pmc, c);
+                for(let c = 0; c < this.evaluatedExpression.values.values.length; c++)
+                {
+                    this._pmcToValueIdx.set(this.evaluatedExpression.values.values[c].pmc, c);
+                }
             }
         }
     }
