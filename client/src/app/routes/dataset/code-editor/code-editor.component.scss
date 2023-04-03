@@ -404,3 +404,12 @@ expression-text-editor.active
         color: rgb(var(--clr-gray-30));
     }
 }
+
+status-indicator.linked {
+    cursor: pointer;
+
+    &:hover {
+        background-color: rgba(128,128,128,0.2);
+        border-radius: 50%;
+    }
+}

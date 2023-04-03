@@ -61,12 +61,13 @@ POSSIBILITY OF SUCH DAMAGE.
                           </mat-option>
                       </mat-select>
                   </div>
-                  <mat-icon
-                      class="{{module.id === linkedModuleID ? 'linked' : 'unlinked'}}"
-                      #tooltip="matTooltip"
-                      matTooltip="{{module.id === linkedModuleID ? 'Unlink Expression and Module' : 'Link expression to the latest version of the module'}}"
-                      (click)="onLinkModule(module.id === linkedModuleID ? '' : module.id)"
-                  >{{module.id === linkedModuleID ? 'link' : 'link_off'}}</mat-icon>
+                  <img 
+                    class="{{module.id === linkedModuleID ? 'linked' : 'unlinked'}}"
+                    #tooltip="matTooltip"
+                    matTooltip="{{module.id === linkedModuleID ? 'Unlink Expression and Module' : 'Link expression to the latest version of the module'}}"
+                    src="{{module.id === linkedModuleID ? 'assets/button-icons/blue-link.svg' : 'assets/button-icons/grey-link.svg'}}"
+                    (click)="onLinkModule(module.id === linkedModuleID ? '' : module.id)"
+                  >
               </span>
           </div>
           <div class="empty-line">

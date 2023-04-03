@@ -159,7 +159,11 @@ h3 {
                     }
 
                     &.linked {
-                        border-color: #ffff8d;
+                        border-color: #91BFDB;
+                    }
+
+                    &.unlinked {
+                        border-radius: 50%;
                     }
 
                     &.unlinked:hover {
@@ -231,16 +235,24 @@ h3 {
     }  
 }
 
-mat-icon {
+img {
     &.linked {
-        margin-left: 4px;
-        color: #ffff8d;
         cursor: pointer;
+        border-radius: 50%;
+        padding: 4px;
+
+        &:hover {
+            background-color: rgba(128,128,128,0.2);
+        }
     }
     
     &.unlinked {
-        margin-left: 4px;
-        color: #546E7A;
         cursor: pointer;
+        padding: 4px;
+        border-radius: 50%;
+    }
+
+    &.unlinked:hover {
+        background-color: rgba(128,128,128,0.2);
     }
 }

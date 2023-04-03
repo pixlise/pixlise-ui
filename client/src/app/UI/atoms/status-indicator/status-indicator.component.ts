@@ -38,7 +38,17 @@ export class StatusIndicatorComponent
 {
     @Input() valid: boolean = true;
     @Input() status: string = "";
+    @Input() useLinkIcon: boolean = false;
 
     constructor()
     {}
+
+    get statusIcon(): string
+    {
+        let validIcon = this.useLinkIcon ? "assets/button-icons/blue-link.svg" : "assets/button-icons/blue-circle-check.svg";
+        let invalidIcon = this.useLinkIcon ? "assets/button-icons/red-link.svg" : "assets/button-icons/red-circle-x.svg";
+
+        return this.valid ? validIcon : invalidIcon;
+
+    }
 }

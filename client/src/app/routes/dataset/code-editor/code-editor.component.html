@@ -252,13 +252,17 @@ POSSIBILITY OF SUCH DAMAGE.
                     [(ngModel)]="bottomEditor.name"
                 >
                 <status-indicator
-                [valid]="bottomEditor.isExpressionSaved"
-                [status]="bottomEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"
-            ></status-indicator>
+                    class="{{isBottomEditorLinked ? 'linked' : ''}}"
+                    [useLinkIcon]="isBottomEditorLinked"
+                    [valid]="bottomEditor.isExpressionSaved"
+                    [status]="bottomEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"
+                    (click)="onLinkModule(null)"
+                ></status-indicator>
                 <mat-select
                     *ngIf="bottomEditor.isModule"
                     [value]="bottomEditor.version.version"
                     (selectionChange)="onModuleVersionChange($event.value, 'bottom')"
+                    [disabled]="isBottomEditorLinked"
                 >
                     <mat-option
                         *ngFor="let version of bottomEditor.versionList;"

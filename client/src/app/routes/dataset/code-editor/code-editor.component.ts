@@ -974,6 +974,11 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         return this._filteredTagIDs;
     }
 
+    get isBottomEditorLinked(): boolean
+    {
+        return this.topEditor.linkedModuleID === this.bottomEditor.expression.id;
+    }
+
     onFilterExpressions(filter: string)
     {
         this._filterText = filter;
