@@ -59,22 +59,25 @@ export class ModuleReference
         }
 
         let latest = moduleService.getLatestCachedModuleVersion(this.moduleID, true);
+
+        let isAheadOfRelease = false;
+        let isLatestVersion = false;
+
         if(latest)
         {
             this.latestVersion = latest.version;
-        }
 
-        let isAheadOfRelease = false;
-        let isLatestVersion = latest.version === this.version;
-        if(latest && !isLatestVersion)
-        {
-            let [latestMajor, latestMinor] = latest.version.split(".").map((part) => parseInt(part));
-            let [thisMajor, thisMinor] = this.version.split(".").map((part) => parseInt(part));
+            isLatestVersion = this.latestVersion === this.version;
+            if(!isLatestVersion)
+            {
+                let [latestMajor, latestMinor] = this.latestVersion.split(".").map((part) => parseInt(part));
+                let [thisMajor, thisMinor] = this.version.split(".").map((part) => parseInt(part));
 
-            this.isLatestMajorRelease = latestMajor === thisMajor;
+                this.isLatestMajorRelease = latestMajor === thisMajor;
 
-            // If the first 2 parts are equal, we know it's ahead of the release because it doesn't end in ".0"
-            isAheadOfRelease = this.isLatestMajorRelease && latestMinor === thisMinor && !this.version.endsWith(".0");
+                // If the first 2 parts are equal, we know it's ahead of the release because it doesn't end in ".0"
+                isAheadOfRelease = this.isLatestMajorRelease && latestMinor === thisMinor && !this.version.endsWith(".0");
+            }
         }
 
         // If we can't get the latest version, assume it's the latest, else check if it's at least as new as the latest
