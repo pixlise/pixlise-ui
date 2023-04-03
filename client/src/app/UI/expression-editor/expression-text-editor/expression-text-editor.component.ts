@@ -41,6 +41,7 @@ import { Range } from "codemirror";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import * as CodeMirror from "codemirror";
+import { AuthenticationService } from "src/app/services/authentication.service";
 
 require("codemirror/addon/comment/comment.js");
 require("codemirror/mode/lua/lua");
@@ -138,6 +139,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     constructor(
         private _datasetService: DataSetService,
         private _widgetDataService: WidgetRegionDataService,
+        private _authService: AuthenticationService
     )
     {
     }
@@ -246,6 +248,12 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             this.toggleHeader.emit();
         }
     }
+
+    checkIsOwner(module: DataExpressionModule): boolean
+    {
+        return module.author.user_id === this._authService.getUserID();
+    }
+
 
     onLinkModule(moduleID: string): void
     {

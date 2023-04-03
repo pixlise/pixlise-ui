@@ -300,6 +300,34 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             {
                 let installedModuleExpressions = [];
                 editor.modules = [];
+
+                let userID = this._authService.getUserID();
+                modules.sort((moduleA, moduleB)=>
+                {
+                    if(moduleA?.origin?.creator?.user_id === userID)
+                    {
+                        if(moduleB?.origin?.creator?.user_id === userID)
+                        {
+                            return moduleA.name.localeCompare(moduleB.name);
+                        }
+                        else
+                        {
+                            return -1;
+                        }
+                    }
+                    else
+                    {
+                        if(moduleB?.origin?.creator?.user_id === userID)
+                        {
+                            return 1;
+                        }
+                        else
+                        {
+                            return moduleA.name.localeCompare(moduleB.name);
+                        }
+                    }
+                });
+
                 modules.forEach((module) => 
                 {
                     let sourceModule = this._moduleService.getSourceDataModule(module.id);
@@ -1623,16 +1651,20 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     {
         this.topEditor.linkedModuleID = moduleID;
         let latestVersion = this._moduleService.getLatestCachedModuleVersion(moduleID);
-
-        if(!this.isSplitScreen || this.bottomEditor?.expression?.id !== moduleID || this.bottomEditor?.version?.version !== latestVersion.version)
+        if(!latestVersion)
         {
-            this.onOpenSplitScreen({ id: moduleID, version: latestVersion.version, isModule: true });
+            return;
+        }
+
+        if(!this.isSplitScreen || this.bottomEditor?.expression?.id !== moduleID || this.bottomEditor?.version?.version !== latestVersion?.version)
+        {
+            this.onOpenSplitScreen({ id: moduleID, version: latestVersion?.version, isModule: true });
         }
 
         let linkedIndex = this.topEditor.expression.moduleReferences.findIndex(ref => ref.moduleID === moduleID);
         if(linkedIndex >= 0)
         {
-            this.topEditor.expression.moduleReferences[linkedIndex] = new ModuleReference(moduleID, latestVersion.version);
+            this.topEditor.expression.moduleReferences[linkedIndex] = new ModuleReference(moduleID, latestVersion?.version);
             this.loadInstalledModules();
         }
     }

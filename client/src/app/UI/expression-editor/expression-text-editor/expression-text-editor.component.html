@@ -61,7 +61,8 @@ POSSIBILITY OF SUCH DAMAGE.
                           </mat-option>
                       </mat-select>
                   </div>
-                  <img 
+                  <img
+                    *ngIf="checkIsOwner(module)"
                     class="{{module.id === linkedModuleID ? 'linked' : 'unlinked'}}"
                     #tooltip="matTooltip"
                     matTooltip="{{module.id === linkedModuleID ? 'Unlink Expression and Module' : 'Link expression to the latest version of the module'}}"
