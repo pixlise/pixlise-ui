@@ -39,6 +39,8 @@ import { SentryHelper } from "src/app/utils/utils";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 import { MonacoEditorService } from "src/app/services/monaco-editor.service";
+import { PIXLANGHelp } from "./code-help/pixlang-help";
+import { rfindFunctionNameAndParams } from "./code-help/help";
 
 
 export class DataExpressionModule
@@ -129,6 +131,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @ViewChild('editorContainer', { static: true }) _editorContainer: ElementRef;
     private _editor: any/*IStandaloneCodeEditor*/ = null;
     //editorOptions = {theme: 'vs-dark', language: 'javascript'};
+
+    private _helpPIXLANG = new PIXLANGHelp();
 
     constructor(
         private _monacoService: MonacoEditorService,
@@ -241,6 +245,14 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             }
         });
 
+        this.monaco.languages.registerSignatureHelpProvider(EXPR_LANGUAGE_PIXLANG, {
+            signatureHelpTriggerCharacters: ["(", ","],
+            provideSignatureHelp: (model/*: ITextModel*/, position/*: Position*/, token/*: CancellationToken*/, context/*: SignatureHelpContext*/)=>//: ProviderResult<SignatureHelpResult>
+            {
+                return this.providePIXLANGSignatureHelp(model, position, context);
+            }
+        });
+        
         // Setup Lua help lookup
         this.monaco.languages.registerCompletionItemProvider("lua", {
             provideCompletionItems: (model/*: ITextModel*/, position/*: Position*/, context/*: CompletionContext*/, token/*: CancellationToken*/)=>//: ProviderResult<CompletionList>
@@ -252,6 +264,14 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                 return this.resolveLUACompletionItem(item, token);
             }
         });
+
+        // Other providers we may want to implement
+        // registerImplementationProvider(languageSelector: LanguageSelector, provider: ImplementationProvider): IDisposable
+        //     ^-- Go to implementation
+        // registerDeclarationProvider(languageSelector: LanguageSelector, provider: DeclarationProvider): IDisposable
+        //     ^-- Go to definition
+        // registerTypeDefinitionProvider(languageSelector: LanguageSelector, provider: TypeDefinitionProvider): IDisposable
+        //     ^-- Go to type definition
 
         // Install lua help provider stuff:
         // NOTE: there are several things we can do...
@@ -361,7 +381,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         ["pseudo", "Pseudo-element lookup with parameter: element"],
     ]);
 */
-    providePIXLANGCompletionItems(model/*: ITextModel*/, position/*: Position*/, context/*: CompletionContext*/, token/*: CancellationToken*/)//: ProviderResult<CompletionList>
+    private providePIXLANGCompletionItems(model/*: ITextModel*/, position/*: Position*/, context/*: CompletionContext*/, token/*: CancellationToken*/)//: ProviderResult<CompletionList>
     {
         // See: https://microsoft.github.io/monaco-editor/typedoc/interfaces/languages.CompletionItem.html
         let word = model.getWordUntilPosition(position);
@@ -373,113 +393,17 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         };
 
         let monaco = this.monaco;
-
         let result/*: CompletionItem[]*/ = [];
 
-        let detectors = "\nDetector must be ";
-        let validDetectorHint: any = this._widgetRegionDataService.quantificationLoaded?.getDetectors();
-        if(validDetectorHint == undefined)
-        {
-            detectors += " a detector label present in the loaded quantification";
-        }
-        else
-        {
-            if(validDetectorHint.length == 1)
-            {
-                detectors += validDetectorHint[0];
-            }
-            else
-            {
-                detectors += "one of "+validDetectorHint.join(" or ");
-            }
-            detectors += " to match the loaded quantification";
-        }
-
-        let elemHint = "";
-        if(this._widgetRegionDataService.quantificationLoaded?.getElementFormulae()?.length)
-        {
-            elemHint = " Available element formulae are: "+this._widgetRegionDataService.quantificationLoaded.getElementFormulae().join(", ");
-        }
-
-        let dataFuncs = new Map<string, string[]>([
-            ["element", ["${1:elementFormula}, ${2:column}, ${3:detector}",
-                "Queries element map values",
-                "Looks up quantified value for the specified element formula."+elemHint+"\nColumn selects which column to use: %, %-as-mmol or err are commonly used."+detectors]],
-            ["elementSum", ["${1:column}, ${2:detector}",
-                "Sum of column values for all elements in quantification",
-                "Computes the sum of all elements in the quantification for the given column"+detectors]],
-            ["data", ["${1:column}, ${2:detector}",
-                "Reads the data column specified",
-                "Reads the column specified, as found in the loaded quantification, eg: chisq."+detectors]],
-            ["spectrum", ["${1:startChannel}, ${2:endChannel}, ${3:detector}",
-                "Retrieves the sum of counts between start and end channels",
-                "Retrieves the sum of counts for the spectrum of each PMC between the start and end channels specified"+detectors]],
-            ["spectrumDiff", ["${1:startChannel}, ${2:endChannel}, ${3:operation}",
-                "Returns a map of A-B spectrum within the specified channel range",
-                "Returns a map containing the difference of combining all channels in the specified channel range of A and B spectrum. Operation can be max or sum"]],
-            ["pseudo", ["${1:element}",
-                "Returns pseudo-intensity map for given element",
-                "Looks up the pseudo-intensity value calculated on-board for the given elements"]],
-            ["housekeeping", ["${1:column}",
-                "Retrieves housekeeping data from specified column",
-                "These come from the housekeeping values returned from PIXL, things like temperatures, voltages, etc."]],
-            ["diffractionPeaks", ["${1:eVstart}, ${2:eVend}",
-                "Returns a map of diffraction peak counts per PMC",
-                "Sums all diffraction peaks detected per PMC (in both diffraction database and user-entered diffraction peaks)"]],
-            ["roughness", ["",
-                "Retrieves a map of roughness from diffraction database",
-                "Roughness values come from the diffraction database, each PMC will contain the globalDifference of roughness (higher = rougher)"]],
-            ["position", ["${1:axis}",
-                "Returns a map of position values for each PMC",
-                "Returns a map of position values (x, y or z) for each PMC, as read from the spectrum data returned from PIXL"]],
-            ["makeMap", ["${1:value}",
-                "Makes a map with each PMC having the value specified",
-                "Returns a map with the same dimensions as any map returned by other functions, all PMCs having the value specified. Useful for making for example a map of all 1's"]],
-            ["atomicMass", ["${1:elementFormula}",
-                "Returns the atomic mass of the formula",
-                "This calculates the atomic mass of the given formula, using the same method that is used elsewhere in PIXLISE. Examples: Ca or Fe2O3"]],
-            
-            ["threshold", ["${1:map}, ${2:compare}, ${3:threshold}",
-                "Returns a map where all values within compare+/-threshold are 1, the rest 0",
-                "Returns a map with where the value of each PMC in the source map is checked to be within compare +/- threshold, if so, a 1 is returned, but if it's outside the range, 0 is returned"]],
-            ["normalise", ["${1:map}",
-                "Normalise a map, so all values are between 0-1",
-                "Normalises a map by finding the min and max value, then computing each PMCs value as a percentage between that min and max, so all output values range between 0.0 and 1.0"]],
-            ["pow", ["${1:mapOrScalarBase}, ${2:exponent}",
-                "Calculates pow of each map PMC value, to the given exponent",
-                "Returns a map where the value of each PMC is the first param raised to the exponent"]],
-
-            ["under", ["${1:map}, ${2:reference}",
-                "Returns a map where value is 1 if less than reference, else 0",
-                "Returns a map where the value is 1 for any PMC whose input map value is less than the reference value, and 0 otherwise"]],
-            ["under_undef", ["${1:map}, ${2:reference}",
-                "Returns a map where value is 1 if less than reference, else 0",
-                "Returns a map where the value is 1 for any PMC whose input map value is less than the reference value, and undefined otherwise (will create hole in map on context image)"]],
-            ["over", ["${1:map}, ${2:reference}",
-                "Returns a map where value is 1 if greater than reference, else 0",
-                "Returns a map where the value is 1 for any PMC whose input map value is greater than the reference value, and 0 otherwise"]],
-            ["over_undef", ["${1:map}, ${2:reference}",
-                "Returns a map where value is 1 if greater than reference, else 0",
-                "Returns a map where the value is 1 for any PMC whose input map value is greater than the reference value, and undefined otherwise (will create hole in map on context image)"]],
-
-            ["avg", ["${1:map}, ${2:param2}",
-                "Returns a map which is the average of the 2 parameters specified",
-                "param2 may optionally be a map or a number"]],
-            ["min", ["${1:map}, ${2:param2}",
-                "Returns a map which is the minimum of the 2 parameters specified",
-                "param2 may optionally be a map or a number"]],
-            ["max", ["${1:map}, ${2:param2}",
-                "Returns a map which is the maximum of the 2 parameters specified",
-                "param2 may optionally be a map or a number"]],
-        ]);
-        for(let [f, details] of dataFuncs)
+        let items = this._helpPIXLANG.getCompletionItems();
+        for(let item of items)
         {
             result.push({
-                label: f,
-                kind: monaco.languages.CompletionItemKind.Keyword,
-                insertText: f+"("+details[0]+")",
-                detail: details[1],
-                documentation: details[2],
+                label: item.name,
+                kind: monaco.languages.CompletionItemKind.Function,
+                insertText: item.name+"(",
+                detail: item.doc,
+                //documentation: item.doc,
                 insertTextRules:
                     monaco.languages.CompletionItemInsertTextRule
                         .InsertAsSnippet,
@@ -487,55 +411,89 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                 //commitCharacters: ["("],
             });
         }
-        
-        let trigFuncs = ["sin", "cos", "tan", "asin", "acos", "atan"];
-        for(let f of trigFuncs)
-        {
-            result.push({
-				label: f,
-				kind: monaco.languages.CompletionItemKind.Keyword,
-                detail: "Returns a map where each PMC value is "+f+" of the given angle (or map of angles)",
-                documentation: "If a angle is a single number parameter, the map will have the same value in each PMC, but if the parameter is a map, each resulting map value with be "+f+" of the parameter maps value for that PMC",
-				insertText: f+"(${1:angle})",
-				insertTextRules:
-					monaco.languages.CompletionItemInsertTextRule
-						.InsertAsSnippet,
-				range: range,
-			});
-        }
-
-        result.push({
-            label: "ln",
-            kind: monaco.languages.CompletionItemKind.Keyword,
-            detail: "Returns a map where each PMC contains the natural logarithm of the given value (or the corresponding PMCs value if the parameter is a map)",
-            documentation: "",
-            insertText: "ln(${1:value})",
-            insertTextRules:
-                monaco.languages.CompletionItemInsertTextRule
-                    .InsertAsSnippet,
-            range: range,
-        });
-
-        result.push({
-            label: "exp",
-            kind: monaco.languages.CompletionItemKind.Keyword,
-            detail: "Returns a map where each PMC contains the e raised to the value (or the corresponding PMCs value if the parameter is a map)",
-            documentation: "",
-            insertText: "exp(${1:value})",
-            insertTextRules:
-                monaco.languages.CompletionItemInsertTextRule
-                    .InsertAsSnippet,
-            range: range,
-        });
 
         return {suggestions: result};
     }
 
-    resolvePIXLANGCompletionItem(item/*: CompletionItem*/, token/*: CancellationToken*/)//: ProviderResult<CompletionItem>
+    private resolvePIXLANGCompletionItem(item/*: CompletionItem*/, token/*: CancellationToken*/)//: ProviderResult<CompletionItem>
     {
     }
 
-    provideLUACompletionItems(model/*: ITextModel*/, position/*: Position*/, context/*: CompletionContext*/, token/*: CancellationToken*/)//: ProviderResult<CompletionList>
+    private providePIXLANGSignatureHelp(model/*: ITextModel*/, position/*: Position*/, context/*: SignatureHelpContext*/)//: ProviderResult<SignatureHelpResult>
+    {
+        // Find the function we're being asked to provide help for. Search backwards from the current position
+        let searchTextLines = model.getValueInRange(/*new IRange*/{
+            startLineNumber: Math.max(position.lineNumber-5, 0),
+            endLineNumber: position.lineNumber,
+            startColumn: 0,
+            endColumn: position.column
+        });
+        
+        // Split by line, and remove comments, then recombine
+        let searchLines = searchTextLines.split("\n");
+        let searchText = "";
+        for(let line of searchLines)
+        {
+            // Trim comments
+            let pos = line.indexOf("//");
+            if(pos > -1)
+            {
+                line = line.substring(0, pos);
+            }
+            searchText += line+" ";
+        }
+
+        // Find the function name going backwards
+        let items = rfindFunctionNameAndParams(searchText);
+
+        if(!items.empty)
+        {
+            // Provide signature help if we can find the function
+            let sig = this._helpPIXLANG.getSignatureHelp(items.funcName, items.params, this._widgetRegionDataService.quantificationLoaded, this._widgetRegionDataService.dataset);
+            if(!sig)
+            {
+                return null;
+            }
+
+/*
+        let sigParams = [];
+        for(let p of sig.params)
+        {
+            sigParams.push({label: p.name, documentation: p.doc});
+        }
+
+        let signatureHelp = {
+            signatures: [
+                {
+                    label: sig.funcName,
+                    documentation: null,//sig.funcDoc,
+                    parameters: []//sigParams
+                }
+            ],
+            activeParameter: 0,
+            activeSignature: 0
+        };
+*/
+            let signatureHelp = {
+                signatures: [
+                    {
+                        label: sig.prefix+"   "+sig.activeParam+",   "+sig.suffix,
+                        documentation: sig.paramDoc,//sig.funcDoc,
+                        parameters: []//sigParams
+                    }
+                ],
+                activeParameter: 0,
+                activeSignature: 0
+            };
+
+            // NOTE: we have to provide the dispose function. MS code also includes this, see https://github.com/microsoft/pxt/blob/master/webapp/src/monaco.tsx#L209
+            return { value: signatureHelp, dispose: () => {} };
+        }
+
+        return null;
+    }
+
+    private provideLUACompletionItems(model/*: ITextModel*/, position/*: Position*/, context/*: CompletionContext*/, token/*: CancellationToken*/)//: ProviderResult<CompletionList>
     {
         let word = model.getWordUntilPosition(position);
         let range = {
@@ -548,7 +506,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         console.log("LUA completion: "+word.word);
     }
 
-    resolveLUACompletionItem(item/*: CompletionItem*/, token/*: CancellationToken*/)//: ProviderResult<CompletionItem>
+    private resolveLUACompletionItem(item/*: CompletionItem*/, token/*: CancellationToken*/)//: ProviderResult<CompletionItem>
     {
     }
 
