@@ -65,7 +65,7 @@ export class ModuleReference
         }
 
         let isAheadOfRelease = false;
-        let isLatestVersion = latest.version === this.version;
+        let isLatestVersion = latest?.version === this.version;
         if(latest && !isLatestVersion)
         {
             let [latestMajor, latestMinor] = latest.version.split(".").map((part) => parseInt(part));
