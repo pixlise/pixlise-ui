@@ -34,6 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
           <div 
               *ngFor="let module of installedModules; index as i"
               class="module-import-line"
+              id="module-{{module.id}}"
           >
               <div class="line-gutter" [ngStyle]="{'width': gutterWidth}">
                   <span class="line-number">
@@ -42,7 +43,10 @@ POSSIBILITY OF SUCH DAMAGE.
               </div>
               <span class="header-code cm-s-pixlise">
                   <span class="cm-keyword">local </span>
-                  <span class="cm-variable">{{module.name}}</span> = <span class="cm-builtin">require </span>
+                  <span 
+                    class="cm-variable"
+                    [ngStyle]="{'marginRight': maxInstalledModuleCharacterLength ? maxInstalledModuleCharacterLength - module.name.length + 'ch' : 0}"
+                  >{{module.name}}</span> = <span class="cm-builtin">require </span>
                   <div class="module-container">
                       <mat-select
                           #tooltip="matTooltip"
@@ -64,6 +68,7 @@ POSSIBILITY OF SUCH DAMAGE.
                   <img
                     *ngIf="checkIsOwner(module)"
                     class="{{module.id === linkedModuleID ? 'linked' : 'unlinked'}}"
+                    [ngStyle]="{'marginLeft': getVersionContainerWidthDifference(module.id) + 'px'}"
                     #tooltip="matTooltip"
                     matTooltip="{{module.id === linkedModuleID ? 'Unlink Expression and Module' : 'Link expression to the latest version of the module'}}"
                     src="{{module.id === linkedModuleID ? 'assets/button-icons/blue-link.svg' : 'assets/button-icons/grey-link.svg'}}"

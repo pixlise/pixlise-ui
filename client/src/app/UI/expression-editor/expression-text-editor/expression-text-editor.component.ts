@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
 import { CodemirrorComponent } from "@ctrl/ngx-codemirror";
 import { Subscription, timer } from "rxjs";
 import { ExpressionParts, PixliseDataQuerier } from "src/app/expression-language/interpret-pixlise";
@@ -106,6 +106,10 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     private _gutterWidth: number = 0;
 
     private _initAsLua: boolean = false;
+    private _installedModules: DataExpressionModule[] = [];
+    private _isHeaderOpen: boolean = false;
+
+    public moduleContainerWidths: Record<string, number> = {};
 
     @Input() isLua: boolean = false;
     @Input() expression: DataExpression = null;
@@ -116,10 +120,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Input() showHelp: boolean = true;
     @Input() range: Range = null;
 
-    @Input() installedModules: DataExpressionModule[] = [];
-    @Input() isHeaderOpen: boolean = false;
     @Input() showInstalledModules: boolean = true;
-
     @Input() linkedModuleID: string = null;
 
     @Output() onChange = new EventEmitter<DataExpression>();
@@ -139,7 +140,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     constructor(
         private _datasetService: DataSetService,
         private _widgetDataService: WidgetRegionDataService,
-        private _authService: AuthenticationService
+        private _authService: AuthenticationService,
+        private elementRef: ElementRef,
     )
     {
     }
@@ -223,6 +225,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
             this.updateGutter();
         });
+
+        this.calculateModuleContainerWidths();
     }
 
     ngOnDestroy()
@@ -265,6 +269,28 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         this.onClick.emit();
     }
 
+    get installedModules(): DataExpressionModule[]
+    {
+        return this._installedModules;
+    }
+
+    @Input() set installedModules(modules: DataExpressionModule[])
+    {
+        this._installedModules = modules;
+        this.calculateModuleContainerWidths();
+    }
+
+    get isHeaderOpen(): boolean
+    {
+        return this._isHeaderOpen;
+    }
+
+    @Input() set isHeaderOpen(isOpen: boolean)
+    {
+        this._isHeaderOpen = isOpen;
+        this.calculateModuleContainerWidths();
+    }
+
     onModuleVersionChange(event, i): void
     {
         this.installedModules[i].version = event.value;
@@ -275,6 +301,80 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     {
         this.installedModules.splice(i, 1);
         this.onModuleChange.emit(this.installedModules);
+    }
+
+    calculateModuleContainerWidths(): void
+    {
+        if(!this.installedModules?.length)
+        {
+            return;
+        }
+
+        // We need to wait for the DOM to be updated before we can get the width of the module containers
+        // We do this by using setTimeout with 0ms delay, which will run on the next tick
+        setTimeout(() =>
+        {
+            this.moduleContainerWidths = {};
+            this.elementRef?.nativeElement?.querySelectorAll("div.module-import-line").forEach((element: HTMLElement)=>
+            {
+                let moduleID = element.id.replace("module-", "");
+                let module = this.installedModules.find(module => module.id === moduleID);
+                if(module)
+                {
+                    this.moduleContainerWidths[moduleID] = element.querySelector(".module-container")?.clientWidth || 0;
+                }
+            });
+        });
+    }
+
+    getMaxWidthModule(): DataExpressionModule
+    {
+        let maxLength = 0;
+        let maxWidthModule = null;
+        this.installedModules.forEach((module) =>
+        {
+            if(module.name.length > maxLength)
+            {
+                maxWidthModule = module;
+                maxLength = module.name.length;
+            }
+        });
+
+        if(!maxWidthModule?.id)
+        {
+            return null;
+        }
+
+        return maxWidthModule;
+    }
+
+    getVersionContainerWidthDifference(moduleID: string): number
+    {
+        if(!this.installedModules || !moduleID)
+        {
+            return 0;
+        }
+
+        let maxWidth = this.moduleContainerWidths[this.getMaxWidthModule().id] || 0;
+        let thisWidth = this.moduleContainerWidths[moduleID] || 0;
+
+        return maxWidth && thisWidth ? maxWidth - thisWidth : 0;
+    }
+
+    get maxInstalledModuleCharacterLength(): number
+    {
+        if(!this.installedModules)
+        {
+            return 0;
+        }
+
+        let maxLength = 0;
+        this.installedModules.forEach((module) =>
+        {
+            maxLength = Math.max(maxLength, module.name.length);
+        });
+
+        return maxLength;
     }
 
     get isHeaderNonEmptyAndOpen(): boolean
