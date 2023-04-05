@@ -278,7 +278,7 @@ export class ExpressionRunnerService
                     // Built-in modules
                     for(let mod of builtInModules)
                     {
-                        let ver = mod.versions.get(mod.name);
+                        let ver = mod.versions.get("0.0.0");
                         if(!ver)
                         {
                             throw new Error("Failed to get source code for built-in module: "+mod.name);

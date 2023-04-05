@@ -29,7 +29,7 @@
 
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { UNICODE_GREEK_LOWERCASE_PSI } from "src/app/utils/utils";
-import { DataModuleService } from "../services/data-module.service";
+import { DataModuleService } from "src/app/services/data-module.service";
 
 
 export class ShortName
