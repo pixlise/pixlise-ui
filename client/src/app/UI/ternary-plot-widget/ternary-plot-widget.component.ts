@@ -54,6 +54,7 @@ import { TernaryModel } from "./model";
 import { TernaryCorner, TernaryData, TernaryDataColour, TernaryDataItem, TernaryPlotPointIndex } from "./ternary-data";
 import { exportScatterPlot, ExportPlotCaller } from "src/app/UI/ternary-plot-widget/export-helper";
 import { ExpressionReferences } from "../references-picker/references-picker.component";
+import { DataModuleService } from "src/app/services/data-module.service";
 
 
 @Component({
@@ -100,6 +101,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
         private _selectionService: SelectionService,
         private _datasetService: DataSetService,
         private _exprService: DataExpressionService,
+        private _moduleService: DataModuleService,
         private _viewStateService: ViewStateService,
         private _widgetDataService: WidgetRegionDataService,
         public dialog: MatDialog
@@ -115,7 +117,9 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
             this._subs.add(this._exprService.expressionsUpdated$.subscribe(() =>
             {
                 // If user has changed axes, but still has unsaved expression showing, dont reset
-                if(!this._aExpressionId.startsWith("unsaved-") && !this._bExpressionId.startsWith("unsaved-") && !this._cExpressionId.startsWith("unsaved-"))
+                if( !DataExpressionId.isUnsavedExpressionId(this._aExpressionId) &&
+                    !DataExpressionId.isUnsavedExpressionId(this._bExpressionId) &&
+                    !DataExpressionId.isUnsavedExpressionId(this._cExpressionId) )
                 {
                     // Default set axes to first three preview expressions passed
                     if(this._exprService.getExpression(this.previewExpressionIDs[0]))
@@ -321,6 +325,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                 if(expr)
                 {
                     corners[c].label = expr.getExpressionShortDisplayName(18).shortName;
+                    corners[c].modulesOutOfDate = expr?.checkModuleReferences(this._moduleService) ?? false;
 
                     const mmolAppend = "(mmol)";
                     if(this.showMmol && !corners[c].label.endsWith(mmolAppend)) // Note this won't detect if (mmol) was modified by short name to be (mm...
@@ -734,7 +739,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
             exprIds = [this._cExpressionId];
         }
 
-        dialogConfig.data = new ExpressionPickerData("Vertex", DataExpressionId.DataExpressionTypeAll, exprIds, true, false, false, this.isPreviewMode);
+        dialogConfig.data = new ExpressionPickerData("Vertex", exprIds, true, false, false, this.isPreviewMode);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

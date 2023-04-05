@@ -31,6 +31,37 @@
   CodeMirror Theme for our expression editor
   Name:       pixlise
 */
+:root {
+    color-scheme: dark;
+}
+
+.CodeMirror-scroll, .CodeMirror-vscrollbar, .CodeMirror-hscrollbar {
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  // Track
+  &::-webkit-scrollbar-track {
+    background: rgba(35, 40, 41, 0.5); 
+  }
+  
+  // Handle
+  &::-webkit-scrollbar-thumb {
+    background: #565F63;
+    border-radius: 4px;
+
+    &:hover {
+      background: lighten(#565F63, 10%); 
+    }
+  }
+}
+
+.CodeMirror-scrollbar-filler {
+  background-color: #232829;
+}
+
 
 .cm-s-pixlise.CodeMirror {
   background-color: $clr-gray-90;

@@ -30,7 +30,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { BadgeStyle } from "../../badge/badge.component";
 
-export type PushButtonStyle = "normal" | "borderless" | "yellow" | "outline" | "gray" | "light-right-outline";
+export type PushButtonStyle = "normal" | "borderless" | "yellow" | "outline" | "gray" | "light-right-outline" | "orange" | "dark-outline";
 
 @Component({
     selector: "push-button",
@@ -53,7 +53,7 @@ export class PushButtonComponent implements OnInit
 
     ngOnInit()
     {
-        const validStyles: PushButtonStyle[] = ["normal", "borderless", "yellow", "outline", "gray", "light-right-outline"];
+        const validStyles: PushButtonStyle[] = ["normal", "borderless", "yellow", "outline", "gray", "light-right-outline", "orange", "dark-outline"];
         if(validStyles.indexOf(this.buttonStyle) == -1)
         {
             console.warn("Invalid style for push-button: "+this.buttonStyle);

@@ -39,8 +39,11 @@ export const environment = {
     luaDebug: false, // Enable debug flag on Lua runner which will print timing stats and provide Lua code the printMap() function
     initLuaTranspiler: false, // Should we init a PIXLISE->Lua transpiler
     initExpressionLanguageComparer: false, // Should we init a PIXLISE->Lua comparer, implies initTranspiler=true
+    newLuaPerExpression: false, // Should we create a new Lua WASM instance per expression run?
     expressionLanguageCompareSkipLines: 1, // How many lines to skip when doing line-by-line comparison
-    expressionLanguageCompareDiffAllowed: 0.0000001 // Absolute difference allowed between output values of Lua vs PIXLISE expressions 
+    expressionLanguageCompareDiffAllowed: 0.0000001, // Absolute difference allowed between output values of Lua vs PIXLISE expressions
+    expressionExecStatSaveIntervalSec: 600, // How long to wait before we save exec stats for an expression again
+    luaTimeoutMs: 30000, // Max time we allow a Lua call to take to run
 };
 
 /*

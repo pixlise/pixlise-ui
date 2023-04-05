@@ -181,7 +181,11 @@ export class LuaTranspiler
     {
         // Saw some scripts that had "element" as a variable name, which is also a function, in Lua this breaks
         // Here we check if it's any of the global function names, if so, replace
-        if(this._mapReturningFuncs.indexOf(varName) > -1)
+
+        if(
+            this._mapReturningFuncs.indexOf(varName) > -1 ||            
+            varName == "return" // Special case, we've seen "return" as a variable name in PIXLANG, breaks Lua converted code... this makes it "return _return"
+            )
         {
             return "_"+varName;
         }

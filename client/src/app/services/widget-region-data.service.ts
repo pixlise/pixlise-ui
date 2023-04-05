@@ -29,9 +29,9 @@
 
 import { Injectable } from "@angular/core";
 import { ReplaySubject, Subject, Subscription, Observable, combineLatest, of } from "rxjs";
-import { map } from "rxjs/operators";
-import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
-import { getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
+import { map, catchError, tap } from "rxjs/operators";
+import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
+import { ExpressionRunnerService } from "src/app/services/expression-runner.service";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
 import { QuantificationLayer } from "src/app/models/Quantifications";
@@ -166,14 +166,21 @@ export enum WidgetDataErrorType
 export class RegionDataResultItem
 {
     constructor(
-        public values: PMCDataValues,
+        public exprResult: DataQueryResult,
         public errorType: WidgetDataErrorType,
         public error: string,
         public warning: string,
         public expression: DataExpression,
         public region: RegionData,
-        public query: DataSourceParams)
+        public query: DataSourceParams,
+        public isPMCTable: boolean = true,
+    )
     {
+    }
+
+    get values(): PMCDataValues
+    {
+        return this.exprResult?.resultValues;
     }
 }
 
@@ -356,6 +363,7 @@ export class WidgetRegionDataService
         private _datasetService: DataSetService,
         private _quantService: QuantificationService,
         private _diffractionService: DiffractionPeakService,
+        private _exprRunnerService: ExpressionRunnerService,
     )
     {
         // Subscribe for things that aren't dataset dependent...
@@ -503,11 +511,11 @@ export class WidgetRegionDataService
 
             // If we have a cached value for this, return that
             let cachedResult = this._resultCache.getCachedResult(query, expr.modUnixTimeSec, region ? region.modUnixTimeSec : 0);
-            if(cachedResult != null)
+            if(cachedResult !== null)
             {
                 // Return a result with cached values but this query+expression, just in case it changed!
                 let cachedResultReturn = new RegionDataResultItem(
-                    cachedResult.values,
+                    cachedResult.exprResult,
                     cachedResult.errorType,
                     cachedResult.error,
                     cachedResult.warning,
@@ -520,23 +528,73 @@ export class WidgetRegionDataService
             }
             else
             {
-                result$.push(this.runAsyncExpression(query, expr));
+                // Run the expression and handle any errors in our own way here. This function is intended to be called by
+                // consumers of the data that will show a visualisation, so we want to provide a specific consistant error message
+
+                // Some expressions run slowly, so we cache their results in case they are re-run frequently
+                // eg in the case of UI refreshing binary or ternary plots
+                let t0 = performance.now();
+                
+                result$.push(
+                    this.runAsyncExpression(query, expr, false).pipe(
+                        tap(
+                            (result: RegionDataResultItem)=>
+                            {
+                                // Cache if needed
+                                let t1 = performance.now();
+                                this._resultCache.addCachedResult(query, t1-t0, result);
+                            }
+                        ),
+                        catchError(
+                            (err)=>
+                            {
+                                let errorMsg = httpErrorToString(err, "WidgetRegionDataService.getData catchError");
+
+                                // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
+                                if(
+                                    errorMsg.indexOf("The currently loaded quantification does not contain data for detector") < 0 &&
+                                    errorMsg.indexOf("The currently loaded quantification does not contain column") < 0
+                                    )
+                                {
+                                    SentryHelper.logMsg(true, errorMsg);
+                                }
+
+                                return of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr, region, query));
+                            }
+                        )
+                    )
+                );
             }
         }
 
         // Wait for all of them and complete
         let finalResult$ = combineLatest(result$);
         return finalResult$.pipe(
-            map((resultItems: RegionDataResultItem[])=>
-            {
-                return new RegionDataResults(resultItems, "");
-            })
+            map(
+                (resultItems: RegionDataResultItem[])=>
+                {
+                    return new RegionDataResults(resultItems, "");
+                }
+            ),
+            catchError(
+                (err)=>
+                {
+                    console.error(err);
+                    throw new Error(err);
+                }
+            )
         ); 
     }
 
-    private processQuantResult(t0: number, result: PMCDataValues, query: DataSourceParams, expr: DataExpression, region: RegionData, pmcOffset: number, shouldCache: boolean = true): RegionDataResultItem
+    private processQuantResult(result: DataQueryResult, query: DataSourceParams, expr: DataExpression, region: RegionData, pmcOffset: number): RegionDataResultItem
     {
-        let unitConverted = this.applyUnitConversion(expr, result, query.units);
+        let pmcValues = result?.resultValues as PMCDataValues;
+        if(!Array.isArray(pmcValues?.values) || (pmcValues.values.length > 0 && !(pmcValues.values[0] instanceof PMCDataValue)))
+        {
+            return new RegionDataResultItem(result, WidgetDataErrorType.WERR_QUERY, "Result is not a PMC array!", null, expr, region, query, false);
+        }
+
+        let unitConverted = this.applyUnitConversion(expr, pmcValues, query.units);
 
         // Also change the PMC values to be dataset-relative in the case of combined dataset
         if(pmcOffset > 0)
@@ -547,18 +605,14 @@ export class WidgetRegionDataService
             }
         }
 
-        let resultItem = new RegionDataResultItem(unitConverted, null, null, unitConverted.warning, expr, region, query);
-
-        if(shouldCache)
-        {
-            // Cache if needed
-            let t1 = performance.now();
-            this._resultCache.addCachedResult(query, t1-t0, resultItem);
-        }
+        // Put this back in the result
+        result.resultValues = unitConverted;
+        let resultItem = new RegionDataResultItem(result, null, null, unitConverted.warning, expr, region, query);
 
         return resultItem;
     }
 
+/* Seems to have gone unused
     public cacheExpression(query: DataSourceParams, expr: DataExpression, result: PMCDataValues, warning: string = ""): void
     {
         this._resultCache.addCachedResult(
@@ -575,105 +629,52 @@ export class WidgetRegionDataService
             )
         );
     }
+*/
 
-    public runAsyncExpression(query: DataSourceParams, expr: DataExpression, shouldCache: boolean = true): Observable<RegionDataResultItem>
+    // Runs an expression with given parameters. If errors are encountered, they will be returned as part of the Observables own
+    // error handling interface.
+    public runAsyncExpression(query: DataSourceParams, expr: DataExpression, allowAnyResponse: boolean): Observable<RegionDataResultItem>
     {
         let dataset = this._datasetService.datasetLoaded;
         let region = this._regions.get(query.roiId);
-        let result$: Observable<RegionDataResultItem> = null;
 
-        try
+        // At this point, we have to decide what we're querying for. If we have an ROI specified, we are only querying for its PMCs
+        // BUT datasetId filters this further, because if we have one specified (in the case of combined datasets), we need to
+        // only include PMCs for that dataset!
+        let pmcsToQuery = region ? region.pmcs : null;
+        let pmcOffset = 0;
+
+        if(query.datasetId)
         {
-            // Some expressions run slowly, so we cache their results in case they are re-run frequently
-            // eg in the case of UI refreshing binary or ternary plots
-            let t0 = performance.now();
+            // Get the offset for this dataset ID
+            pmcOffset = dataset.getIdOffsetForSubDataset(query.datasetId);
 
-            // At this point, we have to decide what we're querying for. If we have an ROI specified, we are only querying for its PMCs
-            // BUT datasetId filters this further, because if we have one specified (in the case of combined datasets), we need to
-            // only include PMCs for that dataset!
-            let pmcsToQuery = region ? region.pmcs : null;
-            let pmcOffset = 0;
-
-            if(query.datasetId)
+            // We're filtering down!
+            if(!pmcsToQuery)
             {
-                // Get the offset for this dataset ID
-                pmcOffset = dataset.getIdOffsetForSubDataset(query.datasetId);
-
-                // We're filtering down!
-                if(!pmcsToQuery)
-                {
-                    // No PMCs given, so just get all for the given dataset ID
-                    pmcsToQuery = this.getPMCsForDatasetId(query.datasetId, dataset)
-                }
-                else
-                {
-                    // Region PMCs are specified, so filter down to only those for the given dataset!
-                    pmcsToQuery = this.filterPMCsForDatasetId(region.pmcs, query.datasetId, dataset);
-                }
-            }
-
-            // At this point if we don't have the expression text, we query for it and return it as part of a chain of observables
-            let data$: Observable<PMCDataValues> = null;
-
-            if(expr.expression.length <= 0)
-            {
-                data$ = new Observable<PMCDataValues>(
-                    (observer)=>
-                    {
-                        this._exprService.getExpressionAsync(query.exprId).subscribe(
-                            (exprQueried: DataExpression)=>
-                            {
-                                let query$ = getQuantifiedDataWithExpression(exprQueried.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
-                                query$.subscribe(
-                                    (values: PMCDataValues)=>
-                                    {
-                                        observer.next(values);
-                                        observer.complete();
-                                    },
-                                    (err)=>
-                                    {
-                                        observer.error(err);
-                                    }
-                                );
-                            },
-                            (err)=>
-                            {
-                                observer.error(err);
-                            }
-                        );
-                    }
-                );
+                // No PMCs given, so just get all for the given dataset ID
+                pmcsToQuery = this.getPMCsForDatasetId(query.datasetId, dataset);
             }
             else
             {
-                // We do have the expression text already, so just run normally
-                data$ = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, pmcsToQuery);
+                // Region PMCs are specified, so filter down to only those for the given dataset!
+                pmcsToQuery = this.filterPMCsForDatasetId(region.pmcs, query.datasetId, dataset);
             }
+        }
 
-            result$ = data$.pipe(
-                map((result: PMCDataValues)=>
+        return this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, pmcsToQuery, allowAnyResponse).pipe(
+            map(
+                (result: DataQueryResult)=>
                 {
-                    return this.processQuantResult(t0, result, query, expr, region, pmcOffset, shouldCache);
-                })
-            );
-        }
-        catch (error)
-        {
-            let errorMsg = httpErrorToString(error, "WidgetRegionDataService.getData");
+                    return this.processQuantResult(result, query, expr, region, pmcOffset);
+                }
+            )
+        );
+    }
 
-            // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
-            if(
-                errorMsg.indexOf("The currently loaded quantification does not contain data for detector") < 0 &&
-                errorMsg.indexOf("The currently loaded quantification does not contain column") < 0
-                )
-            {
-                SentryHelper.logMsg(true, errorMsg);
-            }
-
-            result$ = of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr, region, query));
-        }
-
-        return result$;
+    public exportExpressionCode(expr: DataExpression): Observable<Blob>
+    {
+        return this._exprRunnerService.exportExpressionCode(expr, this._quantificationLoaded, this._diffractionService);
     }
 
     private getPMCsForDatasetId(datasetId: string, dataset: DataSet): Set<number>
@@ -892,11 +893,11 @@ export class WidgetRegionDataService
 
         console.log(logmsg+": Generated "+this._regions.size+" regions.");
 
-        console.log(logmsg+": Region build finished, notifying subscribers...");
-        let t0 = performance.now();
+        //console.log(logmsg+": Region build finished, notifying subscribers...");
+        //let t0 = performance.now();
         this.widgetData$.next(reason);
-        let t1 = performance.now();
-        console.log(logmsg+": Subscribers notified in "+(t1-t0).toLocaleString()+"ms");
+        //let t1 = performance.now();
+        //console.log(logmsg+": Subscribers notified in "+(t1-t0).toLocaleString()+"ms");
     }
 
     getRemainingPMCs(): number[]
@@ -1131,41 +1132,21 @@ export class WidgetRegionDataService
                                 this._exprService.setQuantDataAvailable(quant.getElementList(), quant.getDetectors());
 
                                 // Remember that we've loaded this...
-                                this._quantIdLastLoaded = this._quantId/*quant.summary.jobId*/; // Remember that we've loaded this one!
-                                this._quantificationLoaded = quant;
-
-                                this.rebuildData(WidgetDataUpdateReason.WUPD_QUANT);
-
-                                // Also notify that there is a new quantification loaded
-                                this.quantificationLoaded$.next(quant);
+                                this.onQuantChange(this._quantId, quant);
                             },
                             (err)=>
                             {
                                 console.error(this._logPrefix+": "+httpErrorToString(err, "Quant failed to load"));
-                                // Failed to load a quant, set our state that way
-                                this._quantIdLastLoaded = this._quantId/*quant.summary.jobId*/; // Remember that we've failed to load this one!
-                                this._quantificationLoaded = null;
 
-                                this.rebuildData(WidgetDataUpdateReason.WUPD_QUANT);
-
-                                // Notify out that we don't have a quant loaded
-                                this.quantificationLoaded$.next(null);
+                                // Saving the ID so we remember that we've failed to load this one!
+                                this.onQuantChange(this._quantId, null);
                             }
                         );
                     }
                 }
                 else
                 {
-                    // No quant to load!
-                    this._quantificationLoaded = null;
-
-                    // Don't strictly need to clear this here but might as well...
-                    this._quantIdLastLoaded = null;
-
-                    this.rebuildData(WidgetDataUpdateReason.WUPD_QUANT);
-
-                    // Notify out that we don't have a quant loaded
-                    this.quantificationLoaded$.next(null);
+                    this.onQuantChange(null, null);
                 }
             },
             (err)=>
@@ -1177,6 +1158,22 @@ export class WidgetRegionDataService
                 this.resubscribeViewStateQuantLoaded();
             }
         ));
+    }
+
+    // Handles a quant change
+    private onQuantChange(quantId: string, quant: QuantificationLayer): void
+    {
+        // With a new quant loading anything we have cached is invalidated
+        this._resultCache.clear();
+        
+        // Save stuff
+        this._quantificationLoaded = quant;
+        this._quantIdLastLoaded = quantId;
+
+        this.rebuildData(WidgetDataUpdateReason.WUPD_QUANT);
+
+        // Notify about this quant
+        this.quantificationLoaded$.next(quant);
     }
 
     private resubscribeMultiQuantROIs()

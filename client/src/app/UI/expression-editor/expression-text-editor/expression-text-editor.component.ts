@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
 import { CodemirrorComponent } from "@ctrl/ngx-codemirror";
 import { Subscription, timer } from "rxjs";
 import { ExpressionParts, PixliseDataQuerier } from "src/app/expression-language/interpret-pixlise";
@@ -38,10 +38,28 @@ import { WidgetRegionDataService } from "src/app/services/widget-region-data.ser
 import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElement, Suggestion } from "../expression-help";
 import { SentryHelper } from "src/app/utils/utils";
 import { Range } from "codemirror";
+import { ObjectCreator } from "src/app/models/BasicTypes";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import * as CodeMirror from "codemirror";
+import { AuthenticationService } from "src/app/services/authentication.service";
 
 require("codemirror/addon/comment/comment.js");
 require("codemirror/mode/lua/lua");
+require("codemirror/addon/hint/show-hint.js");
+require("codemirror/addon/hint/anyword-hint.js");
+require("codemirror/addon/lint/lint.js");
 
+export class DataExpressionModule
+{
+    constructor(
+        public id: string,
+        public name: string,
+        public description: string = "",
+        public version: string = "",
+        public author: ObjectCreator= new ObjectCreator("", ""),
+        public allVersions: string[] = [],
+    ){}
+}
 
 export class TextSelection
 {
@@ -73,7 +91,7 @@ export class MarkPosition
 export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 {
     @ViewChild(CodemirrorComponent, {static: false}) private _codeMirror: CodemirrorComponent;
-
+    
     private _subs = new Subscription();
     private _expr: DataExpression = null;
     private _exprParts: ExpressionParts = null;
@@ -85,7 +103,13 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     dropdownTop: string = "";
     dropdownLeft: string = "";
 
+    private _gutterWidth: number = 0;
+
     private _initAsLua: boolean = false;
+    private _installedModules: DataExpressionModule[] = [];
+    private _isHeaderOpen: boolean = false;
+
+    public moduleContainerWidths: Record<string, number> = {};
 
     @Input() isLua: boolean = false;
     @Input() expression: DataExpression = null;
@@ -96,33 +120,41 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Input() showHelp: boolean = true;
     @Input() range: Range = null;
 
+    @Input() showInstalledModules: boolean = true;
+    @Input() linkedModuleID: string = null;
+
     @Output() onChange = new EventEmitter<DataExpression>();
     @Output() onTextChange = new EventEmitter<string>();
     @Output() onTextSelect = new EventEmitter<TextSelection>();
+    @Output() onModuleChange = new EventEmitter<DataExpressionModule[]>();
     @Output() runExpression = new EventEmitter();
     @Output() runHighlightedExpression = new EventEmitter();
     @Output() saveExpression = new EventEmitter();
+    @Output() toggleSidebar = new EventEmitter();
+    @Output() toggleSplitView = new EventEmitter();
     @Output() changeExpression = new EventEmitter<(text: string) => void>();
+    @Output() toggleHeader = new EventEmitter();
+    @Output() onClick = new EventEmitter();
+    @Output() linkModule = new EventEmitter<string>();
     
     constructor(
         private _datasetService: DataSetService,
         private _widgetDataService: WidgetRegionDataService,
+        private _authService: AuthenticationService,
+        private elementRef: ElementRef,
     )
     {
     }
 
     ngOnInit()
     {
-        // If we're in lua mode, strip out the lua start, this will be added back before save
-        let strippedExpression = this.isLua ? this.stripLua(this.expression.expression) : this.expression.expression;
-
         // Make a copy of incoming expression, so we don't edit what's there!
-        this._expr = new DataExpression(this.expression.id, this.expression.name, strippedExpression, this.expression.type, this.expression.comments, this.expression.shared, this.expression.creator, this.expression.createUnixTimeSec, this.expression.modUnixTimeSec, this.expression.tags);
+        this._expr = this.copyExpression(this.expression);
         this.findVariables();
 
         this.changeExpression.emit((text: string) =>
         {
-            this._expr.expression = text;
+            this._expr.sourceCode = text;
             this._codeMirror.codeMirrorGlobal.then((cm: any)=>
             {
                 this.setupCodeMirror(cm.default);
@@ -132,6 +164,29 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                 cmObj.refresh();
             });
         });
+    }
+
+    getHintList(curWord: string): string[]
+    {
+        return [];
+    }
+
+    copyExpression(expression: DataExpression): DataExpression
+    {
+        return new DataExpression(
+            expression.id,
+            expression.name,
+            expression.sourceCode,
+            expression.sourceLanguage,
+            expression.comments,
+            expression.shared,
+            expression.creator,
+            expression.createUnixTimeSec,
+            expression.modUnixTimeSec,
+            expression.tags,
+            expression.moduleReferences,
+            expression.recentExecStats
+        );
     }
 
     ngAfterViewInit(): void
@@ -167,12 +222,169 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
             const source2 = timer(100);
             const sub2 = source2.subscribe(setupFunc);
+
+            this.updateGutter();
         });
+
+        this.calculateModuleContainerWidths();
     }
 
     ngOnDestroy()
     {
         this._subs.unsubscribe();
+    }
+
+    get isSourceLanguageLua(): boolean
+    {
+        return this.expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
+    }
+
+    get toggleHeaderTooltip(): string
+    {
+        let tooltip = this.isHeaderOpen ? "Hide installed modules" : "Show installed modules";
+        return this.isSourceLanguageLua ? tooltip : "Modules are only available in Lua";
+    }
+
+    onToggleHeader(): void
+    {
+        if(this.isSourceLanguageLua)
+        {
+            this.toggleHeader.emit();
+        }
+    }
+
+    checkIsOwner(module: DataExpressionModule): boolean
+    {
+        return module.author.user_id === this._authService.getUserID();
+    }
+
+
+    onLinkModule(moduleID: string): void
+    {
+        this.linkModule.emit(moduleID);
+    }
+
+    onSetActive(): void
+    {
+        this.onClick.emit();
+    }
+
+    get installedModules(): DataExpressionModule[]
+    {
+        return this._installedModules;
+    }
+
+    @Input() set installedModules(modules: DataExpressionModule[])
+    {
+        this._installedModules = modules;
+        this.calculateModuleContainerWidths();
+    }
+
+    get isHeaderOpen(): boolean
+    {
+        return this._isHeaderOpen;
+    }
+
+    @Input() set isHeaderOpen(isOpen: boolean)
+    {
+        this._isHeaderOpen = isOpen;
+        this.calculateModuleContainerWidths();
+    }
+
+    onModuleVersionChange(event, i): void
+    {
+        this.installedModules[i].version = event.value;
+        this.onModuleChange.emit(this.installedModules);
+    }
+
+    deleteModule(i): void
+    {
+        this.installedModules.splice(i, 1);
+        this.onModuleChange.emit(this.installedModules);
+    }
+
+    calculateModuleContainerWidths(): void
+    {
+        if(!this.installedModules?.length)
+        {
+            return;
+        }
+
+        // We need to wait for the DOM to be updated before we can get the width of the module containers
+        // We do this by using setTimeout with 0ms delay, which will run on the next tick
+        setTimeout(() =>
+        {
+            this.moduleContainerWidths = {};
+            this.elementRef?.nativeElement?.querySelectorAll("div.module-import-line").forEach((element: HTMLElement)=>
+            {
+                let moduleID = element.id.replace("module-", "");
+                let module = this.installedModules.find(module => module.id === moduleID);
+                if(module)
+                {
+                    this.moduleContainerWidths[moduleID] = element.querySelector(".module-container")?.clientWidth || 0;
+                }
+            });
+        });
+    }
+
+    getMaxWidthModule(): DataExpressionModule
+    {
+        let maxLength = 0;
+        let maxWidthModule = null;
+        this.installedModules.forEach((module) =>
+        {
+            if(module.name.length > maxLength)
+            {
+                maxWidthModule = module;
+                maxLength = module.name.length;
+            }
+        });
+
+        if(!maxWidthModule?.id)
+        {
+            return null;
+        }
+
+        return maxWidthModule;
+    }
+
+    getVersionContainerWidthDifference(moduleID: string): number
+    {
+        if(!this.installedModules || !moduleID)
+        {
+            return 0;
+        }
+
+        let maxWidth = this.moduleContainerWidths[this.getMaxWidthModule().id] || 0;
+        let thisWidth = this.moduleContainerWidths[moduleID] || 0;
+
+        return maxWidth && thisWidth ? maxWidth - thisWidth : 0;
+    }
+
+    get maxInstalledModuleCharacterLength(): number
+    {
+        if(!this.installedModules)
+        {
+            return 0;
+        }
+
+        let maxLength = 0;
+        this.installedModules.forEach((module) =>
+        {
+            maxLength = Math.max(maxLength, module.name.length);
+        });
+
+        return maxLength;
+    }
+
+    get isHeaderNonEmptyAndOpen(): boolean
+    {
+        return this.isHeaderOpen && this.installedModules.length > 0;
+    }
+
+    get gutterWidth(): string
+    {
+        return `${this._gutterWidth}px`;
     }
 
     get isWindows(): boolean
@@ -193,9 +405,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         const resetMarks = (cm) =>
         {
             this.range = null;
-            let cursor = cm.getCursor();
-            cm.setSelection({line: 0, ch: 0}, {line: 0, ch: 0});
-            cm.setSelection(cursor, cursor);
         };
         
         if(this.isWindows)
@@ -213,6 +422,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                     this.runHighlightedExpression.emit();
                 },
                 "Ctrl-S": () => this.saveExpression.emit(),
+                "Ctrl-B": () => this.toggleSidebar.emit(),
+                "Ctrl-\\": () => this.toggleSplitView.emit(),
             });
         }
         else
@@ -231,13 +442,21 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
                 },
                 "Cmd-S": () => this.saveExpression.emit(),
+                "Cmd-B": () => this.toggleSidebar.emit(),
+                "Cmd-\\": () => this.toggleSplitView.emit(),
             });
         }
     }
 
     private findVariables(): void
     {
-        if(this._expr.expression == null || this._expr.expression.length == 0)
+        // NOTE: this is confusing, we have isLua input and expression also has a source language
+        if(this._expr.sourceLanguage === EXPR_LANGUAGE_LUA || this.isLua)
+        {
+            return;
+        }
+
+        if(this._expr.sourceCode == null || this._expr.sourceCode.length == 0)
         {
             this._exprParts = new ExpressionParts([], [], [], "");
             return;
@@ -245,7 +464,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
         try
         {
-            this._exprParts = PixliseDataQuerier.breakExpressionIntoParts(this._expr.expression);
+            this._exprParts = PixliseDataQuerier.breakExpressionIntoParts(this._expr.sourceCode);
         }
         catch (error)
         {
@@ -280,13 +499,13 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             });
         }
 
-        return this._expr.expression;
+        return this._expr.sourceCode;
     }
 
     set editExpression(val: string)
     {
-        this._expr.expression = val;
-        this.onTextChange.emit(this._expr.expression || "");
+        this._expr.sourceCode = val;
+        this.onTextChange.emit(this._expr.sourceCode || "");
     }
 
     get expressionComments(): string
@@ -302,16 +521,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     get isEditable(): boolean
     {
         return this.allowEdit;
-    }
-
-    stripLua(text: string): string
-    {
-        if(text.startsWith("LUA\n"))
-        {
-            text = text.substring(4);
-        }
-
-        return text;
     }
 
     onKeyDown(event: KeyboardEvent): void
@@ -355,7 +564,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         let cursor = doc.getCursor();
 
         // Work out what the cursor is over, need to consider multi-line!
-        let lines = this._expr.expression.split("\n");
+        let lines = this._expr.sourceCode.split("\n");
         let cursorIdx = ExpressionHelp.getIndexInExpression(cursor.line, cursor.ch, lines);
 
         // Do whatever the action id suggests
@@ -427,7 +636,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     private replaceExpressionPart(startIdx: number, endIdx: number, replaceWith: string)
     {
         // Apply the suggestion picked
-        let prefix = this._expr.expression.substring(0, startIdx);
+        let prefix = this._expr.sourceCode.substring(0, startIdx);
 
         // Check if it ends in a , we add a space for niceness
         if(prefix.length > 0 && prefix[prefix.length-1] == ",")
@@ -435,9 +644,9 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             prefix += " ";
         }
 
-        let postfix = this._expr.expression.substring(endIdx);
+        let postfix = this._expr.sourceCode.substring(endIdx);
 
-        this._expr.expression = prefix+replaceWith+postfix;
+        this._expr.sourceCode = prefix+replaceWith+postfix;
     }
 
     onClickDialog(event): void
@@ -508,6 +717,12 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     }
 
+    private updateGutter(): void
+    {
+        let gutterWidth = document.querySelector(".CodeMirror-gutters")?.getBoundingClientRect()?.width;
+        this._gutterWidth = gutterWidth ? gutterWidth : 29;
+    }
+
     private setupCodeMirrorEventHandlers(cm: CodeMirror.EditorFromTextArea): void
     {
         cm.on("beforeChange", (instance, event)=>
@@ -525,6 +740,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         {
             // User may have created/deleted variables
             this.findVariables();
+            this.updateGutter();
 
             this.updateHelp();
             this.range = null;
@@ -537,6 +753,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
         cm.on("focus", (instance)=>
         {
+            this.onSetActive();
             this.updateHelp();
             this.markExecutedExpressionRange(cm);
         });
@@ -563,17 +780,15 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                     }
                     this.onTextSelect.emit(
                         new TextSelection(text, isSingleLineEmpty, startLine, endLine, selection.ranges[0], 
-                            () => this.markExecutedExpressionRange(cm, range),
                             () =>
                             {
-                                let rangeEnd = this.range?.to() || {line: 0, ch: 0};
+                                this.clearMarkedText(cm);
+                                this.markExecutedExpressionRange(cm, range);
+                            },
+                            () =>
+                            {
+                                this.clearMarkedText(cm);
                                 this.range = null;
-
-                                // We have to set selection twice to clear the marked range because code mirror only
-                                // does an actual selection change (which resets marked text) if the new selection is valid and
-                                // different from the old selection and we can only ensure it is different by setting it twice
-                                cm.setSelection({line: 0, ch: 0}, {line: 0, ch: 0});
-                                cm.setSelection(rangeEnd, rangeEnd);
                             }
                         )
                     );
@@ -599,6 +814,11 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         {
             cm.focus();
         }
+    }
+
+    private clearMarkedText(cm: CodeMirror.EditorFromTextArea): void
+    {
+        cm.getAllMarks().forEach(marker => marker.clear());
     }
 
     private markExecutedExpressionRange(cm: CodeMirror.EditorFromTextArea, range: Range = null): void
@@ -628,6 +848,12 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     private updateHelp(): void
     {
+        // NOTE: this is confusing, we have isLua input and expression also has a source language
+        if(this._expr.sourceLanguage != EXPR_LANGUAGE_LUA || this.isLua)
+        {
+            return;
+        }
+
         let cm = this._codeMirror.codeMirror;
 
         let doc = cm.getDoc();
@@ -643,8 +869,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         else
         {
             this.activeHelp = this.getCursorSuggestions(cursor);
-            this._markTextPositions = ExpressionTextEditorComponent.findPositionsToMark(this._exprParts, this._expr.expression, cursor);
-            this._markMatchedBracketPositions = ExpressionTextEditorComponent.findMatchedBracketPositions(this._expr.expression, cursor);
+            this._markTextPositions = ExpressionTextEditorComponent.findPositionsToMark(this._exprParts, this._expr.sourceCode, cursor);
+            this._markMatchedBracketPositions = ExpressionTextEditorComponent.findMatchedBracketPositions(this._expr.sourceCode, cursor);
         }
 
         if(this.activeHelp && cm)
@@ -904,7 +1130,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         let potentialVarName = lineStr.substring(startPos, endPos);
 
         // Check if it's a variable we know of
-        if(exprParts.variableNames.indexOf(potentialVarName) >= 0)
+        if(exprParts?.variableNames.indexOf(potentialVarName) >= 0)
         {
             return potentialVarName;
         }

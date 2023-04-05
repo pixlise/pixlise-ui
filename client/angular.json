@@ -37,6 +37,21 @@
                 "output": "assets/lua"
               },
               {
+                "glob": "DebugHelp.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "CSV.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "PixliseRuntime.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
                 "glob": "FuncRunner.lua",
                 "input": "src/app/expression-language/lua/test",
                 "output": "assets/lua"

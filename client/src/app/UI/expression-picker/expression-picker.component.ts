@@ -33,6 +33,7 @@ import { Subscription } from "rxjs";
 import { DataSet } from "src/app/models/DataSet";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataModuleService } from "src/app/services/data-module.service";
 import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
@@ -44,13 +45,13 @@ import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
 import { RGBMix } from "src/app/services/rgbmix-config.service";
 import { makeDataForExpressionList, ExpressionListBuilder, ExpressionListGroupNames, ExpressionListItems, LocationDataLayerPropertiesWithVisibility } from "src/app/models/ExpressionList";
 import { ObjectCreator } from "src/app/models/BasicTypes";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 
 
 export class ExpressionPickerData
 {
     constructor(
         public title: string,
-        public exprType: string,
         public activeExpressionIDs: string[],
         public singleSelection: boolean,
         public showRGBMixes: boolean,
@@ -95,6 +96,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
         private _datasetService: DataSetService,
         private _widgetDataService: WidgetRegionDataService,
         private _exprService: DataExpressionService,
+        private _moduleService: DataModuleService,
         private _rgbMixService: RGBMixConfigService,
         public dialog: MatDialog
     )
@@ -104,6 +106,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
 
     ngOnInit()
     {
+        this._moduleService.refresh();
         this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, this.data.showRGBMixes, this.data.showAnomalyExpressions, this._exprService);
 
         this.dialogRef.backdropClick().subscribe(
@@ -166,7 +169,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
                 this._listBuilder.notifyDataArrived(
                     (data[0] as DataSet).getPseudoIntensityElementsList(),
                     data[1] as QuantificationLayer,
-                    this._exprService.getExpressions(DataExpressionId.DataExpressionTypeAll),
+                    this._exprService.getExpressions(),
                     this._rgbMixService.getRGBMixes()
                 );
 
@@ -320,7 +323,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
         dialogConfig.disableClose = true;
         //dialogConfig.backdropClass = "panel";
 
-        let blankExpr = new DataExpression("", "", "", this.data.exprType, "", false, null, 0, 0);
+        let blankExpr = new DataExpression("", "", "", EXPR_LANGUAGE_LUA, "", false, null, 0, 0, [], [], null);
         dialogConfig.data = new ExpressionEditorConfig(blankExpr, true);
 
         const dialogRef = this.dialog.open(ExpressionEditorComponent, dialogConfig);
@@ -334,7 +337,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
                 }
                 else
                 {
-                    this._exprService.add(dlgResult.expr.name, dlgResult.expr.expression, blankExpr.type, dlgResult.expr.comments).subscribe(
+                    this._exprService.add(dlgResult.expr.name, dlgResult.expr.sourceCode, blankExpr.sourceLanguage, dlgResult.expr.comments).subscribe(
                         (response)=>
                         {
                             // Make sure all objects are valid and check if we want to apply this expression immediately
@@ -346,7 +349,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
                                 }
 
                                 // The response is the whole expression list, so we need to narrow it down to just our expression to get the assigned ID
-                                let matchingIDs = Object.entries(response).filter(([, expression]) => expression.name === dlgResult.expr.name && expression.expression === dlgResult.expr.expression).map(([layerID]) => layerID);
+                                let matchingIDs = Object.entries(response).filter(([, expression]) => expression.name === dlgResult.expr.name && expression.sourceCode === dlgResult.expr.sourceCode).map(([layerID]) => layerID);
 
                                 // If we matched more or less than 1 expression, something went wrong so we're not going to close the picker
                                 if(matchingIDs.length === 1) 
@@ -360,7 +363,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
                                 }
                             }
                         },
-                        ()=>
+                        (err)=>
                         {
                             alert("Failed to add data expression: "+dlgResult.expr.name);
                         }

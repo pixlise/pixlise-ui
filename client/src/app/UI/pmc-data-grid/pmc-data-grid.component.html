@@ -32,9 +32,19 @@ POSSIBILITY OF SUCH DAMAGE.
 <div fxLayout="column" class="data-grid">
   <div class="grid-header">
     <h2>{{header}}</h2>
-    <input class="summary-value" value="{{avgDataValue | number:'1.0-2'}} (avg.)" readonly>
-    <input class="summary-value" value="{{minDataValue | number:'1.0-2'}} (min.)" readonly>
-    <input class="summary-value" value="{{maxDataValue | number:'1.0-2'}} (max.)" readonly>
+    <multi-switch-button
+        #tooltip="matTooltip"
+        [matTooltip]="toggleTooltip"
+        class="log-toggle-btn"
+        [options]="['Output', 'Logs']"
+        [value]="isOutputView ? 'Output' : 'Logs'"
+        [disabled]="!isOutputView && !!stderr"
+        (onChange)="onChangeOutputMode()"
+      >
+    </multi-switch-button>
+    <input class="summary-value" value="{{!isValidTableData || !isOutputView ? ' --' : avgDataValue | number:'1.0-2'}} (avg.)" readonly>
+    <input class="summary-value" value="{{!isValidTableData || !isOutputView ? ' --' : minDataValue | number:'1.0-2'}} (min.)" readonly>
+    <input class="summary-value" value="{{!isValidTableData || !isOutputView ? ' --' : maxDataValue | number:'1.0-2'}} (max.)" readonly>
     <icon-button
       title="Solo"
       (onClick)="onSolo()"
@@ -47,8 +57,8 @@ POSSIBILITY OF SUCH DAMAGE.
         icon="assets/button-icons/export.svg">
     </icon-button>
   </div>
-  <div class="table-container" [style.height]="!isValidData ? '100%' : 'auto'">
-    <table *ngIf="isValidData">
+  <div class="result-container" [style.height]="!isValidTableData ? '100%' : 'auto'">
+    <table *ngIf="isValidTableData && isOutputView">
       <tr *ngFor="let _ of [].constructor(rowCount); let i = index;">
         <td
           *ngFor="let _ of [].constructor(columnCount); let j = index;"
@@ -63,9 +73,16 @@ POSSIBILITY OF SUCH DAMAGE.
         </td>
       </tr>
     </table>
-    <div *ngIf="!isValidData" class="invalid-input">
+
+    <div *ngIf="!isValidTableData && isValidData && isOutputView" class="result-text">{{printableResultValue}}</div>
+
+    <div *ngIf="!isValidData && isOutputView" class="invalid-input">
       <img src="assets/icons/error-triangle-dark.svg"/>
       <h5>No Valid Input</h5>
+      <h6>Run an expression or highlight<br>a selection of code to run</h6>
     </div>
+
+    <div *ngIf="!isOutputView && !stderr" class="log-text">{{stdout || "No log output"}}</div>
+    <div *ngIf="!isOutputView && stderr" class="error-text">{{stderr || "No log output"}}</div>
   </div>
 </div>

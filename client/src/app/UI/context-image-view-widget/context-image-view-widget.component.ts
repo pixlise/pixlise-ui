@@ -53,9 +53,9 @@ import { ContextImageModel } from "src/app/UI/context-image-view-widget/model";
 import { RegionChangeInfo } from "src/app/UI/context-image-view-widget/region-manager";
 import { ContextImageToolId } from "src/app/UI/context-image-view-widget/tools/base-context-image-tool";
 import { ToolButtonState, ToolHostCreateSettings } from "src/app/UI/context-image-view-widget/tools/tool-host";
-import { randomString } from "src/app/utils/utils";
-import { makeDataForExpressionList, ExpressionListBuilder, ExpressionListGroupNames, ExpressionListItems, LocationDataLayerPropertiesWithVisibility } from "src/app/models/ExpressionList";
+import { makeDataForExpressionList } from "src/app/models/ExpressionList";
 import { ROIService } from "src/app/services/roi.service";
+import { DataModuleService } from "src/app/services/data-module.service";
 
 
 @Component({
@@ -69,7 +69,6 @@ import { ROIService } from "src/app/services/roi.service";
 })
 export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
 {
-    private id = randomString(4);
     private _subs = new Subscription();
     private _modelSubs = new Subscription();
 
@@ -100,6 +99,7 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
         private snackService: SnackService,
         private layoutService: LayoutService,
         private exprService: DataExpressionService,
+        private moduleService: DataModuleService,
         private rgbMixService: RGBMixConfigService,
         private viewStateService: ViewStateService,
         private selectionService: SelectionService,
@@ -166,6 +166,7 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
                 showMapColourScale
             ),
             this.exprService,
+            this.moduleService,
             this.rgbMixService,
             this.selectionService,
             this.datasetService,
@@ -275,10 +276,9 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
                     let validPreviewExpressions = this.previewExpressionIDs.filter(id => this.exprService.getExpression(id));
                     if(validPreviewExpressions.length > 0)
                     {
-                        validPreviewExpressions.forEach(id =>
-                        {
-                            this.mdl.layerManager.setLayerVisibility(id, 1, true, []);
-                        });
+                        // We can only show one visible layer on the context image, so we just show the first one
+                        this.mdl.layerManager.setSingleLayerVisible(validPreviewExpressions[0]);
+                        this.reDraw();
                     }
                 }
                 this.mdl.regionManager.setDataset(data[0] as DataSet);

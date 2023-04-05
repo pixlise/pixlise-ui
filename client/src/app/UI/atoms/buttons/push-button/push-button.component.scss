@@ -69,6 +69,13 @@
     box-sizing: border-box;
 }
 
+.btn-dark-outline {
+    @extend .btn-base;
+    color: $clr-gray-100;
+    border: 1px solid $clr-gray-100;
+    box-sizing: border-box;
+}
+
 .btn-normal {
     @extend .btn-base;
     padding: $sz-half;
@@ -105,6 +112,12 @@
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
     padding: $sz-half 8px;
+}
+
+.btn-orange {
+    @extend .btn-base;
+    color: black;
+    background-color: $clr-orange;
 }
 
 .disabled {

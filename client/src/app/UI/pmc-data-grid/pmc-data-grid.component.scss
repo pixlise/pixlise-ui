@@ -49,6 +49,11 @@
             padding-left: 8px;
         }
 
+        multi-switch-button {
+            min-width: 150px;
+            margin-right: 8px;
+        }
+
         .summary-value {
             width: 75px;
             margin-right: 8px;
@@ -61,8 +66,14 @@
         }
     }
 
-    .table-container {
+    .result-container {
         overflow: scroll;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+        -ms-overflow-style: none;
+        scrollbar-width: none;
 
         table {
             width: 100%;
@@ -106,6 +117,19 @@
             }
         }
 
+        .result-text, .log-text, .error-text {
+            background: black;
+            border-radius: 8px;
+            border: 1px solid #222829;
+            margin: 4px;
+            padding: 8px;
+            white-space: pre-wrap;
+        }
+
+        .error-text {
+            color: red;
+        }
+
         .invalid-input {
             width: 100%;
             height: 100%;
@@ -121,7 +145,16 @@
 
             h5 {
                 margin-top: 8px;
-                color: rgb(var(--clr-gray-50));
+                color: rgb(var(--clr-gray-30));
+                text-transform: uppercase;
+            }
+
+            h6 {
+                text-align: center;
+                font-weight: 500;
+                font-size: 12px;
+                line-height: 16px;
+                color: white;
                 text-transform: uppercase;
             }
         }

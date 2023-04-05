@@ -27,7 +27,7 @@
 -- ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 -- POSSIBILITY OF SUCH DAMAGE.
 
-local Map = {
+Map = {
     opMultiply = 1,
     opDivide = 2,
     opAdd = 3,
@@ -415,6 +415,31 @@ function Map.threshold(m, compare, threshold)
         r[k] = {v[1], save}
     end
     return r
+end
+
+function Map.printDebugMap(m, comment)
+    print(comment.." map size: "..#m[1])
+    for k, v in ipairs(m[1]) do
+        print(v.."="..m[2][k])
+    end
+end
+
+-- This is slow! PMC doesn't match index but surely we could skip and start looping from near it!
+function Map.getPMCValue(m, pmc)
+    for idx, mapPMC in ipairs(m[1]) do
+        if mapPMC == pmc then
+            return m[2][idx]
+        end
+    end
+end
+
+function Map.setPMCValue(m, pmc, v)
+    for idx, mapPMC in ipairs(m[1]) do
+        if mapPMC == pmc then
+            m[2][idx] = v
+            return
+        end
+    end
 end
 
 return Map

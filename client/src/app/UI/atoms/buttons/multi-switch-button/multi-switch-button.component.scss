@@ -56,8 +56,10 @@
 
     &.disabled {
         .multi-switch-option {
+            color: $clr-gray-50;
+
             &.active {
-                color: $clr-gray-30;
+                background-color: $clr-gray-70;
             }
         }
 

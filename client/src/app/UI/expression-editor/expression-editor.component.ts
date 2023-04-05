@@ -33,6 +33,8 @@ import { Router } from "@angular/router";
 import { Subscription } from "rxjs";
 import { DataExpression } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+
 
 export class ExpressionEditorConfig
 {
@@ -72,7 +74,20 @@ export class ExpressionEditorComponent implements OnDestroy
     )
     {
         // Make a copy of incoming expression, so we don't edit what's there!
-        this.expression = new DataExpression(data.expr.id, data.expr.name, data.expr.expression, data.expr.type, data.expr.comments, data.expr.shared, data.expr.creator, data.expr.createUnixTimeSec, data.expr.modUnixTimeSec, data.expr.tags);
+        this.expression = new DataExpression(
+            data.expr.id,
+            data.expr.name,
+            data.expr.sourceCode,
+            data.expr.sourceLanguage,
+            data.expr.comments,
+            data.expr.shared,
+            data.expr.creator,
+            data.expr.createUnixTimeSec,
+            data.expr.modUnixTimeSec,
+            data.expr.tags,
+            data.expr.moduleReferences,
+            data.expr.recentExecStats
+        );
     }
 
     ngOnDestroy()
@@ -82,7 +97,7 @@ export class ExpressionEditorComponent implements OnDestroy
 
     get isLua(): boolean
     {
-        return this.expression.expression.startsWith("LUA\n");
+        return this.expression.sourceLanguage == EXPR_LANGUAGE_LUA;
     }
 
     get expressionName(): string
@@ -100,14 +115,14 @@ export class ExpressionEditorComponent implements OnDestroy
 
     get editExpression(): string
     {
-        return this.expression.expression;
+        return this.expression.sourceCode;
     }
 
     set editExpression(val: string)
     {
         if(this.isEditable)
         {
-            this.expression.expression = val;
+            this.expression.sourceCode = val;
         }
     }
 
@@ -131,7 +146,7 @@ export class ExpressionEditorComponent implements OnDestroy
 
     onExpressionTextChanged(expressionText: string)
     {
-        this.expression.expression = expressionText;
+        this.expression.sourceCode = expressionText;
     }
 
     onOpenSoloEditorView(): void
@@ -147,7 +162,7 @@ export class ExpressionEditorComponent implements OnDestroy
     onOK()
     {
         // Make sure both have data
-        if(this.expression == null || this.expression.name.length <= 0 || this.expression.expression.length <= 0)
+        if(this.expression == null || this.expression.name.length <= 0 || this.expression.sourceCode.length <= 0)
         {
             alert("Please enter a name and expression");
             return;
@@ -159,7 +174,7 @@ export class ExpressionEditorComponent implements OnDestroy
     onApplyToChart()
     {
         // Make sure both have data
-        if(this.expression == null || this.expression.name.length <= 0 || this.expression.expression.length <= 0)
+        if(this.expression == null || this.expression.name.length <= 0 || this.expression.sourceCode.length <= 0)
         {
             alert("Please enter a name and expression");
             return;

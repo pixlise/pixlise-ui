@@ -29,7 +29,7 @@
 
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable, ReplaySubject, Subject, of } from "rxjs";
+import { Observable, ReplaySubject, Subject, forkJoin, of } from "rxjs";
 import { tap, map } from "rxjs/operators";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications";
@@ -38,53 +38,95 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 import { QuantificationService } from "src/app/services/quantification.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
-import { DataExpression, DataExpressionId, ShortName } from "src/app/models/Expression";
+import { DataExpression, DataExpressionId, ShortName, ExpressionExecStats, ModuleReference } from "src/app/models/Expression";
+import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "../expression-language/expression-language";
+import { environment } from "src/environments/environment";
+import { LuaTranspiler } from "../expression-language/lua-transpiler";
+import { DataModuleService } from "./data-module.service";
+import { NotificationItem, NotificationService } from "./notification.service";
+import { NotificationSubscriptions, UserOptionsService } from "./user-options.service";
 
 
 class DataExpressionInput
 {
     constructor(
         public name: string,
-        public expression: string,
-        public type: string,
+        public sourceCode: string,
+        public sourceLanguage: string,
         public comments: string,
         public tags: string[] = [],
+        public moduleReferences: ModuleReference[] = [],
     )
     {
     }
 }
 
 // What we receive
-class DataExpressionWire
+export class DataExpressionWire
 {
     constructor(
+        public id: string,
         public name: string,
-        public expression: string,
-        public type: string,
+        public sourceCode: string,
+        public sourceLanguage: string,
         public comments: string,
         public shared: boolean,
         public creator: ObjectCreator,
         public create_unix_time_sec: number,
         public mod_unix_time_sec: number,
         public tags: string[] = [],
+        public moduleReferences: ModuleReference[],
+        public recentExecStats: ExpressionExecStats
     )
     {
     }
 
-    makeExpression(id: string): DataExpression
+    makeExpression(id: string, moduleService: DataModuleService = null): DataExpression
     {
+        let moduleReferences = this.moduleReferences || [];
+        moduleReferences = moduleReferences.map((ref) => new ModuleReference(ref.moduleID, ref.version));
+        let isModuleListUpToDate = true;
+        let hasMinorOutdatedModuleReferences = false;
+        let hasMajorOutdatedModuleReferences = false;
+        if(moduleService && this.sourceLanguage === EXPR_LANGUAGE_LUA && moduleReferences.length > 0)
+        {
+            moduleReferences.forEach((ref) =>
+            {
+                if(!ref.checkIsLatest(moduleService))
+                {
+                    isModuleListUpToDate = false;
+                    if(ref.isLatestMajorRelease)
+                    {
+                        hasMinorOutdatedModuleReferences = true;
+                    }
+                    else
+                    {
+                        hasMinorOutdatedModuleReferences = true;
+                        hasMajorOutdatedModuleReferences = true;
+                    }
+                }
+            });
+        }
+
         let result = new DataExpression(
             id,
             this.name,
-            this.expression,
-            this.type,
+            this.sourceCode,
+            this.sourceLanguage,
             this.comments || "",
             this.shared,
-            this.creator,
+            new ObjectCreator(this.creator.name, this.creator.user_id, this.creator.email),
             this.create_unix_time_sec,
             this.mod_unix_time_sec,
-            this.tags || []
+            this.tags || [],
+            moduleReferences,
+            this.recentExecStats || null,
+            isModuleListUpToDate
         );
+
+        result.hasMinorOutdatedModuleReferences = hasMinorOutdatedModuleReferences;
+        result.hasMajorOutdatedModuleReferences = hasMajorOutdatedModuleReferences;
+
         return result;
     }
 }
@@ -98,19 +140,64 @@ export class DataExpressionService
     private _expressionsUpdated$ = new ReplaySubject<void>(1);
     private _expressions: Map<string, DataExpression> = new Map<string, DataExpression>();
 
-    private _elementFormulae: string[] = [];
+    private _elementFormulae: Set<string> = new Set<string>();
     private _validDetectors: string[] = [QuantModes.quantModeCombined];
 
     private _diffractionCountExpression = "";
     private _diffractionCountExpressionName = "";
 
+    private _minorUpdatesAvailable = false;
+    private _majorUpdatesAvailable = false;
+
+    private _isSubscribedToMinorReleases = false;
+    private _isSubscribedToMajorReleases = false;
+
     constructor(
         private _datasetService: DataSetService, // just for getting pseudointensity predefined expression ids
         private _loadingSvc: LoadingIndicatorService,
+        private _moduleService: DataModuleService,
+        private _notifcationService: NotificationService,
+        private _userOptionsService: UserOptionsService,
         private http: HttpClient
     )
     {
-        this.refreshExpressions();
+        this._moduleService.refresh();
+
+        // When the module list changes, we need to check our expressions to see if they're still up to date
+        // This also ensures that we have the latest module list when we first load expressions
+        this._moduleService.modulesUpdated$.subscribe(() =>
+        {
+            this.refreshExpressions();
+        });
+
+        this._userOptionsService.userOptionsChanged$.subscribe(() =>
+        {
+            this._userOptionsService.notificationSubscriptions.topics.forEach((topic) =>
+            {
+                if(topic.name === NotificationSubscriptions.notificationMinorModuleRelease && topic.config.method.ui)
+                {
+                    this._isSubscribedToMinorReleases = true;
+                }
+                else if(topic.name === NotificationSubscriptions.notificationMajorModuleRelease && topic.config.method.ui)
+                {
+                    this._isSubscribedToMajorReleases = true;
+                }
+            });
+
+            // These conditionals will fire either if the expression list loaded before the user options or if there were updates 
+            // available and the user toggled on the notifications. If not, we handle this when first processing the expressions.
+            if(this._isSubscribedToMajorReleases && this._majorUpdatesAvailable)
+            {
+                this._notifcationService.addNotification("New Major Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+                this._majorUpdatesAvailable = false;
+                this._minorUpdatesAvailable = false;
+            }
+            else if(this._isSubscribedToMinorReleases && this._minorUpdatesAvailable)
+            {
+                this._notifcationService.addNotification("New Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+                this._minorUpdatesAvailable = false;
+            }
+        });
     }
 
     get expressionsUpdated$(): Subject<void>
@@ -120,7 +207,11 @@ export class DataExpressionService
 
     setQuantDataAvailable(elementFormulae: string[], detectors: string[]): void
     {
-        this._elementFormulae = elementFormulae;
+        this._elementFormulae.clear();
+        for(let e of elementFormulae)
+        {
+            this._elementFormulae.add(e);
+        }
         this._validDetectors = detectors;
 
         // If we have expressions, run their compatibility check against these
@@ -173,7 +264,28 @@ export class DataExpressionService
 
     private processReceivedExpressionList(receivedDataExpressions: object, deleteReceived: boolean = false): void
     {
+        // This is very hacky, but some endpoints return just the JSON of the object, others
+        // return a map of id->object, and others just return the ID. This is done to standardize the response.
+        if(typeof receivedDataExpressions === "string" && !String(receivedDataExpressions).startsWith("{"))
+        {
+            receivedDataExpressions = {[receivedDataExpressions]: {}};
+        }
+        else if(
+            receivedDataExpressions &&
+            receivedDataExpressions["id"] &&
+            receivedDataExpressions["name"] &&
+            receivedDataExpressions["sourceCode"]
+        )
+        {
+            receivedDataExpressions = {[receivedDataExpressions["id"]]: receivedDataExpressions};
+        }
+
         let t0 = performance.now();
+
+        let firstTimeProcessed = true;
+        let expressionsNeedUpdating = false;
+        let majorModuleVersionsOutdated = false;
+        let minorModuleVersionsOutdated = false;
 
         // Only update changed expressions
         Object.entries(receivedDataExpressions).forEach(([id, expression]: [string, DataExpressionWire])=>
@@ -186,20 +298,67 @@ export class DataExpressionService
             {
                 // NOTE: JS doesn't _actually_ return a DataExpressionWire
                 let wireExpr = new DataExpressionWire(
+                    id,
                     expression["name"],
-                    expression["expression"],
-                    expression["type"],
+                    expression["sourceCode"],
+                    expression["sourceLanguage"],
                     expression["comments"],
                     expression["shared"],
                     expression["creator"],
                     expression["create_unix_time_sec"],
                     expression["mod_unix_time_sec"],
-                    expression["tags"]
+                    expression["tags"],
+                    expression["moduleReferences"],
+                    expression["recentExecStats"]
                 );
-                let receivedDataExpression = wireExpr.makeExpression(id);
+                // We're passing in the module service here so we can make sure all modules are up to date
+                // and cache this once
+                let receivedDataExpression = wireExpr.makeExpression(id, this._moduleService);
+                if(this._expressions.get(id))
+                {
+                    firstTimeProcessed = false;
+                }
+                else if(!receivedDataExpression.isModuleListUpToDate)
+                {
+                    expressionsNeedUpdating = true;
+                    if(receivedDataExpression.hasMajorOutdatedModuleReferences)
+                    {
+                        majorModuleVersionsOutdated = true;
+                        minorModuleVersionsOutdated = true;
+                    }
+                    else if(receivedDataExpression.hasMinorOutdatedModuleReferences)
+                    {
+                        minorModuleVersionsOutdated = true;
+                    }
+                }
+
                 this._expressions.set(id, receivedDataExpression);
             }
         });
+
+        // If this is the first time we're processing expressions and some have ouotdated modules, notify the user
+        // Expressions can load quick so sometimes this is loaded before user options. If this is the case, track
+        // them as needing updating and notify when the user options are loaded
+        if(firstTimeProcessed && expressionsNeedUpdating)
+        {
+            if(majorModuleVersionsOutdated && this._isSubscribedToMajorReleases)
+            {
+                this._notifcationService.addNotification("New Major Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+            }
+            else if(minorModuleVersionsOutdated && this._isSubscribedToMinorReleases)
+            {
+                this._notifcationService.addNotification("New Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+            }
+            else if(majorModuleVersionsOutdated)
+            {
+                this._majorUpdatesAvailable = true;
+                this._minorUpdatesAvailable = true;
+            }
+            else if(minorModuleVersionsOutdated)
+            {
+                this._minorUpdatesAvailable = true;
+            }
+        }
 
         this.checkQuantCompatibleExpressions();
 
@@ -223,21 +382,14 @@ export class DataExpressionService
         return changeCount;
     }
 
-    getExpressions(type: string = DataExpressionId.DataExpressionTypeAll): Map<string, DataExpression>
+    getExpressions(): Map<string, DataExpression>
     {
-        // This used to take a type field because we thought we'd have "types" of expressions specific to a given widget
-        // but this never eventuated. type field is deprecated and currently we expect it to be set to all...
-        if(type !== DataExpressionId.DataExpressionTypeAll)
-        {
-            throw new Error("getExpressions called with unexpected type: "+type);
-        }
-
         return this._expressions;
     }
 
     filterInvalidElements(exprIdList: string[], quantification: QuantificationLayer): string[]
     {
-        const exprList = this.getAllExpressionIds(DataExpressionId.DataExpressionTypeAll, quantification);
+        const exprList = this.getAllExpressionIds(quantification);
         let newDisplayExprIds: string[] = [];
 
         for(let exprId of exprIdList)
@@ -252,11 +404,10 @@ export class DataExpressionService
         return newDisplayExprIds;
     }
 
-    private getAllExpressionIds(type: string, quantification: QuantificationLayer): string[]
+    private getAllExpressionIds(quantification: QuantificationLayer): string[]
     {
-        let ids = this.getPredefinedExpressionIds(type, quantification);
-        let exprs = this.getExpressions(type);
-        for(let id of exprs.keys())
+        let ids = this.getPredefinedExpressionIds(quantification);
+        for(let id of this._expressions.keys())
         {
             ids.push(id);
         }
@@ -269,7 +420,7 @@ export class DataExpressionService
     // and its elements - the data are related so it makes plots look wonky
     getStartingExpressions(quantification: QuantificationLayer): string[]
     {
-        const exprList = this.getAllExpressionIds(DataExpressionId.DataExpressionTypeAll, quantification);
+        const exprList = this.getAllExpressionIds(quantification);
 
         let result = [];
 
@@ -318,7 +469,7 @@ export class DataExpressionService
         return result;
     }
 
-    private getPredefinedExpressionIds(type: string, quantification: QuantificationLayer): string[]
+    private getPredefinedExpressionIds(quantification: QuantificationLayer): string[]
     {
         let result: string[] = [];
 
@@ -378,7 +529,12 @@ export class DataExpressionService
     getExpressionAsync(id: string): Observable<DataExpression>
     {
         let expr = this.getExpression(id);
-        if(expr.expression.length > 0)
+        if(!expr)
+        {
+            throw new Error("Expression: "+id+" not found!");
+        }
+
+        if(expr.sourceCode.length > 0)
         {
             // We already have the text, so just return it as-is
             return of(expr);
@@ -391,15 +547,18 @@ export class DataExpressionService
                 {
                     // NOTE: JS doesn't _actually_ return a DataExpressionWire
                     let wireExpr = new DataExpressionWire(
+                        id,
                         expression["name"],
-                        expression["expression"],
-                        expression["type"],
+                        expression["sourceCode"],
+                        expression["sourceLanguage"],
                         expression["comments"],
                         expression["shared"],
                         expression["creator"],
                         expression["create_unix_time_sec"],
                         expression["mod_unix_time_sec"],
-                        expression["tags"]
+                        expression["tags"],
+                        expression["moduleReferences"], 
+                        expression["recentExecStats"]
                     );
                     let receivedDataExpression = wireExpr.makeExpression(id);
                     return receivedDataExpression;
@@ -521,12 +680,15 @@ export class DataExpressionService
             id,
             name,
             expr,
-            DataExpressionId.DataExpressionTypeAll, // TODO: bad hard code here! Should be a param for this func
+            EXPR_LANGUAGE_PIXLANG,
             "Built-in expression",
             false,
             null,
             0,
-            0
+            0,
+            [],
+            [],
+            null
         );
 
         // Run the compatibility checker on this
@@ -540,28 +702,98 @@ export class DataExpressionService
         let receivedDataExpression = new DataExpression(
             id,
             name || expr.name,
-            expr.expression,
-            expr.type,
+            expr.sourceCode,
+            expr.sourceLanguage,
             expr.comments || "",
             false,
             null,
             -1,
-            new Date().getUTCSeconds(),
-            expr.tags || []
+            Math.round(Date.now() / 1000),
+            expr.tags || [],
+            expr.moduleReferences,
+            expr.recentExecStats
         );
         this._expressions.set(id, receivedDataExpression);
         this._expressionsUpdated$.next();
     }
 
-    add(name: string, expression: string, type: string, comments: string, tags: string[] = []): Observable<object>
+    clearAllUnsavedFromCache(): void
+    {
+        this._expressions.forEach((expr, id) =>
+        {
+            if(id.startsWith("unsaved-"))
+            {
+                this._expressions.delete(id);
+            }
+        });
+    }
+
+    removeFromCache(id: string): void
+    {
+        this._expressions.delete(id);
+        this._expressionsUpdated$.next();
+    }
+
+    convertToLua(id: string, saveExpression: boolean = false): Observable<object>
+    {
+        let expression = this.getExpressionAsync(id).pipe(
+            tap(
+                async (expression: DataExpression)=>
+                {
+                    if(!expression || expression.sourceLanguage === EXPR_LANGUAGE_LUA)
+                    {
+                        return;
+                    }
+
+                    let loadID = null;
+                    if(saveExpression)
+                    {
+                        loadID = this._loadingSvc.add("Converting expression to Lua...");
+                    }
+
+                    let transpiler = new LuaTranspiler();
+                    expression.sourceCode = transpiler.transpile(expression.sourceCode);
+                    expression.sourceLanguage = EXPR_LANGUAGE_LUA;
+                    expression.moduleReferences = [];
+
+                    if(saveExpression)
+                    {
+                        await this.edit(expression.id, expression.name, expression.sourceCode, expression.sourceLanguage, expression.comments, expression.tags, expression.moduleReferences).subscribe(
+                            ()=>
+                            {
+                                this._loadingSvc.remove(loadID);
+                            },
+                            (err)=>
+                            {
+                                alert("Error converting expression to Lua: "+err);
+                                console.error("Error converting expression to Lua:", err);
+                                this._loadingSvc.remove(loadID);
+                            }
+                        );
+                    }
+
+                    return expression;
+                },
+                (err)=>
+                {
+                    alert("Error converting expression to Lua: "+err);
+                    console.error("Error converting expression to Lua:", err);
+                }
+            )
+        );
+
+        return expression;
+    }
+
+    add(name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = []): Observable<DataExpressionWire>
     {
         let loadID = this._loadingSvc.add("Saving new expression...");
         let apiURL = APIPaths.getWithHost(APIPaths.api_data_expression);
-        let toSave = new DataExpressionInput(name, expression, type, comments, tags);
-        return this.http.post<object>(apiURL, toSave, makeHeaders())
+        let toSave = new DataExpressionInput(name, sourceCode, sourceLanguage, comments, tags);
+        return this.http.post<DataExpressionWire>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(
-                    (resp: object)=>
+                    (resp: DataExpressionWire)=>
                     {
                         if(resp) 
                         {
@@ -581,12 +813,12 @@ export class DataExpressionService
             );
     }
 
-    edit(id: string, name: string, expression: string, type: string, comments: string, tags: string[] = []): Observable<object>
+    edit(id: string, name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = [], moduleReferences: ModuleReference[] = []): Observable<object>
     {
         let loadID = this._loadingSvc.add("Saving changed expression...");
         let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
 
-        let toSave = new DataExpressionInput(name, expression, type, comments, tags);
+        let toSave = new DataExpressionInput(name, sourceCode, sourceLanguage, comments, tags, moduleReferences);
         return this.http.put<object>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(
@@ -594,6 +826,7 @@ export class DataExpressionService
                     {
                         this.processReceivedExpressionList(resp);
                         this._loadingSvc.remove(loadID);
+                        return resp;
                     },
                     (err)=>
                     {
@@ -603,28 +836,95 @@ export class DataExpressionService
             );
     }
 
+    updateAllExpressions(): Observable<object[]>
+    {
+        let loadID = this._loadingSvc.add("Updating modules for all expressions...");
+
+        let updatePromises: Observable<object>[] = [];
+        this._expressions.forEach((expression, id) =>
+        {
+            if(!expression.isModuleListUpToDate)
+            {
+                let moduleReferences = [];
+                expression.moduleReferences.forEach((moduleRef) =>
+                {
+                    if(!moduleRef.checkIsLatest(this._moduleService))
+                    {
+                        if(moduleRef.latestVersion)
+                        {
+                            moduleReferences.push(new ModuleReference(moduleRef.moduleID, moduleRef.latestVersion));
+                        }
+                        else
+                        {
+                            moduleReferences.push(moduleRef);
+                            console.error(`Could not find latest version of module ${moduleRef.moduleID} for expression ${expression.name} (${expression.id}).`);
+                        }
+                    }
+                    else
+                    {
+                        moduleReferences.push(moduleRef);
+                    }
+                });
+
+                updatePromises.push(this.getExpressionAsync(id).pipe(map(
+                    async (oldExpression: DataExpression)=>
+                    {
+                        return await this.edit(
+                            oldExpression.id,
+                            oldExpression.name,
+                            oldExpression.sourceCode,
+                            oldExpression.sourceLanguage,
+                            oldExpression.comments,
+                            oldExpression.tags,
+                            moduleReferences
+                        ).toPromise().then(
+                            (response)=>
+                            {
+                                return response;
+                            },
+                            (err)=>
+                            {
+                                alert("Error updating expression: "+err);
+                                console.error("Error updating expression:", err);
+                            }
+                        );
+                    }
+                )));
+            }
+        });
+
+        return forkJoin(updatePromises).pipe(tap(
+            ()=>
+            {
+                this._loadingSvc.remove(loadID);
+            },
+            (err)=>
+            {
+                alert("Error updating all expressions: "+err);
+                this._loadingSvc.remove(loadID);
+            }
+        ));
+    }
+
     updateTags(id: string, tags: string[]): Observable<object>
     {
         let loadID = this._loadingSvc.add("Saving new expression tags...");
         let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
 
-        let expression = this.getExpression(id);
-        let toSave = new DataExpressionInput(expression.name, expression.expression, expression.type, expression.comments, tags);
-
-        return this.http.put<object>(apiURL, toSave, makeHeaders())
-            .pipe(
-                tap(
-                    (resp: object)=>
-                    {
-                        this.processReceivedExpressionList(resp);
-                        this._loadingSvc.remove(loadID);
-                    },
-                    (err)=>
-                    {
-                        this._loadingSvc.remove(loadID);
-                    }
-                )
-            );
+        return this.getExpressionAsync(id).pipe(tap(
+            async (expression: DataExpression)=>
+            {
+                let toSave = new DataExpressionInput(expression.name, expression.sourceCode, expression.sourceLanguage, expression.comments, tags);
+                await this.http.put<object>(apiURL, toSave, makeHeaders()).toPromise().then((resp: object)=>
+                {
+                    this.processReceivedExpressionList(resp);
+                    this._loadingSvc.remove(loadID);
+                }).catch(() =>
+                {
+                    this._loadingSvc.remove(loadID);
+                });
+            })
+        );
     }
 
     del(id: string): Observable<object>
@@ -666,5 +966,59 @@ export class DataExpressionService
                     }
                 )
             );
+    }
+
+    // Call this to save runtime stats. Internally this saves them in local cache and sends to API, subscribing
+    // for the result, but does nothing with it except print errors if needed
+    saveExecutionStats(id: string, dataRequired: string[], runtimeMs: number): void
+    {
+        // Don't send for ids that are "special"
+        if(
+            DataExpressionId.isPredefinedExpression(id) ||
+            DataExpressionId.isPredefinedNewID(id) ||
+            DataExpressionId.isPredefinedQuantExpression(id) ||
+            DataExpressionId.isUnsavedExpressionId(id)
+            )
+        {
+            return;
+        }
+
+        // Check if we have a recent cache time, if so, don't send, no point flooding API with this
+        let expr = this._expressions.get(id);
+        let nowSec = Math.floor(Date.now() / 1000);
+
+        if(expr && expr.recentExecStats && nowSec-expr.recentExecStats.mod_unix_time_sec < environment.expressionExecStatSaveIntervalSec)
+        {
+            // Don't save too often
+            return;
+        }
+
+        let toSave = new ExpressionExecStats(dataRequired, runtimeMs, null);
+        // Don't send blank timestamps...
+        if(!toSave.mod_unix_time_sec)
+        {
+            delete toSave["mod_unix_time_sec"];
+        }
+
+        let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/execution-stat/${id}`;
+        this.http.put<object>(apiURL, toSave, makeHeaders()).subscribe(
+            (result: object)=>
+            {
+                // Save to our local copy at this point
+                if(expr)
+                {
+                    let recvd = new ExpressionExecStats(result["dataRequired"], result["runtimeMs"], result["mod_unix_time_sec"]);
+                    expr.recentExecStats = recvd;
+                }
+                else
+                {
+                    console.warn("Failed to find expression: "+id+" when saving execution stats. Ignored.")
+                }
+            },
+            (err)=>
+            {
+                console.error(err);
+            }
+        );
     }
 }

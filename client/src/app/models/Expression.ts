@@ -29,6 +29,7 @@
 
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { UNICODE_GREEK_LOWERCASE_PSI } from "src/app/utils/utils";
+import { DataModuleService } from "../services/data-module.service";
 
 
 export class ShortName
@@ -38,27 +39,148 @@ export class ShortName
     }
 }
 
+export class ModuleReference
+{
+    latestVersion: string = null;
+    isLatestMajorRelease: boolean = false;
+
+    constructor(
+        public moduleID: string,
+        public version: string,
+    )
+    {
+    }
+
+    checkIsLatest(moduleService: DataModuleService): boolean
+    {
+        if(!moduleService)
+        {
+            return true;
+        }
+
+        let latest = moduleService.getLatestCachedModuleVersion(this.moduleID, true);
+        if(latest)
+        {
+            this.latestVersion = latest.version;
+        }
+
+        let isAheadOfRelease = false;
+        let isLatestVersion = latest?.version === this.version;
+        if(latest && !isLatestVersion)
+        {
+            let [latestMajor, latestMinor] = latest.version.split(".").map((part) => parseInt(part));
+            let [thisMajor, thisMinor] = this.version.split(".").map((part) => parseInt(part));
+
+            this.isLatestMajorRelease = latestMajor === thisMajor;
+
+            // If the first 2 parts are equal, we know it's ahead of the release because it doesn't end in ".0"
+            isAheadOfRelease = this.isLatestMajorRelease && latestMinor === thisMinor && !this.version.endsWith(".0");
+        }
+
+        // If we can't get the latest version, assume it's the latest, else check if it's at least as new as the latest
+        return !latest || isLatestVersion || isAheadOfRelease;
+    }
+}
+
+export class ExpressionExecStats
+{
+    constructor(
+        public dataRequired: string[],
+        public runtimeMs: number,
+        public mod_unix_time_sec: number
+    )
+    {
+    }
+}
+
 export class DataExpression
 {
-    private _requiredElementFormulae = new Set<string>();
-    private _requiredDetectors = new Set<string>();
+    private _requiredElementFormulae: string[] = [];
+    private _requiredDetectors: string[] = [];
 
     private _isCompatibleWithQuantification: boolean = true;
+
+    public hasMinorOutdatedModuleReferences: boolean = false;
+    public hasMajorOutdatedModuleReferences: boolean = false;
 
     constructor(
         public id: string,
         public name: string,
-        public expression: string,
-        public type: string,
+        public sourceCode: string,
+        public sourceLanguage: string,
         public comments: string,
         public shared: boolean,
         public creator: ObjectCreator,
         public createUnixTimeSec: number,
         public modUnixTimeSec: number,
-        public tags: string[] = [],
+        public tags: string[],
+        public moduleReferences: ModuleReference[],
+        public recentExecStats: ExpressionExecStats,
+
+        // This flag is used to indicate that the module references are up to date and isn't stored with the expression
+        public isModuleListUpToDate: boolean = true
     )
     {
-        this.parseRequiredQuantificationData();
+        // Read in the required elements and detectors from the recent exec stats (if any)
+        // NOTE: These lists are assembled in the expression language interpreter code
+        //       so look there to see what the possibilities are
+        if(recentExecStats && recentExecStats.dataRequired)
+        {
+            let elems = new Set<string>();
+            let dets = new Set<string>();
+            for(let item of recentExecStats.dataRequired)
+            {
+                let elem = DataExpressionId.getPredefinedQuantExpressionElement(item);
+                if(elem)
+                {
+                    elems.add(elem);
+                }
+
+                let detector = DataExpressionId.getPredefinedQuantExpressionDetector(item);
+                if(detector)
+                {
+                    dets.add(detector);
+                }
+            }
+
+            this._requiredElementFormulae = Array.from(elems.keys());
+            this._requiredDetectors = Array.from(dets.keys());
+        }
+    }
+
+    copy(): DataExpression
+    {
+        // We need to instantiate new versions of all complex objects to prevent javascript from passing by reference
+        let creator = new ObjectCreator(this.creator?.name, this.creator?.user_id, this.creator?.email);
+        let tags = Array.from(this.tags || []);
+        let moduleReferences = Array.from(this.moduleReferences || []).map((ref) => new ModuleReference(ref.moduleID, ref.version));
+        let recentExecStats = new ExpressionExecStats(
+            this.recentExecStats?.dataRequired,
+            this.recentExecStats?.runtimeMs,
+            this.recentExecStats?.mod_unix_time_sec
+        );
+
+        return new DataExpression(
+            this.id,
+            this.name,
+            this.sourceCode,
+            this.sourceLanguage,
+            this.comments,
+            this.shared,
+            creator,
+            this.createUnixTimeSec,
+            this.modUnixTimeSec,
+            tags,
+            moduleReferences,
+            recentExecStats,
+            this.isModuleListUpToDate
+        );
+    }
+
+    checkModuleReferences(moduleService: DataModuleService): boolean
+    {
+        // Check if any of the module references are outdated
+        return this.moduleReferences.some((module)=> !module.checkIsLatest(moduleService));
     }
 
     get isCompatibleWithQuantification(): boolean
@@ -68,14 +190,14 @@ export class DataExpression
 
     // Checks compatibility with passed in params, returns true if flag was changed
     // otherwise false.
-    checkQuantCompatibility(elementList: string[], detectors: string[]): boolean
+    checkQuantCompatibility(elementList: Set<string>, detectors: string[]): boolean
     {
         let wasCompatible = this._isCompatibleWithQuantification;
 
         // Check if the quant would have the data we're requiring...
         for(let elem of this._requiredElementFormulae)
         {
-            if(elementList.indexOf(elem) <= -1)
+            if(!elementList.has(elem))
             {
                 // NOTE: quant element list returns both pure and oxide/carbonate, so this check is enough
                 this._isCompatibleWithQuantification = false;
@@ -85,6 +207,8 @@ export class DataExpression
 
         for(let detector of this._requiredDetectors)
         {
+            // This is likely a list of 1-2 items so indexOf is fast enough. If we end up with more detectors in future
+            // we may need to use a Set for this too
             if(detectors.indexOf(detector) <= -1)
             {
                 // Expression contains a detector that doesn't exist in the quantification
@@ -150,14 +274,14 @@ export class DataExpression
                     result.shortName = result.shortName.substring(0, charLimit)+"...";
                     /*
                     const elemSearch = "element(";
-                    let elemPos = expr.expression.indexOf(elemSearch);
+                    let elemPos = expr.sourceCode.indexOf(elemSearch);
                     if(elemPos > -1)
                     {
                         elemPos += elemSearch.length;
 
                         // Find the element after this
-                        let commaPos = expr.expression.indexOf(",", elemPos+1);
-                        let elem = expr.expression.substring(elemPos, commaPos);
+                        let commaPos = expr.sourceCode.indexOf(",", elemPos+1);
+                        let elem = expr.sourceCode.substring(elemPos, commaPos);
                         elem = elem.replace(/['"]+/g, "");
 
                         // Was limiting to 2 chars, but we now deal a lot in oxides/carbonates
@@ -173,51 +297,6 @@ export class DataExpression
         }
 
         return result;
-    }
-
-    private parseRequiredQuantificationData()
-    {
-        this._requiredElementFormulae.clear();
-        this._requiredDetectors.clear();
-
-        // Find all occurances of element() in expression and determine what element formulae (eg element or oxide/carbonate)
-        // are used, and what detectors are referenced
-        // This can be used elsewhere to show if this expression is compatible with the currently loaded quantification
-        const element = "element";
-        let elemPos = this.expression.indexOf(element);
-
-        while(elemPos > -1)
-        {
-            let nextSearchStart = elemPos+element.length;
-
-            // Make sure it's not elementSum()
-            if(this.expression.substring(elemPos, elemPos+element.length+3) != "elementSum")
-            {
-                // Find (
-                let openBracketPos = this.expression.indexOf("(", elemPos+element.length);
-                let closeBracketPos = openBracketPos;
-                if(openBracketPos > -1)
-                {
-                    // Find )
-                    closeBracketPos = this.expression.indexOf(")", openBracketPos);
-
-                    if(closeBracketPos > -1)
-                    {
-                        // We've now got the start and end of the expression parameters. Break this into tokens
-                        let params = this.getExpressionParameters(this.expression.substring(openBracketPos+1, closeBracketPos));
-                        if(params.length == 3)
-                        {
-                            this._requiredElementFormulae.add(params[0]);
-                            this._requiredDetectors.add(params[2]);
-                        }
-
-                        nextSearchStart = closeBracketPos;
-                    }
-                }
-            }
-
-            elemPos = this.expression.indexOf(element, nextSearchStart);
-        }
     }
 
     // Expects strings like:
@@ -278,6 +357,10 @@ export class DataExpression
 
 export class DataExpressionId
 {
+    public static NewExpression = "new-expression";
+    public static NewModule = "new-module";
+    public static UnsavedExpressionPrefix = "unsaved-";
+
     private static PredefinedPseudoIntensityLayerPrefix = "pseudo-";
     private static PredefinedQuantDataLayerPrefix = "data-";
     private static PredefinedQuantElementLayerPrefix = "elem-";
@@ -288,15 +371,17 @@ export class DataExpressionId
     private static SuffixZHeight = "zheight";
 
     // Static functions for getting/accessing/parsing predefined expression IDs
-    // TODO: remove this if the whole concept of expression types
-    // goes unused... this is already a hack to get them to all show up
-    public static get DataExpressionTypeAll(): string { return "All"; }
-    /*
-    public static get DataExpressionTypeContextImage(): string { return "ContextImage"; }
-    public static get DataExpressionTypeChordDiagram(): string { return "ChordDiagram"; }
-    public static get DataExpressionTypeBinaryPlot(): string { return "BinaryPlot"; }
-    public static get DataExpressionTypeTernaryPlot(): string { return "TernaryPlot"; }
-*/
+    public static isPredefinedNewID(id: string): boolean
+    {
+        id = id ? id.toLowerCase() : "";
+        return [DataExpressionId.NewExpression, DataExpressionId.NewModule].includes(id);
+    }
+
+    public static isUnsavedExpressionId(id: string): boolean
+    {
+        return id.startsWith(DataExpressionId.UnsavedExpressionPrefix);
+    }
+
     public static isPredefinedExpression(id: string): boolean
     {
         return id.startsWith(DataExpressionId.PredefinedLayerPrefix);

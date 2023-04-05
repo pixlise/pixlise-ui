@@ -29,7 +29,7 @@
 
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { Subscription } from "rxjs";
-import { ItemTag } from "src/app/models/tags";
+import { BuiltInTags, ItemTag } from "src/app/models/tags";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { TaggingService } from "src/app/services/tagging.service";
 
@@ -66,6 +66,7 @@ export class TagPickerComponent implements OnInit
     @Input() selectedTagIDs: string[] = [];
     @Input() tags: ItemTag[] = [];
     @Input() filterToTagType: boolean = true;
+    @Input() allowAdminBuiltin: boolean = false;
     @Input() additionalVisibleTagType: string[] = ["layer"];
 
     @Output() onTagSelectionChanged = new EventEmitter<string[]>();
@@ -80,27 +81,44 @@ export class TagPickerComponent implements OnInit
 
     ngOnInit()
     {
-        this._authService.userProfile$.subscribe(
+        this._subs.add(this._authService.userProfile$.subscribe(
             (user)=>
             {
                 this.user = user;
                 this.currentAuthor = this.user.name;
             }
-        );
+        ));
 
         this._taggingService.refreshTagList();
 
-        this._taggingService.tags$.subscribe((tags) =>
+        this._subs.add(this._taggingService.tags$.subscribe(async (tags) =>
         {
+            let isAdmin = false;
+
+            if(this.allowAdminBuiltin)
+            {
+                isAdmin = await this._authService.getIdTokenClaims$().toPromise().then(
+                    (claims)=>
+                    {
+                        return AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionViewUserRoles);
+                    },
+                    (err)=>
+                    {
+                        return false;
+                    }
+                );
+            }
+
             // Only show tags that are of the same type as the current item if filterToTagType or are of the additional visible type
             this.tags = Array.from(tags.values()).filter((tag) => 
                 !this.filterToTagType
                 || tag.type === this.type
                 || this.additionalVisibleTagType.includes(tag.type)
+                || (isAdmin && this.allowAdminBuiltin && tag.type === BuiltInTags.type)
             );
 
             this.groupTags();
-        });
+        }));
 
         this.groupTags();
         this.focusOnInput();

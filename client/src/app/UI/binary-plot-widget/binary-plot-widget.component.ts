@@ -54,6 +54,7 @@ import { BinaryInteraction } from "./interaction";
 import { BinaryPlotModel } from "./model";
 import { exportScatterPlot, ExportPlotCaller } from "src/app/UI/ternary-plot-widget/export-helper";
 import { ExpressionReferences } from "../references-picker/references-picker.component";
+import { DataModuleService } from "src/app/services/data-module.service";
 
 
 @Component({
@@ -95,6 +96,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         private _selectionService: SelectionService,
         private _datasetService: DataSetService,
         private _exprService: DataExpressionService,
+        private _moduleService: DataModuleService,
         private _viewStateService: ViewStateService,
         private _widgetDataService: WidgetRegionDataService,
         public dialog: MatDialog
@@ -110,7 +112,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             this._subs.add(this._exprService.expressionsUpdated$.subscribe(() =>
             {
                 // If user has changed axes, but still has unsaved expression showing, dont reset
-                if(!this._xAxisExpressionId.startsWith("unsaved-") && !this._yAxisExpressionId.startsWith("unsaved-"))
+                if(!DataExpressionId.isUnsavedExpressionId(this._xAxisExpressionId) && !DataExpressionId.isUnsavedExpressionId(this._yAxisExpressionId))
                 {
                     // Default set axes to first two preview expressions passed
                     if(this._exprService.getExpression(this.previewExpressionIDs[0]))
@@ -176,12 +178,12 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                         if(loadedState.expressionIDs.length == 2)
                         {
                             this._xAxisExpressionId = loadedState.expressionIDs[0];
-                            if(this._xAxisExpressionId.startsWith("unsaved-"))
+                            if(DataExpressionId.isUnsavedExpressionId(this._xAxisExpressionId))
                             {
                                 this._xAxisExpressionId = "";
                             }
                             this._yAxisExpressionId = loadedState.expressionIDs[1];
-                            if(this._yAxisExpressionId.startsWith("unsaved-"))
+                            if(DataExpressionId.isUnsavedExpressionId(this._yAxisExpressionId))
                             {
                                 this._yAxisExpressionId = "";
                             }
@@ -366,6 +368,9 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         let yErrorShort: string = "";
         let yErrorLong: string = "";
 
+        let xModulesOutOfDate: boolean = false;
+        let yModulesOutOfDate: boolean = false;
+
         let queryWarnings: Set<string> = new Set<string>();
 
         let labelMaxChars = this.showMmol ? 18 : 24;
@@ -374,11 +379,21 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         {
             exprIdX = queryData.queryResults[0].query.exprId;
             xLabel = queryData.queryResults[0].expression?.getExpressionShortDisplayName(labelMaxChars).shortName;
+            if(!xLabel)
+            {
+                xLabel = "";
+            }
+            xModulesOutOfDate = queryData.queryResults[0].expression?.checkModuleReferences(this._moduleService) ?? false;
         }
         if(queryData.queryResults.length > 1)
         {
             exprIdY = queryData.queryResults[1].query.exprId;
             yLabel = queryData.queryResults[1].expression?.getExpressionShortDisplayName(labelMaxChars).shortName;
+            if(!yLabel)
+            {
+                yLabel = "";
+            }
+            yModulesOutOfDate = queryData.queryResults[1].expression?.checkModuleReferences(this._moduleService) ?? false;
         }
 
         if(this.showMmol)
@@ -501,7 +516,10 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             yErrorShort,
             yErrorLong,
 
-            queryWarnings
+            queryWarnings,
+
+            xModulesOutOfDate,
+            yModulesOutOfDate
         );
     }
 
@@ -553,7 +571,10 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         yErrorShort: string,
         yErrorLong: string,
 
-        queryWarnings: Set<string>
+        queryWarnings: Set<string>,
+
+        xModulesOutOfDate: boolean = false,
+        yModulesOutOfDate: boolean = false
     )
     {
         if(this._references.length > 0)
@@ -624,8 +645,8 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         let binaryData = new BinaryPlotData(
             shapes,
             coloursRGB,
-            new BinaryPlotAxisData(xLabel, xPointGroup, xValueRange, xErrorShort, xErrorLong),
-            new BinaryPlotAxisData(yLabel, yPointGroup, yValueRange, yErrorShort, yErrorLong),
+            new BinaryPlotAxisData(xLabel, xPointGroup, xValueRange, xErrorShort, xErrorLong, xModulesOutOfDate),
+            new BinaryPlotAxisData(yLabel, yPointGroup, yValueRange, yErrorShort, yErrorLong, yModulesOutOfDate),
             pmcLookup,
             this._visibleROIs
         );
@@ -746,7 +767,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             exprIds = [this._yAxisExpressionId];
         }
 
-        dialogConfig.data = new ExpressionPickerData("Plot Axis", DataExpressionId.DataExpressionTypeAll, exprIds, true, false, false, this.isPreviewMode);
+        dialogConfig.data = new ExpressionPickerData("Plot Axis", exprIds, true, false, false, this.isPreviewMode);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

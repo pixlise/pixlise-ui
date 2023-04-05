@@ -77,6 +77,27 @@ export enum QuantOp
     OVER_UNDEFINED,
 }
 
+export class DataQueryResult
+{
+    constructor(
+        public resultValues: PMCDataValues | any, // PMCDataValues if the query was for PMC data, otherwise it's whatever the query returned
+        public isPMCTable: boolean,
+        public dataRequired: string[],
+        public runtimeMs: number,
+        public stdout: string,
+        public stderr: string,
+        public recordedExpressionInputs: Map<string, PMCDataValues>
+    )
+    {
+    }
+
+    public static get DataTypeSpectrum() { return "spectrum" }
+    public static get DataTypeHousekeeping() { return "housekeeping" }
+    public static get DataTypeDiffraction() { return "diffraction" }
+    public static get DataTypeRoughness() { return "roughness" }
+    public static get DataTypePosition() { return "position" }
+}
+
 export class PMCDataValues
 {
     private _valueRange: MinMax = new MinMax();

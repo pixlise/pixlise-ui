@@ -43,6 +43,7 @@ import { WidgetRegionDataService, DataSourceParams } from "src/app/services/widg
 import { ColourRamp } from "src/app/utils/colours";
 import { SentryHelper } from "src/app/utils/utils";
 import { LayerStore, ExpressionListBuilder, ExpressionListItems } from "src/app/models/ExpressionList";
+import { DataModuleService } from "src/app/services/data-module.service";
 
 
 export class LayerChangeInfo
@@ -85,6 +86,7 @@ export class LayerManager
 
     constructor(
         private _exprService: DataExpressionService,
+        public moduleService: DataModuleService,
         private _rgbMixService: RGBMixConfigService,
         private _widgetDataService: WidgetRegionDataService,
     )
@@ -126,7 +128,7 @@ export class LayerManager
         this._listBuilder.notifyDataArrived(
             this._dataset.getPseudoIntensityElementsList(),
             data[1] as QuantificationLayer,
-            this._exprService.getExpressions(DataExpressionId.DataExpressionTypeAll),
+            this._exprService.getExpressions(),
             this._rgbMixService.getRGBMixes()
         );
 
@@ -446,7 +448,7 @@ export class LayerManager
             let prevOpacity = layer.opacity;
             let prevVis = layer.visible;
 
-            if(layer.visible != visible)
+            if(layer.visible !== visible)
             {
                 opacityOnly = false;
             }
@@ -473,6 +475,13 @@ export class LayerManager
         {
             this.finishSetLayerVisibility(opacityOnly, idsToHide);
         }
+    }
+
+    setSingleLayerVisible(id: string): void
+    {
+        this.regenerateLayers("setSingleLayerVisible");
+        let otherVisibleIDs = this.getVisibleLayers().map((layer) => layer.id).filter((layerID) => layerID !== id);
+        this.setLayerVisibility(id, 1, true, otherVisibleIDs);
     }
 
     private finishSetLayerVisibility(opacityOnly: boolean, idsToHide: string[])
@@ -514,17 +523,14 @@ export class LayerManager
         this.publishLayerChange(true, "setLayerDisplayValueShading");
     }
 
+    getVisibleLayers(): LocationDataLayer[]
+    {
+        return this._layers.getLayerArray().filter((layer: LocationDataLayer) => layer.visible);
+    }
+
     visibleLayerCount(): number
     {
-        let count = 0;
-        for(let layer of this._layers.getLayerArray())
-        {
-            if(layer.visible)
-            {
-                count++;
-            }
-        }
-        return count;
+        return this.getVisibleLayers().length;
     }
 
     getLayerProperties(id: string): LocationDataLayerProperties

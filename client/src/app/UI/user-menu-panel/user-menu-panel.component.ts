@@ -66,6 +66,8 @@ export class UserMenuPanelComponent implements OnInit
             new NotificationSetting("Dataset Image Updated", NotificationSubscriptions.notificationDatasetImageUpdated, new NotificationMethod(false, false, false)),
             new NotificationSetting("Dataset Housekeeping Updated", NotificationSubscriptions.notificationDatasetHousekeepingUpdated, new NotificationMethod(false, false, false)),
             new NotificationSetting("Element Set Shared", NotificationSubscriptions.notificationElementSetShared, new NotificationMethod(false, false, false)),
+            new NotificationSetting("Major Module Release", NotificationSubscriptions.notificationMajorModuleRelease, new NotificationMethod(false, false, false)),
+            new NotificationSetting("Minor Module Release", NotificationSubscriptions.notificationMinorModuleRelease, new NotificationMethod(false, false, false)),
         ];
 
         this._authService.userProfile$.subscribe(

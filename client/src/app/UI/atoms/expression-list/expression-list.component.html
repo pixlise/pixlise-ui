@@ -41,6 +41,15 @@ POSSIBILITY OF SUCH DAMAGE.
 <cdk-virtual-scroll-viewport *ngIf="items" itemSize="{{itemSize}}" fxFlex="100%" (scroll)="onScroll($event)">
     <ng-container *cdkVirtualFor="let item of items.items; templateCacheSize: 0">
         <ng-container [ngSwitch]="item.itemType">
+            <!-- currently-open-header -->
+            <ng-container *ngSwitchCase="'currently-open-header'">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
+                </context-visibility-header>
+            </ng-container>
             <ng-container *ngSwitchCase="elementsHeaderName">
                 <context-visibility-header
                     [content]="item.content"
@@ -56,7 +65,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [showSlider]="showOpacitySliders"
                     [showSettings]="!showPureSwitchOnElements"
                     [showColours]="showColourOptions"
-                    [showVisible]="true"
+                    [showVisible]="isSelectable"
                     [showPureSwitch]="showPureSwitchOnElements"
                     [detectors]="detectors"
                     [activeIcon]="selectedIcon"
@@ -64,6 +73,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     (visibilityChange)="onLayerVisibilityChange($event)"
                     (colourChange)="onLayerColourChange($event)"
                     [isPreviewMode]="isPreviewMode"
+                    [isSidePanel]="isSidePanel"
                 >
                 </context-layer-settings>
             </ng-container>
@@ -100,6 +110,23 @@ POSSIBILITY OF SUCH DAMAGE.
                     (visibilityChange)="onLayerVisibilityChange($event)">
                 </rgbmix-layer-settings>
             </ng-container>
+            <ng-container *ngSwitchCase="'installed-modules-header'">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
+                </context-visibility-header>
+            </ng-container>
+            <ng-container *ngSwitchCase="'modules-header'">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
+                    <ng-content select="[modulesHeader]" header></ng-content>
+                </context-visibility-header>
+            </ng-container>
             <ng-container *ngSwitchCase="expressionsHeaderName">
                 <context-visibility-header
                     [content]="item.content"
@@ -109,15 +136,42 @@ POSSIBILITY OF SUCH DAMAGE.
                     <ng-content select="[expressionHeader]" header></ng-content>
                 </context-visibility-header>
             </ng-container>
+            <ng-container *ngSwitchCase="'examples-header'">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
+                </context-visibility-header>
+            </ng-container>
+            <ng-container *ngSwitchCase="'expression-updates-header'">
+                <context-visibility-header
+                    [content]="item.content"
+                    [isOpen]="isSectionOpen(item.itemType)"
+                    (onToggleOpen)="onToggleLayerSectionOpen(item.itemType, $event)"
+                    (onScrollToItem)="onScrollToItem(item.itemType, $event)">
+                    <push-button
+                        header
+                        buttonStyle="outline"
+                        #tooltip="matTooltip"
+                        matTooltip="Update all modules used by expressions to latest"
+                        (click)="onUpdateAllExpressions()"
+                    >Update All
+                    </push-button>
+                </context-visibility-header>
+            </ng-container>
             <ng-container *ngSwitchCase="'expression'">
                 <context-layer-settings
+                    [isCurrentlyOpen]="item.groupHeaderType === currentlyOpenHeaderName"
                     [layerInfo]="item.content"
                     [showSlider]="showOpacitySliders"
                     [showSettings]="item.shared || !item.content.isPredefinedLayer"
+                    [showPreviewButton]="true"
+                    [showSplitScreenButton]="isSidePanel"
                     [showDelete]="!item.content.isPredefinedLayer"
                     [showShare]="!item.content.isPredefinedLayer"
                     [showColours]="showColourOptions"
-                    [showVisible]="true"
+                    [showVisible]="!isSidePanel && isSelectable"
                     [showDownload]="downloadable"
                     [showTagPicker]="true"
                     [activeIcon]="selectedIcon"
@@ -126,6 +180,40 @@ POSSIBILITY OF SUCH DAMAGE.
                     (onLayerImmediateSelection)="onLayerImmediateSelectionEvent($event)"
                     (colourChange)="onLayerColourChange($event)"
                     [isPreviewMode]="isPreviewMode"
+                    [isSidePanel]="isSidePanel"
+                    [isSplitScreen]="isSplitScreen"
+                    (openSplitScreen)="onOpenSplitScreen($event)"
+                    (onDeleteEvent)="onDeleteEvent($event)"
+                    [customOptions]="getCustomLayerConfig(item.content?.layer?.id)"
+                >
+                </context-layer-settings>
+            </ng-container>
+            <ng-container *ngSwitchCase="'module'">
+                <context-layer-settings
+                    [isCurrentlyOpen]="item.groupHeaderType === currentlyOpenHeaderName"
+                    [isInstalledModule]="item.groupHeaderType === installedModulesHeaderName"
+                    [layerInfo]="item.content"
+                    [isModule]="true"
+                    [showSlider]="false"
+                    [showSettings]="true"
+                    [showPreviewButton]="true"
+                    [showSplitScreenButton]="true"
+                    [showDelete]="false"
+                    [showShare]="false"
+                    [showColours]="false"
+                    [showVisible]="isSelectable"
+                    [showDownload]="downloadable"
+                    [showTagPicker]="true"
+                    [activeIcon]="selectedIcon"
+                    [inactiveIcon]="unselectedIcon"
+                    (visibilityChange)="onLayerVisibilityChange($event)"
+                    (onLayerImmediateSelection)="onLayerImmediateSelectionEvent($event)"
+                    (colourChange)="onLayerColourChange($event)"
+                    [isPreviewMode]="isPreviewMode"
+                    [isSidePanel]="isSidePanel"
+                    [isSplitScreen]="isSplitScreen"
+                    (openSplitScreen)="onOpenSplitScreen($event)"
+                    [customOptions]="getCustomLayerConfig(item.content?.layer?.id)"
                 >
                 </context-layer-settings>
             </ng-container>
@@ -144,12 +232,13 @@ POSSIBILITY OF SUCH DAMAGE.
                     [showSlider]="false"
                     [showSettings]="false"
                     [showColours]="false"
-                    [showVisible]="true"
+                    [showVisible]="isSelectable"
                     [showDownload]="downloadable"
                     [activeIcon]="selectedIcon"
                     [inactiveIcon]="unselectedIcon"
                     (visibilityChange)="onLayerVisibilityChange($event)"
                     [isPreviewMode]="isPreviewMode"
+                    [isSidePanel]="isSidePanel"
                 >
                 </context-layer-settings>
             </ng-container>
@@ -168,13 +257,14 @@ POSSIBILITY OF SUCH DAMAGE.
                     [showSlider]="showOpacitySliders"
                     [showSettings]="false"
                     [showColours]="showColourOptions"
-                    [showVisible]="true"
+                    [showVisible]="isSelectable"
                     [showDownload]="downloadable"
                     [activeIcon]="selectedIcon"
                     [inactiveIcon]="unselectedIcon"
                     (visibilityChange)="onLayerVisibilityChange($event)"
                     (colourChange)="onLayerColourChange($event)"
                     [isPreviewMode]="isPreviewMode"
+                    [isSidePanel]="isSidePanel"
                 >
                 </context-layer-settings>
             </ng-container>

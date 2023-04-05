@@ -29,7 +29,7 @@
 
 import { Observable, of } from "rxjs";
 import jsep from "jsep";
-import { PMCDataValues, QuantOp } from "src/app/expression-language/data-values";
+import { PMCDataValues, DataQueryResult, QuantOp } from "src/app/expression-language/data-values";
 import { InterpreterDataSource } from "./interpreter-data-source";
 
 
@@ -43,15 +43,17 @@ export class ExpressionParts
 export class PixliseDataQuerier
 {
     private _runningExpression: string = "";
+    private _dataSource: InterpreterDataSource = null;
 
     constructor(
-        private _dataSource: InterpreterDataSource
     )
     {
     }
 
-    public runQuery(expression: string): Observable<PMCDataValues>
+    public runQuery(expression: string, dataSource: InterpreterDataSource): Observable<DataQueryResult>
     {
+        this._dataSource = dataSource;
+
         let t0 = performance.now();
 
         // Parse the expression
@@ -63,10 +65,10 @@ export class PixliseDataQuerier
 
         if(result instanceof PMCDataValues)
         {            
-            let t1 = performance.now();
-            console.log(">>> PIXLISE expression took: "+(t1-t0).toLocaleString()+"ms");
+            let runtimeMs = performance.now()-t0;
+            console.log(">>> PIXLISE expression took: "+runtimeMs.toLocaleString()+"ms");
 
-            return of(result as PMCDataValues);
+            return of(new DataQueryResult(result as PMCDataValues, true, [], runtimeMs, "", "", new Map<string, PMCDataValues>()));
         }
 
         throw new Error("Expression: "+expression+" did not result in usable map data. Result was: "+result);
@@ -520,7 +522,7 @@ export class PixliseDataQuerier
     }
 
     // Expects PMCDataValues and a scalar
-    private mapOperation(allowMap: boolean, allowScalar: boolean, callee, argList): PMCDataValues
+    private mapOperation(allowMap: boolean, allowScalar: boolean, callee: string, argList): PMCDataValues
     {
         let op = this.getEnumForCallIfExists(callee);
         if(op == null)

@@ -39,7 +39,8 @@ export class BinaryPlotAxisData
         public pointGroups: PMCDataValues[],
         public valueRange: MinMax,
         public errorMsgShort: string,
-        public errorMsgLong: string
+        public errorMsgLong: string,
+        public modulesOutOfDate: boolean = false,
     )
     {
     }
