@@ -43,6 +43,7 @@ import { WidgetRegionDataService, DataSourceParams } from "src/app/services/widg
 import { ColourRamp } from "src/app/utils/colours";
 import { SentryHelper } from "src/app/utils/utils";
 import { LayerStore, ExpressionListBuilder, ExpressionListItems } from "src/app/models/ExpressionList";
+import { DataModuleService } from "src/app/services/data-module.service";
 
 
 export class LayerChangeInfo
@@ -85,6 +86,7 @@ export class LayerManager
 
     constructor(
         private _exprService: DataExpressionService,
+        public moduleService: DataModuleService,
         private _rgbMixService: RGBMixConfigService,
         private _widgetDataService: WidgetRegionDataService,
     )

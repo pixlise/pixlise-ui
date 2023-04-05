@@ -177,6 +177,12 @@ export class DataExpression
         );
     }
 
+    checkModuleReferences(moduleService: DataModuleService): boolean
+    {
+        // Check if any of the module references are outdated
+        return this.moduleReferences.some((module)=> !module.checkIsLatest(moduleService));
+    }
+
     get isCompatibleWithQuantification(): boolean
     {
         return this._isCompatibleWithQuantification;

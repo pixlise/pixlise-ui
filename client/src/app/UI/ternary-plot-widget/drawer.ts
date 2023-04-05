@@ -90,7 +90,7 @@ export class TernaryDiagramDrawer implements CanvasDrawer
                     rawData.cornerA.label,
                     rawData.cornerA.errorMsgShort,
                     this._mdl.drawData.hoverLabel=="A",
-                    clrLabel,
+                    rawData.cornerA.modulesOutOfDate ? Colours.ORANGE.asString() : clrLabel,
                     viewport.width,
                     this.showSwapButton
                 );
@@ -104,7 +104,7 @@ export class TernaryDiagramDrawer implements CanvasDrawer
                     rawData.cornerB.label,
                     rawData.cornerB.errorMsgShort,
                     this._mdl.drawData.hoverLabel=="B",
-                    clrLabel,
+                    rawData.cornerB.modulesOutOfDate ? Colours.ORANGE.asString() : clrLabel,
                     viewport.width,
                     this.showSwapButton
                 );
@@ -128,7 +128,7 @@ export class TernaryDiagramDrawer implements CanvasDrawer
                 rawData.cornerC.label,
                 rawData.cornerC.errorMsgShort,
                 this._mdl.drawData.hoverLabel=="C",
-                clrLabel,
+                rawData.cornerC.modulesOutOfDate ? Colours.ORANGE.asString() : clrLabel,
                 viewport.width,
                 this.showSwapButton
             );

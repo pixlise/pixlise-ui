@@ -54,6 +54,7 @@ import { TernaryModel } from "./model";
 import { TernaryCorner, TernaryData, TernaryDataColour, TernaryDataItem, TernaryPlotPointIndex } from "./ternary-data";
 import { exportScatterPlot, ExportPlotCaller } from "src/app/UI/ternary-plot-widget/export-helper";
 import { ExpressionReferences } from "../references-picker/references-picker.component";
+import { DataModuleService } from "src/app/services/data-module.service";
 
 
 @Component({
@@ -100,6 +101,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
         private _selectionService: SelectionService,
         private _datasetService: DataSetService,
         private _exprService: DataExpressionService,
+        private _moduleService: DataModuleService,
         private _viewStateService: ViewStateService,
         private _widgetDataService: WidgetRegionDataService,
         public dialog: MatDialog
@@ -323,6 +325,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                 if(expr)
                 {
                     corners[c].label = expr.getExpressionShortDisplayName(18).shortName;
+                    corners[c].modulesOutOfDate = expr?.checkModuleReferences(this._moduleService) ?? false;
 
                     const mmolAppend = "(mmol)";
                     if(this.showMmol && !corners[c].label.endsWith(mmolAppend)) // Note this won't detect if (mmol) was modified by short name to be (mm...

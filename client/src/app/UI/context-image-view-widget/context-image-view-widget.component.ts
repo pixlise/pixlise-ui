@@ -55,6 +55,7 @@ import { ContextImageToolId } from "src/app/UI/context-image-view-widget/tools/b
 import { ToolButtonState, ToolHostCreateSettings } from "src/app/UI/context-image-view-widget/tools/tool-host";
 import { makeDataForExpressionList } from "src/app/models/ExpressionList";
 import { ROIService } from "src/app/services/roi.service";
+import { DataModuleService } from "src/app/services/data-module.service";
 
 
 @Component({
@@ -98,6 +99,7 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
         private snackService: SnackService,
         private layoutService: LayoutService,
         private exprService: DataExpressionService,
+        private moduleService: DataModuleService,
         private rgbMixService: RGBMixConfigService,
         private viewStateService: ViewStateService,
         private selectionService: SelectionService,
@@ -164,6 +166,7 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
                 showMapColourScale
             ),
             this.exprService,
+            this.moduleService,
             this.rgbMixService,
             this.selectionService,
             this.datasetService,

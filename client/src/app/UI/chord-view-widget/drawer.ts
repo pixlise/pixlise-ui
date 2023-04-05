@@ -204,7 +204,7 @@ export class ChordDiagramDrawer implements CanvasDrawer
         screenContext.fillRect(pos.x, pos.y, w, h);
 
         // Draw the text
-        screenContext.fillStyle = Colours.GRAY_10.asString();
+        screenContext.fillStyle = node.item.modulesOutOfDate ? Colours.ORANGE.asString() : Colours.GRAY_10.asString();
         screenContext.fillText(valueText, textX, pos.y+padding);
 
         // Draw error in error arc colour
@@ -257,7 +257,7 @@ export class ChordDiagramDrawer implements CanvasDrawer
         }
 
         // Label text
-        screenContext.fillStyle = this.COLOUR_NODE_LABEL;
+        screenContext.fillStyle = node.item.modulesOutOfDate ? Colours.ORANGE.asString() : this.COLOUR_NODE_LABEL;
         let pt = node.labelRect.center();
         screenContext.fillText(node.item.label, pt.x+labelOffsetX, pt.y);
     }

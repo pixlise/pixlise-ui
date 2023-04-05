@@ -38,6 +38,7 @@ import { Colours } from "src/app/utils/colours";
 import { CANVAS_FONT_WIDTH_PERCENT, drawTextWithBackground } from "src/app/utils/drawing";
 import { getValueDecimals } from "src/app/utils/utils";
 import { BaseUIElement, drawStrokedText } from "./base-ui-element";
+import { DataExpression } from "src/app/models/Expression";
 
 
 class scaleInfo
@@ -92,7 +93,7 @@ class LayerChannelScale
     constructor(
         private _ctx: IContextImageModel,
         public layer: IColourScaleDataSource,
-        private _channel: number
+        private _channel: number,
     )
     {
     }
@@ -559,9 +560,24 @@ class LayerChannelScale
         // Draw the actual scale
         this.drawScale(screenContext, histogram, pos, layer, scaleRange, clrBlack);
 
+        let hasOutOfDateModules = false;
+        if(layer?.expressionID && layer?.source)
+        {
+            hasOutOfDateModules = (layer.source as DataExpression).checkModuleReferences(this._ctx.layerManager.moduleService);
+        }
+        // layer.
         // Draw the title at the top
         //screenContext.fillText(layer.name, pos.rect.x+histBarMaxSize, pos.rect.y);
-        drawTextWithBackground(screenContext, layer.getChannelName(this._channel), pos.rect.x+pos.histBarMaxSize, pos.rect.y, pos.fontSize, 4);
+        drawTextWithBackground(
+            screenContext,
+            layer.getChannelName(this._channel),
+            pos.rect.x+pos.histBarMaxSize,
+            pos.rect.y,
+            pos.fontSize,
+            4,
+            Colours.GRAY_100.asStringWithA(0.5),
+            hasOutOfDateModules ? Colours.ORANGE.asString() : Colours.GRAY_10.asString()
+        );
         //drawStrokedText(screenContext, layer.getChannelName(this._channel), pos.rect.x+pos.histBarMaxSize, pos.rect.y);
 
         // Draw the tags for above/below the range. If it's hovered, the tags are bigger so it's clear theyre draggable
