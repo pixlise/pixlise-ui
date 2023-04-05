@@ -29,12 +29,10 @@
 
 @import 'variables.scss';
 
-// To edit code mirror styling, look at pixlise-codemirror-theme.scss
-
 .dlg-border-with-backdrop {
     min-width: 50vw;
     max-width: 90vw;
-//    max-height: 80vh;
+    min-height: 60vh;
 }
 
 h3 {

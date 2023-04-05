@@ -29,6 +29,9 @@
 
 import { Component } from "@angular/core";
 
+import { MonacoEditorService } from "src/app/services/monaco-editor.service";
+
+
 @Component({
     selector: "app-root",
     templateUrl: "./app.component.html",
@@ -36,4 +39,12 @@ import { Component } from "@angular/core";
 })
 export class AppComponent
 {
+    constructor(
+        private _monacoService: MonacoEditorService,
+    )
+    {
+        // We trigger loading the service once, here, right on startup. This will end up creating a monaco object tied
+        // to the window, which our child components can listen for being ready and create code editor views as needed
+        this._monacoService.load();
+    }
 }

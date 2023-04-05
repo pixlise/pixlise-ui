@@ -62,62 +62,61 @@
     expression-text-editor {
         height: 100%;
         display: flex;
-
-        ::ng-deep .cm-s-pixlise.CodeMirror {
+/*        ::ng-deep .cm-s-pixlise.CodeMirror {
             height: calc(100vh - 48px - 26px - 26px);
-        }
+        }*/
     }
 
     &.module {
         expression-text-editor {
-            ::ng-deep .cm-s-pixlise.CodeMirror {
+/*            ::ng-deep .cm-s-pixlise.CodeMirror {
                 height: calc(100vh - 48px - 24px);
-            }
+            }*/
         }
     }
 
     &.top-open {
-        expression-text-editor.top-expression {
+        expression-text-editor.top-expression {/*
             ::ng-deep .cm-s-pixlise.CodeMirror {
                 height: calc(100vh - 48px - 100px - 26px - 14px);
-            }
+            }*/
         }
     }
 
      &.bottom-open {
-        expression-text-editor.bottom-expression {
+        expression-text-editor.bottom-expression {/*
             ::ng-deep .cm-s-pixlise.CodeMirror {
                 height: calc(100vh - 48px - 100px - 26px - 26px);
-            }
+            }*/
         }
     }
 
     &.split-screen-mode {
-        expression-text-editor {
+        expression-text-editor {/*
             ::ng-deep .cm-s-pixlise.CodeMirror {
                 height: calc(50vh - 48px - 18px)
-            }
+            }*/
         }
 
         &.top-open {
-            expression-text-editor.top-expression {
+            expression-text-editor.top-expression {/*
                 ::ng-deep .cm-s-pixlise.CodeMirror {
                     height: calc(50vh - 48px - 16px - 100px);
-                }
+                }*/
             }
 
-            expression-text-editor.bottom-expression {
+            expression-text-editor.bottom-expression {/*
                 ::ng-deep .cm-s-pixlise.CodeMirror {
                     height: calc(50vh - 48px - 4px);
-                }
+                }*/
             }
         }
 
         &.bottom-open {
             expression-text-editor.bottom-expression {
-                ::ng-deep .cm-s-pixlise.CodeMirror {
+/*                ::ng-deep .cm-s-pixlise.CodeMirror {
                     height: calc(50vh - 48px - 100px - 26px);
-                }
+                }*/
             }
         }
     }

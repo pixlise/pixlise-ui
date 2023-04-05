@@ -29,7 +29,7 @@
 
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { UNICODE_GREEK_LOWERCASE_PSI } from "src/app/utils/utils";
-import { DataModuleService } from "../services/data-module.service";
+import { DataModuleService } from "src/app/services/data-module.service";
 
 
 export class ShortName
@@ -59,13 +59,12 @@ export class ModuleReference
         }
 
         let latest = moduleService.getLatestCachedModuleVersion(this.moduleID, true);
-        if(latest)
-        {
-            this.latestVersion = latest.version;
-        }
+
+
+        this.latestVersion = latest?.version;
 
         let isAheadOfRelease = false;
-        let isLatestVersion = latest?.version === this.version;
+        let isLatestVersion = this.latestVersion === this.version;
         if(latest && !isLatestVersion)
         {
             let [latestMajor, latestMinor] = latest.version.split(".").map((part) => parseInt(part));

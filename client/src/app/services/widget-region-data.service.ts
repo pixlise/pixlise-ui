@@ -438,6 +438,12 @@ export class WidgetRegionDataService
         return this._loadedViewState;
     }
 
+    // Provided as a convenience for not having to have a dataset service as well in anything that calls us
+    get dataset(): DataSet
+    {
+        return this._datasetService.datasetLoaded;
+    }
+
     // This queries data based on parameters. The assumption is it either returns null, or returns an array with the same
     // amount of items as the input parameters array (what). This is required because code calling this can then know which
     // DataSourceParams is associated with which returned value. The result array may contain null items, but the length
