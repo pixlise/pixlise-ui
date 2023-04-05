@@ -85,7 +85,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 {
     private _subs = new Subscription();
     private _expr: DataExpression = null;
-    private _exprParts: ExpressionParts = null;
 
     activeHelp: CursorSuggestions = null;
     private _markTextPositions: MarkPosition[] = [];
@@ -97,7 +96,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     private _gutterWidth: number = 0;
 
     private _initAsLua: boolean = false;
-
 
     @Input() isLua: boolean = false;
     @Input() expression: DataExpression = null;
