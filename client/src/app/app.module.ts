@@ -40,6 +40,8 @@ import { DragDropModule } from "@angular/cdk/drag-drop";
 
 import * as Sentry from "@sentry/browser";
 
+import { VERSION } from "src/environments/version";
+
 import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
 
@@ -160,8 +162,6 @@ import { AnnotationItemComponent } from "./UI/spectrum-chart-widget/spectrum-pea
 import { DataCollectionDialogComponent } from "./UI/data-collection-dialog/data-collection-dialog.component";
 import { WidgetSettingsMenuComponent } from "./UI/atoms/widget-settings-menu/widget-settings-menu.component";
 import { MenuPanelHostComponent } from "./UI/atoms/widget-settings-menu/menu-panel-host/menu-panel-host.component";
-import { VERSION } from "src/environments/version";
-import { ExpressionHelpDropdownComponent } from "./UI/expression-editor/expression-help-dropdown/expression-help-dropdown.component";
 import { FullScreenDisplayComponent } from "./UI/atoms/full-screen-display/full-screen-display.component";
 import { TestUtilitiesComponent } from "./routes/admin/test-utilities/test-utilities.component";
 import { QuantificationLogViewComponent } from "./routes/dataset/quantifications/quantification-log-view/quantification-log-view.component";
@@ -423,7 +423,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         DataCollectionDialogComponent,
         WidgetSettingsMenuComponent,
         MenuPanelHostComponent,
-        ExpressionHelpDropdownComponent,
         FullScreenDisplayComponent,
         QuantificationLogViewComponent,
         SpectrumPeakLabelPickerComponent,

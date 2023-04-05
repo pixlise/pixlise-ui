@@ -29,11 +29,7 @@
 
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ElementRef } from "@angular/core";
 import { Subscription } from "rxjs";
-import { ExpressionParts, PixliseDataQuerier } from "src/app/expression-language/interpret-pixlise";
-import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataExpression } from "src/app/models/Expression";
-import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElement, Suggestion } from "../expression-help";
-import { SentryHelper } from "src/app/utils/utils";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { MonacoEditorService, MONACO_LUA_LANGUAGE_NAME } from "src/app/services/monaco-editor.service";
@@ -86,16 +82,10 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     private _subs = new Subscription();
     private _expr: DataExpression = null;
 
-    activeHelp: CursorSuggestions = null;
     private _markTextPositions: MarkPosition[] = [];
     private _markMatchedBracketPositions: MarkPosition[] = [];
 
-    dropdownTop: string = "";
-    dropdownLeft: string = "";
-
     private _gutterWidth: number = 0;
-
-    private _initAsLua: boolean = false;
 
     @Input() isLua: boolean = false;
     @Input() expression: DataExpression = null;
@@ -145,11 +135,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             this._expr.sourceCode = text;
             this.refreshMonaco();
         });
-    }
-
-    getHintList(curWord: string): string[]
-    {
-        return [];
     }
 
     copyExpression(expression: DataExpression): DataExpression

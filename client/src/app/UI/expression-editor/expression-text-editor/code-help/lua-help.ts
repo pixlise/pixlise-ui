@@ -27,3 +27,21 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { SourceHelp } from "./help";
+import { PIXLANGHelp } from "./pixlang-help";
+
+
+export class LUAHelp extends SourceHelp
+{
+    constructor()
+    {
+        super();
+
+        // These are shared between the 2 languages, same syntax, etc
+        PIXLANGHelp.makeDataFunctionHelp(this);
+    }
+
+    buildHelpForSources(sourceCode: Map<string, string>): void
+    {
+    }
+}

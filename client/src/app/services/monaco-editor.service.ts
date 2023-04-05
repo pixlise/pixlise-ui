@@ -33,6 +33,7 @@ import { Injectable } from '@angular/core';
 import { Subject, ReplaySubject } from 'rxjs';
 
 import { PIXLANGHelp } from "src/app/UI/expression-editor/expression-text-editor/code-help/pixlang-help";
+import { LUAHelp } from "src/app/UI/expression-editor/expression-text-editor/code-help/lua-help";
 import { SourceContextParser } from "src/app/UI/expression-editor/expression-text-editor/code-help/help";
 import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 
@@ -50,7 +51,7 @@ export class MonacoEditorService
     public loadingFinished: Subject<void> = new ReplaySubject<void>();
 
     private _helpPIXLANG = new PIXLANGHelp();
-    //private _helpLUA = new LUAHelp();
+    private _helpLUA = new LUAHelp();
 
     constructor(
         private _widgetRegionDataService: WidgetRegionDataService,
@@ -58,30 +59,7 @@ export class MonacoEditorService
     {
     }
 
-    private finishLoading()
-    {
-        let monaco = this.monaco;
-
-        // Setup syntax highlighting for PIXLANG
-        this.createMonacoPIXLANGLanguage(monaco);
-
-        // The best monaco resources:
-        // https://microsoft.github.io/monaco-editor/playground.html?source=v0.36.1
-        // https://microsoft.github.io/monaco-editor/typedoc/index.html
-        
-        this.installIntellisenseHelpers(monaco);
-
-        // Tell the world we're ready
-        this.loadingFinished.next();
-    }
-
-    private get monaco(): any
-    {
-        let monaco = (<any>window).monaco;
-        return monaco;
-    }
-
-    public load()
+    load()
     {
         // load the assets
         const baseUrl = './assets' + '/monaco-editor/min/vs';
@@ -115,6 +93,36 @@ export class MonacoEditorService
         {
             onGotAmdLoader();
         }
+    }
+
+    buildHelpForSources(sourceCode: Map<string, string>): void
+    {
+        // We don't do this for PIXLANG, but for LUA source files we rebuild the help database
+        // so the next code suggestion that comes up is relevant to what sources we are running
+        this._helpLUA.buildHelpForSources(sourceCode);
+    }
+
+    private get monaco(): any
+    {
+        let monaco = (<any>window).monaco;
+        return monaco;
+    }
+
+    private finishLoading()
+    {
+        let monaco = this.monaco;
+
+        // Setup syntax highlighting for PIXLANG
+        this.createMonacoPIXLANGLanguage(monaco);
+
+        // The best monaco resources:
+        // https://microsoft.github.io/monaco-editor/playground.html?source=v0.36.1
+        // https://microsoft.github.io/monaco-editor/typedoc/index.html
+        
+        this.installIntellisenseHelpers(monaco);
+
+        // Tell the world we're ready
+        this.loadingFinished.next();
     }
 
     private createMonacoPIXLANGLanguage(monaco)

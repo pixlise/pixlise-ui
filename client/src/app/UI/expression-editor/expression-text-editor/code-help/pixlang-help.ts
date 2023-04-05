@@ -29,16 +29,24 @@
 
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
-import { SourceHelp, HelpSignature, HelpCompletionItem, FunctionHelp, FunctionParamHelp, SourceContextParser } from "./help";
+import { SourceHelp, FunctionHelp, FunctionParamHelp, SourceContextParser } from "./help";
 
 
-
-export class PIXLANGHelp implements SourceHelp
+export class PIXLANGHelp extends SourceHelp
 {
-    private _allHelp = new Map<string, FunctionHelp>();
-
     constructor()
     {
+        super();
+
+        PIXLANGHelp.makeDataFunctionHelp(this);
+        PIXLANGHelp.makeMapFunctionHelp(this);
+        PIXLANGHelp.makeTrigFunctionHelp(this);
+    }
+
+    static makeDataFunctionHelp(help: SourceHelp): void
+    {
+        const OriginID = "";
+
         // --- Map querying
         let elementFormulae = new FunctionParamHelp("elementFormula", "Element formula to read for");
         elementFormulae.getPossibleValues = (paramsProvided: string[], quantificationLoaded: QuantificationLayer, dataset: DataSet)=>
@@ -70,13 +78,13 @@ export class PIXLANGHelp implements SourceHelp
             return quantificationLoaded?.getDetectors();
         };
 
-        this.addHelp(new FunctionHelp("element", "Queries element map values", [
+        help.addHelp(new FunctionHelp("element", "Queries element map values", OriginID, [
             elementFormulae,
             elementColumns,
             detectors,
         ]));
 
-        this.addHelp(new FunctionHelp("elementSum", "Sum of column values for all elements in quantification", [
+        help.addHelp(new FunctionHelp("elementSum", "Sum of column values for all elements in quantification", OriginID, [
             elementColumns,
             detectors,
         ]));
@@ -87,18 +95,18 @@ export class PIXLANGHelp implements SourceHelp
             return quantificationLoaded?.getDataColumns() || [];
         };
 
-        this.addHelp(new FunctionHelp("data", "Reads the data column specified", [
+        help.addHelp(new FunctionHelp("data", "Reads the data column specified", OriginID, [
             dataColumn,
             detectors,
         ]));
 
-        this.addHelp(new FunctionHelp("spectrum", "Retrieves the sum of counts between start and end channels, for the given detector", [
+        help.addHelp(new FunctionHelp("spectrum", "Retrieves the sum of counts between start and end channels, for the given detector", OriginID, [
             new FunctionParamHelp("startChannel", "Start channel (0-4095)"),
             new FunctionParamHelp("endChannel", "End channel (0-4095)"),
             detectors,
         ]));
 
-        this.addHelp(new FunctionHelp("spectrumDiff", "Retrieves the sum of counts between start and end channels, for the given detector", [
+        help.addHelp(new FunctionHelp("spectrumDiff", "Retrieves the sum of counts between start and end channels, for the given detector", OriginID, [
             new FunctionParamHelp("startChannel", "Start channel (0-4095)"),
             new FunctionParamHelp("endChannel", "End channel (0-4095)"),
             new FunctionParamHelp("operation", "The operation to combine channel counts for a detector", ["max", "sum"]),
@@ -111,7 +119,7 @@ export class PIXLANGHelp implements SourceHelp
             return dataset.getPseudoIntensityElementsList();
         };
 
-        this.addHelp(new FunctionHelp("pseudo", "Returns pseudo-intensity map for given element", [
+        help.addHelp(new FunctionHelp("pseudo", "Returns pseudo-intensity map for given element", OriginID, [
             pseudoItem
         ]));
 
@@ -121,211 +129,106 @@ export class PIXLANGHelp implements SourceHelp
             return dataset.experiment.getMetaLabelsList();
         };
 
-        this.addHelp(new FunctionHelp("housekeeping", "Retrieves housekeeping data from specified column", [
+        help.addHelp(new FunctionHelp("housekeeping", "Retrieves housekeeping data from specified column", OriginID, [
             housekeepingColumn
         ]));
 
-        this.addHelp(new FunctionHelp("diffractionPeaks", "Returns a map of diffraction peak counts per PMC", [
+        help.addHelp(new FunctionHelp("diffractionPeaks", "Returns a map of diffraction peak counts per PMC", OriginID, [
             new FunctionParamHelp("eVstart", "eV range start. Note, this depends on the spectrum calibration currently set!"),
             new FunctionParamHelp("eVend", "eV range end. Note, this depends on the spectrum calibration currently set!")
         ]));
 
-        this.addHelp(new FunctionHelp("roughness", "Retrieves a map of roughness from diffraction database globalDifference value (higher means rougher)"));
+        help.addHelp(new FunctionHelp("roughness", "Retrieves a map of roughness from diffraction database globalDifference value (higher means rougher)", OriginID));
 
-        this.addHelp(new FunctionHelp("position", "Returns a map of position values for each PMC", [
+        help.addHelp(new FunctionHelp("position", "Returns a map of position values for each PMC", OriginID, [
             new FunctionParamHelp("axis", "The axis to read", ["x", "y", "z"])
         ]));
 
-        this.addHelp(new FunctionHelp("makeMap", "Makes a map with each PMC having the value specified. The map will have the same dimensions as other maps obtained", [
+        help.addHelp(new FunctionHelp("makeMap", "Makes a map with each PMC having the value specified. The map will have the same dimensions as other maps obtained", OriginID, [
             new FunctionParamHelp("value", "Value for each PMC in a map. Useful for eg to make a unit map of 1's")
         ]));
 
-        this.addHelp(new FunctionHelp("atomicMass", "Returns the atomic mass of the formula, uses the same calculation as elsewhere in PIXLISE", [
+        help.addHelp(new FunctionHelp("atomicMass", "Returns the atomic mass of the formula, uses the same calculation as elsewhere in PIXLISE", OriginID, [
             new FunctionParamHelp("elementFormulae", "The formula to calculate the mass of, for example: Ca or Fe2O3")
         ]));
+    }
+
+    static makeMapFunctionHelp(help: SourceHelp): void
+    {
+        const OriginID = "";
 
         // --- Map operations
-        this.addHelp(new FunctionHelp("threshold", "Returns a map with where the value of each PMC in the source map is checked to be within compare +/- threshold, if so, a 1 is returned, but if it's outside the range, 0 is returned", [
+        help.addHelp(new FunctionHelp("threshold", "Returns a map with where the value of each PMC in the source map is checked to be within compare +/- threshold, if so, a 1 is returned, but if it's outside the range, 0 is returned", OriginID, [
             new FunctionParamHelp("map", "The map to threshold"),
             new FunctionParamHelp("compare", "The comparison value"),
             new FunctionParamHelp("threshold", "The range of comparison (used as +/- around the compare value)")
         ]));
         
-        this.addHelp(new FunctionHelp("normalise", "Normalises a map by finding the min and max value, then computing each PMCs value as a percentage between that min and max, so all output values range between 0.0 and 1.0", [
+        help.addHelp(new FunctionHelp("normalise", "Normalises a map by finding the min and max value, then computing each PMCs value as a percentage between that min and max, so all output values range between 0.0 and 1.0", OriginID, [
             new FunctionParamHelp("map", "The map to normalise"),
         ]));
 
-        this.addHelp(new FunctionHelp("pow", "Calculates pow of each map PMC value, to the given exponent", [
+        help.addHelp(new FunctionHelp("pow", "Calculates pow of each map PMC value, to the given exponent", OriginID, [
             new FunctionParamHelp("value", "The map (or scalar) to raise to a power. If a scalar is used, all map values created will be the same."),
             new FunctionParamHelp("exponent", "Exponent to raise value to"),
         ]));
 
-        this.addHelp(new FunctionHelp("under", "Returns a map where value is 1 if less than reference, else 0", [
+        help.addHelp(new FunctionHelp("under", "Returns a map where value is 1 if less than reference, else 0", OriginID, [
             new FunctionParamHelp("map", "The map to operate on"),
             new FunctionParamHelp("reference", "The value to use as a reference for the operation"),
         ]));
 
-        this.addHelp(new FunctionHelp("under_undef", "Returns a map where value is 1 if less than reference, else undefined (will leave holes in context image maps for example!)", [
+        help.addHelp(new FunctionHelp("under_undef", "Returns a map where value is 1 if less than reference, else undefined (will leave holes in context image maps for example!)", OriginID, [
             new FunctionParamHelp("map", "The map to operate on"),
             new FunctionParamHelp("reference", "The value to use as a reference for the operation"),
         ]));
 
-        this.addHelp(new FunctionHelp("over", "Returns a map where value is 1 if greater than reference, else 0", [
+        help.addHelp(new FunctionHelp("over", "Returns a map where value is 1 if greater than reference, else 0", OriginID, [
             new FunctionParamHelp("map", "The map to operate on"),
             new FunctionParamHelp("reference", "The value to use as a reference for the operation"),
         ]));
 
-        this.addHelp(new FunctionHelp("over_undef", "Returns a map where value is 1 if greater than reference, else undefined (will leave holes in context image maps for example!", [
+        help.addHelp(new FunctionHelp("over_undef", "Returns a map where value is 1 if greater than reference, else undefined (will leave holes in context image maps for example!", OriginID, [
             new FunctionParamHelp("map", "The map to operate on"),
             new FunctionParamHelp("reference", "The value to use as a reference for the operation"),
         ]));
 
-        this.addHelp(new FunctionHelp("avg", "Returns a map which is the average of the 2 parameters specified", [
+        help.addHelp(new FunctionHelp("avg", "Returns a map which is the average of the 2 parameters specified", OriginID, [
             new FunctionParamHelp("map", "The map to operate on"),
             new FunctionParamHelp("value", "May be a map or scalar, to calculate the average from using the first map parameter")
         ]));
         
-        this.addHelp(new FunctionHelp("min", "Returns a map which is the minimum of the 2 parameters specified", [
+        help.addHelp(new FunctionHelp("min", "Returns a map which is the minimum of the 2 parameters specified", OriginID, [
             new FunctionParamHelp("map", "The map to operate on"),
             new FunctionParamHelp("value", "May be a map or scalar, to find the minimum from using the first map parameter")
         ]));
         
-        this.addHelp(new FunctionHelp("max", "Returns a map which is the maximum of the 2 parameters specified", [
+        help.addHelp(new FunctionHelp("max", "Returns a map which is the maximum of the 2 parameters specified", OriginID, [
             new FunctionParamHelp("map", "The map to operate on"),
             new FunctionParamHelp("value", "May be a map or scalar, to find the maximum from using the first map parameter")
         ]));
 
-        this.addHelp(new FunctionHelp("ln", "Returns a map where each PMC contains the natural logarithm of the given value (or the corresponding PMCs value if the parameter is a map)", [
+        help.addHelp(new FunctionHelp("ln", "Returns a map where each PMC contains the natural logarithm of the given value (or the corresponding PMCs value if the parameter is a map)", OriginID, [
             new FunctionParamHelp("value", "May be a map or scalar")
         ]));
 
-        this.addHelp(new FunctionHelp("exp", "Returns a map where each PMC contains the e raised to the value (or the corresponding PMCs value if the parameter is a map)", [
+        help.addHelp(new FunctionHelp("exp", "Returns a map where each PMC contains the e raised to the value (or the corresponding PMCs value if the parameter is a map)", OriginID, [
             new FunctionParamHelp("value", "May be a map or scalar")
         ]));
+    }
+    
+    static makeTrigFunctionHelp(help: SourceHelp): void
+    {
+        const OriginID = "";
 
         // --- Trig functions
         let trigFuncs = ["sin", "cos", "tan", "asin", "acos", "atan"];
 
         for(let f of trigFuncs)
         {
-            this.addHelp(new FunctionHelp(f, "Returns a map where each PMC value is "+f+" of the given angle (or map of angles)", [
+            help.addHelp(new FunctionHelp(f, "Returns a map where each PMC value is "+f+" of the given angle (or map of angles)", OriginID, [
                 new FunctionParamHelp("angle", "Angle in radians")
             ]));
         }
-    }
-
-    private addHelp(h: FunctionHelp): void
-    {
-        this._allHelp.set(h.name, h);
-    }
-
-    getKeywords(): string[]
-    {
-        return Array.from(this._allHelp.keys());
-    }
-
-    getCompletionItems(): HelpCompletionItem[]
-    {
-        let result: HelpCompletionItem[] = [];
-
-        for(let item of this._allHelp.values())
-        {
-/*            let sig = item.name+"(";
-            let first = true;
-            for(let p of item.params)
-            {
-                if(!first)
-                {
-                    sig += ",";
-                }
-
-                sig += p.name;
-                first = false;
-            }
-            sig += ")";
-*/
-            result.push(new HelpCompletionItem(item.name, item.doc/*, sig*/));
-        }
-
-        return result;
-    }
-
-    getSignatureHelp(funcName: string, paramsProvided: string[], quantificationLoaded: QuantificationLayer, dataset: DataSet): HelpSignature
-    {
-        let help = this._allHelp.get(funcName);
-        if(!help)
-        {
-            help = this._allHelp.get("element");
-            return null;
-        }
-    /*
-        let params: HelpSignatureParam[] = [];
-
-        for(let p of help.params)
-        {
-            params.push(new HelpSignatureParam(
-                p.name,
-                p.doc,
-                p.getPossibleValues(paramsProvided, quantificationLoaded, dataset)
-            ));
-        }
-
-        return new HelpSignature(
-            help.name,
-            help.doc,
-            params
-        );*/
-
-        if(help.params.length <= 0)
-        {
-            return new HelpSignature(
-                funcName+"(",
-                "",
-                ")",
-                "",
-                [],
-                0
-            );
-        }
-
-        let paramIdx = paramsProvided.length;
-        let result = new HelpSignature(
-            funcName+"(",
-            help.params[paramIdx].name,
-            "",
-            help.params[paramIdx].doc,
-            [],
-            paramIdx-1
-        );
-
-        // Fill in params we've passed over already
-        for(let c = 0; c < paramIdx; c++)
-        {
-            result.prefix += help.params[c].name;
-
-            if(c < help.params.length-1)
-            {
-                result.prefix += ", ";
-            }
-        }
-
-        // Add in parameters we haven't specified yet
-        for(let c = paramIdx+1; c < help.params.length; c++)
-        {
-            //if(result.suffix.length > 0 || paramIdx == 0)
-            {
-                result.suffix += ", ";
-            }
-            result.suffix += help.params[c].name;
-        }
-        result.suffix += ")";
-
-        // Add possible values to docs if needed
-        let possibilities = help.params[paramIdx].getPossibleValues(paramsProvided, quantificationLoaded, dataset);
-        if(possibilities && possibilities.length > 0)
-        {
-            result.paramPossibleValues = possibilities;
-        }
-        return result;
     }
 }

@@ -276,6 +276,7 @@ export class FunctionHelp
     constructor(
         public name: string,
         public doc: string,
+        public originID: string, // The module ID it's defined in, or blank in case of PIXLISE functions, element() etc
         public params: FunctionParamHelp[] = [] // For parameter-less functions
     )
     {
@@ -322,9 +323,107 @@ export class HelpSignature
     }
 }
 
-export interface SourceHelp
+
+export class SourceHelp
 {
-    getKeywords(): string[];
-    getCompletionItems(): HelpCompletionItem[];
+    private _allHelp = new Map<string, FunctionHelp>();
+
+    constructor()
+    {
+    }
+
+    addHelp(h: FunctionHelp): void
+    {
+        this._allHelp.set(h.name, h);
+    }
+
+    clearHelp(originID: string): void
+    {
+        // Remove all entries that have this origin ID
+        for(let [k, v] of this._allHelp)
+        {
+            if(v.originID == originID)
+            {
+                this._allHelp.delete(k);
+            }
+        }
+    }
+
+    getKeywords(): string[]
+    {
+        return Array.from(this._allHelp.keys());
+    }
+
+    getCompletionItems(): HelpCompletionItem[]
+    {
+        let result: HelpCompletionItem[] = [];
+
+        for(let item of this._allHelp.values())
+        {
+            result.push(new HelpCompletionItem(item.name, item.doc/*, sig*/));
+        }
+
+        return result;
+    }
+
     getSignatureHelp(funcName: string, paramsProvided: string[], quantificationLoaded: QuantificationLayer, dataset: DataSet): HelpSignature
+    {
+        let help = this._allHelp.get(funcName);
+        if(!help)
+        {
+            return null;
+        }
+
+        if(help.params.length <= 0)
+        {
+            return new HelpSignature(
+                funcName+"(",
+                "",
+                ")",
+                "",
+                [],
+                0
+            );
+        }
+
+        let paramIdx = paramsProvided.length;
+        let result = new HelpSignature(
+            funcName+"(",
+            help.params[paramIdx].name,
+            "",
+            help.params[paramIdx].doc,
+            [],
+            paramIdx-1
+        );
+
+        // Fill in params we've passed over already
+        for(let c = 0; c < paramIdx; c++)
+        {
+            result.prefix += help.params[c].name;
+
+            if(c < help.params.length-1)
+            {
+                result.prefix += ", ";
+            }
+        }
+
+        // Add in parameters we haven't specified yet
+        for(let c = paramIdx+1; c < help.params.length; c++)
+        {
+            //if(result.suffix.length > 0 || paramIdx == 0)
+            {
+                result.suffix += ", ";
+            }
+            result.suffix += help.params[c].name;
+        }
+        result.suffix += ")";
+
+        // Add possible values to docs if needed
+        let possibilities = help.params[paramIdx].getPossibleValues(paramsProvided, quantificationLoaded, dataset);
+        if(possibilities && possibilities.length > 0)
+        {
+            result.paramPossibleValues = possibilities;
+        }
+        return result;
+    }
 }
