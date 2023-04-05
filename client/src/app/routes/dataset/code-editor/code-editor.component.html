@@ -247,6 +247,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 (onClick)="setTopEditorActive()"
                 [linkedModuleID]="topEditor.linkedModuleID"
                 (linkModule)="onLinkModule($event)"
+                [isSplitScreen]="isSplitScreen"
             >
             </expression-text-editor>
             <div *ngIf="bottomEditor.expression && isSplitScreen" class="split-screen-header">
@@ -340,6 +341,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [showInstalledModules]="!bottomEditor.isModule"
                 (onModuleChange)="onModuleChange($event, 'bottom')"
                 (onClick)="setBottomEditorActive()"
+                [isSplitScreen]="isSplitScreen"
             >
             </expression-text-editor>
         </div>

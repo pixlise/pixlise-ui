@@ -28,7 +28,7 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
-<div class="code-container" fxFlex (click)="onSetActive()">
+<div class="code-container {{isSplitScreen ? 'split' : ''}} {{showInstalledModules ? 'installed-modules' : ''}} {{isHeaderOpen ? 'header-open' : ''}}" fxFlex (click)="onSetActive()">
   <div *ngIf="expression && showInstalledModules" class="installed-modules-text">
       <div *ngIf="isHeaderOpen" class="imports">
           <div 
@@ -36,7 +36,7 @@ POSSIBILITY OF SUCH DAMAGE.
               class="module-import-line"
               id="module-{{module.id}}"
           >
-              <div class="line-gutter" [ngStyle]="{'width': gutterWidth}">
+              <div class="line-gutter">
                   <span class="line-number">
                     <img src="assets/button-icons/x.svg" (click)="deleteModule(i)">
                   </span>
@@ -77,12 +77,12 @@ POSSIBILITY OF SUCH DAMAGE.
               </span>
           </div>
           <div class="empty-line">
-            <div class="line-gutter" [ngStyle]="{'width': gutterWidth}">
+            <div class="line-gutter">
             </div>
           </div>
       </div>
       <div class="header-divider" [ngStyle]="{'margin-top': isHeaderNonEmptyAndOpen ? '-12px' : '0px'}">
-          <div class="line-gutter" [ngStyle]="{'width': gutterWidth}">
+          <div class="line-gutter">
               <icon-button
                   #tooltip="matTooltip"
                   class="{{isHeaderOpen ? 'open' : 'closed'}}"

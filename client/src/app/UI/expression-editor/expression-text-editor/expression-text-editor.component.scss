@@ -66,6 +66,11 @@ h3 {
     width: 100%;
 }
 
+.line-gutter {
+    width: 62px;
+}
+
+
 .installed-modules-text {
     background-color: #222829;
 
@@ -255,5 +260,24 @@ img {
 
     &.unlinked:hover {
         background-color: rgba(128,128,128,0.2);
+    }
+}
+
+.code-container {
+    &.installed-modules {
+        .editor-container {
+            max-height: calc(100% - 28px) !important;
+        }
+
+        &.split {
+            flex: unset !important;
+            height: calc(50vh - 55px);
+        }
+    }
+
+    &.header-open {
+        .editor-container {
+            max-height: calc(100% - 116px) !important;
+        }
     }
 }

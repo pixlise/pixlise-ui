@@ -37,6 +37,8 @@ import { ObjectCreator } from "src/app/models/BasicTypes";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { MonacoEditorService, MONACO_LUA_LANGUAGE_NAME } from "src/app/services/monaco-editor.service";
+import { DataSetService } from "src/app/services/data-set.service";
+import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 
 
 export class DataExpressionModule
@@ -109,6 +111,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Input() showInstalledModules: boolean = true;
     @Input() linkedModuleID: string = null;
 
+    @Input() isSplitScreen: boolean = false;
+
     @Output() onChange = new EventEmitter<DataExpression>();
     @Output() onTextChange = new EventEmitter<string>();
     @Output() onTextSelect = new EventEmitter<TextSelection>();
@@ -127,8 +131,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     private _editor: any/*IStandaloneCodeEditor*/ = null;
 
     constructor(
-        // private _datasetService: DataSetService,
-        // private _widgetDataService: WidgetRegionDataService,
+        private _datasetService: DataSetService,
+        private _widgetDataService: WidgetRegionDataService,
         private _authService: AuthenticationService,
         private elementRef: ElementRef,
         private _monacoService: MonacoEditorService,
@@ -249,7 +253,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         );
 
         this._editor.setModel(mdl);
-        this.monaco.editor.setTheme(this._expr.sourceLanguage == EXPR_LANGUAGE_LUA ? "vs-dark" : "vs-dark-pixlang");
+        this.monaco.editor.setTheme(this._expr.sourceLanguage == EXPR_LANGUAGE_LUA ? "vs-dark-lua" : "vs-dark-pixlang");
     }
 
     private refreshMonaco(): void
