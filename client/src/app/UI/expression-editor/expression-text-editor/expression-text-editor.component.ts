@@ -32,15 +32,11 @@ import { Subscription } from "rxjs";
 import { ExpressionParts, PixliseDataQuerier } from "src/app/expression-language/interpret-pixlise";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataExpression } from "src/app/models/Expression";
-import { DataSetService } from "src/app/services/data-set.service";
-import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { CursorSuggestions, ExpressionHelp, FunctionParameterPosition, LabelElement, Suggestion } from "../expression-help";
 import { SentryHelper } from "src/app/utils/utils";
 import { ObjectCreator } from "src/app/models/BasicTypes";
-import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
-import { MonacoEditorService } from "src/app/services/monaco-editor.service";
-import { PIXLANGHelp } from "./code-help/pixlang-help";
-import { rfindFunctionNameAndParams } from "./code-help/help";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { MonacoEditorService, MONACO_LUA_LANGUAGE_NAME } from "src/app/services/monaco-editor.service";
 
 
 export class DataExpressionModule
@@ -52,7 +48,9 @@ export class DataExpressionModule
         public version: string = "",
         public author: ObjectCreator= new ObjectCreator("", ""),
         public allVersions: string[] = [],
-    ){}
+    )
+    {
+    }
 }
 
 export class TextSelection
@@ -77,6 +75,7 @@ export class MarkPosition
     }
 }
 
+
 @Component({
     selector: "expression-text-editor",
     templateUrl: "./expression-text-editor.component.html",
@@ -98,6 +97,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     private _gutterWidth: number = 0;
 
     private _initAsLua: boolean = false;
+
 
     @Input() isLua: boolean = false;
     @Input() expression: DataExpression = null;
@@ -130,13 +130,9 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     
     @ViewChild('editorContainer', { static: true }) _editorContainer: ElementRef;
     private _editor: any/*IStandaloneCodeEditor*/ = null;
-    //editorOptions = {theme: 'vs-dark', language: 'javascript'};
-
-    private _helpPIXLANG = new PIXLANGHelp();
 
     constructor(
         private _monacoService: MonacoEditorService,
-        private _widgetRegionDataService: WidgetRegionDataService,
     )
     {
     }
@@ -189,9 +185,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     private createMonaco(): any/*IStandaloneCodeEditor*/
     {
-        // The best monaco resources:
-        // https://microsoft.github.io/monaco-editor/playground.html?source=v0.36.1
-        // https://microsoft.github.io/monaco-editor/typedoc/index.html
+        // For more fundamental monaco extensions, see MonacoEditorService
         
         // Here is everything we need to re-implement/modify in Monaco:
         //
@@ -218,68 +212,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         // - "cursorActivity" - this.updateHelp()
         // - "focus" - this.onSetActive(), this.updateHelp(), this.markExecutedExpressionRange(cm);
         // - "beforeSelectionChange" - When selection was valid, called this.onTextSelect.emit() with new TextSelection containing functions to handle running that text
-        //
-        // PIXLANG syntax highlighting
-        //
-        // PIXLANG help. This is a short description of what it did:
-        //  findVariables() would call PixliseDataQuerier.breakExpressionIntoParts, store that in this._exprParts
-        //  onHelpEscape() - if user clicked esc button on help dialog, we went up a level
-        //  onHelpClick() - if user clicked help suggestion, we did it. Supported:
-        //                              - element function param fill from list
-        //                              - adding functions from list
-        //                              - selecting operators from list
-        //                              - showing help dialog if nothing else useful to show 
-
-        // Set up PIXLANG syntax highlighter
-        this.createMonacoPIXLANGLanguage();
-
-        // Setup PIXLANG help lookup
-        this.monaco.languages.registerCompletionItemProvider(EXPR_LANGUAGE_PIXLANG, {
-            provideCompletionItems: (model/*: ITextModel*/, position/*: Position*/, context/*: CompletionContext*/, token/*: CancellationToken*/)=>//: ProviderResult<CompletionList>
-            {
-                return this.providePIXLANGCompletionItems(model, position, context, token);
-            },
-            resolveCompletionItem: (item/*: CompletionItem*/, token/*: CancellationToken*/)=>//: ProviderResult<CompletionItem>
-            {
-                return this.resolvePIXLANGCompletionItem(item, token);
-            }
-        });
-
-        this.monaco.languages.registerSignatureHelpProvider(EXPR_LANGUAGE_PIXLANG, {
-            signatureHelpTriggerCharacters: ["(", ","],
-            provideSignatureHelp: (model/*: ITextModel*/, position/*: Position*/, token/*: CancellationToken*/, context/*: SignatureHelpContext*/)=>//: ProviderResult<SignatureHelpResult>
-            {
-                return this.providePIXLANGSignatureHelp(model, position, context);
-            }
-        });
-        
-        // Setup Lua help lookup
-        this.monaco.languages.registerCompletionItemProvider("lua", {
-            provideCompletionItems: (model/*: ITextModel*/, position/*: Position*/, context/*: CompletionContext*/, token/*: CancellationToken*/)=>//: ProviderResult<CompletionList>
-            {
-                return this.provideLUACompletionItems(model, position, context, token);
-            },
-            resolveCompletionItem: (item/*: CompletionItem*/, token/*: CancellationToken*/)=>//: ProviderResult<CompletionItem>
-            {
-                return this.resolveLUACompletionItem(item, token);
-            }
-        });
-
-        // Other providers we may want to implement
-        // registerImplementationProvider(languageSelector: LanguageSelector, provider: ImplementationProvider): IDisposable
-        //     ^-- Go to implementation
-        // registerDeclarationProvider(languageSelector: LanguageSelector, provider: DeclarationProvider): IDisposable
-        //     ^-- Go to definition
-        // registerTypeDefinitionProvider(languageSelector: LanguageSelector, provider: TypeDefinitionProvider): IDisposable
-        //     ^-- Go to type definition
-
-        // Install lua help provider stuff:
-        // NOTE: there are several things we can do...
-        //   https://microsoft.github.io/monaco-editor/playground.html?source=v0.36.1#example-extending-language-services-inlay-hints-provider-example
-        // codelens - installs a line above a function for eg that can be run
-        // completionprovider - our help case
-        // hoverprovider - maybe for debugging, see a variable value?
-        // inlay hints - not even sure what this is...
 
         // Set up options and create a monaco editor:
         let options = {
@@ -296,41 +228,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         return this.monaco.editor.create(this._editorContainer.nativeElement, options);
     }
 
-    private createMonacoPIXLANGLanguage()
-    {
-        let monaco = this.monaco;
-
-        // Register a new language
-        monaco.languages.register({ id: EXPR_LANGUAGE_PIXLANG });
-
-        // Register a tokens provider for the language
-        let keywords = ["normalize", "threshold", "pow", "data", "spectrum", "spectrumDiff", "element", "elementSum", "pseudo", "housekeeping", "diffractionPeaks", "roughness", "position", "under", "over", "under_undef", "over_undef", "avg", "min", "max", "makeMap", "sin", "cos", "tan", "asin", "acos", "atan", "exp", "ln", "atomicMass"];
-        monaco.languages.setMonarchTokensProvider(EXPR_LANGUAGE_PIXLANG, {
-            keywords,
-            tokenizer: {
-                root: [
-                    [/@?[a-zA-Z][\w$]*/, {cases:{"@keywords": "keyword", "@default": "variable"}}],
-                    [/\/\/.*/, "comment"],
-                    [/".*?"/, "string"],
-                ],
-            },
-        });
-
-        // Define a new theme that contains only rules that match this language
-        monaco.editor.defineTheme("vs-dark-pixlang", {
-            base: "vs-dark",
-            inherit: false,
-            rules: [
-                { token: "keyword", foreground: "#91bfdb", fontStyle: "bold" },
-                { token: "variable", foreground: "#ffff8d" },
-                { token: "string", foreground: "#fc8d59" },
-                { token: "comment", foreground: "#549e7a" },
-            ],
-            colors: {
-                "editor.foreground": "#eeffff",
-            },
-        });
-    }
 
     private createMonacoModel(): void
     {
@@ -343,7 +240,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         // Create the model the editor will use
         let mdl/*: ITextModel*/ = this.monaco.editor.createModel(
             this._expr.sourceCode,
-            this._expr.sourceLanguage == EXPR_LANGUAGE_LUA ? "lua" : this._expr.sourceLanguage
+            this._expr.sourceLanguage == EXPR_LANGUAGE_LUA ? MONACO_LUA_LANGUAGE_NAME : this._expr.sourceLanguage
         );
 
         // Add handlers to this model
@@ -374,140 +271,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     ngOnDestroy()
     {
         this._subs.unsubscribe();
-    }
-/*
-    private _PIXLANGHelpItems = new Map<string, string>([
-        ["element", "Element function with parameters: element, column (% or %-as-mmol), detector (Combined, A or B)"],
-        ["pseudo", "Pseudo-element lookup with parameter: element"],
-    ]);
-*/
-    private providePIXLANGCompletionItems(model/*: ITextModel*/, position/*: Position*/, context/*: CompletionContext*/, token/*: CancellationToken*/)//: ProviderResult<CompletionList>
-    {
-        // See: https://microsoft.github.io/monaco-editor/typedoc/interfaces/languages.CompletionItem.html
-        let word = model.getWordUntilPosition(position);
-        let range = {
-            startLineNumber: position.lineNumber,
-            endLineNumber: position.lineNumber,
-            startColumn: word.startColumn,
-            endColumn: word.endColumn,
-        };
-
-        let monaco = this.monaco;
-        let result/*: CompletionItem[]*/ = [];
-
-        let items = this._helpPIXLANG.getCompletionItems();
-        for(let item of items)
-        {
-            result.push({
-                label: item.name,
-                kind: monaco.languages.CompletionItemKind.Function,
-                insertText: item.name+"(",
-                detail: item.doc,
-                //documentation: item.doc,
-                insertTextRules:
-                    monaco.languages.CompletionItemInsertTextRule
-                        .InsertAsSnippet,
-                range: range,
-                //commitCharacters: ["("],
-            });
-        }
-
-        return {suggestions: result};
-    }
-
-    private resolvePIXLANGCompletionItem(item/*: CompletionItem*/, token/*: CancellationToken*/)//: ProviderResult<CompletionItem>
-    {
-    }
-
-    private providePIXLANGSignatureHelp(model/*: ITextModel*/, position/*: Position*/, context/*: SignatureHelpContext*/)//: ProviderResult<SignatureHelpResult>
-    {
-        // Find the function we're being asked to provide help for. Search backwards from the current position
-        let searchTextLines = model.getValueInRange(/*new IRange*/{
-            startLineNumber: Math.max(position.lineNumber-5, 0),
-            endLineNumber: position.lineNumber,
-            startColumn: 0,
-            endColumn: position.column
-        });
-        
-        // Split by line, and remove comments, then recombine
-        let searchLines = searchTextLines.split("\n");
-        let searchText = "";
-        for(let line of searchLines)
-        {
-            // Trim comments
-            let pos = line.indexOf("//");
-            if(pos > -1)
-            {
-                line = line.substring(0, pos);
-            }
-            searchText += line+" ";
-        }
-
-        // Find the function name going backwards
-        let items = rfindFunctionNameAndParams(searchText);
-
-        if(!items.empty)
-        {
-            // Provide signature help if we can find the function
-            let sig = this._helpPIXLANG.getSignatureHelp(items.funcName, items.params, this._widgetRegionDataService.quantificationLoaded, this._widgetRegionDataService.dataset);
-            if(!sig)
-            {
-                return null;
-            }
-
-/*
-        let sigParams = [];
-        for(let p of sig.params)
-        {
-            sigParams.push({label: p.name, documentation: p.doc});
-        }
-
-        let signatureHelp = {
-            signatures: [
-                {
-                    label: sig.funcName,
-                    documentation: null,//sig.funcDoc,
-                    parameters: []//sigParams
-                }
-            ],
-            activeParameter: 0,
-            activeSignature: 0
-        };
-*/
-            let signatureHelp = {
-                signatures: [
-                    {
-                        label: sig.prefix+"   "+sig.activeParam+",   "+sig.suffix,
-                        documentation: sig.paramDoc,//sig.funcDoc,
-                        parameters: []//sigParams
-                    }
-                ],
-                activeParameter: 0,
-                activeSignature: 0
-            };
-
-            // NOTE: we have to provide the dispose function. MS code also includes this, see https://github.com/microsoft/pxt/blob/master/webapp/src/monaco.tsx#L209
-            return { value: signatureHelp, dispose: () => {} };
-        }
-
-        return null;
-    }
-
-    private provideLUACompletionItems(model/*: ITextModel*/, position/*: Position*/, context/*: CompletionContext*/, token/*: CancellationToken*/)//: ProviderResult<CompletionList>
-    {
-        let word = model.getWordUntilPosition(position);
-        let range = {
-            startLineNumber: position.lineNumber,
-            endLineNumber: position.lineNumber,
-            startColumn: word.startColumn,
-            endColumn: word.endColumn,
-        };
-
-        console.log("LUA completion: "+word.word);
-    }
-
-    private resolveLUACompletionItem(item/*: CompletionItem*/, token/*: CancellationToken*/)//: ProviderResult<CompletionItem>
-    {
     }
 
     get isSourceLanguageLua(): boolean

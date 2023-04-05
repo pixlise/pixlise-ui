@@ -27,29 +27,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-function cleanParam(param: string): string
-{
-    let noWhite = param.trim();
-/*
-    // Now remove quotes if they exist on both ends
-    // NOTE: This is only because if we're dealing with "cleaning" a partially typed param
-    // eg element("Fe, we don't want to clear the ", so it's displayed correctly
-    if(noWhite[0] == "\"" && noWhite[noWhite.length-1] == "\"")
-    {
-        noWhite = noWhite.substring(1, noWhite.length-2);
-    }
-*/
-    // Now remove any \" in case it's a string
-    if(noWhite[0] == "\"")
-    {
-        noWhite = noWhite.substring(1);
-    }
-    if(noWhite[noWhite.length-1] == "\"")
-    {
-        noWhite = noWhite.substring(0, noWhite.length-1);
-    }
-    return noWhite;
-}
+import { QuantificationLayer } from "src/app/models/Quantifications";
+import { DataSet } from "src/app/models/DataSet";
+
 
 export class NameAndParamResult
 {
@@ -63,99 +43,288 @@ export class NameAndParamResult
     }
 }
 
-export function rfindFunctionNameAndParams(text: string): NameAndParamResult
+export class SourceContextParser
 {
-    let result = new NameAndParamResult("", [], "");
-
-    let inQuotes = false;
-    let bracketDepth = 0;
-    let currMark = -1;
-
-    for(let c = text.length-1; c >= 0; c--)
+    constructor(private _commentMarker: string)
     {
-        let ch = text[c];
-        if(ch == "\"")
+        if(!this._commentMarker)
         {
-            // If this is the first thing we've seen, we may be partially through typing
-            // a parameter with quotes, eg: element("Fe
-            // So in this case we have to assume we've just LEFT the quoted area, not just
-            // entered
-            if(result.empty)
-            {
-                // This is the special case...
-                inQuotes = false;
-            }
-            else
-            {
-                inQuotes = !inQuotes;
-            }
-        }
-        else if(!inQuotes)
-        {
-            if(ch == ")")
-            {
-                bracketDepth++;
-            }
-            else if(ch == "(")
-            {
-                bracketDepth--;
-                if(currMark >= 0)
-                {
-                    // Likely end of 1st param, into the function call
-                    if(bracketDepth < 0)
-                    {
-                        result.params.push(cleanParam(text.substring(c+1, currMark)));
-                        currMark = c;
-                    }
-                }
-                else
-                {
-                    // We must have a partial parameter typed, eg element("Fe", "%
-                    // So save it here
-                    let typedParam = text.substring(c+1).trim();
-                    if(typedParam)
-                    {
-                        result.partialParam = cleanParam(typedParam);
-                    }
-                    currMark = c;
-                }
-            }
-            else if(bracketDepth <= 0)
-            {
-                if(ch == ",")
-                {
-                    if(currMark < 0)
-                    {
-                        // We must have a partial parameter typed, eg element("Fe", "%
-                        // So save it here
-                        let typedParam = text.substring(c+1).trim();
-                        if(typedParam)
-                        {
-                            result.partialParam = cleanParam(typedParam);
-                        }
-
-                        currMark = c;
-                    }
-                    else
-                    {
-                        // We have just found a param, save the whole thing
-                        result.params.push(cleanParam(text.substring(c+1, currMark)));
-                        currMark = c;
-                    }
-                }
-                else if(ch == " " || ch == "\t" || c == 0)
-                {
-                    if(bracketDepth < 0)
-                    {
-                        result.funcName = cleanParam(text.substring(c, currMark));
-                        break;
-                    }
-                }
-            }
+            throw new Error("Comment marker cannot be blank");
         }
     }
 
-    // Reverse the param order here, we were parsing backwards!
-    result.params = result.params.reverse();
-    return result;
+    // If we can, extract the word right before the end of the string
+    // This means we're looking back from the end of the string and only reporting
+    // we found a "word" if it's alpha-numeric but is a valid variable/function name
+    wordAtEnd(source: string): string
+    {
+        let text = this.stripCommentsAndFlatten(source);
+
+        let foundLetters = false;
+        for(let c = text.length-1; c >= 0; c--)
+        {
+            let ch = text[c];
+            if(ch == "\"" || ch == "'")
+            {
+                // If we found a quote char, we're likely something like "blah where this isn't a word, but a string def 
+                break;
+            }
+            else if(ch == ")" || ch == "(" || ch == " " || ch == "\t")
+            {
+                if(foundLetters)
+                {
+                    // Found these but had some valid letters until then, so cut off here
+                    return text.substring(c+1);
+                }
+                else
+                {
+                    // If we've found these, we don't have a word anyway so stop here
+                    break;
+                }
+            }
+            else if(ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch == "_")
+            {
+                foundLetters = true;
+            }
+        }
+
+        return "";
+    }
+
+    // Reverse-find from the end of the text, what function we're in, and what parameters have already been provided
+    rfindFunctionNameAndParams(source: string): NameAndParamResult
+    {
+        let text = this.stripCommentsAndFlatten(source);
+
+        let result = new NameAndParamResult("", [], "");
+
+        let inQuotes = false;
+        let bracketDepth = 0;
+        let currMark = -1;
+
+        for(let c = text.length-1; c >= 0; c--)
+        {
+            let ch = text[c];
+            if(ch == "\"")
+            {
+                // If this is the first thing we've seen, we may be partially through typing
+                // a parameter with quotes, eg: element("Fe
+                // So in this case we have to assume we've just LEFT the quoted area, not just
+                // entered
+                if(result.empty)
+                {
+                    // This is the special case...
+                    inQuotes = false;
+                }
+                else
+                {
+                    inQuotes = !inQuotes;
+                }
+            }
+            else if(!inQuotes)
+            {
+                if(ch == ")")
+                {
+                    bracketDepth++;
+                }
+                else if(ch == "(")
+                {
+                    bracketDepth--;
+                    if(currMark >= 0)
+                    {
+                        // Likely end of 1st param, into the function call
+                        if(bracketDepth < 0)
+                        {
+                            result.params.push(this.cleanParam(text.substring(c+1, currMark)));
+                            currMark = c;
+                        }
+                    }
+                    else
+                    {
+                        if(bracketDepth < 0)
+                        {
+                            // We must have a partial parameter typed, eg element("Fe", "%
+                            // So save it here
+                            let typedParam = text.substring(c+1).trim();
+                            if(typedParam)
+                            {
+                                result.partialParam = this.cleanParam(typedParam);
+                            }
+                        }
+                        currMark = c;
+                    }
+                }
+                else if(bracketDepth <= 0)
+                {
+                    if(ch == ",")
+                    {
+                        if(currMark < 0)
+                        {
+                            // We must have a partial parameter typed, eg element("Fe", "%
+                            // So save it here
+                            let typedParam = text.substring(c+1).trim();
+                            if(typedParam)
+                            {
+                                result.partialParam = this.cleanParam(typedParam);
+                            }
+
+                            currMark = c;
+                        }
+                        else
+                        {
+                            // We have just found a param, save the whole thing
+                            result.params.push(this.cleanParam(text.substring(c+1, currMark)));
+                            currMark = c;
+                        }
+                    }
+                    else if(ch == " " || ch == "\t" || c == 0)
+                    {
+                        if(bracketDepth < 0)
+                        {
+                            result.funcName = this.cleanParam(text.substring(c, currMark));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Reverse the param order here, we were parsing backwards!
+        result.params = result.params.reverse();
+        return result;
+    }
+
+    private cleanParam(param: string): string
+    {
+        let noWhite = param.trim();
+    /*
+        // Now remove quotes if they exist on both ends
+        // NOTE: This is only because if we're dealing with "cleaning" a partially typed param
+        // eg element("Fe, we don't want to clear the ", so it's displayed correctly
+        if(noWhite[0] == "\"" && noWhite[noWhite.length-1] == "\"")
+        {
+            noWhite = noWhite.substring(1, noWhite.length-2);
+        }
+    */
+    /*
+        // Now remove any \" in case it's a string
+        if(noWhite[0] == "\"")
+        {
+            noWhite = noWhite.substring(1);
+        }
+        if(noWhite[noWhite.length-1] == "\"")
+        {
+            noWhite = noWhite.substring(0, noWhite.length-1);
+        }*/
+        return noWhite;
+    }
+
+    public static stripQuotes(param: string): string
+    {
+        // Now remove any \" in case it's a string
+        if(param[0] == "\"" && param[param.length-1] == "\"")
+        {
+            return param.substring(1, param.length-1);
+        }
+        return param;
+    }
+
+    private stripCommentsAndFlatten(searchTextLines: string): string
+    {
+        // Split by line, and remove comments, then recombine
+        let searchLines = searchTextLines.split("\n");
+        let searchText = "";
+        for(let line of searchLines)
+        {
+            // Trim comments
+            let pos = line.indexOf(this._commentMarker);
+            if(pos > -1)
+            {
+                line = line.substring(0, pos);
+            }
+
+            if(searchText.length > 0)
+            {
+                searchText += " ";
+            }
+            searchText += line;
+        }
+
+        return searchText;
+    }
+}
+
+export class FunctionParamHelp
+{
+    constructor(
+        public name: string,
+        public doc: string,
+        private _possibleValues: string[] = []
+    )
+    {
+    }
+
+    // Can be overridden if needed
+    getPossibleValues(paramsProvided: string[], quantificationLoaded: QuantificationLayer, dataset: DataSet): string[]
+    {
+        return this._possibleValues;
+    }
+}
+
+export class FunctionHelp
+{
+    constructor(
+        public name: string,
+        public doc: string,
+        public params: FunctionParamHelp[] = [] // For parameter-less functions
+    )
+    {
+    }
+}
+
+export class HelpCompletionItem
+{
+    constructor(
+        public name: string,
+        public doc: string,
+        //public sig: string
+    )
+    {
+
+    }
+}
+/*
+class HelpSignatureParam
+{
+    constructor(
+        public name: string,
+        public doc: string,
+        public possibleValues: string[]
+    )
+    {
+    }
+}
+*/
+export class HelpSignature
+{
+    constructor(
+/*        public funcName: string,
+        public funcDoc: string,
+        public params: HelpSignatureParam[]*/
+        public prefix: string,
+        public activeParam: string,
+        public suffix: string,
+        public paramDoc: string,
+        public paramPossibleValues: string[],
+        public activeParamIdx: number
+    )
+    {
+    }
+}
+
+export interface SourceHelp
+{
+    getKeywords(): string[];
+    getCompletionItems(): HelpCompletionItem[];
+    getSignatureHelp(funcName: string, paramsProvided: string[], quantificationLoaded: QuantificationLayer, dataset: DataSet): HelpSignature
 }

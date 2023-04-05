@@ -29,76 +29,11 @@
 
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
+import { SourceHelp, HelpSignature, HelpCompletionItem, FunctionHelp, FunctionParamHelp, SourceContextParser } from "./help";
 
 
-class FunctionParamHelp
-{
-    constructor(
-        public name: string,
-        public doc: string,
-        private _possibleValues: string[] = []
-    )
-    {
-    }
 
-    // Can be overridden if needed
-    getPossibleValues(paramsProvided: string[], quantificationLoaded: QuantificationLayer, dataset: DataSet): string[]
-    {
-        return this._possibleValues;
-    }
-}
-
-class FunctionHelp
-{
-    constructor(
-        public name: string,
-        public doc: string,
-        public params: FunctionParamHelp[] = [] // For parameter-less functions
-    )
-    {
-    }
-}
-
-class HelpCompletionItem
-{
-    constructor(
-        public name: string,
-        public doc: string,
-        //public sig: string
-    )
-    {
-
-    }
-}
-/*
-class HelpSignatureParam
-{
-    constructor(
-        public name: string,
-        public doc: string,
-        public possibleValues: string[]
-    )
-    {
-    }
-}
-*/
-class HelpSignature
-{
-    constructor(
-/*        public funcName: string,
-        public funcDoc: string,
-        public params: HelpSignatureParam[]*/
-        public prefix: string,
-        public activeParam: string,
-        public suffix: string,
-        public paramDoc: string,
-        public activeParamIdx: number
-    )
-    {
-    }
-}
-
-export class PIXLANGHelp
+export class PIXLANGHelp implements SourceHelp
 {
     private _allHelp = new Map<string, FunctionHelp>();
 
@@ -118,7 +53,8 @@ export class PIXLANGHelp
             if(paramsProvided.length > 0)
             {
                 // Assume the first parameter is the elementFormula!
-                let colType = quantificationLoaded?.getElementColumns(paramsProvided[0]);
+                // Clear quotes from the parameter or it won't be interpreted correctly
+                let colType = quantificationLoaded?.getElementColumns(SourceContextParser.stripQuotes(paramsProvided[0]));
                 if(colType.indexOf("%") >= 0 && colType.indexOf("%-as-mmol") < 0)
                 {
                     colType.push("%-as-mmol");
@@ -347,6 +283,7 @@ export class PIXLANGHelp
                 "",
                 ")",
                 "",
+                [],
                 0
             );
         }
@@ -357,34 +294,37 @@ export class PIXLANGHelp
             help.params[paramIdx].name,
             "",
             help.params[paramIdx].doc,
+            [],
             paramIdx-1
         );
 
         // Fill in params we've passed over already
         for(let c = 0; c < paramIdx; c++)
         {
-            if(c > 0)
-            {
-                result.prefix += ",";
-            }
             result.prefix += help.params[c].name;
+
+            if(c < help.params.length-1)
+            {
+                result.prefix += ", ";
+            }
         }
 
         // Add in parameters we haven't specified yet
         for(let c = paramIdx+1; c < help.params.length; c++)
         {
-            if(result.suffix.length > 0)
+            //if(result.suffix.length > 0 || paramIdx == 0)
             {
-                result.suffix += ",";
+                result.suffix += ", ";
             }
             result.suffix += help.params[c].name;
         }
+        result.suffix += ")";
 
         // Add possible values to docs if needed
         let possibilities = help.params[paramIdx].getPossibleValues(paramsProvided, quantificationLoaded, dataset);
         if(possibilities && possibilities.length > 0)
         {
-            result.paramDoc += "\n\nPossible values: "+possibilities.join(", ");
+            result.paramPossibleValues = possibilities;
         }
         return result;
     }
