@@ -28,10 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
-// import { CodemirrorComponent } from "@ctrl/ngx-codemirror";
-import { ReplaySubject, Subject, Subscription } from "rxjs";
-// import { ExpressionParts, PixliseDataQuerier } from "src/app/expression-language/interpret-pixlise";
-// import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications";
+import { Subscription } from "rxjs";
 import { DataExpression } from "src/app/models/Expression";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
@@ -101,6 +98,9 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Input() allowEdit: boolean = true;
     @Input() applyNow: boolean = false;
     @Input() isImmediatelyAppliable: boolean = true;
+
+    // If this is not null, will trigger diff view
+    private _diffText: string = null;
 
     @Input() showHelp: boolean = true;
     @Input() range: Range = null;
@@ -179,33 +179,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     private createMonaco(): any/*IStandaloneCodeEditor*/
     {
         // For more fundamental monaco extensions, see MonacoEditorService
-        
-        // Here is everything we need to re-implement/modify in Monaco:
-        //
-        // Gutters - is this needed at all?
-        //
-        // Key bindings:
-        // "Cmd-/" "Ctrl-/" - comments - monaco already implements this!
-        // "Cmd-Enter" "Ctrl-Enter" - Run expression
-        // "Cmd-Alt-Enter" "Ctrl-Alt-Enter" - Run highlighted expression
-        // "Cmd-S" "Ctrl-S" saveExpression.emit(),
-        // "Cmd-B" "Ctrl-B": () => this.toggleSidebar.emit(),
-        // "Cmd-\\" "Ctrl-\\": () => this.toggleSplitView.emit(),
-        //
-        // Other key bindings (outside the codemirror div)
-        // - onKeyDown event.key == "Escape": this.activeHelp = null;
-        // - onKeyUp - swallow all events
-        // - onClickDialog - hide help if user clicked on anything outside codemirror: this.activeHelp = null;
-        //
-        // Marking text in black (run to line/run selection)
-        //
-        // Code-mirror had event handlers for:
-        // - "beforeChange" - filtered what was pasted, only calling event.update if it's acceptable (origin==paste, text was type object of length > 1
-        // - "change" - called this.findVariables(), this.updateGutter(), this.updateHelp(), and set this.range=null;
-        // - "cursorActivity" - this.updateHelp()
-        // - "focus" - this.onSetActive(), this.updateHelp(), this.markExecutedExpressionRange(cm);
-        // - "beforeSelectionChange" - When selection was valid, called this.onTextSelect.emit() with new TextSelection containing functions to handle running that text
-
         // Set up options and create a monaco editor:
         let options = {
             model: null,
@@ -221,6 +194,55 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         return this.monaco.editor.create(this._editorContainer.nativeElement, options);
     }
 
+    private createDiffEditor()
+    {
+        let originalModel = this.monaco.editor.createModel(
+            this._expr.sourceCode,
+            MONACO_LUA_LANGUAGE_NAME
+        );
+
+        let diffModel = this.monaco.editor.createModel(
+            this._diffText,
+            MONACO_LUA_LANGUAGE_NAME
+        );
+
+        this._editor = this.monaco.editor.createDiffEditor(
+            this._editorContainer.nativeElement,
+            {
+                enableSplitViewResizing: false,
+                renderSideBySide: false,
+                readOnly: true
+            }
+        );
+
+        this._editor.setModel({
+            original: originalModel,
+            modified: diffModel,
+        });
+        // var originalModel = monaco.editor.createModel(
+        //     "This line is removed on the right.\njust some text\nabcd\nefgh\nSome more text",
+        //     "text/plain"
+        // );
+        // var modifiedModel = monaco.editor.createModel(
+        //     "just some text\nabcz\nzzzzefgh\nSome more text\nThis line is removed on the left.",
+        //     "text/plain"
+        // );
+
+        // var diffEditor = monaco.editor.createDiffEditor(
+        //     document.getElementById("container"),
+        //     {
+        //         // You can optionally disable the resizing
+        //         enableSplitViewResizing: false,
+
+        //         // Render the diff inline
+        //         renderSideBySide: false,
+        //     }
+        // );
+        // diffEditor.setModel({
+        //     original: originalModel,
+        //     modified: modifiedModel,
+        // });
+    }
 
     private createMonacoModel(): void
     {
@@ -337,6 +359,24 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     ngOnDestroy()
     {
         this._subs.unsubscribe();
+    }
+
+    get diffText(): string
+    {
+        return this._diffText;
+    }
+
+    @Input() set diffText(value: string)
+    {
+        this._diffText = value;
+        if(this._diffText)
+        {
+            if(this._editor)
+            {
+                this._editor.getModel().dispose();
+            }
+            this.createDiffEditor();
+        }
     }
 
     get isSourceLanguageLua(): boolean

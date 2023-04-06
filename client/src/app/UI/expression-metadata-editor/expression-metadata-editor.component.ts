@@ -38,6 +38,12 @@ type MajorGroupedRelease = {
     minorVersions: DataModuleVersionSourceWire[];
 }
 
+export type DiffVersions = {
+    id: string;
+    oldVersion: DataModuleVersionSourceWire;
+    newVersion: DataModuleVersionSourceWire;
+}
+
 @Component({
     selector: "expression-metadata-editor",
     templateUrl: "./expression-metadata-editor.component.html",
@@ -60,6 +66,7 @@ export class ExpressionMetadataEditorComponent implements OnInit
     @Output() changeTags: EventEmitter<string[]> = new EventEmitter<string[]>();
 
     @Output() updateMetadata: EventEmitter<void> = new EventEmitter<void>();
+    @Output() onShowDiff: EventEmitter<DiffVersions> = new EventEmitter<DiffVersions>();
 
     private _fetched: boolean = false;
     private _releaseNotes: MajorGroupedRelease[] = [];
@@ -85,6 +92,15 @@ export class ExpressionMetadataEditorComponent implements OnInit
     onClose(): void
     {
         this.updateMetadata.emit();
+    }
+
+    showDiffClicked(): void
+    {
+        this.onShowDiff.emit({
+            id: this.expression.id,
+            oldVersion: this.currentVersion,
+            newVersion: this.latestRelease
+        });
     }
 
     get name(): string

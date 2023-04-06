@@ -165,6 +165,7 @@ export class MonacoEditorService
                 { token: "comment", foreground: "#549e7a" },
                 { token: "number", foreground: "#FF5370" },
                 { token: "constant", foreground: "#91bfdb" },
+                { token: "operator", foreground: "#89ddff" },
             ],
             colors: {
                 "editor.foreground": "#eeffff",

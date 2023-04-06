@@ -57,9 +57,10 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
-import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
+import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
 import EditorConfig from "./editor-config";
+import { DiffVersions } from "src/app/UI/expression-metadata-editor/expression-metadata-editor.component";
 
 @Component({
     selector: "code-editor",
@@ -113,6 +114,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     
     public topEditor: EditorConfig = new EditorConfig();
     public bottomEditor: EditorConfig = new EditorConfig();
+
+    public diffText: string = "";
 
     public isTopEditorActive = false;
     public lastRunEditor: "top" | "bottom" = null;
@@ -374,6 +377,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this._expressionID = this._route.snapshot.params["expression_id"];
         let version = this._route.snapshot.queryParams["version"];
         this.resetSidePanelConfigs();
+
+        this.diffText = "";
 
         this.topEditor = new EditorConfig();
         this.topEditor.userID = this._authService.getUserID();
@@ -699,10 +704,12 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     }
 
     onModuleVersionChange(version: string, position: string = "top", id: string = "", showSplit: boolean = false): void
-    {   
+    {
         let editor = position === "top" ? this.topEditor : this.bottomEditor;
         id = id && id.length > 0 ? id : editor.expression.id;
-
+        
+        this.diffText = "";
+        
         this._moduleService.getModule(id, version).subscribe((module) =>
         {
             if(editor.expression)
@@ -768,6 +775,14 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             console.error(`Failed to fetch module: ${id} v${version}`, error);
         }
         );
+    }
+
+    onShowDiff({ id, newVersion }: DiffVersions): void
+    {
+        this._moduleService.getModule(id, newVersion.version).subscribe((newModule) =>
+        {
+            this.diffText = newModule.version.sourceCode;
+        });
     }
 
     onAddExpression(): void
