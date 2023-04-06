@@ -461,15 +461,15 @@ end
 -- Returns a map whose values are 1 if they are within the range compare +/- threshold or 0 otherwise
 -- m: Map to read
 -- compare: Scalar base number
--- threshold: Scalar value to define the range, being from compare-threshold to compare+threshold
-function Map.threshold(m, compare, threshold)
+-- range: Scalar value to define the range, being from compare-threshold to compare+threshold
+function Map.threshold(m, compare, range)
     assert(type(m) == "table", makeAssertReport(m, "table"))
     assert(type(compare) == "number", makeAssertReport(compare, "number"))
-    assert(type(threshold) == "number", makeAssertReport(threshold, "number"))
+    assert(type(range) == "number", makeAssertReport(range, "number"))
     local r = {}
     for k, v in ipairs(m) do
         local save = 0
-        if v[2] ~= nil and math.abs(v[2]-compare) < threshold then -- Note, handling "undefined" values
+        if v[2] ~= nil and math.abs(v[2]-compare) < range then -- Note, handling "undefined" values
             save = 1
         end
         r[k] = {v[1], save}
