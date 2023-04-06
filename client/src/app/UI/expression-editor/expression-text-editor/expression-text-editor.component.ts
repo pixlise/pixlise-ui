@@ -131,8 +131,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     private _editor: any/*IStandaloneCodeEditor*/ = null;
 
     constructor(
-        private _datasetService: DataSetService,
-        private _widgetDataService: WidgetRegionDataService,
         private _authService: AuthenticationService,
         private elementRef: ElementRef,
         private _monacoService: MonacoEditorService,
@@ -215,7 +213,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         let options = {
             model: null,
             automaticLayout: true,
-            theme: "vs-dark", // I think this takes away some of the colouring unfortunately
+            theme: "vs-dark",
             scrollBeyondLastLine: false,
             //roundedSelection: false,
             readOnly: !this.allowEdit,

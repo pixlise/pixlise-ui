@@ -158,10 +158,10 @@ export class PIXLANGHelp extends SourceHelp
         const OriginID = "";
 
         // --- Map operations
-        help.addHelp(new FunctionHelp("threshold", "", "Returns a map with where the value of each PMC in the source map is checked to be within compare +/- threshold, if so, a 1 is returned, but if it's outside the range, 0 is returned", OriginID, [
+        help.addHelp(new FunctionHelp("threshold", "", "Returns a map with where the value of each PMC in the source map is checked to be within compare +/- threshold range, if so, a 1 is returned, but if it's outside the range, 0 is returned", OriginID, [
             new FunctionParamHelp("map", "The map to threshold"),
             new FunctionParamHelp("compare", "The comparison value"),
-            new FunctionParamHelp("threshold", "The range of comparison (used as +/- around the compare value)")
+            new FunctionParamHelp("range", "The range of comparison (used as +/- around the compare value)")
         ]));
         
         help.addHelp(new FunctionHelp("normalise", "", "Normalises a map by finding the min and max value, then computing each PMCs value as a percentage between that min and max, so all output values range between 0.0 and 1.0", OriginID, [

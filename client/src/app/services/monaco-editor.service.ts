@@ -67,7 +67,7 @@ export class MonacoEditorService
     load()
     {
         // load the assets
-        const baseUrl = "./assets" + "/monaco-editor/min/vs";
+        const baseUrl = "./assets/monaco-editor/min/vs";
 
         if(typeof (<any>window).monaco === "object")
         {

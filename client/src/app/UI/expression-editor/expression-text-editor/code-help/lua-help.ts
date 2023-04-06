@@ -33,9 +33,9 @@ import { SourceHelp, FunctionHelp, FunctionParamHelp } from "./help";
 
 export class LUAHelp extends SourceHelp
 {
-    private _luaKeywords = ["and", "break", "do", "else", "elseif", "end", "false", "for",
+/*    private _luaKeywords = ["and", "break", "do", "else", "elseif", "end", "false", "for",
                             "function", "if", "in", "local", "nil", "not", "or", "repeat",
-                            "return", "then", "true", "until", "while", "goto"];
+                            "return", "then", "true", "until", "while", "goto"];*/
 
     constructor()
     {
