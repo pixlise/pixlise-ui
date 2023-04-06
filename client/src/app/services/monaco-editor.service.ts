@@ -34,7 +34,7 @@ import { Subject, ReplaySubject } from "rxjs";
 
 import { PIXLANGHelp } from "src/app/UI/expression-editor/expression-text-editor/code-help/pixlang-help";
 import { LUAHelp } from "src/app/UI/expression-editor/expression-text-editor/code-help/lua-help";
-import { SourceHelp, NameAndParamResult } from "src/app/UI/expression-editor/expression-text-editor/code-help/help";
+import { SourceHelp, NameAndParamResult, HelpSignature } from "src/app/UI/expression-editor/expression-text-editor/code-help/help";
 import { SourceContextParser } from "src/app/UI/expression-editor/expression-text-editor/code-help/help";
 import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 
@@ -310,7 +310,7 @@ export class MonacoEditorService
         return this.showGlobalCompletion(helpSource, range);
     }
 
-    private showFunctionParamCompletion(itemsNearCursor: NameAndParamResult, sig, range)
+    private showFunctionParamCompletion(itemsNearCursor: NameAndParamResult, sig: HelpSignature, range)
     {
         let monaco = this.monaco;
         let result/*: CompletionItem[]*/ = [];
@@ -452,18 +452,33 @@ export class MonacoEditorService
                 return null;
             }
 
-            let showLabel = sig.prefix+" <<"+sig.activeParam+">> "+sig.suffix;
+            let sigParams = [];
+            let funcDocPrefix = "";
+            for(let p of sig.params)
+            {
+                let sigParam = {label: p.name};
+                if(p.doc)
+                {
+                    sigParam["documentation"] = p.name+": "+p.doc;
+                    if(sigParams.length == sig.activeParamIdx)
+                    {
+                        // We have docs for the active one, so put a prefix in for func doc to provide some separation
+                        funcDocPrefix = "\n";
+                    }
+                }
+                sigParams.push(sigParam);
+            }
 
             let signatureHelp = {
                 signatures: [
                     {
-                        label: showLabel,
-                        documentation: sig.paramDoc,//sig.funcDoc,
-                        parameters: []//sigParams
+                        label: sig.signature,
+                        documentation: funcDocPrefix+(modName.length > 0 ? modName+"." : "")+sig.funcName+"():\n"+sig.funcDoc,//sig.paramDoc,//sig.funcDoc,
+                        parameters: sigParams
                     }
                 ],
-                activeParameter: 0,
-                activeSignature: 0
+                activeParameter: sig.activeParamIdx,
+                activeSignature: 0 // We're only showing one signature, because we look it up, and we don't support overloading...
             };
 
             // NOTE: we have to provide the dispose function. MS code also includes this, see https://github.com/microsoft/pxt/blob/master/webapp/src/monaco.tsx#L209

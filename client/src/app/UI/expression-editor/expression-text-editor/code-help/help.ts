@@ -328,28 +328,29 @@ export class HelpCompletionItem
 
     }
 }
-/*
+
 class HelpSignatureParam
 {
     constructor(
         public name: string,
         public doc: string,
-        public possibleValues: string[]
+        //public possibleValues: string[]
     )
     {
     }
 }
-*/
+
 export class HelpSignature
 {
     constructor(
-/*        public funcName: string,
+        public signature: string,
+        public funcName: string,
         public funcDoc: string,
-        public params: HelpSignatureParam[]*/
-        public prefix: string,
-        public activeParam: string,
-        public suffix: string,
-        public paramDoc: string,
+        public params: HelpSignatureParam[],
+        //public prefix: string,
+        //public activeParam: string,
+        //public suffix: string,
+        //public paramDoc: string,
         public paramPossibleValues: string[],
         public activeParamIdx: number
     )
@@ -438,46 +439,48 @@ export class SourceHelp
         if(help.params.length <= 0)
         {
             return new HelpSignature(
-                funcName+"(",
-                "",
-                ")",
-                "",
+                funcName+"()",
+                funcName,
+                help.doc,
+                [],
                 [],
                 0
             );
         }
 
         let paramIdx = paramsProvided.length;
+
+        let signature = funcName+"(";
+        let resultParams: HelpSignatureParam[] = [];
+        let first = true;
+        for(let p of help.params)
+        {
+            // Store param info
+            resultParams.push(new HelpSignatureParam(p.name, p.doc));
+
+            // And add to the signature
+            if(!first)
+            {
+                signature += ", ";
+            }
+
+            signature += p.name;
+            first = false;
+        }
+
+        signature += ")";
+
+        // NOTE: User may have typed too many , - in this case the active param index will be too high. Here's hoping monaco handles that OK!
+        //if(paramIdx >= help.params.length)
+
         let result = new HelpSignature(
-            funcName+"(",
-            help.params[paramIdx].name,
-            "",
-            help.params[paramIdx].doc,
+            signature,
+            funcName,
+            help.doc,
+            resultParams,
             [],
-            paramIdx-1
+            paramIdx
         );
-
-        // Fill in params we've passed over already
-        for(let c = 0; c < paramIdx; c++)
-        {
-            result.prefix += help.params[c].name;
-
-            if(c < help.params.length-1)
-            {
-                result.prefix += ", ";
-            }
-        }
-
-        // Add in parameters we haven't specified yet
-        for(let c = paramIdx+1; c < help.params.length; c++)
-        {
-            //if(result.suffix.length > 0 || paramIdx == 0)
-            {
-                result.suffix += ", ";
-            }
-            result.suffix += help.params[c].name;
-        }
-        result.suffix += ")";
 
         // Add possible values to docs if needed
         let possibilities = help.params[paramIdx].getPossibleValues(paramsProvided, quantificationLoaded, dataset);
