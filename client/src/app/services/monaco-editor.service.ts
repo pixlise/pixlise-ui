@@ -30,14 +30,16 @@
 // This was inspired by a post here: https://stackoverflow.com/questions/71072724/implement-monaco-editor-in-angular-13
 
 import { Injectable } from '@angular/core';
-import { Subject, ReplaySubject } from 'rxjs';
+import { Subject, ReplaySubject, combineLatest } from 'rxjs';
 
 import { PIXLANGHelp } from "src/app/UI/expression-editor/expression-text-editor/code-help/pixlang-help";
 import { LUAHelp } from "src/app/UI/expression-editor/expression-text-editor/code-help/lua-help";
+import { SourceHelp, NameAndParamResult } from "src/app/UI/expression-editor/expression-text-editor/code-help/help";
 import { SourceContextParser } from "src/app/UI/expression-editor/expression-text-editor/code-help/help";
 import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 
 import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { DataModuleService, DataModule } from "src/app/services/data-module.service";
 
 
 export const MONACO_LUA_LANGUAGE_NAME = "lua";
@@ -55,6 +57,7 @@ export class MonacoEditorService
 
     constructor(
         private _widgetRegionDataService: WidgetRegionDataService,
+        private _moduleService: DataModuleService,
     )
     {
     }
@@ -95,11 +98,11 @@ export class MonacoEditorService
         }
     }
 
-    buildHelpForSources(sourceCode: Map<string, string>): void
+    buildHelpForSource(originID: string, sourceCode: string): void
     {
         // We don't do this for PIXLANG, but for LUA source files we rebuild the help database
         // so the next code suggestion that comes up is relevant to what sources we are running
-        this._helpLUA.buildHelpForSources(sourceCode);
+        this._helpLUA.buildHelpForSource(originID, sourceCode);
     }
 
     private get monaco(): any
@@ -118,11 +121,25 @@ export class MonacoEditorService
         // The best monaco resources:
         // https://microsoft.github.io/monaco-editor/playground.html?source=v0.36.1
         // https://microsoft.github.io/monaco-editor/typedoc/index.html
-        
         this.installIntellisenseHelpers(monaco);
 
-        // Tell the world we're ready
-        this.loadingFinished.next();
+        // Get the built in modules and generate help for them right away
+        this._moduleService.getBuiltInModules(false).subscribe(
+            (modules: DataModule[])=>
+            {
+                for(let mod of modules)
+                {
+                    let ver = mod.versions.get("0.0.0");
+                    if(ver && ver.sourceCode.length > 0)
+                    {
+                        this._helpLUA.buildHelpForSource(mod.id, ver.sourceCode);
+                    }
+                }
+
+                // Tell the world we're ready
+                this.loadingFinished.next();
+            }
+        );
     }
 
     private createMonacoPIXLANGLanguage(monaco)
@@ -161,39 +178,31 @@ export class MonacoEditorService
 
     private installIntellisenseHelpers(monaco)
     {
-        // Setup PIXLANG help lookup
-        //registerCompletionItemProvider(languageSelector: LanguageSelector, provider: CompletionItemProvider): IDisposable
-        monaco.languages.registerCompletionItemProvider(EXPR_LANGUAGE_PIXLANG, {
-            triggerCharacters: ["\"", ",", "("], // Make completion show up for functions and their parameters, and strings
-            //provideCompletionItems: (model: ITextModel, position: Position, context: CompletionContext, token: CancellationToken): ProviderResult<CompletionList>
-            provideCompletionItems: (model, position, context, token)=>this.providePIXLANGCompletionItems(model, position, context, token),
-            //resolveCompletionItem: (item: CompletionItem, token: CancellationToken): ProviderResult<CompletionItem>
-            resolveCompletionItem: (item, token)=>this.resolvePIXLANGCompletionItem(item, token)
-        });
+        // Setup help lookup
+        let lang = [EXPR_LANGUAGE_PIXLANG, MONACO_LUA_LANGUAGE_NAME];
+        let helpSource = [this._helpPIXLANG, this._helpLUA];
 
-        //registerSignatureHelpProvider(languageSelector: LanguageSelector, provider: SignatureHelpProvider): IDisposable
-        monaco.languages.registerSignatureHelpProvider(EXPR_LANGUAGE_PIXLANG, {
-            signatureHelpTriggerCharacters: ["(", ","],
-            //provideSignatureHelp: (model: ITextModel, position: Position, token: CancellationToken, context: SignatureHelpContext): ProviderResult<SignatureHelpResult>
-            provideSignatureHelp: (model, position, token, context)=>this.providePIXLANGSignatureHelp(model, position, context)
-        });
+        for(let c = 0; c < lang.length; c++)
+        {
+            let language = lang[c];
+            let src = helpSource[c];
 
-        // Setup Lua help lookup
-        //registerCompletionItemProvider(languageSelector: LanguageSelector, provider: CompletionItemProvider): IDisposable
-        monaco.languages.registerCompletionItemProvider(MONACO_LUA_LANGUAGE_NAME, {
-            triggerCharacters: ["\"", ",", "("], // Make completion show up for functions and their parameters, and strings
-            //provideCompletionItems: (model: ITextModel, position: Position, context: CompletionContext, token: CancellationToken): ProviderResult<CompletionList>
-            provideCompletionItems: (model, position, context, token)=>this.provideLUACompletionItems(model, position, context, token),
-            //resolveCompletionItem: (item: CompletionItem, token: CancellationToken): ProviderResult<CompletionItem>
-            resolveCompletionItem: (item, token)=>this.resolveLUACompletionItem(item, token)
-        });
+            //registerCompletionItemProvider(languageSelector: LanguageSelector, provider: CompletionItemProvider): IDisposable
+            monaco.languages.registerCompletionItemProvider(language, {
+                triggerCharacters: ["\"", ",", "(", "."], // Make completion show up for functions and their parameters, and strings
+                //provideCompletionItems: (model: ITextModel, position: Position, context: CompletionContext, token: CancellationToken): ProviderResult<CompletionList>
+                provideCompletionItems: (model, position, context, token)=>this.provideCompletionItems(src, model, position, context, token),
+                //resolveCompletionItem: (item: CompletionItem, token: CancellationToken): ProviderResult<CompletionItem>
+                //resolveCompletionItem: (item, token)=>this.resolveCompletionItem(src, item, token)
+            });
 
-        //registerSignatureHelpProvider(languageSelector: LanguageSelector, provider: SignatureHelpProvider): IDisposable
-        monaco.languages.registerSignatureHelpProvider(MONACO_LUA_LANGUAGE_NAME, {
-            signatureHelpTriggerCharacters: ["(", ","],
-            //provideSignatureHelp: (model: ITextModel, position: Position, token: CancellationToken, context: SignatureHelpContext): ProviderResult<SignatureHelpResult>
-            provideSignatureHelp: (model, position, token, context)=>this.provideLUASignatureHelp(model, position, context)
-        });
+            //registerSignatureHelpProvider(languageSelector: LanguageSelector, provider: SignatureHelpProvider): IDisposable
+            monaco.languages.registerSignatureHelpProvider(language, {
+                signatureHelpTriggerCharacters: ["(", ","],
+                //provideSignatureHelp: (model: ITextModel, position: Position, token: CancellationToken, context: SignatureHelpContext): ProviderResult<SignatureHelpResult>
+                provideSignatureHelp: (model, position, token, context)=>this.provideSignatureHelp(src, model, position, context)
+            });
+        }
 
         // Other providers we may want to implement
         // registerImplementationProvider(languageSelector: LanguageSelector, provider: ImplementationProvider): IDisposable
@@ -209,14 +218,10 @@ export class MonacoEditorService
         // codelens - installs a line above a function for eg that can be run
         // hoverprovider - maybe for debugging, see a variable value?
         // inlay hints - not even sure what this is...
-
     }
 
-    private providePIXLANGCompletionItems(model/*: ITextModel*/, position/*: Position*/, context/*: CompletionContext*/, token/*: CancellationToken*/)//: ProviderResult<CompletionList>
+    private provideCompletionItems(helpSource: SourceHelp, model/*: ITextModel*/, position/*: Position*/, context/*: CompletionContext*/, token/*: CancellationToken*/)//: ProviderResult<CompletionList>
     {
-        let monaco = this.monaco;
-        let result/*: CompletionItem[]*/ = [];
-
         // Find a range we'll insert in
         let word = model.getWordUntilPosition(position);
         let range = {
@@ -237,42 +242,107 @@ export class MonacoEditorService
         });
 
         // Find the function name going backwards
-        let p = new SourceContextParser("//");
+        let p = new SourceContextParser(helpSource.commentStartToken);
         let itemsNearCursor = p.rfindFunctionNameAndParams(searchTextLines);
 
         if(!itemsNearCursor.empty)
         {
-            let sig = this._helpPIXLANG.getSignatureHelp(itemsNearCursor.funcName, itemsNearCursor.params, this._widgetRegionDataService.quantificationLoaded, this._widgetRegionDataService.dataset);
+            // Try split it into module name and function if possible
+            let modName = "";
+            let funcName = itemsNearCursor.funcName;
+
+            let parts = itemsNearCursor.funcName.split(".");
+            if(parts.length == 2)
+            {
+                modName = parts[0];
+                funcName = parts[1];
+            }
+
+            let sig = helpSource.getSignatureHelp(modName, funcName, itemsNearCursor.params, this._widgetRegionDataService.quantificationLoaded, this._widgetRegionDataService.dataset);
             if(sig)
             {
-                for(let possibleValue of sig.paramPossibleValues)
-                {
-                    let quotedValue = "\""+possibleValue+"\"";
-                    let possibleValueToInsert = possibleValue+"\"";
-                    if(itemsNearCursor.partialParam != "\"")
-                    {
-                        possibleValueToInsert = "\""+possibleValueToInsert;
-                    }
-
-                    result.push({
-                        label: quotedValue,
-                        kind: monaco.languages.CompletionItemKind.EnumMember,
-                        insertText: possibleValueToInsert,
-                        insertTextRules:
-                            monaco.languages.CompletionItemInsertTextRule
-                                .InsertAsSnippet,
-                        range: range,
-                        //commitCharacters: ["("],
-                    });
-                }
-
-                // We're responding with these values
-                return {suggestions: result};
+                return this.showFunctionParamCompletion(itemsNearCursor, sig, range);
             }
         }
 
-        let items = this._helpPIXLANG.getCompletionItems();
-        for(let item of items)
+        // If we just typed a module name, we have to list the functions within it
+        let moduleName = p.rfindModuleName(searchTextLines);
+        if(moduleName.length > 0)
+        {
+            return this.showModuleFunctionsCompletion(moduleName, helpSource, range);
+        }
+
+        return this.showGlobalCompletion(helpSource, range);
+    }
+
+    private showFunctionParamCompletion(itemsNearCursor: NameAndParamResult, sig, range)
+    {
+        let monaco = this.monaco;
+        let result/*: CompletionItem[]*/ = [];
+
+        for(let possibleValue of sig.paramPossibleValues)
+        {
+            let quotedValue = "\""+possibleValue+"\"";
+            let possibleValueToInsert = possibleValue+"\"";
+            if(itemsNearCursor.partialParam != "\"")
+            {
+                possibleValueToInsert = "\""+possibleValueToInsert;
+            }
+
+            result.push({
+                label: quotedValue,
+                kind: monaco.languages.CompletionItemKind.EnumMember,
+                insertText: possibleValueToInsert,
+                insertTextRules:
+                    monaco.languages.CompletionItemInsertTextRule
+                        .InsertAsSnippet,
+                range: range,
+                //commitCharacters: ["("],
+            });
+        }
+
+        return {suggestions: result};
+    }
+
+    private showModuleFunctionsCompletion(moduleName: string, helpSource: SourceHelp, range)
+    {
+        let monaco = this.monaco;
+        let result/*: CompletionItem[]*/ = [];
+
+        let mods = helpSource.getCompletionModules(moduleName);
+        if(mods.length == 1)
+        {
+            // List items for this module!
+            let funcs = helpSource.getCompletionFunctions(mods[0].name);
+            for(let modItem of funcs)
+            {
+                result.push({
+                    label: modItem.name,
+                    kind: monaco.languages.CompletionItemKind.Function,
+                    insertText: modItem.name,
+                    detail: modItem.doc,
+                    //documentation: item.doc,
+                    insertTextRules:
+                        monaco.languages.CompletionItemInsertTextRule
+                            .InsertAsSnippet,
+                    range: range,
+                    //commitCharacters: ["("],
+                });
+            }
+        }
+
+        return {suggestions: result};
+    }
+
+    private showGlobalCompletion(helpSource: SourceHelp, range)
+    {
+        let monaco = this.monaco;
+        let result/*: CompletionItem[]*/ = [];
+
+        // Otherwise, stick to global functions and modules
+        // If we're still here, show global functions and modules
+        let funcs = helpSource.getCompletionFunctions("");
+        for(let item of funcs)
         {
             result.push({
                 label: item.name,
@@ -288,14 +358,33 @@ export class MonacoEditorService
             });
         }
 
+        let mods = helpSource.getCompletionModules("");
+        for(let item of mods)
+        {
+            result.push({
+                label: item.name,
+                kind: monaco.languages.CompletionItemKind.Module,   // vs .Class
+                                                                    // See: https://microsoft.github.io/monaco-editor/typedoc/enums/languages.CompletionItemKind.html
+                insertText: item.name,
+                detail: item.doc,
+                //documentation: item.doc,
+                insertTextRules:
+                    monaco.languages.CompletionItemInsertTextRule
+                        .InsertAsSnippet,
+                range: range,
+                //commitCharacters: ["("],
+            });
+        }
+
         return {suggestions: result};
     }
 
-    private resolvePIXLANGCompletionItem(item/*: CompletionItem*/, token/*: CancellationToken*/)//: ProviderResult<CompletionItem>
+/*
+    private resolveCompletionItem(helpSource: SourceHelp, item: CompletionItem, token: CancellationToken): ProviderResult<CompletionItem>
     {
     }
-
-    private providePIXLANGSignatureHelp(model/*: ITextModel*/, position/*: Position*/, context/*: SignatureHelpContext*/)//: ProviderResult<SignatureHelpResult>
+*/
+    private provideSignatureHelp(helpSource: SourceHelp, model/*: ITextModel*/, position/*: Position*/, context/*: SignatureHelpContext*/)//: ProviderResult<SignatureHelpResult>
     {
         // Find the function we're being asked to provide help for. Search backwards from the current position
         let searchTextLines = model.getValueInRange(/*new IRange*/{
@@ -306,13 +395,23 @@ export class MonacoEditorService
         });
 
         // Find the function name going backwards
-        let p = new SourceContextParser("//");
+        let p = new SourceContextParser(helpSource.commentStartToken);
         let items = p.rfindFunctionNameAndParams(searchTextLines);
 
         if(!items.empty)
         {
             // Provide signature help if we can find the function
-            let sig = this._helpPIXLANG.getSignatureHelp(items.funcName, items.params, this._widgetRegionDataService.quantificationLoaded, this._widgetRegionDataService.dataset);
+            let modName = "";
+            let funcName = items.funcName;
+
+            let parts = items.funcName.split(".");
+            if(parts.length == 2)
+            {
+                modName = parts[0];
+                funcName = parts[1];
+            }
+
+            let sig = helpSource.getSignatureHelp(modName, funcName, items.params, this._widgetRegionDataService.quantificationLoaded, this._widgetRegionDataService.dataset);
             if(!sig)
             {
                 return null;
@@ -337,26 +436,5 @@ export class MonacoEditorService
         }
 
         return null;
-    }
-
-    private provideLUACompletionItems(model/*: ITextModel*/, position/*: Position*/, context/*: CompletionContext*/, token/*: CancellationToken*/)//: ProviderResult<CompletionList>
-    {
-        let word = model.getWordUntilPosition(position);
-        let range = {
-            startLineNumber: position.lineNumber,
-            endLineNumber: position.lineNumber,
-            startColumn: word.startColumn,
-            endColumn: word.endColumn,
-        };
-
-        console.log("LUA completion: "+word.word);
-    }
-
-    private resolveLUACompletionItem(item/*: CompletionItem*/, token/*: CancellationToken*/)//: ProviderResult<CompletionItem>
-    {
-    }
-
-    private provideLUASignatureHelp(model/*: ITextModel*/, position/*: Position*/, context/*: SignatureHelpContext*/)//: ProviderResult<SignatureHelpResult>
-    {
     }
 }

@@ -91,6 +91,39 @@ export class SourceContextParser
         return "";
     }
 
+    // Get module name typed, expects "." with a name before it
+    rfindModuleName(source: string): string
+    {
+        let modName = "";
+        let validModuleChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
+
+        if(source.length > 0 && source[source.length-1] == ".")
+        {
+            // Likely won't have a longer module name than 20 chars, API limits it
+            for(let c = 0; c < 20; c++)
+            {
+                let idx = source.length-2-c;
+                if(idx >= 0)
+                {
+                    let ch = source[idx];
+                    // Check if it's still module name goodness
+                    if(validModuleChars.indexOf(ch) == -1)
+                    {
+                        modName = source.substring(idx+1, source.length-1);
+                        break;
+                    }
+                }
+                else
+                {
+                    // Too long, not a module name, stop here
+                    break;
+                }
+            }
+        }
+
+        return modName;
+    }
+
     // Reverse-find from the end of the text, what function we're in, and what parameters have already been provided
     rfindFunctionNameAndParams(source: string): NameAndParamResult
     {
@@ -275,6 +308,7 @@ export class FunctionHelp
 {
     constructor(
         public name: string,
+        public moduleName: string,
         public doc: string,
         public originID: string, // The module ID it's defined in, or blank in case of PIXLISE functions, element() etc
         public params: FunctionParamHelp[] = [] // For parameter-less functions
@@ -328,13 +362,14 @@ export class SourceHelp
 {
     private _allHelp = new Map<string, FunctionHelp>();
 
-    constructor()
+    constructor(public commentStartToken: string)
     {
     }
 
     addHelp(h: FunctionHelp): void
     {
-        this._allHelp.set(h.name, h);
+        let fullName = h.moduleName.length > 0 ? h.moduleName+"."+h.name : h.name;
+        this._allHelp.set(fullName, h);
     }
 
     clearHelp(originID: string): void
@@ -354,21 +389,47 @@ export class SourceHelp
         return Array.from(this._allHelp.keys());
     }
 
-    getCompletionItems(): HelpCompletionItem[]
+    getCompletionFunctions(moduleName: string): HelpCompletionItem[]
     {
         let result: HelpCompletionItem[] = [];
 
         for(let item of this._allHelp.values())
         {
-            result.push(new HelpCompletionItem(item.name, item.doc/*, sig*/));
+            if(item.moduleName == moduleName)
+            {
+                result.push(new HelpCompletionItem(item.name, item.doc/*, sig*/));
+            }
         }
 
         return result;
     }
 
-    getSignatureHelp(funcName: string, paramsProvided: string[], quantificationLoaded: QuantificationLayer, dataset: DataSet): HelpSignature
+    // Blank input returns all modules
+    getCompletionModules(moduleName: string): HelpCompletionItem[]
     {
-        let help = this._allHelp.get(funcName);
+        let modules = new Set<string>();
+
+        let result: HelpCompletionItem[] = [];
+
+        for(let item of this._allHelp.values())
+        {
+            if(moduleName.length <= 0 && item.moduleName.length > 0 || moduleName.length > 0 && item.moduleName == moduleName)
+            {
+                modules.add(item.moduleName);
+            }
+        }
+
+        for(let mod of modules)
+        {
+            result.push(new HelpCompletionItem(mod, ""));
+        }
+        return result;
+    }
+
+    getSignatureHelp(moduleName: string, funcName: string, paramsProvided: string[], quantificationLoaded: QuantificationLayer, dataset: DataSet): HelpSignature
+    {
+        let fullName = moduleName.length > 0 ? moduleName+"."+funcName : funcName;
+        let help = this._allHelp.get(fullName);
         if(!help)
         {
             return null;

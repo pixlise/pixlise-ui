@@ -118,3 +118,13 @@ describe("SourceContextParser.wordAtEnd", () =>
         expect(p.wordAtEnd("something\"")).toEqual("");
     });
 });
+
+describe("SourceContextParser.rfindModuleName", () => 
+{
+    it("handles cases where we're not at a function", () => 
+    {
+        let p = new SourceContextParser("//");
+        expect(p.rfindModuleName("local v = Map.")).toEqual("Map");
+        expect(p.rfindModuleName("local v = Map.add(Fe, Const.")).toEqual("Const");
+    });
+});
