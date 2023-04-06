@@ -29,13 +29,11 @@
 
 import { Component, ElementRef, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Router } from "@angular/router";
 import { Subject, Subscription } from "rxjs";
 import { PMCDataValues } from "src/app/expression-language/data-values";
 import { PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionService } from "src/app/services/data-expression.service";
 import { DataExpressionId } from "src/app/models/Expression";
-import { DataSetService } from "src/app/services/data-set.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { chordState, ViewStateService } from "src/app/services/view-state.service";
 import { DataSourceParams, WidgetDataUpdateReason, WidgetRegionDataService, RegionDataResults } from "src/app/services/widget-region-data.service";
@@ -51,6 +49,7 @@ import { PanZoom } from "../atoms/interactive-canvas/pan-zoom";
 import { ChordDiagramDrawer } from "./drawer";
 import { ChordDiagramInteraction } from "./interaction";
 import { ChordDrawMode, ChordNodeData, ChordViewModel } from "./model";
+import { DataModuleService } from "src/app/services/data-module.service";
 
 
 @Component({
@@ -93,6 +92,7 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
     constructor(
         private _selectionService: SelectionService,
         private _exprService: DataExpressionService,
+        private _moduleService: DataModuleService,
         private _viewStateService: ViewStateService,
         private _widgetDataService: WidgetRegionDataService,
         public dialog: MatDialog,
@@ -509,6 +509,7 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
         let elemColumns: Map<string, number[]> = new Map<string, number[]>();
         let elemColumnTotals: Map<string, number> = new Map<string, number>();
         let elemColumnError: Map<string, number> = new Map<string, number>();
+        let expressionsOutOfDate: Map<string, boolean> = new Map<string, boolean>();
         let allTotals = 0;
         let rowCount = 0;
 
@@ -516,6 +517,8 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
         {
             const colData = queryData.queryResults[queryIdx];
             const exprId = colData.query.exprId;
+
+            expressionsOutOfDate.set(exprId, colData?.expression?.checkModuleReferences(this._moduleService) ?? false);
 
             // TODO: David says we can probably average A and B values here
             if(queryData.queryResults[queryIdx].errorType)
@@ -605,7 +608,7 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
             }
 
             //console.log(elem+' error='+error+', %='+concentration);
-            let item = new ChordNodeData(names.shortName, names.name, exprId, concentration, dispConcentration, error, [], errorMsg);
+            let item = new ChordNodeData(names.shortName, names.name, exprId, concentration, dispConcentration, error, [], errorMsg, expressionsOutOfDate.get(exprId));
 
             // Add chords
             // NOTE: We add a chord value for every node. This means the drawing code has a value for all and we don't

@@ -152,6 +152,7 @@ export class BinaryDiagramDrawer implements CanvasDrawer
         screenContext.font = BinaryPlotModel.FONT_SIZE+"px Roboto";
         screenContext.fillStyle = this.lightMode ? Colours.GRAY_80.asString() : Colours.GRAY_30.asString();
 
+        
         // Y axis
         this.drawYAxisLabel(
             screenContext,
@@ -160,7 +161,7 @@ export class BinaryDiagramDrawer implements CanvasDrawer
             rawData.yAxisData.errorMsgShort,
             rawData.yAxisData.errorMsgLong,
             this._mdl.drawData.hoverLabel=="Y",
-            this.lightMode ? Colours.GRAY_80.asString() : Colours.GRAY_30.asString(),
+            rawData.yAxisData.modulesOutOfDate ? Colours.ORANGE.asString() : this.lightMode ? Colours.GRAY_80.asString() : Colours.GRAY_30.asString(),
         );
 
         // X axis
@@ -175,7 +176,7 @@ export class BinaryDiagramDrawer implements CanvasDrawer
             rawData.xAxisData.errorMsgShort,
             //rawData.xAxis.errorMsgLong,
             this._mdl.drawData.hoverLabel=="X",
-            this.lightMode ? Colours.GRAY_80.asString() : Colours.GRAY_30.asString(),
+            rawData.xAxisData.modulesOutOfDate ? Colours.ORANGE.asString() : this.lightMode ? Colours.GRAY_80.asString() : Colours.GRAY_30.asString(),
             viewport.width,
             this.showSwapButton
         );

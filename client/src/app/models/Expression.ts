@@ -60,24 +60,20 @@ export class ModuleReference
 
         let latest = moduleService.getLatestCachedModuleVersion(this.moduleID, true);
 
+
+        this.latestVersion = latest?.version;
+
         let isAheadOfRelease = false;
-        let isLatestVersion = false;
-
-        if(latest)
+        let isLatestVersion = this.latestVersion === this.version;
+        if(latest && !isLatestVersion)
         {
-            this.latestVersion = latest.version;
+            let [latestMajor, latestMinor] = latest.version.split(".").map((part) => parseInt(part));
+            let [thisMajor, thisMinor] = this.version.split(".").map((part) => parseInt(part));
 
-            isLatestVersion = this.latestVersion === this.version;
-            if(!isLatestVersion)
-            {
-                let [latestMajor, latestMinor] = this.latestVersion.split(".").map((part) => parseInt(part));
-                let [thisMajor, thisMinor] = this.version.split(".").map((part) => parseInt(part));
+            this.isLatestMajorRelease = latestMajor === thisMajor;
 
-                this.isLatestMajorRelease = latestMajor === thisMajor;
-
-                // If the first 2 parts are equal, we know it's ahead of the release because it doesn't end in ".0"
-                isAheadOfRelease = this.isLatestMajorRelease && latestMinor === thisMinor && !this.version.endsWith(".0");
-            }
+            // If the first 2 parts are equal, we know it's ahead of the release because it doesn't end in ".0"
+            isAheadOfRelease = this.isLatestMajorRelease && latestMinor === thisMinor && !this.version.endsWith(".0");
         }
 
         // If we can't get the latest version, assume it's the latest, else check if it's at least as new as the latest
@@ -178,6 +174,12 @@ export class DataExpression
             recentExecStats,
             this.isModuleListUpToDate
         );
+    }
+
+    checkModuleReferences(moduleService: DataModuleService): boolean
+    {
+        // Check if any of the module references are outdated
+        return this.moduleReferences.some((module)=> !module.checkIsLatest(moduleService));
     }
 
     get isCompatibleWithQuantification(): boolean

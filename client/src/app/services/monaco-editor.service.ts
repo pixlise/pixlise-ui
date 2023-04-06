@@ -29,8 +29,8 @@
 
 // This was inspired by a post here: https://stackoverflow.com/questions/71072724/implement-monaco-editor-in-angular-13
 
-import { Injectable } from '@angular/core';
-import { Subject, ReplaySubject, combineLatest } from 'rxjs';
+import { Injectable } from "@angular/core";
+import { Subject, ReplaySubject } from "rxjs";
 
 import { PIXLANGHelp } from "src/app/UI/expression-editor/expression-text-editor/code-help/pixlang-help";
 import { LUAHelp } from "src/app/UI/expression-editor/expression-text-editor/code-help/lua-help";
@@ -41,12 +41,14 @@ import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-lan
 import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { DataModuleService, DataModule } from "src/app/services/data-module.service";
 
+import { languages } from "monaco-editor";
+import { language, conf } from "monaco-editor/esm/vs/basic-languages/lua/lua.js";
 
 export const MONACO_LUA_LANGUAGE_NAME = "lua";
 
 
 @Injectable({
-    providedIn: 'root',
+    providedIn: "root",
 })
 export class MonacoEditorService
 {
@@ -65,9 +67,9 @@ export class MonacoEditorService
     load()
     {
         // load the assets
-        const baseUrl = './assets' + '/monaco-editor/min/vs';
+        const baseUrl = "./assets" + "/monaco-editor/min/vs";
 
-        if (typeof (<any>window).monaco === 'object')
+        if(typeof (<any>window).monaco === "object")
         {
             this.finishLoading();
             return;
@@ -76,8 +78,8 @@ export class MonacoEditorService
         const onGotAmdLoader: any = ()=>
         {
             // load Monaco
-            (<any>window).require.config({ paths: { vs: `${baseUrl}` } });
-            (<any>window).require([`vs/editor/editor.main`], ()=>
+            (<any>window).require.config({ paths: { vs: baseUrl } });
+            (<any>window).require(["vs/editor/editor.main"], ()=>
             {
                 this.finishLoading();
             });
@@ -86,10 +88,10 @@ export class MonacoEditorService
         // load AMD loader, if necessary
         if(!(<any>window).require)
         {
-            const loaderScript: HTMLScriptElement = document.createElement('script');
-            loaderScript.type = 'text/javascript';
+            const loaderScript: HTMLScriptElement = document.createElement("script");
+            loaderScript.type = "text/javascript";
             loaderScript.src = `${baseUrl}/loader.js`;
-            loaderScript.addEventListener('load', onGotAmdLoader);
+            loaderScript.addEventListener("load", onGotAmdLoader);
             document.body.appendChild(loaderScript);
         }
         else
@@ -117,6 +119,7 @@ export class MonacoEditorService
 
         // Setup syntax highlighting for PIXLANG
         this.createMonacoPIXLANGLanguage(monaco);
+        this.styleMonacoLUALanguage(monaco);
 
         // The best monaco resources:
         // https://microsoft.github.io/monaco-editor/playground.html?source=v0.36.1
@@ -142,6 +145,35 @@ export class MonacoEditorService
         );
     }
 
+    private styleMonacoLUALanguage(monaco)
+    {
+        languages.register({
+            id: "lua",
+            extensions: [".lua"],
+            aliases: ["Lua", "lua"],
+        });
+        languages.setMonarchTokensProvider("lua", language);
+        languages.setLanguageConfiguration("lua", conf);
+
+        monaco.editor.defineTheme("vs-dark-lua", {
+            base: "vs-dark",
+            inherit: true,
+            rules: [
+                { token: "keyword", foreground: "#c792ea", fontStyle: "bold" },
+                { token: "variable", foreground: "#ffff8d" },
+                { token: "string", foreground: "#fc8d59" },
+                { token: "comment", foreground: "#549e7a" },
+                { token: "number", foreground: "#FF5370" },
+                { token: "constant", foreground: "#91bfdb" },
+            ],
+            colors: {
+                "editor.foreground": "#eeffff",
+                "editor.background": "#232829",
+                "editorGutter.background": "#283237",
+            },
+        });
+    }
+
     private createMonacoPIXLANGLanguage(monaco)
     {
         // Register a new language
@@ -165,13 +197,16 @@ export class MonacoEditorService
             base: "vs-dark",
             inherit: false,
             rules: [
-                { token: "keyword", foreground: "#91bfdb", fontStyle: "bold" },
+                { token: "keyword", foreground: "#c792ea", fontStyle: "bold" },
                 { token: "variable", foreground: "#ffff8d" },
                 { token: "string", foreground: "#fc8d59" },
                 { token: "comment", foreground: "#549e7a" },
+                { token: "number", foreground: "#FF5370" },
             ],
             colors: {
                 "editor.foreground": "#eeffff",
+                "editor.background": "#232829",
+                "editorGutter.background": "#283237",
             },
         });
     }

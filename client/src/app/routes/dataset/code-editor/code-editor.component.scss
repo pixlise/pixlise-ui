@@ -76,7 +76,8 @@
     }
 
     &.top-open {
-        expression-text-editor.top-expression {/*
+        expression-text-editor.top-expression {
+            /*
             ::ng-deep .cm-s-pixlise.CodeMirror {
                 height: calc(100vh - 48px - 100px - 26px - 14px);
             }*/
@@ -92,7 +93,11 @@
     }
 
     &.split-screen-mode {
-        expression-text-editor {/*
+        expression-text-editor {
+            &.top-expression {
+                height: calc(50vh - 55px);
+            }
+            /*
             ::ng-deep .cm-s-pixlise.CodeMirror {
                 height: calc(50vh - 48px - 18px)
             }*/
@@ -401,5 +406,14 @@ expression-text-editor.active
 .runtime-container {
     .runtime-seconds {
         color: rgb(var(--clr-gray-30));
+    }
+}
+
+status-indicator.linked {
+    cursor: pointer;
+
+    &:hover {
+        background-color: rgba(128,128,128,0.2);
+        border-radius: 50%;
     }
 }

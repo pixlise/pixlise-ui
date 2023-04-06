@@ -37,7 +37,8 @@ export class TernaryCorner
         public label: string,
         public errorMsgShort: string,
         public errorMsgLong: string,
-        public valueRange: MinMax
+        public valueRange: MinMax,
+        public modulesOutOfDate: boolean = false,
     )
     {
     }

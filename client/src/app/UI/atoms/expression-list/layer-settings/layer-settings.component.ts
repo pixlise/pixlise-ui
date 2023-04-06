@@ -715,7 +715,7 @@ export class LayerSettingsComponent implements OnInit
             showSplitScreenButton: this.showSplitScreenButton && !this.isCurrentlyOpen && (this.isModule || this.isSplitScreen),
             showSettingsButton: this.showSettingsButton && !this.isCurrentlyOpen,
             showColours: this.showColours,
-            showVisible: this.showVisible,
+            showVisible: this.showVisible && !this.layerInfo?.layer?.id?.startsWith("builtin-"),
         };
         return Object.entries(buttons).filter(([, visible]) => visible).map(([layerButtonName]) => layerButtonName);
     }

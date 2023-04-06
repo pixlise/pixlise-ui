@@ -44,6 +44,9 @@ export interface IColourScaleDataSource
     displayScalingAllowed: boolean;
     name: string;
 
+    expressionID?: string;
+    source?: any;
+
     getHistogram(channel: number): Histogram;
     setHistogramSteps(steps: number): void;
     

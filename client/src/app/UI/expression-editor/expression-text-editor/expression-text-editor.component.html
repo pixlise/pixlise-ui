@@ -28,21 +28,25 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
-<div class="code-container" fxFlex (click)="onSetActive()">
+<div class="code-container {{isSplitScreen ? 'split' : ''}} {{showInstalledModules ? 'installed-modules' : ''}} {{isHeaderOpen ? 'header-open' : ''}}" fxFlex (click)="onSetActive()">
   <div *ngIf="expression && showInstalledModules" class="installed-modules-text">
       <div *ngIf="isHeaderOpen" class="imports">
           <div 
               *ngFor="let module of installedModules; index as i"
               class="module-import-line"
+              id="module-{{module.id}}"
           >
-              <div class="line-gutter" [ngStyle]="{'width': gutterWidth}">
+              <div class="line-gutter">
                   <span class="line-number">
                     <img src="assets/button-icons/x.svg" (click)="deleteModule(i)">
                   </span>
               </div>
               <span class="header-code cm-s-pixlise">
                   <span class="cm-keyword">local </span>
-                  <span class="cm-variable">{{module.name}}</span> = <span class="cm-builtin">require </span>
+                  <span 
+                    class="cm-variable"
+                    [ngStyle]="{'marginRight': maxInstalledModuleCharacterLength ? maxInstalledModuleCharacterLength - module.name.length + 'ch' : 0}"
+                  >{{module.name}}</span> = <span class="cm-builtin">require </span>
                   <div class="module-container">
                       <mat-select
                           #tooltip="matTooltip"
@@ -61,21 +65,24 @@ POSSIBILITY OF SUCH DAMAGE.
                           </mat-option>
                       </mat-select>
                   </div>
-                  <mat-icon
-                      class="{{module.id === linkedModuleID ? 'linked' : 'unlinked'}}"
-                      #tooltip="matTooltip"
-                      matTooltip="{{module.id === linkedModuleID ? 'Unlink Expression and Module' : 'Link expression to the latest version of the module'}}"
-                      (click)="onLinkModule(module.id === linkedModuleID ? '' : module.id)"
-                  >{{module.id === linkedModuleID ? 'link' : 'link_off'}}</mat-icon>
+                  <img
+                    *ngIf="checkIsOwner(module)"
+                    class="{{module.id === linkedModuleID ? 'linked' : 'unlinked'}}"
+                    [ngStyle]="{'marginLeft': getVersionContainerWidthDifference(module.id) + 'px'}"
+                    #tooltip="matTooltip"
+                    matTooltip="{{module.id === linkedModuleID ? 'Unlink Expression and Module' : 'Link expression to the latest version of the module'}}"
+                    src="{{module.id === linkedModuleID ? 'assets/button-icons/blue-link.svg' : 'assets/button-icons/grey-link.svg'}}"
+                    (click)="onLinkModule(module.id === linkedModuleID ? '' : module.id)"
+                  >
               </span>
           </div>
           <div class="empty-line">
-            <div class="line-gutter" [ngStyle]="{'width': gutterWidth}">
+            <div class="line-gutter">
             </div>
           </div>
       </div>
       <div class="header-divider" [ngStyle]="{'margin-top': isHeaderNonEmptyAndOpen ? '-12px' : '0px'}">
-          <div class="line-gutter" [ngStyle]="{'width': gutterWidth}">
+          <div class="line-gutter">
               <icon-button
                   #tooltip="matTooltip"
                   class="{{isHeaderOpen ? 'open' : 'closed'}}"

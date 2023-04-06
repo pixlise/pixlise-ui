@@ -54,6 +54,7 @@ import { BinaryInteraction } from "./interaction";
 import { BinaryPlotModel } from "./model";
 import { exportScatterPlot, ExportPlotCaller } from "src/app/UI/ternary-plot-widget/export-helper";
 import { ExpressionReferences } from "../references-picker/references-picker.component";
+import { DataModuleService } from "src/app/services/data-module.service";
 
 
 @Component({
@@ -95,6 +96,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         private _selectionService: SelectionService,
         private _datasetService: DataSetService,
         private _exprService: DataExpressionService,
+        private _moduleService: DataModuleService,
         private _viewStateService: ViewStateService,
         private _widgetDataService: WidgetRegionDataService,
         public dialog: MatDialog
@@ -366,6 +368,9 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         let yErrorShort: string = "";
         let yErrorLong: string = "";
 
+        let xModulesOutOfDate: boolean = false;
+        let yModulesOutOfDate: boolean = false;
+
         let queryWarnings: Set<string> = new Set<string>();
 
         let labelMaxChars = this.showMmol ? 18 : 24;
@@ -378,6 +383,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             {
                 xLabel = "";
             }
+            xModulesOutOfDate = queryData.queryResults[0].expression?.checkModuleReferences(this._moduleService) ?? false;
         }
         if(queryData.queryResults.length > 1)
         {
@@ -387,6 +393,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             {
                 yLabel = "";
             }
+            yModulesOutOfDate = queryData.queryResults[1].expression?.checkModuleReferences(this._moduleService) ?? false;
         }
 
         if(this.showMmol)
@@ -509,7 +516,10 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             yErrorShort,
             yErrorLong,
 
-            queryWarnings
+            queryWarnings,
+
+            xModulesOutOfDate,
+            yModulesOutOfDate
         );
     }
 
@@ -561,7 +571,10 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         yErrorShort: string,
         yErrorLong: string,
 
-        queryWarnings: Set<string>
+        queryWarnings: Set<string>,
+
+        xModulesOutOfDate: boolean = false,
+        yModulesOutOfDate: boolean = false
     )
     {
         if(this._references.length > 0)
@@ -632,8 +645,8 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         let binaryData = new BinaryPlotData(
             shapes,
             coloursRGB,
-            new BinaryPlotAxisData(xLabel, xPointGroup, xValueRange, xErrorShort, xErrorLong),
-            new BinaryPlotAxisData(yLabel, yPointGroup, yValueRange, yErrorShort, yErrorLong),
+            new BinaryPlotAxisData(xLabel, xPointGroup, xValueRange, xErrorShort, xErrorLong, xModulesOutOfDate),
+            new BinaryPlotAxisData(yLabel, yPointGroup, yValueRange, yErrorShort, yErrorLong, yModulesOutOfDate),
             pmcLookup,
             this._visibleROIs
         );

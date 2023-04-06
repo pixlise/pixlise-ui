@@ -45,7 +45,8 @@ export class ChordNodeData
         public errorValue: number,
         public chords: number[], // Assumes the array is ordered in the same way the actual ChordNodeData list is
         // so if Fe is first in ChordNodeData[], links[0] is Fe
-        public errorMsg: string
+        public errorMsg: string,
+        public modulesOutOfDate: boolean = false,
     )
     {
     }

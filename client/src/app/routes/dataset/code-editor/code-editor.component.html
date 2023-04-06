@@ -91,6 +91,14 @@ POSSIBILITY OF SUCH DAMAGE.
                     [disabled]="topEditor.modules.length === 0 && !isSplitScreen && bottomEditor.isExpressionSaved"
                     (onChange)="onToggleSplitScreen()">
                 </multi-switch-button>
+                <icon-button
+                    *ngIf="!topEditor.isLua && topEditor.editable"
+                    icon="assets/button-icons/lua-language.svg"
+                    (onClick)="convertToLua()"
+                    #tooltip="matTooltip"
+                    matTooltip="Convert Pixlang Expression to Lua"
+                >
+                </icon-button>
                 <expression-metadata-editor
                     [expression]="topEditor.expression"
                     [isModule]="topEditor.isModule"
@@ -239,6 +247,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 (onClick)="setTopEditorActive()"
                 [linkedModuleID]="topEditor.linkedModuleID"
                 (linkModule)="onLinkModule($event)"
+                [isSplitScreen]="isSplitScreen"
             >
             </expression-text-editor>
             <div *ngIf="bottomEditor.expression && isSplitScreen" class="split-screen-header">
@@ -252,13 +261,17 @@ POSSIBILITY OF SUCH DAMAGE.
                     [(ngModel)]="bottomEditor.name"
                 >
                 <status-indicator
-                [valid]="bottomEditor.isExpressionSaved"
-                [status]="bottomEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"
-            ></status-indicator>
+                    class="{{isBottomEditorLinked ? 'linked' : ''}}"
+                    [useLinkIcon]="isBottomEditorLinked"
+                    [valid]="bottomEditor.isExpressionSaved"
+                    [status]="bottomEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"
+                    (click)="onLinkModule(null)"
+                ></status-indicator>
                 <mat-select
                     *ngIf="bottomEditor.isModule"
                     [value]="bottomEditor.version.version"
                     (selectionChange)="onModuleVersionChange($event.value, 'bottom')"
+                    [disabled]="isBottomEditorLinked"
                 >
                     <mat-option
                         *ngFor="let version of bottomEditor.versionList;"
@@ -267,8 +280,11 @@ POSSIBILITY OF SUCH DAMAGE.
                 </mat-select>
                 <status-indicator
                     *ngIf="bottomEditor.isModule"
+                    class="{{isBottomEditorLinked ? 'linked' : ''}}"
+                    [useLinkIcon]="isBottomEditorLinked"
                     [valid]="bottomEditor.isLatestVersionReleased && (!bottomEditor.isModule || bottomEditor.isLoadedVersionLatest)"
                     [status]="bottomEditor.isLatestVersionReleased ? !bottomEditor.isLoadedVersionLatest ? 'Switch to latest version to edit' : 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
+                    (click)="onLinkModule(null)"
                 ></status-indicator>
                 <expression-metadata-editor
                     *ngIf="bottomEditor.isModule && !bottomEditor.isLoadedVersionLatest"
@@ -325,6 +341,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 [showInstalledModules]="!bottomEditor.isModule"
                 (onModuleChange)="onModuleChange($event, 'bottom')"
                 (onClick)="setBottomEditorActive()"
+                [isSplitScreen]="isSplitScreen"
             >
             </expression-text-editor>
         </div>
@@ -367,17 +384,6 @@ POSSIBILITY OF SUCH DAMAGE.
                     #tooltip="matTooltip"
                     [matTooltip]="releaseModuleTooltip"
                 >Release Module
-                </push-button>
-                <push-button
-                    *ngIf="!topEditor.isLua"
-                    class="convert-to-lua-btn"
-                    buttonStyle="yellow"
-                    [disabled]="!topEditor.editable"
-                    [active]="topEditor.useAutocomplete"
-                    (onClick)="convertToLua()"
-                    #tooltip="matTooltip"
-                    matTooltip="WARNING: This is a one way operation"
-                >Convert to LUA
                 </push-button>
                 <push-button
                     *ngIf="isSplitScreen"
