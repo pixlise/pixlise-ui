@@ -42,9 +42,9 @@ POSSIBILITY OF SUCH DAMAGE.
                   </span>
               </div>
               <span class="header-code cm-s-pixlise">
-                  <span class="cm-keyword">local </span>
+                  <span class="mtk15">local </span>
                   <span 
-                    class="cm-variable"
+                    class="mtk1"
                     [ngStyle]="{'marginRight': maxInstalledModuleCharacterLength ? maxInstalledModuleCharacterLength - module.name.length + 'ch' : 0}"
                   >{{module.name}}</span> = <span class="cm-builtin">require </span>
                   <div class="module-container">
@@ -58,7 +58,7 @@ POSSIBILITY OF SUCH DAMAGE.
                           [disabled]="module.id === linkedModuleID"
                       >
                           <mat-option
-                              class="cm-string"
+                              class="mtk25"
                               *ngFor="let version of module.allVersions;"
                               [value]="version"
                           >{{module.name}}@{{version}}

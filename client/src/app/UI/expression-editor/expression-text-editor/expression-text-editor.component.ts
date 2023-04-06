@@ -29,7 +29,7 @@
 
 import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
 // import { CodemirrorComponent } from "@ctrl/ngx-codemirror";
-import { Subscription } from "rxjs";
+import { ReplaySubject, Subject, Subscription } from "rxjs";
 // import { ExpressionParts, PixliseDataQuerier } from "src/app/expression-language/interpret-pixlise";
 // import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications";
 import { DataExpression } from "src/app/models/Expression";
@@ -37,8 +37,6 @@ import { ObjectCreator } from "src/app/models/BasicTypes";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { MonacoEditorService, MONACO_LUA_LANGUAGE_NAME } from "src/app/services/monaco-editor.service";
-import { DataSetService } from "src/app/services/data-set.service";
-import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 
 
 export class DataExpressionModule
@@ -63,7 +61,6 @@ export class TextSelection
         public startLine: number,
         public endLine: number,
         public range: Range,
-        public markText: () => void,
         public clearMarkedText: () => void,
     )
     {
@@ -247,11 +244,84 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                 // variable
                 this._expr.sourceCode = mdl.getValue();
                 this.onTextChange.emit(this._expr.sourceCode || "");
+                this.monaco.editor.setModelMarkers(this._editor.getModel(), "owner", []);
             }
         );
 
         this._editor.setModel(mdl);
         this.monaco.editor.setTheme(this._expr.sourceLanguage == EXPR_LANGUAGE_LUA ? "vs-dark-lua" : "vs-dark-pixlang");
+        this.registerKeyBindings();
+    }
+
+    private onRunHighlightedExpressionCommand(): void
+    {
+        let range = this._editor.getSelection();
+
+        let isSingleLineEmpty = range.startLineNumber === range.endLineNumber && range.startColumn === range.endColumn;
+        if(isSingleLineEmpty)
+        {
+            range.startLineNumber = 1;
+            range.startColumn = 1;
+        }
+
+        let text = this._editor.getModel().getValueInRange(range);
+
+        this.onTextSelect.emit(
+            new TextSelection(
+                text,
+                isSingleLineEmpty,
+                range.startLineNumber,
+                range.endLineNumber,
+                range,
+                () =>
+                {
+                    // Clear the highlight
+                    this.monaco.editor.setModelMarkers(this._editor.getModel(), "owner", []);
+                }
+            )
+        );
+        this.monaco.editor.setModelMarkers(this._editor.getModel(), "owner", [
+            {
+                message: `Currently visualizing the highlighted lines (${range.startLineNumber}:${range.startColumn} - ${range.endLineNumber}:${range.endColumn})`,
+                severity: this.monaco.MarkerSeverity.Info,
+                startLineNumber: range.startLineNumber,
+                startColumn: range.startColumn,
+                endLineNumber: range.endLineNumber,
+                endColumn: range.endColumn,
+            }
+        ]);
+
+        this.runHighlightedExpression.emit();
+    }
+
+    private registerKeyBindings(): void
+    {
+        let runExpressionID = "run-expression";
+        let runHighlightedExpressionID = "run-highlighted-expression";
+
+        let keybindings = [
+            {
+                id: runExpressionID,
+                keybinding: this.monaco.KeyMod.CtrlCmd | this.monaco.KeyCode.Enter,
+                run: () => this.runExpression.emit()
+            },
+            {
+                id: runHighlightedExpressionID,
+                keybinding: this.monaco.KeyMod.CtrlCmd | this.monaco.KeyMod.Alt | this.monaco.KeyCode.Enter,
+                run: () => this.onRunHighlightedExpressionCommand()
+            },
+        ];
+
+        keybindings.forEach(({ id, keybinding, run }) =>
+        {
+            this.monaco.editor.addCommand({ id, run });
+    
+            this.monaco.editor.addKeybindingRule({
+                keybinding,
+                command: id,
+                when: "textInputFocus",
+            });
+        });
     }
 
     private refreshMonaco(): void
@@ -301,6 +371,9 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     onSetActive(): void
     {
+        // Have to re-register keybindings every time the active editor is changed because these are stored globally
+        this.registerKeyBindings();
+
         this.onClick.emit();
     }
 

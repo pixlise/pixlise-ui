@@ -60,7 +60,6 @@ import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-langua
 import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
 import EditorConfig from "./editor-config";
-import { BuiltInTags } from "src/app/models/tags";
 
 @Component({
     selector: "code-editor",
@@ -666,6 +665,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             }, 5000);
 
             editor.expression = null;
+            // If we're opening a new expression, we need to reset the editor
             setTimeout(() =>
             {
                 editor = new EditorConfig();
@@ -683,7 +683,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 {
                     this.bottomEditor = editor;
                 }
-            }, 1);
+            });
 
             if(!showSplit && this.isSplitScreen)
             {
@@ -707,7 +707,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         {
             if(editor.expression)
             {
-                // This is a hack to remove code mirrors internal cached copy of the code and replace with the new code
+                // This is a hack to remove the internal cached copy of the code and replace with the new code
                 // by re-rendering the text editor component
                 editor.expression = null;
                 setTimeout(() =>
@@ -734,7 +734,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     }
 
                     this.updateCurrentlyOpenList(true);
-                }, 1);
+                });
             }
             else
             {
@@ -1202,11 +1202,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     runHighlightedExpression(): void
     {
         this.lastRunEditor = null;
-        if(this.executedTextSelection)
-        {
-            this.executedTextSelection.clearMarkedText();
-        }
-
         // Highlighted expressions always use the top editor info so only 1 unsaved expression ID is injected into the cache
         let highlightedExpression = new DataExpression(
             this._expressionID,
@@ -1225,10 +1220,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         if(this.textHighlighted)
         {
             highlightedExpression.sourceCode = this.textHighlighted;
-        }
-        else if(this.isEmptySelection)
-        {
-            highlightedExpression.sourceCode = this.topEditor.expression.sourceCode.split("\n").slice(0, this.endLineHighlighted + 1).join("\n");
         }
 
         if(this.topEditor.isLua)
@@ -1258,11 +1249,11 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         let isMultiLine = this.startLineHighlighted !== this.endLineHighlighted || this.isEmptySelection;
         if(this.isEmptySelection)
         {
-            lineRange = `0 - ${this.endLineHighlighted + 1}`;
+            lineRange = `0 - ${this.endLineHighlighted}`;
         }
         else
         {
-            lineRange = !isMultiLine ? `${this.startLineHighlighted + 1}` : `${this.startLineHighlighted + 1} - ${this.endLineHighlighted + 1}`;
+            lineRange = !isMultiLine ? `${this.startLineHighlighted}` : `${this.startLineHighlighted} - ${this.endLineHighlighted}`;
         }
         
         this.displayExpressionTitle = `Unsaved ${this.topEditor.expression.name} (Line${isMultiLine ? "s": ""} ${lineRange})`;
@@ -1272,7 +1263,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.isSubsetExpression = true;
 
         this.executedTextSelection = this.activeTextSelection;
-        this.executedTextSelection.markText();
     }
 
     convertToLua(): void
