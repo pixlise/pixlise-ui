@@ -171,6 +171,12 @@ export class MonacoEditorService
                 "editor.foreground": "#eeffff",
                 "editor.background": "#232829",
                 "editorGutter.background": "#283237",
+                "diffEditor.insertedTextBackground": "#3F83F766",
+                "diffEditor.insertedLineBackground": "#3F83F733",
+                "diffEditorGutter.insertedLineBackground": "#3F83F766",
+                "diffEditor.removedTextBackground": "#D35FB766",
+                "diffEditor.removedLineBackground": "#D35FB733",
+                "diffEditorGutter.removedLineBackground": "#D35FB766",
             },
         });
     }

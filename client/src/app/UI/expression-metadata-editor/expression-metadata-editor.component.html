@@ -81,9 +81,9 @@ POSSIBILITY OF SUCH DAMAGE.
                 class="code-diff-btn"
                 [buttonStyle]="buttonStyle"
                 #tooltip="matTooltip"
-                matTooltip="Show Code Difference between v{{currentVersion?.version}} and v{{latestRelease?.version}}"
+                matTooltip="{{isShowingDifference ? 'Hide' : 'Show'}} Code Difference between v{{currentVersion?.version}} and v{{latestRelease?.version}}"
                 (click)="showDiffClicked()"
-            >Show Difference
+            >{{isShowingDifference ? 'Hide' : 'Show'}} Difference
             </push-button>
         </div>
     </div>

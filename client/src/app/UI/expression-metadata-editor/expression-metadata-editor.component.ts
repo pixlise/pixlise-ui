@@ -60,6 +60,7 @@ export class ExpressionMetadataEditorComponent implements OnInit
     @Input() versions: DataModuleVersionSourceWire[] = [];
 
     @Input() showDiff: boolean = false;
+    @Input() isShowingDifference: boolean = false;
 
     @Output() changeName: EventEmitter<string> = new EventEmitter<string>();
     @Output() changeDescription: EventEmitter<string> = new EventEmitter<string>();
@@ -96,11 +97,22 @@ export class ExpressionMetadataEditorComponent implements OnInit
 
     showDiffClicked(): void
     {
-        this.onShowDiff.emit({
-            id: this.expression.id,
-            oldVersion: this.currentVersion,
-            newVersion: this.latestRelease
-        });
+        if(this.isShowingDifference)
+        {
+            this.onShowDiff.emit({
+                id: this.expression.id,
+                oldVersion: this.currentVersion,
+                newVersion: null
+            });
+        }
+        else
+        {
+            this.onShowDiff.emit({
+                id: this.expression.id,
+                oldVersion: this.currentVersion,
+                newVersion: this.latestRelease
+            });
+        }
     }
 
     get name(): string

@@ -709,7 +709,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         id = id && id.length > 0 ? id : editor.expression.id;
         
         this.diffText = "";
-        
+
         this._moduleService.getModule(id, version).subscribe((module) =>
         {
             if(editor.expression)
@@ -777,8 +777,20 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         );
     }
 
-    onShowDiff({ id, newVersion }: DiffVersions): void
+    get isShowingDifference(): boolean
     {
+        return this.diffText && this.diffText.length > 0;
+    }
+
+    onShowDiff({ id, oldVersion, newVersion }: DiffVersions): void
+    {
+        if(!newVersion)
+        {
+            this.diffText = "";
+            this.onModuleVersionChange(oldVersion.version, "bottom", id, true);
+            return;
+        }
+
         this._moduleService.getModule(id, newVersion.version).subscribe((newModule) =>
         {
             this.diffText = newModule.version.sourceCode;
