@@ -36,12 +36,11 @@ import { PIXLANGHelp } from "src/app/UI/expression-editor/expression-text-editor
 import { LUAHelp } from "src/app/UI/expression-editor/expression-text-editor/code-help/lua-help";
 import { SourceHelp, NameAndParamResult, HelpSignature } from "src/app/UI/expression-editor/expression-text-editor/code-help/help";
 import { SourceContextParser } from "src/app/UI/expression-editor/expression-text-editor/code-help/help";
-import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
+import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 
 import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { DataModuleService, DataModule } from "src/app/services/data-module.service";
 
-import { languages } from "monaco-editor";
 import { language, conf } from "monaco-editor/esm/vs/basic-languages/lua/lua.js";
 import { LuaTranspiler } from "../expression-language/lua-transpiler";
 
@@ -149,7 +148,7 @@ export class MonacoEditorService
     private styleMonacoLUALanguage(monaco)
     {
         monaco.languages.register({
-            id: "lua",
+            id: MONACO_LUA_LANGUAGE_NAME,
             extensions: [".lua"],
             aliases: ["Lua", "lua", "LUA"],
         });
@@ -163,8 +162,8 @@ export class MonacoEditorService
             ...luaLang.tokenizer.root,
         ];
 
-        monaco.languages.setMonarchTokensProvider("lua", luaLang);
-        monaco.languages.setLanguageConfiguration("lua", conf);
+        monaco.languages.setMonarchTokensProvider(MONACO_LUA_LANGUAGE_NAME, luaLang);
+        monaco.languages.setLanguageConfiguration(MONACO_LUA_LANGUAGE_NAME, conf);
 
         monaco.editor.defineTheme("vs-dark-lua", {
             base: "vs-dark",
