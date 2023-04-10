@@ -30,17 +30,17 @@
 @import 'variables.scss';
 
 // To edit code mirror styling, look at pixlise-codemirror-theme.scss
-
+/*
 .dlg-border-with-backdrop {
     min-width: 50vw;
     max-width: 90vw;
     padding: 0;
 }
 
-.code-mirror-container {
+.code-edit-container {
     max-width: 50vw;
 }
-
+*/
 h3 {
     margin-top: $sz-unit;
     margin-bottom: 0px;
@@ -63,7 +63,13 @@ h3 {
 .code-container {
     display: flex;
     flex-direction: column;
+    width: 100%;
 }
+
+.line-gutter {
+    width: 62px;
+}
+
 
 .installed-modules-text {
     background-color: #222829;
@@ -220,7 +226,7 @@ h3 {
 
             background-color: #222829;
             border-radius: 8px;
-            z-index: 100;
+            z-index: 1;
             padding: 0 4px;
         }
     }
@@ -254,5 +260,24 @@ img {
 
     &.unlinked:hover {
         background-color: rgba(128,128,128,0.2);
+    }
+}
+
+.code-container {
+    &.installed-modules {
+        .editor-container {
+            max-height: calc(100% - 28px) !important;
+        }
+
+        &.split {
+            flex: unset !important;
+            height: calc(50vh - 55px);
+        }
+    }
+
+    &.header-open {
+        .editor-container {
+            max-height: calc(100% - 116px) !important;
+        }
     }
 }

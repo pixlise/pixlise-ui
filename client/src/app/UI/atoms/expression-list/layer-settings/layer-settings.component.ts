@@ -565,8 +565,9 @@ export class LayerSettingsComponent implements OnInit
         }
     }
 
-    private openCodeModal(allowEdit: boolean): void
+    private openCodeModal(): void
     {
+        // Editing isn't allowed in the mini-modal
         const dialogConfig = new MatDialogConfig();
         dialogConfig.panelClass = "panel";
 
@@ -575,7 +576,7 @@ export class LayerSettingsComponent implements OnInit
             this._moduleService.getLatestModuleVersion(this.layerInfo.layer.id).subscribe((latestVersion) =>
             {
                 let convertedModule = latestVersion.convertToExpression();   
-                dialogConfig.data = new ExpressionEditorConfig(convertedModule, allowEdit, false, false, !this.isPreviewMode);
+                dialogConfig.data = new ExpressionEditorConfig(convertedModule, false, false, false, !this.isPreviewMode);
                 this.dialog.open(ExpressionEditorComponent, dialogConfig);
             });
         }
@@ -583,7 +584,7 @@ export class LayerSettingsComponent implements OnInit
         {
             this._exprService.getExpressionAsync(this.layerInfo.layer.id).subscribe(expression =>
             {
-                dialogConfig.data = new ExpressionEditorConfig(expression, allowEdit, false, false, !this.isPreviewMode);
+                dialogConfig.data = new ExpressionEditorConfig(expression, false, false, false, !this.isPreviewMode);
                 this.dialog.open(ExpressionEditorComponent, dialogConfig);
             });
         }
@@ -591,7 +592,7 @@ export class LayerSettingsComponent implements OnInit
 
     onPreview(event): void
     {
-        this.openCodeModal(!this.isSharedByOtherUser);
+        this.openCodeModal();
     }
 
     protected onExpressionSettings(event): void
@@ -610,7 +611,7 @@ export class LayerSettingsComponent implements OnInit
         }
         else
         {
-            this.openCodeModal(allowEdit);
+            this.openCodeModal();
         }
     }
 

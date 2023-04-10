@@ -56,6 +56,11 @@
                 "input": "src/app/expression-language/lua/test",
                 "output": "assets/lua"
               },
+              {
+                "glob": "**/*",
+                "input": "node_modules/monaco-editor",
+                "output": "assets/monaco-editor"
+              },
               "src/local-development-pixlise-config.json",
               "src/agreement-version.json",
               "src/version.json"
@@ -90,8 +95,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "2mb",
-                  "maximumError": "5mb"
+                  "maximumWarning": "4mb",
+                  "maximumError": "8mb"
                 },
                 {
                   "type": "anyComponentStyle",

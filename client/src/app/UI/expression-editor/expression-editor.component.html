@@ -33,7 +33,6 @@ POSSIBILITY OF SUCH DAMAGE.
     fxLayout="column"
     class="dlg-border-with-backdrop gap-separated-vertical-elements"
 >
-
     <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
         <h1>Expression Editor</h1>
         <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
@@ -56,6 +55,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
     </div>
     <expression-text-editor
+        fxFlex="100%"
         [expression]="expression"
         [allowEdit]="isEditable"
         [isImmediatelyAppliable]="data.isImmediatelyAppliable"
@@ -65,7 +65,7 @@ POSSIBILITY OF SUCH DAMAGE.
     >
     </expression-text-editor>
     <div class="label">Expression Description</div>
-    <input type="text" placeholder="" [(ngModel)]="expressionComments" [disabled]="!isEditable" fxFlex>
+    <input type="text" placeholder="" [(ngModel)]="expressionComments" [disabled]="!isEditable">
 
     <div fxLayout="row" fxLayoutAlign="end" class="choice-container gap-separated-horizontal-elements">
         <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>

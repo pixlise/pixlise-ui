@@ -57,10 +57,10 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
-import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
+import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
 import EditorConfig from "./editor-config";
-import { BuiltInTags } from "src/app/models/tags";
+import { DiffVersions } from "src/app/UI/expression-metadata-editor/expression-metadata-editor.component";
 
 @Component({
     selector: "code-editor",
@@ -114,6 +114,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     
     public topEditor: EditorConfig = new EditorConfig();
     public bottomEditor: EditorConfig = new EditorConfig();
+
+    public diffText: string = "";
 
     public isTopEditorActive = false;
     public lastRunEditor: "top" | "bottom" = null;
@@ -375,6 +377,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this._expressionID = this._route.snapshot.params["expression_id"];
         let version = this._route.snapshot.queryParams["version"];
         this.resetSidePanelConfigs();
+
+        this.diffText = "";
 
         this.topEditor = new EditorConfig();
         this.topEditor.userID = this._authService.getUserID();
@@ -666,6 +670,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             }, 5000);
 
             editor.expression = null;
+            // If we're opening a new expression, we need to reset the editor
             setTimeout(() =>
             {
                 editor = new EditorConfig();
@@ -683,7 +688,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 {
                     this.bottomEditor = editor;
                 }
-            }, 1);
+            });
 
             if(!showSplit && this.isSplitScreen)
             {
@@ -699,15 +704,17 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     }
 
     onModuleVersionChange(version: string, position: string = "top", id: string = "", showSplit: boolean = false): void
-    {   
+    {
         let editor = position === "top" ? this.topEditor : this.bottomEditor;
         id = id && id.length > 0 ? id : editor.expression.id;
+        
+        this.diffText = "";
 
         this._moduleService.getModule(id, version).subscribe((module) =>
         {
             if(editor.expression)
             {
-                // This is a hack to remove code mirrors internal cached copy of the code and replace with the new code
+                // This is a hack to remove the internal cached copy of the code and replace with the new code
                 // by re-rendering the text editor component
                 editor.expression = null;
                 setTimeout(() =>
@@ -734,7 +741,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     }
 
                     this.updateCurrentlyOpenList(true);
-                }, 1);
+                });
             }
             else
             {
@@ -768,6 +775,26 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             console.error(`Failed to fetch module: ${id} v${version}`, error);
         }
         );
+    }
+
+    get isShowingDifference(): boolean
+    {
+        return this.diffText && this.diffText.length > 0;
+    }
+
+    onShowDiff({ id, oldVersion, newVersion }: DiffVersions): void
+    {
+        if(!newVersion)
+        {
+            this.diffText = "";
+            this.onModuleVersionChange(oldVersion.version, "bottom", id, true);
+            return;
+        }
+
+        this._moduleService.getModule(id, newVersion.version).subscribe((newModule) =>
+        {
+            this.diffText = newModule.version.sourceCode;
+        });
     }
 
     onAddExpression(): void
@@ -1202,11 +1229,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     runHighlightedExpression(): void
     {
         this.lastRunEditor = null;
-        if(this.executedTextSelection)
-        {
-            this.executedTextSelection.clearMarkedText();
-        }
-
         // Highlighted expressions always use the top editor info so only 1 unsaved expression ID is injected into the cache
         let highlightedExpression = new DataExpression(
             this._expressionID,
@@ -1225,10 +1247,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         if(this.textHighlighted)
         {
             highlightedExpression.sourceCode = this.textHighlighted;
-        }
-        else if(this.isEmptySelection)
-        {
-            highlightedExpression.sourceCode = this.topEditor.expression.sourceCode.split("\n").slice(0, this.endLineHighlighted + 1).join("\n");
         }
 
         if(this.topEditor.isLua)
@@ -1258,11 +1276,11 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         let isMultiLine = this.startLineHighlighted !== this.endLineHighlighted || this.isEmptySelection;
         if(this.isEmptySelection)
         {
-            lineRange = `0 - ${this.endLineHighlighted + 1}`;
+            lineRange = `0 - ${this.endLineHighlighted}`;
         }
         else
         {
-            lineRange = !isMultiLine ? `${this.startLineHighlighted + 1}` : `${this.startLineHighlighted + 1} - ${this.endLineHighlighted + 1}`;
+            lineRange = !isMultiLine ? `${this.startLineHighlighted}` : `${this.startLineHighlighted} - ${this.endLineHighlighted}`;
         }
         
         this.displayExpressionTitle = `Unsaved ${this.topEditor.expression.name} (Line${isMultiLine ? "s": ""} ${lineRange})`;
@@ -1272,7 +1290,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.isSubsetExpression = true;
 
         this.executedTextSelection = this.activeTextSelection;
-        this.executedTextSelection.markText();
     }
 
     convertToLua(): void

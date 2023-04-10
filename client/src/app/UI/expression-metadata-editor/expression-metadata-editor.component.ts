@@ -38,6 +38,12 @@ type MajorGroupedRelease = {
     minorVersions: DataModuleVersionSourceWire[];
 }
 
+export type DiffVersions = {
+    id: string;
+    oldVersion: DataModuleVersionSourceWire;
+    newVersion: DataModuleVersionSourceWire;
+}
+
 @Component({
     selector: "expression-metadata-editor",
     templateUrl: "./expression-metadata-editor.component.html",
@@ -54,12 +60,14 @@ export class ExpressionMetadataEditorComponent implements OnInit
     @Input() versions: DataModuleVersionSourceWire[] = [];
 
     @Input() showDiff: boolean = false;
+    @Input() isShowingDifference: boolean = false;
 
     @Output() changeName: EventEmitter<string> = new EventEmitter<string>();
     @Output() changeDescription: EventEmitter<string> = new EventEmitter<string>();
     @Output() changeTags: EventEmitter<string[]> = new EventEmitter<string[]>();
 
     @Output() updateMetadata: EventEmitter<void> = new EventEmitter<void>();
+    @Output() onShowDiff: EventEmitter<DiffVersions> = new EventEmitter<DiffVersions>();
 
     private _fetched: boolean = false;
     private _releaseNotes: MajorGroupedRelease[] = [];
@@ -85,6 +93,26 @@ export class ExpressionMetadataEditorComponent implements OnInit
     onClose(): void
     {
         this.updateMetadata.emit();
+    }
+
+    showDiffClicked(): void
+    {
+        if(this.isShowingDifference)
+        {
+            this.onShowDiff.emit({
+                id: this.expression.id,
+                oldVersion: this.currentVersion,
+                newVersion: null
+            });
+        }
+        else
+        {
+            this.onShowDiff.emit({
+                id: this.expression.id,
+                oldVersion: this.currentVersion,
+                newVersion: this.latestRelease
+            });
+        }
     }
 
     get name(): string

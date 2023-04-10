@@ -435,14 +435,17 @@ export class VariogramWidgetComponent implements OnInit
             for(let exprId of this._expressionIds)
             {
                 let expr = this._exprService.getExpression(exprId);
-                let label = expr.getExpressionShortDisplayName(12).shortName;
-                this.expressionNames.push(expr.name);
-
-                if(title.length > 0)
+                if(expr)
                 {
-                    title += " / ";
+                    let label = expr.getExpressionShortDisplayName(12).shortName;
+                    this.expressionNames.push(expr.name);
+
+                    if(title.length > 0)
+                    {
+                        title += " / ";
+                    }
+                    title += label;
                 }
-                title += label;
             }
         }
 

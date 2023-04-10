@@ -64,8 +64,8 @@ function housekeeping(column)
     return readCSV("housekeeping-"..column)
 end
 
-function diffractionPeaks(evStart, eVend)
-    return readCSV("diffractionPeaks-"..evStart.."-"..eVend)
+function diffractionPeaks(eVstart, eVend)
+    return readCSV("diffractionPeaks-"..eVstart.."-"..eVend)
 end
 
 function roughness()
