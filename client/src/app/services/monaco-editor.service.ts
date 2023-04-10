@@ -43,6 +43,7 @@ import { DataModuleService, DataModule } from "src/app/services/data-module.serv
 
 import { languages } from "monaco-editor";
 import { language, conf } from "monaco-editor/esm/vs/basic-languages/lua/lua.js";
+import { LuaTranspiler } from "../expression-language/lua-transpiler";
 
 export const MONACO_LUA_LANGUAGE_NAME = "lua";
 
@@ -147,27 +148,41 @@ export class MonacoEditorService
 
     private styleMonacoLUALanguage(monaco)
     {
-        languages.register({
+        monaco.languages.register({
             id: "lua",
             extensions: [".lua"],
-            aliases: ["Lua", "lua"],
+            aliases: ["Lua", "lua", "LUA"],
         });
-        languages.setMonarchTokensProvider("lua", language);
-        languages.setLanguageConfiguration("lua", conf);
+
+        let luaLang = language;
+        luaLang["builtins"] = LuaTranspiler.builtinFunctions;
+        luaLang.tokenizer.root = [
+            [/([a-z_A-Z]+)([.])([a-z_A-Z]+)(\s*[(])/, ["identifier", "@delimiter", "function", "@brackets"]],
+            [/([a-z_A-Z]+)(\s*[(])/, [{ cases: { "@builtins": "builtin", "@default": "function" } }, "@brackets"]],
+            [/([a-z_A-Z]+)([.])([a-z_A-Z]+)/, ["identifier", "@delimiter", "member"]],
+            ...luaLang.tokenizer.root,
+        ];
+
+        monaco.languages.setMonarchTokensProvider("lua", luaLang);
+        monaco.languages.setLanguageConfiguration("lua", conf);
 
         monaco.editor.defineTheme("vs-dark-lua", {
             base: "vs-dark",
-            inherit: true,
+            inherit: false,
             rules: [
                 { token: "keyword", foreground: "#c792ea", fontStyle: "bold" },
-                { token: "variable", foreground: "#ffff8d" },
+                { token: "identifier", foreground: "#ffff8d" },
+                { token: "function", foreground: "#91bfdb" },
+                { token: "builtin", foreground: "#c792ea" },
+                { token: "member", foreground: "#4EC9B0" },
                 { token: "string", foreground: "#fc8d59" },
                 { token: "comment", foreground: "#549e7a" },
                 { token: "number", foreground: "#FF5370" },
                 { token: "constant", foreground: "#91bfdb" },
-                { token: "operator", foreground: "#89ddff" },
+                { token: "delimiter", foreground: "#89ddff" },
             ],
             colors: {
+                "entity.name.function": "#ffff8d",
                 "editor.foreground": "#eeffff",
                 "editor.background": "#232829",
                 "editorGutter.background": "#283237",

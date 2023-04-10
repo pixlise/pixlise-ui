@@ -38,7 +38,9 @@ export class LuaTranspiler
     private _runningExpression: string = "";
     private _variableLookupIsMap: Map<string, boolean> = new Map<string, boolean>();
     private _mapLibFuncs = ["pow", "over", "min", "max", "under", "under_undef", "over", "over_undef", "avg", "ln", "exp", "sin", "cos", "tan", "asin", "acos", "atan"];
-    private _mapReturningFuncs = ["element", "elementSum", "data", "spectrum", "spectrumDiff", "pseudo", "housekeeping", "diffractionPeaks", "roughness", "position", "makeMap"];
+
+    public static builtinFunctions = ["element", "elementSum", "data", "spectrum", "spectrumDiff", "pseudo", "housekeeping", "diffractionPeaks", "roughness", "position", "makeMap"];
+    private _mapReturningFuncs = LuaTranspiler.builtinFunctions;
 
     constructor()
     {
