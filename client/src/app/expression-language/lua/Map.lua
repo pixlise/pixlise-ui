@@ -65,11 +65,11 @@ local function makeAssertReport(var, expType)
     return result
 end
 
-local function fixBadValue(s)
+local function handleBadValue(s)
     -- Check if it's NaN or infinite
-    if s ~= s then -- or s == infinity or s == -infinity then
-        s = 0
-    end
+    --if s ~= s then -- or s == infinity or s == -infinity then
+    --    s = 0
+    --end
     return s
 end
 
@@ -87,11 +87,11 @@ local function opWithScalarRaw(m, s, scalarLeft, op)
     elseif op == Map.opDivide then
         if scalarLeft then
             for k, v in ipairs(m[2]) do
-                values[k] = fixBadValue(s / v)
+                values[k] = handleBadValue(s / v)
             end
         else
             for k, v in ipairs(m[2]) do
-                values[k] = fixBadValue(v / s)
+                values[k] = handleBadValue(v / s)
             end
         end
     elseif op == Map.opSubtract then
@@ -111,44 +111,6 @@ local function opWithScalarRaw(m, s, scalarLeft, op)
     elseif op == Map.opMax then
         for k, v in ipairs(m[2]) do
             values[k] = math.max(v, s)
-        end
-    elseif op == Map.opOver then
-        for k, v in ipairs(m[2]) do
-            if v > s then
-                values[k] = 1
-            else
-                values[k] = 0
-            end
-        end
-    elseif op == Map.opOverUndef then
-        for k, v in ipairs(m[2]) do
-            if v > s then
-                values[k] = 1
-            else
-                values[k] = 0
-            end
-            if values[k] == 0 then
-                values[k] = nil
-            end
-        end
-    elseif op == Map.opUnder then
-        for k, v in ipairs(m[2]) do
-            if v < s then
-                values[k] = 1
-            else
-                values[k] = 0
-            end
-        end
-    elseif op == Map.opUnderUndef then
-        for k, v in ipairs(m[2]) do
-            if v < s then
-                values[k] = 1
-            else
-                values[k] = 0
-            end
-            if values[k] == 0 then
-                values[k] = nil
-            end
         end
     else
         assert(false, "opWithScalarRaw unexpected op: "..op)
@@ -171,7 +133,7 @@ local function opWithMaps(m1, m2, op)
         end
     elseif op == Map.opDivide then
         for k, v in ipairs(m1[2]) do
-            values[k] = fixBadValue(v / m2[2][k])
+            values[k] = handleBadValue(v / m2[2][k])
         end
     elseif op == Map.opSubtract then
         for k, v in ipairs(m1[2]) do
@@ -265,124 +227,144 @@ function Map.max(l, r)
     return op(l, r, Map.opMax)
 end
 
--- Returns a map where if value of l is > r, result will have 1, otherwise
--- 0. One of l, r is expected to be a map, the other a map or scalar.
-function Map.over(l, r)
-    return opWithScalar(l, r, Map.opOver)
+-- Returns a map where if value for a PMC in m is > cmp, the result map will contain 1 otherwise 0.
+-- m: The map to check
+-- cmp: The value to compare to
+function Map.over(m, cmp)
+    assert(type(m) == "table", makeAssertReport(m, "table"))
+    assert(type(cmp) == "number", makeAssertReport(cmp, "number"))
+    local values = {}
+    for k, v in ipairs(m[2]) do
+        if v > cmp then
+            values[k] = 1
+        else
+            values[k] = 0
+        end
+    end
+    return {m[1], values}
 end
 
--- Returns a map where if value of l is < r, result will have 1, otherwise
--- 0. One of l, r is expected to be a map, the other a map or scalar.
-function Map.under(l, r)
-    return opWithScalar(l, r, Map.opUnder)
+-- Returns a map where if value for a PMC in m is > cmp, the result map will contain 1 otherwise
+-- null, which means this will for example leave holes in a context image for PMCs with a null value
+-- m: The map to check
+-- cmp: The value to compare to
+function Map.over_undef(m, cmp)
+    assert(type(m) == "table", makeAssertReport(m, "table"))
+    assert(type(cmp) == "number", makeAssertReport(cmp, "number"))
+    local values = {}
+    for k, v in ipairs(m[2]) do
+        if v > cmp then
+            values[k] = 1
+        else
+            values[k] = 0
+        end
+        if values[k] == 0 then
+            values[k] = nil
+        end
+    end
+    return {m[1], values}
 end
 
--- Returns a map where if value of l is > r, result will have 1, otherwise
--- null (leaves hole in context image for eg). One of l, r is expected to
--- be a map, the other a map or scalar.
-function Map.over_undef(l, r)
-    return opWithScalar(l, r, Map.opOverUndef)
+
+-- Returns a map where if value for a PMC in m is < cmp, the result map will contain 1 otherwise 0.
+-- m: The map to check
+-- cmp: The value to compare to
+function Map.under(m, cmp)
+    assert(type(m) == "table", makeAssertReport(m, "table"))
+    assert(type(cmp) == "number", makeAssertReport(cmp, "number"))
+    local values = {}
+    for k, v in ipairs(m[2]) do
+        if v < cmp then
+            values[k] = 1
+        else
+            values[k] = 0
+        end
+    end
+    return {m[1], values}
 end
 
--- Returns a map where if value of l is < r, result will have 1, otherwise
--- null (leaves hole in context image for eg). One of l, r is expected to
--- be a map, the other a map or scalar.
-function Map.under_undef(l, r)
-    return opWithScalar(l, r, Map.opUnderUndef)
+-- Returns a map where if value for a PMC in m is < cmp, the result map will contain 1 otherwise
+-- null, which means this will for example leave holes in a context image for PMCs with a null value
+-- m: The map to check
+-- cmp: The value to compare to
+function Map.uner_undef(m, cmp)
+    assert(type(m) == "table", makeAssertReport(m, "table"))
+    assert(type(cmp) == "number", makeAssertReport(cmp, "number"))
+    local values = {}
+    for k, v in ipairs(m[2]) do
+        if v < cmp then
+            values[k] = 1
+        else
+            values[k] = 0
+        end
+        if values[k] == 0 then
+            values[k] = nil
+        end
+    end
+    return {m[1], values}
+end
+
+local function mapFunc(m, f)
+    assert(type(m) == "table", makeAssertReport(m, "table"))
+    local values = {}
+    for k, v in ipairs(m[2]) do
+        values[k] = handleBadValue(f(v))
+    end
+    return {m[1], values}
 end
 
 -- Returns a map where each value is sin of corresponding value in m
 -- where the values in m are interpreted as being in radians
 -- m: Map whose values to read
 function Map.sin(m)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    local values = {}
-    for k, v in ipairs(m[2]) do
-        values[k] = math.sin(v[2])
-    end
-    return {m[1], values}
+    return mapFunc(m, math.sin)
 end
 
 -- Returns a map where each value is cos of corresponding value in m
 -- where the values in m are interpreted as being in radians
 -- m: Map whose values to read
 function Map.cos(m)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    local values = {}
-    for k, v in ipairs(m[2]) do
-        values[k] = math.cos(v[2])
-    end
-    return {m[1], values}
+    return mapFunc(m, math.cos)
 end
 
 -- Returns a map where each value is tan of corresponding value in m
 -- where the values in m are interpreted as being in radians
 -- m: Map whose values to read
 function Map.tan(m)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    local values = {}
-    for k, v in ipairs(m[2]) do
-        values[k] = math.tan(v[2])
-    end
-    return {m[1], values}
+    return mapFunc(m, math.tan)
 end
 
 -- Returns a map where each value is asin of corresponding value in m
 -- where the values in m are interpreted as being in radians
 -- m: Map whose values to read
 function Map.asin(m)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    local values = {}
-    for k, v in ipairs(m[2]) do
-        values[k] = math.asin(v[2])
-    end
-    return {m[1], values}
+    return mapFunc(m, math.asin)
 end
 
 -- Returns a map where each value is acos of corresponding value in m
 -- where the values in m are interpreted as being in radians
 -- m: Map whose values to read
 function Map.acos(m)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    local values = {}
-    for k, v in ipairs(m[2]) do
-        values[k] = math.acos(v[2])
-    end
-    return {m[1], values}
+    return mapFunc(m, math.acos)
 end
 
 -- Returns a map where each value is atan of corresponding value in m
 -- where the values in m are interpreted as being in radians
 -- m: Map whose values to read
 function Map.atan(m)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    local values = {}
-    for k, v in ipairs(m[2]) do
-        values[k] = math.atan(v[2])
-    end
-    return {m[1], values}
+    return mapFunc(m, math.atan)
 end
 
 -- Returns a map where each value is e raised to power of of corresponding value in m
 -- m: Map whose values to read
 function Map.exp(m)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    local values = {}
-    for k, v in ipairs(m[2]) do
-        values[k] = fixBadValue(math.exp(v[2]))
-    end
-    return {m[1], values}
+    return mapFunc(m, math.exp)
 end
 
 -- Returns a map where each value is natural log of corresponding value in m
 -- m: Map whose values to read
 function Map.ln(m)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    local values = {}
-    for k, v in ipairs(m[2]) do
-        values[k] = fixBadValue(math.log(v[2]))
-    end
-    return {m[1], values}
+    return mapFunc(m, math.log)
 end
 
 -- Returns a map where each value is natural log of corresponding value in m
@@ -393,7 +375,7 @@ function Map.pow(m, exp)
     assert(type(exp) == "number", makeAssertReport(exp, "number"))
     local values = {}
     for k, v in ipairs(m[2]) do
-        values[k] = fixBadValue(v ^ exp)
+        values[k] = handleBadValue(v ^ exp)
     end
     return {m[1], values}
 end
@@ -404,19 +386,19 @@ local function findMinMax(m)
 
     local first = true
 
-    for k, v in ipairs(m) do
-        if v[2] ~= nil then -- Ignore "undefined" values
+    for k, v in ipairs(m[2]) do
+        if v ~= nil then -- Ignore "undefined" values
             if first == true then
-                mapMin = v[2]
-                mapMax = v[2]
+                mapMin = v
+                mapMax = v
 
                 first = false
             else
-                if v[2] < mapMin then
-                    mapMin = v[2]
+                if v < mapMin then
+                    mapMin = v
                 end
-                if v[2] > mapMax then
-                    mapMax = v[2]
+                if v > mapMax then
+                    mapMax = v
                 end
             end
         end
@@ -441,14 +423,14 @@ function Map.normalise(m)
     end
 
     -- Normalise each value to be a % within min-max range, ie 0-1
-    for k, v in ipairs(m) do
-        if v[2] ~= nil then  -- Skip "undefined" values
-            r[k] = {v[1], (v[2]-mapMin)/mapRange}
+    for k, v in ipairs(m[2]) do
+        if v ~= nil then  -- Skip "undefined" values
+            r[k] = (v-mapMin)/mapRange
         else
-            r[k] = {v[1], nil}
+            r[k] = nil
         end
     end
-    return r
+    return {m[1], r}
 end
 
 -- Added to help our Americans, but then we're doing everything else with "Queens English"
@@ -467,14 +449,14 @@ function Map.threshold(m, compare, range)
     assert(type(compare) == "number", makeAssertReport(compare, "number"))
     assert(type(range) == "number", makeAssertReport(range, "number"))
     local r = {}
-    for k, v in ipairs(m) do
+    for k, v in ipairs(m[2]) do
         local save = 0
-        if v[2] ~= nil and math.abs(v[2]-compare) < range then -- Note, handling "undefined" values
+        if v ~= nil and math.abs(v-compare) < range then -- Note, handling "undefined" values
             save = 1
         end
-        r[k] = {v[1], save}
+        r[k] = save
     end
-    return r
+    return {m[1], r}
 end
 
 -- Prints map contents to stdout with comment to help make more sense of it
@@ -493,24 +475,40 @@ end
 -- m: Map to read
 -- pmc: Scalar PMC number to find corresponding value of
 function Map.getPMCValue(m, pmc)
+    assert(type(m) == "table", makeAssertReport(m, "table"))
+    assert(type(pmc) == "number", makeAssertReport(pmc, "number"))
+
     for idx, mapPMC in ipairs(m[1]) do
         if mapPMC == pmc then
             return m[2][idx]
         end
     end
+
+    -- Explicitly return nil if not found
+    return nil
 end
 
--- Sets the value of PMC in modification to the specified value v
+-- Sets the value of PMC in modification to the specified value v. Returns true if new value added
 -- m: Map to change
 -- pmc: Scalar PMC number to set value of
 -- v: Scalar value to set in map for given PMC
 function Map.setPMCValue(m, pmc, v)
+    assert(type(m) == "table", makeAssertReport(m, "table"))
+    assert(type(pmc) == "number", makeAssertReport(pmc, "number"))
+    assert(type(v) == "number", makeAssertReport(v, "number"))
+
     for idx, mapPMC in ipairs(m[1]) do
         if mapPMC == pmc then
             m[2][idx] = v
-            return
+            return false -- Existing value cahnged
         end
     end
+
+    -- New value added
+    local newIdx = #m[1]+1
+    m[1][newIdx] = pmc
+    m[2][newIdx] = v
+    return true
 end
 
 return Map
