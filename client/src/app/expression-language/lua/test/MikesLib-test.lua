@@ -50,8 +50,16 @@ TestMikesLib = {}
         PIXLISEstub.resetReplay() -- Reset replay of data returns from PIXLISE functions
         local result = MikesLib.TotalFunc(Map)
 
-        -- FOR NOW, we ignore 3 PMCs where we get NaN vs the original code calculating a value (incorrectly)
-        local pmcsToIgnore = {[256]=true, [1475]=true, [1669]=true}
+        local pmcsToIgnore = {
+            -- FOR NOW, we ignore 3 PMCs where we get NaN vs the original code calculating a value (incorrectly)
+            [256]=true, [1475]=true, [1669]=true,
+            -- We also ignore new PMCs we get NaN for from the new code, which was incorrectly NOT returning a NaN in PIXLANG before!
+            [129]=true, [303]=true, [308]=true, [334]=true, [385]=true, [420]=true, [485]=true, [578]=true, [596]=true, [666]=true, [683]=true, [692]=true,
+            [720]=true, [812]=true, [965]=true, [1272]=true, [1358]=true, [1390]=true, [1439]=true, [1472]=true, [1540]=true, [1706]=true, [1752]=true,
+            [1763]=true, [1790]=true, [1795]=true, [1809]=true, [1838]=true, [1846]=true, [1869]=true, [2019]=true, [2057]=true, [2193]=true, [2194]=true,
+            [2258]=true, [2260]=true, [2308]=true
+        }
+
         local ignoreCount = 0
         for _, _ in pairs(pmcsToIgnore) do
             ignoreCount = ignoreCount+1

@@ -61,6 +61,9 @@ function Utils.findMapTableDifferenceLine(a, aName, b, bName, ignorePMCMap)
         return 0, "invalid table structure for: "..bName
     end
 
+    local firstLine = -1
+    local errMsg = ""
+
     for r, aPMC in ipairs(a[1]) do
         if ignorePMCMap[aPMC] == nil then
             if aPMC ~= b[1][r] then
@@ -68,12 +71,19 @@ function Utils.findMapTableDifferenceLine(a, aName, b, bName, ignorePMCMap)
             end
 
             if a[2][r] ~= b[2][r] then
-                return r, "value "..a[2][r].." doesn't equal "..b[2][r].." (pmc="..aPMC..")"
+                if firstLine < 0 then
+                    firstLine = r
+                end
+
+                if #errMsg > 0 then
+                    errMsg = errMsg.."\n"
+                end
+                errMsg = errMsg.."value "..a[2][r].." doesn't equal "..b[2][r].." (pmc="..aPMC..")"
             end
         end
     end
     
-    return -1, ""
+    return firstLine, errMsg
 end
 
 ----------------------------------------- Benchmarking/Profiling

@@ -471,7 +471,7 @@ end
 
 -- This is slow! PMC doesn't match index but surely we could skip and start looping from near it!
 
--- Retrieves the value for a given PMC from the map m
+-- Retrieves the value for a given PMC from the map m. If the value does not exist, nil is returned
 -- m: Map to read
 -- pmc: Scalar PMC number to find corresponding value of
 function Map.getPMCValue(m, pmc)
