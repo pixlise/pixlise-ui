@@ -155,10 +155,11 @@ export class MonacoEditorService
 
         let luaLang = language;
         luaLang["builtins"] = LuaTranspiler.builtinFunctions;
+        luaLang["builtins"] = luaLang["builtins"].concat(DataModuleService.getBuiltInModuleNames());
         luaLang.tokenizer.root = [
-            [/([a-z_A-Z]+)([.])([a-z_A-Z]+)(\s*[(])/, ["identifier", "@delimiter", "function", "@brackets"]],
+            [/([a-z_A-Z]+)([.])([a-z_A-Z]+)(\s*[(])/, [{ cases: { "@builtins": "builtin", "@default": "identifier" } }, "@delimiter", "function", "@brackets"]],
             [/([a-z_A-Z]+)(\s*[(])/, [{ cases: { "@builtins": "builtin", "@default": "function" } }, "@brackets"]],
-            [/([a-z_A-Z]+)([.])([a-z_A-Z]+)/, ["identifier", "@delimiter", "member"]],
+            [/([a-z_A-Z]+)([.])([a-z_A-Z]+)/, [{ cases: { "@builtins": "builtin", "@default": "identifier" } }, "@delimiter", "member"]],
             ...luaLang.tokenizer.root,
         ];
 
