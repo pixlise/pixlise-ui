@@ -45,10 +45,64 @@ export class LUAHelp extends SourceHelp
         PIXLANGHelp.makeDataFunctionHelp(this);
     }
 
+    private loadBuiltinHelp(): void
+    {
+        this.addHelp(
+            new FunctionHelp("print", "", "Print a string or value to the Logs view", "", 
+                [new FunctionParamHelp("message", "The message to print")])
+        );
+
+        this.addHelp(
+            new FunctionHelp("next", "", "Returns the next key and value in a table", "",
+                [new FunctionParamHelp("table", "The table to iterate over"), new FunctionParamHelp("index", "The index to start from")])
+        );
+
+        this.addHelp(
+            new FunctionHelp("tostring", "", "Converts a value to a string", "",
+                [new FunctionParamHelp("value", "The value to convert")])
+        );
+
+        this.addHelp(
+            new FunctionHelp("tonumber", "", "Converts a value to a number. Returns nil if it can't be converted", "",
+                [new FunctionParamHelp("value", "The value to convert")])
+        );
+
+        this.addHelp(
+            new FunctionHelp("type", "", "Returns the type of a value", "",
+                [new FunctionParamHelp("value", "The value to check")])
+        );
+
+        this.addHelp(
+            new FunctionHelp("pairs", "", "Returns an iterator function that iterates over all key-value pairs in a table", "",
+                [new FunctionParamHelp("table", "The table to iterate over")])
+        );
+
+        this.addHelp(
+            new FunctionHelp("assert", "", "Checks if a value is true, and if not, throws an error", "",
+                [new FunctionParamHelp("value", "The value to check"), new FunctionParamHelp("message", "The error message to throw")])
+        );
+
+        this.addHelp(
+            new FunctionHelp("error", "", "Throws an error", "",
+                [new FunctionParamHelp("message", "The error message to throw")])
+        );
+
+        this.addHelp(
+            new FunctionHelp("ipairs", "", "Returns an iterator function that iterates over all key-value pairs in a table", "",
+                [new FunctionParamHelp("table", "The table to iterate over")])
+        );
+
+        this.addHelp(
+            new FunctionHelp("select", "", "Returns the value at the given index in the given table", "",
+                [new FunctionParamHelp("index", "The index to get"), new FunctionParamHelp("table", "The table to get from")])
+        );
+    }
+
     buildHelpForSource(originID: string, sourceCode: string): void
     {
         // Clear any that we have
         this.clearHelp(originID);
+        this.loadBuiltinHelp();
 
         // Form new help
         let help = this.makeHelpForSource(originID, sourceCode);
@@ -140,7 +194,7 @@ export class LUAHelp extends SourceHelp
     // list of lines, and building help text as we find it
     private getFuncDoc(sourceLines: string[], funcLine: number): string[]
     {
-        const docLineStart = "--"
+        const docLineStart = "--";
         let docLines: string[] = [];
 
         for(let c = funcLine-1; c >= 0; c--)
