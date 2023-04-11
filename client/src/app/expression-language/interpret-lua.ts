@@ -205,47 +205,58 @@ export class LuaDataQuerier
 */
     private LuaFunctionArgCounts = [3, 2, 2, 3, 3, 1, 1, 2, 0, 1, 1];
     private LuaCallableFunctions = new Map<string, any>([
-        ["element", (a,b,c)=>{
+        ["element", (a,b,c)=>
+        {
             this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantElementExpression(a, b, c));
             return this.makeLuaTable(`elem-${a}-${b}-${c}`, this._dataSource.readElement([a, b, c]));
         }],
-        ["elementSum", (a,b)=>{
+        ["elementSum", (a,b)=>
+        {
             // Dont save runtime stat here, this works for any quant
             return this.makeLuaTable(`elemSum-${a}-${b}`, this._dataSource.readElementSum([a, b]));
         }],
-        ["data", (a,b)=>{
+        ["data", (a,b)=>
+        {
             this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantDataExpression(a, b));
             return this.makeLuaTable(`data-${a}-${b}`, this._dataSource.readMap([a, b]));
         }],
-        ["spectrum", (a,b,c)=>{
+        ["spectrum", (a,b,c)=>
+        {
             this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
             return this.makeLuaTable(`spectrum-${a}-${b}-${c}`, this._dataSource.readSpectrum([a, b, c]));
         }],
-        ["spectrumDiff", (a,b,c)=>{
+        ["spectrumDiff", (a,b,c)=>
+        {
             this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
             return this.makeLuaTable(`spectrumDiff-${a}-${b}-${c}`, this._dataSource.readSpectrumDifferences([a, b, c]));
         }],
-        ["pseudo", (a)=>{
+        ["pseudo", (a)=>
+        {
             this._runtimeDataRequired.add(DataExpressionId.makePredefinedPseudoIntensityExpression(a));
             return this.makeLuaTable(`pseudo-${a}`, this._dataSource.readPseudoIntensity([a]));
         }],
-        ["housekeeping", (a)=>{
+        ["housekeeping", (a)=>
+        {
             this._runtimeDataRequired.add(DataQueryResult.DataTypeHousekeeping+"-"+a);
             return this.makeLuaTable(`housekeeping-${a}`, this._dataSource.readHousekeepingData([a]));
         }],
-        ["diffractionPeaks", (a,b)=>{
+        ["diffractionPeaks", (a,b)=>
+        {
             this._runtimeDataRequired.add(DataQueryResult.DataTypeDiffraction);
             return this.makeLuaTable(`diffractionPeaks-${a}-${b}`, this._dataSource.readDiffractionData([a, b]));
         }],
-        ["roughness", ()=>{
+        ["roughness", ()=>
+        {
             this._runtimeDataRequired.add(DataQueryResult.DataTypeRoughness);
             return this.makeLuaTable("roughness", this._dataSource.readRoughnessData([]));
         }],
-        ["position", (a)=>{
+        ["position", (a)=>
+        {
             this._runtimeDataRequired.add(DataQueryResult.DataTypePosition);
             return this.makeLuaTable(`position-${a}`, this._dataSource.readPosition([a]));
         }],
-        ["makeMap", (a)=>{
+        ["makeMap", (a)=>
+        {
             return this.makeLuaTable(`makeMap-${a}`, this._dataSource.makeMap([a]));
         }],
     ]);

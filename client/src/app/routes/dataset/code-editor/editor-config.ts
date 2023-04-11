@@ -3,12 +3,25 @@ import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-lan
 import { DataExpression } from "src/app/models/Expression";
 import { DataModuleService, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 
+export class LuaRuntimeError
+{
+    constructor(    
+        public stack: string = "",
+        public line: number = -1,
+        public errType: string = "",
+        public sourceLine: string = "",
+        public message: string = "",
+    ){}
+}
+
 class EditorConfig
 {
     private _modules: DataExpressionModule[] = [];
     public isSaveableOutput: boolean = true;
 
     public linkedModuleID: string = null;
+
+    public runtimeError: LuaRuntimeError = null;
 
     constructor(
         public expression: DataExpression = null,
@@ -106,6 +119,7 @@ class EditorConfig
             this.expression.sourceCode = val;
             this.isCodeChanged = true;
             this.isExpressionSaved = false;
+            this.runtimeError = null;
         }
     }
 
@@ -261,7 +275,11 @@ class EditorConfig
     get isLoadedVersionLatest(): boolean
     {
         let latestVersion = this.latestVersion?.version;
-        return latestVersion && latestVersion === this.version?.version;
+        
+        let [latestMajor, latestMinor] = (latestVersion?.split(".") || []).map(version => parseInt(version));
+        let [currentMajor, currentMinor] = (this.version?.version?.split(".") || []).map(version => parseInt(version));
+        
+        return latestVersion && latestMajor === currentMajor && latestMinor === currentMinor;
     }
 
     get isLatestVersionReleased(): boolean

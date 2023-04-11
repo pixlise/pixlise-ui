@@ -59,7 +59,7 @@ import { DataSet } from "src/app/models/DataSet";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
-import EditorConfig from "./editor-config";
+import EditorConfig, { LuaRuntimeError } from "./editor-config";
 import { DiffVersions } from "src/app/UI/expression-metadata-editor/expression-metadata-editor.component";
 
 @Component({
@@ -837,6 +837,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
     onToggleSplitScreen(): void
     {
+        this.diffText = "";
+
         if(!this.bottomEditor.expression && !this.isSplitScreen && this.topEditor.modules.length > 0)
         {
             let firstInstalledModule = this.topEditor.modules[0];
@@ -946,7 +948,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                         ()=>
                         {
                             this.createTopRowComponents(selectors.topWidgetSelectors);
-                            // this.runExpression();
                         }
                     );
                 }
@@ -1199,6 +1200,15 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.evaluatedExpression = null;
                     this.stderr = `${err}`;
                     editor.isSaveableOutput = false;
+
+                    if(runTop)
+                    {
+                        this.topEditor.runtimeError = new LuaRuntimeError(err["stack"], err["line"], err["errType"], err["sourceLine"], this.stderr);
+                    }
+                    else
+                    {
+                        this.bottomEditor.runtimeError = new LuaRuntimeError(err["stack"], err["line"], err["errType"], err["sourceLine"], this.stderr);
+                    }
                 }
             );
         }
