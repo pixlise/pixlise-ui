@@ -34,6 +34,7 @@ import { ObjectCreator } from "src/app/models/BasicTypes";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { MonacoEditorService, MONACO_LUA_LANGUAGE_NAME } from "src/app/services/monaco-editor.service";
+import { LuaRuntimeError } from "src/app/routes/dataset/code-editor/editor-config";
 
 
 export class DataExpressionModule
@@ -82,12 +83,8 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     private _subs = new Subscription();
     private _expr: DataExpression = null;
 
-    private _markTextPositions: MarkPosition[] = [];
-    private _markMatchedBracketPositions: MarkPosition[] = [];
-
     private _gutterWidth: number = 0;
 
-    private _initAsLua: boolean = false;
     private _installedModules: DataExpressionModule[] = [];
     private _isHeaderOpen: boolean = false;
 
@@ -101,6 +98,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
     // If this is not null, will trigger diff view
     private _diffText: string = null;
+    private _runtimeError: LuaRuntimeError = null;
 
     @Input() showHelp: boolean = true;
     @Input() range: Range = null;
@@ -353,6 +351,28 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
                 this._editor.getModel().dispose();
             }
             this.createDiffEditor();
+        }
+    }
+
+    get runtimeError(): LuaRuntimeError
+    {
+        return this._runtimeError;
+    }
+
+    @Input() set runtimeError(value: LuaRuntimeError)
+    {
+        this._runtimeError = value;
+        if(this._runtimeError)
+        {
+            let marker =
+            {
+                message: this._runtimeError.message,
+                severity: this.monaco.MarkerSeverity.Error,
+                startLineNumber: this._runtimeError.line,
+                startColumn: 1
+            };
+
+            this.monaco.editor.setModelMarkers(this._editor.getModel(), "owner", [marker]);
         }
     }
 
