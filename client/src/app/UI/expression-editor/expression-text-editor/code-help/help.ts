@@ -362,6 +362,7 @@ export class HelpSignature
 export class SourceHelp
 {
     private _allHelp = new Map<string, FunctionHelp>();
+    protected _keywords: string[] = [];
 
     constructor(public commentStartToken: string)
     {
@@ -385,9 +386,14 @@ export class SourceHelp
         }
     }
 
-    getKeywords(): string[]
+    getAllFunctions(): string[]
     {
         return Array.from(this._allHelp.keys());
+    }
+
+    getKeywords(): string[]
+    {
+        return this._keywords;
     }
 
     getCompletionFunctions(moduleName: string): HelpCompletionItem[]

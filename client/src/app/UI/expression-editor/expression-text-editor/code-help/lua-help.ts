@@ -29,71 +29,85 @@
 
 import { PIXLANGHelp } from "./pixlang-help";
 import { SourceHelp, FunctionHelp, FunctionParamHelp } from "./help";
+import { InterpreterDataSource } from "src/app/expression-language/interpreter-data-source";
 
 
 export class LUAHelp extends SourceHelp
 {
-/*    private _luaKeywords = ["and", "break", "do", "else", "elseif", "end", "false", "for",
-                            "function", "if", "in", "local", "nil", "not", "or", "repeat",
-                            "return", "then", "true", "until", "while", "goto"];*/
-
     constructor()
     {
         super("--");
 
+        this._keywords = ["and", "break", "do", "else", "elseif", "end", "false", "for",
+            "function", "if", "in", "local", "nil", "not", "or", "repeat",
+            "return", "then", "true", "until", "while", "goto"
+        ];
+
         // These are shared between the 2 languages, same syntax, etc
         PIXLANGHelp.makeDataFunctionHelp(this);
+
+        // This is more similar to what's in PIXLANGHelp.makeDataFunctionHelp but new to Lua only
+        this.addHelp(
+            new FunctionHelp("exists", "", "Checks if a given column exists in the given data type. For example: exists(\"element\", \"CaO\")", "", [
+                new FunctionParamHelp("DataType", "The data type we're checking", InterpreterDataSource.validExistsDataTypes), 
+                new FunctionParamHelp("Column", "The column to check, depends on DataType passed")
+            ])
+        );
+
+        // These are local help items that we have stick around, not part of modules, so shouldn't be cleared later
+        this.loadBuiltinHelp();
     }
 
     private loadBuiltinHelp(): void
     {
+        const OriginID = "";
         this.addHelp(
-            new FunctionHelp("print", "", "Print a string or value to the Logs view", "", 
+            new FunctionHelp("print", "", "Print a string or value to the Logs view", OriginID, 
                 [new FunctionParamHelp("message", "The message to print")])
         );
 
         this.addHelp(
-            new FunctionHelp("next", "", "Returns the next key and value in a table", "",
+            new FunctionHelp("next", "", "Returns the next key and value in a table", OriginID,
                 [new FunctionParamHelp("table", "The table to iterate over"), new FunctionParamHelp("index", "The index to start from")])
         );
 
         this.addHelp(
-            new FunctionHelp("tostring", "", "Converts a value to a string", "",
+            new FunctionHelp("tostring", "", "Converts a value to a string", OriginID,
                 [new FunctionParamHelp("value", "The value to convert")])
         );
 
         this.addHelp(
-            new FunctionHelp("tonumber", "", "Converts a value to a number. Returns nil if it can't be converted", "",
+            new FunctionHelp("tonumber", "", "Converts a value to a number. Returns nil if it can't be converted", OriginID,
                 [new FunctionParamHelp("value", "The value to convert")])
         );
 
         this.addHelp(
-            new FunctionHelp("type", "", "Returns the type of a value", "",
+            new FunctionHelp("type", "", "Returns the type of a value", OriginID,
                 [new FunctionParamHelp("value", "The value to check")])
         );
 
         this.addHelp(
-            new FunctionHelp("pairs", "", "Returns an iterator function that iterates over all key-value pairs in a table", "",
+            new FunctionHelp("pairs", "", "Returns an iterator function that iterates over all key-value pairs in a table", OriginID,
                 [new FunctionParamHelp("table", "The table to iterate over")])
         );
 
         this.addHelp(
-            new FunctionHelp("assert", "", "Checks if a value is true, and if not, throws an error", "",
+            new FunctionHelp("assert", "", "Checks if a value is true, and if not, throws an error", OriginID,
                 [new FunctionParamHelp("value", "The value to check"), new FunctionParamHelp("message", "The error message to throw")])
         );
 
         this.addHelp(
-            new FunctionHelp("error", "", "Throws an error", "",
+            new FunctionHelp("error", "", "Throws an error", OriginID,
                 [new FunctionParamHelp("message", "The error message to throw")])
         );
 
         this.addHelp(
-            new FunctionHelp("ipairs", "", "Returns an iterator function that iterates over all key-value pairs in a table", "",
+            new FunctionHelp("ipairs", "", "Returns an iterator function that iterates over all key-value pairs in a table", OriginID,
                 [new FunctionParamHelp("table", "The table to iterate over")])
         );
 
         this.addHelp(
-            new FunctionHelp("select", "", "Returns the value at the given index in the given table", "",
+            new FunctionHelp("select", "", "Returns the value at the given index in the given table", OriginID,
                 [new FunctionParamHelp("index", "The index to get"), new FunctionParamHelp("table", "The table to get from")])
         );
     }
@@ -102,7 +116,6 @@ export class LUAHelp extends SourceHelp
     {
         // Clear any that we have
         this.clearHelp(originID);
-        this.loadBuiltinHelp();
 
         // Form new help
         let help = this.makeHelpForSource(originID, sourceCode);

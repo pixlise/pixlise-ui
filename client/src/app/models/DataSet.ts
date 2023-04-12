@@ -532,20 +532,31 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         return PMCDataValues.makeWithValues(values);
     }
 
+    getPseudoIntensityElementsList(): string[]
+    {
+        let ranges = this.experiment.getPseudoIntensityRangesList();
+        let elems: string[] = [];
+        for(let range of ranges)
+        {
+            elems.push(range.getName());
+        }
+        return elems;
+    }
+
     // HousekeepingDataQuerierSource interface
     getHousekeepingData(name: string): PMCDataValues
     {
-        let metaLabels = this.experiment.getMetaLabelsList();
-        let metaTypes = this.experiment.getMetaTypesList();
+        const metaLabels = this.experiment.getMetaLabelsList();
+        const metaTypes = this.experiment.getMetaTypesList();
 
         // If it exists as a metaLabel and has a type we can return, do it
-        let metaIdx = metaLabels.indexOf(name);
+        const metaIdx = metaLabels.indexOf(name);
         if(metaIdx < 0)
         {
             throw new Error("The currently loaded dataset does not include housekeeping data with column name: \""+name+"\"");
         }
 
-        let metaType = metaTypes[metaIdx];
+        const metaType = metaTypes[metaIdx];
         if(metaType != Experiment.MetaDataType.MT_FLOAT && metaType != Experiment.MetaDataType.MT_INT)
         {
             throw new Error("Non-numeric data type for housekeeping data column: "+name);
@@ -555,7 +566,6 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         let values: PMCDataValue[] = [];
 
         let locs = this.experiment.getLocationsList();
-        let idx = 0;
         for(let loc of locs)
         {
             let metaList = loc.getMetaList();
@@ -609,6 +619,29 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         }
 
         return PMCDataValues.makeWithValues(values);
+    }
+
+    hasHousekeepingData(name: string): boolean
+    {
+        const metaLabels = this.experiment.getMetaLabelsList();
+        const metaTypes = this.experiment.getMetaTypesList();
+
+        // If it exists as a metaLabel and has a type we can return, do it
+        const metaIdx = metaLabels.indexOf(name);
+        if(metaIdx < 0)
+        {
+            // Name not found
+            return false;
+        }
+
+        const metaType = metaTypes[metaIdx];
+        if(metaType != Experiment.MetaDataType.MT_FLOAT && metaType != Experiment.MetaDataType.MT_INT)
+        {
+            // We can only return floats & ints so say no
+            return false;
+        }
+
+        return true;
     }
 
     // SpectrumDataQuerierSource
@@ -866,17 +899,6 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         }
 
         return loc.source.getRtt();
-    }
-
-    getPseudoIntensityElementsList(): string[]
-    {
-        let ranges = this.experiment.getPseudoIntensityRangesList();
-        let elems: string[] = [];
-        for(let range of ranges)
-        {
-            elems.push(range.getName());
-        }
-        return elems;
     }
 
     getPMCsForLocationIndexes(locationIndexes: number[], onlyWithNormalOrDwellSpectra: boolean): Set<number>

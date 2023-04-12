@@ -316,11 +316,6 @@ export class QuantificationLayer implements QuantifiedDataQuerierSource
         return this._dataColumns;
     }
 
-    getDetectors(): string[]
-    {
-        return this._detectors;
-    }
-
     makeSelectionLocationList(detectorId: string, dataset: DataSet): Set<number>
     {
         // Run through all our data, find the PMC, get its location index and return that
@@ -432,6 +427,16 @@ export class QuantificationLayer implements QuantifiedDataQuerierSource
         }
 
         return result;
+    }
+
+    getDetectors(): string[]
+    {
+        return this._detectors;
+    }
+
+    columnExists(col: string): boolean
+    {
+        return this.getColumnIndex(col) > -1;
     }
 
     private getQuantifiedDataValues(detectorId: string, colIdx: number, mult: number, isPctColumn: boolean): PMCDataValue[]

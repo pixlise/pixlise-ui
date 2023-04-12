@@ -202,7 +202,7 @@ export class MonacoEditorService
         monaco.languages.register({ id: EXPR_LANGUAGE_PIXLANG });
 
         // Register a tokens provider for the language
-        let keywords = this._helpPIXLANG.getKeywords();
+        let keywords = this._helpPIXLANG.getAllFunctions();
         monaco.languages.setMonarchTokensProvider(EXPR_LANGUAGE_PIXLANG, {
             keywords,
             tokenizer: {
@@ -396,8 +396,7 @@ export class MonacoEditorService
         let monaco = this.monaco;
         let result/*: CompletionItem[]*/ = [];
 
-        // Otherwise, stick to global functions and modules
-        // If we're still here, show global functions and modules
+        // Show global functions
         let funcs = helpSource.getCompletionFunctions("");
         for(let item of funcs)
         {
@@ -415,15 +414,35 @@ export class MonacoEditorService
             });
         }
 
+        // Show all modules
         let mods = helpSource.getCompletionModules("");
         for(let item of mods)
         {
             result.push({
                 label: item.name,
-                kind: monaco.languages.CompletionItemKind.Module,   // vs .Class
-                                                                    // See: https://microsoft.github.io/monaco-editor/typedoc/enums/languages.CompletionItemKind.html
+                // Another option would've been .Class
+                // See: https://microsoft.github.io/monaco-editor/typedoc/enums/languages.CompletionItemKind.html
+                kind: monaco.languages.CompletionItemKind.Module,   
                 insertText: item.name,
                 detail: item.doc,
+                //documentation: item.doc,
+                insertTextRules:
+                    monaco.languages.CompletionItemInsertTextRule
+                        .InsertAsSnippet,
+                range: range,
+                //commitCharacters: ["("],
+            });
+        }
+
+        // Show language keywords
+        let kw = helpSource.getKeywords();
+        for(let word of kw)
+        {
+            result.push({
+                label: word,
+                kind: monaco.languages.CompletionItemKind.Keyword,
+                insertText: word,
+                //detail: item.doc,
                 //documentation: item.doc,
                 insertTextRules:
                     monaco.languages.CompletionItemInsertTextRule
