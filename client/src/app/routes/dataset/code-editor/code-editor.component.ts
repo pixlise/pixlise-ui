@@ -302,7 +302,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             combineLatest(installedModules).subscribe((modules) =>
             {
                 let installedModuleExpressions = [];
-                editor.modules = [];
+                editor.rawModules = [];
 
                 let userID = this._authService.getUserID();
                 modules.sort((moduleA, moduleB)=>
@@ -346,13 +346,10 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                         allVersions = Array.from(sourceModule.versions.keys());
                     }
 
-                    editor.modules.push(new DataExpressionModule(module.id, module.name, module.comments, module.version.version, module.origin.creator, allVersions));
+                    editor.rawModules.push(new DataExpressionModule(module.id, module.name, module.comments, module.version.version, module.origin.creator, allVersions));
                     installedModuleExpressions.push(module.convertToExpression());
                     this.openModules[`${module.id}-${module.version}`] = module;
                 });
-
-                // Don't show expression as unsaved when we're initially loading modules
-                editor.isExpressionSaved = true;
 
                 this.sidebarTopSections["installed-modules"] = this.makeInstalledModulesGroup(installedModuleExpressions);
                 this.regenerateItemList();
@@ -360,8 +357,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         }
         else
         {
-            editor.modules = [];
-            editor.isExpressionSaved = true;
+            editor.rawModules = [];
 
             this.sidebarTopSections["installed-modules"] = this.makeInstalledModulesGroup();
             this.regenerateItemList();
@@ -457,7 +453,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.topEditor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
 
                     this._fetchedExpression = true;
-                    this.topEditor.fetchStoredExpression();
 
                     // Add the current expression to the currently-open list
                     this.sidebarTopSections["currently-open"].childType = "expression";
@@ -468,6 +463,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
                     this.loadInstalledModules();
                     this.regenerateItemList();
+
+                    this.topEditor.fetchStoredExpression();
                     setTimeout(() =>
                     {
                         this.runExpression(true, true);
@@ -494,7 +491,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.topEditor.expression = module.convertToExpression();
 
                     this._fetchedExpression = true;
-                    this.topEditor.fetchStoredExpression();
 
                     this.sidebarTopSections["currently-open"].childType = "module";
                     this.sidebarTopSections["currently-open"].items = [
@@ -508,6 +504,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     }
 
                     this.regenerateItemList();
+
+                    this.topEditor.fetchStoredExpression();
                 },
                 (error) =>
                 {
@@ -747,17 +745,18 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 editor.userID = this._authService.getUserID();
                 editor.isModule = false;
                 editor.expression = expression.copy();
-                editor.fetchStoredExpression();
                 editor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
                 
                 if(position === "top")
                 {
                     this.topEditor = editor;
                     this.updateMainExpressionID(id);
+                    this.topEditor.fetchStoredExpression();
                 }
                 else
                 {
                     this.bottomEditor = editor;
+                    this.bottomEditor.fetchStoredExpression();
                 }
             });
 
@@ -796,7 +795,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     editor.expression = module.convertToExpression();
                     editor.version = module.version;
                     editor.versions = this._moduleService.getSourceDataModule(id).versions;
-                    editor.fetchStoredExpression();
                     if(showSplit)
                     {
                         this.isSplitScreen = true;
@@ -806,10 +804,12 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     {
                         this.topEditor = editor;
                         this.updateMainExpressionID(module.id, module.version.version);
+                        this.topEditor.fetchStoredExpression();
                     }
                     else
                     {
                         this.bottomEditor = editor;
+                        this.bottomEditor.fetchStoredExpression();
                     }
 
                     this.updateCurrentlyOpenList(true);
@@ -823,7 +823,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 editor.expression = module.convertToExpression();
                 editor.version = module.version;
                 editor.versions = this._moduleService.getSourceDataModule(id).versions;
-                editor.fetchStoredExpression();
+
                 if(showSplit)
                 {
                     this.isSplitScreen = true;
@@ -833,10 +833,12 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 {
                     this.topEditor = editor;
                     this._router.navigate(["dataset", this._datasetID, "code-editor", module.id], {queryParams: {version: module.version.version}});
+                    this.topEditor.fetchStoredExpression();
                 }
                 else
                 {
                     this.bottomEditor = editor;
+                    this.bottomEditor.fetchStoredExpression();
                 }
 
                 this.updateCurrentlyOpenList(true);

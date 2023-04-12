@@ -181,6 +181,12 @@ class EditorConfig
         this.isExpressionSaved = false;
     }
 
+    // Bypasses the setter to avoid setting isExpressionSaved to false
+    set rawModules(modules: DataExpressionModule[])
+    {
+        this._modules = modules;
+    }
+
     checkIfModulesAreLatest(moduleService: DataModuleService): void
     {
         if(this.expression && this.expression.sourceLanguage === EXPR_LANGUAGE_LUA)
@@ -214,6 +220,8 @@ class EditorConfig
             if(!this.isModule || this.isLoadedLatestEditableVersion)
             {
                 this.editExpression = parsedExpression.text;
+                this.isExpressionSaved = false;
+                this.isCodeChanged = true;
             }
         }
 
