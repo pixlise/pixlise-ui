@@ -335,43 +335,6 @@ export class InterpreterDataSource
         return PMCDataValues.makeWithValues(values);
     }
 
-    ////////////////////////////////////// Calling Trig Functions //////////////////////////////////////
-    // Expects: Function name, and arg of either PMCDataValues or scalar
-    // Returns: PMCDataValues or scalar depending on args
-    private mathFunction(funcName: string, argList): any
-    {
-        // Expect the right one(s)
-        let trigFunctionNames = ["sin", "cos", "tan", "asin", "acos", "atan", "exp", "ln"];
-        let trigFunctions = [Math.sin, Math.cos, Math.tan, Math.asin, Math.acos, Math.atan, Math.exp, Math.log];
-        let trigFuncIdx = trigFunctionNames.indexOf(funcName);
-        if(trigFuncIdx < 0)
-        {
-            throw new Error("trigFunction() expression unknown function: "+funcName);
-        }
- 
-        if(argList.length != 1)
-        {
-            throw new Error(funcName+"() expression expects 1 parameter: scalar (radians) OR map of radians");
-        }
-
-        let trigFunc = trigFunctions[trigFuncIdx];
-
-        // If argument is a scalar, we simply call the trig function and return the result as a single value
-        // this is useful for things like makeMap(sin(0.5)) where we want a whole map initialised to a certain value
-        if(typeof argList[0] == "number")
-        {
-            return trigFunc(argList[0]);
-        }
-
-        if(argList[0] instanceof PMCDataValues)
-        {
-            // Input is a map of radians, we run the trig function for each value and return a map of the same size
-            return argList[0].mathFunc(trigFunc);
-        }
-
-        throw new Error(funcName+"() expression expects 1 parameter: scalar (radians) OR map of radians. Arg was wrong type.");
-    }
-
     ////////////////////////////////////// Querying Periodic Table Data //////////////////////////////////////
     // Expects: Element symbol, eg Fe or O and also works with carbonates/oxides the same way the rest of
     //          PIXLISE works it out
@@ -428,4 +391,46 @@ export class InterpreterDataSource
 
         return this.housekeepingDataSource.getHousekeepingData(argList[0]);
     }
+
+    ////////////////////////////////////// Checking if data exists //////////////////////////////////////
+    // Expects: Data Type, Column
+    // Data Type must be one of: "element", "detector", "data", "housekeeping", "pseudo"
+    // The Column parameter depends on what the first one was, eg can ask for:
+    // - "element", "Ca" or "element", "CaO".
+    // - "detector", "A" or "detector", "Combined".
+    // - "data", "chisq".
+    // - "housekeeping", "f_pixl_3_3_volt"
+    // - "pseudo", "Ca"
+    public exists(dataType: string, column: string): boolean
+    {
+        // Check if the data is available
+        if(dataType == "element")
+        {
+            let elems = this.quantDataSource.getElementList();
+            return elems.indexOf(column) > -1;
+        }
+        else if(dataType == "detector")
+        {
+            let dets = this.quantDataSource.getDetectors();
+            return dets.indexOf(column) > -1;
+        }
+        else if(dataType == "data")
+        {
+            return this.quantDataSource.columnExists(column);
+        }
+        else if(dataType == "housekeeping")
+        {
+            return this.housekeepingDataSource.hasHousekeepingData(column);
+        }
+        else if(dataType == "pseudo")
+        {
+            let elems = this.pseudoDataSource.getPseudoIntensityElementsList();
+            return elems.indexOf(column) > -1;
+        }
+
+        const validDataTypes = InterpreterDataSource.validExistsDataTypes;
+        throw new Error("exists() expects 2 parameters: data type (one of: ["+validDataTypes.join(", ")+"]) and column");
+    }
+
+    public static validExistsDataTypes = ["element", "detector", "data", "housekeeping", "pseudo"];
 }

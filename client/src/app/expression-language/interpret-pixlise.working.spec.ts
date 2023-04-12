@@ -65,6 +65,16 @@ class MockSource implements QuantifiedDataQuerierSource
     {
         return this._pmcs;
     }
+
+    getDetectors(): string[]
+    {
+        return ["A", "B"];
+    }
+
+    columnExists(col: string): boolean
+    {
+        return col == "chisq";
+    }
 }
 
 class MockPseudoSource implements PseudoIntensityDataQuerierSource
@@ -83,6 +93,11 @@ class MockPseudoSource implements PseudoIntensityDataQuerierSource
         }
 
         return value;
+    }
+
+    getPseudoIntensityElementsList(): string[]
+    {
+        return Object.keys(this.data);
     }
 }
 
@@ -107,6 +122,12 @@ class MockHousekeepingSource implements HousekeepingDataQuerierSource
     getPositionData(axis: string): PMCDataValues
     {
         return this.getHousekeepingData(axis);
+    }
+
+    hasHousekeepingData(name: string): boolean
+    {
+        let value = this.data[name];
+        return (value !== undefined);
     }
 }
 

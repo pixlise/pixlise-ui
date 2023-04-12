@@ -275,10 +275,14 @@ export class LuaDataQuerier
             this._lua.global.set(prefix+funcName, func);
         }
 
-        // Special simple one, we don't have debugging for this
+        // Special simple ones, we don't have debugging for these
         this._lua.global.set("atomicMass", (symbol)=>
         {
             return periodicTableDB.getMolecularMass(symbol);
+        });
+        this._lua.global.set("exists", (dataType, column)=>
+        {
+            return this._dataSource.exists(dataType, column);
         });
     }
 
