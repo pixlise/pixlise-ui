@@ -33,13 +33,14 @@ import { SourceHelp, FunctionHelp, FunctionParamHelp } from "./help";
 
 export class LUAHelp extends SourceHelp
 {
-/*    private _luaKeywords = ["and", "break", "do", "else", "elseif", "end", "false", "for",
-                            "function", "if", "in", "local", "nil", "not", "or", "repeat",
-                            "return", "then", "true", "until", "while", "goto"];*/
-
     constructor()
     {
         super("--");
+
+        this._keywords = ["and", "break", "do", "else", "elseif", "end", "false", "for",
+            "function", "if", "in", "local", "nil", "not", "or", "repeat",
+            "return", "then", "true", "until", "while", "goto"
+        ];
 
         // These are shared between the 2 languages, same syntax, etc
         PIXLANGHelp.makeDataFunctionHelp(this);
