@@ -178,7 +178,7 @@ class EditorConfig
 
     checkIfModulesAreLatest(moduleService: DataModuleService): void
     {
-        if(this.expression)
+        if(this.expression && this.expression.sourceLanguage === EXPR_LANGUAGE_LUA)
         {
             // We have to check this separately since we're making a copy
             let isModuleListUpToDate = this.expression.moduleReferences?.some(ref => ref.checkIsLatest(moduleService));
