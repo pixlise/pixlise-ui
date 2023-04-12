@@ -351,6 +351,9 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.openModules[`${module.id}-${module.version}`] = module;
                 });
 
+                // Don't show expression as unsaved when we're initially loading modules
+                editor.isExpressionSaved = true;
+
                 this.sidebarTopSections["installed-modules"] = this.makeInstalledModulesGroup(installedModuleExpressions);
                 this.regenerateItemList();
             });
@@ -358,6 +361,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         else
         {
             editor.modules = [];
+            editor.isExpressionSaved = true;
+
             this.sidebarTopSections["installed-modules"] = this.makeInstalledModulesGroup();
             this.regenerateItemList();
         }
