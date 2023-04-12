@@ -3,6 +3,11 @@ import { EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-lan
 import { DataExpression } from "src/app/models/Expression";
 import { DataModuleService, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 
+export type LocalStorageExpression = {
+    text: string;
+    date: number; // Seconds since epoch
+}
+
 export class LuaRuntimeError
 {
     constructor(    
@@ -190,6 +195,38 @@ class EditorConfig
     {
         this.isSaveableOutput = true;
         this.editExpression = text;
+        this.storeExpression();
+    }
+
+    storeExpression(): void
+    {
+        let storedExpression: LocalStorageExpression = { text: this.editExpression, date: Math.round(Date.now() / 1000) };
+        localStorage.setItem(this.expression.id, JSON.stringify(storedExpression));
+    }
+
+    fetchStoredExpression(): void
+    {
+        let storedExpression = localStorage.getItem(this.expression.id);
+        let parsedExpression = storedExpression ? JSON.parse(storedExpression) : null;
+        if(!this.isSharedByOtherUser && parsedExpression && parsedExpression.date > this.expression.modUnixTimeSec)
+        {
+            // Only update the expression if it's not a module or if it's the latest version
+            if(!this.isModule || this.isLoadedLatestEditableVersion)
+            {
+                this.editExpression = parsedExpression.text;
+            }
+        }
+
+        // Remove the stored expression if it's older than the expression returned from the API
+        else if(storedExpression)
+        {
+            localStorage.removeItem(this.expression.id);
+        }
+    }
+
+    removeStoredExpression(): void
+    {
+        localStorage.removeItem(this.expression.id);
     }
 
     onNameChange(name: string): void
@@ -270,6 +307,17 @@ class EditorConfig
         });
 
         return latestVersion;
+    }
+
+    get isLoadedLatestEditableVersion(): boolean
+    {
+        if(!this.expression || !this.isModule || !this.version?.version)
+        {
+            return false;
+        }
+
+        let latestVersion = this.latestVersion?.version;
+        return (this.isSharedByOtherUser && this.isLoadedVersionLatest) || (!this.isSharedByOtherUser && latestVersion === this.version?.version);
     }
 
     get isLoadedVersionLatest(): boolean

@@ -81,6 +81,16 @@ POSSIBILITY OF SUCH DAMAGE.
                 [valid]="topEditor.isLatestVersionReleased && (!topEditor.isModule || topEditor.isLoadedVersionLatest)"
                 [status]="topEditor.isLatestVersionReleased ? !topEditor.isLoadedVersionLatest ? 'Switch to latest version to edit' : 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
             ></status-indicator>
+            <icon-button
+                *ngIf="!topEditor.isExpressionSaved"
+                icon="assets/button-icons/refresh-light.svg"
+                (onClick)="onRevertChanges('top')"
+                [hasBackground]="false"
+                [state]="topEditorRevertableState"
+                #tooltip="matTooltip"
+                matTooltip="Revert changes to the last saved version"
+            >
+            </icon-button>
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                 <multi-switch-button
                     #tooltip="matTooltip"
@@ -226,7 +236,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 *ngIf="topEditor && topEditor.expression && (!topEditor.isModule || (topEditor.isModule && !isNewID))"
                 class="top-expression {{isTopEditorActive && isSplitScreen ? 'active' : ''}}"
                 [expression]="topEditor.expression"
-                [allowEdit]="topEditor.editable && (!topEditor.isModule || (topEditor.isModule && topEditor.isLoadedVersionLatest))"
+                [allowEdit]="topEditor.editable && (!topEditor.isModule || (topEditor.isModule && topEditor.isLoadedLatestEditableVersion))"
                 [isImmediatelyAppliable]="false"
                 [applyNow]="false"
                 (onTextChange)="onTextChange($event, 'top')"
@@ -288,6 +298,16 @@ POSSIBILITY OF SUCH DAMAGE.
                     [status]="bottomEditor.isLatestVersionReleased ? !bottomEditor.isLoadedVersionLatest ? 'Switch to latest version to edit' : 'Latest version is publicly available' : 'Latest version hasn\'t been released'"
                     (click)="onLinkModule(null)"
                 ></status-indicator>
+                <icon-button
+                    *ngIf="!bottomEditor.isExpressionSaved"
+                    icon="assets/button-icons/refresh-light.svg"
+                    (onClick)="onRevertChanges('bottom')"
+                    [hasBackground]="false"
+                    [state]="bottomEditorRevertableState"
+                    #tooltip="matTooltip"
+                    matTooltip="Revert changes to the last saved version"
+                >
+                </icon-button>
                 <expression-metadata-editor
                     *ngIf="bottomEditor.isModule && !bottomEditor.isLoadedVersionLatest"
                     class="bottom-metadata-editor"
@@ -325,7 +345,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 *ngIf="bottomEditor && bottomEditor.expression && isSplitScreen"
                 class="bottom-expression {{!isTopEditorActive && isSplitScreen ? 'active' : ''}}"
                 [expression]="bottomEditor.expression"
-                [allowEdit]="bottomEditor.editable && (!bottomEditor.isModule || bottomEditor.isLoadedVersionLatest)"
+                [allowEdit]="bottomEditor.editable && (!bottomEditor.isModule || bottomEditor.isLoadedLatestEditableVersion)"
                 [isImmediatelyAppliable]="false"
                 [applyNow]="false"
                 (onTextChange)="onTextChange($event, 'bottom')"

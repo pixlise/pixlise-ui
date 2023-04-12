@@ -61,6 +61,7 @@ import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSour
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
 import EditorConfig, { LuaRuntimeError } from "./editor-config";
 import { DiffVersions } from "src/app/UI/expression-metadata-editor/expression-metadata-editor.component";
+import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
 
 @Component({
     selector: "code-editor",
@@ -451,6 +452,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.topEditor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
 
                     this._fetchedExpression = true;
+                    this.topEditor.fetchStoredExpression();
 
                     // Add the current expression to the currently-open list
                     this.sidebarTopSections["currently-open"].childType = "expression";
@@ -487,6 +489,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.topEditor.expression = module.convertToExpression();
 
                     this._fetchedExpression = true;
+                    this.topEditor.fetchStoredExpression();
 
                     this.sidebarTopSections["currently-open"].childType = "module";
                     this.sidebarTopSections["currently-open"].items = [
@@ -595,6 +598,68 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.loadInstalledModules();
     }
 
+    get topEditorRevertableState(): IconButtonState
+    {
+        return this.topEditor.isExpressionSaved ? IconButtonState.DISABLED : IconButtonState.OFF;
+    }
+
+    get bottomEditorRevertableState(): IconButtonState
+    {
+        return this.bottomEditor.isExpressionSaved ? IconButtonState.DISABLED : IconButtonState.OFF;
+    }
+
+    onRevertChanges(position: string = "top"): void
+    {
+        let editor = position === "top" ? this.topEditor : this.bottomEditor;
+        if(!confirm(`Are you sure you want to revert all changes for ${editor.isModule ? "module" : "expression"} ${editor.expression.name}?`))
+        {
+            return;
+        }
+
+        editor.removeStoredExpression();
+        editor.isExpressionSaved = true;
+        editor.isCodeChanged = false;
+
+        if(editor.isModule)
+        {
+            this._moduleService.getModule(editor.expression.id, editor.version.version).subscribe((module) =>
+            {
+                if(!module)
+                {
+                    console.error(`Empty module: ${editor.expression.id}`);
+                    this.regenerateItemList();
+                    return;
+                }
+
+                editor.version = module.version;
+
+                editor.expression = null;
+                setTimeout(() => 
+                {
+                    editor.expression = module.convertToExpression();
+                });
+            });
+        }
+        else
+        {
+            this._expressionService.getExpressionAsync(editor.expression.id).subscribe((expression) =>
+            {
+                if(!expression)
+                {
+                    console.error(`Empty expression: ${editor.expression.id}`);
+                    this.regenerateItemList();
+                    return;
+                }
+    
+                editor.expression = null;
+                setTimeout(() => 
+                {
+                    editor.expression = expression.copy();
+                });
+            });
+        }
+    }
+
     onOpenSplitScreen({id, version, isModule}: {id: string; version: string; isModule: boolean;}): void
     {
         // Don't reopen the same module or expression
@@ -677,6 +742,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 editor.userID = this._authService.getUserID();
                 editor.isModule = false;
                 editor.expression = expression.copy();
+                editor.fetchStoredExpression();
                 editor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
                 
                 if(position === "top")
@@ -725,6 +791,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     editor.expression = module.convertToExpression();
                     editor.version = module.version;
                     editor.versions = this._moduleService.getSourceDataModule(id).versions;
+                    editor.fetchStoredExpression();
                     if(showSplit)
                     {
                         this.isSplitScreen = true;
@@ -751,6 +818,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 editor.expression = module.convertToExpression();
                 editor.version = module.version;
                 editor.versions = this._moduleService.getSourceDataModule(id).versions;
+                editor.fetchStoredExpression();
                 if(showSplit)
                 {
                     this.isSplitScreen = true;
