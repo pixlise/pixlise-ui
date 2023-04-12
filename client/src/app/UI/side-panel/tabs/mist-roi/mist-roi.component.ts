@@ -88,7 +88,6 @@ export class MistROIComponent implements OnInit
         ));
     }
 
-
     ngOnDestroy()
     {
         this._subs.unsubscribe();
@@ -98,7 +97,6 @@ export class MistROIComponent implements OnInit
     {
         return this._contextImageService.mdl.regionManager;
     }
-
 
     onGotModel(): void
     {
