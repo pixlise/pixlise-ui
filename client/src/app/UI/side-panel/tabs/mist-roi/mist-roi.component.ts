@@ -187,8 +187,10 @@ export class MistROIComponent implements OnInit
                         }
                     );
                 }
-                else
+                else if(response.includesMultipleDatasets)
                 {
+                    let mistROIsWithOffsets = [];
+
                     // Only allow upload of ROIs if they're to one of the combined sub-datasets
                     this._subDataSetIDs.forEach((subDatasetID: string) =>
                     {
@@ -198,6 +200,7 @@ export class MistROIComponent implements OnInit
                             return;
                         }
                         
+                        // Add ROIs without offsets to sub-dataset
                         this._roiService.bulkAdd(rois, response.overwrite, response.skipDuplicates, response.deleteExisting, true, subDatasetID).subscribe(
                             ()=>
                             {
@@ -208,7 +211,29 @@ export class MistROIComponent implements OnInit
                                 alert(httpErrorToString(err, ""));
                             }
                         );
+
+                        rois.forEach((roi) =>
+                        {
+                            let offset = this._datasetService.datasetLoaded.getIdOffsetForSubDataset(subDatasetID);
+                            if(offset)
+                            {
+                                roi.locationIndexes = roi.locationIndexes.map((locIdx) => locIdx + offset);
+                            }
+                            mistROIsWithOffsets.push(roi);
+                        });
                     });
+
+                    // Add ROIs to combined dataset
+                    this._roiService.bulkAdd(mistROIsWithOffsets, response.overwrite, response.skipDuplicates, response.deleteExisting, true).subscribe(
+                        ()=>
+                        {
+                            this._selectionService.clearSelection();
+                        },
+                        (err)=>
+                        {
+                            alert(httpErrorToString(err, ""));
+                        }
+                    );
                 }
                 this.expandedIndices = Array.from(new Set([...this.expandedIndices, 0]));
             }
