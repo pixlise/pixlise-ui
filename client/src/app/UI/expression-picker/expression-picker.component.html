@@ -57,6 +57,16 @@ POSSIBILITY OF SUCH DAMAGE.
                     [value]="author.user_id">{{author.name}}
                 </mat-option>
             </mat-select>
+            <two-state-icon-button
+                *ngIf="!data.singleSelection"
+                class="select-all-toggle"
+                #tooltip="matTooltip"
+                matTooltip="{{isAllFilteredSelected ? 'Deselect' : 'Select'}} all filtered layers"
+                [activeIcon]="activeIcon"
+                [inactiveIcon]="inactiveIcon"
+                [active]="isAllFilteredSelected"
+                (onToggle)="onSelectAllFiltered()">
+            </two-state-icon-button>
         </div>
     </div>
     <expression-list
