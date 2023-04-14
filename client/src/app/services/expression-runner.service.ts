@@ -50,7 +50,6 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { DataExpression } from "src/app/models/Expression";
 import { DataQuerier, EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { InterpreterDataSource } from "src/app/expression-language/interpreter-data-source";
-import { expression } from "mathjs";
 
 
 class LoadedSources

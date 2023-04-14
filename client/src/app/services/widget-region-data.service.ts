@@ -294,6 +294,24 @@ class QueryResultCache
         this._queryResultCache.clear();
     }
 
+    clearForROI(roiID: string)
+    {
+        let keysToClear = [];
+        for(let [key, cache] of this._queryResultCache)
+        {
+            if(cache.params.roiId == roiID)
+            {
+                keysToClear.push(key);
+            }
+        }
+
+        // Now clear them
+        for(let key of keysToClear)
+        {
+            this._queryResultCache.delete(key);
+        }
+    }
+
     private makeKey(params: DataSourceParams): string
     {
         return params.exprId+"/"+params.roiId+"/"+params.datasetId+"/"+params.units;
@@ -617,25 +635,6 @@ export class WidgetRegionDataService
 
         return resultItem;
     }
-
-/* Seems to have gone unused
-    public cacheExpression(query: DataSourceParams, expr: DataExpression, result: PMCDataValues, warning: string = ""): void
-    {
-        this._resultCache.addCachedResult(
-            query,
-            expr.modUnixTimeSec,
-            new RegionDataResultItem(
-                result,
-                null,
-                null,
-                warning,
-                expr,
-                this._regions.get(query.roiId),
-                query
-            )
-        );
-    }
-*/
 
     // Runs an expression with given parameters. If errors are encountered, they will be returned as part of the Observables own
     // error handling interface.
@@ -1004,9 +1003,13 @@ export class WidgetRegionDataService
                 }
                 else
                 {
+                    // Update the selected points region
                     let region = this.ensureRegionStored(PredefinedROIID.SelectedPoints);
                     region.pmcs = selection.beamSelection.getSelectedPMCs();
                     region.locationIndexes = Array.from(selection.beamSelection.locationIndexes);
+
+                    // Clear any cached expressions which depended on selection
+                    this._resultCache.clearForROI(PredefinedROIID.SelectedPoints);
 
                     this.widgetData$.next(WidgetDataUpdateReason.WUPD_SELECTION);
                 }
