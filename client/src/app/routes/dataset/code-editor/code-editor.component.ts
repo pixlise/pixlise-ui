@@ -52,17 +52,16 @@ import { ExpressionListHeaderToggleEvent, LiveLayerConfig } from "src/app/UI/ato
 import { LayerVisibilityChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
-import { RGBMix } from "src/app/services/rgbmix-config.service"
+import { RGBMix } from "src/app/services/rgbmix-config.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
-import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
+import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
 import EditorConfig, { LuaRuntimeError } from "./editor-config";
 import { DiffVersions } from "src/app/UI/expression-metadata-editor/expression-metadata-editor.component";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
-import { catchError } from "rxjs/operators";
 
 @Component({
     selector: "code-editor",
@@ -79,6 +78,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     private _previewComponent = null;
     private _datasetID: string;
     private _expressionID: string = "unsaved-new-expression";
+    private _runExpressionTimer = null;
 
     public isSidebarOpen = false;
     // What we display in the virtual-scroll capable list
@@ -228,7 +228,10 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             }
 
             this._expressionService.clearAllUnsavedFromCache();
-            this.resetEditors();
+            if(!this._newExpression)
+            {
+                this.resetEditors();
+            }
         });
     }
 
@@ -466,9 +469,16 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.regenerateItemList();
 
                     this.topEditor.fetchStoredExpression();
-                    setTimeout(() =>
+                    
+                    if(this._runExpressionTimer)
+                    {
+                        clearTimeout(this._runExpressionTimer);
+                    }
+
+                    this._runExpressionTimer = setTimeout(() =>
                     {
                         this.runExpression(true, true);
+                        this._runExpressionTimer = null;
                     }, 5000);
                 },
                 (error) =>
@@ -738,9 +748,16 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
             this.loadInstalledModules();
             this.regenerateItemList();
-            setTimeout(() =>
+
+            if(this._runExpressionTimer)
+            {
+                clearTimeout(this._runExpressionTimer);
+            }
+
+            this._runExpressionTimer = setTimeout(() =>
             {
                 this.runExpression(true, true);
+                this._runExpressionTimer = null;
             }, 5000);
 
             editor.expression = null;
@@ -902,6 +919,16 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
     navigateToNew(type: "expression" | "module" = "expression"): void
     {
+        if(this._runExpressionTimer)
+        {
+            clearTimeout(this._runExpressionTimer);
+            this._runExpressionTimer = null;
+        }
+
+        this._newExpression = true;
+        this.topEditor.expression = null;
+        this.bottomEditor.expression = null;
+        this._expressionID = type === "expression" ? DataExpressionId.NewExpression : DataExpressionId.NewModule;
         this._router.navigate(["dataset", this._datasetID, "code-editor", `new-${type}`]);
     }
 
