@@ -46,6 +46,7 @@ import { RGBMix } from "src/app/services/rgbmix-config.service";
 import { makeDataForExpressionList, ExpressionListBuilder, ExpressionListGroupNames, ExpressionListItems, LocationDataLayerPropertiesWithVisibility } from "src/app/models/ExpressionList";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { AuthenticationService } from "src/app/services/authentication.service";
 
 
 export class ExpressionPickerData
@@ -99,6 +100,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
         private _exprService: DataExpressionService,
         private _moduleService: DataModuleService,
         private _rgbMixService: RGBMixConfigService,
+        private _authService: AuthenticationService,
         public dialog: MatDialog
     )
     {
@@ -108,7 +110,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
     ngOnInit()
     {
         this._moduleService.refresh();
-        this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, this.data.showRGBMixes, this.data.showAnomalyExpressions, this._exprService);
+        this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, this.data.showRGBMixes, this.data.showAnomalyExpressions, this._exprService, this._authService);
 
         this.dialogRef.backdropClick().subscribe(
             ()=>

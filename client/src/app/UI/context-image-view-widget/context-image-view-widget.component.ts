@@ -56,6 +56,7 @@ import { ToolButtonState, ToolHostCreateSettings } from "src/app/UI/context-imag
 import { makeDataForExpressionList } from "src/app/models/ExpressionList";
 import { ROIService } from "src/app/services/roi.service";
 import { DataModuleService } from "src/app/services/data-module.service";
+import { AuthenticationService } from "src/app/services/authentication.service";
 
 
 @Component({
@@ -108,7 +109,8 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
         private _diffractionService: DiffractionPeakService,
         public dialog: MatDialog,
         private _loadingSvc: LoadingIndicatorService,
-        private _roiService: ROIService
+        private _roiService: ROIService,
+        private _authService: AuthenticationService
     )
     {
         //console.warn('ContextImageViewWidgetComponent ['+this.id+'] constructor, got service: '+contextImageService.getId());
@@ -175,7 +177,8 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
             this.widgetDataService,
             this._diffractionService,
             this.widgetPosition,
-            this._loadingSvc
+            this._loadingSvc,
+            this._authService
         );
         this.contextImageService.setModel(mdl);
 

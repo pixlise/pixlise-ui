@@ -178,7 +178,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.topEditor.userID = userID;
         this.bottomEditor.userID = userID;
 
-        this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, false, false, this._expressionService, false);
+        this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, false, false, this._expressionService, this._authService, false);
         this._datasetID = this._route.snapshot.parent?.params["dataset_id"];
         this._expressionID = this._route.snapshot.params["expression_id"];
 
