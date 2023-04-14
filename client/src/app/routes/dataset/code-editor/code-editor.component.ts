@@ -52,12 +52,12 @@ import { ExpressionListHeaderToggleEvent, LiveLayerConfig } from "src/app/UI/ato
 import { LayerVisibilityChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
-import { RGBMix } from "src/app/services/rgbmix-config.service"
+import { RGBMix } from "src/app/services/rgbmix-config.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
-import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
+import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
 import EditorConfig, { LuaRuntimeError } from "./editor-config";
 import { DiffVersions } from "src/app/UI/expression-metadata-editor/expression-metadata-editor.component";
@@ -78,6 +78,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     private _previewComponent = null;
     private _datasetID: string;
     private _expressionID: string = "unsaved-new-expression";
+    private _runExpressionTimer = null;
 
     public isSidebarOpen = false;
     // What we display in the virtual-scroll capable list
@@ -227,7 +228,10 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             }
 
             this._expressionService.clearAllUnsavedFromCache();
-            this.resetEditors();
+            if(!this._newExpression)
+            {
+                this.resetEditors();
+            }
         });
     }
 
@@ -387,7 +391,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.topEditor.isModule = !!version;
         if(this.topEditor.isModule)
         {
-            this.topEditor.versions = this._moduleService.getSourceDataModule(this._expressionID).versions;
+            this.topEditor.versions = this._moduleService.getSourceDataModule(this._expressionID)?.versions;
         }
 
         this.bottomEditor = new EditorConfig();
@@ -438,84 +442,92 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             // Check to make sure this is an expression and not a module
             if(!this.topEditor.isModule)
             {
-                this._expressionService.getExpressionAsync(this._expressionID).subscribe(
-                    (expression)=>
+                this._expressionService.getExpressionAsync(this._expressionID).subscribe((expression) =>
+                {
+                    if(!expression)
                     {
-                        if(!expression)
-                        {
-                            console.error(`Empty expression: ${this._expressionID}`);
-                            this.regenerateItemList();
-                            return;
-                        }
-
-                        this.topEditor.expression = expression.copy();
-                        this.topEditor.checkIfModulesAreLatest(this._moduleService);
-
-                        this.topEditor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
-
-                        this._fetchedExpression = true;
-
-                        // Add the current expression to the currently-open list
-                        this.sidebarTopSections["currently-open"].childType = "expression";
-                        this.sidebarTopSections["currently-open"].items = [
-                            this.topEditor.expression
-                        ];
-                        this.updateSidePanelLayer(this.topEditor.expression.id, true);
-
-                        this.loadInstalledModules();
+                        console.error(`Empty expression: ${this._expressionID}`);
                         this.regenerateItemList();
-
-                        this.topEditor.fetchStoredExpression();
-                        setTimeout(() =>
-                        {
-                            this.runExpression(true, true);
-                        }, 5000);
-                    },
-                    (error) =>
-                    {
-                        console.error(`Failed to fetch expression: ${this._expressionID}`, error);
-                        this.regenerateItemList();
+                        return;
                     }
-                );
+
+                    this.topEditor.expression = expression.copy();
+                    this.topEditor.checkIfModulesAreLatest(this._moduleService);
+
+                    this.topEditor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
+
+                    this._fetchedExpression = true;
+
+                    // Add the current expression to the currently-open list
+                    this.sidebarTopSections["currently-open"].childType = "expression";
+                    this.sidebarTopSections["currently-open"].items = [
+                        this.topEditor.expression
+                    ];
+                    this.updateSidePanelLayer(this.topEditor.expression.id, true);
+
+                    this.loadInstalledModules();
+                    this.regenerateItemList();
+
+                    this.topEditor.fetchStoredExpression();
+                    
+                    if(this._runExpressionTimer)
+                    {
+                        clearTimeout(this._runExpressionTimer);
+                    }
+
+                    this._runExpressionTimer = setTimeout(() =>
+                    {
+                        this.runExpression(true, true);
+                        this._runExpressionTimer = null;
+                    }, 5000);
+                },
+                (error) =>
+                {
+                    console.error(`Failed to fetch expression: ${this._expressionID}`, error);
+                    alert(`Failed to find expression: ${this._expressionID}`);
+                    this.forceNavigateToNew("expression");
+                    this.regenerateItemList();
+                    return of(null);
+                });
             }
             else
             {
-                this._moduleService.getModule(this._expressionID, version).subscribe(
-                    (module)=>
+                this._moduleService.getModule(this._expressionID, version).subscribe((module) =>
+                {
+                    if(!module)
                     {
-                        if(!module)
-                        {
-                            console.error(`Empty module: ${this._expressionID}`);
-                            this.regenerateItemList();
-                            return;
-                        }
-
-                        this.topEditor.version = module.version;
-                        this.topEditor.expression = module.convertToExpression();
-
-                        this._fetchedExpression = true;
-
-                        this.sidebarTopSections["currently-open"].childType = "module";
-                        this.sidebarTopSections["currently-open"].items = [
-                            this.topEditor.expression
-                        ];
-                        this.updateSidePanelLayer(this.topEditor.expression.id, true, false, true, this.topEditor.isBuiltIn);
-
-                        if(this.sidebarTopSections["installed-modules"])
-                        {
-                            delete this.sidebarTopSections["installed-modules"];
-                        }
-
+                        console.error(`Empty module: ${this._expressionID}`);
                         this.regenerateItemList();
-
-                        this.topEditor.fetchStoredExpression();
-                    },
-                    (error) =>
-                    {
-                        console.error(`Failed to fetch module: ${this._expressionID}`, error);
-                        this.regenerateItemList();
+                        return;
                     }
-                );
+
+                    this.topEditor.version = module.version;
+                    this.topEditor.expression = module.convertToExpression();
+
+                    this._fetchedExpression = true;
+
+                    this.sidebarTopSections["currently-open"].childType = "module";
+                    this.sidebarTopSections["currently-open"].items = [
+                        this.topEditor.expression
+                    ];
+                    this.updateSidePanelLayer(this.topEditor.expression.id, true, false, true, this.topEditor.isBuiltIn);
+
+                    if(this.sidebarTopSections["installed-modules"])
+                    {
+                        delete this.sidebarTopSections["installed-modules"];
+                    }
+
+                    this.regenerateItemList();
+
+                    this.topEditor.fetchStoredExpression();
+                },
+                (error) =>
+                {
+                    console.error(`Failed to fetch module: ${this._expressionID}`, error);
+                    alert(`Failed to find module: ${this._expressionID}`);
+                    this.forceNavigateToNew("module");
+                    this.regenerateItemList();
+                });
             }
         }
 
@@ -649,27 +661,21 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         }
         else
         {
-            this._expressionService.getExpressionAsync(editor.expression.id).subscribe(
-                (expression) =>
+            this._expressionService.getExpressionAsync(editor.expression.id).subscribe((expression) =>
+            {
+                if(!expression)
                 {
-                    if(!expression)
-                    {
-                        console.error(`Empty expression: ${editor.expression.id}`);
-                        this.regenerateItemList();
-                        return;
-                    }
-        
-                    editor.expression = null;
-                    setTimeout(() => 
-                    {
-                        editor.expression = expression.copy();
-                    });
-                },
-                (err)=>
-                {
-                    // TODO: handle error (?)
+                    console.error(`Empty expression: ${editor.expression.id}`);
+                    this.regenerateItemList();
+                    return;
                 }
-            );
+    
+                editor.expression = null;
+                setTimeout(() => 
+                {
+                    editor.expression = expression.copy();
+                });
+            });
         }
     }
 
@@ -721,68 +727,73 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     onExpressionChange(id: string, position: string = "top", showSplit: boolean = false): void
     {
         let editor = position === "top" ? this.topEditor : this.bottomEditor;
-        this._expressionService.getExpressionAsync(id).subscribe(
-            (expression)=>
+        this._expressionService.getExpressionAsync(id).subscribe((expression) =>
+        {
+            this._expressionID = id;
+            if(!expression)
             {
-                this._expressionID = id;
-                if(!expression)
-                {
-                    console.error(`Empty expression: ${this._expressionID}`);
-                    this.regenerateItemList();
-                    return;
-                }
-                this._fetchedExpression = true;
-
-                // Add the current expression to the currently-open list
-                this.sidebarTopSections["currently-open"].childType = "expression";
-                this.sidebarTopSections["currently-open"].items = [
-                    editor.expression
-                ];
-                this.removeSidePanelConfig(editor.expression.id);
-                this.updateSidePanelLayer(id, true);
-
-                this.loadInstalledModules();
+                console.error(`Empty expression: ${this._expressionID}`);
                 this.regenerateItemList();
-                setTimeout(() =>
-                {
-                    this.runExpression(true, true);
-                }, 5000);
-
-                editor.expression = null;
-                // If we're opening a new expression, we need to reset the editor
-                setTimeout(() =>
-                {
-                    editor = new EditorConfig();
-                    editor.userID = this._authService.getUserID();
-                    editor.isModule = false;
-                    editor.expression = expression.copy();
-                    editor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
-                    
-                    if(position === "top")
-                    {
-                        this.topEditor = editor;
-                        this.updateMainExpressionID(id);
-                        this.topEditor.fetchStoredExpression();
-                    }
-                    else
-                    {
-                        this.bottomEditor = editor;
-                        this.bottomEditor.fetchStoredExpression();
-                    }
-                });
-
-                if(!showSplit && this.isSplitScreen)
-                {
-                    this.isSplitScreen = false;
-                    this.bottomEditor = new EditorConfig();
-                }
-            },
-            (error) =>
-            {
-                console.error(`Failed to fetch expression: ${this._expressionID}`, error);
-                this.regenerateItemList();
+                return;
             }
-        );
+            this._fetchedExpression = true;
+
+            // Add the current expression to the currently-open list
+            this.sidebarTopSections["currently-open"].childType = "expression";
+            this.sidebarTopSections["currently-open"].items = [
+                editor.expression
+            ];
+            this.removeSidePanelConfig(editor.expression.id);
+            this.updateSidePanelLayer(id, true);
+
+            this.loadInstalledModules();
+            this.regenerateItemList();
+
+            if(this._runExpressionTimer)
+            {
+                clearTimeout(this._runExpressionTimer);
+            }
+
+            this._runExpressionTimer = setTimeout(() =>
+            {
+                this.runExpression(true, true);
+                this._runExpressionTimer = null;
+            }, 5000);
+
+            editor.expression = null;
+            // If we're opening a new expression, we need to reset the editor
+            setTimeout(() =>
+            {
+                editor = new EditorConfig();
+                editor.userID = this._authService.getUserID();
+                editor.isModule = false;
+                editor.expression = expression.copy();
+                editor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
+                
+                if(position === "top")
+                {
+                    this.topEditor = editor;
+                    this.updateMainExpressionID(id);
+                    this.topEditor.fetchStoredExpression();
+                }
+                else
+                {
+                    this.bottomEditor = editor;
+                    this.bottomEditor.fetchStoredExpression();
+                }
+            });
+
+            if(!showSplit && this.isSplitScreen)
+            {
+                this.isSplitScreen = false;
+                this.bottomEditor = new EditorConfig();
+            }
+        },
+        (error) =>
+        {
+            console.error(`Failed to fetch expression: ${this._expressionID}`, error);
+            this.regenerateItemList();
+        });
     }
 
     onModuleVersionChange(version: string, position: string = "top", id: string = "", showSplit: boolean = false): void
@@ -906,12 +917,22 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.forceNavigateToNew("module");
     }
 
-    navigateToNew(type: string = "expression"): void
+    navigateToNew(type: "expression" | "module" = "expression"): void
     {
+        if(this._runExpressionTimer)
+        {
+            clearTimeout(this._runExpressionTimer);
+            this._runExpressionTimer = null;
+        }
+
+        this._newExpression = true;
+        this.topEditor.expression = null;
+        this.bottomEditor.expression = null;
+        this._expressionID = type === "expression" ? DataExpressionId.NewExpression : DataExpressionId.NewModule;
         this._router.navigate(["dataset", this._datasetID, "code-editor", `new-${type}`]);
     }
 
-    forceNavigateToNew(type: string = "expression"): void
+    forceNavigateToNew(type: "expression" | "module" = "expression"): void
     {
         this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=> this.navigateToNew(type));
     }
@@ -1387,6 +1408,11 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.isSubsetExpression = true;
 
         this.executedTextSelection = this.activeTextSelection;
+
+        if(this.executedTextSelection && this.executedTextSelection.markText)
+        {
+            this.executedTextSelection.markText();
+        }
     }
 
     convertToLua(): void
