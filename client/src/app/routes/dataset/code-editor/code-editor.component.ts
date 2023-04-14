@@ -62,6 +62,7 @@ import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/U
 import EditorConfig, { LuaRuntimeError } from "./editor-config";
 import { DiffVersions } from "src/app/UI/expression-metadata-editor/expression-metadata-editor.component";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
+import { catchError } from "rxjs/operators";
 
 @Component({
     selector: "code-editor",
@@ -387,7 +388,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.topEditor.isModule = !!version;
         if(this.topEditor.isModule)
         {
-            this.topEditor.versions = this._moduleService.getSourceDataModule(this._expressionID).versions;
+            this.topEditor.versions = this._moduleService.getSourceDataModule(this._expressionID)?.versions;
         }
 
         this.bottomEditor = new EditorConfig();
@@ -473,7 +474,10 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 (error) =>
                 {
                     console.error(`Failed to fetch expression: ${this._expressionID}`, error);
+                    alert(`Failed to find expression: ${this._expressionID}`);
+                    this.forceNavigateToNew("expression");
                     this.regenerateItemList();
+                    return of(null);
                 });
             }
             else
@@ -510,6 +514,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 (error) =>
                 {
                     console.error(`Failed to fetch module: ${this._expressionID}`, error);
+                    alert(`Failed to find module: ${this._expressionID}`);
+                    this.forceNavigateToNew("module");
                     this.regenerateItemList();
                 });
             }
@@ -894,12 +900,12 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.forceNavigateToNew("module");
     }
 
-    navigateToNew(type: string = "expression"): void
+    navigateToNew(type: "expression" | "module" = "expression"): void
     {
         this._router.navigate(["dataset", this._datasetID, "code-editor", `new-${type}`]);
     }
 
-    forceNavigateToNew(type: string = "expression"): void
+    forceNavigateToNew(type: "expression" | "module" = "expression"): void
     {
         this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=> this.navigateToNew(type));
     }

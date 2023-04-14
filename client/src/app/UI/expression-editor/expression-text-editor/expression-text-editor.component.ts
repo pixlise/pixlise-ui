@@ -298,7 +298,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
         let text = this._editor.getModel().getValueInRange(range);
 
-        // TODO: Need to trigger this on the actual text select event so that button works
         this.onTextSelect.emit(
             new TextSelection(
                 text,

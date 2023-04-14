@@ -29,7 +29,7 @@
 
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable, ReplaySubject, Subject, forkJoin, of } from "rxjs";
+import { Observable, ReplaySubject, Subject, forkJoin, of, throwError } from "rxjs";
 import { tap, map } from "rxjs/operators";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications";
@@ -531,7 +531,8 @@ export class DataExpressionService
         let expr = this.getExpression(id);
         if(!expr)
         {
-            throw new Error("Expression: "+id+" not found!");
+            return throwError(new Error("Expression: "+id+" not found!"));
+            // throw new Error("Expression: "+id+" not found!");
         }
 
         if(expr.sourceCode.length > 0)
