@@ -618,25 +618,6 @@ export class WidgetRegionDataService
         return resultItem;
     }
 
-/* Seems to have gone unused
-    public cacheExpression(query: DataSourceParams, expr: DataExpression, result: PMCDataValues, warning: string = ""): void
-    {
-        this._resultCache.addCachedResult(
-            query,
-            expr.modUnixTimeSec,
-            new RegionDataResultItem(
-                result,
-                null,
-                null,
-                warning,
-                expr,
-                this._regions.get(query.roiId),
-                query
-            )
-        );
-    }
-*/
-
     // Runs an expression with given parameters. If errors are encountered, they will be returned as part of the Observables own
     // error handling interface.
     public runAsyncExpression(query: DataSourceParams, expr: DataExpression, allowAnyResponse: boolean): Observable<RegionDataResultItem>
