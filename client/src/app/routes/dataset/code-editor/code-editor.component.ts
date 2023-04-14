@@ -1375,6 +1375,11 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.isSubsetExpression = true;
 
         this.executedTextSelection = this.activeTextSelection;
+
+        if(this.executedTextSelection && this.executedTextSelection.markText)
+        {
+            this.executedTextSelection.markText();
+        }
     }
 
     convertToLua(): void

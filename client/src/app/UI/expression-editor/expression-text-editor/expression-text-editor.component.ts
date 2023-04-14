@@ -60,6 +60,7 @@ export class TextSelection
         public endLine: number,
         public range: Range,
         public clearMarkedText: () => void,
+        public markText?: () => void,
     )
     {
     } 
@@ -248,6 +249,40 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         this._editor.setModel(mdl);
         this.monaco.editor.setTheme(this._expr.sourceLanguage == EXPR_LANGUAGE_LUA ? "vs-dark-lua" : "vs-dark-pixlang");
         this.registerKeyBindings();
+        this._editor.onDidChangeCursorSelection((event) =>
+        {
+            let range = event.selection;
+            let isSingleLineEmpty = range.startLineNumber === range.endLineNumber && range.startColumn === range.endColumn;
+
+            let text = this._editor.getModel().getValueInRange(range);
+            this.onTextSelect.emit(
+                new TextSelection(
+                    text,
+                    isSingleLineEmpty,
+                    range.startLineNumber,
+                    range.endLineNumber,
+                    range,
+                    () =>
+                    {
+                        // Clear the highlight
+                        this.monaco.editor.setModelMarkers(this._editor.getModel(), "owner", []);
+                    },
+                    () =>
+                    {
+                        this.monaco.editor.setModelMarkers(this._editor.getModel(), "owner", [
+                            {
+                                message: `Currently visualizing the highlighted lines (${range.startLineNumber}:${range.startColumn} - ${range.endLineNumber}:${range.endColumn})`,
+                                severity: this.monaco.MarkerSeverity.Info,
+                                startLineNumber: range.startLineNumber,
+                                startColumn: range.startColumn,
+                                endLineNumber: range.endLineNumber,
+                                endColumn: range.endColumn,
+                            }
+                        ]);
+                    }
+                )
+            );
+        });
     }
 
     private onRunHighlightedExpressionCommand(): void
@@ -263,6 +298,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
 
         let text = this._editor.getModel().getValueInRange(range);
 
+        // TODO: Need to trigger this on the actual text select event so that button works
         this.onTextSelect.emit(
             new TextSelection(
                 text,
