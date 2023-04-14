@@ -29,16 +29,16 @@
 
 import { Injectable } from "@angular/core";
 import { ReplaySubject, Subscription } from "rxjs";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+
 import { BeamSelection } from "src/app/models/BeamSelection";
 import { PixelSelection } from "src/app/models/PixelSelection";
-import { ROIService } from "src/app/services/roi.service";
 import { selectionState, ViewState, ViewStateService } from "src/app/services/view-state.service";
 import { DataSet } from "../models/DataSet";
 import { DataSetService } from "./data-set.service";
 import { parseNumberRangeString} from "src/app/utils/utils";
 
-
-
+import { UserPromptDialogComponent, UserPromptDialogParams, UserPromptDialogResult, UserPromptDialogStringItem } from "src/app/UI/atoms/user-prompt-dialog/user-prompt-dialog.component";
 
 
 // The Selection service. It should probably be named something like CrossViewLinkingService though!
@@ -71,40 +71,6 @@ export class SelectionHistoryItem
     }
 }
 
-// Gets PMCs relative to whole dataset for ones entered for corresponding sub-datasets (in case of combined datasets)
-// otherwise for original-style single datasets, it just creates the PMCs from the range one string specified
-export function getPMCsForRTTs(pmcRangeStrings: string[], dataset: DataSet): Set<number>
-{
-    let selection = new Set<number>();
-    let datasetScanSources = dataset.experiment.getScanSourcesList();
-
-    for(let c = 0; c < pmcRangeStrings.length; c++)
-    {
-        let entry = pmcRangeStrings[c];
-        let selectPMCs = parseNumberRangeString(entry);
-
-        for(let pmc of selectPMCs)
-        {
-            // Add PMC offset for this dataset (if needed)...
-            let selectPMC = pmc;
-            if(datasetScanSources.length > 0)
-            {
-                selectPMC += datasetScanSources[c].getIdOffset();
-            }
-
-            let locIdx = dataset.pmcToLocationIndex.get(selectPMC);
-            if(locIdx == undefined)
-            {
-                // Show alert for the entered PMC!
-                alert("PMC: "+pmc+" is not valid for dataset: "+datasetScanSources[c].getRtt());
-                return;
-            }
-
-            selection.add(locIdx);
-        }
-    }
-    return selection;
-}
 
 @Injectable({
     providedIn: "root"
@@ -127,7 +93,6 @@ export class SelectionService
 
     constructor(
         private _datasetService: DataSetService,
-        private _roiService: ROIService,
         private _viewStateService: ViewStateService
     )
     {
@@ -436,5 +401,125 @@ export class SelectionService
     get chordClicks$(): ReplaySubject<string[]>
     {
         return this._chordClicks$;
+    }
+
+    // Central place where UI can come to ask for user entry of selected PMCs
+    public promptUserForPMCSelection(dialog: MatDialog): void
+    {
+        let dataset = this._datasetService.datasetLoaded;
+        if(!dataset)
+        {
+            return;
+        }
+
+        let datasetScanSources = dataset.experiment.getScanSourcesList();
+
+        let promptMsg = "You can enter PMCs in a comma-separated list, and ranges are also allowed.\n\nFor example: 10,11,13-17";
+        let prompts = [];
+
+        for(let src of datasetScanSources)
+        {
+            prompts.push("Enter PMCs for dataset: "+src.getRtt());
+        }
+
+        if(prompts.length <= 0)
+        {
+            prompts.push("Enter PMCs for current dataset:");
+        }
+
+        let promptItems = [];
+
+        for(let prompt of prompts)
+        {
+            promptItems.push(
+                new UserPromptDialogStringItem(
+                    prompt,
+                    (val: string)=>{return true;}
+                )
+            );
+        }
+
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.data = new UserPromptDialogParams(
+            "Enter PMCs to Select",
+            "Select",
+            "Cancel",
+            promptItems,
+            false,
+            "",
+            null,
+            promptMsg,
+        );
+
+        const dialogRef = dialog.open(UserPromptDialogComponent, dialogConfig);
+
+        dialogRef.afterClosed().subscribe(
+            (result: UserPromptDialogResult)=>
+            {
+                if(result)
+                {
+                    let enteredValues = Array.from(result.enteredValues.values());
+
+                    try
+                    {
+                        let selection = this.getPMCsForRTTs(enteredValues, dataset);
+                        if(selection.size > 0)
+                        {
+                            this.setSelection(dataset, new BeamSelection(dataset, selection), null);
+                            return;
+                        }
+                    }
+                    catch (e)
+                    {
+                        alert(e);
+                        return;
+                    }
+
+                    alert("No PMCs were able to be read from entered text. Selection not changed.");
+                }
+                // else: User cancelled...
+            }
+        );
+    }
+
+    // Gets PMCs relative to whole dataset for ones entered for corresponding sub-datasets (in case of combined datasets)
+    // otherwise for original-style single datasets, it just creates the PMCs from the range one string specified
+    private getPMCsForRTTs(pmcRangeStrings: string[], dataset: DataSet): Set<number>
+    {
+        let selection = new Set<number>();
+        let datasetScanSources = dataset.experiment.getScanSourcesList();
+
+        for(let c = 0; c < pmcRangeStrings.length; c++)
+        {
+            let entry = pmcRangeStrings[c];
+            let selectPMCs = parseNumberRangeString(entry);
+
+            for(let pmc of selectPMCs)
+            {
+                // Add PMC offset for this dataset (if needed)...
+                let selectPMC = pmc;
+                if(datasetScanSources.length > c)
+                {
+                    selectPMC += datasetScanSources[c].getIdOffset();
+                }
+
+                let locIdx = dataset.pmcToLocationIndex.get(selectPMC);
+                if(locIdx == undefined)
+                {
+                    // Show alert for the entered PMC!
+                    let msg = "PMC: "+pmc+" is not valid for dataset";
+                    if(datasetScanSources.length > c)
+                    {
+                        msg += ": "+datasetScanSources[c].getRtt() || "<unknown>";
+                    }
+
+                    msg += ". Selection not changed.";
+                    throw new Error(msg);
+                }
+
+                selection.add(locIdx);
+            }
+        }
+        return selection;
     }
 }

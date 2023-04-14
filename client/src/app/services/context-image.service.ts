@@ -42,8 +42,6 @@ import { randomString } from "src/app/utils/utils";
 })
 export class ContextImageService implements OnDestroy
 {
-// Proper cleanup
-    private id = randomString(4);
     private _mdl: ContextImageModel = null;
     private _mdl$ = new ReplaySubject<void>(1);
 
@@ -51,19 +49,19 @@ export class ContextImageService implements OnDestroy
 
     constructor()
     {
-        //console.warn('ContextImageService ['+this.id+'] constructor');
+        //console.warn('ContextImageService ['+this._id+'] constructor');
     }
 
     ngOnDestroy()
     {
-        //console.warn('ContextImageService ['+this.id+'] ngOnDestroy');
+        //console.warn('ContextImageService ['+this._id+'] ngOnDestroy');
     }
 
-    getId(): string { return this.id; }
+    //getId(): string { return this._id; }
 
     setModel(mdl: ContextImageModel): void
     {
-        //console.warn('ContextImageService ['+this.id+'] got model:');
+        //console.warn('ContextImageService ['+this._id+'] got model:');
         //console.log(mdl);
         this._mdl = mdl;
         this._mdl$.next();

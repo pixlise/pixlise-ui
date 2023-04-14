@@ -531,8 +531,7 @@ export class DataExpressionService
         let expr = this.getExpression(id);
         if(!expr)
         {
-            return throwError(new Error("Expression: "+id+" not found!"));
-            // throw new Error("Expression: "+id+" not found!");
+            return throwError("Expression: "+id+" not found!");
         }
 
         if(expr.sourceCode.length > 0)

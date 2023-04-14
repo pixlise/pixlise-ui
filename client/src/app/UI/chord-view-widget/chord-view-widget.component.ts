@@ -62,7 +62,6 @@ export class ChordViewWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
     @Input() widgetPosition: string = "";
     @Input() previewExpressionIDs: string[] = [];
 
-    //    private id = randomString(4);
     private _subs = new Subscription();
 
     public drawForSelection: boolean = false;

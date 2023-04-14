@@ -297,60 +297,6 @@ export class DataExpression
 
         return result;
     }
-
-    // Expects strings like:
-    // "FeO-T", "%", "A"
-    // Returns each of the above in a string array
-    private getExpressionParameters(code: string): string[]
-    {
-        let inParam = false;
-        let params = [];
-        let currParam = "";
-        let commaCount = 0;
-
-        for(let c = 0; c < code.length; c++)
-        {
-            const ch = code[c];
-
-            if(ch == "\"" || ch == "'")
-            {
-                if(!inParam)
-                {
-                    inParam = true;
-                }
-                else
-                {
-                    // Finished up reading a param
-                    params.push(currParam);
-                    currParam = "";
-                    inParam = false;
-                }
-            }
-            else
-            {
-                if(inParam)
-                {
-                    currParam += ch;
-                }
-                else if(ch == ",")
-                {
-                    commaCount++;
-                }
-            }
-        }
-
-        if(commaCount != 2 || params.length != 3)
-        {
-            // We failed to get the element requested from the element() function. This is mostly going to happen
-            // if the expression defines a string variable to store the name of the element, and passes that to
-            // the element() function. The side-effect of this is that the function won't be properly checked for
-            // being "crossed-out", so the user won't know that this expression is valid against their loaded quant
-            console.warn("Failed to parse parameters for expression("+code+")");
-            return [];
-        }
-
-        return params;
-    }
 }
 
 

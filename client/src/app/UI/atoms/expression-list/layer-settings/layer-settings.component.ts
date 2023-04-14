@@ -582,11 +582,17 @@ export class LayerSettingsComponent implements OnInit
         }
         else
         {
-            this._exprService.getExpressionAsync(this.layerInfo.layer.id).subscribe(expression =>
-            {
-                dialogConfig.data = new ExpressionEditorConfig(expression, false, false, false, !this.isPreviewMode);
-                this.dialog.open(ExpressionEditorComponent, dialogConfig);
-            });
+            this._exprService.getExpressionAsync(this.layerInfo.layer.id).subscribe(
+                (expression)=>
+                {
+                    dialogConfig.data = new ExpressionEditorConfig(expression, false, false, false, !this.isPreviewMode);
+                    this.dialog.open(ExpressionEditorComponent, dialogConfig);
+                },
+                (err)=>
+                {
+                    // TODO: handle error (?)
+                }
+            );
         }
     }
 

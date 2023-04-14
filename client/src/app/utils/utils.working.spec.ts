@@ -45,9 +45,9 @@ describe("randomString", () =>
 
         for(let c = 0; c < 1000; c++)
         {
-            let str = randomString(6);
+            let str = randomString(8);
 
-            expect(str.length).toEqual(6);
+            expect(str.length).toEqual(8);
 
             // This has failed twice randomly, don't know why, so if it fails again this should print out the specific values...
             if(prevs.has(str))
