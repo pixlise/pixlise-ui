@@ -50,6 +50,7 @@ import { RGBA } from "src/app/utils/colours";
 import { adjustImageRGB } from "src/app/utils/drawing";
 import { ContextImageToolHost, ToolHostCreateSettings } from "./tools/tool-host";
 import { DataModuleService } from "src/app/services/data-module.service";
+import { AuthenticationService } from "src/app/services/authentication.service";
 
 
 
@@ -115,10 +116,11 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
         private _diffractionService: DiffractionPeakService,
         public widgetPosition: string,
         private _loadingSvc: LoadingIndicatorService,
+        private _authService: AuthenticationService
     )
     {
         this._toolHost = new ContextImageToolHost(toolSettings, this);
-        this._layerManager = new LayerManager(_exprService, _moduleService, _rgbMixService, widgetDataService);
+        this._layerManager = new LayerManager(_exprService, _moduleService, _rgbMixService, widgetDataService, _authService);
         this._regionManager = new RegionManager(widgetDataService);
     }
 
