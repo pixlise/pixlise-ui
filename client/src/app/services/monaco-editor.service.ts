@@ -157,9 +157,22 @@ export class MonacoEditorService
         luaLang["builtins"] = LuaTranspiler.builtinFunctions;
         luaLang["builtins"] = luaLang["builtins"].concat(DataModuleService.getBuiltInModuleNames());
         luaLang.tokenizer.root = [
-            [/([a-z_A-Z]+)([.])([a-z_A-Z]+)(\s*[(])/, [{ cases: { "@builtins": "builtin", "@default": "identifier" } }, "@delimiter", "function", "@brackets"]],
-            [/([a-z_A-Z]+)(\s*[(])/, [{ cases: { "@builtins": "builtin", "@default": "function" } }, "@brackets"]],
-            [/([a-z_A-Z]+)([.])([a-z_A-Z]+)/, [{ cases: { "@builtins": "builtin", "@default": "identifier" } }, "@delimiter", "member"]],
+            // lambda function support, ex. "myFunc = function(a, b, c)"
+            [/([a-z_A-Z]+)(\s*=\s*)(function)(\s*[(]\s*)/, ["function", "delimiter", "keyword", "delimiter"]],
+
+            // wrapped if statement and builtin function support, ex: "if not (x == 1) then"
+            [/([a-z_A-Z]+)(\s*[(]\s*)/, [{ cases: { "@builtins": "builtin", "@keywords": "keyword", "@default": "function" } }, "delimiter"]],
+
+            // Pound sign length support
+            [/([#]\s*)/, ["keyword"]],
+
+            // module and built-in module function support, ex. "myModule.myFunc()"
+            [/([a-z_A-Z]+)([.])([a-z_A-Z]+)(\s*[(])/, [{ cases: { "@builtins": "builtin", "@default": "identifier" } }, "delimiter", "function", "delimiter"]],
+
+            // module member variable support, ex. "myModule.myVar"
+            [/([a-z_A-Z]+)([.])([a-z_A-Z]+)/, [{ cases: { "@builtins": "builtin", "@default": "identifier" } }, "delimiter", "member"]],
+
+            // default language support
             ...luaLang.tokenizer.root,
         ];
 
