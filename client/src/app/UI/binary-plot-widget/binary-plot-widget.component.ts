@@ -123,9 +123,10 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                     {
                         this._yAxisExpressionId = this.previewExpressionIDs[1];
                     }
-                }
 
-                this.prepareData("preview-expression-refresh", null);
+                    // Force a refresh because we changed our expressions to include the unsaved one
+                    this.prepareData("preview-expression-refresh", null);
+                }
             }));
         }
 
