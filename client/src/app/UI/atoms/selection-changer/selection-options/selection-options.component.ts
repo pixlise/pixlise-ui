@@ -39,7 +39,8 @@ export enum SelectionOption
     SEL_ENTER_PMCS,
     SEL_DWELL,
     NEW_ROI,
-    SEL_SUBDATASET
+    SEL_SUBDATASET,
+    SEL_INVERT
 }
 
 export class SelectionOptionsDialogData
@@ -119,5 +120,10 @@ export class SelectionOptionsComponent implements OnInit
     onSelectForSubDataset(id: string): void
     {
         this.dialogRef.close(new SelectionOptionsDialogResult(SelectionOption.SEL_SUBDATASET, id));
+    }
+
+    onInvertSelection(): void
+    {
+        this.dialogRef.close(new SelectionOptionsDialogResult(SelectionOption.SEL_INVERT, ""));
     }
 }

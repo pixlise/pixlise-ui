@@ -41,8 +41,6 @@ Map = {
     opAverage = 11
 }
 
---local infinity = 1/0
-
 local function makeAssertReport(var, expType)
     local result = ""
     local caller = debug.getinfo(2, "n")

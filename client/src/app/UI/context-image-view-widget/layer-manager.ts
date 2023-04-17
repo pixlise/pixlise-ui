@@ -44,6 +44,7 @@ import { ColourRamp } from "src/app/utils/colours";
 import { SentryHelper } from "src/app/utils/utils";
 import { LayerStore, ExpressionListBuilder, ExpressionListItems } from "src/app/models/ExpressionList";
 import { DataModuleService } from "src/app/services/data-module.service";
+import { AuthenticationService } from "src/app/services/authentication.service";
 
 
 export class LayerChangeInfo
@@ -89,9 +90,10 @@ export class LayerManager
         public moduleService: DataModuleService,
         private _rgbMixService: RGBMixConfigService,
         private _widgetDataService: WidgetRegionDataService,
+        private _authService: AuthenticationService
     )
     {
-        this._listBuilder = new ExpressionListBuilder(true, [], true, true, true, true, this._exprService);
+        this._listBuilder = new ExpressionListBuilder(true, [], true, true, true, true, this._exprService, this._authService);
     }
 
     protected publishLayerChange(needSave: boolean, reason: string): void

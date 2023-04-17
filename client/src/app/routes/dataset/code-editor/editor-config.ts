@@ -181,6 +181,11 @@ class EditorConfig
         this.isExpressionSaved = false;
     }
 
+    get rawModules(): DataExpressionModule[]
+    {
+        return this._modules;
+    }
+
     // Bypasses the setter to avoid setting isExpressionSaved to false
     set rawModules(modules: DataExpressionModule[])
     {

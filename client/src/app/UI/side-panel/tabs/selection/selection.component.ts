@@ -28,18 +28,16 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, OnInit } from "@angular/core";
-import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { BeamSelection } from "src/app/models/BeamSelection";
 import { DataSet, ContextImageItem } from "src/app/models/DataSet";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { ROIService } from "src/app/services/roi.service";
-import { SelectionHistoryItem, SelectionService, getPMCsForRTTs } from "src/app/services/selection.service";
+import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
 import { httpErrorToString } from "src/app/utils/utils";
 import { SelectionTabModel, AverageRGBURatio } from "./model";
-import { UserPromptDialogComponent, UserPromptDialogParams, UserPromptDialogResult, UserPromptDialogStringItem } from "src/app/UI/atoms/user-prompt-dialog/user-prompt-dialog.component";
-
 
 const emptySelectionDescription = "Empty";
 
@@ -349,77 +347,9 @@ export class SelectionComponent implements OnInit
 
     onEnterSelection(): void
     {
-        SelectionComponent.DoEnterSelection(this._datasetService, this.dialog, this._selectionService);
+        this._selectionService.promptUserForPMCSelection(this.dialog);
     }
 
-    public static DoEnterSelection(datasetService: DataSetService, dialog: MatDialog, selectionService: SelectionService): void
-    {
-        let dataset = datasetService.datasetLoaded;
-        if(!dataset)
-        {
-            return;
-        }
-
-        let datasetScanSources = dataset.experiment.getScanSourcesList();
-
-        let promptMsg = "You can enter PMCs in a comma-separated list, and ranges are also allowed.\n\nFor example: 10,11,13-17";
-        let prompts = [];
-
-        for(let src of datasetScanSources)
-        {
-            prompts.push("Enter PMCs for dataset: "+src.getRtt());
-        }
-
-        if(prompts.length <= 0)
-        {
-            prompts.push("Enter PMCs for current dataset:");
-        }
-
-        let promptItems = [];
-
-        for(let prompt of prompts)
-        {
-            promptItems.push(
-                new UserPromptDialogStringItem(
-                    prompt,
-                    (val: string)=>{return true;}
-                )
-            );
-        }
-
-        const dialogConfig = new MatDialogConfig();
-        dialogConfig.data = new UserPromptDialogParams(
-            "Enter PMCs to Select",
-            "Select",
-            "Cancel",
-            promptItems,
-            false,
-            "",
-            null,
-            promptMsg,
-        );
-
-        const dialogRef = dialog.open(UserPromptDialogComponent, dialogConfig);
-
-        dialogRef.afterClosed().subscribe(
-            (result: UserPromptDialogResult)=>
-            {
-                if(result)
-                {
-                    let enteredValues = Array.from(result.enteredValues.values());
-                    let selection = getPMCsForRTTs(enteredValues, dataset);
-                    if(selection.size > 0)
-                    {
-                        selectionService.setSelection(dataset, new BeamSelection(dataset, selection), null);
-                        return;
-                    }
-
-                    alert("No PMCs were able to be read from entered text. Selection not changed.");
-                }
-                // else: User cancelled...
-            }
-        );
-    }
 
     onUnselectPMC(pmc: number)
     {

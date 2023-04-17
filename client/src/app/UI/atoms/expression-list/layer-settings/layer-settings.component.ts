@@ -582,11 +582,17 @@ export class LayerSettingsComponent implements OnInit
         }
         else
         {
-            this._exprService.getExpressionAsync(this.layerInfo.layer.id).subscribe(expression =>
-            {
-                dialogConfig.data = new ExpressionEditorConfig(expression, false, false, false, !this.isPreviewMode);
-                this.dialog.open(ExpressionEditorComponent, dialogConfig);
-            });
+            this._exprService.getExpressionAsync(this.layerInfo.layer.id).subscribe(
+                (expression)=>
+                {
+                    dialogConfig.data = new ExpressionEditorConfig(expression, false, false, false, !this.isPreviewMode);
+                    this.dialog.open(ExpressionEditorComponent, dialogConfig);
+                },
+                (err)=>
+                {
+                    // TODO: handle error (?)
+                }
+            );
         }
     }
 
@@ -711,7 +717,7 @@ export class LayerSettingsComponent implements OnInit
             showDownload: this.showDownload,
             showShare: this.showShare && !this.sharedBy,
             showTagPicker: this.showTagPicker,
-            showPixlangConvert: this.isPixlangExpression,
+            showPixlangConvert: this.isPixlangExpression && !this.isPredefined,
             showPreviewButton: this.showPreviewButton && !this.isCurrentlyOpen,
             showSplitScreenButton: this.showSplitScreenButton && !this.isCurrentlyOpen && (this.isModule || this.isSplitScreen),
             showSettingsButton: this.showSettingsButton && !this.isCurrentlyOpen,

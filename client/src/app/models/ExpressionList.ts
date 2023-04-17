@@ -42,6 +42,7 @@ import { LayerInfo } from "src/app/UI/atoms/expression-list/layer-settings/layer
 import { ExpressionListHeaderInfo } from "src/app/UI/atoms/expression-list/layer-settings/header.component";
 import { ObjectCreator } from "./BasicTypes";
 import { BuiltInTags } from "./tags";
+import { AuthenticationService } from "../services/authentication.service";
 
 
 // Not all static vars so we can use this from HTML if the component "extends" this class
@@ -107,6 +108,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         private _includeRGBMix: boolean,
         public includeAnomalies: boolean,
         protected _exprService: DataExpressionService,
+        protected _authService: AuthenticationService,
         public showUnsavedExpressions: boolean = true
     )
     {
@@ -248,7 +250,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                 this._userExpressions.push(expr);
             }
 
-            if(!expr.isModuleListUpToDate)
+            if(!expr.isModuleListUpToDate && expr.creator.user_id == this._authService.getUserID())
             {
                 this._userExpressionsWithUpdates.push(expr);
             }
@@ -867,7 +869,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         let layers: LayerInfo[] = [];
         for(let item of items)
         {
-            if(!this.showUnsavedExpressions && item?.id?.startsWith("unsaved-"))
+            if(!this.showUnsavedExpressions && item?.id?.startsWith(DataExpressionId.UnsavedExpressionPrefix))
             {
                 continue;
             }

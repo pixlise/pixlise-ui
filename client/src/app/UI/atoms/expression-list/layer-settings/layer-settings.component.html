@@ -146,7 +146,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 <img class="custom-icon" [src]="customIcon" />
             </div>
             <div 
-                *ngIf="sharedBy" 
+                *ngIf="!isSidePanel && sharedBy" 
                 class="obj-creator"
                 #tooltip="matTooltip"
                 [matTooltip]="sharedBy"
@@ -264,13 +264,19 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
         <div 
+            *ngIf="isSidePanel && sharedBy" 
+            class="obj-creator"
+            #tooltip="matTooltip"
+            [matTooltip]="sharedBy"
+        >{{sharedBy}}</div>
+        <div 
             *ngIf="createdTime > 0" 
             class="obj-create-time"
             #tooltip="matTooltip"
             matTooltip="Created: {{createdTime | date:'medium'}}"
         >{{createdTime|date:'dd/MMM/yy'}}</div>
         <div 
-            *ngIf="expressionComments.length > 0" 
+            *ngIf="!isSidePanel && expressionComments.length > 0" 
             class="comment"
             [ngStyle]="{'max-width': commentWidth}"
             #tooltip="matTooltip"

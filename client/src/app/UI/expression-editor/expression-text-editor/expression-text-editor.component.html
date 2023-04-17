@@ -42,11 +42,11 @@ POSSIBILITY OF SUCH DAMAGE.
                   </span>
               </div>
               <span class="header-code cm-s-pixlise">
-                  <span class="mtk15">local </span>
+                  <span class="mtk3">local </span>
                   <span 
-                    class="mtk1"
+                    class="mtk7"
                     [ngStyle]="{'marginRight': maxInstalledModuleCharacterLength ? maxInstalledModuleCharacterLength - module.name.length + 'ch' : 0}"
-                  >{{module.name}}</span> = <span class="cm-builtin">require </span>
+                  >{{module.name}}</span><span class="mtk6"> = </span><span class="mtk3">require </span>
                   <div class="module-container">
                       <mat-select
                           #tooltip="matTooltip"
@@ -58,7 +58,7 @@ POSSIBILITY OF SUCH DAMAGE.
                           [disabled]="module.id === linkedModuleID"
                       >
                           <mat-option
-                              class="mtk25"
+                              class="module-version-type"
                               *ngFor="let version of module.allVersions;"
                               [value]="version"
                           >{{module.name}}@{{version}}

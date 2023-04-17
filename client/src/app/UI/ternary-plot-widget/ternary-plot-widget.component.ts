@@ -67,7 +67,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
     @Input() widgetPosition: string = "";
     @Input() previewExpressionIDs: string[] = [];
 
-    private id = randomString(4);
+    private _id = randomString(4);
     private _subs = new Subscription();
 
     private _visibleROIs: string[] = [];
@@ -134,9 +134,10 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                     {
                         this._cExpressionId = this.previewExpressionIDs[2];
                     }
-                }
 
-                this.prepareData("preview-expression-refresh", null);
+                    // Force a refresh because we changed our expressions to include the unsaved one
+                    this.prepareData("preview-expression-refresh", null);
+                }
             }));
         }
 
@@ -216,7 +217,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
 
     ngOnDestroy()
     {
-        //console.warn('N-ary ['+this.id+'] ngOnDestroy');
+        //console.warn('N-ary ['+this._id+'] ngOnDestroy');
         this._subs.unsubscribe();
     }
 
@@ -285,7 +286,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
 
     private prepareData(reason: string, widgetUpdReason: WidgetDataUpdateReason): void
     {
-        console.log("Ternary ["+this.id+"] prepareData reason: "+reason);
+        console.log("Ternary ["+this._id+"] prepareData reason: "+reason);
 
         let t0 = performance.now();
         this.setDefaultsIfNeeded(widgetUpdReason);

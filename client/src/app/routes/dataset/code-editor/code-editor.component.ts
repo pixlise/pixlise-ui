@@ -43,7 +43,8 @@ import { SpectrumChartWidgetComponent } from "src/app/UI/spectrum-chart-widget/s
 import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/ternary-plot-widget.component";
 import { DataExpressionService, DataExpressionWire } from "src/app/services/data-expression.service";
 import { DataExpression, DataExpressionId, ModuleReference } from "src/app/models/Expression";
-import { DataSourceParams, RegionDataResultItem, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { DataQueryResult } from "src/app/expression-language/data-values";
+import { DataSourceParams, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionModule, TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
 import { AuthenticationService } from "src/app/services/authentication.service";
@@ -52,12 +53,12 @@ import { ExpressionListHeaderToggleEvent, LiveLayerConfig } from "src/app/UI/ato
 import { LayerVisibilityChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
-import { RGBMix } from "src/app/services/rgbmix-config.service"
+import { RGBMix } from "src/app/services/rgbmix-config.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { DataSet } from "src/app/models/DataSet";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
-import { DataModuleService, DataModuleSpecificVersionWire, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
+import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
 import EditorConfig, { LuaRuntimeError } from "./editor-config";
 import { DiffVersions } from "src/app/UI/expression-metadata-editor/expression-metadata-editor.component";
@@ -77,7 +78,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
     private _previewComponent = null;
     private _datasetID: string;
-    private _expressionID: string = "unsaved-new-expression";
+    private _expressionID: string = DataExpressionId.UnsavedExpressionPrefix+"-new-expression";
+    private _runExpressionTimer = null;
 
     public isSidebarOpen = false;
     // What we display in the virtual-scroll capable list
@@ -125,7 +127,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     public executedTextSelection: TextSelection = null;
     public isSubsetExpression: boolean = false;
 
-    public evaluatedExpression: RegionDataResultItem;
+    public evaluatedExpression: DataQueryResult;
+    public expressionToEvaluate: DataExpression;
     public stdout: string = "";
     public stderr: string = "";
     public pmcGridExpressionTitle: string = "";
@@ -178,7 +181,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.topEditor.userID = userID;
         this.bottomEditor.userID = userID;
 
-        this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, false, false, this._expressionService, false);
+        this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, false, false, this._expressionService, this._authService, false);
         this._datasetID = this._route.snapshot.parent?.params["dataset_id"];
         this._expressionID = this._route.snapshot.params["expression_id"];
 
@@ -227,7 +230,10 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             }
 
             this._expressionService.clearAllUnsavedFromCache();
-            this.resetEditors();
+            if(!this._newExpression)
+            {
+                this.resetEditors();
+            }
         });
     }
 
@@ -254,8 +260,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                         }
                         else
                         {
-                            this.topEditor.expression.id = "unsaved-new-expression";
-                            this._expressionID = "unsaved-new-expression";
+                            this.topEditor.expression.id = DataExpressionId.UnsavedExpressionPrefix+"-new-expression";
+                            this._expressionID = DataExpressionId.UnsavedExpressionPrefix+"-new-expression";
                             this._newExpression = true;
                             this.navigateToNew("expression");
                         }
@@ -387,7 +393,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.topEditor.isModule = !!version;
         if(this.topEditor.isModule)
         {
-            this.topEditor.versions = this._moduleService.getSourceDataModule(this._expressionID).versions;
+            this.topEditor.versions = this._moduleService.getSourceDataModule(this._expressionID)?.versions;
         }
 
         this.bottomEditor = new EditorConfig();
@@ -465,15 +471,25 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.regenerateItemList();
 
                     this.topEditor.fetchStoredExpression();
-                    setTimeout(() =>
+                    
+                    if(this._runExpressionTimer)
+                    {
+                        clearTimeout(this._runExpressionTimer);
+                    }
+
+                    this._runExpressionTimer = setTimeout(() =>
                     {
                         this.runExpression(true, true);
+                        this._runExpressionTimer = null;
                     }, 5000);
                 },
                 (error) =>
                 {
                     console.error(`Failed to fetch expression: ${this._expressionID}`, error);
+                    alert(`Failed to find expression: ${this._expressionID}`);
+                    this.forceNavigateToNew("expression");
                     this.regenerateItemList();
+                    return of(null);
                 });
             }
             else
@@ -510,6 +526,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 (error) =>
                 {
                     console.error(`Failed to fetch module: ${this._expressionID}`, error);
+                    alert(`Failed to find module: ${this._expressionID}`);
+                    this.forceNavigateToNew("module");
                     this.regenerateItemList();
                 });
             }
@@ -732,9 +750,16 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
             this.loadInstalledModules();
             this.regenerateItemList();
-            setTimeout(() =>
+
+            if(this._runExpressionTimer)
+            {
+                clearTimeout(this._runExpressionTimer);
+            }
+
+            this._runExpressionTimer = setTimeout(() =>
             {
                 this.runExpression(true, true);
+                this._runExpressionTimer = null;
             }, 5000);
 
             editor.expression = null;
@@ -894,12 +919,22 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.forceNavigateToNew("module");
     }
 
-    navigateToNew(type: string = "expression"): void
+    navigateToNew(type: "expression" | "module" = "expression"): void
     {
+        if(this._runExpressionTimer)
+        {
+            clearTimeout(this._runExpressionTimer);
+            this._runExpressionTimer = null;
+        }
+
+        this._newExpression = true;
+        this.topEditor.expression = null;
+        this.bottomEditor.expression = null;
+        this._expressionID = type === "expression" ? DataExpressionId.NewExpression : DataExpressionId.NewModule;
         this._router.navigate(["dataset", this._datasetID, "code-editor", `new-${type}`]);
     }
 
-    forceNavigateToNew(type: string = "expression"): void
+    forceNavigateToNew(type: "expression" | "module" = "expression"): void
     {
         this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=> this.navigateToNew(type));
     }
@@ -1251,19 +1286,21 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 editor.expression.moduleReferences,
                 null,
             );
-            this._widgetDataService.runAsyncExpression(
-                new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID),
-                expression,
-                true
-            ).subscribe(
-                (result: RegionDataResultItem)=>
+
+            // This is a bit of a chicken and egg thing - the expression will fail to run if it's not already
+            // in the expression service, so we save it here, and update it again when the name is corrected
+            this._expressionService.cache(this.previewID, expression, null);
+
+            this._widgetDataService.runAsyncExpression(expression, true).subscribe(
+                (result: DataQueryResult)=>
                 {
                     this.evaluatedExpression = result;
-                    this.stdout = result.exprResult.stdout;
-                    this.stderr = result.exprResult.stderr;
+                    this.expressionToEvaluate = expression;
+                    this.stdout = result.stdout;
+                    this.stderr = result.stderr;
 
                     editor.isSaveableOutput = editor.isModule || result.isPMCTable;
-                    if(this.evaluatedExpression && (!result.isPMCTable || this.evaluatedExpression?.values?.values?.length > 0))
+                    if(this.evaluatedExpression && (!result.isPMCTable || this.evaluatedExpression?.resultValues?.values?.length > 0))
                     {
                         editor.isCodeChanged = false;
                         this.displayExpressionTitle = `Unsaved ${expression.name}`;
@@ -1273,6 +1310,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 (err)=>
                 {
                     this.evaluatedExpression = null;
+                    this.expressionToEvaluate = null;
                     this.stderr = `${err}`;
                     editor.isSaveableOutput = false;
 
@@ -1339,20 +1377,18 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             highlightedExpression.sourceCode = this.addLuaHighlight(highlightedExpression.sourceCode);
         }
 
-        this._widgetDataService.runAsyncExpression(
-            new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID),
-            highlightedExpression,
-            true
-        ).subscribe(
-            (result: RegionDataResultItem)=>
+        this._widgetDataService.runAsyncExpression(highlightedExpression, true).subscribe(
+            (result: DataQueryResult)=>
             {
                 this.evaluatedExpression = result;
-                this.stdout = result.exprResult.stdout;
-                this.stderr = result.exprResult.stderr;
+                this.expressionToEvaluate = highlightedExpression;
+                this.stdout = result.stdout;
+                this.stderr = result.stderr;
             },
             (err)=>
             {
                 this.evaluatedExpression = null;
+                this.expressionToEvaluate = null;
                 this.stderr = `${err}`;
             }
         );
@@ -1375,6 +1411,11 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.isSubsetExpression = true;
 
         this.executedTextSelection = this.activeTextSelection;
+
+        if(this.executedTextSelection && this.executedTextSelection.markText)
+        {
+            this.executedTextSelection.markText();
+        }
     }
 
     convertToLua(): void
@@ -1545,13 +1586,13 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
     get isEvaluatedDataValid(): boolean
     {
-        let values = this.evaluatedExpression?.values;
+        let values = this.evaluatedExpression?.resultValues?.values;
         return typeof values !== "undefined" && values !== null && (!Array.isArray(values?.values) || values.values.length > 0);
     }
 
     get runtimeSeconds(): string
     {
-        let msTime = this.evaluatedExpression?.exprResult?.runtimeMs;
+        let msTime = this.evaluatedExpression?.runtimeMs;
         if(!msTime || !this.isEvaluatedDataValid)
         {
             return "";

@@ -67,7 +67,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
     @Input() widgetPosition: string = "";
     @Input() previewExpressionIDs: string[] = [];
 
-    private id = randomString(4);
+    private _id = randomString(4);
     private _subs = new Subscription();
 
     private _visibleROIs: string[] = [];
@@ -123,9 +123,10 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                     {
                         this._yAxisExpressionId = this.previewExpressionIDs[1];
                     }
-                }
 
-                this.prepareData("preview-expression-refresh", null);
+                    // Force a refresh because we changed our expressions to include the unsaved one
+                    this.prepareData("preview-expression-refresh", null);
+                }
             }));
         }
 
@@ -227,7 +228,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
 
     ngOnDestroy()
     {
-        //console.warn('N-ary ['+this.id+'] ngOnDestroy');
+        //console.warn('N-ary ['+this._id+'] ngOnDestroy');
         this._subs.unsubscribe();
     }
 
@@ -296,7 +297,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
 
     private prepareData(reason: string, widgetUpdReason: WidgetDataUpdateReason): void
     {
-        console.log("Binary ["+this.id+"] prepareData reason: "+reason);
+        console.log("Binary ["+this._id+"] prepareData reason: "+reason);
 
         let t0 = performance.now();
         this.setDefaultsIfNeeded(widgetUpdReason);
