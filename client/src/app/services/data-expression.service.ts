@@ -156,7 +156,7 @@ export class DataExpressionService
         private _datasetService: DataSetService, // just for getting pseudointensity predefined expression ids
         private _loadingSvc: LoadingIndicatorService,
         private _moduleService: DataModuleService,
-        private _notifcationService: NotificationService,
+        private _notificationService: NotificationService,
         private _userOptionsService: UserOptionsService,
         private http: HttpClient
     )
@@ -190,13 +190,13 @@ export class DataExpressionService
             // available and the user toggled on the notifications. If not, we handle this when first processing the expressions.
             if(this._isSubscribedToMajorReleases && this._majorUpdatesAvailable)
             {
-                this._notifcationService.addNotification("New Major Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+                this._notificationService.addNotification("New Major Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
                 this._majorUpdatesAvailable = false;
                 this._minorUpdatesAvailable = false;
             }
             else if(this._isSubscribedToMinorReleases && this._minorUpdatesAvailable)
             {
-                this._notifcationService.addNotification("New Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+                this._notificationService.addNotification("New Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
                 this._minorUpdatesAvailable = false;
             }
         });
@@ -345,11 +345,11 @@ export class DataExpressionService
         {
             if(majorModuleVersionsOutdated && this._isSubscribedToMajorReleases)
             {
-                this._notifcationService.addNotification("New Major Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+                this._notificationService.addNotification("New Major Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
             }
             else if(minorModuleVersionsOutdated && this._isSubscribedToMinorReleases)
             {
-                this._notifcationService.addNotification("New Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+                this._notificationService.addNotification("New Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
             }
             else if(majorModuleVersionsOutdated)
             {
