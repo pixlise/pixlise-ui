@@ -22,7 +22,7 @@ jobs:
         #   triggering subsequent actions (like the Core Release workflow); to
         #   allow these tags to dispatch new workflows, you must pass in a PAT
         #   see: https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PIXLISE_GH_PAT }}
         WITH_V: true
         DEFAULT_BUMP: minor
     - name: Github Tag Bump
@@ -30,6 +30,6 @@ jobs:
       uses: anothrNick/github-tag-action@1.61.0
       env:
         # NOTE: see above
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PIXLISE_GH_PAT }}
         WITH_V: true
         DEFAULT_BUMP: patch
