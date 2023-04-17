@@ -526,8 +526,7 @@ export class WidgetRegionDataService
                                     SentryHelper.logMsg(true, errorMsg);
                                 }
 
-                                //return of(new DataQueryResult(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr, region, query));
-                                throw errorMsg;
+                                return of(new DataQueryResult(null, false, [], null, "", "", null));
                             }
                         )
                     )

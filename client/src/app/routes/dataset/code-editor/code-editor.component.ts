@@ -1289,7 +1289,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
             // This is a bit of a chicken and egg thing - the expression will fail to run if it's not already
             // in the expression service, so we save it here, and update it again when the name is corrected
-            this._expressionService.cache(this.previewID, expression, null);
+            // this._expressionService.cache(this.previewID, expression, null);
 
             this._widgetDataService.runAsyncExpression(expression, true).subscribe(
                 (result: DataQueryResult)=>
