@@ -492,11 +492,6 @@ export class WidgetRegionDataService
                 if(continueOnError)
                 {
                     console.error("getData: "+errorMsg+". Ignored...");
-
-                    // Fail it on the first query item
-                    exprRuns.push(expr);
-                    exprResult$.push(of(new DataQueryResult([], false, [], 0, "", "", new Map<string, PMCDataValues>())));
-                    //result$.push(of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_EXPR, errorMsg, null, null, null, queries[0])));
                     continue;
                 }
 
@@ -516,13 +511,7 @@ export class WidgetRegionDataService
             else
             {
                 exprResult$.push(
-                    this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, false).pipe(
-                        tap(
-                            (result: DataQueryResult)=>
-                            {
-                                this._resultCache.addCachedResult(exprId, result.runtimeMs, result);
-                            }
-                        ),
+                    this.runAsyncExpression(expr, false).pipe(
                         catchError(
                             (err)=>
                             {
@@ -617,7 +606,7 @@ export class WidgetRegionDataService
                 outputResult.queryResults.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null, null, null, query));
                 continue;
             }
-            
+
             // At this point, we have to decide what PMCs to return for this query item. If we have an ROI specified, we are only querying
             // for its PMCs BUT datasetId filters this further, because if we have one specified (in the case of combined datasets), we need to
             // only include PMCs for that dataset!
@@ -643,7 +632,7 @@ export class WidgetRegionDataService
             }
 
             const expr = exprById.get(query.exprId);
-            let processedResult = this.processQueryResult(exprResult.resultValues, query, expr, region, pmcOffset, pmcsToQuery);
+            let processedResult = this.processQueryResult(exprResult, query, expr, region, pmcOffset, pmcsToQuery);
             outputResult.queryResults.push(processedResult);
         }
 
@@ -652,9 +641,18 @@ export class WidgetRegionDataService
 
     // Runs an expression with given parameters. If errors are encountered, they will be returned as part of the Observables own
     // error handling interface.
-    runAsyncExpression(query: DataSourceParams, expr: DataExpression, allowAnyResponse: boolean): Observable<DataQueryResult>
+    runAsyncExpression(expr: DataExpression, allowAnyResponse: boolean): Observable<DataQueryResult>
     {
-        return this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, allowAnyResponse);
+        return this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, allowAnyResponse).pipe(
+            tap(
+                (result: DataQueryResult)=>
+                {
+                    // We cache here, this should called by code editor, and any widgets refreshing after this should just pick up
+                    // the calculated result
+                    this._resultCache.addCachedResult(expr.id, result.runtimeMs, result);
+                }
+            ),
+        );
     }
     
     private processQueryResult(
@@ -669,7 +667,18 @@ export class WidgetRegionDataService
         let pmcValues = result?.resultValues as PMCDataValues;
         if(!Array.isArray(pmcValues?.values) || (pmcValues.values.length > 0 && !(pmcValues.values[0] instanceof PMCDataValue)))
         {
-            return new RegionDataResultItem(result, WidgetDataErrorType.WERR_QUERY, "Result is not a PMC array!", null, expr, region, query, false);
+            return new RegionDataResultItem(
+                new DataQueryResult(
+                    result.resultValues,
+                    result.isPMCTable,
+                    result.dataRequired,
+                    result.runtimeMs,
+                    result.stderr,
+                    result.stderr,
+                    result.recordedExpressionInputs
+                ),
+                WidgetDataErrorType.WERR_QUERY, "Result is not a PMC array!", null, expr, region, query, false
+            );
         }
 
         // Filter to only the PMCs we're interested in
@@ -687,29 +696,45 @@ export class WidgetRegionDataService
             }
         }
 
-        // Put this back in the result
-        result.resultValues = unitConverted;
+        let resultItem = new RegionDataResultItem(
+            new DataQueryResult(
+                unitConverted, // Put this in the result
+                result.isPMCTable,
+                result.dataRequired,
+                result.runtimeMs,
+                result.stderr,
+                result.stderr,
+                result.recordedExpressionInputs
+            ),
+            null, null, unitConverted.warning, expr, region, query
+        );
 
-        let resultItem = new RegionDataResultItem(result, null, null, unitConverted.warning, expr, region, query);
         return resultItem;
     }
 
+    // NOTE: this always copies the result
     private filterForPMCs(queryResult: PMCDataValues, forPMCs: Set<number>): PMCDataValues
     {
+        let resultValues: PMCDataValue[] = [];
+
         // Filter for PMCs requested
         // TODO: Modify this so we don't uneccessarily run expressions for PMCs we end up throwing away
         if(forPMCs === null)
         {
-            return queryResult;
-        }
-
-        // Build a new result only containing PMCs specified
-        let resultValues: PMCDataValue[] = [];
-        for(let item of queryResult.values)
-        {
-            if(forPMCs.has(item.pmc))
+            for(let item of queryResult.values)
             {
                 resultValues.push(item);
+            }
+        }
+        else
+        {
+            // Build a new result only containing PMCs specified
+            for(let item of queryResult.values)
+            {
+                if(forPMCs.has(item.pmc))
+                {
+                    resultValues.push(item);
+                }
             }
         }
 
@@ -1225,10 +1250,10 @@ export class WidgetRegionDataService
     {
         this._viewStateRelatedSubs.add(this._quantService.multiQuantZStack$.subscribe(
             (zStack: ZStackItem[])=>
-            {
-                // Rebuild the list of RemainingPoints
-                this._multiQuantLoaded = true;
-                this.rebuildData(WidgetDataUpdateReason.WUPD_REMAINING_POINTS);
+                {
+                    // Rebuild the list of RemainingPoints
+                    this._multiQuantLoaded = true;
+                    this.rebuildData(WidgetDataUpdateReason.WUPD_REMAINING_POINTS);
             },
             (err)=>
             {
