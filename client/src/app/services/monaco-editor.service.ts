@@ -160,17 +160,17 @@ export class MonacoEditorService
             // lambda function support, ex. "myFunc = function(a, b, c)"
             [/([a-z_A-Z]+)(\s*=\s*)(function)(\s*[(]\s*)/, ["function", "delimiter", "keyword", "delimiter"]],
 
-            // module and built-in module function support, ex. "myModule.myFunc()"
-            [/([a-z_A-Z]+)([.])([a-z_A-Z]+)(\s*[(])/, [{ cases: { "@builtins": "builtin", "@default": "identifier" } }, "@delimiter", "function", "@brackets"]],
+            // wrapped if statement and builtin function support, ex: "if not (x == 1) then"
+            [/([a-z_A-Z]+)(\s*[(]\s*)/, [{ cases: { "@builtins": "builtin", "@keywords": "keyword", "@default": "function" } }, "delimiter"]],
 
-            // built-in functions support, ex. "spectrum(10, 100, 'A')"
-            [/([a-z_A-Z]+)(\s*[(])/, [{ cases: { "@builtins": "builtin", "@default": "function" } }, "@brackets"]],
+            // Pound sign length support
+            [/([#]\s*)/, ["keyword"]],
+
+            // module and built-in module function support, ex. "myModule.myFunc()"
+            [/([a-z_A-Z]+)([.])([a-z_A-Z]+)(\s*[(])/, [{ cases: { "@builtins": "builtin", "@default": "identifier" } }, "delimiter", "function", "delimiter"]],
 
             // module member variable support, ex. "myModule.myVar"
-            [/([a-z_A-Z]+)([.])([a-z_A-Z]+)/, [{ cases: { "@builtins": "builtin", "@default": "identifier" } }, "@delimiter", "member"]],
-
-            // wrapped if statement support, ex: "if not (x == 1) then"
-            [/(\s*)(if)(\snot\s)*(\s*[(]\s*)/, ["delimiter", "keyword", "keyword", "delimiter"]],
+            [/([a-z_A-Z]+)([.])([a-z_A-Z]+)/, [{ cases: { "@builtins": "builtin", "@default": "identifier" } }, "delimiter", "member"]],
 
             // default language support
             ...luaLang.tokenizer.root,
