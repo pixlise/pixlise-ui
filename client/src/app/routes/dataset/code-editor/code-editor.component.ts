@@ -78,7 +78,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
     private _previewComponent = null;
     private _datasetID: string;
-    private _expressionID: string = "unsaved-new-expression";
+    private _expressionID: string = DataExpressionId.UnsavedExpressionPrefix+"-new-expression";
     private _runExpressionTimer = null;
 
     public isSidebarOpen = false;
@@ -260,8 +260,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                         }
                         else
                         {
-                            this.topEditor.expression.id = "unsaved-new-expression";
-                            this._expressionID = "unsaved-new-expression";
+                            this.topEditor.expression.id = DataExpressionId.UnsavedExpressionPrefix+"-new-expression";
+                            this._expressionID = DataExpressionId.UnsavedExpressionPrefix+"-new-expression";
                             this._newExpression = true;
                             this.navigateToNew("expression");
                         }

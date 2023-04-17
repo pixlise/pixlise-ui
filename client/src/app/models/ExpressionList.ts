@@ -869,7 +869,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         let layers: LayerInfo[] = [];
         for(let item of items)
         {
-            if(!this.showUnsavedExpressions && item?.id?.startsWith("unsaved-"))
+            if(!this.showUnsavedExpressions && item?.id?.startsWith(DataExpressionId.UnsavedExpressionPrefix))
             {
                 continue;
             }

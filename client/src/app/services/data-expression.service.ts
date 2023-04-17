@@ -723,7 +723,7 @@ export class DataExpressionService
     {
         this._expressions.forEach((expr, id) =>
         {
-            if(id.startsWith("unsaved-"))
+            if(id.startsWith(DataExpressionId.UnsavedExpressionPrefix))
             {
                 this._expressions.delete(id);
             }
