@@ -212,10 +212,10 @@ export class RegionDataResults
 class QueryCacheItem
 {
     constructor(
-        public params: DataSourceParams,
+        public params: string,
         public runtimeMs: number,
         public cacheUnixTimeMs: number,
-        public calculatedResult: RegionDataResultItem,
+        public calculatedResult: DataQueryResult,
         public lastAccessUnixTimeMs: number,
     )
     {
@@ -234,7 +234,7 @@ class QueryResultCache
     {
     }
 
-    addCachedResult(params: DataSourceParams, runtimeMs: number, calculatedResult: RegionDataResultItem)
+    addCachedResult(exprId: string, runtimeMs: number, calculatedResult: DataQueryResult)
     {
         // Add to the cache if we want to cache it
         if(runtimeMs < this._expressionResultCacheThresholdMs)
@@ -243,9 +243,9 @@ class QueryResultCache
             return;
         }
 
-        let key = this.makeKey(params);
+        let key = this.makeKey(exprId);
         let nowUnixMs = Date.now();
-        this._queryResultCache.set(key, new QueryCacheItem(params, runtimeMs, nowUnixMs, calculatedResult, nowUnixMs));
+        this._queryResultCache.set(key, new QueryCacheItem(exprId, runtimeMs, nowUnixMs, calculatedResult, nowUnixMs));
 
         console.log("  Cached query result for: "+key+", calc duration: "+Math.floor(runtimeMs)+"ms");
 
@@ -253,10 +253,10 @@ class QueryResultCache
         this.purgeOldItems();
     }
 
-    getCachedResult(params: DataSourceParams, expressionModUnixTimeSec: number, roiModUnixTimeSec: number): RegionDataResultItem
+    getCachedResult(exprId: string, expressionModUnixTimeSec: number): DataQueryResult
     {
         // Search the cache
-        let key = this.makeKey(params);
+        let key = this.makeKey(exprId);
         let item = this._queryResultCache.get(key);
 
         if(!item)
@@ -275,13 +275,6 @@ class QueryResultCache
             return null;
         }
 
-        if(cacheUnixTimeSec < roiModUnixTimeSec)
-        {
-            console.log("  Found outdated (roi) cache item, deleted for: "+key);
-            this._queryResultCache.delete(key);
-            return null;
-        }
-
         let nowUnixMs = Date.now();
         item.lastAccessUnixTimeMs = nowUnixMs;
         console.log("  Found cached query item for: "+key+", calc duration was: "+Math.floor(item.runtimeMs)+"ms");
@@ -294,27 +287,9 @@ class QueryResultCache
         this._queryResultCache.clear();
     }
 
-    clearForROI(roiID: string)
+    private makeKey(exprId: string): string
     {
-        let keysToClear = [];
-        for(let [key, cache] of this._queryResultCache)
-        {
-            if(cache.params.roiId == roiID)
-            {
-                keysToClear.push(key);
-            }
-        }
-
-        // Now clear them
-        for(let key of keysToClear)
-        {
-            this._queryResultCache.delete(key);
-        }
-    }
-
-    private makeKey(params: DataSourceParams): string
-    {
-        return params.exprId+"/"+params.roiId+"/"+params.datasetId+"/"+params.units;
+        return exprId; // Nothing exotic to do with it now that we're only caching by expression ID
     }
 
     private purgeOldItems()
@@ -531,34 +506,44 @@ export class WidgetRegionDataService
 
             // Run the expression and remember the order in which we ran them...
             exprRuns.push(expr);
-            exprResult$.push(
-                this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, false).pipe(
-                    /*tap(
-                        (result: RegionDataResultItem)=>
-                        {
-                            this._resultCache.addCachedResult(query, result.exprResult.runtimeMs, result);
-                        }
-                    ),*/
-                    catchError(
-                        (err)=>
-                        {
-                            let errorMsg = httpErrorToString(err, "WidgetRegionDataService.getData catchError");
 
-                            // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
-                            if(
-                                errorMsg.indexOf("The currently loaded quantification does not contain data for detector") < 0 &&
-                                errorMsg.indexOf("The currently loaded quantification does not contain column") < 0
-                            )
+            // Check cache for already-run expression
+            let cachedResult = this._resultCache.getCachedResult(exprId, expr.modUnixTimeSec);
+            if(cachedResult !== null)
+            {
+                exprResult$.push(of(cachedResult));
+            }
+            else
+            {
+                exprResult$.push(
+                    this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, false).pipe(
+                        tap(
+                            (result: DataQueryResult)=>
                             {
-                                SentryHelper.logMsg(true, errorMsg);
+                                this._resultCache.addCachedResult(exprId, result.runtimeMs, result);
                             }
+                        ),
+                        catchError(
+                            (err)=>
+                            {
+                                let errorMsg = httpErrorToString(err, "WidgetRegionDataService.getData catchError");
 
-                            //return of(new DataQueryResult(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr, region, query));
-                            throw errorMsg;
-                        }
+                                // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
+                                if(
+                                    errorMsg.indexOf("The currently loaded quantification does not contain data for detector") < 0 &&
+                                    errorMsg.indexOf("The currently loaded quantification does not contain column") < 0
+                                )
+                                {
+                                    SentryHelper.logMsg(true, errorMsg);
+                                }
+
+                                //return of(new DataQueryResult(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr, region, query));
+                                throw errorMsg;
+                            }
+                        )
                     )
-                )
-            );
+                );
+            }
         }
 
         // Now wait for all expressions to complete
@@ -579,120 +564,6 @@ export class WidgetRegionDataService
             )
         );
     }
-
-/*
-        for(let query of what)
-        {
-
-            // Get region info (allow NULL in request because context image doesn't need to be slowed by this)
-            let region: RegionData = null;
-            if(query.roiId != null)
-            {
-                region = this._regions.get(query.roiId);
-                if(!region)
-                {
-                    let errorMsg = "Failed to find region id: \""+query.roiId+"\"";
-
-                    if(continueOnError)
-                    {
-                        console.error("getData: "+errorMsg+". Ignored...");
-                        result$.push(of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null, null, null, query)));
-                        continue;
-                    }
-                    console.error("getData: "+errorMsg);
-                    return of(new RegionDataResults([], errorMsg));
-                }
-            }
-
-            // Get the expression
-            let expr = this._exprService.getExpression(query.exprId);
-            if(!expr)
-            {
-                let errorMsg = "Failed to retrieve expression: \""+query.exprId+"\"";
-
-                if(continueOnError)
-                {
-                    
-                    console.error("getData: "+errorMsg+". Ignored...");
-                    result$.push(of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_EXPR, errorMsg, null, null, region, query)));
-                    continue;
-                }
-                console.error("getData: "+errorMsg);
-                return of(new RegionDataResults([], errorMsg));
-            }
-
-            // If we have a cached value for this, return that
-            let cachedResult = this._resultCache.getCachedResult(query, expr.modUnixTimeSec, region ? region.modUnixTimeSec : 0);
-            if(cachedResult !== null)
-            {
-                // Return a result with cached values but this query+expression, just in case it changed!
-                let cachedResultReturn = new RegionDataResultItem(
-                    cachedResult.exprResult,
-                    cachedResult.errorType,
-                    cachedResult.error,
-                    cachedResult.warning,
-                    expr,
-                    region,
-                    query
-                );
-
-                result$.push(of(cachedResultReturn));
-            }
-            else
-            {
-                // Run the expression and handle any errors in our own way here. This function is intended to be called by
-                // consumers of the data that will show a visualisation, so we want to provide a specific consistant error message
-
-                // Some expressions run slowly, so we cache their results in case they are re-run frequently
-                // eg in the case of UI refreshing binary or ternary plots
-                result$.push(
-                    this.runAsyncExpression(query, expr, false).pipe(
-                        tap(
-                            (result: RegionDataResultItem)=>
-                            {
-                                this._resultCache.addCachedResult(query, result.exprResult.runtimeMs, result);
-                            }
-                        ),
-                        catchError(
-                            (err)=>
-                            {
-                                let errorMsg = httpErrorToString(err, "WidgetRegionDataService.getData catchError");
-
-                                // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
-                                if(
-                                    errorMsg.indexOf("The currently loaded quantification does not contain data for detector") < 0 &&
-                                    errorMsg.indexOf("The currently loaded quantification does not contain column") < 0
-                                    )
-                                {
-                                    SentryHelper.logMsg(true, errorMsg);
-                                }
-
-                                return of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr, region, query));
-                            }
-                        )
-                    )
-                );
-            }
-        }
-
-        // Wait for all of them and complete
-        let finalResult$ = combineLatest(result$);
-        return finalResult$.pipe(
-            map(
-                (resultItems: RegionDataResultItem[])=>
-                {
-                    return new RegionDataResults(resultItems, "");
-                }
-            ),
-            catchError(
-                (err)=>
-                {
-                    console.error(err);
-                    throw new Error(err);
-                }
-            )
-        );
-*/
 
     private buildResult(what: DataSourceParams[], exprRuns: DataExpression[], exprResults: DataQueryResult[], continueOnError: boolean): RegionDataResults
     {
@@ -1175,9 +1046,6 @@ export class WidgetRegionDataService
                     let region = this.ensureRegionStored(PredefinedROIID.SelectedPoints);
                     region.pmcs = selection.beamSelection.getSelectedPMCs();
                     region.locationIndexes = Array.from(selection.beamSelection.locationIndexes);
-
-                    // Clear any cached expressions which depended on selection
-                    this._resultCache.clearForROI(PredefinedROIID.SelectedPoints);
 
                     this.widgetData$.next(WidgetDataUpdateReason.WUPD_SELECTION);
                 }
