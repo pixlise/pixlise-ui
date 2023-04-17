@@ -161,7 +161,9 @@ export class DataExpressionService
         private http: HttpClient
     )
     {
-        this._moduleService.refresh();
+        // NOTE: we don't need to do this here, module service should refresh itself
+        // when it needs to!
+        //this._moduleService.refresh();
 
         // When the module list changes, we need to check our expressions to see if they're still up to date
         // This also ensures that we have the latest module list when we first load expressions
