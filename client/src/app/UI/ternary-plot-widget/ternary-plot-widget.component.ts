@@ -134,9 +134,10 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                     {
                         this._cExpressionId = this.previewExpressionIDs[2];
                     }
-                }
 
-                this.prepareData("preview-expression-refresh", null);
+                    // Force a refresh because we changed our expressions to include the unsaved one
+                    this.prepareData("preview-expression-refresh", null);
+                }
             }));
         }
 

@@ -156,12 +156,14 @@ export class DataExpressionService
         private _datasetService: DataSetService, // just for getting pseudointensity predefined expression ids
         private _loadingSvc: LoadingIndicatorService,
         private _moduleService: DataModuleService,
-        private _notifcationService: NotificationService,
+        private _notificationService: NotificationService,
         private _userOptionsService: UserOptionsService,
         private http: HttpClient
     )
     {
-        this._moduleService.refresh();
+        // NOTE: we don't need to do this here, module service should refresh itself
+        // when it needs to!
+        //this._moduleService.refresh();
 
         // When the module list changes, we need to check our expressions to see if they're still up to date
         // This also ensures that we have the latest module list when we first load expressions
@@ -188,13 +190,13 @@ export class DataExpressionService
             // available and the user toggled on the notifications. If not, we handle this when first processing the expressions.
             if(this._isSubscribedToMajorReleases && this._majorUpdatesAvailable)
             {
-                this._notifcationService.addNotification("New Major Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+                this._notificationService.addNotification("New Major Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
                 this._majorUpdatesAvailable = false;
                 this._minorUpdatesAvailable = false;
             }
             else if(this._isSubscribedToMinorReleases && this._minorUpdatesAvailable)
             {
-                this._notifcationService.addNotification("New Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+                this._notificationService.addNotification("New Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
                 this._minorUpdatesAvailable = false;
             }
         });
@@ -343,11 +345,11 @@ export class DataExpressionService
         {
             if(majorModuleVersionsOutdated && this._isSubscribedToMajorReleases)
             {
-                this._notifcationService.addNotification("New Major Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+                this._notificationService.addNotification("New Major Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
             }
             else if(minorModuleVersionsOutdated && this._isSubscribedToMinorReleases)
             {
-                this._notifcationService.addNotification("New Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
+                this._notificationService.addNotification("New Module Updates Have Been Released", false, NotificationItem.typeOutdatedModules);
             }
             else if(majorModuleVersionsOutdated)
             {
@@ -721,7 +723,7 @@ export class DataExpressionService
     {
         this._expressions.forEach((expr, id) =>
         {
-            if(id.startsWith("unsaved-"))
+            if(id.startsWith(DataExpressionId.UnsavedExpressionPrefix))
             {
                 this._expressions.delete(id);
             }

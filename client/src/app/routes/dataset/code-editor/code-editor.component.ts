@@ -43,7 +43,8 @@ import { SpectrumChartWidgetComponent } from "src/app/UI/spectrum-chart-widget/s
 import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/ternary-plot-widget.component";
 import { DataExpressionService, DataExpressionWire } from "src/app/services/data-expression.service";
 import { DataExpression, DataExpressionId, ModuleReference } from "src/app/models/Expression";
-import { DataSourceParams, RegionDataResultItem, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { DataQueryResult } from "src/app/expression-language/data-values";
+import { DataSourceParams, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionModule, TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
 import { AuthenticationService } from "src/app/services/authentication.service";
@@ -77,7 +78,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
     private _previewComponent = null;
     private _datasetID: string;
-    private _expressionID: string = "unsaved-new-expression";
+    private _expressionID: string = DataExpressionId.UnsavedExpressionPrefix+"-new-expression";
     private _runExpressionTimer = null;
 
     public isSidebarOpen = false;
@@ -126,7 +127,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     public executedTextSelection: TextSelection = null;
     public isSubsetExpression: boolean = false;
 
-    public evaluatedExpression: RegionDataResultItem;
+    public evaluatedExpression: DataQueryResult;
+    public expressionToEvaluate: DataExpression;
     public stdout: string = "";
     public stderr: string = "";
     public pmcGridExpressionTitle: string = "";
@@ -258,8 +260,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                         }
                         else
                         {
-                            this.topEditor.expression.id = "unsaved-new-expression";
-                            this._expressionID = "unsaved-new-expression";
+                            this.topEditor.expression.id = DataExpressionId.UnsavedExpressionPrefix+"-new-expression";
+                            this._expressionID = DataExpressionId.UnsavedExpressionPrefix+"-new-expression";
                             this._newExpression = true;
                             this.navigateToNew("expression");
                         }
@@ -1284,19 +1286,21 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 editor.expression.moduleReferences,
                 null,
             );
-            this._widgetDataService.runAsyncExpression(
-                new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID),
-                expression,
-                true
-            ).subscribe(
-                (result: RegionDataResultItem)=>
+
+            // This is a bit of a chicken and egg thing - the expression will fail to run if it's not already
+            // in the expression service, so we save it here, and update it again when the name is corrected
+            this._expressionService.cache(this.previewID, expression, null);
+
+            this._widgetDataService.runAsyncExpression(expression, true).subscribe(
+                (result: DataQueryResult)=>
                 {
                     this.evaluatedExpression = result;
-                    this.stdout = result.exprResult.stdout;
-                    this.stderr = result.exprResult.stderr;
+                    this.expressionToEvaluate = expression;
+                    this.stdout = result.stdout;
+                    this.stderr = result.stderr;
 
                     editor.isSaveableOutput = editor.isModule || result.isPMCTable;
-                    if(this.evaluatedExpression && (!result.isPMCTable || this.evaluatedExpression?.values?.values?.length > 0))
+                    if(this.evaluatedExpression && (!result.isPMCTable || this.evaluatedExpression?.resultValues?.values?.length > 0))
                     {
                         editor.isCodeChanged = false;
                         this.displayExpressionTitle = `Unsaved ${expression.name}`;
@@ -1306,6 +1310,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 (err)=>
                 {
                     this.evaluatedExpression = null;
+                    this.expressionToEvaluate = null;
                     this.stderr = `${err}`;
                     editor.isSaveableOutput = false;
 
@@ -1372,20 +1377,18 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             highlightedExpression.sourceCode = this.addLuaHighlight(highlightedExpression.sourceCode);
         }
 
-        this._widgetDataService.runAsyncExpression(
-            new DataSourceParams(this._expressionID, PredefinedROIID.AllPoints, this._datasetID),
-            highlightedExpression,
-            true
-        ).subscribe(
-            (result: RegionDataResultItem)=>
+        this._widgetDataService.runAsyncExpression(highlightedExpression, true).subscribe(
+            (result: DataQueryResult)=>
             {
                 this.evaluatedExpression = result;
-                this.stdout = result.exprResult.stdout;
-                this.stderr = result.exprResult.stderr;
+                this.expressionToEvaluate = highlightedExpression;
+                this.stdout = result.stdout;
+                this.stderr = result.stderr;
             },
             (err)=>
             {
                 this.evaluatedExpression = null;
+                this.expressionToEvaluate = null;
                 this.stderr = `${err}`;
             }
         );
@@ -1583,13 +1586,13 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
     get isEvaluatedDataValid(): boolean
     {
-        let values = this.evaluatedExpression?.values;
+        let values = this.evaluatedExpression?.resultValues?.values;
         return typeof values !== "undefined" && values !== null && (!Array.isArray(values?.values) || values.values.length > 0);
     }
 
     get runtimeSeconds(): string
     {
-        let msTime = this.evaluatedExpression?.exprResult?.runtimeMs;
+        let msTime = this.evaluatedExpression?.runtimeMs;
         if(!msTime || !this.isEvaluatedDataValid)
         {
             return "";

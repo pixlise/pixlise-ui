@@ -1387,7 +1387,7 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         // hull and use the angle formed by that vs the X axis
         let longestVec = null;
         let longestVecLength = 0;
-        let longestVecIdx = -1;
+        //let longestVecIdx = -1;
         for(let c = 0; c < footprintHullPoints.length; c++)
         {
             let lastIdx = c-1;
@@ -1402,7 +1402,7 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
             {
                 longestVec = vec;
                 longestVecLength = vecLen;
-                longestVecIdx = c;
+                //longestVecIdx = c;
             }
         }
 
@@ -1671,11 +1671,12 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
             c++;
         }
         
-        if(!this.pmcForBulkMaxValueLocation)
+        if(this.pmcForBulkMaxValueLocation === null)
         {
             console.warn("  Dataset does not contain BulkSum or MaxValue spectrums");
         }
-        if(!this.spectrumMaxValueNormal || this.spectrumMaxValueNormal  <= 0)
+
+        if(!this.spectrumMaxValueNormal || this.spectrumMaxValueNormal <= 0)
         {
             console.warn("  Max spectrum value found: "+this.spectrumMaxValueNormal);
         }

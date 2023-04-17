@@ -299,7 +299,28 @@ export class DataModuleService
         private _authService: AuthenticationService,
     )
     {
-        this.refresh();
+/* This never seems to end up with a true value!
+        // We only refresh once we have authenticated
+        this._authService.isAuthenticated$.subscribe(
+            (authenticated: boolean)=>
+            {
+                if(authenticated)
+                {
+                    this.refresh();
+                }
+            }
+        );
+*/
+        // We only refresh once we have authenticated
+        this._authService.userProfile$.subscribe(
+            (profile)=>
+            {
+                if(profile)
+                {
+                    this.refresh();
+                }
+            }
+        );
     }
 
     get modulesUpdated$(): Subject<void>
