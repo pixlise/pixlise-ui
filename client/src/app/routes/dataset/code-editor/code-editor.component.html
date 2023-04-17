@@ -380,6 +380,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 class="{{isPMCDataGridSolo ? 'solo' : ''}}"
                 [header]="pmcGridExpressionTitle"
                 [evaluatedExpression]="evaluatedExpression"
+                [expression]="expressionToEvaluate"
                 [columnCount]="15"
                 (onToggleSolo)="onTogglePMCDataGridSolo($event)"
                 [stdout]="stdout"

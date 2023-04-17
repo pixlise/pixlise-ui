@@ -78,7 +78,6 @@ export class ExpressionRunnerService
         expression: DataExpression,
         quantSource: QuantifiedDataQuerierSource,
         diffractionSource: DiffractionPeakQuerierSource,
-        forPMCs: Set<number> = null,
         allowAnyResponse: boolean = false
     ): Observable<DataQueryResult>
     {
@@ -123,10 +122,6 @@ export class ExpressionRunnerService
                                 this._exprService.saveExecutionStats(expression.id, queryResult.dataRequired, queryResult.runtimeMs);
 
                                 // Return the results, but filter for PMCs requested, if need be
-                                if(queryResult.isPMCTable)
-                                {
-                                    queryResult.resultValues = this.filterForPMCs(queryResult.resultValues, forPMCs);
-                                }
                                 return queryResult;
                             }
                         )
@@ -214,28 +209,6 @@ export class ExpressionRunnerService
                 }
             )
         );
-    }
-
-    private filterForPMCs(queryResult: PMCDataValues, forPMCs: Set<number>): PMCDataValues
-    {
-        // Filter for PMCs requested
-        // TODO: Modify this so we don't uneccessarily run expressions for PMCs we end up throwing away
-        if(forPMCs === null)
-        {
-            return queryResult;
-        }
-
-        // Build a new result only containing PMCs specified
-        let resultValues: PMCDataValue[] = [];
-        for(let item of queryResult.values)
-        {
-            if(forPMCs.has(item.pmc))
-            {
-                resultValues.push(item);
-            }
-        }
-
-        return PMCDataValues.makeWithValues(resultValues);
     }
 
     exportExpressionCode(
