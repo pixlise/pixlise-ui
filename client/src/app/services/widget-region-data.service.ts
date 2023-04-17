@@ -1251,12 +1251,15 @@ export class WidgetRegionDataService
         this._viewStateRelatedSubs.add(this._quantService.multiQuantZStack$.subscribe(
             (zStack: ZStackItem[])=>
             {
-                if(zStack.length > 0) // NOTE: this is accessed via service later, we only check the length here
-                {
+                // NOTE: this needs to run! If not, we can get stuck
+                // The following was tried but failed for the above reason...
+                // NOTE: this is accessed via service later, we only check the length here
+                //if(zStack.length > 0)
+                //{
                     // Rebuild the list of RemainingPoints
                     this._multiQuantLoaded = true;
                     this.rebuildData(WidgetDataUpdateReason.WUPD_REMAINING_POINTS);
-                }
+                //}
             },
             (err)=>
             {
