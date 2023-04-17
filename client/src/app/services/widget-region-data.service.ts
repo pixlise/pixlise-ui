@@ -471,15 +471,15 @@ export class WidgetRegionDataService
     getData(what: DataSourceParams[], continueOnError: boolean): Observable<RegionDataResults>
     {
         let dataset = this._datasetService.datasetLoaded;
-
         if(!dataset)
         {
             console.error("getData: No dataset");
             return of(new RegionDataResults([], "No dataset"));
         }
 
-        let result$: Observable<RegionDataResultItem>[] = [];
-
+        // The queries often will be for the same expression ID but for multiple regions. We run the (unique) expressions all at once
+        // and then sort out which ROI the data are for
+        let queryByExprId = new Map<string, DataSourceParams[]>();
         for(let query of what)
         {
             // If we have a dataset ID specified, and it doesn't match our dataset ID we error out if the dataset is not a "combined" one.
@@ -495,6 +495,94 @@ export class WidgetRegionDataService
                     return of(new RegionDataResults([], "Queried for dataset ID: "+query.datasetId+" when not in combined dataset!"));
                 }
             }
+
+            if(!queryByExprId.has(query.exprId))
+            {
+                queryByExprId.set(query.exprId, []);
+            }
+
+            queryByExprId.get(query.exprId).push(query);
+        }
+
+        let exprRuns: DataExpression[] = [];
+        let exprResult$: Observable<DataQueryResult>[] = [];
+        for(let [exprId, queries] of queryByExprId)
+        {
+            // Get the expression
+            let expr = this._exprService.getExpression(exprId);
+            if(!expr)
+            {
+                let errorMsg = "Failed to retrieve expression: \""+exprId+"\"";
+
+                if(continueOnError)
+                {
+                    console.error("getData: "+errorMsg+". Ignored...");
+
+                    // Fail it on the first query item
+                    exprRuns.push(expr);
+                    exprResult$.push(of(new DataQueryResult([], false, [], 0, "", "", new Map<string, PMCDataValues>())));
+                    //result$.push(of(new RegionDataResultItem(null, WidgetDataErrorType.WERR_EXPR, errorMsg, null, null, null, queries[0])));
+                    continue;
+                }
+
+                console.error("getData: "+errorMsg);
+                return of(new RegionDataResults([], errorMsg));
+            }
+
+            // Run the expression and remember the order in which we ran them...
+            exprRuns.push(expr);
+            exprResult$.push(
+                this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, false).pipe(
+                    /*tap(
+                        (result: RegionDataResultItem)=>
+                        {
+                            this._resultCache.addCachedResult(query, result.exprResult.runtimeMs, result);
+                        }
+                    ),*/
+                    catchError(
+                        (err)=>
+                        {
+                            let errorMsg = httpErrorToString(err, "WidgetRegionDataService.getData catchError");
+
+                            // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
+                            if(
+                                errorMsg.indexOf("The currently loaded quantification does not contain data for detector") < 0 &&
+                                errorMsg.indexOf("The currently loaded quantification does not contain column") < 0
+                            )
+                            {
+                                SentryHelper.logMsg(true, errorMsg);
+                            }
+
+                            //return of(new DataQueryResult(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr, region, query));
+                            throw errorMsg;
+                        }
+                    )
+                )
+            );
+        }
+
+        // Now wait for all expressions to complete
+        let exprResults$ = combineLatest(exprResult$);
+        return exprResults$.pipe(
+            map(
+                (results: DataQueryResult[])=>
+                {
+                    return this.buildResult(what, exprRuns, results, continueOnError);
+                }
+            ),
+            catchError(
+                (err)=>
+                {
+                    console.error(err);
+                    throw new Error(err);
+                }
+            )
+        );
+    }
+
+/*
+        for(let query of what)
+        {
 
             // Get region info (allow NULL in request because context image doesn't need to be slowed by this)
             let region: RegionData = null;
@@ -557,16 +645,12 @@ export class WidgetRegionDataService
 
                 // Some expressions run slowly, so we cache their results in case they are re-run frequently
                 // eg in the case of UI refreshing binary or ternary plots
-                let t0 = performance.now();
-                
                 result$.push(
                     this.runAsyncExpression(query, expr, false).pipe(
                         tap(
                             (result: RegionDataResultItem)=>
                             {
-                                // Cache if needed
-                                let t1 = performance.now();
-                                this._resultCache.addCachedResult(query, t1-t0, result);
+                                this._resultCache.addCachedResult(query, result.exprResult.runtimeMs, result);
                             }
                         ),
                         catchError(
@@ -607,10 +691,109 @@ export class WidgetRegionDataService
                     throw new Error(err);
                 }
             )
-        ); 
+        );
+*/
+
+    private buildResult(what: DataSourceParams[], exprRuns: DataExpression[], exprResults: DataQueryResult[], continueOnError: boolean): RegionDataResults
+    {
+        let dataset = this._datasetService.datasetLoaded;
+        let outputResult = new RegionDataResults([], "");
+
+        // We got data back for an expression, look up what else it was supposed to include
+        let exprResultById = new Map<string, DataQueryResult>();
+        let exprById = new Map<string, DataExpression>();
+
+        for(let c = 0; c < exprResults.length; c++)
+        {
+            // Get the expression that ran
+            const expr = exprRuns[c];
+            const exprResult = exprResults[c];
+
+            exprResultById.set(expr.id, exprResult);
+            exprById.set(expr.id, expr);
+        }
+
+        // Now run through all the original query stuff, in that order, and apply the ROI and unit conversions
+        // to form output data
+        for(let query of what)
+        {
+            let region: RegionData = null;
+            if(query.roiId != null)
+            {
+                region = this._regions.get(query.roiId);
+                if(!region)
+                {
+                    let errorMsg = "Failed to find region id: \""+query.roiId+"\"";
+
+                    if(continueOnError)
+                    {
+                        console.error("getData: "+errorMsg+". Ignored...");
+                        outputResult.queryResults.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null, null, null, query));
+                        continue;
+                    }
+                    console.error("getData: "+errorMsg);
+                    return new RegionDataResults([], errorMsg);
+                }
+            }
+
+            // Get the expression result for this query item
+            let exprResult = exprResultById.get(query.exprId);
+            if(!exprResult || !exprResult.resultValues)
+            {
+                let errorMsg = "Failed to get result for expression: "+query.exprId;
+                
+                // This expression failed, so anything expecting data from here should just get an error
+                outputResult.queryResults.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null, null, null, query));
+                continue;
+            }
+            
+            // At this point, we have to decide what PMCs to return for this query item. If we have an ROI specified, we are only querying
+            // for its PMCs BUT datasetId filters this further, because if we have one specified (in the case of combined datasets), we need to
+            // only include PMCs for that dataset!
+            let pmcsToQuery = region ? region.pmcs : null;
+            let pmcOffset = 0;
+
+            if(query.datasetId)
+            {
+                // Get the offset for this dataset ID
+                pmcOffset = dataset.getIdOffsetForSubDataset(query.datasetId);
+
+                // We're filtering down!
+                if(!pmcsToQuery)
+                {
+                    // No PMCs given, so just get all for the given dataset ID
+                    pmcsToQuery = this.getPMCsForDatasetId(query.datasetId, dataset);
+                }
+                else
+                {
+                    // Region PMCs are specified, so filter down to only those for the given dataset!
+                    pmcsToQuery = this.filterPMCsForDatasetId(region.pmcs, query.datasetId, dataset);
+                }
+            }
+
+            const expr = exprById.get(query.exprId);
+            let processedResult = this.processQueryResult(exprResult.resultValues, query, expr, region, pmcOffset, pmcsToQuery);
+            outputResult.queryResults.push(processedResult);
+        }
+
+        return outputResult;
     }
 
-    private processQuantResult(result: DataQueryResult, query: DataSourceParams, expr: DataExpression, region: RegionData, pmcOffset: number): RegionDataResultItem
+    // Runs an expression with given parameters. If errors are encountered, they will be returned as part of the Observables own
+    // error handling interface.
+    runAsyncExpression(query: DataSourceParams, expr: DataExpression, allowAnyResponse: boolean): Observable<DataQueryResult>
+    {
+        return this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, allowAnyResponse);
+    }
+    
+    private processQueryResult(
+        result: DataQueryResult,
+        query: DataSourceParams,
+        expr: DataExpression,
+        region: RegionData,
+        pmcOffset: number,
+        forPMCs: Set<number>
+    ): RegionDataResultItem
     {
         let pmcValues = result?.resultValues as PMCDataValues;
         if(!Array.isArray(pmcValues?.values) || (pmcValues.values.length > 0 && !(pmcValues.values[0] instanceof PMCDataValue)))
@@ -618,7 +801,11 @@ export class WidgetRegionDataService
             return new RegionDataResultItem(result, WidgetDataErrorType.WERR_QUERY, "Result is not a PMC array!", null, expr, region, query, false);
         }
 
-        let unitConverted = this.applyUnitConversion(expr, pmcValues, query.units);
+        // Filter to only the PMCs we're interested in
+        let filteredPMCValues = this.filterForPMCs(pmcValues, forPMCs);
+
+        // Apply unit conversion if needed
+        let unitConverted = this.applyUnitConversion(expr, filteredPMCValues, query.units);
 
         // Also change the PMC values to be dataset-relative in the case of combined dataset
         if(pmcOffset > 0)
@@ -631,53 +818,35 @@ export class WidgetRegionDataService
 
         // Put this back in the result
         result.resultValues = unitConverted;
-        let resultItem = new RegionDataResultItem(result, null, null, unitConverted.warning, expr, region, query);
 
+        let resultItem = new RegionDataResultItem(result, null, null, unitConverted.warning, expr, region, query);
         return resultItem;
     }
 
-    // Runs an expression with given parameters. If errors are encountered, they will be returned as part of the Observables own
-    // error handling interface.
-    public runAsyncExpression(query: DataSourceParams, expr: DataExpression, allowAnyResponse: boolean): Observable<RegionDataResultItem>
+    private filterForPMCs(queryResult: PMCDataValues, forPMCs: Set<number>): PMCDataValues
     {
-        let dataset = this._datasetService.datasetLoaded;
-        let region = this._regions.get(query.roiId);
-
-        // At this point, we have to decide what we're querying for. If we have an ROI specified, we are only querying for its PMCs
-        // BUT datasetId filters this further, because if we have one specified (in the case of combined datasets), we need to
-        // only include PMCs for that dataset!
-        let pmcsToQuery = region ? region.pmcs : null;
-        let pmcOffset = 0;
-
-        if(query.datasetId)
+        // Filter for PMCs requested
+        // TODO: Modify this so we don't uneccessarily run expressions for PMCs we end up throwing away
+        if(forPMCs === null)
         {
-            // Get the offset for this dataset ID
-            pmcOffset = dataset.getIdOffsetForSubDataset(query.datasetId);
+            return queryResult;
+        }
 
-            // We're filtering down!
-            if(!pmcsToQuery)
+        // Build a new result only containing PMCs specified
+        let resultValues: PMCDataValue[] = [];
+        for(let item of queryResult.values)
+        {
+            if(forPMCs.has(item.pmc))
             {
-                // No PMCs given, so just get all for the given dataset ID
-                pmcsToQuery = this.getPMCsForDatasetId(query.datasetId, dataset);
-            }
-            else
-            {
-                // Region PMCs are specified, so filter down to only those for the given dataset!
-                pmcsToQuery = this.filterPMCsForDatasetId(region.pmcs, query.datasetId, dataset);
+                resultValues.push(item);
             }
         }
 
-        return this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, pmcsToQuery, allowAnyResponse).pipe(
-            map(
-                (result: DataQueryResult)=>
-                {
-                    return this.processQuantResult(result, query, expr, region, pmcOffset);
-                }
-            )
-        );
+        return PMCDataValues.makeWithValues(resultValues);
     }
 
-    public exportExpressionCode(expr: DataExpression): Observable<Blob>
+    // This is really just a convenience thing - this service already has all the things required to call export on the expression runner
+    exportExpressionCode(expr: DataExpression): Observable<Blob>
     {
         return this._exprRunnerService.exportExpressionCode(expr, this._quantificationLoaded, this._diffractionService);
     }
@@ -707,7 +876,6 @@ export class WidgetRegionDataService
     private filterPMCsForDatasetId(regionPMCs: Set<number>, datasetId: string, dataset: DataSet): Set<number>
     {
         let locIdxs = dataset.getLocationIdxsForSubDataset(datasetId);
-        let locations = dataset.experiment.getLocationsList();
 
         let pmcsToQuery = new Set<number>();
         for(let regionPMC of regionPMCs)
