@@ -68,6 +68,8 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
     selectedPMCs: Set<number> = new Set();
     currentSelection: SelectionHistoryItem = null;
 
+    public copyIcon: string = "content_copy";
+
     constructor(
         private _selectionService: SelectionService,
         private _datasetService: DataSetService,
@@ -141,8 +143,21 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         }
         else if(typeof values === "object")
         {
-            // Pretty print JSON
-            return JSON.stringify(values, null, 2);
+            let cache = [];
+
+            // This is a bit of a hack to get around the fact that JSON.stringify doesn't handle circular references
+            return JSON.stringify(values, (key, value) =>
+            {
+                if(typeof value === "object" && value !== null)
+                {
+                    if(cache.indexOf(value) !== -1)
+                    {
+                        return `[${key}]`;
+                    }
+                    cache.push(value);
+                }
+                return value;
+            }, 2);
         }
         else
         {
@@ -289,6 +304,17 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         }
 
         this._selectionService.setSelection(this._datasetService.datasetLoaded, new BeamSelection(dataset, locationIndexes), pixelSelection, true);
+    }
+
+    onCopyOutput()
+    {
+        let output = this.printableResultValue;
+        if(output && navigator?.clipboard)
+        {
+            navigator.clipboard.writeText(output);
+            this.copyIcon = "done";
+            setTimeout(() => this.copyIcon = "content_copy", 1000);
+        }
     }
 
     onExport()
