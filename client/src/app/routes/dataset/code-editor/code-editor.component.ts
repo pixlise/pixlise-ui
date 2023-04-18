@@ -1343,7 +1343,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             if(textLines.length > 0)
             {
                 let lastLine = textLines[textLines.length - 1];
-                let assignmentSplit = lastLine.split(" = ");
+                let assignmentSplit = lastLine.split(/\s*=\s*/);
                 if(assignmentSplit.length === 2)
                 {
                     let lhsVarName = assignmentSplit[0].replace("local ", "").trim();
