@@ -1342,7 +1342,17 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             let textLines = changedText.trim().split("\n");
             if(textLines.length > 0)
             {
-                textLines[textLines.length - 1] = "return " + textLines[textLines.length - 1];
+                let lastLine = textLines[textLines.length - 1];
+                let assignmentSplit = lastLine.split(" = ");
+                if(assignmentSplit.length === 2)
+                {
+                    let lhsVarName = assignmentSplit[0].replace("local ", "").trim();
+                    textLines.push(`return ${lhsVarName}`);
+                }
+                else
+                {
+                    textLines[textLines.length - 1] = "return " + textLines[textLines.length - 1];
+                }
             }
             changedText = textLines.join("\n");
         }
