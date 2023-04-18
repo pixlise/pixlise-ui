@@ -1337,12 +1337,22 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     addLuaHighlight(text: string): string
     {
         let changedText = text;
-        if(!changedText.includes("return"))
+        if(!changedText.includes("return "))
         {
             let textLines = changedText.trim().split("\n");
             if(textLines.length > 0)
             {
-                textLines[textLines.length - 1] = "return " + textLines[textLines.length - 1];
+                let lastLine = textLines[textLines.length - 1];
+                let assignmentSplit = lastLine.split(/\s*=\s*/);
+                if(assignmentSplit.length === 2)
+                {
+                    let lhsVarName = assignmentSplit[0].replace("local ", "").trim();
+                    textLines.push(`return ${lhsVarName}`);
+                }
+                else
+                {
+                    textLines[textLines.length - 1] = "return " + textLines[textLines.length - 1];
+                }
             }
             changedText = textLines.join("\n");
         }

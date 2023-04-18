@@ -160,3 +160,22 @@
         }
     }
 }
+
+.result-text {
+    position: relative;
+
+    .copy-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        color: rgba(var(--clr-gray-30), 0.8);
+        cursor: pointer;
+
+        &:hover {
+            color: rgba(var(--clr-gray-30), 1);
+        }
+    }
+}

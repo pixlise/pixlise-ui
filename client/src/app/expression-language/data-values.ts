@@ -86,16 +86,32 @@ export class DataQueryResult
         public runtimeMs: number,
         public stdout: string,
         public stderr: string,
-        public recordedExpressionInputs: Map<string, PMCDataValues>
+        public recordedExpressionInputs: Map<string, PMCDataValues>,
+        public errorMsg: string = "",
     )
     {
     }
 
-    public static get DataTypeSpectrum() { return "spectrum" }
-    public static get DataTypeHousekeeping() { return "housekeeping" }
-    public static get DataTypeDiffraction() { return "diffraction" }
-    public static get DataTypeRoughness() { return "roughness" }
-    public static get DataTypePosition() { return "position" }
+    public static get DataTypeSpectrum()
+    {
+        return "spectrum";
+    }
+    public static get DataTypeHousekeeping()
+    {
+        return "housekeeping";
+    }
+    public static get DataTypeDiffraction()
+    {
+        return "diffraction";
+    }
+    public static get DataTypeRoughness()
+    {
+        return "roughness";
+    }
+    public static get DataTypePosition()
+    {
+        return "position";
+    }
 }
 
 export class PMCDataValues
