@@ -59,6 +59,7 @@ export class MistRoiUploadComponent implements OnInit
     public mistROIs: ROIItem[] = [];
     public mistROIsByDatasetID: Map<string, ROIItem[]> = new Map<string, ROIItem[]>();
     public includesMultipleDatasets: boolean = false;
+    public uploadToSubDatasets: boolean = false;
 
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: MistROIUploadData,
@@ -204,7 +205,8 @@ export class MistRoiUploadComponent implements OnInit
                 skipDuplicates,
                 mistROIs: this.mistROIs,
                 mistROIsByDatasetID: this.mistROIsByDatasetID,
-                includesMultipleDatasets: this.includesMultipleDatasets
+                includesMultipleDatasets: this.includesMultipleDatasets,
+                uploadToSubDatasets: this.uploadToSubDatasets,
             });
         }
     }

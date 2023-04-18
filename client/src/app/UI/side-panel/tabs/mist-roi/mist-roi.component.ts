@@ -167,7 +167,7 @@ export class MistROIComponent implements OnInit
         const dialogRef = this.dialog.open(MistRoiUploadComponent, dialogConfig);
 
         dialogRef.afterClosed().subscribe(
-            (response: {mistROIs: ROIItem[]; deleteExisting: boolean; overwrite: boolean; skipDuplicates: boolean; mistROIsByDatasetID: Map<string, ROIItem[]>; includesMultipleDatasets: boolean;})=>
+            (response: {mistROIs: ROIItem[]; deleteExisting: boolean; overwrite: boolean; skipDuplicates: boolean; mistROIsByDatasetID: Map<string, ROIItem[]>; includesMultipleDatasets: boolean; uploadToSubDatasets: boolean;})=>
             {
                 if(!response || !response?.mistROIs)
                 {
@@ -187,10 +187,18 @@ export class MistROIComponent implements OnInit
                         }
                     );
                 }
-                else if(response.includesMultipleDatasets)
+                else
                 {
                     let mistROIsWithOffsets = [];
 
+                    let missingSubDatasets = Array.from(response.mistROIsByDatasetID.keys()).filter((subDataset) => !this._subDataSetIDs.includes(subDataset));
+                    if(missingSubDatasets.length > 0)
+                    {
+                        if(!confirm("The following sub-datasets are missing from the current dataset: " + missingSubDatasets.join(", ") + ". Do you want to continue?"))
+                        {
+                            return;
+                        }
+                    }
                     // Only allow upload of ROIs if they're to one of the combined sub-datasets
                     this._subDataSetIDs.forEach((subDatasetID: string) =>
                     {
@@ -200,17 +208,20 @@ export class MistROIComponent implements OnInit
                             return;
                         }
                         
-                        // Add ROIs without offsets to sub-dataset
-                        this._roiService.bulkAdd(rois, response.overwrite, response.skipDuplicates, response.deleteExisting, true, subDatasetID).subscribe(
-                            ()=>
-                            {
-                                this._selectionService.clearSelection();
-                            },
-                            (err)=>
-                            {
-                                alert(httpErrorToString(err, ""));
-                            }
-                        );
+                        if(response.uploadToSubDatasets)
+                        {
+                            // Add ROIs without offsets to sub-dataset
+                            this._roiService.bulkAdd(rois, response.overwrite, response.skipDuplicates, response.deleteExisting, true, subDatasetID).subscribe(
+                                ()=>
+                                {
+                                    this._selectionService.clearSelection();
+                                },
+                                (err)=>
+                                {
+                                    alert(httpErrorToString(err, ""));
+                                }
+                            );
+                        }
 
                         rois.forEach((roi) =>
                         {
