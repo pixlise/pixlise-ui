@@ -526,8 +526,7 @@ export class WidgetRegionDataService
                                     SentryHelper.logMsg(true, errorMsg);
                                 }
 
-                                //return of(new DataQueryResult(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null, expr, region, query));
-                                throw errorMsg;
+                                return of(new DataQueryResult(null, false, [], null, "", "", null, errorMsg));
                             }
                         )
                     )
@@ -603,7 +602,17 @@ export class WidgetRegionDataService
                 let errorMsg = "Failed to get result for expression: "+query.exprId;
                 
                 // This expression failed, so anything expecting data from here should just get an error
-                outputResult.queryResults.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null, null, null, query));
+                outputResult.queryResults.push(
+                    new RegionDataResultItem(exprResult,
+                        WidgetDataErrorType.WERR_QUERY,
+                        errorMsg,
+                        errorMsg,
+                        exprById.get(query.exprId),
+                        region,
+                        query,
+                        exprResult?.isPMCTable || false
+                    )
+                );
                 continue;
             }
 
@@ -1251,12 +1260,15 @@ export class WidgetRegionDataService
         this._viewStateRelatedSubs.add(this._quantService.multiQuantZStack$.subscribe(
             (zStack: ZStackItem[])=>
             {
-                if(zStack.length > 0) // NOTE: this is accessed via service later, we only check the length here
-                {
+                // NOTE: this needs to run! If not, we can get stuck
+                // The following was tried but failed for the above reason...
+                // NOTE: this is accessed via service later, we only check the length here
+                //if(zStack.length > 0)
+                //{
                     // Rebuild the list of RemainingPoints
                     this._multiQuantLoaded = true;
                     this.rebuildData(WidgetDataUpdateReason.WUPD_REMAINING_POINTS);
-                }
+                //}
             },
             (err)=>
             {

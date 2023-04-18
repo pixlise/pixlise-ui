@@ -64,7 +64,7 @@ export class TaggingService
 
     getTagName(tagID: string): string
     {
-        return this._lastTagsLookup.get(tagID)?.name || "";
+        return this._lastTagsLookup?.get(tagID)?.name || "";
     }
 
     private resubscribeDataset()

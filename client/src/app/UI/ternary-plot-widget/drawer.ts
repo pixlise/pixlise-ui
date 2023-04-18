@@ -84,30 +84,36 @@ export class TernaryDiagramDrawer implements CanvasDrawer
         {
             let drawA = ()=>
             {
-                TernaryDiagramDrawer.drawAxisLabel(
-                    screenContext,
-                    drawData.labelA,
-                    rawData.cornerA.label,
-                    rawData.cornerA.errorMsgShort,
-                    this._mdl.drawData.hoverLabel=="A",
-                    rawData.cornerA.modulesOutOfDate ? Colours.ORANGE.asString() : clrLabel,
-                    viewport.width,
-                    this.showSwapButton
-                );
+                if(rawData.cornerA)
+                {
+                    TernaryDiagramDrawer.drawAxisLabel(
+                        screenContext,
+                        drawData.labelA,
+                        rawData.cornerA.label,
+                        rawData.cornerA.errorMsgShort,
+                        this._mdl.drawData.hoverLabel=="A",
+                        rawData.cornerA.modulesOutOfDate ? Colours.ORANGE.asString() : clrLabel,
+                        viewport.width,
+                        this.showSwapButton
+                    );
+                }
             };
 
             let drawB = ()=>
             {
-                TernaryDiagramDrawer.drawAxisLabel(
-                    screenContext,
-                    drawData.labelB,
-                    rawData.cornerB.label,
-                    rawData.cornerB.errorMsgShort,
-                    this._mdl.drawData.hoverLabel=="B",
-                    rawData.cornerB.modulesOutOfDate ? Colours.ORANGE.asString() : clrLabel,
-                    viewport.width,
-                    this.showSwapButton
-                );
+                if(rawData.cornerB)
+                {
+                    TernaryDiagramDrawer.drawAxisLabel(
+                        screenContext,
+                        drawData.labelB,
+                        rawData.cornerB.label,
+                        rawData.cornerB.errorMsgShort,
+                        this._mdl.drawData.hoverLabel=="B",
+                        rawData.cornerB.modulesOutOfDate ? Colours.ORANGE.asString() : clrLabel,
+                        viewport.width,
+                        this.showSwapButton
+                    );
+                }
             };
 
             // Draw whichever is hovered last
@@ -122,16 +128,19 @@ export class TernaryDiagramDrawer implements CanvasDrawer
                 drawB();
             }
 
-            TernaryDiagramDrawer.drawAxisLabel(
-                screenContext,
-                drawData.labelC,
-                rawData.cornerC.label,
-                rawData.cornerC.errorMsgShort,
-                this._mdl.drawData.hoverLabel=="C",
-                rawData.cornerC.modulesOutOfDate ? Colours.ORANGE.asString() : clrLabel,
-                viewport.width,
-                this.showSwapButton
-            );
+            if(rawData.cornerC)
+            {
+                TernaryDiagramDrawer.drawAxisLabel(
+                    screenContext,
+                    drawData.labelC,
+                    rawData.cornerC.label,
+                    rawData.cornerC.errorMsgShort,
+                    this._mdl.drawData.hoverLabel=="C",
+                    rawData.cornerC.modulesOutOfDate ? Colours.ORANGE.asString() : clrLabel,
+                    viewport.width,
+                    this.showSwapButton
+                );
+            }
         }
 
         // Draw hover values if we have any

@@ -681,9 +681,9 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
 
     exportPlotData(datasetId: string): string
     {
-        let cornerALabel = this._ternaryModel.raw.cornerA.label;
-        let cornerBLabel = this._ternaryModel.raw.cornerB.label;
-        let cornerCLabel = this._ternaryModel.raw.cornerC.label;
+        let cornerALabel = this._ternaryModel.raw.cornerA?.label || "";
+        let cornerBLabel = this._ternaryModel.raw.cornerB?.label || "";
+        let cornerCLabel = this._ternaryModel.raw.cornerC?.label || "";
 
         let data = `"PMC","ROI","${cornerALabel}","${cornerBLabel}","${cornerCLabel}"\n`;
         let dataset = this._datasetService.datasetLoaded;
