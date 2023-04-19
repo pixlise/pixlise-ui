@@ -30,11 +30,12 @@
 import { Component, ElementRef, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subject, Subscription } from "rxjs";
-import { PMCDataValues } from "src/app/expression-language/data-values";
+import { PMCDataValues, PMCDataValue } from "src/app/expression-language/data-values";
 import { MinMax } from "src/app/models/BasicTypes";
 import { Point } from "src/app/models/Geometry";
 import { orderVisibleROIs, PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { binaryState, ViewStateService } from "src/app/services/view-state.service";
@@ -45,14 +46,15 @@ import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
 import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.component";
 import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expression-picker/expression-picker.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
-import { RGBA } from "src/app/utils/colours";
-import { randomString } from "src/app/utils/utils";
-import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
+import { Colours, RGBA } from "src/app/utils/colours";
+import { httpErrorToString, randomString } from "src/app/utils/utils";
 import { BinaryPlotAxisData, BinaryPlotData, BinaryPlotPointIndex } from "./binary-data";
 import { BinaryDiagramDrawer } from "./drawer";
 import { BinaryInteraction } from "./interaction";
 import { BinaryPlotModel } from "./model";
-import { exportScatterPlot } from "src/app/UI/ternary-plot-widget/export-helper";
+import { exportScatterPlot, ExportPlotCaller } from "src/app/UI/ternary-plot-widget/export-helper";
+import { ExpressionReferences } from "../references-picker/references-picker.component";
+import { DataModuleService } from "src/app/services/data-module.service";
 
 
 @Component({
@@ -60,11 +62,12 @@ import { exportScatterPlot } from "src/app/UI/ternary-plot-widget/export-helper"
     templateUrl: "./binary-plot-widget.component.html",
     styleUrls: ["./binary-plot-widget.component.scss"]
 })
-export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawer
+export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawer, ExportPlotCaller
 {
     @Input() widgetPosition: string = "";
+    @Input() previewExpressionIDs: string[] = [];
 
-    private id = randomString(4);
+    private _id = randomString(4);
     private _subs = new Subscription();
 
     private _visibleROIs: string[] = [];
@@ -73,6 +76,8 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
     private _yAxisExpressionId: string = "";
 
     showMmol: boolean = false;
+
+    private _references: string[] = [];
 
     private _binaryModel: BinaryPlotModel = new BinaryPlotModel();
 
@@ -91,6 +96,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         private _selectionService: SelectionService,
         private _datasetService: DataSetService,
         private _exprService: DataExpressionService,
+        private _moduleService: DataModuleService,
         private _viewStateService: ViewStateService,
         private _widgetDataService: WidgetRegionDataService,
         public dialog: MatDialog
@@ -100,6 +106,30 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
 
     ngOnInit()
     {
+        // Only subscribe to expressions if we have preview expressions passed
+        if(this.isPreviewMode)
+        {
+            this._subs.add(this._exprService.expressionsUpdated$.subscribe(() =>
+            {
+                // If user has changed axes, but still has unsaved expression showing, dont reset
+                if(!DataExpressionId.isUnsavedExpressionId(this._xAxisExpressionId) && !DataExpressionId.isUnsavedExpressionId(this._yAxisExpressionId))
+                {
+                    // Default set axes to first two preview expressions passed
+                    if(this._exprService.getExpression(this.previewExpressionIDs[0]))
+                    {
+                        this._xAxisExpressionId = this.previewExpressionIDs[0];
+                    }
+                    if(this.previewExpressionIDs.length > 1 && this._exprService.getExpression(this.previewExpressionIDs[1]))
+                    {
+                        this._yAxisExpressionId = this.previewExpressionIDs[1];
+                    }
+
+                    // Force a refresh because we changed our expressions to include the unsaved one
+                    this.prepareData("preview-expression-refresh", null);
+                }
+            }));
+        }
+
         this._subs.add(this._selectionService.chordClicks$.subscribe(
             (chordExprIds: string[])=>
             {
@@ -149,7 +179,15 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
                         if(loadedState.expressionIDs.length == 2)
                         {
                             this._xAxisExpressionId = loadedState.expressionIDs[0];
+                            if(DataExpressionId.isUnsavedExpressionId(this._xAxisExpressionId))
+                            {
+                                this._xAxisExpressionId = "";
+                            }
                             this._yAxisExpressionId = loadedState.expressionIDs[1];
+                            if(DataExpressionId.isUnsavedExpressionId(this._yAxisExpressionId))
+                            {
+                                this._yAxisExpressionId = "";
+                            }
                         }
                         else
                         {
@@ -190,13 +228,18 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
 
     ngOnDestroy()
     {
-        //console.warn('N-ary ['+this.id+'] ngOnDestroy');
+        //console.warn('N-ary ['+this._id+'] ngOnDestroy');
         this._subs.unsubscribe();
     }
 
     get thisSelector(): string
     {
         return ViewStateService.widgetSelectorBinaryPlot;
+    }
+
+    get isPreviewMode(): boolean
+    {
+        return this.previewExpressionIDs && this.previewExpressionIDs.length > 0;
     }
 
     get isSolo(): IconButtonState
@@ -254,15 +297,59 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
 
     private prepareData(reason: string, widgetUpdReason: WidgetDataUpdateReason): void
     {
-        console.log("Binary ["+this.id+"] prepareData reason: "+reason);
+        console.log("Binary ["+this._id+"] prepareData reason: "+reason);
 
         let t0 = performance.now();
         this.setDefaultsIfNeeded(widgetUpdReason);
 
         // We've got data, create a model!
-        let exprX = null;
-        let exprY = null;
+        this.keyItems = [];
+        this.expressionsMissingPMCs = "";
 
+        // Use widget data service to rebuild our data model
+        let query: DataSourceParams[] = [];
+
+        // Query each region for both expressions if we have any...
+        if(this._xAxisExpressionId.length <= 0 || this._yAxisExpressionId.length <= 0)
+        {
+            console.error("BinaryPlot prepareData: No query ran");
+            this.assignEmptyQuery(t0);
+        }
+        else
+        {
+            // NOTE: we need the selected points to be last in this list, so they are drawn last, and are always visible
+            for(let roiId of this._visibleROIs)
+            {
+                query.push(new DataSourceParams(this._xAxisExpressionId, roiId, "", this.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT));
+                query.push(new DataSourceParams(this._yAxisExpressionId, roiId, "", this.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT));
+            }
+
+            this._widgetDataService.getData(query, true).subscribe(
+                (queryData)=>
+                {
+                    if(queryData.error)
+                    {
+                        console.error("BinaryPlot prepareData error: "+queryData.error);
+                        this.assignEmptyQuery(t0);
+                    }
+                    else
+                    {
+                        this.processQueryResult(t0, queryData);
+                    }
+                },
+                (err)=>
+                {
+                    console.error(httpErrorToString(err, "BinaryPlot prepareData error"));
+                    this.assignEmptyQuery(t0);
+                }
+            );
+        }
+    }
+
+    private processQueryResult(t0: number, queryData: RegionDataResults)
+    {
+        let exprIdX = "";
+        let exprIdY = "";
         let xLabel = "";
         let yLabel = "";
 
@@ -282,149 +369,273 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         let yErrorShort: string = "";
         let yErrorLong: string = "";
 
-        this.keyItems = [];
-        this.expressionsMissingPMCs = "";
+        let xModulesOutOfDate: boolean = false;
+        let yModulesOutOfDate: boolean = false;
+
         let queryWarnings: Set<string> = new Set<string>();
 
-        // Use widget data service to rebuild our data model
-        let queryData: RegionDataResults = null;
-        let query: DataSourceParams[] = [];
+        let labelMaxChars = this.showMmol ? 18 : 24;
 
-        // Query each region for both expressions if we have any...
-        if(this._xAxisExpressionId.length > 0 && this._yAxisExpressionId.length > 0)
+        if(queryData.queryResults.length > 0)
         {
-            exprX = this._exprService.getExpression(this._xAxisExpressionId);
-            exprY = this._exprService.getExpression(this._yAxisExpressionId);
-
-            // NOTE: we need the selected points to be last in this list, so they are drawn last, and are always visible
-            for(let roiId of this._visibleROIs)
+            exprIdX = queryData.queryResults[0].query.exprId;
+            xLabel = queryData.queryResults[0].expression?.getExpressionShortDisplayName(labelMaxChars).shortName;
+            if(!xLabel)
             {
-                query.push(new DataSourceParams(this._xAxisExpressionId, roiId, "", this.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT));
-                query.push(new DataSourceParams(this._yAxisExpressionId, roiId, "", this.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT));
+                xLabel = "";
             }
-
-            queryData = this._widgetDataService.getData(query, true);
+            xModulesOutOfDate = queryData.queryResults[0].expression?.checkModuleReferences(this._moduleService) ?? false;
+        }
+        if(queryData.queryResults.length > 1)
+        {
+            exprIdY = queryData.queryResults[1].query.exprId;
+            yLabel = queryData.queryResults[1].expression?.getExpressionShortDisplayName(labelMaxChars).shortName;
+            if(!yLabel)
+            {
+                yLabel = "";
+            }
+            yModulesOutOfDate = queryData.queryResults[1].expression?.checkModuleReferences(this._moduleService) ?? false;
         }
 
-        if(!queryData)
+        if(this.showMmol)
         {
-            console.error("BinaryPlot prepareData: No query ran");
+            const mmolAppend = "(mmol)";
+            if(xLabel.length > 0 && !xLabel.endsWith(mmolAppend)) // Note this won't detect if (mmol) was modified by short name to be (mm...
+            {
+                xLabel += mmolAppend;
+            }
+
+            if(yLabel.length > 0 && !yLabel.endsWith(mmolAppend)) // Note this won't detect if (mmol) was modified by short name to be (mm...
+            {
+                yLabel += mmolAppend;
+            }
         }
-        else if(queryData.error)
+
+        // Read data for each region
+        for(let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx+=2)
         {
-            console.error("BinaryPlot prepareData error: "+queryData.error);
+            let resultX = queryData.queryResults[queryIdx];
+            let resultY = queryData.queryResults[queryIdx+1];
+
+            if(resultX.warning)
+            {
+                queryWarnings.add(resultX.warning);
+            }
+            if(resultY.warning)
+            {
+                queryWarnings.add(resultY.warning);
+            }
+
+            if( resultX.errorType == WidgetDataErrorType.WERR_ROI &&
+                resultY.errorType == WidgetDataErrorType.WERR_ROI )
+            {
+                // Don't log anything for ROI causing a fail, we just silently ignore if UI is set
+                // to show ROIs that have been deleted. The moment an ROI selection dialog has save
+                // clicked, we purge invalid ones anyway
+                continue;
+            }
+
+            // Show any abbreviated errors that we need to here
+            if(resultX.errorType)
+            {
+                xErrorShort = resultX.errorType;
+                xErrorLong = resultX.error;
+            }
+
+            if(resultY.errorType)
+            {
+                yErrorShort = resultY.errorType;
+                yErrorLong = resultY.error;
+            }
+
+            if(resultX.errorType || resultY.errorType)
+            {
+                continue;
+            }
+
+            // Filter out any data for PMCs which don't exist in BOTH x and y
+            // This fixes issues we saw when using for eg housekeeping data vs quantification data
+            // where housekeeping values could be more numerous because they exist in PMCs that don't
+            // have location data...
+            let values = PMCDataValues.filterToCommonPMCsOnly([resultX.values, resultY.values]);
+
+            let valuesX = values[0];
+            let valuesY = values[1];
+
+            xValueRange.expandByMinMax(valuesX.valueRange);
+            yValueRange.expandByMinMax(valuesY.valueRange);
+
+            for(let c = 0; c < valuesX.values.length; c++)
+            {
+                pmcLookup.set(valuesX.values[c].pmc, new BinaryPlotPointIndex(xPointGroup.length, c));
+            }
+
+            xPointGroup.push(valuesX);
+            yPointGroup.push(valuesY);
+
+            let region = resultX.region;
+            if(region.colour)
+            {
+                coloursRGB.push(RGBA.fromWithA(region.colour, 1));
+                shapes.push(region?.shape || "circle");
+
+                // Add to key too. We only specify an ID if it can be brought to front - all points & selection
+                // are fixed in their draw order, so don't supply for those
+                let roiIdForKey = region.id;
+                if(PredefinedROIID.isPredefined(roiIdForKey))
+                {
+                    roiIdForKey = "";
+                }
+
+                this.keyItems.push(new KeyItem(roiIdForKey, region.name, region.colour, null, region.shape));
+            }
+
+            if(resultX.values.values.length != resultY.values.values.length)
+            {
+                queryWarnings.add("X and Y axes had different sets of PMCs, only showing PMCs that exist on both axes");
+            }
         }
-        else
+
+        this.assignQueryResult(
+            t0,
+            exprIdX,
+            exprIdY,
+            xLabel,
+            yLabel,
+            xValueRange,
+            yValueRange,
+    
+            shapes,
+            coloursRGB,
+            xPointGroup,
+            yPointGroup,
+    
+            pmcLookup,
+    
+            xErrorShort,
+            xErrorLong,
+            yErrorShort,
+            yErrorLong,
+
+            queryWarnings,
+
+            xModulesOutOfDate,
+            yModulesOutOfDate
+        );
+    }
+
+    private assignEmptyQuery(t0: number)
+    {
+        this.assignQueryResult(
+            t0,
+            "",
+            "",
+            "",
+            "",
+            new MinMax(),
+            new MinMax(),
+    
+            [],
+            [],
+            [],
+            [],
+    
+            new Map<number, BinaryPlotPointIndex>(),
+    
+            "",
+            "",
+            "",
+            "",
+
+            new Set<string>()
+        );
+    }
+
+    private assignQueryResult(
+        t0: number,
+        exprIdX: string,
+        exprIdY: string,
+        xLabel: string,
+        yLabel: string,
+        xValueRange: MinMax,
+        yValueRange: MinMax,
+
+        shapes: string[],
+        coloursRGB: RGBA[],
+        xPointGroup: PMCDataValues[],
+        yPointGroup: PMCDataValues[],
+
+        pmcLookup: Map<number, BinaryPlotPointIndex>,
+
+        xErrorShort: string,
+        xErrorLong: string,
+        yErrorShort: string,
+        yErrorLong: string,
+
+        queryWarnings: Set<string>,
+
+        xModulesOutOfDate: boolean = false,
+        yModulesOutOfDate: boolean = false
+    )
+    {
+        if(this._references.length > 0)
         {
-            let labelMaxChars = this.showMmol ? 18 : 24;
+            let refXDataValue = new PMCDataValues();
+            let refYDataValue = new PMCDataValues();
 
-            if(exprX)
+            this._references.forEach((referenceName, i) =>
             {
-                xLabel = this._exprService.getExpressionShortDisplayName(exprX.id, labelMaxChars).shortName;
-            }
-            if(exprY)
-            {
-                yLabel = this._exprService.getExpressionShortDisplayName(exprY.id, labelMaxChars).shortName;
-            }
+                let reference = ExpressionReferences.getByName(referenceName);
 
-            if(this.showMmol)
-            {
-                const mmolAppend = "(mmol)";
-                if(xLabel.length > 0 && !xLabel.endsWith(mmolAppend)) // Note this won't detect if (mmol) was modified by short name to be (mm...
+                if(!reference)
                 {
-                    xLabel += mmolAppend;
+                    console.error(`BinaryPlot prepareData: Couldn't find reference ${referenceName}`);
+                    return;
                 }
 
-                if(yLabel.length > 0 && !yLabel.endsWith(mmolAppend)) // Note this won't detect if (mmol) was modified by short name to be (mm...
-                {
-                    yLabel += mmolAppend;
-                }
-            }
+                let refXValue = ExpressionReferences.getExpressionValue(reference, exprIdX)?.weightPercentage;
+                let isRefXNull = refXValue == null;
+                let refYValue = ExpressionReferences.getExpressionValue(reference, exprIdY)?.weightPercentage;
+                let isRefYNull = refYValue == null;
 
-            // Read data for each region
-            for(let queryIdx = 0; queryIdx < query.length; queryIdx+=2)
-            {
-                let resultX = queryData.queryResults[queryIdx];
-                let resultY = queryData.queryResults[queryIdx+1];
-
-                if(resultX.warning)
+                if(isRefXNull && isRefYNull)
                 {
-                    queryWarnings.add(resultX.warning);
-                }
-                if(resultY.warning)
-                {
-                    queryWarnings.add(resultY.warning);
+                    console.warn(`BinaryPlot prepareData: Reference ${referenceName} has undefined values for: ${xLabel}, ${yLabel}`);
+                    return;
                 }
 
-                if( resultX.errorType == WidgetDataErrorType.WERR_ROI &&
-                    resultY.errorType == WidgetDataErrorType.WERR_ROI )
+                if(isRefXNull)
                 {
-                    // Don't log anything for ROI causing a fail, we just silently ignore if UI is set
-                    // to show ROIs that have been deleted. The moment an ROI selection dialog has save
-                    // clicked, we purge invalid ones anyway
-                    continue;
+                    refXValue = 0;
+                    console.warn(`BinaryPlot prepareData: Reference ${referenceName} has undefined ${xLabel} value`);
+                }
+                if(isRefYNull)
+                {
+                    refYValue = 0;
+                    console.warn(`BinaryPlot prepareData: Reference ${referenceName} has undefined ${yLabel} value`);
                 }
 
-                // Show any abbreviated errors that we need to here
-                if(resultX.errorType)
-                {
-                    xErrorShort = resultX.errorType;
-                    xErrorLong = resultX.error;
-                }
+                // We don't have a PMC for these, so -10 and below are now reserverd for reference values
+                let referenceIndex = ExpressionReferences.references.findIndex((ref) => ref.name === referenceName);
+                let id = -10 - referenceIndex;
 
-                if(resultY.errorType)
-                {
-                    yErrorShort = resultY.errorType;
-                    yErrorLong = resultY.error;
-                }
+                console.log(`BinaryPlot prepareData: Adding reference ${referenceName} with id ${id} and values (${refXValue}, ${refYValue})`);
 
-                if(resultX.errorType || resultY.errorType)
-                {
-                    continue;
-                }
+                refXDataValue.values.push(new PMCDataValue(id, refXValue, isRefXNull, referenceName));
+                refYDataValue.values.push(new PMCDataValue(id, refYValue, isRefYNull, referenceName));
+                pmcLookup.set(refXDataValue.values[i].pmc, new BinaryPlotPointIndex(xPointGroup.length, i));
+            });
 
-                // Filter out any data for PMCs which don't exist in BOTH x and y
-                // This fixes issues we saw when using for eg housekeeping data vs quantification data
-                // where housekeeping values could be more numerous because they exist in PMCs that don't
-                // have location data...
-                let values = PMCDataValues.filterToCommonPMCsOnly([resultX.values, resultY.values]);
+            refXDataValue = PMCDataValues.makeWithValues(refXDataValue.values);
+            refYDataValue = PMCDataValues.makeWithValues(refYDataValue.values);
+            
+            xValueRange.expandByMinMax(refXDataValue.valueRange);
+            yValueRange.expandByMinMax(refYDataValue.valueRange);
 
-                let valuesX = values[0];
-                let valuesY = values[1];
-
-                xValueRange.expandByMinMax(valuesX.valueRange);
-                yValueRange.expandByMinMax(valuesY.valueRange);
-
-                for(let c = 0; c < valuesX.values.length; c++)
-                {
-                    pmcLookup.set(valuesX.values[c].pmc, new BinaryPlotPointIndex(xPointGroup.length, c));
-                }
-
-                xPointGroup.push(valuesX);
-                yPointGroup.push(valuesY);
-
-                let region = this._widgetDataService.regions.get(query[queryIdx].roiId);
-                if(region.colour)
-                {
-                    coloursRGB.push(RGBA.fromWithA(region.colour, 1));
-                    shapes.push(region?.shape || "circle");
-
-                    // Add to key too. We only specify an ID if it can be brought to front - all points & selection
-                    // are fixed in their draw order, so don't supply for those
-                    let roiIdForKey = region.id;
-                    if(PredefinedROIID.isPredefined(roiIdForKey))
-                    {
-                        roiIdForKey = "";
-                    }
-
-                    this.keyItems.push(new KeyItem(roiIdForKey, region.name, region.colour, null, region.shape));
-                }
-
-                if(resultX.values.values.length != resultY.values.values.length)
-                {
-                    queryWarnings.add("X and Y axes had different sets of PMCs, only showing PMCs that exist on both axes");
-                }
-            }
+            xPointGroup.push(refXDataValue);
+            yPointGroup.push(refYDataValue);
+            coloursRGB.push(Colours.CONTEXT_PURPLE);
+            this.keyItems.push(new KeyItem("references", "Ref Points", Colours.CONTEXT_PURPLE, null, "circle"));
         }
 
         if(queryWarnings.size > 0)
@@ -435,8 +646,8 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         let binaryData = new BinaryPlotData(
             shapes,
             coloursRGB,
-            new BinaryPlotAxisData(xLabel, xPointGroup, xValueRange, xErrorShort, xErrorLong),
-            new BinaryPlotAxisData(yLabel, yPointGroup, yValueRange, yErrorShort, yErrorLong),
+            new BinaryPlotAxisData(xLabel, xPointGroup, xValueRange, xErrorShort, xErrorLong, xModulesOutOfDate),
+            new BinaryPlotAxisData(yLabel, yPointGroup, yValueRange, yErrorShort, yErrorLong, yModulesOutOfDate),
             pmcLookup,
             this._visibleROIs
         );
@@ -462,6 +673,11 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         console.log("  Binary prepareData took: "+(t1-t0).toLocaleString()+"ms, needsDraw$ took: "+(t2-t1).toLocaleString()+"ms");
     }
 
+    get axesIDs(): string[]
+    {
+        return [this._xAxisExpressionId, this._yAxisExpressionId];
+    }
+
     private setDefaultsIfNeeded(widgetUpdReason: WidgetDataUpdateReason): void
     {
         // If we don't have any elements set to display, use the first 2 in the quant data
@@ -470,7 +686,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             this._yAxisExpressionId.length <= 0 ||
             (
                 widgetUpdReason == WidgetDataUpdateReason.WUPD_QUANT &&
-                DataExpressionService.hasPseudoIntensityExpressions([this._xAxisExpressionId, this._yAxisExpressionId])
+                DataExpressionId.hasPseudoIntensityExpressions([this._xAxisExpressionId, this._yAxisExpressionId])
             )
         )
         {
@@ -552,7 +768,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
             exprIds = [this._yAxisExpressionId];
         }
 
-        dialogConfig.data = new ExpressionPickerData("Plot Axis", DataExpressionService.DataExpressionTypeAll, exprIds, true, false, false);
+        dialogConfig.data = new ExpressionPickerData("Plot Axis", exprIds, true, false, false, this.isPreviewMode);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 
@@ -586,7 +802,7 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         let hoverPMC = this._selectionService.hoverPMC;
         if(this._binaryModel && this._binaryModel.raw)
         {
-            if(hoverPMC < 0)
+            if(hoverPMC < 0 && hoverPMC > -10)
             {
                 // Clearing, easy case
                 this._binaryModel.hoverPoint = null;
@@ -646,31 +862,10 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         this._binaryModel.selectModeExcludeROI = !this._binaryModel.selectModeExcludeROI;
     }
 
-    exportPlotData(datasetId: string): string
+    onReferences(references)
     {
-        let xAxisLabel = this._binaryModel.raw.xAxisData.axisLabel;
-        let yAxisLabel = this._binaryModel.raw.yAxisData.axisLabel;
-
-        let data = `"PMC","ROI","${xAxisLabel}","${yAxisLabel}"\n`;
-        let dataset = this._datasetService.datasetLoaded;
-
-        Array.from(this._binaryModel.raw.pmcToValueLookup.entries()).forEach(([pmc, idx]) =>
-        {
-            // Check if this PMC is a member of the dataset ID we're exporting for
-            if(dataset.getSubDatasetIdForPMC(pmc) == datasetId)
-            {
-                // Subtract the PMC offset
-                pmc -= dataset.getIdOffsetForSubDataset(datasetId);
-
-                let x = this._binaryModel.raw.xAxisData.pointGroups[idx.pointGroup].values[idx.valueIndex].value;
-                let y = this._binaryModel.raw.yAxisData.pointGroups[idx.pointGroup].values[idx.valueIndex].value;
-                let roiId = this._binaryModel.raw.visibleROIs[idx.pointGroup];
-                let roiName = this._widgetDataService.regions.get(roiId).name;
-                data += `${pmc},${roiName},${x},${y}\n`;
-            }
-        });
-
-        return data;
+        this._references = references;
+        this.prepareData("references-update", null);
     }
 
     onExport()
@@ -681,5 +876,33 @@ export class BinaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDrawe
         }
 
         exportScatterPlot(this.dialog, "Binary", this._datasetService.datasetLoaded, this);
+    }
+
+    exportPlotData(datasetId: string): string
+    {
+        let xLabel = this._binaryModel.raw.xAxisData.axisLabel;
+        let yLabel = this._binaryModel.raw.yAxisData.axisLabel;
+
+        let data = `"PMC","ROI","${xLabel}","${yLabel}"\n`;
+        let dataset = this._datasetService.datasetLoaded;
+
+        Array.from(this._binaryModel.raw.pmcToValueLookup.entries()).forEach(([pmc, idx]) =>
+        {
+            // Check if this PMC is a member of the dataset ID we're exporting for
+            if(dataset.getSubDatasetIdForPMC(pmc) == datasetId)
+            {
+                // Subtract the PMC offset
+                pmc -= dataset.getIdOffsetForSubDataset(datasetId);
+
+                let xValue = this._binaryModel.raw.xAxisData.pointGroups[idx.pointGroup].values[idx.valueIndex].value;
+                let yValue = this._binaryModel.raw.yAxisData.pointGroups[idx.pointGroup].values[idx.valueIndex].value;
+
+                let roiId = this._binaryModel.raw.visibleROIs[idx.pointGroup];
+                let roiName = this._widgetDataService.regions.get(roiId).name;
+                data += `${pmc},"${roiName}",${xValue},${yValue}\n`;
+            }
+        });
+
+        return data;
     }
 }

@@ -29,7 +29,7 @@ gitInfo.version = version;
 var pversion = process.argv.slice(2);
 var v = {
     "raw": pversion[0],
-    "hash": "unknown",
+    "hash": gitInfo.hash,
     "tag": pversion[0],
     "semver": {
         "raw": pversion[0],

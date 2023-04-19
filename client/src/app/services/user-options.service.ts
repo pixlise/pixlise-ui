@@ -83,6 +83,8 @@ export class NotificationSubscriptions
     public static readonly notificationDatasetImageUpdated = "dataset-image-updated";
     public static readonly notificationDatasetHousekeepingUpdated = "dataset-housekeeping-updated";
     public static readonly notificationElementSetShared = "element-set-shared";
+    public static readonly notificationMajorModuleRelease = "major-module-release";
+    public static readonly notificationMinorModuleRelease = "minor-module-release";
 
     constructor(public topics: NotificationTopic[])
     {

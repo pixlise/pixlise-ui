@@ -31,7 +31,8 @@ import { combineLatest, Observable } from "rxjs";
 
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { DataExpressionService, DataExpression } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { RGBMix, RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { LocationDataLayerProperties, LocationDataLayer } from "src/app/models/LocationData2D";
 import { DataSetService } from "../services/data-set.service";
@@ -40,6 +41,8 @@ import { RGBLayerInfo } from "src/app/UI/atoms/expression-list/layer-settings/rg
 import { LayerInfo } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ExpressionListHeaderInfo } from "src/app/UI/atoms/expression-list/layer-settings/header.component";
 import { ObjectCreator } from "./BasicTypes";
+import { BuiltInTags } from "./tags";
+import { AuthenticationService } from "../services/authentication.service";
 
 
 // Not all static vars so we can use this from HTML if the component "extends" this class
@@ -48,10 +51,17 @@ export class ExpressionListGroupNames
     // Names of header sections
     readonly elementsHeaderName = "elements-header";
     readonly rgbMixHeaderName = "rgbmix-header";
+    readonly expressionsUpdateHeaderName = "expression-updates-header";
     readonly expressionsHeaderName = "expressions-header";
     readonly anomalyHeaderName = "anomaly-header";
     readonly pseudoIntensityHeaderName = "pseudointensity-header";
     readonly settingHeaderName = "setting-header";
+
+    // Code editor sidebar-only sections
+    readonly currentlyOpenHeaderName = "currently-open-header";
+    readonly installedModulesHeaderName = "installed-modules-header";
+    readonly modulesHeaderName = "modules-header";
+    readonly examplesHeaderName = "examples-header";
 }
 
 function sortByNameAndCompatibility(a: DataExpression | RGBMix, b: DataExpression | RGBMix)
@@ -66,8 +76,8 @@ function sortByNameAndCompatibility(a: DataExpression | RGBMix, b: DataExpressio
     }
     // Else we go alphabetical
 
-    let aU = a.name.toUpperCase();
-    let bU = b.name.toUpperCase();
+    let aU = a?.name?.toUpperCase() || "";
+    let bU = b?.name?.toUpperCase() || "";
     if(aU < bU) { return -1; }
     if(aU > bU) { return 1; }
     return 0;
@@ -79,6 +89,9 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
     // The stuff we query, when all of these are NOT null, we regenerate the list of items to display
     protected _userExpressions: DataExpression[] = [];
     protected _sharedExpressions: DataExpression[] = [];
+    protected _exampleExpressions: DataExpression[] = [];
+    protected _userExpressionsWithUpdates: DataExpression[] = [];
+
     protected _elementsFromQuant: DataExpression[] = [];
     protected _elementRelatedBuiltIn: DataExpression[] = [];
     protected _pseudointensities: DataExpression[] = [];
@@ -93,8 +106,10 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         private _includeChiSq: boolean,
         private _includeUnquantifiedWeight: boolean,
         private _includeRGBMix: boolean,
-        includeAnomalies: boolean,
-        protected _exprService: DataExpressionService
+        public includeAnomalies: boolean,
+        protected _exprService: DataExpressionService,
+        protected _authService: AuthenticationService,
+        public showUnsavedExpressions: boolean = true
     )
     {
         super();
@@ -136,7 +151,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
 
         for(let elem of pseudoIntensities)
         {
-            let id = DataExpressionService.makePredefinedPseudoIntensityExpression(elem);
+            let id = DataExpressionId.makePredefinedPseudoIntensityExpression(elem);
             let expression = this._exprService.getExpression(id);
             this._pseudointensities.push(expression);
         }
@@ -175,7 +190,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                     
                     for(let det of detectors)
                     {
-                        let id = DataExpressionService.makePredefinedQuantElementExpression(formula, col, det);
+                        let id = DataExpressionId.makePredefinedQuantElementExpression(formula, col, det);
                         let expression = this._exprService.getExpression(id);
                         this._elementsFromQuant.push(expression);
                     }
@@ -195,7 +210,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
             {
                 for(let det of detectors)
                 {
-                    let id = DataExpressionService.makePredefinedQuantDataExpression(chisqColName, det);
+                    let id = DataExpressionId.makePredefinedQuantDataExpression(chisqColName, det);
                     let expression = this._exprService.getExpression(id);
                     this._elementRelatedBuiltIn.push(expression);
                 }
@@ -206,7 +221,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         {
             for(let det of detectors)
             {
-                let id = DataExpressionService.predefinedUnquantifiedPercentDataExpression+"("+det+")";
+                let id = DataExpressionId.predefinedUnquantifiedPercentDataExpression+"("+det+")";
                 let expression = this._exprService.getExpression(id);
                 this._elementRelatedBuiltIn.push(expression);
             }
@@ -216,11 +231,17 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
     protected processExpressions(expressions: Map<string, DataExpression>): void
     {
         this._userExpressions = [];
+        this._userExpressionsWithUpdates = [];
         this._sharedExpressions = [];
+        this._exampleExpressions = [];
 
         for(let expr of expressions.values())
         {
-            if(expr.shared)
+            if(expr.tags.includes(BuiltInTags.exampleTag))
+            {
+                this._exampleExpressions.push(expr);
+            }
+            else if(expr.shared)
             {
                 this._sharedExpressions.push(expr);
             }
@@ -228,11 +249,18 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
             {
                 this._userExpressions.push(expr);
             }
+
+            if(!expr.isModuleListUpToDate && expr.creator.user_id == this._authService.getUserID())
+            {
+                this._userExpressionsWithUpdates.push(expr);
+            }
         }
 
         // Sort by name
         this._userExpressions.sort(sortByNameAndCompatibility);
         this._sharedExpressions.sort(sortByNameAndCompatibility);
+        this._exampleExpressions.sort(sortByNameAndCompatibility);
+        this._userExpressionsWithUpdates.sort(sortByNameAndCompatibility);
     }
 
     protected processRGBMixes(mixes: Map<string, RGBMix>): void
@@ -269,9 +297,9 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
     {
         // Anomalies are pre-defined...
         let anomalyIDs = [
-            DataExpressionService.predefinedRoughnessDataExpression,
-            DataExpressionService.predefinedDiffractionCountDataExpression,
-            DataExpressionService.predefinedHeightZDataExpression
+            DataExpressionId.predefinedRoughnessDataExpression,
+            DataExpressionId.predefinedDiffractionCountDataExpression,
+            DataExpressionId.predefinedHeightZDataExpression
         ];
 
         this._anomalies = [];
@@ -328,7 +356,12 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         expressionAuthorsFilter: string[],
         filterTagIDs: string[],
         includeExploratoryRGBMix: boolean,
-        makeLayer: (source: DataExpression | RGBMix)=>LocationDataLayerProperties
+        makeLayer: (source: DataExpression | RGBMix)=>LocationDataLayerProperties,
+        includeQuantifiedElements: boolean=true,
+        includePseudointensities: boolean=true,
+        customStartSections: CustomExpressionGroup[]=[],
+        customEndSections: CustomExpressionGroup[]=[],
+        includeExamples: boolean=false
     ): ExpressionListItems
     {
         let groups: ExpressionListGroupItems[] = [];
@@ -338,23 +371,46 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
 
         // Pad the list with element related (eg chisq, unquantified %)
         this.includeElementRelatedBuiltInExpressions(elements, chosenElementIDs, recentChosenElementIDs, makeLayer, subLayerOwnerIDs);
+        
+        customStartSections.forEach(section =>
+        {
+            groups.push(
+                new ExpressionListGroupItems(
+                    section.type,
+                    section.label,
+                    headerSectionsOpen.has(section.type),
+                    section.childType,
+                    expressionNameFilter,
+                    expressionAuthorsFilter,
+                    filterTagIDs,
+                    this.getItems(section.items, makeLayer),
+                    section.emptyMessage,
+                    null,
+                    "",
+                    groups.length - 1 >= 0 ? groups[groups.length-1]?.items.length || 0 : 0
+                )
+            );
+        });
 
-        groups.push(
-            new ExpressionListGroupItems(
-                this.elementsHeaderName,
-                "Quantified Elements",
-                headerSectionsOpen.has(this.elementsHeaderName),
-                "element-map",
-                expressionNameFilter,
-                expressionAuthorsFilter,
-                filterTagIDs,
-                elements,
-                "No quantified elements - have you loaded a quantification?",
-                null,
-                "",
-                0 
-            )
-        );
+        if(includeQuantifiedElements)
+        {
+            groups.push(
+                new ExpressionListGroupItems(
+                    this.elementsHeaderName,
+                    "Quantified Elements",
+                    headerSectionsOpen.has(this.elementsHeaderName),
+                    "element-map",
+                    expressionNameFilter,
+                    expressionAuthorsFilter,
+                    filterTagIDs,
+                    elements,
+                    "No quantified elements - have you loaded a quantification?",
+                    null,
+                    "",
+                    0 
+                )
+            );
+        }
 
         if(this._includeRGBMix)
         {
@@ -371,7 +427,27 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                     "No user RGB mixes to view",
                     this.getRGBItems(this._sharedRGBMixes, makeLayer),
                     "No shared RGB mixes to view",
-                    groups[groups.length-1].items.length
+                    groups[groups.length-1]?.items.length || 0
+                )
+            );
+        }
+
+        if(this._userExpressionsWithUpdates.length > 0)
+        {
+            groups.push(
+                new ExpressionListGroupItems(
+                    this.expressionsUpdateHeaderName,
+                    "Outdated Code",
+                    headerSectionsOpen.has(this.expressionsUpdateHeaderName),
+                    "expression",
+                    expressionNameFilter,
+                    expressionAuthorsFilter,
+                    filterTagIDs,
+                    this.getItems(this._userExpressionsWithUpdates, makeLayer),
+                    "No expressions need updating",
+                    null,
+                    "",
+                    groups[groups.length-1]?.items.length || 0
                 )
             );
         }
@@ -389,7 +465,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                 "No user expressions to view",
                 this.getItems(this._sharedExpressions, makeLayer),
                 "No shared expressions to view",
-                groups[groups.length-1].items.length
+                groups[groups.length-1]?.items.length || 0
             )
         );
 
@@ -408,27 +484,70 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
                     "No anomalies to view",
                     null,
                     "",
-                    groups[groups.length-1].items.length
+                    groups[groups.length-1]?.items.length || 0
                 )
             );
         }
 
-        groups.push(
-            new ExpressionListGroupItems(
-                this.pseudoIntensityHeaderName,
-                "Pseudo-Intensities",
-                headerSectionsOpen.has(this.pseudoIntensityHeaderName),
-                "pseudointensity",
-                expressionNameFilter,
-                expressionAuthorsFilter,
-                filterTagIDs,
-                this.getItems(this._pseudointensities, makeLayer),
-                "No pseudo-intensity data available",
-                null,
-                "",
-                groups[groups.length-1].items.length
-            )
-        );
+        if(includePseudointensities)
+        {
+            groups.push(
+                new ExpressionListGroupItems(
+                    this.pseudoIntensityHeaderName,
+                    "Pseudo-Intensities",
+                    headerSectionsOpen.has(this.pseudoIntensityHeaderName),
+                    "pseudointensity",
+                    expressionNameFilter,
+                    expressionAuthorsFilter,
+                    filterTagIDs,
+                    this.getItems(this._pseudointensities, makeLayer),
+                    "No pseudo-intensity data available",
+                    null,
+                    "",
+                    groups[groups.length-1]?.items.length || 0
+                )
+            );
+        }
+
+        customEndSections.forEach(section =>
+        {
+            groups.push(
+                new ExpressionListGroupItems(
+                    section.type,
+                    section.label,
+                    headerSectionsOpen.has(section.type),
+                    section.childType,
+                    expressionNameFilter,
+                    expressionAuthorsFilter,
+                    filterTagIDs,
+                    this.getItems(section.items, makeLayer),
+                    section.emptyMessage,
+                    null,
+                    "",
+                    groups[groups.length-1]?.items.length || 0
+                )
+            );
+        });
+
+        if(includeExamples)
+        {
+            groups.push(
+                new ExpressionListGroupItems(
+                    this.examplesHeaderName,
+                    "Examples",
+                    headerSectionsOpen.has(this.examplesHeaderName),
+                    "expression",
+                    expressionNameFilter,
+                    expressionAuthorsFilter,
+                    filterTagIDs,
+                    this.getItems(this._exampleExpressions, makeLayer),
+                    "No examples to view",
+                    null,
+                    "",
+                    groups[groups.length-1]?.items.length || 0
+                )
+            );
+        }
 
         // Form the final data structure
         let groupLookup = new Map<string, ExpressionListGroupItems>();
@@ -436,7 +555,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         for(let group of groups)
         {
             groupLookup.set(group.headerItemType, group);
-            items.push(...group.items);
+            items.push(...group.items.map(item => new LayerViewItem(item.itemType, item.shared, item.content, group.headerItemType)));
         }
 
         // Add exploratory RGB mix if needed
@@ -553,7 +672,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         {
             exprLookup.set(expr.id, expr);
 
-            let element = DataExpressionService.getPredefinedQuantExpressionElement(expr.id);
+            let element = DataExpressionId.getPredefinedQuantExpressionElement(expr.id);
             if(!element)
             {
                 throw new Error("extractMainExpressionsWithSubLayers called for non-element expression: "+expr.id);
@@ -645,7 +764,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
 
         for(let expr of this._elementRelatedBuiltIn)
         {
-            let detector = DataExpressionService.getPredefinedQuantExpressionDetector(expr.id);
+            let detector = DataExpressionId.getPredefinedQuantExpressionDetector(expr.id);
             let id = expr.id.substring(0, expr.id.length-detector.length-2); // (-2 for the bracket characters)
 
             uniqueIDs.add(id);
@@ -750,7 +869,13 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         let layers: LayerInfo[] = [];
         for(let item of items)
         {
+            if(!this.showUnsavedExpressions && item?.id?.startsWith(DataExpressionId.UnsavedExpressionPrefix))
+            {
+                continue;
+            }
+
             let layer = makeLayer(item);
+            layer.isOutOfDate = !item?.isModuleListUpToDate || false;
             layers.push(new LayerInfo(layer, []));
         }
 
@@ -759,10 +884,7 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
             return layerB.layer.source.createUnixTimeSec - layerA.layer.source.createUnixTimeSec;
         });
 
-        let visibleLayers = layers.filter(layer => layer.layer.visible);
-        let hiddenLayers = layers.filter(layer => !layer.layer.visible);
-        
-        return [...visibleLayers, ...hiddenLayers];
+        return layers;
     }
 
     protected getRGBItems(items: RGBMix[], makeLayer: (source: DataExpression | RGBMix)=>LocationDataLayerProperties): RGBLayerInfo[]
@@ -899,7 +1021,7 @@ export function makeDataForExpressionList(
 
 export class LayerViewItem
 {
-    constructor(public itemType: string, public shared: boolean, public content)
+    constructor(public itemType: string, public shared: boolean, public content, public groupHeaderType?: string)
     {
     }
 }
@@ -910,6 +1032,14 @@ export class ExpressionListItems
     {
     }
 }
+
+export type CustomExpressionGroup = {
+    type: string;
+    childType: string;
+    label: string;
+    items: DataExpression[];
+    emptyMessage: string;
+};
 
 // Helper for building groups with the right side-effects of having an empty entry or a shared section, and counting the
 // total items/visible items for display correctly in the header

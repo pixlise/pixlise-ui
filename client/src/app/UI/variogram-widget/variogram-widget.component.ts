@@ -35,6 +35,7 @@ import { MinMax } from "src/app/models/BasicTypes";
 import { distanceBetweenPoints, Point } from "src/app/models/Geometry";
 import { orderVisibleROIs, PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { variogramState, ViewStateService } from "src/app/services/view-state.service";
@@ -360,7 +361,7 @@ export class VariogramWidgetComponent implements OnInit
         //dialogConfig.autoFocus = true;
         //dialogConfig.width = '1200px';
 
-        dialogConfig.data = new ExpressionPickerData("Plot Axis", DataExpressionService.DataExpressionTypeAll, this._expressionIds, false, false, false);
+        dialogConfig.data = new ExpressionPickerData("Plot Axis", this._expressionIds, false, false, false);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 
@@ -399,7 +400,6 @@ export class VariogramWidgetComponent implements OnInit
         this.setDefaultsIfNeeded(widgetUpdReason);
 
         // Use widget data service to rebuild our data model
-        let queryData: RegionDataResults = null;
         let query: DataSourceParams[] = [];
 
         // Query each region for both expressions if we have any...
@@ -413,9 +413,21 @@ export class VariogramWidgetComponent implements OnInit
                 }
             }
 
-            queryData = this._widgetDataService.getData(query, false);
+            this._widgetDataService.getData(query, false).subscribe(
+                (queryData=>
+                {
+                    this.processQueryResult(t0, queryData);
+                })
+            )
         }
+        else
+        {
+            this.processQueryResult(t0, null);
+        }
+    }
 
+    private processQueryResult(t0: number, queryData: RegionDataResults)
+    {
         let title = "";
         if(queryData && !queryData.hasQueryErrors() && this._expressionIds.length > 0)
         {
@@ -423,14 +435,17 @@ export class VariogramWidgetComponent implements OnInit
             for(let exprId of this._expressionIds)
             {
                 let expr = this._exprService.getExpression(exprId);
-                let label = this._exprService.getExpressionShortDisplayName(expr.id, 12).shortName;
-                this.expressionNames.push(expr.name);
-
-                if(title.length > 0)
+                if(expr)
                 {
-                    title += " / ";
+                    let label = expr.getExpressionShortDisplayName(12).shortName;
+                    this.expressionNames.push(expr.name);
+
+                    if(title.length > 0)
+                    {
+                        title += " / ";
+                    }
+                    title += label;
                 }
-                title += label;
             }
         }
 
@@ -480,8 +495,7 @@ export class VariogramWidgetComponent implements OnInit
         let queryIdx = 0;
         for(let pts of varioPoints)
         {
-            const roiId = query[queryIdx].roiId;
-            let region = this._widgetDataService.regions.get(roiId);
+            let region = queryData.queryResults[queryIdx].region;
             if(!region.colour)
             {
                 continue;
@@ -523,7 +537,7 @@ export class VariogramWidgetComponent implements OnInit
             this._expressionIds.length <= 0 ||
             (
                 widgetUpdReason == WidgetDataUpdateReason.WUPD_QUANT &&
-                DataExpressionService.hasPseudoIntensityExpressions(this._expressionIds)
+                DataExpressionId.hasPseudoIntensityExpressions(this._expressionIds)
             )
         )
         {
@@ -699,7 +713,7 @@ export class VariogramWidgetComponent implements OnInit
         {
             // Start off with some reasonable defaults
             this._variogramModel.maxDistance = (this.distanceSliderMin+this.distanceSliderMax)/2;
-            this._variogramModel.binCount = (this.binSliderMin+this.binSliderMax)/2;
+            this._variogramModel.binCount = Math.floor((this.binSliderMin+this.binSliderMax)/2);
         }
     }
 }

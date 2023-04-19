@@ -29,7 +29,7 @@
 
 import { Component, Input, OnInit, Output, EventEmitter, ViewChild } from "@angular/core";
 import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
-import { iif, timer } from "rxjs";
+import { PartialObserver, combineLatest, iif, timer } from "rxjs";
 
 import { DataExpressionService } from "src/app/services/data-expression.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
@@ -37,12 +37,38 @@ import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { RGBChannelsEvent } from "src/app/UI/atoms/expression-list/rgbmix-selector/rgbmix-selector.component";
 import { LayerVisibilityChange, LayerColourChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ExpressionListGroupNames, ExpressionListItems, LayerViewItem } from "src/app/models/ExpressionList";
+import { DataExpression } from "src/app/models/Expression";
+import { combineAll } from "rxjs/operators";
 
 
 export class ExpressionListHeaderToggleEvent
 {
     constructor(public itemType: string, public open: boolean)
     {
+    }
+}
+
+// This serves as a way to inject custom styling for items in the expression list without changing type
+export class LiveLayerConfig
+{
+    constructor(
+        public layerID: string,
+        public icon: string = null,
+        public iconTooltip: string = null,
+        public sideColour: string = null,
+        public tagType: string = null,
+        public labelColour: string = null,
+    )
+    {}
+
+    equals(other: LiveLayerConfig): boolean
+    {
+        return this.layerID === other.layerID &&
+            this.icon === other.icon &&
+            this.iconTooltip === other.iconTooltip &&
+            this.sideColour === other.sideColour &&
+            this.tagType === other.tagType &&
+            this.labelColour === other.labelColour;
     }
 }
 
@@ -63,6 +89,13 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     @Input() showPureSwitchOnElements: boolean;
     @Input() initialScrollToIdx: number = -1;
     @Input() downloadable: boolean = true;
+    @Input() isSelectable: boolean = true;
+    
+    @Input() isPreviewMode: boolean = false;
+    @Input() isSidePanel: boolean = false;
+    @Input() isSplitScreen: boolean = false;
+
+    @Input() liveLayerConfigs: LiveLayerConfig[] = [];
 
     @Input() selectedIcon: string = "assets/button-icons/check-on.svg";
     @Input() unselectedIcon: string = "assets/button-icons/check-off.svg";
@@ -71,6 +104,9 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     @Output() visibilityChange = new EventEmitter();
     @Output() onLayerImmediateSelection = new EventEmitter();
     @Output() colourChange = new EventEmitter();
+    @Output() openSplitScreen = new EventEmitter();
+    @Output() onDelete = new EventEmitter();
+    @Output() onAllExpressionsUpdated = new EventEmitter();
 
     stickyItemHeaderName: string = "";
     stickyItem: LayerViewItem = null;
@@ -109,6 +145,16 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     get detectors(): string[]
     {
         return this._exprService.validDetectors;
+    }
+
+    getCustomLayerConfig(layerID: string): LiveLayerConfig
+    {
+        if(!layerID)
+        {
+            return null;
+        }
+
+        return this.liveLayerConfigs.find((config) => config.layerID === layerID);
     }
 
     // Header section opening/closing
@@ -165,6 +211,18 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
         }
     }
 
+    onUpdateAllExpressions(): void
+    {
+        this._exprService.updateAllExpressions().subscribe((updatedExpressions: any[]) =>
+        {
+            combineLatest(updatedExpressions).subscribe((resolvedExpressions) =>
+            {
+                this.onAllExpressionsUpdated.emit(resolvedExpressions);
+                console.log("Updated all expressions", resolvedExpressions);
+            });
+        });
+    }
+
     onExploratoryRGBChanged(event: RGBChannelsEvent): void
     {
         // User changed the experimental ones, set the channels if we can
@@ -190,6 +248,11 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     onLayerColourChange(event: LayerColourChange): void
     {
         this.colourChange.emit(event);
+    }
+
+    onOpenSplitScreen(event): void
+    {
+        this.openSplitScreen.emit(event);
     }
 
     // Scroll to item, triggered by clicking on a badge on a group header
@@ -275,6 +338,11 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
         }
 
         return activeHeader;
+    }
+
+    onDeleteEvent(id: string): void
+    {
+        this.onDelete.emit(id);
     }
 
     onScroll(event): void

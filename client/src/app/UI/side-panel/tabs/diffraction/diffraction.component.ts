@@ -37,6 +37,7 @@ import { PredefinedROIID } from "src/app/models/roi";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { DiffractionPeak, DiffractionPeakService, UserDiffractionPeak } from "src/app/services/diffraction-peak.service";
 import { SelectionService } from "src/app/services/selection.service";
@@ -53,6 +54,7 @@ import { DiffractionHistogramModel, HistogramBar, HistogramData, HistogramSelect
 import { EnergyCalibrationManager } from "src/app/UI/spectrum-chart-widget/energy-calibration-manager";
 import { Colours } from "src/app/utils/colours";
 import { httpErrorToString } from "src/app/utils/utils";
+import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 
 
 @Component({
@@ -228,7 +230,7 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
         let layerMan = this.getLayerManager();
         if(layerMan)
         {
-            this._diffractionMapLayer = layerMan.getLayerProperties(DataExpressionService.predefinedDiffractionCountDataExpression);
+            this._diffractionMapLayer = layerMan.getLayerProperties(DataExpressionId.predefinedDiffractionCountDataExpression);
         }
     }
 
@@ -262,10 +264,10 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
             // We're making it visible now... Hide the roughness expression otherwise it looks
             // like showing the map failed because users dont see the layers concept in this view
             // (roughness would be "on top" and can't see our map)
-            layerMan.setLayerVisibility(DataExpressionService.predefinedRoughnessDataExpression, 1, false, []);
+            layerMan.setLayerVisibility(DataExpressionId.predefinedRoughnessDataExpression, 1, false, []);
         }
 
-        layerMan.setLayerVisibility(DataExpressionService.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, !this._diffractionMapLayer.visible, []);
+        layerMan.setLayerVisibility(DataExpressionId.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, !this._diffractionMapLayer.visible, []);
         
         this.refreshLayerInfo();
     }
@@ -281,8 +283,8 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
         }
 
         // Force it to hide then show, this will recalculate it
-        layerMan.setLayerVisibility(DataExpressionService.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, false, []);
-        layerMan.setLayerVisibility(DataExpressionService.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, true, []);
+        layerMan.setLayerVisibility(DataExpressionId.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, false, []);
+        layerMan.setLayerVisibility(DataExpressionId.predefinedDiffractionCountDataExpression, this._diffractionMapLayer.opacity, true, []);
 
         //this.refreshLayerInfo();
     }
@@ -415,7 +417,7 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
         this._exprService.add(
             exprData[0],
             exprData[1],
-            DataExpressionService.DataExpressionTypeAll,
+            EXPR_LANGUAGE_PIXLANG,
             exprData[2]
         ).subscribe(
             ()=>
@@ -765,38 +767,41 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
         }
 
         // Get the map data
-        let query: DataSourceParams[] = [new DataSourceParams(DataExpressionService.predefinedDiffractionCountDataExpression, PredefinedROIID.AllPoints, "")];
-        let queryData: RegionDataResults = this._widgetDataService.getData(query, false);
-
-        // If we have valid data, we select all PMCs where value >= 1
-        if(queryData.error)
-        {
-            alert("Error while querying diffraction peaks: "+queryData.error);
-            return;
-        }
-
-        if(queryData.hasQueryErrors() || queryData.queryResults.length != 1)
-        {
-            alert("Error encountered while querying diffraction peaks");
-            return;
-        }
-
-        let selectedLocIdxs = new Set<number>();
-        for(let item of queryData.queryResults[0].values.values)
-        {
-            if(item.value >= 1)
+        let query: DataSourceParams[] = [new DataSourceParams(DataExpressionId.predefinedDiffractionCountDataExpression, PredefinedROIID.AllPoints, "")];
+        this._widgetDataService.getData(query, false).subscribe(
+            (queryData: RegionDataResults)=>
             {
-                // Look up the location index
-                let idx = dataset.pmcToLocationIndex.get(item.pmc);
-                if(idx != undefined)
+                // If we have valid data, we select all PMCs where value >= 1
+                if(queryData.error)
                 {
-                    selectedLocIdxs.add(idx);
+                    alert("Error while querying diffraction peaks: "+queryData.error);
+                    return;
                 }
-            }
-        }
 
-        // Select them!
-        this._selectionService.setSelection(dataset, new BeamSelection(dataset, selectedLocIdxs), null, true);
+                if(queryData.hasQueryErrors() || queryData.queryResults.length != 1)
+                {
+                    alert("Error encountered while querying diffraction peaks");
+                    return;
+                }
+
+                let selectedLocIdxs = new Set<number>();
+                for(let item of queryData.queryResults[0].values.values)
+                {
+                    if(item.value >= 1)
+                    {
+                        // Look up the location index
+                        let idx = dataset.pmcToLocationIndex.get(item.pmc);
+                        if(idx != undefined)
+                        {
+                            selectedLocIdxs.add(idx);
+                        }
+                    }
+                }
+
+                // Select them!
+                this._selectionService.setSelection(dataset, new BeamSelection(dataset, selectedLocIdxs), null, true);
+            }
+        );
     }
 
     // CanvasDrawer

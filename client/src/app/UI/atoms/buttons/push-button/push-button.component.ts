@@ -28,7 +28,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { BadgeStyle } from "../../badge/badge.component";
 
+export type PushButtonStyle = "normal" | "borderless" | "yellow" | "outline" | "gray" | "light-right-outline" | "orange" | "dark-outline";
 
 @Component({
     selector: "push-button",
@@ -37,8 +39,12 @@ import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 })
 export class PushButtonComponent implements OnInit
 {
-    @Input() buttonStyle: string = "normal";
+    @Input() buttonStyle: PushButtonStyle = "normal";
+    @Input() active: boolean = false;
     @Input() disabled: boolean = false;
+    @Input() notificationCount: number = 0;
+    @Input() badgeStyle: BadgeStyle = "notification";
+    @Input() tooltipTitle: string = "";
     @Output() onClick = new EventEmitter();
 
     constructor()
@@ -47,7 +53,7 @@ export class PushButtonComponent implements OnInit
 
     ngOnInit()
     {
-        const validStyles = ["normal", "borderless", "yellow", "outline", "gray", "light-right-outline"];
+        const validStyles: PushButtonStyle[] = ["normal", "borderless", "yellow", "outline", "gray", "light-right-outline", "orange", "dark-outline"];
         if(validStyles.indexOf(this.buttonStyle) == -1)
         {
             console.warn("Invalid style for push-button: "+this.buttonStyle);
@@ -57,12 +63,7 @@ export class PushButtonComponent implements OnInit
 
     get styleCSS(): string
     {
-        let style = "btn-"+this.buttonStyle;
-        if(this.disabled)
-        {
-            style += " disabled";
-        }
-        return style;
+        return `btn-${this.buttonStyle}${this.disabled ? " disabled" : ""}${this.active ? " active" : ""}`;
     }
 
     onClickInternal(event): void

@@ -43,13 +43,13 @@ export class PMCDataValue
     // Thought of defining a "special" undefined value but that means any math done will have to check
     // for this.
     //
-    // Finally, it seems a spearate isUndefined flag is the easiest way to go. When element() reads it,
+    // Finally, it seems a separate isUndefined flag is the easiest way to go. When element() reads it,
     // some values may have this set to true, but after arithmatic it will become false.
     //
     // Also this way if something displaying the data wants to treat them as 0's it doesn't need
     // modification, but if it wants to treat them otherwise it has a separate variable to look at.
     // isUndefined defaults to false because we rarely actually want to create an undefined value!
-    constructor(public pmc: number, public value: number, public isUndefined: boolean = false)
+    constructor(public pmc: number, public value: number, public isUndefined: boolean = false, public label: string = "")
     {
         // If the value comes in as undefined, set it to 0, warn if this is not so
         if(this.isUndefined && this.value != 0)
@@ -75,6 +75,43 @@ export enum QuantOp
     UNDER_UNDEFINED,
 // Same as OVER but set the 0 value to undefined
     OVER_UNDEFINED,
+}
+
+export class DataQueryResult
+{
+    constructor(
+        public resultValues: PMCDataValues | any, // PMCDataValues if the query was for PMC data, otherwise it's whatever the query returned
+        public isPMCTable: boolean,
+        public dataRequired: string[],
+        public runtimeMs: number,
+        public stdout: string,
+        public stderr: string,
+        public recordedExpressionInputs: Map<string, PMCDataValues>,
+        public errorMsg: string = "",
+    )
+    {
+    }
+
+    public static get DataTypeSpectrum()
+    {
+        return "spectrum";
+    }
+    public static get DataTypeHousekeeping()
+    {
+        return "housekeeping";
+    }
+    public static get DataTypeDiffraction()
+    {
+        return "diffraction";
+    }
+    public static get DataTypeRoughness()
+    {
+        return "roughness";
+    }
+    public static get DataTypePosition()
+    {
+        return "position";
+    }
 }
 
 export class PMCDataValues

@@ -1,0 +1,2045 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+import { Component, ComponentFactoryResolver, HostListener, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { Subscription, combineLatest, of, timer } from "rxjs";
+import { ContextImageService } from "src/app/services/context-image.service";
+import { LayoutService } from "src/app/services/layout.service";
+import { analysisLayoutState, ViewStateService } from "src/app/services/view-state.service";
+import { BinaryPlotWidgetComponent } from "src/app/UI/binary-plot-widget/binary-plot-widget.component";
+// Components we can create dynamically
+import { ChordViewWidgetComponent } from "src/app/UI/chord-view-widget/chord-view-widget.component";
+import { ContextImageViewWidgetComponent } from "src/app/UI/context-image-view-widget/context-image-view-widget.component";
+import { HistogramViewComponent } from "src/app/UI/histogram-view/histogram-view.component";
+import { SpectrumChartWidgetComponent } from "src/app/UI/spectrum-chart-widget/spectrum-chart-widget.component";
+import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/ternary-plot-widget.component";
+import { DataExpressionService, DataExpressionWire } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId, ModuleReference } from "src/app/models/Expression";
+import { DataQueryResult } from "src/app/expression-language/data-values";
+import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { DataExpressionModule, TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
+import { AuthenticationService } from "src/app/services/authentication.service";
+import { CustomExpressionGroup, ExpressionListBuilder, ExpressionListGroupNames, ExpressionListItems, LocationDataLayerPropertiesWithVisibility, makeDataForExpressionList } from "src/app/models/ExpressionList";
+import { ExpressionListHeaderToggleEvent, LiveLayerConfig } from "src/app/UI/atoms/expression-list/expression-list.component";
+import { LayerVisibilityChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
+import { ObjectCreator } from "src/app/models/BasicTypes";
+import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
+import { RGBMix } from "src/app/services/rgbmix-config.service";
+import { DataSetService } from "src/app/services/data-set.service";
+import { QuantificationLayer } from "src/app/models/Quantifications";
+import { DataSet } from "src/app/models/DataSet";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
+import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/UI/module-release-dialog/module-release-dialog.component";
+import EditorConfig, { LuaRuntimeError } from "./editor-config";
+import { DiffVersions } from "src/app/UI/expression-metadata-editor/expression-metadata-editor.component";
+import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
+
+@Component({
+    selector: "code-editor",
+    templateUrl: "./code-editor.component.html",
+    styleUrls: ["./code-editor.component.scss"],
+    providers: [ContextImageService],
+})
+export class CodeEditorComponent extends ExpressionListGroupNames implements OnInit, OnDestroy
+{
+    @ViewChild("preview", { read: ViewContainerRef }) previewContainer;
+
+    private _subs = new Subscription();
+
+    private _previewComponent = null;
+    private _datasetID: string;
+    private _expressionID: string = DataExpressionId.UnsavedExpressionPrefix+"-new-expression";
+    private _runExpressionTimer = null;
+
+    public isSidebarOpen = false;
+    // What we display in the virtual-scroll capable list
+    headerSectionsOpen: Set<string> = new Set<string>([this.currentlyOpenHeaderName]);
+    items: ExpressionListItems = null;
+    initialScrollToIdx: number = -1;
+    public sidebarTopSections: Record<string, CustomExpressionGroup> = {
+        "currently-open": {
+            type: this.currentlyOpenHeaderName,
+            childType: "expression",
+            label: "Currently Open",
+            items: [],
+            emptyMessage: "No expressions are currently open.",
+        },
+        "installed-modules": {
+            type:  this.installedModulesHeaderName,
+            childType: "module",
+            label: "Installed Modules",
+            items: [],
+            emptyMessage: "No modules are installed.",
+        },
+        "modules": {
+            type:  this.modulesHeaderName,
+            childType: "module",
+            label: "Modules",
+            items: [],
+            emptyMessage: "No modules are available.",
+        }
+    };
+    public sidebarBottomSections: Record<string, CustomExpressionGroup> = {};
+
+    public openModules: Record<string, DataModuleSpecificVersionWire> = {};
+
+    public isSplitScreen = false;
+    
+    public topEditor: EditorConfig = new EditorConfig();
+    public bottomEditor: EditorConfig = new EditorConfig();
+
+    public diffText: string = "";
+
+    public isTopEditorActive = false;
+    public lastRunEditor: "top" | "bottom" = null;
+
+    public activeTextSelection: TextSelection = null;
+    public executedTextSelection: TextSelection = null;
+    public isSubsetExpression: boolean = false;
+
+    public evaluatedExpression: DataQueryResult;
+    public expressionToEvaluate: DataExpression;
+    public stdout: string = "";
+    public stderr: string = "";
+    public pmcGridExpressionTitle: string = "";
+    public displayExpressionTitle: string = "";
+
+    public isPMCDataGridSolo: boolean = false;
+
+    private _keyPresses: { [key: string]: boolean } = {};
+    
+    private _fetchedExpression: boolean = false;
+
+    updateText: (text: string) => void;
+
+    private _filterText: string = "";
+
+    private _authors: ObjectCreator[] = [];
+    private _filteredAuthors: string[] = [];
+    private _filteredTagIDs: string[] = [];
+
+    private _newExpression: boolean = false;
+
+    // Icons to display
+    activeIcon="assets/button-icons/check-on.svg";
+    inactiveIcon="assets/button-icons/check-off.svg";
+
+    _listBuilder: ExpressionListBuilder;
+    public sidePanelLayerConfigs: LiveLayerConfig[] = [];
+
+    constructor(
+        private _route: ActivatedRoute,
+        private _router: Router,
+        private _authService: AuthenticationService,
+        private _layoutService: LayoutService,
+        private _viewStateService: ViewStateService,
+        private resolver: ComponentFactoryResolver,
+        public dialog: MatDialog,
+        private _expressionService: DataExpressionService,
+        private _moduleService: DataModuleService,
+        private _widgetDataService: WidgetRegionDataService,
+        private _datasetService: DataSetService,
+    )
+    {
+        super();
+    }
+
+
+    ngOnInit()
+    {
+        let userID = this._authService.getUserID();
+        this.topEditor.userID = userID;
+        this.bottomEditor.userID = userID;
+
+        this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, false, false, this._expressionService, this._authService, false);
+        this._datasetID = this._route.snapshot.parent?.params["dataset_id"];
+        this._expressionID = this._route.snapshot.params["expression_id"];
+
+        let showOutdatedModulesSection = this._route.snapshot.queryParams["outdated"] === "true";
+        if(showOutdatedModulesSection)
+        {
+            this.headerSectionsOpen = new Set<string>([this.expressionsUpdateHeaderName]);
+            this.isSidebarOpen = true;
+        }
+
+        this._subs.add(this._moduleService.modulesUpdated$.subscribe(() =>
+        {
+            // Regenerate modules list on change
+            this.sidebarTopSections["modules"].items = [];
+            
+            this._moduleService.getModules().forEach((module) =>
+            {
+                let latestVersion = Array.from(module.versions.values()).pop();
+                let latestModuleExpression = new DataExpression(
+                    module.id,
+                    module.name,
+                    latestVersion.sourceCode,
+                    EXPR_LANGUAGE_LUA,
+                    module.comments,
+                    module.origin.shared,
+                    module.origin.creator,
+                    module.origin.create_unix_time_sec,
+                    latestVersion.mod_unix_time_sec,
+                    latestVersion.tags,
+                    [],
+                    null
+                );
+
+                this.sidebarTopSections["modules"].items.push(latestModuleExpression);
+            });
+
+            this.topEditor.checkIfModulesAreLatest(this._moduleService);
+            this.regenerateItemList();
+        }));
+
+        combineLatest([this._expressionService.expressionsUpdated$, this._moduleService.modulesUpdated$]).subscribe(() =>
+        {
+            if(this._fetchedExpression)
+            {
+                return;
+            }
+
+            this._expressionService.clearAllUnsavedFromCache();
+            if(!this._newExpression)
+            {
+                this.resetEditors();
+            }
+        });
+    }
+
+    syncCurrentlyOpenSection(): void
+    {
+        // If one of the currently open expressions isn't new and doesn't exist anymore, close it
+        this.sidebarTopSections["currently-open"].items.forEach((item, i) =>
+        {
+            if(!this._expressionService.getExpression(item.id) && !this._newExpression)
+            {
+                this.sidebarTopSections["currently-open"].items.splice(i, 1);
+                if(this.topEditor.expression.id === item.id)
+                {
+                    if(this.topEditor.isExpressionSaved)
+                    {
+                        this.forceNavigateToNew("expression");
+                    }
+                    else
+                    {
+                        let shouldClose = confirm("Your currently open expression has been deleted! Do you want to close it?");
+                        if(shouldClose)
+                        {
+                            this.forceNavigateToNew("expression");
+                        }
+                        else
+                        {
+                            this.topEditor.expression.id = DataExpressionId.UnsavedExpressionPrefix+"-new-expression";
+                            this._expressionID = DataExpressionId.UnsavedExpressionPrefix+"-new-expression";
+                            this._newExpression = true;
+                            this.navigateToNew("expression");
+                        }
+                    }
+                }
+                else if(this.bottomEditor.expression.id === item.id)
+                {
+                    this.isSplitScreen = false;
+                }
+            }
+        });
+    }
+
+    makeInstalledModulesGroup(items: DataExpression[] = []): CustomExpressionGroup
+    {
+        return {
+            type: "installed-modules-header",
+            childType: "module",
+            label: "Installed Modules",
+            items,
+            emptyMessage: "No modules are installed.",
+        };
+    }
+
+    loadInstalledModules(position: string = "top"): void
+    {
+        let editor = position === "top" ? this.topEditor : this.bottomEditor;
+
+        let installedModules = editor.expression.moduleReferences.map((moduleRef) =>
+        {
+            let existingModule = this.openModules[`${moduleRef.moduleID}-${moduleRef.version}`];
+            if(existingModule)
+            {
+                return of(existingModule);
+            }
+            else
+            {
+                return this._moduleService.getModule(moduleRef.moduleID, moduleRef.version);
+            }
+        });
+
+        if(installedModules.length > 0)
+        {
+            combineLatest(installedModules).subscribe((modules) =>
+            {
+                let installedModuleExpressions = [];
+                editor.rawModules = [];
+
+                let userID = this._authService.getUserID();
+                modules.sort((moduleA, moduleB)=>
+                {
+                    if(moduleA?.origin?.creator?.user_id === userID)
+                    {
+                        if(moduleB?.origin?.creator?.user_id === userID)
+                        {
+                            return moduleA.name.localeCompare(moduleB.name);
+                        }
+                        else
+                        {
+                            return -1;
+                        }
+                    }
+                    else
+                    {
+                        if(moduleB?.origin?.creator?.user_id === userID)
+                        {
+                            return 1;
+                        }
+                        else
+                        {
+                            return moduleA.name.localeCompare(moduleB.name);
+                        }
+                    }
+                });
+
+                modules.forEach((module) => 
+                {
+                    let sourceModule = this._moduleService.getSourceDataModule(module.id);
+                    let allVersions: string[] = [];
+
+                    // If the user is not the creator of the module, only show the released versions
+                    if(sourceModule.origin.creator.user_id !== this._authService.getUserID())
+                    {
+                        allVersions = Array.from(sourceModule.versions.values()).filter((version) => version.version.endsWith(".0")).map((version) => version.version);
+                    }
+                    else
+                    {
+                        allVersions = Array.from(sourceModule.versions.keys());
+                    }
+
+                    editor.rawModules.push(new DataExpressionModule(module.id, module.name, module.comments, module.version.version, module.origin.creator, allVersions));
+                    installedModuleExpressions.push(module.convertToExpression());
+                    this.openModules[`${module.id}-${module.version}`] = module;
+                });
+
+                this.sidebarTopSections["installed-modules"] = this.makeInstalledModulesGroup(installedModuleExpressions);
+                this.regenerateItemList();
+            });
+        }
+        else
+        {
+            editor.rawModules = [];
+
+            this.sidebarTopSections["installed-modules"] = this.makeInstalledModulesGroup();
+            this.regenerateItemList();
+        }
+    }
+
+    setTopEditorActive(): void
+    {
+        this.isTopEditorActive = true;
+    }
+
+    setBottomEditorActive(): void
+    {
+        this.isTopEditorActive = false;
+    }
+
+    resetEditors(): void
+    {
+        this._expressionID = this._route.snapshot.params["expression_id"];
+        let version = this._route.snapshot.queryParams["version"];
+        this.resetSidePanelConfigs();
+
+        this.diffText = "";
+
+        this.topEditor = new EditorConfig();
+        this.topEditor.userID = this._authService.getUserID();
+        this.topEditor.isModule = !!version;
+        if(this.topEditor.isModule)
+        {
+            this.topEditor.versions = this._moduleService.getSourceDataModule(this._expressionID)?.versions;
+        }
+
+        this.bottomEditor = new EditorConfig();
+        this.bottomEditor.userID = this._authService.getUserID();
+
+        this._newExpression = DataExpressionId.isPredefinedNewID(this._expressionID);
+        if(this._newExpression)
+        {
+            this.topEditor.isModule = this._expressionID === DataExpressionId.NewModule;
+        }
+
+        // If we're creating a new expression or module, create a blank expression first
+        if(this._newExpression)
+        {
+            this.topEditor.expression = new DataExpression(
+                "",
+                "",
+                "",
+                EXPR_LANGUAGE_LUA,
+                "",
+                false,
+                new ObjectCreator("", "", ""),
+                0,
+                0,
+                [],
+                [],
+                null
+            );
+
+            this.sidebarTopSections["currently-open"].childType = this.topEditor.isModule ? "module" : "expression";
+            this.sidebarTopSections["currently-open"].items = [];
+            if(this.topEditor.isModule)
+            {
+                if(this.sidebarTopSections["installed-modules"])
+                {
+                    delete this.sidebarTopSections["installed-modules"];
+                }
+            }
+            else
+            {
+                this.sidebarTopSections["installed-modules"] = this.makeInstalledModulesGroup();
+            }
+            this._fetchedExpression = true;
+            this.regenerateItemList();
+        }
+        else
+        {
+            // Check to make sure this is an expression and not a module
+            if(!this.topEditor.isModule)
+            {
+                this._expressionService.getExpressionAsync(this._expressionID).subscribe((expression) =>
+                {
+                    if(!expression)
+                    {
+                        console.error(`Empty expression: ${this._expressionID}`);
+                        this.regenerateItemList();
+                        return;
+                    }
+
+                    this.topEditor.expression = expression.copy();
+                    this.topEditor.checkIfModulesAreLatest(this._moduleService);
+
+                    this.topEditor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
+
+                    this._fetchedExpression = true;
+
+                    // Add the current expression to the currently-open list
+                    this.sidebarTopSections["currently-open"].childType = "expression";
+                    this.sidebarTopSections["currently-open"].items = [
+                        this.topEditor.expression
+                    ];
+                    this.updateSidePanelLayer(this.topEditor.expression.id, true);
+
+                    this.loadInstalledModules();
+                    this.regenerateItemList();
+
+                    this.topEditor.fetchStoredExpression();
+                    
+                    if(this._runExpressionTimer)
+                    {
+                        clearTimeout(this._runExpressionTimer);
+                    }
+
+                    this._runExpressionTimer = setTimeout(() =>
+                    {
+                        this.runExpression(true, true);
+                        this._runExpressionTimer = null;
+                    }, 5000);
+                },
+                (error) =>
+                {
+                    console.error(`Failed to fetch expression: ${this._expressionID}`, error);
+                    alert(`Failed to find expression: ${this._expressionID}`);
+                    this.forceNavigateToNew("expression");
+                    this.regenerateItemList();
+                    return of(null);
+                });
+            }
+            else
+            {
+                this._moduleService.getModule(this._expressionID, version).subscribe((module) =>
+                {
+                    if(!module)
+                    {
+                        console.error(`Empty module: ${this._expressionID}`);
+                        this.regenerateItemList();
+                        return;
+                    }
+
+                    this.topEditor.version = module.version;
+                    this.topEditor.expression = module.convertToExpression();
+
+                    this._fetchedExpression = true;
+
+                    this.sidebarTopSections["currently-open"].childType = "module";
+                    this.sidebarTopSections["currently-open"].items = [
+                        this.topEditor.expression
+                    ];
+                    this.updateSidePanelLayer(this.topEditor.expression.id, true, false, true, this.topEditor.isBuiltIn);
+
+                    if(this.sidebarTopSections["installed-modules"])
+                    {
+                        delete this.sidebarTopSections["installed-modules"];
+                    }
+
+                    this.regenerateItemList();
+
+                    this.topEditor.fetchStoredExpression();
+                },
+                (error) =>
+                {
+                    console.error(`Failed to fetch module: ${this._expressionID}`, error);
+                    alert(`Failed to find module: ${this._expressionID}`);
+                    this.forceNavigateToNew("module");
+                    this.regenerateItemList();
+                });
+            }
+        }
+
+        let all$ = makeDataForExpressionList(
+            this._datasetService,
+            this._widgetDataService,
+            this._expressionService,
+            null
+        );
+        this._subs.add(all$.subscribe(
+            (data: unknown[])=>
+            {
+                this._listBuilder.notifyDataArrived(
+                    (data[0] as DataSet).getPseudoIntensityElementsList(),
+                    data[1] as QuantificationLayer,
+                    this._expressionService.getExpressions(),
+                    null
+                );
+
+                // All have arrived, the taps above would've saved their contents in a way that we like, so
+                // now we can regenerate our item list
+                this.regenerateItemList();
+            }
+        ));
+    }
+
+    removeSidePanelConfig(id: string): void
+    {
+        let existingIndex = this.sidePanelLayerConfigs.findIndex((config) => config.layerID === id);
+        if(existingIndex >= 0)
+        {
+            this.sidePanelLayerConfigs.splice(existingIndex, 1);
+        }
+    }
+
+    resetSidePanelConfigs(): void
+    {
+        this.sidePanelLayerConfigs = [];
+    }
+
+    updateSidePanelLayer(id: string, isUpToDate: boolean = true, isLocked: boolean = false, isModule: boolean = false, isBuiltin: boolean = false): boolean
+    {
+        let icon = "";
+        let iconTooltip = "";
+
+        let nameOfLayer = isModule ? "module" : "expression";
+        if(isLocked)
+        {
+            icon = "";
+            iconTooltip = "";
+        }
+        else
+        {
+            icon = isUpToDate ? "assets/button-icons/blue-circle-check.svg" : "assets/button-icons/red-circle-x.svg";
+            iconTooltip = isUpToDate ? `This ${nameOfLayer} is saved` : `This ${nameOfLayer} has unsaved changes`;
+        }
+
+        let sideColour = isModule ? isBuiltin ? "#91BFDB" : "#FFFF8D" : "";
+        let newLayerConfig = new LiveLayerConfig(id, icon, iconTooltip, sideColour, isModule ? "module" : "expression");
+
+        let existingIndex = this.sidePanelLayerConfigs.findIndex((config) => config.layerID === id);
+        if(existingIndex >= 0)
+        {
+            let existingConfig = this.sidePanelLayerConfigs[existingIndex];
+
+            // Only update if the config has changed to prevent unnecessary re-renders
+            if(!existingConfig.equals(newLayerConfig))
+            {
+                this.sidePanelLayerConfigs[existingIndex] = newLayerConfig;
+                return true;
+            }
+        }
+        else
+        {
+            this.sidePanelLayerConfigs.push(newLayerConfig);
+            return true;
+        }
+
+        return false;
+    }
+
+    onModuleChange(modules: DataExpressionModule[], position: string = "top"): void
+    {
+        let editor = position === "top" ? this.topEditor : this.bottomEditor;
+        editor.expression.moduleReferences = modules.map((module) => new ModuleReference(module.id, module.version));
+        editor.checkIfModulesAreLatest(this._moduleService);
+        this.loadInstalledModules();
+    }
+
+    get topEditorRevertableState(): IconButtonState
+    {
+        return this.topEditor.isExpressionSaved ? IconButtonState.DISABLED : IconButtonState.OFF;
+    }
+
+    get bottomEditorRevertableState(): IconButtonState
+    {
+        return this.bottomEditor.isExpressionSaved ? IconButtonState.DISABLED : IconButtonState.OFF;
+    }
+
+    onRevertChanges(position: string = "top"): void
+    {
+        let editor = position === "top" ? this.topEditor : this.bottomEditor;
+        if(!confirm(`Are you sure you want to revert all changes for ${editor.isModule ? "module" : "expression"} ${editor.expression.name}?`))
+        {
+            return;
+        }
+
+        editor.removeStoredExpression();
+        editor.isExpressionSaved = true;
+        editor.isCodeChanged = false;
+
+        if(editor.isModule)
+        {
+            this._moduleService.getModule(editor.expression.id, editor.version.version).subscribe((module) =>
+            {
+                if(!module)
+                {
+                    console.error(`Empty module: ${editor.expression.id}`);
+                    this.regenerateItemList();
+                    return;
+                }
+
+                editor.version = module.version;
+
+                editor.expression = null;
+                setTimeout(() => 
+                {
+                    editor.expression = module.convertToExpression();
+                });
+            });
+        }
+        else
+        {
+            this._expressionService.getExpressionAsync(editor.expression.id).subscribe((expression) =>
+            {
+                if(!expression)
+                {
+                    console.error(`Empty expression: ${editor.expression.id}`);
+                    this.regenerateItemList();
+                    return;
+                }
+    
+                editor.expression = null;
+                setTimeout(() => 
+                {
+                    editor.expression = expression.copy();
+                });
+            });
+        }
+    }
+
+    onOpenSplitScreen({id, version, isModule}: {id: string; version: string; isModule: boolean;}): void
+    {
+        // Don't reopen the same module or expression
+        if(this.bottomEditor?.expression && this.bottomEditor.expression.id === id && (!isModule || this.bottomEditor.version.version === version))
+        {
+            this.isSplitScreen = true;
+            return;
+        }
+
+        // Don't open the same module or expression twice
+        if(this.topEditor?.expression && this.topEditor.expression.id === id && (!isModule || this.topEditor.version.version === version))
+        {
+            this.isSplitScreen = true;
+            return;
+        }
+
+        if(isModule)
+        {
+            this.onModuleVersionChange(version, "bottom", id, true);
+        }
+        else
+        {
+            this.onExpressionChange(id, "top", true);
+        }
+    }
+
+    onAllExpressionsUpdated(expressionsUpdated): void
+    {
+        if(expressionsUpdated && expressionsUpdated.length > 0)
+        {
+            expressionsUpdated.forEach((expression) =>
+            {
+                // Only need to check the top editor, because bottom is always a module
+                if(!this.topEditor.isModule && expression.id === this.topEditor.expression.id)
+                {
+                    this.topEditor.expression.moduleReferences = expression.moduleReferences.map(
+                        (module) => new ModuleReference(module.moduleID, module.version)
+                    );
+                    this.topEditor.checkIfModulesAreLatest(this._moduleService);
+                    this.loadInstalledModules();
+                }
+            });
+        }
+    }
+
+    onExpressionChange(id: string, position: string = "top", showSplit: boolean = false): void
+    {
+        let editor = position === "top" ? this.topEditor : this.bottomEditor;
+        this._expressionService.getExpressionAsync(id).subscribe((expression) =>
+        {
+            this._expressionID = id;
+            if(!expression)
+            {
+                console.error(`Empty expression: ${this._expressionID}`);
+                this.regenerateItemList();
+                return;
+            }
+            this._fetchedExpression = true;
+
+            // Add the current expression to the currently-open list
+            this.sidebarTopSections["currently-open"].childType = "expression";
+            this.sidebarTopSections["currently-open"].items = [
+                editor.expression
+            ];
+            this.removeSidePanelConfig(editor.expression.id);
+            this.updateSidePanelLayer(id, true);
+
+            this.loadInstalledModules();
+            this.regenerateItemList();
+
+            if(this._runExpressionTimer)
+            {
+                clearTimeout(this._runExpressionTimer);
+            }
+
+            this._runExpressionTimer = setTimeout(() =>
+            {
+                this.runExpression(true, true);
+                this._runExpressionTimer = null;
+            }, 5000);
+
+            editor.expression = null;
+            // If we're opening a new expression, we need to reset the editor
+            setTimeout(() =>
+            {
+                editor = new EditorConfig();
+                editor.userID = this._authService.getUserID();
+                editor.isModule = false;
+                editor.expression = expression.copy();
+                editor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
+                
+                if(position === "top")
+                {
+                    this.topEditor = editor;
+                    this.updateMainExpressionID(id);
+                    this.topEditor.fetchStoredExpression();
+                }
+                else
+                {
+                    this.bottomEditor = editor;
+                    this.bottomEditor.fetchStoredExpression();
+                }
+            });
+
+            if(!showSplit && this.isSplitScreen)
+            {
+                this.isSplitScreen = false;
+                this.bottomEditor = new EditorConfig();
+            }
+        },
+        (error) =>
+        {
+            console.error(`Failed to fetch expression: ${this._expressionID}`, error);
+            this.regenerateItemList();
+        });
+    }
+
+    onModuleVersionChange(version: string, position: string = "top", id: string = "", showSplit: boolean = false): void
+    {
+        let editor = position === "top" ? this.topEditor : this.bottomEditor;
+        id = id && id.length > 0 ? id : editor.expression.id;
+        
+        this.diffText = "";
+
+        this._moduleService.getModule(id, version).subscribe((module) =>
+        {
+            if(editor.expression)
+            {
+                // This is a hack to remove the internal cached copy of the code and replace with the new code
+                // by re-rendering the text editor component
+                editor.expression = null;
+                setTimeout(() =>
+                {
+                    editor = new EditorConfig();
+                    editor.userID = this._authService.getUserID();
+                    editor.isModule = true;
+                    editor.expression = module.convertToExpression();
+                    editor.version = module.version;
+                    editor.versions = this._moduleService.getSourceDataModule(id).versions;
+                    if(showSplit)
+                    {
+                        this.isSplitScreen = true;
+                    }
+
+                    if(position === "top")
+                    {
+                        this.topEditor = editor;
+                        this.updateMainExpressionID(module.id, module.version.version);
+                        this.topEditor.fetchStoredExpression();
+                    }
+                    else
+                    {
+                        this.bottomEditor = editor;
+                        this.bottomEditor.fetchStoredExpression();
+                    }
+
+                    this.updateCurrentlyOpenList(true);
+                });
+            }
+            else
+            {
+                editor = new EditorConfig();
+                editor.userID = this._authService.getUserID();
+                editor.isModule = true;
+                editor.expression = module.convertToExpression();
+                editor.version = module.version;
+                editor.versions = this._moduleService.getSourceDataModule(id).versions;
+
+                if(showSplit)
+                {
+                    this.isSplitScreen = true;
+                }
+
+                if(position === "top")
+                {
+                    this.topEditor = editor;
+                    this._router.navigate(["dataset", this._datasetID, "code-editor", module.id], {queryParams: {version: module.version.version}});
+                    this.topEditor.fetchStoredExpression();
+                }
+                else
+                {
+                    this.bottomEditor = editor;
+                    this.bottomEditor.fetchStoredExpression();
+                }
+
+                this.updateCurrentlyOpenList(true);
+            }
+        },
+        (error) =>
+        {
+            alert(`Failed to fetch module: ${id} v${version}`);
+            console.error(`Failed to fetch module: ${id} v${version}`, error);
+        }
+        );
+    }
+
+    get isShowingDifference(): boolean
+    {
+        return this.diffText && this.diffText.length > 0;
+    }
+
+    onShowDiff({ id, oldVersion, newVersion }: DiffVersions): void
+    {
+        if(!newVersion)
+        {
+            this.diffText = "";
+            this.onModuleVersionChange(oldVersion.version, "bottom", id, true);
+            return;
+        }
+
+        this._moduleService.getModule(id, newVersion.version).subscribe((newModule) =>
+        {
+            this.diffText = newModule.version.sourceCode;
+        });
+    }
+
+    onAddExpression(): void
+    {
+        let unsavedChanges = !this.topEditor.isExpressionSaved || (this.isSplitScreen && !this.bottomEditor.isExpressionSaved);
+        if(unsavedChanges && !confirm("Are you sure you want to create a new expression? Any unsaved changes will be lost."))
+        {
+            return;
+        }
+
+        this.forceNavigateToNew("expression");
+    }
+
+    onAddModule(): void
+    {
+        let unsavedChanges = !this.topEditor.isExpressionSaved || (this.isSplitScreen && !this.bottomEditor.isExpressionSaved);
+        if(unsavedChanges && !confirm("Are you sure you want to create a new expression? Any unsaved changes will be lost."))
+        {
+            return;
+        }
+
+        this.forceNavigateToNew("module");
+    }
+
+    navigateToID(id: string, version: string = null): void
+    {
+        if(this._runExpressionTimer)
+        {
+            clearTimeout(this._runExpressionTimer);
+            this._runExpressionTimer = null;
+        }
+
+        this._newExpression = true;
+        this.topEditor.expression = null;
+        this.bottomEditor.expression = null;
+        this._expressionID = id;
+        if(version)
+        {
+            this._router.navigate(["dataset", this._datasetID, "code-editor", id], {queryParams: { version }});
+        }
+        else
+        {
+            this._router.navigate(["dataset", this._datasetID, "code-editor", id]);
+        }
+    }
+
+    navigateToNew(type: "expression" | "module" = "expression"): void
+    {
+        if(this._runExpressionTimer)
+        {
+            clearTimeout(this._runExpressionTimer);
+            this._runExpressionTimer = null;
+        }
+
+        this._newExpression = true;
+        this.topEditor.expression = null;
+        this.bottomEditor.expression = null;
+        this._expressionID = type === "expression" ? DataExpressionId.NewExpression : DataExpressionId.NewModule;
+        this._router.navigate(["dataset", this._datasetID, "code-editor", `new-${type}`]);
+    }
+
+    forceNavigateToNew(type: "expression" | "module" = "expression"): void
+    {
+        this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=> this.navigateToNew(type));
+    }
+
+    forceNavigateToID(id: string, version: string = null): void
+    {
+        this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=> this.navigateToID(id, version));
+    }
+
+    onCopyToNewExpression()
+    {
+        this._expressionService.add(
+            this.topEditor.name + " (copy)",
+            this.topEditor.editExpression,
+            this.topEditor.expression.sourceLanguage,
+            this.topEditor.comments,
+            this.topEditor.expression.tags,
+            this.topEditor.expression.moduleReferences
+        ).subscribe((expression) =>
+        { 
+            this.forceNavigateToID(expression.id);
+        });
+    }
+
+    onToggleSidebar(): void
+    {
+        this.isSidebarOpen = !this.isSidebarOpen;
+        this._layoutService.resizeCanvas$.next();
+    }
+
+    onToggleSplitScreen(): void
+    {
+        this.diffText = "";
+
+        if(!this.bottomEditor.expression && !this.isSplitScreen && this.topEditor.modules.length > 0)
+        {
+            let firstInstalledModule = this.topEditor.modules[0];
+            this.onOpenSplitScreen({ id: firstInstalledModule.id, version: firstInstalledModule.version, isModule: true });
+        }
+        else
+        {
+            if(this.isSplitScreen && this.bottomEditor.expression && this.bottomEditor.isExpressionSaved && this.topEditor.modules.length === 0)
+            {
+                this.bottomEditor = new EditorConfig();
+            }
+            else if(!this.isSplitScreen && !this.bottomEditor.expression && this.topEditor.modules.length === 0)
+            {
+                return;
+            }
+
+            this.isSplitScreen = !this.isSplitScreen;
+
+            if(this.isSplitScreen)
+            {
+                this.updateCurrentlyOpenList(true);
+            }
+        }
+
+        // If we're not in split screen, make sure the top editor is active and the currently open list is updated
+        if(!this.isSplitScreen)
+        {
+            this.setTopEditorActive();
+            this.updateCurrentlyOpenList(false);
+        }
+    }
+
+    onDeleteExpression(id: string): void
+    {
+        this._expressionService.del(id).subscribe(
+            ()=>
+            {
+                this.syncCurrentlyOpenSection();
+                console.log(`Deleted expression: ${id}`);
+            },
+            (err)=>
+            {
+                console.error(`Failed to delete expression: ${id}`, err);
+                alert("Failed to delete data expression!");
+            }
+        );
+    }
+
+    onUpdateMetadata(): void
+    {
+        this.updateCurrentlyOpenList(this.isSplitScreen);
+    }
+
+    updateCurrentlyOpenList(includeBottomExpression: boolean = false): void
+    {
+        let oldIDs = this.sidebarTopSections["currently-open"].items.map((item) => item.id);
+        this.sidebarTopSections["currently-open"].items = includeBottomExpression && this.bottomEditor.expression ? [
+            this.topEditor.expression,
+            this.bottomEditor.expression
+        ] : [
+            this.topEditor.expression
+        ];
+
+        let isSidePanelChanged = false;
+        let newIDs = this.sidebarTopSections["currently-open"].items.map((item) => item.id);
+        if(newIDs.length !== oldIDs.length || newIDs.every((id) => oldIDs.includes(id)))
+        {
+            isSidePanelChanged = true;
+        }
+
+        let topChanged = this.updateSidePanelLayer(this.topEditor.expression.id, this.topEditor.isExpressionSaved, this.topEditor.isSharedByOtherUser, this.topEditor.isModule, this.topEditor.isBuiltIn);
+        isSidePanelChanged = isSidePanelChanged || topChanged;
+
+        if(includeBottomExpression && this.bottomEditor?.expression?.id)
+        {
+            let bottomChanged = this.updateSidePanelLayer(this.bottomEditor.expression.id, this.bottomEditor.isExpressionSaved, this.bottomEditor.isSharedByOtherUser, this.bottomEditor.isModule, this.bottomEditor.isBuiltIn);
+            isSidePanelChanged = isSidePanelChanged || bottomChanged;
+        }
+
+        if(isSidePanelChanged)
+        {
+            this.regenerateItemList();
+        }
+    }
+
+    ngOnDestroy()
+    {
+        this._subs.unsubscribe();
+        this.clearPreviewReplaceable();
+    }
+
+    ngAfterViewInit()
+    {
+        this._layoutService.notifyNgAfterViewInit();
+
+        this._subs.add(this._viewStateService.analysisViewSelectors$.subscribe(
+            (selectors: analysisLayoutState)=>
+            {
+                if(selectors)
+                {
+                    // Run these after this function finished, else we get ExpressionChangedAfterItHasBeenCheckedError
+                    // See: https://stackoverflow.com/questions/43917940/angular-dynamic-component-loading-expressionchangedafterithasbeencheckederror
+                    // Suggestion is we shouldn't be doing this in ngAfterViewInit, but if we do it in ngOnInit we don't yet have the view child
+                    // refs available
+                    const source = timer(1);
+                    /*const sub =*/ source.subscribe(
+                        ()=>
+                        {
+                            this.createTopRowComponents(selectors.topWidgetSelectors);
+                        }
+                    );
+                }
+                else
+                {
+                    this.previewContainer.clear();
+                    this.clearPreviewReplaceable();
+                }
+            },
+            (err)=>
+            {
+            }
+        ));
+    }
+
+    private get _activeIDs(): Set<string>
+    {
+        let references = this.topEditor?.expression?.moduleReferences || [];
+        return new Set(references.map((ref) => ref.moduleID));
+    }
+
+    private regenerateItemList(): void
+    {
+        let customStartSections = Object.values(this.sidebarTopSections);
+        let customEndSections = Object.values(this.sidebarBottomSections);
+
+        this.items = this._listBuilder.makeExpressionList(
+            this.headerSectionsOpen,
+            this._activeIDs,
+            new Set<string>(),
+            this._filterText,
+            this._filteredAuthors,
+            this._filteredTagIDs,
+            false, // We never show the exploratory RGB mix item
+            (source: DataExpression|RGBMix): LocationDataLayerProperties=>
+            {
+                let layer = new LocationDataLayerPropertiesWithVisibility(source?.id, source?.name, source?.id, source);
+                layer.visible = (this._activeIDs.has(source?.id));
+                return layer;
+            },
+            false,
+            false,
+            customStartSections,
+            customEndSections,
+            true
+        );
+
+        this.authors = this._listBuilder.getAuthors();
+    }
+
+    get authors(): ObjectCreator[]
+    {
+        return this._authors;
+    }
+
+    set authors(authors: ObjectCreator[])
+    {
+        this._authors = authors;
+    }
+
+    get authorsTooltip(): string
+    {
+        let authorNames = this._authors.filter((author) => this._filteredAuthors.includes(author.user_id)).map((author) => author.name);
+        return this._filteredAuthors.length > 0 ? `Authors:\n${authorNames.join("\n")}` : "No Authors Selected";
+    }
+
+    get filteredAuthors(): string[]
+    {
+        return this._filteredAuthors;
+    }
+
+    set filteredAuthors(authors: string[])
+    {
+        this._filteredAuthors = authors;
+        this.regenerateItemList();
+    }
+
+    get filteredTagIDs(): string[]
+    {
+        return this._filteredTagIDs;
+    }
+
+    get isBottomEditorLinked(): boolean
+    {
+        return this.topEditor.linkedModuleID === this.bottomEditor.expression.id;
+    }
+
+    onFilterExpressions(filter: string)
+    {
+        this._filterText = filter;
+        this.regenerateItemList();
+    }
+
+    onFilterTagSelectionChanged(tags: string[]): void
+    {
+        this._filteredTagIDs = tags;
+        this.regenerateItemList();
+    }
+
+    private toggleLayerSectionOpenNoRegen(itemType: string, open: boolean): void
+    {
+        if(open)
+        {
+            // It was opened, ensure it's in the set of open sections
+            this.headerSectionsOpen.add(itemType);
+        }
+        else
+        {
+            // It's closed, ensure it's not in the open list
+            this.headerSectionsOpen.delete(itemType);
+        }
+    }
+
+    onToggleLayerSectionOpen(event: ExpressionListHeaderToggleEvent): void
+    {
+        this.toggleLayerSectionOpenNoRegen(event.itemType, event.open);
+
+        // Now that one of our sections has toggled, regenerate the whole list of what to show
+        this.regenerateItemList();
+    }
+
+    onLayerImmediateSelection(event: LayerVisibilityChange): void
+    {
+        this.onLayerVisibilityChange(event);
+    }
+
+    onLayerVisibilityChange(event: LayerVisibilityChange): void
+    {
+        if(this.topEditor.isModule)
+        {
+            // We don't allow modules to have installed modules
+            return;
+        }
+
+        if(event.visible)
+        {
+            let latestVersion = this._moduleService.getLatestCachedModuleVersion(event.layerID);
+            if(latestVersion)
+            {
+                this.topEditor.expression.moduleReferences.push(new ModuleReference(event.layerID, latestVersion.version));
+            }
+        }
+        else
+        {
+            this.topEditor.expression.moduleReferences = this.topEditor.expression.moduleReferences.filter((ref) => ref.moduleID !== event.layerID);
+        }
+
+        this.topEditor.isExpressionSaved = false;
+        this.loadInstalledModules();
+        this.regenerateItemList();
+    }
+
+    private clearPreviewReplaceable(): void
+    {
+        if(this._previewComponent != null)
+        {
+            this._previewComponent.destroy();
+            this._previewComponent = null;
+        }
+    }
+
+    private createTopRowComponents(selectors: string[])
+    {
+        // Set this one
+        this.previewContainer.clear();
+        this.clearPreviewReplaceable();
+        let factory = this.makeComponentFactory(selectors[2]);
+        if(factory)
+        {
+            let comp = this.previewContainer.createComponent(factory);
+            comp.instance.widgetPosition = "preview";
+            comp.instance.previewExpressionIDs = [this.previewID];
+
+            this._previewComponent = comp;
+        }
+    }
+
+    onToggleAutocomplete(): void
+    {
+        if(this.topEditor.editable)
+        {
+            this.topEditor.useAutocomplete = !this.topEditor.useAutocomplete;
+        }
+    }
+
+    onClose(): void
+    {
+        let unsavedChanges = !this.topEditor.isExpressionSaved || (this.isSplitScreen && !this.bottomEditor.isExpressionSaved);
+        if(unsavedChanges && !confirm("Are you sure you want to close this expression? Any unsaved changes will be lost."))
+        {
+            return;
+        }
+
+        this._expressionService.removeFromCache(this.previewID);
+        this._router.navigate(["dataset", this._datasetID, "analysis"]);
+    }
+
+    get previewID(): string
+    {
+        return DataExpressionId.UnsavedExpressionPrefix+this._expressionID;
+    }
+
+    runExpression(runTop: boolean = true, forceRun: boolean = false): void
+    {
+        if(!this.isRunable && !forceRun)
+        {
+            return;
+        }
+
+        this.lastRunEditor = runTop ? "top" : "bottom";
+        let editor = runTop ? this.topEditor : this.bottomEditor;
+        if(this._expressionID && editor.expression)
+        {
+            let expressionText = editor.isLua ? this.addLuaHighlight(editor.expression.sourceCode) : editor.expression.sourceCode;
+            let expression = new DataExpression(
+                this._expressionID,
+                editor.expression.name,
+                expressionText,
+                editor.expression.sourceLanguage,
+                editor.expression.comments,
+                editor.expression.shared,
+                editor.expression.creator,
+                editor.expression.createUnixTimeSec,
+                editor.expression.modUnixTimeSec,
+                editor.expression.tags,
+                editor.expression.moduleReferences,
+                null,
+            );
+
+            // This is a bit of a chicken and egg thing - the expression will fail to run if it's not already
+            // in the expression service, so we save it here, and update it again when the name is corrected
+            // this._expressionService.cache(this.previewID, expression, null);
+
+            this._widgetDataService.runAsyncExpression(expression, true).subscribe(
+                (result: DataQueryResult)=>
+                {
+                    this.evaluatedExpression = result;
+                    this.expressionToEvaluate = expression;
+                    this.stdout = result.stdout;
+                    this.stderr = result.stderr;
+
+                    editor.isSaveableOutput = editor.isModule || result.isPMCTable;
+                    if(this.evaluatedExpression && (!result.isPMCTable || this.evaluatedExpression?.resultValues?.values?.length > 0))
+                    {
+                        editor.isCodeChanged = false;
+                        this.displayExpressionTitle = `Unsaved ${expression.name}`;
+                        this._expressionService.cache(this.previewID, expression, this.displayExpressionTitle);
+                    }
+                },
+                (err)=>
+                {
+                    this.evaluatedExpression = null;
+                    this.expressionToEvaluate = null;
+                    this.stderr = `${err}`;
+                    editor.isSaveableOutput = false;
+
+                    if(runTop)
+                    {
+                        this.topEditor.runtimeError = new LuaRuntimeError(err["stack"], err["line"], err["errType"], err["sourceLine"], this.stderr);
+                    }
+                    else
+                    {
+                        this.bottomEditor.runtimeError = new LuaRuntimeError(err["stack"], err["line"], err["errType"], err["sourceLine"], this.stderr);
+                    }
+                }
+            );
+        }
+        this.pmcGridExpressionTitle = "Numeric Values: All";
+        this.isSubsetExpression = false;
+        if(this.executedTextSelection)
+        {
+            this.executedTextSelection.clearMarkedText();
+        }
+        this.executedTextSelection = null;
+    }
+
+    addLuaHighlight(text: string): string
+    {
+        let changedText = text;
+        if(!changedText.includes("return "))
+        {
+            let textLines = changedText.trim().split("\n");
+            if(textLines.length > 0)
+            {
+                let lastLine = textLines[textLines.length - 1];
+                let assignmentSplit = lastLine.split(/\s*=\s*/);
+                if(assignmentSplit.length === 2)
+                {
+                    let lhsVarName = assignmentSplit[0].replace("local ", "").trim();
+                    textLines.push(`return ${lhsVarName}`);
+                }
+                else
+                {
+                    textLines[textLines.length - 1] = "return " + textLines[textLines.length - 1];
+                }
+            }
+            changedText = textLines.join("\n");
+        }
+        return changedText;
+    }
+
+    runHighlightedExpression(): void
+    {
+        this.lastRunEditor = null;
+        // Highlighted expressions always use the top editor info so only 1 unsaved expression ID is injected into the cache
+        let highlightedExpression = new DataExpression(
+            this._expressionID,
+            this.topEditor.expression.name,
+            "",
+            this.topEditor.expression.sourceLanguage,
+            this.topEditor.expression.comments,
+            this.topEditor.expression.shared,
+            this.topEditor.expression.creator,
+            this.topEditor.expression.createUnixTimeSec,
+            this.topEditor.expression.modUnixTimeSec,
+            this.topEditor.expression.tags,
+            [],
+            null
+        );
+        if(this.textHighlighted)
+        {
+            highlightedExpression.sourceCode = this.textHighlighted;
+        }
+
+        if(this.topEditor.isLua)
+        {
+            highlightedExpression.sourceCode = this.addLuaHighlight(highlightedExpression.sourceCode);
+        }
+
+        this._widgetDataService.runAsyncExpression(highlightedExpression, true).subscribe(
+            (result: DataQueryResult)=>
+            {
+                this.evaluatedExpression = result;
+                this.expressionToEvaluate = highlightedExpression;
+                this.stdout = result.stdout;
+                this.stderr = result.stderr;
+            },
+            (err)=>
+            {
+                this.evaluatedExpression = null;
+                this.expressionToEvaluate = null;
+                this.stderr = `${err}`;
+            }
+        );
+
+        let lineRange = "";
+        let isMultiLine = this.startLineHighlighted !== this.endLineHighlighted || this.isEmptySelection;
+        if(this.isEmptySelection)
+        {
+            lineRange = `0 - ${this.endLineHighlighted}`;
+        }
+        else
+        {
+            lineRange = !isMultiLine ? `${this.startLineHighlighted}` : `${this.startLineHighlighted} - ${this.endLineHighlighted}`;
+        }
+        
+        this.displayExpressionTitle = `Unsaved ${this.topEditor.expression.name} (Line${isMultiLine ? "s": ""} ${lineRange})`;
+        this._expressionService.cache(this.previewID, highlightedExpression, this.displayExpressionTitle);
+
+        this.pmcGridExpressionTitle = `Numeric Values: Line${isMultiLine ? "s": ""} ${lineRange}`;
+        this.isSubsetExpression = true;
+
+        this.executedTextSelection = this.activeTextSelection;
+
+        if(this.executedTextSelection && this.executedTextSelection.markText)
+        {
+            this.executedTextSelection.markText();
+        }
+    }
+
+    convertToLua(): void
+    {
+        // Bottom editor is always the lua editor, so pixlang will only be in the top
+        this._expressionService.convertToLua(this.topEditor.expression.id, false).subscribe((luaExpression: object)=>
+        {
+            if(!luaExpression)
+            {
+                return;
+            }
+
+            this.topEditor.editExpression = (luaExpression as DataExpression).sourceCode;
+            if(this.updateText)
+            {
+                this.topEditor.isLua = true;
+                this.updateText((luaExpression as DataExpression).sourceCode);
+            }
+        },
+        (err)=>
+        {
+            this.stderr = `${err}`;
+        });
+
+    }
+
+    changeExpression(updateText: ((text: string) => void)): void
+    {
+        this.updateText = updateText;
+    }
+
+    onTextChange(text: string, position: string = "top"): void
+    {
+        let editor = position === "top" ? this.topEditor : this.bottomEditor;
+        
+        editor.onExpressionTextChanged(text);
+        this.updateCurrentlyOpenList(this.isSplitScreen);
+    }
+
+    onTextSelect(textSelection: TextSelection): void
+    {
+        this.activeTextSelection = textSelection;
+    }
+
+    get isNewID(): boolean
+    {
+        return this._newExpression;
+    }
+
+    get isRunable(): boolean
+    {
+        let otherEditorActive = this.isTopEditorActive && this.lastRunEditor !== "top" || !this.isTopEditorActive && this.lastRunEditor !== "bottom";
+        let isCodeChanged = this.isTopEditorActive ? this.topEditor.isCodeChanged : this.bottomEditor.isCodeChanged;
+        return otherEditorActive || isCodeChanged || !this.isEvaluatedDataValid;
+    }
+
+    get textHighlighted(): string
+    {
+        return this.activeTextSelection?.text;
+    }
+
+    get moduleNameTooltip(): string
+    {
+        return "Module Name Requirements:\n- Must be unique\n- Must be alphanumeric\n- Cannot contain spaces\n- Cannot contain special characters\n- Cannot start with a number";
+    }
+
+    get splitScreenTooltip(): string
+    {
+        if(this.topEditor.isModule)
+        {
+            return "Cannot splitscreen from module editor";
+        }
+
+        let tooltip = "Toggle between single and splitscreen view";
+        tooltip += this.isWindows ? " (Ctrl+\\)" : " (Cmd+\\)";
+        return this.topEditor.modules.length > 0 ? tooltip : `${tooltip}\nCannot splitscreen with no installed modules`;
+    }
+
+    get moduleSidebarTooltip(): string
+    {
+        let tooltip = this.isSidebarOpen ? "Close Modules Sidebar" : "Open Modules Sidebar";
+        return tooltip + (this.isWindows ? " (Ctrl+B)" : " (Cmd+B)");
+    }
+
+    get saveModuleTooltip(): string
+    {
+        let saveTooltip = this.isWindows ? "Save Module (Ctrl+S)" : "Save Module (Cmd+S)";
+
+        if(this.topEditor.invalidExpression && this.topEditor.isModule)
+        {
+            saveTooltip += `\n${this.isSplitScreen ? "Top Editor " : ""}Error: ${this.topEditor.errorTooltip}`;
+        }
+        if(this.isSplitScreen && this.bottomEditor.invalidExpression && this.bottomEditor.isModule)
+        {
+            saveTooltip += `\nBottom Editor Error: ${this.bottomEditor.errorTooltip}`;
+        }
+
+        return saveTooltip;
+    }
+
+    get saveExpressionTooltip(): string
+    {
+        let saveTooltip = this.isWindows ? "Save Expression (Ctrl+S)" : "Save Expression (Cmd+S)";
+
+        if(this.topEditor.invalidExpression && !this.topEditor.isModule)
+        {
+            saveTooltip += `\n${this.isSplitScreen ? "Top Editor " : ""}Error: ${this.topEditor.errorTooltip}`;
+        }
+        if(this.isSplitScreen && this.bottomEditor.invalidExpression && !this.bottomEditor.isModule)
+        {
+            saveTooltip += `\nBottom Editor Error: ${this.bottomEditor.errorTooltip}`;
+        }
+
+        return saveTooltip;
+    }
+
+    get runCodeTooltip(): string
+    {
+        return this.isWindows ? "Run Full Expression (Ctrl+Enter)" : "Run Full Expression (Cmd+Enter)";
+    }
+
+    get runHighlightedCodeTooltip(): string
+    {
+        let targetText = this.textHighlighted === "" ? "Code Until Line" : "Selected Code";
+        return this.isWindows ? `Run ${targetText} (Ctrl+Alt+Enter)` : `Run ${targetText} (Cmd+Option+Enter)`;
+    }
+
+    get releaseModuleTooltip(): string
+    {
+        return "Open Release Module Dialog";
+    }
+
+
+    get isWindows(): boolean
+    {
+        return navigator.userAgent.search("Windows") !== -1;
+    }
+
+    get isEmptySelection(): boolean
+    {
+        return this.activeTextSelection?.isEmptySelection;
+    }
+
+    get startLineHighlighted(): number
+    {
+        return this.activeTextSelection?.startLine;
+    }
+
+    get endLineHighlighted(): number
+    {
+        return this.activeTextSelection?.endLine;
+    }
+
+    get hasVisibleModule(): boolean
+    {
+        return this.topEditor.isModule || this.bottomEditor.isModule;
+    }
+
+    get visibleModuleCodeEditor(): EditorConfig
+    {
+        return this.hasVisibleModule ? this.topEditor.isModule ? this.topEditor : this.bottomEditor : null;
+    }
+
+    get isVisibleModuleEditable(): boolean
+    {
+        return this.visibleModuleCodeEditor?.editable && !this.visibleModuleCodeEditor.invalidExpression;
+    }
+
+    get isEvaluatedDataValid(): boolean
+    {
+        let values = this.evaluatedExpression?.resultValues?.values;
+        return typeof values !== "undefined" && values !== null && (!Array.isArray(values?.values) || values.values.length > 0);
+    }
+
+    get runtimeSeconds(): string
+    {
+        let msTime = this.evaluatedExpression?.runtimeMs;
+        if(!msTime || !this.isEvaluatedDataValid)
+        {
+            return "";
+        }
+
+        let formattedTime: string | number = Number(msTime / 1000);
+        if(formattedTime < 1 && formattedTime > -1)
+        {
+            formattedTime = formattedTime.toPrecision(2);
+        }
+        else 
+        {
+            formattedTime = Math.round(formattedTime * 100) / 100;
+        }
+        return `${formattedTime}`;
+    }
+
+    onTogglePMCDataGridSolo(isSolo: boolean): void
+    {
+        this.isPMCDataGridSolo = isSolo;
+    }
+
+    onConfirmNewModuleName(): void
+    {
+        let moduleName = this.topEditor.expression.name;
+        this.topEditor.expression.sourceCode = `
+        -- Modules must all start like this:
+        ${moduleName} = {}
+
+        ---- START EXAMPLE CODE (feel free to delete) ----
+
+        -- A module can contain constants like so:
+        ${moduleName}.ExampleConstant = 3.1415926
+
+        -- A module can also contain functions. This can be called from an expression like: 
+        --  ${moduleName}.ExampleFunction(1, 2)
+        -- it would return 3
+        function ${moduleName}.ExampleFunction(a, b)
+            return a+b
+        end
+
+        ---- END EXAMPLE CODE ----------------------------
+
+        -- Modules must return themselves as their last line
+        return ${moduleName}
+        `.replace(/\n {8,8}/g, "\n").trim();
+        this.onSave(true);
+    }
+
+    onSave(saveTop: boolean = true): void
+    {
+        let editor = saveTop ? this.topEditor : this.bottomEditor;
+        if(editor.isExpressionSaved || !editor.editable || editor.invalidExpression)
+        {
+            // Nothing valid to save
+            return;
+        }
+
+        // New expressions are always going to be on top
+        if(this._newExpression && saveTop)
+        {
+            if(editor.isModule)
+            {
+                this._moduleService.addModule(
+                    editor.expression.name,
+                    editor.expression.sourceCode,
+                    editor.expression.comments,
+                    editor.expression.tags
+                ).subscribe((newModule: DataModuleSpecificVersionWire) =>
+                {
+                    if(!newModule)
+                    {
+                        // An error occurred and the module wasn't saved
+                        console.error("Error saving module", editor);
+                        alert(`Error saving module ${editor.expression.name}}`);
+                        return;
+                    }
+                    this._newExpression = false;
+
+                    if(!(newModule instanceof DataModuleSpecificVersionWire))
+                    {
+                        newModule = this._moduleService.readSpecificVersionModule(newModule);
+                    }
+
+                    // Treat module as expression so we can visualize it in the same way
+                    let convertedModule = newModule.convertToExpression();
+                    convertedModule.sourceCode = editor.expression.sourceCode;
+                    convertedModule.tags = editor.expression.tags;
+                    editor.expression = convertedModule;
+
+                    editor.version = newModule.version;
+                    editor.versions = new Map([[newModule.version.version, newModule.version]]);
+
+                    editor.isCodeChanged = false;
+                    editor.isExpressionSaved = true;
+                    this.updateMainExpressionID(editor.expression.id, editor.version.version);
+                    this.updateCurrentlyOpenList(true);
+                });
+            }
+            else
+            {
+                this._expressionService.add(
+                    editor.expression.name,
+                    editor.expression.sourceCode,
+                    editor.expression.sourceLanguage,
+                    editor.expression.comments,
+                    editor.expression.tags
+                ).subscribe((newExpression: DataExpressionWire) =>
+                {
+                    this._newExpression = false;
+                    editor.expression = new DataExpression(
+                        newExpression.id,
+                        newExpression.name,
+                        newExpression.sourceCode,
+                        newExpression.sourceLanguage,
+                        newExpression.comments,
+                        newExpression.shared,
+                        newExpression.creator,
+                        newExpression.create_unix_time_sec,
+                        newExpression.mod_unix_time_sec,
+                        newExpression.tags,
+                        newExpression.moduleReferences || editor.expression.moduleReferences,
+                        newExpression.recentExecStats || editor.expression.recentExecStats
+                    );
+                    editor.isCodeChanged = false;
+                    editor.isExpressionSaved = true;
+                    this.updateMainExpressionID(editor.expression.id);
+                    this.updateCurrentlyOpenList(false);
+                });
+            }
+        }
+        else
+        {
+            if(editor.isModule)
+            {
+                this._moduleService.savePatchVersion(
+                    editor.expression.id,
+                    editor.expression.sourceCode,
+                    editor.expression.comments,
+                    editor.expression.tags
+                ).subscribe((newModule: DataModuleSpecificVersionWire) =>
+                {
+                    if(!newModule)
+                    {
+                        // An error occurred and the module wasn't saved
+                        console.error("Error saving module", editor);
+                        alert(`Error saving module ${editor.expression.name}}`);
+                        return;
+                    }
+                    editor.version = newModule.version;
+                    editor.versions.set(newModule.version.version, newModule.version);
+                    editor.isCodeChanged = false;
+                    editor.isExpressionSaved = true;
+                    this.updateCurrentlyOpenList(this.isSplitScreen);
+
+                    // If sync, update top editor
+                    if(!saveTop && this.topEditor.linkedModuleID === editor.expression.id)
+                    {
+                        let linkedModuleIndex = this.topEditor.expression.moduleReferences.findIndex(ref => ref.moduleID === editor.expression.id);
+                        if(linkedModuleIndex >= 0)
+                        {
+                            this.topEditor.expression.moduleReferences[linkedModuleIndex] = new ModuleReference(editor.expression.id, editor.version.version);
+                            this.topEditor.isCodeChanged = true;
+                        }
+
+                        this.topEditor.checkIfModulesAreLatest(this._moduleService);
+                        this.loadInstalledModules();
+                    }
+                });
+            }
+            else
+            {
+                this._expressionService.edit(
+                    editor.expression.id,
+                    editor.expression.name,
+                    editor.expression.sourceCode,
+                    editor.expression.sourceLanguage,
+                    editor.expression.comments,
+                    editor.expression.tags,
+                    editor.expression.moduleReferences
+                ).subscribe(
+                    ()=>
+                    {
+                        editor.isCodeChanged = false;
+                        editor.isExpressionSaved = true;
+                        this.updateCurrentlyOpenList(this.isSplitScreen);
+                    },
+                    (err)=>
+                    {
+                        console.error(`Failed to save expression ${editor.expression.name}`, err);
+                        alert(`Failed to save expression ${editor.expression.name}: ${err?.message}`);
+                    }
+                );
+            }
+        }
+    }
+
+    onLinkModule(moduleID: string): void
+    {
+        this.topEditor.linkedModuleID = moduleID;
+        let latestVersion = this._moduleService.getLatestCachedModuleVersion(moduleID);
+        if(!latestVersion)
+        {
+            return;
+        }
+
+        if(!this.isSplitScreen || this.bottomEditor?.expression?.id !== moduleID || this.bottomEditor?.version?.version !== latestVersion?.version)
+        {
+            this.onOpenSplitScreen({ id: moduleID, version: latestVersion?.version, isModule: true });
+        }
+
+        let linkedIndex = this.topEditor.expression.moduleReferences.findIndex(ref => ref.moduleID === moduleID);
+        if(linkedIndex >= 0)
+        {
+            this.topEditor.expression.moduleReferences[linkedIndex] = new ModuleReference(moduleID, latestVersion?.version);
+            this.loadInstalledModules();
+        }
+    }
+
+    updateMainExpressionID(id: string, version: string = null): void
+    {
+        this._expressionID = id;
+        if(!version)
+        {
+            this._router.navigate(["dataset", this._datasetID, "code-editor", id]);
+        }
+        else
+        {
+            this._router.navigate(["dataset", this._datasetID, "code-editor", id], { queryParams: { version } });
+        }
+    }
+
+    onRelease(): void
+    {
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.panelClass = "panel";
+
+        let id = this.visibleModuleCodeEditor?.expression?.id;
+        let title = this.visibleModuleCodeEditor.expression?.name;
+        let version = this.visibleModuleCodeEditor?.version?.version;
+        if(!id || !title || !version)
+        {
+            console.error("Failed to release module", title, version, id);
+            alert("Failed to release module");
+            return;
+        }
+
+        dialogConfig.data = new ModuleReleaseDialogData(
+            id,
+            title,
+            version,
+            this.visibleModuleCodeEditor.editExpression,
+            this.visibleModuleCodeEditor.expression.tags
+        );
+
+        let dialogRef = this.dialog.open(ModuleReleaseDialogComponent, dialogConfig);
+        dialogRef.afterClosed().subscribe((result: DataModuleSpecificVersionWire) =>
+        {
+            if(!result)
+            {
+                return;
+            }
+
+            let convertedModule = result.convertToExpression();
+            this.visibleModuleCodeEditor.expression = convertedModule;
+            this.visibleModuleCodeEditor.version = result.version;
+            let moduleID = this.visibleModuleCodeEditor.expression.id;
+            if(this.topEditor.isModule)
+            {
+                this._router.navigate(["dataset", this._datasetID, "code-editor", moduleID], {queryParams: {version: result.version.version}});
+            }
+        });
+    }
+
+    @HostListener("window:keydown", ["$event"])
+    onKeydown(event: KeyboardEvent): void
+    {
+        this._keyPresses[event.key] = true;
+        if((this._keyPresses["Meta"] && this._keyPresses["Enter"]) || (this._keyPresses["Control"] && this._keyPresses["Enter"]))
+        {
+            this.runExpression();
+            if(event.key === "Meta" || event.key === "Control")
+            {
+                this._keyPresses["Meta"] = false;
+                this._keyPresses["Control"] = false;
+                this._keyPresses["Enter"] = false;
+            }
+            this._keyPresses[event.key] = false;
+        }
+        else if((this._keyPresses["Meta"] && this._keyPresses["s"]) || (this._keyPresses["Control"] && this._keyPresses["s"]))
+        {
+            this.onSave();
+            this._keyPresses[event.key] = false;
+            if(event.key === "Meta" || event.key === "Control")
+            {
+                this._keyPresses["Meta"] = false;
+                this._keyPresses["Control"] = false;
+                this._keyPresses["s"] = false;
+            }
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            event.preventDefault();
+        }
+        else if((this._keyPresses["Meta"] && this._keyPresses["b"]) || (this._keyPresses["Control"] && this._keyPresses["b"]))
+        {
+            this.onToggleSidebar();
+            this._keyPresses[event.key] = false;
+            if(event.key === "Meta" || event.key === "Control")
+            {
+                this._keyPresses["Meta"] = false;
+                this._keyPresses["Control"] = false;
+                this._keyPresses["b"] = false;
+            }
+        }
+        else if((this._keyPresses["Meta"] && this._keyPresses["\\"]) || (this._keyPresses["Control"] && this._keyPresses["\\"]))
+        {
+            this.onToggleSplitScreen();
+            this._keyPresses[event.key] = false;
+            if(event.key === "Meta" || event.key === "Control")
+            {
+                this._keyPresses["Meta"] = false;
+                this._keyPresses["Control"] = false;
+                this._keyPresses["\\"] = false;
+            }
+        }
+    }
+
+    @HostListener("window:keyup", ["$event"])
+    onKeyup(event: KeyboardEvent): void
+    {
+        this._keyPresses[event.key] = false;
+    }
+
+    // NOTE: there are ways to go from selector string to ComponentFactory:
+    //       eg. https://indepth.dev/posts/1400/components-by-selector-name-angular
+    //       but we're only really doing this for 5 components, and don't actually want
+    //       it to work for any number of components, so hard-coding here will suffice
+    private getComponentClassForSelector(selector: string): any
+    {
+        // Limited Preview Mode Widgets
+        if(selector == ViewStateService.widgetSelectorChordDiagram)
+        {
+            return ChordViewWidgetComponent;
+        }
+        else if(selector == ViewStateService.widgetSelectorBinaryPlot)
+        {
+            return BinaryPlotWidgetComponent;
+        }
+        else if(selector == ViewStateService.widgetSelectorTernaryPlot)
+        {
+            return TernaryPlotWidgetComponent;
+        }
+        else if(selector == ViewStateService.widgetSelectorHistogram)
+        {
+            return HistogramViewComponent;
+        }
+        else if(selector == ViewStateService.widgetSelectorSpectrum)
+        {
+            return SpectrumChartWidgetComponent;
+        }
+        else if(selector == ViewStateService.widgetSelectorContextImage)
+        {
+            return ContextImageViewWidgetComponent;
+        }
+
+        console.error("getComponentClassForSelector unknown selector: "+selector+". Substituting chord diagram");
+        return ChordViewWidgetComponent;
+    }
+
+    private makeComponentFactory(selector: string): object
+    {
+        let klass = this.getComponentClassForSelector(selector);
+        let factory = this.resolver.resolveComponentFactory(klass);
+        return factory;
+    }
+
+    @HostListener("window:resize", ["$event"])
+    onResize(event)
+    {
+        // Window resized, notify all canvases
+        this._layoutService.notifyWindowResize();
+    }
+
+    onExportLuaCode()
+    {
+        let expr = this?.topEditor?.expression;
+        if(!expr)
+        {
+            return; // should we show an alert or something?
+        }
+
+        this._widgetDataService.exportExpressionCode(expr).subscribe(
+            (exportData: Blob)=>
+            {
+                saveAs(exportData, expr.name+".zip");
+            }
+        );
+    }
+}

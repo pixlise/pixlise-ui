@@ -205,6 +205,14 @@ class PeriodicTableDB
         // This needs to find elements and the multipliciation factor in the formula
         let weight = 0;
 
+        // Special case - if it's FeO-T, we worked correctly before, but had pointless warning messages for O-T
+        // because it was read as "O-" which wasn't a valid element, after which "O" was tried, and worked... so here
+        // we snip off O-T in this case
+        if(formula === "FeO-T")
+        {
+            formula = "FeO";
+        }
+
         let formulaRemainder = formula;
         for(let c = 0; c < formula.length; c++) // ensure this always quits
         {

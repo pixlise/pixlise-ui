@@ -532,20 +532,31 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         return PMCDataValues.makeWithValues(values);
     }
 
+    getPseudoIntensityElementsList(): string[]
+    {
+        let ranges = this.experiment.getPseudoIntensityRangesList();
+        let elems: string[] = [];
+        for(let range of ranges)
+        {
+            elems.push(range.getName());
+        }
+        return elems;
+    }
+
     // HousekeepingDataQuerierSource interface
     getHousekeepingData(name: string): PMCDataValues
     {
-        let metaLabels = this.experiment.getMetaLabelsList();
-        let metaTypes = this.experiment.getMetaTypesList();
+        const metaLabels = this.experiment.getMetaLabelsList();
+        const metaTypes = this.experiment.getMetaTypesList();
 
         // If it exists as a metaLabel and has a type we can return, do it
-        let metaIdx = metaLabels.indexOf(name);
+        const metaIdx = metaLabels.indexOf(name);
         if(metaIdx < 0)
         {
             throw new Error("The currently loaded dataset does not include housekeeping data with column name: \""+name+"\"");
         }
 
-        let metaType = metaTypes[metaIdx];
+        const metaType = metaTypes[metaIdx];
         if(metaType != Experiment.MetaDataType.MT_FLOAT && metaType != Experiment.MetaDataType.MT_INT)
         {
             throw new Error("Non-numeric data type for housekeeping data column: "+name);
@@ -555,7 +566,6 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         let values: PMCDataValue[] = [];
 
         let locs = this.experiment.getLocationsList();
-        let idx = 0;
         for(let loc of locs)
         {
             let metaList = loc.getMetaList();
@@ -609,6 +619,29 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         }
 
         return PMCDataValues.makeWithValues(values);
+    }
+
+    hasHousekeepingData(name: string): boolean
+    {
+        const metaLabels = this.experiment.getMetaLabelsList();
+        const metaTypes = this.experiment.getMetaTypesList();
+
+        // If it exists as a metaLabel and has a type we can return, do it
+        const metaIdx = metaLabels.indexOf(name);
+        if(metaIdx < 0)
+        {
+            // Name not found
+            return false;
+        }
+
+        const metaType = metaTypes[metaIdx];
+        if(metaType != Experiment.MetaDataType.MT_FLOAT && metaType != Experiment.MetaDataType.MT_INT)
+        {
+            // We can only return floats & ints so say no
+            return false;
+        }
+
+        return true;
     }
 
     // SpectrumDataQuerierSource
@@ -791,7 +824,7 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
 
         for(let locCache of this.locationPointCache)
         {
-            if(locCache.source && locCache.source.getRtt() == id)
+            if(locCache.source && locCache.source.getRtt() === id)
             {
                 result.add(locCache.locationIdx);
             }
@@ -866,17 +899,6 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         }
 
         return loc.source.getRtt();
-    }
-
-    getPseudoIntensityElementsList(): string[]
-    {
-        let ranges = this.experiment.getPseudoIntensityRangesList();
-        let elems: string[] = [];
-        for(let range of ranges)
-        {
-            elems.push(range.getName());
-        }
-        return elems;
     }
 
     getPMCsForLocationIndexes(locationIndexes: number[], onlyWithNormalOrDwellSpectra: boolean): Set<number>
@@ -1105,7 +1127,6 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
             {
                 scanSource = scanSources[scanSourceIdx];
             }
-
             let locToCache = new DataSetLocation(beamPoint, idx, pmc, hasNormalSpectra, hasDwellSpectra, hasMissingData, [], hasPseudo, scanSource);
             this.locationPointCache.push(locToCache);
 
@@ -1366,7 +1387,7 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         // hull and use the angle formed by that vs the X axis
         let longestVec = null;
         let longestVecLength = 0;
-        let longestVecIdx = -1;
+        //let longestVecIdx = -1;
         for(let c = 0; c < footprintHullPoints.length; c++)
         {
             let lastIdx = c-1;
@@ -1381,7 +1402,7 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
             {
                 longestVec = vec;
                 longestVecLength = vecLen;
-                longestVecIdx = c;
+                //longestVecIdx = c;
             }
         }
 
@@ -1650,11 +1671,12 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
             c++;
         }
         
-        if(!this.pmcForBulkMaxValueLocation)
+        if(this.pmcForBulkMaxValueLocation === null)
         {
             console.warn("  Dataset does not contain BulkSum or MaxValue spectrums");
         }
-        if(!this.spectrumMaxValueNormal || this.spectrumMaxValueNormal  <= 0)
+
+        if(!this.spectrumMaxValueNormal || this.spectrumMaxValueNormal <= 0)
         {
             console.warn("  Max spectrum value found: "+this.spectrumMaxValueNormal);
         }

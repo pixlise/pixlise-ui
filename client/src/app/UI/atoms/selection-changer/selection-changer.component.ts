@@ -34,10 +34,9 @@ import { BeamSelection } from "src/app/models/BeamSelection";
 import { DataSetService } from "src/app/services/data-set.service";
 import { DataSet } from "src/app/models/DataSet";
 import { ROIService } from "src/app/services/roi.service";
-import { SelectionHistoryItem, SelectionService, getPMCsForRTTs } from "src/app/services/selection.service";
+import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
 import { SelectionOption, SelectionOptionsComponent, SelectionOptionsDialogData, SelectionOptionsDialogResult } from "src/app/UI/atoms/selection-changer/selection-options/selection-options.component";
 import { httpErrorToString, UNICODE_CARET_DOWN } from "src/app/utils/utils";
-import { UserPromptDialogComponent, UserPromptDialogParams, UserPromptDialogResult, UserPromptDialogStringItem } from "src/app/UI/atoms/user-prompt-dialog/user-prompt-dialog.component";
 import { SelectionComponent } from "src/app/UI/side-panel/tabs/selection/selection.component";
 
 
@@ -144,6 +143,10 @@ export class SelectionChangerComponent implements OnInit
                 {
                     this.onSelectForSubDataset(choice.value);
                 }
+                else if(choice.result == SelectionOption.SEL_INVERT)
+                {
+                    this.onInvertSelection();
+                }
                 else
                 {
                     alert("Error: selection failed - not implemented!");
@@ -178,7 +181,7 @@ export class SelectionChangerComponent implements OnInit
 
     onSelectSpecificPMC(): void
     {
-        SelectionComponent.DoEnterSelection(this._datasetService, this.dialog, this._selectionService);
+        this._selectionService.promptUserForPMCSelection(this.dialog);
     }
 
     onSelectDwellPMCs(): void
@@ -225,5 +228,29 @@ export class SelectionChangerComponent implements OnInit
 
         let selection = dataset.getLocationIdxsForSubDataset(id);
         this._selectionService.setSelection(dataset, new BeamSelection(dataset, selection), null);
+    }
+
+    onInvertSelection(): void
+    {
+        let dataset = this._datasetService.datasetLoaded;
+        if(!dataset)
+        {
+            return;
+        }
+
+        // Here we want to invert the selection, but when selecting new points, only select ones that have a location and spectra!
+        let sel = this._selectionService.getCurrentSelection();
+        let selIdxs = sel.beamSelection.locationIndexes;
+        let newSel = new Set<number>();
+
+        for(let loc of dataset.locationPointCache)
+        {
+            if(!selIdxs.has(loc.locationIdx) && (loc.hasNormalSpectra || loc.hasDwellSpectra))
+            {
+                newSel.add(loc.locationIdx);
+            }
+        }
+
+        this._selectionService.setSelection(dataset, new BeamSelection(dataset, newSel), null);
     }
 }

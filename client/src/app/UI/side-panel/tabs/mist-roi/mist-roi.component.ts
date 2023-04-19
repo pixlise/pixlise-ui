@@ -40,6 +40,7 @@ import { Colours } from "src/app/utils/colours";
 import { httpErrorToString } from "src/app/utils/utils";
 import { MistRoiConvertComponent, MistROIConvertData } from "./mist-roi-convert/mist-roi-convert.component";
 import { MistRoiUploadComponent, MistROIUploadData } from "./mist-roi-upload/mist-roi-upload.component";
+import { DataSet } from "src/app/models/DataSet";
 
 
 @Component({
@@ -62,6 +63,8 @@ export class MistROIComponent implements OnInit
     private _selectionEmpty: boolean = true;
     roiSearchString: string = "";
 
+    private _subDataSetIDs: string[] = [];
+
     constructor(
         private _contextImageService: ContextImageService,
         private _datasetService: DataSetService,
@@ -80,14 +83,22 @@ export class MistROIComponent implements OnInit
                 this.onGotModel();
             }
         ));
+
         this._subs.add(this._selectionService.selection$.subscribe(
             (sel: SelectionHistoryItem)=>
             {
                 this._selectionEmpty = sel.beamSelection.getSelectedPMCs().size <= 0 && sel.pixelSelection.selectedPixels.size <= 0;
             }
         ));
-    }
 
+        this._subs.add(this._datasetService.dataset$.subscribe(
+            (dataset: DataSet)=>
+            {
+                let sources = dataset.experiment.getScanSourcesList();
+                this._subDataSetIDs = sources.map((src) => src.getRtt());
+            }
+        ));
+    }
 
     ngOnDestroy()
     {
@@ -98,7 +109,6 @@ export class MistROIComponent implements OnInit
     {
         return this._contextImageService.mdl.regionManager;
     }
-
 
     onGotModel(): void
     {
@@ -153,26 +163,89 @@ export class MistROIComponent implements OnInit
     {
         const dialogConfig = new MatDialogConfig();
 
-        dialogConfig.data = new MistROIUploadData();
+        dialogConfig.data = new MistROIUploadData(this._datasetService.datasetIDLoaded);
         const dialogRef = this.dialog.open(MistRoiUploadComponent, dialogConfig);
 
         dialogRef.afterClosed().subscribe(
-            (response: {mistROIs: ROIItem[]; deleteExisting: boolean; overwrite: boolean; skipDuplicates: boolean;})=>
+            (response: {mistROIs: ROIItem[]; deleteExisting: boolean; overwrite: boolean; skipDuplicates: boolean; mistROIsByDatasetID: Map<string, ROIItem[]>; includesMultipleDatasets: boolean; uploadToSubDatasets: boolean;})=>
             {
                 if(!response || !response?.mistROIs)
                 {
                     return;
                 }
-                this._roiService.bulkAdd(response.mistROIs, response.overwrite, response.skipDuplicates, response.deleteExisting, true).subscribe(
-                    ()=>
+
+                if(!response.includesMultipleDatasets)
+                {
+                    this._roiService.bulkAdd(response.mistROIs, response.overwrite, response.skipDuplicates, response.deleteExisting, true).subscribe(
+                        ()=>
+                        {
+                            this._selectionService.clearSelection();
+                        },
+                        (err)=>
+                        {
+                            alert(httpErrorToString(err, ""));
+                        }
+                    );
+                }
+                else
+                {
+                    let mistROIsWithOffsets = [];
+
+                    let missingSubDatasets = Array.from(response.mistROIsByDatasetID.keys()).filter((subDataset) => !this._subDataSetIDs.includes(subDataset));
+                    if(missingSubDatasets.length > 0)
                     {
-                        this._selectionService.clearSelection();
-                    },
-                    (err)=>
-                    {
-                        alert(httpErrorToString(err, ""));
+                        if(!confirm("The following sub-datasets are missing from the current dataset: " + missingSubDatasets.join(", ") + ". Do you want to continue?"))
+                        {
+                            return;
+                        }
                     }
-                );
+                    // Only allow upload of ROIs if they're to one of the combined sub-datasets
+                    this._subDataSetIDs.forEach((subDatasetID: string) =>
+                    {
+                        let rois = response.mistROIsByDatasetID.get(subDatasetID);
+                        if(!rois)
+                        {
+                            return;
+                        }
+                        
+                        if(response.uploadToSubDatasets)
+                        {
+                            // Add ROIs without offsets to sub-dataset
+                            this._roiService.bulkAdd(rois, response.overwrite, response.skipDuplicates, response.deleteExisting, true, subDatasetID).subscribe(
+                                ()=>
+                                {
+                                    this._selectionService.clearSelection();
+                                },
+                                (err)=>
+                                {
+                                    alert(httpErrorToString(err, ""));
+                                }
+                            );
+                        }
+
+                        rois.forEach((roi) =>
+                        {
+                            let offset = this._datasetService.datasetLoaded.getIdOffsetForSubDataset(subDatasetID);
+                            if(offset)
+                            {
+                                roi.locationIndexes = roi.locationIndexes.map((locIdx) => locIdx + offset);
+                            }
+                            mistROIsWithOffsets.push(roi);
+                        });
+                    });
+
+                    // Add ROIs to combined dataset
+                    this._roiService.bulkAdd(mistROIsWithOffsets, response.overwrite, response.skipDuplicates, response.deleteExisting, true).subscribe(
+                        ()=>
+                        {
+                            this._selectionService.clearSelection();
+                        },
+                        (err)=>
+                        {
+                            alert(httpErrorToString(err, ""));
+                        }
+                    );
+                }
                 this.expandedIndices = Array.from(new Set([...this.expandedIndices, 0]));
             }
         );

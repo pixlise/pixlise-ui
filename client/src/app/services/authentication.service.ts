@@ -190,7 +190,12 @@ export class AuthenticationService
         // from: Convert that resulting promise into an observable
         this.isAuthenticated$ = this.auth0Client$.pipe(
             concatMap((client: Auth0Client) => from(client.isAuthenticated())),
-            tap(res => this.loggedIn = res)
+            tap(
+                (res)=>
+                {
+                    this.loggedIn = res;
+                }
+            )
         );
 
         this.handleRedirectCallback$ = this.auth0Client$.pipe(

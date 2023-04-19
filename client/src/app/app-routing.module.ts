@@ -40,6 +40,7 @@ import { DatasetComponent } from "./routes/dataset/dataset.component";
 import { DatasetCustomisationComponent } from "./routes/dataset-customisation/dataset-customisation.component";
 
 import { AnalysisComponent } from "./routes/dataset/analysis/analysis.component";
+import { CodeEditorComponent } from "./routes/dataset/code-editor/code-editor.component";
 import { QuantificationsComponent } from "./routes/dataset/quantifications/quantifications.component";
 import { MapBrowserComponent } from "./routes/dataset/map-browser/map-browser.component";
 import { PiquantComponent } from "./routes/piquant/piquant.component";
@@ -80,6 +81,7 @@ function getRoutes(): Routes
                     children: [
                         { path: "", redirectTo: "analysis", pathMatch: "full" },
                         { path: "analysis", component: AnalysisComponent },
+                        { path: "code-editor/:expression_id", component: CodeEditorComponent },
                         { path: "maps", component: MapBrowserComponent },
                         {
                             path: "quant-logs",

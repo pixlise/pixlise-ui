@@ -32,6 +32,7 @@ import { NgModule, ErrorHandler, Injectable, APP_INITIALIZER } from "@angular/co
 import { HTTP_INTERCEPTORS, HttpErrorResponse, HttpClientModule } from "@angular/common/http";
 import { FormsModule } from "@angular/forms";
 import { MAT_DIALOG_DEFAULT_OPTIONS,  MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { Observable } from "rxjs";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { OverlayModule } from "@angular/cdk/overlay";
 import { CdkAccordionModule } from "@angular/cdk/accordion";
@@ -39,7 +40,7 @@ import { DragDropModule } from "@angular/cdk/drag-drop";
 
 import * as Sentry from "@sentry/browser";
 
-import { CodemirrorModule } from "@ctrl/ngx-codemirror";
+import { VERSION } from "src/environments/version";
 
 import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
@@ -91,6 +92,7 @@ import { VersionDisplayComponent } from "./routes/about/version-display/version-
 
 import { QuantSelectorPanelComponent } from "./UI/quantification-selector/quant-selector-panel/quant-selector-panel.component";
 import { ExpressionEditorComponent } from "./UI/expression-editor/expression-editor.component";
+import { ExpressionTextEditorComponent } from "./UI/expression-editor/expression-text-editor/expression-text-editor.component";
 
 import { Base64ImagePipe } from "./utils/base64-image.pipe";
 import { AddBearerPipe } from "./utils/add-bearer-header.pipe";
@@ -140,6 +142,7 @@ import { PeriodicTableTabComponent } from "./UI/spectrum-chart-widget/spectrum-p
 import { ExpressionPickerComponent } from "./UI/expression-picker/expression-picker.component";
 import { TagPickerComponent } from "./UI/tag-picker/tag-picker.component";
 import { ROIPickerComponent } from "./UI/roipicker/roipicker.component";
+import { ReferencesPickerComponent } from "./UI/references-picker/references-picker.component";
 import { RegionItemSettingsComponent } from "./UI/roipicker/region-item-settings/region-item-settings.component";
 import { RegionContainerComponent } from "./UI/roipicker/region-container/region-container.component";
 import { SpectrumRegionPickerComponent } from "./UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
@@ -159,8 +162,6 @@ import { AnnotationItemComponent } from "./UI/spectrum-chart-widget/spectrum-pea
 import { DataCollectionDialogComponent } from "./UI/data-collection-dialog/data-collection-dialog.component";
 import { WidgetSettingsMenuComponent } from "./UI/atoms/widget-settings-menu/widget-settings-menu.component";
 import { MenuPanelHostComponent } from "./UI/atoms/widget-settings-menu/menu-panel-host/menu-panel-host.component";
-import { VERSION } from "src/environments/version";
-import { ExpressionHelpDropdownComponent } from "./UI/expression-editor/expression-help-dropdown/expression-help-dropdown.component";
 import { FullScreenDisplayComponent } from "./UI/atoms/full-screen-display/full-screen-display.component";
 import { TestUtilitiesComponent } from "./routes/admin/test-utilities/test-utilities.component";
 import { QuantificationLogViewComponent } from "./routes/dataset/quantifications/quantification-log-view/quantification-log-view.component";
@@ -225,6 +226,12 @@ import { LogViewerComponent } from "./UI/log-viewer/log-viewer.component";
 import { AnnotationEditorComponent } from "./UI/annotation-editor/annotation-editor.component";
 import { AnnotationDisplayComponent } from "./UI/annotation-editor/annotation-display/annotation-display.component";
 import { PlotExporterDialogComponent } from "./UI/atoms/plot-exporter-dialog/plot-exporter-dialog.component";
+import { CodeEditorComponent } from "./routes/dataset/code-editor/code-editor.component";
+import { PMCDataGridComponent } from "./UI/pmc-data-grid/pmc-data-grid.component";
+
+import { StatusIndicatorComponent } from "./UI/atoms/status-indicator/status-indicator.component";
+import { ModuleReleaseDialogComponent } from "./UI/module-release-dialog/module-release-dialog.component";
+import { ExpressionMetadataEditorComponent } from "./UI/expression-metadata-editor/expression-metadata-editor.component";
 
 
 @Injectable()
@@ -308,10 +315,12 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
     };
 };
 
+
 @NgModule({
     declarations: [
         AppComponent,
         AnalysisComponent,
+        CodeEditorComponent,
         QuantificationsComponent,
         DatasetsComponent,
         PageNotFoundComponent,
@@ -345,6 +354,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         PeriodicTableTabComponent,
         QuantSelectorPanelComponent,
         ExpressionEditorComponent,
+        ExpressionTextEditorComponent,
         Base64ImagePipe,
         MapBrowserComponent,
         DatasetLoadingProgressComponent,
@@ -389,6 +399,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         BinaryPlotWidgetComponent,
         TernaryPlotWidgetComponent,
         ROIPickerComponent,
+        ReferencesPickerComponent,
         AnnotationEditorComponent,
         AnnotationDisplayComponent,
         RegionItemSettingsComponent,
@@ -412,7 +423,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         DataCollectionDialogComponent,
         WidgetSettingsMenuComponent,
         MenuPanelHostComponent,
-        ExpressionHelpDropdownComponent,
         FullScreenDisplayComponent,
         QuantificationLogViewComponent,
         SpectrumPeakLabelPickerComponent,
@@ -466,6 +476,10 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         AddDatasetDialogComponent,
         LogViewerComponent,
         PlotExporterDialogComponent,
+        PMCDataGridComponent,
+        StatusIndicatorComponent,
+        ModuleReleaseDialogComponent,
+        ExpressionMetadataEditorComponent
     ],
     imports: [
         BrowserModule,
@@ -478,7 +492,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         FlexLayoutModule,
         OverlayModule,
         CdkAccordionModule,
-        CodemirrorModule,
         NgxDropzoneModule,
         DragDropModule,
         MatTooltipModule,
@@ -519,6 +532,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         LayerControlComponent,
         ExpressionPickerComponent,
         ExpressionEditorComponent,
+        ExpressionTextEditorComponent,
         QuantSelectorPanelComponent,
         UserMenuPanelComponent,
         AnnotationOptionsComponent,

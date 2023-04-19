@@ -53,9 +53,10 @@ import { ContextImageModel } from "src/app/UI/context-image-view-widget/model";
 import { RegionChangeInfo } from "src/app/UI/context-image-view-widget/region-manager";
 import { ContextImageToolId } from "src/app/UI/context-image-view-widget/tools/base-context-image-tool";
 import { ToolButtonState, ToolHostCreateSettings } from "src/app/UI/context-image-view-widget/tools/tool-host";
-import { randomString } from "src/app/utils/utils";
-import { makeDataForExpressionList, ExpressionListBuilder, ExpressionListGroupNames, ExpressionListItems, LocationDataLayerPropertiesWithVisibility } from "src/app/models/ExpressionList";
+import { makeDataForExpressionList } from "src/app/models/ExpressionList";
 import { ROIService } from "src/app/services/roi.service";
+import { DataModuleService } from "src/app/services/data-module.service";
+import { AuthenticationService } from "src/app/services/authentication.service";
 
 
 @Component({
@@ -69,7 +70,6 @@ import { ROIService } from "src/app/services/roi.service";
 })
 export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
 {
-    private id = randomString(4);
     private _subs = new Subscription();
     private _modelSubs = new Subscription();
 
@@ -77,6 +77,7 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
 
     @Input() widgetPosition: string = "";
     @Input() mode: string = "analysis";
+    @Input() previewExpressionIDs: string[] = [];
 
     soloView: boolean = false;
     showBottomToolbar: boolean = true;
@@ -99,6 +100,7 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
         private snackService: SnackService,
         private layoutService: LayoutService,
         private exprService: DataExpressionService,
+        private moduleService: DataModuleService,
         private rgbMixService: RGBMixConfigService,
         private viewStateService: ViewStateService,
         private selectionService: SelectionService,
@@ -107,7 +109,8 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
         private _diffractionService: DiffractionPeakService,
         public dialog: MatDialog,
         private _loadingSvc: LoadingIndicatorService,
-        private _roiService: ROIService
+        private _roiService: ROIService,
+        private _authService: AuthenticationService
     )
     {
         //console.warn('ContextImageViewWidgetComponent ['+this.id+'] constructor, got service: '+contextImageService.getId());
@@ -146,8 +149,9 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
             return;
         }
 
-        // NOTE: no matter what, if we're showing as a solo view, we hide any buttons that open fold-down panels under the context image
-        if(this.soloView)
+        // NOTE: no matter what, if we're showing as a solo view or in preview mode, we hide any buttons that open 
+        // fold-down panels under the context image
+        if(this.soloView || this.isPreviewMode)
         {
             this.showFoldDownPanelButtons = false;
         }
@@ -164,6 +168,7 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
                 showMapColourScale
             ),
             this.exprService,
+            this.moduleService,
             this.rgbMixService,
             this.selectionService,
             this.datasetService,
@@ -172,7 +177,8 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
             this.widgetDataService,
             this._diffractionService,
             this.widgetPosition,
-            this._loadingSvc
+            this._loadingSvc,
+            this._authService
         );
         this.contextImageService.setModel(mdl);
 
@@ -267,6 +273,25 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
         this._modelSubs.add(all$.subscribe(
             (data: unknown[])=>
             {
+                // Only subscribe to expressions if we have preview expressions passed
+                if(this.isPreviewMode)
+                {
+                    let validPreviewExpressions = this.previewExpressionIDs.filter(id => this.exprService.getExpression(id));
+                    let exprUpdated = data[3] === "expr-updated";
+                    if(validPreviewExpressions.length > 0 && exprUpdated)
+                    {
+                        // We can only show one visible layer on the context image, so we just show the first one
+                        this.mdl.layerManager.setSingleLayerVisible(validPreviewExpressions[0]);
+                        this.reDraw();
+
+                        // Wait 100ms to ensure this is the last subscription run
+                        setTimeout(() =>
+                        {
+                            this.mdl.layerManager.setSingleLayerVisible(validPreviewExpressions[0]);
+                            this.reDraw();
+                        }, 100);
+                    }
+                }
                 this.mdl.regionManager.setDataset(data[0] as DataSet);
 
                 // Process widget data update reason with the rest. Previously this was received either before or after notifyDataArrived causing
@@ -410,6 +435,11 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
     get thisSelector(): string
     {
         return ViewStateService.widgetSelectorContextImage;
+    }
+
+    get isPreviewMode(): boolean 
+    {
+        return this.previewExpressionIDs && this.previewExpressionIDs.length > 0;
     }
 
     private saveState(reason: string): void

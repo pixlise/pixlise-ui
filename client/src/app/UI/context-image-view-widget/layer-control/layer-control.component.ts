@@ -29,14 +29,16 @@
 
 import { Component, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Observable, Subscription } from "rxjs";
+import { Observable, Subscription, combineLatest } from "rxjs";
+import { map } from "rxjs/operators";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { ContextImageService } from "src/app/services/context-image.service";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { ViewStateService } from "src/app/services/view-state.service";
-import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
 import { LayerChangeInfo, LayerManager } from "src/app/UI/context-image-view-widget/layer-manager";
 import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
@@ -50,6 +52,9 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { PredefinedROIID } from "src/app/models/roi";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { generateExportCSVForExpression } from "src/app/services/export-data.service";
+import { makeValidFileName } from "src/app/utils/utils";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { Router } from "@angular/router";
 
 
 export class LayerDetails
@@ -98,11 +103,9 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     constructor(
         private _contextImageService: ContextImageService,
-        private _exprService: DataExpressionService,
-        private _rgbMixService: RGBMixConfigService,
+        private _router: Router,
         private _widgetDataService: WidgetRegionDataService,
         private _authService: AuthenticationService,
-        private _diffractionService: DiffractionPeakService,
         private _datasetService: DataSetService,
         public dialog: MatDialog
     )
@@ -284,69 +287,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     onAddExpression(): void
     {
-        this.showExpressionEditor(new DataExpression("", "", "", DataExpressionService.DataExpressionTypeAll, "", false, null, 0, 0)).subscribe(
-            ({ expression, applyNow })=>
-            {
-                if(expression)
-                {
-                    // User has defined a new one, upload it
-                    this._exprService.add(expression.name, expression.expression, expression.type, expression.comments, expression.tags).subscribe(
-                        (response)=>
-                        {
-                            if(applyNow)
-                            {
-                                // If save and apply now is selected, turn on the layer
-                                let layerID = Object.keys(response || {})[0] || "";
-                                this._contextImageService.mdl.layerManager.setLayerVisibility(layerID, 1, true, []);
-                            }
-                        },
-                        (err)=>
-                        {
-                            alert("Failed to add data expression: "+expression.name);
-                        }
-                    );
-                }
-                // Else user probably cancelled...
-            },
-            (err)=>
-            {
-                console.error(err);
-            }
-        );
-    }
-
-    private showExpressionEditor(toEdit: DataExpression): Observable<{expression: DataExpression; applyNow: boolean;}>
-    {
-        return new Observable<{expression: DataExpression; applyNow: boolean;}>(
-            (observer)=>
-            {
-                const dialogConfig = new MatDialogConfig();
-                dialogConfig.panelClass = "panel";
-                dialogConfig.disableClose = true;
-
-                dialogConfig.data = new ExpressionEditorConfig(toEdit, true);
-
-                const dialogRef = this.dialog.open(ExpressionEditorComponent, dialogConfig);
-
-                dialogRef.afterClosed().subscribe(
-                    (dlgResult: ExpressionEditorConfig)=>
-                    {
-                        let toReturn: DataExpression = null;
-                        if(dlgResult)
-                        {
-                            toReturn = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec, dlgResult.expr.tags);
-                        }
-
-                        observer.next({ expression: toReturn, applyNow: dlgResult.applyNow });
-                        observer.complete();
-                    },
-                    (err)=>
-                    {
-                        observer.error(err);
-                    }
-                );
-            }
-        );
+        this._router.navigate(["dataset", this._datasetService.datasetIDLoaded, "code-editor", DataExpressionId.NewExpression]);
     }
 
     get elementRelativeShading(): boolean
@@ -476,25 +417,6 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         this.regenerateItemList("");
     }
 
-    exportExpressionValues(exprId: string, datasetId: string): string
-    {
-        let queryData: RegionDataResults = this._widgetDataService.getData([new DataSourceParams(exprId, PredefinedROIID.AllPoints, datasetId)], false);
-
-        if(queryData.error)
-        {
-            throw new Error(`Failed to query CSV data for expression: ${exprId}. ${queryData.error}`);
-        }
-
-        let csv: string = "PMC,Value\n";
-
-        queryData.queryResults[0].values.values.forEach(({pmc, value, isUndefined})=>
-        {
-            csv += `${pmc},${isUndefined ? "" : value}\n`;
-        });
-
-        return csv;
-    }
-
     getCanvasOptions(options: PlotExporterDialogOption[], ids: string[]): string[]
     {
         let isColourScaleVisible = options.findIndex((option) => option.label == "Visible Colour Scale") > -1;
@@ -573,7 +495,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
             (options: PlotExporterDialogOption[])=>
             {
                 let canvases: CanvasExportItem[] = [];
-                let csvs: CSVExportItem[] = [];
+                let csvs$: Observable<CSVExportItem>[] = [];
 
                 let drawer = new ExportDrawer(this._contextImageService.mdl, this._contextImageService.mdl.toolHost);
 
@@ -592,7 +514,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                     if(options.findIndex((option) => option.label === "Web Resolution (1200x800)") > -1)
                     {
                         canvases.push(new CanvasExportItem(
-                            `Web Resolution/${name.replace(/\//g, "_")}`,
+                            `Web Resolution/${makeValidFileName(name)}`,
                             generatePlotImage(drawer, this._contextImageService.mdl.transform, [], 1200, 800, false, false, exportIDs)
                         ));   
                     }
@@ -600,7 +522,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                     if(options.findIndex((option) => option.label === "Print Resolution (4096x2160)") > -1)
                     {
                         canvases.push(new CanvasExportItem(
-                            `Print Resolution/${name.replace(/\//g, "_")}`,
+                            `Print Resolution/${makeValidFileName(name)}`,
                             generatePlotImage(drawer, this._contextImageService.mdl.transform, [], 4096, 2160, false, false, exportIDs)
                         ));   
                     }
@@ -617,14 +539,14 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                     {
                         let id = element?.content?.layer?.source?.id;
 
-                        let elem = DataExpressionService.getPredefinedQuantExpressionElement(id);
+                        let elem = DataExpressionId.getPredefinedQuantExpressionElement(id);
                         if(elem.length > 0)
                         {
                             if(!first)
                             {
                                 name += ",";
                             }
-                            name += elem +"("+DataExpressionService.getPredefinedQuantExpressionDetector(id)+")";
+                            name += elem +"("+DataExpressionId.getPredefinedQuantExpressionDetector(id)+")";
                         }
 
                         elemExprIds.push(id);
@@ -642,14 +564,26 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
                     for(let datasetId of subDatasetIDs)
                     {
-                        csvs.push(new CSVExportItem(
-                            `${name}`+" for dataset"+datasetId,
-                            generateExportCSVForExpression(elemExprIds, PredefinedROIID.AllPoints, datasetId, this._widgetDataService)
-                        ));
+                        csvs$.push(
+                            generateExportCSVForExpression(elemExprIds, PredefinedROIID.AllPoints, datasetId, this._widgetDataService).pipe(
+                                map(
+                                    (csvData)=>
+                                    {
+                                        return new CSVExportItem(`${name}${datasetId ? " for dataset"+datasetId : ""}`, csvData);
+                                    }
+                                )
+                            )
+                        );
                     }
                 }
 
-                dialogRef.componentInstance.onDownload(canvases, csvs);
+                let csvsFinished$ = combineLatest(csvs$);
+                return csvsFinished$.subscribe(
+                    (csvItems: CSVExportItem[])=>
+                    {
+                        dialogRef.componentInstance.onDownload(canvases, csvItems);
+                    }
+                );
             });
 
         return dialogRef.afterClosed();

@@ -29,9 +29,9 @@
 
 import { Component, Input, OnInit, Output, EventEmitter } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Subscription } from "rxjs";
+import { Observable, Subscription, combineLatest } from "rxjs";
+import { map } from "rxjs/operators";
 import { PMCDataValues } from "src/app/expression-language/data-values";
-import { getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
 import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
 import { RGBUImage } from "src/app/models/RGBUImage"; // for channel names, probably shouldn't be linking this though :(
 import { AuthenticationService } from "src/app/services/authentication.service";
@@ -40,7 +40,7 @@ import { DataExpressionService } from "src/app/services/data-expression.service"
 import { DataSetService } from "src/app/services/data-set.service";
 import { DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { RGBMixConfigService, RGBMix } from "src/app/services/rgbmix-config.service";
-import { WidgetRegionDataService, DataSourceParams } from "src/app/services/widget-region-data.service";
+import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
 import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
 import { httpErrorToString } from "src/app/utils/utils";
@@ -330,8 +330,9 @@ export class RGBMixLayerSettingsComponent implements OnInit
         return this.layerInfo.layer.visible;
     }
 
-    exportExpressionValues(datasetId: string): string
+    exportExpressionValues(datasetId: string): Observable<string>
     {
+        // TODO: Merge this with ExportDataDialogComponent.generateExportCSVForRGBMix
         let rgbMix = this._rgbMixService.getRGBMixes().get(this.layerInfo.layer.id);
         if(!rgbMix)
         {
@@ -344,44 +345,47 @@ export class RGBMixLayerSettingsComponent implements OnInit
             new DataSourceParams(rgbMix.blue.expressionID, null, datasetId)
         ];
 
-        let queryResults = this._widgetDataService.getData(query, false);
-
-        let csv = "PMC";
-        let perChanData: PMCDataValues[] = [];
-        let ch = 0;
-
-        for(let channelResult of queryResults.queryResults)
-        {
-            if(channelResult.error)
+        return this._widgetDataService.getData(query, false).pipe(
+            map((queryResults: RegionDataResults)=>
             {
-                throw new Error("Failed to find expression: "+query[ch].exprId+" for channel: "+RGBUImage.channels[ch]);
-            }
+                let csv = "PMC";
+                let perChanData: PMCDataValues[] = [];
+                let ch = 0;
 
-            perChanData.push(channelResult.values);
-            csv += ","+channelResult.expressionName;
+                for(let channelResult of queryResults.queryResults)
+                {
+                    if(channelResult.error)
+                    {
+                        throw new Error("Failed to find expression: "+channelResult.query.exprId+" for channel: "+RGBUImage.channels[ch]);
+                    }
 
-            ch++;
-        }
-        csv += "\n";
+                    perChanData.push(channelResult.values);
+                    csv += ","+channelResult.expression.name;
 
-        // If we didn't get 3 channels, stop here
-        if(perChanData.length !== 3)
-        {
-            throw new Error("Failed to generate RGB columns for RGB expression: "+this.layerInfo.layer.id);
-        }
+                    ch++;
+                }
+                csv += "\n";
 
-        let perChanDataNoGaps = PMCDataValues.filterToCommonPMCsOnly(perChanData);
-        perChanDataNoGaps[0].values.forEach((pmcData, i)=>
-        {
-            if(pmcData.pmc !== perChanDataNoGaps[1].values[i].pmc || pmcData.pmc !== perChanDataNoGaps[2].values[i].pmc)
-            {
-                throw new Error(`Failed to generate RGB CSV for rgb mix ID: ${this.layerInfo.layer.id}, mismatched PMC returned for item: ${i}`);
-            }
+                // If we didn't get 3 channels, stop here
+                if(perChanData.length !== 3)
+                {
+                    throw new Error("Failed to generate RGB columns for RGB expression: "+this.layerInfo.layer.id);
+                }
 
-            csv += `${pmcData.pmc},${pmcData.value},${perChanDataNoGaps[1].values[i].value},${perChanDataNoGaps[2].values[i].value}\n`;
-        });
+                let perChanDataNoGaps = PMCDataValues.filterToCommonPMCsOnly(perChanData);
+                perChanDataNoGaps[0].values.forEach((pmcData, i)=>
+                {
+                    if(pmcData.pmc !== perChanDataNoGaps[1].values[i].pmc || pmcData.pmc !== perChanDataNoGaps[2].values[i].pmc)
+                    {
+                        throw new Error(`Failed to generate RGB CSV for rgb mix ID: ${this.layerInfo.layer.id}, mismatched PMC returned for item: ${i}`);
+                    }
 
-        return csv;
+                    csv += `${pmcData.pmc},${pmcData.value},${perChanDataNoGaps[1].values[i].value},${perChanDataNoGaps[2].values[i].value}\n`;
+                });
+
+                return csv;
+            })
+        );
     }
 
     getCanvasOptions(options: PlotExporterDialogOption[]): string[]
@@ -448,7 +452,7 @@ export class RGBMixLayerSettingsComponent implements OnInit
             (options: PlotExporterDialogOption[])=>
             {
                 let canvases: CanvasExportItem[] = [];
-                let csvs: CSVExportItem[] = [];
+                let csvs$: Observable<CSVExportItem>[] = [];
 
                 let drawer = new ExportDrawer(this._contextImageService.mdl, this._contextImageService.mdl.toolHost);
                 let exportIDs = this.getCanvasOptions(options);
@@ -482,14 +486,24 @@ export class RGBMixLayerSettingsComponent implements OnInit
 
                     for(let datasetId of subDatasetIDs)
                     {
-                        csvs.push(new CSVExportItem(
-                            "Expression Values - "+datasetId,
-                            this.exportExpressionValues(datasetId)
-                        ));
+                        csvs$.push(
+                            this.exportExpressionValues(datasetId).pipe(
+                                map((csv: string)=>
+                                {
+                                    return new CSVExportItem("Expression Values - "+datasetId, csv);
+                                })
+                            )
+                        );
                     }
                 }
 
-                dialogRef.componentInstance.onDownload(canvases, csvs);
+                let csvsFinished$ = combineLatest(csvs$);
+                return csvsFinished$.subscribe(
+                    (csvItems: CSVExportItem[])=>
+                    {
+                        dialogRef.componentInstance.onDownload(canvases, csvItems);
+                    }
+                );
             });
 
         return dialogRef.afterClosed();

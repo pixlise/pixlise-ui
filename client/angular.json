@@ -26,6 +26,41 @@
             "assets": [
               "src/favicon.ico",
               "src/assets",
+              {
+                "glob": "glue.wasm",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "Map.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "DebugHelp.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "CSV.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "PixliseRuntime.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "FuncRunner.lua",
+                "input": "src/app/expression-language/lua/test",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/monaco-editor",
+                "output": "assets/monaco-editor"
+              },
               "src/local-development-pixlise-config.json",
               "src/agreement-version.json",
               "src/version.json"
@@ -60,60 +95,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "2mb",
-                  "maximumError": "5mb"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "6kb"
-                }
-              ]
-            },
-            "staging": {
-              "fileReplacements": [
-                {
-                  "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment.staging.ts"
-                }
-              ],
-              "optimization": true,
-              "outputHashing": "all",
-              "sourceMap": true,
-              "namedChunks": false,
-              "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "2mb",
-                  "maximumError": "5mb"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "6kb"
-                }
-              ]
-            },
-            "devenv": {
-              "fileReplacements": [
-                {
-                  "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment.devenv.ts"
-                }
-              ],
-              "optimization": true,
-              "outputHashing": "all",
-              "sourceMap": true,
-              "namedChunks": false,
-              "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "2mb",
-                  "maximumError": "5mb"
+                  "maximumWarning": "4mb",
+                  "maximumError": "8mb"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -138,12 +121,6 @@
           },
           "configurations": {
             "production": {
-              "browserTarget": "pixlise:build:production"
-            },
-            "staging": {
-              "browserTarget": "pixlise:build:production"
-            },
-            "devenv": {
               "browserTarget": "pixlise:build:production"
             },
             "development": {

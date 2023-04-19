@@ -51,6 +51,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <widget-switcher [activeSelector]='thisSelector' [widgetPosition]='widgetPosition'></widget-switcher>
 
         <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
+            <references-picker (onChange)="onReferences($event)"></references-picker>
             <icon-button
                 (click)="onToggleSolo()"
                 title='Toggle Solo View'

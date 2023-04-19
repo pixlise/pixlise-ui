@@ -31,12 +31,13 @@ import { PMCDataValues } from "src/app/expression-language/data-values";
 import { Rect } from "src/app/models/Geometry";
 import { mapLayerVisibility } from "src/app/services/view-state.service";
 import { ColourRamp, Colours, RGBA } from "src/app/utils/colours";
+import { RGBMix, RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { degToRad } from "src/app/utils/utils";
-import { MinMax, ObjectCreator } from "./BasicTypes";
+import { MinMax } from "./BasicTypes";
 import { IColourScaleDataSource } from "./ColourScaleDataSource";
 import { DataSet } from "./DataSet";
-import { DataExpressionService, DataExpression } from "src/app/services/data-expression.service";
-import { RGBMix } from "src/app/services/rgbmix-config.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 
 // A class to represent a point and colour. These can be used to draw anything
 // on top of our context images
@@ -129,6 +130,8 @@ export class LocationDataLayerProperties
 
     protected _source: DataExpression | RGBMix;
 
+    public isOutOfDate: boolean = false;
+
     constructor(id: string, name: string, expressionID: string, source: DataExpression | RGBMix)
     {
         this._id = id;
@@ -136,7 +139,7 @@ export class LocationDataLayerProperties
         this._expressionID = expressionID;
         this._source = source;
 
-        this._isPredefinedLayer = DataExpressionService.isPredefinedExpression(this._id);
+        this._isPredefinedLayer = DataExpressionId.isPredefinedExpression(this._id);
     }
 
     get id(): string
@@ -202,8 +205,6 @@ export class LocationDataLayerChannel
     protected _pmcToPointsLookup: Map<number, number> = new Map<number, number>();
 
     private _valueRange: MinMax = new MinMax();
-    private _minIdx: number = null;
-    private _maxIdx: number = null;
 
     private _displayValueRange: MinMax = new MinMax();
 
@@ -276,10 +277,8 @@ export class LocationDataLayerChannel
     {
         this._points = [];
         this._pmcToPointsLookup.clear();
-        this._minIdx = null;
         this._valueRange = new MinMax();
         // NOTE: not clearing _displayValueRange here!
-        this._maxIdx = null;
         this._isBinary = true;
         this.clearHistogram();
     }
@@ -334,7 +333,7 @@ export class LocationDataLayerChannel
     }
 
     // Returns error string or null if no error
-    generateRGBFromChannels(red: LocationDataLayerChannel, green: LocationDataLayerChannel, blue: LocationDataLayerChannel): string
+    generateRGBFromChannels(red: LocationDataLayerChannel, green: LocationDataLayerChannel, blue: LocationDataLayerChannel): void
     {
         this.clearPoints();
         let pointCount = red._points.length;
@@ -376,8 +375,6 @@ export class LocationDataLayerChannel
                 currentPoint.locIdx
             ));
         }
-
-        return null;
     }
 
     getValue(pmc: number): number
@@ -542,20 +539,24 @@ export class LocationDataLayerChannel
 
         if(this._valueRange.expandMin(value))
         {
-            this._minIdx = idx;
             minMaxChange = true;
         }
 
         if(this._valueRange.expandMax(value))
         {
-            this._maxIdx = idx;
             minMaxChange = true;
         }
 
         // Check if it's a non-binary value
         if(value != 0 && value != 1)// || this._valueRange.min == this._valueRange.max)
         {
-            this._isBinary = false;
+            if(this._isBinary)
+            {
+                this._isBinary = false;
+                // We just changed our binary flag to false, so we should force histogram steps to regen
+                this._histogramSteps = 0; 
+                this._histogram.clear(this._histogramSteps);
+            }
         }
 
         // Also add it to our histogram counts
@@ -573,7 +574,7 @@ export class LocationDataLayerChannel
                 if(stepSize != 0)
                 {
                     let idx = Math.floor(value / stepSize);
-                    this._histogram[idx]++;
+                    this._histogram.increment(idx);
                 }
             }
         }
@@ -891,12 +892,12 @@ export class LocationDataLayer extends LocationDataLayerProperties implements IC
         this._channels[channel].generatePoints(data, dataset);
     }
 
-    // Returns error string or null if no error
-    generateRGBMix(data: PMCDataValues[], dataset: DataSet): string
+    // Throws error string if error
+    generateRGBMix(data: PMCDataValues[], dataset: DataSet): void
     {
         if(data.length != this._channels.length)
         {
-            return "generateRGBMix: Mismatched channel count vs data provided";
+            throw new Error("generateRGBMix: Mismatched channel count vs data provided");
         }
 
         // Set the right values in each channel, then combine into a special channel we use for drawing
@@ -905,18 +906,25 @@ export class LocationDataLayer extends LocationDataLayerProperties implements IC
             this._channels[c].generatePoints(data[c], dataset);
         }
 
-        return this.regenerateRGBChannelForDrawIfNeeded();
+        this.regenerateRGBChannelForDrawIfNeeded();
     }
 
-    // Returns error string or null if no error
-    private regenerateRGBChannelForDrawIfNeeded(): string
+    // Throws error string if error
+    private regenerateRGBChannelForDrawIfNeeded(): void
     {
-        if(this._channels.length == 3)
+        if(!RGBMixConfigService.isRGBMixID(this._id))
         {
-            this._rgbMixChannelForDraw = new LocationDataLayerChannel(this.properties, this.properties.displayValueShading);
-            return this._rgbMixChannelForDraw.generateRGBFromChannels(this._channels[0], this._channels[1], this._channels[2]);
+            // Not an RGB mix
+            return;
         }
-        return "ERROR: RGB mix does not have 3 channels defined";
+
+        if(this._channels.length != 3)
+        {
+            throw new Error("ERROR: RGB mix does not have 3 channels defined");
+        }
+
+        this._rgbMixChannelForDraw = new LocationDataLayerChannel(this.properties, this.properties.displayValueShading);
+        this._rgbMixChannelForDraw.generateRGBFromChannels(this._channels[0], this._channels[1], this._channels[2]);
     }
 
     getDrawParamsForRawValue(channel: number, rawValue: number, rawRange: MinMax): LocationData2DDrawParams
