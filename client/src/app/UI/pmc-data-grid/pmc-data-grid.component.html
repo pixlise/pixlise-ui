@@ -86,7 +86,15 @@ POSSIBILITY OF SUCH DAMAGE.
       <h6>Run an expression or highlight<br>a selection of code to run</h6>
     </div>
 
-    <div *ngIf="!isOutputView && !stderr" class="log-text">{{stdout || "No log output"}}</div>
-    <div *ngIf="!isOutputView && stderr" class="error-text">{{stderr || "No log output"}}</div>
+    <div *ngIf="!isOutputView && !stderr" class="log-text">{{stdout ? stdout.trim() : "No log output"}}
+      <div class="copy-btn" (click)="onCopyStdout()">
+        <mat-icon>{{copyIcon}}</mat-icon>Copy
+      </div>
+    </div>
+    <div *ngIf="!isOutputView && stderr" class="error-text">{{stderr ? stderr.trim() : "No log output"}}
+      <div class="copy-btn" (click)="onCopyStderr()">
+        <mat-icon>{{copyIcon}}</mat-icon>Copy
+      </div>
+    </div>
   </div>
 </div>

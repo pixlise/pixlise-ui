@@ -31,7 +31,7 @@ import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, SimpleChange
 import { Subscription } from "rxjs";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { ContextImageService } from "src/app/services/context-image.service";
-import { CSVExportItem, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
+import { CSVExportItem, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption, TXTExportItem } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
 import { DataSetService } from "src/app/services/data-set.service";
@@ -306,15 +306,29 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         this._selectionService.setSelection(this._datasetService.datasetLoaded, new BeamSelection(dataset, locationIndexes), pixelSelection, true);
     }
 
-    onCopyOutput()
+    private _copyText(text: string)
     {
-        let output = this.printableResultValue;
-        if(output && navigator?.clipboard)
+        if(text && navigator?.clipboard)
         {
-            navigator.clipboard.writeText(output);
+            navigator.clipboard.writeText(text);
             this.copyIcon = "done";
             setTimeout(() => this.copyIcon = "content_copy", 1000);
         }
+    }
+
+    onCopyOutput()
+    {
+        this._copyText(this.printableResultValue);
+    }
+
+    onCopyStdout()
+    {
+        this._copyText(this.evaluatedExpression?.stdout.trim());
+    }
+
+    onCopyStderr()
+    {
+        this._copyText(this.evaluatedExpression?.stderr.trim());
     }
 
     onExport()
@@ -324,8 +338,10 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
             return;
         }
 
+        let validExpressionValues = this.evaluatedExpression?.resultValues?.values.length > 0;
         let exportOptions = [
-            new PlotExporterDialogOption("Expression Values .csv", true),
+            new PlotExporterDialogOption("Expression Values .csv", validExpressionValues, false, { type: "checkbox", disabled: !validExpressionValues }),
+            new PlotExporterDialogOption("Expression Output .txt", true),
         ];
 
         const dialogConfig = new MatDialogConfig();
@@ -337,8 +353,9 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
             {
                 let optionLabels = options.map(option => option.label);
                 let csvs: CSVExportItem[] = [];
+                let txts: TXTExportItem[] = [];
 
-                if(optionLabels.indexOf("Expression Values .csv") > -1)
+                if(optionLabels.indexOf("Expression Values .csv") > -1 && validExpressionValues)
                 {
                     let data = this.evaluatedExpression.resultValues.values.map((point) =>
                     {
@@ -348,8 +365,12 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
                     let csvData = `PMC,Value\n${data.join("\n")}`;
                     csvs.push(new CSVExportItem(`${this.expression.name} Values`, csvData));
                 }
+                if(optionLabels.indexOf("Expression Output .txt") > -1)
+                {
+                    txts.push(new CSVExportItem(`${this.expression.name} Output`, this.evaluatedExpression.stdout));
+                }
 
-                dialogRef.componentInstance.onDownload([], csvs);
+                dialogRef.componentInstance.onDownload([], csvs, txts);
             }
         );
     }
