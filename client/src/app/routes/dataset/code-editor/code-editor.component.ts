@@ -44,8 +44,7 @@ import { TernaryPlotWidgetComponent } from "src/app/UI/ternary-plot-widget/terna
 import { DataExpressionService, DataExpressionWire } from "src/app/services/data-expression.service";
 import { DataExpression, DataExpressionId, ModuleReference } from "src/app/models/Expression";
 import { DataQueryResult } from "src/app/expression-language/data-values";
-import { DataSourceParams, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
-import { PredefinedROIID } from "src/app/models/roi";
+import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { DataExpressionModule, TextSelection } from "src/app/UI/expression-editor/expression-text-editor/expression-text-editor.component";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { CustomExpressionGroup, ExpressionListBuilder, ExpressionListGroupNames, ExpressionListItems, LocationDataLayerPropertiesWithVisibility, makeDataForExpressionList } from "src/app/models/ExpressionList";
