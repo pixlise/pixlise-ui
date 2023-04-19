@@ -578,8 +578,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         let nameOfLayer = isModule ? "module" : "expression";
         if(isLocked)
         {
-            icon = "assets/button-icons/lock.svg";
-            iconTooltip = `This ${nameOfLayer} is locked and cannot be edited`;
+            icon = "";
+            iconTooltip = "";
         }
         else
         {
