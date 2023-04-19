@@ -47,6 +47,11 @@ export class CSVExportItem
     constructor(public name: string, public data: string) {}
 }
 
+export class TXTExportItem
+{
+    constructor(public name: string, public data: string) {}
+}
+
 export type PlotExporterType = {
     type: "checkbox" | "switch";
     options?: string[];
@@ -207,11 +212,14 @@ export class PlotExporterDialogComponent implements OnInit
 
     onToggleOption(option: PlotExporterDialogOption)
     {
-        option.value = !option.value;
-        if(this.data.imagePreview)
+        if(!option.type.disabled)
         {
-            this.previewLoading = true;
-            this.onPreviewChange.emit(this.enabledOptions);
+            option.value = !option.value;
+            if(this.data.imagePreview)
+            {
+                this.previewLoading = true;
+                this.onPreviewChange.emit(this.enabledOptions);
+            }
         }
     }
 
@@ -272,11 +280,12 @@ export class PlotExporterDialogComponent implements OnInit
         this.onConfirmOptions.emit(this.enabledOptions);
     }
 
-    onDownload(canvasItems: CanvasExportItem[], csvItems: CSVExportItem[]): void
+    onDownload(canvasItems: CanvasExportItem[], csvItems: CSVExportItem[], txtItems: TXTExportItem[] = []): void
     {
         let zip = new JSZip();
 
         csvItems.forEach(item => zip.folder("csvs").file(`${item.name}.csv`, item.data));
+        txtItems.forEach(item => zip.folder("txts").file(`${item.name}.txt`, item.data));
         canvasItems.forEach(item =>
         {
             zip.folder("plots").file(`${item.name}.png`, item.canvas.toDataURL("image/png").split(",")[1], {base64: true});
