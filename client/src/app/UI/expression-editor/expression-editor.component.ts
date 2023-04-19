@@ -34,6 +34,7 @@ import { Subscription } from "rxjs";
 import { DataExpression } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { DataExpressionService } from "src/app/services/data-expression.service";
 
 
 export class ExpressionEditorConfig
@@ -70,6 +71,7 @@ export class ExpressionEditorComponent implements OnDestroy
         @Inject(MAT_DIALOG_DATA) public data: ExpressionEditorConfig,
         private _router: Router,
         private _datasetService: DataSetService,
+        private _expressionService: DataExpressionService,
         public dialogRef: MatDialogRef<ExpressionEditorComponent>,
     )
     {
@@ -149,14 +151,38 @@ export class ExpressionEditorComponent implements OnDestroy
         this.expression.sourceCode = expressionText;
     }
 
-    onOpenSoloEditorView(): void
+    navigateToExpression(id: string): void
     {
         let datasetID = this._datasetService.datasetIDLoaded;
-        this._router.navigate(["dataset", datasetID, "code-editor", this.expression.id]);
+        this._router.navigate(["dataset", datasetID, "code-editor", id]);
+    }
 
-        // TODO: Save the expression to local storage and pick back up on solo view
+    forceNavigateToCodeEditor(id: string): void
+    {
+        this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=> this.navigateToExpression(id));
+    }
 
+    onOpenSoloEditorView(): void
+    {
+        this.forceNavigateToCodeEditor(this.expression.id);
         this.dialogRef.close(null);
+    }
+
+
+    onCopyToNewExpression()
+    {
+        this._expressionService.add(
+            this.expressionName + " (copy)",
+            this.editExpression,
+            this.expression.sourceLanguage,
+            this.expressionComments,
+            this.expression.tags,
+            this.expression.moduleReferences
+        ).subscribe((expression) =>
+        { 
+            this.forceNavigateToCodeEditor(expression.id);
+            this.dialogRef.close(null);
+        });
     }
 
     onOK()

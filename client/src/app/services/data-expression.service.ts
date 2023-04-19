@@ -787,11 +787,11 @@ export class DataExpressionService
         return expression;
     }
 
-    add(name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = []): Observable<DataExpressionWire>
+    add(name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = [], moduleReferences: ModuleReference[] = []): Observable<DataExpressionWire>
     {
         let loadID = this._loadingSvc.add("Saving new expression...");
         let apiURL = APIPaths.getWithHost(APIPaths.api_data_expression);
-        let toSave = new DataExpressionInput(name, sourceCode, sourceLanguage, comments, tags);
+        let toSave = new DataExpressionInput(name, sourceCode, sourceLanguage, comments, tags, moduleReferences);
         return this.http.post<DataExpressionWire>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(
