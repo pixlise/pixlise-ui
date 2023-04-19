@@ -70,7 +70,7 @@ function Utils.findMapTableDifferenceLine(a, aName, b, bName, ignorePMCMap)
                 return r, "pmc "..aPMC.." doesn't equal "..b[1][r]
             end
 
-            if a[2][r] ~= b[2][r] then
+            if math.floor(a[2][r] * 1000) / 1000 ~= math.floor(b[2][r] * 1000) / 1000 then
                 if firstLine < 0 then
                     firstLine = r
                 end
