@@ -720,7 +720,7 @@ export class LayerSettingsComponent implements OnInit
             showPixlangConvert: this.isPixlangExpression && !this.isPredefined,
             showPreviewButton: this.showPreviewButton && !this.isCurrentlyOpen,
             showSplitScreenButton: this.showSplitScreenButton && !this.isCurrentlyOpen && (this.isModule || this.isSplitScreen),
-            showSettingsButton: this.showSettingsButton && !this.isCurrentlyOpen,
+            showSettingsButton: this.showSettingsButton && !this.isCurrentlyOpen && !this.isSharedByOtherUser,
             showColours: this.showColours,
             showVisible: this.showVisible && !this.layerInfo?.layer?.id?.startsWith("builtin-"),
         };

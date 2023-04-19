@@ -247,7 +247,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
         );
 
         this._editor.setModel(mdl);
-        this.monaco.editor.setTheme(this._expr.sourceLanguage == EXPR_LANGUAGE_LUA ? "vs-dark-lua" : "vs-dark-pixlang");
+        this.monaco.editor.setTheme(this._expr.sourceLanguage === EXPR_LANGUAGE_LUA ? "vs-dark-lua" : "vs-dark-pixlang");
         this.registerKeyBindings();
         this._editor.onDidChangeCursorSelection((event) =>
         {
