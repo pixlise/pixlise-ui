@@ -603,7 +603,6 @@ export class LayerSettingsComponent implements OnInit
 
     protected onExpressionSettings(event): void
     {
-        let allowEdit = this.showSettings && !this.layerInfo.layer.source.shared && !this.isSharedByOtherUser && !this.isPreviewMode;
         if(this.isModule)
         {
             this._moduleService.getLatestModuleVersion(this.layerInfo.layer.id).subscribe((latestVersion) =>
@@ -611,13 +610,9 @@ export class LayerSettingsComponent implements OnInit
                 this._navigateToCodeEditor(this.layerInfo.layer.id, latestVersion.version.version);
             });
         }
-        else if(allowEdit || this.isPreviewMode)
-        {
-            this._navigateToCodeEditor(this.layerInfo.layer.id);
-        }
         else
         {
-            this.openCodeModal();
+            this._navigateToCodeEditor(this.layerInfo.layer.id);
         }
     }
 

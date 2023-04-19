@@ -221,6 +221,7 @@ export class MonacoEditorService
             tokenizer: {
                 root: [
                     [/@?[a-zA-Z][\w$]*/, {cases:{"@keywords": "keyword", "@default": "variable"}}],
+                    [/[0-9]+/, "number"],
                     [/\/\/.*/, "comment"],
                     [/".*?"/, "string"],
                 ],
