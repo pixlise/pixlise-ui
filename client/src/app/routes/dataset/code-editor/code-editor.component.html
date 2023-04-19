@@ -433,6 +433,15 @@ POSSIBILITY OF SUCH DAMAGE.
                 >Save Module
                 </push-button>
                 <push-button
+                    *ngIf="!topEditor.isModule && topEditor.isSharedByOtherUser"
+                    class="save-btn"
+                    buttonStyle="yellow"
+                    (onClick)="onCopyToNewExpression()"
+                    #tooltip="matTooltip"
+                    matTooltip="Copy the open expression to a new expression."
+                >Copy Expression
+                </push-button>
+                <push-button
                     *ngIf="!topEditor.isModule"
                     class="save-btn"
                     [buttonStyle]="topEditor.invalidExpression ? 'orange' : 'yellow'"

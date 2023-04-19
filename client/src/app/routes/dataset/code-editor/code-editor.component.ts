@@ -918,6 +918,28 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         this.forceNavigateToNew("module");
     }
 
+    navigateToID(id: string, version: string = null): void
+    {
+        if(this._runExpressionTimer)
+        {
+            clearTimeout(this._runExpressionTimer);
+            this._runExpressionTimer = null;
+        }
+
+        this._newExpression = true;
+        this.topEditor.expression = null;
+        this.bottomEditor.expression = null;
+        this._expressionID = id;
+        if(version)
+        {
+            this._router.navigate(["dataset", this._datasetID, "code-editor", id], {queryParams: { version }});
+        }
+        else
+        {
+            this._router.navigate(["dataset", this._datasetID, "code-editor", id]);
+        }
+    }
+
     navigateToNew(type: "expression" | "module" = "expression"): void
     {
         if(this._runExpressionTimer)
@@ -936,6 +958,26 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     forceNavigateToNew(type: "expression" | "module" = "expression"): void
     {
         this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=> this.navigateToNew(type));
+    }
+
+    forceNavigateToID(id: string, version: string = null): void
+    {
+        this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=> this.navigateToID(id, version));
+    }
+
+    onCopyToNewExpression()
+    {
+        this._expressionService.add(
+            this.topEditor.name + " (copy)",
+            this.topEditor.editExpression,
+            this.topEditor.expression.sourceLanguage,
+            this.topEditor.comments,
+            this.topEditor.expression.tags,
+            this.topEditor.expression.moduleReferences
+        ).subscribe((expression) =>
+        { 
+            this.forceNavigateToID(expression.id);
+        });
     }
 
     onToggleSidebar(): void
