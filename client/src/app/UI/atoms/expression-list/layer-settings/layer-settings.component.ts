@@ -712,7 +712,7 @@ export class LayerSettingsComponent implements OnInit
             showDownload: this.showDownload,
             showShare: this.showShare && !this.sharedBy,
             showTagPicker: this.showTagPicker,
-            showPixlangConvert: this.isPixlangExpression && !this.isPredefined,
+            showPixlangConvert: this.isPixlangExpression && !this.isPredefined && !DataExpressionId.isPredefinedExpression(this.layerInfo?.layer?.id),
             showPreviewButton: this.showPreviewButton && !this.isCurrentlyOpen,
             showSplitScreenButton: this.showSplitScreenButton && !this.isCurrentlyOpen && (this.isModule || this.isSplitScreen),
             showSettingsButton: this.showSettingsButton && !this.isCurrentlyOpen,
