@@ -453,8 +453,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.topEditor.expression = expression.copy();
                     this.topEditor.checkIfModulesAreLatest(this._moduleService);
 
-                    this.topEditor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
-
                     this._fetchedExpression = true;
 
                     // Add the current expression to the currently-open list
@@ -1477,12 +1475,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 return;
             }
 
+            this.topEditor.expression = (luaExpression as DataExpression);
             this.topEditor.isLua = true;
-            this.topEditor.expression = null;
-            setTimeout(() => 
-            {
-                this.topEditor.expression = (luaExpression as DataExpression);
-            });
         },
         (err)=>
         {
