@@ -118,7 +118,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Output() saveExpression = new EventEmitter();
     @Output() toggleSidebar = new EventEmitter();
     @Output() toggleSplitView = new EventEmitter();
-    @Output() changeExpression = new EventEmitter<(text: string) => void>();
     @Output() toggleHeader = new EventEmitter();
     @Output() onClick = new EventEmitter();
     @Output() linkModule = new EventEmitter<string>();
@@ -138,12 +137,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     {
         // Make a copy of incoming expression, so we don't edit what's there!
         this._expr = this.copyExpression(this.expression);
-
-        this.changeExpression.emit((text: string) =>
-        {
-            this._expr.sourceCode = text;
-            this.refreshMonaco();
-        });
     }
 
     copyExpression(expression: DataExpression): DataExpression

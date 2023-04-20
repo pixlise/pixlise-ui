@@ -139,8 +139,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     
     private _fetchedExpression: boolean = false;
 
-    updateText: (text: string) => void;
-
     private _filterText: string = "";
 
     private _authors: ObjectCreator[] = [];
@@ -454,8 +452,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
                     this.topEditor.expression = expression.copy();
                     this.topEditor.checkIfModulesAreLatest(this._moduleService);
-
-                    this.topEditor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
 
                     this._fetchedExpression = true;
 
@@ -1479,23 +1475,14 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 return;
             }
 
-            this.topEditor.editExpression = (luaExpression as DataExpression).sourceCode;
-            if(this.updateText)
-            {
-                this.topEditor.isLua = true;
-                this.updateText((luaExpression as DataExpression).sourceCode);
-            }
+            this.topEditor.expression = (luaExpression as DataExpression);
+            this.topEditor.isLua = true;
         },
         (err)=>
         {
             this.stderr = `${err}`;
         });
 
-    }
-
-    changeExpression(updateText: ((text: string) => void)): void
-    {
-        this.updateText = updateText;
     }
 
     onTextChange(text: string, position: string = "top"): void
