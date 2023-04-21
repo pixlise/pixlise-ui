@@ -600,7 +600,11 @@ export class WidgetRegionDataService
             if(!exprResult || !exprResult.resultValues)
             {
                 let errorMsg = "Failed to get result for expression: "+query.exprId;
-                
+                if(exprResult && exprResult.errorMsg)
+                {
+                    errorMsg = exprResult.errorMsg;
+                }
+
                 // This expression failed, so anything expecting data from here should just get an error
                 outputResult.queryResults.push(
                     new RegionDataResultItem(exprResult,
