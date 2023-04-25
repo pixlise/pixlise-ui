@@ -437,10 +437,10 @@ POSSIBILITY OF SUCH DAMAGE.
                     (onClick)="onCopyToNewExpression()"
                     #tooltip="matTooltip"
                     matTooltip="Copy the open expression to a new expression."
-                >Copy Expression
+                >Copy To New
                 </push-button>
                 <push-button
-                    *ngIf="!topEditor.isModule"
+                    *ngIf="!topEditor.isModule && topEditor.editable"
                     class="save-btn"
                     [buttonStyle]="topEditor.invalidExpression ? 'orange' : 'yellow'"
                     [disabled]="!topEditor.editable || topEditor.isExpressionSaved || topEditor.invalidExpression"
