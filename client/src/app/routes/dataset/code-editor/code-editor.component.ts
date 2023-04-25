@@ -1459,14 +1459,14 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         );
 
         let lineRange = "";
-        let isMultiLine = this.startLineHighlighted !== this.endLineHighlighted || this.isEmptySelection;
+        let isMultiLine = this.startLineHighlighted !== this.endLineHighlighted || (this.isEmptySelection && this.endLineHighlighted > 1);
         if(this.isEmptySelection)
         {
-            lineRange = `0 - ${this.endLineHighlighted}`;
+            lineRange = this.endLineHighlighted === 1 ? "1" : `1 - ${this.endLineHighlighted}`;
         }
         else
         {
-            lineRange = !isMultiLine ? `${this.startLineHighlighted}` : `${this.startLineHighlighted} - ${this.endLineHighlighted}`;
+            lineRange = !isMultiLine ? `${this.startLineHighlighted}` : `${this.startLineHighlighted + 1} - ${this.endLineHighlighted}`;
         }
         
         this.displayExpressionTitle = `Unsaved ${this.topEditor.expression.name} (Line${isMultiLine ? "s": ""} ${lineRange})`;
