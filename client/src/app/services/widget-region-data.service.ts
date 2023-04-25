@@ -523,7 +523,7 @@ export class WidgetRegionDataService
                                     errorMsg.indexOf("The currently loaded quantification does not contain column") < 0
                                 )
                                 {
-                                    SentryHelper.logMsg(true, errorMsg);
+                                    // SentryHelper.logMsg(true, errorMsg);
                                 }
 
                                 return of(new DataQueryResult(null, false, [], null, "", "", null, errorMsg));

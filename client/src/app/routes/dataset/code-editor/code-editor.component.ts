@@ -497,7 +497,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
                     this._runExpressionTimer = setTimeout(() =>
                     {
-                        this.runExpression(true, true);
+                        this.runExpression();
                         this._runExpressionTimer = null;
                     }, 5000);
                 },
@@ -776,7 +776,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
             this._runExpressionTimer = setTimeout(() =>
             {
-                this.runExpression(true, true);
+                this.runExpression();
                 this._runExpressionTimer = null;
             }, 5000);
 
@@ -1320,13 +1320,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         return DataExpressionId.UnsavedExpressionPrefix+this._expressionID;
     }
 
-    runExpression(runTop: boolean = true, forceRun: boolean = false): void
+    runExpression(runTop: boolean = true): void
     {
-        if(!this.isRunable && !forceRun)
-        {
-            return;
-        }
-
         this.lastRunEditor = runTop ? "top" : "bottom";
         let editor = runTop ? this.topEditor : this.bottomEditor;
         if(this._expressionID && editor.expression)
@@ -1524,13 +1519,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     get isNewID(): boolean
     {
         return this._newExpression;
-    }
-
-    get isRunable(): boolean
-    {
-        let otherEditorActive = this.isTopEditorActive && this.lastRunEditor !== "top" || !this.isTopEditorActive && this.lastRunEditor !== "bottom";
-        let isCodeChanged = this.isTopEditorActive ? this.topEditor.isCodeChanged : this.bottomEditor.isCodeChanged;
-        return otherEditorActive || isCodeChanged || !this.isEvaluatedDataValid;
     }
 
     get textHighlighted(): string
