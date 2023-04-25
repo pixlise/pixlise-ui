@@ -80,7 +80,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     private _expressionID: string = DataExpressionId.UnsavedExpressionPrefix+"-new-expression";
     private _runExpressionTimer = null;
 
-    public isSidebarOpen = false;
+    private _isSidebarOpen = false;
     // What we display in the virtual-scroll capable list
     headerSectionsOpen: Set<string> = new Set<string>([this.currentlyOpenHeaderName]);
     items: ExpressionListItems = null;
@@ -169,8 +169,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     )
     {
         super();
+        this.fetchLocalStorageMetadata();
     }
-
 
     ngOnInit()
     {
@@ -233,6 +233,29 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             }
         });
     }
+
+    get isSidebarOpen(): boolean
+    {
+        return this._isSidebarOpen;
+    }
+
+    set isSidebarOpen(value: boolean)
+    {
+        this._isSidebarOpen = value;
+        this.storeMetadata();
+    }
+
+    storeMetadata(): void
+    {
+        localStorage.setItem("isSidebarOpen", this.isSidebarOpen.toString());
+    }
+
+    fetchLocalStorageMetadata(): void
+    {
+        let isSidebarOpen = localStorage?.getItem("isSidebarOpen") || false;
+        this.isSidebarOpen = isSidebarOpen === "true";
+    }
+
 
     syncCurrentlyOpenSection(): void
     {

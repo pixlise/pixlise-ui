@@ -301,6 +301,12 @@
     flex-direction: column;
 }
 
+.sidebar-closed {
+    .sidebar {
+        display: none !important;
+    }
+}
+
 .sidebar-open {
     .sidebar-header {
         width: 300px;
@@ -311,7 +317,7 @@
     }
 
     .sidebar {
-        min-width: 300px;
+        width: 300px;
     }
 
     .preview-container, .viz-panels, pmc-data-grid {
