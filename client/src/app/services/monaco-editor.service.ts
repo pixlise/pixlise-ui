@@ -193,6 +193,7 @@ export class MonacoEditorService
                 { token: "number", foreground: "#FF5370" },
                 { token: "constant", foreground: "#91bfdb" },
                 { token: "delimiter", foreground: "#89ddff" },
+                { token: "special-char", foreground: "#D16969" },
             ],
             colors: {
                 "entity.name.function": "#ffff8d",

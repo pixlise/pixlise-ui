@@ -201,7 +201,7 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         let values = this._values || [];
         values.forEach((point) =>
         {
-            if(typeof point.value === "number" && !point.isUndefined)
+            if(typeof point.value === "number" && !point.isUndefined && !isNaN(point.value))
             {
                 avgValue += point.value;
                 validPointCount++;

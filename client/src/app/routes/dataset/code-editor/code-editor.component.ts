@@ -1546,7 +1546,9 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     get moduleSidebarTooltip(): string
     {
         let tooltip = this.isSidebarOpen ? "Close Modules Sidebar" : "Open Modules Sidebar";
-        return tooltip + (this.isWindows ? " (Ctrl+B)" : " (Cmd+B)");
+        let cmdOrCtrl = this.isWindows ? "Ctrl" : "Cmd";
+        let altKeyName = this.isFirefox ? this.isWindows ? "+Alt" : "+Option" : "";
+        return `${tooltip} (${cmdOrCtrl}${altKeyName}+B)`;
     }
 
     get saveModuleTooltip(): string
@@ -1597,10 +1599,14 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         return "Open Release Module Dialog";
     }
 
-
     get isWindows(): boolean
     {
         return navigator.userAgent.search("Windows") !== -1;
+    }
+
+    get isFirefox(): boolean
+    {
+        return !!navigator.userAgent.match(/firefox|fxios/i);
     }
 
     get isEmptySelection(): boolean
@@ -1919,51 +1925,59 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     @HostListener("window:keydown", ["$event"])
     onKeydown(event: KeyboardEvent): void
     {
+        let cmdOrCtrl = this.isWindows ? "Control" : "Meta";
+
         this._keyPresses[event.key] = true;
-        if((this._keyPresses["Meta"] && this._keyPresses["Enter"]) || (this._keyPresses["Control"] && this._keyPresses["Enter"]))
+        if((this._keyPresses[cmdOrCtrl] && this._keyPresses["Enter"]))
         {
             this.runExpression();
-            if(event.key === "Meta" || event.key === "Control")
+            if(event.key === cmdOrCtrl)
             {
-                this._keyPresses["Meta"] = false;
-                this._keyPresses["Control"] = false;
+                this._keyPresses[cmdOrCtrl] = false;
                 this._keyPresses["Enter"] = false;
             }
             this._keyPresses[event.key] = false;
         }
-        else if((this._keyPresses["Meta"] && this._keyPresses["s"]) || (this._keyPresses["Control"] && this._keyPresses["s"]))
+        else if((this._keyPresses[cmdOrCtrl] && this._keyPresses["s"]))
         {
             this.onSave();
             this._keyPresses[event.key] = false;
-            if(event.key === "Meta" || event.key === "Control")
+            if(event.key === cmdOrCtrl)
             {
-                this._keyPresses["Meta"] = false;
-                this._keyPresses["Control"] = false;
+                this._keyPresses[cmdOrCtrl] = false;
                 this._keyPresses["s"] = false;
             }
             event.stopPropagation();
             event.stopImmediatePropagation();
             event.preventDefault();
         }
-        else if((this._keyPresses["Meta"] && this._keyPresses["b"]) || (this._keyPresses["Control"] && this._keyPresses["b"]))
+        else if((this._keyPresses[cmdOrCtrl] && this._keyPresses["b"]) && !this.isFirefox)
         {
             this.onToggleSidebar();
             this._keyPresses[event.key] = false;
-            if(event.key === "Meta" || event.key === "Control")
+            if(event.key === cmdOrCtrl)
             {
-                this._keyPresses["Meta"] = false;
-                this._keyPresses["Control"] = false;
+                this._keyPresses[cmdOrCtrl] = false;
                 this._keyPresses["b"] = false;
             }
         }
-        else if((this._keyPresses["Meta"] && this._keyPresses["\\"]) || (this._keyPresses["Control"] && this._keyPresses["\\"]))
+        else if((this._keyPresses[cmdOrCtrl] && this._keyPresses["∫"]) && this.isFirefox)
+        {
+            this.onToggleSidebar();
+            this._keyPresses[event.key] = false;
+            if(event.key === cmdOrCtrl)
+            {
+                this._keyPresses[cmdOrCtrl] = false;
+                this._keyPresses["∫"] = false;
+            }
+        }
+        else if((this._keyPresses[cmdOrCtrl] && this._keyPresses["\\"]))
         {
             this.onToggleSplitScreen();
             this._keyPresses[event.key] = false;
-            if(event.key === "Meta" || event.key === "Control")
+            if(event.key === cmdOrCtrl)
             {
-                this._keyPresses["Meta"] = false;
-                this._keyPresses["Control"] = false;
+                this._keyPresses[cmdOrCtrl] = false;
                 this._keyPresses["\\"] = false;
             }
         }
