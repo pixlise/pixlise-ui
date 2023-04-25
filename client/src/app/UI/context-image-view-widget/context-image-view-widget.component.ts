@@ -442,6 +442,13 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
         return this.previewExpressionIDs && this.previewExpressionIDs.length > 0;
     }
 
+    onRefreshLayer(): void
+    {
+        let validPreviewExpressions = this.previewExpressionIDs.filter(id => this.exprService.getExpression(id));
+        this.mdl.layerManager.setSingleLayerVisible(validPreviewExpressions[0]);
+        this.reDraw();
+    }
+
     private saveState(reason: string): void
     {
         this.mdl.saveState(reason);
