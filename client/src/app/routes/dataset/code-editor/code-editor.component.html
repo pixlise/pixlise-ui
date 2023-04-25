@@ -126,7 +126,6 @@ POSSIBILITY OF SUCH DAMAGE.
                 <push-button
                     class="run-btn"
                     buttonStyle="yellow"
-                    [disabled]="!isRunable"
                     (onClick)="runExpression()"
                     #tooltip="matTooltip"
                     [matTooltip]="runCodeTooltip"
@@ -164,7 +163,7 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
         </div>
     </div>
-    <div fxLayout="row" class="editor-body {{isSidebarOpen ? 'sidebar-open' : ''}}">
+    <div fxLayout="row" class="editor-body {{isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}}">
         <div class="sidebar">
             <div *ngIf="isSidebarOpen" fxLayout="row" class="filter-container">
                 <filter-box
@@ -437,10 +436,10 @@ POSSIBILITY OF SUCH DAMAGE.
                     (onClick)="onCopyToNewExpression()"
                     #tooltip="matTooltip"
                     matTooltip="Copy the open expression to a new expression."
-                >Copy Expression
+                >Copy To New
                 </push-button>
                 <push-button
-                    *ngIf="!topEditor.isModule"
+                    *ngIf="!topEditor.isModule && topEditor.editable"
                     class="save-btn"
                     [buttonStyle]="topEditor.invalidExpression ? 'orange' : 'yellow'"
                     [disabled]="!topEditor.editable || topEditor.isExpressionSaved || topEditor.invalidExpression"

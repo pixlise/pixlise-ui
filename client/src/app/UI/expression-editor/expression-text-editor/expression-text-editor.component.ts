@@ -289,6 +289,9 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
             range.startColumn = 1;
         }
 
+        let lastLine = this._editor.getModel().getLineContent(range.endLineNumber);
+        range.endColumn = lastLine.length + 1;
+
         let text = this._editor.getModel().getValueInRange(range);
 
         this.onTextSelect.emit(

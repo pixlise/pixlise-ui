@@ -61,7 +61,8 @@
             border-color: rgb(var(--clr-gray-70));
         }
 
-        .export-btn {
+        .settings-btn {
+            display: flex;
             margin-right: 8px;
         }
     }
@@ -99,6 +100,9 @@
                 }
 
                 td {
+                    height: 14px;
+                    min-height: 14px;
+
                     text-align: center;
                     padding: 6px 4px;
                     color: rgb(var(--clr-gray-30));

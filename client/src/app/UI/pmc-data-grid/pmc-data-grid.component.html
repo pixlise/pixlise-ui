@@ -29,6 +29,21 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
+<ng-template #selectionSettingsMenu>
+  <div fxLayout="column" class="gap-separated-vertical-elements">
+    <div fxLayout="column" fxLayoutAlign="start center" >
+        <label>Show PMCs:</label>
+        <two-state-button
+            leftLabel="Non-null"
+            rightLabel="All PMCs"
+            [active]="showAllPMCs"
+            (onToggle)="onToggleValidOnly($event)"
+        >
+        </two-state-button>
+    </div>
+  </div>
+</ng-template>
+
 <div fxLayout="column" class="data-grid">
   <div class="grid-header">
     <h2>{{header}}</h2>
@@ -56,20 +71,27 @@ POSSIBILITY OF SUCH DAMAGE.
         (onClick)="onExport()"
         icon="assets/button-icons/export.svg">
     </icon-button>
+    <widget-settings-menu [settingsDialog]="selectionSettingsMenu">
+      <icon-button
+          class="settings-btn"
+          title="Settings"
+          icon="assets/button-icons/settings.svg">
+      </icon-button>
+    </widget-settings-menu>
   </div>
   <div class="result-container" [style.height]="!isValidTableData ? '100%' : 'auto'">
     <table *ngIf="isValidTableData && isOutputView">
-      <tr *ngFor="let _ of [].constructor(rowCount); let i = index;">
+      <tr *ngFor="let row of data; let i = index;">
         <td
-          *ngFor="let _ of [].constructor(columnCount); let j = index;"
-          class="{{hoveredIndex !== null && hoveredIndex[0] === i && hoveredIndex[1] === j ? 'hover' : ''}} {{selectedPMCs.has(getDataPointPMC(i, j)) ? 'selected' : ''}}"
+          *ngFor="let cell of row; let j = index;"
+          class="{{hoveredIndex !== null && hoveredIndex[0] === i && hoveredIndex[1] === j ? 'hover' : ''}} {{selectedPMCs.has(cell.pmc) ? 'selected' : ''}}"
           (click)="onClickPMC(i, j)"
           (mouseenter)="onMouseEnter(i, j)"
           (mouseleave)="onMouseLeave(i, j)"
           #tooltip="matTooltip"
-          [matTooltip]="getDataTooltip(i, j)"
+          [matTooltip]="cell.tooltip"
         >
-          {{getDataValue(i, j) | number:'1.0-2'}}
+          {{cell.value | number:'1.0-2'}}
         </td>
       </tr>
     </table>
