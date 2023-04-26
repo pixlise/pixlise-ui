@@ -147,7 +147,7 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         let values = this._evaluatedExpression?.resultValues;
         if(this.isValidTableData)
         {
-            return values.values.map((point) => point.value).join(", ");
+            return values?.values?.map((point) => point.value).join(", ") || "";
         }
         
         if(Array.isArray(values))
@@ -377,12 +377,12 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
 
     onCopyStdout()
     {
-        this._copyText(this._evaluatedExpression?.stdout.trim());
+        this._copyText(this.stdout?.trim());
     }
 
     onCopyStderr()
     {
-        this._copyText(this._evaluatedExpression?.stderr.trim());
+        this._copyText(this.stderr?.trim());
     }
 
     onExport()

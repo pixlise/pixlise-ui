@@ -92,6 +92,8 @@ export class AnalysisComponent implements OnInit, OnDestroy
     //private _soloViewComponent = null;
     private _soloDialogRef = null;
 
+    private _keyPresses = new Set<string>();
+
     constructor(
         private _route: ActivatedRoute,
         private _router: Router,
@@ -388,6 +390,44 @@ export class AnalysisComponent implements OnInit, OnDestroy
                 this._underSpectrumComponents.push(comp);
             }
         }
+    }
+
+    get isWindows(): boolean
+    {
+        return navigator.userAgent.search("Windows") !== -1;
+    }
+
+    get isFirefox(): boolean
+    {
+        return !!navigator.userAgent.match(/firefox|fxios/i);
+    }
+
+    @HostListener("window:keydown", ["$event"])
+    onKeydown(event: KeyboardEvent): void
+    {
+        let cmdOrCtrl = this.isWindows ? "Control" : "Meta";
+        let bOrAltB = this.isFirefox ? "∫" : "b";
+
+        this._keyPresses.add(event.key);
+        if(
+            (this._keyPresses.has(cmdOrCtrl) && this._keyPresses.has(bOrAltB))
+        )
+        {
+            if(event.key === cmdOrCtrl)
+            {
+                this._keyPresses.delete(cmdOrCtrl);
+                this._keyPresses.delete(bOrAltB);
+            }
+            this._keyPresses.delete(event.key);
+
+            this._viewStateService.showSidePanel = !this._viewStateService.showSidePanel;
+        }
+    }
+
+    @HostListener("window:keyup", ["$event"])
+    onKeyup(event: KeyboardEvent): void
+    {
+        this._keyPresses.delete(event.key);
     }
 
     // NOTE: there are ways to go from selector string to ComponentFactory:

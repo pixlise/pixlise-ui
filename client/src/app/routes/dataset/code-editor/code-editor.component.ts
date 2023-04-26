@@ -135,7 +135,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
     public isPMCDataGridSolo: boolean = false;
 
-    private _keyPresses: { [key: string]: boolean } = {};
+    // private _keyPresses: { [key: string]: boolean } = {};
+    private _keyPresses: Set<string> = new Set<string>();
     
     private _fetchedExpression: boolean = false;
 
@@ -1926,59 +1927,50 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     onKeydown(event: KeyboardEvent): void
     {
         let cmdOrCtrl = this.isWindows ? "Control" : "Meta";
+        let bOrAltB = this.isFirefox ? "∫" : "b";
 
-        this._keyPresses[event.key] = true;
-        if((this._keyPresses[cmdOrCtrl] && this._keyPresses["Enter"]))
+        this._keyPresses.add(event.key);
+        if((this._keyPresses.has(cmdOrCtrl) && this._keyPresses.has("Enter")))
         {
             this.runExpression();
             if(event.key === cmdOrCtrl)
             {
-                this._keyPresses[cmdOrCtrl] = false;
-                this._keyPresses["Enter"] = false;
+                this._keyPresses.delete(cmdOrCtrl);
+                this._keyPresses.delete("Enter");
             }
-            this._keyPresses[event.key] = false;
+            this._keyPresses.delete(event.key);
         }
-        else if((this._keyPresses[cmdOrCtrl] && this._keyPresses["s"]))
+        else if((this._keyPresses.has(cmdOrCtrl) && this._keyPresses.has("s")))
         {
             this.onSave();
-            this._keyPresses[event.key] = false;
+            this._keyPresses.delete(event.key);
             if(event.key === cmdOrCtrl)
             {
-                this._keyPresses[cmdOrCtrl] = false;
-                this._keyPresses["s"] = false;
+                this._keyPresses.delete(cmdOrCtrl);
+                this._keyPresses.delete("s");
             }
             event.stopPropagation();
             event.stopImmediatePropagation();
             event.preventDefault();
         }
-        else if((this._keyPresses[cmdOrCtrl] && this._keyPresses["b"]) && !this.isFirefox)
+        else if((this._keyPresses.has(cmdOrCtrl) && this._keyPresses.has(bOrAltB)))
         {
             this.onToggleSidebar();
-            this._keyPresses[event.key] = false;
+            this._keyPresses.delete(event.key);
             if(event.key === cmdOrCtrl)
             {
-                this._keyPresses[cmdOrCtrl] = false;
-                this._keyPresses["b"] = false;
+                this._keyPresses.delete(cmdOrCtrl);
+                this._keyPresses.delete(bOrAltB);
             }
         }
-        else if((this._keyPresses[cmdOrCtrl] && this._keyPresses["∫"]) && this.isFirefox)
-        {
-            this.onToggleSidebar();
-            this._keyPresses[event.key] = false;
-            if(event.key === cmdOrCtrl)
-            {
-                this._keyPresses[cmdOrCtrl] = false;
-                this._keyPresses["∫"] = false;
-            }
-        }
-        else if((this._keyPresses[cmdOrCtrl] && this._keyPresses["\\"]))
+        else if((this._keyPresses.has(cmdOrCtrl) && this._keyPresses.has("\\")))
         {
             this.onToggleSplitScreen();
-            this._keyPresses[event.key] = false;
+            this._keyPresses.delete(event.key);
             if(event.key === cmdOrCtrl)
             {
-                this._keyPresses[cmdOrCtrl] = false;
-                this._keyPresses["\\"] = false;
+                this._keyPresses.delete(cmdOrCtrl);
+                this._keyPresses.delete("\\");
             }
         }
     }
@@ -1986,7 +1978,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     @HostListener("window:keyup", ["$event"])
     onKeyup(event: KeyboardEvent): void
     {
-        this._keyPresses[event.key] = false;
+        this._keyPresses.delete(event.key);
     }
 
     // NOTE: there are ways to go from selector string to ComponentFactory:
