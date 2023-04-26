@@ -406,17 +406,17 @@ export class AnalysisComponent implements OnInit, OnDestroy
     onKeydown(event: KeyboardEvent): void
     {
         let cmdOrCtrl = this.isWindows ? "Control" : "Meta";
+        let bOrAltB = this.isFirefox ? "∫" : "b";
 
         this._keyPresses.add(event.key);
         if(
-            (this._keyPresses.has(cmdOrCtrl) && this._keyPresses.has("b") && !this.isFirefox) || 
-            (this._keyPresses.has(cmdOrCtrl) && this._keyPresses.has("∫") && this.isFirefox)
+            (this._keyPresses.has(cmdOrCtrl) && this._keyPresses.has(bOrAltB))
         )
         {
             if(event.key === cmdOrCtrl)
             {
                 this._keyPresses.delete(cmdOrCtrl);
-                this._keyPresses.delete("B");
+                this._keyPresses.delete(bOrAltB);
             }
             this._keyPresses.delete(event.key);
 

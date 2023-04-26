@@ -109,12 +109,12 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
 
     <div *ngIf="!isOutputView && !stderr" class="log-text">{{stdout ? stdout.trim() : "No log output"}}
-      <div class="copy-btn" (click)="onCopyStdout()">
+      <div *ngIf="stdout" class="copy-btn" (click)="onCopyStdout()">
         <mat-icon>{{copyIcon}}</mat-icon>Copy
       </div>
     </div>
     <div *ngIf="!isOutputView && stderr" class="error-text">{{stderr ? stderr.trim() : "No log output"}}
-      <div class="copy-btn" (click)="onCopyStderr()">
+      <div *ngIf="stderr" class="copy-btn" (click)="onCopyStderr()">
         <mat-icon>{{copyIcon}}</mat-icon>Copy
       </div>
     </div>
