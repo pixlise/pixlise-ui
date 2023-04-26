@@ -156,12 +156,16 @@ export class MonacoEditorService
         let luaLang = language;
         luaLang["builtins"] = LuaTranspiler.builtinFunctions;
         luaLang["builtins"] = luaLang["builtins"].concat(DataModuleService.getBuiltInModuleNames());
+        luaLang["escapes"] = /\\(?:[abfnrtv\\"'?]|[0-7]{1,3}|x[a-fA-F0-9]{2}|u[a-fA-F0-9]{4}|U[a-fA-F0-9]{8})/;
         luaLang.tokenizer.root = [
             // lambda function support, ex. "myFunc = function(a, b, c)"
             [/([a-z_A-Z]+)(\s*=\s*)(function)(\s*[(]\s*)/, ["function", "delimiter", "keyword", "delimiter"]],
 
             // wrapped if statement and builtin function support, ex: "if not (x == 1) then"
             [/([a-z_A-Z]+)(\s*[(]\s*)/, [{ cases: { "@builtins": "builtin", "@keywords": "keyword", "@default": "function" } }, "delimiter"]],
+
+            [/@escapes/, "string.escape"],
+            [/\\./, "string.escape.invalid"],
 
             // Pound sign length support
             [/([#]\s*)/, ["keyword"]],
@@ -193,7 +197,7 @@ export class MonacoEditorService
                 { token: "number", foreground: "#FF5370" },
                 { token: "constant", foreground: "#91bfdb" },
                 { token: "delimiter", foreground: "#89ddff" },
-                { token: "special-char", foreground: "#D16969" },
+                { token: "string.escape", foreground: "#D16969" },
             ],
             colors: {
                 "entity.name.function": "#ffff8d",

@@ -370,6 +370,18 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         }
     }
 
+    get printableStdout(): string
+    {
+        let text = this.stdout || "";
+        return text.replace(/[\t]/g, "    ");
+    }
+
+    get printableStderr(): string
+    {
+        let text = this.stderr?.trim() || "";
+        return text.replace(/[\t]/g, "    ");
+    }
+
     onCopyOutput()
     {
         this._copyText(this.printableResultValue);
