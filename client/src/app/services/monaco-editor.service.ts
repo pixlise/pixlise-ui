@@ -164,6 +164,7 @@ export class MonacoEditorService
             // wrapped if statement and builtin function support, ex: "if not (x == 1) then"
             [/([a-z_A-Z]+)(\s*[(]\s*)/, [{ cases: { "@builtins": "builtin", "@keywords": "keyword", "@default": "function" } }, "delimiter"]],
 
+            // Escaped special characters support
             [/@escapes/, "string.escape"],
             [/\\./, "string.escape.invalid"],
 
