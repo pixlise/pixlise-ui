@@ -31,6 +31,7 @@ import { Observable, of } from "rxjs";
 import jsep from "jsep";
 import { PMCDataValues, DataQueryResult, QuantOp } from "src/app/expression-language/data-values";
 import { InterpreterDataSource } from "./interpreter-data-source";
+import { DataExpressionId } from "../models/Expression";
 
 
 export class ExpressionParts
@@ -44,6 +45,7 @@ export class PixliseDataQuerier
 {
     private _runningExpression: string = "";
     private _dataSource: InterpreterDataSource = null;
+    private _runtimeDataRequired: Set<string> = new Set<string>();
 
     constructor(
     )
@@ -53,6 +55,7 @@ export class PixliseDataQuerier
     public runQuery(expression: string, dataSource: InterpreterDataSource): Observable<DataQueryResult>
     {
         this._dataSource = dataSource;
+        this._runtimeDataRequired.clear();
 
         let t0 = performance.now();
 
@@ -68,7 +71,7 @@ export class PixliseDataQuerier
             let runtimeMs = performance.now()-t0;
             console.log(">>> PIXLISE expression took: "+runtimeMs.toLocaleString()+"ms");
 
-            return of(new DataQueryResult(result as PMCDataValues, true, [], runtimeMs, "", "", new Map<string, PMCDataValues>()));
+            return of(new DataQueryResult(result as PMCDataValues, true, Array.from(this._runtimeDataRequired.keys()), runtimeMs, "", "", new Map<string, PMCDataValues>()));
         }
 
         throw new Error("Expression: "+expression+" did not result in usable map data. Result was: "+result);
@@ -361,19 +364,33 @@ export class PixliseDataQuerier
         }
         else if(callee == "data")
         {
-            return this._dataSource.readMap(args);
+            let r = this._dataSource.readMap(args);
+            // If we didn't die so far, it must be valid
+            if(args && args.length == 2)
+            {
+                this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantDataExpression(args[0], args[1]));
+            }
+            return r;
         }
         else if(callee == "spectrum")
         {
+            this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
             return this._dataSource.readSpectrum(args);
         }
         else if(callee == "spectrumDiff")
         {
+            this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
             return this._dataSource.readSpectrumDifferences(args);
         }
         else if(callee == "element")
         {
-            return this._dataSource.readElement(args);
+            let r = this._dataSource.readElement(args);
+            // If we didn't die so far, it must be valid
+            if(args && args.length == 3)
+            {
+                this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantElementExpression(args[0], args[1], args[2]));
+            }
+            return r;
         }
         else if(callee == "elementSum")
         {
@@ -381,22 +398,37 @@ export class PixliseDataQuerier
         }
         else if(callee == "pseudo")
         {
-            return this._dataSource.readPseudoIntensity(args);
+            let r = this._dataSource.readPseudoIntensity(args);
+            // If we didn't die so far, it must be valid
+            if(args && args.length == 1)
+            {
+                this._runtimeDataRequired.add(DataExpressionId.makePredefinedPseudoIntensityExpression(args[0]));
+            }
+            return r;
         }
         else if(callee == "housekeeping")
         {
-            return this._dataSource.readHousekeepingData(args);
+            let r = this._dataSource.readHousekeepingData(args);
+            // If we didn't die so far, it must be valid
+            if(args && args.length == 1)
+            {
+                this._runtimeDataRequired.add(DataQueryResult.DataTypeHousekeeping+"-"+args[0]);
+            }
+            return r;
         }
         else if(callee == "diffractionPeaks")
         {
+            this._runtimeDataRequired.add(DataQueryResult.DataTypeDiffraction);
             return this._dataSource.readDiffractionData(args);
         }
         else if(callee == "roughness")
         {
+            this._runtimeDataRequired.add(DataQueryResult.DataTypeRoughness);
             return this._dataSource.readRoughnessData(args);
         }
         else if(callee == "position")
         {
+            this._runtimeDataRequired.add(DataQueryResult.DataTypePosition);
             return this._dataSource.readPosition(args);
         }
         else if(callee == "under" || callee == "over" || callee == "under_undef" || callee == "over_undef")
