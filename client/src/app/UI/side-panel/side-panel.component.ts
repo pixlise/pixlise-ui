@@ -418,6 +418,24 @@ export class SidePanelComponent implements OnInit
         }
     }
 
+    get isWindows(): boolean
+    {
+        return navigator.userAgent.search("Windows") !== -1;
+    }
+
+    get isFirefox(): boolean
+    {
+        return !!navigator.userAgent.match(/firefox|fxios/i);
+    }
+
+    get toggleSidePanelTooltip(): string
+    {
+        let tooltip = this._viewStateService.showSidePanel ? "Hide Side Panel" : "Show Side Panel";
+        let cmdOrCtrl = this.isWindows ? "Ctrl" : "Cmd";
+        let altKeyName = this.isFirefox ? this.isWindows ? "+Alt" : "+Option" : "";
+        return `${tooltip} (${cmdOrCtrl}${altKeyName}+B)`;
+    }
+
     onToggleSidePanel(): void
     {
         this._viewStateService.showSidePanel = !this._viewStateService.showSidePanel;

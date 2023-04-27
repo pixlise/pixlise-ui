@@ -57,7 +57,8 @@ export class ExpressionPickerData
         public singleSelection: boolean,
         public showRGBMixes: boolean,
         public showAnomalyExpressions: boolean,
-        public isPreviewMode: boolean = false
+        public isPreviewMode: boolean = false,
+        public showModules: boolean = true
     )
     {
     }
@@ -109,7 +110,10 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
 
     ngOnInit()
     {
-        this._moduleService.refresh();
+        if(this.data.showModules)
+        {
+            this._moduleService.refresh();
+        }
         this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, this.data.showRGBMixes, this.data.showAnomalyExpressions, this._exprService, this._authService);
 
         this.dialogRef.backdropClick().subscribe(

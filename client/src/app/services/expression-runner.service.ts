@@ -28,12 +28,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Injectable } from "@angular/core";
-import { DatePipe } from '@angular/common';
+import { DatePipe } from "@angular/common";
 
 import { Observable, of, combineLatest, from } from "rxjs";
 import { map, concatMap } from "rxjs/operators";
 
-import * as JSZip from "jszip";
+import JSZip from "jszip";
 
 import { DataExpressionService } from "./data-expression.service";
 import { DataModuleService, DataModuleSpecificVersionWire, DataModule } from "src/app/services/data-module.service";

@@ -30,7 +30,7 @@
 import { Component, ElementRef, Inject, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { saveAs } from "file-saver";
-import * as JSZip from "jszip";
+import JSZip from "jszip";
 import { Observable, Subscription, combineLatest, of } from "rxjs";
 import { map } from "rxjs/operators";
 import { PMCDataValues } from "src/app/expression-language/data-values";

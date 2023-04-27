@@ -1688,7 +1688,7 @@ export class ViewStateService
 
     convertAnnotationsFromWireFrame(annotations: fullScreenAnnotationItemWireFrame[]): FullScreenAnnotationItem[]
     {
-        return annotations.map(annotationWireFrame =>
+        return (annotations || []).map(annotationWireFrame =>
             new FullScreenAnnotationItem(
                 annotationWireFrame.type as AnnotationToolOption,
                 annotationWireFrame.points.map(point => new AnnotationPoint(point.x, point.y, point.screenWidth, point.screenHeight)),
@@ -1703,7 +1703,7 @@ export class ViewStateService
 
     convertAnnotationsToWireFrame(annotations: FullScreenAnnotationItem[]): fullScreenAnnotationItemWireFrame[]
     {
-        return annotations.map(annotation =>
+        return (annotations || []).map(annotation =>
         {
             return {
                 type: annotation.type,

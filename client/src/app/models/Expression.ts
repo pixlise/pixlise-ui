@@ -324,21 +324,21 @@ export class DataExpressionId
 
     public static isUnsavedExpressionId(id: string): boolean
     {
-        return id.startsWith(DataExpressionId.UnsavedExpressionPrefix);
+        return id?.startsWith(DataExpressionId.UnsavedExpressionPrefix);
     }
 
     public static isPredefinedExpression(id: string): boolean
     {
-        return id.startsWith(DataExpressionId.PredefinedLayerPrefix);
+        return id?.startsWith(DataExpressionId.PredefinedLayerPrefix);
     }
     public static isPredefinedQuantExpression(id: string): boolean
     {
-        return id.startsWith(DataExpressionId.PredefinedLayerPrefix+DataExpressionId.PredefinedQuantElementLayerPrefix);
+        return id?.startsWith(DataExpressionId.PredefinedLayerPrefix+DataExpressionId.PredefinedQuantElementLayerPrefix);
     }
     public static getPredefinedPseudoIntensityExpressionElement(id: string): string
     {
         let prefix = DataExpressionId.PredefinedLayerPrefix+DataExpressionId.PredefinedPseudoIntensityLayerPrefix;
-        if(!id.startsWith(prefix))
+        if(!id?.startsWith(prefix))
         {
             return "";
         }
@@ -352,7 +352,7 @@ export class DataExpressionId
         let prefix = DataExpressionId.PredefinedLayerPrefix+DataExpressionId.PredefinedQuantElementLayerPrefix;
 
         // expecting prefix-<elem info: 1-2 chars OR FeO-T>-<column, eg %, int, err, %-as-mmol>
-        if(!id.startsWith(prefix))
+        if(!id?.startsWith(prefix))
         {
             return "";
         }
@@ -382,7 +382,7 @@ export class DataExpressionId
         let prefix = DataExpressionId.PredefinedLayerPrefix+DataExpressionId.PredefinedQuantElementLayerPrefix;
 
         // expecting prefix-<elem info: 1-2 chars OR FeO-T>-<column, eg %, int, err>
-        if(!id.startsWith(prefix))
+        if(!id?.startsWith(prefix))
         {
             return "";
         }
@@ -423,7 +423,7 @@ export class DataExpressionId
         let dataPrefix = DataExpressionId.PredefinedLayerPrefix+DataExpressionId.PredefinedQuantDataLayerPrefix;
 
         // expecting prefix-<elem info: 1-2 chars OR FeO-T>-<column, eg %, int, err> OR a data column
-        if(!id.startsWith(elemPrefix) && !id.startsWith(dataPrefix))
+        if(!id?.startsWith(elemPrefix) && !id.startsWith(dataPrefix))
         {
             return "";
         }

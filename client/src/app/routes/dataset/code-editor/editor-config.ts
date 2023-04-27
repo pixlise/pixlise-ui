@@ -46,11 +46,19 @@ class EditorConfig
         return this.expression?.sourceLanguage === EXPR_LANGUAGE_LUA;
     }
 
-    set isLua(value: boolean)
+    set isLua(isExprLua: boolean)
     {
         if(this.expression)
         {
-            this.expression.sourceLanguage = value ? EXPR_LANGUAGE_LUA : EXPR_LANGUAGE_PIXLANG;
+            let expression = this.expression.copy();
+
+            this.expression = null;
+            // Ensure that the code editor refreshes
+            setTimeout(() =>
+            {
+                expression.sourceLanguage = isExprLua ? EXPR_LANGUAGE_LUA : EXPR_LANGUAGE_PIXLANG;
+                this.expression = expression;
+            });
         }
     }
 

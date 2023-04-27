@@ -80,7 +80,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     private _expressionID: string = DataExpressionId.UnsavedExpressionPrefix+"-new-expression";
     private _runExpressionTimer = null;
 
-    public isSidebarOpen = false;
+    private _isSidebarOpen = false;
     // What we display in the virtual-scroll capable list
     headerSectionsOpen: Set<string> = new Set<string>([this.currentlyOpenHeaderName]);
     items: ExpressionListItems = null;
@@ -135,11 +135,10 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
     public isPMCDataGridSolo: boolean = false;
 
-    private _keyPresses: { [key: string]: boolean } = {};
+    // private _keyPresses: { [key: string]: boolean } = {};
+    private _keyPresses: Set<string> = new Set<string>();
     
     private _fetchedExpression: boolean = false;
-
-    updateText: (text: string) => void;
 
     private _filterText: string = "";
 
@@ -171,8 +170,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     )
     {
         super();
+        this.fetchLocalStorageMetadata();
     }
-
 
     ngOnInit()
     {
@@ -235,6 +234,29 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             }
         });
     }
+
+    get isSidebarOpen(): boolean
+    {
+        return this._isSidebarOpen;
+    }
+
+    set isSidebarOpen(value: boolean)
+    {
+        this._isSidebarOpen = value;
+        this.storeMetadata();
+    }
+
+    storeMetadata(): void
+    {
+        localStorage.setItem("isSidebarOpen", this.isSidebarOpen.toString());
+    }
+
+    fetchLocalStorageMetadata(): void
+    {
+        let isSidebarOpen = localStorage?.getItem("isSidebarOpen") || false;
+        this.isSidebarOpen = isSidebarOpen === "true";
+    }
+
 
     syncCurrentlyOpenSection(): void
     {
@@ -455,8 +477,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.topEditor.expression = expression.copy();
                     this.topEditor.checkIfModulesAreLatest(this._moduleService);
 
-                    this.topEditor.isLua = expression.sourceLanguage === EXPR_LANGUAGE_LUA;
-
                     this._fetchedExpression = true;
 
                     // Add the current expression to the currently-open list
@@ -478,7 +498,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
                     this._runExpressionTimer = setTimeout(() =>
                     {
-                        this.runExpression(true, true);
+                        this.runExpression();
                         this._runExpressionTimer = null;
                     }, 5000);
                 },
@@ -757,7 +777,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
 
             this._runExpressionTimer = setTimeout(() =>
             {
-                this.runExpression(true, true);
+                this.runExpression();
                 this._runExpressionTimer = null;
             }, 5000);
 
@@ -1301,13 +1321,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         return DataExpressionId.UnsavedExpressionPrefix+this._expressionID;
     }
 
-    runExpression(runTop: boolean = true, forceRun: boolean = false): void
+    runExpression(runTop: boolean = true): void
     {
-        if(!this.isRunable && !forceRun)
-        {
-            return;
-        }
-
         this.lastRunEditor = runTop ? "top" : "bottom";
         let editor = runTop ? this.topEditor : this.bottomEditor;
         if(this._expressionID && editor.expression)
@@ -1445,14 +1460,14 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         );
 
         let lineRange = "";
-        let isMultiLine = this.startLineHighlighted !== this.endLineHighlighted || this.isEmptySelection;
+        let isMultiLine = this.startLineHighlighted !== this.endLineHighlighted || (this.isEmptySelection && this.endLineHighlighted > 1);
         if(this.isEmptySelection)
         {
-            lineRange = `0 - ${this.endLineHighlighted}`;
+            lineRange = this.endLineHighlighted === 1 ? "1" : `1 - ${this.endLineHighlighted}`;
         }
         else
         {
-            lineRange = !isMultiLine ? `${this.startLineHighlighted}` : `${this.startLineHighlighted} - ${this.endLineHighlighted}`;
+            lineRange = !isMultiLine ? `${this.startLineHighlighted}` : `${this.startLineHighlighted + 1} - ${this.endLineHighlighted}`;
         }
         
         this.displayExpressionTitle = `Unsaved ${this.topEditor.expression.name} (Line${isMultiLine ? "s": ""} ${lineRange})`;
@@ -1479,23 +1494,14 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 return;
             }
 
-            this.topEditor.editExpression = (luaExpression as DataExpression).sourceCode;
-            if(this.updateText)
-            {
-                this.topEditor.isLua = true;
-                this.updateText((luaExpression as DataExpression).sourceCode);
-            }
+            this.topEditor.expression = (luaExpression as DataExpression);
+            this.topEditor.isLua = true;
         },
         (err)=>
         {
             this.stderr = `${err}`;
         });
 
-    }
-
-    changeExpression(updateText: ((text: string) => void)): void
-    {
-        this.updateText = updateText;
     }
 
     onTextChange(text: string, position: string = "top"): void
@@ -1514,13 +1520,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     get isNewID(): boolean
     {
         return this._newExpression;
-    }
-
-    get isRunable(): boolean
-    {
-        let otherEditorActive = this.isTopEditorActive && this.lastRunEditor !== "top" || !this.isTopEditorActive && this.lastRunEditor !== "bottom";
-        let isCodeChanged = this.isTopEditorActive ? this.topEditor.isCodeChanged : this.bottomEditor.isCodeChanged;
-        return otherEditorActive || isCodeChanged || !this.isEvaluatedDataValid;
     }
 
     get textHighlighted(): string
@@ -1548,7 +1547,9 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     get moduleSidebarTooltip(): string
     {
         let tooltip = this.isSidebarOpen ? "Close Modules Sidebar" : "Open Modules Sidebar";
-        return tooltip + (this.isWindows ? " (Ctrl+B)" : " (Cmd+B)");
+        let cmdOrCtrl = this.isWindows ? "Ctrl" : "Cmd";
+        let altKeyName = this.isFirefox ? this.isWindows ? "+Alt" : "+Option" : "";
+        return `${tooltip} (${cmdOrCtrl}${altKeyName}+B)`;
     }
 
     get saveModuleTooltip(): string
@@ -1599,10 +1600,14 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         return "Open Release Module Dialog";
     }
 
-
     get isWindows(): boolean
     {
         return navigator.userAgent.search("Windows") !== -1;
+    }
+
+    get isFirefox(): boolean
+    {
+        return !!navigator.userAgent.match(/firefox|fxios/i);
     }
 
     get isEmptySelection(): boolean
@@ -1921,52 +1926,51 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     @HostListener("window:keydown", ["$event"])
     onKeydown(event: KeyboardEvent): void
     {
-        this._keyPresses[event.key] = true;
-        if((this._keyPresses["Meta"] && this._keyPresses["Enter"]) || (this._keyPresses["Control"] && this._keyPresses["Enter"]))
+        let cmdOrCtrl = this.isWindows ? "Control" : "Meta";
+        let bOrAltB = this.isFirefox ? "∫" : "b";
+
+        this._keyPresses.add(event.key);
+        if((this._keyPresses.has(cmdOrCtrl) && this._keyPresses.has("Enter")))
         {
             this.runExpression();
-            if(event.key === "Meta" || event.key === "Control")
+            if(event.key === cmdOrCtrl)
             {
-                this._keyPresses["Meta"] = false;
-                this._keyPresses["Control"] = false;
-                this._keyPresses["Enter"] = false;
+                this._keyPresses.delete(cmdOrCtrl);
+                this._keyPresses.delete("Enter");
             }
-            this._keyPresses[event.key] = false;
+            this._keyPresses.delete(event.key);
         }
-        else if((this._keyPresses["Meta"] && this._keyPresses["s"]) || (this._keyPresses["Control"] && this._keyPresses["s"]))
+        else if((this._keyPresses.has(cmdOrCtrl) && this._keyPresses.has("s")))
         {
             this.onSave();
-            this._keyPresses[event.key] = false;
-            if(event.key === "Meta" || event.key === "Control")
+            this._keyPresses.delete(event.key);
+            if(event.key === cmdOrCtrl)
             {
-                this._keyPresses["Meta"] = false;
-                this._keyPresses["Control"] = false;
-                this._keyPresses["s"] = false;
+                this._keyPresses.delete(cmdOrCtrl);
+                this._keyPresses.delete("s");
             }
             event.stopPropagation();
             event.stopImmediatePropagation();
             event.preventDefault();
         }
-        else if((this._keyPresses["Meta"] && this._keyPresses["b"]) || (this._keyPresses["Control"] && this._keyPresses["b"]))
+        else if((this._keyPresses.has(cmdOrCtrl) && this._keyPresses.has(bOrAltB)))
         {
             this.onToggleSidebar();
-            this._keyPresses[event.key] = false;
-            if(event.key === "Meta" || event.key === "Control")
+            this._keyPresses.delete(event.key);
+            if(event.key === cmdOrCtrl)
             {
-                this._keyPresses["Meta"] = false;
-                this._keyPresses["Control"] = false;
-                this._keyPresses["b"] = false;
+                this._keyPresses.delete(cmdOrCtrl);
+                this._keyPresses.delete(bOrAltB);
             }
         }
-        else if((this._keyPresses["Meta"] && this._keyPresses["\\"]) || (this._keyPresses["Control"] && this._keyPresses["\\"]))
+        else if((this._keyPresses.has(cmdOrCtrl) && this._keyPresses.has("\\")))
         {
             this.onToggleSplitScreen();
-            this._keyPresses[event.key] = false;
-            if(event.key === "Meta" || event.key === "Control")
+            this._keyPresses.delete(event.key);
+            if(event.key === cmdOrCtrl)
             {
-                this._keyPresses["Meta"] = false;
-                this._keyPresses["Control"] = false;
-                this._keyPresses["\\"] = false;
+                this._keyPresses.delete(cmdOrCtrl);
+                this._keyPresses.delete("\\");
             }
         }
     }
@@ -1974,7 +1978,7 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
     @HostListener("window:keyup", ["$event"])
     onKeyup(event: KeyboardEvent): void
     {
-        this._keyPresses[event.key] = false;
+        this._keyPresses.delete(event.key);
     }
 
     // NOTE: there are ways to go from selector string to ComponentFactory:

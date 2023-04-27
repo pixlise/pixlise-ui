@@ -445,7 +445,7 @@ export class WidgetRegionDataService
     //       so they won't be unique against the PMCs for the overall dataset anymore!
     getData(what: DataSourceParams[], continueOnError: boolean): Observable<RegionDataResults>
     {
-        let dataset = this._datasetService.datasetLoaded;
+        let dataset = this.dataset;
         if(!dataset)
         {
             console.error("getData: No dataset");
@@ -555,7 +555,7 @@ export class WidgetRegionDataService
 
     private buildResult(what: DataSourceParams[], exprRuns: DataExpression[], exprResults: DataQueryResult[], continueOnError: boolean): RegionDataResults
     {
-        let dataset = this._datasetService.datasetLoaded;
+        let dataset = this.dataset;
         let outputResult = new RegionDataResults([], "");
 
         // We got data back for an expression, look up what else it was supposed to include
@@ -600,7 +600,11 @@ export class WidgetRegionDataService
             if(!exprResult || !exprResult.resultValues)
             {
                 let errorMsg = "Failed to get result for expression: "+query.exprId;
-                
+                if(exprResult && exprResult.errorMsg)
+                {
+                    errorMsg = exprResult.errorMsg;
+                }
+
                 // This expression failed, so anything expecting data from here should just get an error
                 outputResult.queryResults.push(
                     new RegionDataResultItem(exprResult,
@@ -856,7 +860,7 @@ export class WidgetRegionDataService
         let logmsg = this._logPrefix+" rebuildData reason="+reason;
         let skipReasons = [];
 
-        let dataset = this._datasetService.datasetLoaded;
+        let dataset = this.dataset;
         let selection = this._selectionService.getCurrentSelection();
 
         // Rebuild our view of the world
@@ -980,7 +984,7 @@ export class WidgetRegionDataService
 
     getRemainingPMCs(): number[]
     {
-        let dataset = this._datasetService.datasetLoaded;
+        let dataset = this.dataset;
         if(!dataset)
         {
             console.warn("getRemainingPMCs when no dataset available in WidgetRegionDataService");

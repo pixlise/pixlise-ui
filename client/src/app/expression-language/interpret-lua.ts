@@ -408,6 +408,13 @@ export class LuaDataQuerier
                 {
                     let parsedErr = this.parseLuaError(err, sourceCode);
 
+                    // We may need to reset Lua as we seem to have a resource leak that causes an error after running about 20 expressions
+                    // TODO: this will need fixing at somepoint!
+                    if(parsedErr.message.indexOf("memory access out of bounds") >= 0)
+                    {
+                        cleanupLua = true;
+                    }
+
                     console.error(parsedErr);
 
                     // This prints a bunch of tables out but hasn't proven useful for debugging...
@@ -683,7 +690,11 @@ end
         for(let item of data.values)
         {
             pmcs.push(item.pmc);
-            values.push(item.isUndefined ? null : item.value);
+
+            // NOTE: Lua doesn't support nil values in tables. https://www.lua.org/manual/5.3/manual.html#2.1
+            // so here we specify an undefined value as a NaN so it doesn't break. May need to consider just
+            // excluding those PMCs completely, however then the maps wont be the same size in Lua land...
+            values.push(item.isUndefined ? NaN : item.value);
         }
 
         let luaTable = [pmcs, values];

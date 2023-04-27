@@ -71,18 +71,120 @@ local function handleBadValue(s)
     return s
 end
 
+local function unorderedOp(op, v1, v2)
+    -- NOTE: we can only support operations where the order of params doesn't matter!
+    -- NOTE2: We check for nils!
+    -- if v1 == nil or v2 == nil then
+    --     return 1/0
+    -- end
+    if op == Map.opMultiply then
+        return v1*v2
+    elseif op == Map.opAdd then
+        return v1+v2
+    elseif op == Map.opMin then
+        return math.min(v1, v2)
+    elseif op == Map.opMax then
+        return math.max(v1, v2)
+    end
+    error("unorderedOp unexpected op: "..op)
+end
+
+
+local function op(op, ...)
+    -- Check there are enough parameters
+    assert(#{...}, "function expects at least 2 arguments")
+    -- Check that one of the first 2 parameters is a map and init
+    -- values based the one that is map
+    -- This is largely for backwards compatibility - we originally supported
+    -- only 2 arguments, and we flexibly allow maps and numbers as arguments
+    -- but we do at some point want to find the starting value we multiply things
+    -- with. Don't want to loop through the args twice, so we just check the first
+    -- 2 here
+    local m1, m2 = table.unpack({...})
+    local pmcs
+    local startIdx = -1
+    local startValues
+    if type(m1) == "table" then
+        startIdx = 1
+        pmcs = m1[1]
+        startValues = m1[2]
+    elseif type(m2) == "table" then
+        startIdx = 2
+        pmcs = m2[1]
+        startValues = m2[2]
+    else
+        error("one of first 2 arguments expected to be a map")
+    end
+
+    -- Init values to be a copy of whatever we've decided to start with
+    local values = {}
+    for k, v in ipairs(startValues) do
+        values[k] = v
+    end
+
+    for argi, arg in ipairs({...}) do
+        -- Don't involve the one we started with, it's already included in the op
+        if argi ~= startIdx then
+            if type(arg) == "table" then
+                -- This is a table, multiply every value by its corresponding table value
+                for k, v in ipairs(arg[2]) do
+                    values[k] = unorderedOp(op, values[k], v)
+                end
+            else
+                -- This is a number, apply op to every value by it
+                for k, v in ipairs(values) do
+                    values[k] = unorderedOp(op, v, arg)
+                end
+            end
+        end
+    end
+    
+    return {pmcs, values}
+end
+
+-- The following are implemented in terms of op()
+
+-- Returns a new map which contains the result of all arguments
+-- multiplied together. Note that at least one of the first 2
+-- arguments is required to be a map, while numbers are treated
+-- like a map where all PMCs have that same value. Returns a map
+-- with the same dimensions as the input map
+function Map.mul(...)
+    return op(Map.opMultiply, table.unpack({...}))
+end
+
+-- Returns a new map which is the sum of all the maps specified.
+-- Note that at least one parameter must be a map, while numbers
+-- will be treated like a map where all PMCs have that same value.
+-- Returns a new map of the same dimension an input map
+function Map.add(...)
+    return op(Map.opAdd, table.unpack({...}))
+end
+
+-- Returns a new map where each value is the minimum of corresponding
+-- value in arguments. Note that at least one of the arguments
+-- is required to be a map, while numbers are treated like a map
+-- where all PMCs have that same value. Returns a new map of the
+-- same dimension an input map
+function Map.min(...)
+    return op(Map.opMin, table.unpack({...}))
+end
+
+-- Returns a new map where each value is the maximum of corresponding
+-- value in arguments. Note that at least one of the arguments
+-- is required to be a map, while numbers are treated like a map
+-- where all PMCs have that same value. Returns a new map of the
+-- same dimension an input map
+function Map.max(...)
+    return op(Map.opMax, table.unpack({...}))
+end
+
+-- Separate implementations because order matters
+
 local function opWithScalarRaw(m, s, scalarLeft, op)
     local values = {}
 
-    if op == Map.opMultiply then
-        for k, v in ipairs(m[2]) do
-            values[k] = v * s
-        end
-    elseif op == Map.opAdd then
-        for k, v in ipairs(m[2]) do
-            values[k] = v + s
-        end
-    elseif op == Map.opDivide then
+    if op == Map.opDivide then
         if scalarLeft then
             for k, v in ipairs(m[2]) do
                 values[k] = handleBadValue(s / v)
@@ -102,14 +204,6 @@ local function opWithScalarRaw(m, s, scalarLeft, op)
                 values[k] = v - s
             end
         end
-    elseif op == Map.opMin then
-        for k, v in ipairs(m[2]) do
-            values[k] = math.min(v, s)
-        end
-    elseif op == Map.opMax then
-        for k, v in ipairs(m[2]) do
-            values[k] = math.max(v, s)
-        end
     else
         assert(false, "opWithScalarRaw unexpected op: "..op)
     end
@@ -117,37 +211,16 @@ local function opWithScalarRaw(m, s, scalarLeft, op)
     return {m[1], values}
 end
 
-
 local function opWithMaps(m1, m2, op)
     local values = {}
 
-    if op == Map.opMultiply then
-        for k, v in ipairs(m1[2]) do
-            values[k] = v * m2[2][k]
-        end
-    elseif op == Map.opAdd then
-        for k, v in ipairs(m1[2]) do
-            values[k] = v + m2[2][k]
-        end
-    elseif op == Map.opDivide then
+    if op == Map.opDivide then
         for k, v in ipairs(m1[2]) do
             values[k] = handleBadValue(v / m2[2][k])
         end
     elseif op == Map.opSubtract then
         for k, v in ipairs(m1[2]) do
             values[k] = v - m2[2][k]
-        end
-    elseif op == Map.opAverage then
-        for k, v in ipairs(m1[2]) do
-            values[k] = (v + m2[2][k])*0.5
-        end
-    elseif op == Map.opMin then
-        for k, v in ipairs(m1[2]) do
-            values[k] = math.min(v, m2[2][k])
-        end
-    elseif op == Map.opMax then
-        for k, v in ipairs(m1[2]) do
-            values[k] = math.max(v, m2[2][k])
         end
     else
         assert(false, "opWithMaps unexpected op: "..op)
@@ -173,7 +246,7 @@ local function opWithScalar(l, r, op)
     end
 end
 
-local function op(l, r, op)
+local function orderedOp(l, r, op)
     local ltype = type(l)
     local rtype = type(r)
     if (ltype == "table") and (rtype == "table") then
@@ -183,49 +256,22 @@ local function op(l, r, op)
     end
 end
 
--- l*r, where one of l, r is expected to be a map, the other
--- a map or scalar. Returns a map of the same dimension as
--- the parameter map
-function Map.mul(l, r)
-    return op(l, r, Map.opMultiply)
-end
 
 -- l/r, where one of l, r is expected to be a map, the other
--- a map or scalar. Returns a map of the same dimension as
+-- a map or scalar. Returns a new map of the same dimension as
 -- the parameter maps. Division by 0 results in a map value of NaN
 function Map.div(l, r)
-    return op(l, r, Map.opDivide)
-end
-
--- l+r, where one of l, r is expected to be a map, the other
--- a map or scalar. Returns a map of the same dimension as
--- the parameter map
-function Map.add(l, r)
-    return op(l, r, Map.opAdd)
+    return orderedOp(l, r, Map.opDivide)
 end
 
 -- l-r, where one of l, r is expected to be a map, the other
--- a map or scalar. Returns a map of the same dimension as
+-- a map or scalar. Returns a new map of the same dimension as
 -- the parameter map
-function Map.sub(l, r)
-    return op(l, r, Map.opSubtract)
+function Map.sub(l, r, ...)
+    return orderedOp(l, r, Map.opSubtract)
 end
 
--- Returns a map where each value is the minimum of corresponding
--- value in l, and r. One of l, r is expected to be a map, the other
--- a map or scalar.
-function Map.min(l, r)
-    return op(l, r, Map.opMin)
-end
-
--- Returns a map where each value is the maximum of corresponding
--- value in l, and r. One of l, r is expected to be a map, the other
--- a map or scalar.
-function Map.max(l, r)
-    return op(l, r, Map.opMax)
-end
-
--- Returns a map where if value for a PMC in m is > cmp, the result map will contain 1 otherwise 0.
+-- Returns a new map where if value for a PMC in m is > cmp, the result map will contain 1 otherwise 0.
 -- m: The map to check
 -- cmp: The value to compare to
 function Map.over(m, cmp)
@@ -242,7 +288,7 @@ function Map.over(m, cmp)
     return {m[1], values}
 end
 
--- Returns a map where if value for a PMC in m is > cmp, the result map will contain 1 otherwise
+-- Returns a new map where if value for a PMC in m is > cmp, the result map will contain 1 otherwise
 -- null, which means this will for example leave holes in a context image for PMCs with a null value
 -- m: The map to check
 -- cmp: The value to compare to
@@ -264,7 +310,7 @@ function Map.over_undef(m, cmp)
 end
 
 
--- Returns a map where if value for a PMC in m is < cmp, the result map will contain 1 otherwise 0.
+-- Returns a new map where if value for a PMC in m is < cmp, the result map will contain 1 otherwise 0.
 -- m: The map to check
 -- cmp: The value to compare to
 function Map.under(m, cmp)
@@ -281,11 +327,11 @@ function Map.under(m, cmp)
     return {m[1], values}
 end
 
--- Returns a map where if value for a PMC in m is < cmp, the result map will contain 1 otherwise
+-- Returns a new map where if value for a PMC in m is < cmp, the result map will contain 1 otherwise
 -- null, which means this will for example leave holes in a context image for PMCs with a null value
 -- m: The map to check
 -- cmp: The value to compare to
-function Map.uner_undef(m, cmp)
+function Map.under_undef(m, cmp)
     assert(type(m) == "table", makeAssertReport(m, "table"))
     assert(type(cmp) == "number", makeAssertReport(cmp, "number"))
     local values = {}
@@ -311,61 +357,61 @@ local function mapFunc(m, f)
     return {m[1], values}
 end
 
--- Returns a map where each value is sin of corresponding value in m
+-- Returns a new map where each value is sin of corresponding value in m
 -- where the values in m are interpreted as being in radians
 -- m: Map whose values to read
 function Map.sin(m)
     return mapFunc(m, math.sin)
 end
 
--- Returns a map where each value is cos of corresponding value in m
+-- Returns a new map where each value is cos of corresponding value in m
 -- where the values in m are interpreted as being in radians
 -- m: Map whose values to read
 function Map.cos(m)
     return mapFunc(m, math.cos)
 end
 
--- Returns a map where each value is tan of corresponding value in m
+-- Returns a new map where each value is tan of corresponding value in m
 -- where the values in m are interpreted as being in radians
 -- m: Map whose values to read
 function Map.tan(m)
     return mapFunc(m, math.tan)
 end
 
--- Returns a map where each value is asin of corresponding value in m
+-- Returns a new map where each value is asin of corresponding value in m
 -- where the values in m are interpreted as being in radians
 -- m: Map whose values to read
 function Map.asin(m)
     return mapFunc(m, math.asin)
 end
 
--- Returns a map where each value is acos of corresponding value in m
+-- Returns a new map where each value is acos of corresponding value in m
 -- where the values in m are interpreted as being in radians
 -- m: Map whose values to read
 function Map.acos(m)
     return mapFunc(m, math.acos)
 end
 
--- Returns a map where each value is atan of corresponding value in m
+-- Returns a new map where each value is atan of corresponding value in m
 -- where the values in m are interpreted as being in radians
 -- m: Map whose values to read
 function Map.atan(m)
     return mapFunc(m, math.atan)
 end
 
--- Returns a map where each value is e raised to power of of corresponding value in m
+-- Returns a new map where each value is e raised to power of of corresponding value in m
 -- m: Map whose values to read
 function Map.exp(m)
     return mapFunc(m, math.exp)
 end
 
--- Returns a map where each value is natural log of corresponding value in m
+-- Returns a new map where each value is natural log of corresponding value in m
 -- m: Map whose values to read
 function Map.ln(m)
     return mapFunc(m, math.log)
 end
 
--- Returns a map where each value is natural log of corresponding value in m
+-- Returns a new map where each value is natural log of corresponding value in m
 -- m: Map to raise to power
 -- exp: Scalar exponent
 function Map.pow(m, exp)
@@ -404,7 +450,7 @@ local function findMinMax(m)
     return mapMin, mapMax
 end
 
--- Returns a map whose values are between 0 and 1, calculated by taking the min/max of map m
+-- Returns a new map whose values are between 0 and 1, calculated by taking the min/max of map m
 -- then producing a map where the max is set to 1, min is 0, and values in between are percentages
 -- between 0 and 1
 -- m: Map to normalise
@@ -438,7 +484,7 @@ end
 --     return Map.normalise(m)
 -- end
 
--- Returns a map whose values are 1 if they are within the range compare +/- threshold or 0 otherwise
+-- Returns a new map whose values are 1 if they are within the range compare +/- threshold or 0 otherwise
 -- m: Map to read
 -- compare: Scalar base number
 -- range: Scalar value to define the range, being from compare-threshold to compare+threshold
@@ -507,6 +553,64 @@ function Map.setPMCValue(m, pmc, v)
     m[1][newIdx] = pmc
     m[2][newIdx] = v
     return true
+end
+
+-- Retrieves the value for the nth PMC from the map m. If the value does not exist, nil is returned
+-- m: Map to read
+-- index: Scalar index of PMC to return
+function Map.getNthPMC(m, index)
+    assert(type(m) == "table", makeAssertReport(m, "table"))
+    assert(type(index) == "number", makeAssertReport(index, "number"))
+
+    return m[1][index]
+end
+
+-- Retrieves the value for the nth PMC from the map m. If the value does not exist, nil is returned
+-- m: Map to read
+-- index: Scalar PMC number to find corresponding value of
+function Map.getNthValue(m, index)
+    assert(type(m) == "table", makeAssertReport(m, "table"))
+    assert(type(index) == "number", makeAssertReport(index, "number"))
+
+    return m[2][index]
+end
+
+-- Retrieves all the PMCs in the map (the first sub-table of the map)
+-- m: Map to read
+function Map.getPMCs(m)
+    assert(type(m) == "table", makeAssertReport(m, "table"))
+    assert(type(m[1]) == "table", makeAssertReport(m[1], "table"))
+
+    return m[1]
+end
+
+-- Retrieves all the values in the map (the second sub-table of the map)
+-- m: Map to read
+function Map.getValues(m)
+    assert(type(m) == "table", makeAssertReport(m, "table"))
+    assert(type(m[2]) == "table", makeAssertReport(m[2], "table"))
+
+    return m[2]
+end
+
+-- Replaces bad values such as infinity, negative infinity and NaN with the value
+-- requested. Edits passed in map, returns nothing.
+-- NOTE that tables in Lua cannot contain nil so this function wont check for nil.
+-- See https://www.lua.org/manual/5.3/manual.html#2.1
+-- m: Map to replace values in
+-- with: The number to replace bad values with
+function Map.replaceBadValues(m, with)
+    assert(type(m) == "table", makeAssertReport(m, "table"))
+    assert(type(with) == "number", makeAssertReport(with, "number"))
+
+    for c, v in ipairs(m[2]) do
+        -- NOTE: Lua has no NaN constant, but its equivalent value is math.huge, which
+        -- also happens to work for infinity. We take abs() to consider negative infinity
+        -- too, and of course nil is also a "bad" value
+        if v ~= v or math.abs(v) == math.huge then
+            m[2][c] = with
+        end
+    end
 end
 
 return Map
