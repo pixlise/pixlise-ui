@@ -408,6 +408,13 @@ export class LuaDataQuerier
                 {
                     let parsedErr = this.parseLuaError(err, sourceCode);
 
+                    // We may need to reset Lua as we seem to have a resource leak that causes an error after running about 20 expressions
+                    // TODO: this will need fixing at somepoint!
+                    if(parsedErr.message.indexOf("memory access out of bounds") >= 0)
+                    {
+                        cleanupLua = true;
+                    }
+
                     console.error(parsedErr);
 
                     // This prints a bunch of tables out but hasn't proven useful for debugging...
