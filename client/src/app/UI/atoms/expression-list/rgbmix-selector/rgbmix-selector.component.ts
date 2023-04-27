@@ -182,7 +182,7 @@ export class RGBMixSelectorComponent implements OnInit
         //dialogConfig.disableClose = true;
         //dialogConfig.autoFocus = true;
         //dialogConfig.width = '1200px';
-        dialogConfig.data = new ExpressionPickerData(channel+" Expression", selectedId.length > 0 ? [selectedId] : [], true, false, false);
+        dialogConfig.data = new ExpressionPickerData(channel+" Expression", selectedId.length > 0 ? [selectedId] : [], true, false, false, false, false);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

@@ -526,7 +526,7 @@ export class WidgetRegionDataService
                                     SentryHelper.logMsg(true, errorMsg);
                                 }
 
-                                return of(new DataQueryResult(null, false, [], null, "", "", null));
+                                return of(new DataQueryResult(null, false, [], null, "", "", null, errorMsg));
                             }
                         )
                     )
@@ -600,9 +600,23 @@ export class WidgetRegionDataService
             if(!exprResult || !exprResult.resultValues)
             {
                 let errorMsg = "Failed to get result for expression: "+query.exprId;
-                
+                if(exprResult && exprResult.errorMsg)
+                {
+                    errorMsg = exprResult.errorMsg;
+                }
+
                 // This expression failed, so anything expecting data from here should just get an error
-                outputResult.queryResults.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null, null, null, query));
+                outputResult.queryResults.push(
+                    new RegionDataResultItem(exprResult,
+                        WidgetDataErrorType.WERR_QUERY,
+                        errorMsg,
+                        errorMsg,
+                        exprById.get(query.exprId),
+                        region,
+                        query,
+                        exprResult?.isPMCTable || false
+                    )
+                );
                 continue;
             }
 

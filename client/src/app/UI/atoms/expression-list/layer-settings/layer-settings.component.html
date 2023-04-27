@@ -100,7 +100,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 *ngIf="layerButton === 'showSettingsButton'"
                 #tooltip="matTooltip"
                 matTooltip="Open {{isModule ? 'module' : 'expression'}}"
-                icon="{{isPredefined ? 'assets/button-icons/gear.svg' : isSidePanel ? 'assets/button-icons/layout-single-view.svg' : isSharedByOtherUser ? 'assets/button-icons/code.svg' : 'assets/button-icons/edit.svg'}}"
+                icon="{{isPredefined ? 'assets/button-icons/gear.svg' : 'assets/button-icons/layout-single-view.svg'}}"
                 (click)="onSettings($event)">
             </icon-button>
             <icon-button
@@ -136,6 +136,14 @@ POSSIBILITY OF SUCH DAMAGE.
                 [ngClass]='{"incompatible": incompatibleWithQuant}'
                 [ngStyle]="{'min-width': minLabelTextWidth, 'color': labelColour}"
             >{{labelToShow}}</div>
+            <div
+                *ngIf="isSharedByOtherUser"
+                class="custom-icon"
+                #tooltip="matTooltip"
+                matTooltip="This {{isModule ? 'module' : 'expression'}} is shared by another user and can't be edited."
+            >
+                <img class="custom-icon" src="assets/button-icons/lock.svg" />
+            </div>
             <div
                 *ngIf="customIcon"
                 class="custom-icon"
@@ -242,7 +250,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     *ngIf="layerButton === 'showSettingsButton'"
                     #tooltip="matTooltip"
                     matTooltip="{{isSharedByOtherUser || isPredefined ? 'Show' : 'Open' }} {{isModule ? 'module' : 'expression'}}"
-                    icon="{{isPredefined ? 'assets/button-icons/gear.svg' : isSidePanel ? 'assets/button-icons/layout-single-view.svg' : isSharedByOtherUser ? 'assets/button-icons/code.svg' : 'assets/button-icons/edit.svg'}}"
+                    icon="{{isPredefined ? 'assets/button-icons/gear.svg' : 'assets/button-icons/layout-single-view.svg'}}"
                     (click)="onSettings($event)">
                 </icon-button>
                 <icon-button

@@ -87,7 +87,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 <h3 *ngIf="dataProducts.length > 0">Data Products ({{enabledDataProducts.length * data.dataProductMultiplier}})</h3>
                 <div *ngFor="let option of dataProducts" fxLayout="row" fxLayoutAlign="space-between center"
                     class="gap-separated-horizontal-elements">
-                    <div>{{option.label}}:</div>
+                    <div class="{{option.type.disabled ? 'disabled-text' : ''}}">{{option.label}}:</div>
                     <two-state-icon-button 
                         *ngIf="option.type.type === 'checkbox'"
                         activeIcon="assets/button-icons/check-on.svg"

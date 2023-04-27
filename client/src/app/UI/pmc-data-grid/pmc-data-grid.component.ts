@@ -27,11 +27,11 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, SimpleChanges } from "@angular/core";
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from "@angular/core";
 import { Subscription } from "rxjs";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
 import { ContextImageService } from "src/app/services/context-image.service";
-import { CSVExportItem, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
+import { CSVExportItem, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption, TXTExportItem } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
 import { DataSetService } from "src/app/services/data-set.service";
@@ -39,6 +39,11 @@ import { BeamSelection } from "src/app/models/BeamSelection";
 import { DataQueryResult } from "src/app/expression-language/data-values";
 import { DataExpression } from "src/app/models/Expression";
 
+export interface DataCell {
+    pmc: number;
+    value: string|number;
+    tooltip: string;
+}
 
 @Component({
     selector: "pmc-data-grid",
@@ -51,23 +56,37 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
     private _subs = new Subscription();
 
     @Input() header: string = "Data Grid";
-    @Input() evaluatedExpression: DataQueryResult = null;
+    // @Input() evaluatedExpression: DataQueryResult = null;
     @Input() expression: DataExpression = null;
     @Input() columnCount: number = 0;
     @Input() stdout: string = "";
     @Input() stderr: string = "";
 
     @Output() onToggleSolo = new EventEmitter();
-
     private _isSolo: boolean = false;
 
-    private _isOutputView: boolean = true;
+    private _values: PMCDataValue[] = null;
+    private _evaluatedExpression: DataQueryResult = null;
+    
+    public rowCount: number = 0;
+    public data: DataCell[][] = [];
+    public printableResultValue: string = "";
+    public isValidData: boolean = false;
+    public isValidTableData: boolean = false;
+    
+    public minDataValue: number = 0;
+    public maxDataValue: number = 0;
+    public avgDataValue: number = 0;
 
-    private _pmcToValueIdx = new Map<number, number>();
+    private _isOutputView: boolean = true;
+    private _pmcToValueIdx: Map<number, {row: number; col: number;}> = new Map();
 
     selectedPMCs: Set<number> = new Set();
     currentSelection: SelectionHistoryItem = null;
+    
+    public copyIcon: string = "content_copy";
 
+    public showAllPMCs: boolean = true;
     constructor(
         private _selectionService: SelectionService,
         private _datasetService: DataSetService,
@@ -85,25 +104,177 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         });
     }
 
-    ngOnChanges(changes: SimpleChanges): void
-    {
-        // Rebuild our PMC->value index lookup
-        if(changes["evaluatedExpression"])
-        {
-            this._pmcToValueIdx.clear();
-            if(this.evaluatedExpression?.resultValues?.values)
-            {
-                for(let c = 0; c < this.evaluatedExpression.resultValues.values.length; c++)
-                {
-                    this._pmcToValueIdx.set(this.evaluatedExpression.resultValues.values[c].pmc, c);
-                }
-            }
-        }
-    }
-
     ngOnDestroy()
     {
         this._subs.unsubscribe();
+    }
+
+    get evaluatedExpression(): DataQueryResult
+    {
+        return this._evaluatedExpression;
+    }
+
+    @Input() set evaluatedExpression(value: DataQueryResult)
+    {
+        this._evaluatedExpression = value;
+
+        this.preComputeData();
+    }
+
+    preComputeData()
+    {
+        this._values = this._evaluatedExpression?.resultValues?.values || [];
+        if(!this.showAllPMCs)
+        {
+            this._values = this._values.filter((value) => !isNaN(Number(value?.value)));
+        }
+        this.rowCount = this.calculateRowCount();
+        this.printableResultValue = this.calculatePrintableResultValue();
+        this.isValidData = this.calculateIsValidData();
+        this.isValidTableData = this.calculateIsValidTableData();
+        this.calculateStats();
+        this.calculateData();
+    }
+
+    calculateRowCount(): number
+    {
+        let count = this._values.length; 
+        return count && this.columnCount > 0 ? Math.floor(count / this.columnCount) : 0;
+    }
+
+    calculatePrintableResultValue()
+    {
+        let values = this._evaluatedExpression?.resultValues;
+        if(this.isValidTableData)
+        {
+            return values?.values?.map((point) => point.value).join(", ") || "";
+        }
+        
+        if(Array.isArray(values))
+        {
+            return values.map(value => JSON.stringify(value)).join("\n");
+        }
+        else if(typeof values === "object")
+        {
+            let cache = [];
+
+            // This is a bit of a hack to get around the fact that JSON.stringify doesn't handle circular references
+            return JSON.stringify(values, (key, value) =>
+            {
+                if(typeof value === "object" && value !== null)
+                {
+                    if(cache.indexOf(value) !== -1)
+                    {
+                        return `[${key}]`;
+                    }
+                    cache.push(value);
+                }
+                return value;
+            }, 2);
+        }
+        else
+        {
+            return `${values}`;
+        }
+    }
+
+    calculateIsValidData(): boolean
+    {
+        let values = this._evaluatedExpression?.resultValues;
+        return typeof values !== "undefined" && values !== null && (!Array.isArray(values?.values) || values.values.length > 0);
+    }
+
+    calculateIsValidTableData(): boolean
+    {
+        let values = this.evaluatedExpression?.resultValues;
+        return values instanceof PMCDataValues && values?.values?.length > 0;
+    }
+
+    calculateStats()
+    {
+        this.minDataValue = this._evaluatedExpression?.resultValues?.valueRange?.min || 0;
+        this.maxDataValue = this._evaluatedExpression?.resultValues?.valueRange?.max || 0;
+
+        let avgValue = null;
+        let validPointCount = 0;
+
+        let values = this._values || [];
+        values.forEach((point) =>
+        {
+            if(typeof point.value === "number" && !point.isUndefined && !isNaN(point.value))
+            {
+                avgValue += point.value;
+                validPointCount++;
+            }
+        });
+
+        this.avgDataValue = avgValue !== null && validPointCount > 0 ? avgValue / validPointCount : 0;
+    }
+
+    private _getDataPoint(row: number, col: number): PMCDataValue
+    {
+        let index = row * this.columnCount + col;
+        if(index >= this._values.length)
+        {
+            return null;
+        }
+        
+        return this._values[index];
+    }
+
+    private _getDataPointPMC(row: number, col: number): number
+    {
+        return this._getDataPoint(row, col)?.pmc || null;
+    }
+    
+    private _getDataValue(row: number, col: number): number|string
+    {
+        let value = this._getDataPoint(row, col)?.value;
+        return [null, undefined].includes(value) ? "" : value;
+    }
+
+    private _getDataTooltip(row: number, col: number): string
+    {
+        let point = this._getDataPoint(row, col);
+        if(point === null)
+        {
+            return "Undefined";
+        }
+        else
+        {
+            let roundedValue = typeof point.value === "number" ? Math.round(point.value * 1000) / 1000 : point.value;
+            return `PMC: ${point.pmc}\nValue: ${point.isUndefined ? "Undefined" : roundedValue}`;
+        }
+    }
+
+    calculateData()
+    {
+        let data: DataCell[][] = [];
+        for(let rowIndex = 0; rowIndex < this.rowCount; rowIndex++)
+        {
+            let row: DataCell[] = [];
+            for(let colIndex = 0; colIndex < this.columnCount; colIndex++)
+            {
+                let pmc = this._getDataPointPMC(rowIndex, colIndex);
+                let value = this._getDataValue(rowIndex, colIndex);
+
+                if(!this.showAllPMCs && isNaN(Number(value)))
+                {
+                    continue;
+                }
+
+                row.push({
+                    pmc,
+                    value,
+                    tooltip: this._getDataTooltip(rowIndex, colIndex)
+                });
+
+                this._pmcToValueIdx.set(pmc, {row: rowIndex, col: colIndex});
+            }
+            data.push(row);
+        }
+
+        this.data = data;
     }
 
     get isOutputView(): boolean
@@ -121,125 +292,23 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         return this.stderr ? "Fix the errors below to enable output view" : "Switch between code return output and log view";
     }
 
-    get rowCount(): number
-    {
-        let count = this.evaluatedExpression?.resultValues?.values.length; 
-        return count && this.columnCount > 0 ? Math.floor(count / this.columnCount) : 0;
-    }
-
-    get printableResultValue(): string
-    {
-        let values = this.evaluatedExpression?.resultValues;
-        if(this.isValidTableData)
-        {
-            return values.values.map((point) => point.value).join(", ");
-        }
-        
-        if(Array.isArray(values))
-        {
-            return values.map(value => JSON.stringify(value)).join("\n");
-        }
-        else if(typeof values === "object")
-        {
-            // Pretty print JSON
-            return JSON.stringify(values, null, 2);
-        }
-        else
-        {
-            return `${values}`;
-        }
-    }
-
-    get isValidData(): boolean
-    {
-        let values = this.evaluatedExpression?.resultValues;
-        return typeof values !== "undefined" && values !== null && (!Array.isArray(values?.values) || values.values.length > 0);
-    }
-
-    get isValidTableData(): boolean
-    {
-        let values = this.evaluatedExpression?.resultValues;
-        return values instanceof PMCDataValues && values?.values.length > 0;
-    }
-
-    get minDataValue(): number
-    {
-        return this.evaluatedExpression?.resultValues?.valueRange?.min || 0;
-    }
-
-    get maxDataValue(): number
-    {
-        return this.evaluatedExpression?.resultValues?.valueRange?.max || 0;
-    }
-
-    get avgDataValue(): number
-    {
-        let avgValue = null;
-        let validPointCount = 0;
-
-        let values = this.evaluatedExpression?.resultValues?.values || [];
-        values.forEach((point) =>
-        {
-            if(typeof point.value === "number" && !point.isUndefined)
-            {
-                avgValue += point.value;
-                validPointCount++;
-            }
-        });
-
-        return avgValue !== null && validPointCount > 0 ? avgValue / validPointCount : 0;
-    }
-
     get hoveredIndex(): number[]
     {
-        if(this.isValidTableData && this._selectionService.hoverPMC !== -1 && this.evaluatedExpression?.resultValues)
+        if(this.isValidTableData && this._selectionService.hoverPMC !== -1 && this._pmcToValueIdx.size > 0)
         {
-            // Find the idx of hovered PMC value
-            let valIdx = this._pmcToValueIdx.get(this._selectionService.hoverPMC);
-            if(valIdx !== undefined)
+            let point = this._pmcToValueIdx.get(this._selectionService.hoverPMC);
+            if(point !== undefined)
             {
-                let row = Math.floor(valIdx / this.columnCount);
-                let col = valIdx % this.columnCount;
-                return [row, col];
+                return [point.row, point.col];
             }
         }
         return null;
     }
 
-    private getDataPoint(row: number, col: number): PMCDataValue
+    onToggleValidOnly(showAllPMCs: boolean)
     {
-        let index = row * this.columnCount + col;
-        if(index >= this.evaluatedExpression.resultValues.values.length)
-        {
-            return null;
-        }
-        
-        return this.evaluatedExpression.resultValues.values[index];
-    }
-
-    getDataPointPMC(row: number, col: number): number
-    {
-        return this.getDataPoint(row, col)?.pmc || null;
-    }
-    
-    getDataValue(row: number, col: number): number|string
-    {
-        let value = this.getDataPoint(row, col)?.value;
-        return [null, undefined].includes(value) ? "" : value;
-    }
-
-    getDataTooltip(row: number, col: number): string
-    {
-        let point = this.getDataPoint(row, col);
-        if(point === null)
-        {
-            return "Undefined";
-        }
-        else
-        {
-            let roundedValue = typeof point.value === "number" ? Math.round(point.value * 1000) / 1000 : point.value;
-            return `PMC: ${point.pmc}\nValue: ${point.isUndefined ? "Undefined" : roundedValue}`;
-        }
+        this.showAllPMCs = showAllPMCs;
+        this.preComputeData();
     }
 
     onSolo()
@@ -255,8 +324,8 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
 
     onMouseEnter(row: number, col: number)
     {
-        let point = this.getDataPoint(row, col);
-        if(point !== null)
+        let point = this.data[row][col];
+        if(point !== null && point !== undefined)
         {
             this._selectionService.setHoverPMC(point.pmc);
         }
@@ -264,8 +333,8 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
 
     onMouseLeave(row: number, col: number)
     {
-        let point = this.getDataPoint(row, col);
-        if(point !== null && this._selectionService.hoverPMC === point.pmc)
+        let point = this.data[row][col];
+        if(point !== null && point !== undefined && this._selectionService.hoverPMC === point.pmc)
         {
             this._selectionService.setHoverPMC(-1);
         }
@@ -274,7 +343,7 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
     onClickPMC(row: number, col: number)
     {
         let dataset = this._datasetService.datasetLoaded;
-        let pmc = this.getDataPointPMC(row, col);
+        let pmc = this.data[row][col]?.pmc;
         let selectedLocIndex = dataset.pmcToLocationIndex.get(pmc);
         let { beamSelection, pixelSelection } = this.currentSelection;
         
@@ -291,15 +360,54 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
         this._selectionService.setSelection(this._datasetService.datasetLoaded, new BeamSelection(dataset, locationIndexes), pixelSelection, true);
     }
 
+    private _copyText(text: string)
+    {
+        if(text && navigator?.clipboard)
+        {
+            navigator.clipboard.writeText(text);
+            this.copyIcon = "done";
+            setTimeout(() => this.copyIcon = "content_copy", 1000);
+        }
+    }
+
+    get printableStdout(): string
+    {
+        let text = this.stdout || "";
+        return text.replace(/[\t]/g, "    ");
+    }
+
+    get printableStderr(): string
+    {
+        let text = this.stderr?.trim() || "";
+        return text.replace(/[\t]/g, "    ");
+    }
+
+    onCopyOutput()
+    {
+        this._copyText(this.printableResultValue);
+    }
+
+    onCopyStdout()
+    {
+        this._copyText(this.stdout?.trim());
+    }
+
+    onCopyStderr()
+    {
+        this._copyText(this.stderr?.trim());
+    }
+
     onExport()
     {
-        if(!this.evaluatedExpression || !this.expression)
+        if(!this._evaluatedExpression || !this.expression)
         {
             return;
         }
 
+        let validExpressionValues = this._values.length > 0;
         let exportOptions = [
-            new PlotExporterDialogOption("Expression Values .csv", true),
+            new PlotExporterDialogOption("Expression Values .csv", validExpressionValues, false, { type: "checkbox", disabled: !validExpressionValues }),
+            new PlotExporterDialogOption("Expression Output .txt", true),
         ];
 
         const dialogConfig = new MatDialogConfig();
@@ -311,8 +419,9 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
             {
                 let optionLabels = options.map(option => option.label);
                 let csvs: CSVExportItem[] = [];
+                let txts: TXTExportItem[] = [];
 
-                if(optionLabels.indexOf("Expression Values .csv") > -1)
+                if(optionLabels.indexOf("Expression Values .csv") > -1 && validExpressionValues)
                 {
                     let data = this.evaluatedExpression.resultValues.values.map((point) =>
                     {
@@ -322,8 +431,12 @@ export class PMCDataGridComponent implements OnInit, OnDestroy
                     let csvData = `PMC,Value\n${data.join("\n")}`;
                     csvs.push(new CSVExportItem(`${this.expression.name} Values`, csvData));
                 }
+                if(optionLabels.indexOf("Expression Output .txt") > -1)
+                {
+                    txts.push(new CSVExportItem(`${this.expression.name} Output`, this.evaluatedExpression.stdout));
+                }
 
-                dialogRef.componentInstance.onDownload([], csvs);
+                dialogRef.componentInstance.onDownload([], csvs, txts);
             }
         );
     }

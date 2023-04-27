@@ -35,6 +35,14 @@ POSSIBILITY OF SUCH DAMAGE.
 >
     <div fxLayout="row" fxLayoutAlign="space-between center" class="gap-separated-horizontal-elements">
         <h1>Expression Editor</h1>
+        <div
+            *ngIf="!isEditable"
+            #tooltip="matTooltip"
+            matTooltip="This expression is shared by another user and can't be edited."
+            class="lock-icon"
+        >
+            <img src="assets/button-icons/lock.svg" />
+        </div>
         <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
             <div class="label">Expression Name</div>
             <input type="text" placeholder="" [(ngModel)]="expressionName" [disabled]="!isEditable" fxFlex>
@@ -44,14 +52,8 @@ POSSIBILITY OF SUCH DAMAGE.
                 [showCurrentTagsSection]="true"
                 (onTagSelectionChanged)="onTagSelectionChanged($event)"
                 [editable]="isEditable"
-            >
+            > 
             </tag-picker>
-            <icon-button
-                *ngIf="data.showSoloEditorButton"
-                (onClick)="onOpenSoloEditorView()"
-                title="Open Solo Editor View"
-                icon="assets/button-icons/widget-solo.svg"
-            ></icon-button>
         </div>
     </div>
     <expression-text-editor
@@ -69,7 +71,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <div fxLayout="row" fxLayoutAlign="end" class="choice-container gap-separated-horizontal-elements">
         <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-        <push-button *ngIf="data.isImmediatelyAppliable" buttonStyle="outline" [disabled]="!isEditable" (onClick)="onApplyToChart()">Save and Apply to Chart</push-button>
-        <push-button buttonStyle="yellow" [disabled]="!isEditable" (onClick)="onOK()">Apply</push-button>
+        <push-button buttonStyle="outline" (onClick)="onOpenSoloEditorView()">Open In Expression Editor</push-button>
+        <push-button buttonStyle="yellow" (onClick)="onCopyToNewExpression()">Copy To New Expression</push-button>
     </div>
 </div>

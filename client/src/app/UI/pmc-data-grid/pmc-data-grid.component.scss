@@ -61,7 +61,8 @@
             border-color: rgb(var(--clr-gray-70));
         }
 
-        .export-btn {
+        .settings-btn {
+            display: flex;
             margin-right: 8px;
         }
     }
@@ -99,6 +100,9 @@
                 }
 
                 td {
+                    height: 14px;
+                    min-height: 14px;
+
                     text-align: center;
                     padding: 6px 4px;
                     color: rgb(var(--clr-gray-30));
@@ -157,6 +161,26 @@
                 color: white;
                 text-transform: uppercase;
             }
+        }
+    }
+}
+
+.result-text, .log-text, .error-text {
+    position: relative;
+    min-height: 16px;
+
+    .copy-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 5px;
+        right: 8px;
+        color: rgba(var(--clr-gray-30), 0.8);
+        cursor: pointer;
+
+        &:hover {
+            color: rgba(var(--clr-gray-30), 1);
         }
     }
 }

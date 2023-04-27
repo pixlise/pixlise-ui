@@ -36,9 +36,13 @@ import { MistROIItem, ROIItem } from "src/app/models/roi";
 
 export class MistROIUploadData
 {
-    constructor()
-    {
-    }
+    static readonly MIST_ROI_HEADERS = ["ClassificationTrail", "ID_Depth", "PMC", "group1", "group2", "group3", "group4", "species", "formula"];
+    static readonly DatasetIDHeader = "DatasetID";
+
+    constructor(
+        public datasetID: string = "",
+    )
+    {}
 }
 
 
@@ -53,6 +57,9 @@ export class MistRoiUploadComponent implements OnInit
     public overwriteOptions: string[] = ["Over-Write All", "Over-Write ROIs With the Same Name", "Do Not Over-Write"];
     public csvFile: File;
     public mistROIs: ROIItem[] = [];
+    public mistROIsByDatasetID: Map<string, ROIItem[]> = new Map<string, ROIItem[]>();
+    public includesMultipleDatasets: boolean = false;
+    public uploadToSubDatasets: boolean = false;
 
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: MistROIUploadData,
@@ -86,15 +93,16 @@ export class MistRoiUploadComponent implements OnInit
     {
         let items: ROIItem[] = [];
 
-        let expectedHeaders = ["ClassificationTrail", "ID_Depth", "PMC", "group1", "group2", "group3", "group4", "species", "formula"];
+        let expectedHeaders = MistROIUploadData.MIST_ROI_HEADERS;
 
         let rows = papa.parse(rawCSV);
         let headers = rows.data.length > 0 ? rows.data[0] : [];
-        if(headers.filter(header => expectedHeaders.includes(header)).length !== expectedHeaders.length) 
+        if(!expectedHeaders.every(header => headers.includes(header)))
         {
             alert("Malformed Mist ROI CSV! Unexpected headers found.");
             return [];
         }
+        this.includesMultipleDatasets = headers.includes(MistROIUploadData.DatasetIDHeader);
 
         for(let row of rows.data.slice(1))
         {
@@ -114,6 +122,29 @@ export class MistRoiUploadComponent implements OnInit
             if(existingIndex >= 0)
             {
                 items[existingIndex].locationIndexes.push(rawItem.PMC);
+
+                if(this.includesMultipleDatasets)
+                {
+
+                    let datasetID = rawItem?.DatasetID || this.data.datasetID;
+                    let datasetItems = this.mistROIsByDatasetID.get(datasetID);
+                    if(datasetItems)
+                    {
+                        let existingMistIndex = datasetItems.findIndex((item) => item.mistROIItem.ClassificationTrail === rawItem.ClassificationTrail);
+                        if(existingMistIndex >= 0)
+                        {
+                            datasetItems[existingMistIndex].locationIndexes.push(rawItem.PMC);
+                        }
+                        else
+                        {
+                            datasetItems.push(items[existingIndex]);
+                        }
+                    }
+                    else
+                    {
+                        this.mistROIsByDatasetID.set(datasetID, [items[existingIndex]]);
+                    }
+                }
             }
             else
             {
@@ -124,22 +155,32 @@ export class MistRoiUploadComponent implements OnInit
                 // Adding the "mist__roi." prefix so we can duplicate a MIST ROI into a "regular" ROI and keep the same name
                 let name = rawItem.species && rawItem.species.length > 0 ? rawItem.species : mineralGroupID;
                 let existingName = items.findIndex((item) => item.name.replace("mist__roi.", "") === name) >= 0;
-                items.push(
-                    new ROIItem(
-                        `mist__roi.${existingName ? rawItem.ClassificationTrail : name}`,
-                        [rawItem.PMC],
+
+                let mistROI = new ROIItem(
+                    `mist__roi.${existingName ? rawItem.ClassificationTrail : name}`,
+                    [rawItem.PMC],
+                    rawItem.ClassificationTrail,
+                    null,
+                    null,
+                    new MistROIItem(
+                        rawItem.species,
+                        mineralGroupID,
+                        rawItem.ID_Depth,
                         rawItem.ClassificationTrail,
-                        null,
-                        null,
-                        new MistROIItem(
-                            rawItem.species,
-                            mineralGroupID,
-                            rawItem.ID_Depth,
-                            rawItem.ClassificationTrail,
-                            rawItem.formula
-                        )
+                        rawItem.formula
                     )
                 );
+                items.push(mistROI);
+
+                if(this.includesMultipleDatasets)
+                {
+                    let datasetID = rawItem?.DatasetID || this.data.datasetID;
+                    if(!this.mistROIsByDatasetID.has(datasetID))
+                    {
+                        this.mistROIsByDatasetID.set(datasetID, []);
+                    }
+                    this.mistROIsByDatasetID.get(datasetID).push(mistROI);
+                }
             }
         }
 
@@ -162,7 +203,10 @@ export class MistRoiUploadComponent implements OnInit
                 deleteExisting,
                 overwrite,
                 skipDuplicates,
-                mistROIs: this.mistROIs
+                mistROIs: this.mistROIs,
+                mistROIsByDatasetID: this.mistROIsByDatasetID,
+                includesMultipleDatasets: this.includesMultipleDatasets,
+                uploadToSubDatasets: this.uploadToSubDatasets,
             });
         }
     }

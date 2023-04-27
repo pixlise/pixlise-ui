@@ -489,7 +489,7 @@ export class SourceHelp
         );
 
         // Add possible values to docs if needed
-        let possibilities = help.params[paramIdx].getPossibleValues(paramsProvided, quantificationLoaded, dataset);
+        let possibilities = help.params[paramIdx]?.getPossibleValues(paramsProvided, quantificationLoaded, dataset);
         if(possibilities && possibilities.length > 0)
         {
             result.paramPossibleValues = possibilities;

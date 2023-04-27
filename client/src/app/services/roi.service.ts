@@ -353,10 +353,10 @@ export class ROIService
         );
     }
 
-    bulkAdd(roiItems: ROIItem[], overwrite: boolean = false, skipDuplicates: boolean = false, deleteExistingMistROIs: boolean = false, shareROIs: boolean = false): Observable<void | unknown[]>
+    bulkAdd(roiItems: ROIItem[], overwrite: boolean = false, skipDuplicates: boolean = false, deleteExistingMistROIs: boolean = false, shareROIs: boolean = false, datasetID: string = null): Observable<void | unknown[]>
     {
-        let loadID = this._loadingSvc.add(`Saving ${roiItems.length} new ROIs...`);
-        let apiURL = this.makeURL(this.getDatasetID(), "bulk"); 
+        let loadID = this._loadingSvc.add(`Saving ${roiItems.length} new ROIs${datasetID ? " for dataset " + datasetID : ""}...`);
+        let apiURL = this.makeURL(datasetID || this.getDatasetID(), "bulk");
 
         return this.http.post<void>(apiURL, { roiItems, overwrite, skipDuplicates, deleteExistingMistROIs, shareROIs }, makeHeaders()).pipe(
             tap(

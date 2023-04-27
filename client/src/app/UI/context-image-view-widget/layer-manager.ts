@@ -465,11 +465,14 @@ export class LayerManager
                 },
                 (err)=>
                 {
-                    // Notify the user & set vis back how it was
-                    alert(err);
-
-                    layer.opacity = prevOpacity;
-                    layer.visible = prevVis;
+                    // Notify the user & set vis back how it was unless it's an unsaved expression
+                    if(!id.startsWith(DataExpressionId.UnsavedExpressionPrefix))
+                    {
+                        alert(err);
+    
+                        layer.opacity = prevOpacity;
+                        layer.visible = prevVis;
+                    }
                 }
             );
         }

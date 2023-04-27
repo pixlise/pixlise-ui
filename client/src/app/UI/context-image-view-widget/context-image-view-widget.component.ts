@@ -277,11 +277,19 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
                 if(this.isPreviewMode)
                 {
                     let validPreviewExpressions = this.previewExpressionIDs.filter(id => this.exprService.getExpression(id));
-                    if(validPreviewExpressions.length > 0)
+                    let exprUpdated = data[3] === "expr-updated";
+                    if(validPreviewExpressions.length > 0 && exprUpdated)
                     {
                         // We can only show one visible layer on the context image, so we just show the first one
                         this.mdl.layerManager.setSingleLayerVisible(validPreviewExpressions[0]);
                         this.reDraw();
+
+                        // Wait 100ms to ensure this is the last subscription run
+                        setTimeout(() =>
+                        {
+                            this.mdl.layerManager.setSingleLayerVisible(validPreviewExpressions[0]);
+                            this.reDraw();
+                        }, 100);
                     }
                 }
                 this.mdl.regionManager.setDataset(data[0] as DataSet);
@@ -432,6 +440,16 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
     get isPreviewMode(): boolean 
     {
         return this.previewExpressionIDs && this.previewExpressionIDs.length > 0;
+    }
+
+    onRefreshLayer(): void
+    {
+        let validPreviewExpressions = this.previewExpressionIDs.filter(id => this.exprService.getExpression(id));
+        if(validPreviewExpressions.length > 0)
+        {
+            this.mdl.layerManager.setSingleLayerVisible(validPreviewExpressions[0]);
+            this.reDraw();
+        }
     }
 
     private saveState(reason: string): void

@@ -44,6 +44,16 @@ POSSIBILITY OF SUCH DAMAGE. -->
                 {{option}}:
             </mat-radio-button>
         </mat-radio-group>
+        <mat-checkbox
+            class="top-gap upload-subdatasets"
+            [(ngModel)]="uploadToSubDatasets"
+            [disabled]="!includesMultipleDatasets"
+            #tooltip="matTooltip"
+            [matTooltip]="includesMultipleDatasets ? 'Also upload MIST ROIs to their respective sub-datasets' : 'This CSV does not contain multiple datasets'"
+            [matTooltipDisabled]="!isValidMistROIFile"
+        >
+            Upload To Sub-Datasets
+        </mat-checkbox>
     </div>
 
     <div fxLayout="row" fxLayoutAlign="end center" class="card-toolbar gap-separated-horizontal-elements">
