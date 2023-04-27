@@ -29,7 +29,7 @@
 
 import { Component, Inject, OnInit } from "@angular/core";
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
-import * as JSZip from "jszip";
+import JSZip from "jszip";
 import { Subscription } from "rxjs";
 import { ViewState, ViewStateService } from "src/app/services/view-state.service";
 

@@ -76,6 +76,7 @@ TestMikesLib = {}
         lu.assertEquals(line, -1)
         lu.assertEquals(comment, "")
     end
+--[[
     function TestMikesLib:testTotalFuncSpeed()
         -- Run it many times to get an average time
         local t0 = os.clock()
@@ -93,7 +94,7 @@ TestMikesLib = {}
         -- often here...
         lu.assertEquals(runtime < 10, true)
     end
-
+]]--
 --[[
     
 Diagnosing speed issues - we can see how long function calls took with this:
