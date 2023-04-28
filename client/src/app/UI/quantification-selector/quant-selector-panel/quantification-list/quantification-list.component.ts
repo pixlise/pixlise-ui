@@ -105,7 +105,7 @@ export class QuantificationListComponent implements OnInit
                 if(claims)
                 {
                     this.canBless = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionBlessQuantification);
-                    this.canPublish = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionBlessQuantification);
+                    this.canPublish = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionPublishQuantification);
                 }
             }
         );
