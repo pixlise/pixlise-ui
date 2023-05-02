@@ -1,0 +1,15 @@
+{
+    "disableCoverage": true,
+    "disableDependencies": true,
+    "disableProperties": true,
+    "disableTemplateTab": true,
+    "disableDomTree": true,
+    "hideGenerator": true,
+    "watch": false,
+    "includesName": "Code Structure",
+    "assetsFolder": "./docs/additional-documentation",
+    "includes": "./docs",
+    "name": "PIXLISE UI Documentation",
+    "serve": true,
+    "tsconfig": "tsconfig.doc.json"
+}
