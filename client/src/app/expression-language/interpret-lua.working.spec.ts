@@ -28,6 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { LuaDataQuerier } from "src/app/expression-language/interpret-lua";
+//import { InterpreterDataSource } from "./interpreter-data-source";
+import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 
 
 describe("LuaDataQuerier parseLuaError()", () =>
@@ -52,7 +54,7 @@ describe("LuaDataQuerier parseLuaError()", () =>
         let err2 = lua["parseLuaError"](err, "1\n2\n3\n4\n5\n6\n7\n8\n");
         
         expect(err2["line"]).toEqual(7);
-        expect(err2.message).toEqual(`Syntax error on line 7: unfinished string near '"A)'`);
+        expect(err2.message).toEqual("Syntax error on line 7: unfinished string near '\"A)'");
         expect(err2.stack).toEqual(err.stack);
         expect(err2["sourceLine"]).toEqual("7");
         expect(err2["errType"]).toEqual("ErrorSyntax");
@@ -67,7 +69,7 @@ describe("LuaDataQuerier parseLuaError()", () =>
         let err2 = lua["parseLuaError"](err, "1\n2\n3\n4\n5\n6\n7\n8\n");
 
         expect(err2["line"]).toEqual(7);
-        expect(err2.message).toEqual(`Syntax error on line 7: 'end' expected (to close 'function' at line 4) near ')'`);
+        expect(err2.message).toEqual("Syntax error on line 7: 'end' expected (to close 'function' at line 4) near ')'");
         expect(err2.stack).toEqual(err.stack);
         expect(err2["sourceLine"]).toEqual("7");
         expect(err2["errType"]).toEqual("ErrorSyntax");
@@ -82,7 +84,7 @@ describe("LuaDataQuerier parseLuaError()", () =>
         let err2 = lua["parseLuaError"](err, "1\n2\n3\n4\n5\n6\n7\n8\n");
 
         expect(err2["line"]).toEqual(5);
-        expect(err2.message).toEqual(`Runtime error on line 5: attempt to call a nil value (field 'addd')\nstack traceback:\n\t[string \"local Map = makeMapLib()...\"]:8: in main chunk`);
+        expect(err2.message).toEqual("Runtime error on line 5: attempt to call a nil value (field 'addd')\nstack traceback:\n\t[string \"local Map = makeMapLib()...\"]:8: in main chunk");
         expect(err2.stack).toEqual(err.stack);
         expect(err2["sourceLine"]).toEqual("5");
         expect(err2["errType"]).toEqual("ErrorRun");
@@ -97,9 +99,141 @@ describe("LuaDataQuerier parseLuaError()", () =>
         let err2 = lua["parseLuaError"](err, "1\n2\n3\n4\n5\n6\n7\n8\n");
 
         expect(err2["line"]).toEqual(6);
-        expect(err2.message).toEqual(`Runtime error on line 6: Something went wrong\nstack traceback:\n\t[string \"local Map = makeMapLib()...\"]:6: in local 'expr_6a3a_2'\n\t[string \"local Map = makeMapLib()...\"]:9: in main chunk`);
+        expect(err2.message).toEqual("Runtime error on line 6: Something went wrong\nstack traceback:\n\t[string \"local Map = makeMapLib()...\"]:6: in local 'expr_6a3a_2'\n\t[string \"local Map = makeMapLib()...\"]:9: in main chunk");
         expect(err2.stack).toEqual(err.stack);
         expect(err2["sourceLine"]).toEqual("6");
         expect(err2["errType"]).toEqual("ErrorRun");
+    });
+});
+
+fdescribe("LuaDataQuerier runQuery()", ()=>
+{
+    it("should run simple func returning string", (done)=> 
+    {
+        let lua = new LuaDataQuerier(false);
+        const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+
+        lua.runQuery("return \"hello\"..\"world\"..333", new Map<string, string>(), ds, true, true, false).subscribe(
+            // Result
+            (value)=>
+            {
+                const exp = new DataQueryResult("helloworld333", false, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
+                expect(value.runtimeMs > 0);
+                expect(value).toEqual(exp);
+            },
+            // Error handler
+            (err)=>
+            {
+                fail("Expected value");
+            },
+            // Finalizer
+            done
+        );
+    });
+
+    it("should reject string result if asked to", (done)=> 
+    {
+        let lua = new LuaDataQuerier(false);
+        const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+
+        lua.runQuery("return \"hello\"..\"world\"..333", new Map<string, string>(), ds, true, false, false).subscribe(
+            // Result
+            null,
+            // Error handler
+            (err)=>
+            {
+                expect(err.message).toEqual("Expression did not return map data in expected format");
+                done();
+            }
+        );
+    });
+
+    it("should run simple func returning number", (done)=> 
+    {
+        let lua = new LuaDataQuerier(false);
+        const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+
+        lua.runQuery("return 3+4", new Map<string, string>(), ds, true, true, false).subscribe(
+            // Result
+            (value)=>
+            {
+                const exp = new DataQueryResult(7, false, [], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
+                expect(value.runtimeMs > 0);
+                expect(value).toEqual(exp);
+            },
+            // Error handler
+            null,
+            // Finalizer
+            done
+        );
+    });
+
+    it("should run fail if unknown lua func called", (done)=> 
+    {
+        let lua = new LuaDataQuerier(false);
+        const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+
+        lua.runQuery("return nonExistantFunc(\"Ca\", \"%\", \"B\")", new Map<string, string>(), ds, true, true, false).subscribe(
+            // Result
+            null,
+            // Error handler
+            (err)=>
+            {
+                expect(err.message).toEqual("Runtime error on line 1: attempt to call a nil value (global 'nonExistantFunc')");
+                done();
+            }
+        );
+    });
+
+    it("should run simple expression", (done)=> 
+    {
+        let lua = new LuaDataQuerier(false);
+        const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+        const Ca = PMCDataValues.makeWithValues([
+            new PMCDataValue(4, 10),
+            new PMCDataValue(5, 11),
+            new PMCDataValue(7, 12),
+        ]);
+        ds.readElement.and.returnValue(Ca);
+
+        lua.runQuery("return element(\"Ca\", \"%\", \"B\")", new Map<string, string>(), ds, true, true, false).subscribe(
+            // Result
+            (value)=>
+            {
+                const exp = new DataQueryResult(Ca, true, ["expr-elem-Ca-%(B)"], value.runtimeMs, "", "", new Map<string, PMCDataValues>(), "");
+                expect(value).toEqual(exp);
+            },
+            // Error handler
+            null,
+            // Finalizer
+            done
+        );
+    });
+
+    it("should run simple expression (and record inputs)", (done)=> 
+    {
+        let lua = new LuaDataQuerier(false);
+        const ds = jasmine.createSpyObj("InterpreterDataSource", ["readElement"], []);
+        const Ca = PMCDataValues.makeWithValues([
+            new PMCDataValue(4, 10),
+            new PMCDataValue(5, 11),
+            new PMCDataValue(7, 12),
+        ]);
+        ds.readElement.and.returnValue(Ca);
+
+        lua.runQuery("return element(\"Ca\", \"%\", \"B\")", new Map<string, string>(), ds, true, true, true).subscribe(
+            // Result
+            (value)=>
+            {
+                const exp = new DataQueryResult(Ca, true, ["expr-elem-Ca-%(B)"], value.runtimeMs, "", "", new Map<string, PMCDataValues>(
+                    [["elem-Ca-%-B", Ca]]
+                ), "");
+                expect(value).toEqual(exp);
+            },
+            // Error handler
+            null,
+            // Finalizer
+            done
+        );
     });
 });
