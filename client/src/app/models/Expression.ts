@@ -115,6 +115,10 @@ export class DataExpression
         public tags: string[],
         public moduleReferences: ModuleReference[],
         public recentExecStats: ExpressionExecStats,
+        
+        public doi: string = "",
+        public doiBadge: string = "",
+        public doiLink: string = "",
 
         // This flag is used to indicate that the module references are up to date and isn't stored with the expression
         public isModuleListUpToDate: boolean = true
@@ -172,6 +176,9 @@ export class DataExpression
             tags,
             moduleReferences,
             recentExecStats,
+            this.doi,
+            this.doiBadge,
+            this.doiLink,
             this.isModuleListUpToDate
         );
     }

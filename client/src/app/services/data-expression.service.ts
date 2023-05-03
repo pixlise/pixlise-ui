@@ -76,7 +76,10 @@ export class DataExpressionWire
         public mod_unix_time_sec: number,
         public tags: string[] = [],
         public moduleReferences: ModuleReference[],
-        public recentExecStats: ExpressionExecStats
+        public recentExecStats: ExpressionExecStats,
+        public doi: string = "",
+        public doiBadge: string = "",
+        public doiLink: string = "",
     )
     {
     }
@@ -121,6 +124,9 @@ export class DataExpressionWire
             this.tags || [],
             moduleReferences,
             this.recentExecStats || null,
+            this.doi,
+            this.doiBadge,
+            this.doiLink,
             isModuleListUpToDate
         );
 
@@ -311,7 +317,10 @@ export class DataExpressionService
                     expression["mod_unix_time_sec"],
                     expression["tags"],
                     expression["moduleReferences"],
-                    expression["recentExecStats"]
+                    expression["recentExecStats"],
+                    expression["doi"],
+                    expression["doiBadge"],
+                    expression["doiLink"],
                 );
                 // We're passing in the module service here so we can make sure all modules are up to date
                 // and cache this once
@@ -970,6 +979,27 @@ export class DataExpressionService
             );
     }
 
+    publishDOI(id: string, zipFile: Blob): Observable<DataExpression>
+    {
+        let loadID = this._loadingSvc.add("Publishing expression to Zenodo...");
+        let apiURL = APIPaths.getWithHost(APIPaths.api_publish_doi+"/"+APIPaths.api_data_expression+"/"+id);
+        return this.http.post<DataExpression>(apiURL, zipFile, makeHeaders())
+            .pipe(
+                tap(
+                    (expression: DataExpression)=>
+                    {
+                        console.log(expression);
+                        this._loadingSvc.remove(loadID);
+                        this.refreshExpressions();
+                    },
+                    (err)=>
+                    {
+                        this._loadingSvc.remove(loadID);
+                    }
+                )
+            );
+    }
+
     // Call this to save runtime stats. Internally this saves them in local cache and sends to API, subscribing
     // for the result, but does nothing with it except print errors if needed
     saveExecutionStats(id: string, dataRequired: string[], runtimeMs: number): void
@@ -980,7 +1010,7 @@ export class DataExpressionService
             DataExpressionId.isPredefinedNewID(id) ||
             DataExpressionId.isPredefinedQuantExpression(id) ||
             DataExpressionId.isUnsavedExpressionId(id)
-            )
+        )
         {
             return;
         }

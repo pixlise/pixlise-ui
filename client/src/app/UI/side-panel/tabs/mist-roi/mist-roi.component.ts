@@ -189,7 +189,7 @@ export class MistROIComponent implements OnInit
                 }
                 else
                 {
-                    let mistROIsWithOffsets = [];
+                    let mistROIsWithOffsets: ROIItem[] = [];
 
                     let missingSubDatasets = Array.from(response.mistROIsByDatasetID.keys()).filter((subDataset) => !this._subDataSetIDs.includes(subDataset));
                     if(missingSubDatasets.length > 0)
@@ -210,27 +210,61 @@ export class MistROIComponent implements OnInit
                         
                         if(response.uploadToSubDatasets)
                         {
-                            // Add ROIs without offsets to sub-dataset
-                            this._roiService.bulkAdd(rois, response.overwrite, response.skipDuplicates, response.deleteExisting, true, subDatasetID).subscribe(
-                                ()=>
+                            // Need to convert list of PMCs to LocationIndexes for sub-dataset
+                            this._datasetService.loadDatasetFile(subDatasetID).subscribe((subDataSetExperiment) =>
+                            {
+                                let subDataSet = new DataSet(subDatasetID, subDataSetExperiment, null);
+
+                                let subDataSetROIs = rois.map((roi) =>
                                 {
-                                    this._selectionService.clearSelection();
-                                },
-                                (err)=>
-                                {
-                                    alert(httpErrorToString(err, ""));
-                                }
-                            );
+                                    return new ROIItem(
+                                        roi.name,
+                                        roi.locationIndexes.map((locIdx) => subDataSet.pmcToLocationIndex.get(locIdx)),
+                                        roi.description,
+                                        roi.imageName,
+                                        roi.pixelIndexes,
+                                        roi.mistROIItem,
+                                        roi.tags
+                                    );
+                                });
+
+                                // Add ROIs without offsets to sub-dataset
+                                this._roiService.bulkAdd(subDataSetROIs, response.overwrite, response.skipDuplicates, response.deleteExisting, true, subDatasetID).subscribe(
+                                    ()=>
+                                    {
+                                        this._selectionService.clearSelection();
+                                    },
+                                    (err)=>
+                                    {
+                                        alert(httpErrorToString(err, ""));
+                                    }
+                                );
+                            });
+
                         }
 
                         rois.forEach((roi) =>
                         {
                             let offset = this._datasetService.datasetLoaded.getIdOffsetForSubDataset(subDatasetID);
-                            if(offset)
+                            roi.locationIndexes = roi.locationIndexes.map((locIdx) =>
                             {
-                                roi.locationIndexes = roi.locationIndexes.map((locIdx) => locIdx + offset);
+                                let offsetPMC = offset ? locIdx + offset : locIdx;
+                                return this._datasetService.datasetLoaded.pmcToLocationIndex.get(offsetPMC);
+                            });
+
+                            // We need to re-combine the ROIs with differing offsets into one ROI
+                            let existingIndex = mistROIsWithOffsets.findIndex((existingROI) => existingROI.name === roi.name);
+                            if(existingIndex >= 0)
+                            {
+                                mistROIsWithOffsets[existingIndex].locationIndexes = [
+                                    ...mistROIsWithOffsets[existingIndex].locationIndexes,
+                                    ...roi.locationIndexes
+                                ];
                             }
-                            mistROIsWithOffsets.push(roi);
+                            else
+                            {
+                                mistROIsWithOffsets.push(roi);
+                            }
                         });
                     });
 

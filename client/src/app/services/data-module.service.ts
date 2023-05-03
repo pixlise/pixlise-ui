@@ -84,6 +84,9 @@ export class DataModuleVersionSourceWire
         public comments: string,
         public mod_unix_time_sec: number,
         public sourceCode: string,
+        public doi: string = "",
+        public doiBadge: string = "",
+        public doiLink: string = ""
     )
     {
     }
@@ -238,7 +241,10 @@ class DataModuleStore
                 ver.tags,
                 ver.comments,
                 ver.mod_unix_time_sec,
-                ver.sourceCode
+                ver.sourceCode,
+                ver.doi,
+                ver.doiBadge,
+                ver.doiLink
             )
         );
     }
@@ -383,6 +389,9 @@ export class DataModuleService
                 module["version"]["comments"],
                 module["version"]["mod_unix_time_sec"],
                 module["version"]["sourceCode"],
+                module["version"]["doi"],
+                module["version"]["doiBadge"],
+                module["version"]["doiLink"],
             ),
         );
 
@@ -401,7 +410,19 @@ export class DataModuleService
             let versMap = new Map<string, DataModuleVersionSourceWire>();
             for(let moduleVersion of module["versions"])
             {
-                versMap.set(moduleVersion["version"], new DataModuleVersionSourceWire(moduleVersion["version"], moduleVersion["tags"], moduleVersion["comments"], moduleVersion["mod_unix_time_sec"], ""));
+                versMap.set(
+                    moduleVersion["version"],
+                    new DataModuleVersionSourceWire(
+                        moduleVersion["version"],
+                        moduleVersion["tags"],
+                        moduleVersion["comments"],
+                        moduleVersion["mod_unix_time_sec"],
+                        "",
+                        moduleVersion["doi"],
+                        moduleVersion["doiBadge"],
+                        moduleVersion["doiLink"]
+                    )
+                );
             }
             
             let wireMod = new DataModule(
@@ -499,7 +520,7 @@ export class DataModuleService
     addModuleVersion(moduleId: string, sourceCode: string, comments: string, tags: string[], type: string = "patch", loadingText: string = "Saving new module version..."): Observable<DataModuleSpecificVersionWire>
     {
         let loadID = this._loadingSvc.add(loadingText);
-        let apiURL = APIPaths.getWithHost(APIPaths.api_data_module+"/"+moduleId);
+        let apiURL = APIPaths.getWithHost(APIPaths.api_data_module+"/"+moduleId) + "?publish_doi=true";
         let toSave = new DataModuleVersionInput(sourceCode, comments, tags, type);
         return this.http.put<DataModuleSpecificVersionWire>(apiURL, toSave, makeHeaders())
             .pipe(
@@ -508,6 +529,7 @@ export class DataModuleService
                     {
                         if(resp) 
                         {
+                            console.log("ADD MOD VERSION", resp)
                             // Add this to our list of modules
                             let recvdModule = this.readSpecificVersionModule(resp);
 

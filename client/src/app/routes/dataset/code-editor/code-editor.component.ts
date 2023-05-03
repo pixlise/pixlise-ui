@@ -541,6 +541,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.regenerateItemList();
 
                     this.topEditor.fetchStoredExpression();
+
+                    console.log("Loaded module", module);
                 },
                 (error) =>
                 {
@@ -2043,6 +2045,25 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             (exportData: Blob)=>
             {
                 saveAs(exportData, expr.name+".zip");
+            }
+        );
+    }
+
+    publishDOI()
+    {
+        let expr = this?.topEditor?.expression;
+        if(!expr)
+        {
+            return;
+        }
+
+        this._widgetDataService.exportExpressionCode(expr).subscribe(
+            (exportData: Blob)=>
+            {
+                this._expressionService.publishDOI(expr.id, exportData).subscribe((expression) =>
+                {
+                    console.log("EXPR PUBLISHED", expression)
+                })
             }
         );
     }

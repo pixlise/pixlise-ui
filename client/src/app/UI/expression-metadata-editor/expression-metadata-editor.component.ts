@@ -115,6 +115,42 @@ export class ExpressionMetadataEditorComponent implements OnInit
         }
     }
 
+    get doiBadge(): string
+    {
+        if(this.isModule)
+        {
+            return this.currentVersion?.doiBadge || "";
+        }
+        else
+        {
+            return this.expression?.doiBadge || "";
+        }
+    }
+
+    get doiLink(): string
+    {
+        if(this.isModule)
+        {
+            return this.currentVersion?.doiLink || "";
+        }
+        else
+        {
+            return this.expression?.doiLink || "";
+        }
+    }
+
+    get doi(): string
+    {
+        if(this.isModule)
+        {
+            return this.currentVersion?.doi || "";
+        }
+        else
+        {
+            return this.expression?.doi || "";
+        }
+    }
+
     get name(): string
     {
         return this.expression.name;
@@ -145,6 +181,11 @@ export class ExpressionMetadataEditorComponent implements OnInit
     set tags(value: string[])
     {
         this.expression.tags = value;
+    }
+
+    openDOIFormDialog(): void
+    {
+        
     }
 
     onTagSelectionChanged(tags: string[]): void
@@ -231,6 +272,8 @@ export class ExpressionMetadataEditorComponent implements OnInit
                 this.latestRelease = this.releaseNotes[0].minorVersions[0];
             }
         }
+
+        console.log("META", this.currentVersion, this.latestRelease)
     }
 
     getVersionDisplayName(version: DataModuleVersionSourceWire): string
