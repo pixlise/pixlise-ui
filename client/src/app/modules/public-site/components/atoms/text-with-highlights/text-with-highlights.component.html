@@ -1,0 +1,4 @@
+<ng-container *ngFor="let txt of parts; let i = index;">
+    <span *ngIf="i % 2 == 0" [ngClass]="styleMain">{{txt}}</span>
+    <span *ngIf="i % 2 != 0" [ngClass]="styleAlternate">{{txt}}</span>
+</ng-container>

@@ -1,0 +1,73 @@
+<div class="page">
+    <img class="header-image" src="assets/images/bg-quantification.jpg">
+    <nav-section-switch [isTop]="true" leftNavLabel="Workflow" leftNavLink="public/workflow" rightNavLabel="Investigation" rightNavLink="public/investigation"></nav-section-switch>
+    <div class="flex-column chill section">
+        <div class="flex-column flex-center-center">
+            <button-nav-down link="features"></button-nav-down>
+        </div>
+        <number-button theNumber="00" theLabel="The Challenge" link="challenge" [showArrow]="false"></number-button>
+        <h3>Revolutionize your quantification.</h3>
+        <img src="assets/images/quantification/parallel.svg">
+    </div>
+    <div class="flex-row piquant section">
+        <h3>Meet PIQUANT.</h3>
+        <div class="flex-column">
+            <p><span class="yellow">PIQUANT</span>* is an ultra-fast quantification engine that yields accurate quantification of thousands of scan points in minutes. Craft compound quantifications with different element sets or matrix assumptions for multiple regions of a single dataset. Rapidly visualize fully quantified maps of every element in your quantification. And don’t forget to share them all with your lab.</p>
+            <p>Since its origin in 2000, the PIQUANT database continues to be improved for planetary science missions. PIQUANT is fundamental parameters based and is uniquely optimized for cloud-parallelization enabling scientific investigation that is simultaneously fast and accurate. PIQUANT is also fully open-source, providing full transparency into the quantification process.</p>
+            <p>*With cloud-parallelization</p>
+        </div>
+        <div class="flex-column more-piquant">
+            <a href="piquant"><div>MORE ON PIQUANT <img src="assets/images/arrow-right-yellow-small.svg"></div></a>
+        </div>
+    </div>
+<!--
+    <div class="flex-row stat1 section-small">
+        <div><span class="figure-large">3.1</span><span class="figure-time">AVERAGE PIQUANT QUANTIFICATION TIME (MINUTES)</span></div>
+    </div>
+    <div class="flex-row stat2 section-small">
+        <div><span class="figure-large">4721</span><span class="figure-time">TOTAL QUANTIFICATIONS PERFORMED SINCE 2020</span></div>
+    </div>
+    <div class="flex-row stat3 section-small">
+        <div><span class="figure-large">99%</span><span class="figure-time">FASTER THAN COMPETITOR QUANTIFICATION SOFTWARE</span></div>
+    </div>
+    <div class="flex-row stat4 section-small">
+    </div>
+-->
+    <div class="flex-column industry section">
+        <number-button theNumber="01" theLabel="Quantification" link="quantification" [showArrow]="false"></number-button>
+        <h3>Industry-leading accuracy and speed in elemental quantification. Seamlessly integrated into the PIXLISE interface.</h3>
+        <img src="assets/images/quantification/piquant.png">
+        
+        <div class="flex-row small-card-container">
+            <div class="small-card">
+                <img src="assets/images/quantification/checkbox.svg">
+                <h4>Elemental Identification</h4>
+                <p>Easily build an element set with interactive indicators that assist you to locate distinct peaks in spectra.</p>
+            </div>
+            <div class="small-card">
+                <img src="assets/images/quantification/map.svg">
+                <h4>Quantified Element Maps</h4>
+                <p>Visualize the spatial distribution of elements in your scan with fully quantified data.</p>
+            </div>
+            <div class="small-card">
+                <img src="assets/images/quantification/mouse.svg">
+                <h4>Multi-Quantification</h4>
+                <p>A feature found only in PIXLISE, craft individual quantifications for regions of your dataset and combine them into one.</p>
+            </div>
+            <div class="small-card">
+                <img src="assets/images/quantification/table.svg">
+                <h4>Quantified Element Table</h4>
+                <p>Display quantified weight percentages for every element of your dataset in a table.</p>
+            </div>
+        </div>
+    </div>
+    <div class="quote">
+        <quote-viewer
+            [quoteParts]="quoteParts"
+            quotePerson="Abigail Alwood"
+            quotePersonTitle="PIXL Instrument Principle Investigator"
+            linkLabel="EXPLORE CASE STUDIES"
+            link="pixlise-story"></quote-viewer>
+    </div>
+    <nav-section-switch [isTop]="false" leftNavLabel="Workflow" leftNavLink="public/workflow" rightNavLabel="Investigation" rightNavLink="public/investigation"></nav-section-switch>
+</div>

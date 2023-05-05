@@ -1,0 +1,162 @@
+@import '../../../scss/public-site.scss';
+
+.page {
+    .product {
+        background-color: $clr-gray-100;
+        color: $clr-gray-10;
+        height: 550px;
+
+        h2 {
+            width: 700px;
+        }
+
+        p {
+            color: $clr-gray-30;
+            height: 100px;
+        }
+
+        .product-card-container {
+            justify-content: center;
+            gap: 48px;
+
+            .product-card {
+                border-top: $clr-yellow 1px solid;
+                padding: 36px;
+                width: 360px;
+                background-color: $clr-gray-80;
+
+                box-shadow: 0px 0px $sz-unit $clr-gray-100;
+                border-bottom-left-radius: $sz-unit;
+                border-bottom-right-radius: $sz-unit;
+
+                .img-container {
+                    padding: 40px 0px;
+                    height: 190px;
+
+                    display: flex;
+                    flex-direction: row;
+                    justify-content: center;
+                }
+            }
+        }
+    }
+
+    .collaboration {
+        background-color: $clr-gray-20;
+        color: $clr-gray-50;
+
+        h2 {
+            color: $clr-gray-50;
+            width: 900px;
+        }
+
+        .collab-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+        }
+    }
+    .workflow {
+        background-color: $clr-gray-70;
+        color: $clr-gray-10;
+    }
+/*
+    .workflow {
+        background-color: $clr-gray-70;
+        color: $clr-gray-10;
+
+        .container {
+            white-space: nowrap;
+        }
+
+        .text-container {
+            width: 440px;
+            display: inline-block;
+            padding-right: 100px;
+
+            white-space: normal;
+        }
+
+        p {
+            color: $clr-gray-20;
+        }
+
+        img {
+            width: 1124px;
+            display: inline-block;
+            position: relative;
+            right: -$sz-border-x;
+        }
+    }
+*/
+
+.quote-section {
+    background-color: $clr-gray-100;
+}
+/*
+    .quote-section {
+        padding: 0px $sz-border-x;
+
+        display: flex;
+        flex-direction: row;
+        //justify-content: center;
+        align-items: stretch;
+
+        background-color: $clr-gray-100;
+
+        border-top: $clr-yellow 1px solid;
+
+        .quote-container {
+            padding: $sz-border-y 0px;
+
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+
+            .text-quote {
+                max-width: 800px;
+                padding-bottom: $sz-subheading-gap
+            }
+        }
+
+        .explore {
+            justify-content: center;
+
+            border-left: $clr-gray-70 1px solid;
+            padding-left: $sz-paragraph-gap;
+            width: 400px;
+        }
+
+        a {
+            color: $clr-gray-30;
+        }
+    }
+*/
+    .quantification {
+        background-color: $clr-gray-80;
+        //background-image: url("assets/images/landing/piquant-pie.svg");
+        background-repeat: no-repeat;
+        background-position: center left;
+        padding-top: 136px;
+
+        .bg {
+            position: relative;
+            top: 0px;
+            left: -$sz-border-x;
+            display: inline-block;
+        }
+        .right-text {
+            padding-top: 344px;
+        }
+
+        h2 {
+            padding-bottom: 28px;
+        }
+    }
+
+    .investigation {
+        background-color: $clr-gray-70;
+    }
+}
+

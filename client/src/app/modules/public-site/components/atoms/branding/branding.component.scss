@@ -1,0 +1,15 @@
+@import '../../../scss/public-site.scss';
+
+.logos {
+    padding: $sz-paragraph-gap;
+    background-color: $clr-gray-20;
+    color: $clr-gray-50;
+
+    .caption {
+        padding-bottom: $sz-paragraph-gap;
+    }
+
+    .logo-row {
+        gap: $sz-button-gap;
+    }
+}

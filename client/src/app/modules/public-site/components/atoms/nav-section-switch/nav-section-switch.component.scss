@@ -1,0 +1,24 @@
+@import '../../../scss/public-site.scss';
+
+.nav-switch {
+    justify-content: space-between;
+    padding: 24px 0px;
+
+    .chevron {
+        width: $sz-border-x;
+        color: $clr-red;
+        font-size: 2em;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    &.light {
+        background-color: $clr-gray-10;
+        color: $clr-gray-70;
+    }
+
+    &.dark {
+        background-color: $clr-gray-90;
+        color: $clr-gray-50;
+    }
+}

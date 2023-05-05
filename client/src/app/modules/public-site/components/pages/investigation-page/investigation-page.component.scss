@@ -1,0 +1,13 @@
+@import '../../../scss/public-site.scss';
+
+.page {
+    .suite {
+        background-color: $clr-gray-90;
+    }
+    .expression{
+        background-color: $clr-gray-100;
+    }
+    .diffraction {
+        background-color: $clr-gray-70;
+    }
+}

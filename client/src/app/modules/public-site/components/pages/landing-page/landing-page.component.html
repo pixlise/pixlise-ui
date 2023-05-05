@@ -1,0 +1,111 @@
+<div class="page">
+    <img class="header-image" src="assets/images/bg-landing.jpg">
+    <div class="product section">
+        <number-button theNumber="00" theLabel="Product" link="" [showArrow]="false"></number-button>
+        <h2>PIXLISE is founded on three principals.</h2>
+        <div class="flex-row product-card-container">
+            <div class="flex-column product-card">
+                <div class="img-container">
+                    <img src="assets/images/landing/workflow-card.svg">
+                </div>
+                <h3>Flexibility</h3>
+                <p>Frictionless scientific workflow with cutting-edge interface design, sharing, and exporting capabilities.</p>
+                <number-button theNumber="" theLabel="EXPLORE WORKFLOW" link="public/workflow" [showArrow]="true"></number-button>
+            </div>
+            <div class="flex-column product-card">
+                <div class="img-container">
+                    <img src="assets/images/landing/quantification-card.svg">
+                </div>
+                <h3>Speed</h3>
+                <p>Ultra-fast data quantification—never compromising accuracy and precision.</p>
+                <number-button theNumber="" theLabel="EXPLORE QUANTIFICATION" link="public/quantification" [showArrow]="true"></number-button>
+            </div>
+            <div class="flex-column product-card">
+                <div class="img-container">
+                    <img src="assets/images/landing/investigation-card.svg">
+                </div>
+                <h3>Innovation</h3>
+                <p>Intricately-interconnected and customizable tools that grow with your geoscientific knowledge.</p>
+                <number-button theNumber="" theLabel="EXPLORE INVESTIGATION" link="public/investigation" [showArrow]="true"></number-button>
+            </div>
+        </div>
+    </div>
+    <div class="collaboration section">
+        <h2><text-with-highlights [parts]="collaborationParts" styleMain="" styleAlternate="red"></text-with-highlights></h2>
+        <div class="collab-container">
+            <img src="assets/images/landing/collaboration.svg">
+        </div>
+    </div>
+<!--
+    <div class="workflow section">
+        <number-button theNumber="01" theLabel="Workflow" link="workflow" [showArrow]="true"></number-button>
+        <div class="container">
+            <div class="text-container">
+                <h2>Scientific investigation at the speed of thought.</h2>
+                <h4>Fast, Flexible, and Lab-optimized.</h4>
+                <p>PIXLISE is an interface informed by <strong>thousands of hours of collaboration</strong> between geoscientists and
+                    visualization designers. With intricately-connected features, <strong>colorblind-safe palettes</strong>, and
+                    customizable plot panels, PIXLISE's <strong>flexible user interface</strong> empowers the modern scientist with
+                    an <strong>innovative workflow</strong>.</p>
+            </div>
+            <img src="assets/images/landing/anim-flexibility.gif">
+        </div>
+    </div>
+-->
+    <div class="workflow">
+        <section-image-list-text [params]="workspaceParams"></section-image-list-text>
+    </div>
+<!--
+    <div class="quote-section">
+        <div class="quote-container">
+            <div class="text-quote">“This tool allows me to make new and different types of analyses <span class="text-quote-bold yellow">which I had never imagined were possible</span>.”</div>
+            <div class="text-quote-origin-bold">- Michael Tice <span class="red text-quote-origin">NASA Geoscientist</span></div>
+        </div>
+        <div class="flex-column explore">
+            <a href="case-studies"><div>EXPLORE CASE STUDIES <img src="assets/images/arrow-right-yellow-small.svg"></div></a>
+        </div>
+    </div>
+-->
+    <div class="quote-section">
+        <quote-viewer
+            [quoteParts]="quoteParts"
+            quotePerson="Michael Tice"
+            quotePersonTitle="NASA Geoscientist"
+            linkLabel="THE STORY OF PIXLISE"
+            link="pixlise-story"></quote-viewer>
+    </div>
+    <div class="quantification section">
+        <img class="bg" src="assets/images/landing/piquant-pie.svg">
+        <div class="flex-column">
+            <number-button theNumber="02" theLabel="Quantification" link="public/quantification" [showArrow]="true"></number-button>
+            <div class="flex-row">
+                <h2>24-hour data quantification Try 3 minutes.</h2>
+                <div class="right-text">
+                    <h3>Say hello to PIQUANT.</h3>
+                    <p><text-with-highlights [parts]="piquantParts" styleMain="" styleAlternate="bold"></text-with-highlights></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="investigation">
+        <section-image-list-text [params]="investigationParams"></section-image-list-text>
+    </div>
+<!--
+    <div class="investigation section">
+        <number-button theNumber="03" theLabel="Investigation" link="investigation" [showArrow]="true"></number-button>
+        <div class="flex-row">
+            <div>
+                <h2>Next-level mineral and elemental identification.</h2>
+                <h4>Comprehensive tools equipped to help you rapidly explore an unknown sample.</h4>
+                <p>Examine geo-chemical composition with responsive binary, ternary, and spectral diagrams. <strong>Identify elemental distribution</strong>
+                    with the chord diagram and fully quantified maps. <strong>Select and save subsets of scanpoints</strong> of any amount based on chemical,
+                    mineral, or spatial relationships as regions of interest.</p>
+            </div>
+            <div>
+                <img src="assets/images/landing/investigation-angled-screenshot.png">
+                <img src="assets/images/landing/anim-maps-drawing.gif">
+            </div>
+        </div>
+    </div>
+-->
+</div>

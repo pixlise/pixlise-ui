@@ -1,0 +1,11 @@
+@import '../../../scss/public-site.scss';
+
+.down-nav {
+    align-items: center;
+    position: relative;
+    top: -100px;
+
+    .caption {
+        padding-bottom: $sz-unit;
+    }
+}

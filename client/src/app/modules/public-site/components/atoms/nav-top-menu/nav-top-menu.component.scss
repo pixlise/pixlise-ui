@@ -1,0 +1,14 @@
+@import '../../../scss/public-site.scss';
+
+.nav {
+    justify-content: space-between;
+    padding: $sz-border-y $sz-border-x;
+
+    .links {
+        gap: $sz-button-gap;
+    }
+
+    .buttons {
+        gap: $sz-unit;
+    }
+}

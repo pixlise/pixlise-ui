@@ -1,0 +1,52 @@
+@import '../../../scss/public-site.scss';
+
+.section {
+    padding: $sz-border-y $sz-border-x;
+
+    .container {
+        white-space: nowrap;
+        gap: 100px;
+    }
+
+    .text-container {
+        width: 440px;
+        display: inline-block;
+        white-space: normal;
+    }
+
+    p {
+        color: $clr-gray-20;
+    }
+
+    img {
+        position: absolute;
+    }
+
+    .img-container {
+        flex-grow: 1;
+
+        display: inline-block;
+        position: relative;
+    }
+
+    .img-foreground {
+        z-index: 2;
+        right: -$sz-border-x;
+        width: 1124px;
+    }
+
+    .img-background {
+        z-index: 1;
+        right: 160px;
+        top: -160px;
+    }
+
+    h3 {
+        padding-top: $sz-heading-gap;
+        padding-bottom: $sz-subheading-gap;
+    }
+
+    h4 {
+        padding-top: $sz-heading-gap;
+    }
+}

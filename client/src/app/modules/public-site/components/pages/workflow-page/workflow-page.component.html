@@ -1,0 +1,68 @@
+<div class="page">
+    <img class="header-image" src="assets/images/bg-workflow.jpg">
+    <nav-section-switch [isTop]="true" leftNavLabel="Investigation" leftNavLink="public/investigation" rightNavLabel="Quantification" rightNavLink="public/quantification"></nav-section-switch>
+    <div class="flex-column flex-center-center exploration section">
+        <button-nav-down link="features"></button-nav-down>
+        <div class="flex-row">
+            <div class="flex-column">
+                <number-button theNumber="00" theLabel="The Challenge" link="challenge" [showArrow]="false"></number-button>
+                <h3 class="heading">Is your current workflow optimized for <span class="brighter">exploration?</span></h3>
+                <div class="flex-column left-pad">
+                    <h3 class="mid">collaboration</h3>
+                    <h3 class="darker">efficiency</h3>
+                </div>
+            </div>
+            <img src="assets/images/workflow/exploration.svg">
+        </div>
+    </div>
+    <div class="flex-column solution section">
+        <number-button theNumber="01" theLabel="The Solution" link="solution" [showArrow]="false"></number-button>
+        <h3>Revolutionary data-viz capabilities that enable scientific investigation at the <span class="red">speed of thought.</span></h3>
+        <img src="assets/images/workflow/anim-linking.gif">
+        <div class="flex-row small-card-container">
+            <div class="small-card">
+                <img src="assets/images/workflow/interconnected.svg">
+                <h4>Interconnected Panels</h4>
+                <p>Interactive plots instantaneously reflect your every input across the entire workspace.</p>
+            </div>
+            <div class="small-card">
+                <img src="assets/images/workflow/flexible.svg">
+                <h4>User Interface Flexibility</h4>
+                <p>Customize your workspace by assigning any visualization to each panel with intuitive dropdown menus.</p>
+            </div>
+            <div class="small-card">
+                <img src="assets/images/workflow/visible.svg">
+                <h4>Accessible UI Components</h4>
+                <p>All PIXLISE components are contrast-compliant and color-blind accessible.</p>
+            </div>
+        </div>
+    </div>
+    <div class="flex-column sharing section">
+        <number-button theNumber="02" theLabel="Sharable Results" link="sharing" [showArrow]="false"></number-button>
+        <h3>Share anything from granular units of analysis to <span class="red">multi-screen, multi-step analytic workflows.</span></h3>
+        <div class="flex-row sharing-container">
+            <img src="assets/images/workflow/sharing.svg">
+            <div class="flex-column">
+                <div class="caption yellow">SHARE:</div>
+                <ul>
+                    <li>Regions of Interest</li>
+                    <li>Expressions</li>
+                    <li>Workspaces</li>
+                    <li>Quantification sets</li>
+                    <li>Collections</li>
+                </ul>
+
+                <h4>Science is a team sport.</h4>
+                <p>Deeply-integrated push-button sharing allows <strong>real-time collaborative analysis</strong> and
+                    multi-scientist, cross-disciplinary workflows across a single sample. Share discrete selections,
+                    custom expressions, quantification element sets, workspaces, and collections. Every scientist in
+                    your lab will have access to PIXLISE through the web, allowing your whole team to participate in
+                     analyzing shared objects.</p>
+            </div>
+        </div>
+    </div>
+    <div class="analysis">
+        <section-image-list-text [params]="analysisParams"></section-image-list-text>
+    </div>
+    <nav-section-switch [isTop]="false" leftNavLabel="Investigation" leftNavLink="public/investigation" rightNavLabel="Quantification" rightNavLink="public/quantification"></nav-section-switch>
+</div>

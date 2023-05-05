@@ -1,0 +1,47 @@
+@import '../../../scss/public-site.scss';
+
+.community {
+    background-color: $clr-gray-10;
+    color: $clr-gray-50;
+    padding: 0px $sz-border-x;
+
+    h3 {
+        color: $clr-gray-50;
+    }
+
+    p {
+        width: 680px;
+    }
+
+    .red {
+        color: $clr-red;
+    }
+
+    .right-pad {
+        padding-right: 8px;
+    }
+
+    .counter {
+        font-weight: bold;
+        font-size: 20px;
+    }
+
+    .section {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .left {
+        padding: $sz-border-y 0px;
+
+        flex-grow: 1;
+        flex-shrink: 1;
+        flex-basis: 70%;
+    }
+
+    .right {
+        padding-left: 35px;
+        border-left: #da4e22 1px solid;
+    }
+}

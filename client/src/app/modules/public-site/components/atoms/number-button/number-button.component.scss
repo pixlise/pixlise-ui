@@ -1,0 +1,85 @@
+@import '../../../scss/public-site.scss';
+
+.number-button {
+    cursor: pointer;
+    display: inline-block;
+    white-space: nowrap;
+
+    border-radius: 4px;
+    text-decoration: none;
+
+    img {
+        padding: 0px 8px;
+        display: inline-block;
+        border-left: #424241 1px solid;
+    }
+
+    .label {
+        padding: 4px 8px;
+        text-transform: uppercase;
+        display: inline-block;
+    }
+
+    .chevron {
+        font-size: 1.5em;
+    }
+
+    &.yellow {
+        border: $clr-yellow 1px solid;
+        color: $clr-yellow;
+
+        .sep {
+            border-left: $clr-yellow 1px solid;
+        }
+    }
+
+    &.white {
+        border: $clr-gray-10 1px solid;
+        color: $clr-gray-10;
+
+        .sep {
+            border-left: $clr-gray-10 1px solid;
+        }
+    }
+
+    &.white-solid {
+        background-color: $clr-gray-10;
+        color: $clr-gray-100;
+
+        .sep {
+            border-left: $clr-gray-100 1px solid;
+        }
+    }
+
+    &.black {
+        border: $clr-gray-100 1px solid;
+        color: $clr-gray-100;
+
+        .sep {
+            border-left: $clr-gray-100 1px solid;
+        }
+    }
+
+    &.red {
+        border: $clr-red 1px solid;
+        color: $clr-red;
+
+        .sep {
+            border-left: $clr-red 1px solid;
+        }
+    }
+
+    &.red-shadow {
+        @extend .red;
+        box-shadow: 0px $sz-half $sz-unit $clr-gray-50;
+    }
+
+    &.gray-no-border {
+        color: $clr-gray-30;
+
+        .sep {
+            border-left: $clr-gray-30 1px solid;
+        }
+    }
+}
+

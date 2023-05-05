@@ -27,6 +27,11 @@
               "src/favicon.ico",
               "src/assets",
               {
+                "glob": "**/*",
+                "input": "src/app/modules/public-site/assets",
+                "output": "assets"
+              },
+              {
                 "glob": "glue.wasm",
                 "input": "src/app/expression-language/lua",
                 "output": "assets/lua"

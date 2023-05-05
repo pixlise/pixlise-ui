@@ -108,7 +108,6 @@ export class AnalysisComponent implements OnInit, OnDestroy
     {
     }
 
-
     ngOnInit()
     {
         this._route.queryParams

@@ -1,0 +1,51 @@
+@import '../../../scss/public-site.scss';
+
+.footer {
+    display: flex;
+    flex-direction: column;
+    background-color: $clr-gray-100;
+
+    color: $clr-gray-20;
+
+    a {
+        display: inline-block;
+        color: $clr-gray-20;
+        padding-bottom: $sz-paragraph-gap;
+    }
+
+    .links {
+        padding: $sz-border-y $sz-border-x;
+
+        .logo-group {
+            flex-grow: 1;
+
+            .tagline {
+                width: 230px;
+            }
+
+            .credits {
+                padding-top: $sz-double;
+            }
+        }
+
+        .link-groups {
+            justify-content: flex-end;
+            gap: $sz-button-gap;
+
+            a {
+                padding-bottom: $sz-half;
+            }
+
+            .caption {
+                margin-bottom: 24px;
+                color: $clr-gray-20;
+            }
+
+            a {
+                text-decoration: none;
+                font-weight: bold;
+                color: #858280;
+            }
+        }
+    }
+}

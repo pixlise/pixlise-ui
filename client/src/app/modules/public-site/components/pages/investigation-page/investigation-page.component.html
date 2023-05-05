@@ -1,0 +1,14 @@
+<div class="page">
+    <img class="header-image" src="assets/images/bg-investigation.jpg">
+    <nav-section-switch [isTop]="true" leftNavLabel="Quantification" leftNavLink="public/quantification" rightNavLabel="Workflow" rightNavLink="public/workflow"></nav-section-switch>
+    <div class="suite">
+        <section-image-list-text [params]="suiteParams"></section-image-list-text>
+    </div>
+    <div class="expression">
+        <section-image-list-text [params]="expressionParams"></section-image-list-text>
+    </div>
+    <div class="diffraction">
+        <section-image-list-text [params]="diffractionParams"></section-image-list-text>
+    </div>
+    <nav-section-switch [isTop]="false" leftNavLabel="Quantification" leftNavLink="public/quantification" rightNavLabel="Workflow" rightNavLink="public/workflow"></nav-section-switch>
+</div>

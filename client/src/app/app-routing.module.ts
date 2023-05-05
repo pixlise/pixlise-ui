@@ -58,6 +58,7 @@ import { TestUtilitiesComponent } from "./routes/admin/test-utilities/test-utili
 import { GlobalNotificationsComponent } from "./routes/admin/global-notifications/global-notifications.component";
 
 import { AuthenticatedGuard } from "./guards/authenticated.guard";
+import { PublicSiteModule } from "./modules/public-site/public-site.module";
 
 
 const APP_ROUTES: Routes = [
@@ -65,7 +66,9 @@ const APP_ROUTES: Routes = [
     { path: "authenticate", component: AuthenticateComponent },
     { path: "about", component: AboutComponent },
 
-    { path: "", redirectTo: "/about", pathMatch: "full" },
+    { path: "", loadChildren: ()=>import("./modules/public-site/public-site.module").then(m=>m.PublicSiteModule) },
+    //{ path: "", redirectTo: "/landing", pathMatch: "full" },
+    //{ path: "", redirectTo: "/about", pathMatch: "full" },
 
     // Authenticated pages
     {
@@ -130,6 +133,7 @@ const APP_ROUTES: Routes = [
 
 @NgModule({
     imports: [
+        PublicSiteModule,
         RouterModule.forRoot(
             APP_ROUTES,
             { enableTracing: environment.route_dbg } // <-- debugging purposes only
