@@ -3,6 +3,8 @@ import { SectionImageListTextInputs, SectionImageItemContent } from "../../layou
 import { NumberButtonParams } from "../../atoms/number-button/number-button.component";
 
 
+export const LandingRouteName = "pixlise";
+
 @Component({
     selector: "app-landing-page",
     templateUrl: "./landing-page.component.html",

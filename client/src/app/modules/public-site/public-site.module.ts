@@ -3,7 +3,7 @@ import { Routes, RouterModule } from "@angular/router";
 
 import { CommonModule } from "@angular/common";
 
-import { LandingPageComponent } from "./components/pages/landing-page/landing-page.component";
+import { LandingPageComponent, LandingRouteName } from "./components/pages/landing-page/landing-page.component";
 import { WorkflowPageComponent } from "./components/pages/workflow-page/workflow-page.component";
 import { QuantificationPageComponent } from "./components/pages/quantification-page/quantification-page.component";
 import { InvestigationPageComponent } from "./components/pages/investigation-page/investigation-page.component";
@@ -21,15 +21,17 @@ import { QuoteViewerComponent } from "./components/atoms/quote-viewer/quote-view
 import { TextWithHighlightsComponent } from "./components/atoms/text-with-highlights/text-with-highlights.component";
 import { NavTopMenuComponent } from "./components/atoms/nav-top-menu/nav-top-menu.component";
 import { NavSectionSwitchComponent } from "./components/atoms/nav-section-switch/nav-section-switch.component";
+import { MissionPageComponent } from "./components/pages/mission-page/mission-page.component";
 
 
 const APP_ROUTES: Routes = [
     { path: "public", component: PublicPageComponent,
         children: [
-            { path: "pixlise", component: LandingPageComponent },
+            { path: LandingRouteName, component: LandingPageComponent },
             { path: "workflow", component: WorkflowPageComponent },
             { path: "investigation", component: InvestigationPageComponent },
             { path: "quantification", component: QuantificationPageComponent },
+            { path: "mission", component: MissionPageComponent },
         ]
     },
     { path: "", redirectTo: "public/pixlise", pathMatch: "full" },
@@ -53,7 +55,8 @@ const APP_ROUTES: Routes = [
         TextWithHighlightsComponent,
         SectionImageTilesTextComponent,
         NavTopMenuComponent,
-        NavSectionSwitchComponent
+        NavSectionSwitchComponent,
+        MissionPageComponent
     ],
     imports: [
         CommonModule,
