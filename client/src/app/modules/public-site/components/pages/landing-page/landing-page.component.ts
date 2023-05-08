@@ -1,5 +1,6 @@
 import { Component, OnInit } from "@angular/core";
-import { SectionImageListTextInputs } from "../../layouts/section-image-list-text/section-image-list-text.component";
+import { SectionImageListTextInputs, SectionImageItemContent } from "../../layouts/section-image-list-text/section-image-list-text.component";
+import { NumberButtonParams } from "../../atoms/number-button/number-button.component";
 
 
 @Component({
@@ -38,46 +39,56 @@ export class LandingPageComponent implements OnInit
     ];
 
     workspaceParams = new SectionImageListTextInputs(
-        "01", "Workflow", "public/workflow",
+        new NumberButtonParams("01", "Workflow", "yellow", true, true, "public/workflow"),
         ["Scientific investigation at the speed of thought."],
-        "Fast, Flexible, and Lab-optimized.",
+        true,
+        "", // If no label we don't show the list
         [
-            "PIXLISE is an interface informed by ",
-            "thousands of hours of collaboration",
-            " between geoscientists and visualization designers. With intricately-connected features, ",
-            "colorblind-safe palettes",
-            ", and customizable plot panels, PIXLISE's ",
-            "flexible user interface",
-            " empowers the modern scientist with an ",
-            "innovative workflow",
-            "."
-        ],
-        "",
-        [],
-        "assets/images/landing/anim-flexibility.gif",
-        "",
-        true
+            // The only items info will be shown
+            new SectionImageItemContent(
+                "", // No list item to show...
+                ["Fast, Flexible, and Lab-optimized."],
+                [
+                    "PIXLISE is an interface informed by ",
+                    "thousands of hours of collaboration",
+                    " between geoscientists and visualization designers. With intricately-connected features, ",
+                    "colorblind-safe palettes",
+                    ", and customizable plot panels, PIXLISE's ",
+                    "flexible user interface",
+                    " empowers the modern scientist with an ",
+                    "innovative workflow",
+                    "."
+                ],
+                "assets/images/landing/anim-flexibility.gif",
+                ""
+            ),
+        ]
     );
 
     investigationParams = new SectionImageListTextInputs(
-        "03", "Investigation", "public/investigation",
+        new NumberButtonParams("03", "Investigation", "yellow", true, true, "public/investigation"),
         ["Next-level mineral and elemental identification."],
-        "Fast, Flexible, and Lab-optimized.",
+        true,
+        "", // If no label we don't show the list
         [
-            "Examine geo-chemical composition with responsive binary, ternary, and spectral diagrams. ",
-            "Identify elemental distribution",
-            " with the chord diagram and fully quantified maps. ",
-            "Select and save subsets of scanpoints",
-            " of any amount based on chemical, mineral, or spatial relationships as regions of interest."
-        ],
-        "",
-        [],
-        "assets/images/landing/anim-maps-drawing.gif",
-        "assets/images/landing/investigation-angled-screenshot.png",
-        true
+            // The only items info will be shown
+            new SectionImageItemContent(
+                "", // No list item to show...
+                ["Comprehensive tools equipped to help you rapidly explore an unknown sample."],
+                [
+                    "Examine geo-chemical composition with responsive binary, ternary, and spectral diagrams. ",
+                    "Identify elemental distribution",
+                    " with the chord diagram and fully quantified maps. ",
+                    "Select and save subsets of scanpoints",
+                    " of any amount based on chemical, mineral, or spatial relationships as regions of interest."
+                ],
+                "assets/images/landing/anim-maps-drawing.gif",
+                "assets/images/landing/investigation-angled-screenshot.png",
+            )
+        ]
     );
 
-    quoteParts = ["Without PIXLISE and PIQUANT, PIXL would still be a great instrument, but nobody would know because ", "we'd still be processing our first dataset."];
+    quoteParts = ["This tool allows me to make new and different types of analyses ", "which I had never imagined were possible."];
 
     constructor()
     {

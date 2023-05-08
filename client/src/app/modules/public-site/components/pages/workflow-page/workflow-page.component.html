@@ -7,11 +7,11 @@
         </div>
     </div>
     <nav-section-switch [isTop]="true" leftNavLabel="Investigation" leftNavLink="public/investigation" rightNavLabel="Quantification" rightNavLink="public/quantification"></nav-section-switch>
-    <div class="flex-column flex-center-center exploration section">
+    <div class="flex-column exploration section">
         <button-nav-down link="features"></button-nav-down>
-        <div class="flex-row">
+        <div class="flex-row img-spacer">
             <div class="flex-column">
-                <number-button theNumber="00" theLabel="The Challenge" link="challenge" [showArrow]="false"></number-button>
+                <number-button theNumber="00" theLabel="The Challenge" link="" colourStyle="red" [showArrow]="false"></number-button>
                 <h3 class="heading">Is your current workflow optimized for <span class="brighter">exploration?</span></h3>
                 <div class="flex-column left-pad">
                     <h3 class="mid">collaboration</h3>
@@ -21,8 +21,12 @@
             <img src="assets/images/workflow/exploration.svg">
         </div>
     </div>
+    <div class="solution">
+        <section-image-tiles-text [params]="solutionParams"></section-image-tiles-text>
+    </div>
+<!--
     <div class="flex-column solution section">
-        <number-button theNumber="01" theLabel="The Solution" link="solution" [showArrow]="false"></number-button>
+        <number-button theNumber="01" theLabel="The Solution" link="" colourStyle="red" [showArrow]="false"></number-button>
         <h3>Revolutionary data-viz capabilities that enable scientific investigation at the <span class="red">speed of thought.</span></h3>
         <img src="assets/images/workflow/anim-linking.gif">
         <div class="flex-row small-card-container">
@@ -43,8 +47,9 @@
             </div>
         </div>
     </div>
+-->
     <div class="flex-column sharing section">
-        <number-button theNumber="02" theLabel="Sharable Results" link="sharing" [showArrow]="false"></number-button>
+        <number-button theNumber="02" theLabel="Sharable Results" link="" colourStyle="red" [showArrow]="false"></number-button>
         <h3>Share anything from granular units of analysis to <span class="red">multi-screen, multi-step analytic workflows.</span></h3>
         <div class="flex-row sharing-container">
             <img src="assets/images/workflow/sharing.svg">

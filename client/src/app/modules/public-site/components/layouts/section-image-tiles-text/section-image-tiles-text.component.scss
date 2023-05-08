@@ -1,0 +1,48 @@
+@import '../../../scss/public-site.scss';
+
+.section {
+    overflow: hidden;
+
+    h3 {
+        width: 1200px;
+        padding-top: $sz-spacer-gap;
+        padding-bottom: $sz-spacer-gap;
+    }
+
+    img {
+        max-height: 1000px;
+    }
+
+    .tile-container {
+        justify-content: space-between;
+        gap: $sz-button-gap;
+        padding-top: $sz-spacer-gap;
+
+        .tile {
+            padding: $sz-button-gap;
+            flex-grow: 1;
+
+            border-radius: $sz-unit;
+            border: 1px solid transparent;
+
+            max-width: 20vw;
+            //background-color: $clr-gray-100;
+
+            h4 {
+                padding: $sz-double 0px;
+            }
+
+            p {
+                padding: 0px;
+            }
+
+            &:hover {
+                border: $clr-gray-50 1px solid;
+            }
+        }
+
+        .active {
+            box-shadow: 0px 0px $sz-unit black;
+        }
+    }
+}

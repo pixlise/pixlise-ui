@@ -291,10 +291,16 @@ a {
 
     .header-content {
         align-items: center;
+        width: 450px;
+
+        h2 {
+            text-shadow: 0px 10px 24px #000000B0;
+            font-weight: bold;
+            padding-bottom: 0px;
+        }
+        p {
+            text-align: center;
+        }
     }
 
-    h2 {
-        text-shadow: 0px 10px 24px #000000B0;
-        font-weight: bold;
-    }
 }

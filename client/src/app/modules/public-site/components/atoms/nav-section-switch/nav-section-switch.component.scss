@@ -2,12 +2,11 @@
 
 .nav-switch {
     justify-content: space-between;
-    padding: 24px 0px;
 
     .chevron {
+        padding-top: 24px;
         width: $sz-border-x;
         color: $clr-red;
-        font-size: 2em;
         font-weight: bold;
         text-align: center;
     }
@@ -15,10 +14,31 @@
     &.light {
         background-color: $clr-gray-10;
         color: $clr-gray-70;
+        
+        .left-nav {
+            border-right: $clr-gray-50 1px solid;
+        }
+
+        .right-nav {
+            border-left: $clr-gray-50 1px solid;
+        }
     }
 
     &.dark {
         background-color: $clr-gray-90;
         color: $clr-gray-50;
+        
+        .left-nav {
+            border-right: $clr-gray-70 1px solid;
+        }
+
+        .right-nav {
+            border-left: $clr-gray-70 1px solid;
+        }
+    }
+
+    .nav-btn {
+        @extend .figure-time;
+        padding: 24px $sz-button-gap;
     }
 }

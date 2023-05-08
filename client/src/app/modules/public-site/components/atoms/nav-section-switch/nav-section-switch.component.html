@@ -1,10 +1,13 @@
 <div class="flex-row nav-switch" [ngClass]="colourStyle">
-    <div class="flex-row clickable" (click)="onNavLeft()">
-        <div class="red chevron">&laquo;</div>
-        <div class="figure-time">{{leftNavLabel}}</div>
+    <div class="clickable" (click)="onNavLeft()">
+        <div class="nav-btn left-nav">
+            <span class="red chevron">&laquo;</span>
+            {{leftNavLabel}}
+        </div>
     </div>
-    <div class="flex-row clickable" (click)="onNavRight()">
-        <div class="figure-time">{{rightNavLabel}}</div>
-        <div class="red chevron">&raquo;</div>
+    <div class="clickable" (click)="onNavRight()">
+        <div class="nav-btn right-nav">{{rightNavLabel}} 
+            <span class="red chevron">&raquo;</span>
+        </div>
     </div>
 </div>

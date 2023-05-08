@@ -1,21 +1,27 @@
 <div class="section">
-    <number-button [theNumber]="params.navButtonNumber" [theLabel]="params.navButtonLabel" colourStyle="red"></number-button>
+    <number-button [params]="params.navButtonParams"></number-button>
     <div class="flex-row container">
         <div class="flex-column text-container">
             <h2 *ngIf="params.headingLarge"><text-with-highlights [parts]="params.headingParts" styleMain="" styleAlternate="red"></text-with-highlights></h2>
             <h3 *ngIf="!params.headingLarge"><text-with-highlights [parts]="params.headingParts" styleMain="" styleAlternate="red"></text-with-highlights></h3>
-            <ng-container *ngIf="params.listTitle && params.listItems.length > 0">
+            <ng-container *ngIf="params.listTitle && params.listItems.length > 1">
                 <div class="caption yellow">{{params.listTitle}}</div>
                 <ul>
-                    <li *ngFor="let item of params.listItems">{{item}}</li>
+                    <li
+                        *ngFor="let item of params.listItems"
+                        [ngClass]="{'active': item.listLabel == activeItem?.listLabel}"
+                        (click)="onClickListItem(item)"
+                        >{{item.listLabel}}</li>
                 </ul>
             </ng-container>
-            <h4>{{params.subHeading}}</h4>
-            <p><text-with-highlights [parts]="params.descriptionParts" styleMain="" styleAlternate="bold"></text-with-highlights></p>
+            <ng-container *ngIf="activeItem">
+                <h4><text-with-highlights [parts]="activeItem.headingParts" styleMain="" styleAlternate="bold"></text-with-highlights></h4>
+                <p><text-with-highlights [parts]="activeItem.descriptionParts" styleMain="" styleAlternate="bold"></text-with-highlights></p>
+            </ng-container>
         </div>
-        <div class="img-container">
-            <img class="img-foreground" [src]="params.imageLinkForeground">
-            <img class="img-background" [src]="params.imageLinkBackground">
+        <div *ngIf="activeItem" class="img-container">
+            <img *ngIf="activeItem.imageLinkForeground" class="img-foreground" [src]="activeItem.imageLinkForeground">
+            <img *ngIf="activeItem.imageLinkBackground" class="img-background" [src]="activeItem.imageLinkBackground">
         </div>
     </div>
 </div>

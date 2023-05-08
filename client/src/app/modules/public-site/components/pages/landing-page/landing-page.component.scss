@@ -157,22 +157,45 @@
     .quantification {
         background-color: $clr-gray-80;
         //background-image: url("assets/images/landing/piquant-pie.svg");
-        background-repeat: no-repeat;
-        background-position: center left;
-        padding-top: 136px;
+        //background-repeat: no-repeat;
+        //background-position: center left;
+
+        position: relative;
+        overflow: hidden;
 
         .bg {
-            position: relative;
-            top: 0px;
+            position: absolute;
+            top: $sz-button-gap;
             left: -$sz-border-x;
-            display: inline-block;
-        }
-        .right-text {
-            padding-top: 344px;
+            z-index: 1;
+            user-select: none;
         }
 
-        h2 {
-            padding-bottom: 28px;
+        .content {
+            position: relative;
+            z-index: 2;
+
+            .text-container {
+                justify-content: space-between;
+                // Allow seeing more of the background image
+                padding-bottom: 200px;
+                
+                .right-text {
+                    padding-top: $sz-spacer-gap;
+                    width: 500px;
+                    /*p {
+                        text-align: justify;
+                    }*/
+                }
+    
+                .left-text {
+                    padding-top: $sz-heading-gap;
+                    h2 {
+                        margin: 0px;
+                        padding: 0px;
+                    }
+                }
+            }
         }
     }
 

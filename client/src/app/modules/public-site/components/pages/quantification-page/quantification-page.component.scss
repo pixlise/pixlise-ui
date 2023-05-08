@@ -5,11 +5,26 @@
         background-color: $clr-gray-90;
     }
     .piquant {
+        padding: 0px $sz-border-x;
         background-color: $clr-gray-100;
+        justify-content: space-between;
 
-        p {
-            padding-top: 0px;
-            padding-bottom: $sz-button-gap;
+        .headcol {
+            justify-content: center;
+            h3 {
+                padding: 0px;
+                text-align: center;
+            }
+        }
+
+        .textcol {
+            padding: $sz-border-y 0px;
+
+            p {
+                padding-top: 0px;
+                padding-bottom: $sz-button-gap;
+                width: 380px;
+            }
         }
 
         .more-piquant {

@@ -4,65 +4,40 @@
     .exploration {
         background-color: $clr-gray-90;
 
-        .heading {
-            padding-bottom: 0px;
-            padding-right: $sz-button-gap;
-            width: 600px;
-            color: $clr-gray-30;
-        }
+        .img-spacer {
+            justify-content: space-between;
 
-        .brighter {
-            color: $clr-gray-10;
-        }
-
-        .mid {
-            color: $clr-gray-50;
-            padding-top: 0px;
-            padding-bottom: 0px;
-        }
-
-        .darker {
-            color: $clr-gray-70;
-            padding-top: 0px;
-            padding-bottom: 0px;
-        }
-
-        .left-pad {
-            padding-left: 310px;
+            .heading {
+                padding-bottom: 0px;
+                width: 600px;
+                color: $clr-gray-30;
+            }
+    
+            .brighter {
+                color: $clr-gray-10;
+            }
+    
+            .mid {
+                color: $clr-gray-50;
+                padding-top: 0px;
+                padding-bottom: 0px;
+            }
+    
+            .darker {
+                color: $clr-gray-70;
+                padding-top: 0px;
+                padding-bottom: 0px;
+            }
+    
+            .left-pad {
+                padding-left: 298px;
+            }
         }
     }
 
     .solution {
         background-color: $clr-gray-100;
         border-top: $clr-red 1px solid;
-
-        h3 {
-            width: 1200px;
-            padding-bottom: $sz-spacer-gap;
-        }
-
-        .solution-container {
-            justify-content: flex-end;
-            gap: $sz-button-gap;
-            padding-top: $sz-spacer-gap;
-
-            .solution-card {
-                padding: $sz-button-gap;
-                width: 250px;
-                background-color: $clr-gray-100;
-
-                box-shadow: 0px 0px $sz-unit black;
-                border-radius: $sz-unit;
-
-                h4 {
-                    padding: 16px 0px;
-                }
-
-                p {
-                    padding: 0px;
-                }
-            }
-        }
     }
 
     .sharing {
