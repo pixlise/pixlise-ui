@@ -1,9 +1,9 @@
 @import '../../../scss/public-site.scss';
 
 .number-button {
-    cursor: pointer;
     display: inline-block;
     white-space: nowrap;
+    user-select: none;
 
     border-radius: 4px;
     text-decoration: none;

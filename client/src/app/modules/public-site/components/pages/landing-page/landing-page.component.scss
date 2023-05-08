@@ -1,6 +1,27 @@
 @import '../../../scss/public-site.scss';
 
 .page {
+    .header {
+        .header-content {
+            top: 500px;
+            left: $sz-border-x;
+            width: 855px;
+
+            h1 {
+                font-weight: bold;
+            }
+
+            p {
+                width: 620px;
+                text-align: justify;
+            }
+
+            img {
+                width: 335px;
+                padding-top: $sz-spacer-gap;
+            }
+        }
+    }
     .product {
         background-color: $clr-gray-100;
         color: $clr-gray-10;

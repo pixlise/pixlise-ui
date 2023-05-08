@@ -1,5 +1,7 @@
 import { Component, OnInit, Input } from "@angular/core";
 
+import { AuthenticationService } from "src/app/services/authentication.service";
+
 
 @Component({
     selector: "footer",
@@ -10,11 +12,18 @@ export class FooterComponent implements OnInit
 {
     @Input() showLogos: boolean;
 
-    constructor()
+    constructor(
+        private _authService: AuthenticationService,
+        )
     {
     }
 
     ngOnInit(): void
     {
+    }
+
+    onLogin()
+    {
+        this._authService.login("/about", false);
     }
 }

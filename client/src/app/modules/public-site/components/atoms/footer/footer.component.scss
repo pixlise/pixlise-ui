@@ -11,6 +11,7 @@
         display: inline-block;
         color: $clr-gray-20;
         padding-bottom: $sz-paragraph-gap;
+        text-transform: uppercase;
     }
 
     .links {
@@ -19,6 +20,8 @@
         .logo-group {
             flex-grow: 1;
 
+            color: $clr-gray-30;
+            
             .tagline {
                 width: 230px;
             }
@@ -38,13 +41,14 @@
 
             .caption {
                 margin-bottom: 24px;
-                color: $clr-gray-20;
+                color: $clr-gray-30;
+                text-transform: uppercase;
             }
 
             a {
                 text-decoration: none;
-                font-weight: bold;
-                color: #858280;
+                font-weight: normal;
+                color: $clr-gray-50;
             }
         }
     }

@@ -2,7 +2,7 @@
 
 .nav {
     justify-content: space-between;
-    padding: $sz-border-y $sz-border-x;
+    padding: 100px $sz-border-x;
 
     .links {
         gap: $sz-button-gap;
@@ -10,5 +10,18 @@
 
     .buttons {
         gap: $sz-unit;
+    }
+
+    a {
+        font-family: "Source Sans Pro";
+        font-size: 18px;
+        font-weight: 510;
+        line-height: 21px;
+        letter-spacing: 0.04em;
+        text-align: left;
+
+        text-decoration: none;
+        color: $clr-gray-10;
+        text-transform: uppercase;
     }
 }

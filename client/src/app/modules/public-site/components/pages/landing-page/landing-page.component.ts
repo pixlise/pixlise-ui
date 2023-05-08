@@ -9,6 +9,12 @@ import { SectionImageListTextInputs } from "../../layouts/section-image-list-tex
 })
 export class LandingPageComponent implements OnInit
 {
+    headingParts = [
+        "Finally, a tool as ",
+        "smart",
+        " as the modern geoscientist."
+    ];
+
     collaborationParts = [
         "Unlock real-time collaboration in your lab with open-source ",
         "web access",
