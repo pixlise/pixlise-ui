@@ -1,16 +1,10 @@
 @import '../../../scss/public-site.scss';
 
 .section {
-    overflow: hidden;
-
     h3 {
         width: 1200px;
         padding-top: $sz-spacer-gap;
         padding-bottom: $sz-spacer-gap;
-    }
-
-    img {
-        max-height: 1000px;
     }
 
     .tile-container {
@@ -21,12 +15,12 @@
         .tile {
             padding: $sz-button-gap;
             flex-grow: 1;
+            flex-shrink: 1;
 
             border-radius: $sz-unit;
             border: 1px solid transparent;
 
             max-width: 20vw;
-            //background-color: $clr-gray-100;
 
             h4 {
                 padding: $sz-double 0px;
