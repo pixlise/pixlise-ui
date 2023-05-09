@@ -150,14 +150,15 @@
                     padding: $sz-double;
                     
                     h4 {
-                        color: $clr-gray-10;
-                        margin: 0px
+                        color: $clr-gray-50;
+                        margin: 0px;
                     }
 
                     p {
                         padding-top: $sz-double;
                         padding-bottom: 0px;
-                        margin: 0px
+                        margin: 0px;        
+                        color: $clr-gray-10;
                     }
 
                     .issue {

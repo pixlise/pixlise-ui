@@ -5,19 +5,23 @@
     white-space: nowrap;
     user-select: none;
 
-    border-radius: 4px;
+    border-radius: $sz-half;
     text-decoration: none;
 
     img {
-        padding: 0px 8px;
+        padding: 0px $sz-unit;
         display: inline-block;
         border-left: #424241 1px solid;
     }
 
     .label {
-        padding: 4px 8px;
+        padding: $sz-half $sz-double;
         text-transform: uppercase;
         display: inline-block;
+    }
+
+    .prefix {
+        background-color: rgba(black, 0.1);
     }
 
     .chevron {
@@ -48,6 +52,15 @@
 
         .sep {
             border-left: $clr-gray-100 1px solid;
+        }
+    }
+
+    &.red-solid {
+        background-color: $clr-red;
+        color: $clr-gray-10;
+
+        .sep {
+            border-left: $clr-gray-10 1px solid;
         }
     }
 

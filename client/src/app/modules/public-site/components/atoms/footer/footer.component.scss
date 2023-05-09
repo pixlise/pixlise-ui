@@ -21,9 +21,9 @@
             flex-grow: 1;
 
             color: $clr-gray-30;
-            
+
             .tagline {
-                width: 230px;
+                width: 280px;
             }
 
             .credits {
@@ -49,6 +49,10 @@
                 text-decoration: none;
                 font-weight: normal;
                 color: $clr-gray-50;
+
+                &:hover {
+                    color: $clr-gray-40;
+                }
             }
         }
     }

@@ -5,21 +5,21 @@
             <h2>Out of this world geoscience, literally.</h2>
         </div>
     </div>
-    <div class="flex-column story section">
-        <number-button theNumber="01" theLabel="Our Story" link="" colourStyle="red" [showArrow]="false"></number-button>
+    <div class="flex-column story section" id="mars2020">
+        <number-button theNumber="01" theLabel="PIXL + Mars 2020" link="" colourStyle="red" [showArrow]="false"></number-button>
         <div class="flex-row img-spacer">
             <div class="flex-column">
                 <h3>Searching for life on <span class="red">the Red Planet.</span></h3>
                 <p>PIXLISE streamlines the search for life on Mars by helping scientists understand data from PIXL (Planetary Instrument for X-ray Lithochemistry) on NASA's Perseverance Rover. Designed for the flagship Mars 2020 mission, PIXLISE provides astrobiologists flexible and powerful visual analytics tools to quickly analyze and understand high-density, spatially-localized, imaging and XRF spectroscopy data.</p>
                 <p class="pad-bottom">In 2018, PIXLISE was born out of Data to Discovery incubation program for science analysis tools, grew as part of JPL's Data Science Program, and elaborated into a robust tool through a multi-year partnership between Queensland University of Technology (QUT) and the Jet Propulsion Laboratory, California Institute of Technology.</p>
-                <number-button theNumber="" theLabel="Read About PIXL" link="public/pixl" colourStyle="red" [showArrow]="true"></number-button>
+                <number-button theNumber="" theLabel="Read About PIXL" link="https://mars.nasa.gov/mars2020/spacecraft/instruments/pixl" colourStyle="red" [showArrow]="true"></number-button>
             </div>
-            <img src="assets/images/mission/perseverance.jpg">
+            <img src="assets/images/aboutus/perseverance.jpg">
         </div>
     </div>
     <branding-logos></branding-logos>
-    <div class="flex-column mission section">
-        <number-button theNumber="02" theLabel="The Mission" link="" colourStyle="red" [showArrow]="false"></number-button>
+    <div class="flex-column mission section" id="pixlise">
+        <number-button theNumber="02" theLabel="PIXLISE" link="" colourStyle="red" [showArrow]="false"></number-button>
         <div class="flex-row img-spacer">
             <div class="flex-column flex-center-center">
                 <h3><span class="darker">Started from Mars,</span> now we're here.</h3>
@@ -37,7 +37,7 @@
             </div>
         </div>
     </div>
-    <div class="flex-column publication section">
+    <div class="flex-column publication section" id="impact">
         <number-button theNumber="03" theLabel="Impact" link="" colourStyle="red" [showArrow]="false"></number-button>
         <div class="flex-row head-container">
             <h3>The proof is in the publication.</h3>
@@ -51,7 +51,7 @@
                 target="_blank">
                 <img *ngIf="pub.imageLink" [src]="pub.imageLink">
                 <div *ngIf="!pub.imageLink" class="flex-row flex-center-center placeholder">
-                    <img src="assets/images/mission/no-image.svg">
+                    <img src="assets/images/aboutus/no-image.svg">
                 </div>
                 <div class="flex-column tile-text">
                     <h4>{{pub.title}}</h4>

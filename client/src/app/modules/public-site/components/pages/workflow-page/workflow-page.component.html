@@ -7,7 +7,7 @@
         </div>
     </div>
     <nav-section-switch [isTop]="true" leftNavLabel="Investigation" leftNavLink="public/investigation" rightNavLabel="Quantification" rightNavLink="public/quantification"></nav-section-switch>
-    <div class="flex-column exploration section">
+    <div class="flex-column exploration section" id="challenge">
         <button-nav-down link="features"></button-nav-down>
         <div class="flex-row img-spacer">
             <div class="flex-column">
@@ -21,24 +21,15 @@
             <img src="assets/images/workflow/exploration.svg">
         </div>
     </div>
-    <div class="solution">
+    <div class="solution" id="solution">
         <section-image-tiles-text [params]="solutionParams"></section-image-tiles-text>
     </div>
-    <div class="flex-column sharing section">
+    <div class="flex-column sharing section" id="sharing">
         <number-button theNumber="02" theLabel="Sharable Results" link="" colourStyle="red" [showArrow]="false"></number-button>
         <h3>Share anything from granular units of analysis to <span class="red">multi-screen, multi-step analytic workflows.</span></h3>
         <div class="flex-row sharing-container">
             <img src="assets/images/workflow/sharing.svg">
             <div class="flex-column">
-                <div class="caption yellow">SHARE:</div>
-                <ul>
-                    <li>Regions of Interest</li>
-                    <li>Expressions</li>
-                    <li>Workspaces</li>
-                    <li>Quantification sets</li>
-                    <li>Collections</li>
-                </ul>
-
                 <h4>Science is a team sport.</h4>
                 <p>Deeply-integrated push-button sharing allows <strong>real-time collaborative analysis</strong> and
                     multi-scientist, cross-disciplinary workflows across a single sample. Share discrete selections,
@@ -48,7 +39,7 @@
             </div>
         </div>
     </div>
-    <div class="analysis">
+    <div class="analysis" id="analysis">
         <section-image-list-text [params]="analysisParams"></section-image-list-text>
     </div>
     <nav-section-switch [isTop]="false" leftNavLabel="Investigation" leftNavLink="public/investigation" rightNavLabel="Quantification" rightNavLink="public/quantification"></nav-section-switch>

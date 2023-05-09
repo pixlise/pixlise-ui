@@ -1,7 +1,7 @@
 import { Component, OnInit, Input } from "@angular/core";
 
 import { AuthenticationService } from "src/app/services/authentication.service";
-
+import { Navigation } from "../../navigation";
 
 @Component({
     selector: "footer",
@@ -11,6 +11,8 @@ import { AuthenticationService } from "src/app/services/authentication.service";
 export class FooterComponent implements OnInit
 {
     @Input() showLogos: boolean;
+
+    navigation: Navigation = new Navigation();
 
     constructor(
         private _authService: AuthenticationService,

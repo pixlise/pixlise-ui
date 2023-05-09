@@ -136,7 +136,11 @@ const APP_ROUTES: Routes = [
         PublicSiteModule,
         RouterModule.forRoot(
             APP_ROUTES,
-            { enableTracing: environment.route_dbg } // <-- debugging purposes only
+            {
+                enableTracing: environment.route_dbg, // <-- debugging purposes only
+                anchorScrolling: "enabled",
+                scrollPositionRestoration: "enabled"
+            }
         )
     ],
     exports: [RouterModule]

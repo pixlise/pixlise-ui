@@ -10,24 +10,9 @@
         </div>
         <div class="flex-row link-groups">
             <div class="caption clickable" (click)="onLogin()">Log In</div>
-            <div class="flex-column">
-                <div class="caption">Features</div>
-                <a href="public/workflow">Workflow</a>
-                <a href="public/quantification">Quantification</a>
-                <a href="public/investigation">Investigation</a>
-            </div>
-            <div class="flex-column">
-                <div class="caption">Get Started</div>
-                <a href="start-options">PIXLISE Options</a>
-                <a href="start-get">Get PIXLISE</a>
-                <a href=" documentation">Documentation</a>
-                <a href="https://www.github.com/pixlise" target="_blank">Repository</a>
-            </div>
-            <div class="flex-column">
-                <div class="caption">About Us</div>
-                <a href="public/mission">PIXL + MARS 2020</a>
-                <a href="impact">Impact</a>
-                <a href="discuss.pixlise.org" target="_blank">Discussion</a>
+            <div *ngFor="let navGroup of navigation.categories" class="flex-column">
+                <div class="caption">{{navGroup}}</div>
+                <a *ngFor="let item of navigation.getItems(navGroup)" [href]="item.link">{{item.label}}</a>
             </div>
         </div>
     </div>

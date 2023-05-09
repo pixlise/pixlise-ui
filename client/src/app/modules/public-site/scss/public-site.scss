@@ -18,6 +18,7 @@ $sz-paragraph-gap: 48px;
 
 $clr-yellow: #FFFF8D;
 $clr-red: #DA4E22;
+$clr-blue: #91BFDB;
 
 $clr-gray-100: #1B1D1E;
 $clr-gray-90: #222829;
@@ -277,7 +278,7 @@ a {
     }
 
     h1 {
-        text-shadow: 0px 10px 24px #000000A6;
+        text-shadow: 0px 10px 24px #000000FF;
     }
 
     .header-content {
@@ -294,7 +295,7 @@ a {
         width: 450px;
 
         h2 {
-            text-shadow: 0px 10px 24px #000000B0;
+            text-shadow: 0px 10px 24px #000000FF;
             font-weight: bold;
             padding-bottom: 0px;
             text-align: center;

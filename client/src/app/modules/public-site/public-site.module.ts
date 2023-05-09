@@ -21,7 +21,8 @@ import { QuoteViewerComponent } from "./components/atoms/quote-viewer/quote-view
 import { TextWithHighlightsComponent } from "./components/atoms/text-with-highlights/text-with-highlights.component";
 import { NavTopMenuComponent } from "./components/atoms/nav-top-menu/nav-top-menu.component";
 import { NavSectionSwitchComponent } from "./components/atoms/nav-section-switch/nav-section-switch.component";
-import { MissionPageComponent } from "./components/pages/mission-page/mission-page.component";
+import { AboutUsPageComponent } from "./components/pages/about-us-page/about-us-page.component";
+import { GetPIXLISEComponent } from "./components/pages/get-pixlise/get-pixlise.component";
 
 
 const APP_ROUTES: Routes = [
@@ -31,7 +32,8 @@ const APP_ROUTES: Routes = [
             { path: "workflow", component: WorkflowPageComponent },
             { path: "investigation", component: InvestigationPageComponent },
             { path: "quantification", component: QuantificationPageComponent },
-            { path: "mission", component: MissionPageComponent },
+            { path: "about-us", component: AboutUsPageComponent },
+            { path: "get-started", component: GetPIXLISEComponent }
         ]
     },
     { path: "", redirectTo: "public/pixlise", pathMatch: "full" },
@@ -56,7 +58,8 @@ const APP_ROUTES: Routes = [
         SectionImageTilesTextComponent,
         NavTopMenuComponent,
         NavSectionSwitchComponent,
-        MissionPageComponent
+        AboutUsPageComponent,
+        GetPIXLISEComponent
     ],
     imports: [
         CommonModule,

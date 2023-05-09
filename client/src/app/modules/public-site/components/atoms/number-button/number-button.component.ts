@@ -1,12 +1,12 @@
 import { Component, OnInit, Input } from "@angular/core";
-import { Router } from "@angular/router";
+import { Router, NavigationExtras } from "@angular/router";
 
 import { AuthenticationService } from "src/app/services/authentication.service";
 
 
-const LoginPrefix = "login:";
-const SignupPrefix = "signup:";
-
+export const LoginPrefix = "login:";
+export const SignupPrefix = "signup:";
+export const DefaultLoggedInLink = "/about";
 
 export class NumberButtonParams
 {
@@ -29,6 +29,7 @@ export class NumberButtonParams
         // The link to go to if clicked. If this is blank, we don't act like a clickable element.
         // If this is prepended with login: we perform a login and the user is redirected to this link afterwards.
         // If this is prepended with signup: we perform the signup workflow, and the user is redirected to this link afterwards
+        // If this is a full link starting with http, it opens in a new tab
         // Otherwise we navigate to ths this link via Angular router
         public link: string,
     )
@@ -104,8 +105,27 @@ export class NumberButtonComponent implements OnInit
             }
             else
             {
-                // Simple link opening, we can handle it
-                this._router.navigate([this.params.link]);
+                // Simple link opening, we can handle it. If it's a whole URL we open it
+                // with window.open in a new tab, otherwise let angular router deal with it
+                if(this.params.link.startsWith("http"))
+                {
+                    window.open(this.params.link, "_blank");
+                }
+                else
+                {
+                    // Handle fragments...
+                    let extras: NavigationExtras = {};
+
+                    let url = this.params.link;
+                    let parts = url.split("#");
+                    if(parts.length == 2)
+                    {
+                        url = parts[0];
+                        extras.fragment = parts[1];
+                    }
+
+                    this._router.navigate([url], extras);
+                }
             }
         }
     }

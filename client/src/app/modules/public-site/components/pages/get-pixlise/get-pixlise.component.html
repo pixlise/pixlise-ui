@@ -1,0 +1,41 @@
+<div class="page">
+    <div class="flex-column header product-header">
+        <img class="header-image" src="assets/images/bg-getpixlise.jpg">
+        <div class="flex-column header-content">
+            <div class="flex-row tile-container">
+                <div *ngFor="let tile of tiles; let i = index;" class="flex-column tile">
+                    <h4 [ngClass]="{'last': (i==tiles.length-1)}">{{tile.label}}</h4>
+                    <p>{{tile.description}}</p>
+                    <number-button [params]="tile.buttonParams"></number-button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="flex-column get section" id="get">
+        <number-button theNumber="01" theLabel="Get your own PIXLISE!" link="" colourStyle="yellow" [showArrow]="false"></number-button>
+        <div class="flex-row separated">
+            <div class="flex-column">
+                <h3 class="darker">Want PIXLISE in your lab?</h3>
+                <h3>We've got options for you.</h3>
+            </div>
+        </div>
+    </div>
+    <div class="flex-column links section" id="links">
+        <number-button theNumber="02" theLabel="Helpful Links + Docs" link="" colourStyle="yellow" [showArrow]="false"></number-button>
+        <div class="flex-row separated">
+            <div class="flex-column">
+                <div class="list-heading">OVERVIEW:</div>
+                <a href="" class="list-item">User Guide</a>
+                <div class="list-item coming-soon">Contributor Guide [coming soon]</div>
+                <div class="list-item coming-soon">Operator Guide [coming soon]</div>
+                <a href="https://datavis.caltech.edu/projects/pixl/" class="list-item">Data to Discovery Article</a>
+                <div class="list-heading top-gap">PIXLISE OPEN SOURCE:</div>
+                <a href="https://www.github.com/pixlise" class="list-item">Source Code Git Repository</a>
+                <a href="https://gitlab.com/pixlise/pixlise-helm-charts" class="list-item">Helm Chart Repository</a>
+            </div>
+            <div class="flex-column">
+                <h3 class="darker">Scientists deserve great tools.</h3>
+                <h3>Our code is free and open source, <span class="lighter">enjoy</span>.</h3>
+            </div>
+        </div>
+    </div>

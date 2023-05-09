@@ -1,20 +1,20 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { MissionPageComponent } from './mission-page.component';
+import { GetPIXLISEComponent } from './get-pixlise.component';
 
-describe('MissionPageComponent', () => {
-  let component: MissionPageComponent;
-  let fixture: ComponentFixture<MissionPageComponent>;
+describe('GetPIXLISEComponent', () => {
+  let component: GetPIXLISEComponent;
+  let fixture: ComponentFixture<GetPIXLISEComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ MissionPageComponent ]
+      declarations: [ GetPIXLISEComponent ]
     })
     .compileComponents();
   });
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(MissionPageComponent);
+    fixture = TestBed.createComponent(GetPIXLISEComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
