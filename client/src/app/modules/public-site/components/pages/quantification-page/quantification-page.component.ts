@@ -21,25 +21,25 @@ export class QuantificationPageComponent implements OnInit
                 "Elemental Identification",
                 "Easily build an element set with interactive indicators that assist you to locate distinct peaks in spectra.",
                 "assets/images/quantification/checkbox.svg",
-                "assets/images/quantification/piquant.png"
+                "assets/images/quantification/piquant.jpg"
             ),
             new SectionImageTileContent(
                 "Quantified Element Maps",
                 "Visualize the spatial distribution of elements in your scan with fully quantified data.",
                 "assets/images/quantification/map.svg",
-                ""
+                "assets/images/quantification/maps.jpg"
             ),
             new SectionImageTileContent(
                 "Multi-Quantification",
                 "A feature found only in PIXLISE, craft individual quantifications for regions of your dataset and combine them into one.",
                 "assets/images/quantification/mouse.svg",
-                ""
+                "assets/images/quantification/multiquant.jpg"
             ),
             new SectionImageTileContent(
                 "Quantified Element Table",
                 "Display quantified weight percentages for every element of your dataset in a table.",
                 "assets/images/quantification/table.svg",
-                ""
+                "assets/images/quantification/quant-table.jpg"
             ),
         ]
     );

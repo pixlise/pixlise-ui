@@ -66,7 +66,7 @@ export class WorkflowPageComponent implements OnInit
                 "User Interface Flexibility",
                 "Customize your workspace by assigning any visualization to each panel with intuitive dropdown menus.",
                 "assets/images/workflow/flexible.svg",
-                ""
+                "assets/images/workflow/anim-flexibility.gif"
             ),
             new SectionImageTileContent(
                 "Accessible UI Components",

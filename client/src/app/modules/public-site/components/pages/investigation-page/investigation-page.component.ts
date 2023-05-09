@@ -20,7 +20,7 @@ export class InvestigationPageComponent implements OnInit
                 "Context Image",
                 ["Insert ", "Heading", " Here"],
                 ["Insert ", "Description", " Here."],
-                "",
+                "assets/images/investigation/context-image.jpg",
                 ""
             ),
             new SectionImageItemContent(
@@ -34,21 +34,21 @@ export class InvestigationPageComponent implements OnInit
                 "Binary + Ternary Plot",
                 ["Insert ", "Heading", " Here"],
                 ["Insert ", "Description", " Here."],
-                "",
+                "assets/images/investigation/anim-binary-ternary.gif",
                 ""
             ),
             new SectionImageItemContent(
                 "Spectrtum Chart",
                 ["Insert ", "Heading", " Here"],
                 ["Insert ", "Description", " Here."],
-                "",
+                "assets/images/investigation/anim-spectrum.gif",
                 ""
             ),
             new SectionImageItemContent(
                 "Quantified Element Maps",
                 ["Insert ", "Heading", " Here"],
                 ["Insert ", "Description", " Here."],
-                "",
+                "assets/images/investigation/anim-map-drawing.gif",
                 ""
             ),
             new SectionImageItemContent(
@@ -62,14 +62,14 @@ export class InvestigationPageComponent implements OnInit
                 "Quantified Element Table",
                 ["Insert ", "Heading", " Here"],
                 ["Insert ", "Description", " Here."],
-                "",
+                "assets/images/investigation/quant-table.jpg",
                 ""
             ),
             new SectionImageItemContent(
                 "Histogram",
                 ["Insert ", "Heading", " Here"],
                 ["Insert ", "Description", " Here."],
-                "",
+                "assets/images/investigation/histogram.jpg",
                 ""
             ),
         ]
@@ -143,7 +143,7 @@ export class InvestigationPageComponent implements OnInit
                     "custom-scripting removal",
                     " features, visualize, identify, and resolve diffraction issues swiftly."
                 ],
-                "assets/images/investigation/diffraction.png",
+                "assets/images/investigation/anim-diffraction.gif",
                 ""
             ),
             new SectionImageItemContent(
