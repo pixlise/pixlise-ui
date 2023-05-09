@@ -31,6 +31,8 @@ import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { DataExpression } from "src/app/models/Expression";
 import { DataModuleService, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 import { PushButtonStyle } from "../atoms/buttons/push-button/push-button.component";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { DOIMetadata, DOIPublishData, DOIPublishDialog } from "./doi-publish-dialog/doi-publish-dialog.component";
 
 type MajorGroupedRelease = {
     majorVersion: DataModuleVersionSourceWire;
@@ -68,6 +70,7 @@ export class ExpressionMetadataEditorComponent implements OnInit
 
     @Output() updateMetadata: EventEmitter<void> = new EventEmitter<void>();
     @Output() onShowDiff: EventEmitter<DiffVersions> = new EventEmitter<DiffVersions>();
+    @Output() publishDOI: EventEmitter<DOIMetadata> = new EventEmitter<DOIMetadata>();
 
     private _fetched: boolean = false;
     private _releaseNotes: MajorGroupedRelease[] = [];
@@ -75,7 +78,8 @@ export class ExpressionMetadataEditorComponent implements OnInit
     public latestRelease: DataModuleVersionSourceWire = null;
 
     constructor(
-      private _moduleService: DataModuleService
+      private _moduleService: DataModuleService,
+      private _dialog: MatDialog
     )
     {
         this.groupReleaseNotes();
@@ -119,11 +123,11 @@ export class ExpressionMetadataEditorComponent implements OnInit
     {
         if(this.isModule)
         {
-            return this.currentVersion?.doiBadge || "";
+            return this.currentVersion?.doiMetadata?.doiBadge || "";
         }
         else
         {
-            return this.expression?.doiBadge || "";
+            return this.expression?.doiMetadata?.doiBadge || "";
         }
     }
 
@@ -131,11 +135,11 @@ export class ExpressionMetadataEditorComponent implements OnInit
     {
         if(this.isModule)
         {
-            return this.currentVersion?.doiLink || "";
+            return this.currentVersion?.doiMetadata?.doiLink || "";
         }
         else
         {
-            return this.expression?.doiLink || "";
+            return this.expression?.doiMetadata?.doiLink || "";
         }
     }
 
@@ -143,11 +147,11 @@ export class ExpressionMetadataEditorComponent implements OnInit
     {
         if(this.isModule)
         {
-            return this.currentVersion?.doi || "";
+            return this.currentVersion?.doiMetadata?.doi || "";
         }
         else
         {
-            return this.expression?.doi || "";
+            return this.expression?.doiMetadata?.doi || "";
         }
     }
 
@@ -185,7 +189,26 @@ export class ExpressionMetadataEditorComponent implements OnInit
 
     openDOIFormDialog(): void
     {
-        
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.panelClass = "panel";
+        dialogConfig.disableClose = true;
+
+        dialogConfig.data = new DOIPublishData(this.expression, this.isModule, this.currentVersion?.version);
+        const dialogRef = this._dialog.open(DOIPublishDialog, dialogConfig);
+
+        dialogRef.afterClosed().subscribe(
+            (metadata: DOIMetadata)=>
+            {
+                if(metadata)
+                {
+                    this.publishDOI.emit(metadata);
+                }
+            },
+            (err)=>
+            {
+                console.error(err);
+            }
+        );
     }
 
     onTagSelectionChanged(tags: string[]): void
@@ -272,8 +295,6 @@ export class ExpressionMetadataEditorComponent implements OnInit
                 this.latestRelease = this.releaseNotes[0].minorVersions[0];
             }
         }
-
-        console.log("META", this.currentVersion, this.latestRelease)
     }
 
     getVersionDisplayName(version: DataModuleVersionSourceWire): string

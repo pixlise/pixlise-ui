@@ -62,6 +62,7 @@ import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "src/app/U
 import EditorConfig, { LuaRuntimeError } from "./editor-config";
 import { DiffVersions } from "src/app/UI/expression-metadata-editor/expression-metadata-editor.component";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
+import { DOIMetadata } from "src/app/UI/expression-metadata-editor/doi-publish-dialog/doi-publish-dialog.component";
 
 @Component({
     selector: "code-editor",
@@ -541,8 +542,6 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                     this.regenerateItemList();
 
                     this.topEditor.fetchStoredExpression();
-
-                    console.log("Loaded module", module);
                 },
                 (error) =>
                 {
@@ -1903,7 +1902,8 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
             title,
             version,
             this.visibleModuleCodeEditor.editExpression,
-            this.visibleModuleCodeEditor.expression.tags
+            this.visibleModuleCodeEditor.expression.tags,
+            this.visibleModuleCodeEditor.expression
         );
 
         let dialogRef = this.dialog.open(ModuleReleaseDialogComponent, dialogConfig);
@@ -2049,22 +2049,36 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
         );
     }
 
-    publishDOI()
+    publishDOI(metadata: DOIMetadata)
     {
-        let expr = this?.topEditor?.expression;
-        if(!expr)
+        let expression = this?.topEditor?.expression;
+        if(!expression)
         {
             return;
         }
 
-        this._widgetDataService.exportExpressionCode(expr).subscribe(
-            (exportData: Blob)=>
-            {
-                this._expressionService.publishDOI(expr.id, exportData).subscribe((expression) =>
+        expression.doiMetadata = metadata;
+
+        this._expressionService.edit(
+            expression.id,
+            expression.name,
+            expression.sourceCode,
+            expression.sourceLanguage,
+            expression.comments,
+            expression.tags,
+            expression.moduleReferences,
+            expression.doiMetadata
+        ).subscribe(() =>
+        {
+            this._widgetDataService.exportExpressionCode(expression).subscribe(
+                (exportData: Blob)=>
                 {
-                    console.log("EXPR PUBLISHED", expression)
-                })
-            }
-        );
+                    this._expressionService.publishDOI(expression, exportData).subscribe((expressionResponse) =>
+                    {
+                        console.log("PUBLISHED DOI", expressionResponse);
+                    });
+                }
+            );
+        });
     }
 }

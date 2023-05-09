@@ -232,6 +232,7 @@ import { PMCDataGridComponent } from "./UI/pmc-data-grid/pmc-data-grid.component
 import { StatusIndicatorComponent } from "./UI/atoms/status-indicator/status-indicator.component";
 import { ModuleReleaseDialogComponent } from "./UI/module-release-dialog/module-release-dialog.component";
 import { ExpressionMetadataEditorComponent } from "./UI/expression-metadata-editor/expression-metadata-editor.component";
+import { DOIPublishDialog } from "./UI/expression-metadata-editor/doi-publish-dialog/doi-publish-dialog.component";
 
 
 @Injectable()
@@ -479,7 +480,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         PMCDataGridComponent,
         StatusIndicatorComponent,
         ModuleReleaseDialogComponent,
-        ExpressionMetadataEditorComponent
+        ExpressionMetadataEditorComponent,
+        DOIPublishDialog
     ],
     imports: [
         BrowserModule,

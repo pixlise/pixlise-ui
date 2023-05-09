@@ -121,6 +121,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [buttonStyle]="topEditor.isModule && !topEditor.isLoadedVersionLatest ? 'orange' : 'normal'"
                     [showDiff]="topEditor.isModule && !topEditor.isLoadedVersionLatest"
                     (onShowDiff)="onShowDiff($event)"
+                    (publishDOI)="publishDOI($event)"
                 >
                 </expression-metadata-editor>
                 <push-button
@@ -322,6 +323,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [showDiff]="true"
                     (onShowDiff)="onShowDiff($event)"
                     [isShowingDifference]="isShowingDifference"
+                    (publishDOI)="publishDOI($event)"
                 >
                 </expression-metadata-editor>
                 <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
@@ -335,6 +337,7 @@ POSSIBILITY OF SUCH DAMAGE.
                         (changeDescription)="bottomEditor.onDescriptionChange($event)"
                         (changeTags)="bottomEditor.onTagSelectionChanged($event)"
                         (updateMetadata)="onUpdateMetadata()"
+                        (publishDOI)="publishDOI($event)"
                     >
                     </expression-metadata-editor>
                 </div>
