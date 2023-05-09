@@ -38,9 +38,37 @@
     .get {
         border-top: $clr-yellow 1px solid;
         border-bottom: $clr-yellow 1px solid;
+
+        .headings {
+            padding-top: $sz-heading-gap;
+        }
+
+        .options {
+            width: 450px;
+            height: 450px;
+
+            li {
+                padding: $sz-half $sz-unit;
+                cursor: pointer;
+            }
+
+            .active {
+                border-radius: $sz-double;
+                background-color: $clr-gray-80;
+            }
+
+            p {
+                padding-top: $sz-double;
+                color: $clr-gray-30;
+            }
+        }
     }
     .links {
         background-color: $clr-gray-80;
+
+        .linkbody {
+            padding-top: $sz-heading-gap;
+        }
 
         .coming-soon {
             color: $clr-gray-60;
@@ -85,6 +113,5 @@
 
     .separated {
         justify-content: space-between;
-        padding-top: $sz-heading-gap;
     }
 }

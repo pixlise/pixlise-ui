@@ -14,15 +14,37 @@
     <div class="flex-column get section" id="get">
         <number-button theNumber="01" theLabel="Get your own PIXLISE!" link="" colourStyle="yellow" [showArrow]="false"></number-button>
         <div class="flex-row separated">
-            <div class="flex-column">
+            <div class="flex-column headings">
                 <h3 class="darker">Want PIXLISE in your lab?</h3>
                 <h3>We've got options for you.</h3>
+            </div>
+            <div class="flex-column options">
+                <div class="list-heading">HOW DO I GET IT?</div>
+                <ul>
+                    <li
+                        *ngFor="let item of getOptions"
+                        [ngClass]="{'active': item == getActiveItem}"
+                        (click)="onClickListItem(item)"
+                        >{{item}}</li>
+                </ul>
+                <div *ngIf="getActiveItem == getOptions[0]">
+                    <p>If you don’t need cloud services, or your lab is unable to get them for your team, don’t worry! PIXLISE can run directly on your local laptop or PC.</p>
+                    <p>You’ll need to pull the source code from <a [href]="repoURL">our open source git repository</a>. You can build and launch the application directly from the source code, or run it in a Docker container, if you are familiar.</p>
+                    <p>Running locally, you will not have access to cloud parallelization for PIQUANT, or the any of the sharing features. However you will have all of the PIXLISE visualization and analysis suite.</p>
+                </div>
+                <div *ngIf="getActiveItem == getOptions[1]">
+                    <p>Set up a cloud account (we use AWS) and you can have a version of PIXLISE for your entire lab to share! All of the PIXLISE features will be enabled, and your lab will have its own website for shared access.</p>
+                    <p>You will need to set up your cloud account, run Kubernetes, and deploy PIXLISE as a Helm Chart. This is a non-trivial task, documentation and open source infrastructure code are on the way from the PIXLISE team, and we will release them soon."</p>                   
+                </div>
+                <div *ngIf="getActiveItem == getOptions[2]">
+                    <p>In the future, PIXLISE may become available as a service, our team would build and host the infrastructure for your lab.</p>
+                </div>
             </div>
         </div>
     </div>
     <div class="flex-column links section" id="links">
         <number-button theNumber="02" theLabel="Helpful Links + Docs" link="" colourStyle="yellow" [showArrow]="false"></number-button>
-        <div class="flex-row separated">
+        <div class="flex-row separated linkbody">
             <div class="flex-column">
                 <div class="list-heading">OVERVIEW:</div>
                 <a href="" class="list-item">User Guide</a>
@@ -30,7 +52,7 @@
                 <div class="list-item coming-soon">Operator Guide [coming soon]</div>
                 <a href="https://datavis.caltech.edu/projects/pixl/" class="list-item">Data to Discovery Article</a>
                 <div class="list-heading top-gap">PIXLISE OPEN SOURCE:</div>
-                <a href="https://www.github.com/pixlise" class="list-item">Source Code Git Repository</a>
+                <a [href]="repoURL" class="list-item">Source Code Git Repository</a>
                 <a href="https://gitlab.com/pixlise/pixlise-helm-charts" class="list-item">Helm Chart Repository</a>
             </div>
             <div class="flex-column">

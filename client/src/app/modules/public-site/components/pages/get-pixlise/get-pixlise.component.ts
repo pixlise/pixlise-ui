@@ -8,6 +8,7 @@ class Tile
     {
     }
 }
+
 @Component({
     selector: "app-get-pixlise",
     templateUrl: "./get-pixlise.component.html",
@@ -15,6 +16,7 @@ class Tile
 })
 export class GetPIXLISEComponent implements OnInit
 {
+    repoURL = "https://www.github.com/pixlise";
     tiles: Tile[] = [
         new Tile(
             "Explore Our World!",
@@ -31,11 +33,19 @@ export class GetPIXLISEComponent implements OnInit
         ),
     ];
 
+    getOptions = ["Personal Local Installation", "Self Hosted Deployment", "Full Cloud Hosted PIXLISE Service"];
+    getActiveItem = this.getOptions[0];
+
     constructor()
     {
     }
 
     ngOnInit(): void
+    { 
+    }
+
+    onClickListItem(item: string)
     {
+        this.getActiveItem = item;
     }
 }
