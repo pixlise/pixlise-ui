@@ -41,28 +41,38 @@ POSSIBILITY OF SUCH DAMAGE.
             >
             </tag-picker>
         </div>
-        <span
-            *ngIf="!doiLink && !isModule"
-            class="new-doi-btn"
-            (click)="openDOIFormDialog()"
-            #tooltip="matTooltip"
-            [matTooltip]="expression.shared ? 'Create DOI for this expression' : 'Cannot create DOI for private expression'"
-        >
-            <img src="{{expression.shared ? 'assets/button-icons/doi-create.svg' : 'assets/button-icons/doi-create-disabled.svg'}}">
-        </span>
-        <a
-            *ngIf="doiLink"
-            [href]="doiLink"
-            target="_blank"
-            rel="noopener noreferrer"
-        >
-            <img 
-                *ngIf="doiBadge"
-                [src]="doiBadge"
+        <span class="doi-btns">
+            <span
+                *ngIf="!isModule"
+                class="new-doi-btn"
+                (click)="openDOIFormDialog()"
                 #tooltip="matTooltip"
-                matTooltip="Open DOI link in Zenodo"
+                [matTooltip]="expression.shared ? 'Create New DOI for this expression' : 'Cannot create DOI for private expression'"
             >
-        </a>
+                <img
+                    *ngIf="!doiLink"
+                    src="{{expression.shared ? 'assets/button-icons/doi-create.svg' : 'assets/button-icons/doi-create-disabled.svg'}}"
+                >
+                <img
+                    class="edit-doi-btn"
+                    *ngIf="doiLink"
+                    src="assets/button-icons/edit.svg"
+                >
+            </span>
+            <a
+                *ngIf="doiLink"
+                [href]="doiLink"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                <img 
+                    *ngIf="doiBadge"
+                    [src]="doiBadge"
+                    #tooltip="matTooltip"
+                    matTooltip="Open DOI link in Zenodo"
+                >
+            </a>
+        </span>
         <div class="metadata-fields">
             <h5 class="metadata-label">Description</h5>
             <textarea [(ngModel)]="description">{{description}}</textarea>

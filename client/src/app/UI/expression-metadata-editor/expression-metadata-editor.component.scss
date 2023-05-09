@@ -141,7 +141,21 @@
     }
 }
 
-.new-doi-btn {
-    width: fit-content;
-    cursor: pointer;
+.doi-btns {
+    display: flex;
+    align-items: center;
+
+    .new-doi-btn {
+        width: fit-content;
+        cursor: pointer;
+
+    }
+
+    .edit-doi-btn {
+        margin-right: 4px;
+    }
+
+    a {
+        display: flex;
+    }
 }
