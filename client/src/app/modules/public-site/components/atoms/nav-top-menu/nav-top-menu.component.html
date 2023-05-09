@@ -3,16 +3,13 @@
     <div class="flex-row links">
         <div
             *ngFor="let navGroup of navigation.categories"
+            (mouseenter)="onMouseEnter(navGroup)"
+            (mouseleave)="onMouseLeave(navGroup)"
             (click)="onClickNav(navGroup)">
             <div class="clickable nav-item" [ngClass]="{'active': isActiveNav(navGroup)}">
                 {{navGroup}}
                 <img [src]="isActiveNav(navGroup) ? 'assets/images/arrow-down.svg': 'assets/images/arrow-down-nav.svg'"></div>
-            <div *ngIf="isMenuOpen(navGroup)" class="flex-column nav-menu">
-                <a
-                    *ngFor="let item of navigation.getItems(navGroup)"
-                    class="clickable nav-item"
-                    [href]="item.link">{{item.label}}</a>
-            </div>
+            <nav-menu *ngIf="isMenuOpen(navGroup)" [items]="navigation.getItems(navGroup)" #childMenu></nav-menu>
         </div>
     </div>
     <div class="flex-row buttons">

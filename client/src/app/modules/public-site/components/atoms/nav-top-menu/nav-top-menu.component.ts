@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, ViewChildren, ElementRef, QueryList } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 
 import { Navigation } from "../../navigation";
@@ -9,10 +9,12 @@ import { LoginPrefix, SignupPrefix, DefaultLoggedInLink } from "../../atoms/numb
 @Component({
     selector: "nav-top-menu",
     templateUrl: "./nav-top-menu.component.html",
-    styleUrls: ["./nav-top-menu.component.scss"]
+    styleUrls: ["./nav-top-menu.component.scss", "./nav-menu/nav-menu.component.scss"]
 })
 export class NavTopMenuComponent implements OnInit
 {
+    @ViewChildren("childMenu") childMenuElements: QueryList<ElementRef>;
+
     loginLink: string = LoginPrefix+DefaultLoggedInLink;
     signupLink: string = SignupPrefix+DefaultLoggedInLink;
     navigation: Navigation = new Navigation();
@@ -43,16 +45,33 @@ export class NavTopMenuComponent implements OnInit
 
     onClickNav(navGroup: string)
     {
-        // Set them all to closed
-        for(let c of this.navigation.categories)
+        // If its one of get started or about us, we navigate to the top of that page
+        // For feature we don't do this because we don't have a place to go to - the sub-menu points to 3
+        // different pages
+        let link = this.navigation.getRootLink(navGroup);
+        if(link)
         {
-            if(c != navGroup)
-            {
-                this._openMenus.set(c, false);
-            }
+            this._router.navigate([link]);
         }
+    }
 
-        this._openMenus.set(navGroup, !this.isMenuOpen(navGroup));
+    onMouseEnter(navGroup: string)
+    {
+        this.setMenuVisible(navGroup, true);
+    }
+
+    onMouseLeave(navGroup: string)
+    {
+        this.setMenuVisible(navGroup, false);
+    }
+
+    private setMenuVisible(navGroup: string, show: boolean)
+    {
+        for(let cat of this.navigation.categories)
+        {
+            this._openMenus.set(cat, false);
+        }
+        this._openMenus.set(navGroup, show);
     }
 
     isMenuOpen(navGroup: string): boolean

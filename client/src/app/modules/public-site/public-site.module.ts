@@ -23,6 +23,7 @@ import { NavTopMenuComponent } from "./components/atoms/nav-top-menu/nav-top-men
 import { NavSectionSwitchComponent } from "./components/atoms/nav-section-switch/nav-section-switch.component";
 import { AboutUsPageComponent } from "./components/pages/about-us-page/about-us-page.component";
 import { GetPIXLISEComponent } from "./components/pages/get-pixlise/get-pixlise.component";
+import { NavMenuComponent } from './components/atoms/nav-top-menu/nav-menu/nav-menu.component';
 
 
 const APP_ROUTES: Routes = [
@@ -59,7 +60,8 @@ const APP_ROUTES: Routes = [
         NavTopMenuComponent,
         NavSectionSwitchComponent,
         AboutUsPageComponent,
-        GetPIXLISEComponent
+        GetPIXLISEComponent,
+        NavMenuComponent
     ],
     imports: [
         CommonModule,

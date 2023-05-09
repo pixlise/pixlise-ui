@@ -1,0 +1,29 @@
+@import '../../../../scss/public-site.scss';
+
+.nav-menu {
+    border-radius: $sz-unit;
+    background-color: rgba($clr-gray-100, 0.7);
+    padding: $sz-double;
+    position: absolute;
+}
+
+.nav-item {
+    font-family: "Source Sans Pro";
+    font-size: 24px;
+    font-weight: 510;
+    line-height: 29px;
+    letter-spacing: 0.04em;
+    text-align: left;
+
+    text-decoration: none;
+    color: $clr-gray-10;
+    text-transform: uppercase;
+
+    &:hover {
+        color: $clr-yellow;
+    }
+}
+
+.active {
+    color: $clr-yellow;
+}

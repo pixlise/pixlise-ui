@@ -8,6 +8,13 @@ export class NavigationItem
 export class Navigation
 {
     public categories = ["Features", "Get Started", "About Us"];
+
+    private _categoryRoots = new Map<string, string>([
+        [this.categories[0], ""],
+        [this.categories[1], "/public/get-started"],
+        [this.categories[2], "/public/about-us"],
+    ]);
+
     private _categoryItems = new Map<string, NavigationItem[]>([
         [this.categories[0], [
             new NavigationItem("Workflow", "/public/workflow"),
@@ -45,5 +52,10 @@ export class Navigation
             }
         }
         return "";
+    }
+
+    public getRootLink(category: string)
+    {
+        return this._categoryRoots.get(category);
     }
 }
