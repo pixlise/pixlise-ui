@@ -45,8 +45,10 @@ POSSIBILITY OF SUCH DAMAGE.
             *ngIf="!doiLink && !isModule"
             class="new-doi-btn"
             (click)="openDOIFormDialog()"
+            #tooltip="matTooltip"
+            [matTooltip]="expression.shared ? 'Create DOI for this expression' : 'Cannot create DOI for private expression'"
         >
-            <img src="assets/button-icons/doi-create.svg">
+            <img src="{{expression.shared ? 'assets/button-icons/doi-create.svg' : 'assets/button-icons/doi-create-disabled.svg'}}">
         </span>
         <a
             *ngIf="doiLink"

@@ -2075,7 +2075,10 @@ export class CodeEditorComponent extends ExpressionListGroupNames implements OnI
                 {
                     this._expressionService.publishDOI(expression, exportData).subscribe((expressionResponse) =>
                     {
-                        console.log("PUBLISHED DOI", expressionResponse);
+                        if(expressionResponse?.doiMetadata?.doi)
+                        {
+                            this.topEditor.expression.doiMetadata = expressionResponse.doiMetadata;
+                        }
                     });
                 }
             );

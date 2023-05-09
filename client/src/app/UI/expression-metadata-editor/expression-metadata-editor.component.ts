@@ -189,6 +189,11 @@ export class ExpressionMetadataEditorComponent implements OnInit
 
     openDOIFormDialog(): void
     {
+        if(!this.expression.shared)
+        {
+            return;
+        }
+
         const dialogConfig = new MatDialogConfig();
         dialogConfig.panelClass = "panel";
         dialogConfig.disableClose = true;
