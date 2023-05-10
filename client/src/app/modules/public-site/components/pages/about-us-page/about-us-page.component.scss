@@ -121,6 +121,7 @@
             display: flex;
             flex-direction: row;
             flex-wrap: wrap;
+            // justify-content: space-around;
             gap: $sz-double;
             padding: $sz-button-gap;
 
@@ -167,6 +168,13 @@
                     }
 
                     .attribution {
+                        color: $clr-gray-40;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    }
+
+                    .date {
                         color: $clr-gray-40;
                     }
                 }

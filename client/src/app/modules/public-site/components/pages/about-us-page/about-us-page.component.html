@@ -54,10 +54,11 @@
                     <img src="assets/images/aboutus/no-image.svg">
                 </div>
                 <div class="flex-column tile-text">
-                    <h4>{{pub.title}}</h4>
-                    <p class="issue">{{pub.subheading}}</p>
+                    <h4>{{pub.publication}}</h4>
+                    <p class="issue">{{pub.issue}}</p>
                     <p>{{pub.summary}}</p>
-                    <p class="attribution">{{pub.attribution}}</p>
+                    <p class="attribution" [title]="pub.attribution">{{pub.attribution}}</p>
+                    <p class="date">{{pub.date}}</p>
                 </div>
             </a>
         </div>
