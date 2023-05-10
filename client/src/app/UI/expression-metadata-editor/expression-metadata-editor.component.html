@@ -43,7 +43,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <span class="doi-btns">
             <span
-                *ngIf="!isModule"
+                *ngIf="!isModule && !isSharedByOtherUser"
                 class="new-doi-btn"
                 (click)="openDOIFormDialog()"
                 #tooltip="matTooltip"

@@ -58,6 +58,7 @@ export class ExpressionMetadataEditorComponent implements OnInit
 
     @Input() expression: DataExpression = null;
     @Input() isModule: boolean = false;
+    @Input() isSharedByOtherUser: boolean = false;
     @Input() currentVersion: DataModuleVersionSourceWire = null;
     @Input() versions: DataModuleVersionSourceWire[] = [];
 

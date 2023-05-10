@@ -176,7 +176,13 @@ export class MistROIComponent implements OnInit
 
                 if(!response.includesMultipleDatasets)
                 {
-                    this._roiService.bulkAdd(response.mistROIs, response.overwrite, response.skipDuplicates, response.deleteExisting, true).subscribe(
+                    let locIDxCorrectedROIs = response.mistROIs.map((roi) =>
+                    {
+                        roi.locationIndexes = roi.locationIndexes.map((locIdx) => this._datasetService.datasetLoaded.pmcToLocationIndex.get(locIdx));
+                        return roi;
+                    });
+
+                    this._roiService.bulkAdd(locIDxCorrectedROIs, response.overwrite, response.skipDuplicates, response.deleteExisting, true).subscribe(
                         ()=>
                         {
                             this._selectionService.clearSelection();
