@@ -1,11 +1,12 @@
 @import '../../../scss/public-site.scss';
 
 .section {
-    padding: $sz-border-y $sz-border-x;
+    padding: $sz-border-y 0px $sz-border-y $sz-border-x;
 
     .container {
-        white-space: nowrap;
+        //white-space: nowrap;
         //align-items: center;
+        justify-content: space-between;
 
         .text-container {
             width: 550px;
@@ -25,24 +26,20 @@
             position: absolute;
         }
 
-        .img-container {
-            flex-grow: 1;
+        .img-vcenter {
+            justify-content: space-around;
+            align-items: flex-end;
 
-            padding-top: $sz-spacer-gap;
-            display: inline-block;
-            position: relative;
-        }
-
-        .img-foreground {
-            z-index: 2;
-            right: -$sz-border-x;
-            width: 1124px;
-        }
-
-        .img-background {
-            z-index: 1;
-            right: 160px;
-            top: -160px;
+            .img-foreground {
+                z-index: 2;
+                max-width: 1124px;
+            }
+            .img-background {
+                position: relative;
+                z-index: 1;
+                right: 380px;
+                top: -160px;
+            }
         }
 
         h3 {
