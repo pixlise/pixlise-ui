@@ -29,9 +29,8 @@
 
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { Subscription } from "rxjs";
-import { DataSetSummary } from "src/app/models/DataSet";
-import { DataSetService } from "src/app/services/data-set.service";
 
+import { DataSetSummary } from "../dataset-summary";
 
 
 @Component({
@@ -50,9 +49,7 @@ export class DataSetSummaryComponent implements OnInit
     private _title: string = "";
     private _missingData: string = "";
 
-    constructor(
-        private datasetService: DataSetService
-    )
+    constructor()
     {
     }
 

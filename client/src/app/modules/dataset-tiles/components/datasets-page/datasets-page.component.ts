@@ -30,18 +30,22 @@
 import { Component, ElementRef, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Router } from "@angular/router";
+
 import { Subscription } from "rxjs";
-import { DataSetSummary } from "src/app/models/DataSet";
-import { DatasetFilter } from "src/app/routes/datasets/dataset-filter";
-import { FilterDialogComponent, FilterDialogData } from "src/app/routes/datasets/filter-dialog/filter-dialog.component";
+
+import { DatasetFilter } from "../dataset-filter";
+import { AddDatasetDialogComponent } from "../add-dataset-dialog/add-dataset-dialog.component";
+import { FilterDialogComponent, FilterDialogData } from "../filter-dialog/filter-dialog.component";
+import { DataSetSummary } from "../dataset-summary";
+
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { ViewStateService } from "src/app/services/view-state.service";
+
 import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "src/app/UI/atoms/picker-dialog/picker-dialog.component";
 import { WidgetSettingsMenuComponent } from "src/app/UI/atoms/widget-settings-menu/widget-settings-menu.component";
 import { HelpMessage } from "src/app/utils/help-message";
 import { getMB, httpErrorToString } from "src/app/utils/utils";
-import { AddDatasetDialogComponent } from "src/app/routes/datasets/add-dataset-dialog/add-dataset-dialog.component";
 
 
 class SummaryItem
@@ -53,10 +57,10 @@ class SummaryItem
 
 @Component({
     selector: "app-datasets",
-    templateUrl: "./datasets.component.html",
-    styleUrls: ["./datasets.component.scss"]
+    templateUrl: "./datasets-page.component.html",
+    styleUrls: ["./datasets-page.component.scss"]
 })
-export class DatasetsComponent implements OnInit
+export class DatasetsPageComponent implements OnInit
 {
     private _subs = new Subscription();
 

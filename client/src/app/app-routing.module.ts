@@ -33,7 +33,6 @@ import { Routes, RouterModule } from "@angular/router";
 import { environment } from "src/environments/environment";
 
 import { AboutComponent } from "./routes/about/about.component";
-import { DatasetsComponent } from "./routes/datasets/datasets.component";
 import { PageNotFoundComponent } from "./routes/page-not-found/page-not-found.component";
 import { AuthenticateComponent } from "./routes/authenticate/authenticate.component";
 import { DatasetComponent } from "./routes/dataset/dataset.component";
@@ -67,6 +66,7 @@ const APP_ROUTES: Routes = [
     { path: "about", component: AboutComponent },
 
     { path: "", loadChildren: ()=>import("./modules/public-site/public-site.module").then(m=>m.PublicSiteModule) },
+    { path: "datasets", loadChildren: ()=>import("./modules/dataset-tiles/dataset-tiles.module").then(m=>m.DatasetTilesModule) },
     //{ path: "", redirectTo: "/landing", pathMatch: "full" },
     //{ path: "", redirectTo: "/about", pathMatch: "full" },
 
@@ -75,7 +75,6 @@ const APP_ROUTES: Routes = [
         path: "",
         canActivate: [AuthenticatedGuard],
         children: [
-            { path: "datasets", component: DatasetsComponent },
             {
                 path: "dataset/:dataset_id",
                 component: DatasetComponent,

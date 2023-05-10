@@ -45,7 +45,6 @@ import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
 
 import { AboutComponent } from "./routes/about/about.component";
-import { DatasetsComponent } from "./routes/datasets/datasets.component";
 import { PageNotFoundComponent } from "./routes/page-not-found/page-not-found.component";
 import { AuthenticateComponent } from "./routes/authenticate/authenticate.component";
 import { DatasetComponent } from "./routes/dataset/dataset.component";
@@ -56,7 +55,6 @@ import { MapBrowserComponent } from "./routes/dataset/map-browser/map-browser.co
 
 import { ToolbarComponent } from "./UI/toolbar/toolbar.component";
 
-import { DataSetSummaryComponent } from "./routes/datasets/data-set-summary/data-set-summary.component";
 import { HttpInterceptorService } from "src/app/services/http-interceptor.service";
 
 import { ContextImageToolbarComponent } from "./UI/context-image-view-widget/context-image-toolbar/context-image-toolbar.component";
@@ -150,7 +148,6 @@ import { WidgetSwitcherComponent } from "./UI/atoms/widget-switcher/widget-switc
 import { WidgetKeyDisplayComponent } from "./UI/atoms/widget-key-display/widget-key-display.component";
 import { SelectionChangerComponent } from "./UI/atoms/selection-changer/selection-changer.component";
 import { SelectionOptionsComponent } from "./UI/atoms/selection-changer/selection-options/selection-options.component";
-import { FilterDialogComponent } from "./routes/datasets/filter-dialog/filter-dialog.component";
 import { BadgeComponent } from "./UI/atoms/badge/badge.component";
 import { NotificationBannerComponent } from "./UI/notification-banner/notification-banner.component";
 import { PickedElementsComponent } from "./UI/spectrum-chart-widget/spectrum-peak-identification/picked-elements/picked-elements.component";
@@ -220,7 +217,6 @@ import { FitLineConfigComponent } from "./UI/spectrum-chart-widget/spectrum-fit-
 import { FitElementsComponent } from "./UI/spectrum-chart-widget/spectrum-fit-container/fit-elements/fit-elements.component";
 import { FitElementSelectionComponent } from "./UI/spectrum-chart-widget/spectrum-fit-container/fit-element-selection/fit-element-selection.component";
 import { EnvConfigurationInitService, AppConfig } from "./services/env-configuration-init.service";
-import { AddDatasetDialogComponent } from "./routes/datasets/add-dataset-dialog/add-dataset-dialog.component";
 import { LogViewerComponent } from "./UI/log-viewer/log-viewer.component";
 import { AnnotationEditorComponent } from "./UI/annotation-editor/annotation-editor.component";
 import { AnnotationDisplayComponent } from "./UI/annotation-editor/annotation-display/annotation-display.component";
@@ -323,9 +319,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         AnalysisComponent,
         CodeEditorComponent,
         QuantificationsComponent,
-        DatasetsComponent,
         PageNotFoundComponent,
-        DataSetSummaryComponent,
         ToolbarComponent,
         ContextImageToolbarComponent,
         QuantResultSummaryComponent,
@@ -412,7 +406,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         SelectionChangerComponent,
         SelectionOptionsComponent,
         GlobalNotificationsComponent,
-        FilterDialogComponent,
         BadgeComponent,
         NotificationBannerComponent,
         PickedElementsComponent,
@@ -474,7 +467,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         MistRoiConvertComponent,
         ViewStateUploadComponent,
         AddBearerPipe,
-        AddDatasetDialogComponent,
         LogViewerComponent,
         PlotExporterDialogComponent,
         PMCDataGridComponent,
