@@ -44,7 +44,6 @@ import { VERSION } from "src/environments/version";
 import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
 
-import { AboutComponent } from "./routes/about/about.component";
 import { DatasetsComponent } from "./routes/datasets/datasets.component";
 import { PageNotFoundComponent } from "./routes/page-not-found/page-not-found.component";
 import { AuthenticateComponent } from "./routes/authenticate/authenticate.component";
@@ -87,7 +86,6 @@ import { WidgetDisplayMessageComponent } from "./UI/atoms/widget-display-message
 import { UserMenuPanelComponent } from "./UI/user-menu-panel/user-menu-panel.component";
 
 import { QuantificationStartOptionsComponent } from "./UI/quantification-start-options/quantification-start-options.component";
-import { VersionDisplayComponent } from "./routes/about/version-display/version-display.component";
 
 import { QuantSelectorPanelComponent } from "./UI/quantification-selector/quant-selector-panel/quant-selector-panel.component";
 import { ExpressionEditorComponent } from "./UI/expression-editor/expression-editor.component";
@@ -337,7 +335,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         ElementTileComponent,
         PeriodicTableComponent,
         LayerControlComponent,
-        AboutComponent,
         ContextImagePickerComponent,
         QuantificationTableComponent,
         HistogramViewComponent,
@@ -348,7 +345,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         UserMenuPanelComponent,
         AnnotationOptionsComponent,
         QuantificationStartOptionsComponent,
-        VersionDisplayComponent,
         ElementSetsComponent,
         AnnotationsComponent,
         BrowseOnChartComponent,

@@ -1,3 +1,32 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
 import { Component, OnInit } from "@angular/core";
 import { Router } from "@angular/router";
 
@@ -27,6 +56,21 @@ class Publication
     {
     }
 }
+
+class Contributor
+{
+    constructor(public name: string, public role: string)
+    {
+    }
+}
+
+class ContributorGroup
+{
+    constructor(public group: string, public contributors: Contributor[])
+    {
+    }
+}
+
 @Component({
     selector: "app-about-us-page",
     templateUrl: "./about-us-page.component.html",
@@ -34,6 +78,45 @@ class Publication
 })
 export class AboutUsPageComponent implements OnInit
 {
+    contributors: ContributorGroup[] = [
+        new ContributorGroup("PIXL PROJECT LEADERSHIP", [
+            new Contributor("Abigail Allwood", "PIXL Principal Investigator"),
+            new Contributor("Joel Hurowitz", "PIXL Deputy Principal Investigator"),
+            new Contributor("Morgan Cable", "PIXL Deputy Principal Investigator")
+        ]),
+        new ContributorGroup("PIXLISE DEVELOPMENT TEAM", [
+            new Contributor("Scott Davidoff", "Project Lead"),
+            new Contributor("Peter Nemere", "QUT Lead Programmer"),
+            new Contributor("Tom Barber", "JPL Lead Programmer"),
+            new Contributor("Michael Fedell", "JPL Programmer"),
+            new Contributor("Ryan Stonebraker", "JPL Programmer"),
+            new Contributor("Adrian Galvin", "Design Lead"),
+            new Contributor("Austin Wright", "Data Scientist"),
+        ]),
+        new ContributorGroup("PIXLISE SCIENCE TEAM", [
+            new Contributor("Mike Tice", "JPL Science Liaison"),
+            new Contributor("Yang Liu", "JPL Science Liaison"),
+            new Contributor("David Flannery", "QUT Science Liaison"),
+            new Contributor("Tim Elam", "Chief Spectroscopist"),
+            new Contributor("Chris Heirwegh", "Spectroscopist"),
+        ]),
+        new ContributorGroup("PIXLISE INCUBATION TEAM ALUMNI", [
+            new Contributor("David Flannery", "Principal Investigator"),
+            new Contributor("Abigail Allwood", "Co-Investigator"),
+            new Contributor("Yang Liu", "Co-Investigator"),
+            new Contributor("David Schurman", "Lead Developer"),
+            new Contributor("Pooja Nair", "Designer"),
+            new Contributor("Adrian Galvin", "Designer"),
+            new Contributor("Scott Davidoff", "Mentor"),
+            new Contributor("Maggie Hendrie", "Mentor"),
+            new Contributor("Santiago Lombeyda", "Mentor"),
+            new Contributor("Hillary Mushkin", "Mentor"),
+        ]),
+        new ContributorGroup("PIXLISE ALUMNI", [
+            new Contributor("Henry Jiao", "Intern Programmer"),
+        ]),
+    ];
+
     scienceTiles: MissionTile[] = [
         new MissionTile("Revolutionary", "We make cutting-edge  visualization and analysis tools for next generation, groundbreaking science."),
         new MissionTile("Collaborative", "Just like how PIXLISE came to be, we believe tools should foster collaboration between everyone in the lab."),

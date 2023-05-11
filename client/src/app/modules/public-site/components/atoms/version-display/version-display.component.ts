@@ -27,12 +27,57 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Subscription } from "rxjs";
+import { ComponentVersion, ComponentVersions } from "src/app/models/BasicTypes";
+import { EnvConfigurationService } from "src/app/services/env-configuration.service";
+import { VERSION } from "src/environments/version";
 
-.version {
-    color: white;
-}
 
-.versions {
-    margin-bottom: $sz-double;
+
+
+@Component({
+    selector: "version-display",
+    templateUrl: "./version-display.component.html",
+    styleUrls: ["./version-display.component.scss"]
+})
+export class VersionDisplayComponent implements OnInit, OnDestroy
+{
+    private _subs = new Subscription();
+
+    versions: ComponentVersions = null;
+    error: boolean = false;
+
+    constructor(
+        public envConfigService: EnvConfigurationService
+    )
+    {
+    }
+
+    ngOnInit()
+    {
+        this.versions = null;
+        this.error = false;
+        const verstr = VERSION["raw"];
+
+        this._subs.add(this.envConfigService.getComponentVersions().subscribe((versions)=>
+        {
+            this.versions = versions;
+            // Add our own one at the start
+            this.versions.components.unshift(new ComponentVersion("PIXLISE UI", verstr, null));
+        },
+        (err)=>
+        {
+            // Just show our own version
+            this.versions = new ComponentVersions([]);
+            this.versions.components.push(new ComponentVersion("PIXLISE UI", verstr, null));
+            this.error = true;
+        }
+        ));
+    }
+
+    ngOnDestroy()
+    {
+        this._subs.unsubscribe();
+    }
 }

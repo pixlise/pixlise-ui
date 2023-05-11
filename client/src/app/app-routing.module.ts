@@ -32,7 +32,6 @@ import { Routes, RouterModule } from "@angular/router";
 
 import { environment } from "src/environments/environment";
 
-import { AboutComponent } from "./routes/about/about.component";
 import { DatasetsComponent } from "./routes/datasets/datasets.component";
 import { PageNotFoundComponent } from "./routes/page-not-found/page-not-found.component";
 import { AuthenticateComponent } from "./routes/authenticate/authenticate.component";
@@ -64,11 +63,8 @@ import { PublicSiteModule } from "./modules/public-site/public-site.module";
 const APP_ROUTES: Routes = [
     // Public pages
     { path: "authenticate", component: AuthenticateComponent },
-    { path: "about", component: AboutComponent },
 
     { path: "", loadChildren: ()=>import("./modules/public-site/public-site.module").then(m=>m.PublicSiteModule) },
-    //{ path: "", redirectTo: "/landing", pathMatch: "full" },
-    //{ path: "", redirectTo: "/about", pathMatch: "full" },
 
     // Authenticated pages
     {

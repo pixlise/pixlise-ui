@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="column" class="versions">
     <div *ngIf="versions==null" fxLayout="row" fxLayoutAlign="space-around" class="loading-icon">
-        <mat-spinner [diameter]="40" color="accent"></mat-spinner>
+        <div>Loading...</div>
     </div>
     <div *ngIf="versions!=null">
         <div *ngFor="let ver of versions.components" fxLayout="column" fxLayoutAlign="start stretch">
