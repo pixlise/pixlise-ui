@@ -152,7 +152,7 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
                 for(let [id, peak] of userPeaks.entries())
                 {
                     this.userPeaks.push(
-                        new DiffractionPeak(peak.pmc, 0, 0, peak.keV, peak.keV-0.1, peak.keV+0.1, DiffractionPeak.statusUnspecified, id)
+                        new DiffractionPeak(peak.pmc, 0, 0, peak.keV, peak.keV-0.1, peak.keV+0.1, "", DiffractionPeak.statusUnspecified, id)
                     );
                 }
 

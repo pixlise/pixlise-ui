@@ -68,6 +68,7 @@ export class DiffractionPeak
         public keV: number, // keV values are calculated based on calibration
         public kevStart: number,
         public kevEnd: number,
+        public detector: string,
         // Thought we'd be operating on these, but raw data doesn't (yet?) contain it
         //public confidence: number,
         //public skew: number,
@@ -275,6 +276,7 @@ export class DiffractionPeakService implements DiffractionPeakQuerierSource
                                 peak.getPeakChannel(),
                                 // keV values will be calculated later
                                 0, 0, 0,
+                                peak.getDetector(),
                                 DiffractionPeak.statusUnspecified
                             )
                         );
