@@ -43,7 +43,7 @@ $sz-subheading-gap: 72px;
 $sz-spacer-gap: 64px;
 $sz-paragraph-gap: 48px;
 
-
+// Colours
 $clr-yellow: #FFFF8D;
 $clr-red: #DA4E22;
 $clr-blue: #91BFDB;
@@ -59,6 +59,8 @@ $clr-gray-30: #BEC0C2;
 $clr-gray-20: #EBECEC;
 $clr-gray-10: #F8F8F8;
 
+
+// Text
 h1 {
     font-family: Inter;
     font-size: 72px;
@@ -242,6 +244,7 @@ li {
     }
 }
 
+// Flexbox helpers
 .flex-row {
     display: flex;
     flex-direction: row;

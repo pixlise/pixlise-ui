@@ -30,9 +30,9 @@
 @import '../../../scss/public-site.scss';
 
 .version {
-    color: white;
-}
+    gap: $sz-unit;
 
-.versions {
-    margin-bottom: $sz-double;
+    @extend .caption;
+    
+    font-weight: normal;
 }

@@ -42,6 +42,7 @@ import { DefaultLoggedInLink } from "../number-button/number-button.component";
 export class FooterComponent implements OnInit
 {
     @Input() showLogos: boolean;
+    @Input() showTeam: boolean;
 
     navigation: Navigation = new Navigation();
 

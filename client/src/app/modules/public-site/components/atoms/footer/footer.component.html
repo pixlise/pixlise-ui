@@ -32,6 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="footer">
     <join-the-community></join-the-community>
     <branding-logos *ngIf="showLogos"></branding-logos>
+    <team-list *ngIf="showTeam"></team-list>
     <div class="flex-row links">
         <div class="logo-group">
             <div><a href="/"><img src="assets/images/pixlise-white-logo.svg"></a></div>
@@ -44,6 +45,10 @@ POSSIBILITY OF SUCH DAMAGE.
             <div *ngFor="let navGroup of navigation.categories" class="flex-column">
                 <div class="caption">{{navGroup}}</div>
                 <a *ngFor="let item of navigation.getItems(navGroup)" [href]="item.link">{{item.label}}</a>
+            </div>
+            <div class="flex-column">
+                <div class="caption">Versions</div>
+                <version-display></version-display>
             </div>
         </div>
     </div>

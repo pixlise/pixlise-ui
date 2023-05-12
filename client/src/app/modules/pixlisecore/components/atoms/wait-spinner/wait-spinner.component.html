@@ -28,11 +28,6 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
-
-<div class="flex-column">
-    <div *ngFor="let ver of versions" class="flex-row version">
-        <div>{{ver.component}}</div>
-        <div *ngIf="ver.version" class="yellow">{{ver.version}}</div>
-        <wait-spinner *ngIf="!ver.version"></wait-spinner>
-    </div>
+<div class="spinner">
+    <div class="dot-pulse"></div>
 </div>

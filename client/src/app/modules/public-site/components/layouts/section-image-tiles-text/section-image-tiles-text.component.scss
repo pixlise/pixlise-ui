@@ -36,6 +36,11 @@
         padding-bottom: $sz-spacer-gap;
     }
 
+    img {
+        height: 800px;
+        width: auto;
+    }
+
     .tile-container {
         justify-content: space-between;
         gap: $sz-button-gap;
@@ -57,6 +62,11 @@
 
             p {
                 padding: 0px;
+            }
+
+            img {
+                height: unset;
+                width: unset;
             }
 
             &:hover {

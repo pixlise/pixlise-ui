@@ -27,38 +27,23 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit } from "@angular/core";
-import { ActivatedRoute } from "@angular/router";
-
-import { LandingRouteName } from "../landing-page/landing-page.component";
-import { AboutUsRouteName } from "../about-us-page/about-us-page.component";
+import { Component, OnInit, Input } from "@angular/core";
 
 
 @Component({
-    selector: "app-public-page",
-    templateUrl: "./public-page.component.html",
-    styleUrls: ["./public-page.component.scss"]
+    selector: "wait-spinner",
+    templateUrl: "./wait-spinner.component.html",
+    styleUrls: ["./wait-spinner.component.scss"]
 })
-export class PublicPageComponent implements OnInit
+export class WaitSpinnerComponent implements OnInit
 {
-    showBrandingLogos = false;
-    showTeam = false;
+    // TODO: add controls like this @Input() size: string = "large";
 
-    constructor(
-        private _route: ActivatedRoute,
-        )
+    constructor()
     {
     }
 
     ngOnInit(): void
     {
-        this._route.url.subscribe(
-            (params)=> 
-            {
-                // TODO: fixme, this is ugly and likely to break if we change our routes!!!
-                this.showBrandingLogos = (window.location.href.indexOf("/public/"+LandingRouteName) >= 0);
-                this.showTeam = (window.location.href.indexOf("/public/"+AboutUsRouteName) >= 0);
-            }
-        );
     }
 }

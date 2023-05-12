@@ -57,9 +57,8 @@ export class Navigation
         ]],
         [this.categories[2], [
             new NavigationItem("PIXL + MARS 2020", "/public/about-us#mars2020"),
-            new NavigationItem("PIXLISE", "/public/about-us#pixlise"),
             new NavigationItem("Impact", "/public/about-us#impact"),
-            new NavigationItem("Discussion", "/public/about-us#discussion"),
+            new NavigationItem("Our Team", "/public/about-us#team"),
         ]]
     ]);
 

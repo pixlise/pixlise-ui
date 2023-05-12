@@ -34,8 +34,6 @@ import { EnvConfigurationService } from "src/app/services/env-configuration.serv
 import { VERSION } from "src/environments/version";
 
 
-
-
 @Component({
     selector: "version-display",
     templateUrl: "./version-display.component.html",
@@ -45,8 +43,15 @@ export class VersionDisplayComponent implements OnInit, OnDestroy
 {
     private _subs = new Subscription();
 
-    versions: ComponentVersions = null;
-    error: boolean = false;
+    private _uiVersion = new ComponentVersion("PIXLISE", VERSION["raw"] ? VERSION["raw"] : "(Local build)", null);
+    private _apiVersionDefault = new ComponentVersion("API", "", null);
+    private _piquantVersionDefault = new ComponentVersion("PIQUANT", "", null);
+
+    versions: ComponentVersion[] = [
+        this._uiVersion,
+        this._apiVersionDefault,
+        this._piquantVersionDefault
+    ];
 
     constructor(
         public envConfigService: EnvConfigurationService
@@ -56,23 +61,24 @@ export class VersionDisplayComponent implements OnInit, OnDestroy
 
     ngOnInit()
     {
-        this.versions = null;
-        this.error = false;
-        const verstr = VERSION["raw"];
-
-        this._subs.add(this.envConfigService.getComponentVersions().subscribe((versions)=>
-        {
-            this.versions = versions;
-            // Add our own one at the start
-            this.versions.components.unshift(new ComponentVersion("PIXLISE UI", verstr, null));
-        },
-        (err)=>
-        {
-            // Just show our own version
-            this.versions = new ComponentVersions([]);
-            this.versions.components.push(new ComponentVersion("PIXLISE UI", verstr, null));
-            this.error = true;
-        }
+        this._subs.add(this.envConfigService.getComponentVersions().subscribe(
+            (versions: ComponentVersions)=>
+            {
+                // Overwrite ours
+                this.versions = [
+                    this._uiVersion,
+                    ...versions.components
+                ];
+            },
+            (err)=>
+            {
+                // Just show our own version and errors for the other 2 known ones
+                this.versions = [
+                    this._uiVersion,
+                    new ComponentVersion(this._apiVersionDefault.component, "(error)", null),
+                    new ComponentVersion(this._piquantVersionDefault.component, "(error)", null),
+                ];
+            }
         ));
     }
 

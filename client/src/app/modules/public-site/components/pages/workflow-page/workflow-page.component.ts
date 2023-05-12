@@ -54,28 +54,28 @@ export class WorkflowPageComponent implements OnInit
                 "Quantified Data",
                 this.analysisSubHeading,
                 this.analysisContent,
-                "assets/images/workflow/excel.png",
+                "assets/images/workflow/quants.png",
                 ""
             ),
             new SectionImageItemContent(
                 "Regions of Interest",
                 this.analysisSubHeading,
                 this.analysisContent,
-                "assets/images/workflow/excel.png",
+                "assets/images/workflow/roi.png",
                 ""
             ),
             new SectionImageItemContent(
                 "Plots",
                 this.analysisSubHeading,
                 this.analysisContent,
-                "assets/images/workflow/excel.png",
+                "assets/images/workflow/plots.png",
                 ""
             ),
             new SectionImageItemContent(
                 "Images",
                 this.analysisSubHeading,
                 this.analysisContent,
-                "assets/images/workflow/excel.png",
+                "assets/images/workflow/images.png",
                 ""
             ),
         ]
@@ -101,7 +101,7 @@ export class WorkflowPageComponent implements OnInit
                 "Accessible UI Components",
                 "All PIXLISE components are contrast-compliant and color-blind accessible.",
                 "assets/images/workflow/visible.svg",
-                ""
+                "assets/images/workflow/accessibility.jpg"
             ),
         ]
     );

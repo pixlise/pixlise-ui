@@ -29,8 +29,9 @@
 
 import { NgModule } from "@angular/core";
 import { Routes, RouterModule } from "@angular/router";
-
 import { CommonModule } from "@angular/common";
+
+import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 
 import { LandingPageComponent, LandingRouteName } from "./components/pages/landing-page/landing-page.component";
 import { WorkflowPageComponent } from "./components/pages/workflow-page/workflow-page.component";
@@ -50,10 +51,12 @@ import { QuoteViewerComponent } from "./components/atoms/quote-viewer/quote-view
 import { TextWithHighlightsComponent } from "./components/atoms/text-with-highlights/text-with-highlights.component";
 import { NavTopMenuComponent } from "./components/atoms/nav-top-menu/nav-top-menu.component";
 import { NavSectionSwitchComponent } from "./components/atoms/nav-section-switch/nav-section-switch.component";
-import { AboutUsPageComponent } from "./components/pages/about-us-page/about-us-page.component";
+import { AboutUsPageComponent, AboutUsRouteName } from "./components/pages/about-us-page/about-us-page.component";
 import { GetPIXLISEComponent } from "./components/pages/get-pixlise/get-pixlise.component";
 import { NavMenuComponent } from "./components/atoms/nav-top-menu/nav-menu/nav-menu.component";
 import { VersionDisplayComponent } from "./components/atoms/version-display/version-display.component";
+import { TeamListComponent } from "./components/atoms/team-list/team-list.component";
+
 
 
 const APP_ROUTES: Routes = [
@@ -63,7 +66,7 @@ const APP_ROUTES: Routes = [
             { path: "workflow", component: WorkflowPageComponent },
             { path: "investigation", component: InvestigationPageComponent },
             { path: "quantification", component: QuantificationPageComponent },
-            { path: "about-us", component: AboutUsPageComponent },
+            { path: AboutUsRouteName, component: AboutUsPageComponent },
             { path: "get-started", component: GetPIXLISEComponent }
         ]
     },
@@ -92,10 +95,12 @@ const APP_ROUTES: Routes = [
         AboutUsPageComponent,
         GetPIXLISEComponent,
         NavMenuComponent,
-        VersionDisplayComponent
+        VersionDisplayComponent,
+        TeamListComponent
     ],
     imports: [
         CommonModule,
+        PIXLISECoreModule,
         RouterModule.forChild(APP_ROUTES)
     ]
 })

@@ -214,47 +214,6 @@
             }
         }
     }
-    .team {
-        background-color: $clr-gray-80;
-        align-items: stretch;
-
-        h3 {
-            padding: 0px;
-        }
-
-        .container {
-            align-items: center;
-
-            .contributors {
-                width: 30vw;
-
-                h4 {
-                    padding-top: $sz-subheading-gap;
-                }
-
-                .contributor {
-                    
-                    justify-content: space-between;
-
-                    .name {
-                        color: $clr-yellow;
-                    }
-                    .role {
-                        color: $clr-red;
-                    }
-                }
-            }
-        }
-        
-        p {
-            padding: 0px;
-            margin: 0px;
-            line-height: 1.5;
-        }
-    }
-    .version {
-        background-color: $clr-gray-100;
-    }
     h3 {
         padding-top: $sz-heading-gap;
         padding-bottom: $sz-subheading-gap;
