@@ -58,6 +58,26 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
 
     <div fxLayout="row" fxLayoutAlign="end" class="gap-separated-horizontal-elements gap-above btn-container">
+        <div class="doi-edit">
+            <two-state-icon-button 
+                activeIcon="assets/button-icons/check-on.svg"
+                inactiveIcon="assets/button-icons/check-off.svg"
+                disabledIcon="assets/button-icons/check-off.svg"
+                [active]="shouldUpdateDOI"
+                (onToggle)="onToggleUpdateDOI()"
+                #tooltip="matTooltip"
+                matTooltip="Update the DOI on module release"
+            >
+            </two-state-icon-button>
+            <span
+                class="edit-doi-btn"
+                (click)="openDOIFormDialog()"
+                #tooltip="matTooltip"
+                matTooltip="Edit the DOI metadata"
+            >
+                <img src="{{shouldUpdateDOI ? 'assets/button-icons/doi-edit.svg' : 'assets/button-icons/doi-edit-disabled.svg'}}">
+            </span>
+        </div>
         <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
         <push-button buttonStyle="yellow" (onClick)="onRelease()">Release</push-button>
     </div>

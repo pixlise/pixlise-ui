@@ -27,109 +27,105 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-.module-container {
-    min-width: 400px;
+input, textarea {
+    width: 400px;
+}
 
-    h1 {
-        margin-bottom: 8px;
+.metadata {
+    max-height: 600px;
+    overflow: scroll;
+
+    > div {
+        margin-top: 8px;
     }
 
-    .versions {
+    .title, .version {
         display: flex;
-        width: 100%;
+        align-items: center;
 
-        .version {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-
-            &:first-of-type {
-                margin-right: 4px;
-            }
-
-            &:last-of-type {
-                margin-left: 4px;
-            }
-
-            .version-label {
-                color: #BEC0C2;
-                
-                font-weight: 400;
-                font-size: 12px;
-                line-height: 16px;
-
-                margin-bottom: 4px;
-            }
-
-            .version-value {
-                padding: 4px;
-                background: #222829;
-                border: 1px solid #444C50;
-                border-radius: 4px;
-                color: #BCBCBC;
-            }
+        input {
+            width: 275px;
+            margin-left: auto;
         }
     }
 
-    .release-type {
-        margin-top: 16px;
-        padding: 0 8px;
+    .creators, .contributors, .related-ids {
+        border: 1px solid #454c50;
+        border-radius: 8px;
+        padding: 8px;
 
-        .release-options {
-            .release-option {
-                color: #BEC0C2;
+        .creator {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 4px;
 
-                &.mat-radio-checked {
-                    color: #F8F8F8;
+            input {
+                width: 115px;
+            }
+
+            img {
+                margin-left: 4px;
+                cursor: pointer;
+                filter: brightness(0.5);
+
+                &:hover {
+                    filter: brightness(1);
                 }
             }
+        }
 
-            .release-option:last-of-type {
-                margin-top: 16px;
+        .add-creator {
+            margin-top: 8px;
+            display: flex;
+            justify-content: center;
+
+            img {
+                cursor: pointer;
+                filter: brightness(0.5);
+
+                &:hover {
+                    filter: brightness(1);
+                }
             }
         }
     }
 
-    .release-notes {
-        margin-top: 16px;
+    .contributors {
+        .creator {
+            input {
+                width: 80px;
+            }
 
-        .label {
-            color: #BEC0C2;
-
-            font-weight: 400;
-            font-size: 12px;
-            line-height: 16px;
-
-            margin-bottom: 4px;
-        }
-
-        textarea {
-            width: 100%;
-            font-family: "Roboto";
+            mat-select {
+                width: 85px !important;
+                margin-left: 0!important;
+            }
         }
     }
 
-    .btn-container {
-        margin-top: 16px;
+    .related-ids {
+        .creator {
+            input {
+                flex: 1;
+            }
+
+            mat-select {
+                width: 125px !important;
+            }
+        }
     }
 }
 
+.required {
+    color: rgb(255,107,37);
+    margin-left: 2px;
+}
 
-.doi-edit {
-    display: flex;
-    align-items: center;
-    margin-right: auto;
+.footer-btns {
+    margin-top: 8px;
+}
 
-    two-state-icon-button {
-        display: flex;
-        align-items: center;
-    }
-
-    .edit-doi-btn {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-
-        margin-left: 0!important;
-    }
+.save-btn {
+    margin-top: 1px;
 }

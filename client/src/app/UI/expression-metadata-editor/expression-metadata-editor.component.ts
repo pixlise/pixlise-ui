@@ -31,6 +31,8 @@ import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { DataExpression } from "src/app/models/Expression";
 import { DataModuleService, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 import { PushButtonStyle } from "../atoms/buttons/push-button/push-button.component";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { DOIMetadata, DOIPublishData, DOIPublishDialog } from "./doi-publish-dialog/doi-publish-dialog.component";
 
 type MajorGroupedRelease = {
     majorVersion: DataModuleVersionSourceWire;
@@ -56,6 +58,7 @@ export class ExpressionMetadataEditorComponent implements OnInit
 
     @Input() expression: DataExpression = null;
     @Input() isModule: boolean = false;
+    @Input() isSharedByOtherUser: boolean = false;
     @Input() currentVersion: DataModuleVersionSourceWire = null;
     @Input() versions: DataModuleVersionSourceWire[] = [];
 
@@ -68,6 +71,7 @@ export class ExpressionMetadataEditorComponent implements OnInit
 
     @Output() updateMetadata: EventEmitter<void> = new EventEmitter<void>();
     @Output() onShowDiff: EventEmitter<DiffVersions> = new EventEmitter<DiffVersions>();
+    @Output() publishDOI: EventEmitter<DOIMetadata> = new EventEmitter<DOIMetadata>();
 
     private _fetched: boolean = false;
     private _releaseNotes: MajorGroupedRelease[] = [];
@@ -75,7 +79,8 @@ export class ExpressionMetadataEditorComponent implements OnInit
     public latestRelease: DataModuleVersionSourceWire = null;
 
     constructor(
-      private _moduleService: DataModuleService
+      private _moduleService: DataModuleService,
+      private _dialog: MatDialog
     )
     {
         this.groupReleaseNotes();
@@ -115,6 +120,42 @@ export class ExpressionMetadataEditorComponent implements OnInit
         }
     }
 
+    get doiBadge(): string
+    {
+        if(this.isModule)
+        {
+            return this.currentVersion?.doiMetadata?.doiBadge || "";
+        }
+        else
+        {
+            return this.expression?.doiMetadata?.doiBadge || "";
+        }
+    }
+
+    get doiLink(): string
+    {
+        if(this.isModule)
+        {
+            return this.currentVersion?.doiMetadata?.doiLink || "";
+        }
+        else
+        {
+            return this.expression?.doiMetadata?.doiLink || "";
+        }
+    }
+
+    get doi(): string
+    {
+        if(this.isModule)
+        {
+            return this.currentVersion?.doiMetadata?.doi || "";
+        }
+        else
+        {
+            return this.expression?.doiMetadata?.doi || "";
+        }
+    }
+
     get name(): string
     {
         return this.expression.name;
@@ -145,6 +186,35 @@ export class ExpressionMetadataEditorComponent implements OnInit
     set tags(value: string[])
     {
         this.expression.tags = value;
+    }
+
+    openDOIFormDialog(): void
+    {
+        if(!this.expression.shared)
+        {
+            return;
+        }
+
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.panelClass = "panel";
+        dialogConfig.disableClose = true;
+
+        dialogConfig.data = new DOIPublishData(this.expression, this.isModule, this.currentVersion?.version);
+        const dialogRef = this._dialog.open(DOIPublishDialog, dialogConfig);
+
+        dialogRef.afterClosed().subscribe(
+            (metadata: DOIMetadata)=>
+            {
+                if(metadata)
+                {
+                    this.publishDOI.emit(metadata);
+                }
+            },
+            (err)=>
+            {
+                console.error(err);
+            }
+        );
     }
 
     onTagSelectionChanged(tags: string[]): void

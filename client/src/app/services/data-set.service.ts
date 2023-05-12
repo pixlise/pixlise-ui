@@ -137,7 +137,7 @@ export class DataSetService
 
     // Returns an observable which completes with success the moment some data arrives, or error
     // Shows progress on loadingSvc
-    private loadDatasetFile(datasetID: string): Observable<Experiment>
+    loadDatasetFile(datasetID: string): Observable<Experiment>
     {
         let loadID = this._loadingSvc.add("Dataset");
         let datasetURL = APIPaths.getWithHost(APIPaths.api_dataset+"/download/"+datasetID+"/dataset");
