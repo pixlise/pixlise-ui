@@ -32,7 +32,8 @@ import { ActivatedRoute, Router } from "@angular/router";
 
 import { Navigation } from "../../navigation";
 
-import { LoginPrefix, SignupPrefix, DefaultLoggedInLink } from "../../atoms/number-button/number-button.component";
+import { LoginPrefix, SignupPrefix } from "../../atoms/number-button/number-button.component";
+import { DefaultLoggedInLink } from "../../navigation";
 
 
 @Component({

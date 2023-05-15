@@ -29,7 +29,8 @@
 
 import { Component, OnInit } from "@angular/core";
 
-import { SignupPrefix, DefaultLoggedInLink } from "../number-button/number-button.component";
+import { SignupPrefix } from "../number-button/number-button.component";
+import { DefaultLoggedInLink } from "../../navigation";
 
 
 @Component({

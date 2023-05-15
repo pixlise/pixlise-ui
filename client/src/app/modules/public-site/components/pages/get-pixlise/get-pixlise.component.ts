@@ -28,7 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, OnInit } from "@angular/core";
-import { NumberButtonParams, LoginPrefix, SignupPrefix, DefaultLoggedInLink } from "../../atoms/number-button/number-button.component";
+import { NumberButtonParams, SignupPrefix } from "../../atoms/number-button/number-button.component";
+import { DefaultLoggedInLink } from "../../navigation";
 
 
 class Tile

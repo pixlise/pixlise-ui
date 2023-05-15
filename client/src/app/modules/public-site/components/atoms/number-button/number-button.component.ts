@@ -35,7 +35,6 @@ import { AuthenticationService } from "src/app/services/authentication.service";
 
 export const LoginPrefix = "login:";
 export const SignupPrefix = "signup:";
-export const DefaultLoggedInLink = "/about";
 
 export class NumberButtonParams
 {

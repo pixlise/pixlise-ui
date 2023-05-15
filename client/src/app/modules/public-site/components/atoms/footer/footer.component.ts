@@ -31,7 +31,7 @@ import { Component, OnInit, Input } from "@angular/core";
 
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { Navigation } from "../../navigation";
-import { DefaultLoggedInLink } from "../number-button/number-button.component";
+import { DefaultLoggedInLink } from "../../navigation";
 
 
 @Component({
