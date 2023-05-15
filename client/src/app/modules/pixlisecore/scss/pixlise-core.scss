@@ -26,7 +26,54 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+// The underlying colours
 
-$clr-yellow: #FFFF8D;
+:root {
+    --clr-gray-100: 27,29,30; // #1b1d1e
+    --clr-gray-90: 34,40,41; // #222829
+    --clr-gray-80: 41,49,55; // #293137
+    --clr-gray-70: 68,76,80; // #444c50
+    --clr-gray-60: 84,95,100; // #545f64
+    --clr-gray-50: 150,150,150; // #969696
+    --clr-gray-40: 188,188,188; // #bcbcbc
+    --clr-gray-30: 190,192,194; // #bec0c2
+    --clr-gray-20: 235,236,236; // #ebecec
+    --clr-gray-10: 248,248,248; // #f8f8f8
 
+    --clr-orange: 252,141,89; // #fc8d59
+    --clr-red: 252,141,89; // #fc8d59
+    --clr-yellow: 255,255,141; // #ffff8d
+    --clr-blue: 145,191,219; // #91bfdb
+    --clr-purple: 158,63,255; // #9e3fff
+    --clr-context-purple: 255,0,246; // #ff00f6
+    --clr-pink: 204,121,167; // #cc79a7
+    --clr-pink: 218,78,34; // #da4e22
+}
+
+// Grid system sizes
+$sz-qtr: 2px;
+$sz-half: 4px;
+$sz-3qtr: 6px;
+$sz-unit: 8px;
 $sz-double: 16px;
+
+// Colours
+// Defined via root variables in case we want to define rgba versions somewhere
+$clr-gray-100: rgb(var(--clr-gray-100));
+$clr-gray-90: rgb(var(--clr-gray-90));
+$clr-gray-80: rgb(var(--clr-gray-80));
+$clr-gray-70: rgb(var(--clr-gray-70));
+$clr-gray-60: rgb(var(--clr-gray-60));
+$clr-gray-50: rgb(var(--clr-gray-50));
+$clr-gray-40: rgb(var(--clr-gray-40));
+$clr-gray-30: rgb(var(--clr-gray-30));
+$clr-gray-20: rgb(var(--clr-gray-20));
+$clr-gray-10: rgb(var(--clr-gray-10));
+
+$clr-orange: rgb(var(--clr-orange));
+$clr-red: rgb(var(--clr-red));
+$clr-yellow: rgb(var(--clr-yellow));
+$clr-blue: rgb(var(--clr-blue));
+$clr-purple: rgb(var(--clr-purple));
+$clr-context-purple: rgb(var(--clr-context-purple));
+$clr-pink: rgb(var(--clr-pink));

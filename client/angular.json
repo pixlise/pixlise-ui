@@ -77,7 +77,8 @@
             ],
             "stylePreprocessorOptions": {
               "includePaths": [
-                "src/scss"
+                "src/scss",
+                "src/app/modules/pixlisecore/scss"
               ]
             },
             "scripts": []
@@ -173,7 +174,8 @@
             ],
             "stylePreprocessorOptions": {
               "includePaths": [
-                "src/scss"
+                "src/scss",
+                "src/app/modules/pixlisecore/scss"
               ]
             },
             "scripts": []

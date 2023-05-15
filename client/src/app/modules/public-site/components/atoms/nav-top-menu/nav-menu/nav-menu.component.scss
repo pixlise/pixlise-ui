@@ -31,7 +31,7 @@
 
 .nav-menu {
     border-radius: $sz-unit;
-    background-color: rgba($clr-gray-100, 0.7);
+    background-color: rgba(var(--clr-gray-100), 0.7);
     padding: $sz-double;
     position: absolute;
 }

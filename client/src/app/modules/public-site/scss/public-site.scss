@@ -27,13 +27,10 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// Sizes
-$sz-qtr: 2px;
-$sz-half: 4px;
-$sz-3qtr: 6px;
-$sz-unit: 8px;
-$sz-double: 16px;
+@import 'pixlise-core.scss';
 
+
+// Sizes
 $sz-border-x: 192px;
 $sz-border-y: 192px;
 
@@ -42,23 +39,6 @@ $sz-heading-gap: 96px;
 $sz-subheading-gap: 72px;
 $sz-spacer-gap: 64px;
 $sz-paragraph-gap: 48px;
-
-// Colours
-$clr-yellow: #FFFF8D;
-$clr-red: #DA4E22;
-$clr-blue: #91BFDB;
-
-$clr-gray-100: #1B1D1E;
-$clr-gray-90: #222829;
-$clr-gray-80: #293137;
-$clr-gray-70: #444C50;
-$clr-gray-60: #545F64;
-$clr-gray-50: #969696;
-$clr-gray-40: #BCBCBC;
-$clr-gray-30: #BEC0C2;
-$clr-gray-20: #EBECEC;
-$clr-gray-10: #F8F8F8;
-
 
 // Text
 h1 {
