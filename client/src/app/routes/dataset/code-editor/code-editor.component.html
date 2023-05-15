@@ -112,6 +112,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 <expression-metadata-editor
                     [expression]="topEditor.expression"
                     [isModule]="topEditor.isModule"
+                    [isSharedByOtherUser]="topEditor.isSharedByOtherUser"
                     [currentVersion]="topEditor.version"
                     [versions]="topEditor.versionList"
                     (changeName)="topEditor.onNameChange($event)"
@@ -121,6 +122,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     [buttonStyle]="topEditor.isModule && !topEditor.isLoadedVersionLatest ? 'orange' : 'normal'"
                     [showDiff]="topEditor.isModule && !topEditor.isLoadedVersionLatest"
                     (onShowDiff)="onShowDiff($event)"
+                    (publishDOI)="publishDOI($event)"
                 >
                 </expression-metadata-editor>
                 <push-button
@@ -310,6 +312,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     *ngIf="bottomEditor.isModule && !bottomEditor.isLoadedVersionLatest"
                     class="bottom-metadata-editor"
                     [expression]="bottomEditor.expression"
+                    [isSharedByOtherUser]="bottomEditor.isSharedByOtherUser"
                     [isModule]="bottomEditor.isModule"
                     [currentVersion]="bottomEditor.version"
                     [versions]="bottomEditor.versionList"
@@ -322,12 +325,14 @@ POSSIBILITY OF SUCH DAMAGE.
                     [showDiff]="true"
                     (onShowDiff)="onShowDiff($event)"
                     [isShowingDifference]="isShowingDifference"
+                    (publishDOI)="publishDOI($event)"
                 >
                 </expression-metadata-editor>
                 <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
                     <expression-metadata-editor
                         class="bottom-metadata-editor"
                         [expression]="bottomEditor.expression"
+                        [isSharedByOtherUser]="bottomEditor.isSharedByOtherUser"
                         [isModule]="bottomEditor.isModule"
                         [currentVersion]="bottomEditor.version"
                         [versions]="bottomEditor.versionList"
@@ -335,6 +340,7 @@ POSSIBILITY OF SUCH DAMAGE.
                         (changeDescription)="bottomEditor.onDescriptionChange($event)"
                         (changeTags)="bottomEditor.onTagSelectionChanged($event)"
                         (updateMetadata)="onUpdateMetadata()"
+                        (publishDOI)="publishDOI($event)"
                     >
                     </expression-metadata-editor>
                 </div>

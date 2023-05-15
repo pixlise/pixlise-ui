@@ -33,6 +33,7 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dial
 import papa from "papaparse";
 
 import { MistROIItem, ROIItem } from "src/app/models/roi";
+import { DataSetService } from "src/app/services/data-set.service";
 
 export class MistROIUploadData
 {

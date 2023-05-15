@@ -29,8 +29,8 @@
 
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable, ReplaySubject, Subject, forkJoin, of, throwError } from "rxjs";
-import { tap, map } from "rxjs/operators";
+import { Observable, ReplaySubject, Subject, combineLatest, forkJoin, of, throwError } from "rxjs";
+import { tap, map, combineAll } from "rxjs/operators";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { QuantificationLayer, QuantModes } from "src/app/models/Quantifications";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
@@ -45,6 +45,7 @@ import { LuaTranspiler } from "../expression-language/lua-transpiler";
 import { DataModuleService } from "./data-module.service";
 import { NotificationItem, NotificationService } from "./notification.service";
 import { NotificationSubscriptions, UserOptionsService } from "./user-options.service";
+import { DOIMetadata } from "../UI/expression-metadata-editor/doi-publish-dialog/doi-publish-dialog.component";
 
 
 class DataExpressionInput
@@ -56,6 +57,7 @@ class DataExpressionInput
         public comments: string,
         public tags: string[] = [],
         public moduleReferences: ModuleReference[] = [],
+        public doiMetadata: DOIMetadata = null,
     )
     {
     }
@@ -76,7 +78,11 @@ export class DataExpressionWire
         public mod_unix_time_sec: number,
         public tags: string[] = [],
         public moduleReferences: ModuleReference[],
-        public recentExecStats: ExpressionExecStats
+        public recentExecStats: ExpressionExecStats,
+        // public doi: string = "",
+        // public doiBadge: string = "",
+        // public doiLink: string = "",
+        public doiMetadata: DOIMetadata
     )
     {
     }
@@ -121,6 +127,10 @@ export class DataExpressionWire
             this.tags || [],
             moduleReferences,
             this.recentExecStats || null,
+            this.doiMetadata,
+            // this.doi,
+            // this.doiBadge,
+            // this.doiLink,
             isModuleListUpToDate
         );
 
@@ -311,7 +321,24 @@ export class DataExpressionService
                     expression["mod_unix_time_sec"],
                     expression["tags"],
                     expression["moduleReferences"],
-                    expression["recentExecStats"]
+                    expression["recentExecStats"],
+                    new DOIMetadata(
+                        expression["doiMetadata"]?.["title"],
+                        expression["doiMetadata"]?.["creators"],
+                        expression["doiMetadata"]?.["description"],
+                        expression["doiMetadata"]?.["keywords"],
+                        expression["doiMetadata"]?.["notes"],
+                        expression["doiMetadata"]?.["relatedIdentifiers"],
+                        expression["doiMetadata"]?.["contributors"],
+                        expression["doiMetadata"]?.["references"],
+                        expression["doiMetadata"]?.["version"],
+                        expression["doiMetadata"]?.["doi"],
+                        expression["doiMetadata"]?.["doiBadge"],
+                        expression["doiMetadata"]?.["doiLink"],
+                    )
+                    // expression["doi"],
+                    // expression["doiBadge"],
+                    // expression["doiLink"],
                 );
                 // We're passing in the module service here so we can make sure all modules are up to date
                 // and cache this once
@@ -560,7 +587,21 @@ export class DataExpressionService
                         expression["mod_unix_time_sec"],
                         expression["tags"],
                         expression["moduleReferences"], 
-                        expression["recentExecStats"]
+                        expression["recentExecStats"],
+                        new DOIMetadata(
+                            expression["doiMetadata"]?.["title"],
+                            expression["doiMetadata"]?.["creators"],
+                            expression["doiMetadata"]?.["description"],
+                            expression["doiMetadata"]?.["keywords"],
+                            expression["doiMetadata"]?.["notes"],
+                            expression["doiMetadata"]?.["relatedIdentifiers"],
+                            expression["doiMetadata"]?.["contributors"],
+                            expression["doiMetadata"]?.["references"],
+                            expression["doiMetadata"]?.["version"],
+                            expression["doiMetadata"]?.["doi"],
+                            expression["doiMetadata"]?.["doiBadge"],
+                            expression["doiMetadata"]?.["doiLink"],
+                        )
                     );
                     let receivedDataExpression = wireExpr.makeExpression(id);
                     return receivedDataExpression;
@@ -713,7 +754,8 @@ export class DataExpressionService
             Math.round(Date.now() / 1000),
             expr.tags || [],
             expr.moduleReferences,
-            expr.recentExecStats
+            expr.recentExecStats,
+            expr.doiMetadata
         );
         this._expressions.set(id, receivedDataExpression);
         this._expressionsUpdated$.next();
@@ -760,7 +802,7 @@ export class DataExpressionService
 
                     if(saveExpression)
                     {
-                        await this.edit(expression.id, expression.name, expression.sourceCode, expression.sourceLanguage, expression.comments, expression.tags, expression.moduleReferences).subscribe(
+                        await this.edit(expression.id, expression.name, expression.sourceCode, expression.sourceLanguage, expression.comments, expression.tags, expression.moduleReferences, expression.doiMetadata).subscribe(
                             ()=>
                             {
                                 this._loadingSvc.remove(loadID);
@@ -787,11 +829,11 @@ export class DataExpressionService
         return expression;
     }
 
-    add(name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = [], moduleReferences: ModuleReference[] = []): Observable<DataExpressionWire>
+    add(name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = [], moduleReferences: ModuleReference[] = [], doiMetadata: DOIMetadata = null): Observable<DataExpressionWire>
     {
         let loadID = this._loadingSvc.add("Saving new expression...");
         let apiURL = APIPaths.getWithHost(APIPaths.api_data_expression);
-        let toSave = new DataExpressionInput(name, sourceCode, sourceLanguage, comments, tags, moduleReferences);
+        let toSave = new DataExpressionInput(name, sourceCode, sourceLanguage, comments, tags, moduleReferences, doiMetadata);
         return this.http.post<DataExpressionWire>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(
@@ -815,12 +857,12 @@ export class DataExpressionService
             );
     }
 
-    edit(id: string, name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = [], moduleReferences: ModuleReference[] = []): Observable<object>
+    edit(id: string, name: string, sourceCode: string, sourceLanguage: string, comments: string, tags: string[] = [], moduleReferences: ModuleReference[] = [], doiMetadata: DOIMetadata = null): Observable<object>
     {
         let loadID = this._loadingSvc.add("Saving changed expression...");
         let apiURL = `${APIPaths.getWithHost(APIPaths.api_data_expression)}/${id}`;
 
-        let toSave = new DataExpressionInput(name, sourceCode, sourceLanguage, comments, tags, moduleReferences);
+        let toSave = new DataExpressionInput(name, sourceCode, sourceLanguage, comments, tags, moduleReferences, doiMetadata);
         return this.http.put<object>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(
@@ -878,7 +920,8 @@ export class DataExpressionService
                             oldExpression.sourceLanguage,
                             oldExpression.comments,
                             oldExpression.tags,
-                            moduleReferences
+                            moduleReferences,
+                            oldExpression.doiMetadata
                         ).toPromise().then(
                             (response)=>
                             {
@@ -916,7 +959,7 @@ export class DataExpressionService
         return this.getExpressionAsync(id).pipe(tap(
             async (expression: DataExpression)=>
             {
-                let toSave = new DataExpressionInput(expression.name, expression.sourceCode, expression.sourceLanguage, expression.comments, tags);
+                let toSave = new DataExpressionInput(expression.name, expression.sourceCode, expression.sourceLanguage, expression.comments, tags, expression.moduleReferences, expression.doiMetadata);
                 await this.http.put<object>(apiURL, toSave, makeHeaders()).toPromise().then((resp: object)=>
                 {
                     this.processReceivedExpressionList(resp);
@@ -970,6 +1013,27 @@ export class DataExpressionService
             );
     }
 
+    publishDOI(expression: DataExpression, zipFile: Blob): Observable<DataExpression>
+    {
+        let loadID = this._loadingSvc.add("Publishing expression to Zenodo...");
+        let apiURL = APIPaths.getWithHost(APIPaths.api_publish_doi+"/"+APIPaths.api_data_expression+"/"+expression.id);
+        return this.http.post<DataExpression>(apiURL, zipFile, makeHeaders()).pipe(
+            tap(
+                (response)=>
+                {
+                    this._loadingSvc.remove(loadID);
+                    this.refreshExpressions();
+                    return response;
+                },
+                (err)=>
+                {
+                    this._loadingSvc.remove(loadID);
+                    return of(null);
+                }
+            )
+        );
+    }
+
     // Call this to save runtime stats. Internally this saves them in local cache and sends to API, subscribing
     // for the result, but does nothing with it except print errors if needed
     saveExecutionStats(id: string, dataRequired: string[], runtimeMs: number): void
@@ -980,7 +1044,7 @@ export class DataExpressionService
             DataExpressionId.isPredefinedNewID(id) ||
             DataExpressionId.isPredefinedQuantExpression(id) ||
             DataExpressionId.isUnsavedExpressionId(id)
-            )
+        )
         {
             return;
         }
@@ -1014,7 +1078,7 @@ export class DataExpressionService
                 }
                 else
                 {
-                    console.warn("Failed to find expression: "+id+" when saving execution stats. Ignored.")
+                    console.warn("Failed to find expression: "+id+" when saving execution stats. Ignored.");
                 }
             },
             (err)=>

@@ -37,6 +37,7 @@ import { LoadingIndicatorService } from "src/app/services/loading-indicator.serv
 import { DataExpression } from "../models/Expression";
 import { EXPR_LANGUAGE_LUA } from "../expression-language/expression-language";
 import { AuthenticationService } from "./authentication.service";
+import { DOIMetadata } from "../UI/expression-metadata-editor/doi-publish-dialog/doi-publish-dialog.component";
 
 
 // What we send in POST or PUT
@@ -58,7 +59,8 @@ class DataModuleVersionInput
         public sourceCode: string, // The module executable code
         public comments: string, // Editable comments
         public tags: string[], // Any tags for this version
-        public versionupdate: string = "patch" // "major", "minor", "patch"
+        public versionupdate: string = "patch", // "major", "minor", "patch"
+        public doiMetadata: DOIMetadata = null // DOI metadata
     )
     {
     }
@@ -84,6 +86,10 @@ export class DataModuleVersionSourceWire
         public comments: string,
         public mod_unix_time_sec: number,
         public sourceCode: string,
+        public doiMetadata: DOIMetadata = null
+        // public doi: string = "",
+        // public doiBadge: string = "",
+        // public doiLink: string = ""
     )
     {
     }
@@ -128,7 +134,8 @@ export class DataModuleSpecificVersionWire
             this.version.mod_unix_time_sec,
             this.version.tags,
             [],
-            null
+            null,
+            this.version.doiMetadata
         );
     }
 }
@@ -238,7 +245,11 @@ class DataModuleStore
                 ver.tags,
                 ver.comments,
                 ver.mod_unix_time_sec,
-                ver.sourceCode
+                ver.sourceCode,
+                ver.doiMetadata
+                // ver.doi,
+                // ver.doiBadge,
+                // ver.doiLink
             )
         );
     }
@@ -383,6 +394,23 @@ export class DataModuleService
                 module["version"]["comments"],
                 module["version"]["mod_unix_time_sec"],
                 module["version"]["sourceCode"],
+                new DOIMetadata(
+                    module["version"]["doiMetadata"]?.["title"],
+                    module["version"]["doiMetadata"]?.["creators"],
+                    module["version"]["doiMetadata"]?.["description"],
+                    module["version"]["doiMetadata"]?.["keywords"],
+                    module["version"]["doiMetadata"]?.["notes"],
+                    module["version"]["doiMetadata"]?.["relatedIdentifiers"],
+                    module["version"]["doiMetadata"]?.["contributors"],
+                    module["version"]["doiMetadata"]?.["references"],
+                    module["version"]["doiMetadata"]?.["version"],
+                    module["version"]["doiMetadata"]?.["doi"],
+                    module["version"]["doiMetadata"]?.["doiBadge"],
+                    module["version"]["doiMetadata"]?.["doiLink"],
+                )
+                // module["version"]["doi"],
+                // module["version"]["doiBadge"],
+                // module["version"]["doiLink"],
             ),
         );
 
@@ -401,7 +429,33 @@ export class DataModuleService
             let versMap = new Map<string, DataModuleVersionSourceWire>();
             for(let moduleVersion of module["versions"])
             {
-                versMap.set(moduleVersion["version"], new DataModuleVersionSourceWire(moduleVersion["version"], moduleVersion["tags"], moduleVersion["comments"], moduleVersion["mod_unix_time_sec"], ""));
+                versMap.set(
+                    moduleVersion["version"],
+                    new DataModuleVersionSourceWire(
+                        moduleVersion["version"],
+                        moduleVersion["tags"],
+                        moduleVersion["comments"],
+                        moduleVersion["mod_unix_time_sec"],
+                        "",
+                        new DOIMetadata(
+                            moduleVersion["version"]["doiMetadata"]?.["title"],
+                            moduleVersion["version"]["doiMetadata"]?.["creators"],
+                            moduleVersion["version"]["doiMetadata"]?.["description"],
+                            moduleVersion["version"]["doiMetadata"]?.["keywords"],
+                            moduleVersion["version"]["doiMetadata"]?.["notes"],
+                            moduleVersion["version"]["doiMetadata"]?.["relatedIdentifiers"],
+                            moduleVersion["version"]["doiMetadata"]?.["contributors"],
+                            moduleVersion["version"]["doiMetadata"]?.["references"],
+                            moduleVersion["version"]["doiMetadata"]?.["version"],
+                            moduleVersion["version"]["doiMetadata"]?.["doi"],
+                            moduleVersion["version"]["doiMetadata"]?.["doiBadge"],
+                            moduleVersion["version"]["doiMetadata"]?.["doiLink"],
+                        )
+                        // moduleVersion["doi"],
+                        // moduleVersion["doiBadge"],
+                        // moduleVersion["doiLink"]
+                    )
+                );
             }
             
             let wireMod = new DataModule(
@@ -469,7 +523,7 @@ export class DataModuleService
             tap(async (latestVersion) =>
             {
                 let { sourceCode, comments } = latestVersion.version;
-                let specificVersion = await this.addModuleVersion(moduleId, sourceCode, comments, tags, "patch", "Updating tags...").toPromise().then((resp)=>
+                let specificVersion = await this.addModuleVersion(moduleId, sourceCode, comments, tags, "patch", null, "Updating tags...").toPromise().then((resp)=>
                 {
                     return resp;
                 });
@@ -483,24 +537,25 @@ export class DataModuleService
 
     savePatchVersion(moduleId: string, sourceCode: string, comments: string, tags: string[]): Observable<DataModuleSpecificVersionWire>
     {
-        return this.addModuleVersion(moduleId, sourceCode, comments, tags, "patch", "Saving new patch version...");
+        return this.addModuleVersion(moduleId, sourceCode, comments, tags, "patch", null, "Saving new patch version...");
     }
 
-    releaseMinorVersion(moduleId: string, sourceCode: string, comments: string, tags: string[]): Observable<DataModuleSpecificVersionWire>
+    releaseMinorVersion(moduleId: string, sourceCode: string, comments: string, tags: string[], doiMetadata: DOIMetadata = null): Observable<DataModuleSpecificVersionWire>
     {
-        return this.addModuleVersion(moduleId, sourceCode, comments, tags, "minor", "Releasing minor version...");
+        return this.addModuleVersion(moduleId, sourceCode, comments, tags, "minor", doiMetadata, "Releasing minor version...");
     }
 
-    releaseMajorVersion(moduleId: string, sourceCode: string, comments: string, tags: string[]): Observable<DataModuleSpecificVersionWire>
+    releaseMajorVersion(moduleId: string, sourceCode: string, comments: string, tags: string[], doiMetadata: DOIMetadata = null): Observable<DataModuleSpecificVersionWire>
     {
-        return this.addModuleVersion(moduleId, sourceCode, comments, tags, "major", "Releasing major version...");
+        return this.addModuleVersion(moduleId, sourceCode, comments, tags, "major", doiMetadata, "Releasing major version...");
     }
     
-    addModuleVersion(moduleId: string, sourceCode: string, comments: string, tags: string[], type: string = "patch", loadingText: string = "Saving new module version..."): Observable<DataModuleSpecificVersionWire>
+    addModuleVersion(moduleId: string, sourceCode: string, comments: string, tags: string[], type: string = "patch", doiMetadata: DOIMetadata = null, loadingText: string = "Saving new module version..."): Observable<DataModuleSpecificVersionWire>
     {
         let loadID = this._loadingSvc.add(loadingText);
-        let apiURL = APIPaths.getWithHost(APIPaths.api_data_module+"/"+moduleId);
-        let toSave = new DataModuleVersionInput(sourceCode, comments, tags, type);
+        let publishParam = doiMetadata && doiMetadata.title ? "?publish_doi=true" : "";
+        let apiURL = APIPaths.getWithHost(APIPaths.api_data_module+"/"+moduleId) + publishParam;
+        let toSave = new DataModuleVersionInput(sourceCode, comments, tags, type, doiMetadata);
         return this.http.put<DataModuleSpecificVersionWire>(apiURL, toSave, makeHeaders())
             .pipe(
                 tap(

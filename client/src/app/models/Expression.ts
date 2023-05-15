@@ -30,6 +30,7 @@
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { UNICODE_GREEK_LOWERCASE_PSI } from "src/app/utils/utils";
 import { DataModuleService } from "src/app/services/data-module.service";
+import { DOIMetadata } from "../UI/expression-metadata-editor/doi-publish-dialog/doi-publish-dialog.component";
 
 
 export class ShortName
@@ -115,6 +116,10 @@ export class DataExpression
         public tags: string[],
         public moduleReferences: ModuleReference[],
         public recentExecStats: ExpressionExecStats,
+        public doiMetadata: DOIMetadata = null,
+        // public doi: string = "",
+        // public doiBadge: string = "",
+        // public doiLink: string = "",
 
         // This flag is used to indicate that the module references are up to date and isn't stored with the expression
         public isModuleListUpToDate: boolean = true
@@ -172,6 +177,10 @@ export class DataExpression
             tags,
             moduleReferences,
             recentExecStats,
+            this.doiMetadata,
+            // this.doi,
+            // this.doiBadge,
+            // this.doiLink,
             this.isModuleListUpToDate
         );
     }

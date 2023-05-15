@@ -32,7 +32,6 @@ import { Routes, RouterModule } from "@angular/router";
 
 import { environment } from "src/environments/environment";
 
-import { AboutComponent } from "./routes/about/about.component";
 import { DatasetsComponent } from "./routes/datasets/datasets.component";
 import { PageNotFoundComponent } from "./routes/page-not-found/page-not-found.component";
 import { AuthenticateComponent } from "./routes/authenticate/authenticate.component";
@@ -58,86 +57,86 @@ import { TestUtilitiesComponent } from "./routes/admin/test-utilities/test-utili
 import { GlobalNotificationsComponent } from "./routes/admin/global-notifications/global-notifications.component";
 
 import { AuthenticatedGuard } from "./guards/authenticated.guard";
+import { PublicSiteModule } from "./modules/public-site/public-site.module";
 
 
-function getRoutes(): Routes
-{
-    let routes: Routes = [
-        // Public pages
-        { path: "authenticate", component: AuthenticateComponent },
-        { path: "about", component: AboutComponent },
+const APP_ROUTES: Routes = [
+    // Public pages
+    { path: "authenticate", component: AuthenticateComponent },
 
-        { path: "", redirectTo: "/about", pathMatch: "full" },
+    { path: "", loadChildren: ()=>import("./modules/public-site/public-site.module").then(m=>m.PublicSiteModule) },
 
-        // Authenticated pages
-        {
-            path: "",
-            canActivate: [AuthenticatedGuard],
-            children: [
-                { path: "datasets", component: DatasetsComponent },
-                {
-                    path: "dataset/:dataset_id",
-                    component: DatasetComponent,
-                    children: [
-                        { path: "", redirectTo: "analysis", pathMatch: "full" },
-                        { path: "analysis", component: AnalysisComponent },
-                        { path: "code-editor/:expression_id", component: CodeEditorComponent },
-                        { path: "maps", component: MapBrowserComponent },
-                        {
-                            path: "quant-logs",
-                            component: QuantificationsComponent,
-                            children: [
-                                //{ path: '', component: QuantResultListComponent },
-                                { path: ":job_id/log/:log_name", component: QuantificationLogViewComponent },
-                                { path: ":job_id", component: SelectedQuantificationViewComponent },
-                            ]
-                        },
-                    ]
-                },
-                { path: "dataset-edit/:dataset_id_for_edit", component: DatasetCustomisationComponent },
-                {
-                    path: "admin",
-                    component: AdminComponent,
-                    children: [
-                        { path: "", redirectTo: "users", pathMatch: "full" },
-                        { path: "users", component: UsersComponent },
-                        { path: "roles", component: RolesComponent },
-                        { path: "test-utils", component: TestUtilitiesComponent },
-                        { path: "global-notifications", component: GlobalNotificationsComponent },
-                        {
-                            path: "quant-jobs",
-                            component: QuantificationsComponent,
-                            children: [
-                                { path: ":job_id/log/:log_name", component: QuantificationLogViewComponent },
-                                { path: ":job_id", component: SelectedQuantificationViewComponent },
-                            ]
-                        },
-                    ]
-                },
-                {
-                    path: "piquant",
-                    component: PiquantComponent,
-                    children: [
-                        { path: "", redirectTo: "config", pathMatch: "full" },
-                        { path: "config", component: PiquantConfigComponent },
-                        { path: "version", component: PiquantVersionComponent },
-                        { path: "downloads", component: PiquantDownloadsComponent },
-                    ]
-                },
-            ]
-        },
+    // Authenticated pages
+    {
+        path: "",
+        canActivate: [AuthenticatedGuard],
+        children: [
+            { path: "datasets", component: DatasetsComponent },
+            {
+                path: "dataset/:dataset_id",
+                component: DatasetComponent,
+                children: [
+                    { path: "", redirectTo: "analysis", pathMatch: "full" },
+                    { path: "analysis", component: AnalysisComponent },
+                    { path: "code-editor/:expression_id", component: CodeEditorComponent },
+                    { path: "maps", component: MapBrowserComponent },
+                    {
+                        path: "quant-logs",
+                        component: QuantificationsComponent,
+                        children: [
+                            //{ path: '', component: QuantResultListComponent },
+                            { path: ":job_id/log/:log_name", component: QuantificationLogViewComponent },
+                            { path: ":job_id", component: SelectedQuantificationViewComponent },
+                        ]
+                    },
+                ]
+            },
+            { path: "dataset-edit/:dataset_id_for_edit", component: DatasetCustomisationComponent },
+            {
+                path: "admin",
+                component: AdminComponent,
+                children: [
+                    { path: "", redirectTo: "users", pathMatch: "full" },
+                    { path: "users", component: UsersComponent },
+                    { path: "roles", component: RolesComponent },
+                    { path: "test-utils", component: TestUtilitiesComponent },
+                    { path: "global-notifications", component: GlobalNotificationsComponent },
+                    {
+                        path: "quant-jobs",
+                        component: QuantificationsComponent,
+                        children: [
+                            { path: ":job_id/log/:log_name", component: QuantificationLogViewComponent },
+                            { path: ":job_id", component: SelectedQuantificationViewComponent },
+                        ]
+                    },
+                ]
+            },
+            {
+                path: "piquant",
+                component: PiquantComponent,
+                children: [
+                    { path: "", redirectTo: "config", pathMatch: "full" },
+                    { path: "config", component: PiquantConfigComponent },
+                    { path: "version", component: PiquantVersionComponent },
+                    { path: "downloads", component: PiquantDownloadsComponent },
+                ]
+            },
+        ]
+    },
 
-        { path: "**", component: PageNotFoundComponent }
-    ];
-
-    return routes;
-}
+    { path: "**", component: PageNotFoundComponent }
+];
 
 @NgModule({
     imports: [
+        PublicSiteModule,
         RouterModule.forRoot(
-            getRoutes(),
-            { enableTracing: environment.route_dbg } // <-- debugging purposes only
+            APP_ROUTES,
+            {
+                enableTracing: environment.route_dbg, // <-- debugging purposes only
+                anchorScrolling: "enabled",
+                scrollPositionRestoration: "enabled"
+            }
         )
     ],
     exports: [RouterModule]

@@ -28,8 +28,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, Inject } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { DataModuleService, DataModuleSpecificVersionWire } from "src/app/services/data-module.service";
+import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
+import { DataModuleService } from "src/app/services/data-module.service";
+import { DOIMetadata, DOIPublishData, DOIPublishDialog } from "../expression-metadata-editor/doi-publish-dialog/doi-publish-dialog.component";
+import { DataExpression } from "src/app/models/Expression";
 
 export class ModuleReleaseDialogData
 {
@@ -38,7 +40,8 @@ export class ModuleReleaseDialogData
         public title: string,
         public currentVersion: string,
         public sourceCode: string,
-        public tags: string[]
+        public tags: string[],
+        public moduleAsExpression: DataExpression,
     )
     {
     }
@@ -54,6 +57,7 @@ export class ModuleReleaseDialogComponent
 {
     isMinorRelease: boolean = true;
     releaseNotes: string = "";
+    shouldUpdateDOI: boolean = false;
 
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: ModuleReleaseDialogData,
@@ -69,11 +73,39 @@ export class ModuleReleaseDialogComponent
         this.dialogRef.close(null);
     }
 
+    openDOIFormDialog()
+    {
+        this.shouldUpdateDOI = true;
+
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.panelClass = "panel";
+        dialogConfig.disableClose = true;
+
+        dialogConfig.data = new DOIPublishData(this.data.moduleAsExpression, true, this.newVersion);
+        const dialogRef = this.dialog.open(DOIPublishDialog, dialogConfig);
+
+        dialogRef.afterClosed().subscribe(
+            (metadata: DOIMetadata)=>
+            {
+                if(metadata)
+                {
+                    this.data.moduleAsExpression.doiMetadata = metadata;
+                }
+            },
+            (err)=>
+            {
+                console.error(err);
+            }
+        );
+    }
+
     onRelease(): void
     {
+        let doiMetadata = this.shouldUpdateDOI && this.data?.moduleAsExpression?.doiMetadata ? this.data.moduleAsExpression.doiMetadata : null;
+
         if(this.isMinorRelease)
         {
-            this._moduleService.releaseMinorVersion(this.data.id, this.data.sourceCode, this.releaseNotes, this.data.tags).subscribe(
+            this._moduleService.releaseMinorVersion(this.data.id, this.data.sourceCode, this.releaseNotes, this.data.tags, doiMetadata).subscribe(
                 (result) =>
                 {
                     let module = this._moduleService.readSpecificVersionModule(result);
@@ -88,7 +120,7 @@ export class ModuleReleaseDialogComponent
         }
         else
         {
-            this._moduleService.releaseMajorVersion(this.data.id, this.data.sourceCode, this.releaseNotes, this.data.tags).subscribe(
+            this._moduleService.releaseMajorVersion(this.data.id, this.data.sourceCode, this.releaseNotes, this.data.tags, doiMetadata).subscribe(
                 (result) =>
                 {
                     let module = this._moduleService.readSpecificVersionModule(result);
@@ -100,6 +132,15 @@ export class ModuleReleaseDialogComponent
                     console.error("Failed to release major version", this.data.id, error);
                 }
             );
+        }
+    }
+
+    onToggleUpdateDOI(): void
+    {
+        this.shouldUpdateDOI = !this.shouldUpdateDOI;
+        if(this.shouldUpdateDOI)
+        {
+            this.openDOIFormDialog();
         }
     }
 

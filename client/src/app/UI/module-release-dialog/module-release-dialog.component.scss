@@ -113,3 +113,23 @@
         margin-top: 16px;
     }
 }
+
+
+.doi-edit {
+    display: flex;
+    align-items: center;
+    margin-right: auto;
+
+    two-state-icon-button {
+        display: flex;
+        align-items: center;
+    }
+
+    .edit-doi-btn {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+
+        margin-left: 0!important;
+    }
+}

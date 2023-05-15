@@ -1,0 +1,74 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div class="page">
+    <div class="flex-column header product-header">
+        <img class="header-image" src="assets/images/bg-quantification.jpg">
+        <div class="flex-column header-content">
+            <h2>Quantification</h2>
+            <p>PIXLISE runs on PIQUANT, an ultra-fast data quantification engine that never compromises accuracy and precision.</p>
+        </div>
+    </div>
+    <nav-section-switch [isTop]="true" leftNavLabel="Workflow" leftNavLink="public/workflow" rightNavLabel="Investigation" rightNavLink="public/investigation"></nav-section-switch>
+    <div class="flex-column chill section">
+        <div class="flex-column flex-center-center">
+            <button-nav-down link="features"></button-nav-down>
+        </div>
+        <number-button theNumber="00" theLabel="The Challenge" link="challenge" colourStyle="red" [showArrow]="false"></number-button>
+        <h3>Revolutionize your quantification.</h3>
+        <img src="assets/images/quantification/parallel.svg">
+    </div>
+    <div class="flex-row piquant">
+        <div class="flex-column headcol">
+            <h3>Meet PIQUANT.</h3>
+        </div>
+        <div class="flex-column textcol">
+            <p><span class="yellow">PIQUANT</span>* is an ultra-fast quantification engine that yields accurate quantification of thousands of scan points in minutes. Craft compound quantifications with different element sets or matrix assumptions for multiple regions of a single dataset. Rapidly visualize fully quantified maps of every element in your quantification. And don’t forget to share them all with your lab.</p>
+            <p>Since its origin in 2000, the PIQUANT database continues to be improved for planetary science missions. PIQUANT is fundamental parameters based and is uniquely optimized for cloud-parallelization enabling scientific investigation that is simultaneously fast and accurate. PIQUANT is also fully open-source, providing full transparency into the quantification process.</p>
+            <p>*With cloud-parallelization</p>
+        </div>
+        <div class="flex-column more-piquant">
+            <number-button theLabel="MORE ON PIQUANT" link="https://pixlise.gitlab.io/documentation/docs/piquant/intro/operation" colourStyle="gray-no-border" [showArrow]="true"></number-button>
+        </div>
+    </div>
+    <div class="industry">
+        <section-image-tiles-text [params]="industryParams"></section-image-tiles-text>
+    </div>
+    <div class="quote">
+        <quote-viewer
+            [quoteParts]="quoteParts"
+            quotePerson="Abigail Alwood"
+            quotePersonTitle="PIXL Instrument Principle Investigator"
+            linkLabel="EXPLORE CASE STUDIES"
+            link="public/about-us#pixlise"></quote-viewer>
+    </div>
+    <nav-section-switch [isTop]="false" leftNavLabel="Workflow" leftNavLink="public/workflow" rightNavLabel="Investigation" rightNavLink="public/investigation"></nav-section-switch>
+</div>
