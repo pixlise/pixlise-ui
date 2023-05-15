@@ -245,7 +245,21 @@ export class ExportDataDialogComponent implements OnInit
 
     private generateDiffractionFeaturesCSV(): string
     {
-        let headers = ["id", "pmc", "effectSize", "channel", "keV", "kevStart", "kevEnd", "detector"];
+        let headers = [
+            "id",
+            "pmc",
+            "effectSize",
+            "baselineVariation",
+            "globalDifference",
+            "differenceSigma",
+            "peakHeight",
+            "channel",
+            "keV",
+            "kevStart",
+            "kevEnd",
+            "detector"
+        ];
+
         return this._allPeaks.reduce((prev, curr) => 
         {
             // Doesn't put " around first item...
