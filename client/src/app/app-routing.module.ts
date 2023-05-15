@@ -66,6 +66,9 @@ const APP_ROUTES: Routes = [
 
     { path: "", loadChildren: ()=>import("./modules/public-site/public-site.module").then(m=>m.PublicSiteModule) },
 
+    // Redirect the old about page here, lots of browsers are likely to have this saved/bookmarked
+    { path: "about", redirectTo: "public/about-us", pathMatch: "full" },
+
     // Authenticated pages
     {
         path: "",
