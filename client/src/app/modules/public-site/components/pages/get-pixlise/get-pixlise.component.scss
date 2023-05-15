@@ -1,0 +1,146 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+@import '../../../scss/public-site.scss';
+
+.page {
+    .header-content {
+        .tile-container {
+            gap: $sz-button-gap;
+
+            .tile {
+                justify-content: space-between;
+                align-items: stretch;
+                align-content: stretch;
+                padding: $sz-button-gap;
+                width: 260px;
+                height: 260px;
+
+                background-color: $clr-gray-90;
+                border-radius: $sz-half;
+
+                h4 {
+                    color: $clr-yellow;
+                    padding: 0px;
+                    margin: 0px;
+
+                }
+
+                .last {
+                    @extend .red;
+                }
+                
+                p {
+                    padding: 0px;
+                    color: $clr-gray-30;
+                    text-align: left;
+                }
+            }
+        }
+    }
+    .get {
+        border-top: $clr-yellow 1px solid;
+        border-bottom: $clr-yellow 1px solid;
+
+        .headings {
+            padding-top: $sz-heading-gap;
+        }
+
+        .options {
+            width: 450px;
+            height: 450px;
+
+            li {
+                padding: $sz-half $sz-unit;
+                cursor: pointer;
+            }
+
+            .active {
+                border-radius: $sz-double;
+                background-color: $clr-gray-80;
+            }
+
+            p {
+                padding-top: $sz-double;
+                color: $clr-gray-30;
+            }
+        }
+    }
+    .links {
+        background-color: $clr-gray-80;
+
+        .linkbody {
+            padding-top: $sz-heading-gap;
+        }
+
+        .coming-soon {
+            color: $clr-gray-60;
+        }
+
+        a {
+            color: $clr-blue;
+        }
+
+        .list-heading {
+            padding-bottom: $sz-unit;
+        }
+
+        .list-item {
+            font-family: Titillium Web;
+            font-size: 24px;
+            font-weight: 400;
+            line-height: 26px;
+            letter-spacing: 0.01em;
+            text-align: left;
+
+            list-style: none;
+        }
+
+        .top-gap {
+            padding-top: $sz-paragraph-gap;
+        }
+    }
+
+    h3 {
+        color: $clr-gray-30;
+        padding: 0px;
+    }
+
+    .darker {
+        color: $clr-gray-50;
+    }
+
+    .lighter {
+        color: white;
+    }
+
+    .separated {
+        justify-content: space-between;
+    }
+}

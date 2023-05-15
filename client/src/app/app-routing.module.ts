@@ -32,7 +32,6 @@ import { Routes, RouterModule } from "@angular/router";
 
 import { environment } from "src/environments/environment";
 
-import { AboutComponent } from "./routes/about/about.component";
 import { DatasetsComponent } from "./routes/datasets/datasets.component";
 import { PageNotFoundComponent } from "./routes/page-not-found/page-not-found.component";
 import { AuthenticateComponent } from "./routes/authenticate/authenticate.component";
@@ -58,14 +57,14 @@ import { TestUtilitiesComponent } from "./routes/admin/test-utilities/test-utili
 import { GlobalNotificationsComponent } from "./routes/admin/global-notifications/global-notifications.component";
 
 import { AuthenticatedGuard } from "./guards/authenticated.guard";
+import { PublicSiteModule } from "./modules/public-site/public-site.module";
 
 
 const APP_ROUTES: Routes = [
     // Public pages
     { path: "authenticate", component: AuthenticateComponent },
-    { path: "about", component: AboutComponent },
 
-    { path: "", redirectTo: "/about", pathMatch: "full" },
+    { path: "", loadChildren: ()=>import("./modules/public-site/public-site.module").then(m=>m.PublicSiteModule) },
 
     // Authenticated pages
     {
@@ -130,9 +129,14 @@ const APP_ROUTES: Routes = [
 
 @NgModule({
     imports: [
+        PublicSiteModule,
         RouterModule.forRoot(
             APP_ROUTES,
-            { enableTracing: environment.route_dbg } // <-- debugging purposes only
+            {
+                enableTracing: environment.route_dbg, // <-- debugging purposes only
+                anchorScrolling: "enabled",
+                scrollPositionRestoration: "enabled"
+            }
         )
     ],
     exports: [RouterModule]

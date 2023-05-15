@@ -1,0 +1,221 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+@import '../../../scss/public-site.scss';
+
+.page {
+    .header-content {
+        width: 650px;
+    }
+    .story {
+        background-color: $clr-gray-10;
+
+        .img-spacer {
+            justify-content: space-between;
+            h3 {
+                color: $clr-gray-50;
+                width: 450px;
+            }
+
+            p {
+                color: $clr-gray-70;
+            }
+
+            img {
+                border-top-left-radius: $sz-unit;
+                border-bottom-left-radius: $sz-unit;
+                position: relative;
+                right: -$sz-border-x;
+                object-fit: contain;
+            }
+
+            .pad-bottom {
+                padding-bottom: $sz-spacer-gap;
+            }
+        }
+    }
+    .mission {
+        background-color: $clr-gray-100;
+        
+        .img-spacer {
+            justify-content: space-between;
+
+            p {
+                width: 420px;
+                padding-right: $sz-border-x;
+                color: $clr-gray-20;
+            }
+
+            h3 {
+                width: 450px;
+
+                .darker {
+                    color: $clr-gray-50;
+                }
+            }
+
+        }
+    }
+    .science {
+        background-color: $clr-gray-70;
+        border-bottom: $clr-yellow 1px solid;
+
+        h3 {
+            color: $clr-gray-50;
+            padding-top: 0px;
+            padding-bottom: $sz-subheading-gap;
+            width: 600px;
+            text-align: center;
+
+            .lighter {
+                color: $clr-gray-20;
+            }
+        }
+
+        .tile-container {
+            gap: $sz-double;
+
+            .tile {
+                background-color: $clr-gray-80;
+                padding: 32px;
+                width: 290px;
+                height: 290px;
+                border-radius: $sz-unit;
+
+                .num {
+                    @extend .figure-time;
+                    text-align: right;
+                    color: $clr-gray-70;
+                }
+
+                h4 {
+                    color: $clr-gray-10;
+                    padding-top: $sz-subheading-gap;
+                    padding-bottom: $sz-button-gap;
+                    margin: 0px;
+                }
+                p {
+                    padding: 0px;
+                    color: $clr-gray-50;
+                }
+            }
+        }
+    }
+    .publication {
+        background-color: $clr-gray-100;
+
+        .head-container {
+            justify-content: flex-start;
+
+            gap: $sz-border-x;
+
+            h3 {
+                width: 420px;
+            }
+
+            p {
+                margin: 0px;
+                padding-top: $sz-heading-gap;
+                width: 420px;
+            }
+        }
+
+        .pub-container {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            // justify-content: space-around;
+            gap: $sz-double;
+            padding: $sz-button-gap;
+
+            background-color: $clr-gray-70;
+            border-radius: $sz-unit;
+
+            .tile {
+                background-color: $clr-gray-80;
+                border-radius: $sz-unit;
+                width: 290px;
+                color: $clr-gray-50;
+
+                img {
+                    width: 100%;
+                    height: auto;
+                }
+
+                .placeholder {
+                    padding: $sz-button-gap;
+                    img {
+                        width: 64px;
+                        height: auto;
+                    }
+                }
+
+                .tile-text {
+                    padding: $sz-double;
+                    
+                    h4 {
+                        color: $clr-gray-50;
+                        margin: 0px;
+                    }
+
+                    p {
+                        padding-top: $sz-double;
+                        padding-bottom: 0px;
+                        margin: 0px;        
+                        color: $clr-gray-10;
+                    }
+
+                    .issue {
+                        color: $clr-gray-40;
+                        font-style: italic;
+                    }
+
+                    .attribution {
+                        color: $clr-gray-40;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    }
+
+                    .date {
+                        color: $clr-gray-40;
+                    }
+                }
+
+                &:hover {
+                    box-shadow: 0px 0px $sz-unit black;
+                }
+            }
+        }
+    }
+    h3 {
+        padding-top: $sz-heading-gap;
+        padding-bottom: $sz-subheading-gap;
+    }
+}

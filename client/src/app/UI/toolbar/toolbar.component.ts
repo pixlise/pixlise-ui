@@ -336,7 +336,7 @@ export class ToolbarComponent implements OnInit, OnDestroy
 
     onAbout(): void
     {
-        this.router.navigateByUrl("/about");
+        this.router.navigateByUrl("/public/about-us");
     }
 
     onExport(): void

@@ -1,0 +1,97 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div class="page">
+    <div class="flex-column header product-header">
+        <img class="header-image" src="assets/images/bg-mission.jpg">
+        <div class="flex-column header-content">
+            <h2>Out of this world geoscience, literally.</h2>
+        </div>
+    </div>
+    <div class="flex-column story section" id="mars2020">
+        <number-button theNumber="01" theLabel="PIXL + Mars 2020" link="" colourStyle="red" [showArrow]="false"></number-button>
+        <div class="flex-row img-spacer">
+            <div class="flex-column">
+                <h3>Searching for life on <span class="red">the Red Planet.</span></h3>
+                <p>PIXLISE streamlines the search for life on Mars by helping scientists understand data from PIXL (Planetary Instrument for X-ray Lithochemistry) on NASA's Perseverance Rover. Designed for the flagship Mars 2020 mission, PIXLISE provides astrobiologists flexible and powerful visual analytics tools to quickly analyze and understand high-density, spatially-localized, imaging and XRF spectroscopy data.</p>
+                <p class="pad-bottom">In 2018, PIXLISE was born out of Data to Discovery incubation program for science analysis tools, grew as part of JPL's Data Science Program, and elaborated into a robust tool through a multi-year partnership between Queensland University of Technology (QUT) and the Jet Propulsion Laboratory, California Institute of Technology.</p>
+                <number-button theNumber="" theLabel="Read About PIXL" link="https://mars.nasa.gov/mars2020/spacecraft/instruments/pixl" colourStyle="red" [showArrow]="true"></number-button>
+            </div>
+            <img src="assets/images/aboutus/perseverance.jpg">
+        </div>
+    </div>
+    <branding-logos></branding-logos>
+    <div class="flex-column mission section" id="pixlise">
+        <number-button theNumber="02" theLabel="PIXLISE" link="" colourStyle="red" [showArrow]="false"></number-button>
+        <div class="flex-row img-spacer">
+            <div class="flex-column flex-center-center">
+                <h3><span class="darker">Started from Mars,</span> now we're here.</h3>
+            </div>
+            <p>Although PIXLISE's story began on the Red Planet, it continues to unfold on our home planet. After years of close collaboration with scientists, engineers, and designers at multiple research institutions, we realized PIXLISE can do much more than its original mission. We are developing a multi-level deployment process which will bring PIXLISE's sophisticated visualization and analysis capability to scientists in geology labs across the globe.</p>
+        </div>
+    </div>
+    <div class="flex-column flex-center-center science section">
+        <h3>We believe in tools built with <span class="lighter">better science</span> in mind.</h3>
+        <div class="flex-row flex-center-center tile-container">
+            <div *ngFor="let tile of scienceTiles; let i = index;" class="tile">
+                <div class="num">{{i|number:'2.0-0'}}</div>
+                <h4>{{tile.title}}</h4>
+                <p>{{tile.description}}</p>
+            </div>
+        </div>
+    </div>
+    <div class="flex-column publication section" id="impact">
+        <number-button theNumber="03" theLabel="Impact" link="" colourStyle="red" [showArrow]="false"></number-button>
+        <div class="flex-row head-container">
+            <h3>The proof is in the publication.</h3>
+            <p>The true impacts of PIXLISE is hard to quantify, because so much of it is untold. These are just a fraction of the scientific conclusions made with a PIXLISE workflow.</p>
+        </div>
+        <div class="pub-container">
+            <a
+                *ngFor="let pub of publications"
+                class="tile"
+                [href]="pub.articleLink"
+                target="_blank">
+                <img *ngIf="pub.imageLink" [src]="pub.imageLink">
+                <div *ngIf="!pub.imageLink" class="flex-row flex-center-center placeholder">
+                    <img src="assets/images/aboutus/no-image.svg">
+                </div>
+                <div class="flex-column tile-text">
+                    <h4>{{pub.publication}}</h4>
+                    <p class="issue">{{pub.issue}}</p>
+                    <p>{{pub.summary}}</p>
+                    <p class="attribution" [title]="pub.attribution">{{pub.attribution}}</p>
+                    <p class="date">{{pub.date}}</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
