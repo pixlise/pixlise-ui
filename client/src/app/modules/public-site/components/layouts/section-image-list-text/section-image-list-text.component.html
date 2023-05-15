@@ -32,10 +32,10 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="section">
     <number-button [params]="params.navButtonParams"></number-button>
     <div class="flex-row container">
-        <div class="flex-column text-container" [ngClass]="{'narrowbox': params.headingLarge}">
+        <div class="flex-column text-container" [ngClass]="{'narrowbox': params.headingLarge, 'text-container-list-limit': hasList}">
             <h2 *ngIf="params.headingLarge"><text-with-highlights [parts]="params.headingParts" styleMain="" styleAlternate="red"></text-with-highlights></h2>
             <h3 *ngIf="!params.headingLarge"><text-with-highlights [parts]="params.headingParts" styleMain="" styleAlternate="red"></text-with-highlights></h3>
-            <ng-container *ngIf="params.listTitle && params.listItems.length > 1">
+            <ng-container *ngIf="hasList">
                 <div class="list-heading">{{params.listTitle}}</div>
                 <ul>
                     <li

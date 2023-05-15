@@ -83,4 +83,9 @@ export class SectionImageListTextComponent implements OnInit
     {
         this.activeItem = item;
     }
+
+    get hasList(): boolean
+    {
+        return this.params.listTitle && this.params.listItems.length > 1;
+    }
 }
