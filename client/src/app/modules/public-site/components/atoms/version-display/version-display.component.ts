@@ -69,6 +69,19 @@ export class VersionDisplayComponent implements OnInit, OnDestroy
                     this._uiVersion,
                     ...versions.components
                 ];
+
+                // Remove the image name from piquant version
+                for(let ver of this.versions)
+                {
+                    if(ver.component == "PIQUANT")
+                    {
+                        let parts = ver.version.split(":");
+                        if(parts.length == 2)
+                        {
+                            ver.version = parts[1];
+                        }
+                    }
+                }
             },
             (err)=>
             {
