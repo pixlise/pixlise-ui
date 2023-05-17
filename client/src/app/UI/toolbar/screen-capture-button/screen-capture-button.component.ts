@@ -30,6 +30,7 @@
 import { Component, Input, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { first } from "rxjs/operators";
+import { AuthenticationService } from "src/app/services/authentication.service";
 import { NotificationService } from "src/app/services/notification.service";
 import { ViewStateCollectionItem, ViewStateService } from "src/app/services/view-state.service";
 import { UserPromptDialogComponent, UserPromptDialogDropdownItem, UserPromptDialogParams, UserPromptDialogResult, UserPromptDialogStringItem } from "src/app/UI/atoms/user-prompt-dialog/user-prompt-dialog.component";
@@ -50,12 +51,16 @@ export class ScreenCaptureButtonComponent implements OnInit
 {
     @Input() datasetID: string = "";
 
+    isPublicUser: boolean = false;
+
     constructor(
         private _viewStateService: ViewStateService,
         private _notificationService: NotificationService,
+        private _authService: AuthenticationService,
         private dialog: MatDialog
     )
     {
+        this._authService.isPublicUser$.subscribe((isPublicUser) => this.isPublicUser = isPublicUser);
     }
 
     ngOnInit(): void
@@ -64,6 +69,11 @@ export class ScreenCaptureButtonComponent implements OnInit
 
     onScreenCapture(): void
     {
+        if(this.isPublicUser)
+        {
+            return;
+        }
+
         // User wants to save the current view state. We ask for a name and optionally a collection to add it to
         if(!this.datasetID)
         {
@@ -98,11 +108,12 @@ export class ScreenCaptureButtonComponent implements OnInit
 
                 if(collectionNames.length > 0)
                 {
+                    let filteredNames = collectionNames.filter((name: string) => !name.startsWith("shared-"));
                     params.items.push(new UserPromptDialogDropdownItem(
                         colName,
-                        (val: string)=>{ return true;},
-                        collectionNames,
-                        collectionNames
+                        () => true,
+                        filteredNames,
+                        filteredNames
                     ));
                 }
 

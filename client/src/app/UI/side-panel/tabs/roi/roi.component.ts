@@ -31,6 +31,7 @@ import { Component, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { ObjectCreator } from "src/app/models/BasicTypes";
+import { AuthenticationService } from "src/app/services/authentication.service";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { ROIService } from "src/app/services/roi.service";
@@ -71,6 +72,7 @@ export class ROIComponent implements OnInit
     private _selectionEmpty: boolean = true;
 
     roiSearchString: string = "";
+    isPublicUser: boolean = false;
 
     private _authors: ObjectCreator[] = [];
     private _filteredAuthors: string[] = [];
@@ -81,10 +83,12 @@ export class ROIComponent implements OnInit
         private _contextImageService: ContextImageService,
         private _datasetService: DataSetService,
         private _roiService: ROIService,
+        private _authService: AuthenticationService,
         private _selectionService: SelectionService,
         public dialog: MatDialog,
     )
     {
+        this._authService.isPublicUser$.subscribe((isPublicUser) => this.isPublicUser = isPublicUser);
     }
 
     ngOnInit(): void

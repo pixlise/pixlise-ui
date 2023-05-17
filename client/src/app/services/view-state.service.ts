@@ -849,6 +849,27 @@ export class ViewStateService
         );
     }
 
+    shareViewStateCollectionPublic(datasetID: string, viewStateID: string): Observable<void>
+    {
+        let loadID = this._loadingSvc.add("Making collection and all used objects public...");
+        let apiURL = APIPaths.getWithHost(`${APIPaths.api_share}/${APIPaths.api_view_state}/public/${datasetID}/${viewStateID}`);
+        return this.http.post<void>(apiURL, "", makeHeaders()).pipe(
+            tap(
+                (evt)=>
+                {
+                    this._loadingSvc.remove(loadID);
+                    this.refreshSavedStates();
+                },
+                (err)=>
+                {
+                    this._loadingSvc.remove(loadID);
+                    this.refreshSavedStates();
+                }
+            )
+        );
+    }
+
+
     private closeUnderContextPanels(): void
     {
         this._showContextImageLayers = false;

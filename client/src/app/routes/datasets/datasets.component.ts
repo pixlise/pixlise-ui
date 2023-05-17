@@ -116,7 +116,7 @@ export class DatasetsComponent implements OnInit
                     if(AuthenticationService.permissionCount(claims) <= 0)
                     {
                         // User has no permissions at all, admins would've set them this way!
-                        this.setDatasetListingNotAllowedError(HelpMessage.AWAITING_ADMIN_APPROVAL);
+                        // this.setDatasetListingNotAllowedError(HelpMessage.AWAITING_ADMIN_APPROVAL);
                     }
                     else
                     {
@@ -124,17 +124,17 @@ export class DatasetsComponent implements OnInit
                         if(AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionNone))
                         {
                             // Show a special error in this case - user has been set to have no permissions
-                            this.setDatasetListingNotAllowedError(HelpMessage.NO_PERMISSIONS);
+                            // this.setDatasetListingNotAllowedError(HelpMessage.NO_PERMISSIONS);
                         }
                         else
                         {
                             // Don't have no-permission set, so see if the user is allowed to access any groups
                             this._allGroups = AuthenticationService.getGroupsPermissionAllows(claims);
                             this._selectedGroups = Array.from(this._allGroups);
-                            if(this._allGroups.length <= 0)
-                            {
-                                this.setDatasetListingNotAllowedError(HelpMessage.NO_DATASET_GROUPS);
-                            }
+                            // if(this._allGroups.length <= 0)
+                            // {
+                            //     this.setDatasetListingNotAllowedError(HelpMessage.NO_DATASET_GROUPS);
+                            // }
                         }
 
                         this._userCanEdit = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionEditDataset);

@@ -102,6 +102,8 @@ export class ToolbarComponent implements OnInit, OnDestroy
     editAnnotationsOpen: boolean = false;
     annotationEditorDialogRef: MatDialogRef<AnnotationEditorComponent, MatDialogConfig> = null;
 
+    isPublicUser: boolean = false;
+
     constructor(
         private router: Router,
         private _datasetService: DataSetService,
@@ -117,6 +119,7 @@ export class ToolbarComponent implements OnInit, OnDestroy
         public dialog: MatDialog,
     )
     {
+        this.authService.isPublicUser$.subscribe((isPublicUser) => this.isPublicUser = isPublicUser);
     }
 
     ngOnInit()
@@ -281,7 +284,10 @@ export class ToolbarComponent implements OnInit, OnDestroy
             // Only enabling maps tab if a quant is loaded
             // TODO: Hide maps tap if no quants or whatever... this all changed when multiple quantifications came in, for now just enabling it always
             this.tabs.push(new TabNav("Element Maps", datasetPrefix+"/maps", true));
-            this.tabs.push(new TabNav("Quant Tracker", datasetPrefix+"/quant-logs", true));
+            if(!this.isPublicUser)
+            {
+                this.tabs.push(new TabNav("Quant Tracker", datasetPrefix+"/quant-logs", true));
+            }
         }
 
         if(this._userPiquantConfigAllowed)

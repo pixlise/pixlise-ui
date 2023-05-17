@@ -178,9 +178,6 @@ export class DataExpression
             moduleReferences,
             recentExecStats,
             this.doiMetadata,
-            // this.doi,
-            // this.doiBadge,
-            // this.doiLink,
             this.isModuleListUpToDate
         );
     }

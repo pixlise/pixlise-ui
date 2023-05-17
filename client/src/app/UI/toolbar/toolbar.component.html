@@ -61,7 +61,7 @@ POSSIBILITY OF SUCH DAMAGE.
   <div *ngIf="isLoggedIn" fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements-wide">
     <current-quantification *ngIf="showQuantPicker"></current-quantification>
 
-    <a [href]="discussLink" class="nav-link-normal" target="_blank">Discussion</a>
+    <a *ngIf="!isPublicUser" [href]="discussLink" class="nav-link-normal" target="_blank">Discussion</a>
 
     <a *ngFor="let tab of tabs" [href]="tab.url" (click)="onNavigate(tab, $event)"
       class="{{tab.cssClass}}">{{tab.label}}</a>

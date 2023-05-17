@@ -82,6 +82,8 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
     items: ExpressionListItems = null;
     initialScrollToIdx: number = -1;
 
+    isPublicUser: boolean = false;
+
     private _filterText: string = "";
     private _selectAllFiltered: boolean = false;
 
@@ -106,6 +108,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
     )
     {
         super();
+        this._authService.isPublicUser$.subscribe((isPublicUser) => this.isPublicUser = isPublicUser);   
     }
 
     ngOnInit()

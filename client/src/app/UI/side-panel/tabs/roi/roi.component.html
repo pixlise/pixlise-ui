@@ -31,7 +31,15 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="column" class="scrollable-container" fxFill>
      <div class="panel-row">
-          <push-button (onClick)="onNewROI()" buttonStyle="yellow" [disabled]="selectionEmpty" fxFlex="100%">New ROI from selection</push-button>
+          <push-button
+               #tooltip="matTooltip"
+               matTooltip="You don't have permission to create ROIs"
+               [matTooltipDisabled]="!isPublicUser"
+               (onClick)="onNewROI()"
+               buttonStyle="yellow"
+               [disabled]="selectionEmpty || isPublicUser"
+               fxFlex="100%"
+          >New ROI from Selection</push-button>
      </div>
      <div *ngIf="showSearch" fxLayout="row" class="gap-separated-horizontal-elements filters-row">
           <filter-box

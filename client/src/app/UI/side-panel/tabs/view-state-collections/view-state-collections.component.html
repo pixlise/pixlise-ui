@@ -54,25 +54,39 @@ POSSIBILITY OF SUCH DAMAGE.
                          class="side-panel-label"
                          [ngClass]="{'collection-selected': collection.isOpen}"
                          title="{{collection.name}}">{{collection.name}}</span>
-                    <span class="side-panel-label sub-label">{{collection.modifiedUnixSec*1000|date:'medium'}}</span>
+                    <span class="side-panel-label sub-label">{{collection.modifiedUnixSec*1000|date:'short'}}</span>
                </div>
                <div
                     fxLayout="row"
                     fxLayoutAlign="start center"
                     class="gap-separated-horizontal-elements">
                     <icon-button
-                         title="Present this collection of workspaces"
+                         #tooltip="matTooltip"
+                         matTooltip="Present this collection of workspaces"
                          icon="assets/button-icons/play.svg"
-                         (click)="onPlay(collection.id, $event)"></icon-button>
+                         (click)="onPlay(collection.id, $event)">
+                    </icon-button>
                     <icon-button
-                         *ngIf="!showShared"
-                         title="Share this collection"
+                         *ngIf="showShared && !isPublicUser"
+                         #tooltip="matTooltip"
+                         matTooltip="Make this collection public"
+                         icon="assets/button-icons/public.svg"
+                         (click)="onSharePublicCollection(collection, $event)">
+                    </icon-button>
+                    <icon-button
+                         *ngIf="!showShared && !isPublicUser"
+                         #tooltip="matTooltip"
+                         matTooltip="Share this collection"
                          icon="assets/button-icons/share.svg"
-                         (click)="onShareCollection(collection.id, $event)"></icon-button>
+                         (click)="onShareCollection(collection.id, $event)">
+                    </icon-button>
                     <icon-button
-                         title="Delete this collection"
+                         *ngIf="!isPublicUser"
+                         #tooltip="matTooltip"
+                         matTooltip="Delete this collection"
                          icon="assets/button-icons/delete.svg"
-                         (click)="onDeleteCollection(collection.id, $event)"></icon-button>
+                         (click)="onDeleteCollection(collection.id, $event)">
+                    </icon-button>
 
                     <img [src]="collection.isOpen ? 'assets/button-icons/arrow-down.svg' : 'assets/button-icons/arrow-right.svg'">
                </div>
