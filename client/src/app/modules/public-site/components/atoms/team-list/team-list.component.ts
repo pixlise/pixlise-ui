@@ -44,7 +44,7 @@ export class TeamListComponent implements OnInit
                 new Contributor("Tom Barber", "JPL Infrastructure Developer"),
                 new Contributor("Michael Fedell", "JPL Infrastructure Developer"),
                 new Contributor("Ryan Stonebraker", "JPL Interface Developer"),
-                new Contributor("Adrian Galvin", "Vsiualization + Design Lead"),
+                new Contributor("Adrian Galvin", "Visualization + Design Lead"),
                 new Contributor("Austin Wright", "Data Science + Machine Learning Lead"),
             ])
         ],
