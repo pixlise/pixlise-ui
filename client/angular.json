@@ -25,6 +25,11 @@
             "aot": true,
             "assets": [
               "src/favicon.ico",
+              {
+                "glob": "robots.txt",
+                "input": "src",
+                "output": "/"
+              },
               "src/assets",
               {
                 "glob": "**/*",
@@ -89,6 +94,10 @@
                 {
                   "replace": "src/environments/environment.ts",
                   "with": "src/environments/environment.prod.ts"
+                },
+                {
+                  "replace": "src/robots.txt",
+                  "with": "src/robots-prod.txt"
                 }
               ],
               "optimization": true,
@@ -150,6 +159,11 @@
             "karmaConfig": "karma.conf.js",
             "assets": [
               "src/favicon.ico",
+              {
+                "glob": "robots.txt",
+                "input": "src",
+                "output": "/"
+              },
               "src/assets",
               {
                 "glob": "glue.wasm",
