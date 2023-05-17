@@ -29,6 +29,7 @@
 
 import { Component, OnInit } from "@angular/core";
 import { Router } from "@angular/router";
+import { MetaTagService } from "../../../services/meta-tag.service";
 
 
 class MissionTile
@@ -74,8 +75,12 @@ export class AboutUsPageComponent implements OnInit
     ];
 
     publications: Publication[] = [];
+    title = "Out of this world geoscience, literally.";
 
-    constructor(private _router: Router)
+    constructor(
+        private _router: Router,
+        private _metaTagService: MetaTagService
+        )
     {
         // Randomise the articles
         let articles = [
@@ -218,5 +223,6 @@ export class AboutUsPageComponent implements OnInit
 */
     ngOnInit(): void
     {
+        this._metaTagService.setMeta(this.title, "How we are helping find signs of life on Mars, our team, and publications", []);
     }
 }
