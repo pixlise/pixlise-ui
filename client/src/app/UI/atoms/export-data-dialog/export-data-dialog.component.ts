@@ -30,7 +30,7 @@
 import { Component, ElementRef, Inject, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { saveAs } from "file-saver";
-import * as JSZip from "jszip";
+import JSZip from "jszip";
 import { Observable, Subscription, combineLatest, of } from "rxjs";
 import { map } from "rxjs/operators";
 import { PMCDataValues } from "src/app/expression-language/data-values";
@@ -107,7 +107,6 @@ export class ExportDataDialogComponent implements OnInit
         private _exprService: DataExpressionService,
         private _diffractionService: DiffractionPeakService,
         private _rgbMixService: RGBMixConfigService,
-        private _diffractionSource: DiffractionPeakService,
         private dialog: MatDialog
     )
     {
@@ -246,7 +245,21 @@ export class ExportDataDialogComponent implements OnInit
 
     private generateDiffractionFeaturesCSV(): string
     {
-        let headers = ["id", "pmc", "effectSize", "channel", "keV", "kevStart", "kevEnd"];
+        let headers = [
+            "id",
+            "pmc",
+            "effectSize",
+            "baselineVariation",
+            "globalDifference",
+            "differenceSigma",
+            "peakHeight",
+            "channel",
+            "keV",
+            "kevStart",
+            "kevEnd",
+            "detector"
+        ];
+
         return this._allPeaks.reduce((prev, curr) => 
         {
             // Doesn't put " around first item...
@@ -260,10 +273,16 @@ export class ExportDataDialogComponent implements OnInit
                     currentLine += ",";
                 }
 
+                // Last one is also a string
+                if(c == headers.length-1)
+                {
+                    currentLine += "\"";
+                }
+
                 currentLine += curr[headers[c]];
 
-                // First one is a string
-                if(c == 0)
+                // First and last one is a string
+                if(c == 0 || c == headers.length-1)
                 {
                     currentLine += "\"";
                 }

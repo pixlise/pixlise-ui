@@ -5,7 +5,10 @@
     "types": [
       "jasmine",
       "node"
-    ]
+    ],
+    "esModuleInterop": true,
+    //"emitDecoratorMetadata": true, <-- results in Cannot access 'ViewStateService' before initialization at: annotation-editor.component.ts:79
+    "allowSyntheticDefaultImports": true,
   },
   "files": [
     "src/test.ts",

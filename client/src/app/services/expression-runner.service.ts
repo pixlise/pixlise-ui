@@ -28,12 +28,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Injectable } from "@angular/core";
-import { DatePipe } from '@angular/common';
+import { DatePipe } from "@angular/common";
 
-import { Observable, of, combineLatest, from } from "rxjs";
+import { Observable, of, combineLatest, from, throwError } from "rxjs";
 import { map, concatMap } from "rxjs/operators";
 
-import * as JSZip from "jszip";
+import JSZip from "jszip";
 
 import { DataExpressionService } from "./data-expression.service";
 import { DataModuleService, DataModuleSpecificVersionWire, DataModule } from "src/app/services/data-module.service";
@@ -220,6 +220,11 @@ export class ExpressionRunnerService
         if(!this._querier)
         {
             this._querier = new DataQuerier();
+        }
+
+        if(expression.sourceLanguage != EXPR_LANGUAGE_LUA)
+        {
+            return throwError("Only expressions written in the Lua programming language can be exported");
         }
 
         // We need a data source because we'll be executing the expression to record results

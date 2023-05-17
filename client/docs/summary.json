@@ -1,0 +1,22 @@
+[
+    {
+        "title": "Periodic Table DB",
+        "file": "periodic-table.md"
+    },
+    {
+        "title": "Interactive Canvas",
+        "file": "interactive-canvas.md"
+    },
+    {
+        "title": "PIXLISE Widgets",
+        "file": "pixlise-widgets.md"
+    },
+    {
+        "title": "Quantification",
+        "file": "quantification.md"
+    },
+    {
+        "title": "Angular UI",
+        "file": "pixlise.md"
+    }
+]

@@ -27,8 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import * as moment from "moment";
-import { Observable } from "rxjs";
+import moment from "moment";
 import {
     HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, SpectrumDataQuerierSource
 } from "src/app/expression-language/data-sources";
@@ -47,7 +46,10 @@ import { invalidPMC, radToDeg } from "src/app/utils/utils";
 import Voronoi from "voronoi";
 
 
-let QuickHull = require("quickhull");
+import QuickHull from "quickhull";
+//let QuickHull = require("quickhull");
+//import polygonClipping from "polygon-clipping";
+//import { intersection } from "polygon-clipping";
 const polygonClipping = require("polygon-clipping");
 
 

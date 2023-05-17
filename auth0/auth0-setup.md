@@ -34,7 +34,6 @@ Add a back-end API via the Auth0 web interface, making note of the "identifier" 
 - `access:PIXL-FM`	Allows access to PIXL flightmodel datasets
 - `access:Stony Brook Breadboard`	Test data from Stony Brook breadboard
 - `access:JPL Breadboard`	Allows user access to JPL breadboard test data sets
-- `download:bulksum`	Allows users to see/use bulk sum MSA download button
 - `no-permission`	Marking user as not having permissions, different from Unassigned user, so we know what error msg to show for newly signed up users.
 - `access:PIXL-EM`	Allows access to PIXL engineering model datasets
 - `write:bless-quant`	Bless a (already shared) quantification

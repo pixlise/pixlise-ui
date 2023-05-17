@@ -63,11 +63,22 @@ export class DiffractionPeak
 
     constructor(
         public pmc: number,
-        public effectSize: number, // the raw data has this value
-        public channel: number, // the raw data has channel
-        public keV: number, // keV values are calculated based on calibration
+
+        // Raw data values
+        public effectSize: number,
+        public baselineVariation: number,
+        public globalDifference: number,
+        public differenceSigma: number,
+        public peakHeight: number,
+        public detector: string,
+        public channel: number,
+
+        // keV values are calculated based on calibration
+        public keV: number,
+
         public kevStart: number,
         public kevEnd: number,
+
         // Thought we'd be operating on these, but raw data doesn't (yet?) contain it
         //public confidence: number,
         //public skew: number,
@@ -266,15 +277,21 @@ export class DiffractionPeakService implements DiffractionPeakQuerierSource
                     else if(peak.getPeakHeight() > 0.64)
                     {
                         // It's diffraction!
-                        let channel = peak.getPeakChannel();
-
                         this._allPeaks.push(
                             new DiffractionPeak(
                                 pmc,
+                                
                                 Math.min(100, peak.getEffectSize()), // Found in SOL139 some spectra were corrupt and effect size was bazillions, so now capping at 100
+                                peak.getBaselineVariation(),
+                                peak.getGlobalDifference(),
+                                peak.getDifferenceSigma(),
+                                peak.getPeakHeight(),
+                                peak.getDetector(),
                                 peak.getPeakChannel(),
+
                                 // keV values will be calculated later
                                 0, 0, 0,
+
                                 DiffractionPeak.statusUnspecified
                             )
                         );

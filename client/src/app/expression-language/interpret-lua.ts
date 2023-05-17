@@ -76,6 +76,7 @@ export class LuaDataQuerier
             return;
         }
 
+        this._lua.global.setTimeout(0);
         this._lua.global.close();
         this._lua = null;
         this._luaInit$ = null;
@@ -186,7 +187,7 @@ export class LuaDataQuerier
 */
 
         // Leave ample time to install a module
-        this.runLuaCodeSync(sourceCode, 10000);
+        let result = this.runLuaCodeSync(sourceCode, 10000);
 
         let t1 = performance.now();
         console.log(this._logId+" Added Lua module: "+moduleName+" in "+(t1-t0).toLocaleString()+"ms...");
@@ -348,16 +349,19 @@ export class LuaDataQuerier
                 ()=>
                 {
                     // Remove timeout as it will run out if we leave it here and things in future will fail
-                    this._lua.global.setTimeout(0);
+                    if(this._lua && this._lua.global)// Check if it's still around though!
+                    {
+                        this._lua.global.setTimeout(0);
+                    }
                 }
             )
         );
     }
 
-    private runLuaCodeSync(sourceCode: string, timeoutMs: number): void
+    private runLuaCodeSync(sourceCode: string, timeoutMs: number)
     {
         this._lua.global.setTimeout(Date.now()+timeoutMs);
-        let result = this._lua.doStringSync(sourceCode)
+        let result = this._lua.doStringSync(sourceCode);
         this._lua.global.setTimeout(0);
         return result;
     }
@@ -407,6 +411,13 @@ export class LuaDataQuerier
                 (err)=>
                 {
                     let parsedErr = this.parseLuaError(err, sourceCode);
+
+                    // We may need to reset Lua as we seem to have a resource leak that causes an error after running about 20 expressions
+                    // TODO: this will need fixing at somepoint!
+                    if(parsedErr.message.indexOf("memory access out of bounds") >= 0)
+                    {
+                        cleanupLua = true;
+                    }
 
                     console.error(parsedErr);
 
