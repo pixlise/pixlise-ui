@@ -28,8 +28,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, OnInit } from "@angular/core";
+
 import { SectionImageListTextInputs, SectionImageItemContent } from "../../layouts/section-image-list-text/section-image-list-text.component";
 import { NumberButtonParams } from "../../atoms/number-button/number-button.component";
+import { MetaTagService } from "../../../services/meta-tag.service";
 
 
 @Component({
@@ -39,6 +41,7 @@ import { NumberButtonParams } from "../../atoms/number-button/number-button.comp
 })
 export class InvestigationPageComponent implements OnInit
 {
+    description = "Intricately-interconnected and customizable tools that grow with your geoscientific knowledge.";
     suiteParams = new SectionImageListTextInputs(
         new NumberButtonParams("01", "Sample Investigation", "red", false, false, ""),
         ["A comprehensive ", "suite", " of interactive visualization tools to quickly explore an unknown sample."],
@@ -186,11 +189,14 @@ export class InvestigationPageComponent implements OnInit
         ]
     );
 
-    constructor()
+    constructor(
+        private _metaTagService: MetaTagService
+        )
     {
     }
 
     ngOnInit(): void
     {
+        this._metaTagService.setMeta("Investigation", this.description, []);
     }
 }

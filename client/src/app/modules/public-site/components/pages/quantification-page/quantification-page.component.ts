@@ -31,6 +31,7 @@ import { Component, OnInit } from "@angular/core";
 
 import { SectionImageTilesInputs, SectionImageTileContent } from "../../layouts/section-image-tiles-text/section-image-tiles-text.component";
 import { NumberButtonParams } from "../../atoms/number-button/number-button.component";
+import { MetaTagService } from "../../../services/meta-tag.service";
 
 
 @Component({
@@ -40,6 +41,7 @@ import { NumberButtonParams } from "../../atoms/number-button/number-button.comp
 })
 export class QuantificationPageComponent implements OnInit
 {
+    description = "PIXLISE runs on PIQUANT, an ultra-fast data quantification engine that never compromises accuracy and precision.";
     quoteParts = ["Without PIXLISE and PIQUANT, PIXL would still be a great instrument, but nobody would know because ", "we'd still be processing our first dataset."];
 
     industryParams = new SectionImageTilesInputs(
@@ -72,11 +74,15 @@ export class QuantificationPageComponent implements OnInit
             ),
         ]
     );
-    constructor()
+
+    constructor(
+        private _metaTagService: MetaTagService
+        )
     {
     }
 
     ngOnInit(): void
     {
+        this._metaTagService.setMeta("Quantification", this.description, []);
     }
 }

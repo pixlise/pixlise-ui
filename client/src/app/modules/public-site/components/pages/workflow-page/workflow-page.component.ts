@@ -28,11 +28,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, OnInit } from "@angular/core";
+
 import { SectionImageListTextInputs, SectionImageItemContent } from "../../layouts/section-image-list-text/section-image-list-text.component";
 import { SectionImageTilesInputs, SectionImageTileContent } from "../../layouts/section-image-tiles-text/section-image-tiles-text.component";
 
 import { NumberButtonParams } from "../../atoms/number-button/number-button.component";
-
+import { MetaTagService } from "../../../services/meta-tag.service";
 
 @Component({
     selector: "app-workflow-page",
@@ -41,6 +42,8 @@ import { NumberButtonParams } from "../../atoms/number-button/number-button.comp
 })
 export class WorkflowPageComponent implements OnInit
 {
+    description = "Frictionless scientific workflow with cutting-edge interface design, sharing, and exporting capabilities.";
+
     analysisSubHeading = ["File format export options that are universally translatable."];
     analysisContent = ["We know you have your favorite analysis tools. Exporting allows seamless transition in your workflow to the resources that will help you do your work the best. Export custom-defined subsets of data and expressions, including raw spectral counts. Generate publication-quality graphics, including geologic images, quantified element maps, or custom expression maps with the push of the button."];
 
@@ -106,11 +109,14 @@ export class WorkflowPageComponent implements OnInit
         ]
     );
 
-    constructor()
+    constructor(
+        private _metaTagService: MetaTagService
+        )
     {
     }
 
     ngOnInit(): void
     {
+        this._metaTagService.setMeta("Workflow", this.description, []);
     }
 }

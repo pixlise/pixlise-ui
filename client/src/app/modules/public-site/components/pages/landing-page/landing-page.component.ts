@@ -28,8 +28,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, OnInit } from "@angular/core";
+
 import { SectionImageListTextInputs, SectionImageItemContent } from "../../layouts/section-image-list-text/section-image-list-text.component";
 import { NumberButtonParams } from "../../atoms/number-button/number-button.component";
+import { MetaTagService } from "../../../services/meta-tag.service";
 
 
 export const LandingRouteName = "pixlise";
@@ -121,11 +123,20 @@ export class LandingPageComponent implements OnInit
 
     quoteParts = ["This tool allows me to make new and different types of analyses ", "which I had never imagined were possible."];
 
-    constructor()
+    constructor(
+        private _metaTagService: MetaTagService
+        )
     {
     }
 
     ngOnInit(): void
     {
+        // NOTE: these must be in sync with the root index.html
+        // When users navigate away we change these, but we expect to come back to the main page and be given these same values
+        this._metaTagService.setMeta(
+            "geoscience and spectroscopy analysis at the speed of thought",
+            "PIXLISE is a geoscience visualization and analysis tool, revolutionizing the speed and flexiblity of geoscience workflows for micro-XRF and reflectance spectroscopy",
+            ["spectroscopy", "visual", "analytics", "software", "geoscience", "geology", "geochemistry", "geomorphology", "petrology", "sedimentology", "astrobiology", "earth", "mars", "planetary", "science", "datavis", "dataviz", "visualization", "XRF", "uXRF", "micro XRF", "reflectance", "rgbu", "multispectral", "hyperspectral", "nasa", "jpl", "perseverance"]
+        );
     }
 }

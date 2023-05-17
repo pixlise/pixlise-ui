@@ -28,8 +28,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, OnInit } from "@angular/core";
+
 import { NumberButtonParams, SignupPrefix } from "../../atoms/number-button/number-button.component";
 import { DefaultLoggedInLink } from "../../navigation";
+import { MetaTagService } from "../../../services/meta-tag.service";
 
 
 class Tile
@@ -58,7 +60,7 @@ export class GetPIXLISEComponent implements OnInit
             new NumberButtonParams("02", "Make an account", "yellow", true, true, SignupPrefix+DefaultLoggedInLink)
         ),
         new Tile("Get PIXLISE!",
-            "PIXLISE is free and open source, we’ll help you choose the best fit for how to get your own personal version.",
+            "PIXLISE is free and open source, we'll help you choose the best fit for how to get your own personal version.",
             new NumberButtonParams("03", "Learn More", "red", true, true, "/public/get-started#links")
         ),
     ];
@@ -66,12 +68,18 @@ export class GetPIXLISEComponent implements OnInit
     getOptions = ["Personal Local Installation", "Self Hosted Deployment", "Full Cloud Hosted PIXLISE Service"];
     getActiveItem = this.getOptions[0];
 
-    constructor()
+    constructor(
+        private _metaTagService: MetaTagService
+        )
     {
     }
 
     ngOnInit(): void
-    { 
+    {
+        this._metaTagService.setMeta("How to get PIXLISE",
+            "There are several options for how to start using PIXLISE, from joining our hosted instance, all the way to downloading the source code and running it yourself!",
+            []
+        );
     }
 
     onClickListItem(item: string)

@@ -25,6 +25,11 @@
             "aot": true,
             "assets": [
               "src/favicon.ico",
+              {
+                "glob": "robots.txt",
+                "input": "src",
+                "output": "/"
+              },
               "src/assets",
               {
                 "glob": "**/*",
@@ -150,6 +155,11 @@
             "karmaConfig": "karma.conf.js",
             "assets": [
               "src/favicon.ico",
+              {
+                "glob": "robots.txt",
+                "input": "src",
+                "output": "/"
+              },
               "src/assets",
               {
                 "glob": "glue.wasm",
