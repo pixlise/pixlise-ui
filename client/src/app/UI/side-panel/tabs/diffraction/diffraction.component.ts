@@ -103,6 +103,8 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
 
     userPeakEditing: boolean = false;
 
+    private _isPublicUser: boolean = true;
+
     constructor(
         private _contextImageService: ContextImageService,
         private _spectrumService: SpectrumChartService,
@@ -194,6 +196,13 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
                 }
             }
         );
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this._isPublicUser = isPublicUser;
+            }
+        ));
         
         this._diffractionService.refreshPeakStatuses(this._datasetService.datasetIDLoaded);
         this._diffractionService.refreshUserPeaks(this._datasetService.datasetIDLoaded);
@@ -208,6 +217,12 @@ export class DiffractionComponent implements OnInit, CanvasDrawer, HistogramSele
         {
             this._spectrumService.mdl.showDiffractionPeaks([]);
         }
+    }
+
+    get canSaveExpression(): boolean
+    {
+        // If user is NOT public, they can save expressions
+        return !this._isPublicUser;
     }
 
     onToggleDetectPeaksListOpen(event)
