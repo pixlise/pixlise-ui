@@ -96,19 +96,6 @@ export class DatasetsComponent implements OnInit
 
     ngOnInit()
     {
-        this._authService.userProfile$.subscribe(
-            (user)=>
-            {
-                if(user.name == user.email)
-                {
-                    // This is a user who hasn't got a name set properly yet
-                    // so here we ask them to type one in that we can overwrite
-                    // in both Auth0 and our own user database
-                    alert("We don't have your name stored, only your email address. This means PIXLISE will not show your name correctly when you share data/obvservations. Please set your user name using the edit button on the user panel (click on user icon in top-right).")
-                }
-            }
-        );
-
         this._authService.getIdTokenClaims$().subscribe(
             (claims)=>
             {
@@ -152,6 +139,19 @@ export class DatasetsComponent implements OnInit
             (isPublicUser)=>
             {
                 this._isPublicUser = isPublicUser;
+                
+                this._authService.userProfile$.subscribe(
+                    (user)=>
+                    {
+                        if(user.name == user.email && !this._isPublicUser) // If public user, we don't harass them about their name not being set
+                        {
+                            // This is a user who hasn't got a name set properly yet
+                            // so here we ask them to type one in that we can overwrite
+                            // in both Auth0 and our own user database
+                            alert("We don't have your name stored, only your email address. This means PIXLISE will not show your name correctly when you share data/obvservations. Please set your user name using the edit button on the user panel (click on user icon in top-right).")
+                        }
+                    }
+                );
             }
         ));
 
