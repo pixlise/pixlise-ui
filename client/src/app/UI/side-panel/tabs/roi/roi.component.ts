@@ -31,8 +31,8 @@ import { Component, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { ObjectCreator } from "src/app/models/BasicTypes";
+import { AuthenticationService } from "src/app/services/authentication.service";
 import { ContextImageService } from "src/app/services/context-image.service";
-import { DataSetService } from "src/app/services/data-set.service";
 import { ROIService } from "src/app/services/roi.service";
 import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
 import { RegionChangeInfo, RegionLayerInfo, RegionManager } from "src/app/UI/context-image-view-widget/region-manager";
@@ -71,6 +71,7 @@ export class ROIComponent implements OnInit
     private _selectionEmpty: boolean = true;
 
     roiSearchString: string = "";
+    isPublicUser: boolean = false;
 
     private _authors: ObjectCreator[] = [];
     private _filteredAuthors: string[] = [];
@@ -79,8 +80,8 @@ export class ROIComponent implements OnInit
 
     constructor(
         private _contextImageService: ContextImageService,
-        private _datasetService: DataSetService,
         private _roiService: ROIService,
+        private _authService: AuthenticationService,
         private _selectionService: SelectionService,
         public dialog: MatDialog,
     )
@@ -102,6 +103,18 @@ export class ROIComponent implements OnInit
                 this._selectionEmpty = sel.beamSelection.getSelectedPMCs().size <= 0 && sel.pixelSelection.selectedPixels.size <= 0;
             }
         ));
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
+            }
+        ));
+    }
+
+    ngOnDestroy()
+    {
+        this._subs.unsubscribe();
     }
 
     checkVisibleRegion(region: RegionLayerInfo)
@@ -147,11 +160,6 @@ export class ROIComponent implements OnInit
             {
             }
         ));
-    }
-
-    ngOnDestroy()
-    {
-        this._subs.unsubscribe();
     }
 
     extractAuthors()

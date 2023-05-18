@@ -28,6 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, Input, OnInit } from "@angular/core";
+import { Subscription } from "rxjs";
+import { AuthenticationService } from "src/app/services/authentication.service";
 import { ViewStateService } from "src/app/services/view-state.service";
 
 
@@ -46,9 +48,13 @@ class SelectableWidget
 })
 export class WidgetSwitcherComponent implements OnInit
 {
+    private _subs = new Subscription();
+
     @Input() activeSelector: string = "";
     @Input() widgetPosition: string = "";
     @Input() previewMode: boolean = false;
+
+    isPublicUser: boolean = false;
 
     selectableOptions: SelectableWidget[] = [
         new SelectableWidget(ViewStateService.widgetSelectorBinaryPlot, "Binary"),
@@ -68,10 +74,19 @@ export class WidgetSwitcherComponent implements OnInit
         new SelectableWidget(ViewStateService.widgetSelectorTernaryPlot, "Ternary"),
         new SelectableWidget(ViewStateService.widgetSelectorVariogram, "Variogram"),
     ];
+
+    // These widgets are hidden from public users because they will always be empty
+    private _publicUserHiddenOptions: string[] = [
+        ViewStateService.widgetSelectorROIQuantCompareTable,
+    ];
+
     selectedOption: string = "";
     private _selectedOptionMap: Map<string, string> = new Map<string, string>();
 
-    constructor(private _viewStateService: ViewStateService)
+    constructor(
+        private _viewStateService: ViewStateService,
+        private _authService: AuthenticationService,
+    )
     {
         for(let opt of this.selectableOptions)
         {
@@ -93,6 +108,17 @@ export class WidgetSwitcherComponent implements OnInit
         }
 
         this.selectedOption = this.activeSelector;
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
+                if(this.isPublicUser)
+                {
+                    this.selectableOptions = this.selectableOptions.filter((option) => !this._publicUserHiddenOptions.includes(option.selector));
+                }
+            }
+        ));
     }
 
     onSwitchWidget(event): void

@@ -47,6 +47,7 @@ export class SelectionOptionsDialogData
 {
     constructor(
         public showDwell: boolean,
+        public showNewROI: boolean,
         public subDataSetIDs: string[],
         public triggerElementRef: ElementRef
     )

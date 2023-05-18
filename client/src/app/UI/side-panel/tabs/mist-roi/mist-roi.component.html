@@ -31,7 +31,14 @@ POSSIBILITY OF SUCH DAMAGE. -->
     <div fxLayout="column" fxLayoutAlign="space-between center"
         class="summary panel-row gap-separated-horizontal-elements">
         <div fxLayout="row" fxLayoutAlign="start center" class="upload-btn">
-            <push-button (onClick)="onUploadROIs($event)" buttonStyle="yellow" fxFlex="100%">
+            <push-button
+                matTooltip="You don't have permission to upload MIST ROIs"
+               [matTooltipDisabled]="!isPublicUser"
+               [disabled]="isPublicUser"
+                (onClick)="onUploadROIs($event)"
+                buttonStyle="yellow"
+                fxFlex="100%"
+            >
                 Upload ROI Set From CSV
             </push-button>
         </div>

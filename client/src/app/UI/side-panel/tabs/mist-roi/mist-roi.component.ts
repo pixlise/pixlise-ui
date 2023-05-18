@@ -41,6 +41,7 @@ import { httpErrorToString } from "src/app/utils/utils";
 import { MistRoiConvertComponent, MistROIConvertData } from "./mist-roi-convert/mist-roi-convert.component";
 import { MistRoiUploadComponent, MistROIUploadData } from "./mist-roi-upload/mist-roi-upload.component";
 import { DataSet } from "src/app/models/DataSet";
+import { AuthenticationService } from "src/app/services/authentication.service";
 
 
 @Component({
@@ -62,6 +63,7 @@ export class MistROIComponent implements OnInit
 
     private _selectionEmpty: boolean = true;
     roiSearchString: string = "";
+    isPublicUser: boolean = false;
 
     private _subDataSetIDs: string[] = [];
 
@@ -70,6 +72,7 @@ export class MistROIComponent implements OnInit
         private _datasetService: DataSetService,
         private _roiService: ROIService,
         private _selectionService: SelectionService,
+        private _authService: AuthenticationService,
         public dialog: MatDialog,
     )
     {
@@ -96,6 +99,13 @@ export class MistROIComponent implements OnInit
             {
                 let sources = dataset.experiment.getScanSourcesList();
                 this._subDataSetIDs = sources.map((src) => src.getRtt());
+            }
+        ));
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
             }
         ));
     }

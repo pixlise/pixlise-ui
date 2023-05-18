@@ -33,6 +33,7 @@ import { Subscription } from "rxjs";
 import { BeamSelection } from "src/app/models/BeamSelection";
 import { DataSet, ContextImageItem } from "src/app/models/DataSet";
 import { ContextImageService } from "src/app/services/context-image.service";
+import { AuthenticationService } from "src/app/services/authentication.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { ROIService } from "src/app/services/roi.service";
 import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
@@ -64,12 +65,14 @@ export class SelectionComponent implements OnInit
     hoverPMC: number = -1;
     expandedIndices: number[] = [0, 1];
     subDataSetIDs: string[] = [];
+    isPublicUser: boolean = false;
 
     constructor(
         private _datasetService: DataSetService,
         private _roiService: ROIService,
         private _selectionService: SelectionService,
         private _contextImageService: ContextImageService,
+        private _authService: AuthenticationService,
         public dialog: MatDialog,
     )
     {
@@ -166,6 +169,13 @@ export class SelectionComponent implements OnInit
             ()=>
             {
                 this.hoverPMC = this._selectionService.hoverPMC;
+            }
+        ));
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
             }
         ));
     }

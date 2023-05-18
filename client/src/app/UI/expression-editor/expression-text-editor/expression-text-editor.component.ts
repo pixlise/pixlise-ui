@@ -453,6 +453,21 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy
     @Input() set installedModules(modules: DataExpressionModule[])
     {
         this._installedModules = modules;
+        modules.forEach((module) =>
+        {
+            module.allVersions.sort((aVersion: string, bVersion: string) =>
+            {
+                if(!aVersion || !bVersion)
+                {
+                    return 0;
+                }
+
+                // Sort by major version, then minor version, then patch version, descending
+                let [aMajor, aMinor, aPatch] = aVersion.split(".").map(version => parseInt(version));
+                let [bMajor, bMinor, bPatch] = bVersion.split(".").map(version => parseInt(version));
+                return bMajor - aMajor || bMinor - aMinor || bPatch - aPatch;
+            });
+        });
         this.calculateModuleContainerWidths();
     }
 

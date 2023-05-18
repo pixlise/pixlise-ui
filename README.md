@@ -4,6 +4,12 @@
 
 ## Data Visualisation for Mars 2020 Rover Project
 
+### What is it?
+
+PIXLISE is an XRF spectroscopy visualisation tool built for the science team behind the PIXL instrument on the NASA Perseverance rover launched to Mars in 2020. It has been released as open source and is intended to be used for many other spectroscopy applications. This repository implements the user interface of the web app. It talks to the API found in the core repository here: https://github.com/pixlise/core
+
+PIXLISE is deployed to https://www.pixlise.org
+
 ### What's here?
 * `/.github/workflows` contains github workflows (actions) for build and deployment and trello integration
 * `/auth0` contains auth0 extensions

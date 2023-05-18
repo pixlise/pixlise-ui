@@ -93,6 +93,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
     
     headerSectionsOpen: Set<string> = new Set<string>();
     items: ExpressionListItems = null;
+    isPublicUser: boolean = false;
     
     private _lastLayerChangeCount: number = 0;
     
@@ -115,6 +116,13 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     ngOnInit()
     {
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
+            }
+        ));
+
         this._subs.add(this._contextImageService.mdl$.subscribe(
             ()=>
             {

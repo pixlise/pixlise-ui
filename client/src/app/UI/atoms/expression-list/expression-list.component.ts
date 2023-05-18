@@ -29,7 +29,7 @@
 
 import { Component, Input, OnInit, Output, EventEmitter, ViewChild } from "@angular/core";
 import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
-import { combineLatest, timer } from "rxjs";
+import { combineLatest, timer, Subscription } from "rxjs";
 
 import { DataExpressionService } from "src/app/services/data-expression.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
@@ -37,6 +37,7 @@ import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { RGBChannelsEvent } from "src/app/UI/atoms/expression-list/rgbmix-selector/rgbmix-selector.component";
 import { LayerVisibilityChange, LayerColourChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ExpressionListGroupNames, ExpressionListItems, LayerViewItem } from "src/app/models/ExpressionList";
+import { AuthenticationService } from "src/app/services/authentication.service";
 
 
 export class ExpressionListHeaderToggleEvent
@@ -77,6 +78,8 @@ export class LiveLayerConfig
 })
 export class ExpressionListComponent extends ExpressionListGroupNames implements OnInit
 {
+    private _subs = new Subscription();
+
     @ViewChild(CdkVirtualScrollViewport) cdkVirtualScrollViewport: CdkVirtualScrollViewport;
 
     @Input() headerSectionsOpen: Set<string> = new Set<string>();
@@ -109,9 +112,12 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     stickyItemHeaderName: string = "";
     stickyItem: LayerViewItem = null;
 
+    isPublicUser: boolean = false;
+
     constructor(
         private _exprService: DataExpressionService,
-        private _rgbMixService: RGBMixConfigService
+        private _rgbMixService: RGBMixConfigService,
+        private _authService: AuthenticationService,
     )
     {
         super();
@@ -119,6 +125,12 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
 
     ngOnInit(): void
     {
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
+            }
+        ));
     }
 
     ngAfterViewInit()

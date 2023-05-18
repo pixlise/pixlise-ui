@@ -102,10 +102,12 @@ export class ToolbarComponent implements OnInit, OnDestroy
     editAnnotationsOpen: boolean = false;
     annotationEditorDialogRef: MatDialogRef<AnnotationEditorComponent, MatDialogConfig> = null;
 
+    isPublicUser: boolean = false;
+
     constructor(
         private router: Router,
         private _datasetService: DataSetService,
-        private authService: AuthenticationService,
+        private _authService: AuthenticationService,
         private _exportService: ExportDataService,
         private _viewStateService: ViewStateService,
 
@@ -127,7 +129,7 @@ export class ToolbarComponent implements OnInit, OnDestroy
         // Set up listeners for things that can change how we display...
 
         // User login/logout/claims changing
-        this._subs.add(this.authService.getIdTokenClaims$().subscribe(
+        this._subs.add(this._authService.getIdTokenClaims$().subscribe(
             (claims)=>
             {
                 this._userPiquantConfigAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionEditPiquantConfig);
@@ -194,6 +196,13 @@ export class ToolbarComponent implements OnInit, OnDestroy
             (annotations: FullScreenAnnotationItem[])=>
             {
                 this.savedAnnotations = annotations;
+            }
+        ));
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
             }
         ));
     }
@@ -281,7 +290,10 @@ export class ToolbarComponent implements OnInit, OnDestroy
             // Only enabling maps tab if a quant is loaded
             // TODO: Hide maps tap if no quants or whatever... this all changed when multiple quantifications came in, for now just enabling it always
             this.tabs.push(new TabNav("Element Maps", datasetPrefix+"/maps", true));
-            this.tabs.push(new TabNav("Quant Tracker", datasetPrefix+"/quant-logs", true));
+            if(!this.isPublicUser)
+            {
+                this.tabs.push(new TabNav("Quant Tracker", datasetPrefix+"/quant-logs", true));
+            }
         }
 
         if(this._userPiquantConfigAllowed)
@@ -320,7 +332,7 @@ export class ToolbarComponent implements OnInit, OnDestroy
 
     get isLoggedIn(): boolean
     {
-        return this.authService.loggedIn;
+        return this._authService.loggedIn;
     }
 
     onNavigate(tab: TabNav, event): void

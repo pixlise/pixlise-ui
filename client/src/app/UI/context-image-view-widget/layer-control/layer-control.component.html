@@ -85,9 +85,20 @@ POSSIBILITY OF SUCH DAMAGE.
             elementHeader>
         </two-state-button>
         <!-- Show add button for expressions -->
-        <icon-button icon='assets/button-icons/plus-white.svg' (click)="onAddExpression()" expressionHeader></icon-button>
+        <icon-button
+            *ngIf="!isPublicUser"
+            icon="assets/button-icons/plus-white.svg" 
+            (click)="onAddExpression()" 
+            expressionHeader
+        ></icon-button>
 
         <!-- Show download all button for quantified elements -->
-        <icon-button icon='assets/button-icons/export.svg' (click)="onDownloadAllElements()" title="Download All Quantified Elements" elementHeader></icon-button>
+        <icon-button
+            *ngIf="!isPublicUser"
+            icon="assets/button-icons/export.svg"
+            (click)="onDownloadAllElements()"
+            title="Download All Quantified Elements"
+            elementHeader
+        ></icon-button>
     </expression-list>
 </div>

@@ -30,8 +30,9 @@
 import { OverlayRef } from "@angular/cdk/overlay";
 import { Component, Inject, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { timer } from "rxjs";
+import { Subscription, timer } from "rxjs";
 import { QuantificationSelectionService } from "src/app/services/quantification-selection.service";
+import { AuthenticationService } from "src/app/services/authentication.service";
 import { ViewStateService } from "src/app/services/view-state.service";
 import { PANEL_CHILD_DATA } from "src/app/UI/atoms/buttons/panel-foldout-button/panel-foldout-button.component";
 import { QuantificationUploadDialogComponent } from "src/app/UI/quantification-upload-dialog/quantification-upload-dialog.component";
@@ -58,6 +59,8 @@ export class QuantSelectorPanelSettings
 })
 export class QuantSelectorPanelComponent implements OnInit, OnDestroy
 {
+    private _subs = new Subscription();
+
     showBottomButtons: boolean = true;
     showControlButtons: boolean = true;
     selectedQuantId: string = null;
@@ -65,11 +68,14 @@ export class QuantSelectorPanelComponent implements OnInit, OnDestroy
     hideMulti: boolean = false;
     showNoneOption: boolean = false;
 
+    private isPublicUser = true;
+
     constructor(
         @Inject(PANEL_CHILD_DATA) public data: QuantSelectorPanelSettings,
         public overlayRef: OverlayRef,
         private _viewStateService: ViewStateService,
         private _quantSelectionService: QuantificationSelectionService,
+        private _authService: AuthenticationService,
         public dialog: MatDialog
     )
     {
@@ -88,10 +94,27 @@ export class QuantSelectorPanelComponent implements OnInit, OnDestroy
 
     ngOnInit()
     {
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
+            }
+        ));
     }
 
     ngOnDestroy()
     {
+        this._subs.unsubscribe();
+    }
+
+    get canQuant()
+    {
+        return !this.isPublicUser;
+    }
+
+    get canUploadQuant()
+    {
+        return !this.isPublicUser;
     }
 
     closePanel(): void
