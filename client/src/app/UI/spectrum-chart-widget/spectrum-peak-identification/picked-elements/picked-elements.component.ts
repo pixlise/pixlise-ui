@@ -49,6 +49,7 @@ export class PickedElementsComponent implements OnInit
 
     pickedLines: XRFLineGroup[] = [];
     quantificationEnabled: boolean = false;
+    isPublicUser: boolean = true;
 
     constructor(
         private _elementSetService: ElementSetService,
@@ -74,6 +75,13 @@ export class PickedElementsComponent implements OnInit
                 this.quantificationEnabled = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionCreateQuantification);
             }
         );
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
+            }
+        ));
     }
 
     ngOnDestroy()

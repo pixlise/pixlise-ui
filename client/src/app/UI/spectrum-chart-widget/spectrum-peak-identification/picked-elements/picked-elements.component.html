@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <div fxLayout="column" fxFill>
     <div class="chosen-list-header" fxLayout="row" fxLayoutAlign="space-between center" fxFlex="none">
         <span class="header-gap">Elements</span>
-        <push-button buttonStyle="outline" (onClick)="onSaveElementSet()">Save Set</push-button>
+        <push-button buttonStyle="outline" [disabled]="isPublicUser" (onClick)="onSaveElementSet()">Save Set</push-button>
     </div>
     <div class="scrollable" fxFlex>
         <peak-id-element-list-item
