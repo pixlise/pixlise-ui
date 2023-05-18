@@ -144,6 +144,7 @@ export class AuthenticationService
     private userProfileSubject$ = new BehaviorSubject<any>(null);
     userProfile$ = this.userProfileSubject$.asObservable();
 
+    isPublicUser$ = new ReplaySubject<boolean>();
     authErrors$ = new ReplaySubject<string>();
 
     constructor(
@@ -204,6 +205,15 @@ export class AuthenticationService
                 }
             )
         );
+
+        this.auth0Client$.subscribe((client: Auth0Client) =>
+        {
+            client.getIdTokenClaims().then((claims)=>
+            {
+                let isPublicUser = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionNone) || AuthenticationService.permissionCount(claims) === 0;
+                this.isPublicUser$.next(isPublicUser);
+            });
+        });
     
         // Define observables for SDK methods that return promises by default
         // For each Auth0 SDK method, first ensure the client instance is ready

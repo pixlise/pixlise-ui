@@ -37,6 +37,7 @@ import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { RGBChannelsEvent } from "src/app/UI/atoms/expression-list/rgbmix-selector/rgbmix-selector.component";
 import { LayerVisibilityChange, LayerColourChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ExpressionListGroupNames, ExpressionListItems, LayerViewItem } from "src/app/models/ExpressionList";
+import { AuthenticationService } from "src/app/services/authentication.service";
 
 
 export class ExpressionListHeaderToggleEvent
@@ -109,12 +110,16 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     stickyItemHeaderName: string = "";
     stickyItem: LayerViewItem = null;
 
+    isPublicUser: boolean = false;
+
     constructor(
         private _exprService: DataExpressionService,
-        private _rgbMixService: RGBMixConfigService
+        private _rgbMixService: RGBMixConfigService,
+        private _authService: AuthenticationService,
     )
     {
         super();
+        this._authService.isPublicUser$.subscribe((isPublicUser) => this.isPublicUser = isPublicUser);
     }
 
     ngOnInit(): void

@@ -79,8 +79,12 @@ export class SidePanelComponent implements OnInit
         this._SelectionTab,
         this._DiffractionTab,
         this._RoughnessTab,
-        //"Drift Correction"
         this._MultiQuantTab,
+    ];
+
+    // These tabs are hidden because all relevant actions are blocked by API for public user
+    private _tabsHiddenFromPublic: string[] = [
+        this._MultiQuantTab
     ];
 
     shortcuts: string[] = [
@@ -122,7 +126,6 @@ export class SidePanelComponent implements OnInit
         SelectionComponent,
         DiffractionComponent,
         RoughnessComponent,
-        //DriftCorrectionComponent
         QuantificationCombineComponent
     ];
 
@@ -139,6 +142,7 @@ export class SidePanelComponent implements OnInit
 
     private _subs = new Subscription();
 
+    isPublicUser: boolean = false;
     private _userUserAdminAllowed: boolean = false;
 
     constructor(
@@ -148,6 +152,14 @@ export class SidePanelComponent implements OnInit
         private _authService: AuthenticationService,
     )
     {
+        this._authService.isPublicUser$.subscribe((isPublicUser) => 
+        {
+            this.isPublicUser = isPublicUser;
+            if(this.isPublicUser)
+            {
+                this.tabs = this.tabs.filter(tab => !this._tabsHiddenFromPublic.includes(tab));
+            }
+        });
     }
 
     ngOnInit(): void

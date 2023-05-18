@@ -45,6 +45,7 @@ export class ExpressionEditorConfig
         public applyNow: boolean = false,
         public isImmediatelyAppliable: boolean = true,
         public showSoloEditorButton: boolean = true,
+        public isPublicUser: boolean = false,
     )
     {
     }

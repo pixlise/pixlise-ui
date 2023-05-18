@@ -288,16 +288,30 @@ class EditorConfig
             return [];
         }
 
+        let filteredVersions = [];
+
         // Only show major/minor versions to users who don't own the module
         if(this.isSharedByOtherUser)
         {
-            return Array.from(this.versions.values()).filter((version: DataModuleVersionSourceWire) => version.version.endsWith(".0"));
+            filteredVersions = Array.from(this.versions.values()).filter((version: DataModuleVersionSourceWire) => version.version.endsWith(".0"));
         }
         else
         {
-            return Array.from(this.versions.values());
+            filteredVersions = Array.from(this.versions.values());
         }
 
+        return filteredVersions.sort((a: DataModuleVersionSourceWire, b: DataModuleVersionSourceWire) =>
+        {
+            if(!a?.version || !b?.version)
+            {
+                return 0;
+            }
+
+            // Sort by major version, then minor version, then patch version, descending
+            let [aMajor, aMinor, aPatch] = a.version.split(".").map(version => parseInt(version));
+            let [bMajor, bMinor, bPatch] = b.version.split(".").map(version => parseInt(version));
+            return bMajor - aMajor || bMinor - aMinor || bPatch - aPatch;
+        });
     }
 
     get latestVersion(): DataModuleVersionSourceWire
@@ -308,24 +322,6 @@ class EditorConfig
         }
 
         let latestVersion = this.versionList[0];
-        this.versionList.forEach(version =>
-        {
-            if(!version?.version || !version.version.match(/^[0-9]+\.[0-9]+\.[0-9]+$/))
-            {
-                return;
-            }
-
-            let [latestMajor, latestMinor, latestPatch] = latestVersion.version.split(".").map(version => parseInt(version));
-            let [major, minor, patch] = version.version.split(".").map(version => parseInt(version));
-            if(
-                major > latestMajor || 
-                (major === latestMajor && minor > latestMinor) || 
-                (major === latestMajor && minor === latestMinor && patch > latestPatch)
-            )
-            {
-                latestVersion = version;
-            }
-        });
 
         return latestVersion;
     }

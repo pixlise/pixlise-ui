@@ -140,6 +140,7 @@ export class LayerSettingsComponent implements OnInit
     @Input() isPreviewMode: boolean = false;
     @Input() isSidePanel: boolean = false;
     @Input() isSplitScreen: boolean = false;
+    @Input() isPublicUser: boolean = false;
 
     @Input() customOptions: LiveLayerConfig = null;
 
@@ -576,7 +577,7 @@ export class LayerSettingsComponent implements OnInit
             this._moduleService.getLatestModuleVersion(this.layerInfo.layer.id).subscribe((latestVersion) =>
             {
                 let convertedModule = latestVersion.convertToExpression();   
-                dialogConfig.data = new ExpressionEditorConfig(convertedModule, false, false, false, !this.isPreviewMode);
+                dialogConfig.data = new ExpressionEditorConfig(convertedModule, false, false, false, !this.isPreviewMode, this.isPublicUser);
                 this.dialog.open(ExpressionEditorComponent, dialogConfig);
             });
         }
@@ -585,7 +586,7 @@ export class LayerSettingsComponent implements OnInit
             this._exprService.getExpressionAsync(this.layerInfo.layer.id).subscribe(
                 (expression)=>
                 {
-                    dialogConfig.data = new ExpressionEditorConfig(expression, false, false, false, !this.isPreviewMode);
+                    dialogConfig.data = new ExpressionEditorConfig(expression, false, false, false, !this.isPreviewMode, this.isPublicUser);
                     this.dialog.open(ExpressionEditorComponent, dialogConfig);
                 },
                 (err)=>
@@ -708,14 +709,14 @@ export class LayerSettingsComponent implements OnInit
     {
         let buttons: Record<string, boolean> = {
             showDetectorPicker: this.showDetectorPicker,
-            showDelete: this.showDelete && !this.isSharedByOtherUser,
+            showDelete: this.showDelete && !this.isSharedByOtherUser && !this.isPublicUser,
             showDownload: this.showDownload,
-            showShare: this.showShare && !this.sharedBy,
+            showShare: this.showShare && !this.sharedBy && !this.isPublicUser,
             showTagPicker: this.showTagPicker,
-            showPixlangConvert: this.isPixlangExpression && !this.isPredefined && !DataExpressionId.isPredefinedExpression(this.layerInfo?.layer?.id),
+            showPixlangConvert: this.isPixlangExpression && !this.isPredefined && !DataExpressionId.isPredefinedExpression(this.layerInfo?.layer?.id)  && !this.isPublicUser,
             showPreviewButton: this.showPreviewButton && !this.isCurrentlyOpen,
             showSplitScreenButton: this.showSplitScreenButton && !this.isCurrentlyOpen && (this.isModule || this.isSplitScreen),
-            showSettingsButton: this.showSettingsButton && !this.isCurrentlyOpen,
+            showSettingsButton: this.showSettingsButton && !this.isCurrentlyOpen && !this.isPublicUser,
             showColours: this.showColours,
             showVisible: this.showVisible && !this.layerInfo?.layer?.id?.startsWith("builtin-"),
         };
