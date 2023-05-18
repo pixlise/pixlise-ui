@@ -108,7 +108,6 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
     )
     {
         super();
-        this._authService.isPublicUser$.subscribe((isPublicUser) => this.isPublicUser = isPublicUser);   
     }
 
     ngOnInit()
@@ -186,6 +185,13 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
                 // All have arrived, the taps above would've saved their contents in a way that we like, so
                 // now we can regenerate our item list
                 this.regenerateItemList();
+            }
+        ));
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
             }
         ));
     }

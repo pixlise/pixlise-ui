@@ -116,7 +116,7 @@ POSSIBILITY OF SUCH DAMAGE.
                             (onClick)="onOpen($event, false)"
                             buttonStyle="yellow"
                             title="Open the dataset with views as you last used them">Open</push-button>
-                        <widget-settings-menu [settingsDialog]="openOptionsMenu" #openOptionsButton>
+                        <widget-settings-menu *ngIf="showOpenOptions" [settingsDialog]="openOptionsMenu" #openOptionsButton>
                             <push-button
                                 buttonStyle="yellow"
                                 title="More options">&#9660;</push-button>

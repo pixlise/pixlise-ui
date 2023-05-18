@@ -206,20 +206,27 @@ export class AuthenticationService
             )
         );
 
-        this.auth0Client$.subscribe((client: Auth0Client) =>
-        {
-            client.getIdTokenClaims().then((claims)=>
-            {
-                let isPublicUser = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionNone) || AuthenticationService.permissionCount(claims) === 0;
-                this.isPublicUser$.next(isPublicUser);
-            });
-        });
-    
         // Define observables for SDK methods that return promises by default
         // For each Auth0 SDK method, first ensure the client instance is ready
         // concatMap: Using the client instance, call SDK method; SDK returns a promise
         // from: Convert that resulting promise into an observable
         this.isAuthenticated$ = this.auth0Client$.pipe(
+            tap(
+                (client: Auth0Client)=>
+                {
+                    client.getIdTokenClaims().then(
+                        (claims)=>
+                        {
+                            if(claims)
+                            {
+                                let isPublicUser = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionNone) ||
+                                    AuthenticationService.permissionCount(claims) === 0;
+                                this.isPublicUser$.next(isPublicUser);
+                            }
+                        }
+                    );
+                }
+            ),
             concatMap((client: Auth0Client) => from(client.isAuthenticated())),
             tap(
                 (res)=>

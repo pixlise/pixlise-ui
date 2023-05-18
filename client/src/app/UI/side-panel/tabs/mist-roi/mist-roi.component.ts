@@ -76,7 +76,6 @@ export class MistROIComponent implements OnInit
         public dialog: MatDialog,
     )
     {
-        this._authService.isPublicUser$.subscribe((isPublicUser) => this.isPublicUser = isPublicUser);   
     }
 
     ngOnInit(): void
@@ -100,6 +99,13 @@ export class MistROIComponent implements OnInit
             {
                 let sources = dataset.experiment.getScanSourcesList();
                 this._subDataSetIDs = sources.map((src) => src.getRtt());
+            }
+        ));
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
             }
         ));
     }

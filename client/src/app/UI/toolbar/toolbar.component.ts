@@ -107,7 +107,7 @@ export class ToolbarComponent implements OnInit, OnDestroy
     constructor(
         private router: Router,
         private _datasetService: DataSetService,
-        private authService: AuthenticationService,
+        private _authService: AuthenticationService,
         private _exportService: ExportDataService,
         private _viewStateService: ViewStateService,
 
@@ -119,7 +119,6 @@ export class ToolbarComponent implements OnInit, OnDestroy
         public dialog: MatDialog,
     )
     {
-        this.authService.isPublicUser$.subscribe((isPublicUser) => this.isPublicUser = isPublicUser);
     }
 
     ngOnInit()
@@ -130,7 +129,7 @@ export class ToolbarComponent implements OnInit, OnDestroy
         // Set up listeners for things that can change how we display...
 
         // User login/logout/claims changing
-        this._subs.add(this.authService.getIdTokenClaims$().subscribe(
+        this._subs.add(this._authService.getIdTokenClaims$().subscribe(
             (claims)=>
             {
                 this._userPiquantConfigAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionEditPiquantConfig);
@@ -197,6 +196,13 @@ export class ToolbarComponent implements OnInit, OnDestroy
             (annotations: FullScreenAnnotationItem[])=>
             {
                 this.savedAnnotations = annotations;
+            }
+        ));
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
             }
         ));
     }
@@ -326,7 +332,7 @@ export class ToolbarComponent implements OnInit, OnDestroy
 
     get isLoggedIn(): boolean
     {
-        return this.authService.loggedIn;
+        return this._authService.loggedIn;
     }
 
     onNavigate(tab: TabNav, event): void

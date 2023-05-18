@@ -29,7 +29,7 @@
 
 import { Component, Input, OnInit, Output, EventEmitter, ViewChild } from "@angular/core";
 import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
-import { combineLatest, timer } from "rxjs";
+import { combineLatest, timer, Subscription } from "rxjs";
 
 import { DataExpressionService } from "src/app/services/data-expression.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
@@ -78,6 +78,8 @@ export class LiveLayerConfig
 })
 export class ExpressionListComponent extends ExpressionListGroupNames implements OnInit
 {
+    private _subs = new Subscription();
+
     @ViewChild(CdkVirtualScrollViewport) cdkVirtualScrollViewport: CdkVirtualScrollViewport;
 
     @Input() headerSectionsOpen: Set<string> = new Set<string>();
@@ -119,11 +121,16 @@ export class ExpressionListComponent extends ExpressionListGroupNames implements
     )
     {
         super();
-        this._authService.isPublicUser$.subscribe((isPublicUser) => this.isPublicUser = isPublicUser);
     }
 
     ngOnInit(): void
     {
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
+            }
+        ));
     }
 
     ngAfterViewInit()

@@ -80,6 +80,7 @@ export class DatasetsComponent implements OnInit
     private _allGroups: string[] = [];
     private _selectedGroups: string[] = [];
     private _userCanEdit: boolean = false;
+    private _isPublicUser: boolean = true;
 
     private _filter: DatasetFilter = new DatasetFilter(null, null, null, null, null, null, null, null, null, null, null);
 
@@ -147,6 +148,13 @@ export class DatasetsComponent implements OnInit
             }
         );
 
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this._isPublicUser = isPublicUser;
+            }
+        ));
+
         this.clearSelection();
         this.onSearch();
     }
@@ -155,6 +163,12 @@ export class DatasetsComponent implements OnInit
     {
         this.closeOpenOptionsMenu();
         this._subs.unsubscribe();
+    }
+
+    get showOpenOptions(): boolean
+    {
+        // Only show these extra options if NOT a public user
+        return !this._isPublicUser;
     }
 
     get userCanEdit(): boolean

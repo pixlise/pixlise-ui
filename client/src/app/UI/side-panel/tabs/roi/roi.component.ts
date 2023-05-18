@@ -88,7 +88,6 @@ export class ROIComponent implements OnInit
         public dialog: MatDialog,
     )
     {
-        this._authService.isPublicUser$.subscribe((isPublicUser) => this.isPublicUser = isPublicUser);
     }
 
     ngOnInit(): void
@@ -106,6 +105,18 @@ export class ROIComponent implements OnInit
                 this._selectionEmpty = sel.beamSelection.getSelectedPMCs().size <= 0 && sel.pixelSelection.selectedPixels.size <= 0;
             }
         ));
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
+            }
+        ));
+    }
+
+    ngOnDestroy()
+    {
+        this._subs.unsubscribe();
     }
 
     checkVisibleRegion(region: RegionLayerInfo)
@@ -151,11 +162,6 @@ export class ROIComponent implements OnInit
             {
             }
         ));
-    }
-
-    ngOnDestroy()
-    {
-        this._subs.unsubscribe();
     }
 
     extractAuthors()
