@@ -152,14 +152,6 @@ export class SidePanelComponent implements OnInit
         private _authService: AuthenticationService,
     )
     {
-        this._authService.isPublicUser$.subscribe((isPublicUser) => 
-        {
-            this.isPublicUser = isPublicUser;
-            if(this.isPublicUser)
-            {
-                this.tabs = this.tabs.filter(tab => !this._tabsHiddenFromPublic.includes(tab));
-            }
-        });
     }
 
     ngOnInit(): void
@@ -174,6 +166,15 @@ export class SidePanelComponent implements OnInit
                 this._userUserAdminAllowed = false;
             }
         ));
+
+        this._subs.add(this._authService.isPublicUser$.subscribe((isPublicUser) => 
+        {
+            this.isPublicUser = isPublicUser;
+            if(this.isPublicUser)
+            {
+                this.tabs = this.tabs.filter(tab => !this._tabsHiddenFromPublic.includes(tab));
+            }
+        }));
     }
 
     ngAfterViewInit(): void

@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class='selection-chip' fxLayout="row">
-    <div class='selection-chip-choice left-chip' (click)="onSelection()">{{leftText}}</div>
+    <div class='selection-chip-choice left-chip' (click)="onSelection($event)">{{leftText}}</div>
     <div class='separator'></div>
     <div class='selection-chip-choice right-chip' (click)="onClear()">Clear</div>
 </div>

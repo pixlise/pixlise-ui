@@ -52,7 +52,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <push-button *ngFor="let id of subDataSetIDs" (onClick)="onSelectForSubDataset(id)" buttonStyle="outline" fxFlex="100%">All Points for Dataset: {{id}}</push-button>
         <push-button (onClick)="onAddNearbyPixels()" buttonStyle="outline" [disabled]="displaySelectedPMCs.length <= 0" fxFlex="100%">Add Nearby Pixels From PMC Locations</push-button>
-        <push-button (onClick)="onNewROI()" buttonStyle="yellow" [disabled]="displaySelectedPMCs.length <= 0" fxFlex="100%">Save selection as ROI</push-button>
+        <push-button (onClick)="onNewROI()" buttonStyle="yellow" [disabled]="displaySelectedPMCs.length <= 0 || isPublicUser" fxFlex="100%">Save selection as ROI</push-button>
      </div>
 
      <cdk-accordion class="selection-accordion">

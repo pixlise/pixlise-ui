@@ -40,8 +40,8 @@ POSSIBILITY OF SUCH DAMAGE.
         (onQuantDeleted)="onQuantDeleted($event)">
     </quantification-list>
     <div *ngIf="showBottomButtons" fxLayout="row" fxLayoutAlign="end" class="unit-padding gap-separated-horizontal-elements">
-        <push-button (onClick)="onMultiQuantification()" buttonStyle="yellow">Multi Quant</push-button>
-        <push-button (onClick)="onCreateQuantification()" buttonStyle="yellow">Quantify</push-button>
-        <push-button (onClick)="onUploadQuantification()" buttonStyle="yellow">Upload CSV</push-button>
+        <push-button *ngIf="canQuant" (onClick)="onMultiQuantification()" buttonStyle="yellow">Multi Quant</push-button>
+        <push-button *ngIf="canQuant" (onClick)="onCreateQuantification()" buttonStyle="yellow">Quantify</push-button>
+        <push-button *ngIf="canUploadQuant" (onClick)="onUploadQuantification()" buttonStyle="yellow">Upload CSV</push-button>
     </div>
 </div>

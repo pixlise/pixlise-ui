@@ -112,11 +112,17 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
     )
     {
         super();
-        this._authService.isPublicUser$.subscribe((isPublicUser) => this.isPublicUser = isPublicUser);
     }
 
     ngOnInit()
     {
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
+            }
+        ));
+
         this._subs.add(this._contextImageService.mdl$.subscribe(
             ()=>
             {

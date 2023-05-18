@@ -82,7 +82,6 @@ export class ViewStateCollectionsComponent implements OnInit
         private _authService: AuthenticationService
     )
     {
-        this._authService.isPublicUser$.subscribe((isPublicUser) => this.isPublicUser = isPublicUser);
     }
 
     ngOnInit(): void
@@ -131,6 +130,13 @@ export class ViewStateCollectionsComponent implements OnInit
             },
             (err)=>
             {
+            }
+        ));
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
             }
         ));
     }
