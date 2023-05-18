@@ -144,7 +144,7 @@ export class AuthenticationService
     private userProfileSubject$ = new BehaviorSubject<any>(null);
     userProfile$ = this.userProfileSubject$.asObservable();
 
-    isPublicUser$ = new ReplaySubject<boolean>();
+    isPublicUser$ = new BehaviorSubject<boolean>(true);
     authErrors$ = new ReplaySubject<string>();
 
     constructor(

@@ -32,12 +32,12 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { BeamSelection } from "src/app/models/BeamSelection";
 import { DataSetService } from "src/app/services/data-set.service";
+import { AuthenticationService } from "src/app/services/authentication.service";
 import { DataSet } from "src/app/models/DataSet";
 import { ROIService } from "src/app/services/roi.service";
 import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
 import { SelectionOption, SelectionOptionsComponent, SelectionOptionsDialogData, SelectionOptionsDialogResult } from "src/app/UI/atoms/selection-changer/selection-options/selection-options.component";
 import { httpErrorToString, UNICODE_CARET_DOWN } from "src/app/utils/utils";
-import { SelectionComponent } from "src/app/UI/side-panel/tabs/selection/selection.component";
 
 
 @Component({
@@ -57,6 +57,7 @@ export class SelectionChangerComponent implements OnInit
         private _selectionService: SelectionService,
         private _datasetService: DataSetService,
         private _roiService: ROIService,
+        private _authService: AuthenticationService,
         public dialog: MatDialog
     )
     {
@@ -103,14 +104,19 @@ export class SelectionChangerComponent implements OnInit
         return this._leftText+" "+UNICODE_CARET_DOWN;
     }
 
-    onSelection(): void
+    onSelection(event): void
     {
         // User clicked on left side, show menu
         const dialogConfig = new MatDialogConfig();
         dialogConfig.backdropClass = "empty-overlay-backdrop";
 
         let dwellPMCs = this._datasetService.datasetLoaded.getDwellLocationIdxs();
-        dialogConfig.data = new SelectionOptionsDialogData(dwellPMCs.size > 0, this._subDataSetIDs, new ElementRef(event.currentTarget));
+        dialogConfig.data = new SelectionOptionsDialogData(
+            dwellPMCs.size > 0, // Only show dwell if me have any
+            !this._authService.isPublicUser$.value, // If user is public, we DON'T allow creation of ROI
+            this._subDataSetIDs,
+            new ElementRef(event.currentTarget)
+        );
 
         const dialogRef = this.dialog.open(SelectionOptionsComponent, dialogConfig);
 

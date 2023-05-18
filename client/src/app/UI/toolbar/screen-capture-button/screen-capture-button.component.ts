@@ -38,9 +38,6 @@ import { UserPromptDialogComponent, UserPromptDialogDropdownItem, UserPromptDial
 
 
 
-
-
-
 // Primarily exists so we can remove the use of these services from the main toolbar, and they are only used when the toolbar
 // needs these items shown. For example, this way we don't instantiate a view state service before loading a dataset
 @Component({
