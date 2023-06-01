@@ -316,7 +316,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
 
         if(expressions.length != 3)
         {
-            this.assignEmptyQuery(t0);
+            this.assignEmptyQuery(t0, corners);
         }
         else
         {
@@ -360,7 +360,7 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
                 (err)=>
                 {
                     console.error(httpErrorToString(err, "Ternary prepareData error"));
-                    this.assignEmptyQuery(t0);
+                    this.assignEmptyQuery(t0, corners);
                 }
             );
         }
@@ -411,8 +411,8 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
             // Did we find an error with this query?
                 if(queryData.queryResults[queryIdx+c].error)
                 {
-                    corners[c].errorMsgShort = queryData.queryResults[queryIdx+c].errorType;
-                    corners[c].errorMsgLong = queryData.queryResults[queryIdx+c].error;
+                    corners[c].errorMsgShort = queryData.queryResults[queryIdx+c].errorType || "";
+                    corners[c].errorMsgLong = queryData.queryResults[queryIdx+c].error || "";
 
                     console.log("Ternary encountered error with expression: "+exprIds[c]+", on region: "+roiId+", corner: "+(c == 0 ? "left" : (c == 1 ? "top": "right")));
                     continue;
@@ -478,12 +478,12 @@ export class TernaryPlotWidgetComponent implements OnInit, OnDestroy, CanvasDraw
         this.assignQueryResult(t0, pointGroups, corners, pmcLookup, queryWarnings);
     }
 
-    private assignEmptyQuery(t0: number)
+    private assignEmptyQuery(t0: number, corners: TernaryCorner[])
     {
         this.assignQueryResult(
             t0,
             [],
-            [],
+            corners,
             new Map<number, TernaryPlotPointIndex>(),
             [],
         );
