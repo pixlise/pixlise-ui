@@ -106,11 +106,10 @@ export class PIXLANGHelp extends SourceHelp
             detectors,
         ]));
 
-        help.addHelp(new FunctionHelp("spectrumDiff", "", "Retrieves the sum of counts between start and end channels, for the given detector", OriginID, [
+        help.addHelp(new FunctionHelp("spectrumDiff", "", "Retrieves the sum of the absolute difference in counts between Normal spectra for the A and B detector, within start and end channels.", OriginID, [
             new FunctionParamHelp("startChannel", "Start channel (0-4095)"),
             new FunctionParamHelp("endChannel", "End channel (0-4095)"),
-            new FunctionParamHelp("operation", "The operation to combine channel counts for a detector", ["max", "sum"]),
-            detectors,
+            new FunctionParamHelp("operation", "The operation to combine channel counts for a detector", ["max", "sum"])
         ]));
 
         let pseudoItem = new FunctionParamHelp("element", "The pseudo-intensity element");
