@@ -36,7 +36,6 @@ import { ContextImageItem, DataSet } from "src/app/models/DataSet";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataExpressionService } from "src/app/services/data-expression.service";
 import { DataSetService } from "src/app/services/data-set.service";
-import { DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { LayoutService } from "src/app/services/layout.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
@@ -106,7 +105,6 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
         private selectionService: SelectionService,
         private widgetDataService: WidgetRegionDataService,
         private envService: EnvConfigurationService,
-        private _diffractionService: DiffractionPeakService,
         public dialog: MatDialog,
         private _loadingSvc: LoadingIndicatorService,
         private _roiService: ROIService,
@@ -175,7 +173,6 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
             this.snackService,
             this.viewStateService,
             this.widgetDataService,
-            this._diffractionService,
             this.widgetPosition,
             this._loadingSvc,
             this._authService
