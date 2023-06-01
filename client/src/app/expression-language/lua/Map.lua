@@ -179,6 +179,18 @@ function Map.max(...)
     return op(Map.opMax, table.unpack({...}))
 end
 
+-- Returns a new map where each value is the abs of corresponding
+-- value in the map provided. Returns a new map of the
+-- same dimension an input map
+function Map.abs(m)
+    assert(type(m) == "table", makeAssertReport(m, "table"))
+    local values = {}
+    for k, v in ipairs(m[2]) do
+        values[k] = math.abs(v)
+    end
+    return {m[1], values}
+end
+
 -- Separate implementations because order matters
 
 local function opWithScalarRaw(m, s, scalarLeft, op)

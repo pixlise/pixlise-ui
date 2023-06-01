@@ -454,7 +454,7 @@ export class WidgetRegionDataService
 
         // The queries often will be for the same expression ID but for multiple regions. We run the (unique) expressions all at once
         // and then sort out which ROI the data are for
-        let queryByExprId = new Map<string, DataSourceParams[]>();
+        let uniqueExprIds = new Set<string>();
         for(let query of what)
         {
             // If we have a dataset ID specified, and it doesn't match our dataset ID we error out if the dataset is not a "combined" one.
@@ -471,17 +471,12 @@ export class WidgetRegionDataService
                 }
             }
 
-            if(!queryByExprId.has(query.exprId))
-            {
-                queryByExprId.set(query.exprId, []);
-            }
-
-            queryByExprId.get(query.exprId).push(query);
+            uniqueExprIds.add(query.exprId);
         }
 
         let exprRuns: DataExpression[] = [];
         let exprResult$: Observable<DataQueryResult>[] = [];
-        for(let [exprId, queries] of queryByExprId)
+        for(let exprId of uniqueExprIds)
         {
             // Get the expression
             let expr = this._exprService.getExpression(exprId);
@@ -489,48 +484,45 @@ export class WidgetRegionDataService
             {
                 let errorMsg = "Failed to retrieve expression: \""+exprId+"\"";
 
-                if(continueOnError)
-                {
-                    console.error("getData: "+errorMsg+". Ignored...");
-                    continue;
-                }
-
                 console.error("getData: "+errorMsg);
-                return of(new RegionDataResults([], errorMsg));
-            }
-
-            // Run the expression and remember the order in which we ran them...
-            exprRuns.push(expr);
-
-            // Check cache for already-run expression
-            let cachedResult = this._resultCache.getCachedResult(exprId, expr.modUnixTimeSec);
-            if(cachedResult !== null)
-            {
-                exprResult$.push(of(cachedResult));
+                //return of(new RegionDataResults([], errorMsg));
+                exprResult$.push(of(new DataQueryResult(null, false, [], null, "", "", null, errorMsg)));
             }
             else
             {
-                exprResult$.push(
-                    this.runAsyncExpression(expr, false).pipe(
-                        catchError(
-                            (err)=>
-                            {
-                                let errorMsg = httpErrorToString(err, "WidgetRegionDataService.getData catchError");
+                // Run the expression and remember the order in which we ran them...
+                exprRuns.push(expr);
 
-                                // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
-                                if(
-                                    errorMsg.indexOf("The currently loaded quantification does not contain data for detector") < 0 &&
-                                    errorMsg.indexOf("The currently loaded quantification does not contain column") < 0
-                                )
+                // Check cache for already-run expression
+                let cachedResult = this._resultCache.getCachedResult(exprId, expr.modUnixTimeSec);
+                if(cachedResult !== null)
+                {
+                    exprResult$.push(of(cachedResult));
+                }
+                else
+                {
+                    exprResult$.push(
+                        this.runAsyncExpression(expr, false).pipe(
+                            catchError(
+                                (err)=>
                                 {
-                                    SentryHelper.logMsg(true, errorMsg);
-                                }
+                                    let errorMsg = httpErrorToString(err, "WidgetRegionDataService.getData catchError");
 
-                                return of(new DataQueryResult(null, false, [], null, "", "", null, errorMsg));
-                            }
+                                    // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
+                                    if(
+                                        errorMsg.indexOf("The currently loaded quantification does not contain data for detector") < 0 &&
+                                        errorMsg.indexOf("The currently loaded quantification does not contain column") < 0
+                                    )
+                                    {
+                                        SentryHelper.logMsg(true, errorMsg);
+                                    }
+
+                                    return of(new DataQueryResult(null, false, [], null, "", "", null, errorMsg));
+                                }
+                            )
                         )
-                    )
-                );
+                    );
+                }
             }
         }
 
@@ -566,10 +558,13 @@ export class WidgetRegionDataService
         {
             // Get the expression that ran
             const expr = exprRuns[c];
-            const exprResult = exprResults[c];
+            if(expr)
+            {
+                const exprResult = exprResults[c];
 
-            exprResultById.set(expr.id, exprResult);
-            exprById.set(expr.id, expr);
+                exprResultById.set(expr.id, exprResult);
+                exprById.set(expr.id, expr);
+            }
         }
 
         // Now run through all the original query stuff, in that order, and apply the ROI and unit conversions

@@ -481,6 +481,16 @@ TestMap = {}
         lu.assertErrorMsgContains("expected table, got string: bob", Map.getValues, "bob")
     end
 
+    function TestMap:testMapAbs()
+        lu.assertErrorMsgContains("expected table, got number", Map.abs, 4)
+
+        local m = {{3,4,7},{3.5,-5.5,1.3}}
+        local result = Map.abs(m)
+        local expected = {{3,4,7},{3.5,5.5,1.3}}
+
+        lu.assertItemsEquals(result, expected)
+    end
+
 -- class TestMap
 
 

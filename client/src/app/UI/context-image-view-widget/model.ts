@@ -34,7 +34,6 @@ import { Point } from "src/app/models/Geometry";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { DataExpressionService } from "src/app/services/data-expression.service";
 import { DataSetService } from "src/app/services/data-set.service";
-import { DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { SelectionService } from "src/app/services/selection.service";
@@ -105,22 +104,21 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     constructor(
         private _contextImageVariant: string,
         toolSettings: ToolHostCreateSettings,
-        private _exprService: DataExpressionService,
-        private _moduleService: DataModuleService,
-        private _rgbMixService: RGBMixConfigService,
+        exprService: DataExpressionService,
+        moduleService: DataModuleService,
+        rgbMixService: RGBMixConfigService,
         private _selService: SelectionService,
         private _datasetService: DataSetService,
         public snackService: SnackService,
         public viewStateService: ViewStateService,
         public widgetDataService: WidgetRegionDataService,
-        private _diffractionService: DiffractionPeakService,
         public widgetPosition: string,
         private _loadingSvc: LoadingIndicatorService,
-        private _authService: AuthenticationService
+        authService: AuthenticationService
     )
     {
         this._toolHost = new ContextImageToolHost(toolSettings, this);
-        this._layerManager = new LayerManager(_exprService, _moduleService, _rgbMixService, widgetDataService, _authService);
+        this._layerManager = new LayerManager(exprService, moduleService, rgbMixService, widgetDataService, authService);
         this._regionManager = new RegionManager(widgetDataService);
     }
 

@@ -58,17 +58,6 @@ import { MatDialog } from "@angular/material/dialog";
 import { Clipboard } from "@angular/cdk/clipboard";
 
 
-export class PseudoIntensityRangeItem
-{
-    // These are assumed to be ready for display - if the chart
-    // is in channel mode, it should be equal to startCh/endCh but
-    // if the chart is calibrated, it should be in eV
-    public startForDisp: number = 0;
-    public endForDisp: number = 0;
-
-    constructor(public name: string, public startCh: number, public endCh: number) {}
-}
-
 export class SpectrumLineChoice
 {
     constructor(
@@ -149,7 +138,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     private _toolHost: SpectrumChartToolHost = null;
 
     // Display settings
-    private _showPseudoIntensityRanges: boolean = false;
     private _logScale: boolean = true;
     private _showXAsEnergy: boolean = true;
     private _shownElementPeakLabels: XRFLine[] = [];
@@ -204,8 +192,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     private _xrfeVUpperBound: number;
 
     private _chartArea: Rect = new Rect(0, 0, 0, 0);
-
-    private _pseudoRangesShown: PseudoIntensityRangeItem[] = [];
 
     private _diffractionPeaksShown: DiffractionPeak[] = [];
 
@@ -513,11 +499,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         return this._energyCalibrationManager;
     }
 
-    get showPseudoIntensityRanges(): boolean
-    {
-        return this._showPseudoIntensityRanges;
-    }
-
     get yAxislogScale(): boolean
     {
         return this._logScale;
@@ -782,12 +763,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     }
 
     // Setting display options
-    setShowPseudoIntensityRanges(show: boolean): void
-    {
-        this._showPseudoIntensityRanges = show;
-        this.clearDisplayData();
-    }
-
     setYAxisLogScale(logScale: boolean): void
     {
         this._logScale = logScale;
@@ -1539,18 +1514,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
         this._xAxis.updateAxis(viewport, this._drawTransform);
         this._yAxis.updateAxis(viewport, this._drawTransform);
-
-        let rangeData: PseudoIntensityRangeItem[] = [];
-        if(this._showPseudoIntensityRanges)
-        {
-            let dataset = this._datasetService.datasetLoaded;
-            for(let item of dataset.experiment.getPseudoIntensityRangesList())
-            {
-                rangeData.push(new PseudoIntensityRangeItem(item.getName(), item.getChannelStart(), item.getChannelEnd()));
-            }
-        }
-
-        this._pseudoRangesShown = rangeData;
     }
 
     clearDisplayData()
