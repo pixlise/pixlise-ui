@@ -34,7 +34,7 @@ import { Point, Rect } from "src/app/models/Geometry";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { ViewStateService } from "src/app/services/view-state.service";
 import { IconButtonState } from "src/app/UI/atoms/buttons/icon-button/icon-button.component";
-import { CanvasExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
+import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
 import { KeyItem } from "../../atoms/widget-key-display/widget-key-display.component";
 import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
 import { ExportDrawer } from "../drawers/export-drawer";
@@ -219,6 +219,8 @@ export class ContextImageToolbarComponent implements OnInit
     {
         if(this._contextImageService && this._contextImageService.mdl)
         {
+            const footprintCoordsID = "Footprint Coordinates";
+
             let visibleROIs = this._contextImageService.mdl.regionManager.getRegionsForDraw().filter(roi => roi.isVisible());
             let colourScale = this._contextImageService.mdl.toolHost.getMapColourScaleDrawer() as MapColourScale;
             let activeColourScale = colourScale && colourScale.channelScales.length > 0;
@@ -228,6 +230,7 @@ export class ContextImageToolbarComponent implements OnInit
                 new PlotExporterDialogOption("Visible Colour Scale", true, true, { type: "checkbox", disabled: !activeColourScale }),
                 new PlotExporterDialogOption("Standard Size Image", true),
                 new PlotExporterDialogOption("Large Image", true),
+                new PlotExporterDialogOption(footprintCoordsID, true),
             ];
 
             const dialogConfig = new MatDialogConfig();
@@ -239,6 +242,7 @@ export class ContextImageToolbarComponent implements OnInit
                 {
                     let optionLabels = options.map(option => option.label);
                     let canvases: CanvasExportItem[] = [];
+                    let csvItems: CSVExportItem[] = [];
 
                     let showKey = optionLabels.indexOf("Visible Key") > -1;
                     let showColourScale = optionLabels.indexOf("Visible Colour Scale") > -1;
@@ -282,11 +286,26 @@ export class ContextImageToolbarComponent implements OnInit
                         ));
                     }
 
-                    dialogRef.componentInstance.onDownload(canvases, []);
+                    if(optionLabels.indexOf(footprintCoordsID) > -1)
+                    {
+                        let coords = "\"hull_count\", \"x\", \"y\"\n";
+
+                        let c = 1;
+                        for(let hull of this._contextImageService.mdl.dataset.wholeFootprintHullPoints)
+                        {
+                            for(let pt of hull)
+                            {
+                                coords += c+", "+pt.x+", "+pt.y+"\n";
+                            }
+                            c++;
+                        }
+                        csvItems.push(new CSVExportItem(footprintCoordsID, coords));
+                    }
+
+                    dialogRef.componentInstance.onDownload(canvases, csvItems);
                 });
 
             return dialogRef.afterClosed();
         }
     }
-
 }
