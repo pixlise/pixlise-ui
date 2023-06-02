@@ -60,6 +60,7 @@ export class LUAHelp extends SourceHelp
 
     private loadBuiltinHelp(): void
     {
+        // Lua global functions
         const OriginID = "";
         this.addHelp(
             new FunctionHelp("print", "", "Print a string or value to the Logs view", OriginID, 
@@ -109,6 +110,184 @@ export class LUAHelp extends SourceHelp
         this.addHelp(
             new FunctionHelp("select", "", "Returns the value at the given index in the given table", OriginID,
                 [new FunctionParamHelp("index", "The index to get"), new FunctionParamHelp("table", "The table to get from")])
+        );
+
+        // Lua math lib
+
+        const mathHelp = [
+            ["abs", "Returns the absolute value of x."],
+            ["acos", "Returns the arc cosine of x (in radians)."],
+            ["asin", "Returns the arc cosine of x (in radians)."],
+            ["atan", "Returns the arc cosine of x (in radians)."],
+            ["ceil", "Returns the smallest integer larger than or equal to x."],
+            ["cos", "Returns the cosine of x (assumed to be in radians)."],
+            ["cosh", "Returns the hyperbolic cosine of x."],
+            ["deg", "Returns the angle x (given in radians) in degrees."],
+            ["exp", "Returns the value e power x."],
+            ["floor", "Returns the largest integer smaller than or equal to x."],
+            ["frexp", "Returns m and e such that x = m2e, e is an integer and the absolute value of m is in the range [0.5, 1) (or zero when x is zero)."],
+            ["log", "Returns the natural logarithm of x."],
+            ["log10", "Returns the base-10 logarithm of x."],
+            ["modf", "Returns two numbers, the integral part of x and the fractional part of x."],
+            ["rad", "Returns the angle x (given in degrees) in radians."],
+            ["randomseed", "Sets x as the \"seed\" for the pseudo-random generator: equal seeds produce equal sequences of numbers."],
+            ["sin", "Returns the sine of x (assumed to be in radians)."],
+            ["sinh", "Returns the hyperbolic sine of x."],
+            ["sqrt", "Returns the square root of x. (You can also use the expression x^0.5 to compute this value.)"],
+            ["tan", "Returns the tangent of x (assumed to be in radians)."],
+            ["tanh", "Returns the hyperbolic tangent of x."],
+        ];
+
+        for(let item of mathHelp)
+        {
+            this.addHelp(
+                new FunctionHelp(item[0], "math", item[1], OriginID,
+                    [new FunctionParamHelp("x", "Numerical value")]
+                )
+            );
+        }
+
+        this.addHelp(
+            new FunctionHelp("atan2", "math", "Returns the arc tangent of y/x (in radians), but uses the signs of both parameters to find the quadrant of the result. (It also handles correctly the case of x being zero.)", OriginID,
+                [new FunctionParamHelp("y", "Numerical value"), new FunctionParamHelp("x", "Numerical value")]
+            )
+        );
+
+        this.addHelp(
+            new FunctionHelp("fmod", "math", "Returns the remainder of the division of x by y that rounds the quotient towards zero.", OriginID,
+                [new FunctionParamHelp("x", "Numerical value"), new FunctionParamHelp("y", "Numerical value")]
+            )
+        );
+
+        this.addHelp(
+            new FunctionHelp("ldexp", "math", "Returns m2e (e should be an integer).", OriginID,
+                [new FunctionParamHelp("m", "Numerical value"), new FunctionParamHelp("e", "Numerical value")]
+            )
+        );
+
+        this.addHelp(
+            new FunctionHelp("fmod", "math", "Returns the remainder of the division of x by y that rounds the quotient towards zero.", OriginID,
+                [new FunctionParamHelp("x", "Numerical value"), new FunctionParamHelp("y", "Numerical value")]
+            )
+        );
+
+        this.addHelp(
+            new FunctionHelp("pow", "math", "Returns x to the power of y. (You can also use the expression x^y to compute this value.)", OriginID,
+                [new FunctionParamHelp("x", "Numerical value"), new FunctionParamHelp("y", "Numerical value")]
+            )
+        );
+
+        this.addHelp(
+            new FunctionHelp("max", "math", "Returns the maximum value among its arguments.", OriginID,
+                [new FunctionParamHelp("x", "Numerical value"), new FunctionParamHelp("...", "Any number of other numerical values")]
+            )
+        );
+
+        this.addHelp(
+            new FunctionHelp("min", "math", "Returns the minimum value among its arguments.", OriginID,
+                [new FunctionParamHelp("x", "Numerical value"), new FunctionParamHelp("...", "Any number of other numerical values")]
+            )
+        );
+
+        this.addHelp(
+            new FunctionHelp("random", "math", "This function is an interface to the simple pseudo-random generator function rand provided by ANSI C.When called without arguments, returns a uniform pseudo-random real number in the range [0,1). When called with an integer number m, math.random returns a uniform pseudo-random integer in the range [1, m]. When called with two integer numbers m and n, math.random returns a uniform pseudo-random integer in the range [m, n].", OriginID,
+                [new FunctionParamHelp("[m [, n]]", "Optional parameters")]
+            )
+        );
+
+        this.addConstHelp("math", new Map<string, string>([
+            ["huge", "The value HUGE_VAL, a value larger than or equal to any other numerical value."],
+            ["pi", "The value of pi."],
+        ]));
+
+        // Lua string lib
+        this.addHelp(
+            new FunctionHelp("upper", "string", "Returns a upper case representation of the argument.", OriginID,
+                [new FunctionParamHelp("s", "String")]
+            )
+        );
+        this.addHelp(
+            new FunctionHelp("lower", "string", "Returns a lower case representation of the argument.", OriginID,
+                [new FunctionParamHelp("s", "String")]
+            )
+        );
+        this.addHelp(
+            new FunctionHelp("reverse", "string", "Returns a string by reversing the characters of the passed string.", OriginID,
+                [new FunctionParamHelp("s", "String")]
+            )
+        );
+        this.addHelp(
+            new FunctionHelp("len", "string", "Returns the length of the passed string.", OriginID,
+                [new FunctionParamHelp("s", "String")]
+            )
+        );
+        this.addHelp(
+            new FunctionHelp("find", "string", "Returns the start index and end index of the findString in the main string and nil if not found.", OriginID,
+                [
+                    new FunctionParamHelp("mainString", "String"),
+                    new FunctionParamHelp("findString", "String"),
+                    new FunctionParamHelp("optionalStartIndex", "Number"),
+                    new FunctionParamHelp("optionalEndIndex", "Number")
+                ]
+            )
+        );
+        this.addHelp(
+            new FunctionHelp("gsub", "string", "Returns a string by replacing occurrences of findString with replaceString.", OriginID,
+                [
+                    new FunctionParamHelp("mainString", "String"),
+                    new FunctionParamHelp("findString", "String"),
+                    new FunctionParamHelp("replaceString", "String")
+                ]
+            )
+        );
+        this.addHelp(
+            new FunctionHelp("format", "string", "Returns a formatted string.", OriginID,
+                [
+                    new FunctionParamHelp("...", "Variable parameters")
+                ]
+            )
+        );
+        this.addHelp(
+            new FunctionHelp("char", "string", "Returns internal character representations of input argument.", OriginID,
+                [new FunctionParamHelp("arg", "String")]
+            )
+        );
+        this.addHelp(
+            new FunctionHelp("byte", "string", "Returns internal numeric representations of input argument.", OriginID,
+                [new FunctionParamHelp("arg", "String")]
+            )
+        );
+        this.addHelp(
+            new FunctionHelp("rep", "string", "Returns a string by repeating the same string n number times.", OriginID,
+                [new FunctionParamHelp("arg", "String to repeat"), new FunctionParamHelp("n", "Number of times")]
+            )
+        );
+
+        // Lua table lib
+        this.addHelp(
+            new FunctionHelp("maxn", "table", "Returns the largest positive numerical index of the given table, or zero if the table has no positive numerical indices. (To do its job this function does a linear traversal of the whole table.)", OriginID,
+                [new FunctionParamHelp("arg", "Table to check")]
+            )
+        );
+        this.addHelp(
+            new FunctionHelp("sort", "table", "Sorts table elements in a given order, in-place, from table[1] to table[n], where n is the length of the table. If comp is given, then it must be a function that receives two table elements, and returns true when the first is less than the second (so that not comp(a[i+1],a[i]) will be true after the sort). If comp is not given, then the standard Lua operator < is used instead. The sort algorithm is not stable; that is, elements considered equal by the given order may have their relative positions changed by the sort.", OriginID,
+                [new FunctionParamHelp("arg", "Table to sort"), new FunctionParamHelp("comp", "Comparator function (optional)")]
+            )
+        );
+        this.addHelp(
+            new FunctionHelp("remove", "table", "Removes from table the element at position pos, shifting down other elements to close the space, if necessary. Returns the value of the removed element. The default value for pos is n, where n is the length of the table, so that a call table.remove(t) removes the last element of table t.", OriginID,
+                [new FunctionParamHelp("arg", "Table to remove from"), new FunctionParamHelp("pos", "Removal index (optional)")]
+            )
+        );
+        this.addHelp(
+            new FunctionHelp("insert", "table", "Inserts element value at position pos in table, shifting up other elements to open space, if necessary. The default value for pos is n+1, where n is the length of the table. So calling insert(t, v) inserts v at the end of the table t.", OriginID,
+                [new FunctionParamHelp("arg", "Table to insert into"), new FunctionParamHelp("pos", "Insertion index (optional)"), new FunctionParamHelp("val", "Value to insert")]
+            )
+        );
+        this.addHelp(
+            new FunctionHelp("concat", "table", "Given an array where all elements are strings or numbers, returns table[i]..sep..table[i+1] ··· sep..table[j]. The default value for sep is the empty string, the default for i is 1, and the default for j is the length of the table. If i is greater than j, returns the empty string.", OriginID,
+                [new FunctionParamHelp("arg", "Table to insert into"), new FunctionParamHelp("[, sep [, i [, j]]]", "Optional separators, indexes")]
+            )
         );
     }
 

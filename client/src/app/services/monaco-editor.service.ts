@@ -346,7 +346,7 @@ export class MonacoEditorService
         let moduleName = p.rfindModuleName(searchTextLines);
         if(moduleName.length > 0)
         {
-            return this.showModuleFunctionsCompletion(moduleName, helpSource, range);
+            return this.showModuleItemCompletion(moduleName, helpSource, range);
         }
 
         return this.showGlobalCompletion(helpSource, range);
@@ -381,7 +381,7 @@ export class MonacoEditorService
         return {suggestions: result};
     }
 
-    private showModuleFunctionsCompletion(moduleName: string, helpSource: SourceHelp, range)
+    private showModuleItemCompletion(moduleName: string, helpSource: SourceHelp, range)
     {
         let monaco = this.monaco;
         let result/*: CompletionItem[]*/ = [];
@@ -398,6 +398,23 @@ export class MonacoEditorService
                     kind: monaco.languages.CompletionItemKind.Function,
                     insertText: modItem.name,
                     detail: modItem.doc,
+                    //documentation: item.doc,
+                    insertTextRules:
+                        monaco.languages.CompletionItemInsertTextRule
+                            .InsertAsSnippet,
+                    range: range,
+                    //commitCharacters: ["("],
+                });
+            }
+
+            let consts = helpSource.getCompletionConstants(mods[0].name);
+            for(let [constName, constDesc] of consts.entries())
+            {
+                result.push({
+                    label: constName,
+                    kind: monaco.languages.CompletionItemKind.Constant,
+                    insertText: constName,
+                    detail: constDesc,
                     //documentation: item.doc,
                     insertTextRules:
                         monaco.languages.CompletionItemInsertTextRule
@@ -442,7 +459,7 @@ export class MonacoEditorService
                 label: item.name,
                 // Another option would've been .Class
                 // See: https://microsoft.github.io/monaco-editor/typedoc/enums/languages.CompletionItemKind.html
-                kind: monaco.languages.CompletionItemKind.Module,   
+                kind: monaco.languages.CompletionItemKind.Module,
                 insertText: item.name,
                 detail: item.doc,
                 //documentation: item.doc,
