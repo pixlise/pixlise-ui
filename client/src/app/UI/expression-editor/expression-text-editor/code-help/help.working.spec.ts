@@ -68,6 +68,15 @@ describe("SourceContextParser.rfindFunctionNameAndParams", () =>
         expect(p.rfindFunctionNameAndParams("element(add(12, 45), \"something\", ")).toEqual(new NameAndParamResult("element", ["add(12, 45)", "\"something\""], ""));
         expect(p.rfindFunctionNameAndParams("element(\"param1\", add(12, 45),")).toEqual(new NameAndParamResult("element", ["\"param1\"", "add(12, 45)"], ""));
         expect(p.rfindFunctionNameAndParams("s = data(\"Fe\", \"%\", \"A\")  element(\"CaO\", \"%\",")).toEqual(new NameAndParamResult("element", ["\"CaO\"", "\"%\""], ""));
+        expect(p.rfindFunctionNameAndParams("s=data(\"Fe\", \"%\",")).toEqual(new NameAndParamResult("data", ["\"Fe\"", "\"%\""], ""));
+        expect(p.rfindFunctionNameAndParams("s=2+data(\"Fe\", \"%\",")).toEqual(new NameAndParamResult("data", ["\"Fe\"", "\"%\""], ""));
+        expect(p.rfindFunctionNameAndParams("s=2/data(\"Fe\", \"%\",")).toEqual(new NameAndParamResult("data", ["\"Fe\"", "\"%\""], ""));
+        expect(p.rfindFunctionNameAndParams("s=2*data(\"Fe\", \"%\",")).toEqual(new NameAndParamResult("data", ["\"Fe\"", "\"%\""], ""));
+        expect(p.rfindFunctionNameAndParams("s=2-data(\"Fe\", \"%\",")).toEqual(new NameAndParamResult("data", ["\"Fe\"", "\"%\""], ""));
+        expect(p.rfindFunctionNameAndParams("s=2^data(\"Fe\", \"%\",")).toEqual(new NameAndParamResult("data", ["\"Fe\"", "\"%\""], ""));
+
+        // NOTE: this fails to find a break... and we're ok with that for now
+        expect(p.rfindFunctionNameAndParams("s=2#data(\"Fe\", \"%\",")).toEqual(new NameAndParamResult("2#data", ["\"Fe\"", "\"%\""], ""));
     });
 });
 
