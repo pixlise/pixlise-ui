@@ -210,11 +210,27 @@ export class SourceContextParser
                             currMark = c;
                         }
                     }
-                    else if(ch == " " || ch == "\t" || c == 0)
+                    // Anything that can be before a module or function name
+                    // Eg " " in: v = func()
+                    // Eg "\t" in: v =  func()
+                    // Eg we're at the start of string already in: func()
+                    // Eg "=" in: v=func()
+                    // Eg "/" in: x=v/func()
+                    // Eg "*" in: x=2*func()
+                    // Eg "+" in: x=2+func()
+                    // Eg "-" in: x=2-func()
+                    // Eg "^" in: x=2^func()
+                    // NOTE: All of the above apply if we had mod.func() instead of func()! 
+                    else if(c == 0 || " \t=/*+-^".indexOf(ch) > -1)
                     {
                         if(bracketDepth < 0)
                         {
-                            result.funcName = this.cleanParam(text.substring(c, currMark));
+                            let startIdx = c;
+                            if("=/*+-^".indexOf(ch) > -1)
+                            {
+                                startIdx++;
+                            }
+                            result.funcName = this.cleanParam(text.substring(startIdx, currMark));
                             break;
                         }
                     }
@@ -362,6 +378,7 @@ export class HelpSignature
 export class SourceHelp
 {
     private _allHelp = new Map<string, FunctionHelp>();
+    private _constHelp = new Map<string, Map<string, string>>();
     protected _keywords: string[] = [];
 
     constructor(public commentStartToken: string)
@@ -372,6 +389,11 @@ export class SourceHelp
     {
         let fullName = h.moduleName.length > 0 ? h.moduleName+"."+h.name : h.name;
         this._allHelp.set(fullName, h);
+    }
+
+    addConstHelp(modName: string, consts: Map<string, string>)
+    {
+        this._constHelp.set(modName, consts);
     }
 
     clearHelp(originID: string): void
@@ -396,6 +418,11 @@ export class SourceHelp
         return this._keywords;
     }
 
+    getConstants(): string[]
+    {
+        return Array.from(this._constHelp.keys());
+    }
+
     getCompletionFunctions(moduleName: string): HelpCompletionItem[]
     {
         let result: HelpCompletionItem[] = [];
@@ -409,6 +436,17 @@ export class SourceHelp
         }
 
         return result;
+    }
+
+    getCompletionConstants(moduleName: string): Map<string, string>
+    {
+        let consts = this._constHelp.get(moduleName);
+        if(!consts)
+        {
+            return new Map<string, string>();
+        }
+
+        return consts;
     }
 
     // Blank input returns all modules
