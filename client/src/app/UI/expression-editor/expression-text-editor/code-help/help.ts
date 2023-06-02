@@ -362,6 +362,7 @@ export class HelpSignature
 export class SourceHelp
 {
     private _allHelp = new Map<string, FunctionHelp>();
+    private _constHelp = new Map<string, Map<string, string>>();
     protected _keywords: string[] = [];
 
     constructor(public commentStartToken: string)
@@ -372,6 +373,11 @@ export class SourceHelp
     {
         let fullName = h.moduleName.length > 0 ? h.moduleName+"."+h.name : h.name;
         this._allHelp.set(fullName, h);
+    }
+
+    addConstHelp(modName: string, consts: Map<string, string>)
+    {
+        this._constHelp.set(modName, consts);
     }
 
     clearHelp(originID: string): void
@@ -396,6 +402,11 @@ export class SourceHelp
         return this._keywords;
     }
 
+    getConstants(): string[]
+    {
+        return Array.from(this._constHelp.keys());
+    }
+
     getCompletionFunctions(moduleName: string): HelpCompletionItem[]
     {
         let result: HelpCompletionItem[] = [];
@@ -409,6 +420,17 @@ export class SourceHelp
         }
 
         return result;
+    }
+
+    getCompletionConstants(moduleName: string): Map<string, string>
+    {
+        let consts = this._constHelp.get(moduleName);
+        if(!consts)
+        {
+            return new Map<string, string>();
+        }
+
+        return consts;
     }
 
     // Blank input returns all modules
