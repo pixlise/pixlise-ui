@@ -210,11 +210,27 @@ export class SourceContextParser
                             currMark = c;
                         }
                     }
-                    else if(ch == " " || ch == "\t" || c == 0)
+                    // Anything that can be before a module or function name
+                    // Eg " " in: v = func()
+                    // Eg "\t" in: v =  func()
+                    // Eg we're at the start of string already in: func()
+                    // Eg "=" in: v=func()
+                    // Eg "/" in: x=v/func()
+                    // Eg "*" in: x=2*func()
+                    // Eg "+" in: x=2+func()
+                    // Eg "-" in: x=2-func()
+                    // Eg "^" in: x=2^func()
+                    // NOTE: All of the above apply if we had mod.func() instead of func()! 
+                    else if(c == 0 || " \t=/*+-^".indexOf(ch) > -1)
                     {
                         if(bracketDepth < 0)
                         {
-                            result.funcName = this.cleanParam(text.substring(c, currMark));
+                            let startIdx = c;
+                            if("=/*+-^".indexOf(ch) > -1)
+                            {
+                                startIdx++;
+                            }
+                            result.funcName = this.cleanParam(text.substring(startIdx, currMark));
                             break;
                         }
                     }

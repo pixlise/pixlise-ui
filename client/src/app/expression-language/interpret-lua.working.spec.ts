@@ -106,7 +106,7 @@ describe("LuaDataQuerier parseLuaError()", () =>
     });
 });
 
-fdescribe("LuaDataQuerier runQuery()", ()=>
+describe("LuaDataQuerier runQuery()", ()=>
 {
     it("should run simple func returning string", (done)=> 
     {
