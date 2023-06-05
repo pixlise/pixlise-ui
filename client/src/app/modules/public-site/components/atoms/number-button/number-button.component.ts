@@ -129,7 +129,7 @@ export class NumberButtonComponent implements OnInit
             else if(this.params.link.startsWith(SignupPrefix))
             {
                 let redir = this.params.link.substring(SignupPrefix.length);
-                this._authService.login(redir, false);
+                this._authService.login(redir, true);
             }
             else
             {
