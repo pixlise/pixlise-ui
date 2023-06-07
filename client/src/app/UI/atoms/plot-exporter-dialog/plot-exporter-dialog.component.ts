@@ -285,8 +285,8 @@ export class PlotExporterDialogComponent implements OnInit
     {
         let zip = new JSZip();
 
-        csvItems.forEach(item => zip.folder("csvs").file(`${item.name}.csv`, item.data));
-        txtItems.forEach(item => zip.folder("txts").file(`${item.name}.txt`, item.data));
+        csvItems.forEach(item => item?.name && item?.data && zip.folder("csvs").file(`${item?.name}.csv`, item.data));
+        txtItems.forEach(item => item?.name && item?.data && zip.folder("txts").file(`${item?.name}.txt`, item.data));
         canvasItems.forEach(item =>
         {
             zip.folder("plots").file(`${item.name}.png`, item.canvas.toDataURL("image/png").split(",")[1], {base64: true});
