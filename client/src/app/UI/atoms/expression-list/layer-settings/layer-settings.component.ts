@@ -29,7 +29,7 @@
 
 import { Component, ElementRef, Input, OnInit, Output, EventEmitter } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Observable, Subscription, combineLatest } from "rxjs";
+import { Observable, Subscription, combineLatest, of } from "rxjs";
 import { map } from "rxjs/operators";
 import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
 import { AuthenticationService } from "src/app/services/authentication.service";
@@ -883,6 +883,11 @@ export class LayerSettingsComponent implements OnInit
                             )
                         );
                     }
+                }
+
+                if(csvs$.length <= 0)
+                {
+                    csvs$.push(of(null));
                 }
 
                 let csvsFinished$ = combineLatest(csvs$);
