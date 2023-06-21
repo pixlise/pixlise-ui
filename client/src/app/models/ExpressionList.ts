@@ -335,7 +335,13 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
 
         for(let item of items)
         {
-            store.addLayer(makeLayer(item));
+            let layer = makeLayer(item);
+            if(!layer)
+            {
+                console.error("Could not make layer during makeLayers", item)
+                continue;
+            }
+            store.addLayer(layer);
         }
 
         // Run through the layers in the same order as makeExpressionList and form them
@@ -707,10 +713,18 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
             {
                 let expr = exprLookup.get(orderedGroup[0]);
                 let layer = makeLayer(expr);
-                result.push(new LayerInfo(layer, orderedGroup.slice(1)));
-
-                // This is going to become the sub-layer list owner!
-                out_subLayerOwnerIDs.push(expr.id);
+                if(!layer)
+                {
+                    console.error("Could not make layer during extractMainExpressionsWithSubLayers for:", expr);
+                }
+                else
+                {
+                    result.push(new LayerInfo(layer, orderedGroup.slice(1)));
+    
+                    // This is going to become the sub-layer list owner!
+                    out_subLayerOwnerIDs.push(expr.id);
+                }
+                    
             }
         };
 
@@ -793,6 +807,11 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
             if(expr)
             {
                 let layer = makeLayer(expr);
+                if(!layer)
+                {
+                    console.error("Could not make layer during includeElementRelatedBuiltInExpressions for:", expr);
+                    continue;
+                }
                 list.push(new LayerInfo(layer, subLayers));
 
                 out_subLayerOwnerIDs.push(ordered[0]);
@@ -869,12 +888,17 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         let layers: LayerInfo[] = [];
         for(let item of items)
         {
-            if(!this.showUnsavedExpressions && item?.id?.startsWith(DataExpressionId.UnsavedExpressionPrefix))
+            if(!this.showUnsavedExpressions && !item?.id || item.id.startsWith(DataExpressionId.UnsavedExpressionPrefix))
             {
                 continue;
             }
 
             let layer = makeLayer(item);
+            if(!layer)
+            {
+                console.error("Could not make layer during getItems for:", item);
+                continue;
+            }
             layer.isOutOfDate = !item?.isModuleListUpToDate || false;
             layers.push(new LayerInfo(layer, []));
         }
@@ -893,6 +917,11 @@ export class ExpressionListBuilder extends ExpressionListGroupNames
         for(let item of items)
         {
             let layer = makeLayer(item);
+            if(!layer)
+            {
+                console.error("Could not make layer during getRGBItems for:", item);
+                continue;
+            }
             result.push(
                 new RGBLayerInfo(
                     layer,

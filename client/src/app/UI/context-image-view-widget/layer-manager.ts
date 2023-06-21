@@ -190,9 +190,16 @@ export class LayerManager
             {
                 // Look it up in our list that we created earlier
                 let layer = this._layers.getLayerById(source.id);
+
+                // HACK: This is a hack to fix a bug where we get a layer that doesn't exist in our list. This will be cleaned up in v4
+                // This code ideally should never be triggered, but has been seen in prod, possibly do to caching?
                 if(!layer)
                 {
-                    throw new Error("makeExpressionList failed for unknown id: "+source.id);
+                    console.error("makeExpressionList failed for unknown id:", source.id);
+                    SentryHelper.logException("makeExpressionList failed for unknown id: "+source.id, "LayerManager");
+                    // throw new Error("makeExpressionList failed for unknown id: "+source.id);
+
+                    return null;
                 }
                 return layer;
             }
