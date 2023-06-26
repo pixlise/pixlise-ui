@@ -31,23 +31,20 @@ import { HttpHeaders } from "@angular/common/http";
 //import { throwError, of } from 'rxjs';
 
 
-export function makeHeaders(): object
-{
+export function makeHeaders(): object {
     const httpOptions = {
         headers: new HttpHeaders({
-            "Content-Type":  "application/json",
+            "Content-Type": "application/json",
             //'Authorization': 'Bearer '+this.authService.getTokenSilently$()
         })
     };
     return httpOptions;
 }
 
-export class APIPaths
-{
-    private static _apiURL: string = "";
-    public static setAPIUrl(url: string)
-    {
-        APIPaths._apiURL = url;
+export class APIPaths {
+    public static apiURL: string = "";
+    public static setAPIUrl(url: string) {
+        APIPaths.apiURL = url;
     }
 
     public static readonly api_detector_config = "detector-config";
@@ -73,8 +70,7 @@ export class APIPaths
     public static readonly api_tags = "tags";
 
     // path should be one of the above, or the above with more stuff added to it, making sure / are included!
-    public static getWithHost(path: string): string
-    {
-        return APIPaths._apiURL+path;
+    public static getWithHost(path: string): string {
+        return APIPaths.apiURL + path;
     }
 }

@@ -60,7 +60,8 @@ import { TeamListComponent } from "./components/atoms/team-list/team-list.compon
 
 
 const APP_ROUTES: Routes = [
-    { path: "public", component: PublicPageComponent,
+    {
+        path: "public", component: PublicPageComponent,
         children: [
             { path: "", redirectTo: LandingRouteName, pathMatch: 'full' },
             { path: LandingRouteName, component: LandingPageComponent },
@@ -104,6 +105,5 @@ const APP_ROUTES: Routes = [
         RouterModule.forChild(APP_ROUTES)
     ]
 })
-export class PublicSiteModule
-{
+export class PublicSiteModule {
 }

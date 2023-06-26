@@ -29,15 +29,12 @@
 
 export const DefaultLoggedInLink = "/datasets";
 
-export class NavigationItem
-{
-    constructor(public label: string, public link: string)
-    {
-    } 
+export class NavigationItem {
+    constructor(public label: string, public link: string) {
+    }
 }
 
-export class Navigation
-{
+export class Navigation {
     public categories = ["Features", "Get Started", "About Us"];
 
     private _categoryRoots = new Map<string, string>([
@@ -64,19 +61,14 @@ export class Navigation
         ]]
     ]);
 
-    public getItems(category: string): NavigationItem[]
-    {
-        return this._categoryItems.get(category);
+    public getItems(category: string): NavigationItem[] {
+        return this._categoryItems.get(category) || [];
     }
 
-    public getCategoryByLink(link: string): string
-    {
-        for(let [cat, items] of this._categoryItems)
-        {
-            for(let nav of items)
-            {
-                if(nav.link.startsWith(link))
-                {
+    public getCategoryByLink(link: string): string {
+        for (let [cat, items] of this._categoryItems) {
+            for (let nav of items) {
+                if (nav.link.startsWith(link)) {
                     return cat;
                 }
             }
@@ -84,8 +76,7 @@ export class Navigation
         return "";
     }
 
-    public getRootLink(category: string)
-    {
+    public getRootLink(category: string) {
         return this._categoryRoots.get(category);
     }
 }

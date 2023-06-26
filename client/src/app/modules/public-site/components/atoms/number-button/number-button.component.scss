@@ -27,104 +27,106 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import '../../../scss/public-site.scss';
+@import "../../../scss/public-site.scss";
 
 .number-button {
+  // display: inline-block;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  user-select: none;
+
+  border-radius: $sz-half;
+  text-decoration: none;
+
+  img {
+    padding: 0px $sz-unit;
     display: inline-block;
-    white-space: nowrap;
-    user-select: none;
+    border-left: #424241 1px solid;
+  }
 
-    border-radius: $sz-half;
-    text-decoration: none;
+  .label {
+    padding: 0 $sz-double;
+    text-transform: uppercase;
+    display: inline-block;
+    line-height: 28px;
+  }
 
-    img {
-        padding: 0px $sz-unit;
-        display: inline-block;
-        border-left: #424241 1px solid;
+  .prefix {
+    background-color: rgba(black, 0.1);
+  }
+
+  .chevron {
+    padding: 0 16px;
+    font-size: 1.5em;
+    display: inline-block;
+  }
+
+  &.yellow {
+    border: $clr-yellow 1px solid;
+    color: $clr-yellow;
+
+    .sep {
+      border-left: $clr-yellow 1px solid;
     }
+  }
 
-    .label {
-        padding: $sz-half $sz-double;
-        text-transform: uppercase;
-        display: inline-block;
+  &.white {
+    border: $clr-gray-10 1px solid;
+    color: $clr-gray-10;
+
+    .sep {
+      border-left: $clr-gray-10 1px solid;
     }
+  }
 
-    .prefix {
-        background-color: rgba(black, 0.1);
+  &.white-solid {
+    background-color: $clr-gray-10;
+    color: $clr-gray-100;
+
+    .sep {
+      border-left: $clr-gray-100 1px solid;
     }
+  }
 
-    .chevron {
-        padding: 1px $sz-double 8px $sz-double;
-        font-size: 1.5em;
-        display: inline-block;
+  &.red-solid {
+    padding: 1px;
+    background-color: $clr-red;
+    color: $clr-gray-10;
+
+    .sep {
+      border-left: $clr-gray-10 1px solid;
     }
+  }
 
-    &.yellow {
-        border: $clr-yellow 1px solid;
-        color: $clr-yellow;
+  &.black {
+    border: $clr-gray-100 1px solid;
+    color: $clr-gray-100;
 
-        .sep {
-            border-left: $clr-yellow 1px solid;
-        }
+    .sep {
+      border-left: $clr-gray-100 1px solid;
     }
+  }
 
-    &.white {
-        border: $clr-gray-10 1px solid;
-        color: $clr-gray-10;
+  &.red {
+    border: $clr-red 1px solid;
+    color: $clr-red;
 
-        .sep {
-            border-left: $clr-gray-10 1px solid;
-        }
+    .sep {
+      border-left: $clr-red 1px solid;
     }
+  }
 
-    &.white-solid {
-        background-color: $clr-gray-10;
-        color: $clr-gray-100;
+  &.red-shadow {
+    @extend .red;
+    box-shadow: 0px $sz-half $sz-unit $clr-gray-50;
+  }
 
-        .sep {
-            border-left: $clr-gray-100 1px solid;
-        }
+  &.gray-no-border {
+    color: $clr-gray-30;
+
+    .sep {
+      border-left: $clr-gray-30 1px solid;
     }
-
-    &.red-solid {
-        padding: 1px;
-        background-color: $clr-red;
-        color: $clr-gray-10;
-
-        .sep {
-            border-left: $clr-gray-10 1px solid;
-        }
-    }
-
-    &.black {
-        border: $clr-gray-100 1px solid;
-        color: $clr-gray-100;
-
-        .sep {
-            border-left: $clr-gray-100 1px solid;
-        }
-    }
-
-    &.red {
-        border: $clr-red 1px solid;
-        color: $clr-red;
-
-        .sep {
-            border-left: $clr-red 1px solid;
-        }
-    }
-
-    &.red-shadow {
-        @extend .red;
-        box-shadow: 0px $sz-half $sz-unit $clr-gray-50;
-    }
-
-    &.gray-no-border {
-        color: $clr-gray-30;
-
-        .sep {
-            border-left: $clr-gray-30 1px solid;
-        }
-    }
+  }
 }
-

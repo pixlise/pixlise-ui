@@ -27,32 +27,28 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import '~@angular/material/theming';
-@import 'variables.scss';
+// @import "@angular/material/theming";
+@use "@angular/material" as mat;
+@import "@angular/material/theming";
 
+@import "variables.scss";
+
+@include mat.core();
 
 // https://material.angular.io/guide/typography
 // Define a custom typography config that overrides the font-family and specific items
-$pixlise-typography: mat-typography-config(
-    $font-family: 'Roboto, monospace',
-    $headline: mat-typography-level(18px, 24px, 700), // only used on main toolbar centre text
-    $title: mat-typography-level(16px, 16px, 700),    // panel captions use this
-    $body-1: mat-typography-level(14px, 14px, 400),   // all the rest...
-    $button: mat-typography-level(12px, 12px, 400),
-    /*$caption: mat-typography-level(4px, 12px, 400)*/
-    //$input: mat-typography-level(16px, 1.25, 400)
+$pixlise-typography: mat.define-typography-config(
+  $font-family: "Roboto, monospace",
+  $body-1: mat.define-typography-level(14px, 14px, 400),
+  $button: mat.define-typography-level(12px, 12px, 400),
+  $headline-1: mat.define-typography-level(18px, 24px, 700),
+  $headline-2: mat.define-typography-level(16px, 24px, 700),
+  $headline-3: mat.define-typography-level(14px, 24px, 700),
+  $subtitle-1: mat.define-typography-level(16px, 24px, 700),
+  $caption: mat.define-typography-level(4px, 12px, 400),
+  $body-2: mat.define-typography-level(16px, 1.25, 400),
 );
 
-
-// Plus imports for other components in your app.
-
-// Include the common styles for Angular Material. We include this here so that you only
-// have to load a single css file for Angular Material in your app.
-// Be sure that you only ever include this mixin once!
-@include mat-core($pixlise-typography);
-
-
-// https://blog.thoughtram.io/angular/2017/05/23/custom-themes-with-angular-material.html
 /*
 Primary - Main colors most widely used across all screens and components.
 Accent - Also known as the secondary color. Used for floating action buttons and interactive elements.
@@ -65,19 +61,28 @@ Background - Colors used for element backgrounds.
 // (imported above). For each palette, you can optionally specify a default, lighter, and darker
 // hue. Available color palettes: https://material.io/design/color/
 // Also useful: https://material.io/design/color/#tools-for-picking-colors
-$pixlise-app-primary: mat-palette($mat-gray, 900, 900, 900);
-$pixlise-app-accent: mat-palette($mat-yellow, A100);
+$pixlise-app-primary: mat.define-palette($mat-grey, 900, 900, 900);
+$pixlise-app-accent: mat.define-palette($mat-yellow, A100);
 
 // The warn palette is optional (defaults to red).
-$pixlise-app-warn: mat-palette($mat-red);
+$pixlise-app-warn: mat.define-palette($mat-red);
 
 // Create the theme object (a Sass map containing all of the palettes).
-$pixlise-app-theme: mat-dark-theme($pixlise-app-primary, $pixlise-app-accent, $pixlise-app-warn);
+$pixlise-app-theme: mat.define-dark-theme(
+  (
+    color: (
+      primary: $pixlise-app-primary,
+      accent: $pixlise-app-accent,
+      warn: $pixlise-app-warn,
+    ),
+    typography: $pixlise-typography,
+  )
+);
+
+@include mat.all-component-themes($pixlise-app-theme);
 
 // Include theme styles for core and each component used in your app.
 // Alternatively, you can import and @include the theme mixins for each component
 // that you are using.
 @include angular-material-theme($pixlise-app-theme);
-
-@include mat-base-typography($pixlise-typography);
-@include angular-material-typography($pixlise-typography);
+@include mat.typography-hierarchy($pixlise-typography);

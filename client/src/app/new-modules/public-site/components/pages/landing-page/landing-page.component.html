@@ -1,0 +1,18 @@
+<h1>Welcome to PIXLISE tech demo</h1>
+
+<ng-container
+  *ngIf="authService.isAuthenticated$ | async; then loggedIn; else loggedOut">
+</ng-container>
+
+<ng-template #loggedIn>
+    <div>You are logged in!</div>
+    <button (click)="onViewDatasets()">View Datasets</button>
+    <button (click)="onLogout()">Logout</button>
+</ng-template>
+
+<ng-template #loggedOut>
+    <button (click)="onLogin()">Login</button>
+    <button (click)="onSignup()">Sign-up</button>
+</ng-template>
+
+<div>Version:<pre>{{versionInfo}}</pre></div>

@@ -42,12 +42,12 @@ import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatSliderModule } from "@angular/material/slider";
 //import {MatChipsModule} from '@angular/material/chips';
 import { MatTabsModule } from "@angular/material/tabs";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 
 @NgModule({
-    imports: [MatButtonModule, MatCheckboxModule, MatSelectModule, MatIconModule, MatButtonToggleModule, MatProgressSpinnerModule, MatSlideToggleModule, MatFormFieldModule, MatDialogModule, MatSliderModule, MatTabsModule, MatExpansionModule, MatRadioModule, /*MatSnackBarModule, MatChipsModule*/],
-    exports: [MatButtonModule, MatCheckboxModule, MatSelectModule, MatIconModule, MatButtonToggleModule, MatProgressSpinnerModule, MatSlideToggleModule, MatFormFieldModule, MatDialogModule, MatSliderModule, MatTabsModule, MatExpansionModule, MatRadioModule, /*MatSnackBarModule, MatChipsModule*/],
+    imports: [MatButtonModule, MatCheckboxModule, MatSelectModule, MatIconModule, MatButtonToggleModule, MatProgressSpinnerModule, MatSlideToggleModule, MatFormFieldModule, MatDialogModule, MatSliderModule, MatTabsModule, MatExpansionModule, MatRadioModule, MatTooltipModule, /*MatSnackBarModule, MatChipsModule*/],
+    exports: [MatButtonModule, MatCheckboxModule, MatSelectModule, MatIconModule, MatButtonToggleModule, MatProgressSpinnerModule, MatSlideToggleModule, MatFormFieldModule, MatDialogModule, MatSliderModule, MatTabsModule, MatExpansionModule, MatRadioModule, MatTooltipModule, /*MatSnackBarModule, MatChipsModule*/],
 })
-export class MaterialModule
-{
+export class MaterialModule {
 }

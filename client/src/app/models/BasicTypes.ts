@@ -31,351 +31,297 @@ export type DataId = string;
 export type SCLK = number;
 export type ScanType = string;
 
-export class MinMax
-{
-    private _min: number = null;
-    private _max: number = null;
+export class MinMax {
+  private _min: number | null = null;
+  private _max: number | null = null;
 
-    constructor(
-        min: number = null,
-        max: number = null
-    )
-    {
-        this.setMin(min);
-        this.setMax(max);
+  constructor(min?: number, max?: number) {
+    if (typeof min === "number") {
+      this.setMin(min);
+    }
+    if (typeof max === "number") {
+      this.setMax(max);
+    }
+  }
+
+  get min(): number | null {
+    return this._min || null;
+  }
+
+  get max(): number | null {
+    return this._max || null;
+  }
+
+  setMin(val: number): void {
+    if (!Number.isFinite(val)) {
+      this._min = 0;
+    } else {
+      this._min = val;
+    }
+  }
+
+  setMax(val: number): void {
+    if (!Number.isFinite(val)) {
+      this._max = 0;
+    } else {
+      this._max = val;
+    }
+  }
+
+  scale(by: number): void {
+    if (!Number.isFinite(by) || this._max == null || this._min == null) {
+      return;
     }
 
-    get min(): number
-    {
-        return this._min;
+    this._min *= by;
+    this._max *= by;
+  }
+
+  expandByMinMax(range: MinMax): void {
+    if (range.min) {
+      this.expand(range.min);
+    }
+    if (range.max) {
+      this.expand(range.max);
+    }
+  }
+
+  expand(value: number): void {
+    this.expandMin(value);
+    this.expandMax(value);
+  }
+
+  expandMin(value: number): boolean {
+    if (Number.isFinite(value) && (this._min == null || value < this._min)) {
+      this._min = value;
+      return true;
+    }
+    return false;
+  }
+
+  expandMax(value: number): boolean {
+    if (Number.isFinite(value) && (this._max == null || value > this._max)) {
+      this._max = value;
+      return true;
+    }
+    return false;
+  }
+
+  getAsPercentageOfRange(value: number, clampIfOutside: boolean): number {
+    if (!Number.isFinite(value)) {
+      // Silently act as if it was a 0
+      return 0;
     }
 
-    get max(): number
-    {
-        return this._max;
+    let range = this.getRange();
+
+    // Prevent div by 0 and unbounded values
+    if (range === 0) {
+      return 0;
     }
 
-    setMin(val: number): void
-    {
-        if(!Number.isFinite(val))
-        {
-            this._min = null;
-        }
-        else
-        {
-            this._min = val;
-        }
+    let pct = (value - (this._min || 0)) / range;
+
+    // If we need to, clamp it:
+    if (clampIfOutside) {
+      if (pct < 0) {
+        pct = 0;
+      }
+      if (pct > 1) {
+        pct = 1;
+      }
     }
 
-    setMax(val: number): void
-    {
-        if(!Number.isFinite(val))
-        {
-            this._max = null;
-        }
-        else
-        {
-            this._max = val;
-        }
+    return pct;
+  }
+
+  // clamp: ensures resultant value is within the range, even if percentage input was not
+  getValueForPercentageOfRange(pct: number, clamp: boolean = true): number {
+    if (!Number.isFinite(pct)) {
+      // Silently act as if it was 0%
+      return this._min || 0;
     }
 
-    scale(by: number): void
-    {
-        if(!Number.isFinite(by) || this._max == null || this._min == null)
-        {
-            return;
-        }
+    let range = this.getRange();
 
-        this._min *= by;
-        this._max *= by;
+    let value = pct * range + (this._min || 0);
+
+    if (clamp) {
+      if (value > (this._max || 0)) {
+        value = this._max as number;
+      }
+
+      if (value < (this._min || 0)) {
+        value = this._min as number;
+      }
     }
 
-    expandByMinMax(range: MinMax): void
-    {
-        this.expand(range.min);
-        this.expand(range.max);
+    return value;
+  }
+
+  getRange(): number {
+    if (this._max == null || this._min == null) {
+      return 0;
+    }
+    return this._max - this._min;
+  }
+
+  getTightestRange(otherRange: MinMax): MinMax {
+    let otherRangeMin =
+      typeof otherRange.min === "number" ? otherRange.min : this._min;
+    let otherRangeMax =
+      typeof otherRange.max === "number" ? otherRange.max : this._max;
+
+    return new MinMax(
+      this._min !== null
+        ? Math.max(otherRangeMin || 0, this._min)
+        : otherRange.min || 0,
+      this._max !== null
+        ? Math.min(otherRangeMax || 0, this._max)
+        : otherRange.max || 0
+    );
+  }
+
+  isWithin(val: number): boolean {
+    if (!Number.isFinite(val)) {
+      return false;
     }
 
-    expand(value: number): void
-    {
-        this.expandMin(value);
-        this.expandMax(value);
+    if (this._min == null || this._max == null) {
+      return false;
     }
 
-    expandMin(value: number): boolean
-    {
-        if(Number.isFinite(value) && (this._min == null || value < this._min))
-        {
-            this._min = value;
-            return true;
-        }
-        return false;
-    }
+    return val >= this._min && val <= this._max;
+  }
 
-    expandMax(value: number): boolean
-    {
-        if(Number.isFinite(value) && (this._max == null || value > this._max))
-        {
-            this._max = value;
-            return true;
-        }
-        return false;
-    }
+  isValid(): boolean {
+    return (
+      typeof this._min === "number" &&
+      typeof this._max === "number" &&
+      isFinite(this._min) &&
+      isFinite(this._max) &&
+      this._max >= this._min
+    );
+  }
 
-    getAsPercentageOfRange(value: number, clampIfOutside: boolean): number
-    {
-        if(!Number.isFinite(value))
-        {
-            // Silently act as if it was a 0
-            return 0;
-        }
-
-        let range = this.getRange();
-
-        // Prevent div by 0
-        if(range == 0)
-        {
-            return 0;
-        }
-
-        let pct = (value-this._min) / range;
-
-        // If we need to, clamp it:
-        if(clampIfOutside)
-        {
-            if(pct < 0)
-            {
-                pct = 0;
-            }
-            if(pct > 1)
-            {
-                pct = 1;
-            }
-        }
-
-        return pct;
-    }
-
-    // clamp: ensures resultant value is within the range, even if percentage input was not
-    getValueForPercentageOfRange(pct: number, clamp: boolean=true): number
-    {
-        if(!Number.isFinite(pct))
-        {
-            // Silently act as if it was 0%
-            return this._min;
-        }
-
-        let range = this.getRange();
-
-        let value = pct * range+this._min;
-
-        if(clamp)
-        {
-            if(value > this._max)
-            {
-                value = this._max;
-            }
-
-            if(value < this._min)
-            {
-                value = this._min;
-            }
-        }
-
-        return value;
-    }
-
-    getRange(): number
-    {
-        if(this._max == null || this._min == null)
-        {
-            return 0;
-        }
-        return this._max-this._min;
-    }
-
-    getTightestRange(otherRange: MinMax): MinMax
-    {
-        return new MinMax(
-            this._min != null ? Math.max(otherRange.min, this._min) : otherRange.min,
-            this._max != null ? Math.min(otherRange.max, this._max) : otherRange.max
-        );
-    }
-
-    isWithin(val: number): boolean
-    {
-        if(!Number.isFinite(val))
-        {
-            return false;
-        }
-
-        if(this._min == null || this._max == null)
-        {
-            return false;
-        }
-
-        return val >= this._min && val <= this._max;
-    }
-
-    isValid(): boolean
-    {
-        return isFinite(this._min) && isFinite(this._max) && this._max >= this._min;
-    }
-
-    equals(other: MinMax): boolean
-    {
-        return (this._min === other._min && this._max === other._max);
-    }
+  equals(other: MinMax): boolean {
+    return this._min === other._min && this._max === other._max;
+  }
 }
 
-export class ComponentVersion
-{
-    constructor(public component: string, public version: string, public buildUnixTimeSec: number)
-    {
-    }
+export class ComponentVersion {
+  constructor(
+    public component: string,
+    public version: string,
+    public buildUnixTimeSec: number = 0
+  ) {}
 }
 
-export class ComponentVersions
-{
-    constructor(public components: ComponentVersion[])
-    {
-    }
+export class ComponentVersions {
+  constructor(public components: ComponentVersion[]) {}
 }
 
 // PIXLISE config related to detector of current dataset
-export class DetectorConfig
-{
-    constructor(
-        public minElement: number,
-        public maxElement: number,
-        public xrfeVLowerBound: number,
-        public xrfeVUpperBound: number,
-        public xrfeVResolution: number,
-        public windowElement: number,
-        public tubeElement: number,
-        public defaultParams: string,
-        public mmBeamRadius: number,
-        public piquantConfigVersions: string[]
-    )
-    {
-    }
+export class DetectorConfig {
+  constructor(
+    public minElement: number,
+    public maxElement: number,
+    public xrfeVLowerBound: number,
+    public xrfeVUpperBound: number,
+    public xrfeVResolution: number,
+    public windowElement: number,
+    public tubeElement: number,
+    public defaultParams: string,
+    public mmBeamRadius: number,
+    public piquantConfigVersions: string[]
+  ) {}
 }
 
 // Detector config list
-export class DetectorConfigList
-{
-    constructor(
-        public configNames: string[]
-    )
-    {
-    }
+export class DetectorConfigList {
+  constructor(public configNames: string[]) {}
 }
 
 // Config file contents for PIQUANT to run
-export class DetectorQuantConfig
-{
-    constructor(
-        public description: string,
-        public configFile: string,
-        public opticEfficiencyFile: string,
-        public calibrationFile: string,
-        public standardsFile: string
-    )
-    {
-    }
+export class DetectorQuantConfig {
+  constructor(
+    public description: string,
+    public configFile: string,
+    public opticEfficiencyFile: string,
+    public calibrationFile: string,
+    public standardsFile: string
+  ) {}
 }
 
 // The overall piquant config that can be modified/viewed by spectroscopists
-export class PiquantConfig
-{
-    constructor(
-        public pixliseConfig: DetectorConfig,
-        public quantConfig: DetectorQuantConfig
-    )
-    {
-    }
+export class PiquantConfig {
+  constructor(
+    public pixliseConfig: DetectorConfig,
+    public quantConfig: DetectorQuantConfig
+  ) {}
 }
 
-export class PiquantDownloadable
-{
-    constructor(
-        public buildVersion: string,
-        public buildDateUnixSec: number,
-        public fileName: string,
-        public fileSizeBytes: number,
-        public downloadUrl: string,
-        public os: string,
-    )
-    {
-    }
+export class PiquantDownloadable {
+  constructor(
+    public buildVersion: string,
+    public buildDateUnixSec: number,
+    public fileName: string,
+    public fileSizeBytes: number,
+    public downloadUrl: string,
+    public os: string
+  ) {}
 }
 
-export class PiquantDownloadables
-{
-    constructor(
-        public downloadItems: PiquantDownloadable[]
-    )
-    {
-    }
+export class PiquantDownloadables {
+  constructor(public downloadItems: PiquantDownloadable[]) {}
 }
 
-export class PiquantVersionConfig
-{
-    constructor(
-        public version: string,
-        public changedUnixTimeSec: number,
-        public creator: ObjectCreator,
-    )
-    {
-    }
+export class PiquantVersionConfig {
+  constructor(
+    public version: string,
+    public changedUnixTimeSec: number,
+    public creator: ObjectCreator
+  ) {}
 }
 
-export class LoadProgress
-{
-    constructor(
-        public fileName: string,
-        public totalSizeBytes: number,
-        public loadedSizeBytes: number
-    )
-    {
-    }
+export class LoadProgress {
+  constructor(
+    public fileName: string,
+    public totalSizeBytes: number,
+    public loadedSizeBytes: number
+  ) {}
 }
 
-export class ObjectCreator 
-{
-    constructor(
-        public name: string,
-        public user_id: string,
-        public email?: string,
-    )
-    {
-    }
+export class ObjectCreator {
+  constructor(
+    public name: string,
+    public user_id: string,
+    public email?: string
+  ) {}
 }
 
-export class SpectrumEnergyCalibration
-{
-    constructor(public eVstart: number, public eVperChannel: number, public detector: string)
-    {
-    }
+export class SpectrumEnergyCalibration {
+  constructor(
+    public eVstart: number,
+    public eVperChannel: number,
+    public detector: string
+  ) {}
 
-    isEmpty(): boolean
-    {
-        // We consider us not set if start=0 and /chan=1
-        return this.eVstart == 0 && this.eVperChannel == 1;
-    }
+  isEmpty(): boolean {
+    // We consider us not set if start=0 and /chan=1
+    return this.eVstart == 0 && this.eVperChannel == 1;
+  }
 
-    toString(): string
-    {
-        return "eVstart="+this.eVstart+", eVperChannel="+this.eVperChannel;
-    }
+  toString(): string {
+    return "eVstart=" + this.eVstart + ", eVperChannel=" + this.eVperChannel;
+  }
 
-    equals(another: SpectrumEnergyCalibration): boolean
-    {
-        // Check when formatted as text, as we do rounding when displaying the values
-        return (
-            this.eVstart.toFixed(3) == another.eVstart.toFixed(3) &&
-            this.eVperChannel.toFixed(3) == another.eVperChannel.toFixed(3) /*&&
+  equals(another: SpectrumEnergyCalibration): boolean {
+    // Check when formatted as text, as we do rounding when displaying the values
+    return (
+      this.eVstart.toFixed(3) == another.eVstart.toFixed(3) &&
+      this.eVperChannel.toFixed(3) == another.eVperChannel.toFixed(3) /*&&
             this.detector == another.detector*/
-        );
-    }
+    );
+  }
 }

@@ -29,112 +29,111 @@
 
 /* You can add global styles to this file, and also import other style files */
 
-@use "~inter-ui/default" as inter-ui with (
-    $inter-font-path: "~inter-ui/Inter (web latin)"
+@use "inter-ui/default" as inter-ui with (
+  $inter-font-path: "inter-ui/Inter (web latin)"
 );
 @include inter-ui.weight-400;
 @include inter-ui.weight-700;
 
-
 :root {
-    --top-toolbar-height: 37px;
-    --widget-drop-below-title: 42px; // 38px title bar + standard padding
-    //--title-height-and-padding: 53px; // 37px title bar + top & bottom unit height
+  --top-toolbar-height: 37px;
+  --widget-drop-below-title: 42px; // 38px title bar + standard padding
+  //--title-height-and-padding: 53px; // 37px title bar + top & bottom unit height
 }
 
-@import 'material-theme.scss';
-@import 'variables.scss';
-@import 'atoms.scss';
+@import "material-theme.scss";
+@import "variables.scss";
+@import "atoms.scss";
 
 /*@import "~@angular/material/prebuilt-themes/purple-green.css";*/
-
 
 /*html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 */
 
-html, body {
-    margin: 0;
-    padding: 0;
-    position: absolute;
-    width: 100%;
-    height: 100%;
+html,
+body {
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  width: 100%;
+  height: 100%;
 }
 
 /* TODO: There has to be a better way than !important with overriding angular things! */
 body {
-    background-color: $ui-color-background !important;
-    font-family: Roboto, "Helvetica Neue", sans-serif;
+  //   background-color: $ui-color-background !important;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
 button {
-    text-transform: uppercase;
-    padding: 0px 6px !important;
-    border-radius: $ui-border-radius !important;
+  text-transform: uppercase;
+  padding: 0px 6px !important;
+  //   border-radius: $ui-border-radius !important;
 }
 
 a {
-    color: $clr-blue;
-    font-weight: bold;
-    text-decoration: none;
-    &:hover {
-        text-decoration: underline;
-    }
+  color: $clr-blue;
+  font-weight: bold;
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 input {
-    background-color: $clr-gray-70;
-    color: $clr-gray-30;
-    border: 1px solid $clr-gray-60;
-    border-radius: $sz-half;
+  background-color: $clr-gray-70;
+  color: $clr-gray-30;
+  border: 1px solid $clr-gray-60;
+  border-radius: $sz-half;
 
-    &:focus {
-        outline: none;
-    }
+  &:focus {
+    outline: none;
+  }
 }
 
 input:disabled {
-    background-color: $clr-gray-80;
-    color: $clr-gray-70;
+  background-color: $clr-gray-80;
+  color: $clr-gray-70;
 }
 
 textarea {
-    resize: none;
-    background-color: $clr-gray-70;
-    color: $clr-gray-30;
-    border: 1px solid $clr-gray-60;
-    border-radius: $sz-half;
+  resize: none;
+  background-color: $clr-gray-70;
+  color: $clr-gray-30;
+  border: 1px solid $clr-gray-60;
+  border-radius: $sz-half;
 
-    &:focus {
-        outline: none;
-    }
+  &:focus {
+    outline: none;
+  }
 }
 
 .mat-flat-button {
-    min-width: unset !important;
-    line-height: 24px !important;
+  min-width: unset !important;
+  line-height: 24px !important;
 }
 .mat-icon {
-    width: 20px !important;
-    height: 20px !important;
+  width: 20px !important;
+  height: 20px !important;
 }
 .material-icons {
-    font-size: $button-icon-size !important;
+  font-size: $button-icon-size !important;
 }
 mat-button-toggle {
-    width: 30px;
-    height: 24px;
+  width: 30px;
+  height: 24px;
 }
 .mat-button-toggle-label-content {
-    padding: 0px !important;
-    line-height: 24px !important;
+  padding: 0px !important;
+  line-height: 24px !important;
 }
 .mat-select {
-    width: 90px !important;
-    margin-left: $small-gap;
-    padding: 4px;
-    border-radius: $ui-border-radius !important;
-    background-color: $button-colour !important;
+  width: 90px !important;
+  margin-left: $small-gap;
+  padding: 4px;
+  border-radius: $ui-border-radius !important;
+  background-color: $button-colour !important;
 }
 
 /*
@@ -143,12 +142,12 @@ and the whole UI no longer conforms to flex layout - some canvases
 end up at a default 300px wide
 */
 .canvas-container {
-    position: relative;
-    min-height: 100px;
-    background-color: black;
+  position: relative;
+  min-height: 100px;
+  background-color: black;
 }
 canvas {
-    position: absolute;
+  position: absolute;
 }
 
 /*
@@ -178,28 +177,28 @@ button:hover {
 */
 /* Text styles */
 small {
-    color: $clr-gray-70;
+  color: $clr-gray-70;
 }
 
 .mat-dialog-container {
-    /*background-color: unset !important;*/
-    background-color: $ui-panel-title-colour;
-    padding: 0px !important;
-    border-radius: $sz-unit !important;
+  /*background-color: unset !important;*/
+  background-color: $ui-panel-title-colour;
+  padding: 0px !important;
+  border-radius: $sz-unit !important;
 }
 
 .panel {
-    background-color: $ui-panel-title-colour;
-    border-radius: $ui-border-radius;
+  background-color: $ui-panel-title-colour;
+  border-radius: $ui-border-radius;
 
-    border: 1px solid $ui-panel-title-colour;
+  border: 1px solid $ui-panel-title-colour;
 
-    padding: 0px;
-    /*margin: 5px;*/
+  padding: 0px;
+  /*margin: 5px;*/
 
-    overflow: hidden;
-    box-sizing: border-box;
-/*
+  overflow: hidden;
+  box-sizing: border-box;
+  /*
     &:hover {
         border: 1px solid $ui-panel-border-highlight-colour;
     }
@@ -208,107 +207,115 @@ small {
 
 // Inserted after dynamic creation, see createUnderSpectrumComponents()
 .flex-fill {
-    flex: 1 1 0%;
-    box-sizing: border-box;
+  flex: 1 1 0%;
+  box-sizing: border-box;
 }
 
-.mat-h1, .mat-title, .mat-typography h1 {
-    margin: 0px;
+.mat-h1,
+.mat-title,
+.mat-typography h1 {
+  margin: 0px;
 }
-.mat-h2, .mat-title, .mat-typography h2 {
-    margin: 0px;
+.mat-h2,
+.mat-title,
+.mat-typography h2 {
+  margin: 0px;
 }
-.mat-h3, .mat-title, .mat-typography h3 {
-    margin: 0px;
+.mat-h3,
+.mat-title,
+.mat-typography h3 {
+  margin: 0px;
 }
 
-h1, h2, h3 {
-    color: $ui-color-text-title;
-    text-transform: uppercase;
+h1,
+h2,
+h3 {
+  color: $ui-color-text-title;
+  text-transform: uppercase;
 }
 
 .panel-title {
-    padding: 5px;
+  padding: 5px;
 }
 
 .panel-upper {
-    /* TODO: fix height */
-    /*height: 65%;*/
-    height: 600px;
+  /* TODO: fix height */
+  /*height: 65%;*/
+  height: 600px;
 }
 
 .panel-scrollable-content {
-    overflow-y: auto;
+  overflow-y: auto;
 }
 
 .card-container {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: space-between;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
 }
 
 .widget-display-msg {
-    text-align: center;
+  text-align: center;
 
-    display: flex;
-    justify-content: center;
-    flex-direction: column;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
 
-    color: $clr-gray-70;
+  color: $clr-gray-70;
 }
 
 .large-top-gap {
-    margin-top: 35vh;
+  margin-top: 35vh;
 }
 
 .obj-creator {
-    color: $clr-gray-50;
-    user-select: none;
+  color: $clr-gray-50;
+  user-select: none;
 }
 
 .obj-create-time {
-    color: $clr-gray-50;
-    user-select: none;
-    font-size: 12px;
+  color: $clr-gray-50;
+  user-select: none;
+  font-size: 12px;
 }
 
 .pickable {
-    padding: $small-gap;
+  padding: $small-gap;
 
-    &:hover {
-        cursor: pointer;
-        background-color: $clr-gray-60;
-    }
+  &:hover {
+    cursor: pointer;
+    background-color: $clr-gray-60;
+  }
 }
 
 .hover-highlight:hover {
-    background-color: $ui-panel-title-highlight-colour;
+  background-color: $ui-panel-title-highlight-colour;
 }
 
 .empty-msg {
-    padding: 80px 0px;
-    text-align: center;
-    color: $clr-gray-70
+  padding: 80px 0px;
+  text-align: center;
+  color: $clr-gray-70;
 }
 
 .key-location-top-right-below-title {
-    position: absolute;
-    top: var(--widget-drop-below-title);
-    right: $sz-unit;
+  position: absolute;
+  top: var(--widget-drop-below-title);
+  right: $sz-unit;
 }
 
 .selection-location-top-left {
-    position: absolute;
-    top: var(--widget-drop-below-title);
-    left: $sz-unit;
+  position: absolute;
+  top: var(--widget-drop-below-title);
+  left: $sz-unit;
 }
 
 /* Needed so we can have floating controls over the canvas */
 .outer-panel {
-    position: relative;
+  position: relative;
 }
 
 .empty-overlay-backdrop {
-/* Deliberately empty: we don't want to tint the screen when a backdrop is showing */
+  /* Deliberately empty: we don't want to tint the screen when a backdrop is showing */
 }

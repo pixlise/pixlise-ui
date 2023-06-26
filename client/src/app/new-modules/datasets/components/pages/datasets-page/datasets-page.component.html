@@ -1,0 +1,8 @@
+<h1>Datasets</h1>
+<button (click)="onHome()">Home</button>
+<button (click)="onRefresh()">Refresh</button>
+
+<h2>Dataset List</h2>
+<ul>
+    <li *ngFor="let ds of datasetList">{{ds}}</li>
+</ul>

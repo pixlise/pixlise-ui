@@ -27,8 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'pixlise-core.scss';
-
+@import "pixlise-core.scss";
 
 // Sizes
 $sz-border-x: 192px;
@@ -42,279 +41,279 @@ $sz-paragraph-gap: 48px;
 
 // Text
 h1 {
-    font-family: Inter;
-    font-size: 72px;
-    font-weight: normal;
-    line-height: 65px;
-    letter-spacing: -0.03em;
-    text-align: left;
+  font-family: Inter;
+  font-size: 72px;
+  font-weight: normal;
+  line-height: 65px;
+  letter-spacing: -0.03em;
+  text-align: left;
 
-    text-transform: none;
+  text-transform: none;
 
-    color: $clr-gray-10;
+  color: $clr-gray-10;
 }
 
 h2 {
-    font-family: Inter;
-    font-size: 65px;
-    font-weight: normal;
-    line-height: 65px;
-    letter-spacing: -0.02em;
-    text-align: left;
+  font-family: Inter;
+  font-size: 65px;
+  font-weight: normal;
+  line-height: 65px;
+  letter-spacing: -0.02em;
+  text-align: left;
 
-    text-transform: none;
+  text-transform: none;
 
-    color: $clr-gray-10;
+  color: $clr-gray-10;
 
-    padding-top: $sz-heading-gap;
-    padding-bottom: $sz-subheading-gap;
+  padding-top: $sz-heading-gap;
+  padding-bottom: $sz-subheading-gap;
 }
 
 h3 {
-    font-family: Inter;
-    font-size: 48px;
-    font-weight: normal;
-    line-height: 47px;
-    letter-spacing: -0.02em;
-    text-align: left;
+  font-family: Inter;
+  font-size: 48px;
+  font-weight: normal;
+  line-height: 47px;
+  letter-spacing: -0.02em;
+  text-align: left;
 
-    text-transform: none;
+  text-transform: none;
 
-    color: $clr-gray-10;
+  color: $clr-gray-10;
 }
 
 h4 {
-    font-family: Inter;
-    font-size: 24px;
-    font-weight: 600;
-    line-height: 26px;
-    letter-spacing: 0em;
-    text-align: left;
+  font-family: Inter;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 26px;
+  letter-spacing: 0em;
+  text-align: left;
 
-    text-transform: none;
+  text-transform: none;
 
-    color: $clr-gray-10;
+  color: $clr-gray-10;
 }
 
 .text-quote {
-    font-family: "Source Sans Pro";
-    font-size: 48px;
-    font-weight: 274;
-    line-height: 57px;
-    letter-spacing: 0em;
-    text-align: left;
+  font-family: "Source Sans Pro";
+  font-size: 48px;
+  font-weight: 274;
+  line-height: 57px;
+  letter-spacing: 0em;
+  text-align: left;
 }
 
 .text-quote-bold {
-    font-family: "Source Sans Pro";
-    font-size: 48px;
-    font-weight: 510;
-    line-height: 57px;
-    letter-spacing: 0em;
-    text-align: left;
+  font-family: "Source Sans Pro";
+  font-size: 48px;
+  font-weight: 510;
+  line-height: 57px;
+  letter-spacing: 0em;
+  text-align: left;
 }
 
 .text-quote-origin-bold {
-    font-family: "Titillium Web";
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 37px;
-    letter-spacing: 0.03em;
-    text-align: left;
+  font-family: "Titillium Web";
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 37px;
+  letter-spacing: 0.03em;
+  text-align: left;
 }
 
 .text-quote-origin {
-    font-family: "Titillium Web";
-    font-size: 24px;
-    font-weight: 400;
-    line-height: 37px;
-    letter-spacing: 0.03em;
-    text-align: left;
+  font-family: "Titillium Web";
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 37px;
+  letter-spacing: 0.03em;
+  text-align: left;
 }
 
 p {
-    font-family: "Source Sans Pro";
-    font-size: 16px;
-    font-weight: 274;
-    line-height: 23px;
-    letter-spacing: 0em;
-    text-align: left;
+  font-family: "Source Sans Pro";
+  font-size: 16px;
+  font-weight: 274;
+  line-height: 23px;
+  letter-spacing: 0em;
+  text-align: left;
 
-    padding-top: $sz-paragraph-gap;
+  padding-top: $sz-paragraph-gap;
 }
 
 .caption {
-    font-family: Inter;
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 16px;
-    letter-spacing: 0.1em;
-    text-align: left;
+  font-family: Inter;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0.1em;
+  text-align: left;
 }
 
 .figure-counter {
-    font-family: "PT Mono";
-    font-size: 30px;
-    font-weight: 700;
-    line-height: 34px;
-    letter-spacing: 0em;
-    text-align: center;    
+  font-family: "PT Mono";
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 34px;
+  letter-spacing: 0em;
+  text-align: center;
 }
 
 .figure-counter-label {
-    font-family: Inter;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 19px;
-    letter-spacing: 0em;
-    text-align: left;
+  font-family: Inter;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 19px;
+  letter-spacing: 0em;
+  text-align: left;
 }
 
 .figure-time {
-    font-family: "PT Mono";
-    font-size: 24px;
-    font-weight: 400;
-    line-height: 27px;
-    letter-spacing: 0em;
-    text-align: left;
+  font-family: "PT Mono";
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 27px;
+  letter-spacing: 0em;
+  text-align: left;
 }
 
 .figure-large {
-    font-family: "PT Mono";
-    font-size: 128px;
-    font-weight: 400;
-    line-height: 141px;
-    letter-spacing: 0.01em;
-    text-align: left;    
+  font-family: "PT Mono";
+  font-size: 128px;
+  font-weight: 400;
+  line-height: 141px;
+  letter-spacing: 0.01em;
+  text-align: left;
 }
 
 .list-heading {
-    font-family: Titillium Web;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 18px;
-    letter-spacing: 0.04em;
-    text-align: left;
-    
-    color: $clr-yellow;
+  font-family: Titillium Web;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 18px;
+  letter-spacing: 0.04em;
+  text-align: left;
+
+  color: $clr-yellow;
 }
 
 ul {
-    color: $clr-yellow;
-    position: relative;
-    left: -46px;
+  color: $clr-yellow;
+  position: relative;
+  left: -46px;
 }
 
 li {
-    font-family: Titillium Web;
-    font-size: 24px;
-    font-weight: 400;
-    line-height: 26px;
-    letter-spacing: 0.01em;
-    text-align: left;
-    
-    color: $clr-gray-50;
-    list-style: none;
+  font-family: Titillium Web;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 26px;
+  letter-spacing: 0.01em;
+  text-align: left;
 
-    &:hover {
-        font-weight: 700;
+  color: $clr-gray-50;
+  list-style: none;
 
-        color: $clr-gray-10;
-        list-style: disc;
-    }
+  &:hover {
+    font-weight: 700;
+
+    color: $clr-gray-10;
+    list-style: disc;
+  }
 }
 
 // Flexbox helpers
 .flex-row {
-    display: flex;
-    flex-direction: row;
+  display: flex;
+  flex-direction: row;
 }
 
 .flex-column {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 .flex-center-center {
-    justify-content: center;
-    align-items: center;
+  justify-content: center;
+  align-items: center;
 }
 
 a {
-    text-decoration: none;
-    font-weight: normal;
+  text-decoration: none;
+  font-weight: normal;
 }
 
 .red {
-    color: $clr-red;
+  color: $clr-red;
 }
 
 .yellow {
-    color: $clr-yellow;
+  color: $clr-yellow;
 }
 
 .section {
-    padding: $sz-border-y $sz-border-x;
+  padding: $sz-border-y $sz-border-x;
 }
 
 .small-card-container {
-    justify-content: space-between;
-    gap: $sz-button-gap;
-    padding-top: $sz-spacer-gap;
+  justify-content: space-between;
+  gap: $sz-button-gap;
+  padding-top: $sz-spacer-gap;
 
-    .small-card {
-        padding: $sz-button-gap;
-        width: 290px;
-        //background-color: $clr-gray-70;
+  .small-card {
+    padding: $sz-button-gap;
+    width: 290px;
+    //background-color: $clr-gray-70;
 
-        box-shadow: 0px 0px $sz-unit black;
-        border-radius: $sz-unit;
+    box-shadow: 0px 0px $sz-unit black;
+    border-radius: $sz-unit;
 
-        h4 {
-            padding: 16px 0px;
-        }
-
-        p {
-            padding: 0px;
-        }
+    h4 {
+      padding: 16px 0px;
     }
+
+    p {
+      padding: 0px;
+    }
+  }
 }
 
 .bold {
-    font-weight: bold;
+  font-weight: bold;
 }
 
 .header {
-    .header-image {
-        height: 100vh;
-        width: 100%;
-    }
+  .header-image {
+    height: 100vh;
+    width: 100%;
+  }
 
-    h1 {
-        text-shadow: 0px 10px 24px #000000FF;
-    }
+  h1 {
+    text-shadow: 0px 10px 24px #000000ff;
+  }
 
-    .header-content {
-        position: absolute;
-    }
+  .header-content {
+    position: absolute;
+  }
 }
 
 .product-header {
+  align-items: center;
+  justify-content: center;
+
+  .header-content {
     align-items: center;
-    justify-content: center;
+    width: 450px;
 
-    .header-content {
-        align-items: center;
-        width: 450px;
-
-        h2 {
-            text-shadow: 0px 10px 24px #000000FF;
-            font-weight: bold;
-            padding-bottom: 0px;
-            text-align: center;
-        }
-        p {
-            text-align: center;
-        }
+    h2 {
+      text-shadow: 0px 10px 24px #000000ff;
+      font-weight: bold;
+      padding-bottom: 0px;
+      text-align: center;
     }
+    p {
+      text-align: center;
+    }
+  }
 }

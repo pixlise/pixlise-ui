@@ -27,12 +27,12 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { HttpClient } from "@angular/common/http";
+import { HttpBackend, HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { APIPaths } from "src/app/utils/api-helpers";
 import { environment } from "src/environments/environment";
-import { ReplaySubject } from "rxjs";
-
+import { ReplaySubject, take, firstValueFrom } from "rxjs";
+import { AuthClientConfig } from "@auth0/auth0-angular";
 
 // App config is retrieved from a json file that is injected into the built container. We ONLY use the
 // environment.ts config file to find the name of the config file to load. This is so we can
@@ -40,92 +40,101 @@ import { ReplaySubject } from "rxjs";
 // This solution follows the example here:
 // https://indepth.dev/posts/1338/build-your-angular-app-once-deploy-anywhere
 
-export class AppConfig
-{
-    production: boolean = false;
-    route_dbg: boolean = false;
-    name: string = "";
+export class AppConfig {
+  production: boolean = false;
+  route_dbg: boolean = false;
+  name: string = "";
 
-    auth0_domain: string = "";
-    auth0_client: string = "";
-    // auth0_secret <-- not needed! Client should never have this
-    auth0_audience: string = "";
-    auth0_namespace: string = "";
+  auth0_domain: string = "";
+  auth0_client: string = "";
+  // auth0_secret <-- not needed! Client should never have this
+  auth0_audience: string = "";
+  auth0_namespace: string = "";
 
-    sentry_dsn: string = "";
+  sentry_dsn: string = "";
 
-    appDomain: string = ""; // Sometimes forms discuss.pixlise.org, or www.pixlise.org
-    apiUrl: string = ""; // For running API locally. Must end in /
+  appDomain: string = ""; // Sometimes forms discuss.pixlise.org, or www.pixlise.org
+  apiUrl: string = ""; // For running API locally. Must end in /
 
-    alertPollInterval_ms: number = 10000;
-    versionPollInterval_ms: number = 300000;
-    versionPollUrl: string = "";
-    dataCollectionAgreementVersionUrl: string = "";
+  alertPollInterval_ms: number = 10000;
+  versionPollInterval_ms: number = 300000;
+  versionPollUrl: string = "";
+  dataCollectionAgreementVersionUrl: string = "";
 
-    allowDifferentMapSizesInExpressions: boolean = true;
+  allowDifferentMapSizesInExpressions: boolean = true;
 
-    expectedDataCollectionAgreementVersion: string = ""; // Eg "1.0"
+  expectedDataCollectionAgreementVersion: string = ""; // Eg "1.0"
 
-    unassignedNewUserRoleId: string = ""; // Auth0 role ID for unassigned new user
+  unassignedNewUserRoleId: string = ""; // Auth0 role ID for unassigned new user
 }
 
-
 @Injectable({
-    providedIn: "root"
+  providedIn: "root",
 })
-export class EnvConfigurationInitService
-{
-    private static _appConfig: AppConfig = null;
-    private _gotConfig$: ReplaySubject<void> = new ReplaySubject<void>();
+export class EnvConfigurationInitService {
+  private static _appConfig?: AppConfig;
+  private _gotConfig$: ReplaySubject<void> = new ReplaySubject<void>();
 
-    constructor(
-        private http: HttpClient
-    )
-    {
-    }
+  constructor() { }
 
-    readAppConfig(): Promise<AppConfig>
-    {
-        return this.http.get<AppConfig>("./"+environment.configName)
-            .toPromise()
-            .then(
-                (config)=>
-                {
-                    EnvConfigurationInitService._appConfig = config;
+  readAppConfig(handler: HttpBackend, authConfig?: AuthClientConfig): Promise<AppConfig | null> {
+    const request$ = new HttpClient(handler).get<AppConfig>(`./${environment.configName}`).pipe(take(1));
+    return firstValueFrom(request$).then(
+      (config) => {
+        if (!config) {
+          console.error("Failed to load application config");
+          return null;
+        }
 
-                    // We want a default here as this file is now fixed in the UI repo
-                    if(!config.dataCollectionAgreementVersionUrl)
-                    {
-                        config.dataCollectionAgreementVersionUrl = "/agreement-version.json";
-                    }
-                    this._gotConfig$.next();
-                    console.log("Loaded application config...");
+        if (authConfig) {
+          authConfig.set({
+            domain: config.auth0_domain,
+            clientId: config.auth0_client,
+            authorizationParams: {
+              audience: config.auth0_audience,
+              redirect_uri: `${window.location.origin}/authenticate`,
+            }
+          });
+        }
 
-                    // Set the API URL in the paths helper (static var)
-                    APIPaths.setAPIUrl(config.apiUrl);
+        EnvConfigurationInitService._appConfig = config;
 
-                    return config;
-                }/*,
+        // We want a default here as this file is now fixed in the UI repo
+        if (config && !config?.dataCollectionAgreementVersionUrl) {
+          config.dataCollectionAgreementVersionUrl =
+            "/agreement-version.json";
+        }
+        this._gotConfig$.next();
+        console.log("Loaded application config...");
+
+        // Set the API URL in the paths helper (static var)
+        if (config?.apiUrl) {
+          APIPaths.setAPIUrl(config.apiUrl);
+        }
+
+        return config;
+      } /*,
                 (err)=>
                 {
                     console.error("Failed to load application config: "+err);
                 }*/
-            );
-    }
+    ).catch(err => {
+      console.error("Failed to load application config: ", err);
+      return null;
+    });
+  }
 
-    // This is static because some code will want to reference this without having
-    // an instance of the env service. Reasons are historical, because this used to
-    // simply be fields from the environment file, so code could always reach out
-    // and say environment.something
-    // Since the app config is loaded on module init, the config should always be
-    // valid by the time it's accessed... should...
-    public static get appConfig(): AppConfig
-    {
-        return EnvConfigurationInitService._appConfig;
-    }
+  // This is static because some code will want to reference this without having
+  // an instance of the env service. Reasons are historical, because this used to
+  // simply be fields from the environment file, so code could always reach out
+  // and say environment.something
+  // Since the app config is loaded on module init, the config should always be
+  // valid by the time it's accessed... should...
+  public static get appConfig(): AppConfig {
+    return EnvConfigurationInitService._appConfig!;
+  }
 
-    get gotConfig$(): ReplaySubject<void>
-    {
-        return this._gotConfig$;
-    }
+  get gotConfig$(): ReplaySubject<void> {
+    return this._gotConfig$;
+  }
 }

@@ -32,18 +32,23 @@
 // The list of file replacements can be found in `angular.json`.
 
 export const environment = {
-    production: false,
-    route_dbg: false,
-    configName: "local-development-pixlise-config.json",
-    expressionResultCacheThresholdMs: 100, // Don't cache things unless they take over an hour to run
-    luaDebug: false, // Enable debug flag on Lua runner which will print timing stats and provide Lua code the printMap() function
-    initLuaTranspiler: false, // Should we init a PIXLISE->Lua transpiler
-    initExpressionLanguageComparer: false, // Should we init a PIXLISE->Lua comparer, implies initTranspiler=true
-    newLuaPerExpression: false, // Should we create a new Lua WASM instance per expression run?
-    expressionLanguageCompareSkipLines: 1, // How many lines to skip when doing line-by-line comparison
-    expressionLanguageCompareDiffAllowed: 0.0000001, // Absolute difference allowed between output values of Lua vs PIXLISE expressions
-    expressionExecStatSaveIntervalSec: 600, // How long to wait before we save exec stats for an expression again
-    luaTimeoutMs: 30000, // Max time we allow a Lua call to take to run
+  production: false,
+  route_dbg: false,
+  configName: "local-development-pixlise-config.json",
+  expressionResultCacheThresholdMs: 100, // Don't cache things unless they take over an hour to run
+  luaDebug: false, // Enable debug flag on Lua runner which will print timing stats and provide Lua code the printMap() function
+  initLuaTranspiler: false, // Should we init a PIXLISE->Lua transpiler
+  initExpressionLanguageComparer: false, // Should we init a PIXLISE->Lua comparer, implies initTranspiler=true
+  newLuaPerExpression: false, // Should we create a new Lua WASM instance per expression run?
+  expressionLanguageCompareSkipLines: 1, // How many lines to skip when doing line-by-line comparison
+  expressionLanguageCompareDiffAllowed: 0.0000001, // Absolute difference allowed between output values of Lua vs PIXLISE expressions
+  expressionExecStatSaveIntervalSec: 600, // How long to wait before we save exec stats for an expression again
+  luaTimeoutMs: 30000, // Max time we allow a Lua call to take to run
+  authTarget: "/datasets",
+  authorizationParams: {
+    audience: "pixlise-backend",
+    redirect_uri: `${window.location.origin}/authenticate`,
+  }
 };
 
 /*
@@ -53,4 +58,4 @@ export const environment = {
  * This import should be commented out in production mode because it will have a negative impact
  * on performance if an error is thrown.
  */
-import "zone.js/dist/zone-error";  // Included with Angular CLI.
+import "zone.js/dist/zone-error"; // Included with Angular CLI.

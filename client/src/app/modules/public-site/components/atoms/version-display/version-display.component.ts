@@ -33,70 +33,62 @@ import { ComponentVersion, ComponentVersions } from "src/app/models/BasicTypes";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { VERSION } from "src/environments/version";
 
-
 @Component({
-    selector: "version-display",
-    templateUrl: "./version-display.component.html",
-    styleUrls: ["./version-display.component.scss"]
+  selector: "version-display",
+  templateUrl: "./version-display.component.html",
+  styleUrls: ["./version-display.component.scss"],
 })
-export class VersionDisplayComponent implements OnInit, OnDestroy
-{
-    private _subs = new Subscription();
+export class VersionDisplayComponent implements OnInit, OnDestroy {
+  private _subs = new Subscription();
 
-    private _uiVersion = new ComponentVersion("PIXLISE", VERSION["raw"] ? VERSION["raw"] : "(Local build)", null);
-    private _apiVersionDefault = new ComponentVersion("API", "", null);
-    private _piquantVersionDefault = new ComponentVersion("PIQUANT", "", null);
+  private _uiVersion = new ComponentVersion(
+    "PIXLISE",
+    (VERSION as any)?.raw || "(Local build)"
+  );
+  private _apiVersionDefault = new ComponentVersion("API", "");
+  private _piquantVersionDefault = new ComponentVersion("PIQUANT", "");
 
-    versions: ComponentVersion[] = [
-        this._uiVersion,
-        this._apiVersionDefault,
-        this._piquantVersionDefault
-    ];
+  versions: ComponentVersion[] = [
+    this._uiVersion,
+    this._apiVersionDefault,
+    this._piquantVersionDefault,
+  ];
 
-    constructor(
-        public envConfigService: EnvConfigurationService
-    )
-    {
-    }
+  constructor(public envConfigService: EnvConfigurationService) {}
 
-    ngOnInit()
-    {
-        this._subs.add(this.envConfigService.getComponentVersions().subscribe(
-            (versions: ComponentVersions)=>
-            {
-                // Overwrite ours
-                this.versions = [
-                    this._uiVersion,
-                    ...versions.components
-                ];
+  ngOnInit() {
+    this._subs.add(
+      this.envConfigService.getComponentVersions().subscribe(
+        (versions: ComponentVersions) => {
+          // Overwrite ours
+          this.versions = [this._uiVersion, ...versions.components];
 
-                // Remove the image name from piquant version
-                for(let ver of this.versions)
-                {
-                    if(ver.component == "PIQUANT")
-                    {
-                        let parts = ver.version.split(":");
-                        if(parts.length == 2)
-                        {
-                            ver.version = parts[1];
-                        }
-                    }
-                }
-            },
-            (err)=>
-            {
-                // Just show our own version and errors for the other 2 known ones
-                this.versions = [
-                    this._uiVersion,
-                    new ComponentVersion(this._apiVersionDefault.component, "(error)", null),
-                    new ComponentVersion(this._piquantVersionDefault.component, "(error)", null),
-                ];
+          // Remove the image name from piquant version
+          for (let ver of this.versions) {
+            if (ver.component == "PIQUANT") {
+              let parts = ver.version.split(":");
+              if (parts.length == 2) {
+                ver.version = parts[1];
+              }
             }
-        ));
-    }
+          }
+        },
+        (err) => {
+          // Just show our own version and errors for the other 2 known ones
+          this.versions = [
+            this._uiVersion,
+            new ComponentVersion(this._apiVersionDefault.component, "(error)"),
+            new ComponentVersion(
+              this._piquantVersionDefault.component,
+              "(error)"
+            ),
+          ];
+        }
+      )
+    );
+  }
 
-    ngOnDestroy()
-    {
-        this._subs.unsubscribe();
-    }
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
 }

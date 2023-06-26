@@ -29,35 +29,27 @@
 
 import { Component, OnInit, Input } from "@angular/core";
 
-import { AuthenticationService } from "src/app/services/authentication.service";
+// import { AuthenticationService } from "src/app/services/authentication.service";
 import { Navigation } from "../../navigation";
 import { DefaultLoggedInLink } from "../../navigation";
-
+import { AuthService } from "@auth0/auth0-angular";
 
 @Component({
-    selector: "footer",
-    templateUrl: "./footer.component.html",
-    styleUrls: ["./footer.component.scss"]
+  selector: "footer",
+  templateUrl: "./footer.component.html",
+  styleUrls: ["./footer.component.scss"],
 })
-export class FooterComponent implements OnInit
-{
-    @Input() showLogos: boolean;
-    @Input() showTeam: boolean;
+export class FooterComponent implements OnInit {
+  @Input() showLogos: boolean = false;
+  @Input() showTeam: boolean = false;
 
-    navigation: Navigation = new Navigation();
+  navigation: Navigation = new Navigation();
 
-    constructor(
-        private _authService: AuthenticationService,
-        )
-    {
-    }
+  constructor(private _authService: AuthService) { }
 
-    ngOnInit(): void
-    {
-    }
+  ngOnInit(): void { }
 
-    onLogin()
-    {
-        this._authService.login(DefaultLoggedInLink, false);
-    }
+  onLogin() {
+    // this._authService.login(DefaultLoggedInLink, false);
+  }
 }

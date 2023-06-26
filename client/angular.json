@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "pixlise": {
+    "client": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -15,61 +15,23 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-devkit/build-angular:browser-esbuild",
           "options": {
-            "outputPath": "dist/pixlise",
+            "outputPath": "dist/client",
             "index": "src/index.html",
             "main": "src/main.ts",
-            "polyfills": "src/polyfills.ts",
+            "polyfills": [
+              "zone.js"
+            ],
             "tsConfig": "tsconfig.app.json",
-            "aot": true,
+            "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              {
-                "glob": "robots.txt",
-                "input": "src",
-                "output": "/"
-              },
               "src/assets",
               {
                 "glob": "**/*",
                 "input": "src/app/modules/public-site/assets",
                 "output": "assets"
-              },
-              {
-                "glob": "glue.wasm",
-                "input": "src/app/expression-language/lua",
-                "output": "assets/lua"
-              },
-              {
-                "glob": "Map.lua",
-                "input": "src/app/expression-language/lua",
-                "output": "assets/lua"
-              },
-              {
-                "glob": "DebugHelp.lua",
-                "input": "src/app/expression-language/lua",
-                "output": "assets/lua"
-              },
-              {
-                "glob": "CSV.lua",
-                "input": "src/app/expression-language/lua",
-                "output": "assets/lua"
-              },
-              {
-                "glob": "PixliseRuntime.lua",
-                "input": "src/app/expression-language/lua",
-                "output": "assets/lua"
-              },
-              {
-                "glob": "FuncRunner.lua",
-                "input": "src/app/expression-language/lua/test",
-                "output": "assets/lua"
-              },
-              {
-                "glob": "**/*",
-                "input": "node_modules/monaco-editor",
-                "output": "assets/monaco-editor"
               },
               "src/local-development-pixlise-config.json",
               "src/agreement-version.json",
@@ -83,7 +45,8 @@
             "stylePreprocessorOptions": {
               "includePaths": [
                 "src/scss",
-                "src/app/modules/pixlisecore/scss"
+                "src/app/modules/pixlisecore/scss",
+                "./node_modules"
               ]
             },
             "scripts": []
@@ -96,13 +59,6 @@
                   "with": "src/environments/environment.prod.ts"
                 }
               ],
-              "optimization": true,
-              "outputHashing": "all",
-              "sourceMap": true,
-              "namedChunks": false,
-              "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
               "budgets": [
                 {
                   "type": "initial",
@@ -113,7 +69,8 @@
                   "type": "anyComponentStyle",
                   "maximumWarning": "6kb"
                 }
-              ]
+              ],
+              "outputHashing": "all"
             },
             "development": {
               "buildOptimizer": false,
@@ -123,19 +80,17 @@
               "sourceMap": true,
               "namedChunks": true
             }
-          }
+          },
+          "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
-          "options": {
-            "browserTarget": "pixlise:build"
-          },
           "configurations": {
             "production": {
-              "browserTarget": "pixlise:build:production"
+              "browserTarget": "client:build:production"
             },
             "development": {
-              "browserTarget": "pixlise:build:development"
+              "browserTarget": "client:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -143,84 +98,29 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "pixlise:build"
+            "browserTarget": "client:build"
           }
         },
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "main": "src/test.ts",
-            "polyfills": "src/polyfills.ts",
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ],
             "tsConfig": "tsconfig.spec.json",
-            "karmaConfig": "karma.conf.js",
+            "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              {
-                "glob": "robots.txt",
-                "input": "src",
-                "output": "/"
-              },
-              "src/assets",
-              {
-                "glob": "glue.wasm",
-                "input": "src/app/expression-language/lua",
-                "output": "assets/lua"
-              },
-              {
-                "glob": "Map.lua",
-                "input": "src/app/expression-language/lua",
-                "output": "assets/lua"
-              },
-              {
-                "glob": "DebugHelp.lua",
-                "input": "src/app/expression-language/lua",
-                "output": "assets/lua"
-              }
+              "src/assets"
             ],
             "styles": [
-              "./node_modules/@angular/material/prebuilt-themes/purple-green.css",
-              "src/scss/material-theme.scss",
               "src/styles.scss"
             ],
-            "stylePreprocessorOptions": {
-              "includePaths": [
-                "src/scss",
-                "src/app/modules/pixlisecore/scss"
-              ]
-            },
             "scripts": []
-          }
-        },
-        "lint": {
-          "builder": "@angular-devkit/build-angular:tslint",
-          "options": {
-            "tsConfig": [
-              "tsconfig.app.json",
-              "tsconfig.spec.json",
-              "e2e/tsconfig.json"
-            ],
-            "exclude": [
-              "**/node_modules/**"
-            ]
-          }
-        },
-        "e2e": {
-          "builder": "@angular-devkit/build-angular:protractor",
-          "options": {
-            "protractorConfig": "e2e/protractor.conf.js",
-            "devServerTarget": "pixlise:serve"
-          },
-          "configurations": {
-            "production": {
-              "devServerTarget": "pixlise:serve:production"
-            },
-            "devenv": {
-              "devServerTarget": "pixlise:serve:production"
-            }
           }
         }
       }
     }
-  },
-  "defaultProject": "pixlise"
+  }
 }

@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+@import "variables.scss";
 
 /* See Figma PIXLISE - UI Components / atoms */
 /*
@@ -69,53 +69,53 @@ h2 {
 */
 
 .txt-dlg-heading {
-    color: $clr-gray-30;
-    font-family: Roboto;
-    font-style: normal;
-    font-weight: normal;
-    font-size: 12px;
-    line-height: 14px;
-    text-transform: uppercase;
+  color: $clr-gray-30;
+  font-family: Roboto;
+  font-style: normal;
+  font-weight: normal;
+  font-size: 12px;
+  line-height: 14px;
+  text-transform: uppercase;
 }
 
 .txt-body {
-    color: $clr-gray-30;
-    font-family: "Roboto";
-    font-style: normal;
-    font-weight: normal;
-    font-size: 14px;
-    line-height: 16px;
+  color: $clr-gray-30;
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: normal;
+  font-size: 14px;
+  line-height: 16px;
 }
 
 .txt-button {
-    font-family: "Roboto";
-    font-style: normal;
-    font-weight: normal;
-    font-size: 14px;
-    line-height: 16px;
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: normal;
+  font-size: 14px;
+  line-height: 16px;
 
-    white-space: nowrap; 
-    overflow: hidden;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .txt-widget-title {
-    color: $clr-gray-30;
-    font-family: "Roboto";
-    font-style: normal;
-    font-weight: 900;
-    font-size: 16px;
-    line-height: 19px;
-    text-transform: uppercase;
-    user-select: none;
-    white-space: nowrap;
+  color: $clr-gray-30;
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 900;
+  font-size: 16px;
+  line-height: 19px;
+  text-transform: uppercase;
+  user-select: none;
+  white-space: nowrap;
 }
 
 .clickable {
-    user-select: none;
-    
-    &:hover {
-        cursor: pointer;
-    }
+  user-select: none;
+
+  &:hover {
+    cursor: pointer;
+  }
 }
 /*
 TODO: get this working... no time at time of writing
@@ -127,193 +127,193 @@ TODO: get this working... no time at time of writing
 }
 */
 .button-shadow {
-    margin: $sz-qtr;
-    // Drop shadow
-    box-shadow: 0px 0px $sz-half $clr-shadow;
-    border-radius: $sz-half;
+  margin: $sz-qtr;
+  // Drop shadow
+  box-shadow: 0px 0px $sz-half $clr-shadow;
+  border-radius: $sz-half;
 }
 
 .button-hoverable:hover {
-    // Drop shadow changes
-    box-shadow: 0px 0px $sz-half $clr-shadow-highlight;
+  // Drop shadow changes
+  box-shadow: 0px 0px $sz-half $clr-shadow-highlight;
 }
 
 .push-btn-rounded {
-    padding: $sz-half;
-    color: $clr-gray-30;
-    background-color: $clr-gray-100;
-    border-radius: $sz-half;
-    font-weight: normal;
-    font-size: 14px;
-    line-height: 16px;
+  padding: $sz-half;
+  color: $clr-gray-30;
+  background-color: $clr-gray-100;
+  border-radius: $sz-half;
+  font-weight: normal;
+  font-size: 14px;
+  line-height: 16px;
 
-    white-space: nowrap; 
-    overflow: hidden;
+  white-space: nowrap;
+  overflow: hidden;
 
-    &:hover {
-        background-color: $clr-gray-90;
-    }
+  &:hover {
+    background-color: $clr-gray-90;
+  }
 }
 
 .card {
-    background-color: $ui-panel-title-colour;
-    border-radius: $ui-border-radius;
+  background-color: $ui-panel-title-colour;
+  border-radius: $ui-border-radius;
 
-    padding: 0px;
+  padding: 0px;
 
-    overflow: hidden;
-    box-sizing: border-box;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .dlg-border-no-backdrop {
-    padding: $sz-double;
-    box-shadow: 0px 0px $sz-unit $clr-shadow;
+  padding: $sz-double;
+  box-shadow: 0px 0px $sz-unit $clr-shadow;
 }
 
 .dlg-border-with-backdrop {
-    padding: $sz-double;
+  padding: $sz-double;
 }
 
 .card-toolbar {
-    padding: $sz-unit;
+  padding: $sz-unit;
 }
 
 .top-shadow {
-    z-index: 10;
-    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  z-index: 10;
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
 }
 
 .card-toolbar-shadow {
-    @extend .top-shadow;
-    border-radius: 8px 8px 0px 0px;
+  @extend .top-shadow;
+  border-radius: 8px 8px 0px 0px;
 }
 
 .gap-separated-horizontal-elements > * + * {
-    margin-left: $sz-unit;
+  margin-left: $sz-unit;
 }
 
 .gap-separated-vertical-elements > * + * {
-    margin-top: $sz-unit;
+  margin-top: $sz-unit;
 }
 
 .gap-separated-vertical-elements-half > * + * {
-    margin-top: $sz-half;
+  margin-top: $sz-half;
 }
 
 .snackbar-below-toolbar {
-    position: absolute;
-    top: $sz-unit;
-    left: $sz-unit;
-    pointer-events: none;
+  position: absolute;
+  top: $sz-unit;
+  left: $sz-unit;
+  pointer-events: none;
 }
 
 .unit-padding {
-    padding: $sz-unit;
+  padding: $sz-unit;
 }
 
 .setting-row-no-pad {
-    background-color: $clr-gray-70;
-    border-bottom: 1px solid $clr-gray-80;
+  background-color: $clr-gray-70;
+  border-bottom: 1px solid $clr-gray-80;
 }
 
 .setting-row {
-    @extend .unit-padding;
-    @extend .setting-row-no-pad;
+  @extend .unit-padding;
+  @extend .setting-row-no-pad;
 }
 
 .setting-row-visible {
-    background-color: $clr-gray-60;
+  background-color: $clr-gray-60;
 }
 
 .setting-label {
-    @extend .txt-body;
-    user-select: none;
+  @extend .txt-body;
+  user-select: none;
 }
 
 .obj-shared {
-    user-select: none;
-    margin-left: $sz-unit;
+  user-select: none;
+  margin-left: $sz-unit;
 }
 
 .obj-colour {
 }
 
 .list-subheading {
-    @extend .txt-dlg-heading;
+  @extend .txt-dlg-heading;
 
-    background-color: $clr-gray-80;
-    padding: $sz-unit;
-    user-select: none;
+  background-color: $clr-gray-80;
+  padding: $sz-unit;
+  user-select: none;
 }
 
 .gray-label {
-    color: $clr-gray-30;
-    font-size: 14px;
-    font-weight: 400;
-    white-space: nowrap;
+  color: $clr-gray-30;
+  font-size: 14px;
+  font-weight: 400;
+  white-space: nowrap;
 }
 
 // Looks like an element tile but it's not an actual element, just a symbol (eg oxide/carbonate)
 .not-an-element {
-    color: $clr-gray-10;
-    background-color: $clr-gray-80;
-    border: 1px solid $clr-gray-100;
-    padding: 0px $sz-half;
-    white-space: nowrap;
-    line-height: 24px;
-    height: 24px; // element tiles are 22 but we also have a 1px border
-    cursor: default;
+  color: $clr-gray-10;
+  background-color: $clr-gray-80;
+  border: 1px solid $clr-gray-100;
+  padding: 0px $sz-half;
+  white-space: nowrap;
+  line-height: 24px;
+  height: 24px; // element tiles are 22 but we also have a 1px border
+  cursor: default;
 }
 
 // Tab-like navigation, used on various pages under the toolbar
 nav {
-    margin: $sz-unit;
+  margin: $sz-unit;
 }
 
 nav > a {
-    font-size: 16px;
-    line-height: 16px;
-    //border-top-left-radius: $sz-half;
-    //border-top-right-radius: $sz-half;
-    color: $clr-gray-30;
+  font-size: 16px;
+  line-height: 16px;
+  //border-top-left-radius: $sz-half;
+  //border-top-right-radius: $sz-half;
+  color: $clr-gray-30;
 
-    &:hover {
-        color: $clr-yellow;
-        text-decoration: none;
-    }
+  &:hover {
+    color: $clr-yellow;
+    text-decoration: none;
+  }
 }
 
 nav > a.active {
-    color: $clr-yellow;
-    //background-color: $clr-gray-80;
+  color: $clr-yellow;
+  //background-color: $clr-gray-80;
 }
 
 nav > a + a {
-    margin-left: 32px;
+  margin-left: 32px;
 }
 
 .full-height-below-toolbar {
-    max-height: calc(100vh - var(--top-toolbar-height)) !important;
+  max-height: calc(100vh - var(--top-toolbar-height)) !important;
 }
 
 .search-box-group {
-    background-color: $clr-gray-70;
-    border: 1px solid $clr-gray-60;
-    border-radius: $sz-half;
+  background-color: $clr-gray-70;
+  border: 1px solid $clr-gray-60;
+  border-radius: $sz-half;
 }
 
 .badge-host {
-    position: relative;
+  position: relative;
 }
 
 .move-up-left {
-    position: absolute;
-    right: -6px;
-    top: -6px;
+  position: absolute;
+  right: -6px;
+  top: -6px;
 }
 
-::ng-deep .mat-tooltip  {
+::ng-deep .mat-tooltip {
   white-space: pre-line !important;
-  background-color: #2B3136;
+  background-color: #2b3136;
   box-shadow: 0 0 2px black;
 }

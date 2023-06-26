@@ -3,47 +3,39 @@
   "compilerOptions": {
     "baseUrl": "./",
     "outDir": "./dist/out-tsc",
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
     "sourceMap": true,
     "declaration": false,
     "downlevelIteration": true,
     "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "module": "es2020",
     "moduleResolution": "node",
     "importHelpers": true,
-    "target": "es2015",
+    "target": "ES2022",
+    "module": "ES2022",
     "typeRoots": [
       "node_modules/@types"
     ],
+    "useDefineForClassFields": false,
     "lib": [
-      "es2018",
+      "ES2022",
       "dom"
     ]
   },
   "angularCompilerOptions": {
-    "strictTemplates": true,
+    "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true,
     "strictPropertyInitialization": false,
     "strictNullChecks": false,
     "noImplicitAny": false,
     "strictBindCallApply": true,
     "strictFunctionTypes": true,
     "allowSyntheticDefaultImports": true,
-/*
-    "allowUnreachableCode": false,
-    "allowUnusedLabels": false,
-    "alwaysStrict": false,
-    "exactOptionalPropertyTypes": false,
-    "noFallthroughCasesInSwitch": false,
-    "noImplicitOverride": false,
-    "noImplicitReturns": false,
-    "noImplicitThis": false,
-    "noPropertyAccessFromIndexSignature": false,
-    "noUncheckedIndexedAccess": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "strict": false,
-    "useUnknownInCatchVariables": false,
-*/
   }
 }

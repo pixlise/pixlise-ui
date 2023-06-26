@@ -30,147 +30,137 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Observable, ReplaySubject, Subject, Subscription } from "rxjs";
-import { ComponentVersions, DetectorConfig, DetectorConfigList, PiquantConfig, PiquantDownloadables, PiquantVersionConfig } from "src/app/models/BasicTypes";
-import { DataSet } from "src/app/models/DataSet";
+import {
+  ComponentVersions,
+  DetectorConfig,
+  DetectorConfigList,
+  PiquantConfig,
+  PiquantDownloadables,
+  PiquantVersionConfig,
+} from "../models/BasicTypes";
+// import { DataSet } from "src/app/models/DataSet";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
-import { DataSetService } from "./data-set.service";
-
+import { APIPaths, makeHeaders } from "../utils/api-helpers";
+// import { DataSetService } from "./data-set.service";
 
 @Injectable({
-    providedIn: "root"
+  providedIn: "root",
 })
-export class EnvConfigurationService
-{
-    private _subs = new Subscription();
+export class EnvConfigurationService {
+  private _subs = new Subscription();
 
-    private _detectorConfig: DetectorConfig = null;
-    private _detectorConfig$ = new ReplaySubject<DetectorConfig>(1);
+  private _detectorConfig!: DetectorConfig;
+  private _detectorConfig$ = new ReplaySubject<DetectorConfig>(1);
 
-    constructor(
-        private http: HttpClient,
-        private datasetService: DataSetService
-    )
-    {
-        this.resubscribeDataset();
-    }
+  constructor(
+    private http: HttpClient // private datasetService: DataSetService
+  ) {
+    this.resubscribeDataset();
+  }
 
-    get detectorConfig(): DetectorConfig
-    {
-        return this._detectorConfig;
-    }
+  get detectorConfig(): DetectorConfig {
+    return this._detectorConfig;
+  }
 
-    get detectorConfig$(): Subject<DetectorConfig>
-    {
-        return this._detectorConfig$;
-    }
+  get detectorConfig$(): Subject<DetectorConfig> {
+    return this._detectorConfig$;
+  }
 
-    private resubscribeDataset()
-    {
-        this._subs.add(this.datasetService.dataset$.subscribe(
-            (dataset: DataSet)=>
-            {
-                if(dataset)
-                {
-                    this.refresh(dataset.experiment.getDetectorConfig());
-                }
-            },
-            (err)=>
-            {
-            },
-            ()=>
-            {
-                this.resubscribeDataset();
-            }
-        ));
-    }
+  private resubscribeDataset() {
+    // this._subs.add(
+    //   this.datasetService.dataset$.subscribe(
+    //     (dataset: DataSet) => {
+    //       if (dataset) {
+    //         this.refresh(dataset.experiment.getDetectorConfig());
+    //       }
+    //     },
+    //     (err) => {},
+    //     () => {
+    //       this.resubscribeDataset();
+    //     }
+    //   )
+    // );
+  }
 
-    refresh(config: string)
-    {
-        console.log("Refreshing detector config: "+config);
-        let apiURL = APIPaths.getWithHost(APIPaths.api_detector_config+"/"+config);
-        this.http.get<DetectorConfig>(apiURL, makeHeaders()).subscribe(
-            (resp: DetectorConfig)=>
-            {
-                this._detectorConfig = resp;
-                this._detectorConfig$.next(this._detectorConfig);
+  refresh(config: string) {
+    console.log("Refreshing detector config: " + config);
+    let apiURL = APIPaths.getWithHost(
+      APIPaths.api_detector_config + "/" + config
+    );
+    this.http.get<DetectorConfig>(apiURL, makeHeaders()).subscribe(
+      (resp: DetectorConfig) => {
+        this._detectorConfig = resp;
+        this._detectorConfig$.next(this._detectorConfig);
 
-                // Re-init the XRF line cache
-                periodicTableDB.notifyDetectorConfig(this._detectorConfig);
-            },
-            (err)=>
-            {
-                console.error("Failed to refresh detector config: \""+config+"\"");
-            }
-        );
-    }
+        // Re-init the XRF line cache
+        periodicTableDB.notifyDetectorConfig(this._detectorConfig);
+      },
+      (err) => {
+        console.error('Failed to refresh detector config: "' + config + '"');
+      }
+    );
+  }
 
-    listConfigs(): Observable<DetectorConfigList>
-    {
-        console.log("Loading quant config list");
-        let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root+"/config");
-        return this.http.get<DetectorConfigList>(apiURL, makeHeaders());
-    }
+  listConfigs(): Observable<DetectorConfigList> {
+    console.log("Loading quant config list");
+    let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root + "/config");
+    return this.http.get<DetectorConfigList>(apiURL, makeHeaders());
+  }
 
-    getPiquantConfigVersions(config: string): Observable<string[]>
-    {
-        console.log("Loading quant config version for: "+config);
-        let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root+"/config/"+config+"/versions");
-        return this.http.get<string[]>(apiURL, makeHeaders());
-    }
+  getPiquantConfigVersions(config: string): Observable<string[]> {
+    console.log("Loading quant config version for: " + config);
+    let apiURL = APIPaths.getWithHost(
+      APIPaths.api_piquant_root + "/config/" + config + "/versions"
+    );
+    return this.http.get<string[]>(apiURL, makeHeaders());
+  }
 
-    getPiquantConfig(config: string, version: string): Observable<PiquantConfig>
-    {
-        console.log("Loading quant config: "+config+", version: "+version);
-        let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root+"/config/"+config+"/version/"+version);
-        return this.http.get<PiquantConfig>(apiURL, makeHeaders());
-    }
+  getPiquantConfig(config: string, version: string): Observable<PiquantConfig> {
+    console.log("Loading quant config: " + config + ", version: " + version);
+    let apiURL = APIPaths.getWithHost(
+      APIPaths.api_piquant_root + "/config/" + config + "/version/" + version
+    );
+    return this.http.get<PiquantConfig>(apiURL, makeHeaders());
+  }
 
-    listPiquantDownloads(): Observable<PiquantDownloadables>
-    {
-        console.log("Loading piquant downloadable list");
-        let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root+"/download");
-        return this.http.get<PiquantDownloadables>(apiURL, makeHeaders());
-    }
+  listPiquantDownloads(): Observable<PiquantDownloadables> {
+    console.log("Loading piquant downloadable list");
+    let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root + "/download");
+    return this.http.get<PiquantDownloadables>(apiURL, makeHeaders());
+  }
 
-    getPiquantVersion(): Observable<PiquantVersionConfig>
-    {
-        let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root+"/version");
-        return this.http.get<PiquantVersionConfig>(apiURL, makeHeaders());
-    }
+  getPiquantVersion(): Observable<PiquantVersionConfig> {
+    let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root + "/version");
+    return this.http.get<PiquantVersionConfig>(apiURL, makeHeaders());
+  }
 
-    setPiquantVersion(version: string): Observable<void>
-    {
-        let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root+"/version");
-        let body = {"version": version};
-        
-        return this.http.post<void>(apiURL, body, makeHeaders());
-    }
+  setPiquantVersion(version: string): Observable<void> {
+    let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root + "/version");
+    let body = { version: version };
 
-    // TODO: If we've requested these before, cache them locally
-    getComponentVersions(): Observable<ComponentVersions>
-    {
-        let apiUrl = APIPaths.getWithHost(APIPaths.api_componentVersions);
+    return this.http.post<void>(apiURL, body, makeHeaders());
+  }
 
-        return this.http.get<ComponentVersions>(apiUrl, makeHeaders());
-    }
+  // TODO: If we've requested these before, cache them locally
+  getComponentVersions(): Observable<ComponentVersions> {
+    let apiUrl = APIPaths.getWithHost(APIPaths.api_componentVersions);
 
-    // For testing only, calls API endpoints that return specific errors
-    test500(): Observable<string>
-    {
-        let apiUrl = APIPaths.getWithHost(APIPaths.api_test+"/500");
-        return this.http.get<string>(apiUrl, makeHeaders());
-    }
+    return this.http.get<ComponentVersions>(apiUrl, makeHeaders());
+  }
 
-    test503(): Observable<string>
-    {
-        let apiUrl = APIPaths.getWithHost(APIPaths.api_test+"/503");
-        return this.http.get<string>(apiUrl, makeHeaders());
-    }
+  // For testing only, calls API endpoints that return specific errors
+  test500(): Observable<string> {
+    let apiUrl = APIPaths.getWithHost(APIPaths.api_test + "/500");
+    return this.http.get<string>(apiUrl, makeHeaders());
+  }
 
-    test404(): Observable<string>
-    {
-        let apiUrl = APIPaths.getWithHost(APIPaths.api_test+"/404"); // literally doesn't exist on API side, so should get real 404 back
-        return this.http.get<string>(apiUrl, makeHeaders());
-    }
+  test503(): Observable<string> {
+    let apiUrl = APIPaths.getWithHost(APIPaths.api_test + "/503");
+    return this.http.get<string>(apiUrl, makeHeaders());
+  }
+
+  test404(): Observable<string> {
+    let apiUrl = APIPaths.getWithHost(APIPaths.api_test + "/404"); // literally doesn't exist on API side, so should get real 404 back
+    return this.http.get<string>(apiUrl, makeHeaders());
+  }
 }
