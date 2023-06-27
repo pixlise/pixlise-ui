@@ -31,23 +31,23 @@
 export class DatasetFilter
 {
     constructor(
-        public solMin: string,
-        public solMax: string,
+        public solMin: string|null,
+        public solMax: string|null,
 
-        public target: string,
+        public target: string|null,
 
-        public site: string,
+        public site: string|null,
 
-        public drive: string,
+        public drive: string|null,
 
-        public detectorChosen: string,
+        public detectorChosen: string|null,
 
-        public hasDwell: boolean,
-        public hasQuant: boolean,
-        public hasNormal: boolean,
+        public hasDwell: boolean|null,
+        public hasQuant: boolean|null,
+        public hasNormal: boolean|null,
 
-        public pmcsMin: string,
-        public pmcsMax: string
+        public pmcsMin: string|null,
+        public pmcsMax: string|null
     )
     {
     }

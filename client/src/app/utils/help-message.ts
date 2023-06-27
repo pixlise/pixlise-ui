@@ -27,50 +27,25 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
-import { BadgeStyle } from "../../badge/badge.component";
-
-export type PushButtonStyle = "normal" | "borderless" | "yellow" | "outline" | "gray" | "light-right-outline" | "orange" | "dark-outline";
-
-@Component({
-    selector: "push-button",
-    templateUrl: "./push-button.component.html",
-    styleUrls: ["./push-button.component.scss"]
-})
-export class PushButtonComponent implements OnInit
+export class HelpMessage
 {
-    @Input() buttonStyle: PushButtonStyle = "normal";
-    @Input() active: boolean = false;
-    @Input() disabled: boolean = false;
-    @Input() notificationCount: number = 0;
-    @Input() badgeStyle: BadgeStyle = "notification";
-    @Input() tooltipTitle: string = "";
-    @Output() onClick = new EventEmitter();
+    public static readonly NO_QUANT_FOR_SELECTION = "No quantification data found for selected PMCs. Are they house-keeping PMCs?";
+    public static readonly NOT_ENOUGH_ELEMENTS = "Not enough elements defined";
+    public static readonly SCATTER_SELECT_LINES_TO_DISPLAY = "Select One Or More Lines To Display";
 
-    constructor()
-    {
-    }
+    public static readonly NO_DATASETS_FOUND = "No search results returned, Citizen.";
+    public static readonly NETWORK_ERROR = "The network is unresponsive, Citizen.";
+    public static readonly NO_PERMISSIONS = "Citizen, you have insufficient permissions.";
+    public static readonly NO_SELECTED_DATASET = "Citizen needs to select a dataset to see metadata.";
 
-    ngOnInit()
-    {
-        const validStyles: PushButtonStyle[] = ["normal", "borderless", "yellow", "outline", "gray", "light-right-outline", "orange", "dark-outline"];
-        if(validStyles.indexOf(this.buttonStyle) == -1)
-        {
-            console.warn("Invalid style for push-button: "+this.buttonStyle);
-            this.buttonStyle = validStyles[0];
-        }
-    }
+    public static readonly PAGE_NOT_FOUND = "Page not found. Citizen must have thought of the wrong planet.";
 
-    get styleCSS(): string
-    {
-        return `btn-${this.buttonStyle}${this.disabled ? " disabled" : ""}${this.active ? " active" : ""}`;
-    }
+    public static readonly SELECTION_EMPTY = "Selection is empty. Citizen needs to select points for this to work.";
+    public static readonly REMAINING_POINTS_EMPTY = "There are no remaining points.";
 
-    onClickInternal(event: MouseEvent): void
-    {
-        if(!this.disabled)
-        {
-            this.onClick.emit(event);
-        }
-    }
+    public static readonly AWAITING_ADMIN_APPROVAL = "Citizen, the admin has not yet verified your account. Check back later.";
+    public static readonly NO_DATASET_GROUPS = "Citizen is not assigned to view any dataset groups.";
+    public static readonly GET_CLAIMS_FAILED = "Failed to get citizens permissions. Try again later.";
+
+    public static readonly ROI_QUERY_FAILED = "Failed to get data, do selected region(s) exist?";
 }

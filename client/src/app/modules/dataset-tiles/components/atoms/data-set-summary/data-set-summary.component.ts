@@ -29,8 +29,7 @@
 
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { Subscription } from "rxjs";
-import { DataSetSummary } from "src/app/models/DataSet";
-import { DataSetService } from "src/app/services/data-set.service";
+import { ScanDataType, ScanItem } from "src/app/generated-protos/scan";
 
 
 
@@ -43,30 +42,35 @@ export class DataSetSummaryComponent implements OnInit
 {
     private _subs = new Subscription();
 
-    @Input() summary: DataSetSummary = null;
-    @Input() selected: DataSetSummary = null;
+    @Input() summary: ScanItem|null = null;
+    @Input() selected: ScanItem|null = null;
     @Output() onSelect = new EventEmitter();
 
     private _title: string = "";
     private _missingData: string = "";
 
     constructor(
-        private datasetService: DataSetService
     )
     {
     }
 
     ngOnInit()
     {
+        if(!this.summary)
+        {
+            return;
+        }
+
         // Prepend SOL if it's there
         this._title = "";
-        if(this.summary.sol)
+        let sol = this.summary.meta["Sol"]||"";
+        if(sol)
         {
-            this._title += "SOL-"+this.summary.sol+": ";
+            this._title += "SOL-"+sol+": ";
         }
         this._title += this.summary.title;
 
-        let missing = DataSetSummary.listMissingData(this.summary);
+        let missing = "";// TODO: DataSetSummary.listMissingData(this.summary);
         if(missing.length > 0)
         {
             this._missingData = "Missing: "+Array.from(missing).join(",");
@@ -84,6 +88,7 @@ export class DataSetSummaryComponent implements OnInit
 
     get tileImageURL(): string
     {
+/* TODO:
         // Snip off the end and replace with context-thumb, which allows the API to work out the image to return
         let pos = this.summary.context_image_link.lastIndexOf("/");
         if(pos < 0)
@@ -93,6 +98,8 @@ export class DataSetSummaryComponent implements OnInit
 
         let url = this.summary.context_image_link.substring(0, pos+1)+"context-thumb";
         return url;
+*/
+        return "";
     }
 
     get title(): string
@@ -112,65 +119,112 @@ export class DataSetSummaryComponent implements OnInit
 
     get isSelected(): boolean
     {
-        let selected = this.selected && this.selected.dataset_id == this.summary.dataset_id;
-        return selected;
+        if(!this.selected)
+        {
+            return false;
+        }
+        return this.selected?.id == this.summary?.id;
     }
 
     get isRGBU(): boolean
     {
-        let rgbuImageCount = this.summary.tiff_context_images || 0;
-        return rgbuImageCount > 0;
+        if(!this.summary)
+        {
+            return false;
+        }
+
+        for(let sdt of this.summary.dataTypes)
+        {
+            if(sdt.dataType == ScanDataType.SD_RGBU)
+            {
+                return sdt.count > 0;
+            }
+        }
+        return false;
     }
     get isXRF(): boolean
     {
-        return this.summary.normal_spectra && this.summary.normal_spectra > 0;
+        return (this.summary?.contentCounts["NormalSpectra"]||0) > 0;
+    }
+
+    get bulkSpectra(): number
+    {
+        return this.summary?.contentCounts["BulkSpectra"]||0;
+    }
+
+    get maxSpectra(): number
+    {
+        return this.summary?.contentCounts["MaxSpectra"]||0;
+    }
+
+    get normalSpectra(): number
+    {
+        return this.summary?.contentCounts["NormalSpectra"]||0;
     }
 
     get dwellSpectra(): number
     {
-        let dwells = this.summary.dwell_spectra;
-        if(!dwells)
-        {
-            return 0;
-        }
-        return dwells;
+        return this.summary?.contentCounts["DwellSpectra"]||0;
+    }
+
+    get pseudoIntensities(): number
+    {
+        return this.summary?.contentCounts["PseudoIntensities"]||0;
     }
 
     get displaySol(): string
     {
-        if(this.summary.sol.length <= 0)
+        let sol = this.summary?.meta["Sol"]||"";
+        if(sol.length <= 0)
         {
             return "pre-mission";
         }
-        return this.summary.sol;
+        return sol;
     }
 
     get displayTarget(): string
     {
-        if(this.summary.target_id == "?" || this.summary.target.length <= 0)
+        let target = this.summary?.meta["Target"]||"";
+        if(target == "?" || target.length <= 0)
         {
             return "--";
         }
 
-        return this.summary.target;
+        return target;
     }
 
-    get displayValue(): string
+    get displayTargetId(): string
     {
-        if(this.summary.drive_id <= 0)
+        let targetId = this.summary?.meta["TargetId"]||"";
+        if(targetId == "?" || targetId.length <= 0)
         {
             return "--";
         }
-        return this.summary.drive_id.toString();
+
+        return targetId;
     }
 
-    onClickTileBackground(event): void
+    get displayDriveID(): string
     {
-        // Consume event so our parent doesn't get our clicks
-        event.stopPropagation();
+        let driveId = this.summary?.meta["DriveId"]||"";
+        if(driveId.length <= 0)
+        {
+            return "--";
+        }
+        return driveId;
     }
 
-    onClickTileArea(event): void
+    get displaySite(): string
+    {
+        return this.summary?.meta["Site"]||"";
+    }
+
+    get summaryId(): string
+    {
+        return this.summary?.id||"";
+    }
+    
+    onClickTileArea(event: MouseEvent): void
     {
         // Consume event so our parent doesn't get our clicks
         event.stopPropagation();

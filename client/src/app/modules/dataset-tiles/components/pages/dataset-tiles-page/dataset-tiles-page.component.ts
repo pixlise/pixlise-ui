@@ -32,20 +32,23 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { Subscription } from "rxjs";
 
-import { DataSetSummary } from "src/app/models/DataSet";
+import { AuthService } from '@auth0/auth0-angular';
+
+import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
+import { ScanDataType, ScanItem } from "src/app/generated-protos/scan";
 
 import { DatasetFilter } from "../../../dataset-filter";
 import { AddDatasetDialogComponent } from "../../atoms/add-dataset-dialog/add-dataset-dialog.component";
 import { FilterDialogComponent, FilterDialogData } from "../../atoms/filter-dialog/filter-dialog.component";
 
-import { AuthenticationService } from "src/app/services/authentication.service";
-import { DataSetService } from "src/app/services/data-set.service";
-import { ViewStateService } from "src/app/services/view-state.service";
+//import { ViewStateService } from "src/app/services/view-state.service";
 
-import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "src/app/UI/atoms/picker-dialog/picker-dialog.component";
-import { WidgetSettingsMenuComponent } from "src/app/UI/atoms/widget-settings-menu/widget-settings-menu.component";
+//import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "src/app/UI/atoms/picker-dialog/picker-dialog.component";
+import { WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { HelpMessage } from "src/app/utils/help-message";
 import { getMB, httpErrorToString } from "src/app/utils/utils";
+import { Permissions } from "src/app/utils/permissions";
 
 
 class SummaryItem
@@ -56,30 +59,31 @@ class SummaryItem
 }
 
 @Component({
-    selector: "app-datasets",
-    templateUrl: "./datasets.component.html",
-    styleUrls: ["./datasets.component.scss"]
+    selector: "dataset-tiles-page",
+    templateUrl: "./dataset-tiles-page.component.html",
+    styleUrls: ["./dataset-tiles-page.component.scss"]
 })
 export class DatasetTilesPageComponent implements OnInit
 {
     private _subs = new Subscription();
 
     // Unfortunately we had to include this hack again :(
-    @ViewChild("openOptionsButton") openOptionsButton: ElementRef;
+    @ViewChild("openOptionsButton") openOptionsButton: ElementRef|undefined;
 
     toSearch: string = "";
-    datasets: DataSetSummary[] = null;
+    scans: ScanItem[] = [];
     datasetListingAllowed: boolean = true;
 
-    selectedDataset: DataSetSummary = null;
+    selectedScan: ScanItem|null = null;
 
-    selectedDatasetSummaryItems: SummaryItem[] = [];
-    selectedDatasetTrackingItems: SummaryItem[] = [];
+    selectedScanSummaryItems: SummaryItem[] = [];
+    selectedScanTrackingItems: SummaryItem[] = [];
     selectedMissingData: string = "";
 
-    errorString: string = null;
+    errorString: string = "";
+    loading = false;
 
-    noSelectedDatasetMsg = HelpMessage.NO_SELECTED_DATASET;
+    noselectedScanMsg = HelpMessage.NO_SELECTED_DATASET;
 
     private _allGroups: string[] = [];
     private _selectedGroups: string[] = [];
@@ -90,9 +94,9 @@ export class DatasetTilesPageComponent implements OnInit
 
     constructor(
         private _router: Router,
-        private _datasetService: DataSetService,
-        private _viewStateService: ViewStateService,
-        private _authService: AuthenticationService,
+        private _dataService: APIDataService,
+        //private _viewStateService: ViewStateService,
+        private _authService: AuthService,
         public dialog: MatDialog
     )
     {
@@ -100,12 +104,13 @@ export class DatasetTilesPageComponent implements OnInit
 
     ngOnInit()
     {
-        this._authService.getIdTokenClaims$().subscribe(
-            (claims)=>
+        this._authService.idTokenClaims$.subscribe({
+            next: (claims)=>
             {
                 if(claims)
                 {
-                    if(AuthenticationService.permissionCount(claims) <= 0)
+                    // This all went unused during public user feature additions
+                    if(Permissions.permissionCount(claims) <= 0)
                     {
                         // User has no permissions at all, admins would've set them this way!
                         // this.setDatasetListingNotAllowedError(HelpMessage.AWAITING_ADMIN_APPROVAL);
@@ -113,7 +118,7 @@ export class DatasetTilesPageComponent implements OnInit
                     else
                     {
                         // If the user is set to have no permissions, we show that error and don't bother requesting
-                        if(AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionNone))
+                        if(Permissions.hasPermissionSet(claims, Permissions.permissionNone))
                         {
                             // Show a special error in this case - user has been set to have no permissions
                             // this.setDatasetListingNotAllowedError(HelpMessage.NO_PERMISSIONS);
@@ -121,7 +126,7 @@ export class DatasetTilesPageComponent implements OnInit
                         else
                         {
                             // Don't have no-permission set, so see if the user is allowed to access any groups
-                            this._allGroups = AuthenticationService.getGroupsPermissionAllows(claims);
+                            this._allGroups = Permissions.getGroupsPermissionAllows(claims);
                             this._selectedGroups = Array.from(this._allGroups);
                             // if(this._allGroups.length <= 0)
                             // {
@@ -129,16 +134,16 @@ export class DatasetTilesPageComponent implements OnInit
                             // }
                         }
 
-                        this._userCanEdit = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionEditDataset);
+                        this._userCanEdit = Permissions.hasPermissionSet(claims, Permissions.permissionEditDataset);
                     }
                 }
             },
-            (err)=>
+            error: (err)=>
             {
                 this.setDatasetListingNotAllowedError(HelpMessage.GET_CLAIMS_FAILED);
             }
-        );
-
+        });
+/* TODO:
         this._subs.add(this._authService.isPublicUser$.subscribe(
             (isPublicUser)=>
             {
@@ -158,7 +163,7 @@ export class DatasetTilesPageComponent implements OnInit
                 );
             }
         ));
-
+*/
         this.clearSelection();
         this.onSearch();
     }
@@ -207,7 +212,7 @@ export class DatasetTilesPageComponent implements OnInit
         this.errorString = err;
     }
 
-    onOpen(event, resetView: boolean): void
+    onOpen(resetView: boolean): void
     {
         this.closeOpenOptionsMenu();
 
@@ -219,22 +224,30 @@ export class DatasetTilesPageComponent implements OnInit
             }
         }
 
-        this._viewStateService.setResetFlag(resetView);
+        // TODO: replace this...
+        //this._viewStateService.setResetFlag(resetView);
 
         // Clear any existing dataset
-        this._datasetService.close();
+        // TODO: replace this if needed
+        // this._datasetService.close();
 
         // Navigating to the URL will trigger the download. This is neat because these URLs are
         // share-able and will open datasets if users are already logged in
-        this._router.navigateByUrl("dataset/"+this.selectedDataset.dataset_id+"/analysis");
+        if(this.selectedScan)
+        {
+            this._router.navigateByUrl("dataset/"+this.selectedScan.id+"/analysis");
+        }
     }
 
-    onEdit(event): void
+    onEdit(): void
     {
         this.closeOpenOptionsMenu();
 
         // Switch to the editing tab
-        this._router.navigateByUrl("dataset-edit/"+this.selectedDataset.dataset_id);
+        if(this.selectedScan)
+        {
+            this._router.navigateByUrl("dataset-edit/"+this.selectedScan.id);
+        }
     }
 
     onClickTileArea(): void
@@ -244,8 +257,8 @@ export class DatasetTilesPageComponent implements OnInit
 
     onSearch(): void
     {
-        this.datasets = null;
-        this.errorString = "Fetching Datasets...";
+        this.scans = [];
+        this.errorString = "Fetching Scans...";
 
         let searchString = this._filter.toSearchString();
 
@@ -262,28 +275,33 @@ export class DatasetTilesPageComponent implements OnInit
             searchString = DatasetFilter.appendTerm(searchString, "title="+this.toSearch);
         }
 
-        this._datasetService.listDatasets(searchString).subscribe(
-            (result: DataSetSummary[])=>
+        // TODO: we don't actually use the filtering stuff, search string needs to change for API
+        // because we have multiple fields we can specify now...
+        this.loading = true;
+        this._dataService.sendScanListRequest(ScanListReq.create({})).subscribe({
+            next: (resp: ScanListResp)=>
             {
-                this.errorString = null;
+                this.loading = false;
+                this.errorString = "";
 
-                this.datasets = result;
-                this.sortDatasets(this.datasets);
-                if(this.datasets.length <= 0)
+                this.scans = resp.scans;
+                this.sortScans(this.scans);
+                if(this.scans.length <= 0)
                 {
                     this.errorString = HelpMessage.NO_DATASETS_FOUND;
                 }
             },
-            (err)=>
+            error: (err)=>
             {
+                this.loading = false;
                 console.error(err);
 
                 // Display the error text that came back, might be useful
                 this.errorString = httpErrorToString(err, "Search Error");
 
-                this.datasets = [];
+                this.scans = [];
             }
-        );
+        });
     }
 
     private getSortValue(a: any, b: any): number
@@ -299,28 +317,31 @@ export class DatasetTilesPageComponent implements OnInit
         return 0;
     }
 
-    private sortDatasets(datasets: DataSetSummary[])
+    private sortScans(scans: ScanItem[])
     {
         // First, sort datasets by SOL alphabetically, because we have some starting with letters to denote
         // that they are test datasets. Then we sort numerically within the lettered sections
-        datasets.sort(
-            (a: DataSetSummary, b: DataSetSummary)=>
+        scans.sort(
+            (a: ScanItem, b: ScanItem)=>
             {
-                if(a.sol === b.sol && a.sol.length > 0) // Don't let empty strings all fall into here!
+                // If there is a sol on both...
+                let aSol = a.meta["sol"]||"", bSol = b.meta["sol"]||"";
+                
+                if(aSol === bSol && aSol.length > 0) // Don't let empty strings all fall into here!
                 {
                     // They're equal, sort by name
                     return this.getSortValue(a.title, b.title);
                 }
 
                 // If they don't match and one is empty, put empty at the end always
-                if(a.sol != b.sol)
+                if(aSol != bSol)
                 {
-                    if(a.sol.length <= 0)
+                    if(aSol.length <= 0)
                     {
                         // a is empty, goes last
                         return 1;
                     }
-                    else if(b.sol.length <= 0)
+                    else if(bSol.length <= 0)
                     {
                         // b is empty, goes last
                         return -1;
@@ -329,11 +350,11 @@ export class DatasetTilesPageComponent implements OnInit
 
                 // SOLs are strings, and can start with letters. We want the letter part alphabetically sorted, and any numbers
                 // after it sorted numerically
-                let aLetter = a.sol.length > 0 && Number.isNaN(Number.parseInt(a.sol[0])) ? a.sol[0] : "";
-                let bLetter = b.sol.length > 0 && Number.isNaN(Number.parseInt(b.sol[0])) ? b.sol[0] : "";
+                let aLetter = aSol.length > 0 && Number.isNaN(Number.parseInt(aSol[0])) ? aSol[0] : "";
+                let bLetter = bSol.length > 0 && Number.isNaN(Number.parseInt(bSol[0])) ? bSol[0] : "";
 
-                let aSolNum = Number.parseInt(a.sol.substring(aLetter.length));
-                let bSolNum = Number.parseInt(b.sol.substring(bLetter.length));
+                let aSolNum = Number.parseInt(aSol.substring(aLetter.length));
+                let bSolNum = Number.parseInt(bSol.substring(bLetter.length));
 
                 // If neither or both have the same letter, sort by number
                 if(aLetter == bLetter)
@@ -379,11 +400,13 @@ export class DatasetTilesPageComponent implements OnInit
         );
     }
 
-    onGroups(event): void
+    onGroups(event: MouseEvent): void
     {
         const dialogConfig = new MatDialogConfig();
         //dialogConfig.backdropClass = 'empty-overlay-backdrop';
 
+        // TODO:
+        /*
         let items: PickerDialogItem[] = [];
         items.push(new PickerDialogItem(null, "Groups", null, true));
 
@@ -404,28 +427,41 @@ export class DatasetTilesPageComponent implements OnInit
                     this.onSearch();
                 }
             }
-        );
+        );*/
     }
 
-    onSelect(event: DataSetSummary): void
+    onSelect(event: ScanItem): void
     {
-        this.selectedDataset = event;
+        this.selectedScan = event;
 
         // Fill these so they display
-        this.selectedDatasetSummaryItems = [
-            new SummaryItem("Bulk Sum:", this.spectraCount(this.selectedDataset.bulk_spectra)),
-            new SummaryItem("Max Value:", this.spectraCount(this.selectedDataset.max_spectra)),
-            new SummaryItem("Normal Spectra:", this.spectraCount(this.selectedDataset.normal_spectra)),
-            new SummaryItem("Dwell Spectra:", this.spectraCount(this.selectedDataset.dwell_spectra)),
-            new SummaryItem("Pseudo intensities:", this.spectraCount(this.selectedDataset.pseudo_intensities)),
-            new SummaryItem("MCC Images:", this.selectedDataset.context_images.toString()),
-            new SummaryItem("PMCs:", this.selectedDataset.location_count.toString()),
-            new SummaryItem("Detector:", this.selectedDataset.detector_config),
-            new SummaryItem("File Size:", getMB(this.selectedDataset.data_file_size)),
+        this.selectedScanSummaryItems = [
+            new SummaryItem("Detector:", this.selectedScan.instrumentConfig),
+            new SummaryItem("Bulk Sum:", this.spectraCount(this.selectedScan.contentCounts["BulkSpectra"])),
+            new SummaryItem("Max Value:", this.spectraCount(this.selectedScan.contentCounts["MaxSpectra"])),
+            new SummaryItem("Normal Spectra:", this.spectraCount(this.selectedScan.contentCounts["NormalSpectra"])),
+            new SummaryItem("Dwell Spectra:", this.spectraCount(this.selectedScan.contentCounts["DwellSpectra"])),
+            new SummaryItem("Pseudo intensities:", this.spectraCount(this.selectedScan.contentCounts["PseudoIntensities"]))
         ];
 
+        for(let sdt of this.selectedScan.dataTypes)
+        {
+            if(sdt.dataType == ScanDataType.SD_IMAGE)
+            {
+                new SummaryItem("MCC Images:", sdt.count.toString());
+            }
+            else if(sdt.dataType == ScanDataType.SD_XRF)
+            {
+                new SummaryItem("PMCs:", sdt.count.toString());
+            }
+            else if(sdt.dataType == ScanDataType.SD_RGBU)
+            {
+                new SummaryItem("RGBU Images:", sdt.count.toString());
+            }
+        }
+
         let createTime = "Unknown";
-        if(this.selectedDataset.create_unixtime_sec)
+        if(this.selectedScan.timestampUnixSec)
         {
             const dtFormat = new Intl.DateTimeFormat("en-GB", {
                 //'dateStyle': 'medium',
@@ -439,26 +475,27 @@ export class DatasetTilesPageComponent implements OnInit
                 //timeZone: 'UTC'
             });
 
-            createTime = dtFormat.format(new Date(this.selectedDataset.create_unixtime_sec*1000));
+            createTime = dtFormat.format(new Date(this.selectedScan.timestampUnixSec*1000));
         }
 
-        this.selectedDatasetSummaryItems.push(new SummaryItem("Updated Time:", createTime));
+        this.selectedScanSummaryItems.push(new SummaryItem("Updated Time:", createTime));
 
-        this.selectedDatasetTrackingItems = [
-            new SummaryItem("Target Name:", this.selectedDataset.target),
-            new SummaryItem("Site:", this.selectedDataset.site),
-            new SummaryItem("Sol:", this.selectedDataset.sol),
-            new SummaryItem("Drive:", this.selectedDataset.drive_id.toString()),
-            new SummaryItem("RTT:", this.selectedDataset.rtt.toString()),
-            new SummaryItem("SCLK:", this.selectedDataset.sclk.toString()),
-            new SummaryItem("PIXLISE ID:", this.selectedDataset.dataset_id.toString()),
+        this.selectedScanTrackingItems = [
+            new SummaryItem("Target Name:", this.selectedScan.meta["Target"]||""),
+            new SummaryItem("Site:", this.selectedScan.meta["Site"]||""),
+            new SummaryItem("Sol:", this.selectedScan.meta["Sol"]||""),
+            new SummaryItem("Drive:", this.selectedScan.meta["DriveId"]||""),
+            new SummaryItem("RTT:", this.selectedScan.meta["RTT"]||""),
+            new SummaryItem("SCLK:", this.selectedScan.meta["SCLK"]||""),
+            new SummaryItem("PIXLISE ID:", this.selectedScan.id),
         ];
 
-        let missing = DataSetSummary.listMissingData(this.selectedDataset);
+        // TODO:
+        let missing = "";//DataSetSummary.listMissingData(this.selectedScan);
         this.selectedMissingData = missing.length > 0 ? "Dataset likely missing: "+Array.from(missing).join(",") : "";
     }
 
-    onAddDataset(): void
+    onAddScan(): void
     {
         const dialogConfig = new MatDialogConfig();
 
@@ -472,7 +509,7 @@ export class DatasetTilesPageComponent implements OnInit
         dialogRef.afterClosed().subscribe(
             ()=>
             {
-                // Refresh datasets in the near future, it should have appeared
+                // Refresh scans in the near future, it should have appeared
                 setTimeout(()=>{this.onSearch();}, 2000);
             }
         );
@@ -480,15 +517,18 @@ export class DatasetTilesPageComponent implements OnInit
 
     get contextImageURL(): string
     {
+/* TODO:
         // Snip off the end and replace with context-thumb, which allows the API to work out the image to return
-        let pos = this.selectedDataset.context_image_link.lastIndexOf("/");
+        let pos = this.selectedScan.context_image_link.lastIndexOf("/");
         if(pos < 0)
         {
-            return this.selectedDataset.context_image_link;
+            return this.selectedScan.context_image_link;
         }
 
-        let url = this.selectedDataset.context_image_link.substring(0, pos+1)+"context-image";
+        let url = this.selectedScan.context_image_link.substring(0, pos+1)+"context-image";
         return url;
+*/
+        return "";
     }
 
     private spectraCount(count: number): string
@@ -502,10 +542,10 @@ export class DatasetTilesPageComponent implements OnInit
 
     private clearSelection(): void
     {
-        this.selectedDataset = null;
+        this.selectedScan = null;
 
-        this.selectedDatasetSummaryItems = [];
-        this.selectedDatasetTrackingItems = [];
+        this.selectedScanSummaryItems = [];
+        this.selectedScanTrackingItems = [];
     }
 
     private closeOpenOptionsMenu(): void

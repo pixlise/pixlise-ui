@@ -32,16 +32,16 @@ POSSIBILITY OF SUCH DAMAGE.
 <ng-template #openOptionsMenu>
     <div fxLayout="column" class="gap-separated-vertical-elements">
         <push-button
-            (onClick)="onOpen($event, true)"
+            (onClick)="onOpen(true)"
             buttonStyle="yellow"
             title="Resets view to default and opens dataset. Used if you have issues opening it normally">Reset & Open</push-button>
-        <push-button *ngIf="userCanEdit" (onClick)="onEdit($event)" buttonStyle="yellow">Edit</push-button>
+        <push-button *ngIf="userCanEdit" (onClick)="onEdit()" buttonStyle="yellow">Edit</push-button>
     </div>
 </ng-template>
 
 <div fxLayout="column" fxFill>
-    <notification-banner></notification-banner>
-    <app-toolbar titleToShow="Select Dataset"></app-toolbar>
+    <!-- TODO <notification-banner></notification-banner>
+    <app-toolbar titleToShow="Select Dataset"></app-toolbar> -->
 
     <div fxLayout="row" fxLayoutAlign="space-between" class="search-panel">
         <div *ngIf="datasetListingAllowed" class="gap-separated-horizontal-elements" fxLayout="row" fxLayoutAlign="start center">
@@ -62,18 +62,18 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <push-button
             *ngIf="userCanEdit"
-            (onClick)="onAddDataset()"
+            (onClick)="onAddScan()"
             buttonStyle="yellow"
             title="Upload a new dataset">Upload</push-button>
     </div>
 
     <div fxLayout="row" fxFlex="100%">
-        <div *ngIf="!errorString && datasets != null" class="scrollable" fxFlex="100%">
+        <div *ngIf="!errorString && !loading" class="scrollable" fxFlex="100%">
             <div fxLayout="row wrap" (onClick)="onClickTileArea()">
                 <data-set-summary
-                    *ngFor="let item of datasets"
+                    *ngFor="let item of scans"
                     [summary]="item"
-                    [selected]="selectedDataset"
+                    [selected]="selectedScan"
                     (onSelect)='onSelect($event)'>
                 </data-set-summary>
             </div>
@@ -81,7 +81,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
         <app-widget-display-message
             *ngIf="errorString"
-            [showSpinner]="datasets === null"
+            [showSpinner]="loading"
             [message]="errorString"
             [large]="true"
             fxFlex="100%">
@@ -91,12 +91,12 @@ POSSIBILITY OF SUCH DAMAGE.
             <h2 class="meta-title">Metadata</h2>
 
             <app-widget-display-message
-                *ngIf="!selectedDataset"
-                [message]="noSelectedDatasetMsg"
+                *ngIf="!selectedScan"
+                [message]="noselectedScanMsg"
                 fxFlex="100%">
             </app-widget-display-message>
 
-            <div *ngIf="selectedDataset != null" fxLayout="column">
+            <div *ngIf="selectedScan != null" fxLayout="column">
                 <div fxLayout="row" fxLayoutAlign="space-around center" class="meta-image-container">
                     <ng-container [ngSwitch]="contextImageURL.length">
                         <ng-container *ngSwitchCase="0">
@@ -105,15 +105,15 @@ POSSIBILITY OF SUCH DAMAGE.
                             </div>
                         </ng-container>
                         <ng-container *ngSwitchDefault>
-                            <img [src]='contextImageURL | addbearerheader | async' class="meta-image">
+                            <!-- TODO <img [src]='contextImageURL | addbearerheader | async' class="meta-image"> -->
                         </ng-container>
                     </ng-container>
                 </div>
                 <div fxLayout="row" fxLayoutAlign="space-between center" class="meta-open-row">
-                    <div>{{selectedDataset.title}}</div>
+                    <div>{{selectedScan.title}}</div>
                     <div fxLayout="row" class="gap-separated-horizontal-elements">
                         <push-button
-                            (onClick)="onOpen($event, false)"
+                            (onClick)="onOpen(false)"
                             buttonStyle="yellow"
                             title="Open the dataset with views as you last used them">Open</push-button>
                         <widget-settings-menu *ngIf="showOpenOptions" [settingsDialog]="openOptionsMenu" #openOptionsButton>
@@ -126,14 +126,14 @@ POSSIBILITY OF SUCH DAMAGE.
                 <div class="meta-heading">Dataset</div>
                 <div *ngIf="selectedIsIncomplete" class="incomplete">{{selectedMissingData}}</div>
                 <div class="meta-area" fxLayout="column">
-                    <div *ngFor="let item of selectedDatasetSummaryItems" fxLayout="row" fxFlex="100%">
+                    <div *ngFor="let item of selectedScanSummaryItems" fxLayout="row" fxFlex="100%">
                         <label>{{item.label}}</label>
                         <span class="meta-value">{{item.value}}</span>
                     </div>
                 </div>
                 <div class="meta-heading">Tracking</div>
                 <div class="meta-area" fxLayout="column" fxLayoutAlign="start">
-                    <div *ngFor="let item of selectedDatasetTrackingItems" fxLayout="row" fxFlex="100%">
+                    <div *ngFor="let item of selectedScanTrackingItems" fxLayout="row" fxFlex="100%">
                         <label>{{item.label}}</label>
                         <span class="meta-value">{{item.value}}</span>
                     </div>

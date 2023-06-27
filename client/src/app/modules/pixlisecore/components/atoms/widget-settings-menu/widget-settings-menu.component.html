@@ -30,25 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div
-    *ngIf="message"
-    fxLayout="column"
-    fxLayoutAlign="space-around"
-    class="widget-display-msg"
-    [ngClass]="{'display-large': large}"
-    fxFlex="100%">
-    <div
-        fxLayout="column"
-        fxLayoutAlign="start center">
-        <ng-container [ngSwitch]="showSpinner">
-            <ng-container *ngSwitchCase="true">
-                <mat-spinner class="img-gap" [diameter]="large ? 64 : 32" color="accent"></mat-spinner>
-            </ng-container>
-            <ng-container *ngSwitchDefault>
-                <img class="img-gap error-img" [ngClass]="{'error-img-large': large}" [src]="image">
-            </ng-container>
-        </ng-container>
-
-        <div class="msg">{{message}}</div>
-        <div class="footer">Communiqué from The Ministry of Visualisation</div>
-    </div>
+    cdkOverlayOrigin
+    (click)="onToggleSettings()">
+    <ng-content></ng-content>
 </div>

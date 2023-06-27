@@ -42,12 +42,12 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
         </ng-container>
         <ng-container *ngSwitchDefault>
-            <img [src]='tileImageURL | addbearerheader | async' class="tile-img">
+            <!-- TODO <img [src]='tileImageURL | addbearerheader | async' class="tile-img"> -->
         </ng-container>
     </ng-container>
     <div class="title-container">
-        <div class="title" [ngClass]="{'incomplete': incomplete}" title='Title: "{{title}}". Dataset ID: "{{summary.dataset_id}}" {{missingDataList}}'>
-            {{title}}<br>{{summary.site}}
+        <div class="title" [ngClass]="{'incomplete': incomplete}" title='Title: "{{title}}". Dataset ID: "{{summaryId}}" {{missingDataList}}'>
+            {{title}}<br>{{displaySite}}
         </div>
          <div class="types">
             <img class="lg-icon" [ngStyle]="{display: isXRF ? 'inline-block' : 'none'}" src='assets/icons/xrf-symbol.svg'>
@@ -61,28 +61,28 @@ POSSIBILITY OF SUCH DAMAGE.
             <span class="label">Dwell:</span><span class="value">{{dwellSpectra}}</span>
         </div>
         <div fxLayout="row" fxLayoutAlign="start center">
-            <span class="label">BulkSum:</span><span class="value">{{summary.bulk_spectra}}</span>
+            <span class="label">BulkSum:</span><span class="value">{{bulkSpectra}}</span>
         </div>
         <div fxLayout="row" fxLayoutAlign="start center">
-            <span class="label">MaxValue:</span><span class="value">{{summary.max_spectra}}</span>
+            <span class="label">MaxValue:</span><span class="value">{{maxSpectra}}</span>
         </div>
         <div fxLayout="row" fxLayoutAlign="start center">
-            <span class="label">Normal:</span><span class="value">{{summary.normal_spectra}}</span>
+            <span class="label">Normal:</span><span class="value">{{normalSpectra}}</span>
         </div>
         <div fxLayout="row" fxLayoutAlign="start center">
-            <span class="label">Pseudo:</span><span class="value">{{summary.pseudo_intensities}}</span>
+            <span class="label">Pseudo:</span><span class="value">{{pseudoIntensities}}</span>
         </div>
     </div>
 
     <div fxLayout="column" fxLayoutAlign="start end" class="right-data gap-separated-vertical-elements-half">
-        <div fxLayout="row" fxLayoutAlign="start center" title='SOL: "{{summary.sol}}"'>
+        <div fxLayout="row" fxLayoutAlign="start center" title='SOL: "{{displaySol}}"'>
             <span class="value">{{displaySol}}</span><img class="icon" src='assets/icons/sol.svg'>
         </div>
-        <div fxLayout="row" fxLayoutAlign="start center" title='Target: "{{summary.target}}" (ID: "{{summary.target_id}}")'>
+        <div fxLayout="row" fxLayoutAlign="start center" title='Target: "{{displayTarget}}" (ID: "{{displayTargetId}}")'>
             <span class="value target">{{displayTarget}}</span><img class="icon" src='assets/icons/target.svg'>
         </div>
-        <div fxLayout="row" fxLayoutAlign="start center" title='Drive ID: "{{summary.drive_id}}"'>
-            <span class="value">{{displayValue}}</span><img class="icon" src='assets/icons/drive.svg'>
+        <div fxLayout="row" fxLayoutAlign="start center" title='Drive ID: "{{displayDriveID}}"'>
+            <span class="value">{{displayDriveID}}</span><img class="icon" src='assets/icons/drive.svg'>
         </div>
     </div>
 </div>

@@ -90,8 +90,8 @@ const APP_ROUTES: Routes = [
       {
         path: "datasets",
         loadChildren: () =>
-          import("./modules/datasets/datasets.module").then(
-            (m) => m.DatasetsModule
+          import("./modules/dataset-tiles/dataset-tiles.module").then(
+            (m) => m.DatasetTilesModule
           ),
       }
     ]

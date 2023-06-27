@@ -1,8 +1,24 @@
 import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
+
 import { WaitSpinnerComponent } from "./components/atoms/wait-spinner/wait-spinner.component";
+// import { MultiStateButtonComponent } from "./components/atoms/buttons/multi-state-button/multi-state-button.component";
+// import { PanelFoldoutButtonComponent } from "./components/atoms/buttons/panel-foldout-button/panel-foldout-button.component";
 import { PushButtonComponent } from "./components/atoms/buttons/push-button/push-button.component";
-import { WidgetDisplayMessageComponent } from "./components/widget-display-message/widget-display-message.component";
+// import { TwoStateEditButtonComponent } from "./components/atoms/buttons/two-state-edit-button/two-state-edit-button.component";
+// import { IconButtonComponent } from "./components/atoms/buttons/icon-button/icon-button.component";
+import { TwoStateButtonComponent } from "./components/atoms/buttons/two-state-button/two-state-button.component";
+// import { BulkSelectionSwitchComponent } from "./components/atoms/buttons/two-state-button/bulk-selection-switch.component";
+// import { PlusMinusSwitchComponent } from "./components/atoms/buttons/two-state-button/plus-minus-switch.component";
+// import { SwitchButtonComponent } from "./components/atoms/buttons/switch-button/switch-button.component";
+// import { MultiSwitchButtonComponent } from "./components/atoms/buttons/multi-switch-button/multi-switch-button.component";
+import { TwoStateIconButton } from "./components/atoms/buttons/two-state-button/two-state-icon-button.component";
+// import { TwoStateIconPushButton } from "./components/atoms/buttons/two-state-button/two-state-icon-push-button.component";
+// import { TwoStatePushButton } from "./components/atoms/buttons/two-state-button/two-state-push-button.component";
+// import { TwoStateIconSwitchComponent } from "./components/atoms/buttons/two-state-button/two-state-icon-switch.component";
+
+import { WidgetDisplayMessageComponent } from "./components/atoms/widget-display-message/widget-display-message.component";
+import { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
 import { MaterialModule } from "../material.module";
 import { BadgeComponent } from "./components/atoms/badge/badge.component";
 import { AuthenticateComponent } from "./components/pages/authenticate/authenticate.component";
@@ -13,6 +29,7 @@ import { APIDataService } from "./services/apidata.service";
 import { HttpInterceptorService } from "./services/http-interceptor.service";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
+export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
 export { APICommService } from "./services/apicomm.service";
 export { APIDataService } from "./services/apidata.service";
 export { HttpInterceptorService } from "./services/http-interceptor.service";
@@ -23,7 +40,10 @@ export { HttpInterceptorService } from "./services/http-interceptor.service";
         WaitSpinnerComponent,
         BadgeComponent,
         PushButtonComponent,
+        TwoStateButtonComponent,
+        TwoStateIconButton,
         WidgetDisplayMessageComponent,
+        WidgetSettingsMenuComponent,
         AuthenticateComponent,
         RouteNotFoundComponent
     ],
@@ -35,7 +55,10 @@ export { HttpInterceptorService } from "./services/http-interceptor.service";
         WaitSpinnerComponent,
         BadgeComponent,
         PushButtonComponent,
+        TwoStateButtonComponent,
+        TwoStateIconButton,
         WidgetDisplayMessageComponent,
+        WidgetSettingsMenuComponent,
         AuthenticateComponent,
         RouteNotFoundComponent
     ],

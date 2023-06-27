@@ -30,17 +30,25 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div
-  class="clickable icon-btn"
-  [ngClass]="{'button-inactive': !state && hasBackground, 'button-active': state==1, 'button-active-overridden': state==2, 'button-disabled': state==3, 'icon-button-background': hasBackground, 'button-shadow': hasBackground, 'button-hoverable': hasBackground }"
-  [ngStyle]="{'background-image': loading ? 'none' : 'url('+icon+')', 'width': sizeStr, 'height': sizeStr}"
-  (click)='onClickInternal($event)'
->
-  <wait-spinner *ngIf="loading"></wait-spinner> <!-- TODO: was <mat-spinner *ngIf="loading" [diameter]="24" [strokeWidth]="4" color="accent"> -->
-  <badge
-      *ngIf="notificationCount > 0"
-      class="notifications"
-      [value]="notificationCount.toString()"
-      title="{{notificationCount}} active notifications"
-  >
-  </badge>
+    *ngIf="message"
+    fxLayout="column"
+    fxLayoutAlign="space-around"
+    class="widget-display-msg"
+    [ngClass]="{'display-large': large}"
+    fxFlex="100%">
+    <div
+        fxLayout="column"
+        fxLayoutAlign="start center">
+        <ng-container [ngSwitch]="showSpinner">
+            <ng-container *ngSwitchCase="true">
+                <wait-spinner></wait-spinner> <!-- TODO: was <mat-spinner class="img-gap" [diameter]="large ? 64 : 32" color="accent"> -->
+            </ng-container>
+            <ng-container *ngSwitchDefault>
+                <img class="img-gap error-img" [ngClass]="{'error-img-large': large}" [src]="image">
+            </ng-container>
+        </ng-container>
+
+        <div class="msg">{{message}}</div>
+        <div class="footer">Communiqué from The Ministry of Visualisation</div>
+    </div>
 </div>

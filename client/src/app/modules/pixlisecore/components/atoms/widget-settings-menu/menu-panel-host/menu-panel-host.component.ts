@@ -27,50 +27,37 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
-import { BadgeStyle } from "../../badge/badge.component";
+import { Component, Inject, OnInit, TemplateRef, ViewContainerRef } from "@angular/core";
+import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 
-export type PushButtonStyle = "normal" | "borderless" | "yellow" | "outline" | "gray" | "light-right-outline" | "orange" | "dark-outline";
+
+export class MenuPanelHostData
+{
+    constructor(
+        public menuTemplate: TemplateRef<any>,
+        public noPadding: boolean = false
+    )
+    {
+    }
+}
 
 @Component({
-    selector: "push-button",
-    templateUrl: "./push-button.component.html",
-    styleUrls: ["./push-button.component.scss"]
+    selector: "app-menu-panel-host",
+    templateUrl: "./menu-panel-host.component.html",
+    styleUrls: ["./menu-panel-host.component.scss"]
 })
-export class PushButtonComponent implements OnInit
+export class MenuPanelHostComponent implements OnInit
 {
-    @Input() buttonStyle: PushButtonStyle = "normal";
-    @Input() active: boolean = false;
-    @Input() disabled: boolean = false;
-    @Input() notificationCount: number = 0;
-    @Input() badgeStyle: BadgeStyle = "notification";
-    @Input() tooltipTitle: string = "";
-    @Output() onClick = new EventEmitter();
-
-    constructor()
+    constructor(
+        @Inject(MAT_DIALOG_DATA) public data: MenuPanelHostData,
+        public dialogRef: MatDialogRef<MenuPanelHostComponent>,
+        private _ViewContainerRef: ViewContainerRef
+    )
     {
+        //console.log(this.data);
     }
 
-    ngOnInit()
+    ngOnInit(): void
     {
-        const validStyles: PushButtonStyle[] = ["normal", "borderless", "yellow", "outline", "gray", "light-right-outline", "orange", "dark-outline"];
-        if(validStyles.indexOf(this.buttonStyle) == -1)
-        {
-            console.warn("Invalid style for push-button: "+this.buttonStyle);
-            this.buttonStyle = validStyles[0];
-        }
-    }
-
-    get styleCSS(): string
-    {
-        return `btn-${this.buttonStyle}${this.disabled ? " disabled" : ""}${this.active ? " active" : ""}`;
-    }
-
-    onClickInternal(event: MouseEvent): void
-    {
-        if(!this.disabled)
-        {
-            this.onClick.emit(event);
-        }
     }
 }

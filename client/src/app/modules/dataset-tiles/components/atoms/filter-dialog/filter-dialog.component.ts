@@ -30,7 +30,7 @@
 import { Component, ElementRef, Inject, OnInit, ViewContainerRef } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { DetectorConfigList } from "src/app/models/BasicTypes";
-import { DatasetFilter } from "src/app/routes/datasets/dataset-filter";
+import { DatasetFilter } from "../../../dataset-filter";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { positionDialogNearParent } from "src/app/utils/utils";
 

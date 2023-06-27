@@ -29,7 +29,10 @@
 
 import { Component, OnInit, Inject } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
-import { DataSetService } from "src/app/services/data-set.service";
+
+import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ScanUploadReq, ScanUploadResp } from "src/app/generated-protos/scan-msgs";
+
 import { httpErrorToString } from "src/app/utils/utils";
 
 
@@ -54,7 +57,7 @@ export class AddDatasetDialogComponent implements OnInit
     constructor(
         //@Inject(MAT_DIALOG_DATA) public params: AddDatasetParameters,
         public dialogRef: MatDialogRef<boolean>,
-        private _datasetService: DataSetService,
+        private _dataService: APIDataService,
         )
     {
     }
@@ -84,21 +87,25 @@ export class AddDatasetDialogComponent implements OnInit
                 this.mode = this.modeCreate;
                 this.modeTitle = "Creating dataset: "+this.nameHint+"...";
 
-                this._datasetService.createDataset(this.nameHint, fileBytes).subscribe(
-                    (logID: string)=>
+                this._dataService.sendScanUploadRequest(ScanUploadReq.create({
+                    id: this.nameHint,
+                    format: "jpl-breadboard",
+                    zippedData: new Uint8Array(fileBytes)
+                })).subscribe({
+                    next: (resp: ScanUploadResp)=>
                     {
                         this.modeTitle = "Dataset: "+this.nameHint+" created";
 
                         // This should trigger log viewing...
-                        this.logId = logID;
+                        //this.logId = resp.logId;
                         this.mode = this.modeComplete;
                     },
-                    (err)=>
+                    error: (err)=>
                     {
                         this.modeTitle = httpErrorToString(err, "Failed to create dataset");
                         this.mode = this.modeComplete;
                     }
-                );
+                });
             },
             ()=>
             {
@@ -116,7 +123,7 @@ export class AddDatasetDialogComponent implements OnInit
     {
         this.dialogRef.close(null);
     }
-
+/* TODO (ngx-dropzone was deprecated)
     onDropFile(event)
     {
         if(this.droppedFiles.length >= 1)
@@ -151,5 +158,5 @@ export class AddDatasetDialogComponent implements OnInit
     {
         //console.log(event);
         this.droppedFiles.splice(this.droppedFiles.indexOf(event), 1);
-    }
+    }*/
 }
