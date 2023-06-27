@@ -6,8 +6,8 @@ import { Observable, of, switchMap, map, delay, retry } from "rxjs";
 
 import { environment } from "src/environments/environment";
 
-import { WSMessage } from "src/app/generated-protos/websocket";
-import { BeginWSConnectionResponse } from "src/app/generated-protos/restmsgs";
+import { WSMessage } from "../../../generated-protos/websocket";
+import { BeginWSConnectionResponse } from "../../../generated-protos/restmsgs";
 import { APIPaths } from 'src/app/utils/api-helpers';
 
 

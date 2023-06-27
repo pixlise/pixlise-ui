@@ -34,6 +34,7 @@
     "git-describe": "^4.1.1",
     "google-protobuf": "^3.21.2",
     "inter-ui": "^3.19.3",
+    "mathjs": "^11.8.2",
     "roboto-fontface": "^0.10.0",
     "rxjs": "~7.8.0",
     "ts-proto": "^1.150.0",

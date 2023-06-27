@@ -7,6 +7,16 @@ import { MaterialModule } from "../material.module";
 import { BadgeComponent } from "./components/atoms/badge/badge.component";
 import { AuthenticateComponent } from "./components/pages/authenticate/authenticate.component";
 
+import { RouteNotFoundComponent } from './components/pages/route-not-found/route-not-found.component';
+import { APICommService } from "./services/apicomm.service";
+import { APIDataService } from "./services/apidata.service";
+import { HttpInterceptorService } from "./services/http-interceptor.service";
+
+export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
+export { APICommService } from "./services/apicomm.service";
+export { APIDataService } from "./services/apidata.service";
+export { HttpInterceptorService } from "./services/http-interceptor.service";
+
 
 @NgModule({
     declarations: [
@@ -14,7 +24,8 @@ import { AuthenticateComponent } from "./components/pages/authenticate/authentic
         BadgeComponent,
         PushButtonComponent,
         WidgetDisplayMessageComponent,
-        AuthenticateComponent
+        AuthenticateComponent,
+        RouteNotFoundComponent
     ],
     imports: [
         CommonModule,
@@ -25,7 +36,13 @@ import { AuthenticateComponent } from "./components/pages/authenticate/authentic
         BadgeComponent,
         PushButtonComponent,
         WidgetDisplayMessageComponent,
-        AuthenticateComponent
+        AuthenticateComponent,
+        RouteNotFoundComponent
+    ],
+    providers: [
+        APICommService,
+        APIDataService,
+        HttpInterceptorService
     ]
 })
 export class PIXLISECoreModule { }

@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { APICommService } from "./apicomm.service";
 import { Subject, ReplaySubject, BehaviorSubject, Observable } from 'rxjs';
 
-import { WSMessage } from "src/app/generated-protos/websocket";
+import { WSMessage } from "../../../generated-protos/websocket";
 import { WSMessageHandler } from "./wsMessageHandler";
 
 import * as _m0 from "protobufjs/minimal";
