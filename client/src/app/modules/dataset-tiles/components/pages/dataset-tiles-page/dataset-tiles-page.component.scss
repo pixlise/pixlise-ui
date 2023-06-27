@@ -27,95 +27,196 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-@import 'atoms.scss';
-
+@import "variables.scss";
+@import "atoms.scss";
 
 h2 {
-    font-weight: 900;
-    font-size: 16px;
-    text-transform: uppercase;
-    color: $clr-gray-30;
+  font-weight: 900;
+  font-size: 16px;
+  text-transform: uppercase;
+  color: $clr-gray-30;
 }
 
 .search-panel {
-    background-color: $ui-panel-title-colour;
-    padding: $large-gap;
-    margin-bottom: $tiny-gap;
+  background-color: $ui-panel-title-colour;
+  padding: $large-gap;
+  margin-bottom: $tiny-gap;
 }
 
 .meta-summary {
-    background-color: $clr-gray-80;
-    width: 25vw;
-    min-width: 250px;
-    overflow-y: auto;
+  background-color: $clr-gray-80;
+  width: 25vw;
+  min-width: 250px;
+  overflow-y: auto;
 }
 
 .scrollable {
-    overflow-y: auto;
-    max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  max-height: calc(100vh - 100px);
 }
 
 .meta-title {
-    padding: $sz-double $sz-unit;
+  padding: $sz-double $sz-unit;
 }
 
 .meta-image {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .meta-image-container {
-    height: 260px;
+  height: 260px;
 }
 
 .meta-open-row {
-    color: $clr-gray-10;
-    font-weight: 900;
-    font-size: 16px;
-    padding: $sz-unit;
+  color: $clr-gray-10;
+  font-weight: 900;
+  font-size: 16px;
+  padding: $sz-unit;
 }
 
 .meta-heading {
-    color: $clr-gray-30;
-    text-transform: uppercase;
-    font-weight: 400;
-    font-size: 12px;
-    padding: $sz-unit;
+  color: $clr-gray-30;
+  text-transform: uppercase;
+  font-weight: 400;
+  font-size: 12px;
+  padding: $sz-unit;
 }
 
 .meta-area {
-    background-color: $clr-gray-70;
-    line-height: 16px;
-    font-size: 12px;
-    padding: $sz-unit;
+  background-color: $clr-gray-70;
+  line-height: 16px;
+  font-size: 12px;
+  padding: $sz-unit;
 }
 
 label {
-    color: $clr-gray-30;
-    width: 50%;
+  color: $clr-gray-30;
+  width: 50%;
 }
 
 .meta-value {
-    color: $clr-gray-10;
-    width: 50%;
+  color: $clr-gray-10;
+  width: 50%;
 }
 
 input {
-    width: 400px;
-    border: none;
-    background-color: transparent;
-    color: $clr-gray-30;
+  width: 400px;
+  border: none;
+  background-color: transparent;
+  color: $clr-gray-30;
 
-    &:focus {
-        outline: none;
-    }
+  &:focus {
+    outline: none;
+  }
 }
 
 .incomplete {
-    color: $clr-orange;
-    font-weight: 400;
-    padding: $sz-unit;
-    background-color: $clr-gray-70;
+  color: $clr-orange;
+  font-weight: 400;
+  padding: $sz-unit;
+  background-color: $clr-gray-70;
+}
+
+.options-menu {
+  display: flex;
+  flex-direction: column;
+}
+
+.datasets-container {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  background-color: #1b1d1e;
+
+  .search-panel {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+    .dataset-search {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start;
+      align-items: center;
+
+      .search-box-group {
+        display: flex;
+        flex-direction: row;
+      }
+    }
+  }
+
+  .summary-container {
+    display: flex;
+    flex-direction: row;
+    flex: 1 1 100%;
+
+    .scrollable {
+      flex: 1 1 100%;
+
+      .tiles {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+    }
+
+    app-widget-display-message {
+      flex: 1 1 100%;
+    }
+  }
+
+  .meta-summary {
+    display: flex;
+    flex-direction: column;
+
+    .info-panel {
+      display: flex;
+      flex-direction: column;
+
+      .meta-image-container {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+
+        .no-context {
+          display: flex;
+          flex-direction: row;
+          justify-content: space-around;
+          align-items: center;
+          flex: 1;
+        }
+      }
+
+      .meta-open-row {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+
+        .meta-buttons {
+          display: flex;
+          flex-direction: row;
+        }
+      }
+
+      .meta-area {
+        &.align-start {
+          align-items: flex-start;
+        }
+
+        display: flex;
+        flex-direction: column;
+
+        .summary-item {
+          display: flex;
+          flex-direction: row;
+          flex: 1 1 100%;
+        }
+      }
+    }
+  }
 }

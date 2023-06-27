@@ -45,6 +45,9 @@
 @import "variables.scss";
 @import "atoms.scss";
 
+// For migration from flex-layout to CSS
+@import "flex-layout.scss";
+
 /*@import "~@angular/material/prebuilt-themes/purple-green.css";*/
 
 /*html, body { height: 100%; }
@@ -58,6 +61,7 @@ body {
   position: absolute;
   width: 100%;
   height: 100%;
+  background-color: #1b1d1e;
 }
 
 /* TODO: There has to be a better way than !important with overriding angular things! */
@@ -107,6 +111,10 @@ textarea {
   &:focus {
     outline: none;
   }
+}
+
+.mat-app-background {
+  background-color: #1b1d1e;
 }
 
 .mat-flat-button {

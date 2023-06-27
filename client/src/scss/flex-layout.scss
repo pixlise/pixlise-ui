@@ -1,0 +1,37 @@
+.fx-flex {
+  display: flex;
+  flex: 1 1 100%;
+}
+
+.fx-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.fx-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.fx-wrap {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.fx-start-center {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+}
+
+.fx-start-end {
+  display: flex;
+  justify-content: start;
+  align-items: flex-end;
+}
+
+.fx-space-around-center {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
