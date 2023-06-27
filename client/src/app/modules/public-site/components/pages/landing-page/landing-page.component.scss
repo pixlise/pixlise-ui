@@ -27,90 +27,90 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import '../../../scss/public-site.scss';
+@import "../../../scss/public-site.scss";
 
 .page {
-    .header {
-        .header-content {
-            top: 500px;
-            left: $sz-border-x;
-            width: 855px;
+  .header {
+    .header-content {
+      top: 50%;
+      left: $sz-border-x;
+      width: 855px;
 
-            h1 {
-                font-weight: bold;
-            }
+      h1 {
+        font-weight: bold;
+      }
 
-            p {
-                width: 620px;
-                text-align: justify;
-            }
+      p {
+        width: 620px;
+        text-align: justify;
+      }
 
-            img {
-                width: 335px;
-                padding-top: $sz-spacer-gap;
-            }
-        }
+      img {
+        width: 335px;
+        padding-top: $sz-spacer-gap;
+      }
     }
-    .product {
-        background-color: $clr-gray-100;
-        color: $clr-gray-10;
-        height: 550px;
+  }
+  .product {
+    background-color: $clr-gray-100;
+    color: $clr-gray-10;
+    height: 550px;
 
-        h2 {
-            width: 700px;
-        }
-
-        p {
-            color: $clr-gray-30;
-            height: 100px;
-        }
-
-        .product-card-container {
-            justify-content: center;
-            gap: 48px;
-
-            .product-card {
-                border-top: $clr-yellow 1px solid;
-                padding: 36px;
-                width: 360px;
-                background-color: $clr-gray-80;
-
-                box-shadow: 0px 0px $sz-unit $clr-gray-100;
-                border-bottom-left-radius: $sz-unit;
-                border-bottom-right-radius: $sz-unit;
-
-                .img-container {
-                    padding: 40px 0px;
-                    height: 190px;
-
-                    display: flex;
-                    flex-direction: row;
-                    justify-content: center;
-                }
-            }
-        }
+    h2 {
+      width: 700px;
     }
 
-    .collaboration {
-        background-color: $clr-gray-20;
-        color: $clr-gray-50;
-
-        h2 {
-            color: $clr-gray-50;
-            width: 900px;
-        }
-
-        .collab-container {
-            display: flex;
-            flex-direction: row;
-            justify-content: center;
-        }
+    p {
+      color: $clr-gray-30;
+      height: 100px;
     }
-    .workflow {
-        background-color: $clr-gray-70;
-        color: $clr-gray-10;
+
+    .product-card-container {
+      justify-content: center;
+      gap: 48px;
+
+      .product-card {
+        border-top: $clr-yellow 1px solid;
+        padding: 36px;
+        width: 360px;
+        background-color: $clr-gray-80;
+
+        box-shadow: 0px 0px $sz-unit $clr-gray-100;
+        border-bottom-left-radius: $sz-unit;
+        border-bottom-right-radius: $sz-unit;
+
+        .img-container {
+          padding: 40px 0px;
+          height: 190px;
+
+          display: flex;
+          flex-direction: row;
+          justify-content: center;
+        }
+      }
     }
-/*
+  }
+
+  .collaboration {
+    background-color: $clr-gray-20;
+    color: $clr-gray-50;
+
+    h2 {
+      color: $clr-gray-50;
+      width: 900px;
+    }
+
+    .collab-container {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+    }
+  }
+  .workflow {
+    background-color: $clr-gray-70;
+    color: $clr-gray-10;
+  }
+  /*
     .workflow {
         background-color: $clr-gray-70;
         color: $clr-gray-10;
@@ -140,10 +140,10 @@
     }
 */
 
-.quote-section {
+  .quote-section {
     background-color: $clr-gray-100;
-}
-/*
+  }
+  /*
     .quote-section {
         padding: 0px $sz-border-x;
 
@@ -183,53 +183,52 @@
         }
     }
 */
-    .quantification {
-        background-color: $clr-gray-80;
-        //background-image: url("assets/images/landing/piquant-pie.svg");
-        //background-repeat: no-repeat;
-        //background-position: center left;
+  .quantification {
+    background-color: $clr-gray-80;
+    //background-image: url("assets/images/landing/piquant-pie.svg");
+    //background-repeat: no-repeat;
+    //background-position: center left;
 
-        position: relative;
-        overflow: hidden;
+    position: relative;
+    overflow: hidden;
 
-        .bg {
-            position: absolute;
-            top: $sz-button-gap;
-            left: -$sz-border-x;
-            z-index: 1;
-            user-select: none;
-        }
+    .bg {
+      position: absolute;
+      top: $sz-button-gap;
+      left: -$sz-border-x;
+      z-index: 1;
+      user-select: none;
+    }
 
-        .content {
-            position: relative;
-            z-index: 2;
+    .content {
+      position: relative;
+      z-index: 2;
 
-            .text-container {
-                justify-content: space-between;
-                // Allow seeing more of the background image
-                padding-bottom: 200px;
-                
-                .right-text {
-                    padding-top: $sz-spacer-gap;
-                    width: 500px;
-                    /*p {
+      .text-container {
+        justify-content: space-between;
+        // Allow seeing more of the background image
+        padding-bottom: 200px;
+
+        .right-text {
+          padding-top: $sz-spacer-gap;
+          width: 500px;
+          /*p {
                         text-align: justify;
                     }*/
-                }
-    
-                .left-text {
-                    padding-top: $sz-heading-gap;
-                    h2 {
-                        margin: 0px;
-                        padding: 0px;
-                    }
-                }
-            }
         }
-    }
 
-    .investigation {
-        background-color: $clr-gray-70;
+        .left-text {
+          padding-top: $sz-heading-gap;
+          h2 {
+            margin: 0px;
+            padding: 0px;
+          }
+        }
+      }
     }
+  }
+
+  .investigation {
+    background-color: $clr-gray-70;
+  }
 }
-

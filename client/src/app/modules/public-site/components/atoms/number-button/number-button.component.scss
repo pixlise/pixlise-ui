@@ -37,6 +37,7 @@
 
   border-radius: $sz-half;
   text-decoration: none;
+  width: fit-content;
 
   img {
     padding: 0px $sz-unit;
@@ -107,7 +108,6 @@
   }
 
   &.red {
-    width: fit-content;
     border: $clr-red 1px solid;
     color: $clr-red;
 
