@@ -1,0 +1,106 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+@import 'variables.scss';
+
+.left-right-padding {
+    padding: 0px $sz-unit;
+}
+
+input {
+    min-width: 250px;
+}
+
+.dlg {
+    min-width: 800px;
+    min-height: 400px;
+}
+
+ngx-dropzone-preview,
+.dropzone  {
+    color: $clr-gray-30;
+    background-color: $clr-gray-80;
+    background-image: unset;
+
+    &:hover {
+        background-color: $clr-gray-80;
+        background-image: unset;
+    }
+}
+
+:host ::ng-deep ngx-dropzone-preview {
+    max-width: 100% !important;
+}
+
+ngx-dropzone,
+.dropzone {
+  margin: $sz-double;
+}
+
+.dropzone {
+    background: $clr-gray-90;
+    color: #fff;
+    border: $sz-half dashed $clr-gray-30;
+    border-radius: $sz-half;
+    font-size: 20px;
+
+    &:hover {
+        background: $clr-gray-90;
+    }
+}
+
+.dropzone.ngx-dz-hovered {
+    border: $sz-half solid $clr-gray-30;
+}
+
+.important {
+    color: $clr-orange;
+    font-weight: bold;
+    max-width: 450px;
+}
+
+.log-area {
+    height: 300px;
+}
+
+.mode-title {
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: $clr-gray-10;
+    padding: $sz-unit;
+}
+
+.spinner {
+    padding-top: 40px;
+}
+
+span {
+    color: $clr-gray-10;
+}
