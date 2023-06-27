@@ -30,7 +30,6 @@
 @import "../../../scss/public-site.scss";
 
 .number-button {
-  // display: inline-block;
   display: flex;
   align-items: center;
   white-space: nowrap;
@@ -90,7 +89,6 @@
   }
 
   &.red-solid {
-    padding: 1px;
     background-color: $clr-red;
     color: $clr-gray-10;
 
@@ -109,6 +107,7 @@
   }
 
   &.red {
+    width: fit-content;
     border: $clr-red 1px solid;
     color: $clr-red;
 
