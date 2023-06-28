@@ -51,8 +51,9 @@ h2 {
 }
 
 .scrollable {
+  margin-top: 2px;
   overflow-y: auto;
-  max-height: calc(100vh - 100px);
+  max-height: calc(100vh - 102px);
 }
 
 .meta-title {
@@ -127,7 +128,7 @@ input {
 .datasets-container {
   display: flex;
   flex-direction: column;
-  flex-wrap: wrap;
+  height: 100%;
   background-color: #1b1d1e;
 
   .search-panel {
@@ -152,18 +153,22 @@ input {
     display: flex;
     flex-direction: row;
     flex: 1 1 100%;
+    height: 100%;
 
     .scrollable {
       flex: 1 1 100%;
 
       .tiles {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
+        display: grid;
+        grid-gap: 4px;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+
+        padding: 0 4px;
       }
     }
 
     app-widget-display-message {
+      display: flex;
       flex: 1 1 100%;
     }
   }
@@ -171,6 +176,9 @@ input {
   .meta-summary {
     display: flex;
     flex-direction: column;
+
+    border-radius: 8px 0 0 0;
+    margin-top: 2px;
 
     .info-panel {
       display: flex;

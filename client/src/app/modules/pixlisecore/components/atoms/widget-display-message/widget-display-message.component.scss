@@ -27,54 +27,58 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+@import "variables.scss";
 
 .widget-display-msg {
-    font-size: 10px;
+  font-size: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex: 1 1 100%;
 }
 
 .display-large {
-    font-size: 18px;
+  font-size: 18px;
 }
 
 .img-gap {
-    margin-bottom: $sz-double;
+  margin-bottom: $sz-double;
 }
 
 .error-img {
-    width: auto;
-    height: 40px;
+  width: auto;
+  height: 40px;
 }
 
 .error-img-large {
-    width: auto;
-    height: 80px;
+  width: auto;
+  height: 80px;
 }
 
 .msg {
-    font-family: Inter, Roboto;
-    font-style: italic;
-    font-weight: 500;
-    color: $clr-gray-10;
-    margin-bottom: $sz-unit;
+  font-family: Inter, Roboto;
+  font-style: italic;
+  font-weight: 500;
+  color: $clr-gray-10;
+  margin-bottom: $sz-unit;
 }
 
 .footer {
-    font-weight: 900;
-    font-family: Roboto;
-    color: $clr-gray-30;
-    font-size: 88%;
+  font-weight: 900;
+  font-family: Roboto;
+  color: $clr-gray-30;
+  font-size: 88%;
 }
 
 .display-large > .error-img {
-    margin-bottom: 21px;
-    height: 60px;
+  margin-bottom: 21px;
+  height: 60px;
 }
 
 .display-large > .msg {
-    margin-bottom: $sz-double;
+  margin-bottom: $sz-double;
 }
 
 .display-large > a {
-    margin-bottom: $sz-double;
+  margin-bottom: $sz-double;
 }

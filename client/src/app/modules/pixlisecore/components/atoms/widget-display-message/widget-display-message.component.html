@@ -31,14 +31,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div
     *ngIf="message"
-    fxLayout="column"
-    fxLayoutAlign="space-around"
     class="widget-display-msg"
     [ngClass]="{'display-large': large}"
-    fxFlex="100%">
-    <div
-        fxLayout="column"
-        fxLayoutAlign="start center">
+>
+    <div class="fx-column fx-start-center">
         <ng-container [ngSwitch]="showSpinner">
             <ng-container *ngSwitchCase="true">
                 <wait-spinner></wait-spinner> <!-- TODO: was <mat-spinner class="img-gap" [diameter]="large ? 64 : 32" color="accent"> -->

@@ -16,25 +16,6 @@ import { MAT_DIALOG_DATA, MAT_DIALOG_DEFAULT_OPTIONS, MatDialogRef } from "@angu
 import { MaterialModule } from "./modules/material.module";
 import { AuthModule, AuthClientConfig } from '@auth0/auth0-angular';
 
-// @Injectable()
-// export class SentryErrorHandler implements ErrorHandler {
-//   constructor() {
-//   }
-
-//   handleError(error: any) {
-//     if (error instanceof HttpErrorResponse) {
-//       console.log("Not reporting HttpErrorResponse to Sentry...");
-//       return;
-//     }
-
-//     const eventId = SentryHelper.logException(error, "SentryErrorHandler");
-
-//     // NOTE: this may stack multiple dialogs on top of each other, we have no way of knowing when the user has dismissed
-//     // a sentry error dialog so we can't implement some kind of ref counting here :(
-//     Sentry.showReportDialog({ eventId });
-//   }
-// }
-
 const appInitializerFn = (configService: EnvConfigurationInitService, handler: HttpBackend, authConfig: AuthClientConfig) => {
   return () => {
     return configService.readAppConfig(handler, authConfig).then((config: AppConfig | null) => {
@@ -84,8 +65,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
         console.log("No Sentry DNS, Sentry error reporting disabled");
       }
     });
-
-    // return config;
   };
 };
 
@@ -121,7 +100,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
     },
     {
       provide: ErrorHandler,
-      // useClass: SentryErrorHandler
       useValue: Sentry.createErrorHandler({
         showDialog: true,
       }),
