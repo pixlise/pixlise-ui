@@ -27,6 +27,7 @@ import { RouteNotFoundComponent } from './components/pages/route-not-found/route
 import { APICommService } from "./services/apicomm.service";
 import { APIDataService } from "./services/apidata.service";
 import { HttpInterceptorService } from "./services/http-interceptor.service";
+import { ToolbarComponent } from "../datasets/components/toolbar/toolbar.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -45,7 +46,8 @@ export { HttpInterceptorService } from "./services/http-interceptor.service";
         WidgetDisplayMessageComponent,
         WidgetSettingsMenuComponent,
         AuthenticateComponent,
-        RouteNotFoundComponent
+        RouteNotFoundComponent,
+        ToolbarComponent
     ],
     imports: [
         CommonModule,
@@ -60,7 +62,8 @@ export { HttpInterceptorService } from "./services/http-interceptor.service";
         WidgetDisplayMessageComponent,
         WidgetSettingsMenuComponent,
         AuthenticateComponent,
-        RouteNotFoundComponent
+        RouteNotFoundComponent,
+        ToolbarComponent
     ],
     providers: [
         APICommService,

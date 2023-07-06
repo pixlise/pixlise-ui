@@ -105,5 +105,4 @@ const APP_ROUTES: Routes = [
         RouterModule.forChild(APP_ROUTES)
     ]
 })
-export class PublicSiteModule {
-}
+export class PublicSiteModule { }

@@ -27,195 +27,199 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import '../../../scss/public-site.scss';
+@import "../../../scss/public-site.scss";
 
 .page {
-    .header-content {
-        width: 650px;
+  .header-content {
+    width: 650px;
+  }
+  .story {
+    background-color: $clr-gray-10;
+    overflow: hidden;
+
+    .img-spacer {
+      justify-content: space-between;
+      h3 {
+        color: $clr-gray-50;
+        width: 450px;
+      }
+
+      p {
+        color: $clr-gray-70;
+      }
+
+      img {
+        border-top-left-radius: $sz-unit;
+        border-bottom-left-radius: $sz-unit;
+        position: relative;
+        right: -$sz-border-x;
+        object-fit: contain;
+      }
+
+      .pad-bottom {
+        padding-bottom: $sz-spacer-gap;
+      }
     }
-    .story {
-        background-color: $clr-gray-10;
+  }
+  .mission {
+    background-color: $clr-gray-100;
 
-        .img-spacer {
-            justify-content: space-between;
-            h3 {
-                color: $clr-gray-50;
-                width: 450px;
-            }
+    .img-spacer {
+      justify-content: space-between;
 
-            p {
-                color: $clr-gray-70;
-            }
+      p {
+        width: 420px;
+        padding-right: $sz-border-x;
+        color: $clr-gray-20;
+      }
 
-            img {
-                border-top-left-radius: $sz-unit;
-                border-bottom-left-radius: $sz-unit;
-                position: relative;
-                right: -$sz-border-x;
-                object-fit: contain;
-            }
+      h3 {
+        width: 450px;
 
-            .pad-bottom {
-                padding-bottom: $sz-spacer-gap;
-            }
+        .darker {
+          color: $clr-gray-50;
         }
+      }
     }
-    .mission {
-        background-color: $clr-gray-100;
-        
-        .img-spacer {
-            justify-content: space-between;
+  }
+  .science {
+    background-color: $clr-gray-70;
+    border-bottom: $clr-yellow 1px solid;
 
-            p {
-                width: 420px;
-                padding-right: $sz-border-x;
-                color: $clr-gray-20;
-            }
-
-            h3 {
-                width: 450px;
-
-                .darker {
-                    color: $clr-gray-50;
-                }
-            }
-
-        }
-    }
-    .science {
-        background-color: $clr-gray-70;
-        border-bottom: $clr-yellow 1px solid;
-
-        h3 {
-            color: $clr-gray-50;
-            padding-top: 0px;
-            padding-bottom: $sz-subheading-gap;
-            width: 600px;
-            text-align: center;
-
-            .lighter {
-                color: $clr-gray-20;
-            }
-        }
-
-        .tile-container {
-            gap: $sz-double;
-
-            .tile {
-                background-color: $clr-gray-80;
-                padding: 32px;
-                width: 290px;
-                height: 290px;
-                border-radius: $sz-unit;
-
-                .num {
-                    @extend .figure-time;
-                    text-align: right;
-                    color: $clr-gray-70;
-                }
-
-                h4 {
-                    color: $clr-gray-10;
-                    padding-top: $sz-subheading-gap;
-                    padding-bottom: $sz-button-gap;
-                    margin: 0px;
-                }
-                p {
-                    padding: 0px;
-                    color: $clr-gray-50;
-                }
-            }
-        }
-    }
-    .publication {
-        background-color: $clr-gray-100;
-
-        .head-container {
-            justify-content: flex-start;
-
-            gap: $sz-border-x;
-
-            h3 {
-                width: 420px;
-            }
-
-            p {
-                margin: 0px;
-                padding-top: $sz-heading-gap;
-                width: 420px;
-            }
-        }
-
-        .pub-container {
-            display: flex;
-            flex-direction: row;
-            flex-wrap: wrap;
-            // justify-content: space-around;
-            gap: $sz-double;
-            padding: $sz-button-gap;
-
-            background-color: $clr-gray-70;
-            border-radius: $sz-unit;
-
-            .tile {
-                background-color: $clr-gray-80;
-                border-radius: $sz-unit;
-                width: 290px;
-                color: $clr-gray-50;
-
-                img {
-                    width: 100%;
-                    height: auto;
-                }
-
-                .placeholder {
-                    padding: $sz-button-gap;
-                    img {
-                        width: 64px;
-                        height: auto;
-                    }
-                }
-
-                .tile-text {
-                    padding: $sz-double;
-                    
-                    h4 {
-                        color: $clr-gray-50;
-                        margin: 0px;
-                    }
-
-                    p {
-                        padding-top: $sz-double;
-                        padding-bottom: 0px;
-                        margin: 0px;        
-                        color: $clr-gray-10;
-                    }
-
-                    .issue {
-                        color: $clr-gray-40;
-                        font-style: italic;
-                    }
-
-                    .attribution {
-                        color: $clr-gray-40;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                    }
-
-                    .date {
-                        color: $clr-gray-40;
-                    }
-                }
-
-                &:hover {
-                    box-shadow: 0px 0px $sz-unit black;
-                }
-            }
-        }
-    }
     h3 {
-        padding-top: $sz-heading-gap;
-        padding-bottom: $sz-subheading-gap;
+      color: $clr-gray-50;
+      padding-top: 0px;
+      padding-bottom: $sz-subheading-gap;
+      width: 600px;
+      text-align: center;
+
+      .lighter {
+        color: $clr-gray-20;
+      }
     }
+
+    .tile-container {
+      width: 85vw;
+      flex-wrap: wrap;
+      gap: $sz-double;
+
+      .tile {
+        background-color: $clr-gray-80;
+        padding: 32px;
+        width: 290px;
+        height: 290px;
+        border-radius: $sz-unit;
+
+        .num {
+          @extend .figure-time;
+          text-align: right;
+          color: $clr-gray-70;
+        }
+
+        h4 {
+          color: $clr-gray-10;
+          padding-top: $sz-subheading-gap;
+          padding-bottom: $sz-button-gap;
+          margin: 0px;
+        }
+        p {
+          padding: 0px;
+          color: $clr-gray-50;
+        }
+      }
+    }
+  }
+  .publication {
+    background-color: $clr-gray-100;
+
+    .head-container {
+      justify-content: flex-start;
+
+      gap: $sz-border-x;
+
+      h3 {
+        width: 420px;
+      }
+
+      p {
+        margin: 0px;
+        padding-top: $sz-heading-gap;
+        width: 420px;
+      }
+    }
+
+    .pub-container {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: $sz-double;
+      padding: $sz-button-gap;
+
+      background-color: $clr-gray-70;
+      border-radius: $sz-unit;
+
+      .tile {
+        background-color: $clr-gray-80;
+        border-radius: $sz-unit;
+        width: 290px;
+        color: $clr-gray-50;
+
+        img {
+          width: 100%;
+          height: auto;
+          border-top-right-radius: 8px;
+          border-top-left-radius: 8px;
+        }
+
+        .placeholder {
+          padding: $sz-button-gap;
+          img {
+            width: 64px;
+            height: auto;
+          }
+        }
+
+        .tile-text {
+          padding: $sz-double;
+
+          h4 {
+            color: $clr-gray-50;
+            margin: 0px;
+          }
+
+          p {
+            padding-top: $sz-double;
+            padding-bottom: 0px;
+            margin: 0px;
+            color: $clr-gray-10;
+          }
+
+          .issue {
+            color: $clr-gray-40;
+            font-style: italic;
+          }
+
+          .attribution {
+            color: $clr-gray-40;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .date {
+            color: $clr-gray-40;
+          }
+        }
+
+        &:hover {
+          box-shadow: 0px 0px $sz-unit black;
+        }
+      }
+    }
+  }
+  h3 {
+    padding-top: $sz-heading-gap;
+    padding-bottom: $sz-subheading-gap;
+  }
 }

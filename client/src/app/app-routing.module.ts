@@ -27,41 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { NgModule, inject } from '@angular/core';
-import { RouterModule, Routes, CanActivateFn, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
-import { Observable, tap } from "rxjs";
-
-import { AuthService } from '@auth0/auth0-angular';
-
-
-// import { NgModule } from "@angular/core";
-// import { Routes, RouterModule } from "@angular/router";
-
-// import { environment } from "src/environments/environment";
-
-// import { DatasetsComponent } from "./routes/datasets/datasets.component";
-// import { PageNotFoundComponent } from "./routes/page-not-found/page-not-found.component";
-// import { AuthenticateComponent } from "./routes/authenticate/authenticate.component";
-// import { DatasetComponent } from "./routes/dataset/dataset.component";
-// import { DatasetCustomisationComponent } from "./routes/dataset-customisation/dataset-customisation.component";
-
-// import { AnalysisComponent } from "./routes/dataset/analysis/analysis.component";
-// import { CodeEditorComponent } from "./routes/dataset/code-editor/code-editor.component";
-// import { QuantificationsComponent } from "./routes/dataset/quantifications/quantifications.component";
-// import { MapBrowserComponent } from "./routes/dataset/map-browser/map-browser.component";
-// import { PiquantComponent } from "./routes/piquant/piquant.component";
-// import { PiquantConfigComponent } from "./routes/piquant/piquant-config/piquant-config.component";
-// import { PiquantVersionComponent } from "./routes/piquant/piquant-version/piquant-version.component";
-// import { PiquantDownloadsComponent } from "./routes/piquant/piquant-downloads/piquant-downloads.component";
-// import { AdminComponent } from "./routes/admin/admin.component";
-
-//import { QuantResultListComponent } from './routes/dataset/quantifications/quant-result-list/quant-result-list.component';
-// import { QuantificationLogViewComponent } from "./routes/dataset/quantifications/quantification-log-view/quantification-log-view.component";
-// import { SelectedQuantificationViewComponent } from "./routes/dataset/quantifications/selected-quantification-view/selected-quantification-view.component";
-// import { UsersComponent } from "./routes/admin/users/users.component";
-// import { RolesComponent } from "./routes/admin/roles/roles.component";
-// import { TestUtilitiesComponent } from "./routes/admin/test-utilities/test-utilities.component";
-// import { GlobalNotificationsComponent } from "./routes/admin/global-notifications/global-notifications.component";
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
 
 import { PublicSiteModule } from "./modules/public-site/public-site.module";
 import { AuthenticateComponent } from './modules/pixlisecore/components/pages/authenticate/authenticate.component';
@@ -90,70 +57,32 @@ const APP_ROUTES: Routes = [
       {
         path: "datasets",
         loadChildren: () =>
-          import("./modules/dataset-tiles/dataset-tiles.module").then(
-            (m) => m.DatasetTilesModule
+          import("./modules/datasets/datasets.module").then(
+            (m) => m.DatasetsModule
           ),
-      }
+      },
     ]
-  }
-  // {
-  //     path: "",
-  //     canActivate: [AuthenticatedGuard],
-  //     children: [
-  //         { path: "datasets", component: DatasetsComponent },
-  //         {
-  //             path: "dataset/:dataset_id",
-  //             component: DatasetComponent,
-  //             children: [
-  //                 { path: "", redirectTo: "analysis", pathMatch: "full" },
-  //                 { path: "analysis", component: AnalysisComponent },
-  //                 { path: "code-editor/:expression_id", component: CodeEditorComponent },
-  //                 { path: "maps", component: MapBrowserComponent },
-  //                 {
-  //                     path: "quant-logs",
-  //                     component: QuantificationsComponent,
-  //                     children: [
-  //                         //{ path: '', component: QuantResultListComponent },
-  //                         { path: ":job_id/log/:log_name", component: QuantificationLogViewComponent },
-  //                         { path: ":job_id", component: SelectedQuantificationViewComponent },
-  //                     ]
-  //                 },
-  //             ]
-  //         },
-  //         { path: "dataset-edit/:dataset_id_for_edit", component: DatasetCustomisationComponent },
-  //         {
-  //             path: "admin",
-  //             component: AdminComponent,
-  //             children: [
-  //                 { path: "", redirectTo: "users", pathMatch: "full" },
-  //                 { path: "users", component: UsersComponent },
-  //                 { path: "roles", component: RolesComponent },
-  //                 { path: "test-utils", component: TestUtilitiesComponent },
-  //                 { path: "global-notifications", component: GlobalNotificationsComponent },
-  //                 {
-  //                     path: "quant-jobs",
-  //                     component: QuantificationsComponent,
-  //                     children: [
-  //                         { path: ":job_id/log/:log_name", component: QuantificationLogViewComponent },
-  //                         { path: ":job_id", component: SelectedQuantificationViewComponent },
-  //                     ]
-  //                 },
-  //             ]
-  //         },
-  //         {
-  //             path: "piquant",
-  //             component: PiquantComponent,
-  //             children: [
-  //                 { path: "", redirectTo: "config", pathMatch: "full" },
-  //                 { path: "config", component: PiquantConfigComponent },
-  //                 { path: "version", component: PiquantVersionComponent },
-  //                 { path: "downloads", component: PiquantDownloadsComponent },
-  //             ]
-  //         },
-  //     ]
-  // },
-
-  // { path: "**", component: PageNotFoundComponent }
+  },
+  {
+    path: "",
+    canActivate: [AuthGuard],
+    children: [
+      {
+        path: "settings",
+        loadChildren: () =>
+          import("./modules/settings/settings.module").then(
+            (m) => m.SettingsModule
+          ),
+      },
+    ]
+  },
+  {
+    path: "**",
+    loadChildren: () =>
+      import("./modules/not-found/not-found.module").then(
+        (m) => m.NotFoundModule
+      ),
+  },
 ];
 
 @NgModule({

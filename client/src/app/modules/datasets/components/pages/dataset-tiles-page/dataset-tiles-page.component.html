@@ -41,7 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="datasets-container">
     <!-- TODO: <notification-banner></notification-banner> -->
-    <!-- TODO: <app-toolbar titleToShow="Select Dataset"></app-toolbar> -->
+    <app-toolbar titleToShow="Select Dataset"></app-toolbar>
 
     <div class="search-panel">
         <div *ngIf="datasetListingAllowed" class="gap-separated-horizontal-elements dataset-search">
@@ -53,7 +53,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     <img src="assets/button-icons/search.svg">
                 </push-button>
             </div>
-            <push-button (onClick)="onFilters()" class="badge-host">Filters
+            <push-button (onClick)="onFilters($event)" class="badge-host">Filters
                 <badge *ngIf="filterCount>0" class="move-up-left" [value]="filterCount.toString()"></badge>
             </push-button>
             <push-button (onClick)="onGroups($event)" class="badge-host">Groups

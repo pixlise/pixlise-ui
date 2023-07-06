@@ -11,9 +11,32 @@ import { FilterDialogComponent } from "./components/atoms/filter-dialog/filter-d
 import { LogViewerComponent } from "./components/atoms/log-viewer/log-viewer.component";
 import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 
-
 const APP_ROUTES: Routes = [
-    { path: "", component: DatasetTilesPageComponent },
+    {
+        path: "",
+        component: DatasetTilesPageComponent
+    },
+    {
+        path: "analysis",
+        loadChildren: () => import("../analysis/analysis.module").then((m) => m.AnalysisModule),
+    },
+    {
+        path: "code-editor",
+        loadChildren: () => import("../code-editor/code-editor.module").then((m) => m.CodeEditorModule),
+    },
+    {
+        path: "maps",
+        loadChildren: () => import("../map-browser/map-browser.module").then((m) => m.MapBrowserModule),
+    },
+    {
+        path: "quant-logs",
+        loadChildren: () => import("../quantifications/quantifications.module").then((m) => m.QuantificationsModule),
+    },
+    // { path: "dataset-edit/:dataset_id_for_edit", component: DatasetCustomisationComponent },
+    {
+        path: "edit",
+        loadChildren: () => import("../dataset-customisation/dataset-customisation.module").then((m) => m.DatasetCustomisationModule),
+    }
 ];
 
 @NgModule({
@@ -32,6 +55,5 @@ const APP_ROUTES: Routes = [
         RouterModule.forChild(APP_ROUTES),
     ]
 })
-export class DatasetTilesModule
-{
+export class DatasetsModule {
 }

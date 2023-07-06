@@ -1,0 +1,10 @@
+.not-found-container {
+  height: 100vh;
+
+  .not-found-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+  }
+}
