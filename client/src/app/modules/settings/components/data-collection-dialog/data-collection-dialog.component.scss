@@ -27,38 +27,53 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+@import "variables.scss";
+@import "atoms.scss";
 
+.data-collection {
+  display: flex;
+  flex-direction: column;
+}
 
-@Component({
-    selector: "switch-button",
-    templateUrl: "./switch-button.component.html",
-    styleUrls: ["./switch-button.component.scss"]
-})
-export class SwitchButtonComponent implements OnInit {
-    @Input() label: string = "";
-    @Input() endLabel: string = "";
-    @Input() active: boolean = false;
-    @Input() disabled: boolean = false;
+.permissions-dlg {
+  font-family: Inter;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 16px;
+  color: $clr-gray-30;
 
-    @Output() onToggle = new EventEmitter();
+  max-width: 400px;
+}
 
-    constructor() {
-    }
+.intro {
+  color: $clr-gray-20;
+  margin-top: $sz-unit;
+}
 
-    ngOnInit() {
-    }
+.heading {
+  color: $clr-yellow;
+  font-weight: bold;
+  margin-top: $sz-unit;
+}
 
-    getImg(): string {
-        if (this.active && !this.disabled) {
-            return "assets/button-icons/switch-on.svg";
-        }
-        return "assets/button-icons/switch-off.svg";
-    }
+.disclaimer {
+  font-weight: bold;
+}
 
-    onClick(event: any): void {
-        if (!this.disabled) {
-            this.onToggle.emit(!this.active);
-        }
-    }
+.footer {
+  color: $clr-gray-40;
+  margin-top: $sz-double;
+}
+
+.txt-container {
+  max-height: 40vh;
+}
+
+.button-container {
+  margin-top: $sz-double;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
 }

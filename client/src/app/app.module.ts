@@ -1,5 +1,6 @@
 import { APP_INITIALIZER, ErrorHandler, Injectable, NgModule } from "@angular/core";
 import { BrowserModule, Title } from "@angular/platform-browser";
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
@@ -22,6 +23,7 @@ import { MapBrowserModule } from "./modules/map-browser/map-browser.module";
 import { QuantificationsModule } from "./modules/quantifications/quantifications.module";
 import { AdminModule } from "./modules/admin/admin.module";
 import { SettingsModule } from "./modules/settings/settings.module";
+import { FormsModule } from "@angular/forms";
 
 const appInitializerFn = (configService: EnvConfigurationInitService, handler: HttpBackend, authConfig: AuthClientConfig) => {
   return () => {
@@ -80,6 +82,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
   declarations: [AppComponent],
   imports: [
     BrowserModule,
+    BrowserAnimationsModule,
+    FormsModule,
     HttpClientModule,
     AppRoutingModule,
     MaterialModule,

@@ -27,38 +27,30 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
-
+import { Component, EventEmitter, Input, Output } from "@angular/core";
 
 @Component({
-    selector: "switch-button",
-    templateUrl: "./switch-button.component.html",
-    styleUrls: ["./switch-button.component.scss"]
+    selector: "action-button",
+    templateUrl: "./action-button.component.html",
+    styleUrls: ["./action-button.component.scss"]
 })
-export class SwitchButtonComponent implements OnInit {
-    @Input() label: string = "";
-    @Input() endLabel: string = "";
-    @Input() active: boolean = false;
+export class ActionButtonComponent {
     @Input() disabled: boolean = false;
-
-    @Output() onToggle = new EventEmitter();
+    @Input() action: "close" | "check" = "close";
+    @Input() tooltipTitle: string = "";
+    @Output() onClick = new EventEmitter();
 
     constructor() {
     }
 
-    ngOnInit() {
+    get isMatIcon(): boolean {
+        let matActionIcons = ["close", "check"];
+        return matActionIcons.includes(this.action);
     }
 
-    getImg(): string {
-        if (this.active && !this.disabled) {
-            return "assets/button-icons/switch-on.svg";
-        }
-        return "assets/button-icons/switch-off.svg";
-    }
-
-    onClick(event: any): void {
+    onClickInternal() {
         if (!this.disabled) {
-            this.onToggle.emit(!this.active);
+            this.onClick.emit();
         }
     }
 }

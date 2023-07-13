@@ -158,41 +158,19 @@ canvas {
   position: absolute;
 }
 
-/*
-button {
-    background-color: $button-colour;
-    color: $button-text-colour;
-
-    font-size: $button-text-size;
-    text-transform: uppercase;
-
-    border-radius: $ui-border-radius;
-    border-width: 0px;
-
-    padding: 4px 8px;
-
-    /* Remove blue halo around clicked buttons * /
-    outline: 0;
-
-    cursor: pointer;
-}
-
-button:hover {
-    background-color: $button-colour-hover;
-    color: $button-text-colour;
-    font-size: $button-text-size;
-}
-*/
 /* Text styles */
 small {
   color: $clr-gray-70;
 }
 
-.mat-dialog-container {
-  /*background-color: unset !important;*/
-  background-color: $ui-panel-title-colour;
-  padding: 0px !important;
-  border-radius: $sz-unit !important;
+.mat-dialog-container,
+.mat-mdc-dialog-container {
+  .mdc-dialog__container {
+    --mdc-dialog-container-color: $ui-panel-title-colour;
+    background-color: $ui-panel-title-colour;
+    padding: 0px !important;
+    border-radius: $sz-unit !important;
+  }
 }
 
 .panel {
@@ -326,4 +304,38 @@ h3 {
 
 .empty-overlay-backdrop {
   /* Deliberately empty: we don't want to tint the screen when a backdrop is showing */
+}
+
+.mat-mdc-tooltip {
+  --mdc-plain-tooltip-supporting-text-size: 10px;
+  --mdc-plain-tooltip-container-color: #2b3135;
+  --mdc-plain-tooltip-supporting-text-color: rgb(var(--clr-gray-10));
+}
+
+.pixlise-message {
+  --mdc-snackbar-container-color: #2b3135;
+  --mdc-snackbar-supporting-text-color: rgb(var(--clr-gray-10));
+  --mat-snack-bar-button-color: rgb(var(--clr-yellow));
+  --mdc-typography-button-font-weight: 800;
+}
+
+.pixlise-warn {
+  --mdc-snackbar-container-color: rgb(var(--clr-orange));
+  --mdc-snackbar-supporting-text-color: rgb(var(--clr-gray-90));
+  --mat-snack-bar-button-color: rgb(var(--clr-gray-90));
+  --mdc-typography-button-font-weight: 800;
+}
+
+.pixlise-error {
+  --mdc-snackbar-container-color: rgb(var(--clr-red));
+  --mdc-snackbar-supporting-text-color: rgb(var(--clr-gray-10));
+  --mat-snack-bar-button-color: rgb(var(--clr-gray-10));
+  --mdc-typography-button-font-weight: 800;
+}
+
+.pixlise-success {
+  --mdc-snackbar-container-color: #66bb6a;
+  --mdc-snackbar-supporting-text-color: rgb(var(--clr-gray-90));
+  --mat-snack-bar-button-color: rgb(var(--clr-gray-90));
+  --mdc-typography-button-font-weight: 800;
 }

@@ -27,38 +27,38 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { Component, Inject } from "@angular/core";
+import { MAT_SNACK_BAR_DATA, MatSnackBarRef } from "@angular/material/snack-bar";
 
+interface SnackBarPopupData {
+    message: string;
+    action: string;
+    type: "warning" | "error" | "success";
+}
 
 @Component({
-    selector: "switch-button",
-    templateUrl: "./switch-button.component.html",
-    styleUrls: ["./switch-button.component.scss"]
+    selector: "snackbar-popup",
+    templateUrl: "./snackbar-popup.component.html",
+    styleUrls: ["./snackbar-popup.component.scss"]
 })
-export class SwitchButtonComponent implements OnInit {
-    @Input() label: string = "";
-    @Input() endLabel: string = "";
-    @Input() active: boolean = false;
-    @Input() disabled: boolean = false;
+export class SnackBarPopupComponent {
+    constructor(
+        public snackBarRef: MatSnackBarRef<SnackBarPopupComponent>,
+        @Inject(MAT_SNACK_BAR_DATA) public data: SnackBarPopupData
+    ) { }
 
-    @Output() onToggle = new EventEmitter();
-
-    constructor() {
+    public close(): void {
+        this.snackBarRef.dismiss();
     }
 
-    ngOnInit() {
-    }
-
-    getImg(): string {
-        if (this.active && !this.disabled) {
-            return "assets/button-icons/switch-on.svg";
-        }
-        return "assets/button-icons/switch-off.svg";
-    }
-
-    onClick(event: any): void {
-        if (!this.disabled) {
-            this.onToggle.emit(!this.active);
+    get icon() {
+        switch (this.data.type) {
+            case "warning":
+                return "warning";
+            case "error":
+                return "error";
+            case "success":
+                return "check_circle";
         }
     }
 }

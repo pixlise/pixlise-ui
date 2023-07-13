@@ -1,6 +1,9 @@
 import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
 
+import { FormsModule } from "@angular/forms";
+import { MatSnackBarModule } from "@angular/material/snack-bar";
+
 import { WaitSpinnerComponent } from "./components/atoms/wait-spinner/wait-spinner.component";
 // import { MultiStateButtonComponent } from "./components/atoms/buttons/multi-state-button/multi-state-button.component";
 // import { PanelFoldoutButtonComponent } from "./components/atoms/buttons/panel-foldout-button/panel-foldout-button.component";
@@ -10,7 +13,7 @@ import { PushButtonComponent } from "./components/atoms/buttons/push-button/push
 import { TwoStateButtonComponent } from "./components/atoms/buttons/two-state-button/two-state-button.component";
 // import { BulkSelectionSwitchComponent } from "./components/atoms/buttons/two-state-button/bulk-selection-switch.component";
 // import { PlusMinusSwitchComponent } from "./components/atoms/buttons/two-state-button/plus-minus-switch.component";
-// import { SwitchButtonComponent } from "./components/atoms/buttons/switch-button/switch-button.component";
+import { SwitchButtonComponent } from "./components/atoms/buttons/switch-button/switch-button.component";
 // import { MultiSwitchButtonComponent } from "./components/atoms/buttons/multi-switch-button/multi-switch-button.component";
 import { TwoStateIconButton } from "./components/atoms/buttons/two-state-button/two-state-icon-button.component";
 // import { TwoStateIconPushButton } from "./components/atoms/buttons/two-state-button/two-state-icon-push-button.component";
@@ -23,47 +26,59 @@ import { MaterialModule } from "../material.module";
 import { BadgeComponent } from "./components/atoms/badge/badge.component";
 import { AuthenticateComponent } from "./components/pages/authenticate/authenticate.component";
 
-import { RouteNotFoundComponent } from './components/pages/route-not-found/route-not-found.component';
+import { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 import { APICommService } from "./services/apicomm.service";
 import { APIDataService } from "./services/apidata.service";
 import { HttpInterceptorService } from "./services/http-interceptor.service";
 import { ToolbarComponent } from "../datasets/components/toolbar/toolbar.component";
+import { SnackBarPopupComponent } from "./components/atoms/snackbar-popup/snackbar-popup.component";
+import { SnackbarService } from "./services/snackbar.service";
+import { ActionButtonComponent } from "./components/atoms/buttons/action-button/action-button.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
 export { APICommService } from "./services/apicomm.service";
 export { APIDataService } from "./services/apidata.service";
 export { HttpInterceptorService } from "./services/http-interceptor.service";
+export { SnackbarService } from "./services/snackbar.service";
 
 
 @NgModule({
     declarations: [
         WaitSpinnerComponent,
         BadgeComponent,
+        ActionButtonComponent,
         PushButtonComponent,
         TwoStateButtonComponent,
+        SwitchButtonComponent,
         TwoStateIconButton,
         WidgetDisplayMessageComponent,
         WidgetSettingsMenuComponent,
         AuthenticateComponent,
         RouteNotFoundComponent,
-        ToolbarComponent
+        ToolbarComponent,
+        SnackBarPopupComponent,
     ],
     imports: [
         CommonModule,
-        MaterialModule
+        MaterialModule,
     ],
     exports: [
         WaitSpinnerComponent,
         BadgeComponent,
+        ActionButtonComponent,
         PushButtonComponent,
         TwoStateButtonComponent,
+        SwitchButtonComponent,
         TwoStateIconButton,
         WidgetDisplayMessageComponent,
         WidgetSettingsMenuComponent,
         AuthenticateComponent,
         RouteNotFoundComponent,
-        ToolbarComponent
+        ToolbarComponent,
+        FormsModule,
+        MaterialModule,
+        MatSnackBarModule
     ],
     providers: [
         APICommService,

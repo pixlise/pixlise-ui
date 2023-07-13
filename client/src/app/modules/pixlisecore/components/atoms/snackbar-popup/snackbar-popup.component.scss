@@ -27,38 +27,64 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+@import "variables.scss";
+@import "atoms.scss";
 
+.snackbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  font-family: "Roboto";
 
-@Component({
-    selector: "switch-button",
-    templateUrl: "./switch-button.component.html",
-    styleUrls: ["./switch-button.component.scss"]
-})
-export class SwitchButtonComponent implements OnInit {
-    @Input() label: string = "";
-    @Input() endLabel: string = "";
-    @Input() active: boolean = false;
-    @Input() disabled: boolean = false;
+  .icon {
+    margin-right: $sz-unit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgb(var(--mat-snack-bar-button-color));
 
-    @Output() onToggle = new EventEmitter();
+    mat-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
 
-    constructor() {
+  .message {
+  }
+
+  .close-btn {
+    margin-left: auto;
+    cursor: pointer;
+    color: rgb(var(--mat-snack-bar-button-color));
+
+    padding: 4px;
+    border-radius: 50%;
+
+    &.rounded {
+      border-radius: 4px;
     }
 
-    ngOnInit() {
+    transition: all 0.2s ease-in-out;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.05);
     }
 
-    getImg(): string {
-        if (this.active && !this.disabled) {
-            return "assets/button-icons/switch-on.svg";
-        }
-        return "assets/button-icons/switch-off.svg";
+    &:active,
+    &:focus {
+      background-color: rgba(0, 0, 0, 0.1);
     }
 
-    onClick(event: any): void {
-        if (!this.disabled) {
-            this.onToggle.emit(!this.active);
-        }
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    mat-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
+  }
 }

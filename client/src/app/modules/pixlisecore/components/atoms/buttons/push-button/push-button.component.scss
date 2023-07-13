@@ -27,115 +27,115 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-@import 'atoms.scss';
+@import "variables.scss";
+@import "atoms.scss";
 
 .btn-base {
-    padding: $sz-half $sz-double;
-    border-radius: $sz-half;
+  padding: $sz-half $sz-double;
+  border-radius: $sz-half;
 
-    text-align: center;
-    text-transform: uppercase;
+  text-align: center;
+  text-transform: uppercase;
 
-    font-weight: 700;
-    font-family: Inter, Roboto;
+  font-weight: 700;
+  font-family: Inter, Roboto;
 
-    font-size: 12px;
-    line-height: 16px;
+  font-size: 12px;
+  line-height: 16px;
 
-    white-space: nowrap;
+  white-space: nowrap;
 
-    &.active {
-        color: $clr-yellow;
-    }
+  &.active {
+    color: $clr-yellow;
+  }
 }
 
 .btn-yellow {
-    @extend .btn-base;
-    color: black;
-    background-color: $clr-yellow;
+  @extend .btn-base;
+  color: black;
+  background-color: $clr-yellow;
 }
 
 .btn-gray {
-    @extend .btn-base;
-    color: $clr-gray-10;
-    background-color: $clr-gray-60;
+  @extend .btn-base;
+  color: $clr-gray-10;
+  background-color: $clr-gray-60;
 }
 
 .btn-outline {
-    @extend .btn-base;
-    color: $clr-gray-30;
-    border: 1px solid $clr-gray-30;
-    box-sizing: border-box;
+  @extend .btn-base;
+  color: $clr-gray-30;
+  outline: 1px solid $clr-gray-30;
+  box-sizing: border-box;
 }
 
 .btn-dark-outline {
-    @extend .btn-base;
-    color: $clr-gray-100;
-    border: 1px solid $clr-gray-100;
-    box-sizing: border-box;
+  @extend .btn-base;
+  color: $clr-gray-100;
+  outline: 1px solid $clr-gray-100;
+  box-sizing: border-box;
 }
 
 .btn-normal {
-    @extend .btn-base;
-    padding: $sz-half;
-    color: $clr-gray-30;
-    text-transform: unset;
-    font-weight: 400;
-    font-family: Roboto;
-    font-size: 14px;
-    line-height: 16px;
-    background-color: $clr-gray-100;
+  @extend .btn-base;
+  padding: $sz-half;
+  color: $clr-gray-30;
+  text-transform: unset;
+  font-weight: 400;
+  font-family: Roboto;
+  font-size: 14px;
+  line-height: 16px;
+  background-color: $clr-gray-100;
 
-    &:hover {
-        background-color: $clr-gray-90;
-    }
+  &:hover {
+    background-color: $clr-gray-90;
+  }
 }
 
 .btn-borderless {
-    @extend .btn-base;
+  @extend .btn-base;
 
-    color: $clr-yellow;
-    opacity: 0.9;
+  color: $clr-yellow;
+  opacity: 0.9;
 
-    //font-style: normal;
+  //font-style: normal;
 
-    &:hover {
-        background-color: $clr-gray-60;
-    }
+  &:hover {
+    background-color: $clr-gray-60;
+  }
 }
 
 .btn-light-right-outline {
-    @extend .btn-base;
-    border: 1px solid $clr-gray-60;
-    border-left: none;
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    padding: $sz-half 8px;
+  @extend .btn-base;
+  outline: 1px solid $clr-gray-60;
+  border-left: none;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding: $sz-half 8px;
 }
 
 .btn-orange {
-    @extend .btn-base;
-    color: black;
-    background-color: $clr-orange;
+  @extend .btn-base;
+  color: black;
+  background-color: $clr-orange;
 }
 
 .disabled {
-    color: $clr-gray-60;
-    background-color: $clr-gray-80;
+  color: $clr-gray-60;
+  background-color: $clr-gray-80;
 
-    &:hover {
-        cursor: default;
-        background-color: $clr-gray-80;
-    }
+  &:hover {
+    cursor: default;
+    background-color: $clr-gray-80;
+  }
 }
 
 .clickable {
-    position: relative;
+  position: relative;
 }
 
 .notifications {
-    position: absolute;
-    top: -6.5px;   
-    right: -6.5px;
+  position: absolute;
+  top: -6.5px;
+  right: -6.5px;
 }

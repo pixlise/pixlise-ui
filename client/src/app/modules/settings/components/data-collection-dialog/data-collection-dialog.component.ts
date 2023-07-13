@@ -27,38 +27,40 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { Component, OnInit } from "@angular/core";
+import { MatDialogRef } from "@angular/material/dialog";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 
 @Component({
-    selector: "switch-button",
-    templateUrl: "./switch-button.component.html",
-    styleUrls: ["./switch-button.component.scss"]
+    selector: "app-data-collection-dialog",
+    templateUrl: "./data-collection-dialog.component.html",
+    styleUrls: ["./data-collection-dialog.component.scss"]
 })
-export class SwitchButtonComponent implements OnInit {
-    @Input() label: string = "";
-    @Input() endLabel: string = "";
-    @Input() active: boolean = false;
-    @Input() disabled: boolean = false;
-
-    @Output() onToggle = new EventEmitter();
-
-    constructor() {
+export class DataCollectionDialogComponent implements OnInit
+{
+    constructor(
+        public dialogRef: MatDialogRef<DataCollectionDialogComponent>,
+    )
+    {
     }
 
-    ngOnInit() {
+    ngOnInit(): void
+    {
     }
 
-    getImg(): string {
-        if (this.active && !this.disabled) {
-            return "assets/button-icons/switch-on.svg";
-        }
-        return "assets/button-icons/switch-off.svg";
+    onDeny(): void
+    {
+        this.dialogRef.close(false);
     }
 
-    onClick(event: any): void {
-        if (!this.disabled) {
-            this.onToggle.emit(!this.active);
-        }
+    onAccept(): void
+    {
+        this.dialogRef.close(true);
+    }
+
+    get appDomain(): string
+    {
+        return EnvConfigurationInitService.appConfig.appDomain;
     }
 }

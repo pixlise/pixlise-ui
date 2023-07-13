@@ -1,0 +1,104 @@
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+
+  app-toolbar {
+    width: 100%;
+  }
+
+  .settings {
+    margin: 4px 8px;
+    width: 50vw;
+
+    section {
+      h2 {
+        border-bottom: 2px solid rgb(190, 192, 194);
+      }
+
+      .notification-item {
+        height: 50px;
+        display: flex;
+        align-items: center;
+
+        .title {
+          margin-left: 8px;
+        }
+
+        .notification-checkbox {
+          margin-right: 8px;
+        }
+
+        &:nth-of-type(even) {
+          background-color: #2b3136;
+        }
+
+        .checkboxes {
+          display: flex;
+          align-items: center;
+          margin-left: auto;
+        }
+      }
+    }
+
+    .user-section {
+      margin-bottom: 8px;
+      .user-info {
+        display: flex;
+        margin-top: 8px;
+
+        .user-fields {
+          display: flex;
+          flex-direction: column;
+          margin-left: 8px;
+
+          .user-field {
+            display: flex;
+
+            input {
+              height: 32px;
+              margin-bottom: 4px;
+              width: 256px;
+            }
+          }
+        }
+      }
+    }
+
+    .data-collection {
+      .data-collection-row {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+
+        margin: 8px;
+
+        switch-button {
+          margin-left: auto;
+        }
+      }
+    }
+
+    .hints {
+      .hints-row {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+
+        margin: 8px;
+
+        two-state-icon-button {
+          margin-left: auto;
+        }
+      }
+    }
+  }
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  margin-left: 4px;
+}

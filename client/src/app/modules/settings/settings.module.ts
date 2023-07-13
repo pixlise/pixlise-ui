@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
 import { PIXLISECoreModule } from '../pixlisecore/pixlisecore.module';
 import { SettingsPageComponent } from './pages/settings-page/settings-page.component';
+import { UserOptionsService } from './services/user-options.service';
+import { DataCollectionDialogComponent } from './components/data-collection-dialog/data-collection-dialog.component';
+
 
 
 
@@ -15,7 +18,8 @@ const APP_ROUTES: Routes = [
 
 @NgModule({
   declarations: [
-    SettingsPageComponent
+    SettingsPageComponent,
+    DataCollectionDialogComponent
   ],
   imports: [
     CommonModule,
@@ -24,6 +28,9 @@ const APP_ROUTES: Routes = [
   ],
   exports: [
     SettingsPageComponent,
+  ],
+  providers: [
+    UserOptionsService
   ]
 })
 export class SettingsModule { }

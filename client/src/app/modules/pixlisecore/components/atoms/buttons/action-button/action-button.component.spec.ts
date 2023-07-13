@@ -27,38 +27,28 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { async, ComponentFixture, TestBed } from "@angular/core/testing";
+import { ActionButtonComponent } from "./action-button.component";
 
 
-@Component({
-    selector: "switch-button",
-    templateUrl: "./switch-button.component.html",
-    styleUrls: ["./switch-button.component.scss"]
-})
-export class SwitchButtonComponent implements OnInit {
-    @Input() label: string = "";
-    @Input() endLabel: string = "";
-    @Input() active: boolean = false;
-    @Input() disabled: boolean = false;
+describe("ActionButtonComponent", () => {
+    let component: ActionButtonComponent;
+    let fixture: ComponentFixture<ActionButtonComponent>;
 
-    @Output() onToggle = new EventEmitter();
+    beforeEach(async(() => {
+        TestBed.configureTestingModule({
+            declarations: [ActionButtonComponent]
+        })
+            .compileComponents();
+    }));
 
-    constructor() {
-    }
+    beforeEach(() => {
+        fixture = TestBed.createComponent(ActionButtonComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-    ngOnInit() {
-    }
-
-    getImg(): string {
-        if (this.active && !this.disabled) {
-            return "assets/button-icons/switch-on.svg";
-        }
-        return "assets/button-icons/switch-off.svg";
-    }
-
-    onClick(event: any): void {
-        if (!this.disabled) {
-            this.onToggle.emit(!this.active);
-        }
-    }
-}
+    it("should create", () => {
+        expect(component).toBeTruthy();
+    });
+});
