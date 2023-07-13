@@ -37,7 +37,8 @@ import { EnvConfigurationInitService } from "src/app/services/env-configuration-
 // import { DataSetService } from "src/app/services/data-set.service";
 // import { ExportDataService } from "src/app/services/export-data.service";
 // import { UserMenuPanelComponent } from "src/app/UI/user-menu-panel/user-menu-panel.component";
-// import { OverlayHost } from "src/app/utils/overlay-host";
+import { OverlayHost } from "src/app/utils/overlay-host";
+import { UserMenuPanelComponent } from "./user-menu-panel/user-menu-panel.component";
 // import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 // import { AnnotationEditorComponent, AnnotationEditorData, AnnotationTool } from "../annotation-editor/annotation-editor.component";
 // import { FullScreenAnnotationItem } from "../annotation-editor/annotation-display/annotation-display.component";
@@ -70,9 +71,9 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     @Input() titleToShow: string = "";
     @Input() darkBackground: boolean = false;
 
-    // @ViewChild(CdkOverlayOrigin) _overlayOrigin!: CdkOverlayOrigin;
+    @ViewChild(CdkOverlayOrigin) _overlayOrigin!: CdkOverlayOrigin;
 
-    // private _overlayHost!: OverlayHost;
+    private _overlayHost!: OverlayHost;
 
     private _subs = new Subscription();
     private _userPiquantConfigAllowed: boolean = false;
@@ -173,16 +174,14 @@ export class ToolbarComponent implements OnInit, OnDestroy {
         // ));
 
         // // If user changes tabs, etc, we want to know
-        // this._subs.add(this.router.events.subscribe(
-        //     (event)=>
-        //     {
-        //         if(event instanceof NavigationEnd || event instanceof ResolveEnd)
-        //         {
-        //             this._overlayHost.hidePanel();
-        //             this.updateToolbar();
-        //         }
-        //     }
-        // ));
+        this._subs.add(this.router.events.subscribe(
+            (event) => {
+                if (event instanceof NavigationEnd || event instanceof ResolveEnd) {
+                    this._overlayHost.hidePanel();
+                    this.updateToolbar();
+                }
+            }
+        ));
 
         // this._subs.add(this._viewStateService.annotations$.subscribe(
         //     (annotations: FullScreenAnnotationItem[])=>
@@ -219,15 +218,15 @@ export class ToolbarComponent implements OnInit, OnDestroy {
             )
         ];
 
-        // this._overlayHost = new OverlayHost(
-        //     this.overlay,
-        //     this.viewContainerRef,
-        //     this.injector,
-        //     this._overlayOrigin,
-        //     UserMenuPanelComponent,
-        //     userOverlayPos,
-        //     true
-        // );
+        this._overlayHost = new OverlayHost(
+            this.overlay,
+            this.viewContainerRef,
+            this.injector,
+            this._overlayOrigin,
+            UserMenuPanelComponent,
+            userOverlayPos,
+            true
+        );
     }
 
     get showExport(): boolean {
@@ -308,7 +307,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     }
 
     onUserMenu(): void {
-        // this._overlayHost.showPanel();
+        this._overlayHost.showPanel();
     }
 
     get isLoggedIn(): boolean {

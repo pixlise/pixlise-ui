@@ -27,43 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
-import { BadgeStyle } from "../../badge/badge.component";
+import { async, ComponentFixture, TestBed } from "@angular/core/testing";
+import { UserMenuPanelComponent } from "./user-menu-panel.component";
 
-export type PushButtonStyle = "normal" | "borderless" | "yellow" | "outline" | "gray" | "light-right-outline" | "orange" | "dark-outline" | "hover-yellow";
 
-@Component({
-    selector: "push-button",
-    templateUrl: "./push-button.component.html",
-    styleUrls: ["./push-button.component.scss"]
-})
-export class PushButtonComponent implements OnInit {
-    @Input() buttonStyle: PushButtonStyle = "normal";
-    @Input() active: boolean = false;
-    @Input() disabled: boolean = false;
-    @Input() notificationCount: number = 0;
-    @Input() badgeStyle: BadgeStyle = "notification";
-    @Input() tooltipTitle: string = "";
-    @Output() onClick = new EventEmitter();
+describe("UserMenuPanelComponent", () => 
+{
+    let component: UserMenuPanelComponent;
+    let fixture: ComponentFixture<UserMenuPanelComponent>;
 
-    constructor() {
-    }
+    beforeEach(async(() => 
+    {
+        TestBed.configureTestingModule({
+            declarations: [ UserMenuPanelComponent ]
+        })
+            .compileComponents();
+    }));
 
-    ngOnInit() {
-        const validStyles: PushButtonStyle[] = ["normal", "borderless", "yellow", "outline", "gray", "light-right-outline", "orange", "dark-outline", "hover-yellow"];
-        if (validStyles.indexOf(this.buttonStyle) == -1) {
-            console.warn("Invalid style for push-button: " + this.buttonStyle);
-            this.buttonStyle = validStyles[0];
-        }
-    }
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(UserMenuPanelComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-    get styleCSS(): string {
-        return `btn-${this.buttonStyle}${this.disabled ? " disabled" : ""}${this.active ? " active" : ""}`;
-    }
-
-    onClickInternal(event: MouseEvent): void {
-        if (!this.disabled) {
-            this.onClick.emit(event);
-        }
-    }
-}
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

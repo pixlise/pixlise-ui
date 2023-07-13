@@ -40,13 +40,6 @@ export class SettingsPageComponent {
           existing.method = topic.config.method;
         }
       });
-
-      this._authService.user$.subscribe((user) => {
-        if (!this.user.iconURL) {
-          this.user.iconURL = user?.picture || "";
-        }
-
-      });
     });
   }
 

@@ -13,6 +13,7 @@ import { makeHeaders } from 'src/app/utils/api-helpers';
 import { UserDismissHintReq, UserHintsReq, UserHintsResp, UserHintsToggleReq, UserHintsToggleResp } from 'src/app/generated-protos/user-hints-msgs';
 import { UserHints } from 'src/app/generated-protos/user-hints';
 import { NotificationConfig, NotificationMethod, NotificationSetting, NotificationSubscriptions, NotificationTopic } from '../models/notification.model';
+import { AuthService } from '@auth0/auth0-angular';
 
 @Injectable({
   providedIn: 'root'
@@ -40,6 +41,7 @@ export class UserOptionsService {
   constructor(
     private _dataService: APIDataService,
     private _snackBar: SnackbarService,
+    private _authService: AuthService,
     private http: HttpClient,
   ) {
     this.fetchCurrentDataCollectionVersion();
@@ -131,6 +133,13 @@ export class UserOptionsService {
     this._dataService.sendUserDetailsRequest(UserDetailsReq.create({})).subscribe({
       next: (resp: UserDetailsResp) => {
         this._userDetails = resp.details || this._userDetails;
+
+        // If we don't have an icon for the user in mongo, get one from auth0
+        if (!this._userDetails.info?.iconURL) {
+          this._authService.user$.subscribe((user) => {
+            this._userDetails.info!.iconURL = user?.picture || "";
+          });
+        }
         this._userOptionsChanged$.next();
       },
       error: (err) => {

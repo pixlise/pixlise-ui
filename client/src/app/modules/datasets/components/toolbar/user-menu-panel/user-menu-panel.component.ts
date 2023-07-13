@@ -27,43 +27,72 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
-import { BadgeStyle } from "../../badge/badge.component";
-
-export type PushButtonStyle = "normal" | "borderless" | "yellow" | "outline" | "gray" | "light-right-outline" | "orange" | "dark-outline" | "hover-yellow";
+import { Component } from "@angular/core";
+import { Router } from "@angular/router";
+import { AuthService } from "@auth0/auth0-angular";
+import { UserDetails } from "src/app/generated-protos/user";
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 
 @Component({
-    selector: "push-button",
-    templateUrl: "./push-button.component.html",
-    styleUrls: ["./push-button.component.scss"]
+    selector: "app-user-menu-panel",
+    templateUrl: "./user-menu-panel.component.html",
+    styleUrls: ["./user-menu-panel.component.scss"]
 })
-export class PushButtonComponent implements OnInit {
-    @Input() buttonStyle: PushButtonStyle = "normal";
-    @Input() active: boolean = false;
-    @Input() disabled: boolean = false;
-    @Input() notificationCount: number = 0;
-    @Input() badgeStyle: BadgeStyle = "notification";
-    @Input() tooltipTitle: string = "";
-    @Output() onClick = new EventEmitter();
+export class UserMenuPanelComponent {
+    user: UserDetails = {
+        info: {
+            id: "",
+            name: "",
+            email: "",
+            iconURL: "",
+        },
+        dataCollectionVersion: "",
+        permissions: []
 
-    constructor() {
+    };
+
+    constructor(
+        private _authService: AuthService,
+        private _userOptionsService: UserOptionsService,
+        private _router: Router,
+    ) {
+
+        this._userOptionsService.userOptionsChanged$.subscribe(
+            () => {
+                this.user = this._userOptionsService.userDetails;
+            }
+        );
     }
 
-    ngOnInit() {
-        const validStyles: PushButtonStyle[] = ["normal", "borderless", "yellow", "outline", "gray", "light-right-outline", "orange", "dark-outline", "hover-yellow"];
-        if (validStyles.indexOf(this.buttonStyle) == -1) {
-            console.warn("Invalid style for push-button: " + this.buttonStyle);
-            this.buttonStyle = validStyles[0];
+    onLogout(): void {
+        this._authService.logout();
+    }
+
+    onResetHints(): void {
+
+    }
+
+    onSettings(): void {
+        this._router.navigate(["/settings"]);
+
+    }
+
+    get userName(): string {
+        if (!this.user?.info) {
+            return "Loading...";
         }
+
+        return this.user.info.name;
     }
 
-    get styleCSS(): string {
-        return `btn-${this.buttonStyle}${this.disabled ? " disabled" : ""}${this.active ? " active" : ""}`;
-    }
-
-    onClickInternal(event: MouseEvent): void {
-        if (!this.disabled) {
-            this.onClick.emit(event);
+    get userEmail(): string {
+        if (!this.user?.info) {
+            return "Loading...";
         }
+        return this.user.info.email;
+    }
+
+    get dataCollectionActive(): boolean {
+        return this._userOptionsService.currentDataCollectionAgreementAccepted;
     }
 }

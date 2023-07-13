@@ -1,8 +1,10 @@
 import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { OverlayModule } from '@angular/cdk/overlay';
 
 import { FormsModule } from "@angular/forms";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
+
 
 import { WaitSpinnerComponent } from "./components/atoms/wait-spinner/wait-spinner.component";
 // import { MultiStateButtonComponent } from "./components/atoms/buttons/multi-state-button/multi-state-button.component";
@@ -34,6 +36,7 @@ import { ToolbarComponent } from "../datasets/components/toolbar/toolbar.compone
 import { SnackBarPopupComponent } from "./components/atoms/snackbar-popup/snackbar-popup.component";
 import { SnackbarService } from "./services/snackbar.service";
 import { ActionButtonComponent } from "./components/atoms/buttons/action-button/action-button.component";
+import { UserMenuPanelComponent } from "../datasets/components/toolbar/user-menu-panel/user-menu-panel.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -58,9 +61,11 @@ export { SnackbarService } from "./services/snackbar.service";
         RouteNotFoundComponent,
         ToolbarComponent,
         SnackBarPopupComponent,
+        UserMenuPanelComponent
     ],
     imports: [
         CommonModule,
+        OverlayModule,
         MaterialModule,
     ],
     exports: [
