@@ -4,7 +4,6 @@ import { APIDataService, SnackbarService } from '../../pixlisecore/pixlisecore.m
 import { ReplaySubject } from 'rxjs';
 
 import * as _m0 from "protobufjs/minimal";
-import { NotificationConfig, NotificationMethod, NotificationSetting, NotificationSubscriptions, NotificationTopic } from '../pages/settings-page/settings-page.component';
 import { UserNotificationSettingsReq, UserNotificationSettingsResp, UserNotificationSettingsWriteReq, UserNotificationSettingsWriteResp } from 'src/app/generated-protos/user-notification-setting-msgs';
 import { UserDetailsReq, UserDetailsResp, UserDetailsWriteReq, UserDetailsWriteResp } from 'src/app/generated-protos/user-msgs';
 import { UserDetails, UserInfo } from 'src/app/generated-protos/user';
@@ -13,6 +12,7 @@ import { HttpClient } from '@angular/common/http';
 import { makeHeaders } from 'src/app/utils/api-helpers';
 import { UserDismissHintReq, UserHintsReq, UserHintsResp, UserHintsToggleReq, UserHintsToggleResp } from 'src/app/generated-protos/user-hints-msgs';
 import { UserHints } from 'src/app/generated-protos/user-hints';
+import { NotificationConfig, NotificationMethod, NotificationSetting, NotificationSubscriptions, NotificationTopic } from '../models/notification.model';
 
 @Injectable({
   providedIn: 'root'
