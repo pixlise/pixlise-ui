@@ -36,7 +36,16 @@
   justify-content: center;
   cursor: pointer;
 
+  &.check {
+    color: #7bb972;
+  }
+
+  &.close {
+    color: orangered;
+  }
+
   &.disabled {
+    color: white;
     opacity: 0.5;
     pointer-events: none;
   }
@@ -58,6 +67,6 @@
       background-color: rgba(255, 255, 255, 0.1);
     }
 
-    transition: all 0.2s ease-in-out;
+    transition: all 0.2s ease;
   }
 }

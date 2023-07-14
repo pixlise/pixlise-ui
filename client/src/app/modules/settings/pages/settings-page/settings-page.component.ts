@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { AuthService } from '@auth0/auth0-angular';
 import { UserOptionsService } from '../../services/user-options.service';
 import { UserInfo } from 'src/app/generated-protos/user';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
@@ -17,7 +16,6 @@ export class SettingsPageComponent {
   user!: UserInfo;
 
   constructor(
-    private _authService: AuthService,
     private _userOptionsService: UserOptionsService,
     private dialog: MatDialog,
   ) {

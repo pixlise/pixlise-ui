@@ -5,6 +5,7 @@ import { PIXLISECoreModule } from '../pixlisecore/pixlisecore.module';
 import { SettingsPageComponent } from './pages/settings-page/settings-page.component';
 import { UserOptionsService } from './services/user-options.service';
 import { DataCollectionDialogComponent } from './components/data-collection-dialog/data-collection-dialog.component';
+import { GroupsPageComponent } from './pages/groups-page/groups-page.component';
 
 
 
@@ -12,13 +13,18 @@ import { DataCollectionDialogComponent } from './components/data-collection-dial
 const APP_ROUTES: Routes = [
   {
     path: "",
-    component: SettingsPageComponent
+    component: SettingsPageComponent,
   },
+  {
+    path: "groups",
+    component: GroupsPageComponent
+  }
 ];
 
 @NgModule({
   declarations: [
     SettingsPageComponent,
+    GroupsPageComponent,
     DataCollectionDialogComponent
   ],
   imports: [
@@ -28,6 +34,7 @@ const APP_ROUTES: Routes = [
   ],
   exports: [
     SettingsPageComponent,
+    GroupsPageComponent,
   ],
   providers: [
     UserOptionsService

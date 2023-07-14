@@ -284,6 +284,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
         }
 
         this.tabs.push(new TabNav("Settings", "settings", true));
+        this.tabs.push(new TabNav("Groups", "settings/groups", true));
 
         if (this._userUserAdminAllowed || this._userPiquantJobsAllowed) {
             this.tabs.push(new TabNav("Admin", "admin", true));
@@ -292,7 +293,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
         // Mark the right tab as being active
         this._currTab = "";
         for (let c = 0; c < this.tabs.length; c++) {
-            this.tabs[c].active = url.indexOf("/" + this.tabs[c].url) > -1;
+            this.tabs[c].active = url.endsWith("/" + this.tabs[c].url);
 
             if (this.tabs[c].active) {
                 this._currTab = this.tabs[c].label;

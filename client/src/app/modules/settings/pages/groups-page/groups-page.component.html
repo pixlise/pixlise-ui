@@ -1,0 +1,33 @@
+<div class="settings-container">
+    <!-- TODO: <notification-banner></notification-banner> -->
+    <app-toolbar titleToShow="Groups"></app-toolbar>
+
+    <div class="group-container">
+        <div class="group-name-container">
+            <h1>Groups</h1>
+            <div class="group-names">
+                <div *ngFor="let group of groups" (click)="onSelectGroup(group)">
+                    <h2>{{group.name}}</h2>
+                    <!-- <div *ngFor="let user of group.users">
+                <h3>{{user.name}}</h3>
+                <div *ngFor="let role of user.roles">
+                    <h4>{{role.name}}</h4>
+                    <div *ngFor="let permission of role.permissions">
+                        <h5>{{permission.name}}</h5>
+                    </div>
+                </div>
+            </div> -->
+                </div>
+            </div>
+        </div>
+        <div *ngIf="selectedGroup" class="selected-group">
+            <h1>{{selectedGroup.name}}</h1>
+            <div *ngFor="let groupId of selectedGroupSubGroups">
+                <h3>{{groupId}}</h3>
+            </div>
+            <div *ngFor="let userId of selectedGroupMembers">
+                <h3>{{userId}}</h3>
+            </div>
+        </div>
+    </div>
+</div>
