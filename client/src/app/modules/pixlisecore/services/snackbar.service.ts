@@ -20,9 +20,17 @@ export class SnackbarService {
         });
     }
 
-    openError(message: string, action: string = ""): void {
+    openError(message: any, action: string = ""): void {
+        let messageText = "";
+        if (typeof message === "object" && message?.errorText) {
+            messageText = message.errorText;
+        }
+        else {
+            messageText = message;
+        }
+
         this._snackBar.openFromComponent(SnackBarPopupComponent, {
-            data: { message, action, type: "error" },
+            data: { message: messageText, action, type: "error" },
             horizontalPosition: "left",
             panelClass: ["pixlise-error"],
             duration: 5000

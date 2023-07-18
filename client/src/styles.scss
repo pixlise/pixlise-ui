@@ -312,6 +312,43 @@ h3 {
   --mdc-plain-tooltip-supporting-text-color: rgb(var(--clr-gray-10));
 }
 
+.mat-mdc-autocomplete-panel {
+  --mat-autocomplete-background-color: #2b3135;
+}
+
+.mdc-text-field--filled:not(.mdc-text-field--disabled) {
+  background-color: #474c50 !important;
+}
+
+.mdc-text-field.mdc-text-field--focused {
+  background-color: #474c50 !important;
+}
+
+.mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label {
+  color: white;
+}
+
+.mdc-text-field--filled:not(.mdc-text-field--disabled):hover
+  .mdc-line-ripple::before,
+.mdc-text-field--filled .mdc-line-ripple::after {
+  border-bottom-color: white;
+}
+
+.mdc-menu-surface {
+  --mdc-theme-surface: #2b3135;
+}
+
+.mat-primary {
+  --mdc-theme-primary: white;
+}
+
+.mat-primary .mat-pseudo-checkbox-checked.mat-pseudo-checkbox-minimal::after,
+.mat-primary
+  .mat-pseudo-checkbox-indeterminate.mat-pseudo-checkbox-minimal::after,
+.mat-mdc-form-field.mat-focused.mat-primary .mat-mdc-select-arrow {
+  color: white;
+}
+
 .pixlise-message {
   --mdc-snackbar-container-color: #2b3135;
   --mdc-snackbar-supporting-text-color: rgb(var(--clr-gray-10));

@@ -28,84 +28,60 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 @import "variables.scss";
+@import "atoms.scss";
 
-.group-container {
+.data-collection {
   display: flex;
-  padding: 16px;
-
-  .group-name-container {
-    border-right: 1px solid $clr-gray-60;
-    padding: 8px;
-
-    .group-names {
-      .group-name {
-        display: flex;
-        align-items: center;
-
-        h2 {
-          cursor: pointer;
-        }
-      }
-    }
-  }
-
-  .selected-group {
-    margin-left: 8px;
-
-    .group-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 8px;
-
-      action-button {
-        margin-left: 8px;
-      }
-    }
-  }
+  flex-direction: column;
 }
 
-.new-group-container {
-  display: flex;
+.permissions-dlg {
+  font-family: Inter;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 16px;
+  color: $clr-gray-30;
 
-  .new-group-name {
-    flex: 1;
-  }
+  max-width: 400px;
 }
 
-.user-card {
+.intro {
+  color: $clr-gray-20;
+  margin-top: $sz-unit;
+}
+
+.heading {
+  color: $clr-yellow;
+  font-weight: bold;
+  margin-top: $sz-unit;
+}
+
+.disclaimer {
+  font-weight: bold;
+}
+
+.footer {
+  color: $clr-gray-40;
+  margin-top: $sz-double;
+}
+
+.txt-container {
+  max-height: 40vh;
+}
+
+.button-container {
+  margin-top: $sz-double;
+
   display: flex;
-  padding: 8px;
-  border-bottom: 1px solid $clr-gray-60;
-  background-color: #464c50;
+  flex-direction: row;
+  justify-content: flex-end;
+}
 
-  .icon {
-    max-width: 75px;
-    margin-right: 8px;
+.fields {
+  margin-top: 16px;
 
-    img {
-      width: 100%;
-    }
-  }
-
-  .details {
-    .info {
-      .label {
-        font-weight: bold;
-        font-size: 12px;
-        color: rgb(var(--clr-gray-30));
-      }
-
-      h3 {
-        font-weight: normal;
-        font-size: 14px;
-        margin: 0;
-        color: white;
-      }
-    }
-  }
-
-  .actions {
-    margin-left: auto;
-    display: flex;
+  mat-form-field {
+    width: 100%;
   }
 }

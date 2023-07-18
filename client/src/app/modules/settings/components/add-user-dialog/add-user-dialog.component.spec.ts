@@ -27,85 +27,28 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { AddUserDialogComponent } from "./add-user-dialog.component";
 
-.group-container {
-  display: flex;
-  padding: 16px;
 
-  .group-name-container {
-    border-right: 1px solid $clr-gray-60;
-    padding: 8px;
+describe("AddUserDialogComponent", () => {
+    let component: AddUserDialogComponent;
+    let fixture: ComponentFixture<AddUserDialogComponent>;
 
-    .group-names {
-      .group-name {
-        display: flex;
-        align-items: center;
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            declarations: [AddUserDialogComponent]
+        })
+            .compileComponents();
+    });
 
-        h2 {
-          cursor: pointer;
-        }
-      }
-    }
-  }
+    beforeEach(() => {
+        fixture = TestBed.createComponent(AddUserDialogComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-  .selected-group {
-    margin-left: 8px;
-
-    .group-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 8px;
-
-      action-button {
-        margin-left: 8px;
-      }
-    }
-  }
-}
-
-.new-group-container {
-  display: flex;
-
-  .new-group-name {
-    flex: 1;
-  }
-}
-
-.user-card {
-  display: flex;
-  padding: 8px;
-  border-bottom: 1px solid $clr-gray-60;
-  background-color: #464c50;
-
-  .icon {
-    max-width: 75px;
-    margin-right: 8px;
-
-    img {
-      width: 100%;
-    }
-  }
-
-  .details {
-    .info {
-      .label {
-        font-weight: bold;
-        font-size: 12px;
-        color: rgb(var(--clr-gray-30));
-      }
-
-      h3 {
-        font-weight: normal;
-        font-size: 14px;
-        margin: 0;
-        color: white;
-      }
-    }
-  }
-
-  .actions {
-    margin-left: auto;
-    display: flex;
-  }
-}
+    it("should create", () => {
+        expect(component).toBeTruthy();
+    });
+});

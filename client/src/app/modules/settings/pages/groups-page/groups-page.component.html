@@ -6,27 +6,53 @@
         <div class="group-name-container">
             <h1>Groups</h1>
             <div class="group-names">
-                <div *ngFor="let group of groups" (click)="onSelectGroup(group)">
-                    <h2>{{group.name}}</h2>
-                    <!-- <div *ngFor="let user of group.users">
-                <h3>{{user.name}}</h3>
-                <div *ngFor="let role of user.roles">
-                    <h4>{{role.name}}</h4>
-                    <div *ngFor="let permission of role.permissions">
-                        <h5>{{permission.name}}</h5>
-                    </div>
+                <div *ngFor="let group of groups" class="group-name">
+                    <action-button *ngIf="canDeleteGroup" action="close" [disabled]="!group" tooltipTitle="Delete"
+                        (onClick)="onDeleteGroup(group)"></action-button>
+                    <h2 (click)="onSelectGroup(group)">{{group.info?.name}}</h2>
                 </div>
-            </div> -->
+            </div>
+            <div *ngIf="canCreateGroup" class="buttons">
+                <div class="user-field">
+                    <span class="new-group-container">
+                        <input [(ngModel)]="newGroupName" class="new-group-name" type="text" autocomplete="off"
+                            data-lpignore="true" placeholder="New Group Name">
+                        <action-button action="check" [disabled]="!newGroupName" tooltipTitle="Create Group"
+                            (onClick)="onCreateGroup()"></action-button>
+                        <action-button action="close" [disabled]="!newGroupName" tooltipTitle="Reset"
+                            (onClick)="onClearNewGroupName()"></action-button>
+                    </span>
                 </div>
             </div>
         </div>
         <div *ngIf="selectedGroup" class="selected-group">
-            <h1>{{selectedGroup.name}}</h1>
-            <div *ngFor="let groupId of selectedGroupSubGroups">
-                <h3>{{groupId}}</h3>
+            <div class="group-header">
+                <h1>{{selectedGroup.info?.name}}</h1>
+                <action-button action="add" [disabled]="!selectedGroup" tooltipTitle="Add User"
+                    (onClick)="onAddUserToGroup(selectedGroup.info!.id)"></action-button>
             </div>
-            <div *ngFor="let userId of selectedGroupMembers">
-                <h3>{{userId}}</h3>
+            <div *ngFor="let group of selectedGroupSubGroups">
+                <h3>{{group.name}}</h3>
+            </div>
+            <div *ngFor="let user of selectedGroupMembers" class="user-card">
+                <div class="icon">
+                    <img *ngIf="user.iconURL" src="{{user.iconURL}}">
+                    <img *ngIf="!user.iconURL" src="assets/icons/default-user-icon.svg">
+                </div>
+                <div class="details">
+                    <span class="info">
+                        <span class="label">Name</span>
+                        <h3>{{user.name}}</h3>
+                    </span>
+                    <span class="info">
+                        <span class="label">Email</span>
+                        <h3>{{user.email}}</h3>
+                    </span>
+                </div>
+                <div class="actions">
+                    <action-button action="close" [disabled]="!user" tooltipTitle="Remove"
+                        (onClick)="onRemoveMemberFromGroup(user.id)"></action-button>
+                </div>
             </div>
         </div>
     </div>

@@ -36,7 +36,7 @@ import { Component, EventEmitter, Input, Output } from "@angular/core";
 })
 export class ActionButtonComponent {
     @Input() disabled: boolean = false;
-    @Input() action: "close" | "check" = "close";
+    @Input() action: "close" | "check" | "add" = "close";
     @Input() tooltipTitle: string = "";
     @Output() onClick = new EventEmitter();
 
@@ -44,7 +44,7 @@ export class ActionButtonComponent {
     }
 
     get isMatIcon(): boolean {
-        let matActionIcons = ["close", "check"];
+        let matActionIcons = ["close", "check", "add"];
         return matActionIcons.includes(this.action);
     }
 

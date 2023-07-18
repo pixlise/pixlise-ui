@@ -6,9 +6,14 @@ import { SettingsPageComponent } from './pages/settings-page/settings-page.compo
 import { UserOptionsService } from './services/user-options.service';
 import { DataCollectionDialogComponent } from './components/data-collection-dialog/data-collection-dialog.component';
 import { GroupsPageComponent } from './pages/groups-page/groups-page.component';
+import { GroupsService } from './services/groups.service';
+import { UsersService } from './services/users.service';
+import { AddUserDialogComponent } from './components/add-user-dialog/add-user-dialog.component';
 
-
-
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldControl, MatFormFieldModule } from '@angular/material/form-field';
+import { ReactiveFormsModule } from '@angular/forms';
 
 const APP_ROUTES: Routes = [
   {
@@ -25,11 +30,16 @@ const APP_ROUTES: Routes = [
   declarations: [
     SettingsPageComponent,
     GroupsPageComponent,
-    DataCollectionDialogComponent
+    DataCollectionDialogComponent,
+    AddUserDialogComponent
   ],
   imports: [
     CommonModule,
     PIXLISECoreModule,
+    MatAutocompleteModule,
+    MatInputModule,
+    MatFormFieldModule,
+    ReactiveFormsModule,
     RouterModule.forChild(APP_ROUTES),
   ],
   exports: [
@@ -37,7 +47,9 @@ const APP_ROUTES: Routes = [
     GroupsPageComponent,
   ],
   providers: [
-    UserOptionsService
+    UserOptionsService,
+    GroupsService,
+    UsersService
   ]
 })
 export class SettingsModule { }

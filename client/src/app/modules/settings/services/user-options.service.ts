@@ -14,6 +14,7 @@ import { UserDismissHintReq, UserHintsReq, UserHintsResp, UserHintsToggleReq, Us
 import { UserHints } from 'src/app/generated-protos/user-hints';
 import { NotificationConfig, NotificationMethod, NotificationSetting, NotificationSubscriptions, NotificationTopic } from '../models/notification.model';
 import { AuthService } from '@auth0/auth0-angular';
+import { FeatureRequest, PermissionsModel } from '../models/permissions.model';
 
 @Injectable({
   providedIn: 'root'
@@ -56,6 +57,10 @@ export class UserOptionsService {
 
   get notificationSubscriptions(): NotificationSubscriptions {
     return this._notificationSubscriptions;
+  }
+
+  hasFeatureAccess(featureRequest: FeatureRequest): boolean {
+    return PermissionsModel.hasPermission(this._userDetails.permissions, featureRequest);
   }
 
   get userDetails(): UserDetails {
