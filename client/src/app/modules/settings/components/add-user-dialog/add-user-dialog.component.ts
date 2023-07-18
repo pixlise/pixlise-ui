@@ -91,7 +91,15 @@ export class AddUserDialogComponent implements OnInit {
     }
 
     onAccept(): void {
-        this.dialogRef.close(true);
+        let userId = this.selectedUserControl.value;
+        if (typeof userId !== 'string' && userId?.auth0User?.id) {
+            userId = userId.auth0User.id;
+        }
+
+        this.dialogRef.close({
+            userId,
+            role: this.selectedRole
+        });
     }
 
     get appDomain(): string {

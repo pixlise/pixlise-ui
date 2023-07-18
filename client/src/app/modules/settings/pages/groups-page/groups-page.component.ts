@@ -98,8 +98,18 @@ export class GroupsPageComponent {
     const dialogRef = this.dialog.open(AddUserDialogComponent, dialogConfig);
 
     dialogRef.afterClosed().subscribe(
-      (userId: string) => {
-        // console.log("The dialog was closed", userId);
+      (userSelection: { userId: string; role: string; }) => {
+        if (!userSelection) {
+          return;
+        }
+
+        if (userSelection.role === "editor") {
+          this._groupsService.addMemberToGroup(groupId, userSelection.userId);
+        } else if (userSelection.role === "viewer") {
+          this._groupsService.addViewerToGroup(groupId, userSelection.userId);
+        } else if (userSelection.role === "admin") {
+          this._groupsService.addAdminToGroup(groupId, userSelection.userId);
+        }
       }
     );
   }
