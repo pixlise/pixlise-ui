@@ -24,6 +24,8 @@ import { QuantificationsModule } from "./modules/quantifications/quantifications
 import { AdminModule } from "./modules/admin/admin.module";
 import { SettingsModule } from "./modules/settings/settings.module";
 import { FormsModule } from "@angular/forms";
+import { ToolbarComponent } from "./components/toolbar/toolbar.component";
+import { SettingsSidebarComponent } from './components/settings-sidebar/settings-sidebar.component';
 
 const appInitializerFn = (configService: EnvConfigurationInitService, handler: HttpBackend, authConfig: AuthClientConfig) => {
   return () => {
@@ -81,6 +83,8 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
 @NgModule({
   declarations: [AppComponent],
   imports: [
+    ToolbarComponent,
+    SettingsSidebarComponent,
     BrowserModule,
     BrowserAnimationsModule,
     FormsModule,
@@ -131,5 +135,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
     }
   ],
   bootstrap: [AppComponent],
+  exports: [ToolbarComponent]
 })
 export class AppModule { }

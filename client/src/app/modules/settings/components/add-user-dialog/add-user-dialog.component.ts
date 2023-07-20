@@ -69,7 +69,6 @@ export class AddUserDialogComponent implements OnInit {
 
         this._usersService.usersChanged$.subscribe(() => {
             this.options = this._usersService.users;
-            console.log("OPTIONS", this.options)
         });
     }
 

@@ -29,21 +29,20 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="panel">
-    <section class="user-info-container">
-        <div class="user-info">
-            <div class="gap-separated-horizontal-elements user-field">
-                <div>{{userName}}</div>
+<div class="dlg-border-with-backdrop permissions-dlg image-uploader">
+    <h1>Upload Profile Icon</h1>
+    <div class="dropzone" ngx-dropzone [accept]="acceptTypes" [multiple]="false" (change)="onDropFile($event)">
+        <ngx-dropzone-label>
+            <div>
+                <h2>Drop image to upload</h2>
             </div>
-            <div class="gap-separated-horizontal-elements user-field">
-                <div>{{userEmail}}</div>
-            </div>
-        </div>
-        <img *ngIf="user !== null" class="user-icon" src="{{user.info?.iconURL}}">
-    </section>
-    <section class="buttons">
-        <push-button buttonStyle="hover-yellow" class="settings" (onClick)="onSettings()">Settings</push-button>
-        <!-- <push-button buttonStyle="hover-yellow" class="reset-hints" (onClick)="onResetHints()">Reset All Hints</push-button> -->
-        <push-button buttonStyle="hover-yellow" class="sign-out" (onClick)="onLogout()">Sign Out</push-button>
-    </section>
+        </ngx-dropzone-label>
+        <ngx-dropzone-image-preview *ngIf="uploadedImage" ngProjectAs="ngx-dropzone-preview" [file]="uploadedImage"
+            [removable]="true" (removed)="onRemoveDroppedFile()">
+        </ngx-dropzone-image-preview>
+    </div>
+    <div class="gap-separated-horizontal-elements button-container">
+        <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+        <push-button buttonStyle="yellow" (onClick)="onConfirm()">Confirm</push-button>
+    </div>
 </div>

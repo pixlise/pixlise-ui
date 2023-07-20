@@ -1,22 +1,32 @@
 import { Component } from '@angular/core';
-import { UserOptionsService } from '../../services/user-options.service';
+import { UserOptionsService } from 'src/app/modules/settings/services/user-options.service';
 import { UserInfo } from 'src/app/generated-protos/user';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { DataCollectionDialogComponent } from '../../components/data-collection-dialog/data-collection-dialog.component';
-import { NotificationSetting, NotificationSubscriptions, NotificationTopic } from '../../models/notification.model';
+import { DataCollectionDialogComponent } from 'src/app/modules/settings/components/data-collection-dialog/data-collection-dialog.component';
+import { NotificationSetting, NotificationSubscriptions, NotificationTopic } from 'src/app/modules/settings/models/notification.model';
+import { CommonModule } from '@angular/common';
+import { PIXLISECoreModule, SnackbarService } from 'src/app/modules/pixlisecore/pixlisecore.module';
+import { ImageUploaderDialogComponent } from 'src/app/modules/settings/components/image-uploader-dialog/image-uploader-dialog.component';
+import { GroupsService } from 'src/app/modules/settings/services/groups.service';
+import { UserGroupInfo, UserGroupRelationship } from 'src/app/generated-protos/user-group';
 
 
 @Component({
-  selector: 'app-settings-page',
-  templateUrl: './settings-page.component.html',
-  styleUrls: ['./settings-page.component.scss']
+  selector: 'app-settings-sidebar',
+  templateUrl: './settings-sidebar.component.html',
+  styleUrls: ['./settings-sidebar.component.scss'],
+  standalone: true,
+  imports: [CommonModule, PIXLISECoreModule],
 })
-export class SettingsPageComponent {
+export class SettingsSidebarComponent {
   notifications: NotificationSetting[] = [];
   user!: UserInfo;
+  groupsWithAccess: UserGroupInfo[] = [];
 
   constructor(
     private _userOptionsService: UserOptionsService,
+    private _groupsService: GroupsService,
+    private _snackBar: SnackbarService,
     private dialog: MatDialog,
   ) {
 
@@ -39,6 +49,14 @@ export class SettingsPageComponent {
         }
       });
     });
+
+    this._groupsService.groupsChanged$.subscribe(() => {
+      this.groupsWithAccess = this._groupsService.groups.filter(group => group.relationshipToUser > UserGroupRelationship.UGR_UNKNOWN);
+    });
+  }
+
+  get isOpen(): boolean {
+    return this._userOptionsService.isSidebarOpen;
   }
 
   get hintAssistanceActive(): boolean {
@@ -87,6 +105,15 @@ export class SettingsPageComponent {
     }
 
     this._userOptionsService.updateUserInfo(this.user);
+  }
+
+  get iconURL(): string {
+    if (!this.user?.iconURL) {
+      return "";
+    }
+    else {
+      return this.user.iconURL;
+    }
   }
 
   get userEmail(): string {
@@ -157,7 +184,17 @@ export class SettingsPageComponent {
     );
   }
 
-  onToggleHintAssistance(): void {
-    this._userOptionsService.toggleUserHints();
+  onCloseSidebar(): void {
+    this._userOptionsService.toggleSidebar();
+  }
+
+  onEditIcon(): void {
+    const dialogConfig = new MatDialogConfig();
+    dialogConfig.disableClose = true;
+    this.dialog.open(ImageUploaderDialogComponent, dialogConfig);
+  }
+
+  onLeaveGroup(group: UserGroupInfo): void {
+    this._groupsService.removeFromGroup(group.id, this._userOptionsService.userDetails.info!.id);
   }
 }

@@ -1,4 +1,5 @@
 const FEATURE_TO_PERMISSION_MAPPING = {
+    "admin": "PIXLISE_ADMIN",
     "createGroup": "PIXLISE_ADMIN",
     "renameGroup": "PIXLISE_ADMIN",
     "deleteGroup": "PIXLISE_ADMIN",

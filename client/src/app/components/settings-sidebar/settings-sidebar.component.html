@@ -1,15 +1,21 @@
-<div class="settings-container">
-    <!-- TODO: <notification-banner></notification-banner> -->
-    <app-toolbar titleToShow="Settings"></app-toolbar>
+<div *ngIf="isOpen" class="settings-container">
     <div class="settings">
         <section class="user-section">
-            <h2>User Info</h2>
+            <h1>User Settings
+                <action-button color="#F8F8F8" action="close" tooltipTitle="Close Sidebar"
+                    (onClick)="onCloseSidebar()"></action-button>
+            </h1>
             <div class="user-info">
-                <img *ngIf="user !== null" class="user-icon" src="{{user.iconURL}}">
+                <div class="user-icon">
+                    <img *ngIf="user !== null" src="{{iconURL}}">
+                    <div class="edit-icon {{!iconURL ? 'no-user' : ''}}">
+                        <action-button action="edit" tooltipTitle="Edit Icon" (onClick)="onEditIcon()"></action-button>
+                    </div>
+                </div>
                 <div class="user-fields">
                     <div class="user-field">
-                        <input [(ngModel)]="userName" class="username" type="text" autocomplete="off"
-                            data-lpignore="true" placeholder="User Name">
+                        <input [(ngModel)]="userName" type="text" autocomplete="off" data-lpignore="true"
+                            placeholder="User Name">
                         <span class="buttons">
                             <action-button action="check" [disabled]="!userNameChanged" tooltipTitle="Confirm"
                                 (onClick)="onConfirmUserName()"></action-button>
@@ -18,8 +24,8 @@
                         </span>
                     </div>
                     <div class="user-field">
-                        <input [(ngModel)]="userEmail" class="userEmail" type="text" autocomplete="off"
-                            data-lpignore="true" placeholder="Email">
+                        <input [(ngModel)]="userEmail" type="text" autocomplete="off" data-lpignore="true"
+                            placeholder="Email">
                         <span class="buttons">
                             <action-button action="check" [disabled]="!userEmailChanged" tooltipTitle="Confirm"
                                 (onClick)="onConfirmUserEmail()"></action-button>
@@ -29,20 +35,40 @@
                     </div>
                 </div>
             </div>
+            <div class="data-collection-row" (click)="onToggleDataCollection()">
+                <a (click)="openDataCollectionDialog($event)">User Data Collection:</a>
+                <switch-button [active]='dataCollectionActive'></switch-button>
+            </div>
+        </section>
+        <section class="group-membership">
+            <h2>Group Membership</h2>
+            <div *ngFor="let group of groupsWithAccess" class="notification-item group-item">
+                <span class="title">{{group.name}}</span>
+                <action-button action="close" tooltipTitle="Leave Group"
+                    (onClick)="onLeaveGroup(group)"></action-button>
+            </div>
+            <div *ngIf="groupsWithAccess.length <= 0" class="empty">
+                <span class="title">No Groups</span>
+            </div>
         </section>
         <section class="notifications">
-            <h2>Notifications</h2>
+            <span class="notifications-header">
+                <h2>Notifications</h2>
+                <span class="col-labels">
+                    <span class="checkbox-label">UI</span>
+                    <span class="checkbox-label">Email</span>
+                </span>
+            </span>
             <div class="notifications-list">
-                <div *ngFor="let notification of notifications" class="notification-item">
+                <div *ngFor="let notification of notifications"
+                    class="notification-item {{!notification.method.ui && !notification.method.email ? 'empty' : ''}}">
                     <span class="title">{{notification.label}}</span>
                     <span class="checkboxes">
-                        <span class="checkbox-label">UI</span>
                         <two-state-icon-button class="notification-checkbox"
                             activeIcon="assets/button-icons/check-on.svg"
                             inactiveIcon="assets/button-icons/check-off.svg" [active]="notification.method.ui"
                             (onToggle)="onToggleNotification(notification, 'ui')">
                         </two-state-icon-button>
-                        <span class="checkbox-label">Email</span>
                         <two-state-icon-button class="notification-checkbox"
                             activeIcon="assets/button-icons/check-on.svg"
                             inactiveIcon="assets/button-icons/check-off.svg" [active]="notification.method.email"
@@ -50,22 +76,6 @@
                         </two-state-icon-button>
                     </span>
                 </div>
-            </div>
-        </section>
-        <section class="data-collection">
-            <h2>Data Collection</h2>
-            <div class="data-collection-row" (click)="onToggleDataCollection()">
-                <a (click)="openDataCollectionDialog($event)">User Data Collection:</a>
-                <switch-button [active]='dataCollectionActive'></switch-button>
-            </div>
-        </section>
-        <section class="hints">
-            <h2>Hints</h2>
-            <div class="hints-row" (click)="onToggleHintAssistance()">
-                <span>Hint Assistance:</span>
-                <two-state-icon-button class="notification-checkbox" activeIcon="assets/button-icons/check-on.svg"
-                    inactiveIcon="assets/button-icons/check-off.svg" [active]="hintAssistanceActive">
-                </two-state-icon-button>
             </div>
         </section>
     </div>

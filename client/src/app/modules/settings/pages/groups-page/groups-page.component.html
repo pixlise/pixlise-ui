@@ -1,6 +1,6 @@
 <div class="settings-container">
     <!-- TODO: <notification-banner></notification-banner> -->
-    <app-toolbar titleToShow="Groups"></app-toolbar>
+    <!-- <app-toolbar titleToShow="Groups"></app-toolbar> -->
 
     <div class="group-container">
         <div class="group-name-container">
@@ -9,7 +9,7 @@
                 <div *ngFor="let group of groups" class="group-name">
                     <action-button *ngIf="canDeleteGroup" action="close" [disabled]="!group" tooltipTitle="Delete"
                         (onClick)="onDeleteGroup(group)"></action-button>
-                    <h2 (click)="onSelectGroup(group)">{{group.info?.name}}</h2>
+                    <h2 (click)="onSelectGroup(group)">{{group.name}}</h2>
                 </div>
             </div>
             <div *ngIf="canCreateGroup" class="buttons">
@@ -54,6 +54,22 @@
                         (onClick)="onRemoveMemberFromGroup(user.id)"></action-button>
                 </div>
             </div>
+        </div>
+        <div *ngIf="!canAccessSelectedGroup && selectedGroupInfo" class="no-group-access">
+            <push-button (onClick)="onRequestAccessToGroup(selectedGroupInfo, false)">Request Viewer
+                Access</push-button>
+            <push-button (onClick)="onRequestAccessToGroup(selectedGroupInfo, true)">Request Member
+                Access</push-button>
+        </div>
+    </div>
+
+    <div *ngIf="isSelectedGroupAdmin" class="requested-access">
+        Requests
+        <div *ngFor="let request of selectedGroupAccessRequests" class="access-request">
+            {{request.userId}}
+            <push-button (onClick)="onGrantAccessToGroup(request)">Grant
+                Access</push-button>
+            <push-button (onClick)="onDismissAccessRequest(request)">Dismiss</push-button>
         </div>
     </div>
 </div>

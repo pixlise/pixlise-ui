@@ -3,3 +3,11 @@
 @import "@fontsource/roboto";
 @import "@fontsource/source-sans-pro";
 @import "@fontsource/titillium-web";
+
+.app-container {
+  display: flex;
+
+  main {
+    flex: 1;
+  }
+}

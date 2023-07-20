@@ -27,68 +27,75 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+import { Component } from "@angular/core";
+import { AuthService } from "@auth0/auth0-angular";
+import { UserDetails } from "src/app/generated-protos/user";
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 
-.toolbar {
-    padding: $sz-half $sz-double;
-    margin-bottom: $ui-border-size;
-    user-select: none;
+@Component({
+    selector: "app-user-menu-panel",
+    templateUrl: "./user-menu-panel.component.html",
+    styleUrls: ["./user-menu-panel.component.scss"]
+})
+export class UserMenuPanelComponent {
+    user: UserDetails = {
+        info: {
+            id: "",
+            name: "",
+            email: "",
+            iconURL: "",
+        },
+        dataCollectionVersion: "",
+        permissions: []
 
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-}
+    };
 
-.dark-background {
-    background-color: $clr-gray-100;
-    margin-bottom: 0px;
-}
+    isOpen = false;
 
-.title-text {
-    font-weight: 900;
-    font-size: 24px;
-    line-height: 28px;
-    color: $clr-gray-40;
-    text-transform: uppercase;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 20vw;
-}
+    trigger: any;
 
-.pixlise {
-    color: $clr-gray-50;
-}
+    constructor(
+        private _authService: AuthService,
+        private _userOptionsService: UserOptionsService,
+    ) {
 
-.nav-link-normal {
-    font-family: Inter, Roboto;
-    font-style: normal;
-    font-weight: 600;
-    font-size: 14px;
-    line-height: 17px;
-    color: $clr-gray-30;
-    text-transform: uppercase;
-    cursor: pointer;
-    text-decoration: none;
-    white-space: nowrap;
-
-    &:hover {
-        color: $clr-gray-50;
+        this._userOptionsService.userOptionsChanged$.subscribe(
+            () => {
+                this.user = this._userOptionsService.userDetails;
+            }
+        );
     }
-}
 
-.nav-link-active {
-    @extend .nav-link-normal;
-    color: $clr-yellow;
-}
+    onLogout(): void {
+        this._authService.logout();
+    }
 
-.nav-link-disabled {
-    @extend .nav-link-normal;
-    color: $clr-gray-60;
-    cursor: default;
-}
+    onResetHints(): void {
 
-.gap-separated-horizontal-elements-wide > * + * {
-    margin-left: $sz-double;
+    }
+
+    onSettings(): void {
+        console.log("Settings clicked", this.isOpen, this.trigger);
+        this._userOptionsService.toggleSidebar();
+
+    }
+
+    get userName(): string {
+        if (!this.user?.info) {
+            return "Loading...";
+        }
+
+        return this.user.info.name;
+    }
+
+    get userEmail(): string {
+        if (!this.user?.info) {
+            return "Loading...";
+        }
+        return this.user.info.email;
+    }
+
+    get dataCollectionActive(): boolean {
+        return this._userOptionsService.currentDataCollectionAgreementAccepted;
+    }
 }

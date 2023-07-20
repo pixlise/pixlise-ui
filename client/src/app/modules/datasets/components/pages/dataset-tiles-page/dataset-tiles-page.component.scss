@@ -53,7 +53,7 @@ h2 {
 .scrollable {
   margin-top: 2px;
   overflow-y: auto;
-  max-height: calc(100vh - 100px);
+  max-height: calc(100vh - 103px);
 }
 
 .meta-title {
@@ -128,8 +128,9 @@ input {
 .datasets-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
   background-color: #1b1d1e;
+  width: 100%;
+  height: calc(100vh - 42px);
 
   .search-panel {
     display: flex;

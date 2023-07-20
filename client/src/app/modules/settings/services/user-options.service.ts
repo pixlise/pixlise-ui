@@ -39,6 +39,8 @@ export class UserOptionsService {
     enabled: false,
   };
 
+  public isSidebarOpen: boolean = false;
+
   constructor(
     private _dataService: APIDataService,
     private _snackBar: SnackbarService,
@@ -48,7 +50,6 @@ export class UserOptionsService {
     this.fetchCurrentDataCollectionVersion();
     this.fetchNotifications();
     this.fetchUserDetails();
-    this.fetchUserHints();
   }
 
   get userOptionsChanged$(): ReplaySubject<void> {
@@ -57,6 +58,10 @@ export class UserOptionsService {
 
   get notificationSubscriptions(): NotificationSubscriptions {
     return this._notificationSubscriptions;
+  }
+
+  toggleSidebar(): void {
+    this.isSidebarOpen = !this.isSidebarOpen;
   }
 
   hasFeatureAccess(featureRequest: FeatureRequest): boolean {
@@ -90,49 +95,49 @@ export class UserOptionsService {
       });
   }
 
-  fetchUserHints(): void {
-    this._dataService.sendUserHintsRequest(UserHintsReq.create({})).subscribe({
-      next: (resp: UserHintsResp) => {
-        this._hints.dismissedHints = resp.hints?.dismissedHints || [];
-        this._hints.enabled = resp.hints?.enabled || false;
+  // fetchUserHints(): void {
+  //   this._dataService.sendUserHintsRequest(UserHintsReq.create({})).subscribe({
+  //     next: (resp: UserHintsResp) => {
+  //       this._hints.dismissedHints = resp.hints?.dismissedHints || [];
+  //       this._hints.enabled = resp.hints?.enabled || false;
 
-        this._userOptionsChanged$.next();
-      },
-      error: (err) => {
-        console.error("Error sendUserHintsRequest Notifications", err);
-        this._snackBar.openError("Error fetching user hints");
-      }
-    });
-  }
+  //       this._userOptionsChanged$.next();
+  //     },
+  //     error: (err) => {
+  //       console.error("Error sendUserHintsRequest Notifications", err);
+  //       this._snackBar.openError("Error fetching user hints");
+  //     }
+  //   });
+  // }
 
-  toggleUserHints(): void {
-    let enabled = !this._hints.enabled;
+  // toggleUserHints(): void {
+  //   let enabled = !this._hints.enabled;
 
-    this._dataService.sendUserHintsToggleRequest(UserHintsToggleReq.create({ enabled })).subscribe({
-      next: (resp: UserHintsToggleResp) => {
-        this._hints.enabled = enabled;
-        this._snackBar.openSuccess("User hints updated");
-        this._userOptionsChanged$.next();
-      },
-      error: (err) => {
-        console.error("Error sendUserHintsToggleRequest Notifications", err);
-        this._snackBar.openError("Error updating user hints");
-      }
-    });
-  }
+  //   this._dataService.sendUserHintsToggleRequest(UserHintsToggleReq.create({ enabled })).subscribe({
+  //     next: (resp: UserHintsToggleResp) => {
+  //       this._hints.enabled = enabled;
+  //       this._snackBar.openSuccess("User hints updated");
+  //       this._userOptionsChanged$.next();
+  //     },
+  //     error: (err) => {
+  //       console.error("Error sendUserHintsToggleRequest Notifications", err);
+  //       this._snackBar.openError("Error updating user hints");
+  //     }
+  //   });
+  // }
 
-  dismissHint(hint: string): void {
-    this._dataService.sendUserDismissHintRequest(UserDismissHintReq.create({ hint })).subscribe({
-      next: (resp: UserHintsToggleResp) => {
-        this._hints.dismissedHints.push(hint);
-        this._userOptionsChanged$.next();
-      },
-      error: (err) => {
-        console.error("Error sendUserDismissHintRequest Notifications", err);
-        this._snackBar.openError("Error dismissing hint");
-      }
-    });
-  }
+  // dismissHint(hint: string): void {
+  //   this._dataService.sendUserDismissHintRequest(UserDismissHintReq.create({ hint })).subscribe({
+  //     next: (resp: UserHintsToggleResp) => {
+  //       this._hints.dismissedHints.push(hint);
+  //       this._userOptionsChanged$.next();
+  //     },
+  //     error: (err) => {
+  //       console.error("Error sendUserDismissHintRequest Notifications", err);
+  //       this._snackBar.openError("Error dismissing hint");
+  //     }
+  //   });
+  // }
 
   fetchUserDetails(): void {
     this._dataService.sendUserDetailsRequest(UserDetailsReq.create({})).subscribe({
@@ -188,6 +193,8 @@ export class UserOptionsService {
     userDetailsWriteReq.email = email;
     userDetailsWriteReq.iconURL = iconURL;
     userDetailsWriteReq.dataCollectionVersion = dataCollectionVersion;
+
+    console.log("SENDING WRITE REQUEST", userDetailsWriteReq)
 
     this._dataService.sendUserDetailsWriteRequest(userDetailsWriteReq).subscribe({
       next: (resp: UserDetailsWriteResp) => {

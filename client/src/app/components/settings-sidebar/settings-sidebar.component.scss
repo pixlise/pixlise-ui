@@ -1,0 +1,251 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+@import "variables.scss";
+
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  height: 100vh;
+  background: var(--gray-90, #222829);
+  box-shadow: -4px 0px 4px 0px rgba(0, 0, 0, 0.25);
+
+  position: relative;
+  width: 320px;
+
+  app-toolbar {
+    width: 100%;
+  }
+
+  .settings {
+    width: 320px;
+    height: 100vh;
+    position: fixed;
+    overflow: scroll;
+    background: var(--gray-90, #222829);
+
+    section {
+      .notifications-header {
+        display: flex;
+        align-items: center;
+        height: 32px;
+        background: var(--gray-80, #293137);
+
+        h2 {
+          padding-left: 16px;
+        }
+
+        .col-labels {
+          margin-left: auto;
+
+          display: flex;
+          align-items: center;
+
+          .checkbox-label:first-of-type {
+            margin-right: 18px;
+          }
+
+          .checkbox-label:last-of-type {
+            margin-right: 10px;
+          }
+        }
+      }
+      .notification-item {
+        height: 50px;
+        display: flex;
+        align-items: center;
+
+        border-bottom: 1px solid #293137;
+
+        &.empty {
+          color: rgb(var(--clr-gray-30));
+        }
+
+        .title {
+          margin-left: 16px;
+        }
+
+        .notification-checkbox {
+          margin-right: 16px;
+        }
+
+        .checkboxes {
+          display: flex;
+          align-items: center;
+          margin-left: auto;
+        }
+      }
+    }
+
+    .user-section {
+      margin-bottom: 8px;
+
+      h1 {
+        display: flex;
+        align-items: center;
+        height: 40px;
+        padding-left: 16px;
+        background: var(--gray-80, #293137);
+        box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+
+        color: var(--gray-30, #bec0c2);
+        font-family: Roboto;
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 900;
+
+        action-button {
+          margin-left: auto;
+          margin-right: 16px;
+        }
+      }
+
+      .data-collection-row {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+
+        margin: 8px 16px;
+
+        switch-button {
+          margin-left: auto;
+        }
+      }
+
+      .user-info {
+        display: flex;
+        margin-top: 8px;
+        justify-content: center;
+
+        .user-icon {
+          position: relative;
+          border-radius: 4px;
+
+          height: 76px;
+          width: 76px;
+
+          img {
+            height: 76px;
+            border-radius: 4px;
+          }
+
+          .edit-icon {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgb(0 0 0 / 50%);
+            opacity: 0;
+            transition: all 0.5s ease;
+
+            &.no-user {
+              opacity: 1;
+            }
+
+            &:hover {
+              opacity: 1;
+            }
+          }
+        }
+
+        .user-fields {
+          display: flex;
+          flex-direction: column;
+          margin-left: 8px;
+
+          .user-field {
+            display: flex;
+
+            input {
+              height: 32px;
+              margin-bottom: 4px;
+              width: 100%;
+              border-top-right-radius: 0;
+              border-bottom-right-radius: 0;
+              border-right: 0;
+            }
+          }
+        }
+      }
+    }
+
+    .group-membership {
+      h2 {
+        display: flex;
+        align-items: center;
+        height: 32px;
+        padding-left: 16px;
+        background: var(--gray-80, #293137);
+      }
+
+      .group-item {
+        switch-button,
+        action-button {
+          margin-left: auto;
+          margin-right: 16px;
+        }
+      }
+
+      .empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 50px;
+        color: rgb(var(--clr-gray-30));
+      }
+    }
+  }
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  padding-left: 4px;
+
+  background: #454c50;
+  height: 34px;
+  border-radius: 4px;
+  border: 1px solid rgb(var(--clr-gray-60));
+  border-left: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+h2 {
+  color: var(--gray-40, #bcbcbc);
+  font-family: Roboto;
+  font-size: 12px;
+}

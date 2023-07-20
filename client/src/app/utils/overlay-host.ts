@@ -46,6 +46,10 @@ export class OverlayHost {
     ) {
     }
 
+    get isOpen(): boolean {
+        return !!this._overlayRef;
+    }
+
     showPanel(): void {
         if (this._overlayRef) {
             return;
@@ -70,7 +74,11 @@ export class OverlayHost {
             new ComponentPortal(
                 this.panelComponentClassType,
                 this.viewContainerRef,
-                this.createInjector({ data: "No Data" }, this._overlayRef)
+                this.createInjector({
+                    data: {
+                        close: () => this.hidePanel()
+                    }
+                }, this._overlayRef)
             )
         );
 

@@ -1,6 +1,6 @@
 import { Component } from "@angular/core";
 import { GroupsService } from "../../services/groups.service";
-import { UserGroup } from "src/app/generated-protos/user-group";
+import { UserGroup, UserGroupInfo, UserGroupJoinRequestDB, UserGroupRelationship } from "src/app/generated-protos/user-group";
 import { UserOptionsService } from "../../services/user-options.service";
 import { UsersService } from "../../services/users.service";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
@@ -12,7 +12,8 @@ import { AddUserDialogComponent } from "../../components/add-user-dialog/add-use
   styleUrls: ["./groups-page.component.scss"],
 })
 export class GroupsPageComponent {
-  private _selectedGroup: UserGroup | null = null;
+  private _selectedGroupId: string | null = null;
+  canAccessSelectedGroup: boolean = false;
 
   newGroupName: string = "";
 
@@ -20,20 +21,7 @@ export class GroupsPageComponent {
     private _groupsService: GroupsService,
     private _userOptionsService: UserOptionsService,
     private dialog: MatDialog,
-  ) {
-    this._groupsService.groupsChanged$.subscribe(() => {
-      if (!this._selectedGroup) {
-        return;
-      }
-
-      const selectedGroup = this._groupsService.groups.find(group => group.info?.id === this._selectedGroup?.info?.id);
-      if (!selectedGroup) {
-        this._selectedGroup = null;
-      } else {
-        this._selectedGroup = selectedGroup;
-      }
-    });
-  }
+  ) { }
 
   get canCreateGroup() {
     return this._userOptionsService.hasFeatureAccess("createGroup");
@@ -47,28 +35,81 @@ export class GroupsPageComponent {
     return this._groupsService.groups;
   }
 
-  onSelectGroup(group: UserGroup) {
-    this._selectedGroup = group;
+  get userId() {
+    return this._userOptionsService?.userDetails?.info?.id || "";
+  }
+
+  get isSelectedGroupAdmin() {
+    return this.selectedGroup?.adminUsers.map(admin => admin.id)?.includes(this.userId) || this._userOptionsService.hasFeatureAccess("admin");
+  }
+
+  onSelectGroup(group: UserGroupInfo) {
+    this._selectedGroupId = group.id;
+    this.canAccessSelectedGroup = group.relationshipToUser > UserGroupRelationship.UGR_UNKNOWN || this._userOptionsService.hasFeatureAccess("admin");
+
+    if (this.isSelectedGroupAdmin) {
+      this._groupsService.fetchGroupAccessRequests(group.id);
+    }
+
+    // Only fetch the group if we don't already have it and the user has access to it
+    if (!this.selectedGroup && this.canAccessSelectedGroup) {
+      this._groupsService.fetchDetailedGroup(group.id);
+    } else {
+
+    }
+  }
+
+  onRequestAccessToGroup(group: UserGroupInfo, asMember: boolean) {
+    this._groupsService.requestAccessToGroup(group, asMember);
+  }
+
+  onGrantAccessToGroup(request: UserGroupJoinRequestDB) {
+    if (request.asMember) {
+      this._groupsService.addMemberToGroup(request.joinGroupId, request.userId, request.id);
+    } else {
+      this._groupsService.addViewerToGroup(request.joinGroupId, request.userId, request.id);
+    }
+  }
+
+  onDismissAccessRequest(request: UserGroupJoinRequestDB) {
+    this._groupsService.dismissAccessRequest(request.joinGroupId, request.id);
+  }
+
+  get selectedGroupId() {
+    return this._selectedGroupId;
+  }
+
+  get selectedGroupInfo() {
+    return this.groups.find(group => group.id === this._selectedGroupId) || null;
   }
 
   get selectedGroup() {
-    return this._selectedGroup;
+    if (!this._selectedGroupId) {
+      return null;
+    }
+
+    const selectedGroup = this._groupsService.detailedGroups.find(group => group.info?.id === this._selectedGroupId);
+    if (!selectedGroup) {
+      return null;
+    } else {
+      return selectedGroup;
+    }
   }
 
   get selectedGroupSubGroups() {
-    if (!this._selectedGroup?.members?.groups) {
-      return [];
-    }
-
-    return this._selectedGroup.members.groups || [];
+    return this.selectedGroup?.members?.groups || [];
   }
 
   get selectedGroupMembers() {
-    if (!this._selectedGroup?.members?.users) {
+    return this.selectedGroup?.members?.users || [];
+  }
+
+  get selectedGroupAccessRequests() {
+    if (!this.selectedGroupId) {
       return [];
     }
 
-    return this._selectedGroup.members?.users || [];
+    return this._groupsService.groupAccessRequests[this.selectedGroupId] || [];
   }
 
   onCreateGroup() {
@@ -76,8 +117,8 @@ export class GroupsPageComponent {
     this.newGroupName = "";
   }
 
-  onDeleteGroup(group: UserGroup) {
-    this._groupsService.deleteGroup(group.info?.id || "");
+  onDeleteGroup(group: UserGroupInfo) {
+    this._groupsService.deleteGroup(group.id || "");
   }
 
   onClearNewGroupName() {
@@ -85,11 +126,11 @@ export class GroupsPageComponent {
   }
 
   onRemoveMemberFromGroup(userId: string) {
-    if (!this._selectedGroup?.info?.id) {
+    if (!this.selectedGroup?.info?.id) {
       return;
     }
 
-    this._groupsService.removeMemberFromGroup(this._selectedGroup.info.id, userId);
+    this._groupsService.removeMemberFromGroup(this.selectedGroup.info.id, userId);
   }
 
   onAddUserToGroup(groupId: string) {

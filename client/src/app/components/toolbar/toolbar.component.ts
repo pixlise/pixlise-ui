@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { CdkOverlayOrigin, ConnectionPositionPair, Overlay } from "@angular/cdk/overlay";
+import { CdkOverlayOrigin, ConnectionPositionPair, Overlay, OverlayModule } from "@angular/cdk/overlay";
 import { Component, Injector, Input, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { Title } from "@angular/platform-browser";
 import { NavigationEnd, ResolveEnd, Router } from "@angular/router";
@@ -39,6 +39,9 @@ import { EnvConfigurationInitService } from "src/app/services/env-configuration-
 // import { UserMenuPanelComponent } from "src/app/UI/user-menu-panel/user-menu-panel.component";
 import { OverlayHost } from "src/app/utils/overlay-host";
 import { UserMenuPanelComponent } from "./user-menu-panel/user-menu-panel.component";
+import { PIXLISECoreModule } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { CommonModule } from "@angular/common";
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 // import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 // import { AnnotationEditorComponent, AnnotationEditorData, AnnotationTool } from "../annotation-editor/annotation-editor.component";
 // import { FullScreenAnnotationItem } from "../annotation-editor/annotation-display/annotation-display.component";
@@ -65,7 +68,9 @@ class TabNav {
 @Component({
     selector: "app-toolbar",
     templateUrl: "./toolbar.component.html",
-    styleUrls: ["./toolbar.component.scss"]
+    styleUrls: ["./toolbar.component.scss"],
+    standalone: true,
+    imports: [PIXLISECoreModule, CommonModule, OverlayModule],
 })
 export class ToolbarComponent implements OnInit, OnDestroy {
     @Input() titleToShow: string = "";
@@ -85,9 +90,13 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     private _currTab: string = "";
     private _dataSetLoadedName = "";
 
+    public isVisible: boolean = true;
+
     title = "";
     tabs: TabNav[] = [];
     datasetID: string = "";
+
+    userIcon: string = "assets/button-icons/user.svg";
 
     // savedAnnotations: FullScreenAnnotationItem[] = [];
     // annotationTool: AnnotationTool = null;
@@ -110,9 +119,16 @@ export class ToolbarComponent implements OnInit, OnDestroy {
         private viewContainerRef: ViewContainerRef,
         private injector: Injector,
         private titleService: Title,
+        private _userOptionsService: UserOptionsService
 
         // public dialog: MatDialog,
     ) {
+        this._userOptionsService.userOptionsChanged$.subscribe(() => {
+            let iconURL = this._userOptionsService.userDetails.info?.iconURL;
+            if (iconURL) {
+                this.userIcon = iconURL;
+            }
+        });
     }
 
     ngOnInit() {
@@ -253,6 +269,9 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
         // Work out what URL we're on
         const url = this.router.url;
+        if (url.includes("/public/")) {
+            this.isVisible = false;
+        }
 
         // Build list of tabs
         if (this._dataSetLoadedName.length <= 0) {
@@ -283,7 +302,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
             this.tabs.push(new TabNav("Piquant", "piquant", true));
         }
 
-        this.tabs.push(new TabNav("Settings", "settings", true));
         this.tabs.push(new TabNav("Groups", "settings/groups", true));
 
         if (this._userUserAdminAllowed || this._userPiquantJobsAllowed) {
@@ -309,6 +327,10 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
     onUserMenu(): void {
         this._overlayHost.showPanel();
+    }
+
+    get userMenuOpen(): boolean {
+        return this._overlayHost?.isOpen;
     }
 
     get isLoggedIn(): boolean {

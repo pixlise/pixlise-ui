@@ -27,72 +27,55 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component } from "@angular/core";
-import { Router } from "@angular/router";
-import { AuthService } from "@auth0/auth0-angular";
-import { UserDetails } from "src/app/generated-protos/user";
-import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
+@import "variables.scss";
+@import "atoms.scss";
 
-@Component({
-    selector: "app-user-menu-panel",
-    templateUrl: "./user-menu-panel.component.html",
-    styleUrls: ["./user-menu-panel.component.scss"]
-})
-export class UserMenuPanelComponent {
-    user: UserDetails = {
-        info: {
-            id: "",
-            name: "",
-            email: "",
-            iconURL: "",
-        },
-        dataCollectionVersion: "",
-        permissions: []
+.panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
 
-    };
+  padding: $sz-double 0px;
+  background-color: $clr-gray-90;
+  min-width: 340px;
+}
 
-    constructor(
-        private _authService: AuthService,
-        private _userOptionsService: UserOptionsService,
-        private _router: Router,
-    ) {
+.user-info-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px $sz-double $sz-unit $sz-double;
+}
 
-        this._userOptionsService.userOptionsChanged$.subscribe(
-            () => {
-                this.user = this._userOptionsService.userDetails;
-            }
-        );
+.user-icon {
+  height: 40px;
+  width: 40px;
+  border-radius: 4px;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 24px;
+
+  .user-field {
+    display: flex;
+  }
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+
+  padding: 0 16px;
+
+  push-button {
+    margin-bottom: $sz-unit;
+
+    &:last-of-type {
+      margin-bottom: 0;
     }
-
-    onLogout(): void {
-        this._authService.logout();
-    }
-
-    onResetHints(): void {
-
-    }
-
-    onSettings(): void {
-        this._router.navigate(["/settings"]);
-
-    }
-
-    get userName(): string {
-        if (!this.user?.info) {
-            return "Loading...";
-        }
-
-        return this.user.info.name;
-    }
-
-    get userEmail(): string {
-        if (!this.user?.info) {
-            return "Loading...";
-        }
-        return this.user.info.email;
-    }
-
-    get dataCollectionActive(): boolean {
-        return this._userOptionsService.currentDataCollectionAgreementAccepted;
-    }
+  }
 }

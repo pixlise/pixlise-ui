@@ -32,11 +32,11 @@ import { RouteNotFoundComponent } from "./components/pages/route-not-found/route
 import { APICommService } from "./services/apicomm.service";
 import { APIDataService } from "./services/apidata.service";
 import { HttpInterceptorService } from "./services/http-interceptor.service";
-import { ToolbarComponent } from "../datasets/components/toolbar/toolbar.component";
+import { ToolbarComponent } from "../../components/toolbar/toolbar.component";
 import { SnackBarPopupComponent } from "./components/atoms/snackbar-popup/snackbar-popup.component";
 import { SnackbarService } from "./services/snackbar.service";
 import { ActionButtonComponent } from "./components/atoms/buttons/action-button/action-button.component";
-import { UserMenuPanelComponent } from "../datasets/components/toolbar/user-menu-panel/user-menu-panel.component";
+import { UserMenuPanelComponent } from "../../components/toolbar/user-menu-panel/user-menu-panel.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -59,7 +59,7 @@ export { SnackbarService } from "./services/snackbar.service";
         WidgetSettingsMenuComponent,
         AuthenticateComponent,
         RouteNotFoundComponent,
-        ToolbarComponent,
+        // ToolbarComponent,
         SnackBarPopupComponent,
         UserMenuPanelComponent
     ],
@@ -80,7 +80,7 @@ export { SnackbarService } from "./services/snackbar.service";
         WidgetSettingsMenuComponent,
         AuthenticateComponent,
         RouteNotFoundComponent,
-        ToolbarComponent,
+        // ToolbarComponent,
         FormsModule,
         MaterialModule,
         MatSnackBarModule

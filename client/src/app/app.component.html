@@ -29,4 +29,12 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<router-outlet></router-outlet>
+<div class="app-container">
+  <main>
+    <app-toolbar></app-toolbar>
+    <router-outlet></router-outlet>
+  </main>
+  <aside>
+    <app-settings-sidebar></app-settings-sidebar>
+  </aside>
+</div>

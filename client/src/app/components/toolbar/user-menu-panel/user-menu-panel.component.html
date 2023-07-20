@@ -29,7 +29,20 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<span class="action-btn {{action}} {{disabled ? 'disabled' : ''}}" (click)="onClickInternal()" #tooltip="matTooltip"
-  [ngStyle]="color ? {'color': color} : {}" [matTooltip]="tooltipTitle">
-  <mat-icon>{{action}}</mat-icon>
-</span>
+<div class="panel">
+    <section class="user-info-container">
+        <div class="user-info">
+            <div class="gap-separated-horizontal-elements user-field">
+                <div>{{userName}}</div>
+            </div>
+            <div class="gap-separated-horizontal-elements user-field">
+                <div>{{userEmail}}</div>
+            </div>
+        </div>
+        <img *ngIf="user !== null" class="user-icon" src="{{user.info?.iconURL}}">
+    </section>
+    <section class="buttons">
+        <push-button buttonStyle="hover-yellow" class="settings" (onClick)="onSettings()">Settings</push-button>
+        <push-button buttonStyle="hover-yellow" class="sign-out" (onClick)="onLogout()">Sign Out</push-button>
+    </section>
+</div>

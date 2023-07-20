@@ -29,7 +29,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div fxLayout="row" class="toolbar" [ngClass]="{'dark-background': darkBackground}">
+<div *ngIf="isVisible" fxLayout="row" class="toolbar" [ngClass]="{'dark-background': darkBackground}">
   <img src="assets/PIXLISE-large.svg" title="Home Page" class="clickable" (click)="onAbout()">
 
   <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
@@ -65,6 +65,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <a *ngFor="let tab of tabs" [href]="tab.url" (click)="onNavigate(tab, $event)"
       class="{{tab.cssClass}}">{{tab.label}}</a>
 
-    <img class="clickable" cdkOverlayOrigin (click)="onUserMenu()" src="assets/button-icons/user.svg">
+    <img class="clickable user-icon {{userMenuOpen ? 'open' : ''}}" cdkOverlayOrigin #trigger="cdkOverlayOrigin"
+      (click)="onUserMenu()" [src]="userIcon">
   </div>
 </div>
