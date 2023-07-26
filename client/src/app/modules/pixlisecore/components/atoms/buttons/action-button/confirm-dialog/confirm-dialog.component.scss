@@ -1,0 +1,13 @@
+h1 {
+  color: white;
+}
+
+h5 {
+  color: rgb(var(--clr-gray-30));
+}
+
+.button-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}

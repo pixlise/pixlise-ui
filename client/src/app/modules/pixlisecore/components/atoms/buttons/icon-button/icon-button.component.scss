@@ -27,44 +27,66 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-@import 'atoms.scss';
+@import "variables.scss";
+@import "atoms.scss";
 
 .icon-btn {
-    // width: 24px;
-    // height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
 
-    background-repeat: no-repeat;
-    background-position: center;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 .button-inactive {
-    background-color: $clr-gray-60;
+  background-color: $clr-gray-60;
 }
 
 .icon-button-background {
-    background-color: $clr-gray-60;
-    filter: drop-shadow(0px 0px $sz-half $clr-shadow);
-    border-radius: $sz-half;
+  background-color: $clr-gray-60;
+  filter: drop-shadow(0px 0px $sz-half $clr-shadow);
+  border-radius: $sz-half;
 }
 
 .button-active {
-    margin: 0px;
-    border: $sz-qtr solid $clr-yellow;
+  margin: 0px;
+  border: $sz-qtr solid $clr-yellow;
 }
 
 .button-active-overridden {
-    margin: 0px;
-    border: $sz-qtr solid rgba(var(--clr-yellow), 0.25);
+  margin: 0px;
+  border: $sz-qtr solid rgba(var(--clr-yellow), 0.25);
 }
 
 .button-disabled {
-    background-color: $clr-gray-80;
+  background-color: $clr-gray-80;
 }
 
-
 .notifications {
-    position: absolute;
-    top: -6.5px;   
-    right: -6.5px;
+  position: absolute;
+  top: -6.5px;
+  right: -6.5px;
+}
+
+.no-bg {
+  padding: 4px;
+  border-radius: 50%;
+  border-radius: 50%;
+  cursor: pointer;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  &:active,
+  &:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .notifications {
+    top: -2.5px;
+    right: -2.5px;
+  }
 }

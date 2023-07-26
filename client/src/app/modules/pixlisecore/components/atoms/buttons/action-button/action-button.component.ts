@@ -28,6 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { ConfirmDialogComponent } from "./confirm-dialog/confirm-dialog.component";
 
 @Component({
     selector: "action-button",
@@ -39,9 +41,11 @@ export class ActionButtonComponent {
     @Input() action: "close" | "check" | "add" | "edit" = "close";
     @Input() tooltipTitle: string = "";
     @Input() color: string = "";
+    @Input() confirmText: string = "";
+
     @Output() onClick = new EventEmitter();
 
-    constructor() {
+    constructor(private dialog: MatDialog) {
     }
 
     get isMatIcon(): boolean {
@@ -51,7 +55,22 @@ export class ActionButtonComponent {
 
     onClickInternal() {
         if (!this.disabled) {
-            this.onClick.emit();
+            if (this.confirmText) {
+                const dialogConfig = new MatDialogConfig();
+                dialogConfig.data = { confirmText: this.confirmText };
+                const dialogRef = this.dialog.open(ConfirmDialogComponent, dialogConfig);
+
+                dialogRef.afterClosed().subscribe(
+                    (confirmed: boolean) => {
+                        if (confirmed) {
+                            this.onClick.emit();
+                        }
+                    }
+                );
+            }
+            else {
+                this.onClick.emit();
+            }
         }
     }
 }

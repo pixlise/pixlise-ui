@@ -27,13 +27,28 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-@import 'atoms.scss';
+@import "variables.scss";
+@import "atoms.scss";
+
+.btn-wrapper {
+  border-radius: 50%;
+  padding: 4px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  &:active,
+  &:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
 
 .icon-btn {
-    width: 24px;
-    height: 24px;
+  width: 24px;
+  height: 24px;
 
-    background-repeat: no-repeat;
-    background-position: center;
+  background-repeat: no-repeat;
+  background-position: center;
 }

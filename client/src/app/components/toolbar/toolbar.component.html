@@ -65,7 +65,8 @@ POSSIBILITY OF SUCH DAMAGE.
     <a *ngFor="let tab of tabs" [href]="tab.url" (click)="onNavigate(tab, $event)"
       class="{{tab.cssClass}}">{{tab.label}}</a>
 
-    <img class="clickable user-icon {{userMenuOpen ? 'open' : ''}}" cdkOverlayOrigin #trigger="cdkOverlayOrigin"
+    <!-- <img class="clickable user-icon {{userMenuOpen ? 'open' : ''}}" cdkOverlayOrigin #trigger="cdkOverlayOrigin"
       (click)="onUserMenu()" [src]="userIcon">
+  </div> -->
+    <user-icon size="24px" cdkOverlayOrigin #trigger="cdkOverlayOrigin" (click)="onUserMenu()"></user-icon>
   </div>
-</div>

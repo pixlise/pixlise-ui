@@ -94,9 +94,9 @@
   margin-left: $sz-double;
 }
 
-.user-icon {
-  width: 24px;
-  border-radius: 50%;
+user-icon {
+  border-radius: 4px;
+  cursor: pointer;
 
   &:hover,
   &.open {

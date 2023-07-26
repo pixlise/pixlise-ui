@@ -28,39 +28,32 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 @import "variables.scss";
+@import "atoms.scss";
 
-.btn-container {
-  display: flex;
-  align-items: center;
+.permissions-dlg {
+  font-family: Inter;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 16px;
+  color: $clr-gray-30;
 
-  .switch-bg {
-    &:hover {
-      fill-opacity: 0.4;
-    }
-
-    &:active,
-    &:focus {
-      fill-opacity: 0.5;
-    }
-  }
+  max-width: 400px;
 }
 
-span {
-  white-space: nowrap;
-  overflow: hidden;
-  user-select: none;
-  cursor: pointer;
+.button-container {
+  margin-top: $sz-double;
 
-  &:first-of-type {
-    margin-right: $sz-unit;
-  }
-
-  &.last {
-    margin-left: $sz-unit;
-  }
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
 }
 
-.switch-button {
-  display: flex;
-  align-items: center;
+.fields {
+  margin-top: 16px;
+
+  input {
+    height: 24px;
+    width: 100%;
+  }
 }

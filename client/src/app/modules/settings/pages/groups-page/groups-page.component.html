@@ -2,29 +2,87 @@
     <!-- TODO: <notification-banner></notification-banner> -->
     <!-- <app-toolbar titleToShow="Groups"></app-toolbar> -->
 
-    <div class="group-container">
-        <div class="group-name-container">
-            <h1>Groups</h1>
-            <div class="group-names">
-                <div *ngFor="let group of groups" class="group-name">
-                    <action-button *ngIf="canDeleteGroup" action="close" [disabled]="!group" tooltipTitle="Delete"
-                        (onClick)="onDeleteGroup(group)"></action-button>
-                    <h2 (click)="onSelectGroup(group)">{{group.name}}</h2>
-                </div>
+    <div class="user-groups">
+        <div class="user-info">
+            <user-icon size="26px"></user-icon>
+            <h3 class="name">{{name}}</h3>
+            <icon-button type="notification" [hasBackground]="false" [notificationCount]="50"></icon-button>
+        </div>
+        <div class="groups my-groups">
+            <div class="header">
+                <h2>My Groups</h2>
             </div>
-            <div *ngIf="canCreateGroup" class="buttons">
-                <div class="user-field">
-                    <span class="new-group-container">
-                        <input [(ngModel)]="newGroupName" class="new-group-name" type="text" autocomplete="off"
-                            data-lpignore="true" placeholder="New Group Name">
-                        <action-button action="check" [disabled]="!newGroupName" tooltipTitle="Create Group"
-                            (onClick)="onCreateGroup()"></action-button>
-                        <action-button action="close" [disabled]="!newGroupName" tooltipTitle="Reset"
-                            (onClick)="onClearNewGroupName()"></action-button>
-                    </span>
+            <div class="content-container request">
+                <input type="text" matInput [formControl]="requestGroupControl" [matAutocomplete]="auto"
+                    class="request-group-input" placeholder="Request to Join a Group ...">
+                <mat-autocomplete #auto="matAutocomplete" [displayWith]="requestGroupDisplayName">
+                    <mat-option *ngFor="let group of filteredGroups | async" [value]="group">
+                        {{group?.name}}
+                    </mat-option>
+                </mat-autocomplete>
+                <div class="request-submit">
+                    <action-button color="#BCBCBC" action="add" tooltipTitle="Request Access"
+                        [disabled]="!selectedGroupToJoin" (onClick)="onRequestGroupAccess()"></action-button>
                 </div>
             </div>
         </div>
+        <div class="groups admin-groups">
+            <div class="header">
+                <h2>Admin</h2>
+                <img src="assets/icons/admin-badge.svg">
+            </div>
+            <div class="content-container">
+                <div (click)="onSelectGroup(group)" *ngFor="let group of groupsWithAdminAccess" class="group-row">
+                    <h5>{{group.name}}</h5>
+                    <action-button color="#BCBCBC" *ngIf="canDeleteGroup" action="close" [disabled]="!group"
+                        confirmText="Are you sure you want to delete this group?" tooltipTitle="Delete"
+                        (onClick)="onDeleteGroup(group)"></action-button>
+                </div>
+                <div *ngIf="groupsWithAdminAccess.length === 0" class="group-row empty">
+                    <h5>None</h5>
+                </div>
+            </div>
+        </div>
+        <div class="groups member-groups">
+            <div class="header">
+                <h2>Member</h2>
+                <img src="assets/icons/member-badge.svg">
+            </div>
+            <div class="content-container">
+                <div (click)="onSelectGroup(group)" *ngFor="let group of groupsWithMemberAccess" class="group-row">
+                    <h5>{{group.name}}</h5>
+                    <action-button color="#BCBCBC" *ngIf="canDeleteGroup" action="close" [disabled]="!group"
+                        confirmText="Are you sure you want to delete this group?" tooltipTitle="Delete"
+                        (onClick)="onDeleteGroup(group)"></action-button>
+                </div>
+                <div *ngIf="groupsWithMemberAccess.length === 0" class="group-row empty">
+                    <h5>None</h5>
+                </div>
+            </div>
+        </div>
+        <div class="groups viewer-groups">
+            <div class="header">
+                <h2>Viewer</h2>
+                <img src="assets/icons/viewer-badge.svg">
+            </div>
+            <div class="content-container">
+                <div (click)="onSelectGroup(group)" *ngFor="let group of groupsWithViewerAccess" class="group-row">
+                    <h5>{{group.name}}</h5>
+                    <action-button color="#BCBCBC" *ngIf="canDeleteGroup" action="close" [disabled]="!group"
+                        confirmText="Are you sure you want to delete this group?" tooltipTitle="Delete"
+                        (onClick)="onDeleteGroup(group)"></action-button>
+                </div>
+                <div *ngIf="groupsWithViewerAccess.length === 0" class="group-row empty">
+                    <h5>None</h5>
+                </div>
+            </div>
+        </div>
+        <div class="new-group">
+            <action-button color="#BCBCBC" action="add" tooltipTitle="Create new group"
+                (onClick)="onOpenCreateNewGroupDialog()"></action-button>
+        </div>
+    </div>
+    <div class="group-container">
         <div *ngIf="selectedGroup" class="selected-group">
             <div class="group-header">
                 <h1>{{selectedGroup.info?.name}}</h1>

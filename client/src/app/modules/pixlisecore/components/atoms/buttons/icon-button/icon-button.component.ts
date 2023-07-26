@@ -30,12 +30,15 @@
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 
 
-export enum IconButtonState
-{
+export enum IconButtonState {
     OFF,
     ACTIVE,
     DIM,
     DISABLED
+}
+
+export const ICONS = {
+    "notification": "assets/button-icons/notification.svg",
 }
 
 @Component({
@@ -43,10 +46,13 @@ export enum IconButtonState
     templateUrl: "./icon-button.component.html",
     styleUrls: ["./icon-button.component.scss"]
 })
-export class IconButtonComponent implements OnInit
-{
-    @Input() icon: string;
-    @Input() state: IconButtonState;
+export class IconButtonComponent implements OnInit {
+    // @Input() icon: string = "";
+    // @Input() type: keyof typeof ICONS = "notification";
+
+    iconURL: string = "";
+
+    @Input() state: IconButtonState = IconButtonState.OFF;
     @Input() hasBackground: boolean = true;
     @Input() loading: boolean = false;
     @Input() notificationCount: number = 0;
@@ -54,24 +60,35 @@ export class IconButtonComponent implements OnInit
 
     @Output() onClick = new EventEmitter();
 
-    constructor()
-    {
+    @Input() get icon() {
+        return this.iconURL;
     }
 
-    ngOnInit()
-    {
+    set icon(value: string) {
+        this.iconURL = value;
     }
 
-    onClickInternal(event): void
-    {
-        if(!this.loading && this.state !== IconButtonState.DISABLED)
-        {
+    @Input() get type(): string {
+        return this.iconURL;
+    }
+
+    set type(value: keyof typeof ICONS) {
+        this.iconURL = ICONS[value];
+    }
+
+    constructor() {
+    }
+
+    ngOnInit() {
+    }
+
+    onClickInternal(event: Event): void {
+        if (!this.loading && this.state !== IconButtonState.DISABLED) {
             this.onClick.emit(event);
         }
     }
 
-    get sizeStr(): string
-    {
+    get sizeStr(): string {
         return `${this.size}px`;
     }
 }

@@ -11,7 +11,7 @@ import { WaitSpinnerComponent } from "./components/atoms/wait-spinner/wait-spinn
 // import { PanelFoldoutButtonComponent } from "./components/atoms/buttons/panel-foldout-button/panel-foldout-button.component";
 import { PushButtonComponent } from "./components/atoms/buttons/push-button/push-button.component";
 // import { TwoStateEditButtonComponent } from "./components/atoms/buttons/two-state-edit-button/two-state-edit-button.component";
-// import { IconButtonComponent } from "./components/atoms/buttons/icon-button/icon-button.component";
+import { IconButtonComponent } from "./components/atoms/buttons/icon-button/icon-button.component";
 import { TwoStateButtonComponent } from "./components/atoms/buttons/two-state-button/two-state-button.component";
 // import { BulkSelectionSwitchComponent } from "./components/atoms/buttons/two-state-button/bulk-selection-switch.component";
 // import { PlusMinusSwitchComponent } from "./components/atoms/buttons/two-state-button/plus-minus-switch.component";
@@ -32,11 +32,10 @@ import { RouteNotFoundComponent } from "./components/pages/route-not-found/route
 import { APICommService } from "./services/apicomm.service";
 import { APIDataService } from "./services/apidata.service";
 import { HttpInterceptorService } from "./services/http-interceptor.service";
-import { ToolbarComponent } from "../../components/toolbar/toolbar.component";
 import { SnackBarPopupComponent } from "./components/atoms/snackbar-popup/snackbar-popup.component";
-import { SnackbarService } from "./services/snackbar.service";
 import { ActionButtonComponent } from "./components/atoms/buttons/action-button/action-button.component";
 import { UserMenuPanelComponent } from "../../components/toolbar/user-menu-panel/user-menu-panel.component";
+import { ConfirmDialogComponent } from "./components/atoms/buttons/action-button/confirm-dialog/confirm-dialog.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -59,9 +58,10 @@ export { SnackbarService } from "./services/snackbar.service";
         WidgetSettingsMenuComponent,
         AuthenticateComponent,
         RouteNotFoundComponent,
-        // ToolbarComponent,
         SnackBarPopupComponent,
-        UserMenuPanelComponent
+        UserMenuPanelComponent,
+        IconButtonComponent,
+        ConfirmDialogComponent
     ],
     imports: [
         CommonModule,
@@ -80,7 +80,8 @@ export { SnackbarService } from "./services/snackbar.service";
         WidgetSettingsMenuComponent,
         AuthenticateComponent,
         RouteNotFoundComponent,
-        // ToolbarComponent,
+        IconButtonComponent,
+        ConfirmDialogComponent,
         FormsModule,
         MaterialModule,
         MatSnackBarModule

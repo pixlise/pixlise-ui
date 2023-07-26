@@ -27,29 +27,33 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-@import 'atoms.scss';
-
+@import "variables.scss";
+@import "atoms.scss";
 
 .badge {
-    line-height: 125%;
-    color: black;
-    font-size: 9px;
-    font-weight: 600;
-    border-radius: 50%;
-    width: 12px;
-    height: 12px;
-    text-align: center;
+  line-height: 125%;
+  color: black;
+  font-size: 9px;
+  font-weight: 600;
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  text-align: center;
 
-    &.notification {
-        background-color: $clr-yellow;
-    }
+  padding: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-    &.warning {
-        background-color: $clr-orange;
-    }
+  &.notification {
+    background-color: $clr-yellow;
+  }
 
-    &.error {
-        background-color: $clr-red;
-    }
+  &.warning {
+    background-color: $clr-orange;
+  }
+
+  &.error {
+    background-color: $clr-red;
+  }
 }

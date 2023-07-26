@@ -27,40 +27,37 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
+import { Component, OnInit } from "@angular/core";
+import { MatDialogRef } from "@angular/material/dialog";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
-.btn-container {
-  display: flex;
-  align-items: center;
+@Component({
+    selector: "app-new-group-dialog",
+    templateUrl: "./new-group-dialog.component.html",
+    styleUrls: ["./new-group-dialog.component.scss"]
+})
+export class NewGroupDialogComponent implements OnInit {
+    groupName: string = "";
 
-  .switch-bg {
-    &:hover {
-      fill-opacity: 0.4;
+    constructor(
+        public dialogRef: MatDialogRef<NewGroupDialogComponent>,
+    ) {
     }
 
-    &:active,
-    &:focus {
-      fill-opacity: 0.5;
+    ngOnInit(): void {
     }
-  }
-}
 
-span {
-  white-space: nowrap;
-  overflow: hidden;
-  user-select: none;
-  cursor: pointer;
+    onCancel(): void {
+        this.dialogRef.close();
+    }
 
-  &:first-of-type {
-    margin-right: $sz-unit;
-  }
+    onConfirm(): void {
+        this.dialogRef.close({
+            groupName: this.groupName
+        });
+    }
 
-  &.last {
-    margin-left: $sz-unit;
-  }
-}
-
-.switch-button {
-  display: flex;
-  align-items: center;
+    get appDomain(): string {
+        return EnvConfigurationInitService.appConfig.appDomain;
+    }
 }

@@ -29,6 +29,12 @@ export class GroupsService {
       next: (res: UserGroupCreateResp) => {
         if (res.group) {
           this.detailedGroups.push(res.group);
+          this.groups.push({
+            id: res.group.info?.id || "",
+            name: res.group.info?.name || "",
+            createdUnixSec: res.group.info?.createdUnixSec || 0,
+            relationshipToUser: UserGroupRelationship.UGR_ADMIN,
+          })
           this.groupsChanged$.next();
         }
       },

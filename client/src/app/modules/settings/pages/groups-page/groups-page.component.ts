@@ -5,6 +5,9 @@ import { UserOptionsService } from "../../services/user-options.service";
 import { UsersService } from "../../services/users.service";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { AddUserDialogComponent } from "../../components/add-user-dialog/add-user-dialog.component";
+import { FormControl } from "@angular/forms";
+import { Observable, map, startWith } from "rxjs";
+import { NewGroupDialogComponent } from "../../components/new-group-dialog/new-group-dialog.component";
 
 @Component({
   selector: "app-groups-page",
@@ -17,11 +20,31 @@ export class GroupsPageComponent {
 
   newGroupName: string = "";
 
+  requestGroupControl = new FormControl<string | UserGroupInfo>("");
+  filteredGroups: Observable<UserGroupInfo[]> = new Observable<UserGroupInfo[]>();
+
   constructor(
     private _groupsService: GroupsService,
     private _userOptionsService: UserOptionsService,
     private dialog: MatDialog,
-  ) { }
+  ) {
+    this.filteredGroups = this.requestGroupControl.valueChanges.pipe(
+      startWith(""),
+      map(value => {
+        const name = typeof value === "string" ? value : value?.name;
+        return name ? this._filterGroupNames(name as string) : this.groups.slice();
+      }),
+    );
+  }
+
+  requestGroupDisplayName(group: UserGroupInfo): string {
+    return group && group?.name ? group.name : "";
+  }
+
+  private _filterGroupNames(name: string): UserGroupInfo[] {
+    const filterValue = name.toLowerCase();
+    return this.groups.filter(option => option.name.toLowerCase().includes(filterValue));
+  }
 
   get canCreateGroup() {
     return this._userOptionsService.hasFeatureAccess("createGroup");
@@ -35,12 +58,53 @@ export class GroupsPageComponent {
     return this._groupsService.groups;
   }
 
+  get groupsWithAdminAccess() {
+    return this._groupsService.groups.filter(group => group.relationshipToUser === UserGroupRelationship.UGR_ADMIN || this._userOptionsService.hasFeatureAccess("admin"));
+  }
+
+  get groupsWithMemberAccess() {
+    return this._groupsService.groups.filter(group => group.relationshipToUser === UserGroupRelationship.UGR_MEMBER);
+  }
+
+  get groupsWithViewerAccess() {
+    return this._groupsService.groups.filter(group => group.relationshipToUser === UserGroupRelationship.UGR_VIEWER);
+  }
+
   get userId() {
     return this._userOptionsService?.userDetails?.info?.id || "";
   }
 
+  get name() {
+    return this._userOptionsService?.userDetails?.info?.name || "";
+  }
+
   get isSelectedGroupAdmin() {
     return this.selectedGroup?.adminUsers.map(admin => admin.id)?.includes(this.userId) || this._userOptionsService.hasFeatureAccess("admin");
+  }
+
+  get selectedGroupToJoin(): string | UserGroupInfo | null {
+    return this.requestGroupControl.value;
+  }
+
+  onRequestGroupAccess() {
+    this.onRequestAccessToGroup(this.selectedGroupToJoin as UserGroupInfo, false);
+    this.requestGroupControl.setValue("");
+  }
+
+  onOpenCreateNewGroupDialog() {
+    const dialogConfig = new MatDialogConfig();
+    const dialogRef = this.dialog.open(NewGroupDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe(
+      (data: { groupName: string }) => {
+        if (!data.groupName) {
+          return;
+        }
+
+        this.newGroupName = data.groupName;
+        this.onCreateGroup();
+      }
+    );
   }
 
   onSelectGroup(group: UserGroupInfo) {
@@ -54,8 +118,6 @@ export class GroupsPageComponent {
     // Only fetch the group if we don't already have it and the user has access to it
     if (!this.selectedGroup && this.canAccessSelectedGroup) {
       this._groupsService.fetchDetailedGroup(group.id);
-    } else {
-
     }
   }
 
@@ -154,5 +216,4 @@ export class GroupsPageComponent {
       }
     );
   }
-
 }

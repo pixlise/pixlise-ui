@@ -41,7 +41,7 @@ import { OverlayHost } from "src/app/utils/overlay-host";
 import { UserMenuPanelComponent } from "./user-menu-panel/user-menu-panel.component";
 import { PIXLISECoreModule } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { CommonModule } from "@angular/common";
-import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
+import { SettingsModule } from "src/app/modules/settings/settings.module";
 // import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 // import { AnnotationEditorComponent, AnnotationEditorData, AnnotationTool } from "../annotation-editor/annotation-editor.component";
 // import { FullScreenAnnotationItem } from "../annotation-editor/annotation-display/annotation-display.component";
@@ -70,7 +70,7 @@ class TabNav {
     templateUrl: "./toolbar.component.html",
     styleUrls: ["./toolbar.component.scss"],
     standalone: true,
-    imports: [PIXLISECoreModule, CommonModule, OverlayModule],
+    imports: [PIXLISECoreModule, CommonModule, OverlayModule, SettingsModule],
 })
 export class ToolbarComponent implements OnInit, OnDestroy {
     @Input() titleToShow: string = "";
@@ -96,8 +96,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     tabs: TabNav[] = [];
     datasetID: string = "";
 
-    userIcon: string = "assets/button-icons/user.svg";
-
     // savedAnnotations: FullScreenAnnotationItem[] = [];
     // annotationTool: AnnotationTool = null;
     editingAnnotationIndex: number = -1;
@@ -118,17 +116,10 @@ export class ToolbarComponent implements OnInit, OnDestroy {
         private overlay: Overlay,
         private viewContainerRef: ViewContainerRef,
         private injector: Injector,
-        private titleService: Title,
-        private _userOptionsService: UserOptionsService
+        private titleService: Title
 
         // public dialog: MatDialog,
     ) {
-        this._userOptionsService.userOptionsChanged$.subscribe(() => {
-            let iconURL = this._userOptionsService.userDetails.info?.iconURL;
-            if (iconURL) {
-                this.userIcon = iconURL;
-            }
-        });
     }
 
     ngOnInit() {

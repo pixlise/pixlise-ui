@@ -27,40 +27,28 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NewGroupDialogComponent } from "./new-group-dialog.component";
 
-.btn-container {
-  display: flex;
-  align-items: center;
 
-  .switch-bg {
-    &:hover {
-      fill-opacity: 0.4;
-    }
+describe("NewGroupDialogComponent", () => {
+    let component: NewGroupDialogComponent;
+    let fixture: ComponentFixture<NewGroupDialogComponent>;
 
-    &:active,
-    &:focus {
-      fill-opacity: 0.5;
-    }
-  }
-}
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            declarations: [NewGroupDialogComponent]
+        })
+            .compileComponents();
+    });
 
-span {
-  white-space: nowrap;
-  overflow: hidden;
-  user-select: none;
-  cursor: pointer;
+    beforeEach(() => {
+        fixture = TestBed.createComponent(NewGroupDialogComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-  &:first-of-type {
-    margin-right: $sz-unit;
-  }
-
-  &.last {
-    margin-left: $sz-unit;
-  }
-}
-
-.switch-button {
-  display: flex;
-  align-items: center;
-}
+    it("should create", () => {
+        expect(component).toBeTruthy();
+    });
+});

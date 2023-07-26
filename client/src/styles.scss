@@ -349,6 +349,11 @@ h3 {
   color: white;
 }
 
+.mdc-list-item--selected .mdc-list-item__primary-text,
+.mdc-list-item--activated .mdc-list-item__primary-text {
+  color: white;
+}
+
 .pixlise-message {
   --mdc-snackbar-container-color: #2b3135;
   --mdc-snackbar-supporting-text-color: rgb(var(--clr-gray-10));

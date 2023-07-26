@@ -15,6 +15,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ImageUploaderDialogComponent } from './components/image-uploader-dialog/image-uploader-dialog.component';
 import { NgxDropzoneModule } from 'ngx-dropzone';
+import { UserIconComponent } from './components/user-icon/user-icon.component';
+import { NewGroupDialogComponent } from './components/new-group-dialog/new-group-dialog.component';
 
 
 const APP_ROUTES: Routes = [
@@ -29,7 +31,9 @@ const APP_ROUTES: Routes = [
     GroupsPageComponent,
     DataCollectionDialogComponent,
     AddUserDialogComponent,
-    ImageUploaderDialogComponent
+    NewGroupDialogComponent,
+    ImageUploaderDialogComponent,
+    UserIconComponent
   ],
   imports: [
     CommonModule,
@@ -43,6 +47,7 @@ const APP_ROUTES: Routes = [
   ],
   exports: [
     GroupsPageComponent,
+    UserIconComponent
   ],
   providers: [
     UserOptionsService,

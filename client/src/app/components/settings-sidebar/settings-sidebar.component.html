@@ -7,7 +7,7 @@
             </h1>
             <div class="user-info">
                 <div class="user-icon">
-                    <img *ngIf="user !== null" src="{{iconURL}}">
+                    <user-icon></user-icon>
                     <div class="edit-icon {{!iconURL ? 'no-user' : ''}}">
                         <action-button action="edit" tooltipTitle="Edit Icon" (onClick)="onEditIcon()"></action-button>
                     </div>

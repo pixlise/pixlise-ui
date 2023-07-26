@@ -9,6 +9,7 @@ import { PIXLISECoreModule, SnackbarService } from 'src/app/modules/pixlisecore/
 import { ImageUploaderDialogComponent } from 'src/app/modules/settings/components/image-uploader-dialog/image-uploader-dialog.component';
 import { GroupsService } from 'src/app/modules/settings/services/groups.service';
 import { UserGroupInfo, UserGroupRelationship } from 'src/app/generated-protos/user-group';
+import { SettingsModule } from 'src/app/modules/settings/settings.module';
 
 
 @Component({
@@ -16,7 +17,7 @@ import { UserGroupInfo, UserGroupRelationship } from 'src/app/generated-protos/u
   templateUrl: './settings-sidebar.component.html',
   styleUrls: ['./settings-sidebar.component.scss'],
   standalone: true,
-  imports: [CommonModule, PIXLISECoreModule],
+  imports: [CommonModule, PIXLISECoreModule, SettingsModule],
 })
 export class SettingsSidebarComponent {
   notifications: NotificationSetting[] = [];
