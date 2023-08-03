@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component } from "@angular/core";
+import { Component, ContentChild, TemplateRef } from "@angular/core";
 
 // import { MonacoEditorService } from "src/app/services/monaco-editor.service";
 

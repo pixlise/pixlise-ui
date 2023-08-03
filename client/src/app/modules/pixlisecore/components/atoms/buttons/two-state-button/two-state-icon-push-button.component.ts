@@ -37,27 +37,22 @@ import { TwoStateButtonComponent } from "./two-state-button.component";
     templateUrl: "./two-state-icon-push-button.component.html",
     styleUrls: ["./two-state-button.component.scss", "./two-state-icon-push-button.component.scss"]
 })
-export class TwoStateIconPushButton extends TwoStateButtonComponent
-{
-    @Input() activeIcon: string;
-    @Input() inactiveIcon: string;
-    @Input() disabledIcon: string;
+export class TwoStateIconPushButton extends TwoStateButtonComponent {
+    @Input() activeIcon: string = "";
+    @Input() inactiveIcon: string = "";
+    @Input() disabledIcon: string = "";
 
-    constructor()
-    {
+    constructor() {
         super();
         this.leftLabel = "";
         this.rightLabel = "";
     }
 
-    get icon(): string
-    {
-        if(this.disabled)
-        {
+    get icon(): string {
+        if (this.disabled) {
             return this.disabledIcon;
         }
-        if(this.active)
-        {
+        if (this.active) {
             return this.activeIcon;
         }
         return this.inactiveIcon;

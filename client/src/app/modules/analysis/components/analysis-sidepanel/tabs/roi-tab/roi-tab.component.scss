@@ -1,0 +1,34 @@
+.roi-container {
+  .panel-row {
+    margin: 8px;
+  }
+}
+
+.new-roi {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  min-width: 400px;
+
+  header {
+    margin-bottom: 8px;
+    .title {
+      font: 700 18px/24px Roboto, monospace;
+    }
+  }
+
+  input,
+  textarea {
+    margin-bottom: 8px;
+  }
+
+  .buttons {
+    display: flex;
+    margin-left: auto;
+    margin-top: 8px;
+
+    :first-child {
+      margin-right: 8px;
+    }
+  }
+}

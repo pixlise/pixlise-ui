@@ -27,17 +27,15 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Inject, OnInit, TemplateRef, ViewContainerRef } from "@angular/core";
+import { Component, Inject, OnInit, TemplateRef } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 
 
-export class MenuPanelHostData
-{
+export class MenuPanelHostData {
     constructor(
         public menuTemplate: TemplateRef<any>,
         public noPadding: boolean = false
-    )
-    {
+    ) {
     }
 }
 
@@ -46,18 +44,13 @@ export class MenuPanelHostData
     templateUrl: "./menu-panel-host.component.html",
     styleUrls: ["./menu-panel-host.component.scss"]
 })
-export class MenuPanelHostComponent implements OnInit
-{
+export class MenuPanelHostComponent implements OnInit {
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: MenuPanelHostData,
         public dialogRef: MatDialogRef<MenuPanelHostComponent>,
-        private _ViewContainerRef: ViewContainerRef
-    )
-    {
-        //console.log(this.data);
+    ) {
     }
 
-    ngOnInit(): void
-    {
+    ngOnInit(): void {
     }
 }

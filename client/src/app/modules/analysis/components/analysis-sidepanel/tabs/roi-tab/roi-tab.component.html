@@ -1,0 +1,75 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<ng-template #newROIMenu>
+    <div class="new-roi">
+        <header>
+            <h1 class="title">New ROI</h1>
+            <!-- <tag-picker type="roi" placeholderText="Search ROI Tags ..." [selectedTagIDs]="selectedTagIDs"
+                [showCurrentTagsSection]="true" [editable]="!isSharedByOtherUser"
+                (onTagSelectionChanged)="onTagSelectionChanged($event)">
+            </tag-picker> -->
+        </header>
+
+        <input type="text" class="name" [(ngModel)]="newROIName" placeholder="ROI Name" />
+        <textarea class="description" [(ngModel)]="newROIDescription" placeholder="ROI Description" rows="4"></textarea>
+
+        <div class="buttons">
+            <push-button buttonStyle="outline" (onClick)="onCancelCreateROI()"
+                title="Cancel creating this ROI">Cancel</push-button>
+            <push-button buttonStyle="yellow" (onClick)="onSaveNewROI()" title="Save new ROI">Save</push-button>
+        </div>
+    </div>
+</ng-template>
+
+
+<section class="roi-container">
+    <div class="panel-row">
+        <push-button #tooltip="matTooltip" matTooltip="You don't have permission to create ROIs"
+            [matTooltipDisabled]="canCreateROIs" (onClick)="onNewROI()" buttonStyle="yellow"
+            [disabled]="selectionEmpty || !canCreateROIs" fxFlex="100%" [customDialog]="newROIMenu" #newROIButton>New
+            ROI from Selection</push-button>
+    </div>
+    <div *ngIf="showSearch" fxLayout="row" class="gap-separated-horizontal-elements filters-row">
+        <!-- <filter-box placeholder="Filter Name..." (onFilterChanged)="onFilterText($event)">
+        </filter-box>
+        <tag-picker type="roi" [selectedTagIDs]="filteredTagIDs" [showCurrentTagsSection]="false"
+            (onTagSelectionChanged)="onTagFilterChanged($event)">
+        </tag-picker> -->
+        <mat-select #tooltip="matTooltip" [matTooltip]="authorsTooltip" multiple [(ngModel)]="filteredAuthors"
+            class="authors-filter" placeholder="Author ...">
+            <mat-option *ngFor="let author of authors;" [value]="author.user_id">{{author.name}}
+            </mat-option>
+        </mat-select>
+    </div>
+    <roi-item *ngFor="let item of roiSummaryList" [summary]="item">
+    </roi-item>
+</section>

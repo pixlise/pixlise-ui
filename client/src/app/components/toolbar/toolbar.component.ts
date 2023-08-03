@@ -123,6 +123,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit() {
+
+
         //this.UserLoggedIn = this.authService.loggedIn;
         this.updateToolbar();
 

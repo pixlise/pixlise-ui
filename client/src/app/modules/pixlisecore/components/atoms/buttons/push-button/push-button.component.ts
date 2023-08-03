@@ -27,8 +27,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, Input, OnInit, Output, TemplateRef } from "@angular/core";
 import { BadgeStyle } from "../../badge/badge.component";
+import { MatDialog, MatDialogRef } from "@angular/material/dialog";
 
 export type PushButtonStyle = "normal" | "borderless" | "yellow" | "outline" | "gray" | "light-right-outline" | "orange" | "dark-outline" | "hover-yellow";
 
@@ -44,9 +45,15 @@ export class PushButtonComponent implements OnInit {
     @Input() notificationCount: number = 0;
     @Input() badgeStyle: BadgeStyle = "notification";
     @Input() tooltipTitle: string = "";
+
+    @Input() customDialog: TemplateRef<any> | null = null;
+
     @Output() onClick = new EventEmitter();
 
-    constructor() {
+    constructor(
+        private dialog: MatDialog,
+        private _dialogRef: MatDialogRef<any>,
+    ) {
     }
 
     ngOnInit() {
@@ -63,7 +70,14 @@ export class PushButtonComponent implements OnInit {
 
     onClickInternal(event: MouseEvent): void {
         if (!this.disabled) {
+            if (this.customDialog) {
+                this._dialogRef = this.dialog.open(this.customDialog, {});
+            }
             this.onClick.emit(event);
         }
+    }
+
+    closeDialog() {
+        this._dialogRef.close();
     }
 }

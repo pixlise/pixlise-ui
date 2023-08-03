@@ -1,0 +1,21 @@
+.widget {
+  height: 100%;
+  background-color: rgb(var(--clr-gray-80));
+  border: 1px solid rgb(var(--clr-gray-80));
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+
+  header {
+    background-color: rgb(var(--clr-gray-80));
+    height: 40px;
+    width: 100%;
+  }
+
+  .visualization {
+    background-color: black;
+    border-radius: 0 0 8px 8px;
+    width: 100%;
+    flex: 1;
+  }
+}

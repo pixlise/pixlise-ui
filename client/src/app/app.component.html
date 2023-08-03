@@ -31,7 +31,13 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="app-container">
   <main>
-    <app-toolbar></app-toolbar>
+    <app-toolbar>
+      <h1 class="page-title">
+        <ng-content select=".page-title"></ng-content>
+      </h1>
+      <!-- <ng-contaziner [ngTemplateOutlet]="title" [ngTemplateOutletContext]="">
+      </ng-contaziner> -->
+    </app-toolbar>
     <router-outlet></router-outlet>
   </main>
   <aside>

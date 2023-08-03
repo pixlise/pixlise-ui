@@ -56,6 +56,19 @@ export class SettingsSidebarComponent {
     });
   }
 
+  getGroupRelationship(group: UserGroupInfo): string {
+    switch (group.relationshipToUser) {
+      case UserGroupRelationship.UGR_ADMIN:
+        return "Admin";
+      case UserGroupRelationship.UGR_MEMBER:
+        return "Member";
+      case UserGroupRelationship.UGR_VIEWER:
+        return "Viewer";
+      default:
+        return "Unknown";
+    }
+  }
+
   get isOpen(): boolean {
     return this._userOptionsService.isSidebarOpen;
   }

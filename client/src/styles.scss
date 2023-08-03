@@ -342,6 +342,32 @@ h3 {
   --mdc-theme-primary: white;
 }
 
+.mdc-list-item__primary-text {
+  width: 100%;
+}
+
+.mat-mdc-select {
+  width: 90px !important;
+  margin-left: 6px;
+  padding: 4px;
+  border-radius: 8px !important;
+  background-color: #171717 !important;
+  padding: 2px 8px;
+}
+
+.mat-mdc-select-min-line {
+  color: white;
+  font-weight: bold;
+}
+
+.cdk-overlay-pane {
+  min-width: 215px;
+}
+
+.multiline-tooltip {
+  white-space: pre-line;
+}
+
 .mat-primary .mat-pseudo-checkbox-checked.mat-pseudo-checkbox-minimal::after,
 .mat-primary
   .mat-pseudo-checkbox-indeterminate.mat-pseudo-checkbox-minimal::after,

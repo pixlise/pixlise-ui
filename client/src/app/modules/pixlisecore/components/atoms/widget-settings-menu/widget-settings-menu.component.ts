@@ -54,60 +54,49 @@ import { MenuPanelHostComponent, MenuPanelHostData } from "./menu-panel-host/men
     templateUrl: "./widget-settings-menu.component.html",
     styleUrls: ["./widget-settings-menu.component.scss"]
 })
-export class WidgetSettingsMenuComponent implements OnInit
-{
-    @ViewChild(CdkOverlayOrigin) _overlayOrigin: CdkOverlayOrigin|undefined;
+export class WidgetSettingsMenuComponent implements OnInit {
+    @ViewChild(CdkOverlayOrigin) _overlayOrigin: CdkOverlayOrigin | undefined;
 
-    @Input() settingsDialog: TemplateRef<any>|null = null;
+    @Input() settingsDialog: TemplateRef<any> | null = null;
     @Input() openDirDown: boolean = true;
     @Input() noPadding: boolean = false;
     @Output() onClose = new EventEmitter();
 
-    private _overlayRef: OverlayRef|null = null;
+    private _overlayRef: OverlayRef | null = null;
 
     constructor(
         public overlay: Overlay,
         public viewContainerRef: ViewContainerRef,
         private injector: Injector
-    )
-    {
+    ) {
     }
 
-    ngOnInit(): void
-    {
+    ngOnInit(): void {
     }
 
-    ngOnDestroy()
-    {
+    ngOnDestroy() {
         this.hidePanel();
     }
 
-    onToggleSettings(): void
-    {
-        if(this._overlayRef)
-        {
+    onToggleSettings(): void {
+        if (this._overlayRef) {
             this.hidePanel();
         }
-        else
-        {
+        else {
             this.showPanel();
         }
     }
 
-    close(): void
-    {
+    close(): void {
         this.hidePanel();
     }
 
-    get isShowing(): boolean
-    {
+    get isShowing(): boolean {
         return this._overlayRef != null;
     }
 
-    private hidePanel(): void
-    {
-        if(!this._overlayRef)
-        {
+    private hidePanel(): void {
+        if (!this._overlayRef) {
             return;
         }
 
@@ -117,17 +106,12 @@ export class WidgetSettingsMenuComponent implements OnInit
 
         let result = ref.detach();
         this.onClose.emit();
-        // NOTE: 
     }
 
-    private showPanel(): void
-    {
-        if(this._overlayRef || !this._overlayOrigin || !this.settingsDialog)
-        {
+    private showPanel(): void {
+        if (this._overlayRef || !this._overlayOrigin || !this.settingsDialog) {
             return;
         }
-        //console.log('showPanel');
-        //console.log(this._overlayOrigin.elementRef);
         const strategy = this.overlay.position().flexibleConnectedTo(this._overlayOrigin.elementRef);
 
         const positions = [
@@ -140,20 +124,19 @@ export class WidgetSettingsMenuComponent implements OnInit
                     overlayX: "end",
                     overlayY: (this.openDirDown ? "top" : "bottom")
                 },
-                0, // Offset X
+                200, // Offset X
                 2  // Offset Y
             )
         ];
+
         strategy.withPositions(positions);
         strategy.withPush(false);
 
         const config = new OverlayConfig(
             {
                 positionStrategy: strategy,
-                // Other strategies are .noop(), .reposition(), or .close()
                 scrollStrategy: this.overlay.scrollStrategies.reposition(),
                 hasBackdrop: true,
-                // TODO: make backdrop a transparent colour???
                 backdropClass: "empty-overlay-backdrop",
             }
         );
@@ -180,19 +163,9 @@ export class WidgetSettingsMenuComponent implements OnInit
 
         // If required, set up so we close if user clicks our background
         this._overlayRef.backdropClick().subscribe(
-            (event)=>
-            {
+            (event) => {
                 this.hidePanel();
             }
         );
-        /*
-        // If overlay closes itself we wanna know
-        this._overlayRef.detachments().subscribe(
-            ()=>
-            {
-                this.hidePanel();
-            }
-        );
-*/
     }
 }

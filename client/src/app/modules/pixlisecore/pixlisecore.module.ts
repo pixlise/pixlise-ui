@@ -36,6 +36,8 @@ import { SnackBarPopupComponent } from "./components/atoms/snackbar-popup/snackb
 import { ActionButtonComponent } from "./components/atoms/buttons/action-button/action-button.component";
 import { UserMenuPanelComponent } from "../../components/toolbar/user-menu-panel/user-menu-panel.component";
 import { ConfirmDialogComponent } from "./components/atoms/buttons/action-button/confirm-dialog/confirm-dialog.component";
+import { TwoStateIconPushButton } from "./components/atoms/buttons/two-state-button/two-state-icon-push-button.component";
+import { MenuPanelHostComponent } from "./components/atoms/widget-settings-menu/menu-panel-host/menu-panel-host.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -54,8 +56,10 @@ export { SnackbarService } from "./services/snackbar.service";
         TwoStateButtonComponent,
         SwitchButtonComponent,
         TwoStateIconButton,
+        TwoStateIconPushButton,
         WidgetDisplayMessageComponent,
         WidgetSettingsMenuComponent,
+        MenuPanelHostComponent,
         AuthenticateComponent,
         RouteNotFoundComponent,
         SnackBarPopupComponent,
@@ -76,8 +80,10 @@ export { SnackbarService } from "./services/snackbar.service";
         TwoStateButtonComponent,
         SwitchButtonComponent,
         TwoStateIconButton,
+        TwoStateIconPushButton,
         WidgetDisplayMessageComponent,
         WidgetSettingsMenuComponent,
+        MenuPanelHostComponent,
         AuthenticateComponent,
         RouteNotFoundComponent,
         IconButtonComponent,

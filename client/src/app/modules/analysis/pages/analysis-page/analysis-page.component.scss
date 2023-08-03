@@ -1,0 +1,21 @@
+.analysis-container {
+  display: flex;
+  padding-right: 8px;
+
+  .widgets-container {
+    display: grid;
+    grid-gap: 8px;
+    grid-template-columns: 3fr repeat(3, 2fr);
+    grid-template-rows: 3fr 2fr;
+
+    width: 100%;
+    height: calc(100vh - 50px);
+
+    widget {
+      &:nth-of-type(2) {
+        grid-column-start: 2;
+        grid-column-end: 5;
+      }
+    }
+  }
+}

@@ -43,7 +43,8 @@
         <section class="group-membership">
             <h2>Group Membership</h2>
             <div *ngFor="let group of groupsWithAccess" class="notification-item group-item">
-                <span class="title">{{group.name}}</span>
+                <span class="title" #tooltip="matTooltip"
+                    matTooltip="Relationship: {{getGroupRelationship(group)}}">{{group.name}}</span>
                 <action-button action="close" tooltipTitle="Leave Group"
                     (onClick)="onLeaveGroup(group)"></action-button>
             </div>

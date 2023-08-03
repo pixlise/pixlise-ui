@@ -75,9 +75,7 @@ export class UserMenuPanelComponent {
     }
 
     onSettings(): void {
-        console.log("Settings clicked", this.isOpen, this.trigger);
         this._userOptionsService.toggleSidebar();
-
     }
 
     get userName(): string {

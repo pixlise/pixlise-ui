@@ -71,7 +71,6 @@ export class ImageUploaderDialogComponent implements OnInit {
         const reader = new FileReader();
         reader.readAsDataURL(result);
         reader.onload = () => {
-          console.log(reader.result, reader.result?.toString().length);
           if (reader.result) {
             this._userOptionsService.updateUserDetails(
               this.userDetails.info!.name,

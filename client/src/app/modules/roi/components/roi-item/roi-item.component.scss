@@ -1,0 +1,134 @@
+.roi-container {
+  display: flex;
+  flex-direction: column;
+  border-left: 4px solid;
+  border-bottom: 1px solid rgb(var(--clr-gray-70));
+
+  .summary {
+    display: flex;
+    background-color: rgb(var(--clr-gray-80));
+    padding: 8px 16px;
+    align-items: center;
+
+    .info {
+      display: flex;
+      flex-direction: column;
+
+      margin: 0;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+
+      h4,
+      p {
+        margin: 0;
+      }
+
+      p {
+        color: rgb(var(--clr-gray-60));
+      }
+    }
+
+    .buttons {
+      display: flex;
+      margin-left: auto;
+    }
+  }
+
+  .details {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    .details-container {
+      width: 100%;
+
+      .overview {
+        padding: 8px;
+        color: rgb(var(--clr-gray-10));
+        border-bottom: 1px solid rgb(var(--clr-gray-80));
+        background-color: rgb(var(--clr-gray-90));
+        display: flex;
+        align-items: center;
+
+        h5 {
+          margin: 0;
+          margin-right: auto;
+          color: rgb(var(--clr-gray-10));
+        }
+
+        .right-btns {
+          display: flex;
+          align-items: center;
+
+          :first-child {
+            margin-right: 4px;
+          }
+        }
+      }
+
+      .pixel-list {
+        padding: 8px;
+
+        h5 {
+          margin: 0;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          overflow: hidden;
+          color: rgb(var(--clr-gray-30));
+        }
+
+        .selection-btns {
+          display: flex;
+          flex-direction: column;
+
+          push-button {
+            margin-top: 8px;
+          }
+        }
+      }
+    }
+  }
+}
+
+.roi-settings {
+  display: flex;
+
+  .settings-buttons {
+    display: flex;
+
+    icon-button {
+      margin-right: 8px;
+    }
+  }
+}
+
+.roi-edit {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  min-width: 400px;
+
+  header {
+    margin-bottom: 8px;
+    .title {
+      font: 700 18px/24px Roboto, monospace;
+    }
+  }
+
+  input,
+  textarea {
+    margin-bottom: 8px;
+  }
+
+  .buttons {
+    display: flex;
+    margin-left: auto;
+    margin-top: 8px;
+
+    :first-child {
+      margin-right: 8px;
+    }
+  }
+}

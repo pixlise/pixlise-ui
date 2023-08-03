@@ -50,7 +50,8 @@
     pointer-events: none;
   }
 
-  mat-icon {
+  mat-icon,
+  .custom-icon {
     display: flex;
     align-items: center;
     justify-content: center;

@@ -59,12 +59,6 @@
 
 .btn-hover-yellow {
   @extend .btn-outline;
-
-  &:hover {
-    color: black;
-    background-color: $clr-yellow;
-    border: 1px solid $clr-yellow;
-  }
 }
 
 .btn-gray {
@@ -79,6 +73,15 @@
   color: $clr-gray-30;
   border: 1px solid $clr-gray-30;
   box-sizing: border-box;
+
+  &:hover {
+    background-color: $clr-gray-80;
+  }
+
+  &:focus,
+  &:active {
+    background-color: $clr-gray-70;
+  }
 }
 
 .btn-dark-outline {

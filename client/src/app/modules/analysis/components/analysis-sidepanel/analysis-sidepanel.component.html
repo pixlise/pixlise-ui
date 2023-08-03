@@ -1,0 +1,56 @@
+<aside class="sidebar {{sidepanelOpen ? 'open' : 'closed'}}">
+    <header>
+        <section *ngIf="sidepanelOpen && activeTab">
+            <mat-select [(ngModel)]="activeTab">
+                <mat-option *ngFor="let tab of tabs" [value]="tab">
+                    <div class="tab-select">
+                        <span>{{tab.title}}</span>
+                        <img [src]="tab.icon">
+                    </div>
+                </mat-option>
+            </mat-select>
+            <img class="active-icon" [src]="activeTab.icon">
+            <two-state-icon-push-button *ngIf="activeTab.showSearchButton" class="search-btn"
+                activeIcon="assets/button-icons/filter-yellow.svg" inactiveIcon="assets/button-icons/filter-white.svg"
+                [active]="showSearch" (onToggle)="onToggleSearch()" #tooltip="matTooltip"
+                matTooltip="{{showSearch ? 'Hide' : 'Show'}} search options"></two-state-icon-push-button>
+        </section>
+        <span class="clickable open-btn" (click)="onToggleSidePanel()" #tooltip="matTooltip"
+            matTooltip="Toggle Sidepanel">
+            <svg width="14" height="12" viewBox="0 0 14 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd"
+                    d="M6.80746 11.7071C6.44418 11.3166 6.44418 10.6834 6.80746 10.2929L10.8009 6L6.80746 1.70711C6.44418 1.31658 6.44418 0.683417 6.80746 0.292893C7.17074 -0.097632 7.75973 -0.097632 8.12301 0.292893L12.7742 5.29289C13.1375 5.68342 13.1375 6.31658 12.7742 6.70711L8.12301 11.7071C7.75973 12.0976 7.17074 12.0976 6.80746 11.7071Z"
+                    fill="#F8F8F8" />
+                <path fill-rule="evenodd" clip-rule="evenodd"
+                    d="M0.295865 11.7071C-0.0674133 11.3166 -0.0674132 10.6834 0.295865 10.2929L4.28925 6L0.295866 1.70711C-0.0674125 1.31658 -0.0674124 0.683417 0.295866 0.292893C0.659144 -0.097632 1.24814 -0.097632 1.61141 0.292893L6.26258 5.29289C6.62585 5.68342 6.62585 6.31658 6.26258 6.70711L1.61141 11.7071C1.24813 12.0976 0.659143 12.0976 0.295865 11.7071Z"
+                    fill="#F8F8F8" />
+            </svg>
+        </span>
+    </header>
+
+    <section *ngIf="!sidepanelOpen" class="button-container">
+        <div class="tab-shortcuts">
+            <img *ngFor="let tab of tabs" class="clickable tab-shortcut" [src]="tab.icon" #tooltip="matTooltip"
+                [matTooltip]="tab.tooltip || tab.title" (click)="onOpenTab(tab)">
+        </div>
+        <hr class="panel-break">
+        <div class="tab-shortcuts">
+            <div *ngFor="let viewShortcut of views" class="view-btn-container">
+                <icon-button icon="{{viewShortcut.icon}}" #tooltip="matTooltip"
+                    [matTooltip]="viewShortcut.tooltip || viewShortcut.title"
+                    (click)="onOpenView(viewShortcut)"></icon-button>
+            </div>
+        </div>
+        <hr *ngIf="isAdmin" class="panel-break">
+        <div *ngIf="isAdmin" class="tab-shortcuts">
+            <div *ngFor="let adminBtn of adminShortcuts" class="view-btn-container">
+                <icon-button icon="{{adminBtn.icon}}" #tooltip="matTooltip"
+                    [matTooltip]="adminBtn.tooltip || adminBtn.title" (click)="onOpenView(adminBtn)"></icon-button>
+            </div>
+        </div>
+    </section>
+
+    <section *ngIf="sidepanelOpen" class="sidepanel-body">
+        <ng-template #openTab></ng-template>
+    </section>
+</aside>

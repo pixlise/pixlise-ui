@@ -31,5 +31,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <span class="action-btn {{action}} {{disabled ? 'disabled' : ''}}" (click)="onClickInternal()" #tooltip="matTooltip"
   [ngStyle]="color ? {'color': color} : {}" [matTooltip]="tooltipTitle">
-  <mat-icon>{{action}}</mat-icon>
+  <mat-icon *ngIf="isMatIcon">{{action}}</mat-icon>
+  <img *ngIf="!isMatIcon" [src]="action" class="custom-icon">
 </span>
