@@ -33,9 +33,31 @@
 
 .picker {
     height: 60vh;
-    min-width: 450px;
+    min-width: 35vw;
 }
 
 .add-label {
     text-transform: capitalize;
+}
+
+.filter-container {
+    display: flex;
+
+    tag-picker {
+        margin-left: 6px;
+    }
+
+    .authors-filter {
+        padding-top: 5px;
+        padding-bottom: 0;
+
+        background: #454c50 !important;
+        border-radius: $sz-half !important;
+        border: 2px solid rgb(var(--clr-gray-60));
+    }
+}
+
+.select-all-toggle {
+    display: flex;
+    align-items: center;
 }

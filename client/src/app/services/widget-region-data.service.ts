@@ -28,15 +28,17 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Injectable } from "@angular/core";
-import { ReplaySubject, Subject, Subscription } from "rxjs";
-import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
-import { getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
+import { ReplaySubject, Subject, Subscription, Observable, combineLatest, of } from "rxjs";
+import { map, catchError, tap } from "rxjs/operators";
+import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
+import { ExpressionRunnerService } from "src/app/services/expression-runner.service";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { MistROIItem, PredefinedROIID, ROIItem, ROISavedItem } from "src/app/models/roi";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { QuantificationService, ZStackItem } from "src/app/services/quantification.service";
@@ -45,6 +47,7 @@ import { SelectionHistoryItem, SelectionService } from "src/app/services/selecti
 import { ViewState, ViewStateService } from "src/app/services/view-state.service";
 import { RGBA } from "src/app/utils/colours";
 import { httpErrorToString, randomString, SentryHelper } from "src/app/utils/utils";
+import { environment } from "src/environments/environment";
 
 
 /* WidgetRegionDataService : The widget data source!
@@ -74,7 +77,12 @@ export enum DataUnit
 
 export class DataSourceParams
 {
-    constructor(public exprId: string, public roiId: string, public units: DataUnit = DataUnit.UNIT_DEFAULT)
+    constructor(
+        public exprId: string,
+        public roiId: string,
+        public datasetId: string,
+        public units: DataUnit = DataUnit.UNIT_DEFAULT
+        )
     {
     }
 }
@@ -94,12 +102,13 @@ export class RegionData extends ROISavedItem
         public pmcs: Set<number>,
         public shape: string,
         mistROIItem: MistROIItem = null,
+        tags: string[] = [],
         visible: boolean = false,
         createUnixTimeSec: number = 0,
         modUnixTimeSec: number = 0
     )
     {
-        super(id, name, locationIndexes, description, imageName, pixelIndexes, shared, creator, mistROIItem, visible, createUnixTimeSec, modUnixTimeSec);
+        super(id, name, locationIndexes, description, imageName, pixelIndexes, shared, creator, mistROIItem, tags, visible, createUnixTimeSec, modUnixTimeSec);
     }
 
     convertToROIItem()
@@ -110,11 +119,12 @@ export class RegionData extends ROISavedItem
             this.description,
             this.imageName,
             Array.from(this.pixelIndexes),
-            this.mistROIItem
+            this.mistROIItem,
+            this.tags
         );
     }
 
-    // TODO: this is pretty dodgy, there must be a better way. Quickly tried casting RegoinData as ROISavedItem and assignment
+    // TODO: this is pretty dodgy, there must be a better way. Quickly tried casting RegionData as ROISavedItem and assignment
     // operator but that probably copied the object because the values never made it into the map storing RegionData...
     setROISavedItemFields(roi: ROISavedItem): void
     {
@@ -129,6 +139,7 @@ export class RegionData extends ROISavedItem
         this.mistROIItem = roi.mistROIItem;
         this.createUnixTimeSec = roi.createUnixTimeSec;
         this.modUnixTimeSec = roi.modUnixTimeSec;
+        this.tags = roi.tags;
     }
 }
 
@@ -154,8 +165,22 @@ export enum WidgetDataErrorType
 
 export class RegionDataResultItem
 {
-    constructor(public values: PMCDataValues, public errorType: WidgetDataErrorType, public error: string, public warning: string)
+    constructor(
+        public exprResult: DataQueryResult,
+        public errorType: WidgetDataErrorType,
+        public error: string,
+        public warning: string,
+        public expression: DataExpression,
+        public region: RegionData,
+        public query: DataSourceParams,
+        public isPMCTable: boolean = true,
+    )
     {
+    }
+
+    get values(): PMCDataValues
+    {
+        return this.exprResult?.resultValues;
     }
 }
 
@@ -178,6 +203,116 @@ export class RegionDataResults
     hasQueryErrors(): boolean
     {
         return this._hasQueryErrors;
+    }
+}
+
+// Query result cache item to store the results of running an expression
+// These results should only be used if they are not too old, and the ROI and expression referenced have not
+// been updated since this was stored! So we will periodically throw away old ones
+class QueryCacheItem
+{
+    constructor(
+        public params: string,
+        public runtimeMs: number,
+        public cacheUnixTimeMs: number,
+        public calculatedResult: DataQueryResult,
+        public lastAccessUnixTimeMs: number,
+    )
+    {
+    }
+}
+
+class QueryResultCache
+{
+    private _queryResultCache: Map<string, QueryCacheItem> = new Map<string, QueryCacheItem>();
+    private _lastPurgeUnixTimeMs: number = Date.now();
+
+    constructor(
+        private _expressionResultCacheThresholdMs,
+        private _unusedTimeoutMs: number,
+        private _purgeFrequencyMs: number)
+    {
+    }
+
+    addCachedResult(exprId: string, runtimeMs: number, calculatedResult: DataQueryResult)
+    {
+        // Add to the cache if we want to cache it
+        if(runtimeMs < this._expressionResultCacheThresholdMs)
+        {
+            // We don't cache this one because it runs quick enough, and we prefer not to store more memory
+            return;
+        }
+
+        let key = this.makeKey(exprId);
+        let nowUnixMs = Date.now();
+        this._queryResultCache.set(key, new QueryCacheItem(exprId, runtimeMs, nowUnixMs, calculatedResult, nowUnixMs));
+
+        console.log("  Cached query result for: "+key+", calc duration: "+Math.floor(runtimeMs)+"ms");
+
+        // Garbage collect
+        this.purgeOldItems();
+    }
+
+    getCachedResult(exprId: string, expressionModUnixTimeSec: number): DataQueryResult
+    {
+        // Search the cache
+        let key = this.makeKey(exprId);
+        let item = this._queryResultCache.get(key);
+
+        if(!item)
+        {
+            console.log("  No cached query found for: "+key);
+            return null;
+        }
+
+        // Check that this cache item is NEWER than the ROI and Expression last modified time
+        // because if someone modified one of these we don't want to be returning the previous result
+        let cacheUnixTimeSec = item.cacheUnixTimeMs/1000;
+        if(cacheUnixTimeSec < expressionModUnixTimeSec)
+        {
+            console.log("  Found outdated (expr) cache item, deleted for: "+key);
+            this._queryResultCache.delete(key);
+            return null;
+        }
+
+        let nowUnixMs = Date.now();
+        item.lastAccessUnixTimeMs = nowUnixMs;
+        console.log("  Found cached query item for: "+key+", calc duration was: "+Math.floor(item.runtimeMs)+"ms");
+
+        return item.calculatedResult;
+    }
+
+    clear()
+    {
+        this._queryResultCache.clear();
+    }
+
+    private makeKey(exprId: string): string
+    {
+        return exprId; // Nothing exotic to do with it now that we're only caching by expression ID
+    }
+
+    private purgeOldItems()
+    {
+        let nowUnixMs = Date.now();
+        if(this._lastPurgeUnixTimeMs-nowUnixMs < this._purgeFrequencyMs)
+        {
+            // Don't purge, don't need to do this that often...
+            return;
+        }
+
+        this._lastPurgeUnixTimeMs = nowUnixMs;
+
+        // Purge anything that hasn't been accessed in a while
+        for(let [key, item] of this._queryResultCache)
+        {
+            let accessedAgoMs = nowUnixMs-item.lastAccessUnixTimeMs;
+            if(accessedAgoMs > this._unusedTimeoutMs)
+            {
+                console.log("  Deleting (timeout) old cache item for: "+key);
+                this._queryResultCache.delete(key);
+            }
+        }
     }
 }
 
@@ -210,6 +345,9 @@ export class WidgetRegionDataService
 
     private _logPrefix = "  >>> WidgetRegionDataService["+randomString(4)+"]";
 
+    // Query result cache - for slow queries we cache their result
+    private _resultCache: QueryResultCache = new QueryResultCache(environment.expressionResultCacheThresholdMs, 60000, 10000);
+
     constructor(
         private _roiService: ROIService,
         private _selectionService: SelectionService,
@@ -218,6 +356,7 @@ export class WidgetRegionDataService
         private _datasetService: DataSetService,
         private _quantService: QuantificationService,
         private _diffractionService: DiffractionPeakService,
+        private _exprRunnerService: ExpressionRunnerService,
     )
     {
         // Subscribe for things that aren't dataset dependent...
@@ -249,6 +388,9 @@ export class WidgetRegionDataService
 
     private resubscribeForViewState(): void
     {
+        // Forget any cached query results
+        this._resultCache.clear();
+
         // Reset all our subscriptions
         this._viewStateRelatedSubs.unsubscribe();
         this._viewStateRelatedSubs = new Subscription();
@@ -289,73 +431,370 @@ export class WidgetRegionDataService
         return this._loadedViewState;
     }
 
+    // Provided as a convenience for not having to have a dataset service as well in anything that calls us
+    get dataset(): DataSet
+    {
+        return this._datasetService.datasetLoaded;
+    }
+
     // This queries data based on parameters. The assumption is it either returns null, or returns an array with the same
     // amount of items as the input parameters array (what). This is required because code calling this can then know which
     // DataSourceParams is associated with which returned value. The result array may contain null items, but the length
-    // should equal "what.length"
-    getData(what: DataSourceParams[], continueOnError: boolean): RegionDataResults
+    // should equal "what.length". There are also error values that can be returned.
+    // NOTE: If a dataset ID is specified (in case of combined datasets), the output PMCs will be relative to that dataset
+    //       so they won't be unique against the PMCs for the overall dataset anymore!
+    getData(what: DataSourceParams[], continueOnError: boolean): Observable<RegionDataResults>
     {
-        let dataset = this._datasetService.datasetLoaded;
-
+        let dataset = this.dataset;
         if(!dataset)
         {
             console.error("getData: No dataset");
-            return new RegionDataResults([], "No dataset");
+            return of(new RegionDataResults([], "No dataset"));
         }
 
-        let result: RegionDataResultItem[] = [];
-
+        // The queries often will be for the same expression ID but for multiple regions. We run the (unique) expressions all at once
+        // and then sort out which ROI the data are for
+        let uniqueExprIds = new Set<string>();
         for(let query of what)
         {
-            // Get region info
-            let region = this._regions.get(query.roiId);
-            if(!region)
+            // If we have a dataset ID specified, and it doesn't match our dataset ID we error out if the dataset is not a "combined" one.
+            if(query.datasetId && !dataset.isCombinedDataset())
             {
-                let errorMsg = "Failed to find region id: \""+query.roiId+"\"";
-
-                if(continueOnError)
+                if(query.datasetId == dataset.getId())
                 {
-                    console.error("getData: "+errorMsg+". Ignored...");
-                    result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null));
-                    continue;
+                    // It matches our dataset ID: someone was just silly so we clear it to create less confusion later when the expression runs
+                    query.datasetId = "";
                 }
-                console.error("getData: "+errorMsg);
-                return new RegionDataResults([], errorMsg);
+                else
+                {
+                    return of(new RegionDataResults([], "Queried for dataset ID: "+query.datasetId+" when not in combined dataset!"));
+                }
             }
 
+            uniqueExprIds.add(query.exprId);
+        }
+
+        let exprRuns: DataExpression[] = [];
+        let exprResult$: Observable<DataQueryResult>[] = [];
+        for(let exprId of uniqueExprIds)
+        {
             // Get the expression
-            let expr = this._exprService.getExpression(query.exprId);
+            let expr = this._exprService.getExpression(exprId);
             if(!expr)
             {
-                let errorMsg = "Failed to retrieve expression: \""+query.exprId+"\"";
+                let errorMsg = "Failed to retrieve expression: \""+exprId+"\"";
 
-                if(continueOnError)
-                {
-                    
-                    console.error("getData: "+errorMsg+". Ignored...");
-                    result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_EXPR, errorMsg, null));
-                    continue;
-                }
                 console.error("getData: "+errorMsg);
-                return new RegionDataResults([], errorMsg);
+                //return of(new RegionDataResults([], errorMsg));
+                exprResult$.push(of(new DataQueryResult(null, false, [], null, "", "", null, errorMsg)));
             }
+            else
+            {
+                // Run the expression and remember the order in which we ran them...
+                exprRuns.push(expr);
 
-            try
-            {
-                let data = getQuantifiedDataWithExpression(expr.expression, this._quantificationLoaded, dataset, dataset, dataset, this._diffractionService, dataset, region.pmcs);
-                data = this.applyUnitConversion(expr, data, query.units);
-                result.push(new RegionDataResultItem(data, null, null, data.warning));
-            }
-            catch (error)
-            {
-                let errorMsg = httpErrorToString(error, "WidgetRegionDataService.getData");
-                SentryHelper.logMsg(true, errorMsg);
-                result.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_QUERY, errorMsg, null));
-                //return null;
+                // Check cache for already-run expression
+                let cachedResult = this._resultCache.getCachedResult(exprId, expr.modUnixTimeSec);
+                if(cachedResult !== null)
+                {
+                    exprResult$.push(of(cachedResult));
+                }
+                else
+                {
+                    exprResult$.push(
+                        this.runAsyncExpression(expr, false).pipe(
+                            catchError(
+                                (err)=>
+                                {
+                                    let errorMsg = httpErrorToString(err, "WidgetRegionDataService.getData catchError");
+
+                                    // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
+                                    if(
+                                        errorMsg.indexOf("The currently loaded quantification does not contain data for detector") < 0 &&
+                                        errorMsg.indexOf("The currently loaded quantification does not contain column") < 0
+                                    )
+                                    {
+                                        SentryHelper.logMsg(true, errorMsg);
+                                    }
+
+                                    return of(new DataQueryResult(null, false, [], null, "", "", null, errorMsg));
+                                }
+                            )
+                        )
+                    );
+                }
             }
         }
 
-        return new RegionDataResults(result, "");
+        // Now wait for all expressions to complete
+        let exprResults$ = combineLatest(exprResult$);
+        return exprResults$.pipe(
+            map(
+                (results: DataQueryResult[])=>
+                {
+                    return this.buildResult(what, exprRuns, results, continueOnError);
+                }
+            ),
+            catchError(
+                (err)=>
+                {
+                    console.error(err);
+                    throw new Error(err);
+                }
+            )
+        );
+    }
+
+    private buildResult(what: DataSourceParams[], exprRuns: DataExpression[], exprResults: DataQueryResult[], continueOnError: boolean): RegionDataResults
+    {
+        let dataset = this.dataset;
+        let outputResult = new RegionDataResults([], "");
+
+        // We got data back for an expression, look up what else it was supposed to include
+        let exprResultById = new Map<string, DataQueryResult>();
+        let exprById = new Map<string, DataExpression>();
+
+        for(let c = 0; c < exprResults.length; c++)
+        {
+            // Get the expression that ran
+            const expr = exprRuns[c];
+            if(expr)
+            {
+                const exprResult = exprResults[c];
+
+                exprResultById.set(expr.id, exprResult);
+                exprById.set(expr.id, expr);
+            }
+        }
+
+        // Now run through all the original query stuff, in that order, and apply the ROI and unit conversions
+        // to form output data
+        for(let query of what)
+        {
+            let region: RegionData = null;
+            if(query.roiId != null)
+            {
+                region = this._regions.get(query.roiId);
+                if(!region)
+                {
+                    let errorMsg = "Failed to find region id: \""+query.roiId+"\"";
+
+                    if(continueOnError)
+                    {
+                        console.error("getData: "+errorMsg+". Ignored...");
+                        outputResult.queryResults.push(new RegionDataResultItem(null, WidgetDataErrorType.WERR_ROI, errorMsg, null, null, null, query));
+                        continue;
+                    }
+                    console.error("getData: "+errorMsg);
+                    return new RegionDataResults([], errorMsg);
+                }
+            }
+
+            // Get the expression result for this query item
+            let exprResult = exprResultById.get(query.exprId);
+            if(!exprResult || !exprResult.resultValues)
+            {
+                let errorMsg = "Failed to get result for expression: "+query.exprId;
+                if(exprResult && exprResult.errorMsg)
+                {
+                    errorMsg = exprResult.errorMsg;
+                }
+
+                // This expression failed, so anything expecting data from here should just get an error
+                outputResult.queryResults.push(
+                    new RegionDataResultItem(exprResult,
+                        WidgetDataErrorType.WERR_QUERY,
+                        errorMsg,
+                        errorMsg,
+                        exprById.get(query.exprId),
+                        region,
+                        query,
+                        exprResult?.isPMCTable || false
+                    )
+                );
+                continue;
+            }
+
+            // At this point, we have to decide what PMCs to return for this query item. If we have an ROI specified, we are only querying
+            // for its PMCs BUT datasetId filters this further, because if we have one specified (in the case of combined datasets), we need to
+            // only include PMCs for that dataset!
+            let pmcsToQuery = region ? region.pmcs : null;
+            let pmcOffset = 0;
+
+            if(query.datasetId)
+            {
+                // Get the offset for this dataset ID
+                pmcOffset = dataset.getIdOffsetForSubDataset(query.datasetId);
+
+                // We're filtering down!
+                if(!pmcsToQuery)
+                {
+                    // No PMCs given, so just get all for the given dataset ID
+                    pmcsToQuery = this.getPMCsForDatasetId(query.datasetId, dataset);
+                }
+                else
+                {
+                    // Region PMCs are specified, so filter down to only those for the given dataset!
+                    pmcsToQuery = this.filterPMCsForDatasetId(region.pmcs, query.datasetId, dataset);
+                }
+            }
+
+            const expr = exprById.get(query.exprId);
+            let processedResult = this.processQueryResult(exprResult, query, expr, region, pmcOffset, pmcsToQuery);
+            outputResult.queryResults.push(processedResult);
+        }
+
+        return outputResult;
+    }
+
+    // Runs an expression with given parameters. If errors are encountered, they will be returned as part of the Observables own
+    // error handling interface.
+    runAsyncExpression(expr: DataExpression, allowAnyResponse: boolean): Observable<DataQueryResult>
+    {
+        return this._exprRunnerService.runExpression(expr, this._quantificationLoaded, this._diffractionService, allowAnyResponse).pipe(
+            tap(
+                (result: DataQueryResult)=>
+                {
+                    // We cache here, this should called by code editor, and any widgets refreshing after this should just pick up
+                    // the calculated result
+                    this._resultCache.addCachedResult(expr.id, result.runtimeMs, result);
+                }
+            ),
+        );
+    }
+    
+    private processQueryResult(
+        result: DataQueryResult,
+        query: DataSourceParams,
+        expr: DataExpression,
+        region: RegionData,
+        pmcOffset: number,
+        forPMCs: Set<number>
+    ): RegionDataResultItem
+    {
+        let pmcValues = result?.resultValues as PMCDataValues;
+        if(!Array.isArray(pmcValues?.values) || (pmcValues.values.length > 0 && !(pmcValues.values[0] instanceof PMCDataValue)))
+        {
+            return new RegionDataResultItem(
+                new DataQueryResult(
+                    result.resultValues,
+                    result.isPMCTable,
+                    result.dataRequired,
+                    result.runtimeMs,
+                    result.stderr,
+                    result.stderr,
+                    result.recordedExpressionInputs
+                ),
+                WidgetDataErrorType.WERR_QUERY, "Result is not a PMC array!", null, expr, region, query, false
+            );
+        }
+
+        // Filter to only the PMCs we're interested in
+        let filteredPMCValues = this.filterForPMCs(pmcValues, forPMCs);
+
+        // Apply unit conversion if needed
+        let unitConverted = this.applyUnitConversion(expr, filteredPMCValues, query.units);
+
+        // Also change the PMC values to be dataset-relative in the case of combined dataset
+        if(pmcOffset > 0)
+        {
+            for(let c = 0; c < unitConverted.values.length; c++)
+            {
+                unitConverted.values[c].pmc -= pmcOffset;
+            }
+        }
+
+        let resultItem = new RegionDataResultItem(
+            new DataQueryResult(
+                unitConverted, // Put this in the result
+                result.isPMCTable,
+                result.dataRequired,
+                result.runtimeMs,
+                result.stderr,
+                result.stderr,
+                result.recordedExpressionInputs
+            ),
+            null, null, unitConverted.warning, expr, region, query
+        );
+
+        return resultItem;
+    }
+
+    // NOTE: this always copies the result
+    private filterForPMCs(queryResult: PMCDataValues, forPMCs: Set<number>): PMCDataValues
+    {
+        let resultValues: PMCDataValue[] = [];
+
+        // Filter for PMCs requested
+        // TODO: Modify this so we don't uneccessarily run expressions for PMCs we end up throwing away
+        if(forPMCs === null)
+        {
+            for(let item of queryResult.values)
+            {
+                resultValues.push(item);
+            }
+        }
+        else
+        {
+            // Build a new result only containing PMCs specified
+            for(let item of queryResult.values)
+            {
+                if(forPMCs.has(item.pmc))
+                {
+                    resultValues.push(item);
+                }
+            }
+        }
+
+        return PMCDataValues.makeWithValues(resultValues);
+    }
+
+    // This is really just a convenience thing - this service already has all the things required to call export on the expression runner
+    exportExpressionCode(expr: DataExpression): Observable<Blob>
+    {
+        return this._exprRunnerService.exportExpressionCode(expr, this._quantificationLoaded, this._diffractionService);
+    }
+
+    private getPMCsForDatasetId(datasetId: string, dataset: DataSet): Set<number>
+    {
+        let locIdxs = dataset.getLocationIdxsForSubDataset(datasetId);
+        let locations = dataset.experiment.getLocationsList();
+
+        let pmcsToQuery = new Set<number>();
+
+        // Convert each to a PMC & use it
+        for(let locIdx of locIdxs)
+        {
+            let loc = locations[locIdx];
+            let pmc = Number.parseInt(loc.getId());
+            if(pmc != undefined)
+            {
+                // NOTE: here we're using the PMC that's for the whole dataset, so it has the source offset included already!
+                pmcsToQuery.add(pmc);
+            }
+        }
+
+        return pmcsToQuery;
+    }
+
+    private filterPMCsForDatasetId(regionPMCs: Set<number>, datasetId: string, dataset: DataSet): Set<number>
+    {
+        let locIdxs = dataset.getLocationIdxsForSubDataset(datasetId);
+
+        let pmcsToQuery = new Set<number>();
+        for(let regionPMC of regionPMCs)
+        {
+            let locIdx = dataset.pmcToLocationIndex.get(regionPMC);
+
+            // See if it exists in the loc idxs for the sub-dataset
+            if(locIdxs.size === 0 || locIdxs.has(locIdx))
+            {
+                // We're adding it!
+                pmcsToQuery.add(regionPMC);
+            }
+        }
+
+        return pmcsToQuery;
     }
 
     private applyUnitConversion(sourceExpression: DataExpression, data: PMCDataValues, unitsRequested: DataUnit): PMCDataValues
@@ -364,7 +803,7 @@ export class WidgetRegionDataService
 
         // Run through all points and apply the units requested. NOTE: This may not work, eg if we're not in the right source units, we can't
         // convert, so in those cases we do nothing
-        let col = DataExpressionService.getPredefinedQuantExpressionElementColumn(sourceExpression.id);
+        let col = DataExpressionId.getPredefinedQuantExpressionElementColumn(sourceExpression.id);
         if(col === "%")
         {
             // We allow conversions here...
@@ -372,7 +811,7 @@ export class WidgetRegionDataService
             if(unitsRequested == DataUnit.UNIT_MMOL)
             {
                 // Need to parse the elements out of the expression to calculate molecular mass and form a conversion factor
-                let formula = DataExpressionService.getPredefinedQuantExpressionElement(sourceExpression.id);
+                let formula = DataExpressionId.getPredefinedQuantExpressionElement(sourceExpression.id);
                 if(formula.length > 0)
                 {
                     let mass = periodicTableDB.getMolecularMass(formula);
@@ -416,7 +855,7 @@ export class WidgetRegionDataService
         let logmsg = this._logPrefix+" rebuildData reason="+reason;
         let skipReasons = [];
 
-        let dataset = this._datasetService.datasetLoaded;
+        let dataset = this.dataset;
         let selection = this._selectionService.getCurrentSelection();
 
         // Rebuild our view of the world
@@ -531,16 +970,16 @@ export class WidgetRegionDataService
 
         console.log(logmsg+": Generated "+this._regions.size+" regions.");
 
-        console.log(logmsg+": Region build finished, notifying subscribers...");
-        let t0 = performance.now();
+        //console.log(logmsg+": Region build finished, notifying subscribers...");
+        //let t0 = performance.now();
         this.widgetData$.next(reason);
-        let t1 = performance.now();
-        console.log(logmsg+": Subscribers notified in "+(t1-t0).toLocaleString()+"ms");
+        //let t1 = performance.now();
+        //console.log(logmsg+": Subscribers notified in "+(t1-t0).toLocaleString()+"ms");
     }
 
     getRemainingPMCs(): number[]
     {
-        let dataset = this._datasetService.datasetLoaded;
+        let dataset = this.dataset;
         if(!dataset)
         {
             console.warn("getRemainingPMCs when no dataset available in WidgetRegionDataService");
@@ -636,6 +1075,7 @@ export class WidgetRegionDataService
                 }
                 else
                 {
+                    // Update the selected points region
                     let region = this.ensureRegionStored(PredefinedROIID.SelectedPoints);
                     region.pmcs = selection.beamSelection.getSelectedPMCs();
                     region.locationIndexes = Array.from(selection.beamSelection.locationIndexes);
@@ -770,41 +1210,21 @@ export class WidgetRegionDataService
                                 this._exprService.setQuantDataAvailable(quant.getElementList(), quant.getDetectors());
 
                                 // Remember that we've loaded this...
-                                this._quantIdLastLoaded = this._quantId/*quant.summary.jobId*/; // Remember that we've loaded this one!
-                                this._quantificationLoaded = quant;
-
-                                this.rebuildData(WidgetDataUpdateReason.WUPD_QUANT);
-
-                                // Also notify that there is a new quantification loaded
-                                this.quantificationLoaded$.next(quant);
+                                this.onQuantChange(this._quantId, quant);
                             },
                             (err)=>
                             {
                                 console.error(this._logPrefix+": "+httpErrorToString(err, "Quant failed to load"));
-                                // Failed to load a quant, set our state that way
-                                this._quantIdLastLoaded = this._quantId/*quant.summary.jobId*/; // Remember that we've failed to load this one!
-                                this._quantificationLoaded = null;
 
-                                this.rebuildData(WidgetDataUpdateReason.WUPD_QUANT);
-
-                                // Notify out that we don't have a quant loaded
-                                this.quantificationLoaded$.next(null);
+                                // Saving the ID so we remember that we've failed to load this one!
+                                this.onQuantChange(this._quantId, null);
                             }
                         );
                     }
                 }
                 else
                 {
-                    // No quant to load!
-                    this._quantificationLoaded = null;
-
-                    // Don't strictly need to clear this here but might as well...
-                    this._quantIdLastLoaded = null;
-
-                    this.rebuildData(WidgetDataUpdateReason.WUPD_QUANT);
-
-                    // Notify out that we don't have a quant loaded
-                    this.quantificationLoaded$.next(null);
+                    this.onQuantChange(null, null);
                 }
             },
             (err)=>
@@ -818,14 +1238,36 @@ export class WidgetRegionDataService
         ));
     }
 
+    // Handles a quant change
+    private onQuantChange(quantId: string, quant: QuantificationLayer): void
+    {
+        // With a new quant loading anything we have cached is invalidated
+        this._resultCache.clear();
+        
+        // Save stuff
+        this._quantificationLoaded = quant;
+        this._quantIdLastLoaded = quantId;
+
+        this.rebuildData(WidgetDataUpdateReason.WUPD_QUANT);
+
+        // Notify about this quant
+        this.quantificationLoaded$.next(quant);
+    }
+
     private resubscribeMultiQuantROIs()
     {
         this._viewStateRelatedSubs.add(this._quantService.multiQuantZStack$.subscribe(
             (zStack: ZStackItem[])=>
             {
-                // Rebuild the list of RemainingPoints
-                this._multiQuantLoaded = true;
-                this.rebuildData(WidgetDataUpdateReason.WUPD_REMAINING_POINTS);
+                // NOTE: this needs to run! If not, we can get stuck
+                // The following was tried but failed for the above reason...
+                // NOTE: this is accessed via service later, we only check the length here
+                //if(zStack.length > 0)
+                //{
+                    // Rebuild the list of RemainingPoints
+                    this._multiQuantLoaded = true;
+                    this.rebuildData(WidgetDataUpdateReason.WUPD_REMAINING_POINTS);
+                //}
             },
             (err)=>
             {

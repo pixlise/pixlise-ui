@@ -29,9 +29,9 @@
 
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { Subscription } from "rxjs";
-import { ItemTag } from "src/app/models/tags";
+import { BuiltInTags, ItemTag } from "src/app/models/tags";
+import { AuthenticationService } from "src/app/services/authentication.service";
 import { TaggingService } from "src/app/services/tagging.service";
-import { UserOptionsService } from "src/app/services/user-options.service";
 
 export interface AuthorTags
 {
@@ -50,6 +50,7 @@ export class TagPickerComponent implements OnInit
 
     private _tagSelectionChanged: boolean = false;
 
+    user: any = null; // Auth0 User Object
     currentAuthor: string = null;
     authors: string[] = [];
     
@@ -59,31 +60,65 @@ export class TagPickerComponent implements OnInit
     
     @Input() showCurrentTagsSection: boolean = false;
 
+    @Input() placeholderText: string = "Search Tags ...";
     @Input() type: string = "layer";
     @Input() editable: boolean = true;
     @Input() selectedTagIDs: string[] = [];
     @Input() tags: ItemTag[] = [];
+    @Input() filterToTagType: boolean = true;
+    @Input() allowAdminBuiltin: boolean = false;
+    @Input() additionalVisibleTagType: string[] = ["layer"];
 
     @Output() onTagSelectionChanged = new EventEmitter<string[]>();
     
 
     constructor(
         private _taggingService: TaggingService,
-        private _userService: UserOptionsService
+        private _authService: AuthenticationService
     )
     {
     }
 
     ngOnInit()
     {
-        this.currentAuthor = this._userService.userConfig.name;
+        this._subs.add(this._authService.userProfile$.subscribe(
+            (user)=>
+            {
+                this.user = user;
+                this.currentAuthor = this.user.name;
+            }
+        ));
+
         this._taggingService.refreshTagList();
 
-        this._taggingService.tags$.subscribe((tags) =>
+        this._subs.add(this._taggingService.tags$.subscribe(async (tags) =>
         {
-            this.tags = Array.from(tags.values());
+            let isAdmin = false;
+
+            if(this.allowAdminBuiltin)
+            {
+                isAdmin = await this._authService.getIdTokenClaims$().toPromise().then(
+                    (claims)=>
+                    {
+                        return AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionViewUserRoles);
+                    },
+                    (err)=>
+                    {
+                        return false;
+                    }
+                );
+            }
+
+            // Only show tags that are of the same type as the current item if filterToTagType or are of the additional visible type
+            this.tags = Array.from(tags.values()).filter((tag) => 
+                !this.filterToTagType
+                || tag.type === this.type
+                || this.additionalVisibleTagType.includes(tag.type)
+                || (isAdmin && this.allowAdminBuiltin && tag.type === BuiltInTags.type)
+            );
+
             this.groupTags();
-        });
+        }));
 
         this.groupTags();
         this.focusOnInput();
@@ -175,7 +210,15 @@ export class TagPickerComponent implements OnInit
             return;
         }
 
-        this.selectedTagIDs = this.selectedTagIDs.filter(id => id !== tagID);
+        let filteredTagIDs = this.validSelectedTagIDs.filter(id => id !== tagID);
+
+        // If the tag is selected, unselect it before deleting
+        if(this.selectedTagIDs.includes(tagID))
+        {
+            this.onTagSelectionChanged.emit(filteredTagIDs);
+        }
+
+        this.selectedTagIDs = filteredTagIDs;
         this._taggingService.delete(tagID).subscribe(() =>
         {
             this._taggingService.refreshTagList();
@@ -186,6 +229,11 @@ export class TagPickerComponent implements OnInit
     get selectedTags(): ItemTag[]
     {
         return this.tags.filter(tag => this.selectedTagIDs.includes(tag.id));
+    }
+
+    get validSelectedTagIDs(): string[]
+    {
+        return this.selectedTags.map(tag => tag.id);
     }
 
     groupTags(): void
@@ -203,7 +251,7 @@ export class TagPickerComponent implements OnInit
 
         this.filteredTags.forEach(tag =>
         {
-            let userID = tag.creator.name === this.currentAuthor ? this.currentAuthor : tag.creator.user_id;
+            let userID = tag.creator.email === this.user.email ? this.currentAuthor : tag.creator.user_id;
             if(!creatorMap[userID])
             {
                 creatorMap[userID] = [];
@@ -243,7 +291,8 @@ export class TagPickerComponent implements OnInit
 
         if(!this.showCurrentTagsSection)
         {
-            this.onTagSelectionChanged.emit(this.selectedTagIDs);
+            // Prune non-existing tags on edit
+            this.onTagSelectionChanged.emit(this.validSelectedTagIDs);
         }
 
         this.focusOnInput();
@@ -253,7 +302,8 @@ export class TagPickerComponent implements OnInit
     {
         if(this._tagSelectionChanged)
         {
-            this.onTagSelectionChanged.emit(this.selectedTagIDs);
+            // Prune non-existing tags on edit
+            this.onTagSelectionChanged.emit(this.validSelectedTagIDs);
             this._tagSelectionChanged = false;
         }
     }

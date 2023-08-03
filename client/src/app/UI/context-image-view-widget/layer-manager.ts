@@ -27,22 +27,24 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { ReplaySubject } from "rxjs";
-import { DiffractionPeakQuerierSource } from "src/app/expression-language/data-sources";
+import { ReplaySubject, Observable, of, throwError } from "rxjs";
+import { map } from "rxjs/operators";
 import { PMCDataValues } from "src/app/expression-language/data-values";
-import { getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
-import { MinMax } from "src/app/models/BasicTypes";
+import { MinMax, ObjectCreator } from "src/app/models/BasicTypes";
 import { DataSet } from "src/app/models/DataSet";
 import { LocationDataLayer, LocationDataLayerProperties } from "src/app/models/LocationData2D";
 import { QuantificationLayer } from "src/app/models/Quantifications";
 import { RGBUImage } from "src/app/models/RGBUImage"; // for channel names, probably shouldn't be linking this though :(
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { RGBMixConfigService, RGBMix } from "src/app/services/rgbmix-config.service";
 import { mapLayerVisibility } from "src/app/services/view-state.service";
-import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { WidgetRegionDataService, DataSourceParams } from "src/app/services/widget-region-data.service";
 import { ColourRamp } from "src/app/utils/colours";
 import { SentryHelper } from "src/app/utils/utils";
 import { LayerStore, ExpressionListBuilder, ExpressionListItems } from "src/app/models/ExpressionList";
+import { DataModuleService } from "src/app/services/data-module.service";
+import { AuthenticationService } from "src/app/services/authentication.service";
 
 
 export class LayerChangeInfo
@@ -85,12 +87,13 @@ export class LayerManager
 
     constructor(
         private _exprService: DataExpressionService,
+        public moduleService: DataModuleService,
         private _rgbMixService: RGBMixConfigService,
         private _widgetDataService: WidgetRegionDataService,
-        private _diffractionSource: DiffractionPeakQuerierSource,
+        private _authService: AuthenticationService
     )
     {
-        this._listBuilder = new ExpressionListBuilder(true, [], true, true, true, true, this._exprService);
+        this._listBuilder = new ExpressionListBuilder(true, [], true, true, true, true, this._exprService, this._authService);
     }
 
     protected publishLayerChange(needSave: boolean, reason: string): void
@@ -127,7 +130,7 @@ export class LayerManager
         this._listBuilder.notifyDataArrived(
             this._dataset.getPseudoIntensityElementsList(),
             data[1] as QuantificationLayer,
-            this._exprService.getExpressions(DataExpressionService.DataExpressionTypeAll),
+            this._exprService.getExpressions(),
             this._rgbMixService.getRGBMixes()
         );
 
@@ -140,7 +143,12 @@ export class LayerManager
         let layers = this._layers.getLayerArray();
         for(let layer of layers)
         {
-            this.generatePointsIfNeeded(layer);
+            this.generatePointsIfNeeded(layer)?.subscribe(
+                ()=>
+                {
+                    // Need this here otherwise gen points won't run
+                }
+            );
         }
     }
 
@@ -160,9 +168,9 @@ export class LayerManager
                 layer.visible &&
                 layer.isPredefinedLayer &&
                 (
-                    DataExpressionService.getPredefinedQuantExpressionElement(layer.id).length > 0 ||
-                    layer.id.startsWith(DataExpressionService.makePredefinedQuantDataExpression("chisq", "")) ||
-                    layer.id.startsWith(DataExpressionService.predefinedUnquantifiedPercentDataExpression)
+                    DataExpressionId.getPredefinedQuantExpressionElement(layer.id).length > 0 ||
+                    layer.id.startsWith(DataExpressionId.makePredefinedQuantDataExpression("chisq", "")) ||
+                    layer.id.startsWith(DataExpressionId.predefinedUnquantifiedPercentDataExpression)
                 )
             )
             {
@@ -182,15 +190,27 @@ export class LayerManager
             {
                 // Look it up in our list that we created earlier
                 let layer = this._layers.getLayerById(source.id);
+
+                // HACK: This is a hack to fix a bug where we get a layer that doesn't exist in our list. This will be cleaned up in v4
+                // This code ideally should never be triggered, but has been seen in prod, possibly do to caching?
                 if(!layer)
                 {
-                    throw new Error("makeExpressionList failed for unknown id: "+source.id);
+                    console.error("makeExpressionList failed for unknown id:", source.id);
+                    SentryHelper.logException("makeExpressionList failed for unknown id: "+source.id, "LayerManager");
+                    // throw new Error("makeExpressionList failed for unknown id: "+source.id);
+
+                    return null;
                 }
                 return layer;
             }
         );
 
         return items;
+    }
+
+    getAuthors(headerSections: string[] = ["expressions-header", "rgbmix-header"]): ObjectCreator[]
+    {
+        return this._listBuilder.getAuthors(headerSections);
     }
 
     recalcHeaderInfos(exprList: ExpressionListItems): void
@@ -219,8 +239,8 @@ export class LayerManager
                 // Element default visibility in map building mode is VISIBLE so we can turn it off later as needed
                 if(isMapBuilding)
                 {
-                    let elem = DataExpressionService.getPredefinedQuantExpressionElement(source.id);
-                    if(DataExpressionService.getPredefinedQuantExpressionElementColumn(source.id) == "%" && !lastAddedElem.startsWith(elem))
+                    let elem = DataExpressionId.getPredefinedQuantExpressionElement(source.id);
+                    if(DataExpressionId.getPredefinedQuantExpressionElementColumn(source.id) == "%" && !lastAddedElem.startsWith(elem))
                     {
                         // If we're in map mode, set it to visible initially, so we can then decide to show the most abundant ones
                         // ALSO, note that if this is a "pure element" of the previous one, we aren't enabling it to be visible
@@ -243,14 +263,19 @@ export class LayerManager
                     "",
                     source,
                     [
-                        source.red.expressionName, // this._exprService.getExpressionShortDisplayName(source.red.expressionID, 15).shortName,
-                        source.green.expressionName, // this._exprService.getExpressionShortDisplayName(source.green.expressionID, 15).shortName,
-                        source.blue.expressionName, // this._exprService.getExpressionShortDisplayName(source.blue.expressionID, 15).shortName
+                        source.red.expressionName,
+                        source.green.expressionName,
+                        source.blue.expressionName,
                     ]
                 );
 
                 rgbLayer.applyMapLayerVisibility(0, vis);
-                let err = this.generatePointsIfNeeded(rgbLayer);
+                this.generatePointsIfNeeded(rgbLayer)?.subscribe(
+                    ()=>
+                    {
+                        // Need this here otherwise gen points won't run
+                    }
+                );
                 return rgbLayer;
             }
         );
@@ -292,7 +317,7 @@ export class LayerManager
         let maps: LocationDataLayer[] = [];
         for(let layer of this._layers.getLayerArray())
         {
-            if(DataExpressionService.getPredefinedQuantExpressionElement(layer.expressionID).length > 0)
+            if(DataExpressionId.getPredefinedQuantExpressionElement(layer.expressionID).length > 0)
             {
                 maps.push(layer);
             }
@@ -432,7 +457,7 @@ export class LayerManager
             let prevOpacity = layer.opacity;
             let prevVis = layer.visible;
 
-            if(layer.visible != visible)
+            if(layer.visible !== visible)
             {
                 opacityOnly = false;
             }
@@ -440,20 +465,39 @@ export class LayerManager
             layer.opacity = opacity;
             layer.visible = visible;
 
-            let err = this.generatePointsIfNeeded(layer);
-            if(err)
-            {
-                // Notify the user & set vis back how it was
-                alert(err);
-
-                layer.opacity = prevOpacity;
-                layer.visible = prevVis;
-
-                // Nothing more to do...
-                return;
-            }
+            this.generatePointsIfNeeded(layer)?.subscribe(
+                ()=>
+                {
+                    this.finishSetLayerVisibility(opacityOnly, idsToHide);
+                },
+                (err)=>
+                {
+                    // Notify the user & set vis back how it was unless it's an unsaved expression
+                    if(!id.startsWith(DataExpressionId.UnsavedExpressionPrefix))
+                    {
+                        alert(err);
+    
+                        layer.opacity = prevOpacity;
+                        layer.visible = prevVis;
+                    }
+                }
+            );
         }
+        else
+        {
+            this.finishSetLayerVisibility(opacityOnly, idsToHide);
+        }
+    }
 
+    setSingleLayerVisible(id: string): void
+    {
+        this.regenerateLayers("setSingleLayerVisible");
+        let otherVisibleIDs = this.getVisibleLayers().map((layer) => layer.id).filter((layerID) => layerID !== id);
+        this.setLayerVisibility(id, 1, true, otherVisibleIDs);
+    }
+
+    private finishSetLayerVisibility(opacityOnly: boolean, idsToHide: string[])
+    {
         // If there are any to hide, do that in one hit here
         for(let hideID of idsToHide)
         {
@@ -491,17 +535,14 @@ export class LayerManager
         this.publishLayerChange(true, "setLayerDisplayValueShading");
     }
 
+    getVisibleLayers(): LocationDataLayer[]
+    {
+        return this._layers.getLayerArray().filter((layer: LocationDataLayer) => layer.visible);
+    }
+
     visibleLayerCount(): number
     {
-        let count = 0;
-        for(let layer of this._layers.getLayerArray())
-        {
-            if(layer.visible)
-            {
-                count++;
-            }
-        }
-        return count;
+        return this.getVisibleLayers().length;
     }
 
     getLayerProperties(id: string): LocationDataLayerProperties
@@ -568,13 +609,18 @@ export class LayerManager
         {
             createdLayer = new LocationDataLayer(expressionID, expr.name, expressionID, expr);
             createdLayer.applyMapLayerVisibility(0, visSetting);
-            let err = this.generatePointsIfNeeded(createdLayer);
-            if(err != null)
-            {
-                //throw new Error(err);
-                // We don't throw an error because if we do, any expression with an error in it will disappear from the list!
-                console.error(err);
-            }
+            this.generatePointsIfNeeded(createdLayer)?.subscribe(
+                ()=>
+                {
+                    // Need this here otherwise gen points won't run
+                },
+                (err)=>
+                {
+                    //throw new Error(err);
+                    // We don't throw an error because if we do, any expression with an error in it will disappear from the list!
+                    console.error(err);
+                }
+            );
 
             this.updateDisplayValueRangeOverride();
         }
@@ -588,19 +634,20 @@ export class LayerManager
     }
 
     // Returns an error string if something goes wrong - otherwise null
-    private generatePointsIfNeeded(layer: LocationDataLayer): string
+    private generatePointsIfNeeded(layer: LocationDataLayer): Observable<void>
     {
-        //let t0 = performance.now();
         if(!layer.isVisible())
         {
             // Not visible, we're lazy, why bother?
-            return null;
+            return of(null);
         }
 
         if(RGBMixConfigService.isRGBMixID(layer.id))
         {
             return this.generateRGBMixLayer(layer);
         }
+
+        //let t0 = performance.now();
 
         // At this point assume it's a DataExpression - we used to look this up but expression is now in
         // layer.source, just need to cast it
@@ -609,38 +656,44 @@ export class LayerManager
         if(!expr)
         {
             let err = "Failed to find data expression: \""+layer.expressionID+"\" when setting layer: "+layer.id+" visibility";
-            return err;
+            return throwError(err);
         }
 
-        try
-        {
-            let quantLayer: QuantificationLayer = this._widgetDataService.quantificationLoaded;
+        return this._widgetDataService.getData([new DataSourceParams(expr.id, null, "")], false).pipe(
+            map((queryResults)=>
+            {
+                if(queryResults.error)
+                {
+                    throw new Error(queryResults.error);
+                }
 
-            let data = getQuantifiedDataWithExpression(expr.expression, quantLayer, this._dataset, this._dataset, this._dataset, this._diffractionSource, this._dataset);
-            layer.generatePoints(0, data, this._dataset);
+                if(queryResults.queryResults[0].error)
+                {
+                    throw new Error(queryResults.queryResults[0].error);
+                }
 
-            // Expand our min/max values as needed
-            this._weightPctValueRange.expandByMinMax(data.valueRange);
-        }
-        catch (error)
-        {
-            SentryHelper.logException(error, "generatePointsIfNeeded");
-            //layer.errorMessage = error;
-            return error;
-        }
-        //let t1 = performance.now();
-        //console.log('generatePointsIfNeeded for '+layer.name+' took: ' + (t1-t0).toLocaleString() + 'ms');
+                let data = queryResults.queryResults[0].values;
 
-        return null;
+                layer.generatePoints(0, data, this._dataset);
+
+                // Expand our min/max values as needed
+                this._weightPctValueRange.expandByMinMax(data.valueRange);
+                return null;
+            },
+            (error)=>
+            {
+                SentryHelper.logException(error, "generatePointsIfNeeded");
+                //layer.errorMessage = error;
+                return error;
+            })
+        );
     }
 
-    private generateRGBMixLayer(layer: LocationDataLayer): string
+    private generateRGBMixLayer(layer: LocationDataLayer): Observable<void>
     {
-        // Run through and get data for each element
-        let quantLayer: QuantificationLayer = this._widgetDataService.quantificationLoaded;
+        // TODO: Merge this with ExportDataDialogComponent.generateExportCSVForRGBMix
 
-        // Run the expression to get a map back
-
+        // Run the expression to get a map back for each colour channel
         try
         {
             let rgbMixes = this._rgbMixService.getRGBMixes();
@@ -648,38 +701,45 @@ export class LayerManager
 
             if(!rgbMix)
             {
-                return "RGB mix info not found for: "+layer.id;
+                return throwError("RGB mix info not found for: "+layer.id);
             }
 
-            let exprIds = [rgbMix.red.expressionID, rgbMix.green.expressionID, rgbMix.blue.expressionID];
+            // Query all 3 expressions together
+            let query = [
+                new DataSourceParams(rgbMix.red.expressionID, null, ""),
+                new DataSourceParams(rgbMix.green.expressionID, null, ""),
+                new DataSourceParams(rgbMix.blue.expressionID, null, "")
+            ];
 
-            let perElemData: PMCDataValues[] = [];
-            let ch = 0;
-            for(let exprId of exprIds)
-            {
-                let expr = this._exprService.getExpression(exprId);
-
-                if(!expr)
+            return this._widgetDataService.getData(query, false).pipe(
+                map((queryResults)=>
                 {
-                    throw new Error("Failed to find expression: "+exprId+" for channel: "+RGBUImage.channels[ch]);
-                }
+                    let perElemData: PMCDataValues[] = [];
+                    let ch = 0;
 
-                let data = getQuantifiedDataWithExpression(expr.expression, quantLayer, this._dataset, this._dataset, this._dataset, this._diffractionSource, this._dataset);
-                perElemData.push(data);
-                //layer.generatePoints(ch, data, this._dataset);
-                ch++;
-            }
+                    for(let channelResult of queryResults.queryResults)
+                    {
+                        if(channelResult.error)
+                        {
+                            throw new Error("Expression: "+channelResult.query.exprId+" for channel: "+RGBUImage.channels[ch]+" had error: "+channelResult.error);
+                        }
 
-            // Now we run through ch0 (R) and recolour the points to mix in the G and B values, making ch0 our render-able channel
-            return layer.generateRGBMix(perElemData, this._dataset);
+                        perElemData.push(channelResult.values);
+
+                        ch++;
+                    }
+
+                    // Now we run through ch0 (R) and recolour the points to mix in the G and B values, making ch0 our render-able channel
+                    let result = layer.generateRGBMix(perElemData, this._dataset);
+                    return result;
+                })
+            );
         }
         catch (error)
         {
             SentryHelper.logException(error, "generateRGBMixLayer");
-            return error;
+            return throwError(error);
         }
-
-        return null;
     }
 
     private updateDisplayValueRangeOverride(): void
@@ -711,7 +771,7 @@ export class LayerManager
         // if we've got it turned on, and this is NOT the weight % layer, turn it off still...
         if(visible)
         {
-            let elemColumn = DataExpressionService.getPredefinedQuantExpressionElementColumn(id);
+            let elemColumn = DataExpressionId.getPredefinedQuantExpressionElementColumn(id);
             if(elemColumn.length > 0)
             {
                 if(elemColumn != '%')

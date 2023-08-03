@@ -4,12 +4,11 @@ This project was generated with [Angular CLI](https://github.com/angular/angular
 
 ## Setting up & running
 
-
-Log your docker client into to registry.gitlab.com: `docker login registry.gitlab.com` and use the username/password you use to access gitlab
+Your docker client will need to download built docker images that come from the PIXLISE project. Because it is now open-source these should be publicly available and you shouldn't need to log into a docker repository.
 
 Now you can use our build-container (with all tools pre-installed) to run `genproto.sh` to generate the protobuf serialization code (from repo root):
 
-`docker run --rm -v "$PWD":/usr/src/pixlise -w /usr/src/pixlise registry.gitlab.com/pixlise/build-container:golang-1.14.1-protoc-3.6.1-protobuf-3.11.4-angular-8.1.1 /bin/bash genproto.sh`
+`docker run --rm -v "$PWD":/usr/src/pixlise -w /usr/src/pixlise ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16 /bin/bash genproto.sh`
 
 Next, install NPM packages:
 `npm i`
@@ -84,3 +83,7 @@ Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protrac
 
 When shit hits the fan, this can turn on lots of build output for diagnosis:
 `ng build --prod --named-chunks --verbose --build-optimizer=false --source-map >> buildoutput.txt`
+
+## Documentation
+
+We support `compodoc`. To generate documentation, install it first: `npm install -g "@compodoc/compodoc"` then run `compodoc` (no parameters needed, as it should pick up the .compodocrc.json configuration file) and open a browser to `http://localhost:8080/`

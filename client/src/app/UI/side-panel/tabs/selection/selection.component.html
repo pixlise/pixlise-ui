@@ -42,16 +42,17 @@ POSSIBILITY OF SUCH DAMAGE.
      </div>
 
      <div fxLayout="column" class="panel-row gap-separated-vertical-elements">
-          <div fxLayout="row" class="gap-separated-horizontal-elements">
-               <push-button (onClick)="onSelectAll()" buttonStyle="outline" fxFlex="50%">Select All</push-button>
-               <push-button (onClick)="onClearSelection()" buttonStyle="outline" fxFlex="50%">Clear</push-button>
-          </div>
-          <div fxLayout="row" class="gap-separated-horizontal-elements">
-               <push-button (onClick)="onSelectDwellPMCs()" buttonStyle="outline" fxFlex="50%">Select Dwells</push-button>
-               <push-button (onClick)="onEnterSelection()" buttonStyle="outline" fxFlex="50%">Enter PMCs</push-button>
-          </div>
-        <push-button (onClick)="onAddNearbyPixels()" buttonStyle="outline" [disabled]="selectedPMCs.length <= 0" fxFlex="100%">Add Nearby Pixels From PMC Locations</push-button>
-          <push-button (onClick)="onNewROI()" buttonStyle="yellow" [disabled]="selectedPMCs.length <= 0" fxFlex="100%">Save selection as ROI</push-button>
+        <div fxLayout="row" class="gap-separated-horizontal-elements">
+            <push-button (onClick)="onSelectAll()" buttonStyle="outline" fxFlex="50%">Select All</push-button>
+            <push-button (onClick)="onClearSelection()" buttonStyle="outline" fxFlex="50%">Clear</push-button>
+        </div>
+        <div fxLayout="row" class="gap-separated-horizontal-elements">
+            <push-button (onClick)="onSelectDwellPMCs()" buttonStyle="outline" fxFlex="50%">Select Dwells</push-button>
+            <push-button (onClick)="onEnterSelection()" buttonStyle="outline" fxFlex="50%">Enter PMCs</push-button>
+        </div>
+        <push-button *ngFor="let id of subDataSetIDs" (onClick)="onSelectForSubDataset(id)" buttonStyle="outline" fxFlex="100%">All Points for Dataset: {{id}}</push-button>
+        <push-button (onClick)="onAddNearbyPixels()" buttonStyle="outline" [disabled]="displaySelectedPMCs.length <= 0" fxFlex="100%">Add Nearby Pixels From PMC Locations</push-button>
+        <push-button (onClick)="onNewROI()" buttonStyle="yellow" [disabled]="displaySelectedPMCs.length <= 0 || isPublicUser" fxFlex="100%">Save selection as ROI</push-button>
      </div>
 
      <cdk-accordion class="selection-accordion">
@@ -78,15 +79,15 @@ POSSIBILITY OF SUCH DAMAGE.
             </div>
             <cdk-virtual-scroll-viewport itemSize="25" fxFlex="100%" [style.display]="expandedIndices.includes(1) ? '' : 'none'">
                 <div
-                    *cdkVirtualFor="let pmc of selectedPMCs"
+                    *cdkVirtualFor="let item of displaySelectedPMCs"
                     fxLayout="row"
                     fxLayoutAlign="space-between center"
                     class="pmc"
-                    [ngClass]="{'pmc-highlight': pmc==hoverPMC}"
-                    (mouseenter)="onPMCEnter(pmc)"
-                    (mouseleave)="onPMCLeave(pmc)">
-                    <div>{{pmc}}</div>
-                    <img (click)="onUnselectPMC(pmc)" class="clickable" src="assets/button-icons/close-cross-gray.svg">
+                    [ngClass]="{'pmc-highlight': item.pmc>=0&&item.pmc==hoverPMC, 'pmc-dataset-heading': item.pmc < 0}"
+                    (mouseenter)="onPMCEnter(item.pmc)"
+                    (mouseleave)="onPMCLeave(item.pmc)">
+                    <div>{{item.displayPMC}}</div>
+                    <img *ngIf="item.pmc >= 0" (click)="onUnselectPMC(item.pmc)" class="clickable" src="assets/button-icons/close-cross-gray.svg">
                 </div>
             </cdk-virtual-scroll-viewport>
         </cdk-accordion-item>

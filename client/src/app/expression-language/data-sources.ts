@@ -35,11 +35,15 @@ export interface QuantifiedDataQuerierSource
 {
     getQuantifiedDataForDetector(detectorId: string, dataLabel: string): PMCDataValues;
     getElementList(): string[];
+    getPMCList(): number[];
+    getDetectors(): string[];
+    columnExists(col: string): boolean;
 }
 
 export interface PseudoIntensityDataQuerierSource
 {
     getPseudoIntensityData(name: string): PMCDataValues;
+    getPseudoIntensityElementsList(): string[];
 }
 
 export interface SpectrumDataQuerierSource
@@ -59,4 +63,5 @@ export interface HousekeepingDataQuerierSource
 {
     getHousekeepingData(name: string): PMCDataValues;
     getPositionData(axis: string): PMCDataValues;
+    hasHousekeepingData(name: string): boolean;
 }

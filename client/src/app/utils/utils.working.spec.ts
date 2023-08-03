@@ -28,9 +28,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import {
-    byteToHexString, doesVersionDiffer, isValidElementsString, isValidPhoneNumber, parseNumberRangeString, randomString, SDSFields,
+    byteToHexString, doesVersionDiffer, isValidElementsString, /*isValidPhoneNumber,*/ parseNumberRangeString, randomString, SDSFields,
     //getPearsonCorrelation,
-    setsEqual, stripInvalidCharsFromPhoneNumber
+    setsEqual, stripInvalidCharsFromPhoneNumber, xor_sum, makeValidFileName
 } from "./utils";
 
 
@@ -45,9 +45,9 @@ describe("randomString", () =>
 
         for(let c = 0; c < 1000; c++)
         {
-            let str = randomString(6);
+            let str = randomString(8);
 
-            expect(str.length).toEqual(6);
+            expect(str.length).toEqual(8);
 
             // This has failed twice randomly, don't know why, so if it fails again this should print out the specific values...
             if(prevs.has(str))
@@ -103,7 +103,7 @@ describe("setsEqual", () =>
         expect(setsEqual(undefined, new Set<number>([1,2,3]))).toEqual(false);
     });
 });
-
+/*
 describe("isValidPhoneNumber", () =>
 {
     it("isValidPhoneNumber accept empty or valid phone numbers", () => 
@@ -118,8 +118,7 @@ describe("isValidPhoneNumber", () =>
         expect(isValidPhoneNumber("61hello1234")).toEqual(false); // + missing
     });
 });
-
-
+*/
 describe("stripInvalidCharsFromPhoneNumber", () =>
 {
     it("stripInvalidCharsFromPhoneNumber strips unwanted characters from phone numbers, no validation", () => 
@@ -234,6 +233,21 @@ describe("parseNumberRangeString", () =>
     it("reads numbers and ranges mixed", () => 
     {
         expect(Array.from(parseNumberRangeString("72, 90-94, 116, 120-123"))).toEqual([72, 90, 91, 92, 93, 94, 116, 120, 121, 122, 123]);
+    });
+});
+
+describe("makeValidFileName", () =>
+{
+    it("works", () => 
+    {
+        expect(makeValidFileName("")).toEqual("");
+        expect(makeValidFileName("file one.txt")).toEqual("file one.txt");
+        expect(makeValidFileName("file @3.txt")).toEqual("file _3.txt");
+        expect(makeValidFileName("file&one?.tx:t")).toEqual("file_one_.tx_t");
+        expect(makeValidFileName("file*%one.tx:t")).toEqual("file__one.tx_t");
+        expect(makeValidFileName("File: Name ${32}.txt")).toEqual("File_ Name _{32}.txt");
+        expect(makeValidFileName("file/one.txt")).toEqual("file_one.txt");
+        expect(makeValidFileName("file\\one^.txt")).toEqual("file_one_.txt");
     });
 });
 
@@ -452,4 +466,23 @@ describe("SDSFields.parseFileName", () =>
             expect(f.toDebugString()+" - "+f.PMC+","+f.RTT+","+f.SCLK+","+f.SOL).toEqual(exp[c]);
         });
     }
+});
+
+describe("xor_sum", () =>
+{
+    it("xor_sum works", () => 
+    {
+        // 25=00011001
+        // 19=00010011
+        expect(xor_sum(25, 19)).toEqual(2);
+        expect(xor_sum(19, 25)).toEqual(2);
+        // 24=00011000
+        // 19=00010011
+        expect(xor_sum(19, 24)).toEqual(3);
+        expect(xor_sum(24, 19)).toEqual(3);
+        // 24=00011000
+        //  3=00000001
+        expect(xor_sum(24, 3)).toEqual(4);
+        expect(xor_sum(3, 24)).toEqual(4);
+    });
 });

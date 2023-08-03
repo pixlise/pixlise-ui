@@ -29,12 +29,10 @@
 
 @import 'variables.scss';
 
-// To edit code mirror styling, look at pixlise-codemirror-theme.scss
-
 .dlg-border-with-backdrop {
     min-width: 50vw;
     max-width: 90vw;
-//    max-height: 80vh;
+    min-height: 60vh;
 }
 
 h3 {
@@ -46,7 +44,7 @@ h3 {
     margin: $sz-double 0px $sz-unit;
 }
 
-.separator {
+expression-text-editor {
     margin: $sz-double 0px;
 }
 
@@ -58,4 +56,8 @@ h3 {
 .help-dropdown {
     position: absolute;
     z-index: 100;
+}
+
+.lock-icon {
+    margin-right: auto;
 }

@@ -27,18 +27,18 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { SentryErrorHandler } from "src/app/app.module";
 import { MinMax } from "src/app/models/BasicTypes";
 import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
 import { getVectorBetweenPoints, Point, Rect } from "src/app/models/Geometry";
 import { Histogram, LocationDataPointState } from "src/app/models/LocationData2D";
 import { CanvasDrawParameters, CanvasInteractionResult, CanvasMouseEvent, CanvasMouseEventId, CanvasParams, CanvasWorldTransform } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { IContextImageModel } from "src/app/UI/context-image-view-widget/model-interface";
-import { ClientSideExportGenerator } from "src/app/UI/export-data-dialog/client-side-export";
-import { Colours, RGBA } from "src/app/utils/colours";
+import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
+import { Colours } from "src/app/utils/colours";
 import { CANVAS_FONT_WIDTH_PERCENT, drawTextWithBackground } from "src/app/utils/drawing";
 import { getValueDecimals } from "src/app/utils/utils";
 import { BaseUIElement, drawStrokedText } from "./base-ui-element";
+import { DataExpression } from "src/app/models/Expression";
 
 
 class scaleInfo
@@ -93,7 +93,7 @@ class LayerChannelScale
     constructor(
         private _ctx: IContextImageModel,
         public layer: IColourScaleDataSource,
-        private _channel: number
+        private _channel: number,
     )
     {
     }
@@ -560,9 +560,24 @@ class LayerChannelScale
         // Draw the actual scale
         this.drawScale(screenContext, histogram, pos, layer, scaleRange, clrBlack);
 
+        let hasOutOfDateModules = false;
+        if(layer?.expressionID && layer?.source)
+        {
+            hasOutOfDateModules = (layer.source as DataExpression).checkModuleReferences(this._ctx.layerManager.moduleService);
+        }
+        // layer.
         // Draw the title at the top
         //screenContext.fillText(layer.name, pos.rect.x+histBarMaxSize, pos.rect.y);
-        drawTextWithBackground(screenContext, layer.getChannelName(this._channel), pos.rect.x+pos.histBarMaxSize, pos.rect.y, pos.fontSize, 4);
+        drawTextWithBackground(
+            screenContext,
+            layer.getChannelName(this._channel),
+            pos.rect.x+pos.histBarMaxSize,
+            pos.rect.y,
+            pos.fontSize,
+            4,
+            Colours.GRAY_100.asStringWithA(0.5),
+            hasOutOfDateModules ? Colours.ORANGE.asString() : Colours.GRAY_10.asString()
+        );
         //drawStrokedText(screenContext, layer.getChannelName(this._channel), pos.rect.x+pos.histBarMaxSize, pos.rect.y);
 
         // Draw the tags for above/below the range. If it's hovered, the tags are bigger so it's clear theyre draggable
@@ -681,12 +696,10 @@ OOOO
             showAtStep = showRanges.reduce((prev, curr) => (Math.abs(curr - showAtStep) < Math.abs(prev - showAtStep) ? curr : prev));
         }
 
-
         // Min box (bottom) to Max box (top) in steps
         let lastState: LocationDataPointState = null;
         for(let c = 0; c < pos.stepsShown; c++)
         {
-            
             // Draw the rect
             let rep = layer.getDrawParamsForRawValue(this._channel, rawValue, layer.getDisplayValueRange(this._channel));
             if(rep.state == LocationDataPointState.IN_RANGE)
@@ -733,8 +746,15 @@ OOOO
                     else
                     {
                         // Draw the min vs max of the value range
-                        // NOTE: This seems pointless as an element map of 1 and 2's was not detected as a binary map!
-                        printValue = this.getScaleValueStr(Math.round(c == 0 ? scaleRange.min : scaleRange.max), scaleRange);
+                        // NOTE: This needs to be limited to the top & bottom of the range, otherwise we end up drawing
+                        //       the same value going up the entire chart
+                        if(
+                            c == 0 || // bottom
+                            c == (pos.stepsShown-1) // top
+                        )
+                        {
+                            printValue = this.getScaleValueStr(Math.round(c == 0 ? scaleRange.min : scaleRange.max), scaleRange);
+                        }
                     }
 
                     // Draw these labels next to the 2 boxes we show in case of a binary map

@@ -1,0 +1,132 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+<ng-template #metadataMenu>
+    <div fxLayout="column" class="gap-separated-vertical-elements" class="metadata-menu">
+        <div class="metadata-header">
+            <h2>{{name}}</h2>
+            <tag-picker
+                type="{{isModule ? 'module' : 'expression'}}"
+                [selectedTagIDs]="tags"
+                [showCurrentTagsSection]="true"
+                (onTagSelectionChanged)="onTagSelectionChanged($event)"
+                [allowAdminBuiltin]="true"
+            >
+            </tag-picker>
+        </div>
+        <span class="doi-btns">
+            <span
+                *ngIf="!isModule && !isSharedByOtherUser"
+                class="new-doi-btn"
+                (click)="openDOIFormDialog()"
+                #tooltip="matTooltip"
+                [matTooltip]="expression.shared ? 'Create New DOI for this expression' : 'Cannot create DOI for private expression'"
+            >
+                <img
+                    *ngIf="!doiLink"
+                    src="{{expression.shared ? 'assets/button-icons/doi-create.svg' : 'assets/button-icons/doi-create-disabled.svg'}}"
+                >
+                <img
+                    class="edit-doi-btn"
+                    *ngIf="doiLink"
+                    src="assets/button-icons/edit.svg"
+                >
+            </span>
+            <a
+                *ngIf="doiLink"
+                [href]="doiLink"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                <img 
+                    *ngIf="doiBadge"
+                    [src]="doiBadge"
+                    #tooltip="matTooltip"
+                    matTooltip="Open DOI link in Zenodo"
+                >
+            </a>
+        </span>
+        <div class="metadata-fields">
+            <h5 class="metadata-label">Description</h5>
+            <textarea [(ngModel)]="description">{{description}}</textarea>
+        </div>
+        <div *ngIf="isModule && releaseNotes.length > 0" class="release-notes">
+            <div
+                *ngFor="let release of releaseNotes; let i = index"
+                class="grouped-release"
+            >
+                <h2 *ngIf="release.majorVersion" class="release-title">Major Release ({{getVersionDisplayName(release.majorVersion)}})
+                    <span *ngIf="showDiff && i === 0" class="latest-release">Latest Release</span>
+                    <span *ngIf="showDiff && currentVersion?.version === release.majorVersion.version" class="current-release">Current Release</span>
+                </h2>
+                <div *ngIf="release.majorVersion" class="release-comments-container">
+                    <div class="release-comments">
+                        {{release.majorVersion.comments || "No release notes"}}
+                    </div>
+                </div>
+                <h2 *ngIf="release?.minorVersions?.length > 0" class="minor-release-title">Minor Releases</h2>
+                <div *ngIf="release?.minorVersions?.length > 0" class="minor-releases">
+                    <div
+                        *ngFor="let minorRelease of release.minorVersions; let j = index"
+                        class="minor-release"
+                    >
+                        <h3><b>{{getVersionDisplayName(minorRelease)}}</b> ({{getVersionReleaseDate(minorRelease)}})
+                            <span *ngIf="showDiff && i === 0 && !release.majorVersion && j === 0" class="latest-release">Latest Release</span>
+                            <span *ngIf="showDiff && currentVersion?.version === minorRelease.version" class="current-release">Current Release</span>
+                        </h3>
+                        <div class="release-comments">
+                            {{minorRelease.comments || "No release notes"}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div *ngIf="showDiff" class="bottom-container">
+            <push-button
+                class="code-diff-btn"
+                [buttonStyle]="buttonStyle"
+                #tooltip="matTooltip"
+                matTooltip="{{isShowingDifference ? 'Hide' : 'Show'}} Code Difference between v{{currentVersion?.version}} and v{{latestRelease?.version}}"
+                (click)="showDiffClicked()"
+            >{{isShowingDifference ? 'Hide' : 'Show'}} Difference
+            </push-button>
+        </div>
+    </div>
+</ng-template>
+
+<widget-settings-menu [settingsDialog]="metadataMenu" (onClose)="onClose()">
+    <push-button
+        class="metadata-btn"
+        [buttonStyle]="buttonStyle"
+        #tooltip="matTooltip"
+        matTooltip="Edit Metadata"
+    >{{title}}
+    </push-button>
+</widget-settings-menu>

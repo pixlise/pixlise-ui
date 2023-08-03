@@ -29,19 +29,19 @@
 
 import { Component, Input, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Observable, Subscription } from "rxjs";
+import { Observable, Subscription, combineLatest } from "rxjs";
+import { map } from "rxjs/operators";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { ContextImageService } from "src/app/services/context-image.service";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { ViewStateService } from "src/app/services/view-state.service";
-import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
 import { LayerChangeInfo, LayerManager } from "src/app/UI/context-image-view-widget/layer-manager";
-import { CanvasExportParameters, ClientSideExportGenerator } from "src/app/UI/export-data-dialog/client-side-export";
-import { ExportDataChoice } from "src/app/UI/export-data-dialog/export-models";
-import { showExportDialog } from "src/app/UI/export-data-dialog/show-export-dialog";
+import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
 import { ExpressionEditorComponent, ExpressionEditorConfig } from "src/app/UI/expression-editor/expression-editor.component";
 import { LayerVisibilityChange, LayerColourChange } from "src/app/UI/atoms/expression-list/layer-settings/layer-settings.component";
 import { ExpressionListHeaderInfo } from "src/app/UI/atoms/expression-list/layer-settings/header.component";
@@ -51,7 +51,10 @@ import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogC
 import { DataSetService } from "src/app/services/data-set.service";
 import { PredefinedROIID } from "src/app/models/roi";
 import { ObjectCreator } from "src/app/models/BasicTypes";
-
+import { generateExportCSVForExpression } from "src/app/services/export-data.service";
+import { makeValidFileName } from "src/app/utils/utils";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { Router } from "@angular/router";
 
 
 export class LayerDetails
@@ -90,6 +93,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
     
     headerSectionsOpen: Set<string> = new Set<string>();
     items: ExpressionListItems = null;
+    isPublicUser: boolean = false;
     
     private _lastLayerChangeCount: number = 0;
     
@@ -100,11 +104,9 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     constructor(
         private _contextImageService: ContextImageService,
-        private _exprService: DataExpressionService,
-        private _rgbMixService: RGBMixConfigService,
+        private _router: Router,
         private _widgetDataService: WidgetRegionDataService,
         private _authService: AuthenticationService,
-        private _diffractionService: DiffractionPeakService,
         private _datasetService: DataSetService,
         public dialog: MatDialog
     )
@@ -114,6 +116,13 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     ngOnInit()
     {
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
+            }
+        ));
+
         this._subs.add(this._contextImageService.mdl$.subscribe(
             ()=>
             {
@@ -162,7 +171,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                     layerManager.recalcHeaderInfos(this.items);
                 }
                 this._lastLayerChangeCount = change.layers.length;
-                this.populateAuthorsList();
+                this.authors = this.getLayerManager().getAuthors();
 
                 let t1 = performance.now();
                 let timing = "layer control regeneration: " + (t1 - t0).toLocaleString() + "ms";
@@ -200,61 +209,6 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         // Now that one of our sections has toggled, regenerate the whole list of what to show
         this.regenerateItemList(""/*event.itemType*/);
         //this.updateHeaderCounts(); // updates counts for the header too...
-    }
-
-    private populateAuthorsList(): void
-    {
-        let items = this.getLayerManager().makeExpressionList(new Set(["expressions-header", "rgbmix-header"]), "", this._contextImageService.lastSubLayerOwners, [], this.selectedTagIDs);
-        
-        let duplicateNames = new Set<string>();
-        let existingNames = new Set<string>();
-        let existingIDs = new Set<string>();
-
-        if(items && items.items && items.items.length > 0)
-        {
-            let authorMap = new Map<string, ObjectCreator>();
-            items.items.forEach((item) =>
-            {
-                let creator = item.content?.layer?.source?.creator;
-                let id = creator?.user_id;
-
-                if(id)
-                {
-                    if(authorMap.has(id) && authorMap[id])
-                    {
-                        // Some expressions were created prior to name changes, so we need to group by ID and prefer the non-email one
-                        let { name, email } = authorMap[id];
-                        authorMap[id].name = email.includes(name) ? creator.name : name;
-                    }
-                    else
-                    {
-                        authorMap.set(id, creator);
-                    }
-
-                    // Check for duplicate names so we can name them differently in the dropdown, while keeping IDs unique
-                    if(existingNames.has(creator.name) && !existingIDs.has(creator.user_id))
-                    {
-                        duplicateNames.add(creator.name);
-                    }
-                    else
-                    {
-                        existingNames.add(creator.name);
-                        existingIDs.add(creator.user_id);
-                    }
-                }
-            });
-
-            // Rename creators with duplicate names to include email
-            for(let [, creator] of authorMap)
-            {
-                if(duplicateNames.has(creator.name))
-                {
-                    creator.name = `${creator.name} (${creator.email})`;
-                }
-            }
-           
-            this.authors = Array.from(authorMap.values()).sort((a, b) => a.name > b.name ? 1 : -1);
-        }
     }
 
     private regenerateItemList(fromGroupHeaderName: string): void
@@ -341,65 +295,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
 
     onAddExpression(): void
     {
-        this.showExpressionEditor(new DataExpression("", "", "", DataExpressionService.DataExpressionTypeAll, "", false, null, 0, 0)).subscribe(
-            (expr: DataExpression)=>
-            {
-                if(expr)
-                {
-                    // User has defined a new one, upload it
-                    this._exprService.add(expr.name, expr.expression, expr.type, expr.comments).subscribe(
-                        ()=>
-                        {
-                            // Don't need to do anything, service refreshes
-                        },
-                        (err)=>
-                        {
-                            alert("Failed to add data expression: "+expr.name);
-                        }
-                    );
-                }
-                // Else user probably cancelled...
-            },
-            (err)=>
-            {
-                console.error(err);
-            }
-        );
-    }
-
-    private showExpressionEditor(toEdit: DataExpression): Observable<DataExpression>
-    {
-        return new Observable<DataExpression>(
-            (observer)=>
-            {
-                const dialogConfig = new MatDialogConfig();
-                dialogConfig.panelClass = "panel";
-                dialogConfig.disableClose = true;
-                //dialogConfig.backdropClass = "panel";
-
-                dialogConfig.data = new ExpressionEditorConfig(toEdit, true);
-
-                const dialogRef = this.dialog.open(ExpressionEditorComponent, dialogConfig);
-
-                dialogRef.afterClosed().subscribe(
-                    (dlgResult: ExpressionEditorConfig)=>
-                    {
-                        let toReturn: DataExpression = null;
-                        if(dlgResult)
-                        {
-                            toReturn = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec);
-                        }
-
-                        observer.next(toReturn);
-                        observer.complete();
-                    },
-                    (err)=>
-                    {
-                        observer.error(err);
-                    }
-                );
-            }
-        );
+        this._router.navigate(["dataset", this._datasetService.datasetIDLoaded, "code-editor", DataExpressionId.NewExpression]);
     }
 
     get elementRelativeShading(): boolean
@@ -417,70 +313,6 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         {
             this._contextImageService.mdl.elementRelativeShading = active;
         }
-    }
-
-    onExport(): void
-    {
-        let choices = [
-            new ExportDataChoice(ClientSideExportGenerator.exportWebResolution, "Web Resolution", false),
-            new ExportDataChoice(ClientSideExportGenerator.exportPrintResolution, "Print Resolution", false),
-
-            new ExportDataChoice(ClientSideExportGenerator.exportDrawBackgroundBlack, "Black Background On Images", true),
-
-            new ExportDataChoice(ClientSideExportGenerator.exportContextImage, "Visible Context Image", false),
-
-            new ExportDataChoice(ClientSideExportGenerator.exportContextImageFootprint, "Include Instrument Footprint", false),
-            new ExportDataChoice(ClientSideExportGenerator.exportContextImageScanPoints, "Include Scan Points", false),
-
-            new ExportDataChoice(ClientSideExportGenerator.exportContextImageROIs, "Visible Regions of Interest", false),
-            new ExportDataChoice(ClientSideExportGenerator.exportExpressionValues, "Expression Values .csv", false),
-            new ExportDataChoice(ClientSideExportGenerator.exportROIExpressionValues, "Separate ROI Expression Values .csv", false),
-            // new ExportDataChoice(ClientSideExportGenerator.exportContextImageROIKey, '', false),
-        ];
-
-        // Come up with some defaults
-        let params = new CanvasExportParameters(
-            "file.name",
-            1200, 800, 1,
-            4096, 2160, 1
-        );
-
-        let lastDrawTransform = this._contextImageService.mdl.transform;
-        if(lastDrawTransform && lastDrawTransform.canvasParams)
-        {
-            /*
-            // Make the web res images double what we have in the viewport
-            params.webResWidth = lastDrawTransform.canvasParams.width*2;
-            params.webResHeight = lastDrawTransform.canvasParams.height*2;
-*/
-            // Make the web res be 1280 x (preserved aspect ratio)
-            params.webResWidth = 1280;
-            params.webResHeight = Math.floor(lastDrawTransform.canvasParams.height/lastDrawTransform.canvasParams.width*params.webResWidth);
-            params.webDPI = params.webResWidth/lastDrawTransform.canvasParams.width;
-
-            // Make the print res be 4096 x (preserved aspect ratio)
-            params.printResWidth = 4096;
-            params.printResHeight = Math.floor(lastDrawTransform.canvasParams.height/lastDrawTransform.canvasParams.width*params.printResWidth);
-            params.printDPI = params.printResWidth/lastDrawTransform.canvasParams.width;
-        }
-
-        let drawer = new ExportDrawer(this._contextImageService.mdl, this._contextImageService.mdl.toolHost);
-        let exportGen = new ClientSideExportGenerator(
-            this._contextImageService.mdl.dataset,
-            this._widgetDataService,
-            drawer,
-            this._contextImageService.mdl.transform,
-            params,
-            this._rgbMixService,
-            this._exprService,
-            this._diffractionService
-        );
-
-        showExportDialog(this.dialog, "Context Image Export Options", false, false, true, true, choices, exportGen).subscribe(
-            ()=>
-            {
-            }
-        );
     }
 
     onFilterExpressions(filter: string): void
@@ -593,24 +425,6 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
         this.regenerateItemList("");
     }
 
-    exportExpressionValues(id: string): string
-    {
-        let queryData: RegionDataResults = this._widgetDataService.getData([new DataSourceParams(id, PredefinedROIID.AllPoints)], false);
-
-        if(queryData.error)
-        {
-            throw new Error(`Failed to query CSV data for expression: ${id}. ${queryData.error}`);
-        }
-
-        let csv: string = "PMC,Value\n";
-        queryData.queryResults[0].values.values.forEach(({pmc, value, isUndefined})=>
-        {
-            csv += `${pmc},${isUndefined ? "" : value}\n`;
-        });
-
-        return csv;
-    }
-
     getCanvasOptions(options: PlotExporterDialogOption[], ids: string[]): string[]
     {
         let isColourScaleVisible = options.findIndex((option) => option.label == "Visible Colour Scale") > -1;
@@ -651,7 +465,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
             new PlotExporterDialogOption("Visible Colour Scale", true, true),
             new PlotExporterDialogOption("Web Resolution (1200x800)", true),
             new PlotExporterDialogOption("Print Resolution (4096x2160)", true),
-            new PlotExporterDialogOption("Expression Values .csv", true),
+            new PlotExporterDialogOption("Weight Percents .csv", true),
         ];
 
         let elements = this.getAllElements();
@@ -689,7 +503,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
             (options: PlotExporterDialogOption[])=>
             {
                 let canvases: CanvasExportItem[] = [];
-                let csvs: CSVExportItem[] = [];
+                let csvs$: Observable<CSVExportItem>[] = [];
 
                 let drawer = new ExportDrawer(this._contextImageService.mdl, this._contextImageService.mdl.toolHost);
 
@@ -708,7 +522,7 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                     if(options.findIndex((option) => option.label === "Web Resolution (1200x800)") > -1)
                     {
                         canvases.push(new CanvasExportItem(
-                            `Web Resolution/${name.replace(/\//g, "_")}`,
+                            `Web Resolution/${makeValidFileName(name)}`,
                             generatePlotImage(drawer, this._contextImageService.mdl.transform, [], 1200, 800, false, false, exportIDs)
                         ));   
                     }
@@ -716,21 +530,68 @@ export class LayerControlComponent extends ExpressionListGroupNames implements O
                     if(options.findIndex((option) => option.label === "Print Resolution (4096x2160)") > -1)
                     {
                         canvases.push(new CanvasExportItem(
-                            `Print Resolution/${name.replace(/\//g, "_")}`,
+                            `Print Resolution/${makeValidFileName(name)}`,
                             generatePlotImage(drawer, this._contextImageService.mdl.transform, [], 4096, 2160, false, false, exportIDs)
                         ));   
                     }
-
-                    if(options.findIndex((option) => option.label == "Expression Values .csv") > -1)
-                    {
-                        csvs.push(new CSVExportItem(
-                            `Expression Values/${name.replace(/\//g, "_")}`,
-                            this.exportExpressionValues(id)
-                        ));  
-                    }
                 });
 
-                dialogRef.componentInstance.onDownload(canvases, csvs);
+                // Group the elements together into one CSV
+                if(options.findIndex((option) => option.label == "Weight Percents .csv") > -1)
+                {
+                    let elemExprIds = [];
+                    let name = "Weight Percents ";
+
+                    let first = true;
+                    for(let element of elements)
+                    {
+                        let id = element?.content?.layer?.source?.id;
+
+                        let elem = DataExpressionId.getPredefinedQuantExpressionElement(id);
+                        if(elem.length > 0)
+                        {
+                            if(!first)
+                            {
+                                name += ",";
+                            }
+                            name += elem +"("+DataExpressionId.getPredefinedQuantExpressionDetector(id)+")";
+                        }
+
+                        elemExprIds.push(id);
+                        first = false;
+                    }
+
+                    // Export CSV
+                    // Loop through all sub-datasets of this one if there are any
+                    let subDatasetIDs = this._datasetService.datasetLoaded.getSubDatasetIds();
+                    if(subDatasetIDs.length <= 0)
+                    {
+                        // Specify a blank one
+                        subDatasetIDs = [""];
+                    }
+
+                    for(let datasetId of subDatasetIDs)
+                    {
+                        csvs$.push(
+                            generateExportCSVForExpression(elemExprIds, PredefinedROIID.AllPoints, datasetId, this._widgetDataService).pipe(
+                                map(
+                                    (csvData)=>
+                                    {
+                                        return new CSVExportItem(`${name}${datasetId ? " for dataset"+datasetId : ""}`, csvData);
+                                    }
+                                )
+                            )
+                        );
+                    }
+                }
+
+                let csvsFinished$ = combineLatest(csvs$);
+                return csvsFinished$.subscribe(
+                    (csvItems: CSVExportItem[])=>
+                    {
+                        dialogRef.componentInstance.onDownload(canvases, csvItems);
+                    }
+                );
             });
 
         return dialogRef.afterClosed();

@@ -30,6 +30,7 @@
 import { Component, ElementRef, Input, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { PredefinedROIID } from "src/app/models/roi";
+import { AuthenticationService } from "src/app/services/authentication.service";
 import { ROIService } from "src/app/services/roi.service";
 import { SpectrumChartService } from "src/app/services/spectrum-chart.service";
 import { ViewStateService } from "src/app/services/view-state.service";
@@ -52,10 +53,10 @@ export class SpectrumRegionSettingsComponent implements OnInit
     @Input() source: SpectrumSource;
 
     private _colourRGB: string = "";
-    private _visible: boolean = false;
     private _sharedBy: string = null;
 
     constructor(
+        private _authService: AuthenticationService,
         private _roiService: ROIService,
         private _viewStateService: ViewStateService,
         private _spectrumService: SpectrumChartService,
@@ -67,16 +68,6 @@ export class SpectrumRegionSettingsComponent implements OnInit
     ngOnInit(): void
     {
         this._colourRGB = this.source.colourRGBA ? RGBA.fromWithA(this.source.colourRGBA, 1).asString() : "";
-        this._visible = false;
-
-        for(let line of this.source.lineChoices)
-        {
-            if(line.enabled)
-            {
-                this._visible = true;
-                break;
-            }
-        }
 
         if(this.source.creator != null && this.source.shared)
         {
@@ -86,12 +77,28 @@ export class SpectrumRegionSettingsComponent implements OnInit
 
     get selectButtonDisabled(): boolean
     {
-        return (this.source.roiID != PredefinedROIID.AllPoints && this.source.locationIndexes.length <= 0);
+        return (this.source.roiID !== PredefinedROIID.AllPoints && this.source.locationIndexes.length <= 0) || this._colourRGB.length <= 0;
+    }
+
+    get spectraDisabledTooltip(): string
+    {
+        if(this.source.roiID !== PredefinedROIID.AllPoints && this.source.locationIndexes.length <= 0)
+        {
+            return "Region has no points to display";
+        }
+        else if(this._colourRGB.length <= 0)
+        {
+            return `No colour defined for ROI: "${this.labelToShow}" cannot show lines`;
+        }
+        else
+        {
+            return "";
+        }
     }
 
     get labelToShow(): string
     {
-        return this.source.roiName;
+        return this.source.roiName.replace("mist__roi.", "");
     }
 
     get showColour(): boolean
@@ -106,12 +113,37 @@ export class SpectrumRegionSettingsComponent implements OnInit
 
     get visible(): boolean
     {
-        return this._visible;
+        return this.source.lineChoices.some((line) => line.enabled);
     }
 
     get sharedBy(): string
     {
         return this._sharedBy;
+    }
+
+    get selectedTagIDs(): string[]
+    {
+        return this.source.tags;
+    }
+
+    get isSharedByOtherUser(): boolean
+    {
+        return this.sharedBy !== null && this.source.creator.user_id !== this._authService.getUserID();
+    }
+
+    onTagSelectionChanged(tags: string[]): void
+    {
+        this._roiService.tag(this.source.roiID, tags).subscribe(
+            ()=>
+            {
+                this._roiService.refreshROIList();
+            },
+            (err)=>
+            {
+                alert(`Error while tagging ROI: ${this.labelToShow}`);
+                this._roiService.refreshROIList();
+            }
+        );
     }
 
     onSelectSpectra(): void
@@ -123,7 +155,7 @@ export class SpectrumRegionSettingsComponent implements OnInit
             this._colourRGB.length <= 0
         )
         {
-            alert("No colour defined for ROI: "+this.source.roiName+", cannot show lines");
+            alert("No colour defined for ROI: "+this.labelToShow+", cannot show lines");
             return;
         }
 
@@ -198,10 +230,6 @@ export class SpectrumRegionSettingsComponent implements OnInit
                         this._spectrumService.mdl.removeSpectrumLine(this.source.roiID, id);
                     }
                 }
-
-                // Remember what's now selected, in case user keeps clicking (while dialog still active)!
-                selectedItems = Array.from(selectedIds);
-                this._visible = selectedItems.length > 0;
             }
         );
     }

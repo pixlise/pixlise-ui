@@ -60,7 +60,14 @@ POSSIBILITY OF SUCH DAMAGE.
 <div fxLayout="column" class="panel outer-panel" fxFill>
     <div fxLayout="row" fxLayoutAlign="space-between center" class="panel-title">
         <widget-switcher [activeSelector]='thisSelector' [widgetPosition]='widgetPosition'></widget-switcher>
+        <push-button (onClick)="onMinerals($event)" title="Choose mineral areas to display" class="minerals-btn">Minerals</push-button>
         <push-button (onClick)="onRegions($event)" title="Choose RGBU regions to display" class="regions-btn">Regions</push-button>
+        <icon-button
+            class="export-btn"
+            (click)="onExport()"
+            title="Export"
+            icon="assets/button-icons/export.svg">
+        </icon-button>
         <push-button (onClick)="toggleKey()" title="Toggle Key" class="key-btn">Key</push-button>
         <widget-settings-menu [settingsDialog]="selectionSettingsMenu">
             <icon-button title='Show Settings Menu' icon="assets/button-icons/settings.svg">
@@ -68,7 +75,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </widget-settings-menu>
     </div>
     <div style="width: 100%; height: 100%; background: black; position: relative;">
-        <div style="width: 100%; height: calc(100% - 10px);" id="parallel-coords-{{widgetPosition}}" class="pcp-plot">
+        <div style="width: 100%; height: calc(100% - 10px);" class="{{plotID}} pcp-plot">
             <div class="axes">
                 <div *ngFor="let axis of visibleAxes" class="axis-container">
                     <div class="axis-title">{{miniMode ? axis.key.toUpperCase() : axis.title}}</div>

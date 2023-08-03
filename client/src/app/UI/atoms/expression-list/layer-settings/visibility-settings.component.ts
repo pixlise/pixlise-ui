@@ -34,7 +34,7 @@ import { DataSetService } from "src/app/services/data-set.service";
 import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "src/app/UI/atoms/picker-dialog/picker-dialog.component";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
 import { ColourScheme } from "src/app/UI/context-image-view-widget/model-interface";
-import { ClientSideExportGenerator } from "src/app/UI/export-data-dialog/client-side-export";
+import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
 import { CanvasExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../plot-exporter-dialog/plot-exporter-dialog.component";
 
 

@@ -27,9 +27,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-export function DecompressZeroRunLengthEncoding(input: number[]): Int32Array
+export function DecompressZeroRunLengthEncoding(input: number[], expectedCount: number): Int32Array
 {
-    let result = new Int32Array(4096);
+    let result = new Int32Array(expectedCount);
     let writeIdx = 0;
     for(let c = 0; c < input.length; c++)
     {

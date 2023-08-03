@@ -32,6 +32,7 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Observable, Subscription } from "rxjs";
 import { LayerViewItem } from "src/app/models/ExpressionList";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { ChannelConfigWire, RGBMixInput } from "src/app/services/rgbmix-config.service";
 import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expression-picker/expression-picker.component";
 
@@ -181,7 +182,7 @@ export class RGBMixSelectorComponent implements OnInit
         //dialogConfig.disableClose = true;
         //dialogConfig.autoFocus = true;
         //dialogConfig.width = '1200px';
-        dialogConfig.data = new ExpressionPickerData(channel+" Expression", DataExpressionService.DataExpressionTypeAll, selectedId.length > 0 ? [selectedId] : [], true, false, false);
+        dialogConfig.data = new ExpressionPickerData(channel+" Expression", selectedId.length > 0 ? [selectedId] : [], true, false, false, false, false);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 

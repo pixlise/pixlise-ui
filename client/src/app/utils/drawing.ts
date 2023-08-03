@@ -194,7 +194,7 @@ export class PointDrawer
         return a;
     }
 
-    drawPoints(points: Point[], colourAlpha: number): void
+    drawPoints(points: Point[], colourAlpha: number, showLabels: boolean = false, maxLabelLength: number = 15): void
     {
         // Setup the context for drawing this
         if(this._fillColour)
@@ -209,6 +209,24 @@ export class PointDrawer
 
         for(let pt of points)
         {
+            // If a point has an endX and endY that is not equal to x,y, draw a line from the point to the end point
+            // This is used to draw an inequality for points that are missing an x or y value
+            if(pt.endX != null && pt.endY != null && (pt.endX !== pt.x || pt.endY !== pt.y))
+            {
+                this._screenContext.save();
+
+                this._screenContext.lineWidth = 2;
+                this._screenContext.strokeStyle = Colours.CONTEXT_PURPLE.asStringWithA(0.5);
+                
+                this._screenContext.beginPath();
+                this._screenContext.moveTo(pt.x, pt.y);
+                this._screenContext.lineTo(pt.endX, pt.endY);
+                this._screenContext.stroke();
+
+                this._screenContext.restore();
+            }
+
+
             if(this._shape === "triangle")
             {
                 this._screenContext.beginPath();
@@ -241,6 +259,47 @@ export class PointDrawer
             if(this._outlineColour)
             {
                 this._screenContext.stroke();
+            }
+
+            if(showLabels && pt.label && pt.label !== "")
+            {
+                let label = "";
+                let labelWords = pt.label.split(" ");
+
+                let currentSegment = "";
+                labelWords.forEach((word, i) =>
+                {
+                    if(i == labelWords.length - 1)
+                    {
+                        label += currentSegment + word;
+                    }
+                    else if(currentSegment.length + word.length > maxLabelLength)
+                    {
+                        label += currentSegment + "\n";
+                        currentSegment = word + " ";
+                    }
+                    else
+                    {
+                        currentSegment += word + " ";
+                    }
+                });
+
+                // Save the existing font and fill style
+                this._screenContext.save();
+
+                // Draw the label
+                this._screenContext.font = CANVAS_FONT_SIZE + "px Roboto";
+                this._screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
+                let labels = label.split("\n");
+
+                // Parse newline characters in the label
+                labels.forEach((label, i) =>
+                {
+                    this._screenContext.fillText(label, pt.x, pt.y - (CANVAS_FONT_SIZE * (labels.length - i) + 2));
+                });
+
+                // Restore the existing font and fill style
+                this._screenContext.restore();
             }
         }
     }

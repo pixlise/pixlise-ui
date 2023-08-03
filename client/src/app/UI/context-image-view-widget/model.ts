@@ -34,7 +34,6 @@ import { Point } from "src/app/models/Geometry";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { DataExpressionService } from "src/app/services/data-expression.service";
 import { DataSetService } from "src/app/services/data-set.service";
-import { DiffractionPeakService } from "src/app/services/diffraction-peak.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { SelectionService } from "src/app/services/selection.service";
@@ -49,6 +48,8 @@ import { RegionManager } from "src/app/UI/context-image-view-widget/region-manag
 import { RGBA } from "src/app/utils/colours";
 import { adjustImageRGB } from "src/app/utils/drawing";
 import { ContextImageToolHost, ToolHostCreateSettings } from "./tools/tool-host";
+import { DataModuleService } from "src/app/services/data-module.service";
+import { AuthenticationService } from "src/app/services/authentication.service";
 
 
 
@@ -103,20 +104,21 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     constructor(
         private _contextImageVariant: string,
         toolSettings: ToolHostCreateSettings,
-        private _exprService: DataExpressionService,
-        private _rgbMixService: RGBMixConfigService,
+        exprService: DataExpressionService,
+        moduleService: DataModuleService,
+        rgbMixService: RGBMixConfigService,
         private _selService: SelectionService,
         private _datasetService: DataSetService,
         public snackService: SnackService,
         public viewStateService: ViewStateService,
         public widgetDataService: WidgetRegionDataService,
-        private _diffractionService: DiffractionPeakService,
         public widgetPosition: string,
         private _loadingSvc: LoadingIndicatorService,
+        authService: AuthenticationService
     )
     {
         this._toolHost = new ContextImageToolHost(toolSettings, this);
-        this._layerManager = new LayerManager(_exprService, _rgbMixService, widgetDataService, _diffractionService);
+        this._layerManager = new LayerManager(exprService, moduleService, rgbMixService, widgetDataService, authService);
         this._regionManager = new RegionManager(widgetDataService);
     }
 

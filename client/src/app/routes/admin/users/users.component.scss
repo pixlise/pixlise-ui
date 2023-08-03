@@ -86,9 +86,39 @@ h3 {
 }
 
 .user-list-container-short-bottom {
-    height: calc(75vh - 100px);
+    height: calc(60vh - 100px);
 }
 
 input {
     width: 200px;
+}
+
+.search-box {
+    margin-left: auto;
+}
+
+.user-stats {
+    h2 {
+        margin-bottom: 8px;
+    }
+
+    .info-row {
+        label {
+            display: flex;
+        }
+    }
+}
+
+.data-collection-groups {
+    display: flex;
+    flex-wrap: wrap;
+    overflow: scroll;
+
+    .data-collection-group {
+        background: #454c50;
+        border-radius: 8px;
+        padding: 4px;
+        margin: 4px;
+        white-space: pre;
+    }
 }

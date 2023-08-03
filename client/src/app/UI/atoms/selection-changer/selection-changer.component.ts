@@ -32,15 +32,12 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { BeamSelection } from "src/app/models/BeamSelection";
 import { DataSetService } from "src/app/services/data-set.service";
+import { AuthenticationService } from "src/app/services/authentication.service";
+import { DataSet } from "src/app/models/DataSet";
 import { ROIService } from "src/app/services/roi.service";
 import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
-import { SelectionOption, SelectionOptionsComponent, SelectionOptionsDialogData } from "src/app/UI/atoms/selection-changer/selection-options/selection-options.component";
-import { httpErrorToString, parseNumberRangeString, UNICODE_CARET_DOWN } from "src/app/utils/utils";
-
-
-
-
-
+import { SelectionOption, SelectionOptionsComponent, SelectionOptionsDialogData, SelectionOptionsDialogResult } from "src/app/UI/atoms/selection-changer/selection-options/selection-options.component";
+import { httpErrorToString, UNICODE_CARET_DOWN } from "src/app/utils/utils";
 
 
 @Component({
@@ -54,11 +51,13 @@ export class SelectionChangerComponent implements OnInit
 
     private _defaultLeftText = "No Selection";
     private _leftText: string = this._defaultLeftText;
+    private _subDataSetIDs: string[] = [];
 
     constructor(
         private _selectionService: SelectionService,
         private _datasetService: DataSetService,
         private _roiService: ROIService,
+        private _authService: AuthenticationService,
         public dialog: MatDialog
     )
     {
@@ -66,6 +65,19 @@ export class SelectionChangerComponent implements OnInit
 
     ngOnInit(): void
     {
+        this._subs.add(this._datasetService.dataset$.subscribe(
+            (dataset: DataSet)=>
+            {
+                this._subDataSetIDs = [];
+
+                let sources = dataset.experiment.getScanSourcesList();
+                for(let src of sources)
+                {
+                    this._subDataSetIDs.push(src.getRtt());
+                }
+            }
+        ));
+
         this._subs.add(this._selectionService.selection$.subscribe(
             (selection: SelectionHistoryItem) =>
             {
@@ -92,19 +104,24 @@ export class SelectionChangerComponent implements OnInit
         return this._leftText+" "+UNICODE_CARET_DOWN;
     }
 
-    onSelection(): void
+    onSelection(event): void
     {
         // User clicked on left side, show menu
         const dialogConfig = new MatDialogConfig();
         dialogConfig.backdropClass = "empty-overlay-backdrop";
 
         let dwellPMCs = this._datasetService.datasetLoaded.getDwellLocationIdxs();
-        dialogConfig.data = new SelectionOptionsDialogData(dwellPMCs.size > 0, new ElementRef(event.currentTarget));
+        dialogConfig.data = new SelectionOptionsDialogData(
+            dwellPMCs.size > 0, // Only show dwell if me have any
+            !this._authService.isPublicUser$.value, // If user is public, we DON'T allow creation of ROI
+            this._subDataSetIDs,
+            new ElementRef(event.currentTarget)
+        );
 
         const dialogRef = this.dialog.open(SelectionOptionsComponent, dialogConfig);
 
         dialogRef.afterClosed().subscribe(
-            (choice: SelectionOption)=>
+            (choice: SelectionOptionsDialogResult)=>
             {
                 if(choice == null || choice == undefined)
                 {
@@ -112,21 +129,29 @@ export class SelectionChangerComponent implements OnInit
                     return;
                 }
 
-                if(choice == SelectionOption.SEL_ALL)
+                if(choice.result == SelectionOption.SEL_ALL)
                 {
                     this.onSelectAll();
                 }
-                else if(choice == SelectionOption.SEL_ENTER_PMCS)
+                else if(choice.result == SelectionOption.SEL_ENTER_PMCS)
                 {
                     this.onSelectSpecificPMC();
                 }
-                else if(choice == SelectionOption.SEL_DWELL)
+                else if(choice.result == SelectionOption.SEL_DWELL)
                 {
                     this.onSelectDwellPMCs();
                 }
-                else if(choice == SelectionOption.NEW_ROI)
+                else if(choice.result == SelectionOption.NEW_ROI)
                 {
                     this.onNewROIFromSelection();
+                }
+                else if(choice.result == SelectionOption.SEL_SUBDATASET)
+                {
+                    this.onSelectForSubDataset(choice.value);
+                }
+                else if(choice.result == SelectionOption.SEL_INVERT)
+                {
+                    this.onInvertSelection();
                 }
                 else
                 {
@@ -162,38 +187,7 @@ export class SelectionChangerComponent implements OnInit
 
     onSelectSpecificPMC(): void
     {
-        let dataset = this._datasetService.datasetLoaded;
-        if(!dataset)
-        {
-            return;
-        }
-
-        let pmcStr = prompt("Enter PMCs between "+dataset.pmcMinMax.min+" and "+dataset.pmcMinMax.max+". Eg: "+dataset.pmcMinMax.min+","+(dataset.pmcMinMax.min+1)+","+(dataset.pmcMinMax.min+5)+"-"+(dataset.pmcMinMax.min+8));
-        if(pmcStr)
-        {
-            let selectPMCs = parseNumberRangeString(pmcStr);
-
-            let selection = new Set<number>();
-            for(let pmc of selectPMCs)
-            {
-                let locIdx = dataset.pmcToLocationIndex.get(pmc);
-                if(locIdx == undefined)
-                {
-                    alert("PMC: "+pmc+" is not valid");
-                    return;
-                }
-
-                selection.add(locIdx);
-            }
-
-            if(selection.size > 0)
-            {
-                this._selectionService.setSelection(dataset, new BeamSelection(dataset, selection), null);
-                return;
-            }
-
-            alert("No PMCs were able to be read from entered text. Selection not changed.");
-        }
+        this._selectionService.promptUserForPMCSelection(this.dialog);
     }
 
     onSelectDwellPMCs(): void
@@ -228,5 +222,41 @@ export class SelectionChangerComponent implements OnInit
                 alert(httpErrorToString(err, ""));
             }
         );
+    }
+
+    onSelectForSubDataset(id: string): void
+    {
+        let dataset = this._datasetService.datasetLoaded;
+        if(!dataset)
+        {
+            return;
+        }
+
+        let selection = dataset.getLocationIdxsForSubDataset(id);
+        this._selectionService.setSelection(dataset, new BeamSelection(dataset, selection), null);
+    }
+
+    onInvertSelection(): void
+    {
+        let dataset = this._datasetService.datasetLoaded;
+        if(!dataset)
+        {
+            return;
+        }
+
+        // Here we want to invert the selection, but when selecting new points, only select ones that have a location and spectra!
+        let sel = this._selectionService.getCurrentSelection();
+        let selIdxs = sel.beamSelection.locationIndexes;
+        let newSel = new Set<number>();
+
+        for(let loc of dataset.locationPointCache)
+        {
+            if(!selIdxs.has(loc.locationIdx) && (loc.hasNormalSpectra || loc.hasDwellSpectra))
+            {
+                newSel.add(loc.locationIdx);
+            }
+        }
+
+        this._selectionService.setSelection(dataset, new BeamSelection(dataset, newSel), null);
     }
 }

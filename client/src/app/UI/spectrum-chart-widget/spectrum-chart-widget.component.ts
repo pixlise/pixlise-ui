@@ -38,6 +38,7 @@ import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { XRFLine } from "src/app/periodic-table/XRFLine";
 import { AnnotationItem, AnnotationService } from "src/app/services/annotation.service";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { AuthenticationService } from "src/app/services/authentication.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { SnackService } from "src/app/services/snack.service";
@@ -77,6 +78,8 @@ export class SpectrumChartWidgetComponent implements OnInit, OnDestroy
 
     keyTop: string = (ZoomMap.maxHeight+ZoomMap.margin+8+36)+"px"; // now also includes toolbar height
 
+    isPublicUser: boolean = true;
+
     constructor(
         private _datasetService: DataSetService,
         private _snackService: SnackService,
@@ -86,6 +89,7 @@ export class SpectrumChartWidgetComponent implements OnInit, OnDestroy
         private _envService: EnvConfigurationService,
         private _spectrumService: SpectrumChartService,
         private _widgetDataService: WidgetRegionDataService,
+        private _authService: AuthenticationService,
         public dialog: MatDialog,
         public clipboard: Clipboard
     )
@@ -200,6 +204,13 @@ export class SpectrumChartWidgetComponent implements OnInit, OnDestroy
             },
             (err)=>
             {
+            }
+        ));
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
             }
         ));
     }

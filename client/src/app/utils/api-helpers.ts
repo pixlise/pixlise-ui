@@ -59,8 +59,10 @@ export class APIPaths
     public static readonly api_dataset = "dataset";
     public static readonly api_quantification = "quantification";
     public static readonly api_data_expression = "data-expression";
+    public static readonly api_data_module = "data-module";
     public static readonly api_view_state = "view-state";
     public static readonly api_share = "share";
+    public static readonly api_publish_doi = "share/doi";
     public static readonly api_export = "export";
     public static readonly api_user_management = "user";
     public static readonly api_notification = "notification";

@@ -27,9 +27,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { Observable, of } from "rxjs";
 import { QuantifiedDataQuerierSource } from "src/app/expression-language/data-sources";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
-import { getQuantifiedDataWithExpression } from "src/app/expression-language/expression-language";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { Quantification } from "src/app/protolibs/quantification_pb";
@@ -316,11 +316,6 @@ export class QuantificationLayer implements QuantifiedDataQuerierSource
         return this._dataColumns;
     }
 
-    getDetectors(): string[]
-    {
-        return this._detectors;
-    }
-
     makeSelectionLocationList(detectorId: string, dataset: DataSet): Set<number>
     {
         // Run through all our data, find the PMC, get its location index and return that
@@ -415,6 +410,35 @@ export class QuantificationLayer implements QuantifiedDataQuerierSource
         return Array.from(this._elementColumns.keys());
     }
 
+    getPMCList(): number[]
+    {
+        // Loop through all our locations and extract PMCs we have values for
+        // NOTE: we don't care which detector...
+        let result: number[] = [];
+
+        for(let quantLocSet of this.quantData.getLocationsetList())
+        {
+            for(let quantLoc of quantLocSet.getLocationList())
+            {
+                let pmc = quantLoc.getPmc();
+                result.push(pmc);
+            }
+            break;
+        }
+
+        return result;
+    }
+
+    getDetectors(): string[]
+    {
+        return this._detectors;
+    }
+
+    columnExists(col: string): boolean
+    {
+        return this.getColumnIndex(col) > -1;
+    }
+
     private getQuantifiedDataValues(detectorId: string, colIdx: number, mult: number, isPctColumn: boolean): PMCDataValue[]
     {
         let resultData: PMCDataValue[] = [];
@@ -472,13 +496,11 @@ export class QuantificationLayer implements QuantifiedDataQuerierSource
         return resultData;
     }
 
-    getAverageEnergyCalibration(): SpectrumEnergyCalibration[]
+    getAverageEnergyCalibration(): Observable<SpectrumEnergyCalibration[]>
     {
-        let result: SpectrumEnergyCalibration[] = [];
-
         if(this._dataColumns.indexOf("eVstart") < 0 || this._dataColumns.indexOf("eV/ch") < 0)
         {
-            return result;
+            return of([]);
         }
 
         // Average all of them, per detector
@@ -494,13 +516,23 @@ export class QuantificationLayer implements QuantifiedDataQuerierSource
             }
         }
 
+        let columns = [];
         for(let detector of detectors)
         {
+            columns.push(this.getQuantifiedDataForDetector(detector, "eVstart"));
+            columns.push(this.getQuantifiedDataForDetector(detector, "eV/ch"));
+        }
+
+        let result: SpectrumEnergyCalibration[] = [];
+
+        let c = 0;
+        for(let detector of detectors)
+        {
+            let eVStartValues = columns[c++] as PMCDataValues;
+            let eVPerChannelValues = columns[c++] as PMCDataValues;
+
             let eVStartSum = 0;
             let eVPerChannelSum = 0;
-
-            let eVStartValues = getQuantifiedDataWithExpression("data(\"eVstart\", \""+detector+"\")", this, null, null, null, null, null, null);
-            let eVPerChannelValues = getQuantifiedDataWithExpression("data(\"eV/ch\", \""+detector+"\")", this, null, null, null, null, null, null);
 
             for(let evStartItem of eVStartValues.values)
             {
@@ -522,6 +554,6 @@ export class QuantificationLayer implements QuantifiedDataQuerierSource
             );
         }
 
-        return result;
+        return of(result);
     }
 }

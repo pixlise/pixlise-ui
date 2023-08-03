@@ -31,8 +31,19 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="column" class="panel outer-panel" fxFill> <!-- fxFill here fills the parent -->
     <div fxLayout="row" fxLayoutAlign="space-between center" class="panel-title">
-        <widget-switcher *ngIf="allowSwitchingTools" [activeSelector]='thisSelector' [widgetPosition]='widgetPosition'></widget-switcher>
+        <widget-switcher *ngIf="allowSwitchingTools" [activeSelector]='thisSelector' [widgetPosition]='widgetPosition' [previewMode]="isPreviewMode"></widget-switcher>
         <h1 *ngIf="!allowSwitchingTools" title="Context Image">Context Image</h1>
+        <icon-button
+            *ngIf="isPreviewMode"
+            class="refresh-button"
+            icon="assets/button-icons/refresh-light.svg"
+            (onClick)="onRefreshLayer()"
+            [hasBackground]="false"
+            [state]="0"
+            #tooltip="matTooltip"
+            matTooltip="Refresh the visible layer"
+        >
+        </icon-button>
         <app-context-image-toolbar></app-context-image-toolbar>
     </div>
 

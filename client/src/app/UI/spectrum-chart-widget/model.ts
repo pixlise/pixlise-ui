@@ -58,17 +58,6 @@ import { MatDialog } from "@angular/material/dialog";
 import { Clipboard } from "@angular/cdk/clipboard";
 
 
-export class PseudoIntensityRangeItem
-{
-    // These are assumed to be ready for display - if the chart
-    // is in channel mode, it should be equal to startCh/endCh but
-    // if the chart is calibrated, it should be in eV
-    public startForDisp: number = 0;
-    public endForDisp: number = 0;
-
-    constructor(public name: string, public startCh: number, public endCh: number) {}
-}
-
 export class SpectrumLineChoice
 {
     constructor(
@@ -92,6 +81,8 @@ export class SpectrumSource
         public roiName: string,
         public shared: boolean,
         public creator: ObjectCreator,
+        public tags: string[],
+        public isMIST: boolean,
 
         // Drawing options
         public colourRGBA: RGBA,
@@ -147,7 +138,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     private _toolHost: SpectrumChartToolHost = null;
 
     // Display settings
-    private _showPseudoIntensityRanges: boolean = false;
     private _logScale: boolean = true;
     private _showXAsEnergy: boolean = true;
     private _shownElementPeakLabels: XRFLine[] = [];
@@ -202,8 +192,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     private _xrfeVUpperBound: number;
 
     private _chartArea: Rect = new Rect(0, 0, 0, 0);
-
-    private _pseudoRangesShown: PseudoIntensityRangeItem[] = [];
 
     private _diffractionPeaksShown: DiffractionPeak[] = [];
 
@@ -511,11 +499,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         return this._energyCalibrationManager;
     }
 
-    get showPseudoIntensityRanges(): boolean
-    {
-        return this._showPseudoIntensityRanges;
-    }
-
     get yAxislogScale(): boolean
     {
         return this._logScale;
@@ -780,12 +763,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     }
 
     // Setting display options
-    setShowPseudoIntensityRanges(show: boolean): void
-    {
-        this._showPseudoIntensityRanges = show;
-        this.clearDisplayData();
-    }
-
     setYAxisLogScale(logScale: boolean): void
     {
         this._logScale = logScale;
@@ -828,9 +805,11 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
                             region.name,
                             region.shared,
                             region.creator,
+                            region.tags,
+                            region.mistROIItem && region?.mistROIItem.ID_Depth >= 5 || false,
                             region.colour == null ? null : RGBA.fromWithA(region.colour, 1),
                             lineChoices,
-                            region.locationIndexes
+                            region.locationIndexes,
                         )
                     );
                 }
@@ -852,9 +831,11 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
                         region.name,
                         region.shared,
                         region.creator,
+                        region.tags,
+                        region.mistROIItem && region?.mistROIItem.ID_Depth >= 5 || false,
                         region.colour == null ? null : RGBA.fromWithA(region.colour, 1),
                         this.getLinesStates(roiID, region.pmcs.size > 1),
-                        region.locationIndexes
+                        region.locationIndexes,
                     )
                 );
 
@@ -998,7 +979,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
             }
             else if(header == "meas")
             {
-                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitMeasuredSpectrum, false, null, Colours.WHITE,
+                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitMeasuredSpectrum, false, null, [], false, Colours.WHITE,
                     [
                         new SpectrumLineChoice(
                             fitLinePrefix+header,SpectrumChartModel.fitMeasuredSpectrum, true, this.readFitColumn(c, csvNumbersByRow), 1, 0.2, true),
@@ -1008,24 +989,24 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
             }
             else if(header == "calc")
             {
-                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitCaclulatedTotalSpectrum, false, null, Colours.ORANGE,
+                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitCaclulatedTotalSpectrum, false, null, [], false, Colours.ORANGE,
                     [new SpectrumLineChoice(fitLinePrefix+header, SpectrumChartModel.fitCaclulatedTotalSpectrum, true, this.readFitColumn(c, csvNumbersByRow))], []));
             }
             else if(header == "residual")
             {
-                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitResiduals, false, null, Colours.BLUE,
+                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitResiduals, false, null, [], false, Colours.BLUE,
                     [new SpectrumLineChoice(fitLinePrefix+header, SpectrumChartModel.fitResiduals, true, this.readFitColumn(c, csvNumbersByRow))], []));
             }
             else if(header == "Pileup")
             {
-                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitPileupPeaks, false, null, Colours.PINK,
+                this._fitLineSources.push(new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitPileupPeaks, false, null, [], false, Colours.PINK,
                     [new SpectrumLineChoice(fitLinePrefix+header, SpectrumChartModel.fitPileupPeaks, false, this.readFitColumn(c, csvNumbersByRow))], []));
             }
             else if(header == "DetCE" || header == "bkg" || header == "SNIP bkg" || header == "calc bkg0")
             {
                 if(!backgroundSrc)
                 {
-                    backgroundSrc = new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitBackground, false, null, Colours.PURPLE, [], []);
+                    backgroundSrc = new SpectrumSource(PredefinedROIID.AllPoints, SpectrumChartModel.fitBackground, false, null, [], false, Colours.PURPLE, [], []);
                 }
 
                 // Add this to the background sources group
@@ -1078,7 +1059,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
                             // Make sure this element has a source defined
                             if(!perElementSources.has(elem))
                             {
-                                perElementSources.set(elem, new SpectrumSource(PredefinedROIID.AllPoints, elem, false, null, Colours.YELLOW, [], [], info.Z));
+                                perElementSources.set(elem, new SpectrumSource(PredefinedROIID.AllPoints, elem, false, null, [], false, Colours.YELLOW, [], [], info.Z));
                             }
 
                             // Add this peak line to the element it belongs to
@@ -1533,18 +1514,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
         this._xAxis.updateAxis(viewport, this._drawTransform);
         this._yAxis.updateAxis(viewport, this._drawTransform);
-
-        let rangeData: PseudoIntensityRangeItem[] = [];
-        if(this._showPseudoIntensityRanges)
-        {
-            let dataset = this._datasetService.datasetLoaded;
-            for(let item of dataset.experiment.getPseudoIntensityRangesList())
-            {
-                rangeData.push(new PseudoIntensityRangeItem(item.getName(), item.getChannelStart(), item.getChannelEnd()));
-            }
-        }
-
-        this._pseudoRangesShown = rangeData;
     }
 
     clearDisplayData()

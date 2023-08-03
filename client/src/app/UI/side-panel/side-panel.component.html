@@ -32,7 +32,13 @@ POSSIBILITY OF SUCH DAMAGE.
 <div fxLayout="column" class="side-panel" fxFill>
     <ng-container *ngIf="!isOpen">
         <div fxLayout="row" fxLayoutAlign="end" class="panel-row gap-separated-horizontal-elements">
-            <img class="clickable" (click)="onToggleSidePanel()" src="assets/button-icons/side-panel-open.svg">
+            <img
+                class="clickable"
+                (click)="onToggleSidePanel()"
+                src="assets/button-icons/side-panel-open.svg"
+                #tooltip="matTooltip"
+                [matTooltip]="toggleSidePanelTooltip"
+            >
         </div>
         <div *ngIf="presentationActive" fxLayout="column" class="play-bar gap-separated-vertical-elements">
             <span>{{presentationSlideIdx}} of {{presentationSlideCount}}</span>
@@ -64,6 +70,12 @@ POSSIBILITY OF SUCH DAMAGE.
                 <icon-button title="{{viewShortcut}}" icon="{{viewIcon(viewShortcut)}}" (click)="onOpenView(viewShortcut)"></icon-button>
             </div>
         </div>
+        <hr *ngIf="isAdmin" class="panel-break">
+        <div *ngIf="isAdmin" fxLayout="column" class="tab-shortcuts">
+            <div *ngFor="let adminBtn of adminButtons" class="view-btn-container">
+                <icon-button title="{{adminBtn}}" icon="{{getAdminIcon(adminBtn)}}" (click)="onAdminAction(adminBtn)"></icon-button>
+            </div>
+        </div>
         <div fxFlex="100%"></div>
     </ng-container>
 
@@ -83,48 +95,33 @@ POSSIBILITY OF SUCH DAMAGE.
             <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
                 <two-state-icon-push-button
                     *ngIf="showSearchButton"
-                    activeIcon="assets/button-icons/search-yellow.svg"
-                    inactiveIcon="assets/button-icons/search-white.svg"
+                    activeIcon="assets/button-icons/filter-yellow.svg"
+                    inactiveIcon="assets/button-icons/filter-white.svg"
                     [active]="showSearch"
                     (onToggle)="onToggleSearch()"
-                    title="Toggle showing search"></two-state-icon-push-button>
+                    #tooltip="matTooltip"
+                    matTooltip="{{showSearch ? 'Hide' : 'Show'}} search options"
+                ></two-state-icon-push-button>
                 <two-state-icon-push-button
                     *ngIf="showSharedButton"
                     activeIcon="assets/button-icons/share-yellow.svg"
                     inactiveIcon="assets/button-icons/share.svg"
                     [active]="showShared"
                     (onToggle)="onToggleShared()"
-                    title="Toggle showing shared items only"></two-state-icon-push-button>
-<!--                <two-state-icon-push-button
-                    *ngIf="showFilterButton"
-                    activeIcon="assets/button-icons/filter-yellow.svg"
-                    inactiveIcon="assets/button-icons/filter-white.svg"
-                    [active]="showFiltered"
-                    (onToggle)="onToggleFiltered()"
-                    title="Toggle showing filtering options">
-                </two-state-icon-push-button> -->
-                <img class="clickable" (click)="onToggleSidePanel()" src="assets/button-icons/side-panel-close.svg">
+                    #tooltip="matTooltip"
+                    matTooltip="{{showShared ? 'Show Non-Shared Items Only' : 'Show Shared Items Only'}}"
+                ></two-state-icon-push-button>
+                <img
+                    class="clickable"
+                    (click)="onToggleSidePanel()"
+                    src="assets/button-icons/side-panel-close.svg"
+                    #tooltip="matTooltip"
+                    [matTooltip]="toggleSidePanelTooltip"
+                >
             </div>
         </div>
         <div class="tab-host-area" fxFlex="100%">
             <div #tabHostTop></div>
         </div>
-<!-- Removed bottom panel due to many edge cases where long scrolling list areas broke the layout if we had 2 panels like that showing
-
-        <div fxLayout="row" fxLayoutAlign="space-between center" class="panel-row gap-separated-horizontal-elements">
-            <mat-select *ngIf="isOpen" [(ngModel)]="activeTabBottom">
-                <mat-option *ngFor="let tab of tabsWithNone" [value]="tab">
-                    <div fxLayout="row" fxLayoutAlign="space-between center">
-                        <span>{{tab}}</span><img [src]="tabIcon(tab)">
-                    </div>
-                </mat-option>
-            </mat-select>
-            <img *ngIf="!bottomIsNoneTab" class="clickable" (click)="onSizePanel()" src="assets/icons/resizer.svg">
-        </div>
-        <div class="item tab-host-area">
-            <div #tabHostBottom></div>
-        </div>
--->
-
     </ng-container>
 </div>

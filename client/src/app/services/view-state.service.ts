@@ -724,8 +724,7 @@ export class ViewStateService
                     result["create_unix_time_sec"],
                     result["mod_unix_time_sec"]
                 );
-            }
-            )
+            })
         );
     }
 
@@ -849,6 +848,27 @@ export class ViewStateService
             )
         );
     }
+
+    shareViewStateCollectionPublic(datasetID: string, viewStateID: string): Observable<void>
+    {
+        let loadID = this._loadingSvc.add("Making collection and all used objects public...");
+        let apiURL = APIPaths.getWithHost(`${APIPaths.api_share}/${APIPaths.api_view_state}/public/${datasetID}/${viewStateID}`);
+        return this.http.post<void>(apiURL, "", makeHeaders()).pipe(
+            tap(
+                (evt)=>
+                {
+                    this._loadingSvc.remove(loadID);
+                    this.refreshSavedStates();
+                },
+                (err)=>
+                {
+                    this._loadingSvc.remove(loadID);
+                    this.refreshSavedStates();
+                }
+            )
+        );
+    }
+
 
     private closeUnderContextPanels(): void
     {
@@ -989,6 +1009,9 @@ export class ViewStateService
             this._soloViewSourcePosition = position;
         }
 
+        // Update analysis view selectors as user may have changed things in solo view
+        this.updateAnalysisViewSelectors();
+
         // Tell listeners solo status changed
         this._viewSolo$.next();
     }
@@ -1063,6 +1086,12 @@ export class ViewStateService
 
                         this._viewSelectorsAreDefaults = true;
                     }
+                    else if(state.analysisLayout.bottomWidgetSelectors.length > 4)
+                    {
+                        // If we have more than 4 widgets along the bottom, we'll just use the first 4
+                        state.analysisLayout.bottomWidgetSelectors = state.analysisLayout.bottomWidgetSelectors.slice(0, 4);
+                        this._viewSelectorsAreDefaults = false;
+                    }
                     else
                     {
                         this._viewSelectorsAreDefaults = false;
@@ -1079,7 +1108,7 @@ export class ViewStateService
     }
 
     // NOTE: MUST BE IN SYNC WITH makeWireViewState
-    private readWireViewState(stateWireObj: object): ViewState
+    readWireViewState(stateWireObj: object): ViewState
     {
         // If we get no widgets for the bottom, use the defaults
         let analysisLayout = stateWireObj["analysisLayout"] as analysisLayoutState;
@@ -1088,7 +1117,7 @@ export class ViewStateService
         // reasons - that came first, this came later and generally want it set to spectrum anyway!
         if(!analysisLayout.topWidgetSelectors || analysisLayout.topWidgetSelectors.length <= 0)
         {
-            analysisLayout.topWidgetSelectors = [ViewStateService.widgetSelectorContextImage, ViewStateService.widgetSelectorSpectrum];
+            analysisLayout.topWidgetSelectors = [ViewStateService.widgetSelectorContextImage, ViewStateService.widgetSelectorSpectrum, ViewStateService.widgetSelectorTernaryPlot];
         }
 
         // Enforce the top left widget is the context image, regardless of what's stored in the user cache
@@ -1131,7 +1160,7 @@ export class ViewStateService
     }
 
     // NOTE: MUST BE IN SYNC WITH readWireViewState
-    private makeWireViewState(state: ViewState): object
+    makeWireViewState(state: ViewState): object
     {
         let result = {
             // Layouts
@@ -1266,7 +1295,7 @@ export class ViewStateService
                 ), "underspectrum1");
 
                 // Also set the spectrum to be a parallel coordinates plot
-                this._viewState.analysisLayout.topWidgetSelectors = [ViewStateService.widgetSelectorContextImage, ViewStateService.widgetSelectorParallelCoordinates];
+                this._viewState.analysisLayout.topWidgetSelectors = [ViewStateService.widgetSelectorContextImage, ViewStateService.widgetSelectorParallelCoordinates, ViewStateService.widgetSelectorTernaryPlot];
 
                 // Default show the context image
                 this.showContextImageOptions = true;
@@ -1294,7 +1323,7 @@ export class ViewStateService
                 ), "underspectrum1");
 
                 // Set top widgets to defaults
-                this._viewState.analysisLayout.topWidgetSelectors = [ViewStateService.widgetSelectorContextImage, ViewStateService.widgetSelectorSpectrum];
+                this._viewState.analysisLayout.topWidgetSelectors = [ViewStateService.widgetSelectorContextImage, ViewStateService.widgetSelectorSpectrum, ViewStateService.widgetSelectorTernaryPlot];
             }
         }
 
@@ -1680,7 +1709,7 @@ export class ViewStateService
 
     convertAnnotationsFromWireFrame(annotations: fullScreenAnnotationItemWireFrame[]): FullScreenAnnotationItem[]
     {
-        return annotations.map(annotationWireFrame =>
+        return (annotations || []).map(annotationWireFrame =>
             new FullScreenAnnotationItem(
                 annotationWireFrame.type as AnnotationToolOption,
                 annotationWireFrame.points.map(point => new AnnotationPoint(point.x, point.y, point.screenWidth, point.screenHeight)),
@@ -1695,7 +1724,7 @@ export class ViewStateService
 
     convertAnnotationsToWireFrame(annotations: FullScreenAnnotationItem[]): fullScreenAnnotationItemWireFrame[]
     {
-        return annotations.map(annotation =>
+        return (annotations || []).map(annotation =>
         {
             return {
                 type: annotation.type,
@@ -1882,15 +1911,17 @@ export class ViewStateService
     // Here position is something that the analysis view understands. See hard codes below to determine what's supported
     setAnalysisViewSelector(position: string, selector: string): void
     {
-        if(position == "top0" || position == "top1")
+        let validTopPositions = ["top0", "top1", "preview"];
+        let validBottomPositions = ["undercontext", "underspectrum0", "underspectrum1", "underspectrum2"];
+
+        if(validTopPositions.includes(position))
         {
-            let idx = (position == "top0") ? 0 : 1;
+            let idx = validTopPositions.indexOf(position);
             this._viewState.analysisLayout.topWidgetSelectors[idx] = selector;
         }
         else
         {
-            const validPositions = ["undercontext", "underspectrum0", "underspectrum1", "underspectrum2"];
-            let idx = validPositions.indexOf(position);
+            let idx = validBottomPositions.indexOf(position);
             if(idx < 0)
             {
                 console.warn("setAnalysisViewSelector failed: bad position "+position+" for: "+selector);
@@ -1898,9 +1929,7 @@ export class ViewStateService
             }
 
             // undercontext refers to first array position, with the rest counting up from there
-            const arrayPositions = [0, 1, 2, 3];
-            
-            this._viewState.analysisLayout.bottomWidgetSelectors[arrayPositions[idx]] = selector;
+            this._viewState.analysisLayout.bottomWidgetSelectors[idx] = selector;
         }
 
         this.save(this._viewState.analysisLayout, "analysisLayout");

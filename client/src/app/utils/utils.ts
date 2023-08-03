@@ -182,6 +182,24 @@ export function radToDeg(rad: number): number
     return rad*180/Math.PI;
 }
 
+export function xor_sum(value1: number, value2: number): number
+{
+    let xor = value1^value2;
+
+    // What's sum mean here? Are we adding up the bits that are on after xor?
+    let bit = 1;
+    let sum = 0;
+    for(let c = 0; c < 31; c++)
+    {
+        if(xor & bit)
+        {
+            sum++;
+        }
+        bit = bit << 1;
+    }
+    return sum;
+}
+/*
 export function isValidPhoneNumber(phNum: string): boolean
 {
     if(phNum.length > 0 && phNum.length < 7)
@@ -209,7 +227,7 @@ export function isValidPhoneNumber(phNum: string): boolean
 
     return true;
 }
-
+*/
 export function stripInvalidCharsFromPhoneNumber(phNum: string): string
 {
     // After a + at the start, we strip everything that's not a digit
@@ -541,6 +559,16 @@ export function httpErrorToString(err: any, operationMsg: string): string
             errorStr = err["statusText"];
         }
 
+        if(errorStr.length <= 0)
+        {
+            // Still don't have one? Try use this other function
+            //errorStr = SentryHelper.extractError(err);
+            if(err["message"])
+            {
+                errorStr = err["message"];
+            }
+        }
+
         if(errorStr.length > 0)
         {
             msg += errorStr;
@@ -646,6 +674,12 @@ export function parseNumberRangeString(nums: string): Set<number>
     }
 
     return result;
+}
+
+export function makeValidFileName(name: string): string
+{
+    //return name.replace(/\!|\@|\#|$|\%|^|\&|*|?|\\|\/|\$/g, "_");
+    return name.replace(/\\|!|@|#|\*|&|\?|\^|%|\$|\:|\//g, "_");
 }
 
 export const invalidPMC = -1;

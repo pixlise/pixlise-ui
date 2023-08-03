@@ -29,6 +29,15 @@
 
 @import 'variables.scss';
 
+h1 {
+    display: flex;
+    align-items: center;
+
+    tag-picker {
+        margin-left: auto;
+    }
+}
+
 .user-prompt-dlg {
     min-width: 360px;
 }
@@ -42,6 +51,11 @@ h3 {
     line-height: 16px;
     margin-top: $sz-unit;
     text-transform: unset;
+}
+
+.info-text {
+    color: $clr-gray-30;
+    white-space: pre-wrap;
 }
 
 .mat-select {

@@ -25,7 +25,52 @@
             "aot": true,
             "assets": [
               "src/favicon.ico",
+              {
+                "glob": "robots.txt",
+                "input": "src",
+                "output": "/"
+              },
               "src/assets",
+              {
+                "glob": "**/*",
+                "input": "src/app/modules/public-site/assets",
+                "output": "assets"
+              },
+              {
+                "glob": "glue.wasm",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "Map.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "DebugHelp.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "CSV.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "PixliseRuntime.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "FuncRunner.lua",
+                "input": "src/app/expression-language/lua/test",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/monaco-editor",
+                "output": "assets/monaco-editor"
+              },
               "src/local-development-pixlise-config.json",
               "src/agreement-version.json",
               "src/version.json"
@@ -37,7 +82,8 @@
             ],
             "stylePreprocessorOptions": {
               "includePaths": [
-                "src/scss"
+                "src/scss",
+                "src/app/modules/pixlisecore/scss"
               ]
             },
             "scripts": []
@@ -60,60 +106,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "2mb",
-                  "maximumError": "5mb"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "6kb"
-                }
-              ]
-            },
-            "staging": {
-              "fileReplacements": [
-                {
-                  "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment.staging.ts"
-                }
-              ],
-              "optimization": true,
-              "outputHashing": "all",
-              "sourceMap": true,
-              "namedChunks": false,
-              "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "2mb",
-                  "maximumError": "5mb"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "6kb"
-                }
-              ]
-            },
-            "devenv": {
-              "fileReplacements": [
-                {
-                  "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment.devenv.ts"
-                }
-              ],
-              "optimization": true,
-              "outputHashing": "all",
-              "sourceMap": true,
-              "namedChunks": false,
-              "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
-              "budgets": [
-                {
-                  "type": "initial",
-                  "maximumWarning": "2mb",
-                  "maximumError": "5mb"
+                  "maximumWarning": "4mb",
+                  "maximumError": "8mb"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -140,12 +134,6 @@
             "production": {
               "browserTarget": "pixlise:build:production"
             },
-            "staging": {
-              "browserTarget": "pixlise:build:production"
-            },
-            "devenv": {
-              "browserTarget": "pixlise:build:production"
-            },
             "development": {
               "browserTarget": "pixlise:build:development"
             }
@@ -167,7 +155,27 @@
             "karmaConfig": "karma.conf.js",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              {
+                "glob": "robots.txt",
+                "input": "src",
+                "output": "/"
+              },
+              "src/assets",
+              {
+                "glob": "glue.wasm",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "Map.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "DebugHelp.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              }
             ],
             "styles": [
               "./node_modules/@angular/material/prebuilt-themes/purple-green.css",
@@ -176,7 +184,8 @@
             ],
             "stylePreprocessorOptions": {
               "includePaths": [
-                "src/scss"
+                "src/scss",
+                "src/app/modules/pixlisecore/scss"
               ]
             },
             "scripts": []

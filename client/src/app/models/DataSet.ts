@@ -27,8 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import * as moment from "moment";
-import { Observable } from "rxjs";
+import moment from "moment";
 import {
     HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, SpectrumDataQuerierSource
 } from "src/app/expression-language/data-sources";
@@ -47,11 +46,10 @@ import { invalidPMC, radToDeg } from "src/app/utils/utils";
 import Voronoi from "voronoi";
 
 
-
-
-
-
-let QuickHull = require("quickhull");
+import QuickHull from "quickhull";
+//let QuickHull = require("quickhull");
+//import polygonClipping from "polygon-clipping";
+//import { intersection } from "polygon-clipping";
 const polygonClipping = require("polygon-clipping");
 
 
@@ -66,8 +64,32 @@ export class DataSetLocation
         public hasMissingData: boolean,
         public polygon: Point[],
         public hasPseudoIntensities: boolean = false,
+        public source: Experiment.ScanSource = null,
     )
     {
+    }
+
+    // PMC is usually a number but in combined datasets we need
+    // to also show the dataset this PMC is sourced from
+    getPrintablePMC(): string
+    {
+        if(!this.source)
+        {
+            return this.PMC.toLocaleString();
+        }
+
+        let result = this.getPMCWithoutOffset().toLocaleString();
+        result += " Dataset: "+this.source.getRtt();
+        return result;
+    }
+
+    getPMCWithoutOffset(): number
+    {
+        if(!this.source)
+        {
+            return this.PMC;
+        }
+        return this.PMC-this.source.getIdOffset();
     }
 }
 
@@ -512,20 +534,31 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         return PMCDataValues.makeWithValues(values);
     }
 
+    getPseudoIntensityElementsList(): string[]
+    {
+        let ranges = this.experiment.getPseudoIntensityRangesList();
+        let elems: string[] = [];
+        for(let range of ranges)
+        {
+            elems.push(range.getName());
+        }
+        return elems;
+    }
+
     // HousekeepingDataQuerierSource interface
     getHousekeepingData(name: string): PMCDataValues
     {
-        let metaLabels = this.experiment.getMetaLabelsList();
-        let metaTypes = this.experiment.getMetaTypesList();
+        const metaLabels = this.experiment.getMetaLabelsList();
+        const metaTypes = this.experiment.getMetaTypesList();
 
         // If it exists as a metaLabel and has a type we can return, do it
-        let metaIdx = metaLabels.indexOf(name);
+        const metaIdx = metaLabels.indexOf(name);
         if(metaIdx < 0)
         {
             throw new Error("The currently loaded dataset does not include housekeeping data with column name: \""+name+"\"");
         }
 
-        let metaType = metaTypes[metaIdx];
+        const metaType = metaTypes[metaIdx];
         if(metaType != Experiment.MetaDataType.MT_FLOAT && metaType != Experiment.MetaDataType.MT_INT)
         {
             throw new Error("Non-numeric data type for housekeeping data column: "+name);
@@ -535,7 +568,6 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         let values: PMCDataValue[] = [];
 
         let locs = this.experiment.getLocationsList();
-        let idx = 0;
         for(let loc of locs)
         {
             let metaList = loc.getMetaList();
@@ -589,6 +621,29 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         }
 
         return PMCDataValues.makeWithValues(values);
+    }
+
+    hasHousekeepingData(name: string): boolean
+    {
+        const metaLabels = this.experiment.getMetaLabelsList();
+        const metaTypes = this.experiment.getMetaTypesList();
+
+        // If it exists as a metaLabel and has a type we can return, do it
+        const metaIdx = metaLabels.indexOf(name);
+        if(metaIdx < 0)
+        {
+            // Name not found
+            return false;
+        }
+
+        const metaType = metaTypes[metaIdx];
+        if(metaType != Experiment.MetaDataType.MT_FLOAT && metaType != Experiment.MetaDataType.MT_INT)
+        {
+            // We can only return floats & ints so say no
+            return false;
+        }
+
+        return true;
     }
 
     // SpectrumDataQuerierSource
@@ -765,15 +820,87 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         return result;
     }
 
-    getPseudoIntensityElementsList(): string[]
+    getLocationIdxsForSubDataset(id: string): Set<number>
     {
-        let ranges = this.experiment.getPseudoIntensityRangesList();
-        let elems: string[] = [];
-        for(let range of ranges)
+        let result = new Set<number>();
+
+        for(let locCache of this.locationPointCache)
         {
-            elems.push(range.getName());
+            if(locCache.source && locCache.source.getRtt() === id)
+            {
+                result.add(locCache.locationIdx);
+            }
         }
-        return elems;
+
+        return result;
+    }
+
+    getIdOffsetForSubDataset(id: string): number
+    {
+        let list = this.experiment.getScanSourcesList();
+        for(let src of list)
+        {
+            if(src.getRtt() == id)
+            {
+                return src.getIdOffset();
+            }
+        }
+
+        return 0;
+    }
+
+    isCombinedDataset(): boolean
+    {
+        return this.getSubDatasetIds().length > 1;
+    }
+
+    getSubDatasetIds(): string[]
+    {
+        if(!this.experiment)
+        {
+            return [];
+        }
+        let list = this.experiment.getScanSourcesList();
+        if(!list)
+        {
+            return [];
+        }
+
+        let ids = [];
+        for(let item of list)
+        {
+            ids.push(item.getRtt());
+        }
+        return ids;
+    }
+
+    getSubDatasetIdForPMC(pmc: number): string
+    {
+        // If we are not a "combined" dataset, just return blank
+        if(!this.isCombinedDataset())
+        {
+            return "";
+        }
+
+        // Otherwise, look it up
+        let locIdx = this.pmcToLocationIndex.get(pmc);
+        if(locIdx == undefined)
+        {
+            return "";
+        }
+
+        let loc = this.locationPointCache[locIdx];
+        if(!loc)
+        {
+            return "";
+        }
+        
+        if(!loc.source)
+        {
+            return "";
+        }
+
+        return loc.source.getRtt();
     }
 
     getPMCsForLocationIndexes(locationIndexes: number[], onlyWithNormalOrDwellSpectra: boolean): Set<number>
@@ -926,6 +1053,7 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         let locPointYMinMax = new MinMax();
         let locPointZMinMax = new MinMax();
 
+        let scanSources = this.experiment.getScanSourcesList();
         let locs = this.experiment.getLocationsList();
         let idx = 0;
         for(let loc of locs)
@@ -995,8 +1123,13 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
             let pseudoIntensities = loc.getPseudoIntensitiesList();
             let hasPseudo = pseudoIntensities && pseudoIntensities.length > 0;
             let hasMissingData = hasPseudo && !hasNormalSpectra;
-
-            let locToCache = new DataSetLocation(beamPoint, idx, pmc, hasNormalSpectra, hasDwellSpectra, hasMissingData, [], hasPseudo);
+            let scanSourceIdx = loc.getScanSource();
+            let scanSource = null;
+            if(scanSourceIdx >= 0 && scanSourceIdx < scanSources.length)
+            {
+                scanSource = scanSources[scanSourceIdx];
+            }
+            let locToCache = new DataSetLocation(beamPoint, idx, pmc, hasNormalSpectra, hasDwellSpectra, hasMissingData, [], hasPseudo, scanSource);
             this.locationPointCache.push(locToCache);
 
             if(locToCache.hasNormalSpectra || locToCache.hasDwellSpectra)
@@ -1256,7 +1389,7 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
         // hull and use the angle formed by that vs the X axis
         let longestVec = null;
         let longestVecLength = 0;
-        let longestVecIdx = -1;
+        //let longestVecIdx = -1;
         for(let c = 0; c < footprintHullPoints.length; c++)
         {
             let lastIdx = c-1;
@@ -1271,7 +1404,7 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
             {
                 longestVec = vec;
                 longestVecLength = vecLen;
-                longestVecIdx = c;
+                //longestVecIdx = c;
             }
         }
 
@@ -1531,7 +1664,7 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
                     item = [];
                 }
 
-                let decoded = DecompressZeroRunLengthEncoding(detector.getSpectrumList());
+                let decoded = DecompressZeroRunLengthEncoding(detector.getSpectrumList(), DataSet.getSpectrumValueCount());
                 item.push(decoded);
 
                 this._decompressedSpectra.set(pmc, item);
@@ -1540,11 +1673,12 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
             c++;
         }
         
-        if(!this.pmcForBulkMaxValueLocation)
+        if(this.pmcForBulkMaxValueLocation === null)
         {
             console.warn("  Dataset does not contain BulkSum or MaxValue spectrums");
         }
-        if(!this.spectrumMaxValueNormal || this.spectrumMaxValueNormal  <= 0)
+
+        if(!this.spectrumMaxValueNormal || this.spectrumMaxValueNormal <= 0)
         {
             console.warn("  Max spectrum value found: "+this.spectrumMaxValueNormal);
         }
@@ -1677,7 +1811,7 @@ export class DataSet implements PseudoIntensityDataQuerierSource, HousekeepingDa
                 isdefault = " <-- Main Image";
                 this.defaultContextImageIdx = c;
             }
-            console.log("   * "+i.path+", pmc="+i.imagePMC+", hasBeam="+i.hasBeamData+", hasData="+(i.rgbSourceImage!=null||i.rgbuSourceImage!=null)+isdefault);
+            console.log("   * "+i.path+", pmc="+i.imagePMC+", hasBeam="+i.hasBeamData+", hasImageLoaded="+(i.rgbSourceImage!=null||i.rgbuSourceImage!=null)+isdefault);
         }
 
         // If we still haven't picked a default, pick the one with the lowest PMC

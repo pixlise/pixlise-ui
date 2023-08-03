@@ -39,12 +39,11 @@ import { DragDropModule } from "@angular/cdk/drag-drop";
 
 import * as Sentry from "@sentry/browser";
 
-import { CodemirrorModule } from "@ctrl/ngx-codemirror";
+import { VERSION } from "src/environments/version";
 
 import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
 
-import { AboutComponent } from "./routes/about/about.component";
 import { DatasetsComponent } from "./routes/datasets/datasets.component";
 import { PageNotFoundComponent } from "./routes/page-not-found/page-not-found.component";
 import { AuthenticateComponent } from "./routes/authenticate/authenticate.component";
@@ -70,7 +69,6 @@ import { InteractiveCanvasComponent } from "./UI/atoms/interactive-canvas/intera
 import { ChordViewWidgetComponent } from "./UI/chord-view-widget/chord-view-widget.component";
 import { BinaryPlotWidgetComponent } from "./UI/binary-plot-widget/binary-plot-widget.component";
 import { TernaryPlotWidgetComponent } from "./UI/ternary-plot-widget/ternary-plot-widget.component";
-import { ScatterPlotViewComponent } from "./UI/scatter-plot-view/scatter-plot-view.component";
 
 import { MaterialModule } from "./modules/material.module";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
@@ -88,10 +86,10 @@ import { WidgetDisplayMessageComponent } from "./UI/atoms/widget-display-message
 import { UserMenuPanelComponent } from "./UI/user-menu-panel/user-menu-panel.component";
 
 import { QuantificationStartOptionsComponent } from "./UI/quantification-start-options/quantification-start-options.component";
-import { VersionDisplayComponent } from "./routes/about/version-display/version-display.component";
 
 import { QuantSelectorPanelComponent } from "./UI/quantification-selector/quant-selector-panel/quant-selector-panel.component";
 import { ExpressionEditorComponent } from "./UI/expression-editor/expression-editor.component";
+import { ExpressionTextEditorComponent } from "./UI/expression-editor/expression-text-editor/expression-text-editor.component";
 
 import { Base64ImagePipe } from "./utils/base64-image.pipe";
 import { AddBearerPipe } from "./utils/add-bearer-header.pipe";
@@ -141,7 +139,9 @@ import { PeriodicTableTabComponent } from "./UI/spectrum-chart-widget/spectrum-p
 import { ExpressionPickerComponent } from "./UI/expression-picker/expression-picker.component";
 import { TagPickerComponent } from "./UI/tag-picker/tag-picker.component";
 import { ROIPickerComponent } from "./UI/roipicker/roipicker.component";
+import { ReferencesPickerComponent } from "./UI/references-picker/references-picker.component";
 import { RegionItemSettingsComponent } from "./UI/roipicker/region-item-settings/region-item-settings.component";
+import { RegionContainerComponent } from "./UI/roipicker/region-container/region-container.component";
 import { SpectrumRegionPickerComponent } from "./UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-picker.component";
 import { SpectrumRegionSettingsComponent } from "./UI/spectrum-chart-widget/spectrum-region-picker/spectrum-region-settings/spectrum-region-settings.component";
 import { WidgetSwitcherComponent } from "./UI/atoms/widget-switcher/widget-switcher.component";
@@ -159,8 +159,6 @@ import { AnnotationItemComponent } from "./UI/spectrum-chart-widget/spectrum-pea
 import { DataCollectionDialogComponent } from "./UI/data-collection-dialog/data-collection-dialog.component";
 import { WidgetSettingsMenuComponent } from "./UI/atoms/widget-settings-menu/widget-settings-menu.component";
 import { MenuPanelHostComponent } from "./UI/atoms/widget-settings-menu/menu-panel-host/menu-panel-host.component";
-import { VERSION } from "src/environments/version";
-import { ExpressionHelpDropdownComponent } from "./UI/expression-editor/expression-help-dropdown/expression-help-dropdown.component";
 import { FullScreenDisplayComponent } from "./UI/atoms/full-screen-display/full-screen-display.component";
 import { TestUtilitiesComponent } from "./routes/admin/test-utilities/test-utilities.component";
 import { QuantificationLogViewComponent } from "./routes/dataset/quantifications/quantification-log-view/quantification-log-view.component";
@@ -168,7 +166,7 @@ import { GlobalNotificationsComponent } from "./routes/admin/global-notification
 import { SpectrumPeakLabelPickerComponent } from "./UI/spectrum-chart-widget/spectrum-peak-label-picker/spectrum-peak-label-picker.component";
 import { RangeSliderComponent } from "./UI/atoms/range-slider/range-slider.component";
 import { VariogramWidgetComponent } from "./UI/variogram-widget/variogram-widget.component";
-import { ExportDataDialogComponent } from "./UI/export-data-dialog/export-data-dialog.component";
+import { ExportDataDialogComponent } from "./UI/atoms/export-data-dialog/export-data-dialog.component";
 import { RGBUViewerComponent } from "./UI/rgbuviewer/rgbuviewer.component";
 import { RGBUPlotComponent } from "./UI/rgbuplot/rgbuplot.component";
 import { RGBUAxisRatioPickerComponent } from "./UI/rgbuplot/rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
@@ -185,6 +183,7 @@ import { WorkspacesComponent } from "./UI/side-panel/tabs/workspaces/workspaces.
 import { ROIComponent } from "./UI/side-panel/tabs/roi/roi.component";
 import { MistROIComponent } from "./UI/side-panel/tabs/mist-roi/mist-roi.component";
 import { MistRoiUploadComponent } from "./UI/side-panel/tabs/mist-roi/mist-roi-upload/mist-roi-upload.component";
+import { ViewStateUploadComponent } from "./UI/side-panel/viewstate-upload/viewstate-upload.component";
 import { MistRoiConvertComponent } from "./UI/side-panel/tabs/mist-roi/mist-roi-convert/mist-roi-convert.component";
 import { SelectionComponent } from "./UI/side-panel/tabs/selection/selection.component";
 import { ViewStateCollectionsComponent } from "./UI/side-panel/tabs/view-state-collections/view-state-collections.component";
@@ -224,6 +223,15 @@ import { LogViewerComponent } from "./UI/log-viewer/log-viewer.component";
 import { AnnotationEditorComponent } from "./UI/annotation-editor/annotation-editor.component";
 import { AnnotationDisplayComponent } from "./UI/annotation-editor/annotation-display/annotation-display.component";
 import { PlotExporterDialogComponent } from "./UI/atoms/plot-exporter-dialog/plot-exporter-dialog.component";
+import { CodeEditorComponent } from "./routes/dataset/code-editor/code-editor.component";
+import { PMCDataGridComponent } from "./UI/pmc-data-grid/pmc-data-grid.component";
+
+import { StatusIndicatorComponent } from "./UI/atoms/status-indicator/status-indicator.component";
+import { ModuleReleaseDialogComponent } from "./UI/module-release-dialog/module-release-dialog.component";
+import { ExpressionMetadataEditorComponent } from "./UI/expression-metadata-editor/expression-metadata-editor.component";
+import { DOIPublishDialog } from "./UI/expression-metadata-editor/doi-publish-dialog/doi-publish-dialog.component";
+
+import { PublicSiteModule } from "./modules/public-site/public-site.module";
 
 
 @Injectable()
@@ -276,7 +284,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
                     {
                         // Note: issue with double entries during http exceptions: https://github.com/getsentry/sentry-javascript/issues/2169
                         // Note: issue with a second entry not being set correctly (as a non-error): https://github.com/getsentry/sentry-javascript/issues/2292#issuecomment-554932519
-                        const isNonErrorException = event.exception.values[0].value.startsWith("Non-Error exception captured");
+                        const isNonErrorException = event?.exception?.values?.[0]?.value?.startsWith?.("Non-Error exception captured");
                         if(isNonErrorException)
                         {
                             if(!event.extra.__serialized__)
@@ -307,10 +315,12 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
     };
 };
 
+
 @NgModule({
     declarations: [
         AppComponent,
         AnalysisComponent,
+        CodeEditorComponent,
         QuantificationsComponent,
         DatasetsComponent,
         PageNotFoundComponent,
@@ -322,12 +332,10 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         InteractiveCanvasComponent,
         ContextImageViewWidgetComponent,
         ChordViewWidgetComponent,
-        ScatterPlotViewComponent,
         PanelComponent,
         ElementTileComponent,
         PeriodicTableComponent,
         LayerControlComponent,
-        AboutComponent,
         ContextImagePickerComponent,
         QuantificationTableComponent,
         HistogramViewComponent,
@@ -338,13 +346,13 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         UserMenuPanelComponent,
         AnnotationOptionsComponent,
         QuantificationStartOptionsComponent,
-        VersionDisplayComponent,
         ElementSetsComponent,
         AnnotationsComponent,
         BrowseOnChartComponent,
         PeriodicTableTabComponent,
         QuantSelectorPanelComponent,
         ExpressionEditorComponent,
+        ExpressionTextEditorComponent,
         Base64ImagePipe,
         MapBrowserComponent,
         DatasetLoadingProgressComponent,
@@ -389,9 +397,11 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         BinaryPlotWidgetComponent,
         TernaryPlotWidgetComponent,
         ROIPickerComponent,
+        ReferencesPickerComponent,
         AnnotationEditorComponent,
         AnnotationDisplayComponent,
         RegionItemSettingsComponent,
+        RegionContainerComponent,
         SpectrumRegionPickerComponent,
         SpectrumRegionSettingsComponent,
         WidgetSwitcherComponent,
@@ -411,7 +421,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         DataCollectionDialogComponent,
         WidgetSettingsMenuComponent,
         MenuPanelHostComponent,
-        ExpressionHelpDropdownComponent,
         FullScreenDisplayComponent,
         QuantificationLogViewComponent,
         SpectrumPeakLabelPickerComponent,
@@ -460,10 +469,16 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         FitElementSelectionComponent,
         MistRoiUploadComponent,
         MistRoiConvertComponent,
+        ViewStateUploadComponent,
         AddBearerPipe,
         AddDatasetDialogComponent,
         LogViewerComponent,
         PlotExporterDialogComponent,
+        PMCDataGridComponent,
+        StatusIndicatorComponent,
+        ModuleReleaseDialogComponent,
+        ExpressionMetadataEditorComponent,
+        DOIPublishDialog
     ],
     imports: [
         BrowserModule,
@@ -476,10 +491,10 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         FlexLayoutModule,
         OverlayModule,
         CdkAccordionModule,
-        CodemirrorModule,
         NgxDropzoneModule,
         DragDropModule,
         MatTooltipModule,
+        PublicSiteModule
     ],
     providers: [
         EnvConfigurationInitService,
@@ -517,6 +532,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService)=>
         LayerControlComponent,
         ExpressionPickerComponent,
         ExpressionEditorComponent,
+        ExpressionTextEditorComponent,
         QuantSelectorPanelComponent,
         UserMenuPanelComponent,
         AnnotationOptionsComponent,

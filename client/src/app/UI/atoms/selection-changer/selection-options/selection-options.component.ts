@@ -38,15 +38,25 @@ export enum SelectionOption
     SEL_ALL,
     SEL_ENTER_PMCS,
     SEL_DWELL,
-    NEW_ROI
+    NEW_ROI,
+    SEL_SUBDATASET,
+    SEL_INVERT
 }
 
 export class SelectionOptionsDialogData
 {
     constructor(
         public showDwell: boolean,
+        public showNewROI: boolean,
+        public subDataSetIDs: string[],
         public triggerElementRef: ElementRef
     )
+    {
+    }
+}
+export class SelectionOptionsDialogResult
+{
+    constructor(public result: SelectionOption, public value: string)
     {
     }
 }
@@ -90,21 +100,31 @@ export class SelectionOptionsComponent implements OnInit
 
     onSelectAll(): void
     {
-        this.dialogRef.close(SelectionOption.SEL_ALL);
+        this.dialogRef.close(new SelectionOptionsDialogResult(SelectionOption.SEL_ALL, ""));
     }
 
     onSelectEntered(): void
     {
-        this.dialogRef.close(SelectionOption.SEL_ENTER_PMCS);
+        this.dialogRef.close(new SelectionOptionsDialogResult(SelectionOption.SEL_ENTER_PMCS, ""));
     }
 
     onSelectDwell(): void
     {
-        this.dialogRef.close(SelectionOption.SEL_DWELL);
+        this.dialogRef.close(new SelectionOptionsDialogResult(SelectionOption.SEL_DWELL, ""));
     }
 
     onNewROI(): void
     {
-        this.dialogRef.close(SelectionOption.NEW_ROI);
+        this.dialogRef.close(new SelectionOptionsDialogResult(SelectionOption.NEW_ROI, ""));
+    }
+
+    onSelectForSubDataset(id: string): void
+    {
+        this.dialogRef.close(new SelectionOptionsDialogResult(SelectionOption.SEL_SUBDATASET, id));
+    }
+
+    onInvertSelection(): void
+    {
+        this.dialogRef.close(new SelectionOptionsDialogResult(SelectionOption.SEL_INVERT, ""));
     }
 }

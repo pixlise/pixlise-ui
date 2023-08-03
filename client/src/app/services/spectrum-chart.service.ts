@@ -43,16 +43,13 @@ import { SelectionService } from "./selection.service";
 export class SpectrumChartService
 {
 // Proper cleanup
-    //private _id = randomString(4);
     private _subs = new Subscription();
 
     private _mdl: SpectrumChartModel = null;
     private _mdl$ = new ReplaySubject<void>(1);
 
     constructor(
-        private _datasetService: DataSetService,
         private _widgetDataService: WidgetRegionDataService,
-        private _selectionService: SelectionService,
         private _diffractionService: DiffractionPeakService,
     )
     {
@@ -107,8 +104,13 @@ export class SpectrumChartService
         let quant = this._widgetDataService.quantificationLoaded;
         if(quant)
         {
-            let calib = quant.getAverageEnergyCalibration();
-            this._mdl.setQuantificationeVCalibration(calib);
+            let calib$ = quant.getAverageEnergyCalibration();
+            calib$.subscribe(
+                (calib)=>
+                {
+                    this._mdl.setQuantificationeVCalibration(calib);
+                }
+            );
         }
     }
 

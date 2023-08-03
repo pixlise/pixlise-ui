@@ -54,12 +54,24 @@ export class TableData
     constructor(
         public title: string,
         public circleColourStr: string,
-        public valueSuffix: string,
+        public valueSuffix: string|string[],
         public headers: TableHeaderItem[],
         public rows: TableRow[],
         public totalsRow: TableRow,
     )
     {
+    }
+
+    getSuffix(index: number): string
+    {
+        if(Array.isArray(this.valueSuffix))
+        {
+            return this.valueSuffix[index];
+        }
+        else
+        {
+            return this.valueSuffix;
+        }
     }
 
     static makeEmpty(): TableData

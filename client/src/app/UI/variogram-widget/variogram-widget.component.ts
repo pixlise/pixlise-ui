@@ -35,6 +35,7 @@ import { MinMax } from "src/app/models/BasicTypes";
 import { distanceBetweenPoints, Point } from "src/app/models/Geometry";
 import { orderVisibleROIs, PredefinedROIID } from "src/app/models/roi";
 import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { SelectionService } from "src/app/services/selection.service";
 import { variogramState, ViewStateService } from "src/app/services/view-state.service";
@@ -47,18 +48,11 @@ import { KeyItem } from "src/app/UI/atoms/widget-key-display/widget-key-display.
 import { ExpressionPickerComponent, ExpressionPickerData } from "src/app/UI/expression-picker/expression-picker.component";
 import { ROIPickerComponent, ROIPickerData } from "src/app/UI/roipicker/roipicker.component";
 import { RGBA } from "src/app/utils/colours";
+import { xor_sum } from "src/app/utils/utils";
 import { VariogramDrawer } from "./drawer";
 import { VariogramInteraction } from "./interaction";
 import { VariogramModel } from "./model";
 import { VariogramData, VariogramPoint, VariogramPointGroup } from "./vario-data";
-
-
-
-
-
-
-
-
 
 
 @Component({
@@ -75,6 +69,8 @@ export class VariogramWidgetComponent implements OnInit
     private _subs = new Subscription();
     private _visibleROIs: string[] = [];
     private _expressionIds: string[] = [];
+
+    expressionNames: string[] = [];
 
     drawModeVector: boolean = false;
 
@@ -93,6 +89,9 @@ export class VariogramWidgetComponent implements OnInit
     binSliderMax: number = 1;
 
     private _viewInited: boolean = false;
+
+    xorLeft: boolean = false;
+    xorRight: boolean = false;
 
     constructor(
         private _exprService: DataExpressionService,
@@ -274,6 +273,22 @@ export class VariogramWidgetComponent implements OnInit
         this.prepareData(reason, null);
     }
 
+    setCombiningAlgorithm(xor: boolean, left: boolean): void
+    {
+        if(left)
+        {
+            this.xorLeft = xor;
+        }
+        else
+        {
+            this.xorRight = xor;
+        }
+        
+        const reason = "combining-alg";
+        this.saveState(reason);
+        this.prepareData(reason, null);
+    }
+
     private saveState(reason: string): void
     {
         console.log("variogram saveState called due to: "+reason);
@@ -346,7 +361,7 @@ export class VariogramWidgetComponent implements OnInit
         //dialogConfig.autoFocus = true;
         //dialogConfig.width = '1200px';
 
-        dialogConfig.data = new ExpressionPickerData("Plot Axis", DataExpressionService.DataExpressionTypeAll, this._expressionIds, false, false, false);
+        dialogConfig.data = new ExpressionPickerData("Plot Axis", this._expressionIds, false, false, false);
 
         const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
 
@@ -385,7 +400,6 @@ export class VariogramWidgetComponent implements OnInit
         this.setDefaultsIfNeeded(widgetUpdReason);
 
         // Use widget data service to rebuild our data model
-        let queryData: RegionDataResults = null;
         let query: DataSourceParams[] = [];
 
         // Query each region for both expressions if we have any...
@@ -395,25 +409,43 @@ export class VariogramWidgetComponent implements OnInit
             {
                 for(let exprId of this._expressionIds)
                 {
-                    query.push(new DataSourceParams(exprId, roiId));
+                    query.push(new DataSourceParams(exprId, roiId, ""));
                 }
             }
 
-            queryData = this._widgetDataService.getData(query, false);
+            this._widgetDataService.getData(query, false).subscribe(
+                (queryData=>
+                {
+                    this.processQueryResult(t0, queryData);
+                })
+            )
         }
+        else
+        {
+            this.processQueryResult(t0, null);
+        }
+    }
 
+    private processQueryResult(t0: number, queryData: RegionDataResults)
+    {
         let title = "";
         if(queryData && !queryData.hasQueryErrors() && this._expressionIds.length > 0)
         {
+            this.expressionNames = [];
             for(let exprId of this._expressionIds)
             {
                 let expr = this._exprService.getExpression(exprId);
-                let label = this._exprService.getExpressionShortDisplayName(expr.id, 12).shortName;
-                if(title.length > 0)
+                if(expr)
                 {
-                    title += " / ";
+                    let label = expr.getExpressionShortDisplayName(12).shortName;
+                    this.expressionNames.push(expr.name);
+
+                    if(title.length > 0)
+                    {
+                        title += " / ";
+                    }
+                    title += label;
                 }
-                title += label;
             }
         }
 
@@ -463,8 +495,7 @@ export class VariogramWidgetComponent implements OnInit
         let queryIdx = 0;
         for(let pts of varioPoints)
         {
-            const roiId = query[queryIdx].roiId;
-            let region = this._widgetDataService.regions.get(roiId);
+            let region = queryData.queryResults[queryIdx].region;
             if(!region.colour)
             {
                 continue;
@@ -506,7 +537,7 @@ export class VariogramWidgetComponent implements OnInit
             this._expressionIds.length <= 0 ||
             (
                 widgetUpdReason == WidgetDataUpdateReason.WUPD_QUANT &&
-                DataExpressionService.hasPseudoIntensityExpressions(this._expressionIds)
+                DataExpressionId.hasPseudoIntensityExpressions(this._expressionIds)
             )
         )
         {
@@ -620,7 +651,10 @@ export class VariogramWidgetComponent implements OnInit
 
                         // Cross-variogram point:
                         // difference in elem1 * difference in elem 2
-                        result[binIdx].sum += (elem1.values[c].value-elem1.values[i].value) * (elem2.values[c].value-elem2.values[i].value);
+                        let lvalue = this.xorLeft ? xor_sum(elem1.values[c].value, elem1.values[i].value) : (elem1.values[c].value-elem1.values[i].value);
+                        let rvalue = this.xorRight ? xor_sum(elem2.values[c].value, elem2.values[i].value) : (elem2.values[c].value-elem2.values[i].value);
+
+                        result[binIdx].sum += lvalue * rvalue;
                         result[binIdx].count++;
                     }
                 }
@@ -679,7 +713,7 @@ export class VariogramWidgetComponent implements OnInit
         {
             // Start off with some reasonable defaults
             this._variogramModel.maxDistance = (this.distanceSliderMin+this.distanceSliderMax)/2;
-            this._variogramModel.binCount = (this.binSliderMin+this.binSliderMax)/2;
+            this._variogramModel.binCount = Math.floor((this.binSliderMin+this.binSliderMax)/2);
         }
     }
 }

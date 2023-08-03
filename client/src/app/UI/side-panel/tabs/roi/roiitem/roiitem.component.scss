@@ -78,6 +78,10 @@
     background-color: $clr-gray-90;
 }
 
+.pmc-dataset-heading {
+    font-weight: bold;
+}
+
 .limited-length-text {
     max-width: $side-panel-label-width;
     color: $clr-gray-30;
@@ -86,6 +90,14 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.roi-label {
+    max-width: 120px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;   
 }
 
 .description-container {

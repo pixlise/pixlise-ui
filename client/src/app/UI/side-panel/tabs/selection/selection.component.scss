@@ -52,6 +52,10 @@
     background-color: $clr-gray-90;
 }
 
+.pmc-dataset-heading {
+    font-weight: bold;
+}
+
 .scrollable-container {
     max-height: calc(100vh - 300px) !important;
 }

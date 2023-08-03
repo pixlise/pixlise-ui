@@ -67,7 +67,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div fxLayout="column" class="unit-padding light-background gap-separated-vertical-elements">
         <push-button (onClick)="onSelectPMCsWithDiffraction()" buttonStyle="outline">Select PMCs with Diffraction</push-button>
-        <push-button (onClick)="onSaveAsExpressionMap()" [disabled]="selectedRangeCount()==0" buttonStyle="outline">Save Selection as Expression Map</push-button>
+        <push-button (onClick)="onSaveAsExpressionMap()" [disabled]="selectedRangeCount()==0 || !canSaveExpression" buttonStyle="outline">Save Selection as Expression Map</push-button>
     </div>
     <div fxLayout="column" class="scrollable" style="max-height: calc(100vh - 386px)">
         <closable-list label="User Entered Peaks" [visibleOverride]="userPeaksListOpen" (onToggleVisible)="onToggleUserPeaksListOpen($event)">

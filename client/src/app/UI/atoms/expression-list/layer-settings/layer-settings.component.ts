@@ -29,10 +29,12 @@
 
 import { Component, ElementRef, Input, OnInit, Output, EventEmitter } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Subscription } from "rxjs";
+import { Observable, Subscription, combineLatest, of } from "rxjs";
+import { map } from "rxjs/operators";
 import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
 import { AuthenticationService } from "src/app/services/authentication.service";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { PickerDialogComponent, PickerDialogData, PickerDialogItem } from "src/app/UI/atoms/picker-dialog/picker-dialog.component";
 import { SliderValue } from "src/app/UI/atoms/slider/slider.component";
 import { ElementColumnPickerComponent, ElementColumnPickerDialogData } from "src/app/UI/atoms/expression-list/layer-settings/element-column-picker/element-column-picker.component";
@@ -41,12 +43,17 @@ import { ColourRamp } from "src/app/utils/colours";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { CanvasExportItem, CSVExportItem, generatePlotImage, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../../plot-exporter-dialog/plot-exporter-dialog.component";
 import { DataSetService } from "src/app/services/data-set.service";
-import { ClientSideExportGenerator } from "src/app/UI/export-data-dialog/client-side-export";
+import { ClientSideExportGenerator } from "src/app/UI/atoms/export-data-dialog/client-side-export";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { ExportDrawer } from "src/app/UI/context-image-view-widget/drawers/export-drawer";
-import { DataSourceParams, RegionDataResults, WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { PredefinedROIID } from "src/app/models/roi";
-import { ItemTag } from "src/app/models/tags";
+import { TaggingService } from "src/app/services/tagging.service";
+import { generateExportCSVForExpression } from "src/app/services/export-data.service";
+import { Router } from "@angular/router";
+import { DataModuleService } from "src/app/services/data-module.service";
+import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
+import { LiveLayerConfig } from "../expression-list.component";
 
 
 export class LayerInfo
@@ -66,7 +73,7 @@ export class LayerInfo
         let filteredIDs = [];
         for(let id of allIDs)
         {
-            if(DataExpressionService.getPredefinedQuantExpressionDetector(id) == detectorFilter)
+            if(DataExpressionId.getPredefinedQuantExpressionDetector(id) == detectorFilter)
             {
                 filteredIDs.push(id);
             }
@@ -109,6 +116,10 @@ export class LayerSettingsComponent implements OnInit
 
     @Input() layerInfo: LayerInfo;
 
+    @Input() isModule: boolean = false;
+
+    @Input() isCurrentlyOpen: boolean = false;
+    @Input() isInstalledModule: boolean = false;
     @Input() showSlider: boolean;
     @Input() showSettings: boolean;
     @Input() showShare: boolean;
@@ -118,24 +129,39 @@ export class LayerSettingsComponent implements OnInit
     @Input() showVisible: boolean;
     @Input() showPureSwitch: boolean;
     @Input() showTagPicker: boolean;
+    @Input() showSplitScreenButton: boolean;
+    @Input() showPreviewButton: boolean;
     
     @Input() detectors: string[] = [];
     
     @Input() activeIcon: string;
     @Input() inactiveIcon: string;
 
+    @Input() isPreviewMode: boolean = false;
+    @Input() isSidePanel: boolean = false;
+    @Input() isSplitScreen: boolean = false;
+    @Input() isPublicUser: boolean = false;
+
+    @Input() customOptions: LiveLayerConfig = null;
+
     @Output() visibilityChange = new EventEmitter();
+    @Output() onLayerImmediateSelection = new EventEmitter();
     @Output() colourChange = new EventEmitter();
+    @Output() openSplitScreen = new EventEmitter();
+    @Output() onDeleteEvent = new EventEmitter();
 
     private _isPureElement: boolean = false;
     private _expressionElement: string = "";
 
     constructor(
+        private _router: Router,
         private _exprService: DataExpressionService,
+        private _moduleService: DataModuleService,
         private _authService: AuthenticationService,
         private _datasetService: DataSetService,
         private _contextImageService: ContextImageService,
         private _widgetDataService: WidgetRegionDataService,
+        private _taggingService: TaggingService,
         public dialog: MatDialog,
     )
     {
@@ -144,7 +170,7 @@ export class LayerSettingsComponent implements OnInit
     ngOnInit()
     {
         this._isPureElement = false;
-        this._expressionElement = DataExpressionService.getPredefinedQuantExpressionElement(this.layerInfo.layer.id);
+        this._expressionElement = DataExpressionId.getPredefinedQuantExpressionElement(this.layerInfo.layer.id);
         let state = periodicTableDB.getElementOxidationState(this._expressionElement);
         if(state && state.isElement)
         {
@@ -157,6 +183,37 @@ export class LayerSettingsComponent implements OnInit
         this._subs.unsubscribe();
     }
 
+    get isBuiltIn(): boolean
+    {
+        return this.layerInfo?.layer?.id?.startsWith("builtin-") || false;
+    }
+
+    get customIcon(): string
+    {
+        return this.customOptions?.icon || "";
+    }
+
+    get customIconTooltip(): string
+    {
+        return this.customOptions?.iconTooltip || "";
+    }
+
+    get customSideColour(): string
+    {
+        return this.customOptions?.sideColour || "";
+    }
+
+    get tagType(): string
+    {
+        return this.customOptions?.tagType || "expression";
+    }
+
+    get labelColour(): string
+    {
+        let colour = this.customOptions?.labelColour || "$clr-gray-10";
+        return this.layerInfo?.layer?.isOutOfDate ? "#FC8D59" : colour;
+    }
+
     get showSettingsButton(): boolean
     {
         if(!this.showSettings)
@@ -166,7 +223,7 @@ export class LayerSettingsComponent implements OnInit
 
         // If we are a predefined expression and NOT an element, we don't show this
         // this is for things like chisq and unquantified weight%
-        if(DataExpressionService.isPredefinedExpression(this.layerInfo.layer.id) && this._expressionElement.length <= 0)
+        if(DataExpressionId.isPredefinedExpression(this.layerInfo.layer.id) && this._expressionElement.length <= 0)
         {
             return false;
         }
@@ -186,6 +243,21 @@ export class LayerSettingsComponent implements OnInit
         });
 
         return notificationCount;
+    }
+
+    get collapsedNotificationTooltipText(): string
+    {
+        let tooltipText = "";
+        this.hiddenLayerButtons.forEach(button =>
+        {
+            if(button === "showTagPicker" && this.selectedTagIDs.length > 0)
+            {
+                tooltipText += "Tags:\n";
+                tooltipText += this.selectedTagIDs.map(tagID => this._taggingService.getTagName(tagID)).join("\n");
+            }
+        });
+
+        return tooltipText.length > 0 ? tooltipText : "View more options";
     }
 
     get labelToShow(): string
@@ -225,7 +297,7 @@ export class LayerSettingsComponent implements OnInit
         return t;
     }
 
-    get expressionHover(): string
+    get expressionCommentsHover(): string
     {
         if(this.layerInfo.layer.source)
         {
@@ -239,7 +311,7 @@ export class LayerSettingsComponent implements OnInit
                     return "Expression is incompatible with currently loaded quantification. Elements or detectors are mismatched";
                 }
 
-                return expr.expression;
+                return expr.comments;
             }
         }
         return "";
@@ -260,6 +332,37 @@ export class LayerSettingsComponent implements OnInit
 
         return comments;
     }
+
+    get minLabelTextWidth(): string
+    {
+        return Math.min(this.labelToShow.length, 10) + "ch";
+    }
+
+    get labelsWidth(): string
+    {
+        let layerWidth = 273;
+        let buttonIconsWidth = this.visibleLayerButtons.length * 33;
+        if(this.hiddenLayerButtons.length > 0)
+        {
+            buttonIconsWidth += 33;
+        }
+
+        let availableSpace = layerWidth - buttonIconsWidth;
+
+        return this.isSidePanel ? `${availableSpace > 0 ? availableSpace : 50}px` : "calc(35vw - 48px - 230px)";
+    }
+
+    get commentWidth(): string
+    {
+        return this.isSidePanel ? "180px" : "calc(35vw - 48px - 230px)";
+    }
+
+    get isPixlangExpression(): boolean
+    {
+        let isDataExpression = this.layerInfo?.layer?.source && this.layerInfo.layer.source instanceof DataExpression;
+        return isDataExpression && (this.layerInfo.layer.source as DataExpression).sourceLanguage === EXPR_LANGUAGE_PIXLANG;
+    }
+
     /*
     get expressionErrorMessage(): string
     {
@@ -289,17 +392,17 @@ export class LayerSettingsComponent implements OnInit
     onTogglePureElement(): void
     {
         // Find the expression in the sub-list that we need to mark as visible...
-        let detector = DataExpressionService.getPredefinedQuantExpressionDetector(this.layerInfo.layer.id);
+        let detector = DataExpressionId.getPredefinedQuantExpressionDetector(this.layerInfo.layer.id);
 
         let allIDs = [this.layerInfo.layer.id, ...this.layerInfo.subLayerIDs];
         for(let id of allIDs)
         {
             // Select if it has the right ID and the inverse pure state that we (still) have stored
-            let elem = DataExpressionService.getPredefinedQuantExpressionElement(id);
+            let elem = DataExpressionId.getPredefinedQuantExpressionElement(id);
             let state = periodicTableDB.getElementOxidationState(elem);
             if(
                 state &&
-                DataExpressionService.getPredefinedQuantExpressionDetector(id) === detector &&
+                DataExpressionId.getPredefinedQuantExpressionDetector(id) === detector &&
                 this._isPureElement !== state.isElement
             )
             {
@@ -328,16 +431,23 @@ export class LayerSettingsComponent implements OnInit
     {
         if(confirm("Are you sure you want to delete this expression?"))
         {
-            this._exprService.del(this.layerInfo.layer.id).subscribe(
-                ()=>
-                {
-                    console.log("Deleted data expression: "+this.layerInfo.layer.expressionID);
-                },
-                (err)=>
-                {
-                    alert("Failed to delete data expression: "+this.layerInfo.layer.expressionID+" named: "+this.layerInfo.layer.name);
-                }
-            );
+            if(this.isSidePanel)
+            {
+                this.onDeleteEvent.emit(this.layerInfo.layer.id);
+            }
+            else
+            {
+                this._exprService.del(this.layerInfo.layer.id).subscribe(
+                    ()=>
+                    {
+                        console.log("Deleted data expression: "+this.layerInfo.layer.expressionID);
+                    },
+                    (err)=>
+                    {
+                        alert("Failed to delete data expression: "+this.layerInfo.layer.expressionID+" named: "+this.layerInfo.layer.name);
+                    }
+                );
+            }
         }
     }
 
@@ -425,47 +535,86 @@ export class LayerSettingsComponent implements OnInit
         this.visibilityChange.emit(new LayerVisibilityChange(visibleLayerID, true, this.layerInfo.layer.opacity, idsToHide));
     }
 
-    protected onExpressionSettings(event): void
+    onSplitScreen(event): void
     {
+        if(this.isModule)
+        {
+            this._moduleService.getLatestModuleVersion(this.layerInfo.layer.id).subscribe((latestVersion) =>
+            {
+                this.openSplitScreen.emit({ id: this.layerInfo.layer.id, version: latestVersion.version.version, isModule: true });
+            });
+        }
+        else
+        {
+            this.openSplitScreen.emit({ id: this.layerInfo.layer.id, version: null, isModule: false });
+        }
+    }
+
+    private _navigateToCodeEditor(id: string, version: string = null): void
+    {
+        if(version)
+        {
+            this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=>
+                this._router.navigate(["dataset", this._datasetService.datasetIDLoaded, "code-editor", id], {queryParams: { version }})
+            );
+        }
+        else
+        {
+            this._router.navigateByUrl("/", {skipLocationChange: true}).then(()=>
+                this._router.navigate(["dataset", this._datasetService.datasetIDLoaded, "code-editor", id])
+            );
+        }
+    }
+
+    private openCodeModal(): void
+    {
+        // Editing isn't allowed in the mini-modal
         const dialogConfig = new MatDialogConfig();
         dialogConfig.panelClass = "panel";
-        dialogConfig.disableClose = true;
-        //dialogConfig.backdropClass = "panel";
 
-        let toEdit = this._exprService.getExpression(this.layerInfo.layer.id);
-
-        // We only allow editing if we were allowed to, AND if expression is NOT shared AND if it was created by our user
-        dialogConfig.data = new ExpressionEditorConfig(toEdit, this.showSettings && !this.layerInfo.layer.source.shared && !this.isSharedByOtherUser);
-
-        const dialogRef = this.dialog.open(ExpressionEditorComponent, dialogConfig);
-
-        dialogRef.afterClosed().subscribe(
-            (dlgResult: ExpressionEditorConfig)=>
+        if(this.isModule)
+        {
+            this._moduleService.getLatestModuleVersion(this.layerInfo.layer.id).subscribe((latestVersion) =>
             {
-                if(!dlgResult)
+                let convertedModule = latestVersion.convertToExpression();   
+                dialogConfig.data = new ExpressionEditorConfig(convertedModule, false, false, false, !this.isPreviewMode, this.isPublicUser);
+                this.dialog.open(ExpressionEditorComponent, dialogConfig);
+            });
+        }
+        else
+        {
+            this._exprService.getExpressionAsync(this.layerInfo.layer.id).subscribe(
+                (expression)=>
                 {
-                    // User probably cancelled
-                }
-                else
+                    dialogConfig.data = new ExpressionEditorConfig(expression, false, false, false, !this.isPreviewMode, this.isPublicUser);
+                    this.dialog.open(ExpressionEditorComponent, dialogConfig);
+                },
+                (err)=>
                 {
-                    let expr = new DataExpression(toEdit.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments, toEdit.shared, toEdit.creator, toEdit.createUnixTimeSec, toEdit.modUnixTimeSec);
-                    this._exprService.edit(this.layerInfo.layer.id, dlgResult.expr.name, dlgResult.expr.expression, toEdit.type, dlgResult.expr.comments).subscribe(
-                        ()=>
-                        {
-                            // Don't need to do anything, service refreshes
-                        },
-                        (err)=>
-                        {
-                            alert("Failed to save edit data expression: "+expr.name);
-                        }
-                    );
+                    // TODO: handle error (?)
                 }
-            },
-            (err)=>
+            );
+        }
+    }
+
+    onPreview(event): void
+    {
+        this.openCodeModal();
+    }
+
+    protected onExpressionSettings(event): void
+    {
+        if(this.isModule)
+        {
+            this._moduleService.getLatestModuleVersion(this.layerInfo.layer.id).subscribe((latestVersion) =>
             {
-                alert("Error while editing data expression: "+toEdit.name);
-            }
-        );
+                this._navigateToCodeEditor(this.layerInfo.layer.id, latestVersion.version.version);
+            });
+        }
+        else
+        {
+            this._navigateToCodeEditor(this.layerInfo.layer.id);
+        }
     }
 
     onColours(event): void
@@ -517,6 +666,12 @@ export class LayerSettingsComponent implements OnInit
         }
     }
 
+    get tooltipText(): string
+    {
+        let outOfDateWarning = this.layerInfo.layer.isOutOfDate ? "\n\n***Expression has module updates available***" : "";
+        return `${this.labelToShow}:\n\t${this.expressionCommentsHover}${outOfDateWarning}`;
+    }
+
     get selectedTagIDs(): string[]
     {
         return this.layerInfo.layer.source.tags || [];
@@ -524,9 +679,18 @@ export class LayerSettingsComponent implements OnInit
 
     onTagSelectionChanged(tagIDs: string[]): void
     {
-        this._exprService.updateTags(this.layerInfo.layer.id, tagIDs).subscribe(() => null,
-            () => alert("Failed to update tags")
-        );
+        if(this.isModule)
+        {
+            this._moduleService.updateTags(this.layerInfo.layer.id, tagIDs).subscribe(() => null,
+                () => alert("Failed to update module tags")
+            );
+        }
+        else
+        {
+            this._exprService.updateTags(this.layerInfo.layer.id, tagIDs).subscribe(() => null,
+                () => alert("Failed to update expression tags")
+            );
+        }
     }
 
     get showDetectorPicker(): boolean
@@ -538,20 +702,23 @@ export class LayerSettingsComponent implements OnInit
  
     get selectedDetector(): string
     {
-        return DataExpressionService.getPredefinedQuantExpressionDetector(this.layerInfo.layer.id);
+        return DataExpressionId.getPredefinedQuantExpressionDetector(this.layerInfo.layer.id);
     }
 
     get layerButtons(): string[]
     {
         let buttons: Record<string, boolean> = {
             showDetectorPicker: this.showDetectorPicker,
-            showShare: this.showShare && !this.sharedBy,
-            showDelete: this.showDelete && !this.isSharedByOtherUser,
+            showDelete: this.showDelete && !this.isSharedByOtherUser && !this.isPublicUser,
             showDownload: this.showDownload,
+            showShare: this.showShare && !this.sharedBy && !this.isPublicUser,
             showTagPicker: this.showTagPicker,
-            showSettingsButton: this.showSettingsButton,
+            showPixlangConvert: this.isPixlangExpression && !this.isPredefined && !DataExpressionId.isPredefinedExpression(this.layerInfo?.layer?.id)  && !this.isPublicUser,
+            showPreviewButton: this.showPreviewButton && !this.isCurrentlyOpen,
+            showSplitScreenButton: this.showSplitScreenButton && !this.isCurrentlyOpen && (this.isModule || this.isSplitScreen),
+            showSettingsButton: this.showSettingsButton && !this.isCurrentlyOpen && !this.isPublicUser,
             showColours: this.showColours,
-            showVisible: this.showVisible,
+            showVisible: this.showVisible && !this.layerInfo?.layer?.id?.startsWith("builtin-"),
         };
         return Object.entries(buttons).filter(([, visible]) => visible).map(([layerButtonName]) => layerButtonName);
     }
@@ -570,15 +737,30 @@ export class LayerSettingsComponent implements OnInit
     {
         return this.layerButtons.slice(0, this.layerButtons.length - 3);
     }
+
+    onConvertToLua(): void
+    {
+        this._exprService.convertToLua(this.layerInfo.layer.id, true).subscribe(
+            (luaExpression: object)=>
+            {
+                console.log(`Successfully Converted to Lua: ${(luaExpression as DataExpression)?.id}}`);
+                return;
+            },
+            (err)=>
+            {
+                alert("Failed to convert to Lua");
+            }
+        );
+    }
     
     onChangeDetector(detector: string)
     {
         // Work out the ID to show. Note if we're already showing this detector, we switch to the other one
-        let showLayerID = DataExpressionService.getExpressionWithoutDetector(this.layerInfo.layer.id)+"("+detector+")";
+        let showLayerID = DataExpressionId.getExpressionWithoutDetector(this.layerInfo.layer.id)+"("+detector+")";
         if(this.layerInfo.layer.id == showLayerID && this.layerInfo.subLayerIDs.length > 0)
         {
             // Find one that matches without detector... that's the one to show
-            let idWithoutDetector = DataExpressionService.getExpressionWithoutDetector(showLayerID);
+            let idWithoutDetector = DataExpressionId.getExpressionWithoutDetector(showLayerID);
             for(let subLayerID of this.layerInfo.subLayerIDs)
             {
                 if(subLayerID.startsWith(idWithoutDetector))
@@ -590,24 +772,6 @@ export class LayerSettingsComponent implements OnInit
             }
         }
         this.setVisibleSubLayer(showLayerID);
-    }
-
-    exportExpressionValues(): string
-    {
-        let queryData: RegionDataResults = this._widgetDataService.getData([new DataSourceParams(this.layerInfo.layer.id, PredefinedROIID.AllPoints)], false);
-
-        if(queryData.error)
-        {
-            throw new Error(`Failed to query CSV data for expression: ${this.layerInfo.layer.id}. ${queryData.error}`);
-        }
-
-        let csv: string = "PMC,Value\n";
-        queryData.queryResults[0].values.values.forEach(({pmc, value, isUndefined})=>
-        {
-            csv += `${pmc},${isUndefined ? "" : value}\n`;
-        });
-
-        return csv;
     }
 
     getCanvasOptions(options: PlotExporterDialogOption[]): string[]
@@ -674,7 +838,7 @@ export class LayerSettingsComponent implements OnInit
             (options: PlotExporterDialogOption[])=>
             {
                 let canvases: CanvasExportItem[] = [];
-                let csvs: CSVExportItem[] = [];
+                let csvs$: Observable<CSVExportItem>[] = [];
 
                 let drawer = new ExportDrawer(this._contextImageService.mdl, this._contextImageService.mdl.toolHost);
                 let exportIDs = this.getCanvasOptions(options);
@@ -697,13 +861,42 @@ export class LayerSettingsComponent implements OnInit
 
                 if(options.findIndex((option) => option.label == "Expression Values .csv") > -1)
                 {
-                    csvs.push(new CSVExportItem(
-                        "Expression Values",
-                        this.exportExpressionValues()
-                    ));  
+                    // Export CSV
+                    // Loop through all sub-datasets of this one if there are any
+                    let subDatasetIDs = this._datasetService.datasetLoaded.getSubDatasetIds();
+                    if(subDatasetIDs.length <= 0)
+                    {
+                        // Specify a blank one
+                        subDatasetIDs = [""];
+                    }
+
+                    for(let datasetId of subDatasetIDs)
+                    {
+                        csvs$.push(
+                            generateExportCSVForExpression([this.layerInfo.layer.id], PredefinedROIID.AllPoints, datasetId, this._widgetDataService).pipe(
+                                map(
+                                    (csvData)=>
+                                    {
+                                        return new CSVExportItem("Expression Values for dataset "+datasetId, csvData);
+                                    }
+                                )
+                            )
+                        );
+                    }
                 }
 
-                dialogRef.componentInstance.onDownload(canvases, csvs);
+                if(csvs$.length <= 0)
+                {
+                    csvs$.push(of(null));
+                }
+
+                let csvsFinished$ = combineLatest(csvs$);
+                return csvsFinished$.subscribe(
+                    (csvItems: CSVExportItem[])=>
+                    {
+                        dialogRef.componentInstance.onDownload(canvases, csvItems);
+                    }
+                );
             });
 
         return dialogRef.afterClosed();

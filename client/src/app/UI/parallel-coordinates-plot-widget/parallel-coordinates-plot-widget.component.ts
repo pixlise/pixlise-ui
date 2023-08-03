@@ -40,6 +40,11 @@ import { orderVisibleROIs } from "src/app/models/roi";
 import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 import { LayoutService } from "src/app/services/layout.service";
 import { KeyItem } from "../atoms/widget-key-display/widget-key-display.component";
+import { CSVExportItem, PlotExporterDialogComponent, PlotExporterDialogData, PlotExporterDialogOption } from "../atoms/plot-exporter-dialog/plot-exporter-dialog.component";
+import { DataSetService } from "src/app/services/data-set.service";
+import { MinMax } from "src/app/models/BasicTypes";
+import { RGBUMineralRatios } from "../rgbuplot/rgbu-data";
+import { RGBUPlotModel } from "../rgbuplot/model";
 
 export class PCPLine
 {
@@ -79,17 +84,17 @@ export class RGBUPoint
         return this._tooltipText;
     }
 
-    calculateLinesForAxes(axes: PCPAxis[], plotID: string): void
+    calculateLinesForAxes(axes: PCPAxis[], element: ElementRef, plotID: string): void
     {
-        let plotContainer = document.querySelector(`${plotID}`);
-        let domAxes = document.querySelectorAll(`${plotID} .axes .axis-container`);
+        let plotContainer = element?.nativeElement?.querySelector(`.${plotID}`);
+        let domAxes = plotContainer?.querySelectorAll(".axes .axis-container");
         if(!domAxes || !plotContainer || domAxes.length != axes.length)
         {
             // Something isn't loaded right, don't continue drawing
             return;
         }
 
-        let axesXLocations = Array.from(domAxes).map((axis) =>
+        let axesXLocations = Array.from(domAxes).map((axis: any) =>
         {
             let clientRect = axis.getBoundingClientRect();
             return clientRect.x + clientRect.width/2;
@@ -156,8 +161,6 @@ export class PCPAxis
 
     public clearSelection(): void
     {
-        this.minSelection = 0;
-        this.maxSelection = 0;
         this.activeSelection = false;
     }
 
@@ -199,11 +202,15 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
     public keyShowing: boolean = false;
     public keyItems: KeyItem[] = [];
 
+    public minerals: string[] = [];
+
     constructor(
+        private _elementRef: ElementRef,
         private _contextImageService: ContextImageService,
         private _selectionService: SelectionService,
         private _widgetDataService: WidgetRegionDataService,
         private _viewStateService: ViewStateService,
+        private _datasetService: DataSetService,
         private _layoutService: LayoutService,
         public dialog: MatDialog
     )
@@ -423,6 +430,22 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
         return avgData;
     }
 
+    private _getCrossChannelMinMax(pointA: RGBUPoint, pointB: RGBUPoint, channels: string[], bufferPercent: number): MinMax
+    {
+        let minMax = new MinMax();
+        channels.forEach((channel) =>
+        {
+            minMax.expand(pointA[channel]);
+            minMax.expand(pointB[channel]);
+        });
+
+        let buffer = (minMax.max - minMax.min) * bufferPercent;
+        minMax.expandMin(minMax.min - buffer);
+        minMax.expandMax(minMax.max + buffer);
+
+        return minMax;
+    }
+
     private _getMinPoint(pointA: RGBUPoint, pointB: RGBUPoint): RGBUPoint
     {
         let minPoint = new RGBUPoint();
@@ -476,6 +499,10 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
 
         // Make sure we're starting with a clean slate
         this._data = [];
+
+        // Add the visible minerals
+        this._data = this._data.concat(this.visibleMinerals);
+
         let selectedPixels = new Set<number>();
         if(this._selectionService && this._selectionService.getCurrentSelection())
         {
@@ -490,7 +517,7 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
         {
             let selectionColor = "110,239,255";
             let averageSelection = this.getROIAveragePoint(selectedPixels, selectionColor, "Selection");
-            averageSelection.calculateLinesForAxes(this.visibleAxes, this.plotID);
+            averageSelection.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID);
             this.keyItems.push(new KeyItem("SelectedPoints", "Selection", `rgba(${selectionColor},255)`));
             this._data.push(averageSelection);
         }
@@ -507,7 +534,7 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
             let colorStr = `${color.r},${color.g},${color.b}`;
             this.keyItems.push(new KeyItem(roiID, roi.name, color));
             let averagePoint = this.getROIAveragePoint(roi.pixelIndexes, colorStr, roi.name, roiID === "AllPoints");
-            averagePoint.calculateLinesForAxes(this.visibleAxes, this.plotID);
+            averagePoint.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID);
             this._data.push(averagePoint);
         });
 
@@ -525,10 +552,23 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
             maxPoint = this._getMaxPoint(maxPoint, point);
         });
 
+        let rgbuChannels = ["r", "g", "b", "u"];
+        let ratioChannels = ["rg", "rb", "ru", "gb", "gu", "bu"];
+        let crossRGBUMinMax = this._getCrossChannelMinMax(minPoint, maxPoint, rgbuChannels, 0.05);
+        let crossRatioMinMax = this._getCrossChannelMinMax(minPoint, maxPoint, ratioChannels, 0.05);
+
         this.axes.forEach(axis =>
         {
-            axis.min = minPoint[axis.key];
-            axis.max = maxPoint[axis.key];
+            if(rgbuChannels.includes(axis.key))
+            {
+                axis.min = crossRGBUMinMax.min;
+                axis.max = crossRGBUMinMax.max;
+            }
+            else
+            {
+                axis.min = crossRatioMinMax.min;
+                axis.max = crossRatioMinMax.max;
+            }
         });
     }
 
@@ -544,12 +584,51 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
 
     get plotID(): string
     {
-        return `#parallel-coords-${this.widgetPosition}`;
+        return `parallel-coords-${this.widgetPosition}`;
     }
 
     get visibleAxes(): PCPAxis[]
     {
         return this.axes.filter((axis) => axis.visible);
+    }
+    
+    get visibleMinerals(): RGBUPoint[]
+    {
+        return this.minerals.map((mineralName) =>
+        {
+            let mineralIndex = RGBUMineralRatios.names.findIndex((mineral) => mineral === mineralName);
+            let rgbuValues = RGBUMineralRatios.ratioValues[mineralIndex];
+
+            return new RGBUPoint(
+                rgbuValues[0] * 255,
+                rgbuValues[1] * 255,
+                rgbuValues[2] * 255,
+                rgbuValues[3] * 255,
+                rgbuValues[0] / rgbuValues[1],
+                rgbuValues[0] / rgbuValues[2],
+                rgbuValues[0] / rgbuValues[3],
+                rgbuValues[1] / rgbuValues[2],
+                rgbuValues[1] / rgbuValues[3],
+                rgbuValues[2] / rgbuValues[3],
+                "234,58,238",
+                mineralName,
+            );
+        });
+    }
+
+    onMinerals(event): void
+    {
+        RGBUPlotModel.selectMinerals(this.dialog, this.minerals, (mineralsShown) => 
+        {
+            if(mineralsShown)
+            {
+                this.minerals = mineralsShown;
+                const reason = "mineral-choice";
+                this.saveState(reason);
+                this._prepareData(reason);
+                this.recalculateLines();
+            }
+        });
     }
 
     toggleLineVisibility(): void
@@ -572,10 +651,59 @@ export class ParallelCoordinatesPlotWidgetComponent implements OnInit, OnDestroy
         {
             this._data.forEach(point =>
             {
-                point.calculateLinesForAxes(this.visibleAxes, this.plotID);
+                point.calculateLinesForAxes(this.visibleAxes, this._elementRef, this.plotID);
             });
         }
     }
+
+    exportPlotData(): string
+    {
+        let axisNames = this.visibleAxes.map((axis) => `"${axis.title.replace(/"/g, "'")}"`);
+        let axisKeys = this.visibleAxes.map((axis) => axis.key);
+        let data = `"ROI",${axisNames.join(",")}\n`;
+        this._data.forEach((rgbuPoint) =>
+        {
+            let row = [rgbuPoint.name, axisKeys.map((key) => rgbuPoint[key])];
+            data += `${row.join(",")}\n`;
+        });
+
+        return data;
+    }
+
+    onExport()
+    {
+        if(this._data)
+        {
+            let exportOptions = [
+                new PlotExporterDialogOption("Plot Data .csv", true),
+            ];
+
+            const dialogConfig = new MatDialogConfig();
+            dialogConfig.data = new PlotExporterDialogData(`${this._datasetService.datasetLoaded.getId()} - Parallel Coords Plot`, "Export Parallel Coordinates Plot", exportOptions);
+
+            const dialogRef = this.dialog.open(PlotExporterDialogComponent, dialogConfig);
+            dialogRef.componentInstance.onConfirmOptions.subscribe(
+                (options: PlotExporterDialogOption[])=>
+                {
+                    let optionLabels = options.map(option => option.label);
+                    let csvs: CSVExportItem[] = [];
+
+                    if(optionLabels.indexOf("Plot Data .csv") > -1)
+                    {
+                        // Export CSV
+                        csvs.push(new CSVExportItem(
+                            "Parallel Coords Plot Data",
+                            this.exportPlotData()
+                        ));
+                    }
+
+                    dialogRef.componentInstance.onDownload([], csvs);
+                });
+
+            return dialogRef.afterClosed();
+        }
+    }
+
 
     @HostListener("window:resize", ["$event"])
     onResize()

@@ -43,8 +43,20 @@ POSSIBILITY OF SUCH DAMAGE.
                 class="gap-separated-horizontal-elements meta-row">
                 <span>Custom Title</span>
                 <input *ngIf="title !== null" [(ngModel)]="title" type="text" placeholder="Custom Title..." fxFlex="100%">
+            </div>
+            <div
+                fxLayout="row"
+                fxLayoutAlign="space-between center"
+                class="gap-separated-horizontal-elements meta-row">
+                <span>Default Context Image</span>
+                <input *ngIf="defaultContextImage !== null" [(ngModel)]="defaultContextImage" type="text" placeholder="File Name..." fxFlex="100%">
+            </div>
+            <div
+                fxLayout="row"
+                fxLayoutAlign="space-between center"
+                class="gap-separated-horizontal-elements meta-row">
                 <mat-spinner *ngIf="title === null" [diameter]="24" color="accent"></mat-spinner>
-                <push-button (onClick)="onSaveTitle()" buttonStyle="yellow">Save</push-button>
+                <push-button (onClick)="onSaveChanges()" buttonStyle="yellow">Save</push-button>
             </div>
             <!-- scrollable list of files -->
             <div fxLayout="column" class="scrollable-container" fxFlex="100%">

@@ -206,8 +206,17 @@ export class RegionManager
 
     setDataset(dataset: DataSet): void
     {
+        // Ignore if it's the same dataset
+        if(this._dataset?.getId() === dataset?.getId())
+        {
+            return;
+        }
+
         this._dataset = dataset;
-        this.regenerate();
+
+        // We used to call this, but realised setDataset() is only called before a widgetDataUpdated() which also regenerates
+        // so don't do it twice!
+        //this.regenerate();
     }
 
     get regions$(): ReplaySubject<RegionChangeInfo>

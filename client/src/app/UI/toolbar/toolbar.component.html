@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="row" fxLayoutAlign="space-between center" class="toolbar"
   [ngClass]="{'dark-background': darkBackground}">
-  <img src="assets/logos/pixlise.svg" title="Home Page" class="clickable" (click)="onAbout()">
+  <img src="assets/PIXLISE-large.svg" title="Home Page" class="clickable" (click)="onAbout()">
 
   <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
     <missing-data-indicator></missing-data-indicator>
@@ -61,7 +61,7 @@ POSSIBILITY OF SUCH DAMAGE.
   <div *ngIf="isLoggedIn" fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements-wide">
     <current-quantification *ngIf="showQuantPicker"></current-quantification>
 
-    <a [href]="discussLink" class="nav-link-normal" target="_blank">Discussion</a>
+    <a *ngIf="!isPublicUser" [href]="discussLink" class="nav-link-normal" target="_blank">Discussion</a>
 
     <a *ngFor="let tab of tabs" [href]="tab.url" (click)="onNavigate(tab, $event)"
       class="{{tab.cssClass}}">{{tab.label}}</a>

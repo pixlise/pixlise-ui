@@ -35,7 +35,6 @@ import { Subscription } from "rxjs";
 import { AuthenticationService } from "src/app/services/authentication.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { ExportDataService } from "src/app/services/export-data.service";
-import { ExportDataChoice } from "src/app/UI/export-data-dialog/export-models";
 import { UserMenuPanelComponent } from "src/app/UI/user-menu-panel/user-menu-panel.component";
 import { OverlayHost } from "src/app/utils/overlay-host";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
@@ -43,7 +42,9 @@ import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dial
 import { AnnotationEditorComponent, AnnotationEditorData, AnnotationTool } from "../annotation-editor/annotation-editor.component";
 import { FullScreenAnnotationItem } from "../annotation-editor/annotation-display/annotation-display.component";
 import { ViewStateService } from "src/app/services/view-state.service";
-import { ClientSideExportGenerator } from "../export-data-dialog/client-side-export";
+import { ExportDataDialogComponent } from "src/app/UI/atoms/export-data-dialog/export-data-dialog.component";
+import { ExportDataChoice, ExportDataConfig } from "src/app/UI/atoms/export-data-dialog/export-models";
+
 
 class TabNav
 {
@@ -101,10 +102,12 @@ export class ToolbarComponent implements OnInit, OnDestroy
     editAnnotationsOpen: boolean = false;
     annotationEditorDialogRef: MatDialogRef<AnnotationEditorComponent, MatDialogConfig> = null;
 
+    isPublicUser: boolean = false;
+
     constructor(
         private router: Router,
         private _datasetService: DataSetService,
-        private authService: AuthenticationService,
+        private _authService: AuthenticationService,
         private _exportService: ExportDataService,
         private _viewStateService: ViewStateService,
 
@@ -113,7 +116,7 @@ export class ToolbarComponent implements OnInit, OnDestroy
         private injector: Injector,
         private titleService: Title,
 
-        public annotationsDialog: MatDialog,
+        public dialog: MatDialog,
     )
     {
     }
@@ -126,7 +129,7 @@ export class ToolbarComponent implements OnInit, OnDestroy
         // Set up listeners for things that can change how we display...
 
         // User login/logout/claims changing
-        this._subs.add(this.authService.getIdTokenClaims$().subscribe(
+        this._subs.add(this._authService.getIdTokenClaims$().subscribe(
             (claims)=>
             {
                 this._userPiquantConfigAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionEditPiquantConfig);
@@ -193,6 +196,13 @@ export class ToolbarComponent implements OnInit, OnDestroy
             (annotations: FullScreenAnnotationItem[])=>
             {
                 this.savedAnnotations = annotations;
+            }
+        ));
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
             }
         ));
     }
@@ -280,7 +290,10 @@ export class ToolbarComponent implements OnInit, OnDestroy
             // Only enabling maps tab if a quant is loaded
             // TODO: Hide maps tap if no quants or whatever... this all changed when multiple quantifications came in, for now just enabling it always
             this.tabs.push(new TabNav("Element Maps", datasetPrefix+"/maps", true));
-            this.tabs.push(new TabNav("Quant Tracker", datasetPrefix+"/quant-logs", true));
+            if(!this.isPublicUser)
+            {
+                this.tabs.push(new TabNav("Quant Tracker", datasetPrefix+"/quant-logs", true));
+            }
         }
 
         if(this._userPiquantConfigAllowed)
@@ -319,7 +332,7 @@ export class ToolbarComponent implements OnInit, OnDestroy
 
     get isLoggedIn(): boolean
     {
-        return this.authService.loggedIn;
+        return this._authService.loggedIn;
     }
 
     onNavigate(tab: TabNav, event): void
@@ -335,7 +348,7 @@ export class ToolbarComponent implements OnInit, OnDestroy
 
     onAbout(): void
     {
-        this.router.navigateByUrl("/about");
+        this.router.navigateByUrl("/public/about-us");
     }
 
     onExport(): void
@@ -352,7 +365,15 @@ export class ToolbarComponent implements OnInit, OnDestroy
             new ExportDataChoice("ui-roi-expressions", "ROI Expression Values .csv", false, false),
         ];
 
-        this._exportService.exportData("PIXLISE Data", choices);
+        const dialogConfig = new MatDialogConfig();
+
+        //dialogConfig.disableClose = true;
+        //dialogConfig.autoFocus = true;
+        //dialogConfig.width = '1200px';
+        dialogConfig.data = new ExportDataConfig("PIXLISE Data", "", true, true, true, false, choices, this._exportService);
+
+        const dialogRef = this.dialog.open(ExportDataDialogComponent, dialogConfig);
+        //dialogRef.afterClosed().subscribe...;
     }
 
     onToggleAnnotations(active: boolean): void
@@ -373,7 +394,7 @@ export class ToolbarComponent implements OnInit, OnDestroy
         const dialogConfig = new MatDialogConfig();
         dialogConfig.hasBackdrop = false;
         dialogConfig.data = new AnnotationEditorData(this.datasetID);
-        this.annotationEditorDialogRef = this.annotationsDialog.open(AnnotationEditorComponent, dialogConfig);
+        this.annotationEditorDialogRef = this.dialog.open(AnnotationEditorComponent, dialogConfig);
 
         this.annotationEditorDialogRef.componentInstance.onActiveTool.subscribe(
             (activeTool: AnnotationTool)=>

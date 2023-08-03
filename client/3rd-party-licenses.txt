@@ -86,13 +86,13 @@ SOFTWARE.
 
 The following NPM packages may be included in this product:
 
- - @ctrl/ngx-codemirror@4.0.1
+monaco-editor@0.36.1
 
 These packages each contain the following license and notice below:
 
-MIT License
+The MIT License (MIT)
 
-Copyright (c) Scott Cooper
+Copyright (c) 2016 - present Microsoft Corporation
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -111,6 +111,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
 
 -----------
 
@@ -159,7 +160,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 The following NPM packages may be included in this product:
 
- - @types/codemirror@0.0.96
  - @types/estree@0.0.45
  - @types/mathjs@6.0.7
 
@@ -368,36 +368,6 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
------------
-
-The following NPM packages may be included in this product:
-
- - codemirror@5.58.2
-
-These packages each contain the following license and notice below:
-
-MIT License
-
-Copyright (C) 2017 by Marijn Haverbeke <marijnh@gmail.com> and others
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
 
 -----------
 
@@ -1691,107 +1661,6 @@ THE SOFTWARE.
 The following NPM packages may be included in this product:
 
  - pixlise@0.0.0
-
-These packages each contain the following license and notice below:
-
-# PIXLISE
-
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 8.1.1.
-
-## Setting up & running
-
-Make sure you have the git submodules inited - pixlise now contains data-formats as a submodule. Once you have done a git clone of the pixlise repository, you will need to run:
-```
-git submodule init
-git submodule update
-```
-
-Next, log your docker client into to registry.gitlab.com: `docker login registry.gitlab.com` and use the username/password you use to access gitlab
-
-Now you can use our build-container (with all tools pre-installed) to run `genproto.sh` to generate the protobuf serialization code (from repo root):
-
-`docker run --rm -v "$PWD":/usr/src/pixlise -w /usr/src/pixlise registry.gitlab.com/pixlise/build-container:golang-1.14.1-protoc-3.6.1-protobuf-3.11.4-angular-8.1.1 /bin/bash genproto.sh`
-
-Now to run it with the angular dev server:
-`cd client`
-`ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
-
-## Auth0 Setup
-The Auth0 account used is ok with mostly all defaults, but it does need a few specific configuration changes:
-- Add the permissions the app needs. For a list of these, search for any code using AuthenticationService class's getIdTokenClaims$() function
-- Add a "rule" to validate scopes, with the following code:
-```
-function (user, context, callback) {
-  var permissions = user.permissions || ['some:thing'];
-  var requestedScopes = context.request.body.scope || context.request.query.scope;
-  var filteredScopes = requestedScopes.split(' ').filter( function(x) {
-    return x.indexOf(':') < 0;
-  });
-
-  var allScopes = filteredScopes.concat(permissions);
-  context.accessToken.scope = allScopes.join(' ');
-  
-  context.accessToken['https://namespace/customclaim'] = permissions;
-
-  callback(null, user, context);
-}
-```
-- Add a "rule" to return permissions in the id token, with the following code:
-```
-// https://community.auth0.com/t/accessing-the-permissions-array-in-the-access-token/27559/10
-function (user, context, callback) {
-  let namespace = 'https://pixlise.qut.edu.au/auth'; // configuration.NAMESPACE
-  var map = require('array-map');
-  var ManagementClient = require('auth0@2.17.0').ManagementClient;
-  var management = new ManagementClient({
-    token: auth0.accessToken,
-    domain: auth0.domain
-  });
-
-  var params = { id: user.user_id, page: 0, per_page: 50, include_totals: true };
-  management.getUserPermissions(params, function (err, permissions) {
-    if (err) {
-      // Handle error.
-      console.log('err: ', err);
-      callback(err);
-    } else {
-      var permissionsArr = map(permissions.permissions, function (permission) {
-        return permission.permission_name;
-      });
-      context.idToken[namespace] = {
-        permissions: permissionsArr
-      };
-    }
-    callback(null, user, context);
-  });
-}
-```
-- Add a back-end API with the Audience: `pixlise-backend`
-
-Make sure the environment.ts file used for building this Angular project has values that point it to the right Auth0 domain and PIXLISE backend endpoints.
-
-## Auto-loading datasets for development
-
-`environments.ts` has an autoload flag - set to true, and it will auto-load a dataset if you are signed in and your browser is pointed to `localhost:4200/home`. To see what dataset it loads, check `routes/home/home.component.ts`.
-
-As part of this, there are some Autoload\*.json files in `/datasets/` which are uploaded as sessions by `/converter/upload.sh` so there is a consistant session to reload.
-
-## Build/deploy
-
-Run `deploy.sh` to run tests, up version, deploy to AWS
-
-## Running unit tests
-
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
-
-## Verbose build output
-
-When shit hits the fan, this can turn on lots of build output for diagnosis:
-`ng build --prod --named-chunks --verbose --build-optimizer=false --source-map >> buildoutput.txt`
 
 -----------
 

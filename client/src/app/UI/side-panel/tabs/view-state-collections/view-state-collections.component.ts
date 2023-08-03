@@ -30,6 +30,7 @@
 import { Component, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
+import { AuthenticationService } from "src/app/services/authentication.service";
 import { DataSetService } from "src/app/services/data-set.service";
 import { LoadingIndicatorService } from "src/app/services/loading-indicator.service";
 import { ViewState, ViewStateCollectionItem, ViewStateCollectionWire, ViewStateService } from "src/app/services/view-state.service";
@@ -71,12 +72,14 @@ export class ViewStateCollectionsComponent implements OnInit
     public activeCollectionId: string = "";
 
     public showShared: boolean = false;
+    public isPublicUser: boolean = false;
 
     constructor(
         private _datasetService: DataSetService,
         private _viewStateService: ViewStateService,
         public dialog: MatDialog,
         private _loadingSvc: LoadingIndicatorService,
+        private _authService: AuthenticationService
     )
     {
     }
@@ -127,6 +130,13 @@ export class ViewStateCollectionsComponent implements OnInit
             },
             (err)=>
             {
+            }
+        ));
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
             }
         ));
     }
@@ -281,7 +291,7 @@ export class ViewStateCollectionsComponent implements OnInit
         );
     }
 
-    onShareCollection(id: string, event): void
+    onSharePublicCollection(collection: ViewStateCollection, event): void
     {
         event.stopPropagation();
 
@@ -291,9 +301,53 @@ export class ViewStateCollectionsComponent implements OnInit
             return;
         }
 
-        if(!confirm("Are you sure you want to share collection: \""+id+"\"?"))
+        if(!collection.shared)
+        {
+            let isShared = this.onShareCollection(collection.id, event);
+            if(!isShared)
+            {
+                return;
+            }
+        }
+
+
+        if(!confirm(`Are you sure you want to share this collection: "${collection.id}" publicly?`))
         {
             return;
+        }
+
+        this._viewStateService.shareViewStateCollectionPublic(this._datasetService.datasetIDLoaded, collection.id).subscribe(
+            ()=>
+            {
+                this._viewStateService.refreshCollections();
+            },
+            (err)=>
+            {
+                console.error("Failed to share public collection", err);
+                alert(`Failed to share public collection: "${collection.id}" - ${err}`);
+            }
+        );
+    }
+
+    onShareCollection(id: string, event, fromPublic = false): boolean
+    {
+        event.stopPropagation();
+
+        if(!this._datasetService.datasetIDLoaded)
+        {
+            alert("Cannot get dataset ID");
+            return false;
+        }
+
+        let shareConfirmText = `Are you sure you want to share collection: "${id}"?`;
+        if(fromPublic)
+        {
+            shareConfirmText = `This collection isn't public! Do you want to share it first (collection: ${id})?`;
+        }
+
+        if(!confirm(shareConfirmText))
+        {
+            return false;
         }
 
         this._viewStateService.shareViewStateCollection(this._datasetService.datasetIDLoaded, id).subscribe(
@@ -306,6 +360,8 @@ export class ViewStateCollectionsComponent implements OnInit
                 alert("Failed to share collection: "+id);
             }
         );
+
+        return true;
     }
     /*
     onAddCurrentViewToCollection(collectionID: string): void

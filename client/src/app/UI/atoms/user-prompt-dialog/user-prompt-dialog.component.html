@@ -31,7 +31,18 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 <div fxLayout="column" class="user-prompt-dlg dlg-border-with-backdrop gap-separated-vertical-elements">
-    <h1>{{data.title}}</h1>
+    <h1>{{data.title}}
+      <tag-picker
+        *ngIf="data.showTagPicker"
+        [type]="data.tagPickerTypes[0] || 'layer'"
+        [additionalVisibleTagType]="data.tagPickerTypes.slice(1)"
+        [selectedTagIDs]="selectedTagIDs"
+        [showCurrentTagsSection]="true"
+        (onTagSelectionChanged)="onTagSelectionChanged($event)"
+      >
+      </tag-picker>
+    </h1>
+    <div class="info-text">{{data.info}}</div>
 
     <ng-container *ngFor="let name of names; let i = index">
         <h3>{{name}}</h3>

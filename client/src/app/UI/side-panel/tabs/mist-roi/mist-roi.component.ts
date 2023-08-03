@@ -27,25 +27,21 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, OnInit } from "@angular/core";
+import { Component, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
-import { ObjectCreator } from "src/app/models/BasicTypes";
-import { MistROIItem, ROIItem } from "src/app/models/roi";
+import { ROIItem } from "src/app/models/roi";
 import { ContextImageService } from "src/app/services/context-image.service";
 import { DataSetService } from "src/app/services/data-set.service";
-import { ROIReference, ROIService } from "src/app/services/roi.service";
+import { ROIService } from "src/app/services/roi.service";
 import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
-import { RegionData } from "src/app/services/widget-region-data.service";
-import { UserPromptDialogParams, UserPromptDialogStringItem } from "src/app/UI/atoms/user-prompt-dialog/user-prompt-dialog.component";
 import { RegionChangeInfo, RegionLayerInfo, RegionManager } from "src/app/UI/context-image-view-widget/region-manager";
-import { Colours, RGBA } from "src/app/utils/colours";
+import { Colours } from "src/app/utils/colours";
 import { httpErrorToString } from "src/app/utils/utils";
 import { MistRoiConvertComponent, MistROIConvertData } from "./mist-roi-convert/mist-roi-convert.component";
 import { MistRoiUploadComponent, MistROIUploadData } from "./mist-roi-upload/mist-roi-upload.component";
-
-
-
+import { DataSet } from "src/app/models/DataSet";
+import { AuthenticationService } from "src/app/services/authentication.service";
 
 
 @Component({
@@ -67,12 +63,16 @@ export class MistROIComponent implements OnInit
 
     private _selectionEmpty: boolean = true;
     roiSearchString: string = "";
+    isPublicUser: boolean = false;
+
+    private _subDataSetIDs: string[] = [];
 
     constructor(
         private _contextImageService: ContextImageService,
         private _datasetService: DataSetService,
         private _roiService: ROIService,
         private _selectionService: SelectionService,
+        private _authService: AuthenticationService,
         public dialog: MatDialog,
     )
     {
@@ -86,14 +86,29 @@ export class MistROIComponent implements OnInit
                 this.onGotModel();
             }
         ));
+
         this._subs.add(this._selectionService.selection$.subscribe(
             (sel: SelectionHistoryItem)=>
             {
                 this._selectionEmpty = sel.beamSelection.getSelectedPMCs().size <= 0 && sel.pixelSelection.selectedPixels.size <= 0;
             }
         ));
-    }
 
+        this._subs.add(this._datasetService.dataset$.subscribe(
+            (dataset: DataSet)=>
+            {
+                let sources = dataset.experiment.getScanSourcesList();
+                this._subDataSetIDs = sources.map((src) => src.getRtt());
+            }
+        ));
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
+            }
+        ));
+    }
 
     ngOnDestroy()
     {
@@ -104,7 +119,6 @@ export class MistROIComponent implements OnInit
     {
         return this._contextImageService.mdl.regionManager;
     }
-
 
     onGotModel(): void
     {
@@ -126,9 +140,7 @@ export class MistROIComponent implements OnInit
                 // Delete any that we didn't see in the new update
                 this.mistROIs = this.mistROIs.filter((region) => roiIDs.has(region.roi.id));
             },
-            (err)=>
-            {
-            }
+            () => null
         ));
     }
 
@@ -161,26 +173,129 @@ export class MistROIComponent implements OnInit
     {
         const dialogConfig = new MatDialogConfig();
 
-        dialogConfig.data = new MistROIUploadData();
+        dialogConfig.data = new MistROIUploadData(this._datasetService.datasetIDLoaded);
         const dialogRef = this.dialog.open(MistRoiUploadComponent, dialogConfig);
 
         dialogRef.afterClosed().subscribe(
-            (response: {mistROIs: ROIItem[]; deleteExisting: boolean; overwrite: boolean; skipDuplicates: boolean;})=>
+            (response: {mistROIs: ROIItem[]; deleteExisting: boolean; overwrite: boolean; skipDuplicates: boolean; mistROIsByDatasetID: Map<string, ROIItem[]>; includesMultipleDatasets: boolean; uploadToSubDatasets: boolean;})=>
             {
                 if(!response || !response?.mistROIs)
                 {
                     return;
                 }
-                this._roiService.bulkAdd(response.mistROIs, response.overwrite, response.skipDuplicates, response.deleteExisting, true).subscribe(
-                    ()=>
+
+                if(!response.includesMultipleDatasets)
+                {
+                    let locIDxCorrectedROIs = response.mistROIs.map((roi) =>
                     {
-                        this._selectionService.clearSelection();
-                    },
-                    (err)=>
+                        roi.locationIndexes = roi.locationIndexes.map((locIdx) => this._datasetService.datasetLoaded.pmcToLocationIndex.get(locIdx));
+                        return roi;
+                    });
+
+                    this._roiService.bulkAdd(locIDxCorrectedROIs, response.overwrite, response.skipDuplicates, response.deleteExisting, true).subscribe(
+                        ()=>
+                        {
+                            this._selectionService.clearSelection();
+                        },
+                        (err)=>
+                        {
+                            alert(httpErrorToString(err, ""));
+                        }
+                    );
+                }
+                else
+                {
+                    let mistROIsWithOffsets: ROIItem[] = [];
+
+                    let missingSubDatasets = Array.from(response.mistROIsByDatasetID.keys()).filter((subDataset) => !this._subDataSetIDs.includes(subDataset));
+                    if(missingSubDatasets.length > 0)
                     {
-                        alert(httpErrorToString(err, ""));
+                        if(!confirm("The following sub-datasets are missing from the current dataset: " + missingSubDatasets.join(", ") + ". Do you want to continue?"))
+                        {
+                            return;
+                        }
                     }
-                );
+                    // Only allow upload of ROIs if they're to one of the combined sub-datasets
+                    this._subDataSetIDs.forEach((subDatasetID: string) =>
+                    {
+                        let rois = response.mistROIsByDatasetID.get(subDatasetID);
+                        if(!rois)
+                        {
+                            return;
+                        }
+                        
+                        if(response.uploadToSubDatasets)
+                        {
+                            // Need to convert list of PMCs to LocationIndexes for sub-dataset
+                            this._datasetService.loadDatasetFile(subDatasetID).subscribe((subDataSetExperiment) =>
+                            {
+                                let subDataSet = new DataSet(subDatasetID, subDataSetExperiment, null);
+
+                                let subDataSetROIs = rois.map((roi) =>
+                                {
+                                    return new ROIItem(
+                                        roi.name,
+                                        roi.locationIndexes.map((locIdx) => subDataSet.pmcToLocationIndex.get(locIdx)),
+                                        roi.description,
+                                        roi.imageName,
+                                        roi.pixelIndexes,
+                                        roi.mistROIItem,
+                                        roi.tags
+                                    );
+                                });
+
+                                // Add ROIs without offsets to sub-dataset
+                                this._roiService.bulkAdd(subDataSetROIs, response.overwrite, response.skipDuplicates, response.deleteExisting, true, subDatasetID).subscribe(
+                                    ()=>
+                                    {
+                                        this._selectionService.clearSelection();
+                                    },
+                                    (err)=>
+                                    {
+                                        alert(httpErrorToString(err, ""));
+                                    }
+                                );
+                            });
+
+                        }
+
+                        rois.forEach((roi) =>
+                        {
+                            let offset = this._datasetService.datasetLoaded.getIdOffsetForSubDataset(subDatasetID);
+                            roi.locationIndexes = roi.locationIndexes.map((locIdx) =>
+                            {
+                                let offsetPMC = offset ? locIdx + offset : locIdx;
+                                return this._datasetService.datasetLoaded.pmcToLocationIndex.get(offsetPMC);
+                            });
+
+                            // We need to re-combine the ROIs with differing offsets into one ROI
+                            let existingIndex = mistROIsWithOffsets.findIndex((existingROI) => existingROI.name === roi.name);
+                            if(existingIndex >= 0)
+                            {
+                                mistROIsWithOffsets[existingIndex].locationIndexes = [
+                                    ...mistROIsWithOffsets[existingIndex].locationIndexes,
+                                    ...roi.locationIndexes
+                                ];
+                            }
+                            else
+                            {
+                                mistROIsWithOffsets.push(roi);
+                            }
+                        });
+                    });
+
+                    // Add ROIs to combined dataset
+                    this._roiService.bulkAdd(mistROIsWithOffsets, response.overwrite, response.skipDuplicates, response.deleteExisting, true).subscribe(
+                        ()=>
+                        {
+                            this._selectionService.clearSelection();
+                        },
+                        (err)=>
+                        {
+                            alert(httpErrorToString(err, ""));
+                        }
+                    );
+                }
                 this.expandedIndices = Array.from(new Set([...this.expandedIndices, 0]));
             }
         );

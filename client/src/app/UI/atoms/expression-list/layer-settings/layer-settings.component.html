@@ -60,11 +60,13 @@ POSSIBILITY OF SUCH DAMAGE.
             </icon-button>
             <tag-picker
                 *ngIf="layerButton === 'showTagPicker'"
-                type="expression"
+                [type]="tagType"
                 [selectedTagIDs]="selectedTagIDs"
                 [showCurrentTagsSection]="true"
                 [editable]="!isSharedByOtherUser"
                 (onTagSelectionChanged)="onTagSelectionChanged($event)"
+                [allowAdminBuiltin]="!isModule"
+                [ngStyle]="{'z-index': '100'}"
             >
             </tag-picker>
             <icon-button
@@ -74,9 +76,31 @@ POSSIBILITY OF SUCH DAMAGE.
                 (click)="onDownload()">
             </icon-button>
             <icon-button
-                *ngIf="layerButton === 'showSettingsButton'"
-                title="Edit expression"
+                *ngIf="layerButton === 'showPixlangConvert'"
+                #tooltip="matTooltip"
+                matTooltip="Convert expression to Lua"
+                icon="assets/button-icons/lua-language.svg"
+                (click)="onConvertToLua()">
+            </icon-button>
+            <icon-button
+                *ngIf="layerButton === 'showSplitScreenButton'"
+                #tooltip="matTooltip"
+                matTooltip="Open {{isModule ? 'module' : 'expression'}} in split screen"
+                [icon]="isModule ? 'assets/button-icons/layout-split-bottom-view.svg' : 'assets/button-icons/layout-split-top-view.svg'"
+                (click)="onSplitScreen($event)">
+            </icon-button>
+            <icon-button
+                *ngIf="layerButton === 'showPreviewButton'"
+                #tooltip="matTooltip"
+                matTooltip="Show {{isModule ? 'module' : 'expression'}} preview"
                 icon="assets/button-icons/code.svg"
+                (click)="onPreview($event)">
+            </icon-button>
+            <icon-button
+                *ngIf="layerButton === 'showSettingsButton'"
+                #tooltip="matTooltip"
+                matTooltip="Open {{isModule ? 'module' : 'expression'}}"
+                icon="{{isPredefined ? 'assets/button-icons/gear.svg' : 'assets/button-icons/layout-single-view.svg'}}"
                 (click)="onSettings($event)">
             </icon-button>
             <icon-button
@@ -97,11 +121,44 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
 </ng-template>
 
-<div fxLayout="column" class="setting-row" [ngClass]="{'setting-row-visible': visible}">
+<div 
+    fxLayout="column"
+    class="setting-row {{isCurrentlyOpen || isInstalledModule ? 'open-row' : ''}} {{isModule && !isBuiltIn ? 'module' : ''}} {{isBuiltIn ? 'built-in' : ''}}"
+    [ngClass]="{'setting-row-visible': visible}"
+    [ngStyle]="customSideColour ? {'border-left': '2px solid ' + customSideColour} : {}"
+>
     <div fxLayout="row" fxLayoutAlign="space-between center">
-        <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
-            <div class="setting-label" [title]="'Expression:\n'+expressionHover" [ngClass]='{"incompatible": incompatibleWithQuant}'>{{labelToShow}}</div>
-            <div *ngIf="sharedBy" class="obj-creator">{{sharedBy}}</div>
+        <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements labels-container" [ngStyle]="{'max-width': labelsWidth}">
+            <div 
+                class="setting-label label-text"
+                #tooltip="matTooltip"
+                [matTooltip]="tooltipText"
+                [ngClass]='{"incompatible": incompatibleWithQuant}'
+                [ngStyle]="{'min-width': minLabelTextWidth, 'color': labelColour}"
+            >{{labelToShow}}</div>
+            <div
+                *ngIf="isSharedByOtherUser"
+                class="custom-icon"
+                #tooltip="matTooltip"
+                matTooltip="This {{isModule ? 'module' : 'expression'}} is shared by another user and can't be edited."
+            >
+                <img class="custom-icon" src="assets/button-icons/lock.svg" />
+            </div>
+            <div
+                *ngIf="customIcon"
+                class="custom-icon"
+                #tooltip="matTooltip"
+                [matTooltip]="customIconTooltip"
+                [matTooltipDisabled]="!customIconTooltip"
+            >
+                <img class="custom-icon" [src]="customIcon" />
+            </div>
+            <div 
+                *ngIf="!isSidePanel && sharedBy" 
+                class="obj-creator"
+                #tooltip="matTooltip"
+                [matTooltip]="sharedBy"
+            >{{sharedBy}}</div>
         </div>
 
         <div fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements">
@@ -113,10 +170,15 @@ POSSIBILITY OF SUCH DAMAGE.
                 [maxValue]="1"
                 (onChange)="onChangeOpacity($event)">
             </slider>
-            <widget-settings-menu *ngIf="showMoreButtonVisible" [settingsDialog]="moreButtonsMenu" [noPadding]="true">
+            <widget-settings-menu 
+                *ngIf="showMoreButtonVisible"
+                [settingsDialog]="moreButtonsMenu" 
+                [noPadding]="true"
+            >
                 <icon-button
+                    #tooltip="matTooltip"
+                    [matTooltip]="collapsedNotificationTooltipText"
                     [notificationCount]="collapsedNotificationCount"
-                    title="View more options"
                     icon="assets/button-icons/three-dots.svg"
                 ></icon-button>
             </widget-settings-menu>
@@ -149,11 +211,12 @@ POSSIBILITY OF SUCH DAMAGE.
                 </icon-button>
                 <tag-picker
                     *ngIf="layerButton === 'showTagPicker'"
-                    type="expression"
+                    [type]="tagType"
                     [selectedTagIDs]="selectedTagIDs"
                     [showCurrentTagsSection]="true"
                     [editable]="!isSharedByOtherUser"
                     (onTagSelectionChanged)="onTagSelectionChanged($event)"
+                    [allowAdminBuiltin]="!isModule"
                 >
                 </tag-picker>
                 <icon-button
@@ -163,9 +226,31 @@ POSSIBILITY OF SUCH DAMAGE.
                     (click)="onDownload()">
                 </icon-button>
                 <icon-button
+                    *ngIf="layerButton === 'showPixlangConvert'"
+                    #tooltip="matTooltip"
+                    matTooltip="Convert expression to Lua"
+                    icon="assets/button-icons/lua-language.svg"
+                    (click)="onConvertToLua()">
+                </icon-button>
+                <icon-button
+                    *ngIf="layerButton === 'showSplitScreenButton'"
+                    #tooltip="matTooltip"
+                    matTooltip="Open {{isModule ? 'module' : 'expression'}} in split screen"
+                    [icon]="isModule ? 'assets/button-icons/layout-split-bottom-view.svg' : 'assets/button-icons/layout-split-top-view.svg'"
+                    (click)="onSplitScreen($event)">
+                </icon-button>
+                <icon-button
+                    *ngIf="layerButton === 'showPreviewButton'"
+                    #tooltip="matTooltip"
+                    matTooltip="Show {{isModule ? 'module' : 'expression'}} preview"
+                    icon="assets/button-icons/code.svg"
+                    (click)="onPreview($event)">
+                </icon-button>
+                <icon-button
                     *ngIf="layerButton === 'showSettingsButton'"
-                    title="Edit expression"
-                    icon="{{isPredefined ? 'assets/button-icons/gear.svg' : 'assets/button-icons/code.svg'}}"
+                    #tooltip="matTooltip"
+                    matTooltip="{{isSharedByOtherUser || isPredefined ? 'Show' : 'Open' }} {{isModule ? 'module' : 'expression'}}"
+                    icon="{{isPredefined ? 'assets/button-icons/gear.svg' : 'assets/button-icons/layout-single-view.svg'}}"
                     (click)="onSettings($event)">
                 </icon-button>
                 <icon-button
@@ -186,7 +271,24 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
     </div>
     <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
-        <div *ngIf="createdTime > 0" class="obj-create-time">Created: {{createdTime|date:'medium'}}</div>
-        <div *ngIf="expressionComments.length > 0" class="comment" title="{{expressionComments}}">{{expressionComments}}</div>
+        <div 
+            *ngIf="isSidePanel && sharedBy" 
+            class="obj-creator"
+            #tooltip="matTooltip"
+            [matTooltip]="sharedBy"
+        >{{sharedBy}}</div>
+        <div 
+            *ngIf="createdTime > 0" 
+            class="obj-create-time"
+            #tooltip="matTooltip"
+            matTooltip="Created: {{createdTime | date:'medium'}}"
+        >{{createdTime|date:'dd/MMM/yy'}}</div>
+        <div 
+            *ngIf="!isSidePanel && expressionComments.length > 0" 
+            class="comment"
+            [ngStyle]="{'max-width': commentWidth}"
+            #tooltip="matTooltip"
+            [matTooltip]="expressionComments"
+        >{{expressionComments}}</div>
     </div>
 </div>

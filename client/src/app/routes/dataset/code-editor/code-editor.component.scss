@@ -1,0 +1,424 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+@import 'variables.scss';
+
+::ng-deep body.mat-app-background.mat-typography {
+    &::-webkit-scrollbar {
+        display: none;
+    }
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.code-editor {
+    &::-webkit-scrollbar {
+        display: none;
+    }
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.preview-container {
+    width: 50vw;
+    min-width: 300px;
+    height: 30vw;
+    min-height: 200px;
+}
+
+.text-editor {
+    height: calc(100vh - 72px);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    max-width: 50vw;
+
+    expression-text-editor {
+        height: 100%;
+        display: flex;
+/*        ::ng-deep .cm-s-pixlise.CodeMirror {
+            height: calc(100vh - 48px - 26px - 26px);
+        }*/
+    }
+
+    &.module {
+        expression-text-editor {
+/*            ::ng-deep .cm-s-pixlise.CodeMirror {
+                height: calc(100vh - 48px - 24px);
+            }*/
+        }
+    }
+
+    &.top-open {
+        expression-text-editor.top-expression {
+            /*
+            ::ng-deep .cm-s-pixlise.CodeMirror {
+                height: calc(100vh - 48px - 100px - 26px - 14px);
+            }*/
+        }
+    }
+
+     &.bottom-open {
+        expression-text-editor.bottom-expression {/*
+            ::ng-deep .cm-s-pixlise.CodeMirror {
+                height: calc(100vh - 48px - 100px - 26px - 26px);
+            }*/
+        }
+    }
+
+    &.split-screen-mode {
+        expression-text-editor {
+            &.top-expression {
+                height: calc(50vh - 55px);
+            }
+            /*
+            ::ng-deep .cm-s-pixlise.CodeMirror {
+                height: calc(50vh - 48px - 18px)
+            }*/
+        }
+
+        &.top-open {
+            expression-text-editor.top-expression {/*
+                ::ng-deep .cm-s-pixlise.CodeMirror {
+                    height: calc(50vh - 48px - 16px - 100px);
+                }*/
+            }
+
+            expression-text-editor.bottom-expression {/*
+                ::ng-deep .cm-s-pixlise.CodeMirror {
+                    height: calc(50vh - 48px - 4px);
+                }*/
+            }
+        }
+
+        &.bottom-open {
+            expression-text-editor.bottom-expression {
+/*                ::ng-deep .cm-s-pixlise.CodeMirror {
+                    height: calc(50vh - 48px - 100px - 26px);
+                }*/
+            }
+        }
+    }
+}
+
+
+.code-editor {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+
+    background-color: #1B1D1E;
+
+    .editor-header {
+        display: flex;
+        align-items: center;
+
+        background-color: #2A3036;
+        box-shadow: 0px 4px 4px 0px #00000040;
+        z-index: 100;
+
+        padding: 5px 0;
+
+        .split-screen-btn {
+            min-width: 115px;
+        }
+
+        .confirm-name-btn {
+            margin-left: 8px;
+        }
+    }
+
+    .run-btn {
+        ::ng-deep > div {
+            display: flex;
+            align-items: center;
+
+            &.disabled {
+                img {
+                    filter: brightness(0.4);
+                }
+            }
+        }
+
+        img {
+            filter: brightness(0);
+            width: 10px;
+            margin-right: 4px;
+        }
+    }
+
+    .run-highlighted-btn {
+        margin-right: 8px;
+    }
+
+    .export-btn {
+        margin-right: 8px;
+    }
+
+    .save-btn {
+        margin-right: 8px;
+    }
+    
+    .editor-footer {
+        @extend .editor-header;
+        height: 28px;
+
+        .text-container {
+            margin-left: 16px;
+            input {
+                margin: 0 8px;
+            }
+        }
+
+        .viz-container {
+            .right-btn-group {
+                push-button:last-of-type {
+                    margin: 0 8px;
+                }
+            }
+        }
+    }
+
+    .text-container {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        padding: 0 8px;
+    }
+
+    .viz-container {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        padding-left: 8px;
+    }
+
+    .right-btn-group {
+        display: flex;
+        align-items: center;
+        margin-left: auto;
+    }
+
+    .viz-panels {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        background-color: #222829;
+        position: relative;
+
+        .preview-container {
+            flex: 1;
+            max-height: 60vh;
+
+            &.hidden {
+                z-index: -1;
+            }
+        }
+
+       pmc-data-grid {
+            flex: 1;
+            min-height: 200px;
+            max-height: 40vh;
+            max-width: 50vw;
+
+            &.solo {
+                position: absolute;
+                top: 0;
+                max-height: calc(100vh - 72px);
+                height: 100%;
+                width: 100%;
+            }
+        }
+    }
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+
+    h2 {
+        margin-left: 8px;
+    }
+
+    .sidebar-header-toggle-btn {
+        display: flex;
+        margin-right: 8px;
+        margin-left: auto;
+        cursor: pointer;
+
+        img {
+            transition: all 0.5s ease;
+        }
+    }
+}
+
+.sidebar-header-closed {
+    .sidebar-header-toggle-btn {
+        display: flex;
+        margin-left: 8px;
+        cursor: pointer;
+
+        img {
+            transition: all 0.5s ease;
+            transform: rotate(180deg);
+        }
+    }
+}
+
+.sidebar {
+    background: #222829;
+    margin-bottom: -35px;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-closed {
+    .sidebar {
+        display: none !important;
+    }
+}
+
+.sidebar-open {
+    .sidebar-header {
+        width: 300px;
+    }
+
+    &.editor-footer {
+        margin-left: 300px;
+    }
+
+    .sidebar {
+        width: 300px;
+    }
+
+    .preview-container, .viz-panels, pmc-data-grid {
+        max-width: calc(50vw - 300px);
+    }
+
+    .text-container {
+        width: calc(50vw + 300px);
+    }
+
+    .viz-container {
+        max-width: calc(50vw - 300px);
+    }
+}
+
+expression-list {
+    margin-right: 1px;
+}
+
+::ng-deep expression-list div.closable-section {
+    background-color: #2B3136;
+}
+
+.filter-container {
+    padding: 8px;
+
+    .authors-filter {
+        flex: 1;
+        height: 19px;
+        min-width: 100px;
+
+        padding-top: 5px;
+        padding-bottom: 0;
+
+        background: #454c50 !important;
+        border-radius: $sz-half !important;
+        border: 2px solid rgb(var(--clr-gray-60));
+    }
+
+    tag-picker {
+        margin-left: 6px;
+    }
+}
+
+.convert-to-lua-btn {
+    margin-left: 8px;
+    margin-right: 8px;
+}
+
+::ng-deep .mat-select-panel {
+    background-color: rgb(var(--clr-gray-90)) !important;
+}
+
+.split-screen-header {
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    background-color: #2a3036;
+    box-shadow: 0px 4px 4px 0px #00000040;
+
+    .bottom-metadata-editor {
+        margin: 4px;
+    }
+}
+
+input.invalid-input {
+    border: 2px solid #fb8d59;
+}
+
+expression-text-editor.active
+{
+    outline: 1px solid #FFFF8D;
+    z-index: 1000;
+}
+
+.expression-name {
+    width: 25ch;
+
+    &:disabled {
+        background-color: #222829;
+        color: #F8F8F8;
+    }    
+
+    &.confirmed-module {
+        background: rgb(var(--clr-gray-90));
+        color: white;
+    }
+}
+
+.runtime-container {
+    .runtime-seconds {
+        color: rgb(var(--clr-gray-30));
+    }
+}
+
+status-indicator.linked {
+    cursor: pointer;
+
+    &:hover {
+        background-color: rgba(128,128,128,0.2);
+        border-radius: 50%;
+    }
+}

@@ -60,6 +60,7 @@ class WireNotification
 export class NotificationItem
 {
     public static readonly typeInfoDismissable: string = "typeInfoDismissable"; // The normal blue ones which can be dismissed with X button
+    public static readonly typeOutdatedModules: string = "typeOutdatedModules"; // Dismissable, but with links to update modules
     public static readonly typeUpdating: string = "typeUpdating"; // Yellow, with refresh page button
 
     constructor(
@@ -139,7 +140,7 @@ export class NotificationService
         // If id matches one of ours, remove it and notify
         for(let c = 0; c < this._notifications.length; c++)
         {
-            if(this._notifications[c].id == id)
+            if(this._notifications[c].id === id)
             {
                 // Check if it's got a hint id associated, if so, we have to save
                 // that among user options hints so if we come across this scenario

@@ -29,8 +29,12 @@
 
 @import 'variables.scss';
 
-.regions-btn {
+.minerals-btn {
     margin-left: auto;
+    margin-right: 4px;
+}
+
+.regions-btn {
     margin-right: 4px;
 }
 
@@ -153,4 +157,8 @@ widget-key-display {
 .axis-toggle-container-mini {
     max-height: 150px;
     overflow: scroll;
+}
+
+.export-btn, .solo-btn {
+    margin-right: $sz-half;
 }

@@ -44,3 +44,7 @@
     @extend .banner;
     background-color: $clr-yellow;
 }
+
+.update-btn, .code-editor {
+    margin-left: 8px;
+}

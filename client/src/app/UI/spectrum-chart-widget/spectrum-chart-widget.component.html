@@ -53,6 +53,7 @@ POSSIBILITY OF SUCH DAMAGE.
             >Display Spectra</two-state-push-button>
 
         <two-state-push-button
+            [disabled]="isPublicUser"
             [active]="showSpectrumFit"
             (onToggle)="onToggleShowSpectrumFit($event)"
             >Display Fit</two-state-push-button>

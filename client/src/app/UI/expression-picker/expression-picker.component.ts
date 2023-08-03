@@ -32,7 +32,9 @@ import { MatDialog, MatDialogConfig, MatDialogRef, MAT_DIALOG_DATA } from "@angu
 import { Subscription } from "rxjs";
 import { DataSet } from "src/app/models/DataSet";
 import { QuantificationLayer } from "src/app/models/Quantifications";
-import { DataExpression, DataExpressionService } from "src/app/services/data-expression.service";
+import { DataExpressionService } from "src/app/services/data-expression.service";
+import { DataModuleService } from "src/app/services/data-module.service";
+import { DataExpression, DataExpressionId } from "src/app/models/Expression";
 import { DataSetService } from "src/app/services/data-set.service";
 import { RGBMixConfigService } from "src/app/services/rgbmix-config.service";
 import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
@@ -42,17 +44,21 @@ import { LayerVisibilityChange } from "src/app/UI/atoms/expression-list/layer-se
 import { LocationDataLayerProperties } from "src/app/models/LocationData2D";
 import { RGBMix } from "src/app/services/rgbmix-config.service";
 import { makeDataForExpressionList, ExpressionListBuilder, ExpressionListGroupNames, ExpressionListItems, LocationDataLayerPropertiesWithVisibility } from "src/app/models/ExpressionList";
+import { ObjectCreator } from "src/app/models/BasicTypes";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
+import { AuthenticationService } from "src/app/services/authentication.service";
 
 
 export class ExpressionPickerData
 {
     constructor(
         public title: string,
-        public exprType: string,
         public activeExpressionIDs: string[],
         public singleSelection: boolean,
         public showRGBMixes: boolean,
-        public showAnomalyExpressions: boolean
+        public showAnomalyExpressions: boolean,
+        public isPreviewMode: boolean = false,
+        public showModules: boolean = true
     )
     {
     }
@@ -76,11 +82,18 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
     items: ExpressionListItems = null;
     initialScrollToIdx: number = -1;
 
+    isPublicUser: boolean = false;
+
     private _filterText: string = "";
-    private _filterAuthors: string[] = [];
-    private _filterTagIDs: string[] = [];
+    private _selectAllFiltered: boolean = false;
+
+    private _authors: ObjectCreator[] = [];
+    private _filteredAuthors: string[] = [];
+    
     private _activeIDs: Set<string> = new Set<string>();
     private _listBuilder: ExpressionListBuilder;
+
+    selectedTagIDs: string[] = [];
 
     constructor(
         @Inject(MAT_DIALOG_DATA) public data: ExpressionPickerData,
@@ -88,7 +101,9 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
         private _datasetService: DataSetService,
         private _widgetDataService: WidgetRegionDataService,
         private _exprService: DataExpressionService,
+        private _moduleService: DataModuleService,
         private _rgbMixService: RGBMixConfigService,
+        private _authService: AuthenticationService,
         public dialog: MatDialog
     )
     {
@@ -97,7 +112,11 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
 
     ngOnInit()
     {
-        this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, this.data.showRGBMixes, this.data.showAnomalyExpressions, this._exprService);
+        if(this.data.showModules)
+        {
+            this._moduleService.refresh();
+        }
+        this._listBuilder = new ExpressionListBuilder(true, ["%"], false, false, this.data.showRGBMixes, this.data.showAnomalyExpressions, this._exprService, this._authService);
 
         this.dialogRef.backdropClick().subscribe(
             ()=>
@@ -119,14 +138,14 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
         // Open whatever category we're showing:
         for(let id of this.data.activeExpressionIDs)
         {
-            if(DataExpressionService.getPredefinedQuantExpressionElement(id))
+            if(DataExpressionId.getPredefinedQuantExpressionElement(id))
             {
                 this.headerSectionsOpen.add(this.elementsHeaderName);
             }
             else if(
-                id == DataExpressionService.predefinedHeightZDataExpression ||
-                id == DataExpressionService.predefinedRoughnessDataExpression ||
-                id == DataExpressionService.predefinedDiffractionCountDataExpression
+                id == DataExpressionId.predefinedHeightZDataExpression ||
+                id == DataExpressionId.predefinedRoughnessDataExpression ||
+                id == DataExpressionId.predefinedDiffractionCountDataExpression
             )
             {
                 this.headerSectionsOpen.add(this.anomalyHeaderName);
@@ -135,7 +154,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
             {
                 this.headerSectionsOpen.add(this.rgbMixHeaderName);
             }
-            else if(DataExpressionService.getPredefinedPseudoIntensityExpressionElement(id))
+            else if(DataExpressionId.getPredefinedPseudoIntensityExpressionElement(id))
             {
                 this.headerSectionsOpen.add(this.pseudoIntensityHeaderName);
             }
@@ -144,6 +163,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
                 this.headerSectionsOpen.add(this.expressionsHeaderName);
             }
         }
+        
 
         // Now subscribe for data we need, process when all have arrived
         let all$ = makeDataForExpressionList(
@@ -158,13 +178,20 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
                 this._listBuilder.notifyDataArrived(
                     (data[0] as DataSet).getPseudoIntensityElementsList(),
                     data[1] as QuantificationLayer,
-                    this._exprService.getExpressions(DataExpressionService.DataExpressionTypeAll),
+                    this._exprService.getExpressions(),
                     this._rgbMixService.getRGBMixes()
                 );
 
                 // All have arrived, the taps above would've saved their contents in a way that we like, so
                 // now we can regenerate our item list
                 this.regenerateItemList();
+            }
+        ));
+
+        this._subs.add(this._authService.isPublicUser$.subscribe(
+            (isPublicUser)=>
+            {
+                this.isPublicUser = isPublicUser;
             }
         ));
     }
@@ -186,16 +213,117 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
             this._activeIDs,
             new Set<string>(),
             this._filterText,
-            this._filterAuthors,
-            this._filterTagIDs,
+            this._filteredAuthors,
+            this.selectedTagIDs,
             false, // We never show the exploratory RGB mix item
             (source: DataExpression|RGBMix): LocationDataLayerProperties=>
             {
                 let layer = new LocationDataLayerPropertiesWithVisibility(source.id, source.name, source.id, source);
-                layer.visible = (this._activeIDs.has(source.id));
+                if(this._selectAllFiltered)
+                {
+                    if(this.isLayerFiltered(layer, this._filterText, this._filteredAuthors, this.selectedTagIDs))
+                    {
+                        this._activeIDs.add(source.id);
+                        layer.visible = true;
+                    }
+                    else
+                    {
+                        this._activeIDs.delete(source.id);
+                        layer.visible = false;
+                    }
+                }
+                else
+                {
+                    layer.visible = (this._activeIDs.has(source.id));
+                }
                 return layer;
             }
         );
+
+        this.authors = this._listBuilder.getAuthors();
+    }
+
+    private isLayerFiltered(layer: LocationDataLayerProperties, filterText: string, filteredAuthors: string[], selectedTagIDs: string[]): boolean
+    {
+        let upperCaseFilter = filterText.toUpperCase();
+        if(upperCaseFilter.length > 0)
+        {
+            let upperName = layer.source.name.toUpperCase();
+            if(upperName.indexOf(upperCaseFilter) === -1)
+            {
+                // Does not contain the filter text, so don't show it
+                return false;
+            }
+        }
+
+        if(filteredAuthors && filteredAuthors.length > 0)
+        {
+            let upperAuthor = layer?.source?.creator?.user_id.toUpperCase();
+            if(!filteredAuthors.map(author => author.toUpperCase()).includes(upperAuthor))
+            {
+                // Was not authored by one of the authors in the filter list
+                return false;
+            }
+        }
+
+        if(selectedTagIDs && selectedTagIDs.length > 0)
+        {
+            let tagIDs = layer?.source?.tags;
+            if(!tagIDs || !selectedTagIDs.every(tag => tagIDs.includes(tag)))
+            {
+                // Was not tagged with one of the tags in the filter list
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    get isAllFilteredSelected(): boolean
+    {
+        return this._selectAllFiltered;
+    }
+    onSelectAllFiltered(): void
+    {
+        this._selectAllFiltered = !this._selectAllFiltered;
+        this._activeIDs.clear();
+
+        this.regenerateItemList();
+    }
+
+    get authors(): ObjectCreator[]
+    {
+        return this._authors;
+    }
+
+    set authors(authors: ObjectCreator[])
+    {
+        this._authors = authors;
+    }
+
+    get authorsTooltip(): string
+    {
+        let authorNames = this._authors.filter((author) => this._filteredAuthors.includes(author.user_id)).map((author) => author.name);
+        return this._filteredAuthors.length > 0 ? `Authors:\n${authorNames.join("\n")}` : "No Authors Selected";
+    }
+
+    get filteredAuthors(): string[]
+    {
+        return this._filteredAuthors;
+    }
+
+    set filteredAuthors(authors: string[])
+    {
+        this._filteredAuthors = authors;
+
+        this.regenerateItemList();
+    }
+
+
+    onTagSelectionChanged(tagIDs: string[]): void
+    {
+        this.selectedTagIDs = tagIDs;
+        this.regenerateItemList();
     }
 
     private toggleLayerSectionOpenNoRegen(itemType: string, open: boolean): void
@@ -220,6 +348,12 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
         this.regenerateItemList();
     }
 
+    onLayerImmediateSelection(event: LayerVisibilityChange): void
+    {
+        this.onLayerVisibilityChange(event);
+        this.onOK();
+    }
+
     onLayerVisibilityChange(event: LayerVisibilityChange): void
     {
         // We handle this by saving the ID in our list of "active" ids, if it's marked visible...
@@ -234,6 +368,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
         else
         {
             this._activeIDs.delete(event.layerID);
+            this._selectAllFiltered = false;
         }
 
         this.regenerateItemList();
@@ -246,7 +381,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
     {
         for(let activeId of this._activeIDs)
         {
-            let activeIdNoDet = DataExpressionService.getExpressionWithoutDetector(activeId);
+            let activeIdNoDet = DataExpressionId.getExpressionWithoutDetector(activeId);
             if(activeIdNoDet == id)
             {
                 return activeId;
@@ -269,7 +404,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
         dialogConfig.disableClose = true;
         //dialogConfig.backdropClass = "panel";
 
-        let blankExpr = new DataExpression("", "", "", this.data.exprType, "", false, null, 0, 0);
+        let blankExpr = new DataExpression("", "", "", EXPR_LANGUAGE_LUA, "", false, null, 0, 0, [], [], null);
         dialogConfig.data = new ExpressionEditorConfig(blankExpr, true);
 
         const dialogRef = this.dialog.open(ExpressionEditorComponent, dialogConfig);
@@ -283,7 +418,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
                 }
                 else
                 {
-                    this._exprService.add(dlgResult.expr.name, dlgResult.expr.expression, blankExpr.type, dlgResult.expr.comments).subscribe(
+                    this._exprService.add(dlgResult.expr.name, dlgResult.expr.sourceCode, blankExpr.sourceLanguage, dlgResult.expr.comments).subscribe(
                         (response)=>
                         {
                             // Make sure all objects are valid and check if we want to apply this expression immediately
@@ -295,7 +430,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
                                 }
 
                                 // The response is the whole expression list, so we need to narrow it down to just our expression to get the assigned ID
-                                let matchingIDs = Object.entries(response).filter(([, expression]) => expression.name === dlgResult.expr.name && expression.expression === dlgResult.expr.expression).map(([layerID]) => layerID);
+                                let matchingIDs = Object.entries(response).filter(([, expression]) => expression.name === dlgResult.expr.name && expression.sourceCode === dlgResult.expr.sourceCode).map(([layerID]) => layerID);
 
                                 // If we matched more or less than 1 expression, something went wrong so we're not going to close the picker
                                 if(matchingIDs.length === 1) 
@@ -309,7 +444,7 @@ export class ExpressionPickerComponent extends ExpressionListGroupNames implemen
                                 }
                             }
                         },
-                        ()=>
+                        (err)=>
                         {
                             alert("Failed to add data expression: "+dlgResult.expr.name);
                         }

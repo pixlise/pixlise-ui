@@ -36,8 +36,6 @@ POSSIBILITY OF SUCH DAMAGE.
         *ngFor="let option of options"
         (click)="onClick(option)"
         class="multi-switch-option {{value === option ? 'active' : ''}}"
-    >
-        {{option}}
-    </div>
+    >{{option}}</div>
     <div class="active-selector" [style.margin-left]="activeLeftOffset" [style.width]="activeWidth"></div>
 </div>
