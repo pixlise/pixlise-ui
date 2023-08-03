@@ -15,6 +15,7 @@ metadata:
     github.com/project-slug: pixlise/pixlise-ui
     backstage.io/techdocs-ref: dir:.
     backstage.io/kubernetes-id: pixlise-ui
+    grafana/tag-selector: ui
 spec:
   type: service
   owner: default/developers
