@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { SnackBarPopupComponent } from '../components/atoms/snackbar-popup/snackbar-popup.component';
+import { LocalStorageService } from './local-storage.service';
 
 export type SnackbarType = "warning" | "error" | "info" | "success";
 
@@ -16,24 +17,25 @@ export type SnackbarDataItem = {
     providedIn: 'root'
 })
 export class SnackbarService {
+    subscriptions: any[] = [];
     history: SnackbarDataItem[] = [];
 
+
     constructor(
-        private _snackBar: MatSnackBar
-    ) { }
+        private _snackBar: MatSnackBar,
+        private _localStorageService: LocalStorageService
+    ) {
+        this.subscriptions.push(this._localStorageService.eventHistory$.subscribe((history) => {
+            this.history = history;
+        }));
+    }
+
+    ngOnDestroy() {
+        this.subscriptions.forEach((sub) => sub.unsubscribe());
+    }
 
     addMessageToHistory(message: string, details: string, action: string, type: SnackbarType): void {
-        if (this.history.length > 10) {
-            this.history.shift();
-        }
-
-        this.history.push({
-            message,
-            details,
-            action,
-            type,
-            timestamp: Date.now()
-        });
+        this._localStorageService.addEventHistoryItem({ message, details, action, type, timestamp: Date.now() });
     }
 
     openWarning(message: string, details: string = "", action: string = ""): void {
@@ -55,7 +57,7 @@ export class SnackbarService {
             messageText = message;
         }
 
-        this.addMessageToHistory(message, details, action, "error");
+        this.addMessageToHistory(messageText, details, action, "error");
         this._snackBar.openFromComponent(SnackBarPopupComponent, {
             data: { message: messageText, details, action, type: "error" },
             horizontalPosition: "left",
@@ -81,5 +83,10 @@ export class SnackbarService {
             panelClass: ["pixlise-message"],
             duration: 5000
         });
+    }
+
+    clearHistory(): void {
+        this.history = [];
+        this._localStorageService.clearEventHistory();
     }
 }

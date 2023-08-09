@@ -97,9 +97,15 @@
 
   .settings-buttons {
     display: flex;
+    align-items: center;
 
-    icon-button {
+    icon-button,
+    action-button {
       margin-right: 8px;
+
+      &:last-child {
+        margin-right: 0;
+      }
     }
   }
 }

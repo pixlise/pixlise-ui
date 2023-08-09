@@ -79,5 +79,23 @@
                 </div>
             </div>
         </section>
+        <section class="event-history">
+            <h2>Event History ({{eventHistory.length}})
+                <action-button class="clear-history" action="delete" #tooltip="matTooltip"
+                    matTooltip="Clear Event History" (onClick)="onClearEventHistory()"></action-button>
+            </h2>
+            <div class="event-history-list">
+                <div *ngFor="let event of eventHistory" class="event-history-item" #tooltip="matTooltip"
+                    matTooltipClass="multiline-tooltip"
+                    [matTooltip]="event.type + '\n' + event.message + '\n' + event.details">
+                    <mat-icon class="event-icon">{{getEventIcon(event.type)}}</mat-icon>
+                    <span class="title">{{event.message}}</span>
+                    <span class="date">{{event.timestamp | date: 'short'}}</span>
+                </div>
+                <div *ngIf="eventHistory.length <= 0" class="empty">
+                    <span class="title">No events</span>
+                </div>
+            </div>
+        </section>
     </div>
 </div>

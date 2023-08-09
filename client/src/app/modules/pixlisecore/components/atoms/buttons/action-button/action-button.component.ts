@@ -40,7 +40,8 @@ export const matActionIcons = {
 };
 
 const customActionIcons = {
-    "edit-clipboard": "assets/button-icons/edit.svg"
+    "edit-clipboard": "assets/button-icons/edit.svg",
+    "delete": "assets/button-icons/delete.svg"
 };
 
 export type ACTION_TYPE = keyof typeof customActionIcons | keyof typeof matActionIcons;
@@ -54,6 +55,7 @@ export class ActionButtonComponent {
     @Input() disabled: boolean = false;
     @Input() tooltipTitle: string = "";
     @Input() color: string = "";
+    @Input() buttonBackground: boolean = false;
     @Input() confirmText: string = "";
     @Input() customDialog: TemplateRef<any> | null = null;
 

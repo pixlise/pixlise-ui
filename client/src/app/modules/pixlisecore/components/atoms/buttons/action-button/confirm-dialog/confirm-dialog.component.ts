@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, HostListener, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 export interface ConfirmTextDialogData {
@@ -24,5 +24,13 @@ export class ConfirmDialogComponent {
 
   onConfirm(): void {
     this.dialogRef.close(true);
+  }
+
+  // listen for enter key to confirm
+  @HostListener('document:keydown.enter', ['$event'])
+  onKeydown(event: any) {
+    if (event.key === "Enter") {
+      this.onConfirm();
+    }
   }
 }

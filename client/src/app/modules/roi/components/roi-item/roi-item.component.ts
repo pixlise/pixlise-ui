@@ -85,7 +85,7 @@ export class ROIItemComponent {
       this._snackBarService.openError(`ROI ${this.name} (${this.summary?.id}) not found`);
       return;
     }
-    console.log("SAVING", this.name, this.description)
+
     let newROI = this.detailedInfo;
     newROI.name = this.name;
     newROI.description = this.description;
@@ -95,6 +95,7 @@ export class ROIItemComponent {
   }
 
   onDelete() {
+    this._roiService.deleteROI(this.summary.id);
     this.closeSettingsMenu();
   }
 
@@ -146,6 +147,9 @@ export class ROIItemComponent {
   private closeEditROIMenu(): void {
     if (this.editROIButton && this.editROIButton instanceof ActionButtonComponent) {
       (this.editROIButton as ActionButtonComponent).closeDialog();
+
+      this.name = "";
+      this.description = "";
     }
   }
 }

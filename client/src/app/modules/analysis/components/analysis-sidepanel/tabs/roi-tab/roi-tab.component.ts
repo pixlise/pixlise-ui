@@ -284,6 +284,7 @@ export class ROITabComponent implements OnInit {
     newROI.tags = this.newROITags;
     newROI.scanId = this._route.snapshot.queryParams["scan_id"];
 
+    // TODO: Get the actual values from the selection
     newROI.pixelIndexesEncoded = [1, 2, 3, 4];
     newROI.scanEntryIndexesEncoded = [12, 213, 15415, 15, 15, 6];
     newROI.imageName = "some_image";
@@ -295,6 +296,10 @@ export class ROITabComponent implements OnInit {
   private closeCreateROIMenu(): void {
     if (this.newROIButton && this.newROIButton instanceof PushButtonComponent) {
       (this.newROIButton as PushButtonComponent).closeDialog();
+
+      this.newROIName = "";
+      this.newROIDescription = "";
+      this.newROITags = [];
     }
   }
 

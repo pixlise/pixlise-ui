@@ -29,8 +29,9 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<span class="action-btn {{action}} {{disabled ? 'disabled' : ''}}" (click)="onClickInternal()" #tooltip="matTooltip"
-  [ngStyle]="color ? {'color': color} : {}" [matTooltip]="tooltipTitle">
+<span class="action-btn {{buttonBackground ? 'btn-bg' : ''}} {{action}} {{disabled ? 'disabled' : ''}}"
+  (click)="onClickInternal()" #tooltip="matTooltip" [ngStyle]="color ? {'color': color} : {}"
+  [matTooltip]="tooltipTitle">
   <mat-icon *ngIf="isMatIcon">{{action}}</mat-icon>
   <img *ngIf="!isMatIcon" [src]="action" class="custom-icon">
 </span>

@@ -10,7 +10,7 @@ import { ImageUploaderDialogComponent } from 'src/app/modules/settings/component
 import { GroupsService } from 'src/app/modules/settings/services/groups.service';
 import { UserGroupInfo, UserGroupRelationship } from 'src/app/generated-protos/user-group';
 import { SettingsModule } from 'src/app/modules/settings/settings.module';
-
+import { SnackbarDataItem } from 'src/app/modules/pixlisecore/services/snackbar.service';
 
 @Component({
   selector: 'app-settings-sidebar',
@@ -23,6 +23,12 @@ export class SettingsSidebarComponent {
   notifications: NotificationSetting[] = [];
   user!: UserInfo;
   groupsWithAccess: UserGroupInfo[] = [];
+
+  public eventIcons = {
+    "warning": "warning",
+    "error": "error",
+    "success": "check_circle",
+  }
 
   constructor(
     private _userOptionsService: UserOptionsService,
@@ -67,6 +73,18 @@ export class SettingsSidebarComponent {
       default:
         return "Unknown";
     }
+  }
+
+  onClearEventHistory(): void {
+    this._snackBar.clearHistory();
+  }
+
+  getEventIcon(type: string): string {
+    return this.eventIcons[type as keyof typeof this.eventIcons];
+  }
+
+  get eventHistory(): SnackbarDataItem[] {
+    return this._snackBar.history;
   }
 
   get isOpen(): boolean {

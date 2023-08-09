@@ -8,6 +8,7 @@ import { AnalysisSidepanelComponent } from './components/analysis-sidepanel/anal
 import { AnalysisLayoutService } from './services/analysis-layout.service';
 import { ROITabComponent } from './components/analysis-sidepanel/tabs/roi-tab/roi-tab.component';
 import { ROIModule } from '../roi/roi.module';
+import { BaseWidgetModel } from './components/widget/models/base-widget.model';
 
 const APP_ROUTES: Routes = [
   {
@@ -22,6 +23,7 @@ const APP_ROUTES: Routes = [
     WidgetComponent,
     AnalysisSidepanelComponent,
     ROITabComponent,
+    BaseWidgetModel
   ],
   imports: [
     CommonModule,
@@ -31,6 +33,8 @@ const APP_ROUTES: Routes = [
   ],
   exports: [
     AnalysisPageComponent,
+    WidgetComponent,
+    BaseWidgetModel
   ],
   providers: [
     AnalysisLayoutService

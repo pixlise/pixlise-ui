@@ -10,6 +10,35 @@
     background-color: rgb(var(--clr-gray-80));
     height: 40px;
     width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    .buttons {
+      display: flex;
+      width: 100%;
+      justify-content: flex-end;
+      margin-right: 6px;
+
+      .top-toolbar {
+        display: flex;
+        margin-right: 4px;
+
+        .btn-container {
+          margin-right: 4px;
+
+          &.overflowed {
+            display: none;
+          }
+
+          .selectable-button {
+            &.active {
+              border: 1px solid rgb(var(--clr-gray-90));
+            }
+          }
+        }
+      }
+    }
   }
 
   .visualization {
@@ -17,5 +46,17 @@
     border-radius: 0 0 8px 8px;
     width: 100%;
     flex: 1;
+  }
+}
+
+.menu-btn-container {
+  margin-bottom: 8px;
+
+  display: flex;
+  justify-content: center;
+  width: 20%;
+
+  &.overflowed {
+    display: none;
   }
 }

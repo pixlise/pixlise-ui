@@ -32,6 +32,15 @@
 
 .panel {
   display: flex;
+  flex-direction: column;
+
+  .overflow-section {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: space-around;
+    margin: auto;
+  }
 }
 
 .unit-padding {

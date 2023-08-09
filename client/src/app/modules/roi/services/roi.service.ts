@@ -45,11 +45,14 @@ export class ROIService {
     });
   }
 
-  editROI(newROI: ROIItem) {
+  writeROI(newROI: ROIItem, isNewROI: boolean) {
     if (!newROI) {
-      this._snackBarService.openError("ROI not found!");
+      this._snackBarService.openError(isNewROI ? "Cannot create empty ROI." : "ROI not found!");
       return;
     }
+
+    // Have to remove owner field to write
+    newROI.owner = undefined;
 
     this._dataService.sendRegionOfInterestWriteRequest(RegionOfInterestWriteReq.create({
       regionOfInterest: ROIItem.create(newROI)
@@ -57,40 +60,44 @@ export class ROIService {
       next: (res) => {
         if (res.regionOfInterest) {
           this.roiItems[res.regionOfInterest.id] = res.regionOfInterest;
+
+          // Update summaries
           this.listROIs();
-          this._snackBarService.openSuccess("ROI updated!");
+
+          this._snackBarService.openSuccess(isNewROI ? "ROI created!" : "ROI updated!");
         } else {
-          this._snackBarService.openError(`ROI (${newROI.id}) not found`);
+          this._snackBarService.openError(isNewROI ? "Failed to create ROI." : `ROI (${newROI.id}) not found`);
         }
       },
       error: (err) => {
         this._snackBarService.openError(err);
+        this.listROIs();
       }
     });
+  }
+
+  editROI(newROI: ROIItem) {
+    this.writeROI(newROI, false);
   }
 
   createROI(newROI: ROIItem) {
-    if (!newROI) {
-      this._snackBarService.openError("Cannot create empty ROI.");
-      return;
-    }
+    this.writeROI(newROI, true);
+  }
 
-    this._dataService.sendRegionOfInterestWriteRequest(RegionOfInterestWriteReq.create({
-      regionOfInterest: ROIItem.create(newROI)
-    })).subscribe({
+  deleteROI(id: string) {
+    this._dataService.sendRegionOfInterestDeleteRequest(RegionOfInterestGetReq.create({ id })).subscribe({
       next: (res) => {
-        if (res.regionOfInterest) {
-          this.roiItems[res.regionOfInterest.id] = res.regionOfInterest;
-          this.listROIs();
-          this._snackBarService.openSuccess("ROI created!");
-        } else {
-          this._snackBarService.openError("Failed to create ROI.");
-        }
+
+        // Remove cached versions
+        delete this.roiSummaries[id];
+        delete this.roiItems[id];
       },
       error: (err) => {
         this._snackBarService.openError(err);
+
+        // Re-fetch summaries to verify frontend is in sync
+        this.listROIs();
       }
     });
   }
-
 }

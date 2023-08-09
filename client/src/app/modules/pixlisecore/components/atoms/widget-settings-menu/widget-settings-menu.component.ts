@@ -58,8 +58,11 @@ export class WidgetSettingsMenuComponent implements OnInit {
     @ViewChild(CdkOverlayOrigin) _overlayOrigin: CdkOverlayOrigin | undefined;
 
     @Input() settingsDialog: TemplateRef<any> | null = null;
+    @Input() overflowSection: TemplateRef<any> | null = null;
+    // overflowSection
     @Input() openDirDown: boolean = true;
     @Input() noPadding: boolean = false;
+    @Input() xOffset: number = 0;
     @Output() onClose = new EventEmitter();
 
     private _overlayRef: OverlayRef | null = null;
@@ -124,7 +127,7 @@ export class WidgetSettingsMenuComponent implements OnInit {
                     overlayX: "end",
                     overlayY: (this.openDirDown ? "top" : "bottom")
                 },
-                200, // Offset X
+                this.xOffset, // Offset X
                 2  // Offset Y
             )
         ];
@@ -148,7 +151,7 @@ export class WidgetSettingsMenuComponent implements OnInit {
                 parent: this.injector,
                 providers: [
                     { provide: OverlayRef, useValue: this._overlayRef },
-                    { provide: MAT_DIALOG_DATA, useValue: new MenuPanelHostData(this.settingsDialog, this.noPadding) },
+                    { provide: MAT_DIALOG_DATA, useValue: new MenuPanelHostData(this.settingsDialog, this.overflowSection, this.noPadding) },
                 ]
             }
         );

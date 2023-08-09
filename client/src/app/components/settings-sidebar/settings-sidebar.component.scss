@@ -227,6 +227,57 @@
         color: rgb(var(--clr-gray-30));
       }
     }
+
+    .event-history {
+      h2 {
+        display: flex;
+        align-items: center;
+        height: 32px;
+        padding-left: 16px;
+        background: var(--gray-80, #293137);
+
+        .clear-history {
+          margin-left: auto;
+          margin-right: 8px;
+        }
+      }
+
+      .event-history-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 16px;
+
+        border-bottom: 1px solid #293137;
+
+        .event-icon {
+          min-width: 20px;
+          margin-right: 4px;
+        }
+
+        .title,
+        .date {
+          font-size: 12px;
+        }
+
+        .title {
+          margin-right: 8px;
+        }
+
+        .date {
+          margin-left: auto;
+          min-width: 90px;
+          color: rgb(var(--clr-gray-30));
+        }
+      }
+
+      .empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 50px;
+        color: rgb(var(--clr-gray-30));
+      }
+    }
   }
 }
 

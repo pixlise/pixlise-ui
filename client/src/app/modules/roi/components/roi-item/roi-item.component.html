@@ -1,8 +1,9 @@
 <ng-template #roiSettingsMenu>
     <div class="roi-settings">
         <div class="settings-buttons">
-            <icon-button title="Delete this ROI" icon="assets/button-icons/delete.svg" (click)="onDelete()">
-            </icon-button>
+            <action-button title="Delete this ROI" action="delete" [buttonBackground]="true"
+                confirmText="Are you sure you want to delete ROI: {{name}}?" (onClick)="onDelete()">
+            </action-button>
             <icon-button title="Share this ROI" icon="assets/button-icons/share.svg" (click)="onShare()">
             </icon-button>
             <icon-button title="Configure Colours" icon="assets/button-icons/colours.svg" (click)="onColours($event)">
@@ -44,7 +45,8 @@
             <p>{{createdDate|date:'dd/MMM/yy'}}</p>
         </div>
         <div class="buttons">
-            <widget-settings-menu *ngIf="!colorChangeOnly" [settingsDialog]="roiSettingsMenu" #settingsButton>
+            <widget-settings-menu *ngIf="!colorChangeOnly" [settingsDialog]="roiSettingsMenu" #settingsButton
+                [xOffset]="180">
                 <icon-button title="Show Settings Menu" [hasBackground]="false"
                     icon="assets/button-icons/settings-gray.svg">
                 </icon-button>
