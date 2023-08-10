@@ -50,7 +50,7 @@
         </div>
     </section>
 
-    <section *ngIf="sidepanelOpen" class="sidepanel-body">
+    <section class="sidepanel-body {{sidepanelOpen ? 'open' : 'closed'}}">
         <ng-template #openTab></ng-template>
     </section>
 </aside>

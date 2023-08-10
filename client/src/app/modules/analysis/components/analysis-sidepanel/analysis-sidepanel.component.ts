@@ -9,7 +9,7 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
   templateUrl: "./analysis-sidepanel.component.html",
   styleUrls: ["./analysis-sidepanel.component.scss"]
 })
-export class AnalysisSidepanelComponent implements AfterViewInit {
+export class AnalysisSidepanelComponent {
   showSearch = false;
 
   @ViewChild("openTab", { read: ViewContainerRef }) openTab?: ViewContainerRef;
@@ -20,35 +20,50 @@ export class AnalysisSidepanelComponent implements AfterViewInit {
     private _userOptionsService: UserOptionsService
   ) { }
 
-  ngAfterViewInit(): void {
-    this.activeTab = this.tabs[0];
-  }
-
-  ngAfterViewChecked(): void {
-    // Reset in case it was never shown
+  ngOnInit(): void {
     if (this.sidepanelOpen && !this._openTabRef) {
       if (!this.activeTab) {
-        this.onOpenTab(this.tabs[0]);
-      } else {
-        this.onOpenTab(this.activeTab);
+        this.activeTab = this.tabs[0];
       }
+
+      this.onOpenTab(this.activeTab);
     }
   }
+
+  // ngAfterViewInit(): void {
+  //   this.activeTab = this.tabs[0];
+  // }
+
+  // ngAfterViewChecked(): void {
+  // Reset in case it was never shown
+  // if (this.sidepanelOpen && !this._openTabRef) {
+  //   if (!this.activeTab) {
+  //     this.onOpenTab(this.tabs[0]);
+  //   } else {
+  //     this.onOpenTab(this.activeTab);
+  //   }
+  // }
+  // }
 
   ngOnDestroy() {
     this.clearTab();
   }
 
   private clearTab(): void {
+    console.log("CLEARING TAB")
     if (this._openTabRef) {
-      this._openTabRef.changeDetectorRef.detach();
       this._openTabRef.destroy();
+      this.openTab?.clear();
       this._openTabRef = null;
     }
   }
 
   set activeTab(tab: SidebarTabItem | null) {
+    this.clearTab();
     this._analysisLayoutService.activeTab = tab;
+    if (tab) {
+      this.onOpenTab(tab);
+    }
   }
 
   get activeTab() {
@@ -76,10 +91,16 @@ export class AnalysisSidepanelComponent implements AfterViewInit {
   }
 
   onOpenTab(tab: SidebarTabItem) {
-    this._analysisLayoutService.activeTab = tab;
-    this._analysisLayoutService.sidepanelOpen = true;
-    if (this.openTab) {
-      this._openTabRef = this.openTab.createComponent(tab.component);
+    if (tab) {
+      if (this.activeTab?.title !== tab.title) {
+        this.clearTab();
+      }
+
+      this._analysisLayoutService.activeTab = tab;
+      this._analysisLayoutService.sidepanelOpen = true;
+      if (this.openTab && tab.component) {
+        this._openTabRef = this.openTab.createComponent(tab.component);
+      }
     }
   }
 
@@ -89,6 +110,9 @@ export class AnalysisSidepanelComponent implements AfterViewInit {
 
   onToggleSidePanel() {
     this._analysisLayoutService.toggleSidePanel();
+    if (this.sidepanelOpen && this.activeTab && !this._openTabRef) {
+      this.onOpenTab(this.activeTab);
+    }
   }
 
   onToggleSearch() {

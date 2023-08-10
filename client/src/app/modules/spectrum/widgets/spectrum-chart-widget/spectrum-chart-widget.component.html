@@ -1,6 +1,6 @@
 <ng-template #settingsMenu>
     <div class="settings">
-        <!-- <div class="gap-separated-horizontal-elements">
+        <div class="scale-buttons">
             <two-state-push-button [active]="resizeSpectraY"
                 (click)="onToggleResizeSpectraY()">Resize</two-state-push-button>
             <two-state-push-button [active]="yAxislogScale" (click)="onToggleYAxislogScale()">Log
@@ -9,10 +9,12 @@
         <switch-button label="Normalise Counts/min:" [active]="countsPerMin"
             (onToggle)="onToggleCountsPerMin()"></switch-button>
         <switch-button label="Normalise Counts/PMC:" [active]="countsPerPMC"
-            (onToggle)="onToggleCountsPerPMC()"></switch-button> -->
+            (onToggle)="onToggleCountsPerPMC()"></switch-button>
     </div>
 </ng-template>
 
-<p>spectrum-chart-widget works!
-    <!-- <two-state-push-button [active]="resizeSpectraY" (click)="onToggleResizeSpectraY()">Resize</two-state-push-button> -->
-</p>
+<p>spectrum-chart-widget works!</p>
+
+<!-- <interactive-canvas [ngClass]="cursorShown" [drawer]="drawer" [drawNotifier]="this.mdl" -->
+<!-- [interactionHandler]="mdl.toolHost" [transform]="mdl.transform" fxFlex="100%"> -->
+<!-- </interactive-canvas> -->

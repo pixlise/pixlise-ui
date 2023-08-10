@@ -19,7 +19,7 @@ import { SwitchButtonComponent } from "./components/atoms/buttons/switch-button/
 // import { MultiSwitchButtonComponent } from "./components/atoms/buttons/multi-switch-button/multi-switch-button.component";
 import { TwoStateIconButton } from "./components/atoms/buttons/two-state-button/two-state-icon-button.component";
 // import { TwoStateIconPushButton } from "./components/atoms/buttons/two-state-button/two-state-icon-push-button.component";
-// import { TwoStatePushButton } from "./components/atoms/buttons/two-state-button/two-state-push-button.component";
+import { TwoStatePushButton } from "./components/atoms/buttons/two-state-button/two-state-push-button.component";
 // import { TwoStateIconSwitchComponent } from "./components/atoms/buttons/two-state-button/two-state-icon-switch.component";
 
 import { WidgetDisplayMessageComponent } from "./components/atoms/widget-display-message/widget-display-message.component";
@@ -56,6 +56,7 @@ export { SnackbarService } from "./services/snackbar.service";
         TwoStateButtonComponent,
         SwitchButtonComponent,
         TwoStateIconButton,
+        TwoStatePushButton,
         TwoStateIconPushButton,
         WidgetDisplayMessageComponent,
         WidgetSettingsMenuComponent,
@@ -80,6 +81,7 @@ export { SnackbarService } from "./services/snackbar.service";
         TwoStateButtonComponent,
         SwitchButtonComponent,
         TwoStateIconButton,
+        TwoStatePushButton,
         TwoStateIconPushButton,
         WidgetDisplayMessageComponent,
         WidgetSettingsMenuComponent,

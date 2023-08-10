@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { BaseWidgetModel } from 'src/app/modules/analysis/components/widget/models/base-widget.model';
 import { PIXLISECoreModule } from 'src/app/modules/pixlisecore/pixlisecore.module';
+import { SpectrumService } from '../../services/spectrum.service';
 
 @Component({
   selector: 'app-spectrum-chart-widget',
@@ -18,7 +19,9 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel {
   countsPerMin = false;
   countsPerPMC = true;
 
-  constructor() {
+  constructor(
+    private _spectrumService: SpectrumService,
+  ) {
     super();
 
     this._widgetControlConfiguration = {
@@ -84,15 +87,15 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel {
   }
 
   onToggleYAxislogScale() {
-
+    this.yAxislogScale = !this.yAxislogScale;
   }
 
   onToggleCountsPerMin() {
-
+    this.countsPerMin = !this.countsPerMin;
   }
 
   onToggleCountsPerPMC() {
-
+    this.countsPerPMC = !this.countsPerPMC;
   }
 
   onShowXRayTubeLines() {
