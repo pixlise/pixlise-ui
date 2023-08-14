@@ -131,6 +131,8 @@ export class ROIComponent implements OnInit
                 let regions = this.getRegionManager().getDisplayedRegions(change.regions);
                 let roiIDs: Set<string> = new Set<string>();
 
+                this._userROIs = [];
+                this._sharedROIs = [];
                 regions.forEach(region => 
                 {
                     if(this.checkVisibleRegion(region))
@@ -284,6 +286,12 @@ export class ROIComponent implements OnInit
                 alert(httpErrorToString(err, ""));
             }
         );
+    }
+
+    onClearVisibleROIs()
+    {
+        this.getRegionManager().clearAllRegionVisibility();
+        this._roiService.clearAllROIVisibility();
     }
 
     get authors(): ObjectCreator[]
