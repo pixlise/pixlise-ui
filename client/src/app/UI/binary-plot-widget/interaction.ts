@@ -216,7 +216,14 @@ export class BinaryInteraction implements CanvasInteractionHandler
             {
                 if(ptWithinPolygon(coord, lassoPoints, bbox))
                 {
-                    selectedPMCs.add(this._mdl.raw.xAxisData.pointGroups[c].values[i].pmc);
+                    if(![null, undefined].includes(this._mdl?.raw?.xAxisData?.pointGroups[c]?.values[i]?.pmc))
+                    {
+                        selectedPMCs.add(this._mdl.raw.xAxisData.pointGroups[c].values[i].pmc);
+                    }
+                    else
+                    {
+                        console.warn(`BinaryInteraction.handleLassoFinish: pmc (pointGroup: ${c}, values: ${i}) is null or undefined. Failed to select.`);
+                    }
                 }
 
                 i++;

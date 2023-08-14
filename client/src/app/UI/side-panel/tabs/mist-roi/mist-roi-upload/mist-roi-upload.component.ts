@@ -114,7 +114,7 @@ export class MistRoiUploadComponent implements OnInit
             rawItem.ID_Depth = Number(rawItem.ID_Depth);
 
             // Ignore all rows where nothing was identified
-            if(rawItem.ID_Depth === 0 || rawItem.ClassificationTrail.length === 0)
+            if(!rawItem.ID_Depth || !rawItem.ClassificationTrail || isNaN(rawItem.PMC))
             {
                 continue;
             }

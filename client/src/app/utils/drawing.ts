@@ -209,9 +209,13 @@ export class PointDrawer
 
         for(let pt of points)
         {
+            if(!pt)
+            {
+                continue;
+            }
             // If a point has an endX and endY that is not equal to x,y, draw a line from the point to the end point
             // This is used to draw an inequality for points that are missing an x or y value
-            if(pt.endX != null && pt.endY != null && (pt.endX !== pt.x || pt.endY !== pt.y))
+            if(![null, undefined].includes(pt?.endX) && ![null, undefined].includes(pt?.endY) && (pt.endX !== pt.x || pt.endY !== pt.y))
             {
                 this._screenContext.save();
 

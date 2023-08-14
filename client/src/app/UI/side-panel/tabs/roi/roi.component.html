@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div fxLayout="column" class="scrollable-container" fxFill>
-     <div class="panel-row">
+     <div class="panel-row selection-controls">
           <push-button
                #tooltip="matTooltip"
                matTooltip="You don't have permission to create ROIs"
@@ -40,6 +40,15 @@ POSSIBILITY OF SUCH DAMAGE.
                [disabled]="selectionEmpty || isPublicUser"
                fxFlex="100%"
           >New ROI from Selection</push-button>
+          <icon-button
+               #tooltip="matTooltip"
+               matTooltip="Clear all visible ROIs"
+               (onClick)="onClearVisibleROIs()"
+               icon="assets/button-icons/visible-off.svg"
+               [hasBackground]="false"
+               class="clear-visible-rois-button"
+          >
+          </icon-button>
      </div>
      <div *ngIf="showSearch" fxLayout="row" class="gap-separated-horizontal-elements filters-row">
           <filter-box

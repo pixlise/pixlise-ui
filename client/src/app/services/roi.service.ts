@@ -256,6 +256,17 @@ export class ROIService
         this._roi$.next(rois);
     }
 
+    clearAllROIVisibility(): void
+    {
+        let rois = new Map<string, ROISavedItem>(this._lastROILookup);
+        rois.forEach((roi: ROISavedItem) =>
+        {
+            roi.visible = false;
+        });
+        this._lastROILookup = rois;
+        this._roi$.next(rois);
+    }
+
     // Normally trying to keep UI out of these services, but this is called from several places
     // so made an exception.
     // This presents the "save selection as ROI" dialog, allowing users to either overwrite an ROI

@@ -438,6 +438,17 @@ export class RegionManager
         this.publishChange(false, "regenerate");
     }
 
+    clearAllRegionVisibility()
+    {
+        this._lastViewStateROIs = [];
+        this._regions.forEach((region) =>
+        {
+            region.visible = false;
+        });
+
+        this.publishChange(true, "clearAllRegionVisibility");
+    }
+
     private makeRegionPolygons(locationIndexes: number[], printableROIID: string): RegionDisplayPolygon[]
     {
         let polys = [];

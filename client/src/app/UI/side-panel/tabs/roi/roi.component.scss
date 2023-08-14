@@ -78,3 +78,12 @@ tag-picker {
 .filters-row {
     padding: 8px;
 }
+
+.selection-controls {
+    display: flex;
+    align-items: center;
+    
+    .clear-visible-rois-button {
+        margin-left: 4px;
+    }
+}
