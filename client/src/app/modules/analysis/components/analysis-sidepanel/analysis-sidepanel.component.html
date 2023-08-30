@@ -31,7 +31,7 @@
     <section *ngIf="!sidepanelOpen" class="button-container">
         <div class="tab-shortcuts">
             <img *ngFor="let tab of tabs" class="clickable tab-shortcut" [src]="tab.icon" #tooltip="matTooltip"
-                [matTooltip]="tab.tooltip || tab.title" (click)="onOpenTab(tab)">
+                [matTooltip]="tab.tooltip || tab.title" (click)="onOpenTab(tab, true)">
         </div>
         <hr class="panel-break">
         <div class="tab-shortcuts">

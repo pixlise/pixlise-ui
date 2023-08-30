@@ -13,6 +13,9 @@ export type WidgetToolbarButtonConfiguration = {
     disabled?: boolean;
     onClick: (value: any) => void;
 
+    // Controls whether the value is copied over in a template
+    templateable?: boolean;
+
     // If there isn't enough room to display the button, move it into the settings menu
     _overflowed?: boolean;
     maxWidth?: number;

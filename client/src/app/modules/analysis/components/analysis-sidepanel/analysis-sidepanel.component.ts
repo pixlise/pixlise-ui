@@ -30,27 +30,11 @@ export class AnalysisSidepanelComponent {
     }
   }
 
-  // ngAfterViewInit(): void {
-  //   this.activeTab = this.tabs[0];
-  // }
-
-  // ngAfterViewChecked(): void {
-  // Reset in case it was never shown
-  // if (this.sidepanelOpen && !this._openTabRef) {
-  //   if (!this.activeTab) {
-  //     this.onOpenTab(this.tabs[0]);
-  //   } else {
-  //     this.onOpenTab(this.activeTab);
-  //   }
-  // }
-  // }
-
   ngOnDestroy() {
     this.clearTab();
   }
 
   private clearTab(): void {
-    console.log("CLEARING TAB")
     if (this._openTabRef) {
       this._openTabRef.destroy();
       this.openTab?.clear();
@@ -90,9 +74,9 @@ export class AnalysisSidepanelComponent {
     return this._userOptionsService.hasFeatureAccess("admin");
   }
 
-  onOpenTab(tab: SidebarTabItem) {
+  onOpenTab(tab: SidebarTabItem, clear = false) {
     if (tab) {
-      if (this.activeTab?.title !== tab.title) {
+      if (clear || this.activeTab?.title !== tab.title) {
         this.clearTab();
       }
 

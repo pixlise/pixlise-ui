@@ -9,6 +9,8 @@ import { AnalysisLayoutService } from './services/analysis-layout.service';
 import { ROITabComponent } from './components/analysis-sidepanel/tabs/roi-tab/roi-tab.component';
 import { ROIModule } from '../roi/roi.module';
 import { BaseWidgetModel } from './components/widget/models/base-widget.model';
+import { InteractiveCanvasComponent } from './components/widget/interactive-canvas/interactive-canvas.component';
+import { WidgetKeyDisplayComponent } from './components/widget/widget-key-display/widget-key-display.component';
 
 const APP_ROUTES: Routes = [
   {
@@ -21,9 +23,11 @@ const APP_ROUTES: Routes = [
   declarations: [
     AnalysisPageComponent,
     WidgetComponent,
+    InteractiveCanvasComponent,
     AnalysisSidepanelComponent,
     ROITabComponent,
-    BaseWidgetModel
+    BaseWidgetModel,
+    WidgetKeyDisplayComponent
   ],
   imports: [
     CommonModule,
