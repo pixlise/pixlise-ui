@@ -30,7 +30,12 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div
-    [ngClass]="{'push-btn-rounded-disabled': disabled, 'push-btn-rounded': !disabled && !active, 'push-btn-rounded-active': !disabled && active, 'clickable': !disabled}"
-    (click)="onClick($event)">
-    <ng-content></ng-content>
+  [ngClass]="{
+    'push-btn-rounded-disabled': disabled,
+    'push-btn-rounded': !disabled && !active,
+    'push-btn-rounded-active': !disabled && active,
+    clickable: !disabled
+  }"
+  (click)="onClick($event)">
+  <ng-content></ng-content>
 </div>

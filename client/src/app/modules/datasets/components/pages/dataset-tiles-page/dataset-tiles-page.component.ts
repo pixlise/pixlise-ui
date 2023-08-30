@@ -32,7 +32,7 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ActivatedRoute, Route, Router } from "@angular/router";
 import { Subscription } from "rxjs";
 
-import { AuthService } from '@auth0/auth0-angular';
+import { AuthService } from "@auth0/auth0-angular";
 
 import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
@@ -50,89 +50,87 @@ import { HelpMessage } from "src/app/utils/help-message";
 import { getMB, httpErrorToString } from "src/app/utils/utils";
 import { Permissions } from "src/app/utils/permissions";
 
-
 class SummaryItem {
-    constructor(public label: string, public value: string) {
-    }
+  constructor(
+    public label: string,
+    public value: string
+  ) {}
 }
 
 @Component({
-    selector: "dataset-tiles-page",
-    templateUrl: "./dataset-tiles-page.component.html",
-    styleUrls: ["./dataset-tiles-page.component.scss"]
+  selector: "dataset-tiles-page",
+  templateUrl: "./dataset-tiles-page.component.html",
+  styleUrls: ["./dataset-tiles-page.component.scss"],
 })
 export class DatasetTilesPageComponent implements OnInit {
-    private _subs = new Subscription();
+  private _subs = new Subscription();
 
-    // Unfortunately we had to include this hack again :(
-    @ViewChild("openOptionsButton") openOptionsButton: ElementRef | undefined;
+  // Unfortunately we had to include this hack again :(
+  @ViewChild("openOptionsButton") openOptionsButton: ElementRef | undefined;
 
-    toSearch: string = "";
-    scans: ScanItem[] = [];
-    datasetListingAllowed: boolean = true;
+  toSearch: string = "";
+  scans: ScanItem[] = [];
+  datasetListingAllowed: boolean = true;
 
-    selectedScan: ScanItem | null = null;
+  selectedScan: ScanItem | null = null;
 
-    selectedScanSummaryItems: SummaryItem[] = [];
-    selectedScanTrackingItems: SummaryItem[] = [];
-    selectedMissingData: string = "";
+  selectedScanSummaryItems: SummaryItem[] = [];
+  selectedScanTrackingItems: SummaryItem[] = [];
+  selectedMissingData: string = "";
 
-    errorString: string = "";
-    loading = false;
+  errorString: string = "";
+  loading = false;
 
-    noselectedScanMsg = HelpMessage.NO_SELECTED_DATASET;
+  noselectedScanMsg = HelpMessage.NO_SELECTED_DATASET;
 
-    private _allGroups: string[] = [];
-    private _selectedGroups: string[] = [];
-    private _userCanEdit: boolean = false;
-    private _isPublicUser: boolean = true;
+  private _allGroups: string[] = [];
+  private _selectedGroups: string[] = [];
+  private _userCanEdit: boolean = false;
+  private _isPublicUser: boolean = true;
 
-    private _filter: DatasetFilter = new DatasetFilter(null, null, null, null, null, null, null, null, null, null, null);
+  private _filter: DatasetFilter = new DatasetFilter(null, null, null, null, null, null, null, null, null, null, null);
 
-    constructor(
-        private _router: Router,
-        private _route: ActivatedRoute,
-        private _dataService: APIDataService,
-        //private _viewStateService: ViewStateService,
-        private _authService: AuthService,
-        public dialog: MatDialog
-    ) {
-    }
+  constructor(
+    private _router: Router,
+    private _route: ActivatedRoute,
+    private _dataService: APIDataService,
+    //private _viewStateService: ViewStateService,
+    private _authService: AuthService,
+    public dialog: MatDialog
+  ) {}
 
-    ngOnInit() {
-        this._authService.idTokenClaims$.subscribe({
-            next: (claims) => {
-                if (claims) {
-                    // This all went unused during public user feature additions
-                    if (Permissions.permissionCount(claims) <= 0) {
-                        // User has no permissions at all, admins would've set them this way!
-                        // this.setDatasetListingNotAllowedError(HelpMessage.AWAITING_ADMIN_APPROVAL);
-                    }
-                    else {
-                        // If the user is set to have no permissions, we show that error and don't bother requesting
-                        if (Permissions.hasPermissionSet(claims, Permissions.permissionNone)) {
-                            // Show a special error in this case - user has been set to have no permissions
-                            // this.setDatasetListingNotAllowedError(HelpMessage.NO_PERMISSIONS);
-                        }
-                        else {
-                            // Don't have no-permission set, so see if the user is allowed to access any groups
-                            this._allGroups = Permissions.getGroupsPermissionAllows(claims);
-                            this._selectedGroups = Array.from(this._allGroups);
-                            // if(this._allGroups.length <= 0)
-                            // {
-                            //     this.setDatasetListingNotAllowedError(HelpMessage.NO_DATASET_GROUPS);
-                            // }
-                        }
-
-                        this._userCanEdit = Permissions.hasPermissionSet(claims, Permissions.permissionEditDataset);
-                    }
-                }
-            },
-            error: (err) => {
-                this.setDatasetListingNotAllowedError(HelpMessage.GET_CLAIMS_FAILED);
+  ngOnInit() {
+    this._authService.idTokenClaims$.subscribe({
+      next: claims => {
+        if (claims) {
+          // This all went unused during public user feature additions
+          if (Permissions.permissionCount(claims) <= 0) {
+            // User has no permissions at all, admins would've set them this way!
+            // this.setDatasetListingNotAllowedError(HelpMessage.AWAITING_ADMIN_APPROVAL);
+          } else {
+            // If the user is set to have no permissions, we show that error and don't bother requesting
+            if (Permissions.hasPermissionSet(claims, Permissions.permissionNone)) {
+              // Show a special error in this case - user has been set to have no permissions
+              // this.setDatasetListingNotAllowedError(HelpMessage.NO_PERMISSIONS);
+            } else {
+              // Don't have no-permission set, so see if the user is allowed to access any groups
+              this._allGroups = Permissions.getGroupsPermissionAllows(claims);
+              this._selectedGroups = Array.from(this._allGroups);
+              // if(this._allGroups.length <= 0)
+              // {
+              //     this.setDatasetListingNotAllowedError(HelpMessage.NO_DATASET_GROUPS);
+              // }
             }
-        });
-        /* TODO:
+
+            this._userCanEdit = Permissions.hasPermissionSet(claims, Permissions.permissionEditDataset);
+          }
+        }
+      },
+      error: err => {
+        this.setDatasetListingNotAllowedError(HelpMessage.GET_CLAIMS_FAILED);
+      },
+    });
+    /* TODO:
                 this._subs.add(this._authService.isPublicUser$.subscribe(
                     (isPublicUser)=>
                     {
@@ -153,214 +151,213 @@ export class DatasetTilesPageComponent implements OnInit {
                     }
                 ));
         */
-        this.clearSelection();
-        this.onSearch();
+    this.clearSelection();
+    this.onSearch();
+  }
+
+  ngOnDestroy() {
+    this.closeOpenOptionsMenu();
+    this._subs.unsubscribe();
+  }
+
+  get showOpenOptions(): boolean {
+    // Only show these extra options if NOT a public user
+    return !this._isPublicUser;
+  }
+
+  get userCanEdit(): boolean {
+    return this._userCanEdit;
+  }
+
+  get selectedIsIncomplete(): boolean {
+    return this.selectedMissingData.length > 0;
+  }
+
+  get filterCount(): number {
+    return this._filter.itemCount();
+  }
+
+  get groupCount(): number {
+    if (this._selectedGroups.length == this._allGroups.length) {
+      // Nothing special about all groups being turned on!
+      return 0;
     }
 
-    ngOnDestroy() {
-        this.closeOpenOptionsMenu();
-        this._subs.unsubscribe();
+    return this._selectedGroups.length;
+  }
+
+  protected setDatasetListingNotAllowedError(err: string): void {
+    this.datasetListingAllowed = false;
+    this.errorString = err;
+  }
+
+  onOpen(resetView: boolean): void {
+    this.closeOpenOptionsMenu();
+
+    if (resetView) {
+      if (
+        !confirm(
+          "Are you sure you want to reset your view to the default for this dataset?\n\nSaved workspaces are not affected, however your last stored view layout, selected regions/expressions on each view, loaded quantification and PMC/pixel selection will be cleared"
+        )
+      ) {
+        return;
+      }
     }
 
-    get showOpenOptions(): boolean {
-        // Only show these extra options if NOT a public user
-        return !this._isPublicUser;
+    // TODO: replace this...
+    //this._viewStateService.setResetFlag(resetView);
+
+    // Clear any existing dataset
+    // TODO: replace this if needed
+    // this._datasetService.close();
+
+    // Navigating to the URL will trigger the download. This is neat because these URLs are
+    // share-able and will open datasets if users are already logged in
+    if (this.selectedScan) {
+      // this._router.navigateByUrl("dataset/"+this.selectedScan.id+"/analysis");
+      this._router.navigate(["analysis"], { relativeTo: this._route, queryParams: { scan_id: this.selectedScan.id } });
+    }
+  }
+
+  onEdit(): void {
+    this.closeOpenOptionsMenu();
+
+    // Switch to the editing tab
+    if (this.selectedScan) {
+      this._router.navigateByUrl("dataset-edit/" + this.selectedScan.id);
+    }
+  }
+
+  onClickTileArea(): void {
+    this.clearSelection();
+  }
+
+  onSearch(): void {
+    this.scans = [];
+    this.errorString = "Fetching Scans...";
+
+    let searchString = this._filter.toSearchString();
+
+    // Combine groups if we need to
+    if (this._allGroups.length != this._selectedGroups.length) {
+      let groupStr = this._selectedGroups.join("|");
+      searchString = DatasetFilter.appendTerm(searchString, "group_id=" + groupStr);
     }
 
-    get userCanEdit(): boolean {
-        return this._userCanEdit;
+    // Finally, add the title text search string
+    if (this.toSearch.length > 0) {
+      searchString = DatasetFilter.appendTerm(searchString, "title=" + this.toSearch);
     }
 
-    get selectedIsIncomplete(): boolean {
-        return this.selectedMissingData.length > 0;
-    }
+    // TODO: we don't actually use the filtering stuff, search string needs to change for API
+    // because we have multiple fields we can specify now...
+    this.loading = true;
+    this._dataService.sendScanListRequest(ScanListReq.create({})).subscribe({
+      next: (resp: ScanListResp) => {
+        this.loading = false;
+        this.errorString = "";
 
-    get filterCount(): number {
-        return this._filter.itemCount();
-    }
-
-    get groupCount(): number {
-        if (this._selectedGroups.length == this._allGroups.length) {
-            // Nothing special about all groups being turned on!
-            return 0;
+        this.scans = resp.scans;
+        this.sortScans(this.scans);
+        if (this.scans.length <= 0) {
+          this.errorString = HelpMessage.NO_DATASETS_FOUND;
         }
+      },
+      error: err => {
+        this.loading = false;
+        console.error(err);
 
-        return this._selectedGroups.length;
-    }
+        // Display the error text that came back, might be useful
+        this.errorString = httpErrorToString(err, "Search Error");
 
-    protected setDatasetListingNotAllowedError(err: string): void {
-        this.datasetListingAllowed = false;
-        this.errorString = err;
-    }
-
-    onOpen(resetView: boolean): void {
-        this.closeOpenOptionsMenu();
-
-        if (resetView) {
-            if (!confirm("Are you sure you want to reset your view to the default for this dataset?\n\nSaved workspaces are not affected, however your last stored view layout, selected regions/expressions on each view, loaded quantification and PMC/pixel selection will be cleared")) {
-                return;
-            }
-        }
-
-        // TODO: replace this...
-        //this._viewStateService.setResetFlag(resetView);
-
-        // Clear any existing dataset
-        // TODO: replace this if needed
-        // this._datasetService.close();
-
-        // Navigating to the URL will trigger the download. This is neat because these URLs are
-        // share-able and will open datasets if users are already logged in
-        if (this.selectedScan) {
-            // this._router.navigateByUrl("dataset/"+this.selectedScan.id+"/analysis");
-            this._router.navigate(["analysis"], { relativeTo: this._route, queryParams: { scan_id: this.selectedScan.id } });
-        }
-    }
-
-    onEdit(): void {
-        this.closeOpenOptionsMenu();
-
-        // Switch to the editing tab
-        if (this.selectedScan) {
-            this._router.navigateByUrl("dataset-edit/" + this.selectedScan.id);
-        }
-    }
-
-    onClickTileArea(): void {
-        this.clearSelection();
-    }
-
-    onSearch(): void {
         this.scans = [];
-        this.errorString = "Fetching Scans...";
+      },
+    });
+  }
 
-        let searchString = this._filter.toSearchString();
-
-        // Combine groups if we need to
-        if (this._allGroups.length != this._selectedGroups.length) {
-            let groupStr = this._selectedGroups.join("|");
-            searchString = DatasetFilter.appendTerm(searchString, "group_id=" + groupStr);
-        }
-
-        // Finally, add the title text search string
-        if (this.toSearch.length > 0) {
-            searchString = DatasetFilter.appendTerm(searchString, "title=" + this.toSearch);
-        }
-
-        // TODO: we don't actually use the filtering stuff, search string needs to change for API
-        // because we have multiple fields we can specify now...
-        this.loading = true;
-        this._dataService.sendScanListRequest(ScanListReq.create({})).subscribe({
-            next: (resp: ScanListResp) => {
-                this.loading = false;
-                this.errorString = "";
-
-                this.scans = resp.scans;
-                this.sortScans(this.scans);
-                if (this.scans.length <= 0) {
-                    this.errorString = HelpMessage.NO_DATASETS_FOUND;
-                }
-            },
-            error: (err) => {
-                this.loading = false;
-                console.error(err);
-
-                // Display the error text that came back, might be useful
-                this.errorString = httpErrorToString(err, "Search Error");
-
-                this.scans = [];
-            }
-        });
+  private getSortValue(a: any, b: any): number {
+    if (a < b) {
+      return 1;
+    } else if (a > b) {
+      return -1;
     }
+    return 0;
+  }
 
-    private getSortValue(a: any, b: any): number {
-        if (a < b) {
-            return 1;
+  private sortScans(scans: ScanItem[]) {
+    // First, sort datasets by SOL alphabetically, because we have some starting with letters to denote
+    // that they are test datasets. Then we sort numerically within the lettered sections
+    scans.sort((a: ScanItem, b: ScanItem) => {
+      // If there is a sol on both...
+      let aSol = a.meta["sol"] || "",
+        bSol = b.meta["sol"] || "";
+
+      if (aSol === bSol && aSol.length > 0) {
+        // Don't let empty strings all fall into here!
+        // They're equal, sort by name
+        return this.getSortValue(a.title, b.title);
+      }
+
+      // If they don't match and one is empty, put empty at the end always
+      if (aSol != bSol) {
+        if (aSol.length <= 0) {
+          // a is empty, goes last
+          return 1;
+        } else if (bSol.length <= 0) {
+          // b is empty, goes last
+          return -1;
         }
-        else if (a > b) {
-            return -1;
-        }
-        return 0;
-    }
+      }
 
-    private sortScans(scans: ScanItem[]) {
-        // First, sort datasets by SOL alphabetically, because we have some starting with letters to denote
-        // that they are test datasets. Then we sort numerically within the lettered sections
-        scans.sort(
-            (a: ScanItem, b: ScanItem) => {
-                // If there is a sol on both...
-                let aSol = a.meta["sol"] || "", bSol = b.meta["sol"] || "";
+      // SOLs are strings, and can start with letters. We want the letter part alphabetically sorted, and any numbers
+      // after it sorted numerically
+      let aLetter = aSol.length > 0 && Number.isNaN(Number.parseInt(aSol[0])) ? aSol[0] : "";
+      let bLetter = bSol.length > 0 && Number.isNaN(Number.parseInt(bSol[0])) ? bSol[0] : "";
 
-                if (aSol === bSol && aSol.length > 0) // Don't let empty strings all fall into here!
-                {
-                    // They're equal, sort by name
-                    return this.getSortValue(a.title, b.title);
-                }
+      let aSolNum = Number.parseInt(aSol.substring(aLetter.length));
+      let bSolNum = Number.parseInt(bSol.substring(bLetter.length));
 
-                // If they don't match and one is empty, put empty at the end always
-                if (aSol != bSol) {
-                    if (aSol.length <= 0) {
-                        // a is empty, goes last
-                        return 1;
-                    }
-                    else if (bSol.length <= 0) {
-                        // b is empty, goes last
-                        return -1;
-                    }
-                }
+      // If neither or both have the same letter, sort by number
+      if (aLetter == bLetter) {
+        return this.getSortValue(aSolNum, bSolNum);
+      }
 
-                // SOLs are strings, and can start with letters. We want the letter part alphabetically sorted, and any numbers
-                // after it sorted numerically
-                let aLetter = aSol.length > 0 && Number.isNaN(Number.parseInt(aSol[0])) ? aSol[0] : "";
-                let bLetter = bSol.length > 0 && Number.isNaN(Number.parseInt(bSol[0])) ? bSol[0] : "";
+      // The one with no letter goes first
+      if (aLetter.length <= 0 && bLetter.length > 0) {
+        return -1;
+      }
 
-                let aSolNum = Number.parseInt(aSol.substring(aLetter.length));
-                let bSolNum = Number.parseInt(bSol.substring(bLetter.length));
+      if (aLetter.length > 0 && bLetter.length <= 0) {
+        return 1;
+      }
 
-                // If neither or both have the same letter, sort by number
-                if (aLetter == bLetter) {
-                    return this.getSortValue(aSolNum, bSolNum);
-                }
+      return this.getSortValue(aLetter, bLetter);
+    });
+  }
 
-                // The one with no letter goes first
-                if (aLetter.length <= 0 && bLetter.length > 0) {
-                    return -1;
-                }
+  onFilters(event: MouseEvent): void {
+    const dialogConfig = new MatDialogConfig();
+    //dialogConfig.backdropClass = 'empty-overlay-backdrop';
 
-                if (aLetter.length > 0 && bLetter.length <= 0) {
-                    return 1;
-                }
+    let filter = this._filter.copy();
+    dialogConfig.data = new FilterDialogData(filter, new ElementRef(event.currentTarget));
 
-                return this.getSortValue(aLetter, bLetter);
-            }
-        );
-    }
+    const dialogRef = this.dialog.open(FilterDialogComponent, dialogConfig);
 
-    onFilters(event: MouseEvent): void {
-        const dialogConfig = new MatDialogConfig();
-        //dialogConfig.backdropClass = 'empty-overlay-backdrop';
+    dialogRef.afterClosed().subscribe((result: DatasetFilter) => {
+      if (result) {
+        this._filter = result;
+        this.onSearch();
+      }
+    });
+  }
 
-        let filter = this._filter.copy();
-        dialogConfig.data = new FilterDialogData(filter, new ElementRef(event.currentTarget));
+  onGroups(event: MouseEvent): void {
+    const dialogConfig = new MatDialogConfig();
+    //dialogConfig.backdropClass = 'empty-overlay-backdrop';
 
-        const dialogRef = this.dialog.open(FilterDialogComponent, dialogConfig);
-
-        dialogRef.afterClosed().subscribe(
-            (result: DatasetFilter) => {
-                if (result) {
-                    this._filter = result;
-                    this.onSearch();
-                }
-            }
-        );
-    }
-
-    onGroups(event: MouseEvent): void {
-        const dialogConfig = new MatDialogConfig();
-        //dialogConfig.backdropClass = 'empty-overlay-backdrop';
-
-        // TODO:
-        /*
+    // TODO:
+    /*
         let items: PickerDialogItem[] = [];
         items.push(new PickerDialogItem(null, "Groups", null, true));
 
@@ -382,87 +379,85 @@ export class DatasetTilesPageComponent implements OnInit {
                 }
             }
         );*/
+  }
+
+  onSelect(event: ScanItem): void {
+    this.selectedScan = event;
+
+    // Fill these so they display
+    this.selectedScanSummaryItems = [
+      new SummaryItem("Detector:", this.selectedScan.instrumentConfig),
+      new SummaryItem("Bulk Sum:", this.spectraCount(this.selectedScan.contentCounts["BulkSpectra"])),
+      new SummaryItem("Max Value:", this.spectraCount(this.selectedScan.contentCounts["MaxSpectra"])),
+      new SummaryItem("Normal Spectra:", this.spectraCount(this.selectedScan.contentCounts["NormalSpectra"])),
+      new SummaryItem("Dwell Spectra:", this.spectraCount(this.selectedScan.contentCounts["DwellSpectra"])),
+      new SummaryItem("Pseudo intensities:", this.spectraCount(this.selectedScan.contentCounts["PseudoIntensities"])),
+    ];
+
+    for (let sdt of this.selectedScan.dataTypes) {
+      if (sdt.dataType == ScanDataType.SD_IMAGE) {
+        new SummaryItem("MCC Images:", sdt.count.toString());
+      } else if (sdt.dataType == ScanDataType.SD_XRF) {
+        new SummaryItem("PMCs:", sdt.count.toString());
+      } else if (sdt.dataType == ScanDataType.SD_RGBU) {
+        new SummaryItem("RGBU Images:", sdt.count.toString());
+      }
     }
 
-    onSelect(event: ScanItem): void {
-        this.selectedScan = event;
+    let createTime = "Unknown";
+    if (this.selectedScan.timestampUnixSec) {
+      const dtFormat = new Intl.DateTimeFormat("en-GB", {
+        //'dateStyle': 'medium',
+        //'timeStyle': 'medium',
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        //timeZone: 'UTC'
+      });
 
-        // Fill these so they display
-        this.selectedScanSummaryItems = [
-            new SummaryItem("Detector:", this.selectedScan.instrumentConfig),
-            new SummaryItem("Bulk Sum:", this.spectraCount(this.selectedScan.contentCounts["BulkSpectra"])),
-            new SummaryItem("Max Value:", this.spectraCount(this.selectedScan.contentCounts["MaxSpectra"])),
-            new SummaryItem("Normal Spectra:", this.spectraCount(this.selectedScan.contentCounts["NormalSpectra"])),
-            new SummaryItem("Dwell Spectra:", this.spectraCount(this.selectedScan.contentCounts["DwellSpectra"])),
-            new SummaryItem("Pseudo intensities:", this.spectraCount(this.selectedScan.contentCounts["PseudoIntensities"]))
-        ];
-
-        for (let sdt of this.selectedScan.dataTypes) {
-            if (sdt.dataType == ScanDataType.SD_IMAGE) {
-                new SummaryItem("MCC Images:", sdt.count.toString());
-            }
-            else if (sdt.dataType == ScanDataType.SD_XRF) {
-                new SummaryItem("PMCs:", sdt.count.toString());
-            }
-            else if (sdt.dataType == ScanDataType.SD_RGBU) {
-                new SummaryItem("RGBU Images:", sdt.count.toString());
-            }
-        }
-
-        let createTime = "Unknown";
-        if (this.selectedScan.timestampUnixSec) {
-            const dtFormat = new Intl.DateTimeFormat("en-GB", {
-                //'dateStyle': 'medium',
-                //'timeStyle': 'medium',
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-                //timeZone: 'UTC'
-            });
-
-            createTime = dtFormat.format(new Date(this.selectedScan.timestampUnixSec * 1000));
-        }
-
-        this.selectedScanSummaryItems.push(new SummaryItem("Updated Time:", createTime));
-
-        this.selectedScanTrackingItems = [
-            new SummaryItem("Target Name:", this.selectedScan.meta["Target"] || ""),
-            new SummaryItem("Site:", this.selectedScan.meta["Site"] || ""),
-            new SummaryItem("Sol:", this.selectedScan.meta["Sol"] || ""),
-            new SummaryItem("Drive:", this.selectedScan.meta["DriveId"] || ""),
-            new SummaryItem("RTT:", this.selectedScan.meta["RTT"] || ""),
-            new SummaryItem("SCLK:", this.selectedScan.meta["SCLK"] || ""),
-            new SummaryItem("PIXLISE ID:", this.selectedScan.id),
-        ];
-
-        // TODO:
-        let missing = "";//DataSetSummary.listMissingData(this.selectedScan);
-        this.selectedMissingData = missing.length > 0 ? "Dataset likely missing: " + Array.from(missing).join(",") : "";
+      createTime = dtFormat.format(new Date(this.selectedScan.timestampUnixSec * 1000));
     }
 
-    onAddScan(): void {
-        const dialogConfig = new MatDialogConfig();
+    this.selectedScanSummaryItems.push(new SummaryItem("Updated Time:", createTime));
 
-        //dialogConfig.disableClose = true;
-        //dialogConfig.autoFocus = true;
-        //dialogConfig.width = '1200px';
+    this.selectedScanTrackingItems = [
+      new SummaryItem("Target Name:", this.selectedScan.meta["Target"] || ""),
+      new SummaryItem("Site:", this.selectedScan.meta["Site"] || ""),
+      new SummaryItem("Sol:", this.selectedScan.meta["Sol"] || ""),
+      new SummaryItem("Drive:", this.selectedScan.meta["DriveId"] || ""),
+      new SummaryItem("RTT:", this.selectedScan.meta["RTT"] || ""),
+      new SummaryItem("SCLK:", this.selectedScan.meta["SCLK"] || ""),
+      new SummaryItem("PIXLISE ID:", this.selectedScan.id),
+    ];
 
-        //dialogConfig.data = ;
-        const dialogRef = this.dialog.open(AddDatasetDialogComponent, dialogConfig);
+    // TODO:
+    let missing = ""; //DataSetSummary.listMissingData(this.selectedScan);
+    this.selectedMissingData = missing.length > 0 ? "Dataset likely missing: " + Array.from(missing).join(",") : "";
+  }
 
-        dialogRef.afterClosed().subscribe(
-            () => {
-                // Refresh scans in the near future, it should have appeared
-                setTimeout(() => { this.onSearch(); }, 2000);
-            }
-        );
-    }
+  onAddScan(): void {
+    const dialogConfig = new MatDialogConfig();
 
-    get contextImageURL(): string {
-        /* TODO:
+    //dialogConfig.disableClose = true;
+    //dialogConfig.autoFocus = true;
+    //dialogConfig.width = '1200px';
+
+    //dialogConfig.data = ;
+    const dialogRef = this.dialog.open(AddDatasetDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe(() => {
+      // Refresh scans in the near future, it should have appeared
+      setTimeout(() => {
+        this.onSearch();
+      }, 2000);
+    });
+  }
+
+  get contextImageURL(): string {
+    /* TODO:
                 // Snip off the end and replace with context-thumb, which allows the API to work out the image to return
                 let pos = this.selectedScan.context_image_link.lastIndexOf("/");
                 if(pos < 0)
@@ -473,26 +468,26 @@ export class DatasetTilesPageComponent implements OnInit {
                 let url = this.selectedScan.context_image_link.substring(0, pos+1)+"context-image";
                 return url;
         */
-        return "";
-    }
+    return "";
+  }
 
-    private spectraCount(count: number): string {
-        if (count <= 0) {
-            return "None";
-        }
-        return count.toString();
+  private spectraCount(count: number): string {
+    if (count <= 0) {
+      return "None";
     }
+    return count.toString();
+  }
 
-    private clearSelection(): void {
-        this.selectedScan = null;
+  private clearSelection(): void {
+    this.selectedScan = null;
 
-        this.selectedScanSummaryItems = [];
-        this.selectedScanTrackingItems = [];
+    this.selectedScanSummaryItems = [];
+    this.selectedScanTrackingItems = [];
+  }
+
+  private closeOpenOptionsMenu(): void {
+    if (this.openOptionsButton && this.openOptionsButton instanceof WidgetSettingsMenuComponent) {
+      (this.openOptionsButton as WidgetSettingsMenuComponent).close();
     }
-
-    private closeOpenOptionsMenu(): void {
-        if (this.openOptionsButton && this.openOptionsButton instanceof WidgetSettingsMenuComponent) {
-            (this.openOptionsButton as WidgetSettingsMenuComponent).close();
-        }
-    }
+  }
 }

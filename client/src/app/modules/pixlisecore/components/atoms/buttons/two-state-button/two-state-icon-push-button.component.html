@@ -30,11 +30,11 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div
-    fxLayout="row"
-    fxLayoutAlign="start center"
-    class="gap-separated-horizontal-elements"
-    [ngClass]="{'push-btn-rounded-disabled': disabled, 'push-btn-rounded': !disabled, 'clickable': !disabled}"
-    (click)="onClick($event)">
-    <ng-content></ng-content>
-    <div class="icon-on-btn" [ngStyle]="{'background-image': 'url('+icon+')'}"></div>
+  fxLayout="row"
+  fxLayoutAlign="start center"
+  class="gap-separated-horizontal-elements"
+  [ngClass]="{ 'push-btn-rounded-disabled': disabled, 'push-btn-rounded': !disabled, clickable: !disabled }"
+  (click)="onClick($event)">
+  <ng-content></ng-content>
+  <div class="icon-on-btn" [ngStyle]="{ 'background-image': 'url(' + icon + ')' }"></div>
 </div>

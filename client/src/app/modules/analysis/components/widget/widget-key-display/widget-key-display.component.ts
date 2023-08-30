@@ -30,73 +30,74 @@
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { RGBA } from "src/app/utils/colours";
 
-
 export class KeyItem {
-    colour: string;
+  colour: string;
 
-    constructor(public id: string, public label: string, colourRGB: RGBA | string, public dashPattern: number[] = [], public shape: string = "") {
-        let colourRGBA: RGBA | null = null;
+  constructor(
+    public id: string,
+    public label: string,
+    colourRGB: RGBA | string,
+    public dashPattern: number[] = [],
+    public shape: string = ""
+  ) {
+    let colourRGBA: RGBA | null = null;
 
-        if (typeof (colourRGB) == "string") {
-            colourRGBA = RGBA.fromString(colourRGB);
-        }
-        else {
-            colourRGBA = colourRGB;
-        }
-
-        if (colourRGBA === null) {
-            this.colour = "";
-        }
-        else {
-            this.colour = (new RGBA(colourRGBA.r, colourRGBA.g, colourRGBA.b, 255)).asString();
-        }
-
-        if (!this.id) {
-            this.id = "";
-        }
+    if (typeof colourRGB == "string") {
+      colourRGBA = RGBA.fromString(colourRGB);
+    } else {
+      colourRGBA = colourRGB;
     }
+
+    if (colourRGBA === null) {
+      this.colour = "";
+    } else {
+      this.colour = new RGBA(colourRGBA.r, colourRGBA.g, colourRGBA.b, 255).asString();
+    }
+
+    if (!this.id) {
+      this.id = "";
+    }
+  }
 }
 
 @Component({
-    selector: "widget-key-display",
-    templateUrl: "./widget-key-display.component.html",
-    styleUrls: ["./widget-key-display.component.scss"]
+  selector: "widget-key-display",
+  templateUrl: "./widget-key-display.component.html",
+  styleUrls: ["./widget-key-display.component.scss"],
 })
 export class WidgetKeyDisplayComponent implements OnInit {
-    @Input() items: KeyItem[] = [];
-    @Output() keyClick = new EventEmitter();
-    @Output() onToggleKey = new EventEmitter();
+  @Input() items: KeyItem[] = [];
+  @Output() keyClick = new EventEmitter();
+  @Output() onToggleKey = new EventEmitter();
 
-    @Input() public keyShowing: boolean = false;
+  @Input() public keyShowing: boolean = false;
 
-    constructor() {
+  constructor() {}
+
+  ngOnInit(): void {}
+
+  onToggleShowKey(): void {
+    this.keyShowing = !this.keyShowing;
+    this.onToggleKey.emit(this.keyShowing);
+  }
+
+  onClickLabel(id: string): void {
+    if (id.length > 0) {
+      this.keyClick.emit(id);
+    }
+  }
+
+  getLabel(item: KeyItem): string {
+    return item.label.replace("mist__roi.", "");
+  }
+
+  getTruncatedLabel(item: KeyItem): string {
+    let maxLength = 15;
+    let label = this.getLabel(item);
+    if (label.length > maxLength) {
+      label = label.slice(0, maxLength) + "...";
     }
 
-    ngOnInit(): void {
-    }
-
-    onToggleShowKey(): void {
-        this.keyShowing = !this.keyShowing;
-        this.onToggleKey.emit(this.keyShowing);
-    }
-
-    onClickLabel(id: string): void {
-        if (id.length > 0) {
-            this.keyClick.emit(id);
-        }
-    }
-
-    getLabel(item: KeyItem): string {
-        return item.label.replace("mist__roi.", "");
-    }
-
-    getTruncatedLabel(item: KeyItem): string {
-        let maxLength = 15;
-        let label = this.getLabel(item);
-        if (label.length > maxLength) {
-            label = label.slice(0, maxLength) + "...";
-        }
-
-        return label;
-    }
+    return label;
+  }
 }

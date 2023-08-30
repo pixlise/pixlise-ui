@@ -1,21 +1,21 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { PiquantConfigComponent } from './piquant-config.component';
+import { PiquantConfigComponent } from "./piquant-config.component";
 
-describe('PiquantConfigComponent', () => {
+describe("PiquantConfigComponent", () => {
   let component: PiquantConfigComponent;
   let fixture: ComponentFixture<PiquantConfigComponent>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [PiquantConfigComponent]
+      declarations: [PiquantConfigComponent],
     });
     fixture = TestBed.createComponent(PiquantConfigComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

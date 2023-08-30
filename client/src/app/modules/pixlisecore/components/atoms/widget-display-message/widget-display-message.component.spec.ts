@@ -30,29 +30,23 @@
 import { async, ComponentFixture, TestBed } from "@angular/core/testing";
 import { WidgetDisplayMessageComponent } from "./widget-display-message.component";
 
+describe("WidgetDisplayMessageComponent", () => {
+  let component: WidgetDisplayMessageComponent;
+  let fixture: ComponentFixture<WidgetDisplayMessageComponent>;
 
-describe("WidgetDisplayMessageComponent", () => 
-{
-    let component: WidgetDisplayMessageComponent;
-    let fixture: ComponentFixture<WidgetDisplayMessageComponent>;
+  beforeEach(async(() => {
+    TestBed.configureTestingModule({
+      declarations: [WidgetDisplayMessageComponent],
+    }).compileComponents();
+  }));
 
-    beforeEach(async(() => 
-    {
-        TestBed.configureTestingModule({
-            declarations: [ WidgetDisplayMessageComponent ]
-        })
-            .compileComponents();
-    }));
+  beforeEach(() => {
+    fixture = TestBed.createComponent(WidgetDisplayMessageComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
 
-    beforeEach(() => 
-    {
-        fixture = TestBed.createComponent(WidgetDisplayMessageComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
-
-    it("should create", () => 
-    {
-        expect(component).toBeTruthy();
-    });
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
 });

@@ -9,20 +9,9 @@ import { AnalysisModule } from "../analysis/analysis.module";
 export { SpectrumChartWidgetComponent } from "./widgets/spectrum-chart-widget/spectrum-chart-widget.component";
 
 @NgModule({
-  declarations: [
-    SpectrumChartWidgetComponent
-  ],
-  imports: [
-    CommonModule,
-    PIXLISECoreModule,
-    AnalysisModule
-  ],
-  exports: [
-    SpectrumChartWidgetComponent
-  ],
-  providers: [
-    DiffractionService,
-    SpectrumService
-  ]
+  declarations: [SpectrumChartWidgetComponent],
+  imports: [CommonModule, PIXLISECoreModule, AnalysisModule],
+  exports: [SpectrumChartWidgetComponent],
+  providers: [DiffractionService, SpectrumService],
 })
-export class SpectrumModule { }
+export class SpectrumModule {}

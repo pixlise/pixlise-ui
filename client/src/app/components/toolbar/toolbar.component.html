@@ -29,12 +29,12 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div *ngIf="isVisible" fxLayout="row" class="toolbar" [ngClass]="{'dark-background': darkBackground}">
-  <img src="assets/PIXLISE-large.svg" title="Home Page" class="clickable" (click)="onAbout()">
+<div *ngIf="isVisible" fxLayout="row" class="toolbar" [ngClass]="{ 'dark-background': darkBackground }">
+  <img src="assets/PIXLISE-large.svg" title="Home Page" class="clickable" (click)="onAbout()" />
 
   <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
     <!-- <missing-data-indicator></missing-data-indicator> -->
-    <div *ngIf="showTitle" class="title-text" [title]="title">{{title}}</div>
+    <div *ngIf="showTitle" class="title-text" [title]="title">{{ title }}</div>
     <push-button *ngIf="showExport" buttonStyle="outline" (onClick)="onExport()">Export</push-button>
     <!-- <two-state-edit-button *ngIf="showViewCapture" id="annotation-toggle-btn" buttonStyle="gray" (onToggle)="onToggleAnnotations($event)"
       [active]="annotationsVisible" [style.z-index]="111" (onEdit)="onEditAnnotations()">
@@ -62,11 +62,11 @@ POSSIBILITY OF SUCH DAMAGE.
 
     <a *ngIf="!isPublicUser" [href]="discussLink" class="nav-link-normal" target="_blank">Discussion</a>
 
-    <a *ngFor="let tab of tabs" [href]="tab.url" (click)="onNavigate(tab, $event)"
-      class="{{tab.cssClass}}">{{tab.label}}</a>
+    <a *ngFor="let tab of tabs" [href]="tab.url" (click)="onNavigate(tab, $event)" class="{{ tab.cssClass }}">{{ tab.label }}</a>
 
     <!-- <img class="clickable user-icon {{userMenuOpen ? 'open' : ''}}" cdkOverlayOrigin #trigger="cdkOverlayOrigin"
       (click)="onUserMenu()" [src]="userIcon">
   </div> -->
     <user-icon size="24px" cdkOverlayOrigin #trigger="cdkOverlayOrigin" (click)="onUserMenu()"></user-icon>
   </div>
+</div>

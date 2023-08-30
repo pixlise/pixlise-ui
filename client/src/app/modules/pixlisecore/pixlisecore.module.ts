@@ -1,10 +1,9 @@
 import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { OverlayModule } from '@angular/cdk/overlay';
+import { OverlayModule } from "@angular/cdk/overlay";
 
 import { FormsModule } from "@angular/forms";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
-
 
 import { WaitSpinnerComponent } from "./components/atoms/wait-spinner/wait-spinner.component";
 // import { MultiStateButtonComponent } from "./components/atoms/buttons/multi-state-button/multi-state-button.component";
@@ -46,58 +45,49 @@ export { APIDataService } from "./services/apidata.service";
 export { HttpInterceptorService } from "./services/http-interceptor.service";
 export { SnackbarService } from "./services/snackbar.service";
 
-
 @NgModule({
-    declarations: [
-        WaitSpinnerComponent,
-        BadgeComponent,
-        ActionButtonComponent,
-        PushButtonComponent,
-        TwoStateButtonComponent,
-        SwitchButtonComponent,
-        TwoStateIconButton,
-        TwoStatePushButton,
-        TwoStateIconPushButton,
-        WidgetDisplayMessageComponent,
-        WidgetSettingsMenuComponent,
-        MenuPanelHostComponent,
-        AuthenticateComponent,
-        RouteNotFoundComponent,
-        SnackBarPopupComponent,
-        UserMenuPanelComponent,
-        IconButtonComponent,
-        ConfirmDialogComponent
-    ],
-    imports: [
-        CommonModule,
-        OverlayModule,
-        MaterialModule,
-    ],
-    exports: [
-        WaitSpinnerComponent,
-        BadgeComponent,
-        ActionButtonComponent,
-        PushButtonComponent,
-        TwoStateButtonComponent,
-        SwitchButtonComponent,
-        TwoStateIconButton,
-        TwoStatePushButton,
-        TwoStateIconPushButton,
-        WidgetDisplayMessageComponent,
-        WidgetSettingsMenuComponent,
-        MenuPanelHostComponent,
-        AuthenticateComponent,
-        RouteNotFoundComponent,
-        IconButtonComponent,
-        ConfirmDialogComponent,
-        FormsModule,
-        MaterialModule,
-        MatSnackBarModule
-    ],
-    providers: [
-        APICommService,
-        APIDataService,
-        HttpInterceptorService
-    ]
+  declarations: [
+    WaitSpinnerComponent,
+    BadgeComponent,
+    ActionButtonComponent,
+    PushButtonComponent,
+    TwoStateButtonComponent,
+    SwitchButtonComponent,
+    TwoStateIconButton,
+    TwoStatePushButton,
+    TwoStateIconPushButton,
+    WidgetDisplayMessageComponent,
+    WidgetSettingsMenuComponent,
+    MenuPanelHostComponent,
+    AuthenticateComponent,
+    RouteNotFoundComponent,
+    SnackBarPopupComponent,
+    UserMenuPanelComponent,
+    IconButtonComponent,
+    ConfirmDialogComponent,
+  ],
+  imports: [CommonModule, OverlayModule, MaterialModule],
+  exports: [
+    WaitSpinnerComponent,
+    BadgeComponent,
+    ActionButtonComponent,
+    PushButtonComponent,
+    TwoStateButtonComponent,
+    SwitchButtonComponent,
+    TwoStateIconButton,
+    TwoStatePushButton,
+    TwoStateIconPushButton,
+    WidgetDisplayMessageComponent,
+    WidgetSettingsMenuComponent,
+    MenuPanelHostComponent,
+    AuthenticateComponent,
+    RouteNotFoundComponent,
+    IconButtonComponent,
+    ConfirmDialogComponent,
+    FormsModule,
+    MaterialModule,
+    MatSnackBarModule,
+  ],
+  providers: [APICommService, APIDataService, HttpInterceptorService],
 })
-export class PIXLISECoreModule { }
+export class PIXLISECoreModule {}

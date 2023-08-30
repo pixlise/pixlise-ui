@@ -1,16 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { WorkflowPageComponent } from './workflow-page.component';
+import { WorkflowPageComponent } from "./workflow-page.component";
 
-describe('WorkflowPageComponent', () => {
+describe("WorkflowPageComponent", () => {
   let component: WorkflowPageComponent;
   let fixture: ComponentFixture<WorkflowPageComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ WorkflowPageComponent ]
-    })
-    .compileComponents();
+      declarations: [WorkflowPageComponent],
+    }).compileComponents();
   });
 
   beforeEach(() => {
@@ -19,7 +18,7 @@ describe('WorkflowPageComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

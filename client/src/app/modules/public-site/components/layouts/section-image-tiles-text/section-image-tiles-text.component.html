@@ -30,18 +30,18 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="flex-column section">
-    <number-button [params]="params.navButtonParams"></number-button>
-    <h3><text-with-highlights [parts]="params.headingParts" styleMain="" styleAlternate="red"></text-with-highlights></h3>
-    <img [src]="activeTile.displayImageLink">
-    <div class="flex-row tile-container">
-        <div
-            *ngFor="let tile of params.tileItems"
-            class="tile clickable"
-            [ngClass]="{'active': tile.label == activeTile?.label}"
-            (click)="onClickTile(tile)">
-            <img [src]="tile.iconImageLink">
-            <h4>{{tile.label}}</h4>
-            <p>{{tile.description}}</p>
-        </div>
+  <number-button [params]="params.navButtonParams"></number-button>
+  <h3><text-with-highlights [parts]="params.headingParts" styleMain="" styleAlternate="red"></text-with-highlights></h3>
+  <img [src]="activeTile.displayImageLink" />
+  <div class="flex-row tile-container">
+    <div
+      *ngFor="let tile of params.tileItems"
+      class="tile clickable"
+      [ngClass]="{ active: tile.label == activeTile?.label }"
+      (click)="onClickTile(tile)">
+      <img [src]="tile.iconImageLink" />
+      <h4>{{ tile.label }}</h4>
+      <p>{{ tile.description }}</p>
     </div>
+  </div>
 </div>

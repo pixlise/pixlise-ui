@@ -30,29 +30,23 @@
 import { async, ComponentFixture, TestBed } from "@angular/core/testing";
 import { TwoStateEditButtonComponent } from "./two-state-edit-button.component";
 
+describe("TwoStateEditButtonComponent", () => {
+  let component: TwoStateEditButtonComponent;
+  let fixture: ComponentFixture<TwoStateEditButtonComponent>;
 
-describe("TwoStateEditButtonComponent", () => 
-{
-    let component: TwoStateEditButtonComponent;
-    let fixture: ComponentFixture<TwoStateEditButtonComponent>;
+  beforeEach(async(() => {
+    TestBed.configureTestingModule({
+      declarations: [TwoStateEditButtonComponent],
+    }).compileComponents();
+  }));
 
-    beforeEach(async(() => 
-    {
-        TestBed.configureTestingModule({
-            declarations: [ TwoStateEditButtonComponent ]
-        })
-            .compileComponents();
-    }));
+  beforeEach(() => {
+    fixture = TestBed.createComponent(TwoStateEditButtonComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
 
-    beforeEach(() => 
-    {
-        fixture = TestBed.createComponent(TwoStateEditButtonComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
-
-    it("should create", () => 
-    {
-        expect(component).toBeTruthy();
-    });
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
 });

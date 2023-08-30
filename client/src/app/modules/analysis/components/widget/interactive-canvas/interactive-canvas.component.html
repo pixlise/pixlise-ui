@@ -30,26 +30,19 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="canvas-container">
-    <canvas
-        #InteractiveCanvas
-
-        tabindex="1"
-
-        (mousedown)="onMouseDownCanvas($event)"
-        (mousemove)="onMouseMoveCanvas($event)"
-        (mouseup)="onMouseUpCanvas($event)"
-
-        (mouseenter)="onMouseEnter($event)"
-        (mouseleave)="onMouseLeave($event)"
-
-        (wheel)="onMouseWheelCanvas($event)"
-
-        (keydown)='onKeyDown($event)'
-        (keyup)='onKeyUp($event)'
-        >
-    </canvas>
-<!--
+  <canvas
+    #InteractiveCanvas
+    tabindex="1"
+    (mousedown)="onMouseDownCanvas($event)"
+    (mousemove)="onMouseMoveCanvas($event)"
+    (mouseup)="onMouseUpCanvas($event)"
+    (mouseenter)="onMouseEnter($event)"
+    (mouseleave)="onMouseLeave($event)"
+    (wheel)="onMouseWheelCanvas($event)"
+    (keydown)="onKeyDown($event)"
+    (keyup)="onKeyUp($event)">
+  </canvas>
+  <!--
         (keydown.shift)='onKeyDown($event)'
         (keyup.shift)='onKeyUp($event)'
--->
-</div>
+--></div>

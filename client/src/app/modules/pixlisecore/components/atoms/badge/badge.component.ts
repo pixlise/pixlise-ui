@@ -32,17 +32,15 @@ import { Component, Input, OnInit } from "@angular/core";
 export type BadgeStyle = "notification" | "warning" | "error";
 
 @Component({
-    selector: "badge",
-    templateUrl: "./badge.component.html",
-    styleUrls: ["./badge.component.scss"]
+  selector: "badge",
+  templateUrl: "./badge.component.html",
+  styleUrls: ["./badge.component.scss"],
 })
 export class BadgeComponent implements OnInit {
-    @Input() value: string = "";
-    @Input() badgeStyle: BadgeStyle = "notification";
+  @Input() value: string = "";
+  @Input() badgeStyle: BadgeStyle = "notification";
 
-    constructor() {
-    }
+  constructor() {}
 
-    ngOnInit(): void {
-    }
+  ngOnInit(): void {}
 }

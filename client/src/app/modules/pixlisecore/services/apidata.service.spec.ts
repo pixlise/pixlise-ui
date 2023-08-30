@@ -1,8 +1,8 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed } from "@angular/core/testing";
 
-import { APIDataService } from './apidata.service';
+import { APIDataService } from "./apidata.service";
 
-describe('APIDataService', () => {
+describe("APIDataService", () => {
   let service: APIDataService;
 
   beforeEach(() => {
@@ -10,7 +10,7 @@ describe('APIDataService', () => {
     service = TestBed.inject(APIDataService);
   });
 
-  it('should be created', () => {
+  it("should be created", () => {
     expect(service).toBeTruthy();
   });
 });

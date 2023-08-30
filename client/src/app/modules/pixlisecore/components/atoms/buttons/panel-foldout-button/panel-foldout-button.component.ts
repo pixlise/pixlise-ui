@@ -27,81 +27,75 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { CdkOverlayOrigin, ConnectionPositionPair, HorizontalConnectionPos, Overlay, OverlayConfig, OverlayRef, VerticalConnectionPos } from "@angular/cdk/overlay";
+import {
+  CdkOverlayOrigin,
+  ConnectionPositionPair,
+  HorizontalConnectionPos,
+  Overlay,
+  OverlayConfig,
+  OverlayRef,
+  VerticalConnectionPos,
+} from "@angular/cdk/overlay";
 import { ComponentPortal } from "@angular/cdk/portal";
 import { Component, InjectionToken, Injector, Input, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 // Possible classes of panels that can be opened
 import { QuantSelectorPanelComponent } from "src/app/UI/quantification-selector/quant-selector-panel/quant-selector-panel.component";
 
-
-
-
 // The token we use to pass data to anything that is shown as a fold-out panel child
 export const PANEL_CHILD_DATA = new InjectionToken<{}>("PANEL_CHILD_DATA");
 
-export enum PanelFoldOutDirection
-{
-    LEFT="LEFT",
-    RIGHT="RIGHT",
-    UP="UP",
-    DOWN="DOWN"
+export enum PanelFoldOutDirection {
+  LEFT = "LEFT",
+  RIGHT = "RIGHT",
+  UP = "UP",
+  DOWN = "DOWN",
 }
 
 @Component({
-    selector: "panel-foldout-button",
-    templateUrl: "./panel-foldout-button.component.html",
-    styleUrls: ["./panel-foldout-button.component.scss"]
+  selector: "panel-foldout-button",
+  templateUrl: "./panel-foldout-button.component.html",
+  styleUrls: ["./panel-foldout-button.component.scss"],
 })
-export class PanelFoldoutButtonComponent implements OnInit
-{
-    @Input() foldOutDirection: string = PanelFoldOutDirection.DOWN;
+export class PanelFoldoutButtonComponent implements OnInit {
+  @Input() foldOutDirection: string = PanelFoldOutDirection.DOWN;
 
-    @Input() overlayPanelClass: string = ""; // Must be 1 of the supported classes, see ngOnInit
+  @Input() overlayPanelClass: string = ""; // Must be 1 of the supported classes, see ngOnInit
 
-    @Input() originX: HorizontalConnectionPos = "end";
-    @Input() originY: VerticalConnectionPos = "bottom";
-    @Input() overlayX: HorizontalConnectionPos = "start";
-    @Input() overlayY: VerticalConnectionPos = "bottom";
-    @Input() offsetX: number = 0;
-    @Input() offsetY: number = 0;
+  @Input() originX: HorizontalConnectionPos = "end";
+  @Input() originY: VerticalConnectionPos = "bottom";
+  @Input() overlayX: HorizontalConnectionPos = "start";
+  @Input() overlayY: VerticalConnectionPos = "bottom";
+  @Input() offsetX: number = 0;
+  @Input() offsetY: number = 0;
 
-    @Input() closeIfClickedBackground: boolean = false;
+  @Input() closeIfClickedBackground: boolean = false;
 
-    @Input() dataForPanel: any = "";
+  @Input() dataForPanel: any = "";
 
-    @ViewChild(CdkOverlayOrigin) _overlayOrigin: CdkOverlayOrigin;
+  @ViewChild(CdkOverlayOrigin) _overlayOrigin: CdkOverlayOrigin;
 
-    private _overlayRef: OverlayRef;
+  private _overlayRef: OverlayRef;
 
-    constructor(
-        public overlay: Overlay,
-        public viewContainerRef: ViewContainerRef,
-        private injector: Injector
-    )
-    {
+  constructor(
+    public overlay: Overlay,
+    public viewContainerRef: ViewContainerRef,
+    private injector: Injector
+  ) {}
+
+  ngOnInit() {}
+
+  ngOnDestroy() {
+    this.hidePanel();
+  }
+
+  onClickTogglePanel(): void {
+    if (this._overlayRef) {
+      this.hidePanel();
+    } else {
+      this.showPanel();
     }
-
-    ngOnInit()
-    {
-    }
-
-    ngOnDestroy()
-    {
-        this.hidePanel();
-    }
-
-    onClickTogglePanel(): void
-    {
-        if(this._overlayRef)
-        {
-            this.hidePanel();
-        }
-        else
-        {
-            this.showPanel();
-        }
-    }
-    /* Deprecated as of Angular 10
+  }
+  /* Deprecated as of Angular 10
     createInjector(data: any, overlayRef: OverlayRef): PortalInjector
     {
 
@@ -113,107 +107,90 @@ export class PanelFoldoutButtonComponent implements OnInit
     }
 */
 
-    private hidePanel(): void
-    {
-        if(!this._overlayRef)
-        {
-            return;
-        }
-
-        this._overlayRef.detach();
-        this.panelHidden();
+  private hidePanel(): void {
+    if (!this._overlayRef) {
+      return;
     }
 
-    private panelHidden(): void
-    {
-        this._overlayRef = null;
-        //this._buttonCaret = this.getCaretForDirection(PanelFoldOutDirection[this.foldOutDirection]);
+    this._overlayRef.detach();
+    this.panelHidden();
+  }
+
+  private panelHidden(): void {
+    this._overlayRef = null;
+    //this._buttonCaret = this.getCaretForDirection(PanelFoldOutDirection[this.foldOutDirection]);
+  }
+
+  private showPanel(): void {
+    if (this._overlayRef) {
+      return;
     }
 
-    private showPanel(): void
-    {
-        if(this._overlayRef)
+    const strategy = this.overlay.position().flexibleConnectedTo(this._overlayOrigin.elementRef);
+
+    const positions = [
+      new ConnectionPositionPair(
         {
-            return;
-        }
-        
-        const strategy = this.overlay.position().flexibleConnectedTo(this._overlayOrigin.elementRef);
-
-        const positions = [
-            new ConnectionPositionPair(
-                {
-                    originX: this.originX,
-                    originY: this.originY
-                },
-                {
-                    overlayX: this.overlayX,
-                    overlayY: this.overlayY
-                },
-                this.offsetX, // Offset X
-                this.offsetY  // Offset Y
-            )
-        ];
-        strategy.withPositions(positions);
-        strategy.withPush(false);
-
-        const config = new OverlayConfig(
-            {
-                positionStrategy: strategy,
-                // Other strategies are .noop(), .reposition(), or .close()
-                scrollStrategy: this.overlay.scrollStrategies.reposition(),
-                hasBackdrop: this.closeIfClickedBackground,
-                // TODO: make backdrop a transparent colour???
-                backdropClass: "empty-overlay-backdrop",
-            }
-        );
-
-        this._overlayRef = this.overlay.create(config);
-
-        let inj = Injector.create(
-            {
-                parent: this.injector,
-                providers: [
-                    { provide: OverlayRef, useValue: this._overlayRef },
-                    { provide: PANEL_CHILD_DATA, useValue: this.dataForPanel },
-                ]
-            }
-        );
-
-        let attachment = new ComponentPortal(
-            this.getFoldOutPanelClass(),
-            this.viewContainerRef,
-            inj
-        );
-
-        this._overlayRef.attach(attachment);
-
-        // If required, set up so we close if user clicks our background
-        if(this.closeIfClickedBackground)
+          originX: this.originX,
+          originY: this.originY,
+        },
         {
-            this._overlayRef.backdropClick().subscribe((event)=>
-            {
-                this.hidePanel();
-            });
-        }
+          overlayX: this.overlayX,
+          overlayY: this.overlayY,
+        },
+        this.offsetX, // Offset X
+        this.offsetY // Offset Y
+      ),
+    ];
+    strategy.withPositions(positions);
+    strategy.withPush(false);
 
-        // If overlay closes itself we wanna know
-        this._overlayRef.detachments().subscribe(() => this.panelHidden());
+    const config = new OverlayConfig({
+      positionStrategy: strategy,
+      // Other strategies are .noop(), .reposition(), or .close()
+      scrollStrategy: this.overlay.scrollStrategies.reposition(),
+      hasBackdrop: this.closeIfClickedBackground,
+      // TODO: make backdrop a transparent colour???
+      backdropClass: "empty-overlay-backdrop",
+    });
 
-        //this._buttonCaret = this.getCaretForDirection(this.getOppositeDirection(PanelFoldOutDirection[this.foldOutDirection]));
+    this._overlayRef = this.overlay.create(config);
+
+    let inj = Injector.create({
+      parent: this.injector,
+      providers: [
+        { provide: OverlayRef, useValue: this._overlayRef },
+        { provide: PANEL_CHILD_DATA, useValue: this.dataForPanel },
+      ],
+    });
+
+    let attachment = new ComponentPortal(this.getFoldOutPanelClass(), this.viewContainerRef, inj);
+
+    this._overlayRef.attach(attachment);
+
+    // If required, set up so we close if user clicks our background
+    if (this.closeIfClickedBackground) {
+      this._overlayRef.backdropClick().subscribe(event => {
+        this.hidePanel();
+      });
     }
 
-    private getFoldOutPanelClass(): any
-    {
+    // If overlay closes itself we wanna know
+    this._overlayRef.detachments().subscribe(() => this.panelHidden());
+
+    //this._buttonCaret = this.getCaretForDirection(this.getOppositeDirection(PanelFoldOutDirection[this.foldOutDirection]));
+  }
+
+  private getFoldOutPanelClass(): any {
     // TODO: Find a better way to do this!
-        if(this.overlayPanelClass == "QuantSelectorPanelComponent")
-        {
-            return QuantSelectorPanelComponent;
-        }
-
-        // Dunno??
-        throw new Error("Unknown fold out panel class: "+this.overlayPanelClass);
+    if (this.overlayPanelClass == "QuantSelectorPanelComponent") {
+      return QuantSelectorPanelComponent;
     }
-    /*
+
+    // Dunno??
+    throw new Error("Unknown fold out panel class: " + this.overlayPanelClass);
+  }
+  /*
     private getCaretForDirection(dir: PanelFoldOutDirection): string
     {
         let result = UNICODE_CARET_LEFT;
@@ -237,25 +214,23 @@ export class PanelFoldoutButtonComponent implements OnInit
         return result;
     }
 */
-    private getOppositeDirection(dir: PanelFoldOutDirection): PanelFoldOutDirection
-    {
-        let result = PanelFoldOutDirection.RIGHT;
+  private getOppositeDirection(dir: PanelFoldOutDirection): PanelFoldOutDirection {
+    let result = PanelFoldOutDirection.RIGHT;
 
-        switch (dir)
-        {
-        //case PanelFoldOutDirection.LEFT:
-        //    result = PanelFoldOutDirection.RIGHT;
-        //    break;
-        case PanelFoldOutDirection.RIGHT:
-            result = PanelFoldOutDirection.LEFT;
-            break;
-        case PanelFoldOutDirection.UP:
-            result = PanelFoldOutDirection.DOWN;
-            break;
-        case PanelFoldOutDirection.DOWN:
-            result = PanelFoldOutDirection.UP;
-            break;
-        }
-        return result;
+    switch (dir) {
+      //case PanelFoldOutDirection.LEFT:
+      //    result = PanelFoldOutDirection.RIGHT;
+      //    break;
+      case PanelFoldOutDirection.RIGHT:
+        result = PanelFoldOutDirection.LEFT;
+        break;
+      case PanelFoldOutDirection.UP:
+        result = PanelFoldOutDirection.DOWN;
+        break;
+      case PanelFoldOutDirection.DOWN:
+        result = PanelFoldOutDirection.UP;
+        break;
     }
+    return result;
+  }
 }

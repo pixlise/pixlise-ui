@@ -32,93 +32,86 @@ import { ComponentPortal } from "@angular/cdk/portal";
 import { Injector, ViewContainerRef } from "@angular/core";
 
 export class OverlayHost {
-    private _overlayRef?: OverlayRef;
+  private _overlayRef?: OverlayRef;
 
-    constructor(
-        private overlay: Overlay,
-        private viewContainerRef: ViewContainerRef,
-        private injector: Injector,
-        private overlayOrigin: CdkOverlayOrigin,
-        private panelComponentClassType: any,
-        private positions: ConnectionPositionPair[],
-        private closeIfClickedBackground: boolean = false,
-        private backdropClass: string = "empty-overlay-backdrop"
-    ) {
+  constructor(
+    private overlay: Overlay,
+    private viewContainerRef: ViewContainerRef,
+    private injector: Injector,
+    private overlayOrigin: CdkOverlayOrigin,
+    private panelComponentClassType: any,
+    private positions: ConnectionPositionPair[],
+    private closeIfClickedBackground: boolean = false,
+    private backdropClass: string = "empty-overlay-backdrop"
+  ) {}
+
+  get isOpen(): boolean {
+    return !!this._overlayRef;
+  }
+
+  showPanel(): void {
+    if (this._overlayRef) {
+      return;
     }
 
-    get isOpen(): boolean {
-        return !!this._overlayRef;
+    const strategy = this.overlay.position().flexibleConnectedTo(this.overlayOrigin.elementRef);
+
+    strategy.withPositions(this.positions);
+    strategy.withPush(false);
+
+    const config = new OverlayConfig({
+      positionStrategy: strategy,
+      scrollStrategy: this.overlay.scrollStrategies.reposition(),
+      hasBackdrop: this.closeIfClickedBackground,
+      backdropClass: this.backdropClass,
+    });
+
+    this._overlayRef = this.overlay.create(config);
+    this._overlayRef.attach(
+      new ComponentPortal(
+        this.panelComponentClassType,
+        this.viewContainerRef,
+        this.createInjector(
+          {
+            data: {
+              close: () => this.hidePanel(),
+            },
+          },
+          this._overlayRef
+        )
+      )
+    );
+
+    // If required, set up so we close if user clicks our background
+    if (this.closeIfClickedBackground) {
+      this._overlayRef.backdropClick().subscribe(event => {
+        this.hidePanel();
+      });
     }
 
-    showPanel(): void {
-        if (this._overlayRef) {
-            return;
-        }
+    // If overlay closes itself we wanna know
+    this._overlayRef.detachments().subscribe(() => {
+      this.panelHidden();
+    });
+  }
 
-        const strategy = this.overlay.position().flexibleConnectedTo(this.overlayOrigin.elementRef);
+  private createInjector(data: any, overlayRef: OverlayRef): Injector {
+    return Injector.create({
+      parent: this.injector,
+      providers: [{ provide: OverlayRef, useValue: overlayRef }],
+    });
+  }
 
-        strategy.withPositions(this.positions);
-        strategy.withPush(false);
-
-        const config = new OverlayConfig(
-            {
-                positionStrategy: strategy,
-                scrollStrategy: this.overlay.scrollStrategies.reposition(),
-                hasBackdrop: this.closeIfClickedBackground,
-                backdropClass: this.backdropClass,
-            }
-        );
-
-        this._overlayRef = this.overlay.create(config);
-        this._overlayRef.attach(
-            new ComponentPortal(
-                this.panelComponentClassType,
-                this.viewContainerRef,
-                this.createInjector({
-                    data: {
-                        close: () => this.hidePanel()
-                    }
-                }, this._overlayRef)
-            )
-        );
-
-        // If required, set up so we close if user clicks our background
-        if (this.closeIfClickedBackground) {
-            this._overlayRef.backdropClick().subscribe(
-                (event) => {
-                    this.hidePanel();
-                }
-            );
-        }
-
-        // If overlay closes itself we wanna know
-        this._overlayRef.detachments().subscribe(
-            () => {
-                this.panelHidden();
-            }
-        );
+  hidePanel(): void {
+    if (!this._overlayRef) {
+      return;
     }
 
-    private createInjector(data: any, overlayRef: OverlayRef): Injector {
-        return Injector.create({
-            parent: this.injector,
-            providers: [
-                { provide: OverlayRef, useValue: overlayRef }
-            ]
-        })
-    }
+    this._overlayRef.detach();
+    this.panelHidden();
+  }
 
-    hidePanel(): void {
-        if (!this._overlayRef) {
-            return;
-        }
-
-        this._overlayRef.detach();
-        this.panelHidden();
-    }
-
-    private panelHidden(): void {
-        this._overlayRef = undefined;
-    }
+  private panelHidden(): void {
+    this._overlayRef = undefined;
+  }
 }
-

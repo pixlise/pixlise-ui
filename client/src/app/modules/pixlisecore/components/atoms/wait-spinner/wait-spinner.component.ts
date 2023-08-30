@@ -29,21 +29,15 @@
 
 import { Component, OnInit, Input } from "@angular/core";
 
-
 @Component({
-    selector: "wait-spinner",
-    templateUrl: "./wait-spinner.component.html",
-    styleUrls: ["./wait-spinner.component.scss"]
+  selector: "wait-spinner",
+  templateUrl: "./wait-spinner.component.html",
+  styleUrls: ["./wait-spinner.component.scss"],
 })
-export class WaitSpinnerComponent implements OnInit
-{
-    // TODO: add controls like this @Input() size: string = "large";
+export class WaitSpinnerComponent implements OnInit {
+  // TODO: add controls like this @Input() size: string = "large";
 
-    constructor()
-    {
-    }
+  constructor() {}
 
-    ngOnInit(): void
-    {
-    }
+  ngOnInit(): void {}
 }

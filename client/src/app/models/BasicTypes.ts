@@ -167,18 +167,12 @@ export class MinMax {
   }
 
   getTightestRange(otherRange: MinMax): MinMax {
-    let otherRangeMin =
-      typeof otherRange.min === "number" ? otherRange.min : this._min;
-    let otherRangeMax =
-      typeof otherRange.max === "number" ? otherRange.max : this._max;
+    let otherRangeMin = typeof otherRange.min === "number" ? otherRange.min : this._min;
+    let otherRangeMax = typeof otherRange.max === "number" ? otherRange.max : this._max;
 
     return new MinMax(
-      this._min !== null
-        ? Math.max(otherRangeMin || 0, this._min)
-        : otherRange.min || 0,
-      this._max !== null
-        ? Math.min(otherRangeMax || 0, this._max)
-        : otherRange.max || 0
+      this._min !== null ? Math.max(otherRangeMin || 0, this._min) : otherRange.min || 0,
+      this._max !== null ? Math.min(otherRangeMax || 0, this._max) : otherRange.max || 0
     );
   }
 
@@ -196,11 +190,7 @@ export class MinMax {
 
   isValid(): boolean {
     return (
-      typeof this._min === "number" &&
-      typeof this._max === "number" &&
-      isFinite(this._min) &&
-      isFinite(this._max) &&
-      this._max >= this._min
+      typeof this._min === "number" && typeof this._max === "number" && isFinite(this._min) && isFinite(this._max) && this._max >= this._min
     );
   }
 
@@ -319,8 +309,7 @@ export class SpectrumEnergyCalibration {
   equals(another: SpectrumEnergyCalibration): boolean {
     // Check when formatted as text, as we do rounding when displaying the values
     return (
-      this.eVstart.toFixed(3) == another.eVstart.toFixed(3) &&
-      this.eVperChannel.toFixed(3) == another.eVperChannel.toFixed(3) /*&&
+      this.eVstart.toFixed(3) == another.eVstart.toFixed(3) && this.eVperChannel.toFixed(3) == another.eVperChannel.toFixed(3) /*&&
             this.detector == another.detector*/
     );
   }

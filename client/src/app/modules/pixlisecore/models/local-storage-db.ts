@@ -1,21 +1,21 @@
-import Dexie, { Table } from 'dexie';
-import { SnackbarDataItem } from '../services/snackbar.service';
+import Dexie, { Table } from "dexie";
+import { SnackbarDataItem } from "../services/snackbar.service";
 
 export class LocalStorageDB extends Dexie {
-    eventHistory!: Table<SnackbarDataItem, number>;
+  eventHistory!: Table<SnackbarDataItem, number>;
 
-    constructor() {
-        super('pixlise');
-        this.version(3).stores({
-            eventHistory: '++id',
-        });
-    }
+  constructor() {
+    super("pixlise");
+    this.version(3).stores({
+      eventHistory: "++id",
+    });
+  }
 
-    async resetDatabase() {
-        await db.transaction('rw', 'eventHistory', () => {
-            this.eventHistory.clear();
-        });
-    }
+  async resetDatabase() {
+    await db.transaction("rw", "eventHistory", () => {
+      this.eventHistory.clear();
+    });
+  }
 }
 
 export const db = new LocalStorageDB();

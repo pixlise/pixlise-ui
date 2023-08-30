@@ -30,10 +30,17 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div fxLayout="row" fxLayoutAlign="start center" class="btn-bg button-shadow button-hoverable">
-    <div *ngFor="let state of states"
-        class="btn-side clickable"
-        [ngClass]="{'btn-on': activeState==state.id, 'btn-off': activeState!=state.id, 'icon-btn': state.label.length <= 0, 'btn-text-pad': state.label.length>0}"
-        [ngStyle]="{'background-image': (state.icon.length > 0 ? 'url('+state.icon+')' : 'unset')}"
-        (click)="onClick(state)"
-        >{{state.label}}</div>
+  <div
+    *ngFor="let state of states"
+    class="btn-side clickable"
+    [ngClass]="{
+      'btn-on': activeState == state.id,
+      'btn-off': activeState != state.id,
+      'icon-btn': state.label.length <= 0,
+      'btn-text-pad': state.label.length > 0
+    }"
+    [ngStyle]="{ 'background-image': state.icon.length > 0 ? 'url(' + state.icon + ')' : 'unset' }"
+    (click)="onClick(state)">
+    {{ state.label }}
+  </div>
 </div>

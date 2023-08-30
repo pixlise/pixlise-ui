@@ -1,16 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { SectionImageListTextComponent } from './section-image-list-text.component';
+import { SectionImageListTextComponent } from "./section-image-list-text.component";
 
-describe('SectionImageListTextComponent', () => {
+describe("SectionImageListTextComponent", () => {
   let component: SectionImageListTextComponent;
   let fixture: ComponentFixture<SectionImageListTextComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ SectionImageListTextComponent ]
-    })
-    .compileComponents();
+      declarations: [SectionImageListTextComponent],
+    }).compileComponents();
   });
 
   beforeEach(() => {
@@ -19,7 +18,7 @@ describe('SectionImageListTextComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

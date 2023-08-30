@@ -30,29 +30,23 @@
 import { async, ComponentFixture, TestBed } from "@angular/core/testing";
 import { DataSetSummaryComponent } from "./data-set-summary.component";
 
+describe("DataSetSummaryComponent", () => {
+  let component: DataSetSummaryComponent;
+  let fixture: ComponentFixture<DataSetSummaryComponent>;
 
-describe("DataSetSummaryComponent", () => 
-{
-    let component: DataSetSummaryComponent;
-    let fixture: ComponentFixture<DataSetSummaryComponent>;
+  beforeEach(async(() => {
+    TestBed.configureTestingModule({
+      declarations: [DataSetSummaryComponent],
+    }).compileComponents();
+  }));
 
-    beforeEach(async(() => 
-    {
-        TestBed.configureTestingModule({
-            declarations: [ DataSetSummaryComponent ]
-        })
-            .compileComponents();
-    }));
+  beforeEach(() => {
+    fixture = TestBed.createComponent(DataSetSummaryComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
 
-    beforeEach(() => 
-    {
-        fixture = TestBed.createComponent(DataSetSummaryComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
-
-    it("should create", () => 
-    {
-        expect(component).toBeTruthy();
-    });
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
 });

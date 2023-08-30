@@ -30,10 +30,10 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="btn-container">
-  <div class="main-btn clickable" [ngClass]="styleCSS" (click)='onToggleInternal()'>
+  <div class="main-btn clickable" [ngClass]="styleCSS" (click)="onToggleInternal()">
     <ng-content></ng-content>
   </div>
-  <div class="edit-btn clickable" [ngClass]="styleCSS" (click)='onEditInternal($event)'>
-    <img class="clickable" src="assets/button-icons/edit.svg" title="Edit">
+  <div class="edit-btn clickable" [ngClass]="styleCSS" (click)="onEditInternal($event)">
+    <img class="clickable" src="assets/button-icons/edit.svg" title="Edit" />
   </div>
 </div>

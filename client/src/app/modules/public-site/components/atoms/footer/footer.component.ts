@@ -45,9 +45,9 @@ export class FooterComponent implements OnInit {
 
   navigation: Navigation = new Navigation();
 
-  constructor(private _authService: AuthService) { }
+  constructor(private _authService: AuthService) {}
 
-  ngOnInit(): void { }
+  ngOnInit(): void {}
 
   onLogin() {
     // this._authService.login(DefaultLoggedInLink, false);

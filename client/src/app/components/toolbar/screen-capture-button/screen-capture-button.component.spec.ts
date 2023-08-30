@@ -30,29 +30,23 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ScreenCaptureButtonComponent } from "./screen-capture-button.component";
 
+describe("ScreenCaptureButtonComponent", () => {
+  let component: ScreenCaptureButtonComponent;
+  let fixture: ComponentFixture<ScreenCaptureButtonComponent>;
 
-describe("ScreenCaptureButtonComponent", () => 
-{
-    let component: ScreenCaptureButtonComponent;
-    let fixture: ComponentFixture<ScreenCaptureButtonComponent>;
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [ScreenCaptureButtonComponent],
+    }).compileComponents();
+  });
 
-    beforeEach(async () => 
-    {
-        await TestBed.configureTestingModule({
-            declarations: [ ScreenCaptureButtonComponent ]
-        })
-            .compileComponents();
-    });
+  beforeEach(() => {
+    fixture = TestBed.createComponent(ScreenCaptureButtonComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
 
-    beforeEach(() => 
-    {
-        fixture = TestBed.createComponent(ScreenCaptureButtonComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
-
-    it("should create", () => 
-    {
-        expect(component).toBeTruthy();
-    });
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
 });

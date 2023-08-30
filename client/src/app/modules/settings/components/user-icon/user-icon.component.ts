@@ -4,16 +4,14 @@ import { UserOptionsService } from "../../services/user-options.service";
 @Component({
   selector: "user-icon",
   templateUrl: "./user-icon.component.html",
-  styleUrls: ["./user-icon.component.scss"]
+  styleUrls: ["./user-icon.component.scss"],
 })
 export class UserIconComponent {
   iconURL: string = "assets/button-icons/user.svg";
 
   @Input() size: string = "76px";
 
-  constructor(
-    private _userOptionsService: UserOptionsService,
-  ) {
+  constructor(private _userOptionsService: UserOptionsService) {
     this._userOptionsService.userOptionsChanged$.subscribe(() => {
       let iconURL = this._userOptionsService?.userDetails?.info?.iconURL;
       if (iconURL) {
@@ -21,6 +19,4 @@ export class UserIconComponent {
       }
     });
   }
-
-
 }

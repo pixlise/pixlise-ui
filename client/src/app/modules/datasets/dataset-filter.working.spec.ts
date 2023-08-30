@@ -29,39 +29,33 @@
 
 import { DatasetFilter } from "./dataset-filter";
 
-
-describe("DatasetFilter.makeSendableSearchString() call", () =>
-{
-    it("should work", () => 
-    {
-        expect(DatasetFilter.makeSendableSearchString("sol=10")).toEqual("sol=10");
-        expect(DatasetFilter.makeSendableSearchString("sol>10")).toEqual("sol=gt|10");
-        expect(DatasetFilter.makeSendableSearchString("sol<10")).toEqual("sol=lt|10");
-        expect(DatasetFilter.makeSendableSearchString("sol=10 rtt=123")).toEqual("sol=10&rtt=123");
-        expect(DatasetFilter.makeSendableSearchString("sol=10  rtt=123")).toEqual("sol=10&rtt=123");
-        expect(DatasetFilter.makeSendableSearchString("sol=10,rtt=123")).toEqual("sol=10&rtt=123");
-        expect(DatasetFilter.makeSendableSearchString("sol=10;rtt=123")).toEqual("sol=10&rtt=123");
-        expect(DatasetFilter.makeSendableSearchString("sol=10, rtt=123")).toEqual("sol=10&rtt=123");
-        expect(DatasetFilter.makeSendableSearchString("sol=10; rtt=123")).toEqual("sol=10&rtt=123");
-        expect(DatasetFilter.makeSendableSearchString("sol=10; rtt=123 drive=441")).toEqual("sol=10&rtt=123&drive=441");
-        expect(DatasetFilter.makeSendableSearchString("sol=10 rtt=123,drive=442")).toEqual("sol=10&rtt=123&drive=442");
-        expect(DatasetFilter.makeSendableSearchString("sol=10; rtt=123;drive=443")).toEqual("sol=10&rtt=123&drive=443");
-        expect(DatasetFilter.makeSendableSearchString("sol=10, rtt=123, drive=444")).toEqual("sol=10&rtt=123&drive=444");
-        expect(DatasetFilter.makeSendableSearchString("sol=10; rtt=123; drive=445")).toEqual("sol=10&rtt=123&drive=445");
-        expect(DatasetFilter.makeSendableSearchString("sol=10; rtt<123; drive>445")).toEqual("sol=10&rtt=lt|123&drive=gt|445");
-    });
+describe("DatasetFilter.makeSendableSearchString() call", () => {
+  it("should work", () => {
+    expect(DatasetFilter.makeSendableSearchString("sol=10")).toEqual("sol=10");
+    expect(DatasetFilter.makeSendableSearchString("sol>10")).toEqual("sol=gt|10");
+    expect(DatasetFilter.makeSendableSearchString("sol<10")).toEqual("sol=lt|10");
+    expect(DatasetFilter.makeSendableSearchString("sol=10 rtt=123")).toEqual("sol=10&rtt=123");
+    expect(DatasetFilter.makeSendableSearchString("sol=10  rtt=123")).toEqual("sol=10&rtt=123");
+    expect(DatasetFilter.makeSendableSearchString("sol=10,rtt=123")).toEqual("sol=10&rtt=123");
+    expect(DatasetFilter.makeSendableSearchString("sol=10;rtt=123")).toEqual("sol=10&rtt=123");
+    expect(DatasetFilter.makeSendableSearchString("sol=10, rtt=123")).toEqual("sol=10&rtt=123");
+    expect(DatasetFilter.makeSendableSearchString("sol=10; rtt=123")).toEqual("sol=10&rtt=123");
+    expect(DatasetFilter.makeSendableSearchString("sol=10; rtt=123 drive=441")).toEqual("sol=10&rtt=123&drive=441");
+    expect(DatasetFilter.makeSendableSearchString("sol=10 rtt=123,drive=442")).toEqual("sol=10&rtt=123&drive=442");
+    expect(DatasetFilter.makeSendableSearchString("sol=10; rtt=123;drive=443")).toEqual("sol=10&rtt=123&drive=443");
+    expect(DatasetFilter.makeSendableSearchString("sol=10, rtt=123, drive=444")).toEqual("sol=10&rtt=123&drive=444");
+    expect(DatasetFilter.makeSendableSearchString("sol=10; rtt=123; drive=445")).toEqual("sol=10&rtt=123&drive=445");
+    expect(DatasetFilter.makeSendableSearchString("sol=10; rtt<123; drive>445")).toEqual("sol=10&rtt=lt|123&drive=gt|445");
+  });
 });
 
-describe("DatasetFilter", () =>
-{
-    it("should return valid search string", () => 
-    {
-        let filter = new DatasetFilter(null, "10", null, "123", null, "PIXL-FM", false, false, true, "12", "23");
-        expect(filter.toSearchString()).toEqual("sol=lt|10&site_id=123&detector_config=PIXL-FM&normal_spectra=gt|0&location_count=bw|12|23");
-    });
-    it("should return valid search string sol greater-than", () => 
-    {
-        let filter = new DatasetFilter("34", null, null, null, null, null, false, false, false, null, null);
-        expect(filter.toSearchString()).toEqual("sol=gt|34");
-    });
+describe("DatasetFilter", () => {
+  it("should return valid search string", () => {
+    let filter = new DatasetFilter(null, "10", null, "123", null, "PIXL-FM", false, false, true, "12", "23");
+    expect(filter.toSearchString()).toEqual("sol=lt|10&site_id=123&detector_config=PIXL-FM&normal_spectra=gt|0&location_count=bw|12|23");
+  });
+  it("should return valid search string sol greater-than", () => {
+    let filter = new DatasetFilter("34", null, null, null, null, null, false, false, false, null, null);
+    expect(filter.toSearchString()).toEqual("sol=gt|34");
+  });
 });

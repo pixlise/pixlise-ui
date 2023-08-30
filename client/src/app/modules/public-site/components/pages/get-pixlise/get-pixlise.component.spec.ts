@@ -1,16 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { GetPIXLISEComponent } from './get-pixlise.component';
+import { GetPIXLISEComponent } from "./get-pixlise.component";
 
-describe('GetPIXLISEComponent', () => {
+describe("GetPIXLISEComponent", () => {
   let component: GetPIXLISEComponent;
   let fixture: ComponentFixture<GetPIXLISEComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ GetPIXLISEComponent ]
-    })
-    .compileComponents();
+      declarations: [GetPIXLISEComponent],
+    }).compileComponents();
   });
 
   beforeEach(() => {
@@ -19,7 +18,7 @@ describe('GetPIXLISEComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

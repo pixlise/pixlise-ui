@@ -29,22 +29,19 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div
-    *ngIf="message"
-    class="widget-display-msg"
-    [ngClass]="{'display-large': large}"
->
-    <div class="fx-column fx-start-center">
-        <ng-container [ngSwitch]="showSpinner">
-            <ng-container *ngSwitchCase="true">
-                <wait-spinner></wait-spinner> <!-- TODO: was <mat-spinner class="img-gap" [diameter]="large ? 64 : 32" color="accent"> -->
-            </ng-container>
-            <ng-container *ngSwitchDefault>
-                <img class="img-gap error-img" [ngClass]="{'error-img-large': large}" [src]="image">
-            </ng-container>
-        </ng-container>
+<div *ngIf="message" class="widget-display-msg" [ngClass]="{ 'display-large': large }">
+  <div class="fx-column fx-start-center">
+    <ng-container [ngSwitch]="showSpinner">
+      <ng-container *ngSwitchCase="true">
+        <wait-spinner></wait-spinner>
+        <!-- TODO: was <mat-spinner class="img-gap" [diameter]="large ? 64 : 32" color="accent"> -->
+      </ng-container>
+      <ng-container *ngSwitchDefault>
+        <img class="img-gap error-img" [ngClass]="{ 'error-img-large': large }" [src]="image" />
+      </ng-container>
+    </ng-container>
 
-        <div class="msg">{{message}}</div>
-        <div class="footer">Communiqué from The Ministry of Visualisation</div>
-    </div>
+    <div class="msg">{{ message }}</div>
+    <div class="footer">Communiqué from The Ministry of Visualisation</div>
+  </div>
 </div>

@@ -30,29 +30,23 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { WidgetSettingsMenuComponent } from "./widget-settings-menu.component";
 
+describe("WidgetSettingsMenuComponent", () => {
+  let component: WidgetSettingsMenuComponent;
+  let fixture: ComponentFixture<WidgetSettingsMenuComponent>;
 
-describe("WidgetSettingsMenuComponent", () => 
-{
-    let component: WidgetSettingsMenuComponent;
-    let fixture: ComponentFixture<WidgetSettingsMenuComponent>;
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [WidgetSettingsMenuComponent],
+    }).compileComponents();
+  });
 
-    beforeEach(async () => 
-    {
-        await TestBed.configureTestingModule({
-            declarations: [ WidgetSettingsMenuComponent ]
-        })
-            .compileComponents();
-    });
+  beforeEach(() => {
+    fixture = TestBed.createComponent(WidgetSettingsMenuComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
 
-    beforeEach(() => 
-    {
-        fixture = TestBed.createComponent(WidgetSettingsMenuComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
-
-    it("should create", () => 
-    {
-        expect(component).toBeTruthy();
-    });
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
 });

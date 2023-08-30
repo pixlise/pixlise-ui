@@ -1,16 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { AddDatasetDialogComponent } from './add-dataset-dialog.component';
+import { AddDatasetDialogComponent } from "./add-dataset-dialog.component";
 
-describe('AddDatasetDialogComponent', () => {
+describe("AddDatasetDialogComponent", () => {
   let component: AddDatasetDialogComponent;
   let fixture: ComponentFixture<AddDatasetDialogComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ AddDatasetDialogComponent ]
-    })
-    .compileComponents();
+      declarations: [AddDatasetDialogComponent],
+    }).compileComponents();
   });
 
   beforeEach(() => {
@@ -19,7 +18,7 @@ describe('AddDatasetDialogComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

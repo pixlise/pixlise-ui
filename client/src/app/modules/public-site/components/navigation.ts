@@ -30,53 +30,64 @@
 export const DefaultLoggedInLink = "/datasets";
 
 export class NavigationItem {
-    constructor(public label: string, public link: string) {
-    }
+  constructor(
+    public label: string,
+    public link: string
+  ) {}
 }
 
 export class Navigation {
-    public categories = ["Features", "Get Started", "About Us"];
+  public categories = ["Features", "Get Started", "About Us"];
 
-    private _categoryRoots = new Map<string, string>([
-        [this.categories[0], ""],
-        [this.categories[1], "/public/get-started"],
-        [this.categories[2], "/public/about-us"],
-    ]);
+  private _categoryRoots = new Map<string, string>([
+    [this.categories[0], ""],
+    [this.categories[1], "/public/get-started"],
+    [this.categories[2], "/public/about-us"],
+  ]);
 
-    private _categoryItems = new Map<string, NavigationItem[]>([
-        [this.categories[0], [
-            new NavigationItem("Workflow", "/public/workflow"),
-            new NavigationItem("Quantification", "/public/quantification"),
-            new NavigationItem("Investigation", "/public/investigation")
-        ]],
-        [this.categories[1], [
-            new NavigationItem("PIXLISE Options", "/public/get-started#top"),
-            new NavigationItem("Get PIXLISE", "/public/get-started#get"),
-            new NavigationItem("Links and Docs", "/public/get-started#links"),
-        ]],
-        [this.categories[2], [
-            new NavigationItem("PIXL + MARS 2020", "/public/about-us#mars2020"),
-            new NavigationItem("Impact", "/public/about-us#impact"),
-            new NavigationItem("Our Team", "/public/about-us#team"),
-        ]]
-    ]);
+  private _categoryItems = new Map<string, NavigationItem[]>([
+    [
+      this.categories[0],
+      [
+        new NavigationItem("Workflow", "/public/workflow"),
+        new NavigationItem("Quantification", "/public/quantification"),
+        new NavigationItem("Investigation", "/public/investigation"),
+      ],
+    ],
+    [
+      this.categories[1],
+      [
+        new NavigationItem("PIXLISE Options", "/public/get-started#top"),
+        new NavigationItem("Get PIXLISE", "/public/get-started#get"),
+        new NavigationItem("Links and Docs", "/public/get-started#links"),
+      ],
+    ],
+    [
+      this.categories[2],
+      [
+        new NavigationItem("PIXL + MARS 2020", "/public/about-us#mars2020"),
+        new NavigationItem("Impact", "/public/about-us#impact"),
+        new NavigationItem("Our Team", "/public/about-us#team"),
+      ],
+    ],
+  ]);
 
-    public getItems(category: string): NavigationItem[] {
-        return this._categoryItems.get(category) || [];
-    }
+  public getItems(category: string): NavigationItem[] {
+    return this._categoryItems.get(category) || [];
+  }
 
-    public getCategoryByLink(link: string): string {
-        for (let [cat, items] of this._categoryItems) {
-            for (let nav of items) {
-                if (nav.link.startsWith(link)) {
-                    return cat;
-                }
-            }
+  public getCategoryByLink(link: string): string {
+    for (let [cat, items] of this._categoryItems) {
+      for (let nav of items) {
+        if (nav.link.startsWith(link)) {
+          return cat;
         }
-        return "";
+      }
     }
+    return "";
+  }
 
-    public getRootLink(category: string) {
-        return this._categoryRoots.get(category);
-    }
+  public getRootLink(category: string) {
+    return this._categoryRoots.get(category);
+  }
 }

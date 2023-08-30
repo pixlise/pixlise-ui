@@ -32,24 +32,17 @@ import { Component, OnInit } from "@angular/core";
 import { SignupPrefix } from "../number-button/number-button.component";
 import { DefaultLoggedInLink } from "../../navigation";
 
-
 @Component({
-    selector: "join-the-community",
-    templateUrl: "./join-the-community.component.html",
-    styleUrls: ["./join-the-community.component.scss"]
+  selector: "join-the-community",
+  templateUrl: "./join-the-community.component.html",
+  styleUrls: ["./join-the-community.component.scss"],
 })
-export class JoinTheCommunityComponent implements OnInit
-{
-    constructor()
-    {
-    }
+export class JoinTheCommunityComponent implements OnInit {
+  constructor() {}
 
-    ngOnInit(): void
-    {
-    }
+  ngOnInit(): void {}
 
-    get link(): string
-    {
-        return SignupPrefix+DefaultLoggedInLink;
-    }
+  get link(): string {
+    return SignupPrefix + DefaultLoggedInLink;
+  }
 }

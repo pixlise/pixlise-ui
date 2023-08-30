@@ -31,64 +31,50 @@ import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { Subscription } from "rxjs";
 import { ScanDataType, ScanItem } from "src/app/generated-protos/scan";
 
-
-
 @Component({
-    selector: "data-set-summary",
-    templateUrl: "./data-set-summary.component.html",
-    styleUrls: ["./data-set-summary.component.scss"]
+  selector: "data-set-summary",
+  templateUrl: "./data-set-summary.component.html",
+  styleUrls: ["./data-set-summary.component.scss"],
 })
-export class DataSetSummaryComponent implements OnInit
-{
-    private _subs = new Subscription();
+export class DataSetSummaryComponent implements OnInit {
+  private _subs = new Subscription();
 
-    @Input() summary: ScanItem|null = null;
-    @Input() selected: ScanItem|null = null;
-    @Output() onSelect = new EventEmitter();
+  @Input() summary: ScanItem | null = null;
+  @Input() selected: ScanItem | null = null;
+  @Output() onSelect = new EventEmitter();
 
-    private _title: string = "";
-    private _missingData: string = "";
+  private _title: string = "";
+  private _missingData: string = "";
 
-    constructor(
-    )
-    {
+  constructor() {}
+
+  ngOnInit() {
+    if (!this.summary) {
+      return;
     }
 
-    ngOnInit()
-    {
-        if(!this.summary)
-        {
-            return;
-        }
-
-        // Prepend SOL if it's there
-        this._title = "";
-        let sol = this.summary.meta["Sol"]||"";
-        if(sol)
-        {
-            this._title += "SOL-"+sol+": ";
-        }
-        this._title += this.summary.title;
-
-        let missing = "";// TODO: DataSetSummary.listMissingData(this.summary);
-        if(missing.length > 0)
-        {
-            this._missingData = "Missing: "+Array.from(missing).join(",");
-        }
-        else
-        {
-            this._missingData = "";
-        }
+    // Prepend SOL if it's there
+    this._title = "";
+    let sol = this.summary.meta["Sol"] || "";
+    if (sol) {
+      this._title += "SOL-" + sol + ": ";
     }
+    this._title += this.summary.title;
 
-    ngOnDestroy()
-    {
-        this._subs.unsubscribe();
+    let missing = ""; // TODO: DataSetSummary.listMissingData(this.summary);
+    if (missing.length > 0) {
+      this._missingData = "Missing: " + Array.from(missing).join(",");
+    } else {
+      this._missingData = "";
     }
+  }
 
-    get tileImageURL(): string
-    {
-/* TODO:
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
+  get tileImageURL(): string {
+    /* TODO:
         // Snip off the end and replace with context-thumb, which allows the API to work out the image to return
         let pos = this.summary.context_image_link.lastIndexOf("/");
         if(pos < 0)
@@ -99,142 +85,115 @@ export class DataSetSummaryComponent implements OnInit
         let url = this.summary.context_image_link.substring(0, pos+1)+"context-thumb";
         return url;
 */
-        return "";
+    return "";
+  }
+
+  get title(): string {
+    return this._title;
+  }
+
+  get incomplete(): boolean {
+    return this._missingData.length > 0;
+  }
+
+  get missingDataList(): string {
+    return this._missingData;
+  }
+
+  get isSelected(): boolean {
+    if (!this.selected) {
+      return false;
+    }
+    return this.selected?.id == this.summary?.id;
+  }
+
+  get isRGBU(): boolean {
+    if (!this.summary) {
+      return false;
     }
 
-    get title(): string
-    {
-        return this._title;
+    for (let sdt of this.summary.dataTypes) {
+      if (sdt.dataType == ScanDataType.SD_RGBU) {
+        return sdt.count > 0;
+      }
+    }
+    return false;
+  }
+  get isXRF(): boolean {
+    return (this.summary?.contentCounts["NormalSpectra"] || 0) > 0;
+  }
+
+  get bulkSpectra(): number {
+    return this.summary?.contentCounts["BulkSpectra"] || 0;
+  }
+
+  get maxSpectra(): number {
+    return this.summary?.contentCounts["MaxSpectra"] || 0;
+  }
+
+  get normalSpectra(): number {
+    return this.summary?.contentCounts["NormalSpectra"] || 0;
+  }
+
+  get dwellSpectra(): number {
+    return this.summary?.contentCounts["DwellSpectra"] || 0;
+  }
+
+  get pseudoIntensities(): number {
+    return this.summary?.contentCounts["PseudoIntensities"] || 0;
+  }
+
+  get displaySol(): string {
+    let sol = this.summary?.meta["Sol"] || "";
+    if (sol.length <= 0) {
+      return "pre-mission";
+    }
+    return sol;
+  }
+
+  get displayTarget(): string {
+    let target = this.summary?.meta["Target"] || "";
+    if (target == "?" || target.length <= 0) {
+      return "--";
     }
 
-    get incomplete(): boolean
-    {
-        return this._missingData.length > 0;
+    return target;
+  }
+
+  get displayTargetId(): string {
+    let targetId = this.summary?.meta["TargetId"] || "";
+    if (targetId == "?" || targetId.length <= 0) {
+      return "--";
     }
 
-    get missingDataList(): string
-    {
-        return this._missingData;
+    return targetId;
+  }
+
+  get displayDriveID(): string {
+    let driveId = this.summary?.meta["DriveId"] || "";
+    if (driveId.length <= 0) {
+      return "--";
+    }
+    return driveId;
+  }
+
+  get displaySite(): string {
+    return this.summary?.meta["Site"] || "";
+  }
+
+  get summaryId(): string {
+    return this.summary?.id || "";
+  }
+
+  onClickTileArea(event: MouseEvent): void {
+    // Consume event so our parent doesn't get our clicks
+    event.stopPropagation();
+
+    if (this.summary == null) {
+      return;
     }
 
-    get isSelected(): boolean
-    {
-        if(!this.selected)
-        {
-            return false;
-        }
-        return this.selected?.id == this.summary?.id;
-    }
-
-    get isRGBU(): boolean
-    {
-        if(!this.summary)
-        {
-            return false;
-        }
-
-        for(let sdt of this.summary.dataTypes)
-        {
-            if(sdt.dataType == ScanDataType.SD_RGBU)
-            {
-                return sdt.count > 0;
-            }
-        }
-        return false;
-    }
-    get isXRF(): boolean
-    {
-        return (this.summary?.contentCounts["NormalSpectra"]||0) > 0;
-    }
-
-    get bulkSpectra(): number
-    {
-        return this.summary?.contentCounts["BulkSpectra"]||0;
-    }
-
-    get maxSpectra(): number
-    {
-        return this.summary?.contentCounts["MaxSpectra"]||0;
-    }
-
-    get normalSpectra(): number
-    {
-        return this.summary?.contentCounts["NormalSpectra"]||0;
-    }
-
-    get dwellSpectra(): number
-    {
-        return this.summary?.contentCounts["DwellSpectra"]||0;
-    }
-
-    get pseudoIntensities(): number
-    {
-        return this.summary?.contentCounts["PseudoIntensities"]||0;
-    }
-
-    get displaySol(): string
-    {
-        let sol = this.summary?.meta["Sol"]||"";
-        if(sol.length <= 0)
-        {
-            return "pre-mission";
-        }
-        return sol;
-    }
-
-    get displayTarget(): string
-    {
-        let target = this.summary?.meta["Target"]||"";
-        if(target == "?" || target.length <= 0)
-        {
-            return "--";
-        }
-
-        return target;
-    }
-
-    get displayTargetId(): string
-    {
-        let targetId = this.summary?.meta["TargetId"]||"";
-        if(targetId == "?" || targetId.length <= 0)
-        {
-            return "--";
-        }
-
-        return targetId;
-    }
-
-    get displayDriveID(): string
-    {
-        let driveId = this.summary?.meta["DriveId"]||"";
-        if(driveId.length <= 0)
-        {
-            return "--";
-        }
-        return driveId;
-    }
-
-    get displaySite(): string
-    {
-        return this.summary?.meta["Site"]||"";
-    }
-
-    get summaryId(): string
-    {
-        return this.summary?.id||"";
-    }
-    
-    onClickTileArea(event: MouseEvent): void
-    {
-        // Consume event so our parent doesn't get our clicks
-        event.stopPropagation();
-
-        if(this.summary == null)
-        {
-            return;
-        }
-
-        // Tell container we're clicked on
-        this.onSelect.emit(this.summary);
-    }
+    // Tell container we're clicked on
+    this.onSelect.emit(this.summary);
+  }
 }

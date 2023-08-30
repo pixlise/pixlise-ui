@@ -29,70 +29,56 @@
 
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 
-
-class StateInfo
-{
-    constructor(
-        public id: string,
-        public label: string,
-        public icon: string,
-    )
-    {
-    }
+class StateInfo {
+  constructor(
+    public id: string,
+    public label: string,
+    public icon: string
+  ) {}
 }
 
 @Component({
-    selector: "multi-state-button",
-    templateUrl: "./multi-state-button.component.html",
-    styleUrls: ["./multi-state-button.component.scss"]
+  selector: "multi-state-button",
+  templateUrl: "./multi-state-button.component.html",
+  styleUrls: ["./multi-state-button.component.scss"],
 })
-export class MultiStateButtonComponent implements OnInit
-{
-    @Input() stateNames: string[] = null;
-    @Input() items: string[] = null;
-    @Input() activeState: string;
+export class MultiStateButtonComponent implements OnInit {
+  @Input() stateNames: string[] = null;
+  @Input() items: string[] = null;
+  @Input() activeState: string;
 
-    @Output() onChange = new EventEmitter();
+  @Output() onChange = new EventEmitter();
 
-    states: StateInfo[];
+  states: StateInfo[];
 
-    constructor()
-    {
+  constructor() {}
+
+  ngOnInit() {
+    this.states = [];
+
+    if (this.stateNames.length <= 0 || this.stateNames.length != this.items.length) {
+      console.error("Invalid stateNames/items defined for MultiStateButtonComponent");
+      return;
     }
 
-    ngOnInit()
-    {
-        this.states = [];
+    //for(let item of this.items)
+    for (let c = 0; c < this.stateNames.length; c++) {
+      let stateName = this.stateNames[c];
+      let item = this.items[c];
 
-        if(this.stateNames.length <= 0 || this.stateNames.length != this.items.length)
-        {
-            console.error("Invalid stateNames/items defined for MultiStateButtonComponent");
-            return;
-        }
-
-        //for(let item of this.items)
-        for(let c = 0; c < this.stateNames.length; c++)
-        {
-            let stateName = this.stateNames[c];
-            let item = this.items[c];
-
-            if(item.startsWith("assets/"))
-            {
-                this.states.push(new StateInfo(stateName, "", item));
-            }
-            else
-            {
-                this.states.push(new StateInfo(stateName, item, ""));
-            }
-        }
-        /*
+      if (item.startsWith("assets/")) {
+        this.states.push(new StateInfo(stateName, "", item));
+      } else {
+        this.states.push(new StateInfo(stateName, item, ""));
+      }
+    }
+    /*
         console.log(this.states);
         console.log(this.stateIdx);
 */
-    }
+  }
 
-    onClick(state: StateInfo): void
-    {
-        this.onChange.emit(state.id);
-    }
+  onClick(state: StateInfo): void {
+    this.onChange.emit(state.id);
+  }
 }

@@ -27,229 +27,179 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+export class DatasetFilter {
+  constructor(
+    public solMin: string | null,
+    public solMax: string | null,
 
-export class DatasetFilter
-{
-    constructor(
-        public solMin: string|null,
-        public solMax: string|null,
+    public target: string | null,
 
-        public target: string|null,
+    public site: string | null,
 
-        public site: string|null,
+    public drive: string | null,
 
-        public drive: string|null,
+    public detectorChosen: string | null,
 
-        public detectorChosen: string|null,
+    public hasDwell: boolean | null,
+    public hasQuant: boolean | null,
+    public hasNormal: boolean | null,
 
-        public hasDwell: boolean|null,
-        public hasQuant: boolean|null,
-        public hasNormal: boolean|null,
+    public pmcsMin: string | null,
+    public pmcsMax: string | null
+  ) {}
 
-        public pmcsMin: string|null,
-        public pmcsMax: string|null
-    )
-    {
+  clear(): void {
+    this.solMin = null;
+    this.solMax = null;
+
+    this.target = null;
+
+    this.site = null;
+
+    this.drive = null;
+
+    this.detectorChosen = null;
+
+    this.hasDwell = null;
+    this.hasQuant = null;
+    this.hasNormal = null;
+
+    this.pmcsMin = null;
+    this.pmcsMax = null;
+  }
+
+  copy(): DatasetFilter {
+    return new DatasetFilter(
+      this.solMin,
+      this.solMax,
+
+      this.target,
+
+      this.site,
+
+      this.drive,
+
+      this.detectorChosen,
+
+      this.hasDwell,
+      this.hasQuant,
+      this.hasNormal,
+
+      this.pmcsMin,
+      this.pmcsMax
+    );
+  }
+
+  itemCount(): number {
+    let c = 0;
+
+    let check = [this.target, this.site, this.drive, this.detectorChosen, this.hasDwell, this.hasQuant, this.hasNormal];
+
+    for (let item of check) {
+      if (item) {
+        c++;
+      }
     }
 
-    clear(): void
-    {
-        this.solMin = null;
-        this.solMax = null;
-
-        this.target = null;
-
-        this.site = null;
-
-        this.drive = null;
-
-        this.detectorChosen = null;
-
-        this.hasDwell = null;
-        this.hasQuant = null;
-        this.hasNormal = null;
-
-        this.pmcsMin = null;
-        this.pmcsMax = null;
+    if (this.solMin || this.solMax) {
+      c++;
     }
 
-    copy(): DatasetFilter
-    {
-        return new DatasetFilter(
-            this.solMin,
-            this.solMax,
-
-            this.target,
-
-            this.site,
-
-            this.drive,
-
-            this.detectorChosen,
-
-            this.hasDwell,
-            this.hasQuant,
-            this.hasNormal,
-
-            this.pmcsMin,
-            this.pmcsMax
-        );
+    if (this.pmcsMin || this.pmcsMax) {
+      c++;
     }
 
-    itemCount(): number
-    {
-        let c = 0;
+    return c;
+  }
 
-        let check = [
-            this.target,
+  toSearchString(): string {
+    let result = "";
 
-            this.site,
-
-            this.drive,
-
-            this.detectorChosen,
-
-            this.hasDwell,
-            this.hasQuant,
-            this.hasNormal
-        ];
-
-        for(let item of check)
-        {
-            if(item)
-            {
-                c++;
-            }
+    if (this.solMin || this.solMax) {
+      if (this.solMin == this.solMax) {
+        result = DatasetFilter.appendTerm(result, "sol=" + this.solMin);
+      } else if (this.solMin && this.solMax) {
+        result = DatasetFilter.appendTerm(result, "sol=bw|" + this.solMin + "|" + this.solMax);
+      } else {
+        if (this.solMin) {
+          result = DatasetFilter.appendTerm(result, "sol>" + this.solMin);
         }
 
-        if(this.solMin || this.solMax)
-        {
-            c++;
+        if (this.solMax) {
+          result = DatasetFilter.appendTerm(result, "sol<" + this.solMax);
         }
-
-        if(this.pmcsMin || this.pmcsMax)
-        {
-            c++;
-        }
-
-        return c;
+      }
     }
 
-    toSearchString(): string
-    {
-        let result = "";
-
-        if(this.solMin || this.solMax)
-        {
-            if(this.solMin == this.solMax)
-            {
-                result = DatasetFilter.appendTerm(result, "sol="+this.solMin);
-            }
-            else if(this.solMin && this.solMax)
-            {
-                result = DatasetFilter.appendTerm(result, "sol=bw|"+this.solMin+"|"+this.solMax);
-            }
-            else
-            {
-                if(this.solMin)
-                {
-                    result = DatasetFilter.appendTerm(result, "sol>"+this.solMin);
-                }
-
-                if(this.solMax)
-                {
-                    result = DatasetFilter.appendTerm(result, "sol<"+this.solMax);
-                }
-            }
-        }
-
-        if(this.target)
-        {
-            result = DatasetFilter.appendTerm(result, "target_id="+this.target);
-        }
-
-        if(this.site)
-        {
-            result = DatasetFilter.appendTerm(result, "site_id="+this.site);
-        }
-
-        if(this.drive)
-        {
-            result = DatasetFilter.appendTerm(result, "drive_id="+this.drive);
-        }
-
-        if(this.detectorChosen)
-        {
-            result = DatasetFilter.appendTerm(result, "detector_config="+this.detectorChosen);
-        }
-
-        if(this.hasDwell)
-        {
-            result = DatasetFilter.appendTerm(result, "dwell_spectra>0");
-        }
-
-        if(this.hasQuant)
-        {
-            result = DatasetFilter.appendTerm(result, "quant_count>0");
-        }
-
-        if(this.hasNormal)
-        {
-            result = DatasetFilter.appendTerm(result, "normal_spectra>0");
-        }
-
-        if(this.pmcsMin || this.pmcsMax)
-        {
-            if(this.pmcsMin == this.pmcsMax)
-            {
-                result = DatasetFilter.appendTerm(result, "location_count="+this.pmcsMin);
-            }
-            else if(this.pmcsMin && this.pmcsMax)
-            {
-                result = DatasetFilter.appendTerm(result, "location_count=bw|"+this.pmcsMin+"|"+this.pmcsMax);
-            }
-            else
-            {
-                if(this.pmcsMin)
-                {
-                    result = DatasetFilter.appendTerm(result, "location_count>"+this.pmcsMin);
-                }
-
-                if(this.pmcsMax)
-                {
-                    result = DatasetFilter.appendTerm(result, "location_count<"+this.pmcsMax);
-                }
-            }
-        }
-
-        return DatasetFilter.makeSendableSearchString(result);
+    if (this.target) {
+      result = DatasetFilter.appendTerm(result, "target_id=" + this.target);
     }
 
-    public static appendTerm(str: string, term: string): string
-    {
-        if(!str)
-        {
-            return term;
+    if (this.site) {
+      result = DatasetFilter.appendTerm(result, "site_id=" + this.site);
+    }
+
+    if (this.drive) {
+      result = DatasetFilter.appendTerm(result, "drive_id=" + this.drive);
+    }
+
+    if (this.detectorChosen) {
+      result = DatasetFilter.appendTerm(result, "detector_config=" + this.detectorChosen);
+    }
+
+    if (this.hasDwell) {
+      result = DatasetFilter.appendTerm(result, "dwell_spectra>0");
+    }
+
+    if (this.hasQuant) {
+      result = DatasetFilter.appendTerm(result, "quant_count>0");
+    }
+
+    if (this.hasNormal) {
+      result = DatasetFilter.appendTerm(result, "normal_spectra>0");
+    }
+
+    if (this.pmcsMin || this.pmcsMax) {
+      if (this.pmcsMin == this.pmcsMax) {
+        result = DatasetFilter.appendTerm(result, "location_count=" + this.pmcsMin);
+      } else if (this.pmcsMin && this.pmcsMax) {
+        result = DatasetFilter.appendTerm(result, "location_count=bw|" + this.pmcsMin + "|" + this.pmcsMax);
+      } else {
+        if (this.pmcsMin) {
+          result = DatasetFilter.appendTerm(result, "location_count>" + this.pmcsMin);
         }
 
-        return str+";"+term;
+        if (this.pmcsMax) {
+          result = DatasetFilter.appendTerm(result, "location_count<" + this.pmcsMax);
+        }
+      }
     }
 
-    public static makeSendableSearchString(search: string): string
-    {
-        // Replace spaces, comma or ; in search text with & so we have:
-        // sol=10 rt=123
-        // sol=10, rt=123
-        // sol=10;rt=123
-        // all become:
-        // sol=10&rtt=123
-        search = search.replace(/[,; ] */g, "&");
+    return DatasetFilter.makeSendableSearchString(result);
+  }
 
-        // Also anything with > or < in it becomes:
-        // sol>10 -> sol=gt|10
-        // sol<10 -> sol=lt|10    
-        search = search.replace(/([a-zA-Z0-9_]+)>([a-zA-Z0-9_]+)/g, "$1=gt|$2");
-        search = search.replace(/([a-zA-Z0-9_]+)<([a-zA-Z0-9_]+)/g, "$1=lt|$2");
-        return search;
+  public static appendTerm(str: string, term: string): string {
+    if (!str) {
+      return term;
     }
+
+    return str + ";" + term;
+  }
+
+  public static makeSendableSearchString(search: string): string {
+    // Replace spaces, comma or ; in search text with & so we have:
+    // sol=10 rt=123
+    // sol=10, rt=123
+    // sol=10;rt=123
+    // all become:
+    // sol=10&rtt=123
+    search = search.replace(/[,; ] */g, "&");
+
+    // Also anything with > or < in it becomes:
+    // sol>10 -> sol=gt|10
+    // sol<10 -> sol=lt|10
+    search = search.replace(/([a-zA-Z0-9_]+)>([a-zA-Z0-9_]+)/g, "$1=gt|$2");
+    search = search.replace(/([a-zA-Z0-9_]+)<([a-zA-Z0-9_]+)/g, "$1=lt|$2");
+    return search;
+  }
 }

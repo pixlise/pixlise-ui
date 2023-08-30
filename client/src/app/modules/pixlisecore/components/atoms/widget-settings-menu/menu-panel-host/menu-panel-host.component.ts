@@ -30,28 +30,24 @@
 import { Component, Inject, OnInit, TemplateRef } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 
-
 export class MenuPanelHostData {
-    constructor(
-        public menuTemplate: TemplateRef<any>,
-        public overflowSectionTemplate: TemplateRef<any> | null,
-        public noPadding: boolean = false
-    ) {
-    }
+  constructor(
+    public menuTemplate: TemplateRef<any>,
+    public overflowSectionTemplate: TemplateRef<any> | null,
+    public noPadding: boolean = false
+  ) {}
 }
 
 @Component({
-    selector: "app-menu-panel-host",
-    templateUrl: "./menu-panel-host.component.html",
-    styleUrls: ["./menu-panel-host.component.scss"]
+  selector: "app-menu-panel-host",
+  templateUrl: "./menu-panel-host.component.html",
+  styleUrls: ["./menu-panel-host.component.scss"],
 })
 export class MenuPanelHostComponent implements OnInit {
-    constructor(
-        @Inject(MAT_DIALOG_DATA) public data: MenuPanelHostData,
-        public dialogRef: MatDialogRef<MenuPanelHostComponent>,
-    ) {
-    }
+  constructor(
+    @Inject(MAT_DIALOG_DATA) public data: MenuPanelHostData,
+    public dialogRef: MatDialogRef<MenuPanelHostComponent>
+  ) {}
 
-    ngOnInit(): void {
-    }
+  ngOnInit(): void {}
 }

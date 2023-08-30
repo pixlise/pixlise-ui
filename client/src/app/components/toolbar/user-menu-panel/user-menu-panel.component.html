@@ -30,19 +30,19 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="panel">
-    <section class="user-info-container">
-        <div class="user-info">
-            <div class="gap-separated-horizontal-elements user-field">
-                <div>{{userName}}</div>
-            </div>
-            <div class="gap-separated-horizontal-elements user-field">
-                <div>{{userEmail}}</div>
-            </div>
-        </div>
-        <img *ngIf="user !== null" class="user-icon" src="{{user.info?.iconURL}}">
-    </section>
-    <section class="buttons">
-        <push-button buttonStyle="hover-yellow" class="settings" (onClick)="onSettings()">Settings</push-button>
-        <push-button buttonStyle="hover-yellow" class="sign-out" (onClick)="onLogout()">Sign Out</push-button>
-    </section>
+  <section class="user-info-container">
+    <div class="user-info">
+      <div class="gap-separated-horizontal-elements user-field">
+        <div>{{ userName }}</div>
+      </div>
+      <div class="gap-separated-horizontal-elements user-field">
+        <div>{{ userEmail }}</div>
+      </div>
+    </div>
+    <img *ngIf="user !== null" class="user-icon" src="{{ user.info?.iconURL }}" />
+  </section>
+  <section class="buttons">
+    <push-button buttonStyle="hover-yellow" class="settings" (onClick)="onSettings()">Settings</push-button>
+    <push-button buttonStyle="hover-yellow" class="sign-out" (onClick)="onLogout()">Sign Out</push-button>
+  </section>
 </div>

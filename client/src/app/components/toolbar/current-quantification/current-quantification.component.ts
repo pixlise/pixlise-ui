@@ -34,77 +34,59 @@ import { QuantificationSelectionInfo, QuantificationSelectionService } from "src
 import { ViewStateService } from "src/app/services/view-state.service";
 import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 
-
-
-
-
 // Primarily exists so we can remove the use of these services from the main toolbar, and they are only used when the toolbar
 // needs these items shown. For example, this way we don't instantiate a widget region data service before loading a dataset
 @Component({
-    selector: "current-quantification",
-    templateUrl: "./current-quantification.component.html",
-    styleUrls: ["./current-quantification.component.scss"]
+  selector: "current-quantification",
+  templateUrl: "./current-quantification.component.html",
+  styleUrls: ["./current-quantification.component.scss"],
 })
-export class CurrentQuantificationComponent implements OnInit
-{
-    private _subs = new Subscription();
+export class CurrentQuantificationComponent implements OnInit {
+  private _subs = new Subscription();
 
-    selectedQuantID: string = "";
-    loadedQuantID: string = "";
+  selectedQuantID: string = "";
+  loadedQuantID: string = "";
 
-    constructor(
-        private _viewStateService: ViewStateService,
-        private _quantSelectionService: QuantificationSelectionService,
-        private _widgetDataService: WidgetRegionDataService,
-    )
-    {
-    }
+  constructor(
+    private _viewStateService: ViewStateService,
+    private _quantSelectionService: QuantificationSelectionService,
+    private _widgetDataService: WidgetRegionDataService
+  ) {}
 
-    ngOnInit(): void
-    {
-        this._subs.add(this._quantSelectionService.quantificationsSelected$.subscribe(
-            (selection: QuantificationSelectionInfo)=>
-            {
-                // Should ONLY process ones without an ROI
-                if(!selection.roiID)
-                {
-                    if(confirm("Are you sure you want to load quantification: \""+selection.quantificationName+"\"?"))
-                    {
-                        this._viewStateService.setQuantification(selection.quantificationID);
-                    }
-                }
-            }
-        ));
+  ngOnInit(): void {
+    this._subs.add(
+      this._quantSelectionService.quantificationsSelected$.subscribe((selection: QuantificationSelectionInfo) => {
+        // Should ONLY process ones without an ROI
+        if (!selection.roiID) {
+          if (confirm('Are you sure you want to load quantification: "' + selection.quantificationName + '"?')) {
+            this._viewStateService.setQuantification(selection.quantificationID);
+          }
+        }
+      })
+    );
 
-        this._subs.add(this._widgetDataService.quantificationLoaded$.subscribe(
-            (quant: QuantificationLayer)=>
-            {
-                if(!quant)
-                {
-                    this.loadedQuantID = "";
-                }
-                else
-                {
-                    this.loadedQuantID = quant.quantId;
-                }
-            }
-        ));
+    this._subs.add(
+      this._widgetDataService.quantificationLoaded$.subscribe((quant: QuantificationLayer) => {
+        if (!quant) {
+          this.loadedQuantID = "";
+        } else {
+          this.loadedQuantID = quant.quantId;
+        }
+      })
+    );
 
-        this._subs.add(this._viewStateService.appliedQuantification$.subscribe(
-            (quantID: string)=>
-            {
-                this.selectedQuantID = quantID;
-            }
-        ));
-    }
+    this._subs.add(
+      this._viewStateService.appliedQuantification$.subscribe((quantID: string) => {
+        this.selectedQuantID = quantID;
+      })
+    );
+  }
 
-    ngOnDestroy()
-    {
-        this._subs.unsubscribe();
-    }
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
 
-    get errorMsg(): string
-    {
-        return this.selectedQuantID != this.loadedQuantID ? "Quantification not loaded" : "";
-    }
+  get errorMsg(): string {
+    return this.selectedQuantID != this.loadedQuantID ? "Quantification not loaded" : "";
+  }
 }

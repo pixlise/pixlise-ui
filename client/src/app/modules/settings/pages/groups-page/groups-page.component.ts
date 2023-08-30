@@ -26,14 +26,14 @@ export class GroupsPageComponent {
   constructor(
     private _groupsService: GroupsService,
     private _userOptionsService: UserOptionsService,
-    private dialog: MatDialog,
+    private dialog: MatDialog
   ) {
     this.filteredGroups = this.requestGroupControl.valueChanges.pipe(
       startWith(""),
       map(value => {
         const name = typeof value === "string" ? value : value?.name;
         return name ? this._filterGroupNames(name as string) : this.groups.slice();
-      }),
+      })
     );
   }
 
@@ -59,7 +59,9 @@ export class GroupsPageComponent {
   }
 
   get groupsWithAdminAccess() {
-    return this._groupsService.groups.filter(group => group.relationshipToUser === UserGroupRelationship.UGR_ADMIN || this._userOptionsService.hasFeatureAccess("admin"));
+    return this._groupsService.groups.filter(
+      group => group.relationshipToUser === UserGroupRelationship.UGR_ADMIN || this._userOptionsService.hasFeatureAccess("admin")
+    );
   }
 
   get groupsWithMemberAccess() {
@@ -95,21 +97,20 @@ export class GroupsPageComponent {
     const dialogConfig = new MatDialogConfig();
     const dialogRef = this.dialog.open(NewGroupDialogComponent, dialogConfig);
 
-    dialogRef.afterClosed().subscribe(
-      (data: { groupName: string }) => {
-        if (!data.groupName) {
-          return;
-        }
-
-        this.newGroupName = data.groupName;
-        this.onCreateGroup();
+    dialogRef.afterClosed().subscribe((data: { groupName: string }) => {
+      if (!data.groupName) {
+        return;
       }
-    );
+
+      this.newGroupName = data.groupName;
+      this.onCreateGroup();
+    });
   }
 
   onSelectGroup(group: UserGroupInfo) {
     this._selectedGroupId = group.id;
-    this.canAccessSelectedGroup = group.relationshipToUser > UserGroupRelationship.UGR_UNKNOWN || this._userOptionsService.hasFeatureAccess("admin");
+    this.canAccessSelectedGroup =
+      group.relationshipToUser > UserGroupRelationship.UGR_UNKNOWN || this._userOptionsService.hasFeatureAccess("admin");
 
     if (this.isSelectedGroupAdmin) {
       this._groupsService.fetchGroupAccessRequests(group.id);
@@ -200,20 +201,18 @@ export class GroupsPageComponent {
     dialogConfig.data = { groupId };
     const dialogRef = this.dialog.open(AddUserDialogComponent, dialogConfig);
 
-    dialogRef.afterClosed().subscribe(
-      (userSelection: { userId: string; role: string; }) => {
-        if (!userSelection) {
-          return;
-        }
-
-        if (userSelection.role === "editor") {
-          this._groupsService.addMemberToGroup(groupId, userSelection.userId);
-        } else if (userSelection.role === "viewer") {
-          this._groupsService.addViewerToGroup(groupId, userSelection.userId);
-        } else if (userSelection.role === "admin") {
-          this._groupsService.addAdminToGroup(groupId, userSelection.userId);
-        }
+    dialogRef.afterClosed().subscribe((userSelection: { userId: string; role: string }) => {
+      if (!userSelection) {
+        return;
       }
-    );
+
+      if (userSelection.role === "editor") {
+        this._groupsService.addMemberToGroup(groupId, userSelection.userId);
+      } else if (userSelection.role === "viewer") {
+        this._groupsService.addViewerToGroup(groupId, userSelection.userId);
+      } else if (userSelection.role === "admin") {
+        this._groupsService.addAdminToGroup(groupId, userSelection.userId);
+      }
+    });
   }
 }

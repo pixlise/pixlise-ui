@@ -30,29 +30,23 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MenuPanelHostComponent } from "./menu-panel-host.component";
 
+describe("MenuPanelHostComponent", () => {
+  let component: MenuPanelHostComponent;
+  let fixture: ComponentFixture<MenuPanelHostComponent>;
 
-describe("MenuPanelHostComponent", () => 
-{
-    let component: MenuPanelHostComponent;
-    let fixture: ComponentFixture<MenuPanelHostComponent>;
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [MenuPanelHostComponent],
+    }).compileComponents();
+  });
 
-    beforeEach(async () => 
-    {
-        await TestBed.configureTestingModule({
-            declarations: [ MenuPanelHostComponent ]
-        })
-            .compileComponents();
-    });
+  beforeEach(() => {
+    fixture = TestBed.createComponent(MenuPanelHostComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
 
-    beforeEach(() => 
-    {
-        fixture = TestBed.createComponent(MenuPanelHostComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
-
-    it("should create", () => 
-    {
-        expect(component).toBeTruthy();
-    });
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
 });

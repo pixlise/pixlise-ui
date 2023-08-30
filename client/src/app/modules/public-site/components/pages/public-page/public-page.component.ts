@@ -33,32 +33,22 @@ import { ActivatedRoute } from "@angular/router";
 import { LandingRouteName } from "../landing-page/landing-page.component";
 import { AboutUsRouteName } from "../about-us-page/about-us-page.component";
 
-
 @Component({
-    selector: "app-public-page",
-    templateUrl: "./public-page.component.html",
-    styleUrls: ["./public-page.component.scss"]
+  selector: "app-public-page",
+  templateUrl: "./public-page.component.html",
+  styleUrls: ["./public-page.component.scss"],
 })
-export class PublicPageComponent implements OnInit
-{
-    showBrandingLogos = false;
-    showTeam = false;
+export class PublicPageComponent implements OnInit {
+  showBrandingLogos = false;
+  showTeam = false;
 
-    constructor(
-        private _route: ActivatedRoute,
-        )
-    {
-    }
+  constructor(private _route: ActivatedRoute) {}
 
-    ngOnInit(): void
-    {
-        this._route.url.subscribe(
-            (params)=> 
-            {
-                // TODO: fixme, this is ugly and likely to break if we change our routes!!!
-                this.showBrandingLogos = (window.location.href.indexOf("/public/"+LandingRouteName) >= 0);
-                this.showTeam = (window.location.href.indexOf("/public/"+AboutUsRouteName) >= 0);
-            }
-        );
-    }
+  ngOnInit(): void {
+    this._route.url.subscribe(params => {
+      // TODO: fixme, this is ugly and likely to break if we change our routes!!!
+      this.showBrandingLogos = window.location.href.indexOf("/public/" + LandingRouteName) >= 0;
+      this.showTeam = window.location.href.indexOf("/public/" + AboutUsRouteName) >= 0;
+    });
+  }
 }

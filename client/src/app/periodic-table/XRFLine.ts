@@ -29,78 +29,86 @@
 
 import { ElementLine, EscapeLine } from "./periodic-table-db";
 
-
 export enum XRFLineType {
-    K_MAX,
-    K_OTHER,
-    L_MAX,
-    L_OTHER,
-    M_MAX,
-    M_OTHER,
-    ESCAPE,
-    //    ANNOTATION
+  K_MAX,
+  K_OTHER,
+  L_MAX,
+  L_OTHER,
+  M_MAX,
+  M_OTHER,
+  ESCAPE,
+  //    ANNOTATION
 }
 
 // TODO: Really need to break this up, XRFLine should be a base class, and depending on its XRFLineType it could store the XRF info, or annotation info, or whatever else.
 //       For now, we need a ROI field for annotations, and it's going to go into the XRFLine class :-/
 export class XRFLine {
-    constructor(
-        public atomicNumber: number,
-        public name: string,
-        public eV: number,
-        public intensity: number,
-        public elementSymbol: string,
-        public siegbahn: string,
-        public lineType: XRFLineType,
-        public tags: string[], // Things like maxK, maxL, maxM (see periodic table data)
-        public roi: string = ""
-    ) {
+  constructor(
+    public atomicNumber: number,
+    public name: string,
+    public eV: number,
+    public intensity: number,
+    public elementSymbol: string,
+    public siegbahn: string,
+    public lineType: XRFLineType,
+    public tags: string[], // Things like maxK, maxL, maxM (see periodic table data)
+    public roi: string = ""
+  ) {}
+
+  isMaxLine(): boolean {
+    return this.lineType == XRFLineType.K_MAX || this.lineType == XRFLineType.L_MAX || this.lineType == XRFLineType.M_MAX;
+  }
+
+  isOtherLine(): boolean {
+    return this.lineType == XRFLineType.K_OTHER || this.lineType == XRFLineType.L_OTHER || this.lineType == XRFLineType.M_OTHER;
+  }
+
+  static makeXRFLineFromEscapeLine(symbol: string, atomicNumber: number, escLine: EscapeLine): XRFLine {
+    return new XRFLine(
+      atomicNumber,
+      escLine.name,
+      escLine.energy,
+      escLine.intensity,
+      symbol,
+      "Esc" + escLine.parentSiegbahn,
+      XRFLineType.ESCAPE,
+      []
+    );
+  }
+
+  static makeXRFLineFromPeriodicTableItem(symbol: string, atomicNumber: number, elemLine: ElementLine): XRFLine {
+    let lineType = XRFLineType.K_OTHER;
+    if (elemLine.Siegbahn[0] == "L") {
+      lineType = XRFLineType.L_OTHER;
+    } else {
+      lineType = XRFLineType.M_OTHER;
     }
 
-    isMaxLine(): boolean {
-        return this.lineType == XRFLineType.K_MAX ||
-            this.lineType == XRFLineType.L_MAX ||
-            this.lineType == XRFLineType.M_MAX;
+    let tags = elemLine.tags;
+    if (!tags) {
+      tags = [];
+    } else {
+      if (tags.indexOf("maxK") > -1) {
+        lineType = XRFLineType.K_MAX;
+      }
+
+      if (tags.indexOf("maxL") > -1) {
+        lineType = XRFLineType.L_MAX;
+      }
+
+      if (tags.indexOf("maxM") > -1) {
+        lineType = XRFLineType.M_MAX;
+      }
     }
-
-    isOtherLine(): boolean {
-        return this.lineType == XRFLineType.K_OTHER ||
-            this.lineType == XRFLineType.L_OTHER ||
-            this.lineType == XRFLineType.M_OTHER;
-    }
-
-    static makeXRFLineFromEscapeLine(symbol: string, atomicNumber: number, escLine: EscapeLine): XRFLine {
-        return new XRFLine(
-            atomicNumber, escLine.name, escLine.energy, escLine.intensity, symbol, "Esc" + escLine.parentSiegbahn, XRFLineType.ESCAPE, []
-        );
-    }
-
-    static makeXRFLineFromPeriodicTableItem(symbol: string, atomicNumber: number, elemLine: ElementLine): XRFLine {
-        let lineType = XRFLineType.K_OTHER;
-        if (elemLine.Siegbahn[0] == "L") {
-            lineType = XRFLineType.L_OTHER;
-        }
-        else {
-            lineType = XRFLineType.M_OTHER;
-        }
-
-        let tags = elemLine.tags;
-        if (!tags) {
-            tags = [];
-        }
-        else {
-            if (tags.indexOf("maxK") > -1) {
-                lineType = XRFLineType.K_MAX;
-            }
-
-            if (tags.indexOf("maxL") > -1) {
-                lineType = XRFLineType.L_MAX;
-            }
-
-            if (tags.indexOf("maxM") > -1) {
-                lineType = XRFLineType.M_MAX;
-            }
-        }
-        return new XRFLine(atomicNumber, symbol + "-" + elemLine.Siegbahn, elemLine.energy, elemLine.intensity, symbol, elemLine.Siegbahn, lineType, tags);
-    }
+    return new XRFLine(
+      atomicNumber,
+      symbol + "-" + elemLine.Siegbahn,
+      elemLine.energy,
+      elemLine.intensity,
+      symbol,
+      elemLine.Siegbahn,
+      lineType,
+      tags
+    );
+  }
 }

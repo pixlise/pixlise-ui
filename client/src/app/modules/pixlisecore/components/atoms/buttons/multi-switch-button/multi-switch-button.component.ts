@@ -29,42 +29,33 @@
 
 import { Component, EventEmitter, Input, Output } from "@angular/core";
 
-
 @Component({
-    selector: "multi-switch-button",
-    templateUrl: "./multi-switch-button.component.html",
-    styleUrls: ["./multi-switch-button.component.scss"]
+  selector: "multi-switch-button",
+  templateUrl: "./multi-switch-button.component.html",
+  styleUrls: ["./multi-switch-button.component.scss"],
 })
-export class MultiSwitchButtonComponent
-{
-    @Input() options: string[];
-    @Input() value: string;
-    @Input() disabled: boolean = false;
+export class MultiSwitchButtonComponent {
+  @Input() options: string[];
+  @Input() value: string;
+  @Input() disabled: boolean = false;
 
-    @Output() onChange = new EventEmitter();
+  @Output() onChange = new EventEmitter();
 
-    constructor()
-    {
+  constructor() {}
+
+  get activeWidth(): number | string {
+    return this.options.length > 0 ? `${Math.round((1 / this.options.length) * 1000) / 10}%` : 0;
+  }
+
+  get activeLeftOffset(): number | string {
+    let index = this.options.findIndex(option => option === this.value);
+    return index >= 0 && this.options.length > 0 ? `${Math.round((index / this.options.length) * 1000) / 10}%` : 0;
+  }
+
+  onClick(selectedValue: string) {
+    if (!this.disabled) {
+      this.value = selectedValue;
+      this.onChange.emit(selectedValue);
     }
-
-    get activeWidth(): number | string
-    {
-        return this.options.length > 0 ? `${Math.round(1 / this.options.length * 1000)/10}%` : 0;
-    }
-
-    get activeLeftOffset(): number | string
-    {
-        let index = this.options.findIndex((option) => option === this.value);
-        return index >= 0 && this.options.length > 0 ? `${Math.round(index / this.options.length * 1000)/10}%` : 0;
-    }
-
-    onClick(selectedValue: string)
-    {
-        if(!this.disabled)
-        {
-            this.value = selectedValue;
-            this.onChange.emit(selectedValue);
-        }
-    }
-
+  }
 }

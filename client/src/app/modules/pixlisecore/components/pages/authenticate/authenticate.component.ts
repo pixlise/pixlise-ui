@@ -33,42 +33,38 @@ import { Subscription } from "rxjs";
 // import { AuthenticationService } from "src/app/services/authentication.service";
 import { AuthService } from "@auth0/auth0-angular";
 
-
-
-
 // The purpose of this page is to process the auth0 code/state that comes in. This is why we have an auth service
 // injected here - if the application is brought to this page and it has the code/state the auth service will see
 // it and treat us as logged in
 
 @Component({
-    selector: "app-authenticate",
-    templateUrl: "./authenticate.component.html",
-    styleUrls: ["./authenticate.component.scss"]
+  selector: "app-authenticate",
+  templateUrl: "./authenticate.component.html",
+  styleUrls: ["./authenticate.component.scss"],
 })
 export class AuthenticateComponent implements OnInit {
-    private _subs = new Subscription();
+  private _subs = new Subscription();
 
-    errorString: string = "";
+  errorString: string = "";
 
-    constructor(
-        private _router: Router,
-        private authService: AuthService
-    ) {
-    }
+  constructor(
+    private _router: Router,
+    private authService: AuthService
+  ) {}
 
-    ngOnInit() {
-        this._subs.add(this.authService.error$.subscribe(
-            (errStr: Error) => {
-                this.errorString = `${errStr}`;
-            }
-        ));
-    }
+  ngOnInit() {
+    this._subs.add(
+      this.authService.error$.subscribe((errStr: Error) => {
+        this.errorString = `${errStr}`;
+      })
+    );
+  }
 
-    ngOnDestroy() {
-        this._subs.unsubscribe();
-    }
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
 
-    onHome() {
-        this._router.navigateByUrl("about");
-    }
+  onHome() {
+    this._router.navigateByUrl("about");
+  }
 }

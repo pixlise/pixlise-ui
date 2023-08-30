@@ -1,21 +1,21 @@
-import { Component } from '@angular/core';
-import { UserOptionsService } from 'src/app/modules/settings/services/user-options.service';
-import { UserInfo } from 'src/app/generated-protos/user';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { DataCollectionDialogComponent } from 'src/app/modules/settings/components/data-collection-dialog/data-collection-dialog.component';
-import { NotificationSetting, NotificationSubscriptions, NotificationTopic } from 'src/app/modules/settings/models/notification.model';
-import { CommonModule } from '@angular/common';
-import { PIXLISECoreModule, SnackbarService } from 'src/app/modules/pixlisecore/pixlisecore.module';
-import { ImageUploaderDialogComponent } from 'src/app/modules/settings/components/image-uploader-dialog/image-uploader-dialog.component';
-import { GroupsService } from 'src/app/modules/settings/services/groups.service';
-import { UserGroupInfo, UserGroupRelationship } from 'src/app/generated-protos/user-group';
-import { SettingsModule } from 'src/app/modules/settings/settings.module';
-import { SnackbarDataItem } from 'src/app/modules/pixlisecore/services/snackbar.service';
+import { Component } from "@angular/core";
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
+import { UserInfo } from "src/app/generated-protos/user";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { DataCollectionDialogComponent } from "src/app/modules/settings/components/data-collection-dialog/data-collection-dialog.component";
+import { NotificationSetting, NotificationSubscriptions, NotificationTopic } from "src/app/modules/settings/models/notification.model";
+import { CommonModule } from "@angular/common";
+import { PIXLISECoreModule, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ImageUploaderDialogComponent } from "src/app/modules/settings/components/image-uploader-dialog/image-uploader-dialog.component";
+import { GroupsService } from "src/app/modules/settings/services/groups.service";
+import { UserGroupInfo, UserGroupRelationship } from "src/app/generated-protos/user-group";
+import { SettingsModule } from "src/app/modules/settings/settings.module";
+import { SnackbarDataItem } from "src/app/modules/pixlisecore/services/snackbar.service";
 
 @Component({
-  selector: 'app-settings-sidebar',
-  templateUrl: './settings-sidebar.component.html',
-  styleUrls: ['./settings-sidebar.component.scss'],
+  selector: "app-settings-sidebar",
+  templateUrl: "./settings-sidebar.component.html",
+  styleUrls: ["./settings-sidebar.component.scss"],
   standalone: true,
   imports: [CommonModule, PIXLISECoreModule, SettingsModule],
 })
@@ -25,20 +25,19 @@ export class SettingsSidebarComponent {
   groupsWithAccess: UserGroupInfo[] = [];
 
   public eventIcons = {
-    "warning": "warning",
-    "error": "error",
-    "success": "check_circle",
-  }
+    warning: "warning",
+    error: "error",
+    success: "check_circle",
+  };
 
   constructor(
     private _userOptionsService: UserOptionsService,
     private _groupsService: GroupsService,
     private _snackBar: SnackbarService,
-    private dialog: MatDialog,
+    private dialog: MatDialog
   ) {
-
     // Create blank notification settings for all notifications
-    this.notifications = NotificationSubscriptions.allNotifications.map((notification) => new NotificationSetting(notification));
+    this.notifications = NotificationSubscriptions.allNotifications.map(notification => new NotificationSetting(notification));
 
     // Do a deep copy of user info
     let { id, name, email, iconURL } = this._userOptionsService.userDetails.info!;
@@ -142,8 +141,7 @@ export class SettingsSidebarComponent {
   get iconURL(): string {
     if (!this.user?.iconURL) {
       return "";
-    }
-    else {
+    } else {
       return this.user.iconURL;
     }
   }
@@ -207,13 +205,11 @@ export class SettingsSidebarComponent {
     dialogConfig.disableClose = true;
     const dialogRef = this.dialog.open(DataCollectionDialogComponent, dialogConfig);
 
-    dialogRef.afterClosed().subscribe(
-      (accepted: boolean) => {
-        if (accepted !== this.dataCollectionActive) {
-          this._userOptionsService.acceptDataCollectionAgreement(accepted);
-        }
+    dialogRef.afterClosed().subscribe((accepted: boolean) => {
+      if (accepted !== this.dataCollectionActive) {
+        this._userOptionsService.acceptDataCollectionAgreement(accepted);
       }
-    );
+    });
   }
 
   onCloseSidebar(): void {

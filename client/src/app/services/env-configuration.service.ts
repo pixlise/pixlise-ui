@@ -84,9 +84,7 @@ export class EnvConfigurationService {
 
   refresh(config: string) {
     console.log("Refreshing detector config: " + config);
-    let apiURL = APIPaths.getWithHost(
-      APIPaths.api_detector_config + "/" + config
-    );
+    let apiURL = APIPaths.getWithHost(APIPaths.api_detector_config + "/" + config);
     this.http.get<DetectorConfig>(apiURL, makeHeaders()).subscribe(
       (resp: DetectorConfig) => {
         this._detectorConfig = resp;
@@ -95,7 +93,7 @@ export class EnvConfigurationService {
         // Re-init the XRF line cache
         periodicTableDB.notifyDetectorConfig(this._detectorConfig);
       },
-      (err) => {
+      err => {
         console.error('Failed to refresh detector config: "' + config + '"');
       }
     );
@@ -109,17 +107,13 @@ export class EnvConfigurationService {
 
   getPiquantConfigVersions(config: string): Observable<string[]> {
     console.log("Loading quant config version for: " + config);
-    let apiURL = APIPaths.getWithHost(
-      APIPaths.api_piquant_root + "/config/" + config + "/versions"
-    );
+    let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root + "/config/" + config + "/versions");
     return this.http.get<string[]>(apiURL, makeHeaders());
   }
 
   getPiquantConfig(config: string, version: string): Observable<PiquantConfig> {
     console.log("Loading quant config: " + config + ", version: " + version);
-    let apiURL = APIPaths.getWithHost(
-      APIPaths.api_piquant_root + "/config/" + config + "/version/" + version
-    );
+    let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root + "/config/" + config + "/version/" + version);
     return this.http.get<PiquantConfig>(apiURL, makeHeaders());
   }
 

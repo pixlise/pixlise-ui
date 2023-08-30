@@ -27,23 +27,20 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
+import { NgModule } from "@angular/core";
+import { RouterModule, Routes } from "@angular/router";
 
 import { PublicSiteModule } from "./modules/public-site/public-site.module";
-import { AuthenticateComponent } from './modules/pixlisecore/components/pages/authenticate/authenticate.component';
-import { AuthGuard } from '@auth0/auth0-angular';
-import { environment } from 'src/environments/environment';
+import { AuthenticateComponent } from "./modules/pixlisecore/components/pages/authenticate/authenticate.component";
+import { AuthGuard } from "@auth0/auth0-angular";
+import { environment } from "src/environments/environment";
 
 const APP_ROUTES: Routes = [
   // Public pages
   { path: "authenticate", component: AuthenticateComponent },
   {
     path: "",
-    loadChildren: () =>
-      import("./modules/public-site/public-site.module").then(
-        (m) => m.PublicSiteModule
-      ),
+    loadChildren: () => import("./modules/public-site/public-site.module").then(m => m.PublicSiteModule),
   },
 
   // Redirect the old about page here, lots of browsers are likely to have this saved/bookmarked
@@ -56,12 +53,9 @@ const APP_ROUTES: Routes = [
     children: [
       {
         path: "datasets",
-        loadChildren: () =>
-          import("./modules/datasets/datasets.module").then(
-            (m) => m.DatasetsModule
-          ),
+        loadChildren: () => import("./modules/datasets/datasets.module").then(m => m.DatasetsModule),
       },
-    ]
+    ],
   },
   {
     path: "",
@@ -69,19 +63,13 @@ const APP_ROUTES: Routes = [
     children: [
       {
         path: "settings",
-        loadChildren: () =>
-          import("./modules/settings/settings.module").then(
-            (m) => m.SettingsModule
-          ),
+        loadChildren: () => import("./modules/settings/settings.module").then(m => m.SettingsModule),
       },
-    ]
+    ],
   },
   {
     path: "**",
-    loadChildren: () =>
-      import("./modules/not-found/not-found.module").then(
-        (m) => m.NotFoundModule
-      ),
+    loadChildren: () => import("./modules/not-found/not-found.module").then(m => m.NotFoundModule),
   },
 ];
 
@@ -96,4 +84,4 @@ const APP_ROUTES: Routes = [
   ],
   exports: [RouterModule],
 })
-export class AppRoutingModule { }
+export class AppRoutingModule {}

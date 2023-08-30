@@ -42,9 +42,9 @@ export const environment = {
   luaTimeoutMs: 60000, // Max time we allow a Lua call to take to run
   authTarget: "/datasets",
   authorizationParams: {
-      audience: "pixlise-backend",
-      redirect_uri: `${window.location.origin}/authenticate`,
-  }
+    audience: "pixlise-backend",
+    redirect_uri: `${window.location.origin}/authenticate`,
+  },
 };
 
 /*

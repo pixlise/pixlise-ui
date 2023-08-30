@@ -30,22 +30,21 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="flex-column team section" id="team">
-    <number-button theNumber="04" theLabel="Our Team" link="" colourStyle="red" [showArrow]="false"></number-button>
-    <div class="flex-row container">
-        <div class="flex-column contributors" *ngFor="let contribCol of contributors">
-            <div *ngFor="let group of contribCol">
-                <h4>{{group.group}}</h4>
-                <div *ngFor="let person of group.contributors" class="flex-row contributor">
-                    <p class="name">{{person.name}}</p>
-                    <p class="role">{{person.role}}</p>
-                </div>
-            </div>
+  <number-button theNumber="04" theLabel="Our Team" link="" colourStyle="red" [showArrow]="false"></number-button>
+  <div class="flex-row container">
+    <div class="flex-column contributors" *ngFor="let contribCol of contributors">
+      <div *ngFor="let group of contribCol">
+        <h4>{{ group.group }}</h4>
+        <div *ngFor="let person of group.contributors" class="flex-row contributor">
+          <p class="name">{{ person.name }}</p>
+          <p class="role">{{ person.role }}</p>
         </div>
+      </div>
     </div>
-<!--
+  </div>
+  <!--
     <p>To reference PIXLISE, please cite:</p>
     <p>Allwood, A. C., Wade, L. A., Foote, M. C., Elam, W. T., Hurowitz, J. A., Battel, S., ... & Zimmerman, R. (2020). PIXL: Planetary instrument for X-ray lithochemistry. Space Science Reviews, 216(8), 1-132.</p>
     <p>DOI: <a href="https://doi.org/10.1007/s11214-020-00767-7">https://doi.org/10.1007/s11214-020-00767-7 </a> <a href="assets/citations/10.1007_s11214-020-00767-7-citation.ris">BibTex </a> <a href="assets/citations/10.1007_s11214-020-00767-7-citation.bib">EndNote</a></p>
     https://zenodo.org/badge/latestdoi/519266678
--->
-</div>
+--></div>

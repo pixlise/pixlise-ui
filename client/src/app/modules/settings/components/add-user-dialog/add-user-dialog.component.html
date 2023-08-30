@@ -30,25 +30,25 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="dlg-border-with-backdrop permissions-dlg data-collection">
-    <h1>Add User</h1>
-    <div class="fields">
-        <mat-form-field>
-            <mat-label>User</mat-label>
-            <input type="text" matInput [formControl]="selectedUserControl" [matAutocomplete]="auto">
-            <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn">
-                <mat-option *ngFor="let option of filteredOptions | async" [value]="option">
-                    {{option.auth0User?.name}}
-                </mat-option>
-            </mat-autocomplete>
-        </mat-form-field>
-        <mat-form-field>
-            <mat-label>Role</mat-label>
-            <mat-select [(value)]="selectedRole">
-                <mat-option *ngFor="let role of roles" [value]="role">{{role}}</mat-option>
-            </mat-select>
-        </mat-form-field>
-    </div>
-    <div class="gap-separated-horizontal-elements button-container">
-        <push-button buttonStyle="yellow" (onClick)="onAccept()">Add</push-button>
-    </div>
+  <h1>Add User</h1>
+  <div class="fields">
+    <mat-form-field>
+      <mat-label>User</mat-label>
+      <input type="text" matInput [formControl]="selectedUserControl" [matAutocomplete]="auto" />
+      <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn">
+        <mat-option *ngFor="let option of filteredOptions | async" [value]="option">
+          {{ option.auth0User?.name }}
+        </mat-option>
+      </mat-autocomplete>
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Role</mat-label>
+      <mat-select [(value)]="selectedRole">
+        <mat-option *ngFor="let role of roles" [value]="role">{{ role }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+  <div class="gap-separated-horizontal-elements button-container">
+    <push-button buttonStyle="yellow" (onClick)="onAccept()">Add</push-button>
+  </div>
 </div>

@@ -8,10 +8,9 @@ import Compressor from "compressorjs";
 @Component({
   selector: "app-image-uploader-dialog",
   templateUrl: "./image-uploader-dialog.component.html",
-  styleUrls: ["./image-uploader-dialog.component.scss"]
+  styleUrls: ["./image-uploader-dialog.component.scss"],
 })
 export class ImageUploaderDialogComponent implements OnInit {
-
   acceptTypes: string = "image/jpeg,image/png";
   uploadedImage: File | undefined = undefined;
 
@@ -19,14 +18,13 @@ export class ImageUploaderDialogComponent implements OnInit {
     public dialogRef: MatDialogRef<ImageUploaderDialogComponent>,
     private _userOptionsService: UserOptionsService,
     private _snackbarService: SnackbarService
-  ) { }
+  ) {}
 
   get userDetails(): UserDetails {
     return this._userOptionsService.userDetails;
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   onDropFile(event: any) {
     let rejectedFiles = [];
@@ -37,11 +35,9 @@ export class ImageUploaderDialogComponent implements OnInit {
     if (rejectedFiles.length > 0) {
       let errorMessage = `Rejected file for upload: ${rejectedFiles.join(",")}. Was it of an acceptible format?`;
       this._snackbarService.openError(errorMessage);
-    }
-    else if (event.addedFiles.length <= 0) {
+    } else if (event.addedFiles.length <= 0) {
       this._snackbarService.openError("No files added for uploading");
-    }
-    else {
+    } else {
       this.uploadedImage = event.addedFiles[0];
       this._snackbarService.openSuccess(`Image ${this.uploadedImage!.name} loaded for upload`);
     }
@@ -50,7 +46,6 @@ export class ImageUploaderDialogComponent implements OnInit {
   onRemoveDroppedFile() {
     this.uploadedImage = undefined;
   }
-
 
   onCancel(): void {
     this.dialogRef.close(false);
@@ -67,7 +62,7 @@ export class ImageUploaderDialogComponent implements OnInit {
       width: 256,
       height: 256,
       resize: "cover",
-      success: (result) => {
+      success: result => {
         const reader = new FileReader();
         reader.readAsDataURL(result);
         reader.onload = () => {
@@ -81,7 +76,7 @@ export class ImageUploaderDialogComponent implements OnInit {
           }
         };
       },
-      error: (err) => {
+      error: err => {
         console.error(err.message);
         this._snackbarService.openError(err.message);
       },

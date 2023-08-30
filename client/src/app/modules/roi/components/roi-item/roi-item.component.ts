@@ -7,7 +7,7 @@ import { ActionButtonComponent } from "src/app/modules/pixlisecore/components/at
 @Component({
   selector: "roi-item",
   templateUrl: "./roi-item.component.html",
-  styleUrls: ["./roi-item.component.scss"]
+  styleUrls: ["./roi-item.component.scss"],
 })
 export class ROIItemComponent {
   @Input() summary!: ROIItemSummary;
@@ -29,8 +29,7 @@ export class ROIItemComponent {
   constructor(
     private _snackBarService: SnackbarService,
     private _roiService: ROIService
-  ) {
-  }
+  ) {}
 
   ngOnDestroy(): void {
     this.closeSettingsMenu();
@@ -107,25 +106,15 @@ export class ROIItemComponent {
     this.closeSettingsMenu();
   }
 
-  onVisibility(evt: any) {
-  }
+  onVisibility(evt: any) {}
 
-  onScanEntryIdxPagePrev() {
-  }
+  onScanEntryIdxPagePrev() {}
 
-  onScanEntryIdxPageNext() {
+  onScanEntryIdxPageNext() {}
 
-  }
-
-  onScanEntryIdxEnter(scanEntryIdx: number) {
-
-  }
-  onScanEntryIdxLeave(scanEntryIdx: number) {
-
-  }
-  onDeleteScanEntryIdx(scanEntryIdx: number) {
-
-  }
+  onScanEntryIdxEnter(scanEntryIdx: number) {}
+  onScanEntryIdxLeave(scanEntryIdx: number) {}
+  onDeleteScanEntryIdx(scanEntryIdx: number) {}
 
   onToggleDetails() {
     this.showDetails = !this.showDetails;

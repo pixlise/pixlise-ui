@@ -1,21 +1,21 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { PiquantVersionComponent } from './piquant-version.component';
+import { PiquantVersionComponent } from "./piquant-version.component";
 
-describe('PiquantVersionComponent', () => {
+describe("PiquantVersionComponent", () => {
   let component: PiquantVersionComponent;
   let fixture: ComponentFixture<PiquantVersionComponent>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [PiquantVersionComponent]
+      declarations: [PiquantVersionComponent],
     });
     fixture = TestBed.createComponent(PiquantVersionComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

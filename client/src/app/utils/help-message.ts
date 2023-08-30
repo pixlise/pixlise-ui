@@ -27,25 +27,24 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-export class HelpMessage
-{
-    public static readonly NO_QUANT_FOR_SELECTION = "No quantification data found for selected PMCs. Are they house-keeping PMCs?";
-    public static readonly NOT_ENOUGH_ELEMENTS = "Not enough elements defined";
-    public static readonly SCATTER_SELECT_LINES_TO_DISPLAY = "Select One Or More Lines To Display";
+export class HelpMessage {
+  public static readonly NO_QUANT_FOR_SELECTION = "No quantification data found for selected PMCs. Are they house-keeping PMCs?";
+  public static readonly NOT_ENOUGH_ELEMENTS = "Not enough elements defined";
+  public static readonly SCATTER_SELECT_LINES_TO_DISPLAY = "Select One Or More Lines To Display";
 
-    public static readonly NO_DATASETS_FOUND = "No search results returned, Citizen.";
-    public static readonly NETWORK_ERROR = "The network is unresponsive, Citizen.";
-    public static readonly NO_PERMISSIONS = "Citizen, you have insufficient permissions.";
-    public static readonly NO_SELECTED_DATASET = "Citizen needs to select a dataset to see metadata.";
+  public static readonly NO_DATASETS_FOUND = "No search results returned, Citizen.";
+  public static readonly NETWORK_ERROR = "The network is unresponsive, Citizen.";
+  public static readonly NO_PERMISSIONS = "Citizen, you have insufficient permissions.";
+  public static readonly NO_SELECTED_DATASET = "Citizen needs to select a dataset to see metadata.";
 
-    public static readonly PAGE_NOT_FOUND = "Page not found. Citizen must have thought of the wrong planet.";
+  public static readonly PAGE_NOT_FOUND = "Page not found. Citizen must have thought of the wrong planet.";
 
-    public static readonly SELECTION_EMPTY = "Selection is empty. Citizen needs to select points for this to work.";
-    public static readonly REMAINING_POINTS_EMPTY = "There are no remaining points.";
+  public static readonly SELECTION_EMPTY = "Selection is empty. Citizen needs to select points for this to work.";
+  public static readonly REMAINING_POINTS_EMPTY = "There are no remaining points.";
 
-    public static readonly AWAITING_ADMIN_APPROVAL = "Citizen, the admin has not yet verified your account. Check back later.";
-    public static readonly NO_DATASET_GROUPS = "Citizen is not assigned to view any dataset groups.";
-    public static readonly GET_CLAIMS_FAILED = "Failed to get citizens permissions. Try again later.";
+  public static readonly AWAITING_ADMIN_APPROVAL = "Citizen, the admin has not yet verified your account. Check back later.";
+  public static readonly NO_DATASET_GROUPS = "Citizen is not assigned to view any dataset groups.";
+  public static readonly GET_CLAIMS_FAILED = "Failed to get citizens permissions. Try again later.";
 
-    public static readonly ROI_QUERY_FAILED = "Failed to get data, do selected region(s) exist?";
+  public static readonly ROI_QUERY_FAILED = "Failed to get data, do selected region(s) exist?";
 }

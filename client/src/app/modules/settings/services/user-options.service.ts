@@ -1,23 +1,40 @@
-import { Injectable } from '@angular/core';
+import { Injectable } from "@angular/core";
 
-import { APIDataService, SnackbarService } from '../../pixlisecore/pixlisecore.module';
-import { ReplaySubject } from 'rxjs';
+import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
+import { ReplaySubject } from "rxjs";
 
 import * as _m0 from "protobufjs/minimal";
-import { UserNotificationSettingsReq, UserNotificationSettingsResp, UserNotificationSettingsWriteReq, UserNotificationSettingsWriteResp } from 'src/app/generated-protos/user-notification-setting-msgs';
-import { UserDetailsReq, UserDetailsResp, UserDetailsWriteReq, UserDetailsWriteResp } from 'src/app/generated-protos/user-msgs';
-import { UserDetails, UserInfo } from 'src/app/generated-protos/user';
-import { EnvConfigurationInitService } from 'src/app/services/env-configuration-init.service';
-import { HttpClient } from '@angular/common/http';
-import { makeHeaders } from 'src/app/utils/api-helpers';
-import { UserDismissHintReq, UserHintsReq, UserHintsResp, UserHintsToggleReq, UserHintsToggleResp } from 'src/app/generated-protos/user-hints-msgs';
-import { UserHints } from 'src/app/generated-protos/user-hints';
-import { NotificationConfig, NotificationMethod, NotificationSetting, NotificationSubscriptions, NotificationTopic } from '../models/notification.model';
-import { AuthService } from '@auth0/auth0-angular';
-import { FeatureRequest, PermissionsModel } from '../models/permissions.model';
+import {
+  UserNotificationSettingsReq,
+  UserNotificationSettingsResp,
+  UserNotificationSettingsWriteReq,
+  UserNotificationSettingsWriteResp,
+} from "src/app/generated-protos/user-notification-setting-msgs";
+import { UserDetailsReq, UserDetailsResp, UserDetailsWriteReq, UserDetailsWriteResp } from "src/app/generated-protos/user-msgs";
+import { UserDetails, UserInfo } from "src/app/generated-protos/user";
+import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
+import { HttpClient } from "@angular/common/http";
+import { makeHeaders } from "src/app/utils/api-helpers";
+import {
+  UserDismissHintReq,
+  UserHintsReq,
+  UserHintsResp,
+  UserHintsToggleReq,
+  UserHintsToggleResp,
+} from "src/app/generated-protos/user-hints-msgs";
+import { UserHints } from "src/app/generated-protos/user-hints";
+import {
+  NotificationConfig,
+  NotificationMethod,
+  NotificationSetting,
+  NotificationSubscriptions,
+  NotificationTopic,
+} from "../models/notification.model";
+import { AuthService } from "@auth0/auth0-angular";
+import { FeatureRequest, PermissionsModel } from "../models/permissions.model";
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class UserOptionsService {
   private _currentDataCollectionVersion: string = "";
@@ -30,7 +47,7 @@ export class UserOptionsService {
       iconURL: "",
     },
     dataCollectionVersion: "",
-    permissions: []
+    permissions: [],
   };
   private _userOptionsChanged$ = new ReplaySubject<void>(1);
 
@@ -45,7 +62,7 @@ export class UserOptionsService {
     private _dataService: APIDataService,
     private _snackBar: SnackbarService,
     private _authService: AuthService,
-    private http: HttpClient,
+    private http: HttpClient
   ) {
     this.fetchCurrentDataCollectionVersion();
     this.fetchNotifications();
@@ -81,7 +98,10 @@ export class UserOptionsService {
   }
 
   get outdatedDataCollectionAgreementAccepted(): boolean {
-    return this._userDetails.dataCollectionVersion !== this._currentDataCollectionVersion && !this._userDetails.dataCollectionVersion.endsWith("-false");
+    return (
+      this._userDetails.dataCollectionVersion !== this._currentDataCollectionVersion &&
+      !this._userDetails.dataCollectionVersion.endsWith("-false")
+    );
   }
 
   get currentDataCollectionVersion(): string {
@@ -89,8 +109,9 @@ export class UserOptionsService {
   }
 
   fetchCurrentDataCollectionVersion(): void {
-    this.http.get<{ version: string; }>(EnvConfigurationInitService.appConfig.dataCollectionAgreementVersionUrl, makeHeaders()).subscribe(
-      (version: { version: string; }) => {
+    this.http
+      .get<{ version: string }>(EnvConfigurationInitService.appConfig.dataCollectionAgreementVersionUrl, makeHeaders())
+      .subscribe((version: { version: string }) => {
         this._currentDataCollectionVersion = version.version;
       });
   }
@@ -146,26 +167,21 @@ export class UserOptionsService {
 
         // If we don't have an icon for the user in mongo, get one from auth0
         if (!this._userDetails.info?.iconURL) {
-          this._authService.user$.subscribe((user) => {
+          this._authService.user$.subscribe(user => {
             this._userDetails.info!.iconURL = user?.picture || "";
           });
         }
         this._userOptionsChanged$.next();
       },
-      error: (err) => {
+      error: err => {
         console.error("Error sendUserDetailsRequest Notifications", err);
         this._snackBar.openError("Error fetching user details");
-      }
+      },
     });
   }
 
   updateUserInfo(userInfo: UserInfo): void {
-    this.updateUserDetails(
-      userInfo.name,
-      userInfo.email,
-      userInfo.iconURL,
-      this._userDetails.dataCollectionVersion
-    );
+    this.updateUserDetails(userInfo.name, userInfo.email, userInfo.iconURL, this._userDetails.dataCollectionVersion);
   }
 
   acceptDataCollectionAgreement(accept: boolean): void {
@@ -179,12 +195,7 @@ export class UserOptionsService {
   }
 
   private updateDataCollectionVersion(dataCollectionVersion: string): void {
-    this.updateUserDetails(
-      this._userDetails.info!.name,
-      this._userDetails.info!.email,
-      this._userDetails.info!.iconURL,
-      dataCollectionVersion
-    );
+    this.updateUserDetails(this._userDetails.info!.name, this._userDetails.info!.email, this._userDetails.info!.iconURL, dataCollectionVersion);
   }
 
   updateUserDetails(name: string, email: string, iconURL: string, dataCollectionVersion: string): void {
@@ -194,7 +205,7 @@ export class UserOptionsService {
     userDetailsWriteReq.iconURL = iconURL;
     userDetailsWriteReq.dataCollectionVersion = dataCollectionVersion;
 
-    console.log("SENDING WRITE REQUEST", userDetailsWriteReq)
+    console.log("SENDING WRITE REQUEST", userDetailsWriteReq);
 
     this._dataService.sendUserDetailsWriteRequest(userDetailsWriteReq).subscribe({
       next: (resp: UserDetailsWriteResp) => {
@@ -207,10 +218,10 @@ export class UserOptionsService {
 
         this._userOptionsChanged$.next();
       },
-      error: (err) => {
+      error: err => {
         this._snackBar.openError("Error updating user details");
         console.error("Error sendUserDetailsWriteRequest Notifications", err);
-      }
+      },
     });
   }
 
@@ -232,18 +243,18 @@ export class UserOptionsService {
         this._notificationSubscriptions = new NotificationSubscriptions(topics);
         this._userOptionsChanged$.next();
       },
-      error: (err) => {
+      error: err => {
         this._snackBar.openError("Error fetching notifications");
-        console.error("Error fetching notifications", err)
-      }
+        console.error("Error fetching notifications", err);
+      },
     });
   }
 
   updateNotifications(notificationSettings: NotificationSetting[]): void {
     let notificationSettingsUpdateRequest: UserNotificationSettingsWriteReq = {
       notifications: {
-        topicSettings: {}
-      }
+        topicSettings: {},
+      },
     };
 
     notificationSettings.forEach((notificationSetting: NotificationSetting) => {
@@ -258,10 +269,10 @@ export class UserOptionsService {
       next: (resp: UserNotificationSettingsWriteResp) => {
         this._snackBar.openSuccess("User notification settings updated");
       },
-      error: (err) => {
+      error: err => {
         this._snackBar.openError(`Error writing user notification settings`);
         console.error("ERROR Writing User Notification Settings", err);
-      }
+      },
     });
   }
 }

@@ -1,16 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { QuantificationPageComponent } from './quantification-page.component';
+import { QuantificationPageComponent } from "./quantification-page.component";
 
-describe('QuantificationPageComponent', () => {
+describe("QuantificationPageComponent", () => {
   let component: QuantificationPageComponent;
   let fixture: ComponentFixture<QuantificationPageComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ QuantificationPageComponent ]
-    })
-    .compileComponents();
+      declarations: [QuantificationPageComponent],
+    }).compileComponents();
   });
 
   beforeEach(() => {
@@ -19,7 +18,7 @@ describe('QuantificationPageComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

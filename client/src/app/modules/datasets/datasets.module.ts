@@ -1,6 +1,6 @@
-import { NgModule } from '@angular/core';
+import { NgModule } from "@angular/core";
 import { Routes, RouterModule } from "@angular/router";
-import { CommonModule } from '@angular/common';
+import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MaterialModule } from "../material.module";
 
@@ -12,48 +12,35 @@ import { LogViewerComponent } from "./components/atoms/log-viewer/log-viewer.com
 import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 
 const APP_ROUTES: Routes = [
-    {
-        path: "",
-        component: DatasetTilesPageComponent
-    },
-    {
-        path: "analysis",
-        loadChildren: () => import("../analysis/analysis.module").then((m) => m.AnalysisModule),
-    },
-    {
-        path: "code-editor",
-        loadChildren: () => import("../code-editor/code-editor.module").then((m) => m.CodeEditorModule),
-    },
-    {
-        path: "maps",
-        loadChildren: () => import("../map-browser/map-browser.module").then((m) => m.MapBrowserModule),
-    },
-    {
-        path: "quant-logs",
-        loadChildren: () => import("../quantifications/quantifications.module").then((m) => m.QuantificationsModule),
-    },
-    // { path: "dataset-edit/:dataset_id_for_edit", component: DatasetCustomisationComponent },
-    {
-        path: "edit",
-        loadChildren: () => import("../dataset-customisation/dataset-customisation.module").then((m) => m.DatasetCustomisationModule),
-    }
+  {
+    path: "",
+    component: DatasetTilesPageComponent,
+  },
+  {
+    path: "analysis",
+    loadChildren: () => import("../analysis/analysis.module").then(m => m.AnalysisModule),
+  },
+  {
+    path: "code-editor",
+    loadChildren: () => import("../code-editor/code-editor.module").then(m => m.CodeEditorModule),
+  },
+  {
+    path: "maps",
+    loadChildren: () => import("../map-browser/map-browser.module").then(m => m.MapBrowserModule),
+  },
+  {
+    path: "quant-logs",
+    loadChildren: () => import("../quantifications/quantifications.module").then(m => m.QuantificationsModule),
+  },
+  // { path: "dataset-edit/:dataset_id_for_edit", component: DatasetCustomisationComponent },
+  {
+    path: "edit",
+    loadChildren: () => import("../dataset-customisation/dataset-customisation.module").then(m => m.DatasetCustomisationModule),
+  },
 ];
 
 @NgModule({
-    declarations: [
-        DatasetTilesPageComponent,
-        DataSetSummaryComponent,
-        AddDatasetDialogComponent,
-        FilterDialogComponent,
-        LogViewerComponent
-    ],
-    imports: [
-        CommonModule,
-        FormsModule,
-        MaterialModule,
-        PIXLISECoreModule,
-        RouterModule.forChild(APP_ROUTES),
-    ]
+  declarations: [DatasetTilesPageComponent, DataSetSummaryComponent, AddDatasetDialogComponent, FilterDialogComponent, LogViewerComponent],
+  imports: [CommonModule, FormsModule, MaterialModule, PIXLISECoreModule, RouterModule.forChild(APP_ROUTES)],
 })
-export class DatasetsModule {
-}
+export class DatasetsModule {}

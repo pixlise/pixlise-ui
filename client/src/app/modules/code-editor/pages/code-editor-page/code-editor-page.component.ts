@@ -1,10 +1,8 @@
-import { Component } from '@angular/core';
+import { Component } from "@angular/core";
 
 @Component({
-  selector: 'app-code-editor-page',
-  templateUrl: './code-editor-page.component.html',
-  styleUrls: ['./code-editor-page.component.scss']
+  selector: "app-code-editor-page",
+  templateUrl: "./code-editor-page.component.html",
+  styleUrls: ["./code-editor-page.component.scss"],
 })
-export class CodeEditorPageComponent {
-
-}
+export class CodeEditorPageComponent {}

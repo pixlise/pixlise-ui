@@ -1,16 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { SectionImageTilesTextComponent } from './section-image-tiles-text.component';
+import { SectionImageTilesTextComponent } from "./section-image-tiles-text.component";
 
-describe('SectionImageTilesTextComponent', () => {
+describe("SectionImageTilesTextComponent", () => {
   let component: SectionImageTilesTextComponent;
   let fixture: ComponentFixture<SectionImageTilesTextComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ SectionImageTilesTextComponent ]
-    })
-    .compileComponents();
+      declarations: [SectionImageTilesTextComponent],
+    }).compileComponents();
   });
 
   beforeEach(() => {
@@ -19,7 +18,7 @@ describe('SectionImageTilesTextComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

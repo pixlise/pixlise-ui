@@ -30,29 +30,23 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { WidgetKeyDisplayComponent } from "./widget-key-display.component";
 
+describe("WidgetKeyDisplayComponent", () => {
+  let component: WidgetKeyDisplayComponent;
+  let fixture: ComponentFixture<WidgetKeyDisplayComponent>;
 
-describe("WidgetKeyDisplayComponent", () => 
-{
-    let component: WidgetKeyDisplayComponent;
-    let fixture: ComponentFixture<WidgetKeyDisplayComponent>;
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [WidgetKeyDisplayComponent],
+    }).compileComponents();
+  });
 
-    beforeEach(async () => 
-    {
-        await TestBed.configureTestingModule({
-            declarations: [ WidgetKeyDisplayComponent ]
-        })
-            .compileComponents();
-    });
+  beforeEach(() => {
+    fixture = TestBed.createComponent(WidgetKeyDisplayComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
 
-    beforeEach(() => 
-    {
-        fixture = TestBed.createComponent(WidgetKeyDisplayComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
-
-    it("should create", () => 
-    {
-        expect(component).toBeTruthy();
-    });
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
 });

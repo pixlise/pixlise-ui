@@ -31,8 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div fxLayout="column" fxLayoutAlign="space-around center" fxFill>
   <div *ngIf="errorString" fxLayout="column" fxLayoutAlign="space-between center" class="page-card">
-    <app-widget-display-message image="assets/PIXLISE.svg" [message]="errorString" [large]="true" fxFlex="100%">
-    </app-widget-display-message>
+    <app-widget-display-message image="assets/PIXLISE.svg" [message]="errorString" [large]="true" fxFlex="100%"> </app-widget-display-message>
     <push-button class="button-gap" (onClick)="onHome()">Back to About page</push-button>
   </div>
   <mat-progress-spinner *ngIf="!errorString" diameter="64" color="accent"></mat-progress-spinner>

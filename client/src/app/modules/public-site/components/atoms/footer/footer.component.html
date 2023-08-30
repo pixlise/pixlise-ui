@@ -30,26 +30,28 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="footer">
-    <join-the-community></join-the-community>
-    <branding-logos *ngIf="showLogos"></branding-logos>
-    <team-list *ngIf="showTeam"></team-list>
-    <div class="flex-row links">
-        <div class="logo-group">
-            <div><a href="/"><img src="assets/images/pixlise-white-logo.svg"></a></div>
-            <div class="tagline">Experience the future of spectroscopy visualization and analysis.</div>
-            <div class="credits">Image Credits:</div>
-            <div class="tagline">NASA/JPL-Caltech/University of Arizona</div>
-        </div>
-        <div class="flex-row link-groups">
-            <div class="caption clickable" (click)="onLogin()">Log In</div>
-            <div *ngFor="let navGroup of navigation.categories" class="flex-column">
-                <div class="caption">{{navGroup}}</div>
-                <a *ngFor="let item of navigation.getItems(navGroup)" [href]="item.link">{{item.label}}</a>
-            </div>
-            <div class="flex-column">
-                <div class="caption">Versions</div>
-                <version-display></version-display>
-            </div>
-        </div>
+  <join-the-community></join-the-community>
+  <branding-logos *ngIf="showLogos"></branding-logos>
+  <team-list *ngIf="showTeam"></team-list>
+  <div class="flex-row links">
+    <div class="logo-group">
+      <div>
+        <a href="/"><img src="assets/images/pixlise-white-logo.svg" /></a>
+      </div>
+      <div class="tagline">Experience the future of spectroscopy visualization and analysis.</div>
+      <div class="credits">Image Credits:</div>
+      <div class="tagline">NASA/JPL-Caltech/University of Arizona</div>
     </div>
+    <div class="flex-row link-groups">
+      <div class="caption clickable" (click)="onLogin()">Log In</div>
+      <div *ngFor="let navGroup of navigation.categories" class="flex-column">
+        <div class="caption">{{ navGroup }}</div>
+        <a *ngFor="let item of navigation.getItems(navGroup)" [href]="item.link">{{ item.label }}</a>
+      </div>
+      <div class="flex-column">
+        <div class="caption">Versions</div>
+        <version-display></version-display>
+      </div>
+    </div>
+  </div>
 </div>

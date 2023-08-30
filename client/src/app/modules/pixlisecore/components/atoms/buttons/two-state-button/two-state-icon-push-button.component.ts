@@ -31,30 +31,29 @@
 import { Component, Input } from "@angular/core";
 import { TwoStateButtonComponent } from "./two-state-button.component";
 
-
 @Component({
-    selector: "two-state-icon-push-button",
-    templateUrl: "./two-state-icon-push-button.component.html",
-    styleUrls: ["./two-state-button.component.scss", "./two-state-icon-push-button.component.scss"]
+  selector: "two-state-icon-push-button",
+  templateUrl: "./two-state-icon-push-button.component.html",
+  styleUrls: ["./two-state-button.component.scss", "./two-state-icon-push-button.component.scss"],
 })
 export class TwoStateIconPushButton extends TwoStateButtonComponent {
-    @Input() activeIcon: string = "";
-    @Input() inactiveIcon: string = "";
-    @Input() disabledIcon: string = "";
+  @Input() activeIcon: string = "";
+  @Input() inactiveIcon: string = "";
+  @Input() disabledIcon: string = "";
 
-    constructor() {
-        super();
-        this.leftLabel = "";
-        this.rightLabel = "";
-    }
+  constructor() {
+    super();
+    this.leftLabel = "";
+    this.rightLabel = "";
+  }
 
-    get icon(): string {
-        if (this.disabled) {
-            return this.disabledIcon;
-        }
-        if (this.active) {
-            return this.activeIcon;
-        }
-        return this.inactiveIcon;
+  get icon(): string {
+    if (this.disabled) {
+      return this.disabledIcon;
     }
+    if (this.active) {
+      return this.activeIcon;
+    }
+    return this.inactiveIcon;
+  }
 }

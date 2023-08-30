@@ -30,46 +30,55 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <ng-template #newROIMenu>
-    <div class="new-roi">
-        <header>
-            <h1 class="title">New ROI</h1>
-            <!-- <tag-picker type="roi" placeholderText="Search ROI Tags ..." [selectedTagIDs]="selectedTagIDs"
+  <div class="new-roi">
+    <header>
+      <h1 class="title">New ROI</h1>
+      <!-- <tag-picker type="roi" placeholderText="Search ROI Tags ..." [selectedTagIDs]="selectedTagIDs"
                 [showCurrentTagsSection]="true" [editable]="!isSharedByOtherUser"
                 (onTagSelectionChanged)="onTagSelectionChanged($event)">
             </tag-picker> -->
-        </header>
+    </header>
 
-        <input type="text" class="name" [(ngModel)]="newROIName" placeholder="ROI Name" />
-        <textarea class="description" [(ngModel)]="newROIDescription" placeholder="ROI Description" rows="4"></textarea>
+    <input type="text" class="name" [(ngModel)]="newROIName" placeholder="ROI Name" />
+    <textarea class="description" [(ngModel)]="newROIDescription" placeholder="ROI Description" rows="4"></textarea>
 
-        <div class="buttons">
-            <push-button buttonStyle="outline" (onClick)="onCancelCreateROI()"
-                title="Cancel creating this ROI">Cancel</push-button>
-            <push-button buttonStyle="yellow" (onClick)="onSaveNewROI()" title="Save new ROI">Save</push-button>
-        </div>
+    <div class="buttons">
+      <push-button buttonStyle="outline" (onClick)="onCancelCreateROI()" title="Cancel creating this ROI">Cancel</push-button>
+      <push-button buttonStyle="yellow" (onClick)="onSaveNewROI()" title="Save new ROI">Save</push-button>
     </div>
+  </div>
 </ng-template>
 
-
 <section class="roi-container">
-    <div class="panel-row">
-        <push-button #tooltip="matTooltip" matTooltip="You don't have permission to create ROIs"
-            [matTooltipDisabled]="canCreateROIs" (onClick)="onNewROI()" buttonStyle="yellow"
-            [disabled]="selectionEmpty || !canCreateROIs" fxFlex="100%" [customDialog]="newROIMenu" #newROIButton>New
-            ROI from Selection</push-button>
-    </div>
-    <div *ngIf="showSearch" fxLayout="row" class="gap-separated-horizontal-elements filters-row">
-        <!-- <filter-box placeholder="Filter Name..." (onFilterChanged)="onFilterText($event)">
+  <div class="panel-row">
+    <push-button
+      #tooltip="matTooltip"
+      matTooltip="You don't have permission to create ROIs"
+      [matTooltipDisabled]="canCreateROIs"
+      (onClick)="onNewROI()"
+      buttonStyle="yellow"
+      [disabled]="selectionEmpty || !canCreateROIs"
+      fxFlex="100%"
+      [customDialog]="newROIMenu"
+      #newROIButton
+      >New ROI from Selection</push-button
+    >
+  </div>
+  <div *ngIf="showSearch" fxLayout="row" class="gap-separated-horizontal-elements filters-row">
+    <!-- <filter-box placeholder="Filter Name..." (onFilterChanged)="onFilterText($event)">
         </filter-box>
         <tag-picker type="roi" [selectedTagIDs]="filteredTagIDs" [showCurrentTagsSection]="false"
             (onTagSelectionChanged)="onTagFilterChanged($event)">
         </tag-picker> -->
-        <mat-select #tooltip="matTooltip" [matTooltip]="authorsTooltip" multiple [(ngModel)]="filteredAuthors"
-            class="authors-filter" placeholder="Author ...">
-            <mat-option *ngFor="let author of authors;" [value]="author.user_id">{{author.name}}
-            </mat-option>
-        </mat-select>
-    </div>
-    <roi-item *ngFor="let item of roiSummaryList" [summary]="item">
-    </roi-item>
+    <mat-select
+      #tooltip="matTooltip"
+      [matTooltip]="authorsTooltip"
+      multiple
+      [(ngModel)]="filteredAuthors"
+      class="authors-filter"
+      placeholder="Author ...">
+      <mat-option *ngFor="let author of authors" [value]="author.user_id">{{ author.name }} </mat-option>
+    </mat-select>
+  </div>
+  <roi-item *ngFor="let item of roiSummaryList" [summary]="item"> </roi-item>
 </section>

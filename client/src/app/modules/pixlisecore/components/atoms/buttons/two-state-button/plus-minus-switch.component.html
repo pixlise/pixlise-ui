@@ -29,18 +29,23 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div fxLayout="row" fxLayoutAlign="start center" (click)="onClick($event)" class="btn-bg button-shadow button-hoverable clickable" [title]="toolTip">
-    <div class="btn-side" [ngClass]="{'btn-on': !active, 'btn-off': active}">
-        <!-- minus icon -->
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="6" y="11" width="12" height="2" rx="1" [ngClass]="{'on': !isPositive, 'off': isPositive}" />
-        </svg>
-    </div>
-    <div class="btn-side" [ngClass]="{'btn-on': active, 'btn-off': !active}">
-        <!-- plus icon -->
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="11" y="6" width="2" height="12" ry="1" [ngClass]="{'on': isPositive, 'off': !isPositive}" />
-            <rect x="6" y="11" width="12" height="2" rx="1" [ngClass]="{'on': isPositive, 'off': !isPositive}" />
-        </svg>
-    </div>
+<div
+  fxLayout="row"
+  fxLayoutAlign="start center"
+  (click)="onClick($event)"
+  class="btn-bg button-shadow button-hoverable clickable"
+  [title]="toolTip">
+  <div class="btn-side" [ngClass]="{ 'btn-on': !active, 'btn-off': active }">
+    <!-- minus icon -->
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="6" y="11" width="12" height="2" rx="1" [ngClass]="{ on: !isPositive, off: isPositive }" />
+    </svg>
+  </div>
+  <div class="btn-side" [ngClass]="{ 'btn-on': active, 'btn-off': !active }">
+    <!-- plus icon -->
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="11" y="6" width="2" height="12" ry="1" [ngClass]="{ on: isPositive, off: !isPositive }" />
+      <rect x="6" y="11" width="12" height="2" rx="1" [ngClass]="{ on: isPositive, off: !isPositive }" />
+    </svg>
+  </div>
 </div>

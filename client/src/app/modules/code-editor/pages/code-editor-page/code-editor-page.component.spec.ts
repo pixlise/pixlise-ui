@@ -1,21 +1,21 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { CodeEditorPageComponent } from './code-editor-page.component';
+import { CodeEditorPageComponent } from "./code-editor-page.component";
 
-describe('CodeEditorPageComponent', () => {
+describe("CodeEditorPageComponent", () => {
   let component: CodeEditorPageComponent;
   let fixture: ComponentFixture<CodeEditorPageComponent>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [CodeEditorPageComponent]
+      declarations: [CodeEditorPageComponent],
     });
     fixture = TestBed.createComponent(CodeEditorPageComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

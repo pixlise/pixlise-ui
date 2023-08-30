@@ -36,72 +36,71 @@ import { UsersService } from "../../services/users.service";
 import { Auth0UserDetails } from "src/app/generated-protos/user";
 
 export interface AddUserDialogData {
-    groupId: string;
+  groupId: string;
 }
 
 export type Role = "viewer" | "editor" | "admin";
 
 @Component({
-    selector: "app-add-user-dialog",
-    templateUrl: "./add-user-dialog.component.html",
-    styleUrls: ["./add-user-dialog.component.scss"]
+  selector: "app-add-user-dialog",
+  templateUrl: "./add-user-dialog.component.html",
+  styleUrls: ["./add-user-dialog.component.scss"],
 })
 export class AddUserDialogComponent implements OnInit {
-    selectedUserControl = new FormControl<string | Auth0UserDetails>('');
-    filteredOptions: Observable<Auth0UserDetails[]>;
-    options: Auth0UserDetails[] = [];
+  selectedUserControl = new FormControl<string | Auth0UserDetails>("");
+  filteredOptions: Observable<Auth0UserDetails[]>;
+  options: Auth0UserDetails[] = [];
 
-    roles = ["viewer", "editor", "admin"];
-    selectedRole: Role = "viewer";
+  roles = ["viewer", "editor", "admin"];
+  selectedRole: Role = "viewer";
 
-    constructor(
-        @Inject(MAT_DIALOG_DATA) public data: AddUserDialogData,
-        public dialogRef: MatDialogRef<AddUserDialogComponent>,
-        private _usersService: UsersService
-    ) {
-        this.filteredOptions = this.selectedUserControl.valueChanges.pipe(
-            startWith(''),
-            map(value => {
-                const name = typeof value === 'string' ? value : value?.auth0User?.name;
-                return name ? this._filter(name as string) : this.options.slice();
-            }),
-        );
+  constructor(
+    @Inject(MAT_DIALOG_DATA) public data: AddUserDialogData,
+    public dialogRef: MatDialogRef<AddUserDialogComponent>,
+    private _usersService: UsersService
+  ) {
+    this.filteredOptions = this.selectedUserControl.valueChanges.pipe(
+      startWith(""),
+      map(value => {
+        const name = typeof value === "string" ? value : value?.auth0User?.name;
+        return name ? this._filter(name as string) : this.options.slice();
+      })
+    );
 
-        this._usersService.usersChanged$.subscribe(() => {
-            this.options = this._usersService.users;
-        });
+    this._usersService.usersChanged$.subscribe(() => {
+      this.options = this._usersService.users;
+    });
+  }
+
+  displayFn(user: Auth0UserDetails): string {
+    return user && user.auth0User?.name ? user.auth0User.name : "";
+  }
+
+  private _filter(name: string): Auth0UserDetails[] {
+    const filterValue = name.toLowerCase();
+
+    return this.options.filter(option => option.auth0User?.name.toLowerCase().includes(filterValue));
+  }
+
+  ngOnInit(): void {}
+
+  onDeny(): void {
+    this.dialogRef.close(false);
+  }
+
+  onAccept(): void {
+    let userId = this.selectedUserControl.value;
+    if (typeof userId !== "string" && userId?.auth0User?.id) {
+      userId = userId.auth0User.id;
     }
 
-    displayFn(user: Auth0UserDetails): string {
-        return user && user.auth0User?.name ? user.auth0User.name : '';
-    }
+    this.dialogRef.close({
+      userId,
+      role: this.selectedRole,
+    });
+  }
 
-    private _filter(name: string): Auth0UserDetails[] {
-        const filterValue = name.toLowerCase();
-
-        return this.options.filter(option => option.auth0User?.name.toLowerCase().includes(filterValue));
-    }
-
-    ngOnInit(): void {
-    }
-
-    onDeny(): void {
-        this.dialogRef.close(false);
-    }
-
-    onAccept(): void {
-        let userId = this.selectedUserControl.value;
-        if (typeof userId !== 'string' && userId?.auth0User?.id) {
-            userId = userId.auth0User.id;
-        }
-
-        this.dialogRef.close({
-            userId,
-            role: this.selectedRole
-        });
-    }
-
-    get appDomain(): string {
-        return EnvConfigurationInitService.appConfig.appDomain;
-    }
+  get appDomain(): string {
+    return EnvConfigurationInitService.appConfig.appDomain;
+  }
 }

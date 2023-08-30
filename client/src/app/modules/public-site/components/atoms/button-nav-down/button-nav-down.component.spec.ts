@@ -1,16 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { ButtonNavDownComponent } from './button-nav-down.component';
+import { ButtonNavDownComponent } from "./button-nav-down.component";
 
-describe('ButtonNavDownComponent', () => {
+describe("ButtonNavDownComponent", () => {
   let component: ButtonNavDownComponent;
   let fixture: ComponentFixture<ButtonNavDownComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ ButtonNavDownComponent ]
-    })
-    .compileComponents();
+      declarations: [ButtonNavDownComponent],
+    }).compileComponents();
   });
 
   beforeEach(() => {
@@ -19,7 +18,7 @@ describe('ButtonNavDownComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

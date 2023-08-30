@@ -30,8 +30,5 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="flex-column nav-menu">
-    <a
-        *ngFor="let item of items"
-        class="clickable nav-item"
-        [href]="item.link">{{item.label}}</a>
+  <a *ngFor="let item of items" class="clickable nav-item" [href]="item.link">{{ item.label }}</a>
 </div>

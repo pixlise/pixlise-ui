@@ -1,21 +1,21 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { AnalysisSidepanelComponent } from './analysis-sidepanel.component';
+import { AnalysisSidepanelComponent } from "./analysis-sidepanel.component";
 
-describe('AnalysisSidepanelComponent', () => {
+describe("AnalysisSidepanelComponent", () => {
   let component: AnalysisSidepanelComponent;
   let fixture: ComponentFixture<AnalysisSidepanelComponent>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [AnalysisSidepanelComponent]
+      declarations: [AnalysisSidepanelComponent],
     });
     fixture = TestBed.createComponent(AnalysisSidepanelComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

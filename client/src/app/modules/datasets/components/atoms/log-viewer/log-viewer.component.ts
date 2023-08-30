@@ -36,81 +36,70 @@ import { LogLine } from "src/app/generated-protos/log";
 // TODO import { LayoutService } from "src/app/services/layout.service";
 import { httpErrorToString } from "src/app/utils/utils";
 
-
 const logAutoRetrieveLimit = 10; // 10 requests
 
 @Component({
-    selector: "log-viewer",
-    templateUrl: "./log-viewer.component.html",
-    styleUrls: ["./log-viewer.component.scss"]
+  selector: "log-viewer",
+  templateUrl: "./log-viewer.component.html",
+  styleUrls: ["./log-viewer.component.scss"],
 })
-export class LogViewerComponent implements OnInit
-{
-    @Input() title: string = "";
-    @Input() logID: string = "";
+export class LogViewerComponent implements OnInit {
+  @Input() title: string = "";
+  @Input() logID: string = "";
 
-    logData: LogLine[] = [];
+  logData: LogLine[] = [];
 
-    private _logAutoRetrieveCount: number = 0;
-    private _loading: boolean = false;
+  private _logAutoRetrieveCount: number = 0;
+  private _loading: boolean = false;
 
-    constructor(
-        private _dataService: APIDataService,
-        // TODO private _layoutService: LayoutService,
-        )
-    {
+  constructor(private _dataService: APIDataService) // TODO private _layoutService: LayoutService,
+  {}
+
+  ngOnInit(): void {
+    this.onRefreshLog();
+  }
+
+  onRefreshLog(): void {
+    if (!this.logID) {
+      return;
     }
 
-    ngOnInit(): void
-    {
-        this.onRefreshLog();
-    }
+    this._loading = true;
+    this._dataService.sendLogReadRequest(LogReadReq.create({ logStreamId: this.logID })).subscribe({
+      next: (resp: LogReadResp) => {
+        this._loading = false;
+        if (resp.entries.length > this.logData.length) {
+          this.logData = resp.entries;
 
-    onRefreshLog(): void
-    {
-        if(!this.logID)
-        {
-            return;
+          // Resize any canvases, as we have likely grown in size
+          // TODO this._layoutService.notifyWindowResize();
         }
 
-        this._loading = true;
-        this._dataService.sendLogReadRequest(LogReadReq.create({logStreamId: this.logID})).subscribe({
-            next: (resp: LogReadResp)=>
-            {
-                this._loading = false;
-                if(resp.entries.length > this.logData.length)
-                {
-                    this.logData = resp.entries;
+        this._logAutoRetrieveCount++;
 
-                    // Resize any canvases, as we have likely grown in size
-                    // TODO this._layoutService.notifyWindowResize();
-                }
+        if (this._logAutoRetrieveCount < logAutoRetrieveLimit) {
+          setTimeout(() => {
+            this.onRefreshLog();
+          }, 2000);
+        }
+      },
+      error: err => {
+        this._loading = false;
+        this.logData = [LogLine.create({ timeStampUnixMs: Date.now(), message: httpErrorToString(err, "Failed to retrieve log") })];
 
-                this._logAutoRetrieveCount++;
+        // Auto-retry anyway, we may have only got a 404 because log isn't yet created/available!
+        this._logAutoRetrieveCount++;
 
-                if(this._logAutoRetrieveCount < logAutoRetrieveLimit)
-                {
-                    setTimeout(()=>{this.onRefreshLog();}, 2000);
-                }
-            },
-            error: (err)=>
-            {
-                this._loading = false;
-                this.logData = [LogLine.create({timeStampUnixMs: Date.now(), message: httpErrorToString(err, "Failed to retrieve log")})];
+        if (this._logAutoRetrieveCount < logAutoRetrieveLimit) {
+          setTimeout(() => {
+            this.onRefreshLog();
+          }, 2000);
+        }
+      },
+    });
+  }
 
-                // Auto-retry anyway, we may have only got a 404 because log isn't yet created/available!
-                this._logAutoRetrieveCount++;
-
-                if(this._logAutoRetrieveCount < logAutoRetrieveLimit)
-                {
-                    setTimeout(()=>{this.onRefreshLog();}, 2000);
-                }
-            }
-        });
-    }
-
-    get loading(): boolean
-    {
-        return this._loading;
-    }
+  get loading(): boolean {
+    return this._loading;
+  }
 }

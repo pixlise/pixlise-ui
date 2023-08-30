@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="number-button" [ngClass]="styles" (click)="onClick()">
-    <div *ngIf="params.labelPrefix" class="label prefix">{{params.labelPrefix}}</div>
-    <div class="label" [ngClass]="{'sep': params.labelPrefix}">{{params.label}}</div>
-    <div *ngIf="params.showArrow" class="chevron" [ngClass]="{'sep': params.showArrowSeparator}">&raquo;</div>
+  <div *ngIf="params.labelPrefix" class="label prefix">{{ params.labelPrefix }}</div>
+  <div class="label" [ngClass]="{ sep: params.labelPrefix }">{{ params.label }}</div>
+  <div *ngIf="params.showArrow" class="chevron" [ngClass]="{ sep: params.showArrowSeparator }">&raquo;</div>
 </div>

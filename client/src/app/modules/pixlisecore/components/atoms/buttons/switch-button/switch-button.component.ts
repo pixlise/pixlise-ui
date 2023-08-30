@@ -29,36 +29,33 @@
 
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 
-
 @Component({
-    selector: "switch-button",
-    templateUrl: "./switch-button.component.html",
-    styleUrls: ["./switch-button.component.scss"]
+  selector: "switch-button",
+  templateUrl: "./switch-button.component.html",
+  styleUrls: ["./switch-button.component.scss"],
 })
 export class SwitchButtonComponent implements OnInit {
-    @Input() label: string = "";
-    @Input() endLabel: string = "";
-    @Input() active: boolean = false;
-    @Input() disabled: boolean = false;
+  @Input() label: string = "";
+  @Input() endLabel: string = "";
+  @Input() active: boolean = false;
+  @Input() disabled: boolean = false;
 
-    @Output() onToggle = new EventEmitter();
+  @Output() onToggle = new EventEmitter();
 
-    constructor() {
+  constructor() {}
+
+  ngOnInit() {}
+
+  getImg(): string {
+    if (this.active && !this.disabled) {
+      return "assets/button-icons/switch-on.svg";
     }
+    return "assets/button-icons/switch-off.svg";
+  }
 
-    ngOnInit() {
+  onClick(event: any): void {
+    if (!this.disabled) {
+      this.onToggle.emit(!this.active);
     }
-
-    getImg(): string {
-        if (this.active && !this.disabled) {
-            return "assets/button-icons/switch-on.svg";
-        }
-        return "assets/button-icons/switch-off.svg";
-    }
-
-    onClick(event: any): void {
-        if (!this.disabled) {
-            this.onToggle.emit(!this.active);
-        }
-    }
+  }
 }

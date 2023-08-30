@@ -57,52 +57,47 @@ import { NavMenuComponent } from "./components/atoms/nav-top-menu/nav-menu/nav-m
 import { VersionDisplayComponent } from "./components/atoms/version-display/version-display.component";
 import { TeamListComponent } from "./components/atoms/team-list/team-list.component";
 
-
-
 const APP_ROUTES: Routes = [
-    {
-        path: "public", component: PublicPageComponent,
-        children: [
-            { path: "", redirectTo: LandingRouteName, pathMatch: 'full' },
-            { path: LandingRouteName, component: LandingPageComponent },
-            { path: "workflow", component: WorkflowPageComponent },
-            { path: "investigation", component: InvestigationPageComponent },
-            { path: "quantification", component: QuantificationPageComponent },
-            { path: AboutUsRouteName, component: AboutUsPageComponent },
-            { path: "get-started", component: GetPIXLISEComponent }
-        ]
-    },
-    { path: "", redirectTo: "public/pixlise", pathMatch: "full" },
+  {
+    path: "public",
+    component: PublicPageComponent,
+    children: [
+      { path: "", redirectTo: LandingRouteName, pathMatch: "full" },
+      { path: LandingRouteName, component: LandingPageComponent },
+      { path: "workflow", component: WorkflowPageComponent },
+      { path: "investigation", component: InvestigationPageComponent },
+      { path: "quantification", component: QuantificationPageComponent },
+      { path: AboutUsRouteName, component: AboutUsPageComponent },
+      { path: "get-started", component: GetPIXLISEComponent },
+    ],
+  },
+  { path: "", redirectTo: "public/pixlise", pathMatch: "full" },
 ];
 
 @NgModule({
-    declarations: [
-        LandingPageComponent,
-        WorkflowPageComponent,
-        QuantificationPageComponent,
-        InvestigationPageComponent,
-        PublicPageComponent,
-        FooterComponent,
-        NumberButtonComponent,
-        BrandingComponent,
-        JoinTheCommunityComponent,
-        SectionImageListTextComponent,
-        ButtonNavDownComponent,
-        QuoteViewerComponent,
-        TextWithHighlightsComponent,
-        SectionImageTilesTextComponent,
-        NavTopMenuComponent,
-        NavSectionSwitchComponent,
-        AboutUsPageComponent,
-        GetPIXLISEComponent,
-        NavMenuComponent,
-        VersionDisplayComponent,
-        TeamListComponent
-    ],
-    imports: [
-        CommonModule,
-        PIXLISECoreModule,
-        RouterModule.forChild(APP_ROUTES)
-    ]
+  declarations: [
+    LandingPageComponent,
+    WorkflowPageComponent,
+    QuantificationPageComponent,
+    InvestigationPageComponent,
+    PublicPageComponent,
+    FooterComponent,
+    NumberButtonComponent,
+    BrandingComponent,
+    JoinTheCommunityComponent,
+    SectionImageListTextComponent,
+    ButtonNavDownComponent,
+    QuoteViewerComponent,
+    TextWithHighlightsComponent,
+    SectionImageTilesTextComponent,
+    NavTopMenuComponent,
+    NavSectionSwitchComponent,
+    AboutUsPageComponent,
+    GetPIXLISEComponent,
+    NavMenuComponent,
+    VersionDisplayComponent,
+    TeamListComponent,
+  ],
+  imports: [CommonModule, PIXLISECoreModule, RouterModule.forChild(APP_ROUTES)],
 })
-export class PublicSiteModule { }
+export class PublicSiteModule {}

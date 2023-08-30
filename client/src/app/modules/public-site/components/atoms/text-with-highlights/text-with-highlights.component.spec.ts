@@ -1,16 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { TextWithHighlightsComponent } from './text-with-highlights.component';
+import { TextWithHighlightsComponent } from "./text-with-highlights.component";
 
-describe('TextWithHighlightsComponent', () => {
+describe("TextWithHighlightsComponent", () => {
   let component: TextWithHighlightsComponent;
   let fixture: ComponentFixture<TextWithHighlightsComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ TextWithHighlightsComponent ]
-    })
-    .compileComponents();
+      declarations: [TextWithHighlightsComponent],
+    }).compileComponents();
   });
 
   beforeEach(() => {
@@ -19,7 +18,7 @@ describe('TextWithHighlightsComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

@@ -35,95 +35,84 @@ import { ScanUploadReq, ScanUploadResp } from "src/app/generated-protos/scan-msg
 
 import { httpErrorToString } from "src/app/utils/utils";
 
-
 @Component({
-    selector: "app-add-dataset-dialog",
-    templateUrl: "./add-dataset-dialog.component.html",
-    styleUrls: ["./add-dataset-dialog.component.scss"]
+  selector: "app-add-dataset-dialog",
+  templateUrl: "./add-dataset-dialog.component.html",
+  styleUrls: ["./add-dataset-dialog.component.scss"],
 })
-export class AddDatasetDialogComponent implements OnInit
-{
-    // switch modes for html
-    modeEntry = "entry";
-    modeCreate = "create";
-    modeComplete = "done";
+export class AddDatasetDialogComponent implements OnInit {
+  // switch modes for html
+  modeEntry = "entry";
+  modeCreate = "create";
+  modeComplete = "done";
 
-    nameHint: string = "";
-    droppedFiles: File[] = [];
-    logId: string = "";
-    mode: string = this.modeEntry;
-    modeTitle: string = "";
+  nameHint: string = "";
+  droppedFiles: File[] = [];
+  logId: string = "";
+  mode: string = this.modeEntry;
+  modeTitle: string = "";
 
-    constructor(
-        //@Inject(MAT_DIALOG_DATA) public params: AddDatasetParameters,
-        public dialogRef: MatDialogRef<boolean>,
-        private _dataService: APIDataService,
-        )
-    {
+  constructor(
+    //@Inject(MAT_DIALOG_DATA) public params: AddDatasetParameters,
+    public dialogRef: MatDialogRef<boolean>,
+    private _dataService: APIDataService
+  ) {}
+
+  ngOnInit(): void {}
+
+  onOK() {
+    if (this.droppedFiles.length != 1) {
+      alert("Please drop one image to upload");
+      return;
     }
 
-    ngOnInit(): void
-    {
+    if (this.nameHint.length <= 0) {
+      alert("Please enter a name");
+      return;
     }
 
-    onOK()
-    {
-        if(this.droppedFiles.length != 1)
-        {
-            alert("Please drop one image to upload");
-            return;
-        }
+    // Here we trigger the dataset creation and monitor logs
+    this.droppedFiles[0].arrayBuffer().then(
+      (fileBytes: ArrayBuffer) => {
+        this.mode = this.modeCreate;
+        this.modeTitle = "Creating dataset: " + this.nameHint + "...";
 
-        if(this.nameHint.length <= 0)
-        {
-            alert("Please enter a name");
-            return;
-        }
+        this._dataService
+          .sendScanUploadRequest(
+            ScanUploadReq.create({
+              id: this.nameHint,
+              format: "jpl-breadboard",
+              zippedData: new Uint8Array(fileBytes),
+            })
+          )
+          .subscribe({
+            next: (resp: ScanUploadResp) => {
+              this.modeTitle = "Dataset: " + this.nameHint + " created";
 
-        // Here we trigger the dataset creation and monitor logs
-        this.droppedFiles[0].arrayBuffer().then(
-            (fileBytes: ArrayBuffer)=>
-            {
-                this.mode = this.modeCreate;
-                this.modeTitle = "Creating dataset: "+this.nameHint+"...";
-
-                this._dataService.sendScanUploadRequest(ScanUploadReq.create({
-                    id: this.nameHint,
-                    format: "jpl-breadboard",
-                    zippedData: new Uint8Array(fileBytes)
-                })).subscribe({
-                    next: (resp: ScanUploadResp)=>
-                    {
-                        this.modeTitle = "Dataset: "+this.nameHint+" created";
-
-                        // This should trigger log viewing...
-                        //this.logId = resp.logId;
-                        this.mode = this.modeComplete;
-                    },
-                    error: (err)=>
-                    {
-                        this.modeTitle = httpErrorToString(err, "Failed to create dataset");
-                        this.mode = this.modeComplete;
-                    }
-                });
+              // This should trigger log viewing...
+              //this.logId = resp.logId;
+              this.mode = this.modeComplete;
             },
-            ()=>
-            {
-                alert("Error: Failed to read files to upload");
-            }
-        );
-    }
+            error: err => {
+              this.modeTitle = httpErrorToString(err, "Failed to create dataset");
+              this.mode = this.modeComplete;
+            },
+          });
+      },
+      () => {
+        alert("Error: Failed to read files to upload");
+      }
+    );
+  }
 
-    get acceptTypes(): string
-    {
-        return "application/zip,application/x-zip-compressed";
-    }
+  get acceptTypes(): string {
+    return "application/zip,application/x-zip-compressed";
+  }
 
-    onCancel()
-    {
-        this.dialogRef.close(null);
-    }
-/* TODO (ngx-dropzone was deprecated)
+  onCancel() {
+    this.dialogRef.close(null);
+  }
+  /* TODO (ngx-dropzone was deprecated)
     onDropFile(event)
     {
         if(this.droppedFiles.length >= 1)

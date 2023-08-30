@@ -33,87 +33,81 @@ import { ConfirmDialogComponent } from "./confirm-dialog/confirm-dialog.componen
 
 // This is used to alias map our actions to mat icons and allow for automatic type inference
 export const matActionIcons = {
-    "close": "close",
-    "check": "check",
-    "add": "add",
-    "edit": "edit"
+  close: "close",
+  check: "check",
+  add: "add",
+  edit: "edit",
 };
 
 const customActionIcons = {
-    "edit-clipboard": "assets/button-icons/edit.svg",
-    "delete": "assets/button-icons/delete.svg"
+  "edit-clipboard": "assets/button-icons/edit.svg",
+  delete: "assets/button-icons/delete.svg",
 };
 
 export type ACTION_TYPE = keyof typeof customActionIcons | keyof typeof matActionIcons;
 
 @Component({
-    selector: "action-button",
-    templateUrl: "./action-button.component.html",
-    styleUrls: ["./action-button.component.scss"]
+  selector: "action-button",
+  templateUrl: "./action-button.component.html",
+  styleUrls: ["./action-button.component.scss"],
 })
 export class ActionButtonComponent {
-    @Input() disabled: boolean = false;
-    @Input() tooltipTitle: string = "";
-    @Input() color: string = "";
-    @Input() buttonBackground: boolean = false;
-    @Input() confirmText: string = "";
-    @Input() customDialog: TemplateRef<any> | null = null;
+  @Input() disabled: boolean = false;
+  @Input() tooltipTitle: string = "";
+  @Input() color: string = "";
+  @Input() buttonBackground: boolean = false;
+  @Input() confirmText: string = "";
+  @Input() customDialog: TemplateRef<any> | null = null;
 
-    @Output() onClick = new EventEmitter();
+  @Output() onClick = new EventEmitter();
 
-    private _actionSource: keyof typeof matActionIcons | string = "close";
-    isMatIcon = false;
+  private _actionSource: keyof typeof matActionIcons | string = "close";
+  isMatIcon = false;
 
-    constructor(
-        private dialog: MatDialog,
-        private _dialogRef: MatDialogRef<any>,
-    ) {
+  constructor(
+    private dialog: MatDialog,
+    private _dialogRef: MatDialogRef<any>
+  ) {}
+
+  @Input() set action(actionName: ACTION_TYPE) {
+    this.isMatIcon = Object.keys(matActionIcons).includes(actionName);
+    if (this.isMatIcon) {
+      this._actionSource = actionName;
+    } else if (Object.keys(customActionIcons).includes(actionName)) {
+      this._actionSource = customActionIcons[actionName as keyof typeof customActionIcons];
     }
+  }
 
-    @Input() set action(actionName: ACTION_TYPE) {
-        this.isMatIcon = Object.keys(matActionIcons).includes(actionName);
-        if (this.isMatIcon) {
-            this._actionSource = actionName;
-        } else if (Object.keys(customActionIcons).includes(actionName)) {
-            this._actionSource = customActionIcons[actionName as keyof typeof customActionIcons];
-        }
+  get action(): keyof typeof matActionIcons | string {
+    return this._actionSource;
+  }
+
+  onClickInternal() {
+    if (!this.disabled) {
+      if (this.confirmText) {
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.data = { confirmText: this.confirmText };
+        this._dialogRef = this.dialog.open(ConfirmDialogComponent, dialogConfig);
+
+        this._dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+          if (confirmed) {
+            this.onClick.emit();
+          }
+        });
+      } else if (this.customDialog) {
+        const dialogConfig = new MatDialogConfig();
+        this._dialogRef = this.dialog.open(this.customDialog, dialogConfig);
+
+        this._dialogRef.afterClosed().subscribe(() => {
+          this.onClick.emit();
+        });
+      } else {
+        this.onClick.emit();
+      }
     }
+  }
 
-    get action(): keyof typeof matActionIcons | string {
-        return this._actionSource;
-    }
-
-    onClickInternal() {
-        if (!this.disabled) {
-            if (this.confirmText) {
-                const dialogConfig = new MatDialogConfig();
-                dialogConfig.data = { confirmText: this.confirmText };
-                this._dialogRef = this.dialog.open(ConfirmDialogComponent, dialogConfig);
-
-                this._dialogRef.afterClosed().subscribe(
-                    (confirmed: boolean) => {
-                        if (confirmed) {
-                            this.onClick.emit();
-                        }
-                    }
-                );
-            } else if (this.customDialog) {
-                const dialogConfig = new MatDialogConfig();
-                this._dialogRef = this.dialog.open(this.customDialog, dialogConfig);
-
-                this._dialogRef.afterClosed().subscribe(
-                    () => {
-                        this.onClick.emit();
-                    }
-                );
-            }
-            else {
-                this.onClick.emit();
-            }
-        }
-    }
-
-    closeDialog() {
-        this._dialogRef.close();
-    }
+  closeDialog() {
+    this._dialogRef.close();
+  }
 }

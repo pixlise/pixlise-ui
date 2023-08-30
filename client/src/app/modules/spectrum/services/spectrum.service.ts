@@ -1,18 +1,18 @@
-import { Injectable } from '@angular/core';
+import { Injectable } from "@angular/core";
 
-import { APIDataService, SnackbarService } from '../../pixlisecore/pixlisecore.module';
-import { ReplaySubject, Subscription } from 'rxjs';
+import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
+import { ReplaySubject, Subscription } from "rxjs";
 
-import { SpectrumReq } from 'src/app/generated-protos/spectrum-msgs';
-import { ScanEntryRange } from 'src/app/generated-protos/scan';
-import { ScanBeamLocationsReq } from 'src/app/generated-protos/scan-beam-location-msgs';
-import { SpectrumChartModel } from '../widgets/spectrum-chart-widget/model';
-import { DiffractionService } from './diffraction.service';
-import { QuantGetReq } from 'src/app/generated-protos/quantification-retrieval-msgs';
-import { ViewStateService } from '../../viewstate/services/viewstate.service';
+import { SpectrumReq } from "src/app/generated-protos/spectrum-msgs";
+import { ScanEntryRange } from "src/app/generated-protos/scan";
+import { ScanBeamLocationsReq } from "src/app/generated-protos/scan-beam-location-msgs";
+import { SpectrumChartModel } from "../widgets/spectrum-chart-widget/model";
+import { DiffractionService } from "./diffraction.service";
+import { QuantGetReq } from "src/app/generated-protos/quantification-retrieval-msgs";
+import { ViewStateService } from "../../viewstate/services/viewstate.service";
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class SpectrumService {
   private _subs = new Subscription();
@@ -25,7 +25,7 @@ export class SpectrumService {
     private _dataService: APIDataService,
     private _snackbarService: SnackbarService,
     private _diffractionService: DiffractionService,
-    private _viewStateService: ViewStateService,
+    private _viewStateService: ViewStateService
   ) {
     this.resubscribeQuantLayers();
 
@@ -38,21 +38,25 @@ export class SpectrumService {
   }
 
   fetchScanBeamLocations(scanId: string = "") {
-    this._dataService.sendScanBeamLocationsRequest(ScanBeamLocationsReq.create({})).subscribe((response) => {
-      console.log("RESP", response)
+    this._dataService.sendScanBeamLocationsRequest(ScanBeamLocationsReq.create({})).subscribe(response => {
+      console.log("RESP", response);
     });
   }
 
   fetchSpectrum(scanId: string = "", entries: ScanEntryRange | undefined = undefined, bulkSum: boolean = false, maxValue: boolean = false) {
-    console.log("FETCHING SPECTRUM", scanId, entries, bulkSum, maxValue)
-    this._dataService.sendSpectrumRequest(SpectrumReq.create({
-      scanId,
-      entries,
-      bulkSum,
-      maxValue,
-    })).subscribe((response) => {
-      console.log("RESP", response)
-    });
+    console.log("FETCHING SPECTRUM", scanId, entries, bulkSum, maxValue);
+    this._dataService
+      .sendSpectrumRequest(
+        SpectrumReq.create({
+          scanId,
+          entries,
+          bulkSum,
+          maxValue,
+        })
+      )
+      .subscribe(response => {
+        console.log("RESP", response);
+      });
   }
 
   private resubscribeQuantLayers() {
@@ -85,8 +89,7 @@ export class SpectrumService {
   //   this._mdl$.next();
   // }
 
-  private fetchQuantLoaded(): void {
-  }
+  private fetchQuantLoaded(): void {}
 
   private updateCalibrationFromQuant(): void {
     // let quant = this._widgetDataService.quantificationLoaded;

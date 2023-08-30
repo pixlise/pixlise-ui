@@ -30,29 +30,23 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { CurrentQuantificationComponent } from "./current-quantification.component";
 
+describe("CurrentQuantificationComponent", () => {
+  let component: CurrentQuantificationComponent;
+  let fixture: ComponentFixture<CurrentQuantificationComponent>;
 
-describe("CurrentQuantificationComponent", () => 
-{
-    let component: CurrentQuantificationComponent;
-    let fixture: ComponentFixture<CurrentQuantificationComponent>;
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [CurrentQuantificationComponent],
+    }).compileComponents();
+  });
 
-    beforeEach(async () => 
-    {
-        await TestBed.configureTestingModule({
-            declarations: [ CurrentQuantificationComponent ]
-        })
-            .compileComponents();
-    });
+  beforeEach(() => {
+    fixture = TestBed.createComponent(CurrentQuantificationComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
 
-    beforeEach(() => 
-    {
-        fixture = TestBed.createComponent(CurrentQuantificationComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
-
-    it("should create", () => 
-    {
-        expect(component).toBeTruthy();
-    });
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
 });

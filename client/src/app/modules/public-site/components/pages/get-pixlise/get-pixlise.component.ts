@@ -33,57 +33,53 @@ import { NumberButtonParams, SignupPrefix } from "../../atoms/number-button/numb
 import { DefaultLoggedInLink } from "../../navigation";
 import { MetaTagService } from "../../../services/meta-tag.service";
 
-
-class Tile
-{
-    constructor(public label: string, public description: string, public buttonParams: NumberButtonParams)
-    {
-    }
+class Tile {
+  constructor(
+    public label: string,
+    public description: string,
+    public buttonParams: NumberButtonParams
+  ) {}
 }
 
 @Component({
-    selector: "app-get-pixlise",
-    templateUrl: "./get-pixlise.component.html",
-    styleUrls: ["./get-pixlise.component.scss"]
+  selector: "app-get-pixlise",
+  templateUrl: "./get-pixlise.component.html",
+  styleUrls: ["./get-pixlise.component.scss"],
 })
-export class GetPIXLISEComponent implements OnInit
-{
-    repoURL = "https://www.github.com/pixlise";
-    tiles: Tile[] = [
-        new Tile(
-            "Explore Our World!",
-            "Try out the basic features of PIXLISE on public access datasets without the need for an account, one click away!",
-            new NumberButtonParams("01", "Free Trial", "yellow", true, true, "/datasets")
-        ),
-        new Tile("Sign Up for More...",
-            "Are you a scientist looking to dig a bit deeper? Sign up to get access to advanced PIXLISE features and our community discussion board.",
-            new NumberButtonParams("02", "Make an account", "yellow", true, true, SignupPrefix+DefaultLoggedInLink)
-        ),
-        new Tile("Get PIXLISE!",
-            "PIXLISE is free and open source, we'll help you choose the best fit for how to get your own personal version.",
-            new NumberButtonParams("03", "Learn More", "red", true, true, "/public/get-started#links")
-        ),
-    ];
+export class GetPIXLISEComponent implements OnInit {
+  repoURL = "https://www.github.com/pixlise";
+  tiles: Tile[] = [
+    new Tile(
+      "Explore Our World!",
+      "Try out the basic features of PIXLISE on public access datasets without the need for an account, one click away!",
+      new NumberButtonParams("01", "Free Trial", "yellow", true, true, "/datasets")
+    ),
+    new Tile(
+      "Sign Up for More...",
+      "Are you a scientist looking to dig a bit deeper? Sign up to get access to advanced PIXLISE features and our community discussion board.",
+      new NumberButtonParams("02", "Make an account", "yellow", true, true, SignupPrefix + DefaultLoggedInLink)
+    ),
+    new Tile(
+      "Get PIXLISE!",
+      "PIXLISE is free and open source, we'll help you choose the best fit for how to get your own personal version.",
+      new NumberButtonParams("03", "Learn More", "red", true, true, "/public/get-started#links")
+    ),
+  ];
 
-    getOptions = ["Personal Local Installation", "Self Hosted Deployment", "Full Cloud Hosted PIXLISE Service"];
-    getActiveItem = this.getOptions[0];
+  getOptions = ["Personal Local Installation", "Self Hosted Deployment", "Full Cloud Hosted PIXLISE Service"];
+  getActiveItem = this.getOptions[0];
 
-    constructor(
-        private _metaTagService: MetaTagService
-        )
-    {
-    }
+  constructor(private _metaTagService: MetaTagService) {}
 
-    ngOnInit(): void
-    {
-        this._metaTagService.setMeta("How to get PIXLISE",
-            "There are several options for how to start using PIXLISE, from joining our hosted instance, all the way to downloading the source code and running it yourself!",
-            []
-        );
-    }
+  ngOnInit(): void {
+    this._metaTagService.setMeta(
+      "How to get PIXLISE",
+      "There are several options for how to start using PIXLISE, from joining our hosted instance, all the way to downloading the source code and running it yourself!",
+      []
+    );
+  }
 
-    onClickListItem(item: string)
-    {
-        this.getActiveItem = item;
-    }
+  onClickListItem(item: string) {
+    this.getActiveItem = item;
+  }
 }

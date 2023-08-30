@@ -1,117 +1,116 @@
 <ng-template #roiSettingsMenu>
-    <div class="roi-settings">
-        <div class="settings-buttons">
-            <action-button title="Delete this ROI" action="delete" [buttonBackground]="true"
-                confirmText="Are you sure you want to delete ROI: {{name}}?" (onClick)="onDelete()">
-            </action-button>
-            <icon-button title="Share this ROI" icon="assets/button-icons/share.svg" (click)="onShare()">
-            </icon-button>
-            <icon-button title="Configure Colours" icon="assets/button-icons/colours.svg" (click)="onColours($event)">
-            </icon-button>
-        </div>
-        <!-- <slider title="Opacity" [value]="opacity" [minValue]="0" [maxValue]="1" (onChange)="onChangeOpacity($event)"> -->
-        <!-- </slider> -->
+  <div class="roi-settings">
+    <div class="settings-buttons">
+      <action-button
+        title="Delete this ROI"
+        action="delete"
+        [buttonBackground]="true"
+        confirmText="Are you sure you want to delete ROI: {{ name }}?"
+        (onClick)="onDelete()">
+      </action-button>
+      <icon-button title="Share this ROI" icon="assets/button-icons/share.svg" (click)="onShare()"> </icon-button>
+      <icon-button title="Configure Colours" icon="assets/button-icons/colours.svg" (click)="onColours($event)"> </icon-button>
     </div>
+    <!-- <slider title="Opacity" [value]="opacity" [minValue]="0" [maxValue]="1" (onChange)="onChangeOpacity($event)"> -->
+    <!-- </slider> -->
+  </div>
 </ng-template>
 
 <ng-template #editROIMenu>
-    <div class="roi-edit">
-        <header>
-            <h1 class="title">Edit ROI</h1>
-            <!-- <tag-picker type="roi" placeholderText="Search ROI Tags ..." [selectedTagIDs]="selectedTagIDs"
+  <div class="roi-edit">
+    <header>
+      <h1 class="title">Edit ROI</h1>
+      <!-- <tag-picker type="roi" placeholderText="Search ROI Tags ..." [selectedTagIDs]="selectedTagIDs"
                 [showCurrentTagsSection]="true" [editable]="!isSharedByOtherUser"
                 (onTagSelectionChanged)="onTagSelectionChanged($event)">
             </tag-picker> -->
-        </header>
+    </header>
 
-        <input type="text" class="name" [(ngModel)]="name" placeholder="ROI Name" />
-        <textarea class="description" [(ngModel)]="description" placeholder="ROI Description" rows="4"></textarea>
+    <input type="text" class="name" [(ngModel)]="name" placeholder="ROI Name" />
+    <textarea class="description" [(ngModel)]="description" placeholder="ROI Description" rows="4"></textarea>
 
-        <div class="buttons">
-            <push-button buttonStyle="outline" (onClick)="onCancelEdit()"
-                title="Cancel editing this ROI">Cancel</push-button>
-            <push-button buttonStyle="yellow" (onClick)="onSaveEdit()"
-                title="Save changes to this ROI">Save</push-button>
-        </div>
+    <div class="buttons">
+      <push-button buttonStyle="outline" (onClick)="onCancelEdit()" title="Cancel editing this ROI">Cancel</push-button>
+      <push-button buttonStyle="yellow" (onClick)="onSaveEdit()" title="Save changes to this ROI">Save</push-button>
     </div>
+  </div>
 </ng-template>
 
-
-<div class="roi-container" [ngStyle]="{'border-left-color': color}">
-    <div class="summary">
-        <div class="info" #tooltip="matTooltip" matTooltipClass="multiline-tooltip"
-            [matTooltip]="name + (description ? '\n\n' + description : '')">
-            <h4>{{name}}</h4>
-            <p>{{createdDate|date:'dd/MMM/yy'}}</p>
-        </div>
-        <div class="buttons">
-            <widget-settings-menu *ngIf="!colorChangeOnly" [settingsDialog]="roiSettingsMenu" #settingsButton
-                [xOffset]="180">
-                <icon-button title="Show Settings Menu" [hasBackground]="false"
-                    icon="assets/button-icons/settings-gray.svg">
-                </icon-button>
-            </widget-settings-menu>
-            <!-- <tag-picker type="roi" placeholderText="Search ROI Tags ..." [selectedTagIDs]="selectedTagIDs"
+<div class="roi-container" [ngStyle]="{ 'border-left-color': color }">
+  <div class="summary">
+    <div class="info" #tooltip="matTooltip" matTooltipClass="multiline-tooltip" [matTooltip]="name + (description ? '\n\n' + description : '')">
+      <h4>{{ name }}</h4>
+      <p>{{ createdDate | date: "dd/MMM/yy" }}</p>
+    </div>
+    <div class="buttons">
+      <widget-settings-menu *ngIf="!colorChangeOnly" [settingsDialog]="roiSettingsMenu" #settingsButton [xOffset]="180">
+        <icon-button title="Show Settings Menu" [hasBackground]="false" icon="assets/button-icons/settings-gray.svg"> </icon-button>
+      </widget-settings-menu>
+      <!-- <tag-picker type="roi" placeholderText="Search ROI Tags ..." [selectedTagIDs]="selectedTagIDs"
             [showCurrentTagsSection]="true" [editable]="!isSharedByOtherUser"
             (onTagSelectionChanged)="onTagSelectionChanged($event)">
         </tag-picker> -->
-            <icon-button *ngIf="colorChangeOnly" title="Configure Colours" icon="assets/button-icons/colours.svg"
-                (click)="onColours($event)">
-            </icon-button>
-            <two-state-icon-button toolTip="Toggle visibility on Context Image"
-                activeIcon="assets/button-icons/visible-on-yellow.svg"
-                inactiveIcon="assets/button-icons/visible-off.svg" [active]="isVisible"
-                (onToggle)="onVisibility($event)"></two-state-icon-button>
-            <icon-button
-                [icon]="showDetails ? 'assets/button-icons/arrow-down.svg' : 'assets/button-icons/arrow-right.svg'"
-                [hasBackground]="false" (click)="onToggleDetails()" title="Toggle showing ROI details"></icon-button>
-        </div>
+      <icon-button *ngIf="colorChangeOnly" title="Configure Colours" icon="assets/button-icons/colours.svg" (click)="onColours($event)">
+      </icon-button>
+      <two-state-icon-button
+        toolTip="Toggle visibility on Context Image"
+        activeIcon="assets/button-icons/visible-on-yellow.svg"
+        inactiveIcon="assets/button-icons/visible-off.svg"
+        [active]="isVisible"
+        (onToggle)="onVisibility($event)"></two-state-icon-button>
+      <icon-button
+        [icon]="showDetails ? 'assets/button-icons/arrow-down.svg' : 'assets/button-icons/arrow-right.svg'"
+        [hasBackground]="false"
+        (click)="onToggleDetails()"
+        title="Toggle showing ROI details"></icon-button>
     </div>
-    <div *ngIf="showDetails" class="details">
-        <wait-spinner *ngIf="!showDetails"></wait-spinner>
-        <div *ngIf="detailedInfo" class="details-container">
-            <div class="overview">
-                <h5>
-                    {{scanEntryCount}} PMCs, {{pixelCount}} pixels
-                </h5>
+  </div>
+  <div *ngIf="showDetails" class="details">
+    <wait-spinner *ngIf="!showDetails"></wait-spinner>
+    <div *ngIf="detailedInfo" class="details-container">
+      <div class="overview">
+        <h5>{{ scanEntryCount }} PMCs, {{ pixelCount }} pixels</h5>
 
-                <div class="right-btns">
-                    <push-button>Select</push-button>
-                    <action-button action="edit-clipboard" [customDialog]="editROIMenu" #editROIButton></action-button>
-                    <icon-button
-                        [icon]="showScanEntryPoints ? 'assets/button-icons/arrow-down.svg' : 'assets/button-icons/arrow-right.svg'"
-                        [hasBackground]="false" (click)="onToggleScanEntryPoints()"
-                        title="Toggle showing ROI details"></icon-button>
-                </div>
-            </div>
-            <div *ngIf="showScanEntryPoints" class="pixel-list">
-                <h5 #tooltip="matTooltip"
-                    matTooltip="ROI pixels were selected from image: {{detailedInfo.imageName || 'N/A'}}"
-                    [matTooltipDisabled]="!detailedInfo.imageName">
-                    Image: {{detailedInfo.imageName || 'N/A'}}
-                </h5>
-                <div class="selection-btns">
-                    <push-button buttonStyle="outline"
-                        title="Saves the selected Scan Entries into this ROI, overwriting previous Scan Entry list">Save
-                        Selection to
-                        ROI</push-button>
-                    <push-button buttonStyle="outline"
-                        title="Adds pixels within bounding polygons of Scan Entry points to ROI">Add RGBU Pixels to
-                        ROI</push-button>
-                </div>
-                <div *ngIf="scanEntryCount > 0" class="outer-padding gap-separated-horizontal-elements">
-                    <push-button (onClick)="onScanEntryIdxPagePrev()">Prev</push-button>
-                    <div>{{pmcPagePosition}}</div>
-                    <push-button (onClick)="onScanEntryIdxPageNext()">Next</push-button>
-                </div>
-                <div *ngFor="let item of displaySelectedPMCs" class="roi-pmc outer-padding"
-                    [ngClass]="{'pmc-highlight': item.pmc>=0&&item.pmc==hoverPMC, 'pmc-dataset-heading': item.pmc < 0}"
-                    (mouseenter)="onScanEntryIdxEnter(item.pmc)" (mouseleave)="onScanEntryIdxLeave(item.pmc)">
-                    <div>{{item.displayPMC}}</div>
-                    <action-button *ngIf="item.pmc >= 0" action="close"
-                        (click)="onDeleteScanEntryIdx(item.pmc)"></action-button>
-                </div>
-            </div>
+        <div class="right-btns">
+          <push-button>Select</push-button>
+          <action-button action="edit-clipboard" [customDialog]="editROIMenu" #editROIButton></action-button>
+          <icon-button
+            [icon]="showScanEntryPoints ? 'assets/button-icons/arrow-down.svg' : 'assets/button-icons/arrow-right.svg'"
+            [hasBackground]="false"
+            (click)="onToggleScanEntryPoints()"
+            title="Toggle showing ROI details"></icon-button>
         </div>
+      </div>
+      <div *ngIf="showScanEntryPoints" class="pixel-list">
+        <h5
+          #tooltip="matTooltip"
+          matTooltip="ROI pixels were selected from image: {{ detailedInfo.imageName || 'N/A' }}"
+          [matTooltipDisabled]="!detailedInfo.imageName">
+          Image: {{ detailedInfo.imageName || "N/A" }}
+        </h5>
+        <div class="selection-btns">
+          <push-button buttonStyle="outline" title="Saves the selected Scan Entries into this ROI, overwriting previous Scan Entry list"
+            >Save Selection to ROI</push-button
+          >
+          <push-button buttonStyle="outline" title="Adds pixels within bounding polygons of Scan Entry points to ROI"
+            >Add RGBU Pixels to ROI</push-button
+          >
+        </div>
+        <div *ngIf="scanEntryCount > 0" class="outer-padding gap-separated-horizontal-elements">
+          <push-button (onClick)="onScanEntryIdxPagePrev()">Prev</push-button>
+          <div>{{ pmcPagePosition }}</div>
+          <push-button (onClick)="onScanEntryIdxPageNext()">Next</push-button>
+        </div>
+        <div
+          *ngFor="let item of displaySelectedPMCs"
+          class="roi-pmc outer-padding"
+          [ngClass]="{ 'pmc-highlight': item.pmc >= 0 && item.pmc == hoverPMC, 'pmc-dataset-heading': item.pmc < 0 }"
+          (mouseenter)="onScanEntryIdxEnter(item.pmc)"
+          (mouseleave)="onScanEntryIdxLeave(item.pmc)">
+          <div>{{ item.displayPMC }}</div>
+          <action-button *ngIf="item.pmc >= 0" action="close" (click)="onDeleteScanEntryIdx(item.pmc)"></action-button>
+        </div>
+      </div>
     </div>
+  </div>
 </div>

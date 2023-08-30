@@ -29,53 +29,42 @@
 
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 
-
 @Component({
-    selector: "two-state-edit-button",
-    templateUrl: "./two-state-edit-button.component.html",
-    styleUrls: ["./two-state-edit-button.component.scss"]
+  selector: "two-state-edit-button",
+  templateUrl: "./two-state-edit-button.component.html",
+  styleUrls: ["./two-state-edit-button.component.scss"],
 })
-export class TwoStateEditButtonComponent implements OnInit
-{
-    @Input() buttonStyle: string = "normal";
-    @Input() disabled: boolean = false;
-    @Input() active: boolean = false;
+export class TwoStateEditButtonComponent implements OnInit {
+  @Input() buttonStyle: string = "normal";
+  @Input() disabled: boolean = false;
+  @Input() active: boolean = false;
 
-    @Output() onToggle = new EventEmitter();
-    @Output() onEdit = new EventEmitter();
+  @Output() onToggle = new EventEmitter();
+  @Output() onEdit = new EventEmitter();
 
-    constructor()
-    {
-    }
+  constructor() {}
 
-    ngOnInit()
-    {
-        const validStyles = ["normal", "borderless", "yellow", "outline", "gray"];
-        if(validStyles.indexOf(this.buttonStyle) == -1)
-        {
-            console.warn("Invalid style for edit-button: "+this.buttonStyle);
-            this.buttonStyle = validStyles[0];
-        }
+  ngOnInit() {
+    const validStyles = ["normal", "borderless", "yellow", "outline", "gray"];
+    if (validStyles.indexOf(this.buttonStyle) == -1) {
+      console.warn("Invalid style for edit-button: " + this.buttonStyle);
+      this.buttonStyle = validStyles[0];
     }
+  }
 
-    get styleCSS(): string
-    {
-        return `btn-${this.buttonStyle}${this.disabled ? " disabled" : ""}${this.active ? " active" : ""}`;
-    }
+  get styleCSS(): string {
+    return `btn-${this.buttonStyle}${this.disabled ? " disabled" : ""}${this.active ? " active" : ""}`;
+  }
 
-    onToggleInternal(): void
-    {
-        if(!this.disabled)
-        {
-            this.active = !this.active;
-            this.onToggle.emit(this.active);
-        }
+  onToggleInternal(): void {
+    if (!this.disabled) {
+      this.active = !this.active;
+      this.onToggle.emit(this.active);
     }
-    onEditInternal(event): void
-    {
-        if(!this.disabled)
-        {
-            this.onEdit.emit(event);
-        }
+  }
+  onEditInternal(event): void {
+    if (!this.disabled) {
+      this.onEdit.emit(event);
     }
+  }
 }

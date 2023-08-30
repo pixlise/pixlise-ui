@@ -30,29 +30,34 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="section">
-    <number-button [params]="params.navButtonParams"></number-button>
-    <div class="flex-row container">
-        <div class="flex-column text-container" [ngClass]="{'narrowbox': params.headingLarge, 'text-container-list-limit': hasList}">
-            <h2 *ngIf="params.headingLarge"><text-with-highlights [parts]="params.headingParts" styleMain="" styleAlternate="red"></text-with-highlights></h2>
-            <h3 *ngIf="!params.headingLarge"><text-with-highlights [parts]="params.headingParts" styleMain="" styleAlternate="red"></text-with-highlights></h3>
-            <ng-container *ngIf="hasList">
-                <div class="list-heading">{{params.listTitle}}</div>
-                <ul>
-                    <li
-                        *ngFor="let item of params.listItems"
-                        [ngClass]="{'active': item.listLabel == activeItem?.listLabel}"
-                        (click)="onClickListItem(item)"
-                        >{{item.listLabel}}</li>
-                </ul>
-            </ng-container>
-            <ng-container *ngIf="activeItem">
-                <h4><text-with-highlights [parts]="activeItem.headingParts" styleMain="" styleAlternate="bold"></text-with-highlights></h4>
-                <p><text-with-highlights [parts]="activeItem.descriptionParts" styleMain="" styleAlternate="bold"></text-with-highlights></p>
-            </ng-container>
-        </div>
-        <div *ngIf="activeItem" class="flex-column img-vcenter">
-            <img *ngIf="activeItem.imageLinkForeground" class="img-foreground" [src]="activeItem.imageLinkForeground">
-            <img *ngIf="activeItem.imageLinkBackground" class="img-background" [src]="activeItem.imageLinkBackground">
-        </div>
+  <number-button [params]="params.navButtonParams"></number-button>
+  <div class="flex-row container">
+    <div class="flex-column text-container" [ngClass]="{ narrowbox: params.headingLarge, 'text-container-list-limit': hasList }">
+      <h2 *ngIf="params.headingLarge">
+        <text-with-highlights [parts]="params.headingParts" styleMain="" styleAlternate="red"></text-with-highlights>
+      </h2>
+      <h3 *ngIf="!params.headingLarge">
+        <text-with-highlights [parts]="params.headingParts" styleMain="" styleAlternate="red"></text-with-highlights>
+      </h3>
+      <ng-container *ngIf="hasList">
+        <div class="list-heading">{{ params.listTitle }}</div>
+        <ul>
+          <li
+            *ngFor="let item of params.listItems"
+            [ngClass]="{ active: item.listLabel == activeItem?.listLabel }"
+            (click)="onClickListItem(item)">
+            {{ item.listLabel }}
+          </li>
+        </ul>
+      </ng-container>
+      <ng-container *ngIf="activeItem">
+        <h4><text-with-highlights [parts]="activeItem.headingParts" styleMain="" styleAlternate="bold"></text-with-highlights></h4>
+        <p><text-with-highlights [parts]="activeItem.descriptionParts" styleMain="" styleAlternate="bold"></text-with-highlights></p>
+      </ng-container>
     </div>
+    <div *ngIf="activeItem" class="flex-column img-vcenter">
+      <img *ngIf="activeItem.imageLinkForeground" class="img-foreground" [src]="activeItem.imageLinkForeground" />
+      <img *ngIf="activeItem.imageLinkBackground" class="img-background" [src]="activeItem.imageLinkBackground" />
+    </div>
+  </div>
 </div>

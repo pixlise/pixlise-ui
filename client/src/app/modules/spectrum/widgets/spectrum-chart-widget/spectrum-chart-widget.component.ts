@@ -1,17 +1,22 @@
-import { Component, Input, OnInit } from '@angular/core';
-import { BaseWidgetModel } from 'src/app/modules/analysis/components/widget/models/base-widget.model';
-import { SnackbarService } from 'src/app/modules/pixlisecore/pixlisecore.module';
-import { SpectrumService } from '../../services/spectrum.service';
-import { Subscription } from 'rxjs';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { SpectrumChartDrawer } from './drawer';
-import { CanvasDrawNotifier, CanvasDrawer, CanvasInteractionHandler, CanvasWorldTransform } from 'src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component';
-import { SpectrumChartModel } from './model';
+import { Component, Input, OnInit } from "@angular/core";
+import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
+import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { SpectrumService } from "../../services/spectrum.service";
+import { Subscription } from "rxjs";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { SpectrumChartDrawer } from "./drawer";
+import {
+  CanvasDrawNotifier,
+  CanvasDrawer,
+  CanvasInteractionHandler,
+  CanvasWorldTransform,
+} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { SpectrumChartModel } from "./model";
 
 @Component({
-  selector: 'app-spectrum-chart-widget',
-  templateUrl: './spectrum-chart-widget.component.html',
-  styleUrls: ['./spectrum-chart-widget.component.scss'],
+  selector: "app-spectrum-chart-widget",
+  templateUrl: "./spectrum-chart-widget.component.html",
+  styleUrls: ["./spectrum-chart-widget.component.scss"],
 })
 export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnInit {
   activeTool: string = "pan";
@@ -38,110 +43,110 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   constructor(
     private _spectrumService: SpectrumService,
     private _snackService: SnackbarService,
-    public dialog: MatDialog,
+    public dialog: MatDialog
   ) {
     super();
 
     this._widgetControlConfiguration = {
-      "topToolbar": [
+      topToolbar: [
         {
-          "id": "pan",
-          "type": "selectable-button",
-          "icon": "assets/button-icons/tool-pan.svg",
-          "tooltip": "Pan Tool (Shift)\nClick and drag to move the context image in the viewport",
-          "value": false,
-          "onClick": () => this.onToolSelected("pan")
+          id: "pan",
+          type: "selectable-button",
+          icon: "assets/button-icons/tool-pan.svg",
+          tooltip: "Pan Tool (Shift)\nClick and drag to move the context image in the viewport",
+          value: false,
+          onClick: () => this.onToolSelected("pan"),
         },
         {
-          "id": "zoom",
-          "type": "selectable-button",
-          "icon": "assets/button-icons/tool-zoom.svg",
-          "tooltip": "Zoom Tool (Shift)\nClick to zoom, or draw a box around area of interest",
-          "value": false,
-          "onClick": () => this.onToolSelected("zoom")
+          id: "zoom",
+          type: "selectable-button",
+          icon: "assets/button-icons/tool-zoom.svg",
+          tooltip: "Zoom Tool (Shift)\nClick to zoom, or draw a box around area of interest",
+          value: false,
+          onClick: () => this.onToolSelected("zoom"),
         },
         {
-          "id": "spectrum-range",
-          "type": "selectable-button",
-          "icon": "assets/button-icons/tool-spectrum-range.svg",
-          "tooltip": "Range Selection Tool\nAllows selection of a range of the spectrum for analysis as maps on context image",
-          "value": false,
-          "onClick": () => this.onToolSelected("spectrum-range")
+          id: "spectrum-range",
+          type: "selectable-button",
+          icon: "assets/button-icons/tool-spectrum-range.svg",
+          tooltip: "Range Selection Tool\nAllows selection of a range of the spectrum for analysis as maps on context image",
+          value: false,
+          onClick: () => this.onToolSelected("spectrum-range"),
         },
         {
-          "id": "zoom-in",
-          "type": "button",
-          "icon": "assets/button-icons/zoom-in.svg",
-          "tooltip": "Zoom In",
-          "onClick": () => this.onZoomIn()
+          id: "zoom-in",
+          type: "button",
+          icon: "assets/button-icons/zoom-in.svg",
+          tooltip: "Zoom In",
+          onClick: () => this.onZoomIn(),
         },
         {
-          "id": "zoom-out",
-          "type": "button",
-          "icon": "assets/button-icons/zoom-out.svg",
-          "tooltip": "Zoom Out",
-          "onClick": () => this.onZoomOut()
+          id: "zoom-out",
+          type: "button",
+          icon: "assets/button-icons/zoom-out.svg",
+          tooltip: "Zoom Out",
+          onClick: () => this.onZoomOut(),
         },
         {
-          "id": "zoom-all",
-          "type": "button",
-          "icon": "assets/button-icons/zoom-all-arrows.svg",
-          "tooltip": "Zoom To Fit Whole Spectrum",
-          "onClick": () => this.onResetZoom()
+          id: "zoom-all",
+          type: "button",
+          icon: "assets/button-icons/zoom-all-arrows.svg",
+          tooltip: "Zoom To Fit Whole Spectrum",
+          onClick: () => this.onResetZoom(),
         },
         {
-          "id": "xray-tube-element",
-          "type": "button",
-          "icon": "assets/button-icons/xray-tube-element.svg",
-          "tooltip": "Show XRF Lines for X-ray Tube Element",
-          "onClick": () => this.onShowXRayTubeLines()
-        }
+          id: "xray-tube-element",
+          type: "button",
+          icon: "assets/button-icons/xray-tube-element.svg",
+          tooltip: "Show XRF Lines for X-ray Tube Element",
+          onClick: () => this.onShowXRayTubeLines(),
+        },
       ],
-      "bottomToolbar": [
+      bottomToolbar: [
         {
-          "id": "spectra",
-          "type": "button",
-          "title": "Display Spectra",
-          "value": false,
-          "onClick": () => { }
+          id: "spectra",
+          type: "button",
+          title: "Display Spectra",
+          value: false,
+          onClick: () => {},
         },
         {
-          "id": "fit",
-          "type": "button",
-          "title": "Display Fit",
-          "value": false,
-          "onClick": () => { }
+          id: "fit",
+          type: "button",
+          title: "Display Fit",
+          value: false,
+          onClick: () => {},
         },
         {
-          "id": "piquant",
-          "type": "button",
-          "title": "Run PIQUANT",
-          "value": false,
-          "onClick": () => { }
+          id: "piquant",
+          type: "button",
+          title: "Run PIQUANT",
+          value: false,
+          onClick: () => {},
         },
         {
-          "id": "peakLabels",
-          "type": "button",
-          "title": "Peak Labels",
-          "value": false,
-          "onClick": () => { }
+          id: "peakLabels",
+          type: "button",
+          title: "Peak Labels",
+          value: false,
+          onClick: () => {},
         },
         {
-          "id": "annotations",
-          "type": "button",
-          "title": "Annotations",
-          "value": false,
-          "onClick": () => { }
+          id: "annotations",
+          type: "button",
+          title: "Annotations",
+          value: false,
+          onClick: () => {},
         },
         {
-          "id": "calibration",
-          "type": "button",
-          "title": "Calibration",
-          "value": false,
-          "onClick": () => { }
+          id: "calibration",
+          type: "button",
+          title: "Calibration",
+          value: false,
+          onClick: () => {},
         },
-      ]
-    }
+      ],
+    };
   }
 
   ngOnInit() {
@@ -154,7 +159,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   reDraw() {
-    console.log("REDRAW")
+    console.log("REDRAW");
     this.drawNotifier.needsDraw$.next();
   }
 
@@ -166,9 +171,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     return this.drawNotifier.toolhost;
   }
 
-  onToggleResizeSpectraY() {
-
-  }
+  onToggleResizeSpectraY() {}
 
   onToggleYAxislogScale() {
     this.yAxislogScale = !this.yAxislogScale;
@@ -182,26 +185,21 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     this.countsPerPMC = !this.countsPerPMC;
   }
 
-  onShowXRayTubeLines() {
+  onShowXRayTubeLines() {}
 
-  }
-
-  onResetZoom() {
-
-  }
+  onResetZoom() {}
 
   onZoomIn() {
     this.reDraw();
   }
 
-  onZoomOut() {
-  }
+  onZoomOut() {}
 
   onToolSelected(tool: string) {
     this.activeTool = tool;
     this._widgetControlConfiguration["topToolbar"]!.forEach((button: any) => {
       button.value = button.id === tool;
     });
-    console.log("Tool selected: ", this.activeTool)
+    console.log("Tool selected: ", this.activeTool);
   }
 }

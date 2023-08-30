@@ -1,16 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { NumberButtonComponent } from './number-button.component';
+import { NumberButtonComponent } from "./number-button.component";
 
-describe('NumberButtonComponent', () => {
+describe("NumberButtonComponent", () => {
   let component: NumberButtonComponent;
   let fixture: ComponentFixture<NumberButtonComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ NumberButtonComponent ]
-    })
-    .compileComponents();
+      declarations: [NumberButtonComponent],
+    }).compileComponents();
   });
 
   beforeEach(() => {
@@ -19,7 +18,7 @@ describe('NumberButtonComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

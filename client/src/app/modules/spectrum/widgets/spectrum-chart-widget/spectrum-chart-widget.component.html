@@ -1,22 +1,13 @@
 <ng-template #settingsMenu>
-    <div class="settings">
-        <div class="scale-buttons">
-            <two-state-push-button [active]="resizeSpectraY"
-                (click)="onToggleResizeSpectraY()">Resize</two-state-push-button>
-            <two-state-push-button [active]="yAxislogScale" (click)="onToggleYAxislogScale()">Log
-                Scale</two-state-push-button>
-        </div>
-        <switch-button label="Normalise Counts/min:" [active]="countsPerMin"
-            (onToggle)="onToggleCountsPerMin()"></switch-button>
-        <switch-button label="Normalise Counts/PMC:" [active]="countsPerPMC"
-            (onToggle)="onToggleCountsPerPMC()"></switch-button>
+  <div class="settings">
+    <div class="scale-buttons">
+      <two-state-push-button [active]="resizeSpectraY" (click)="onToggleResizeSpectraY()">Resize</two-state-push-button>
+      <two-state-push-button [active]="yAxislogScale" (click)="onToggleYAxislogScale()">Log Scale</two-state-push-button>
     </div>
+    <switch-button label="Normalise Counts/min:" [active]="countsPerMin" (onToggle)="onToggleCountsPerMin()"></switch-button>
+    <switch-button label="Normalise Counts/PMC:" [active]="countsPerPMC" (onToggle)="onToggleCountsPerPMC()"></switch-button>
+  </div>
 </ng-template>
 
-<interactive-canvas
-    [drawer]="drawer"
-    [drawNotifier]="drawNotifier"
-    [interactionHandler]="interactionHandler" 
-    [transform]="transform" 
->
+<interactive-canvas [drawer]="drawer" [drawNotifier]="drawNotifier" [interactionHandler]="interactionHandler" [transform]="transform">
 </interactive-canvas>

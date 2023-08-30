@@ -30,9 +30,9 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="flex-column">
-    <div *ngFor="let ver of versions" class="flex-row version">
-        <div>{{ver.component}}</div>
-        <div *ngIf="ver.version" class="yellow">{{ver.version}}</div>
-        <wait-spinner *ngIf="!ver.version"></wait-spinner>
-    </div>
+  <div *ngFor="let ver of versions" class="flex-row version">
+    <div>{{ ver.component }}</div>
+    <div *ngIf="ver.version" class="yellow">{{ ver.version }}</div>
+    <wait-spinner *ngIf="!ver.version"></wait-spinner>
+  </div>
 </div>

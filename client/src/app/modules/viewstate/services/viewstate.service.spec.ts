@@ -1,16 +1,16 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed } from "@angular/core/testing";
 
-import { ViewStateService } from './viewstate.service';
+import { ViewStateService } from "./viewstate.service";
 
-describe('ViewStateService', () => {
-    let service: ViewStateService;
+describe("ViewStateService", () => {
+  let service: ViewStateService;
 
-    beforeEach(() => {
-        TestBed.configureTestingModule({});
-        service = TestBed.inject(ViewStateService);
-    });
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(ViewStateService);
+  });
 
-    it('should be created', () => {
-        expect(service).toBeTruthy();
-    });
+  it("should be created", () => {
+    expect(service).toBeTruthy();
+  });
 });

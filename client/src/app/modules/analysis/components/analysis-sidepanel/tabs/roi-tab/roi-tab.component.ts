@@ -43,14 +43,10 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { Colours } from "src/app/utils/colours";
 import { httpErrorToString } from "src/app/utils/utils";
 
-
-
-
-
 @Component({
   selector: "roi-tab",
   templateUrl: "./roi-tab.component.html",
-  styleUrls: ["./roi-tab.component.scss"]
+  styleUrls: ["./roi-tab.component.scss"],
 })
 export class ROITabComponent implements OnInit {
   private _subs = new Subscription();
@@ -93,9 +89,8 @@ export class ROITabComponent implements OnInit {
     private _route: ActivatedRoute,
     // private _authService: AuthenticationService,
     // private _selectionService: SelectionService,
-    public dialog: MatDialog,
-  ) {
-  }
+    public dialog: MatDialog
+  ) {}
 
   ngOnInit(): void {
     // this._subs.add(this._contextImageService.mdl$.subscribe(
@@ -103,13 +98,11 @@ export class ROITabComponent implements OnInit {
     //     this.onGotModel();
     //   }
     // ));
-
     // this._subs.add(this._selectionService.selection$.subscribe(
     //   (sel: SelectionHistoryItem) => {
     //     this._selectionEmpty = sel.beamSelection.getSelectedPMCs().size <= 0 && sel.pixelSelection.selectedPixels.size <= 0;
     //   }
     // ));
-
     // this._subs.add(this._authService.isPublicUser$.subscribe(
     // (isPublicUser) => {
     // this.isPublicUser = isPublicUser;
@@ -143,17 +136,14 @@ export class ROITabComponent implements OnInit {
     //   (change: RegionChangeInfo) => {
     //     let regions = this.getRegionManager().getDisplayedRegions(change.regions);
     //     let roiIDs: Set<string> = new Set<string>();
-
     //     regions.forEach(region => {
     //       if (this.checkVisibleRegion(region)) {
     //         this.setROI(region);
     //         roiIDs.add(region.roi.id);
     //       }
     //     });
-
     //     // Delete any that we didn't see in the new update
     //     this.deleteROIsNotInList(roiIDs);
-
     //     // Show the list we're interested in
     //     if (this.showShared) {
     //       this._allROIsForDisplay = this._sharedROIs;
@@ -161,7 +151,6 @@ export class ROITabComponent implements OnInit {
     //     else {
     //       this._allROIsForDisplay = this._userROIs;
     //     }
-
     //     this.filterROIsForDisplay();
     //     this.extractAuthors();
     //   },
@@ -183,11 +172,9 @@ export class ROITabComponent implements OnInit {
     this.authors = authors;
   }
 
-
   private filterROIsForDisplay(): void {
     // let filteredROIs: RegionLayerInfo[] = [];
     // let searchString = this.roiSearchString.toLowerCase();
-
     // for (let roi of this._allROIsForDisplay) {
     //   let roiNameLower = roi.roi.name.toLowerCase();
     //   if (
@@ -198,7 +185,6 @@ export class ROITabComponent implements OnInit {
     //     filteredROIs.push(roi);
     //   }
     // }
-
     // this.ROIs = filteredROIs;
   }
 
@@ -312,7 +298,7 @@ export class ROITabComponent implements OnInit {
   }
 
   get authorsTooltip(): string {
-    let authorNames = this._authors.filter((author) => this._filteredAuthors.includes(author.user_id)).map((author) => author.name);
+    let authorNames = this._authors.filter(author => this._filteredAuthors.includes(author.user_id)).map(author => author.name);
     return this._filteredAuthors.length > 0 ? `Authors:\n${authorNames.join("\n")}` : "No Authors Selected";
   }
 
@@ -334,5 +320,4 @@ export class ROITabComponent implements OnInit {
     this.roiSearchString = filterText || "";
     this.filterROIsForDisplay();
   }
-
 }

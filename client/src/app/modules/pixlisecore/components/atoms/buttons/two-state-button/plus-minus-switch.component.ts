@@ -31,23 +31,19 @@
 import { Component } from "@angular/core";
 import { TwoStateButtonComponent } from "./two-state-button.component";
 
-
 @Component({
-    selector: "plus-minus-switch",
-    templateUrl: "./plus-minus-switch.component.html",
-    styleUrls: ["./two-state-button.component.scss", "./plus-minus-switch.component.scss"]
+  selector: "plus-minus-switch",
+  templateUrl: "./plus-minus-switch.component.html",
+  styleUrls: ["./two-state-button.component.scss", "./plus-minus-switch.component.scss"],
 })
-export class PlusMinusSwitchComponent extends TwoStateButtonComponent
-{
-    constructor()
-    {
-        super();
-        this.leftLabel = "";
-        this.rightLabel = "";
-    }
+export class PlusMinusSwitchComponent extends TwoStateButtonComponent {
+  constructor() {
+    super();
+    this.leftLabel = "";
+    this.rightLabel = "";
+  }
 
-    get isPositive(): boolean
-    {
-        return this.active;
-    }
+  get isPositive(): boolean {
+    return this.active;
+  }
 }

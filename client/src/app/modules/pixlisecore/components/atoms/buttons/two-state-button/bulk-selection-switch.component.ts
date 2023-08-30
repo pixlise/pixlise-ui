@@ -31,19 +31,16 @@
 import { Component } from "@angular/core";
 import { TwoStateButtonComponent } from "./two-state-button.component";
 
-
 @Component({
-    selector: "bulk-selection-switch",
-    templateUrl: "./two-state-button.component.html",
-    styleUrls: ["./two-state-button.component.scss"]
+  selector: "bulk-selection-switch",
+  templateUrl: "./two-state-button.component.html",
+  styleUrls: ["./two-state-button.component.scss"],
 })
-export class BulkSelectionSwitchComponent extends TwoStateButtonComponent
-{
-    constructor()
-    {
-        super();
-        this.leftLabel = "Bulk";
-        this.rightLabel = "Selection";
-        this.toolTip = "Toggle to show data only for selected points vs bulk sum of all points";
-    }
+export class BulkSelectionSwitchComponent extends TwoStateButtonComponent {
+  constructor() {
+    super();
+    this.leftLabel = "Bulk";
+    this.rightLabel = "Selection";
+    this.toolTip = "Toggle to show data only for selected points vs bulk sum of all points";
+  }
 }

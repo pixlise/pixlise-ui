@@ -33,67 +33,61 @@ import { UserDetails } from "src/app/generated-protos/user";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 
 @Component({
-    selector: "app-user-menu-panel",
-    templateUrl: "./user-menu-panel.component.html",
-    styleUrls: ["./user-menu-panel.component.scss"]
+  selector: "app-user-menu-panel",
+  templateUrl: "./user-menu-panel.component.html",
+  styleUrls: ["./user-menu-panel.component.scss"],
 })
 export class UserMenuPanelComponent {
-    user: UserDetails = {
-        info: {
-            id: "",
-            name: "",
-            email: "",
-            iconURL: "",
-        },
-        dataCollectionVersion: "",
-        permissions: []
+  user: UserDetails = {
+    info: {
+      id: "",
+      name: "",
+      email: "",
+      iconURL: "",
+    },
+    dataCollectionVersion: "",
+    permissions: [],
+  };
 
-    };
+  isOpen = false;
 
-    isOpen = false;
+  trigger: any;
 
-    trigger: any;
+  constructor(
+    private _authService: AuthService,
+    private _userOptionsService: UserOptionsService
+  ) {
+    this._userOptionsService.userOptionsChanged$.subscribe(() => {
+      this.user = this._userOptionsService.userDetails;
+    });
+  }
 
-    constructor(
-        private _authService: AuthService,
-        private _userOptionsService: UserOptionsService,
-    ) {
+  onLogout(): void {
+    this._authService.logout();
+  }
 
-        this._userOptionsService.userOptionsChanged$.subscribe(
-            () => {
-                this.user = this._userOptionsService.userDetails;
-            }
-        );
+  onResetHints(): void {}
+
+  onSettings(): void {
+    this._userOptionsService.toggleSidebar();
+  }
+
+  get userName(): string {
+    if (!this.user?.info) {
+      return "Loading...";
     }
 
-    onLogout(): void {
-        this._authService.logout();
+    return this.user.info.name;
+  }
+
+  get userEmail(): string {
+    if (!this.user?.info) {
+      return "Loading...";
     }
+    return this.user.info.email;
+  }
 
-    onResetHints(): void {
-
-    }
-
-    onSettings(): void {
-        this._userOptionsService.toggleSidebar();
-    }
-
-    get userName(): string {
-        if (!this.user?.info) {
-            return "Loading...";
-        }
-
-        return this.user.info.name;
-    }
-
-    get userEmail(): string {
-        if (!this.user?.info) {
-            return "Loading...";
-        }
-        return this.user.info.email;
-    }
-
-    get dataCollectionActive(): boolean {
-        return this._userOptionsService.currentDataCollectionAgreementAccepted;
-    }
+  get dataCollectionActive(): boolean {
+    return this._userOptionsService.currentDataCollectionAgreementAccepted;
+  }
 }

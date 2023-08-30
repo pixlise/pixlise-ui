@@ -31,36 +31,25 @@ import { Component, OnInit } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
-
 @Component({
-    selector: "app-data-collection-dialog",
-    templateUrl: "./data-collection-dialog.component.html",
-    styleUrls: ["./data-collection-dialog.component.scss"]
+  selector: "app-data-collection-dialog",
+  templateUrl: "./data-collection-dialog.component.html",
+  styleUrls: ["./data-collection-dialog.component.scss"],
 })
-export class DataCollectionDialogComponent implements OnInit
-{
-    constructor(
-        public dialogRef: MatDialogRef<DataCollectionDialogComponent>,
-    )
-    {
-    }
+export class DataCollectionDialogComponent implements OnInit {
+  constructor(public dialogRef: MatDialogRef<DataCollectionDialogComponent>) {}
 
-    ngOnInit(): void
-    {
-    }
+  ngOnInit(): void {}
 
-    onDeny(): void
-    {
-        this.dialogRef.close(false);
-    }
+  onDeny(): void {
+    this.dialogRef.close(false);
+  }
 
-    onAccept(): void
-    {
-        this.dialogRef.close(true);
-    }
+  onAccept(): void {
+    this.dialogRef.close(true);
+  }
 
-    get appDomain(): string
-    {
-        return EnvConfigurationInitService.appConfig.appDomain;
-    }
+  get appDomain(): string {
+    return EnvConfigurationInitService.appConfig.appDomain;
+  }
 }

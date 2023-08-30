@@ -48,7 +48,7 @@ export const environment = {
   authorizationParams: {
     audience: "pixlise-backend",
     redirect_uri: `${window.location.origin}/authenticate`,
-  }
+  },
 };
 
 /*

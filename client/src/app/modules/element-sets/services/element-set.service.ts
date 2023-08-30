@@ -35,154 +35,141 @@ import { ObjectCreator } from "src/app/models/BasicTypes";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
 import { APIPaths, makeHeaders } from "src/app/utils/api-helpers";
 
-
-
-
-
-
 export class ElementSetSummaryWire {
-    name: string = "";
-    atomicNumbers: number[] = [];
-    shared: boolean = false;
-    creator: ObjectCreator = new ObjectCreator("", "");
+  name: string = "";
+  atomicNumbers: number[] = [];
+  shared: boolean = false;
+  creator: ObjectCreator = new ObjectCreator("", "");
 }
 
 export class ElementSetSummary {
-    constructor(
-        public id: string,
-        public name: string,
-        public atomicNumbers: number[],
-        public shared: boolean,
-        public creator: ObjectCreator,
-        public create_unix_time_sec: number,
-        public mod_unix_time_sec: number
-    ) {
-    }
+  constructor(
+    public id: string,
+    public name: string,
+    public atomicNumbers: number[],
+    public shared: boolean,
+    public creator: ObjectCreator,
+    public create_unix_time_sec: number,
+    public mod_unix_time_sec: number
+  ) {}
 }
 
 export class ElementSetItemLines {
-    constructor(
-        public Z: number,
-        public K: boolean,
-        public L: boolean,
-        public M: boolean,
-        public Esc: boolean
-    ) {
-    }
+  constructor(
+    public Z: number,
+    public K: boolean,
+    public L: boolean,
+    public M: boolean,
+    public Esc: boolean
+  ) {}
 }
 
 export class ElementSetItem {
-    constructor(
-        public name: string,
-        public lines: ElementSetItemLines[],
-        public shared: boolean,
-        public creator: ObjectCreator,
-        public create_unix_time_sec: number,
-        public mod_unix_time_sec: number
-    ) {
-    }
+  constructor(
+    public name: string,
+    public lines: ElementSetItemLines[],
+    public shared: boolean,
+    public creator: ObjectCreator,
+    public create_unix_time_sec: number,
+    public mod_unix_time_sec: number
+  ) {}
 }
 
 export class ElementSetItemPost {
-    constructor(
-        public name: string,
-        public lines: ElementSetItemLines[]
-    ) {
-    }
+  constructor(
+    public name: string,
+    public lines: ElementSetItemLines[]
+  ) {}
 }
 
 @Injectable({
-    providedIn: "root"
+  providedIn: "root",
 })
 export class ElementSetService {
-    private _elementSets$ = new ReplaySubject<ElementSetSummary[]>(1);
+  private _elementSets$ = new ReplaySubject<ElementSetSummary[]>(1);
 
-    constructor(private http: HttpClient) {
-        this.refresh();
+  constructor(private http: HttpClient) {
+    this.refresh();
+  }
+
+  get elementSets$(): Subject<ElementSetSummary[]> {
+    return this._elementSets$;
+  }
+
+  private makeURL(id: string | null): string {
+    let apiURL = APIPaths.getWithHost(APIPaths.api_element_set);
+    if (id != null) {
+      apiURL += "/" + id;
     }
+    return apiURL;
+  }
 
-    get elementSets$(): Subject<ElementSetSummary[]> {
-        return this._elementSets$;
-    }
-
-    private makeURL(id: string | null): string {
-        let apiURL = APIPaths.getWithHost(APIPaths.api_element_set);
-        if (id != null) {
-            apiURL += "/" + id;
-        }
-        return apiURL;
-    }
-
-    refresh() {
-        let apiURL = this.makeURL(null);
-        this.http.get<Map<string, ElementSetSummaryWire>>(apiURL, makeHeaders()).subscribe((resp: Map<string, ElementSetSummaryWire>) => {
-            let summaries: ElementSetSummary[] = [];
-            for (let key of Object.keys(resp))
-            //for(let [key, value] of resp)
-            {
-                let value: any = resp.get(key);
-                summaries.push(
-                    new ElementSetSummary(
-                        key,
-                        value.name,
-                        value.atomicNumbers,
-                        value.shared,
-                        value.creator,
-                        value.create_unix_time_sec,
-                        value.mod_unix_time_sec
-                    )
-                );
-            }
-            this._elementSets$.next(summaries);
-        },
-            (err) => {
-                console.error("Failed to refresh element sets!");
-            }
-        );
-    }
-
-    get(id: string): Observable<ElementSetItem> {
-        let apiURL = this.makeURL(id);
-        return this.http.get<ElementSetItem>(apiURL, makeHeaders());
-    }
-
-    add(name: string, items: XRFLineGroup[]): Observable<void> {
-        let saveLines: ElementSetItemLines[] = [];
-
-        // Fill it with our items
-        for (let item of items) {
-            saveLines.push(new ElementSetItemLines(
-                item.atomicNumber,
-                item.k,
-                item.l,
-                item.m,
-                item.esc
+  refresh() {
+    let apiURL = this.makeURL(null);
+    this.http.get<Map<string, ElementSetSummaryWire>>(apiURL, makeHeaders()).subscribe(
+      (resp: Map<string, ElementSetSummaryWire>) => {
+        let summaries: ElementSetSummary[] = [];
+        //for(let [key, value] of resp)
+        for (let key of Object.keys(resp)) {
+          let value: any = resp.get(key);
+          summaries.push(
+            new ElementSetSummary(
+              key,
+              value.name,
+              value.atomicNumbers,
+              value.shared,
+              value.creator,
+              value.create_unix_time_sec,
+              value.mod_unix_time_sec
             )
-            );
+          );
         }
+        this._elementSets$.next(summaries);
+      },
+      err => {
+        console.error("Failed to refresh element sets!");
+      }
+    );
+  }
 
-        let toSave = new ElementSetItemPost(name, saveLines);
+  get(id: string): Observable<ElementSetItem> {
+    let apiURL = this.makeURL(id);
+    return this.http.get<ElementSetItem>(apiURL, makeHeaders());
+  }
 
-        let apiURL = this.makeURL(null);
-        return this.http.post<void>(apiURL, toSave, makeHeaders())
-            .pipe(
-                tap(ev => { this.refresh(); })
-            );
+  add(name: string, items: XRFLineGroup[]): Observable<void> {
+    let saveLines: ElementSetItemLines[] = [];
+
+    // Fill it with our items
+    for (let item of items) {
+      saveLines.push(new ElementSetItemLines(item.atomicNumber, item.k, item.l, item.m, item.esc));
     }
 
-    del(id: string): Observable<void> {
-        let apiURL = this.makeURL(id);
-        return this.http.delete<void>(apiURL, makeHeaders())
-            .pipe(
-                tap(ev => { this.refresh(); })
-            );
-    }
+    let toSave = new ElementSetItemPost(name, saveLines);
 
-    share(id: string): Observable<string> {
-        let apiURL = APIPaths.getWithHost(APIPaths.api_share + "/" + APIPaths.api_element_set + "/" + id);
-        return this.http.post<string>(apiURL, "", makeHeaders())
-            .pipe(
-                tap(ev => { this.refresh(); })
-            );
-    }
+    let apiURL = this.makeURL(null);
+    return this.http.post<void>(apiURL, toSave, makeHeaders()).pipe(
+      tap(ev => {
+        this.refresh();
+      })
+    );
+  }
+
+  del(id: string): Observable<void> {
+    let apiURL = this.makeURL(id);
+    return this.http.delete<void>(apiURL, makeHeaders()).pipe(
+      tap(ev => {
+        this.refresh();
+      })
+    );
+  }
+
+  share(id: string): Observable<string> {
+    let apiURL = APIPaths.getWithHost(APIPaths.api_share + "/" + APIPaths.api_element_set + "/" + id);
+    return this.http.post<string>(apiURL, "", makeHeaders()).pipe(
+      tap(ev => {
+        this.refresh();
+      })
+    );
+  }
 }

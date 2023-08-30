@@ -1,16 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { NavTopMenuComponent } from './nav-top-menu.component';
+import { NavTopMenuComponent } from "./nav-top-menu.component";
 
-describe('NavTopMenuComponent', () => {
+describe("NavTopMenuComponent", () => {
   let component: NavTopMenuComponent;
   let fixture: ComponentFixture<NavTopMenuComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ NavTopMenuComponent ]
-    })
-    .compileComponents();
+      declarations: [NavTopMenuComponent],
+    }).compileComponents();
   });
 
   beforeEach(() => {
@@ -19,7 +18,7 @@ describe('NavTopMenuComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

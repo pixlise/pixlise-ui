@@ -1,16 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { JoinTheCommunityComponent } from './join-the-community.component';
+import { JoinTheCommunityComponent } from "./join-the-community.component";
 
-describe('JoinTheCommunityComponent', () => {
+describe("JoinTheCommunityComponent", () => {
   let component: JoinTheCommunityComponent;
   let fixture: ComponentFixture<JoinTheCommunityComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ JoinTheCommunityComponent ]
-    })
-    .compileComponents();
+      declarations: [JoinTheCommunityComponent],
+    }).compileComponents();
   });
 
   beforeEach(() => {
@@ -19,7 +18,7 @@ describe('JoinTheCommunityComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

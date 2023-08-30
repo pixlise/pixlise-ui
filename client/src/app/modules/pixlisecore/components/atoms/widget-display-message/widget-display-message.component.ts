@@ -29,25 +29,18 @@
 
 import { Component, Input, OnInit } from "@angular/core";
 
-
-
 @Component({
-    selector: "app-widget-display-message",
-    templateUrl: "./widget-display-message.component.html",
-    styleUrls: ["./widget-display-message.component.scss"]
+  selector: "app-widget-display-message",
+  templateUrl: "./widget-display-message.component.html",
+  styleUrls: ["./widget-display-message.component.scss"],
 })
-export class WidgetDisplayMessageComponent implements OnInit
-{
-    @Input() image: string = "assets/icons/error.svg";
-    @Input() message: string = "";
-    @Input() large: boolean = false;
-    @Input() showSpinner: boolean = false;
+export class WidgetDisplayMessageComponent implements OnInit {
+  @Input() image: string = "assets/icons/error.svg";
+  @Input() message: string = "";
+  @Input() large: boolean = false;
+  @Input() showSpinner: boolean = false;
 
-    constructor()
-    {
-    }
+  constructor() {}
 
-    ngOnInit()
-    {
-    }
+  ngOnInit() {}
 }

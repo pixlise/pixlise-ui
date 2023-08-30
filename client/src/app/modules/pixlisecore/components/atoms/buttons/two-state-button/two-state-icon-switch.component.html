@@ -29,19 +29,16 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div fxLayout="row" fxLayoutAlign="start center" (click)="onClick($event)" class="btn-bg button-shadow button-hoverable clickable" [title]="toolTip">
-    <div class="btn-side" [ngClass]="{'btn-on': !active, 'btn-off': active}">
-        <div
-            class="icon-btn"
-            [ngStyle]="{'background-image': 'url('+leftIcon+')'}"
-            >
-        </div>
-    </div>
-    <div class="btn-side" [ngClass]="{'btn-on': active, 'btn-off': !active}">
-        <div
-            class="icon-btn"
-            [ngStyle]="{'background-image': 'url('+rightIcon+')'}"
-            >
-        </div>
-    </div>
+<div
+  fxLayout="row"
+  fxLayoutAlign="start center"
+  (click)="onClick($event)"
+  class="btn-bg button-shadow button-hoverable clickable"
+  [title]="toolTip">
+  <div class="btn-side" [ngClass]="{ 'btn-on': !active, 'btn-off': active }">
+    <div class="icon-btn" [ngStyle]="{ 'background-image': 'url(' + leftIcon + ')' }"></div>
+  </div>
+  <div class="btn-side" [ngClass]="{ 'btn-on': active, 'btn-off': !active }">
+    <div class="icon-btn" [ngStyle]="{ 'background-image': 'url(' + rightIcon + ')' }"></div>
+  </div>
 </div>

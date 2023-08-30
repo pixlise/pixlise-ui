@@ -31,34 +31,34 @@ import { Component, Inject } from "@angular/core";
 import { MAT_SNACK_BAR_DATA, MatSnackBarRef } from "@angular/material/snack-bar";
 
 interface SnackBarPopupData {
-    message: string;
-    action: string;
-    type: "warning" | "error" | "success";
+  message: string;
+  action: string;
+  type: "warning" | "error" | "success";
 }
 
 @Component({
-    selector: "snackbar-popup",
-    templateUrl: "./snackbar-popup.component.html",
-    styleUrls: ["./snackbar-popup.component.scss"]
+  selector: "snackbar-popup",
+  templateUrl: "./snackbar-popup.component.html",
+  styleUrls: ["./snackbar-popup.component.scss"],
 })
 export class SnackBarPopupComponent {
-    constructor(
-        public snackBarRef: MatSnackBarRef<SnackBarPopupComponent>,
-        @Inject(MAT_SNACK_BAR_DATA) public data: SnackBarPopupData
-    ) { }
+  constructor(
+    public snackBarRef: MatSnackBarRef<SnackBarPopupComponent>,
+    @Inject(MAT_SNACK_BAR_DATA) public data: SnackBarPopupData
+  ) {}
 
-    public close(): void {
-        this.snackBarRef.dismiss();
-    }
+  public close(): void {
+    this.snackBarRef.dismiss();
+  }
 
-    get icon() {
-        switch (this.data.type) {
-            case "warning":
-                return "warning";
-            case "error":
-                return "error";
-            case "success":
-                return "check_circle";
-        }
+  get icon() {
+    switch (this.data.type) {
+      case "warning":
+        return "warning";
+      case "error":
+        return "error";
+      case "success":
+        return "check_circle";
     }
+  }
 }

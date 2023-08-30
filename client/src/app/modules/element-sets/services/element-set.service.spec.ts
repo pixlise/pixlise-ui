@@ -30,14 +30,11 @@
 import { TestBed } from "@angular/core/testing";
 import { ElementSetService } from "./element-set.service";
 
+describe("ElementSetService", () => {
+  beforeEach(() => TestBed.configureTestingModule({}));
 
-describe("ElementSetService", () => 
-{
-    beforeEach(() => TestBed.configureTestingModule({}));
-
-    it("should be created", () => 
-    {
-        const service: ElementSetService = TestBed.get(ElementSetService);
-        expect(service).toBeTruthy();
-    });
+  it("should be created", () => {
+    const service: ElementSetService = TestBed.get(ElementSetService);
+    expect(service).toBeTruthy();
+  });
 });

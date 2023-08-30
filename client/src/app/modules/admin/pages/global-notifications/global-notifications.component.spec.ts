@@ -1,21 +1,21 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { GlobalNotificationsComponent } from './global-notifications.component';
+import { GlobalNotificationsComponent } from "./global-notifications.component";
 
-describe('GlobalNotificationsComponent', () => {
+describe("GlobalNotificationsComponent", () => {
   let component: GlobalNotificationsComponent;
   let fixture: ComponentFixture<GlobalNotificationsComponent>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [GlobalNotificationsComponent]
+      declarations: [GlobalNotificationsComponent],
     });
     fixture = TestBed.createComponent(GlobalNotificationsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

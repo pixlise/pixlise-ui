@@ -7,7 +7,7 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
 @Component({
   selector: "analysis-sidepanel",
   templateUrl: "./analysis-sidepanel.component.html",
-  styleUrls: ["./analysis-sidepanel.component.scss"]
+  styleUrls: ["./analysis-sidepanel.component.scss"],
 })
 export class AnalysisSidepanelComponent {
   showSearch = false;
@@ -18,7 +18,7 @@ export class AnalysisSidepanelComponent {
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _userOptionsService: UserOptionsService
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     if (this.sidepanelOpen && !this._openTabRef) {
@@ -88,9 +88,7 @@ export class AnalysisSidepanelComponent {
     }
   }
 
-  onOpenView(view: SidebarViewShortcut) {
-
-  }
+  onOpenView(view: SidebarViewShortcut) {}
 
   onToggleSidePanel() {
     this._analysisLayoutService.toggleSidePanel();

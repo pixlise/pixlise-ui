@@ -31,18 +31,15 @@
 import { Component } from "@angular/core";
 import { TwoStateButtonComponent } from "./two-state-button.component";
 
-
 @Component({
-    selector: "two-state-push-button",
-    templateUrl: "./two-state-push-button.component.html",
-    styleUrls: ["./two-state-push-button.component.scss"]
+  selector: "two-state-push-button",
+  templateUrl: "./two-state-push-button.component.html",
+  styleUrls: ["./two-state-push-button.component.scss"],
 })
-export class TwoStatePushButton extends TwoStateButtonComponent
-{
-    constructor()
-    {
-        super();
-        this.leftLabel = "";
-        this.rightLabel = "";
-    }
+export class TwoStatePushButton extends TwoStateButtonComponent {
+  constructor() {
+    super();
+    this.leftLabel = "";
+    this.rightLabel = "";
+  }
 }

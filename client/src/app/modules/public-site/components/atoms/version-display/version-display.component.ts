@@ -41,18 +41,11 @@ import { VERSION } from "src/environments/version";
 export class VersionDisplayComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
-  private _uiVersion = new ComponentVersion(
-    "PIXLISE",
-    (VERSION as any)?.raw || "(Local build)"
-  );
+  private _uiVersion = new ComponentVersion("PIXLISE", (VERSION as any)?.raw || "(Local build)");
   private _apiVersionDefault = new ComponentVersion("API", "");
   private _piquantVersionDefault = new ComponentVersion("PIQUANT", "");
 
-  versions: ComponentVersion[] = [
-    this._uiVersion,
-    this._apiVersionDefault,
-    this._piquantVersionDefault,
-  ];
+  versions: ComponentVersion[] = [this._uiVersion, this._apiVersionDefault, this._piquantVersionDefault];
 
   constructor(public envConfigService: EnvConfigurationService) {}
 
@@ -73,15 +66,12 @@ export class VersionDisplayComponent implements OnInit, OnDestroy {
             }
           }
         },
-        (err) => {
+        err => {
           // Just show our own version and errors for the other 2 known ones
           this.versions = [
             this._uiVersion,
             new ComponentVersion(this._apiVersionDefault.component, "(error)"),
-            new ComponentVersion(
-              this._piquantVersionDefault.component,
-              "(error)"
-            ),
+            new ComponentVersion(this._piquantVersionDefault.component, "(error)"),
           ];
         }
       )

@@ -1,21 +1,21 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { MapBrowserPageComponent } from './map-browser-page.component';
+import { MapBrowserPageComponent } from "./map-browser-page.component";
 
-describe('MapBrowserPageComponent', () => {
+describe("MapBrowserPageComponent", () => {
   let component: MapBrowserPageComponent;
   let fixture: ComponentFixture<MapBrowserPageComponent>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      declarations: [MapBrowserPageComponent]
+      declarations: [MapBrowserPageComponent],
     });
     fixture = TestBed.createComponent(MapBrowserPageComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

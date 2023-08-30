@@ -1,9 +1,9 @@
-import { Injectable } from '@angular/core';
-import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from '../models/sidebar.model';
-import { ReplaySubject, timer } from 'rxjs';
+import { Injectable } from "@angular/core";
+import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../models/sidebar.model";
+import { ReplaySubject, timer } from "rxjs";
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class AnalysisLayoutService {
   sidepanelOpen: boolean = false;
@@ -16,7 +16,7 @@ export class AnalysisLayoutService {
 
   activeTab: SidebarTabItem | null = null;
 
-  constructor() { }
+  constructor() {}
 
   get resizeCanvas$(): ReplaySubject<void> {
     // Something just subscribed, schedule a notification in a second
@@ -41,7 +41,6 @@ export class AnalysisLayoutService {
     });
   }
 
-
   toggleSidePanel() {
     this.sidepanelOpen = !this.sidepanelOpen;
     if (this.sidepanelOpen && !this.activeTab) {
@@ -56,5 +55,4 @@ export class AnalysisLayoutService {
   get isFirefox(): boolean {
     return !!navigator.userAgent.match(/firefox|fxios/i);
   }
-
 }

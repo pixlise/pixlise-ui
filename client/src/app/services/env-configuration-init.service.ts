@@ -75,53 +75,54 @@ export class EnvConfigurationInitService {
   private static _appConfig?: AppConfig;
   private _gotConfig$: ReplaySubject<void> = new ReplaySubject<void>();
 
-  constructor() { }
+  constructor() {}
 
   readAppConfig(handler: HttpBackend, authConfig?: AuthClientConfig): Promise<AppConfig | null> {
     const request$ = new HttpClient(handler).get<AppConfig>(`./${environment.configName}`).pipe(take(1));
-    return firstValueFrom(request$).then(
-      (config) => {
-        if (!config) {
-          console.error("Failed to load application config");
-          return null;
-        }
+    return firstValueFrom(request$)
+      .then(
+        config => {
+          if (!config) {
+            console.error("Failed to load application config");
+            return null;
+          }
 
-        if (authConfig) {
-          authConfig.set({
-            domain: config.auth0_domain,
-            clientId: config.auth0_client,
-            authorizationParams: {
-              audience: config.auth0_audience,
-              redirect_uri: `${window.location.origin}/authenticate`,
-            }
-          });
-        }
+          if (authConfig) {
+            authConfig.set({
+              domain: config.auth0_domain,
+              clientId: config.auth0_client,
+              authorizationParams: {
+                audience: config.auth0_audience,
+                redirect_uri: `${window.location.origin}/authenticate`,
+              },
+            });
+          }
 
-        EnvConfigurationInitService._appConfig = config;
+          EnvConfigurationInitService._appConfig = config;
 
-        // We want a default here as this file is now fixed in the UI repo
-        if (config && !config?.dataCollectionAgreementVersionUrl) {
-          config.dataCollectionAgreementVersionUrl =
-            "/agreement-version.json";
-        }
-        this._gotConfig$.next();
-        console.log("Loaded application config...");
+          // We want a default here as this file is now fixed in the UI repo
+          if (config && !config?.dataCollectionAgreementVersionUrl) {
+            config.dataCollectionAgreementVersionUrl = "/agreement-version.json";
+          }
+          this._gotConfig$.next();
+          console.log("Loaded application config...");
 
-        // Set the API URL in the paths helper (static var)
-        if (config?.apiUrl) {
-          APIPaths.setAPIUrl(config.apiUrl);
-        }
+          // Set the API URL in the paths helper (static var)
+          if (config?.apiUrl) {
+            APIPaths.setAPIUrl(config.apiUrl);
+          }
 
-        return config;
-      } /*,
+          return config;
+        } /*,
                 (err)=>
                 {
                     console.error("Failed to load application config: "+err);
                 }*/
-    ).catch(err => {
-      console.error("Failed to load application config: ", err);
-      return null;
-    });
+      )
+      .catch(err => {
+        console.error("Failed to load application config: ", err);
+        return null;
+      });
   }
 
   // This is static because some code will want to reference this without having

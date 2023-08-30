@@ -1,6 +1,6 @@
 import { APP_INITIALIZER, ErrorHandler, Injectable, NgModule } from "@angular/core";
 import { BrowserModule, Title } from "@angular/platform-browser";
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
 import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
@@ -15,7 +15,7 @@ import { VERSION } from "src/environments/version";
 import { SentryHelper } from "src/app/utils/utils";
 import { MAT_DIALOG_DATA, MAT_DIALOG_DEFAULT_OPTIONS, MatDialogRef } from "@angular/material/dialog";
 import { MaterialModule } from "./modules/material.module";
-import { AuthModule, AuthClientConfig } from '@auth0/auth0-angular';
+import { AuthModule, AuthClientConfig } from "@auth0/auth0-angular";
 import { AnalysisModule } from "./modules/analysis/analysis.module";
 import { NotFoundModule } from "./modules/not-found/not-found.module";
 import { CodeEditorModule } from "./modules/code-editor/code-editor.module";
@@ -25,7 +25,7 @@ import { AdminModule } from "./modules/admin/admin.module";
 import { SettingsModule } from "./modules/settings/settings.module";
 import { FormsModule } from "@angular/forms";
 import { ToolbarComponent } from "./components/toolbar/toolbar.component";
-import { SettingsSidebarComponent } from './components/settings-sidebar/settings-sidebar.component';
+import { SettingsSidebarComponent } from "./components/settings-sidebar/settings-sidebar.component";
 
 const appInitializerFn = (configService: EnvConfigurationInitService, handler: HttpBackend, authConfig: AuthClientConfig) => {
   return () => {
@@ -39,7 +39,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
           // https://github.com/getsentry/sentry-react-native/issues/794
           integrations: [
             new Sentry.Integrations.Breadcrumbs({
-              console: false
+              console: false,
             }),
             new Sentry.Replay(),
           ],
@@ -51,7 +51,6 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
             // Note: issue with a second entry not being set correctly (as a non-error): https://github.com/getsentry/sentry-javascript/issues/2292#issuecomment-554932519
             const isNonErrorException = event?.exception?.values?.[0]?.value?.startsWith?.("Non-Error exception captured");
             if (isNonErrorException) {
-
               let serializedExtra: any = event?.extra?.["__serialized__"];
               if (!serializedExtra) {
                 return null;
@@ -71,14 +70,12 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
         const version = (VERSION as any)["raw"];
         console.log("Sentry Initialised, adding version tag: " + version);
         Sentry.setTag("version", version);
-      }
-      else {
+      } else {
         console.log("No Sentry DNS, Sentry error reporting disabled");
       }
     });
   };
 };
-
 
 @NgModule({
   declarations: [AppComponent],
@@ -99,7 +96,7 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
     QuantificationsModule,
     AdminModule,
     SettingsModule,
-    AuthModule.forRoot()
+    AuthModule.forRoot(),
   ],
   providers: [
     EnvConfigurationInitService,
@@ -112,29 +109,29 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
     Title,
     {
       provide: MAT_DIALOG_DEFAULT_OPTIONS,
-      useValue: { hasBackdrop: true }
+      useValue: { hasBackdrop: true },
     },
     {
       provide: HTTP_INTERCEPTORS,
       useClass: HttpInterceptorService,
-      multi: true
+      multi: true,
     },
     {
       provide: MAT_DIALOG_DATA,
-      useValue: {}
+      useValue: {},
     },
     {
       provide: MatDialogRef,
-      useValue: {}
+      useValue: {},
     },
     {
       provide: ErrorHandler,
       useValue: Sentry.createErrorHandler({
         showDialog: true,
       }),
-    }
+    },
   ],
   bootstrap: [AppComponent],
-  exports: [ToolbarComponent]
+  exports: [ToolbarComponent],
 })
-export class AppModule { }
+export class AppModule {}

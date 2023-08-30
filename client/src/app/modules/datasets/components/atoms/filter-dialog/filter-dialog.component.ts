@@ -34,127 +34,98 @@ import { DatasetFilter } from "../../../dataset-filter";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { positionDialogNearParent } from "src/app/utils/utils";
 
-
-
-
-export class FilterDialogData
-{
-    constructor(
-        public filter: DatasetFilter,
-        public triggerElementRef: ElementRef
-    )
-    {
-    }
+export class FilterDialogData {
+  constructor(
+    public filter: DatasetFilter,
+    public triggerElementRef: ElementRef
+  ) {}
 }
 
 @Component({
-    selector: "app-filter-dialog",
-    templateUrl: "./filter-dialog.component.html",
-    styleUrls: ["./filter-dialog.component.scss"]
+  selector: "app-filter-dialog",
+  templateUrl: "./filter-dialog.component.html",
+  styleUrls: ["./filter-dialog.component.scss"],
 })
-export class FilterDialogComponent implements OnInit
-{
-    allDetectorConfigs: string[] = [];
+export class FilterDialogComponent implements OnInit {
+  allDetectorConfigs: string[] = [];
 
-    constructor(
-        @Inject(MAT_DIALOG_DATA) public data: FilterDialogData,
-        private _envService: EnvConfigurationService,
-        public dialogRef: MatDialogRef<FilterDialogComponent>,
-        private _ViewContainerRef: ViewContainerRef
-    )
-    {
-    }
+  constructor(
+    @Inject(MAT_DIALOG_DATA) public data: FilterDialogData,
+    private _envService: EnvConfigurationService,
+    public dialogRef: MatDialogRef<FilterDialogComponent>,
+    private _ViewContainerRef: ViewContainerRef
+  ) {}
 
-    ngOnInit(): void
-    {
-        this._envService.listConfigs().subscribe(
-            (configs: DetectorConfigList)=>
-            {
-                this.allDetectorConfigs = ["", ...configs.configNames];
-            }
-        );
-    }
+  ngOnInit(): void {
+    this._envService.listConfigs().subscribe((configs: DetectorConfigList) => {
+      this.allDetectorConfigs = ["", ...configs.configNames];
+    });
+  }
 
-    ngAfterViewInit()
-    {
-        // Move to be near the element that opened us
-        if(this.data.triggerElementRef)
-        {
-            const openerRect = this.data.triggerElementRef.nativeElement.getBoundingClientRect();
-            const ourWindowRect = this._ViewContainerRef.element.nativeElement.parentNode.getBoundingClientRect();
+  ngAfterViewInit() {
+    // Move to be near the element that opened us
+    if (this.data.triggerElementRef) {
+      const openerRect = this.data.triggerElementRef.nativeElement.getBoundingClientRect();
+      const ourWindowRect = this._ViewContainerRef.element.nativeElement.parentNode.getBoundingClientRect();
 
-            let pos = positionDialogNearParent(openerRect, ourWindowRect);
-            this.dialogRef.updatePosition(pos);
-        }
+      let pos = positionDialogNearParent(openerRect, ourWindowRect);
+      this.dialogRef.updatePosition(pos);
     }
+  }
 
-    get solSet(): boolean
-    {
-        return this.data.filter.solMin != null || this.data.filter.solMax != null;
-    }
+  get solSet(): boolean {
+    return this.data.filter.solMin != null || this.data.filter.solMax != null;
+  }
 
-    get targetSet(): boolean
-    {
-        return this.data.filter.target != null;
-    }
+  get targetSet(): boolean {
+    return this.data.filter.target != null;
+  }
 
-    get driveSet(): boolean
-    {
-        return this.data.filter.drive != null;
-    }
+  get driveSet(): boolean {
+    return this.data.filter.drive != null;
+  }
 
-    get siteSet(): boolean
-    {
-        return this.data.filter.site != null;
-    }
-    
-    get detectorSet(): boolean
-    {
-        return this.data.filter.detectorChosen != null;
-    }
-    
-    get dwellSet(): boolean
-    {
-        return this.data.filter.hasDwell;
-    }
-    
-    get quantSet(): boolean
-    {
-        return this.data.filter.hasQuant;
-    }
-    
-    get normalSet(): boolean
-    {
-        return this.data.filter.hasNormal;
-    }
-    
-    get pmcsSet(): boolean
-    {
-        return this.data.filter.pmcsMin != null || this.data.filter.pmcsMax != null;
-    }
+  get siteSet(): boolean {
+    return this.data.filter.site != null;
+  }
 
-    onToggleHasDwell(): void
-    {
-        this.data.filter.hasDwell = !this.data.filter.hasDwell;
-    }
+  get detectorSet(): boolean {
+    return this.data.filter.detectorChosen != null;
+  }
 
-    onToggleHasQuant(): void
-    {
-        this.data.filter.hasQuant = !this.data.filter.hasQuant;
-    }
+  get dwellSet(): boolean {
+    return this.data.filter.hasDwell;
+  }
 
-    onToggleHasNormal(): void
-    {
-        this.data.filter.hasNormal = !this.data.filter.hasNormal;
-    }
+  get quantSet(): boolean {
+    return this.data.filter.hasQuant;
+  }
 
-    onClear(): void
-    {
-        this.data.filter.clear();
-    }
+  get normalSet(): boolean {
+    return this.data.filter.hasNormal;
+  }
 
-    onApply(): void
-    {
-        this.dialogRef.close(this.data.filter);
-    }
+  get pmcsSet(): boolean {
+    return this.data.filter.pmcsMin != null || this.data.filter.pmcsMax != null;
+  }
+
+  onToggleHasDwell(): void {
+    this.data.filter.hasDwell = !this.data.filter.hasDwell;
+  }
+
+  onToggleHasQuant(): void {
+    this.data.filter.hasQuant = !this.data.filter.hasQuant;
+  }
+
+  onToggleHasNormal(): void {
+    this.data.filter.hasNormal = !this.data.filter.hasNormal;
+  }
+
+  onClear(): void {
+    this.data.filter.clear();
+  }
+
+  onApply(): void {
+    this.dialogRef.close(this.data.filter);
+  }
 }

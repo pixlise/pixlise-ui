@@ -1,16 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { PublicPageComponent } from './public-page.component';
+import { PublicPageComponent } from "./public-page.component";
 
-describe('PublicPageComponent', () => {
+describe("PublicPageComponent", () => {
   let component: PublicPageComponent;
   let fixture: ComponentFixture<PublicPageComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ PublicPageComponent ]
-    })
-    .compileComponents();
+      declarations: [PublicPageComponent],
+    }).compileComponents();
   });
 
   beforeEach(() => {
@@ -19,7 +18,7 @@ describe('PublicPageComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

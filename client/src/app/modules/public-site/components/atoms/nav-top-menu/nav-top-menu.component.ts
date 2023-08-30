@@ -27,30 +27,18 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import {
-  Component,
-  OnInit,
-  ViewChildren,
-  ElementRef,
-  QueryList,
-} from "@angular/core";
+import { Component, OnInit, ViewChildren, ElementRef, QueryList } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 
 import { Navigation } from "../../navigation";
 
-import {
-  LoginPrefix,
-  SignupPrefix,
-} from "../number-button/number-button.component";
+import { LoginPrefix, SignupPrefix } from "../number-button/number-button.component";
 import { DefaultLoggedInLink } from "../../navigation";
 
 @Component({
   selector: "nav-top-menu",
   templateUrl: "./nav-top-menu.component.html",
-  styleUrls: [
-    "./nav-top-menu.component.scss",
-    "./nav-menu/nav-menu.component.scss",
-  ],
+  styleUrls: ["./nav-top-menu.component.scss", "./nav-menu/nav-menu.component.scss"],
 })
 export class NavTopMenuComponent implements OnInit {
   @ViewChildren("childMenu") childMenuElements: QueryList<ElementRef> = new QueryList<ElementRef>();
@@ -61,17 +49,18 @@ export class NavTopMenuComponent implements OnInit {
   private _openMenus: Map<string, boolean> = new Map<string, boolean>();
   private _activeNavGroup: string = "";
 
-  constructor(private _activeRoute: ActivatedRoute, private _router: Router) { }
+  constructor(
+    private _activeRoute: ActivatedRoute,
+    private _router: Router
+  ) {}
 
   ngOnInit(): void {
     for (let c of this.navigation.categories) {
       this._openMenus.set(c, false);
     }
 
-    this._activeRoute.url.subscribe((url) => {
-      this._activeNavGroup = this.navigation.getCategoryByLink(
-        this._router.url
-      );
+    this._activeRoute.url.subscribe(url => {
+      this._activeNavGroup = this.navigation.getCategoryByLink(this._router.url);
     });
   }
 

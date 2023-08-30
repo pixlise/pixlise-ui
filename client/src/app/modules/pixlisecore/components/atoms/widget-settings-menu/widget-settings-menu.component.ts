@@ -33,7 +33,6 @@ import { Component, EventEmitter, Injector, Input, OnInit, Output, TemplateRef, 
 import { MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { MenuPanelHostComponent, MenuPanelHostData } from "./menu-panel-host/menu-panel-host.component";
 
-
 // Warning when using this:
 //
 // If we don't close the options overlay in the onClick handler for some button in it (that navigates to
@@ -50,124 +49,111 @@ import { MenuPanelHostComponent, MenuPanelHostData } from "./menu-panel-host/men
 // often crashes at this point with no stack trace/reason you can look at
 
 @Component({
-    selector: "widget-settings-menu",
-    templateUrl: "./widget-settings-menu.component.html",
-    styleUrls: ["./widget-settings-menu.component.scss"]
+  selector: "widget-settings-menu",
+  templateUrl: "./widget-settings-menu.component.html",
+  styleUrls: ["./widget-settings-menu.component.scss"],
 })
 export class WidgetSettingsMenuComponent implements OnInit {
-    @ViewChild(CdkOverlayOrigin) _overlayOrigin: CdkOverlayOrigin | undefined;
+  @ViewChild(CdkOverlayOrigin) _overlayOrigin: CdkOverlayOrigin | undefined;
 
-    @Input() settingsDialog: TemplateRef<any> | null = null;
-    @Input() overflowSection: TemplateRef<any> | null = null;
-    @Input() openDirDown: boolean = true;
-    @Input() noPadding: boolean = false;
-    @Input() xOffset: number = 0;
-    @Output() onClose = new EventEmitter();
+  @Input() settingsDialog: TemplateRef<any> | null = null;
+  @Input() overflowSection: TemplateRef<any> | null = null;
+  @Input() openDirDown: boolean = true;
+  @Input() noPadding: boolean = false;
+  @Input() xOffset: number = 0;
+  @Output() onClose = new EventEmitter();
 
-    private _overlayRef: OverlayRef | null = null;
+  private _overlayRef: OverlayRef | null = null;
 
-    constructor(
-        public overlay: Overlay,
-        public viewContainerRef: ViewContainerRef,
-        private injector: Injector
-    ) {
+  constructor(
+    public overlay: Overlay,
+    public viewContainerRef: ViewContainerRef,
+    private injector: Injector
+  ) {}
+
+  ngOnInit(): void {}
+
+  ngOnDestroy() {
+    this.hidePanel();
+  }
+
+  onToggleSettings(): void {
+    if (this._overlayRef) {
+      this.hidePanel();
+    } else {
+      this.showPanel();
+    }
+  }
+
+  close(): void {
+    this.hidePanel();
+  }
+
+  get isShowing(): boolean {
+    return this._overlayRef != null;
+  }
+
+  private hidePanel(): void {
+    if (!this._overlayRef) {
+      return;
     }
 
-    ngOnInit(): void {
+    // Clear our var and back up so detachments subscription doesn't double up calling us
+    let ref = this._overlayRef;
+    this._overlayRef = null;
+
+    let result = ref.detach();
+    this.onClose.emit();
+  }
+
+  private showPanel(): void {
+    if (this._overlayRef || !this._overlayOrigin || !this.settingsDialog) {
+      return;
     }
+    const strategy = this.overlay.position().flexibleConnectedTo(this._overlayOrigin.elementRef);
 
-    ngOnDestroy() {
-        this.hidePanel();
-    }
+    const positions = [
+      new ConnectionPositionPair(
+        {
+          originX: "end",
+          originY: this.openDirDown ? "bottom" : "top",
+        },
+        {
+          overlayX: "end",
+          overlayY: this.openDirDown ? "top" : "bottom",
+        },
+        this.xOffset, // Offset X
+        2 // Offset Y
+      ),
+    ];
 
-    onToggleSettings(): void {
-        if (this._overlayRef) {
-            this.hidePanel();
-        }
-        else {
-            this.showPanel();
-        }
-    }
+    strategy.withPositions(positions);
+    strategy.withPush(false);
 
-    close(): void {
-        this.hidePanel();
-    }
+    const config = new OverlayConfig({
+      positionStrategy: strategy,
+      scrollStrategy: this.overlay.scrollStrategies.reposition(),
+      hasBackdrop: true,
+      backdropClass: "empty-overlay-backdrop",
+    });
 
-    get isShowing(): boolean {
-        return this._overlayRef != null;
-    }
+    this._overlayRef = this.overlay.create(config);
 
-    private hidePanel(): void {
-        if (!this._overlayRef) {
-            return;
-        }
+    let inj = Injector.create({
+      parent: this.injector,
+      providers: [
+        { provide: OverlayRef, useValue: this._overlayRef },
+        { provide: MAT_DIALOG_DATA, useValue: new MenuPanelHostData(this.settingsDialog, this.overflowSection, this.noPadding) },
+      ],
+    });
 
-        // Clear our var and back up so detachments subscription doesn't double up calling us
-        let ref = this._overlayRef;
-        this._overlayRef = null;
+    let attachment = new ComponentPortal(MenuPanelHostComponent, this.viewContainerRef, inj);
 
-        let result = ref.detach();
-        this.onClose.emit();
-    }
+    this._overlayRef.attach(attachment);
 
-    private showPanel(): void {
-        if (this._overlayRef || !this._overlayOrigin || !this.settingsDialog) {
-            return;
-        }
-        const strategy = this.overlay.position().flexibleConnectedTo(this._overlayOrigin.elementRef);
-
-        const positions = [
-            new ConnectionPositionPair(
-                {
-                    originX: "end",
-                    originY: (this.openDirDown ? "bottom" : "top")
-                },
-                {
-                    overlayX: "end",
-                    overlayY: (this.openDirDown ? "top" : "bottom")
-                },
-                this.xOffset, // Offset X
-                2  // Offset Y
-            )
-        ];
-
-        strategy.withPositions(positions);
-        strategy.withPush(false);
-
-        const config = new OverlayConfig(
-            {
-                positionStrategy: strategy,
-                scrollStrategy: this.overlay.scrollStrategies.reposition(),
-                hasBackdrop: true,
-                backdropClass: "empty-overlay-backdrop",
-            }
-        );
-
-        this._overlayRef = this.overlay.create(config);
-
-        let inj = Injector.create(
-            {
-                parent: this.injector,
-                providers: [
-                    { provide: OverlayRef, useValue: this._overlayRef },
-                    { provide: MAT_DIALOG_DATA, useValue: new MenuPanelHostData(this.settingsDialog, this.overflowSection, this.noPadding) },
-                ]
-            }
-        );
-
-        let attachment = new ComponentPortal(
-            MenuPanelHostComponent,
-            this.viewContainerRef,
-            inj
-        );
-
-        this._overlayRef.attach(attachment);
-
-        // If required, set up so we close if user clicks our background
-        this._overlayRef.backdropClick().subscribe(
-            (event) => {
-                this.hidePanel();
-            }
-        );
-    }
+    // If required, set up so we close if user clicks our background
+    this._overlayRef.backdropClick().subscribe(event => {
+      this.hidePanel();
+    });
+  }
 }

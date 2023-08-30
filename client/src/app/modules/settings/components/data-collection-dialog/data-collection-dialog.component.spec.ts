@@ -30,29 +30,23 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { DataCollectionDialogComponent } from "./data-collection-dialog.component";
 
+describe("DataCollectionDialogComponent", () => {
+  let component: DataCollectionDialogComponent;
+  let fixture: ComponentFixture<DataCollectionDialogComponent>;
 
-describe("DataCollectionDialogComponent", () => 
-{
-    let component: DataCollectionDialogComponent;
-    let fixture: ComponentFixture<DataCollectionDialogComponent>;
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [DataCollectionDialogComponent],
+    }).compileComponents();
+  });
 
-    beforeEach(async () => 
-    {
-        await TestBed.configureTestingModule({
-            declarations: [ DataCollectionDialogComponent ]
-        })
-            .compileComponents();
-    });
+  beforeEach(() => {
+    fixture = TestBed.createComponent(DataCollectionDialogComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
 
-    beforeEach(() => 
-    {
-        fixture = TestBed.createComponent(DataCollectionDialogComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
-
-    it("should create", () => 
-    {
-        expect(component).toBeTruthy();
-    });
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
 });

@@ -1,16 +1,15 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { NavSectionSwitchComponent } from './nav-section-switch.component';
+import { NavSectionSwitchComponent } from "./nav-section-switch.component";
 
-describe('NavSectionSwitchComponent', () => {
+describe("NavSectionSwitchComponent", () => {
   let component: NavSectionSwitchComponent;
   let fixture: ComponentFixture<NavSectionSwitchComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ NavSectionSwitchComponent ]
-    })
-    .compileComponents();
+      declarations: [NavSectionSwitchComponent],
+    }).compileComponents();
   });
 
   beforeEach(() => {
@@ -19,7 +18,7 @@ describe('NavSectionSwitchComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

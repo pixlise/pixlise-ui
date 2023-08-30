@@ -31,53 +31,71 @@ import { Component, EventEmitter, Input, OnInit, Output, TemplateRef } from "@an
 import { BadgeStyle } from "../../badge/badge.component";
 import { MatDialog, MatDialogRef } from "@angular/material/dialog";
 
-export type PushButtonStyle = "normal" | "borderless" | "yellow" | "outline" | "gray" | "light-right-outline" | "orange" | "dark-outline" | "hover-yellow";
+export type PushButtonStyle =
+  | "normal"
+  | "borderless"
+  | "yellow"
+  | "outline"
+  | "gray"
+  | "light-right-outline"
+  | "orange"
+  | "dark-outline"
+  | "hover-yellow";
 
 @Component({
-    selector: "push-button",
-    templateUrl: "./push-button.component.html",
-    styleUrls: ["./push-button.component.scss"]
+  selector: "push-button",
+  templateUrl: "./push-button.component.html",
+  styleUrls: ["./push-button.component.scss"],
 })
 export class PushButtonComponent implements OnInit {
-    @Input() buttonStyle: PushButtonStyle = "normal";
-    @Input() active: boolean = false;
-    @Input() disabled: boolean = false;
-    @Input() notificationCount: number = 0;
-    @Input() badgeStyle: BadgeStyle = "notification";
-    @Input() tooltipTitle: string = "";
+  @Input() buttonStyle: PushButtonStyle = "normal";
+  @Input() active: boolean = false;
+  @Input() disabled: boolean = false;
+  @Input() notificationCount: number = 0;
+  @Input() badgeStyle: BadgeStyle = "notification";
+  @Input() tooltipTitle: string = "";
 
-    @Input() customDialog: TemplateRef<any> | null = null;
+  @Input() customDialog: TemplateRef<any> | null = null;
 
-    @Output() onClick = new EventEmitter();
+  @Output() onClick = new EventEmitter();
 
-    constructor(
-        private dialog: MatDialog,
-        private _dialogRef: MatDialogRef<any>,
-    ) {
+  constructor(
+    private dialog: MatDialog,
+    private _dialogRef: MatDialogRef<any>
+  ) {}
+
+  ngOnInit() {
+    const validStyles: PushButtonStyle[] = [
+      "normal",
+      "borderless",
+      "yellow",
+      "outline",
+      "gray",
+      "light-right-outline",
+      "orange",
+      "dark-outline",
+      "hover-yellow",
+    ];
+    if (validStyles.indexOf(this.buttonStyle) == -1) {
+      console.warn("Invalid style for push-button: " + this.buttonStyle);
+      this.buttonStyle = validStyles[0];
     }
+  }
 
-    ngOnInit() {
-        const validStyles: PushButtonStyle[] = ["normal", "borderless", "yellow", "outline", "gray", "light-right-outline", "orange", "dark-outline", "hover-yellow"];
-        if (validStyles.indexOf(this.buttonStyle) == -1) {
-            console.warn("Invalid style for push-button: " + this.buttonStyle);
-            this.buttonStyle = validStyles[0];
-        }
-    }
+  get styleCSS(): string {
+    return `btn-${this.buttonStyle}${this.disabled ? " disabled" : ""}${this.active ? " active" : ""}`;
+  }
 
-    get styleCSS(): string {
-        return `btn-${this.buttonStyle}${this.disabled ? " disabled" : ""}${this.active ? " active" : ""}`;
+  onClickInternal(event: MouseEvent): void {
+    if (!this.disabled) {
+      if (this.customDialog) {
+        this._dialogRef = this.dialog.open(this.customDialog, {});
+      }
+      this.onClick.emit(event);
     }
+  }
 
-    onClickInternal(event: MouseEvent): void {
-        if (!this.disabled) {
-            if (this.customDialog) {
-                this._dialogRef = this.dialog.open(this.customDialog, {});
-            }
-            this.onClick.emit(event);
-        }
-    }
-
-    closeDialog() {
-        this._dialogRef.close();
-    }
+  closeDialog() {
+    this._dialogRef.close();
+  }
 }

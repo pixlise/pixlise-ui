@@ -29,38 +29,35 @@
 
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 
-
 @Component({
-    selector: "two-state-button",
-    templateUrl: "./two-state-button.component.html",
-    styleUrls: ["./two-state-button.component.scss"]
+  selector: "two-state-button",
+  templateUrl: "./two-state-button.component.html",
+  styleUrls: ["./two-state-button.component.scss"],
 })
 export class TwoStateButtonComponent implements OnInit {
-    @Input() leftLabel: string = "";
-    @Input() rightLabel: string = "";
+  @Input() leftLabel: string = "";
+  @Input() rightLabel: string = "";
 
-    @Input() toolTip: string = "";
+  @Input() toolTip: string = "";
 
-    @Input() active: boolean = false;
-    // Great... 2 state buttons ended up with a 3rd state. Bit ugly for now but works :(
-    // So far/at time of writing only two-state-icon-button supports this visually, but we
-    // here don't send click event up either...
-    @Input() disabled: boolean = false;
+  @Input() active: boolean = false;
+  // Great... 2 state buttons ended up with a 3rd state. Bit ugly for now but works :(
+  // So far/at time of writing only two-state-icon-button supports this visually, but we
+  // here don't send click event up either...
+  @Input() disabled: boolean = false;
 
-    @Output() onToggle = new EventEmitter();
+  @Output() onToggle = new EventEmitter();
 
-    constructor() {
+  constructor() {}
+
+  ngOnInit() {}
+
+  onClick(event: any): void {
+    if (this.disabled) {
+      return;
     }
-
-    ngOnInit() {
-    }
-
-    onClick(event: any): void {
-        if (this.disabled) {
-            return;
-        }
-        // TODO: return the event too, so things like stopPropagation() can be called! For now the only place needing it was WorkspacesComponent, so solved
-        // that with (click)=...
-        this.onToggle.emit(!this.active);
-    }
+    // TODO: return the event too, so things like stopPropagation() can be called! For now the only place needing it was WorkspacesComponent, so solved
+    // that with (click)=...
+    this.onToggle.emit(!this.active);
+  }
 }

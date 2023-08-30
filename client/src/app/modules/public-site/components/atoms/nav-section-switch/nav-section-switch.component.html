@@ -30,15 +30,16 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="flex-row nav-switch" [ngClass]="colourStyle">
-    <div class="clickable" (click)="onNavLeft()">
-        <div class="nav-btn left-nav">
-            <span class="red chevron">&laquo;</span>
-            {{leftNavLabel}}
-        </div>
+  <div class="clickable" (click)="onNavLeft()">
+    <div class="nav-btn left-nav">
+      <span class="red chevron">&laquo;</span>
+      {{ leftNavLabel }}
     </div>
-    <div class="clickable" (click)="onNavRight()">
-        <div class="nav-btn right-nav">{{rightNavLabel}} 
-            <span class="red chevron">&raquo;</span>
-        </div>
+  </div>
+  <div class="clickable" (click)="onNavRight()">
+    <div class="nav-btn right-nav">
+      {{ rightNavLabel }}
+      <span class="red chevron">&raquo;</span>
     </div>
+  </div>
 </div>

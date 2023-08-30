@@ -30,29 +30,23 @@
 import { async, ComponentFixture, TestBed } from "@angular/core/testing";
 import { PanelFoldoutButtonComponent } from "./panel-foldout-button.component";
 
+describe("PanelFoldoutButtonComponent", () => {
+  let component: PanelFoldoutButtonComponent;
+  let fixture: ComponentFixture<PanelFoldoutButtonComponent>;
 
-describe("PanelFoldoutButtonComponent", () => 
-{
-    let component: PanelFoldoutButtonComponent;
-    let fixture: ComponentFixture<PanelFoldoutButtonComponent>;
+  beforeEach(async(() => {
+    TestBed.configureTestingModule({
+      declarations: [PanelFoldoutButtonComponent],
+    }).compileComponents();
+  }));
 
-    beforeEach(async(() => 
-    {
-        TestBed.configureTestingModule({
-            declarations: [ PanelFoldoutButtonComponent ]
-        })
-            .compileComponents();
-    }));
+  beforeEach(() => {
+    fixture = TestBed.createComponent(PanelFoldoutButtonComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
 
-    beforeEach(() => 
-    {
-        fixture = TestBed.createComponent(PanelFoldoutButtonComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
-
-    it("should create", () => 
-    {
-        expect(component).toBeTruthy();
-    });
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
 });

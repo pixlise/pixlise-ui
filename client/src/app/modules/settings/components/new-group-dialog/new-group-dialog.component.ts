@@ -32,32 +32,28 @@ import { MatDialogRef } from "@angular/material/dialog";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 @Component({
-    selector: "app-new-group-dialog",
-    templateUrl: "./new-group-dialog.component.html",
-    styleUrls: ["./new-group-dialog.component.scss"]
+  selector: "app-new-group-dialog",
+  templateUrl: "./new-group-dialog.component.html",
+  styleUrls: ["./new-group-dialog.component.scss"],
 })
 export class NewGroupDialogComponent implements OnInit {
-    groupName: string = "";
+  groupName: string = "";
 
-    constructor(
-        public dialogRef: MatDialogRef<NewGroupDialogComponent>,
-    ) {
-    }
+  constructor(public dialogRef: MatDialogRef<NewGroupDialogComponent>) {}
 
-    ngOnInit(): void {
-    }
+  ngOnInit(): void {}
 
-    onCancel(): void {
-        this.dialogRef.close();
-    }
+  onCancel(): void {
+    this.dialogRef.close();
+  }
 
-    onConfirm(): void {
-        this.dialogRef.close({
-            groupName: this.groupName
-        });
-    }
+  onConfirm(): void {
+    this.dialogRef.close({
+      groupName: this.groupName,
+    });
+  }
 
-    get appDomain(): string {
-        return EnvConfigurationInitService.appConfig.appDomain;
-    }
+  get appDomain(): string {
+    return EnvConfigurationInitService.appConfig.appDomain;
+  }
 }

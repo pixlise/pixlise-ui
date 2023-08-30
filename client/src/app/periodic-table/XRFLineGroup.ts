@@ -31,77 +31,80 @@ import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { XRFLine, XRFLineType } from "src/app/periodic-table/XRFLine";
 import { ElementSetItemLines } from "../modules/element-sets/services/element-set.service";
 
-
 export class XRFLineGroup {
-    private _lines: XRFLine[] = [];
-    private _escapeLines: XRFLine[] = [];
+  private _lines: XRFLine[] = [];
+  private _escapeLines: XRFLine[] = [];
 
-    private _hasK = false;
-    private _hasL = false;
-    private _hasM = false;
-    private _hasEsc = false;
+  private _hasK = false;
+  private _hasL = false;
+  private _hasM = false;
+  private _hasEsc = false;
 
-    public k: boolean = false;
-    public l: boolean = false;
-    public m: boolean = false;
-    public esc: boolean = false;
+  public k: boolean = false;
+  public l: boolean = false;
+  public m: boolean = false;
+  public esc: boolean = false;
 
-    public visible: boolean = true;
+  public visible: boolean = true;
 
-    constructor(public atomicNumber: number, lines: XRFLine[], escapeLines: XRFLine[]) {
-        // Check if we have K, L or M lines at all
+  constructor(
+    public atomicNumber: number,
+    lines: XRFLine[],
+    escapeLines: XRFLine[]
+  ) {
+    // Check if we have K, L or M lines at all
 
-        let elemItem = periodicTableDB.getElementByAtomicNumber(this.atomicNumber);
+    let elemItem = periodicTableDB.getElementByAtomicNumber(this.atomicNumber);
 
-        if (!elemItem) {
-            console.error("XRFLineGroup failed to get element info for Z=" + atomicNumber);
-            return;
-        }
-
-        for (let c = 0; c < elemItem.lines.length; c++) {
-            let line = elemItem.lines[c].Siegbahn[0];
-            if (line == "K") {
-                this._hasK = true;
-            }
-            if (line == "L") {
-                this._hasL = true;
-            }
-            if (line == "M") {
-                this._hasM = true;
-            }
-        }
-
-        this._hasEsc = elemItem.escapeLines.length > 0;
-
-        this._lines = lines;
-        this._escapeLines = escapeLines;
-        this.updateLineFlags();
+    if (!elemItem) {
+      console.error("XRFLineGroup failed to get element info for Z=" + atomicNumber);
+      return;
     }
 
-    static makeFromElementSetItem(item: ElementSetItemLines): XRFLineGroup {
-        let group = new XRFLineGroup(item.Z, [], []);
-
-        let lines = ["K", "L", "M", "Esc"];
-        for (let line of lines) {
-            if (item[line as keyof ElementSetItemLines]) {
-                group.addLine(line);
-            }
-        }
-
-        return group;
+    for (let c = 0; c < elemItem.lines.length; c++) {
+      let line = elemItem.lines[c].Siegbahn[0];
+      if (line == "K") {
+        this._hasK = true;
+      }
+      if (line == "L") {
+        this._hasL = true;
+      }
+      if (line == "M") {
+        this._hasM = true;
+      }
     }
 
-    static makeFromAtomicNumber(atomicNumber: number): XRFLineGroup {
-        let group = new XRFLineGroup(atomicNumber, [], []);
+    this._hasEsc = elemItem.escapeLines.length > 0;
 
-        group.addLine("K");
-        group.addLine("L");
-        group.addLine("M");
+    this._lines = lines;
+    this._escapeLines = escapeLines;
+    this.updateLineFlags();
+  }
 
-        group.addLine("Esc");
-        return group;
+  static makeFromElementSetItem(item: ElementSetItemLines): XRFLineGroup {
+    let group = new XRFLineGroup(item.Z, [], []);
+
+    let lines = ["K", "L", "M", "Esc"];
+    for (let line of lines) {
+      if (item[line as keyof ElementSetItemLines]) {
+        group.addLine(line);
+      }
     }
-    /*
+
+    return group;
+  }
+
+  static makeFromAtomicNumber(atomicNumber: number): XRFLineGroup {
+    let group = new XRFLineGroup(atomicNumber, [], []);
+
+    group.addLine("K");
+    group.addLine("L");
+    group.addLine("M");
+
+    group.addLine("Esc");
+    return group;
+  }
+  /*
     static getAllVisibleLines(lineGroups: XRFLineGroup[]): XRFLine[]
     {
         let resultLines: XRFLine[] = [];
@@ -122,124 +125,117 @@ export class XRFLineGroup {
         return resultLines;
     }
 */
-    get hasK(): boolean {
-        return this._hasK;
-    }
+  get hasK(): boolean {
+    return this._hasK;
+  }
 
-    get hasL(): boolean {
-        return this._hasL;
-    }
+  get hasL(): boolean {
+    return this._hasL;
+  }
 
-    get hasM(): boolean {
-        return this._hasM;
-    }
+  get hasM(): boolean {
+    return this._hasM;
+  }
 
-    get hasEsc(): boolean {
-        return this._hasEsc;
-    }
+  get hasEsc(): boolean {
+    return this._hasEsc;
+  }
 
-    get lines(): XRFLine[] {
-        return this._lines;
-    }
+  get lines(): XRFLine[] {
+    return this._lines;
+  }
 
-    get escapeLines(): XRFLine[] {
-        return this._escapeLines;
-    }
+  get escapeLines(): XRFLine[] {
+    return this._escapeLines;
+  }
 
-    get allLines(): XRFLine[] {
-        return this._lines.concat(this._escapeLines);
-    }
+  get allLines(): XRFLine[] {
+    return this._lines.concat(this._escapeLines);
+  }
 
-    addXRFLine(line: XRFLine) {
-        if (line.lineType == XRFLineType.ESCAPE) {
-            this._escapeLines.push(line);
+  addXRFLine(line: XRFLine) {
+    if (line.lineType == XRFLineType.ESCAPE) {
+      this._escapeLines.push(line);
+    } else {
+      this._lines.push(line);
+    }
+    this.updateLineFlags();
+  }
+
+  addLine(line: string): void {
+    if (line == "Esc") {
+      this.addEscapeLines();
+    } else {
+      let elemItem = periodicTableDB.getElementByAtomicNumber(this.atomicNumber);
+      if (!elemItem) {
+        return;
+      }
+
+      for (let c = 0; c < elemItem.lines.length; c++) {
+        let elemLine = elemItem.lines[c];
+        if (elemLine.Siegbahn[0] == line) {
+          this._lines.push(XRFLine.makeXRFLineFromPeriodicTableItem(elemItem.symbol, this.atomicNumber, elemLine));
         }
-        else {
-            this._lines.push(line);
-        }
-        this.updateLineFlags();
+      }
     }
 
-    addLine(line: string): void {
-        if (line == "Esc") {
-            this.addEscapeLines();
-        }
-        else {
-            let elemItem = periodicTableDB.getElementByAtomicNumber(this.atomicNumber);
-            if (!elemItem) {
-                return;
-            }
+    this.updateLineFlags();
+  }
 
-            for (let c = 0; c < elemItem.lines.length; c++) {
-                let elemLine = elemItem.lines[c];
-                if (elemLine.Siegbahn[0] == line) {
-                    this._lines.push(XRFLine.makeXRFLineFromPeriodicTableItem(elemItem.symbol, this.atomicNumber, elemLine));
-                }
-            }
-        }
+  delLine(line: string): void {
+    if (line == "Esc") {
+      this._escapeLines = [];
+    } else {
+      let linesToKeep: XRFLine[] = [];
 
-        this.updateLineFlags();
+      for (let c = 0; c < this._lines.length; c++) {
+        if (this._lines[c].siegbahn[0] != line) {
+          linesToKeep.push(this.lines[c]);
+        }
+      }
+
+      this._lines = linesToKeep;
     }
 
-    delLine(line: string): void {
-        if (line == "Esc") {
-            this._escapeLines = [];
-        }
-        else {
-            let linesToKeep: XRFLine[] = [];
+    this.updateLineFlags();
+  }
 
-            for (let c = 0; c < this._lines.length; c++) {
-                if (this._lines[c].siegbahn[0] != line) {
-                    linesToKeep.push(this.lines[c]);
-                }
-            }
+  //////////////////////////////////////////////////////////////////////////////
+  // Private stuff
+  private addEscapeLines(): void {
+    this._escapeLines = [];
 
-            this._lines = linesToKeep;
-        }
-
-        this.updateLineFlags();
+    // Read the escape lines from the DB
+    let elem = periodicTableDB.getElementByAtomicNumber(this.atomicNumber);
+    if (elem) {
+      for (let line of elem.escapeLines) {
+        this._escapeLines.push(XRFLine.makeXRFLineFromEscapeLine(elem.symbol, elem.Z, line));
+      }
     }
 
-    //////////////////////////////////////////////////////////////////////////////
-    // Private stuff
-    private addEscapeLines(): void {
-        this._escapeLines = [];
+    this.updateLineFlags();
+  }
 
-        // Read the escape lines from the DB
-        let elem = periodicTableDB.getElementByAtomicNumber(this.atomicNumber);
-        if (elem) {
-            for (let line of elem.escapeLines) {
-                this._escapeLines.push(
-                    XRFLine.makeXRFLineFromEscapeLine(
-                        elem.symbol, elem.Z, line
-                    )
-                );
-            }
-        }
+  private updateLineFlags(): void {
+    let k = false;
+    let l = false;
+    let m = false;
 
-        this.updateLineFlags();
+    for (let c = 0; c < this._lines.length; c++) {
+      if (this._lines[c].siegbahn[0] == "K") {
+        k = true;
+      }
+      if (this._lines[c].siegbahn[0] == "L") {
+        l = true;
+      }
+      if (this._lines[c].siegbahn[0] == "M") {
+        m = true;
+      }
     }
 
-    private updateLineFlags(): void {
-        let k = false;
-        let l = false;
-        let m = false;
-
-        for (let c = 0; c < this._lines.length; c++) {
-            if (this._lines[c].siegbahn[0] == "K") {
-                k = true;
-            }
-            if (this._lines[c].siegbahn[0] == "L") {
-                l = true;
-            }
-            if (this._lines[c].siegbahn[0] == "M") {
-                m = true;
-            }
-        }
-
-        this.k = k;
-        this.l = l;
-        this.m = m;
-        this.esc = this._escapeLines.length > 0;
-    }
+    this.k = k;
+    this.l = l;
+    this.m = m;
+    this.esc = this._escapeLines.length > 0;
+  }
 }
