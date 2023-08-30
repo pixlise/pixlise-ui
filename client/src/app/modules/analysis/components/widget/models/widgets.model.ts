@@ -1,4 +1,5 @@
 // import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/spectrum-chart-widget.component";
+import { BinaryChartWidgetComponent } from "src/app/modules/scatterplots/scatterplots.module";
 import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/spectrum.module";
 
 export type WidgetToolbarButtonTypes = "selectable-button" | "button" | "toggle-button" | "multi-state-button";
@@ -60,7 +61,7 @@ export const WIDGETS = {
   "binary-plot": {
     name: "Binary Plot",
     description: "Binary plot",
-    component: SpectrumChartWidgetComponent,
+    component: BinaryChartWidgetComponent,
     controlConfiguration: {},
   },
 } satisfies Record<string, WidgetConfiguration>;

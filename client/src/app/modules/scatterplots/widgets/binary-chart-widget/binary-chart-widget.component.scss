@@ -1,0 +1,33 @@
+:host {
+  display: flex;
+  height: 100%;
+}
+
+interactive-canvas {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+}
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  .scale-buttons {
+    display: flex;
+    justify-content: center;
+
+    two-state-push-button:first-of-type {
+      margin-right: 8px;
+    }
+  }
+
+  switch-button {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+
+    margin-top: 8px;
+  }
+}
