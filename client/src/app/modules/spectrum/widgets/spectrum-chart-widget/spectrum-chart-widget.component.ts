@@ -159,7 +159,6 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   reDraw() {
-    console.log("REDRAW");
     this.drawNotifier.needsDraw$.next();
   }
 

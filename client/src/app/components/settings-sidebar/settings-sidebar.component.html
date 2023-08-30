@@ -1,10 +1,12 @@
 <div *ngIf="isOpen" class="settings-container">
+  <div class="titlebar">
+    <h1>
+      User Settings
+      <action-button color="#F8F8F8" action="close" tooltipTitle="Close Sidebar" (onClick)="onCloseSidebar()"></action-button>
+    </h1>
+  </div>
   <div class="settings">
     <section class="user-section">
-      <h1>
-        User Settings
-        <action-button color="#F8F8F8" action="close" tooltipTitle="Close Sidebar" (onClick)="onCloseSidebar()"></action-button>
-      </h1>
       <div class="user-info">
         <div class="user-icon">
           <user-icon></user-icon>

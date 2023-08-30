@@ -6,8 +6,15 @@
 
 .app-container {
   display: flex;
+  position: relative;
 
   main {
     flex: 1;
+  }
+
+  aside {
+    position: absolute;
+    top: 40px;
+    right: 8px;
   }
 }
