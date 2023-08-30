@@ -1,42 +1,57 @@
 <ng-template class="top-toolbar" #overflowSection>
-    <span *ngFor="let button of widgetConfiguration?.controlConfiguration?.topToolbar"
-        class="menu-btn-container {{!button._overflowed ? 'overflowed' : ''}}">
-        <icon-button *ngIf="['button', 'selectable-button'].includes(button.type) && button.icon"
+    <span
+        *ngFor="let button of widgetConfiguration?.controlConfiguration?.topToolbar"
+        class="menu-btn-container {{ !button._overflowed ? 'overflowed' : '' }}">
+        <icon-button
+            *ngIf="['button', 'selectable-button'].includes(button.type) && button.icon"
             [state]="button.type === 'selectable-button' && button.value ? 1 : button.disabled ? 3 : 0"
-            [title]="button.title" class="{{button.type}}" [icon]="button.icon"
+            [title]="button.title"
+            class="{{ button.type }}"
+            [icon]="button.icon"
             (onClick)="button.onClick(button.value)"></icon-button>
     </span>
 </ng-template>
 
 <div class="widget">
     <header>
-        <mat-select [(ngModel)]="activeWidget" #tooltip="matTooltip"
+        <mat-select
+            [(ngModel)]="activeWidget"
+            #tooltip="matTooltip"
             [matTooltip]="widgetConfiguration?.description || ''"
-            [matTooltipDisabled]="!widgetConfiguration?.description" matTooltipPositionAtOrigin="false">
+            [matTooltipDisabled]="!widgetConfiguration?.description"
+            matTooltipPositionAtOrigin="false">
             <mat-option *ngFor="let widget of allWidgetOptions" [value]="widget.id">
                 <div class="widget-select">
-                    <span>{{widget.name}}</span>
+                    <span>{{ widget.name }}</span>
                 </div>
             </mat-option>
         </mat-select>
 
         <div class="buttons" #buttonsContainer>
-            <div class="top-toolbar" #topToolbar>
-                <span *ngFor="let button of widgetConfiguration?.controlConfiguration?.topToolbar"
-                    class="btn-container {{button._overflowed || button._overflowed === undefined ? 'overflowed' : ''}}">
-                    <icon-button *ngIf="['button', 'selectable-button'].includes(button.type) && button.icon"
-                        [state]="button.type === 'selectable-button' && button.value ? 1 : button.disabled ? 3 : 0"
-                        [title]="button.title" class="{{button.type}}" [icon]="button.icon"
-                        (onClick)="button.onClick(button.value)"></icon-button>
-                </span>
+            <div class="top-toolbar {{ topToolbarButtons.length > 0 ? 'visible' : 'hidden' }}" #topToolbar>
+                <widget-configuration-button
+                    *ngFor="let button of topToolbarButtons"
+                    [buttonConfiguration]="button"></widget-configuration-button>
             </div>
             <widget-settings-menu [settingsDialog]="settingsMenu" [overflowSection]="overflowSection" #settingsButton>
-                <icon-button title="Show Settings Menu" icon="assets/button-icons/settings.svg">
-                </icon-button>
+                <icon-button #tooltip="matTooltip" matTooltip="Show Settings Menu" icon="assets/button-icons/settings.svg"> </icon-button>
             </widget-settings-menu>
         </div>
     </header>
-    <div class="visualization">
+    <div class="visualization {{ bottomToolbarButtons.length > 0 ? '' : 'hide-overflow' }}">
+        <widget-configuration-button class="inset-button top-left" [buttonConfiguration]="topLeftInsetButton"></widget-configuration-button>
+        <widget-configuration-button class="inset-button top-center" [buttonConfiguration]="topCenterInsetButton"></widget-configuration-button>
+        <widget-configuration-button class="inset-button top-right" [buttonConfiguration]="topRightInsetButton"></widget-configuration-button>
         <ng-template #currentWidget></ng-template>
+
+        <widget-configuration-button
+            class="inset-button bottom-left"
+            [buttonConfiguration]="bottomLeftInsetButton"></widget-configuration-button>
+        <widget-configuration-button
+            class="inset-button bottom-right"
+            [buttonConfiguration]="bottomRightInsetButton"></widget-configuration-button>
+    </div>
+    <div class="bottom-toolbar {{ bottomToolbarButtons.length > 0 ? 'visible' : 'hidden' }}" #bottomToolbar>
+        <widget-configuration-button *ngFor="let button of bottomToolbarButtons" [buttonConfiguration]="button"></widget-configuration-button>
     </div>
 </div>

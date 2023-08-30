@@ -1,18 +1,26 @@
 import { Component, ComponentRef, ElementRef, HostListener, ViewChild, ViewContainerRef } from "@angular/core";
 import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetToolbarButtonConfiguration } from "./models/widgets.model";
-import { Observable, debounceTime, first, fromEvent, map, startWith } from "rxjs";
 
 @Component({
   selector: "widget",
   templateUrl: "./widget.component.html",
-  styleUrls: ["./widget.component.scss"]
+  styleUrls: ["./widget.component.scss"],
 })
 export class WidgetComponent {
   @ViewChild("currentWidget", { read: ViewContainerRef }) currentWidget!: ViewContainerRef;
   private _currentWidgetRef: ComponentRef<any> | null = null;
 
   @ViewChild("buttonsContainer") buttonsContainer!: ElementRef;
+
   @ViewChild("topToolbar") topToolbar!: ElementRef;
+  @ViewChild("bottomToolbar") bottomToolbar!: ElementRef;
+
+  @ViewChild("topLeftInset") topLeftInset!: ElementRef;
+  @ViewChild("topCenterInset") topCenterInset!: ElementRef;
+  @ViewChild("topRightInset") topRightInset!: ElementRef;
+
+  @ViewChild("bottomLeftInset") bottomLeftInset!: ElementRef;
+  @ViewChild("bottomRightInset") bottomRightInset!: ElementRef;
 
   visibleTopToolbarCount: number = 0;
 
@@ -21,9 +29,7 @@ export class WidgetComponent {
 
   widgetConfiguration?: WidgetConfiguration;
 
-  constructor(
-  ) {
-  }
+  constructor() {}
 
   @HostListener("window:resize", [])
   onResize() {
@@ -56,7 +62,10 @@ export class WidgetComponent {
         this.visibleTopToolbarCount -= 1;
       } else {
         let firstOverflowed = this.widgetConfiguration.controlConfiguration.topToolbar[this.visibleTopToolbarCount];
-        if (buttonsContainerWidth - topToolbarWidth > (firstOverflowed?.maxWidth || 100) && this.visibleTopToolbarCount < this.widgetConfiguration?.controlConfiguration?.topToolbar?.length) {
+        if (
+          buttonsContainerWidth - topToolbarWidth > (firstOverflowed?.maxWidth || 100) &&
+          this.visibleTopToolbarCount < this.widgetConfiguration?.controlConfiguration?.topToolbar?.length
+        ) {
           {
             this.visibleTopToolbarCount += 1;
           }
@@ -86,10 +95,38 @@ export class WidgetComponent {
     this.loadWidget();
   }
 
+  get topToolbarButtons() {
+    return this.widgetConfiguration?.controlConfiguration?.topToolbar || [];
+  }
+
+  get bottomToolbarButtons() {
+    return this.widgetConfiguration?.controlConfiguration?.bottomToolbar || [];
+  }
+
+  get topLeftInsetButton() {
+    return this.widgetConfiguration?.controlConfiguration?.topLeftInsetButton;
+  }
+
+  get topCenterInsetButton() {
+    return this.widgetConfiguration?.controlConfiguration?.topCenterInsetButton;
+  }
+
+  get topRightInsetButton() {
+    return this.widgetConfiguration?.controlConfiguration?.topRightInsetButton;
+  }
+
+  get bottomLeftInsetButton() {
+    return this.widgetConfiguration?.controlConfiguration?.bottomLeftInsetButton;
+  }
+
+  get bottomRightInsetButton() {
+    return this.widgetConfiguration?.controlConfiguration?.bottomRightInsetButton;
+  }
+
   copyConfiguration() {
     return {
       ...WIDGETS[this.activeWidget],
-    }
+    };
   }
 
   loadWidget() {
@@ -108,7 +145,6 @@ export class WidgetComponent {
       });
     }
   }
-
 
   ngAfterViewChecked(): void {
     if (!this._currentWidgetRef) {

@@ -13,8 +13,10 @@
     </div>
 </ng-template>
 
-<p>spectrum-chart-widget works!</p>
-
-<!-- <interactive-canvas [ngClass]="cursorShown" [drawer]="drawer" [drawNotifier]="this.mdl" -->
-<!-- [interactionHandler]="mdl.toolHost" [transform]="mdl.transform" fxFlex="100%"> -->
-<!-- </interactive-canvas> -->
+<interactive-canvas
+    [drawer]="drawer"
+    [drawNotifier]="drawNotifier"
+    [interactionHandler]="interactionHandler" 
+    [transform]="transform" 
+>
+</interactive-canvas>

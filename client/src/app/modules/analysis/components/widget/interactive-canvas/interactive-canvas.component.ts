@@ -36,45 +36,37 @@ import { getMatrixAs2x3Array, Point, Rect } from "src/app/models/Geometry";
 import { AnalysisLayoutService } from "../../../services/analysis-layout.service";
 
 
-export class CanvasParams
-{
-    constructor(public width: number, public height: number, public dpi: number)
-    {
+export class CanvasParams {
+    constructor(public width: number, public height: number, public dpi: number) {
     }
 
-    getCenterPoint(): Point
-    {
-        return new Point(this.width/2, this.height/2);
+    getCenterPoint(): Point {
+        return new Point(this.width / 2, this.height / 2);
     }
 
-    getRect(): Rect
-    {
+    getRect(): Rect {
         return new Rect(0, 0, this.width, this.height);
     }
 
-    equals(other: CanvasParams): boolean
-    {
+    equals(other: CanvasParams): boolean {
         return this.width == other.width &&
             this.height == other.height &&
             this.dpi == other.dpi;
     }
 }
 
-export class CanvasDrawParameters
-{
+export class CanvasDrawParameters {
     constructor(
         public worldTransform: CanvasWorldTransform,
         public drawViewport: CanvasParams,
         // If not drawing for export, set to null/empty...
         //public exportChoices: ExportDataChoice[],
         public exportItemIDs: string[]
-    )
-    {
+    ) {
     }
 }
 
-export interface CanvasDrawer
-{
+export interface CanvasDrawer {
     // The distinction has been lost over time. The intent was that drawing transformed objects was done
     // in drawWorldSpace, while overlays that are screen-aligned, eg buttons/colour scales, etc are drawn
     // in drawScreenSpace. These can probably be merged and instead built with some kind of draw pass number
@@ -93,8 +85,7 @@ export interface CanvasDrawer
     lightMode?: boolean;
 }
 
-export enum CanvasMouseEventId
-{
+export enum CanvasMouseEventId {
     MOUSE_DOWN,
     MOUSE_UP,
     MOUSE_MOVE,
@@ -104,8 +95,7 @@ export enum CanvasMouseEventId
     MOUSE_LEAVE
 }
 
-export class CanvasMouseEvent
-{
+export class CanvasMouseEvent {
     constructor(
         public eventId: CanvasMouseEventId,
 
@@ -128,31 +118,25 @@ export class CanvasMouseEvent
         // Modifier key states
         public shiftKey: boolean,
         public ctrlKey: boolean,
-        public metaKey: boolean,        
-    )
-    {
+        public metaKey: boolean,
+    ) {
     }
 }
 
-export class CanvasKeyEvent
-{
+export class CanvasKeyEvent {
     constructor(
         public key: string,
         public down: boolean,
-    )
-    {
+    ) {
     }
 }
 
-export interface CanvasDrawNotifier
-{
+export interface CanvasDrawNotifier {
     needsDraw$: Subject<void>;
 }
 
-export class CanvasInteractionResult
-{
-    constructor(public redraw: boolean, public catchEvent: boolean)
-    {
+export class CanvasInteractionResult {
+    constructor(public redraw: boolean, public catchEvent: boolean) {
     }
 
     static get redrawAndCatch(): CanvasInteractionResult { return new CanvasInteractionResult(true, true); }
@@ -160,14 +144,12 @@ export class CanvasInteractionResult
     static get redrawOnly(): CanvasInteractionResult { return new CanvasInteractionResult(true, false); }
 }
 
-export interface CanvasInteractionHandler
-{
+export interface CanvasInteractionHandler {
     mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult;
     keyEvent(event: CanvasKeyEvent): CanvasInteractionResult;
 }
 
-export interface CanvasWorldTransform
-{
+export interface CanvasWorldTransform {
     setCanvasParams(canvasParams: CanvasParams): any;
 
     getScale(): Point;
@@ -184,10 +166,9 @@ export interface CanvasWorldTransform
     templateUrl: "./interactive-canvas.component.html",
     styleUrls: ["./interactive-canvas.component.scss"]
 })
-export class InteractiveCanvasComponent implements OnInit, OnDestroy
-{
+export class InteractiveCanvasComponent implements OnInit, OnDestroy {
     @Input() drawer: CanvasDrawer | null = null;
-    @Input() drawNotifier: CanvasDrawNotifier | null = null;
+    _drawNotifier: CanvasDrawNotifier | null = null;
     @Input() interactionHandler: CanvasInteractionHandler | null = null;
     @Input() transform: CanvasWorldTransform | null = null;
 
@@ -208,46 +189,55 @@ export class InteractiveCanvasComponent implements OnInit, OnDestroy
     protected _subs = new Subscription();
     protected _viewport: CanvasParams = new CanvasParams(0, 0, 1);
 
-    constructor(private _layoutService: AnalysisLayoutService)
-    {
+    constructor(private _layoutService: AnalysisLayoutService) {
     }
 
-    ngOnInit()
-    {
+    ngOnInit() {
     }
 
-    ngOnDestroy()
-    {
+    ngOnDestroy() {
         this._subs.unsubscribe();
     }
 
-    ngAfterViewInit(): void
-    {
+    ngAfterViewInit(): void {
         //this.printDbg('ngAfterViewInit');
         this.triggerRedraw();
+        this.callFitCanvasToContainer();
 
-        // this._subs.add(this._layoutService.resizeCanvas$.subscribe(
-        //     ()=>
-        //     {
-        //         this.callFitCanvasToContainer();
-        //     }
-        // ));
-
-        this._subs.add(this.drawNotifier?.needsDraw$.subscribe(
-            ()=>
-            {
-                this.triggerRedraw();
+        this._subs.add(this._layoutService.resizeCanvas$.subscribe(
+            () => {
+                this.callFitCanvasToContainer();
             }
         ));
+
+        if (this.drawNotifier) {
+            this._subs.add(this.drawNotifier.needsDraw$.subscribe(
+                () => {
+                    this.triggerRedraw();
+                }
+            ));
+        }
     }
 
-    triggerRedraw(): void
-    {
+    get drawNotifier() {
+        return this._drawNotifier;
+    }
+
+    @Input() set drawNotifier(notifier: CanvasDrawNotifier | null) {
+        this._drawNotifier = notifier;
+        if (this.drawNotifier) {
+            this._subs.add(this.drawNotifier.needsDraw$.subscribe(
+                () => {
+                    this.triggerRedraw();
+                }
+            ));
+        }
+    }
+
+    triggerRedraw(): void {
         window.requestAnimationFrame(
-            ()=>
-            {
-                if(this._screenContext && this._viewport && this.transform && this.drawer)
-                {
+            () => {
+                if (this._screenContext && this._viewport && this.transform && this.drawer) {
                     InteractiveCanvasComponent.drawFrame(this._screenContext, this._viewport, this.transform, this.drawer);
                 }
             }
@@ -278,10 +268,8 @@ console.log('Style size: '+style_width+'x'+style_height);
 console.log(canvasElem);
     }
 */
-    private callFitCanvasToContainer()
-    {
-        if(!this._imgCanvas)
-        {
+    private callFitCanvasToContainer() {
+        if (!this._imgCanvas) {
             console.error("this._imgCanvas was not set");
             return;
         }
@@ -290,8 +278,7 @@ console.log(canvasElem);
         let canvasElem = this._imgCanvas.nativeElement;
 
         let newViewport = this.fitCanvasToContainer(this._imgCanvas);
-        if(newViewport)
-        {
+        if (newViewport) {
             //console.log('callFitCanvasToContainer viewport: '+newViewport.width+'x'+newViewport.height+', dpi='+newViewport.dpi);
             //console.log(canvasElem);
 
@@ -301,16 +288,13 @@ console.log(canvasElem);
         }
 
         let canvasContext = (<HTMLCanvasElement>canvasElem).getContext("2d");
-        if (canvasContext)
-        {
+        if (canvasContext) {
             this._screenContext = canvasContext;
         }
     }
 
-    fitCanvasToContainer(canvas: ElementRef): CanvasParams | null
-    {
-        if(!canvas)
-        {
+    fitCanvasToContainer(canvas: ElementRef): CanvasParams | null {
+        if (!canvas) {
             //console.error('fitCanvasToContainer failed: null canvas');
             return null;
         }
@@ -318,8 +302,7 @@ console.log(canvasElem);
         const dpi = window.devicePixelRatio;
 
         let canvasElem = canvas.nativeElement;
-        if(canvasElem.width == canvasElem.parentNode.clientWidth*dpi && canvasElem.height == canvasElem.parentNode.clientHeight*dpi)
-        {
+        if (canvasElem.width == canvasElem.parentNode.clientWidth * dpi && canvasElem.height == canvasElem.parentNode.clientHeight * dpi) {
             //console.error('fitCanvasToContainer failed: size already matched');
             return null;
         }
@@ -330,46 +313,42 @@ console.log(canvasElem);
         let displayBackup = canvasElem.style.display;
         canvasElem.style.display = "none";
 
-        canvasElem.width = width*dpi;
-        canvasElem.height = height*dpi;
+        canvasElem.width = width * dpi;
+        canvasElem.height = height * dpi;
 
         canvasElem.style.display = displayBackup;
 
-        canvasElem.style.width = width + "px";
-        canvasElem.style.height = height + "px";
+        // canvasElem.style.width = width + "px";
+        // canvasElem.style.height = height + "px";
+        canvasElem.style.width = "100%";
+        canvasElem.style.height = "100%";
 
         return new CanvasParams(width, height, dpi);
     }
 
     // Not using this because it's a global event, we're only interested if this canvas received it
     //@HostListener('document:mousedown', ['$event'])
-    onMouseDownCanvas(event: MouseEvent)
-    {
+    onMouseDownCanvas(event: MouseEvent) {
         event.preventDefault();
         // We only consider it a mouse down if it's the left mouse button
-        if(event.button == 0)
-        {
+        if (event.button == 0) {
             this._mouseDown = new Point(event.clientX, event.clientY);
             this.sendMouseEvent(this._mouseDown, 0, CanvasMouseEventId.MOUSE_DOWN, event.shiftKey, event.ctrlKey, event.metaKey);
         }
     }
 
-    private shouldProcessMouseEvent(event: MouseEvent): boolean
-    {
+    private shouldProcessMouseEvent(event: MouseEvent): boolean {
         // If mouse is down, we're stalking the mouse, so process it
-        if(this._mouseDown)
-        {
+        if (this._mouseDown) {
             return true;
         }
         return false;
     }
 
-    onMouseEnter(event: MouseEvent): void
-    {
+    onMouseEnter(event: MouseEvent): void {
         event.preventDefault();
         // Grab focus - so we get keyboard presses
-        if(this._imgCanvas)
-        {
+        if (this._imgCanvas) {
             this._imgCanvas.nativeElement.focus();
         }
         let mouse = new Point(event.clientX, event.clientY);
@@ -377,12 +356,10 @@ console.log(canvasElem);
         //this.mouseEntered = true;
     }
 
-    onMouseLeave(event: MouseEvent): void
-    {
+    onMouseLeave(event: MouseEvent): void {
         event.preventDefault();
         // Relinquish focus
-        if(this._imgCanvas)
-        {
+        if (this._imgCanvas) {
             this._imgCanvas.nativeElement.blur();
         }
 
@@ -392,43 +369,35 @@ console.log(canvasElem);
     }
 
     @HostListener("document:mousemove", ["$event"])
-    onGlobalMouseMoveCanvas(event: MouseEvent)
-    {
-        if(this.shouldProcessMouseEvent(event))
-        {
+    onGlobalMouseMoveCanvas(event: MouseEvent) {
+        if (this.shouldProcessMouseEvent(event)) {
             this.onMouseMoveCanvas(event);
         }
     }
 
-    onMouseMoveCanvas(event: MouseEvent)
-    {
+    onMouseMoveCanvas(event: MouseEvent) {
         event.preventDefault();
         let mouse = new Point(event.clientX, event.clientY);
 
         let sendEvent = CanvasMouseEventId.MOUSE_MOVE;
-        if(this._mouseDown)
-        {
+        if (this._mouseDown) {
             sendEvent = CanvasMouseEventId.MOUSE_DRAG;
         }
         this.sendMouseEvent(mouse, 0, sendEvent, event.shiftKey, event.ctrlKey, event.metaKey);
     }
 
     @HostListener("document:mouseup", ["$event"])
-    onGlobalMouseUpCanvas(event: MouseEvent)
-    {
-        if(this.shouldProcessMouseEvent(event))
-        {
+    onGlobalMouseUpCanvas(event: MouseEvent) {
+        if (this.shouldProcessMouseEvent(event)) {
             this.onMouseUpCanvas(event);
         }
     }
 
-    onMouseUpCanvas(event: MouseEvent)
-    {
+    onMouseUpCanvas(event: MouseEvent) {
         event.preventDefault();
 
         // We only consider it a mouse up if it's the left mouse button
-        if(event.button == 0)
-        {
+        if (event.button == 0) {
             let mouse = new Point(event.clientX, event.clientY);
             this.sendMouseEvent(mouse, 0, CanvasMouseEventId.MOUSE_UP, event.shiftKey, event.ctrlKey, event.metaKey);
             this._mouseDown = null;
@@ -436,8 +405,7 @@ console.log(canvasElem);
     }
 
     //@HostListener('document:wheel', ['$event'])
-    onMouseWheelCanvas(event: WheelEvent)
-    {
+    onMouseWheelCanvas(event: WheelEvent) {
         // Found a whole bunch of funny stuff between browser versions/OS's...
         // OSX: Late 2019: if user pressed shift while mouse-scrolling, deltaY was 0, deltaX was populated but 10x deltaY units
         // Windows: Early 2021: getting +/-100 for the deltaY value, deltaX is always 0
@@ -450,8 +418,7 @@ console.log(canvasElem);
         event.preventDefault();
 
         let delta = event.deltaY;
-        if(delta == 0)
-        {
+        if (delta == 0) {
             delta = event.deltaX;
         }
 
@@ -459,12 +426,10 @@ console.log(canvasElem);
 
         // Found that on Windows, we were being given deltaX= +/-100, so lets standardise. On OSX we're getting about +/-4, and
         // wrote code to handle it that way...
-        if(delta > 0)
-        {
+        if (delta > 0) {
             delta = deltaStep;
         }
-        else if(delta < 0)
-        {
+        else if (delta < 0) {
             delta = -deltaStep;
         }
 
@@ -472,47 +437,38 @@ console.log(canvasElem);
         this.sendMouseEvent(mouse, delta, CanvasMouseEventId.MOUSE_WHEEL, event.shiftKey, event.ctrlKey, event.metaKey);
     }
 
-    onKeyDown(event: KeyboardEvent): void
-    {
+    onKeyDown(event: KeyboardEvent): void {
         // Notify parent
         this.sendKeyEvent(event.key, true);
     }
 
-    onKeyUp(event: KeyboardEvent): void
-    {
+    onKeyUp(event: KeyboardEvent): void {
         this.sendKeyEvent(event.key, false);
     }
 
-    private sendKeyEvent(key: string, down: boolean): void
-    {
-        if(!this.interactionHandler)
-        {
+    private sendKeyEvent(key: string, down: boolean): void {
+        if (!this.interactionHandler) {
             console.warn("sendKeyEvent: No interaction handler defined");
             return;
         }
 
         let redraw = this.interactionHandler.keyEvent(new CanvasKeyEvent(key, down));
 
-        if(redraw)
-        {
+        if (redraw) {
             this.triggerRedraw();
         }
     }
 
-    private sendMouseEvent(mousePos: Point, deltaY: number, eventId: number, shiftKey: boolean, ctrlKey: boolean, metaKey: boolean): void
-    {
-        if(!this._mouseLast)
-        {
+    private sendMouseEvent(mousePos: Point, deltaY: number, eventId: number, shiftKey: boolean, ctrlKey: boolean, metaKey: boolean): void {
+        if (!this._mouseLast) {
             this._mouseLast = mousePos;
         }
 
         //let t0 = performance.now();
-        if(!this.interactionHandler)
-        {
+        if (!this.interactionHandler) {
             console.warn("sendMouseEvent: No interaction handler defined");
         }
-        else
-        {
+        else {
             let redraw = this.interactionHandler.mouseEvent(
                 new CanvasMouseEvent(
                     eventId,
@@ -537,8 +493,7 @@ console.log(canvasElem);
 
             //let t1 = performance.now();
             //console.log('mouseEvent took: '+(t1-t0)+'ms');
-            if(redraw)
-            {
+            if (redraw) {
                 this.triggerRedraw();
             }
         }
@@ -546,11 +501,9 @@ console.log(canvasElem);
         this._mouseLast = mousePos;
     }
 
-    public static drawFrame(screenContext: CanvasRenderingContext2D, viewport: CanvasParams, transform: CanvasWorldTransform, drawer: CanvasDrawer, exportItemIDs: string[]=[]): void
-    {
+    public static drawFrame(screenContext: CanvasRenderingContext2D, viewport: CanvasParams, transform: CanvasWorldTransform, drawer: CanvasDrawer, exportItemIDs: string[] = []): void {
         //let t0 = performance.now();
-        if(!screenContext || !viewport || !transform || !drawer)
-        {
+        if (!screenContext || !viewport || !transform || !drawer) {
             return;
         }
 
@@ -586,24 +539,20 @@ console.log(canvasElem);
         //console.log('Canvas redraw took: '+(t1-t0)+'ms');
     }
 
-    protected screenToCanvasSpace(pt: Point): Point
-    {
-        if(!pt)
-        {
+    protected screenToCanvasSpace(pt: Point): Point {
+        if (!pt) {
             return pt;
         }
 
         // Make it relative to our canvas
         let canvasScreenRect = this._imgCanvas?.nativeElement.getBoundingClientRect();
 
-        let canvasPt = new Point(pt.x-canvasScreenRect.left, pt.y-canvasScreenRect.top);
+        let canvasPt = new Point(pt.x - canvasScreenRect.left, pt.y - canvasScreenRect.top);
         return canvasPt;
     }
 
-    protected screenToWorldSpace(pt: Point): Point | null
-    {
-        if(!pt)
-        {
+    protected screenToWorldSpace(pt: Point): Point | null {
+        if (!pt) {
             return pt;
         }
 

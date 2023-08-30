@@ -59,7 +59,6 @@ export class WidgetSettingsMenuComponent implements OnInit {
 
     @Input() settingsDialog: TemplateRef<any> | null = null;
     @Input() overflowSection: TemplateRef<any> | null = null;
-    // overflowSection
     @Input() openDirDown: boolean = true;
     @Input() noPadding: boolean = false;
     @Input() xOffset: number = 0;

@@ -38,4 +38,10 @@ export class AnalysisPageComponent {
   onKeyup(event: KeyboardEvent): void {
     this._keyPresses.delete(event.key);
   }
+
+  @HostListener("window:resize", ["$event"])
+  onResize() {
+    // Window resized, notify all canvases
+    this._analysisLayoutService.notifyWindowResize();
+  }
 }

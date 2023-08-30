@@ -11,6 +11,7 @@ import { ROIModule } from '../roi/roi.module';
 import { BaseWidgetModel } from './components/widget/models/base-widget.model';
 import { InteractiveCanvasComponent } from './components/widget/interactive-canvas/interactive-canvas.component';
 import { WidgetKeyDisplayComponent } from './components/widget/widget-key-display/widget-key-display.component';
+import { WidgetConfigurationButtonComponent } from './components/widget/widget-configuration-button/widget-configuration-button.component';
 
 const APP_ROUTES: Routes = [
   {
@@ -27,7 +28,8 @@ const APP_ROUTES: Routes = [
     AnalysisSidepanelComponent,
     ROITabComponent,
     BaseWidgetModel,
-    WidgetKeyDisplayComponent
+    WidgetKeyDisplayComponent,
+    WidgetConfigurationButtonComponent
   ],
   imports: [
     CommonModule,
@@ -38,7 +40,8 @@ const APP_ROUTES: Routes = [
   exports: [
     AnalysisPageComponent,
     WidgetComponent,
-    BaseWidgetModel
+    BaseWidgetModel,
+    InteractiveCanvasComponent
   ],
   providers: [
     AnalysisLayoutService

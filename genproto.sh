@@ -5,7 +5,7 @@ echo "Generating protobuf for file formats..."
 mkdir -p ./client/src/app/protolibs/
 
 protoc -I=./data-formats/file-formats --js_out=import_style=commonjs,binary:./client/src/app/protolibs/ ./data-formats/file-formats/experiment.proto
-protoc -I=./data-formats/file-formats --js_out=import_style=commonjs,binary:./client/src/app/protolibs/ ./data-formats/file-formats/quantification.proto
+# protoc -I=./data-formats/file-formats --js_out=import_style=commonjs,binary:./client/src/app/protolibs/ ./data-formats/file-formats/quantification.proto
 protoc -I=./data-formats/file-formats --js_out=import_style=commonjs,binary:./client/src/app/protolibs/ ./data-formats/file-formats/diffraction.proto
 
 #echo "Done"

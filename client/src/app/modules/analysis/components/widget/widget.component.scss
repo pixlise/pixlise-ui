@@ -24,18 +24,8 @@
         display: flex;
         margin-right: 4px;
 
-        .btn-container {
-          margin-right: 4px;
-
-          &.overflowed {
-            display: none;
-          }
-
-          .selectable-button {
-            &.active {
-              border: 1px solid rgb(var(--clr-gray-90));
-            }
-          }
+        &.hidden {
+          display: none;
         }
       }
     }
@@ -46,6 +36,42 @@
     border-radius: 0 0 8px 8px;
     width: 100%;
     flex: 1;
+    position: relative;
+
+    &.hide-overflow {
+      overflow: hidden;
+    }
+
+    .inset-button {
+      position: absolute;
+      z-index: 10;
+
+      &.top-left {
+        top: 4px;
+        left: 4px;
+      }
+
+      &.top-center {
+        top: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      &.top-right {
+        top: 4px;
+        right: 4px;
+      }
+
+      &.bottom-left {
+        bottom: 4px;
+        left: 4px;
+      }
+
+      &.bottom-right {
+        bottom: 4px;
+        right: 4px;
+      }
+    }
   }
 }
 
@@ -58,5 +84,25 @@
 
   &.overflowed {
     display: none;
+  }
+}
+
+.bottom-toolbar {
+  display: flex;
+  align-items: center;
+  background-color: rgb(var(--clr-gray-80));
+  height: 40px;
+  width: 100%;
+
+  &.hidden {
+    display: none;
+  }
+
+  .btn-container {
+    margin-right: 4px;
+
+    &:first-of-type {
+      margin-left: 6px;
+    }
   }
 }

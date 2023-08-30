@@ -1,0 +1,21 @@
+.button {
+  display: flex;
+}
+
+.btn-container {
+  margin-right: 4px;
+
+  &.overflowed {
+    display: none;
+  }
+
+  .selectable-button {
+    &.active {
+      border: 1px solid rgb(var(--clr-gray-90));
+    }
+  }
+
+  &:first-of-type {
+    margin-left: 6px;
+  }
+}

@@ -29,12 +29,12 @@
 
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { XRFLine, XRFLineType } from "src/app/periodic-table/XRFLine";
-import { ElementSetItemLines } from "src/app/services/element-set.service";
+import { ElementSetItemLines } from "../modules/element-sets/services/element-set.service";
 
 
 export class XRFLineGroup {
-    private _lines: XRFLine[];
-    private _escapeLines: XRFLine[];
+    private _lines: XRFLine[] = [];
+    private _escapeLines: XRFLine[] = [];
 
     private _hasK = false;
     private _hasL = false;
@@ -83,7 +83,7 @@ export class XRFLineGroup {
 
         let lines = ["K", "L", "M", "Esc"];
         for (let line of lines) {
-            if (item[line]) {
+            if (item[line as keyof ElementSetItemLines]) {
                 group.addLine(line);
             }
         }
@@ -166,6 +166,9 @@ export class XRFLineGroup {
         }
         else {
             let elemItem = periodicTableDB.getElementByAtomicNumber(this.atomicNumber);
+            if (!elemItem) {
+                return;
+            }
 
             for (let c = 0; c < elemItem.lines.length; c++) {
                 let elemLine = elemItem.lines[c];

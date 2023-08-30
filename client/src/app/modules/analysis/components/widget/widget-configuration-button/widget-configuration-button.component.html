@@ -1,0 +1,12 @@
+<div class="button">
+    <span *ngIf="buttonConfiguration" #tooltip="matTooltip" [matTooltip]="buttonConfiguration.tooltip || ''"
+        [matTooltipDisabled]="!buttonConfiguration.tooltip"
+        class="btn-container {{buttonConfiguration._overflowed ? 'overflowed' : ''}}"
+        (click)="buttonConfiguration.onClick(buttonConfiguration.value)">
+        <two-state-push-button *ngIf="buttonConfiguration.title">{{buttonConfiguration.title}}</two-state-push-button>
+        <icon-button
+            *ngIf="['button', 'selectable-button'].includes(buttonConfiguration.type) && buttonConfiguration.icon"
+            [state]="buttonConfiguration.type === 'selectable-button' && buttonConfiguration.value ? 1 : buttonConfiguration.disabled ? 3 : 0"
+            class="{{buttonConfiguration.type}}" [icon]="buttonConfiguration.icon"></icon-button>
+    </span>
+</div>
