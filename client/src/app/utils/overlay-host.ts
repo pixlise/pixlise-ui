@@ -67,20 +67,7 @@ export class OverlayHost {
     });
 
     this._overlayRef = this.overlay.create(config);
-    this._overlayRef.attach(
-      new ComponentPortal(
-        this.panelComponentClassType,
-        this.viewContainerRef,
-        this.createInjector(
-          {
-            data: {
-              close: () => this.hidePanel(),
-            },
-          },
-          this._overlayRef
-        )
-      )
-    );
+    this._overlayRef.attach(new ComponentPortal(this.panelComponentClassType, this.viewContainerRef, this.createInjector(this._overlayRef)));
 
     // If required, set up so we close if user clicks our background
     if (this.closeIfClickedBackground) {
@@ -95,7 +82,7 @@ export class OverlayHost {
     });
   }
 
-  private createInjector(data: any, overlayRef: OverlayRef): Injector {
+  private createInjector(overlayRef: OverlayRef): Injector {
     return Injector.create({
       parent: this.injector,
       providers: [{ provide: OverlayRef, useValue: overlayRef }],

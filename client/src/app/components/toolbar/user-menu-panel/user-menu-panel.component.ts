@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component } from "@angular/core";
+import { Component, Inject } from "@angular/core";
 import { AuthService } from "@auth0/auth0-angular";
 import { UserDetails } from "src/app/generated-protos/user";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
@@ -69,7 +69,11 @@ export class UserMenuPanelComponent {
   onResetHints(): void {}
 
   onSettings(): void {
+    // @ts-ignore
+    console.log("DATA", this.closeMenu);
     this._userOptionsService.toggleSidebar();
+    // @ts-ignore
+    this.closeMenu();
   }
 
   get userName(): string {

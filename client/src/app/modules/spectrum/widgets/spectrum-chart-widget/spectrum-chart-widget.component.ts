@@ -28,16 +28,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
   @Input() widgetPosition: string = "";
 
-  // @Input() drawer: CanvasDrawer | null = null;
-  // @Input() drawNotifier: CanvasDrawNotifier | null = null;
-  // @Input() interactionHandler: CanvasInteractionHandler | null = null;
-  // @Input() transform: CanvasWorldTransform | null = null;
-  // [drawNotifier] = "this.mdl"
-  // [interactionHandler] = "mdl.toolHost"
-  // [transform] = "mdl.transform"
-
-  drawer: CanvasDrawer = new SpectrumChartDrawer();
   drawNotifier = new SpectrumChartModel();
+  drawer: CanvasDrawer = new SpectrumChartDrawer();
 
   private _subs = new Subscription();
   constructor(
@@ -128,13 +120,6 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           id: "peakLabels",
           type: "button",
           title: "Peak Labels",
-          value: false,
-          onClick: () => {},
-        },
-        {
-          id: "annotations",
-          type: "button",
-          title: "Annotations",
           value: false,
           onClick: () => {},
         },
