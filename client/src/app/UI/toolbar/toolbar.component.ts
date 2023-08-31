@@ -84,7 +84,10 @@ export class ToolbarComponent implements OnInit, OnDestroy
     private _userPiquantConfigAllowed: boolean = false;
     private _userUserAdminAllowed: boolean = false;
     private _userPiquantJobsAllowed: boolean = false;
-    private _userExportAllowed: boolean = false;
+    
+    // We want to allow all users, including public users, to export data that's visible
+    private _userExportAllowed: boolean = true;
+
     private _isAnalysisTab: boolean = false;
 
     private _currTab: string = "";
@@ -135,7 +138,6 @@ export class ToolbarComponent implements OnInit, OnDestroy
                 this._userPiquantConfigAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionEditPiquantConfig);
                 this._userUserAdminAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionViewUserRoles);
                 this._userPiquantJobsAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionViewPiquantJobs);
-                this._userExportAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionExportMap);
 
                 this.updateToolbar();
             },
@@ -144,7 +146,6 @@ export class ToolbarComponent implements OnInit, OnDestroy
                 this._userPiquantConfigAllowed = false;
                 this._userUserAdminAllowed = false;
                 this._userPiquantJobsAllowed = false;
-                this._userExportAllowed = false;
 
                 this.updateToolbar();
             }

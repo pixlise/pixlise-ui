@@ -111,10 +111,12 @@ class ColourScalePixelDataSource implements IColourScaleDataSource
 
     setDisplayValueRangeMin(channel: number, val: number): void
     {
+        this._displayRange.setMin(val);
     }
 
     setDisplayValueRangeMax(channel: number, val: number): void
     {
+        this._displayRange.setMax(val);
     }
 
     get channelCount(): number
