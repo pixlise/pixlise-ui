@@ -1,5 +1,11 @@
 .button {
   display: flex;
+  height: 100%;
+  align-items: center;
+
+  &.overflowed {
+    display: none;
+  }
 }
 
 .btn-container {

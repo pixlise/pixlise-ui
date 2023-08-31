@@ -1,15 +1,8 @@
 <ng-template class="top-toolbar" #overflowSection>
-  <span
-    *ngFor="let button of widgetConfiguration?.controlConfiguration?.topToolbar"
-    class="menu-btn-container {{ !button._overflowed ? 'overflowed' : '' }}">
-    <icon-button
-      *ngIf="['button', 'selectable-button'].includes(button.type) && button.icon"
-      [state]="button.type === 'selectable-button' && button.value ? 1 : button.disabled ? 3 : 0"
-      [title]="button.title"
-      class="{{ button.type }}"
-      [icon]="button.icon"
-      (onClick)="button.onClick(button.value)"></icon-button>
-  </span>
+  <widget-configuration-button
+    *ngFor="let button of topToolbarButtons"
+    [buttonConfiguration]="button"
+    [ngStyle]="{ display: button._overflowed ? 'block' : 'none' }"></widget-configuration-button>
 </ng-template>
 
 <div class="widget">
@@ -29,7 +22,10 @@
 
     <div class="buttons" #buttonsContainer>
       <div class="top-toolbar {{ topToolbarButtons.length > 0 ? 'visible' : 'hidden' }}" #topToolbar>
-        <widget-configuration-button *ngFor="let button of topToolbarButtons" [buttonConfiguration]="button"></widget-configuration-button>
+        <widget-configuration-button
+          *ngFor="let button of topToolbarButtons"
+          [buttonConfiguration]="button"
+          [ngStyle]="{ display: button._overflowed ? 'none' : 'block' }"></widget-configuration-button>
       </div>
       <widget-settings-menu [settingsDialog]="settingsMenu" [overflowSection]="overflowSection" #settingsButton>
         <icon-button #tooltip="matTooltip" matTooltip="Show Settings Menu" icon="assets/button-icons/settings.svg"> </icon-button>

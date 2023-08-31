@@ -9,7 +9,5 @@ import { WidgetToolbarButtonConfiguration } from "../models/widgets.model";
 export class WidgetConfigurationButtonComponent {
   @Input() buttonConfiguration?: WidgetToolbarButtonConfiguration;
 
-  constructor() {
-    console.log("WidgetConfigurationButtonComponent constructor", this.buttonConfiguration);
-  }
+  constructor() {}
 }
