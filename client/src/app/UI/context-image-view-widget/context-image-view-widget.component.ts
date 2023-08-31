@@ -248,6 +248,8 @@ export class ContextImageViewWidgetComponent implements OnInit, OnDestroy
             {
                 // Something changed, refresh our tools
                 this.toolButtons = this.mdl.toolHost.getToolButtons();
+                let visibleLayer = this.mdl.layerManager.getFirstVisibleLayer();
+                visibleLayer.setDisplayValueRangeMax(0, 100000)
                 this.reDraw();
             }
         ));
