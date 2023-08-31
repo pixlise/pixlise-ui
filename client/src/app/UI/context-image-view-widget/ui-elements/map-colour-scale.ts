@@ -90,6 +90,9 @@ class LayerChannelScale
 
     private _boxHeight: number = 0;
 
+    private _manualScaleMin: number | null = null;
+    private _manualScaleMax: number | null = null;
+
     constructor(
         private _ctx: IContextImageModel,
         public layer: IColourScaleDataSource,
@@ -115,7 +118,17 @@ class LayerChannelScale
             return null;
         }
 
-        return layer.getValueRange(this._channel);
+        let layerRange = layer.getValueRange(this._channel);
+        if(this._manualScaleMax !== null)
+        {
+            layerRange.setMax(this._manualScaleMax);
+        }
+        if(this._manualScaleMin !== null)
+        {
+            layerRange.setMin(this._manualScaleMin);
+        }
+
+        return layerRange;
     }
 
     protected getScaleTagValues(): MinMax
@@ -132,6 +145,14 @@ class LayerChannelScale
         }
 
         let displayValueRange = layer.getDisplayValueRange(this._channel);
+        if(this._manualScaleMax !== null)
+        {
+            displayValueRange.setMax(this._manualScaleMax);
+        }
+        if(this._manualScaleMin !== null)
+        {
+            displayValueRange.setMin(this._manualScaleMin);
+        }
         return new MinMax(displayValueRange.min, displayValueRange.max);
     }
 
@@ -266,14 +287,70 @@ class LayerChannelScale
         return CanvasInteractionResult.redrawAndCatch;
     }
 
+    protected checkAndHandleTagClickEvent(event: CanvasMouseEvent): boolean
+    {
+        let isClickEvent = false;
+
+        // If we're dragging, check how far we've moved. If it's not far, we'll treat it as a click
+        let distanceMoved = getVectorBetweenPoints(event.canvasMouseDown, event.canvasPoint);
+        let distance = Math.sqrt(distanceMoved.x * distanceMoved.x + distanceMoved.y * distanceMoved.y);
+        if (distance < 1) {
+          if (this._mouseMode === MouseMode.DRAG_TOP_TAG) {
+            isClickEvent = true;
+            let newMax = prompt("Enter new max value", this._tagRawValue.toString());
+            let newMaxNum = parseFloat(newMax);
+            if (!isNaN(newMaxNum)) {
+              this._manualScaleMax = newMaxNum;
+              this.setDisplayValueRangeMax(this._manualScaleMax);
+            }
+            else
+            {
+                let scaleRange = this.getScaleRange();
+                this._manualScaleMax = null;
+                this.setDisplayValueRangeMax(scaleRange.max);
+                this._tagRawValue = scaleRange.max;
+            }
+          } else if (this._mouseMode == MouseMode.DRAG_BOTTOM_TAG) {
+            isClickEvent = true;
+            let newMin = prompt("Enter new min value", this._tagRawValue.toString());
+            let newMinNum = parseFloat(newMin);
+            if (!isNaN(newMinNum)) {
+              this._manualScaleMin = newMinNum;
+              this.setDisplayValueRangeMin(this._manualScaleMin);
+            }
+            else
+            {
+                let scaleRange = this.getScaleRange();
+                this._manualScaleMin = null;
+                this.setDisplayValueRangeMin(scaleRange.min);
+            }
+          }
+        }
+
+        return isClickEvent;
+    }
+
     protected handleMouseDragEnd(event: CanvasMouseEvent): CanvasInteractionResult
     {
         let layer = this.getMapLayer();
-        if(!layer)
+        if(!layer || !event?.canvasMouseDown || !event?.canvasPoint)
         {
             return CanvasInteractionResult.neither;
         }
 
+        if (this.checkAndHandleTagClickEvent(event))
+        {
+            let pos = this.getPosition(event.canvasParams, this._ctx.transform, layer);
+            let valueRange = this.getScaleRange();
+            this._tagDragYPos = this.getScaleYPos(valueRange.max, pos.stepsShown, pos.rect.maxY(), pos.tagHeight);
+
+            this._startTranslation = null;
+            this._dragPosCache = null;
+            this._tagRawValue = 0;
+
+            return CanvasInteractionResult.redrawAndCatch;
+        }
+        
         let result = false;
 
         if(this._mouseMode == MouseMode.DRAG_TOP_TAG || this._mouseMode == MouseMode.DRAG_BOTTOM_TAG)
@@ -290,6 +367,10 @@ class LayerChannelScale
             if(this._mouseMode == MouseMode.DRAG_TOP_TAG)
             {
                 this.setDisplayValueRangeMax(rawValue);
+                this._manualScaleMax = null;
+
+                let valueRange = this.getScaleRange();
+                this._tagDragYTopLimit = this.getScaleYPos(valueRange.max, pos.stepsShown, pos.rect.maxY(), pos.tagHeight);
 
                 // Now remain in "hover" mode for this tag...
                 this._mouseMode = MouseMode.HOVER_TOP_TAG;
@@ -297,6 +378,10 @@ class LayerChannelScale
             else
             {
                 this.setDisplayValueRangeMin(rawValue);
+                this._manualScaleMin = null;
+
+                let valueRange = this.getScaleRange();
+                this._tagDragYBottomLimit = this.getScaleYPos(valueRange.min, pos.stepsShown, pos.rect.maxY(), pos.tagHeight);
 
                 // Now remain in "hover" mode for this tag...
                 this._mouseMode = MouseMode.HOVER_BOTTOM_TAG;
@@ -528,20 +613,28 @@ class LayerChannelScale
             return;
         }
 
+        if(this._manualScaleMax !== null && this._manualScaleMax !== scaleRange.max)
+        {
+            layer.setDisplayValueRangeMax(this._channel, this._manualScaleMax);
+            scaleRange.setMax(this._manualScaleMax);
+        }
+        if(this._manualScaleMin !== null && this._manualScaleMin !== scaleRange.min)
+        {
+            layer.setDisplayValueRangeMin(this._channel, this._manualScaleMin);
+            scaleRange.setMin(this._manualScaleMin);
+        }
+
+        // Generate the histogram
+        layer.setHistogramSteps(pos.stepsShown);
+        let histogram = layer.getHistogram(this._channel);
+       
         const clrBlack = Colours.BLACK.asString();
         const clrBottomTag = Colours.CONTEXT_BLUE.asString();
         const clrTopTag = Colours.CONTEXT_PURPLE.asString();
 
         screenContext.font = pos.fontSize+"px Roboto";
         screenContext.textAlign = "left";
-
-        // Get the histogram too
-        let histogram = layer.getHistogram(this._channel);
-        if(histogram.values.length <= 0)
-        {
-            layer.setHistogramSteps(pos.stepsShown);
-            histogram = layer.getHistogram(this._channel);
-        }
+        
 
         if(!MapColourScale.isMapDataValid(histogram))
         {
@@ -649,6 +742,17 @@ OOOO
     private drawScale(screenContext: CanvasRenderingContext2D, histogram: Histogram, pos: scaleInfo, layer: IColourScaleDataSource, scaleRange: MinMax, labelStyle: string)
     {
         scaleRange = layer.getDisplayValueRange(this._channel) || scaleRange;
+        if(this._manualScaleMax !== null && this._manualScaleMax !== scaleRange.max)
+        {
+            layer.setDisplayValueRangeMax(this._channel, this._manualScaleMax);
+            scaleRange.setMax(this._manualScaleMax);
+        }
+        if(this._manualScaleMin !== null && this._manualScaleMin !== scaleRange.min)
+        {
+            layer.setDisplayValueRangeMin(this._channel, this._manualScaleMin);
+            scaleRange.setMin(this._manualScaleMin);
+        }
+
         let rawValue = scaleRange.min;
         let rawIncr = (scaleRange.getRange())/(pos.stepsShown-1);
 
