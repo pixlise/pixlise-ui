@@ -91,7 +91,7 @@ export class SettingsSidebarComponent {
   }
 
   get hintAssistanceActive(): boolean {
-    return this._userOptionsService.hints.enabled;
+    return true;//this._userOptionsService.hints.enabled;
   }
 
   get dataCollectionActive(): boolean {

@@ -53,7 +53,7 @@ export class UserOptionsService {
 
   private _hints: UserHints = {
     dismissedHints: [],
-    enabled: false,
+    //enabled: false,
   };
 
   public isSidebarOpen: boolean = false;

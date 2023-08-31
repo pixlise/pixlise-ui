@@ -1,17 +1,14 @@
 import { Injectable } from "@angular/core";
 import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import {
-  UserGroupAddAdminReq,
   UserGroupAddMemberReq,
   UserGroupAddViewerReq,
-  UserGroupCreateReq,
-  UserGroupCreateResp,
-  UserGroupDeleteAdminReq,
   UserGroupDeleteMemberReq,
-  UserGroupDeleteReq,
   UserGroupDeleteViewerReq,
-  UserGroupListReq,
-} from "src/app/generated-protos/user-group-msgs";
+} from "src/app/generated-protos/user-group-membership-msgs";
+import { UserGroupCreateReq, UserGroupCreateResp, UserGroupDeleteReq } from "src/app/generated-protos/user-group-management-msgs";
+import { UserGroupAddAdminReq, UserGroupDeleteAdminReq } from "src/app/generated-protos/user-group-admins-msgs";
+import { UserGroupListReq } from "src/app/generated-protos/user-group-retrieval-msgs";
 import { UserGroup, UserGroupInfo, UserGroupJoinRequestDB, UserGroupRelationship } from "src/app/generated-protos/user-group";
 import { ReplaySubject } from "rxjs";
 import { UserGroupReq } from "src/app/generated-protos/user-group-retrieval-msgs";

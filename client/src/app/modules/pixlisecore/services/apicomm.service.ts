@@ -2,7 +2,7 @@ import { Injectable } from "@angular/core";
 import { HttpClient, HttpErrorResponse, HttpEventType } from "@angular/common/http";
 import { webSocket, WebSocketSubject } from "rxjs/webSocket";
 
-import { Observable, of, switchMap, map, delay, retry } from "rxjs";
+import { Observable, of, switchMap, map, delay, retry, catchError } from "rxjs";
 
 import { environment } from "src/environments/environment";
 
@@ -30,6 +30,10 @@ export class APICommService {
         const arr = new Uint8Array(resp);
         const res = BeginWSConnectionResponse.decode(arr);
         return res.connToken;
+      }),
+      catchError((err)=>{
+        console.log(err);
+        throw err;
       })
     );
   }
