@@ -1,33 +1,32 @@
 import { Component, Input, OnInit, OnDestroy } from "@angular/core";
 import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
-import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { Subscription } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { BinaryChartDrawer } from "./drawer";
+
+import { TernaryChartDrawer } from "./drawer";
 import {
   CanvasDrawNotifier,
   CanvasDrawer,
   CanvasInteractionHandler,
   CanvasWorldTransform,
 } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { BinaryChartModel } from "./model";
+import { TernaryChartModel } from "./model";
 
 @Component({
-  selector: "binary-chart-widget",
-  templateUrl: "./binary-chart-widget.component.html",
-  styleUrls: ["./binary-chart-widget.component.scss"],
+  selector: "ternary-chart-widget",
+  templateUrl: "./ternary-chart-widget.component.html",
+  styleUrls: ["./ternary-chart-widget.component.scss"]
 })
-export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
-  mdl = new BinaryChartModel();
-  drawer: CanvasDrawer = new BinaryChartDrawer();
+export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
+  mdl = new TernaryChartModel();
+  drawer: CanvasDrawer;
 
   private _subs = new Subscription();
-  constructor(
-    private _snackService: SnackbarService,
-    public dialog: MatDialog
-  ) {
-    super();
 
+  constructor(public dialog: MatDialog) {
+    super();
+    this.drawer = new TernaryChartDrawer(this.mdl.drawModel);
+    
     this._widgetControlConfiguration = {
       topToolbar: [
         {
@@ -63,14 +62,13 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   ngOnInit() {
-    // this.drawer = new BinaryChartDrawer(this.mdl, this.mdl?.toolHost);
     this.reDraw();
   }
 
   ngOnDestroy() {
     this._subs.unsubscribe();
   }
-
+  
   reDraw() {
     this.mdl.needsDraw$.next();
   }

@@ -26,8 +26,6 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   countsPerMin = false;
   countsPerPMC = true;
 
-  @Input() widgetPosition: string = "";
-
   drawNotifier = new SpectrumChartModel();
   drawer: CanvasDrawer = new SpectrumChartDrawer();
 

@@ -1,13 +1,21 @@
 <ng-template #settingsMenu>
   <div class="settings">
-    <div class="scale-buttons">
-      <two-state-push-button [active]="resizeSpectraY" (click)="onToggleResizeSpectraY()">Resize</two-state-push-button>
-      <two-state-push-button [active]="yAxislogScale" (click)="onToggleYAxislogScale()">Log Scale</two-state-push-button>
-    </div>
-    <switch-button label="Normalise Counts/min:" [active]="countsPerMin" (onToggle)="onToggleCountsPerMin()"></switch-button>
-    <switch-button label="Normalise Counts/PMC:" [active]="countsPerPMC" (onToggle)="onToggleCountsPerPMC()"></switch-button>
+    <two-state-button
+        leftLabel="Weight%"
+        rightLabel="mmol"
+        toolTip="Show results in mmol vs weight %"
+        [active]="showMmol"
+        (onToggle)="setShowMmol()">
+    </two-state-button>
+    <two-state-push-button
+        class="exclude-btn"
+        [active]="selectModeExcludeROI"
+        (onToggle)="onToggleSelectModeExcludeROI()"
+        title="Exclude Lasso: will not select points that are in an ROI"
+    >Exclude
+    </two-state-push-button>
   </div>
 </ng-template>
 
-<interactive-canvas [drawer]="drawer" [drawNotifier]="drawNotifier" [interactionHandler]="interactionHandler" [transform]="transform">
+<interactive-canvas [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interactionHandler" [transform]="transform">
 </interactive-canvas>
