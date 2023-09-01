@@ -19,7 +19,7 @@ import { BinaryChartModel } from "./model";
 })
 export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
   mdl = new BinaryChartModel();
-  drawer: CanvasDrawer = new BinaryChartDrawer();
+  drawer: CanvasDrawer;
 
   private _subs = new Subscription();
   constructor(
@@ -27,6 +27,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     public dialog: MatDialog
   ) {
     super();
+    this.drawer = new BinaryChartDrawer(this.mdl);
 
     this._widgetControlConfiguration = {
       topToolbar: [
