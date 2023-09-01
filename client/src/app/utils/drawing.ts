@@ -161,7 +161,12 @@ export class PointDrawer {
   _size: number = 0;
   _shape: string = "";
 
-  constructor(screenContext: CanvasRenderingContext2D, size: number, fillColour: RGBA, outlineColour: RGBA, shape: string = "circle") {
+  static readonly ShapeCross = "cross";
+  static readonly ShapeCircle = "circle";
+  static readonly ShapeTriangle = "triangle";
+  static readonly ShapeSquare = "square";
+
+  constructor(screenContext: CanvasRenderingContext2D, size: number, fillColour: RGBA, outlineColour: RGBA, shape: string = PointDrawer.ShapeCircle) {
     this._screenContext = screenContext;
     this._fillColour = fillColour;
     this._outlineColour = outlineColour;
@@ -208,14 +213,14 @@ export class PointDrawer {
         this._screenContext.restore();
       }
 
-      if (this._shape === "triangle") {
+      if (this._shape === PointDrawer.ShapeTriangle) {
         this._screenContext.beginPath();
         this._screenContext.moveTo(pt.x - this._size, pt.y + this._size);
         this._screenContext.lineTo(pt.x, pt.y - this._size);
         this._screenContext.lineTo(pt.x + this._size, pt.y + this._size);
-      } else if (this._shape === "square") {
+      } else if (this._shape === PointDrawer.ShapeSquare) {
         this._screenContext.fillRect(pt.x - this._size, pt.y - this._size, this._size * 2, this._size * 2);
-      } else if (this._shape === "cross") {
+      } else if (this._shape === PointDrawer.ShapeCross) {
         this._screenContext.beginPath();
         this._screenContext.fillRect(pt.x - this._size, pt.y - (1 / 4) * this._size, this._size * 2, this._size / 2);
         this._screenContext.fillRect(pt.x - (1 / 4) * this._size, pt.y - this._size, this._size / 2, this._size * 2);
