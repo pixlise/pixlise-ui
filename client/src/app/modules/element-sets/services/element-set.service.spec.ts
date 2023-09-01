@@ -29,9 +29,14 @@
 
 import { TestBed } from "@angular/core/testing";
 import { ElementSetService } from "./element-set.service";
+import { HttpClientModule } from "@angular/common/http";
 
 describe("ElementSetService", () => {
-  beforeEach(() => TestBed.configureTestingModule({}));
+  beforeEach(() =>
+    TestBed.configureTestingModule({
+      imports: [HttpClientModule],
+    })
+  );
 
   it("should be created", () => {
     const service: ElementSetService = TestBed.get(ElementSetService);

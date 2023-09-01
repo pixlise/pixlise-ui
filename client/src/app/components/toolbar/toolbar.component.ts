@@ -36,7 +36,6 @@ import { EnvConfigurationInitService } from "src/app/services/env-configuration-
 // import { AuthenticationService } from "src/app/services/authentication.service";
 // import { DataSetService } from "src/app/services/data-set.service";
 // import { ExportDataService } from "src/app/services/export-data.service";
-// import { UserMenuPanelComponent } from "src/app/UI/user-menu-panel/user-menu-panel.component";
 import { OverlayHost } from "src/app/utils/overlay-host";
 import { UserMenuPanelComponent } from "./user-menu-panel/user-menu-panel.component";
 import { PIXLISECoreModule } from "src/app/modules/pixlisecore/pixlisecore.module";

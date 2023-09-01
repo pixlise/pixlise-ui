@@ -188,7 +188,7 @@ class PeriodicTableDB {
 
   getElementBySymbol(formula: string): PeriodicTableItem | null {
     let idx = this.getElementIndex(formula);
-    if (idx == null) {
+    if (idx == -1) {
       return null;
     }
     return this._periodicTable[idx];
@@ -295,7 +295,7 @@ class PeriodicTableDB {
       let idx = this.getElementIndex(formula);
 
       // Look up the value (it's really idx-1 but this is probably more future-proof)
-      if (idx != null && idx >= 0 && idx < this._periodicTable.length) {
+      if (idx >= 0 && idx < this._periodicTable.length) {
         result.add(this._periodicTable[idx].Z);
       }
     }
@@ -314,7 +314,7 @@ class PeriodicTableDB {
 
     let idx = this._symbolToIdx.get(formula.substring(0, 2));
     if (idx === undefined) {
-      idx = this._symbolToIdx.get(formula.substring(0, 1)) || 0;
+      idx = this._symbolToIdx.get(formula.substring(0, 1)) || -1;
     }
 
     return idx;
@@ -324,7 +324,7 @@ class PeriodicTableDB {
     let result: ElementOxidationState | null = null;
 
     let idx = this.getElementIndex(formula);
-    if (idx != null) {
+    if (idx != -1) {
       // We found an element in it, check if this formula is longer than just the symbol and form
       // the result
       let elem = this._periodicTable[idx];
@@ -351,7 +351,7 @@ class PeriodicTableDB {
 
     for (let formula of formulae) {
       let idx = this.getElementIndex(formula);
-      if (idx != null) {
+      if (idx != -1) {
         let elem = this._periodicTable[idx];
         if (formula.length > elem.symbol.length) {
           // This is an oxide or carbonate, because its formula is longer than the element symbol

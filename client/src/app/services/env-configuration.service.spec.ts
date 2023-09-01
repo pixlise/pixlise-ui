@@ -29,9 +29,14 @@
 
 import { TestBed } from "@angular/core/testing";
 import { EnvConfigurationService } from "./env-configuration.service";
+import { HttpClientModule } from "@angular/common/http";
 
 describe("EnvConfigurationService", () => {
-  beforeEach(() => TestBed.configureTestingModule({}));
+  beforeEach(() =>
+    TestBed.configureTestingModule({
+      imports: [HttpClientModule],
+    })
+  );
 
   it("should be created", () => {
     const service: EnvConfigurationService = TestBed.get(EnvConfigurationService);
