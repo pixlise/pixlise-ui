@@ -69,11 +69,7 @@ export class UserMenuPanelComponent {
   onResetHints(): void {}
 
   onSettings(): void {
-    // @ts-ignore
-    console.log("DATA", this.closeMenu);
     this._userOptionsService.toggleSidebar();
-    // @ts-ignore
-    this.closeMenu();
   }
 
   get userName(): string {

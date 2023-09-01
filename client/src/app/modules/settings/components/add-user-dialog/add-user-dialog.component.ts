@@ -33,7 +33,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { Observable, map, startWith } from "rxjs";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 import { UsersService } from "../../services/users.service";
-import { Auth0UserDetails } from "src/app/generated-protos/user";
+import { Auth0UserDetails, UserInfo } from "src/app/generated-protos/user";
 
 export interface AddUserDialogData {
   groupId: string;
@@ -47,9 +47,9 @@ export type Role = "viewer" | "editor" | "admin";
   styleUrls: ["./add-user-dialog.component.scss"],
 })
 export class AddUserDialogComponent implements OnInit {
-  selectedUserControl = new FormControl<string | Auth0UserDetails>("");
-  filteredOptions: Observable<Auth0UserDetails[]>;
-  options: Auth0UserDetails[] = [];
+  selectedUserControl = new FormControl<string | UserInfo>("");
+  filteredOptions: Observable<UserInfo[]>;
+  options: UserInfo[] = [];
 
   roles = ["viewer", "editor", "admin"];
   selectedRole: Role = "viewer";
@@ -62,24 +62,27 @@ export class AddUserDialogComponent implements OnInit {
     this.filteredOptions = this.selectedUserControl.valueChanges.pipe(
       startWith(""),
       map(value => {
-        const name = typeof value === "string" ? value : value?.auth0User?.name;
-        return name ? this._filter(name as string) : this.options.slice();
+        const name: string = typeof value === "string" ? value : value?.name || "";
+        if (name.length > 0) {
+          this._usersService.searchUsers(name);
+        }
+        return name ? this._filter(name) : this.options.slice();
       })
     );
 
-    this._usersService.usersChanged$.subscribe(() => {
-      this.options = this._usersService.users;
+    this._usersService.searchedUsers$.subscribe(searchedUsers => {
+      this.options = Object.values(this._usersService.cachedUsers);
     });
   }
 
-  displayFn(user: Auth0UserDetails): string {
-    return user && user.auth0User?.name ? user.auth0User.name : "";
+  displayFn(user: UserInfo): string {
+    return user && user.name ? user.name : "";
   }
 
-  private _filter(name: string): Auth0UserDetails[] {
+  private _filter(name: string): UserInfo[] {
     const filterValue = name.toLowerCase();
 
-    return this.options.filter(option => option.auth0User?.name.toLowerCase().includes(filterValue));
+    return this.options.filter(option => option?.name.toLowerCase().includes(filterValue));
   }
 
   ngOnInit(): void {}
@@ -90,8 +93,8 @@ export class AddUserDialogComponent implements OnInit {
 
   onAccept(): void {
     let userId = this.selectedUserControl.value;
-    if (typeof userId !== "string" && userId?.auth0User?.id) {
-      userId = userId.auth0User.id;
+    if (typeof userId !== "string" && userId?.id) {
+      userId = userId.id;
     }
 
     this.dialogRef.close({

@@ -199,7 +199,6 @@ export class GroupsService {
           this._snackBar.openError(`Group (${groupId}) not found`);
           return;
         }
-
         let groupIndex = this.detailedGroups.findIndex(group => group.info?.id === groupId);
         if (groupIndex >= 0) {
           this.detailedGroups[groupIndex] = res.group;

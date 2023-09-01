@@ -16,14 +16,6 @@ import { EnvConfigurationInitService } from "src/app/services/env-configuration-
 import { HttpClient } from "@angular/common/http";
 import { makeHeaders } from "src/app/utils/api-helpers";
 import {
-  UserDismissHintReq,
-  UserHintsReq,
-  UserHintsResp,
-  UserHintsToggleReq,
-  UserHintsToggleResp,
-} from "src/app/generated-protos/user-hints-msgs";
-import { UserHints } from "src/app/generated-protos/user-hints";
-import {
   NotificationConfig,
   NotificationMethod,
   NotificationSetting,
@@ -50,11 +42,6 @@ export class UserOptionsService {
     permissions: [],
   };
   private _userOptionsChanged$ = new ReplaySubject<void>(1);
-
-  private _hints: UserHints = {
-    dismissedHints: [],
-    //enabled: false,
-  };
 
   public isSidebarOpen: boolean = false;
 
@@ -87,10 +74,6 @@ export class UserOptionsService {
 
   get userDetails(): UserDetails {
     return this._userDetails;
-  }
-
-  get hints(): UserHints {
-    return this._hints;
   }
 
   get currentDataCollectionAgreementAccepted(): boolean {
@@ -204,8 +187,6 @@ export class UserOptionsService {
     userDetailsWriteReq.email = email;
     userDetailsWriteReq.iconURL = iconURL;
     userDetailsWriteReq.dataCollectionVersion = dataCollectionVersion;
-
-    console.log("SENDING WRITE REQUEST", userDetailsWriteReq);
 
     this._dataService.sendUserDetailsWriteRequest(userDetailsWriteReq).subscribe({
       next: (resp: UserDetailsWriteResp) => {

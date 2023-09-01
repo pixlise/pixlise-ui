@@ -98,7 +98,7 @@ export class GroupsPageComponent {
     const dialogRef = this.dialog.open(NewGroupDialogComponent, dialogConfig);
 
     dialogRef.afterClosed().subscribe((data: { groupName: string }) => {
-      if (!data.groupName) {
+      if (!data?.groupName) {
         return;
       }
 
@@ -165,6 +165,14 @@ export class GroupsPageComponent {
 
   get selectedGroupMembers() {
     return this.selectedGroup?.members?.users || [];
+  }
+
+  get selectedGroupViewers() {
+    return this.selectedGroup?.viewers?.users || [];
+  }
+
+  get selectedGroupUsers() {
+    return [...this.selectedGroupMembers, ...this.selectedGroupViewers];
   }
 
   get selectedGroupAccessRequests() {

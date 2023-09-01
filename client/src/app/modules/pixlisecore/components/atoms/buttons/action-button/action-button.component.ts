@@ -42,6 +42,8 @@ export const matActionIcons = {
 const customActionIcons = {
   "edit-clipboard": "assets/button-icons/edit.svg",
   delete: "assets/button-icons/delete.svg",
+  confirm: "assets/button-icons/radio-tick-on.svg",
+  deny: "assets/button-icons/grey-circle-x.svg",
 };
 
 export type ACTION_TYPE = keyof typeof customActionIcons | keyof typeof matActionIcons;
