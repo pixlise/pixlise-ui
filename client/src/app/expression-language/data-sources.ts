@@ -28,40 +28,34 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { PMCDataValues } from "src/app/expression-language/data-values";
-import { DataSet } from "src/app/models/DataSet";
 
 // Query data sources (interfaces)
-export interface QuantifiedDataQuerierSource
-{
-    getQuantifiedDataForDetector(detectorId: string, dataLabel: string): PMCDataValues;
-    getElementList(): string[];
-    getPMCList(): number[];
-    getDetectors(): string[];
-    columnExists(col: string): boolean;
+export interface QuantifiedDataQuerierSource {
+  getQuantifiedDataForDetector(detectorId: string, dataLabel: string): PMCDataValues;
+  getElementList(): string[];
+  getPMCList(): number[];
+  getDetectors(): string[];
+  columnExists(col: string): boolean;
 }
 
-export interface PseudoIntensityDataQuerierSource
-{
-    getPseudoIntensityData(name: string): PMCDataValues;
-    getPseudoIntensityElementsList(): string[];
+export interface PseudoIntensityDataQuerierSource {
+  getPseudoIntensityData(name: string): PMCDataValues;
+  getPseudoIntensityElementsList(): string[];
 }
 
-export interface SpectrumDataQuerierSource
-{
-    getSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): PMCDataValues;
-    // If sumOrMax==true, returns sum of differences between A and B otherwise max difference seen between A and B
-    getSpectrumDifferences(channelStart: number, channelEnd: number, sumOrMax: boolean): PMCDataValues;
+export interface SpectrumDataQuerierSource {
+  getSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): PMCDataValues;
+  // If sumOrMax==true, returns sum of differences between A and B otherwise max difference seen between A and B
+  getSpectrumDifferences(channelStart: number, channelEnd: number, sumOrMax: boolean): PMCDataValues;
 }
 
-export interface DiffractionPeakQuerierSource
-{
-    getDiffractionPeakEffectData(channelStart: number, channelEnd: number, dataset: DataSet): PMCDataValues;
-    getRoughnessData(dataset: DataSet): PMCDataValues;
+export interface DiffractionPeakQuerierSource {
+  getDiffractionPeakEffectData(channelStart: number, channelEnd: number): PMCDataValues;
+  getRoughnessData(): PMCDataValues;
 }
 
-export interface HousekeepingDataQuerierSource
-{
-    getHousekeepingData(name: string): PMCDataValues;
-    getPositionData(axis: string): PMCDataValues;
-    hasHousekeepingData(name: string): boolean;
+export interface HousekeepingDataQuerierSource {
+  getHousekeepingData(name: string): PMCDataValues;
+  getPositionData(axis: string): PMCDataValues;
+  hasHousekeepingData(name: string): boolean;
 }

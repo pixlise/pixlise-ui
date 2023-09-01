@@ -33,248 +33,205 @@ import { LuaDataQuerier } from "./interpret-lua";
 import { PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { InterpreterDataSource } from "./interpreter-data-source";
 
+export class ResultComparer {
+  constructor(
+    private _interpretPixlise: PixliseDataQuerier,
+    private _interpretLua: LuaDataQuerier,
+    private _allowedDifferenceLuaToPIXLISE: number
+  ) {}
 
-export class ResultComparer
-{
-    constructor(
-        private _interpretPixlise: PixliseDataQuerier,
-        private _interpretLua: LuaDataQuerier,
-        private _allowedDifferenceLuaToPIXLISE: number
-        )
-    {
+  // Returns -1 if they are the same
+  findDifferenceLine(
+    exprLua: string,
+    modulesLua: Map<string, string>,
+    exprPIXLISE: string,
+    afterLine: number,
+    dataSource: InterpreterDataSource
+  ): number {
+    let result = -1; // No difference found
+
+    // Run each expression up to the line we're checking, take the variable and check the maps generated
+    // so we can stop when they differ
+    let exprLuaLines = exprLua.split("\n");
+    let exprPIXLISELines = exprPIXLISE.split("\n");
+    if (exprLuaLines.length != exprPIXLISELines.length) {
+      throw new Error("Expression line lengths didn't match");
     }
 
-    // Returns -1 if they are the same
-    findDifferenceLine(exprLua: string, modulesLua: Map<string, string>, exprPIXLISE: string, afterLine: number, dataSource: InterpreterDataSource): number
-    {
-        let result = -1; // No difference found
+    let exprLuaRan = "";
+    let exprPIXLISERan = "";
 
-        // Run each expression up to the line we're checking, take the variable and check the maps generated
-        // so we can stop when they differ
-        let exprLuaLines = exprLua.split("\n");
-        let exprPIXLISELines = exprPIXLISE.split("\n");
-        if(exprLuaLines.length != exprPIXLISELines.length)
-        {
-            throw new Error("Expression line lengths didn't match");
+    let lineResultsLua = new Map<string, PMCDataValues>();
+    let lineResultsPIXLISE = new Map<string, PMCDataValues>();
+
+    for (let c = 0; c < exprLuaLines.length; c++) {
+      let luaParts = this.splitLine(exprLuaLines[c], "--");
+      let pixParts = this.splitLine(exprPIXLISELines[c], "//");
+
+      if (luaParts.length != pixParts.length) {
+        throw new Error("Expressions differ on line: " + (c + 1));
+      }
+
+      if (c >= afterLine && luaParts.length > 0) {
+        console.log("Comparing line " + (c + 1) + " of " + exprLuaLines.length + " " + ((c + 1) / exprLuaLines.length) * 100 + "%");
+
+        // Check they're the same var assignment
+        if (luaParts[0] != pixParts[0]) {
+          throw new Error("Expressions assign to different vars on line: " + (c + 1));
         }
 
-        let exprLuaRan = "";
-        let exprPIXLISERan = "";
+        // Run each one to get the value
+        let exprLuaToRun = this.appendTo(exprLuaRan, exprLuaLines[c]);
+        exprLuaToRun += "\nreturn " + luaParts[0];
 
-        let lineResultsLua = new Map<string, PMCDataValues>();
-        let lineResultsPIXLISE = new Map<string, PMCDataValues>();
+        let exprPIXLISEToRun = this.appendTo(exprPIXLISERan, exprPIXLISELines[c]);
+        exprPIXLISEToRun += "\n" + pixParts[0];
 
-        for(let c = 0; c < exprLuaLines.length; c++)
-        {
-            let luaParts = this.splitLine(exprLuaLines[c], "--");
-            let pixParts = this.splitLine(exprPIXLISELines[c], "//");
+        let luaResult$ = this.runLua(exprLuaToRun, modulesLua, dataSource);
+        let pixResult$ = this.runPIXLISE(exprPIXLISEToRun, dataSource);
 
-            if(luaParts.length != pixParts.length)
-            {
-                throw new Error("Expressions differ on line: "+(c+1));
+        let allResults$ = combineLatest([luaResult$, pixResult$]);
+        allResults$.subscribe(results => {
+          let luaResult = results[0];
+          let pixResult = results[1];
+
+          if (!this.isEqual(luaResult.resultValues, pixResult.resultValues)) {
+            console.log("PIXLISE line: " + exprLuaLines[c]);
+            console.log("PIXLISE value for " + pixParts[0] + ":");
+            console.log(pixResult);
+            console.log("Lua line: " + exprPIXLISELines[c]);
+            console.log("Lua value for " + luaParts[0] + ":");
+            console.log(luaResult);
+
+            // Run them again so we can step through it in the debugger
+            let luaResult2$ = this.runLua(exprLuaToRun, modulesLua, dataSource);
+            let pixResult2$ = this.runPIXLISE(exprPIXLISEToRun, dataSource);
+
+            let allResults$ = combineLatest([luaResult2$, pixResult2$]);
+            allResults$.subscribe(results => {});
+
+            if (result < 0) {
+              // We're only returning the first difference line
+              result = c + 1;
             }
+          } else {
+            // Just check one for weird stuff
+            this.checkAndWarn(luaResult.resultValues, c, luaParts[0]);
 
-            if(c >= afterLine && luaParts.length > 0)
-            {
-                console.log("Comparing line "+(c+1)+" of "+exprLuaLines.length+" "+((c+1)/exprLuaLines.length*100)+"%")
+            lineResultsLua.set(luaParts[0], luaResult.resultValues);
+            lineResultsPIXLISE.set(pixParts[0], pixResult.resultValues);
+          }
+        });
+      }
 
-                // Check they're the same var assignment
-                if(luaParts[0] != pixParts[0])
-                {
-                    throw new Error("Expressions assign to different vars on line: "+(c+1));
-                }
-
-                // Run each one to get the value
-                let exprLuaToRun = this.appendTo(exprLuaRan, exprLuaLines[c]);
-                exprLuaToRun += "\nreturn "+luaParts[0];
-
-                let exprPIXLISEToRun = this.appendTo(exprPIXLISERan, exprPIXLISELines[c]);
-                exprPIXLISEToRun += "\n"+pixParts[0];
-
-                let luaResult$ = this.runLua(exprLuaToRun, modulesLua, dataSource);
-                let pixResult$ = this.runPIXLISE(exprPIXLISEToRun, dataSource);
-
-                let allResults$ = combineLatest([luaResult$, pixResult$]);
-                allResults$.subscribe(
-                    (results)=>
-                    {
-                        let luaResult = results[0];
-                        let pixResult = results[1];
-
-                        if(!this.isEqual(luaResult.resultValues, pixResult.resultValues))
-                        {
-                            console.log("PIXLISE line: "+exprLuaLines[c]);
-                            console.log("PIXLISE value for "+pixParts[0]+":");
-                            console.log(pixResult);
-                            console.log("Lua line: "+exprPIXLISELines[c]);
-                            console.log("Lua value for "+luaParts[0]+":");
-                            console.log(luaResult);
-
-                            // Run them again so we can step through it in the debugger
-                            let luaResult2$ = this.runLua(exprLuaToRun, modulesLua, dataSource);
-                            let pixResult2$ = this.runPIXLISE(exprPIXLISEToRun, dataSource);
-
-                            let allResults$ = combineLatest([luaResult2$, pixResult2$]);
-                            allResults$.subscribe(
-                                (results)=>
-                                {
-                                }
-                            );
-
-                            if(result < 0)
-                            {
-                                // We're only returning the first difference line
-                                result = c+1;
-                            }
-                        }
-                        else
-                        {
-                            // Just check one for weird stuff
-                            this.checkAndWarn(luaResult.resultValues, c, luaParts[0]);
-
-                            lineResultsLua.set(luaParts[0], luaResult.resultValues);
-                            lineResultsPIXLISE.set(pixParts[0], pixResult.resultValues);
-                        }
-                    }
-                );
-            }
-
-            exprLuaRan = this.appendTo(exprLuaRan, exprLuaLines[c]);
-            exprPIXLISERan = this.appendTo(exprPIXLISERan, exprPIXLISELines[c]);
-        }
-
-        // Final check
-        if(result == -1 && exprLuaLines.length >= afterLine)
-        {
-            let luaResultFinal$ = this.runLua(exprLua, modulesLua, dataSource);
-            let pixResultFinal$ = this.runPIXLISE(exprPIXLISE, dataSource);
-
-            let allResults$ = combineLatest([luaResultFinal$, pixResultFinal$]);
-            allResults$.subscribe(
-                (results)=>
-                {
-                    if(!this.isEqual(results[0].resultValues, results[1].resultValues))
-                    {
-                        console.log("Expression final values differ!");
-                        result = exprLuaLines.length-1;
-                    }
-                }
-            );
-
-            //console.log(JSON.stringify(luaResultFinal, null, 2));
-            //console.log(JSON.stringify(pixResultFinal, null, 2));
-        }
-
-        // Return the first line number we found to differ
-        return result;
+      exprLuaRan = this.appendTo(exprLuaRan, exprLuaLines[c]);
+      exprPIXLISERan = this.appendTo(exprPIXLISERan, exprPIXLISELines[c]);
     }
 
-    private runLua(expression: string, modules: Map<string, string>, dataSource: InterpreterDataSource): Observable<DataQueryResult>
-    {
-        let luaResult: Observable<DataQueryResult> = null;
+    // Final check
+    if (result == -1 && exprLuaLines.length >= afterLine) {
+      let luaResultFinal$ = this.runLua(exprLua, modulesLua, dataSource);
+      let pixResultFinal$ = this.runPIXLISE(exprPIXLISE, dataSource);
 
-        try
-        {
-            luaResult = this._interpretLua.runQuery(expression, modules, dataSource, false, false, false);
+      let allResults$ = combineLatest([luaResultFinal$, pixResultFinal$]);
+      allResults$.subscribe(results => {
+        if (!this.isEqual(results[0].resultValues, results[1].resultValues)) {
+          console.log("Expression final values differ!");
+          result = exprLuaLines.length - 1;
         }
-        catch(err)
-        {
-            if(!err.message.startsWith("Table expected to have arrays"))
-            {
-                throw err;
-            }
-        }
+      });
 
-        return luaResult;
+      //console.log(JSON.stringify(luaResultFinal, null, 2));
+      //console.log(JSON.stringify(pixResultFinal, null, 2));
     }
 
-    private runPIXLISE(expression: string, dataSource: InterpreterDataSource): Observable<DataQueryResult>
-    {
-        let pixResult: Observable<DataQueryResult> = null;
+    // Return the first line number we found to differ
+    return result;
+  }
 
-        try
-        {
-            pixResult = this._interpretPixlise.runQuery(expression, dataSource);
-        }
-        catch(err)
-        {
-            if(err.message.indexOf("did not result in usable map data") < 0)
-            {
-                throw err;
-            }
-        }
+  private runLua(expression: string, modules: Map<string, string>, dataSource: InterpreterDataSource): Observable<DataQueryResult> {
+    let luaResult: Observable<DataQueryResult> = null;
 
-        return pixResult;
+    try {
+      luaResult = this._interpretLua.runQuery(expression, modules, dataSource, false, false, false);
+    } catch (err) {
+      if (!err.message.startsWith("Table expected to have arrays")) {
+        throw err;
+      }
     }
 
-    private splitLine(line: string, commentStart: string): string[]
-    {
-        let commentPos = line.indexOf(commentStart);
-        if(commentPos >= 0)
-        {
-            line = line.substring(0, commentPos);
-        }
+    return luaResult;
+  }
 
-        let eqPos = line.indexOf("=");
-        if(eqPos > 0)
-        {
-            // Has a variable def
-            let varName = line.substring(0, eqPos).trim();
-            let expr = line.substring(eqPos+1).trim();
-            return [varName, expr];
-        }
+  private runPIXLISE(expression: string, dataSource: InterpreterDataSource): Observable<DataQueryResult> | null {
+    let pixResult: Observable<DataQueryResult> | null = null;
 
-        return [];
+    try {
+      pixResult = this._interpretPixlise.runQuery(expression, dataSource);
+    } catch (err) {
+      if (err.message.indexOf("did not result in usable map data") < 0) {
+        throw err;
+      }
     }
 
-    private appendTo(script: string, line: string): string
-    {
-        let result = "";
-        result += script;
-        if(script.length > 0)
-        {
-            result += "\n";
-        }
-        result += line;
-        return result;
+    return pixResult;
+  }
+
+  private splitLine(line: string, commentStart: string): string[] {
+    const commentPos = line.indexOf(commentStart);
+    if (commentPos >= 0) {
+      line = line.substring(0, commentPos);
     }
 
-    private isEqual(a: PMCDataValues, b: PMCDataValues): boolean
-    {
-        if(a.values.length != b.values.length)
-        {
-            return false;
-        }
-
-        for(let c = 0; c < a.values.length; c++)
-        {
-            if( a.values[c].pmc != b.values[c].pmc ||
-                (isNaN(a.values[c].value) || !isFinite(a.values[c].value)) != (isNaN(b.values[c].value) || !isFinite(b.values[c].value)) ||
-                //isNaN(a.values[c].value) != isNaN(b.values[c].value) ||
-                //isFinite(a.values[c].value) != isFinite(b.values[c].value) ||
-                Math.abs(a.values[c].value - b.values[c].value) > this._allowedDifferenceLuaToPIXLISE
-                )
-            {
-                console.log(`Difference: ${a.values[c].pmc}, ${a.values[c].value} vs ${b.values[c].pmc}, ${b.values[c].value}`)
-                return false;
-            }
-        }
-
-        return true;
+    const eqPos = line.indexOf("=");
+    if (eqPos > 0) {
+      // Has a variable def
+      const varName = line.substring(0, eqPos).trim();
+      const expr = line.substring(eqPos + 1).trim();
+      return [varName, expr];
     }
 
-    private checkAndWarn(m: PMCDataValues, line: number, varName: string): void
-    {
-        for(let c = 0; c < m.values.length; c++)
-        {
-            if(!isFinite(m.values[c].value))
-            {
-                console.log("Not finite: "+m.values[c].pmc+" on line: "+line+", var="+varName)
-            }
-            else if(isNaN(m.values[c].value))
-            {
-                console.log("NAN: "+m.values[c].pmc+" on line: "+line+", var="+varName)
-            }
-        }
+    return [];
+  }
+
+  private appendTo(script: string, line: string): string {
+    let result = "";
+    result += script;
+    if (script.length > 0) {
+      result += "\n";
     }
+    result += line;
+    return result;
+  }
+
+  private isEqual(a: PMCDataValues, b: PMCDataValues): boolean {
+    if (a.values.length != b.values.length) {
+      return false;
+    }
+
+    for (let c = 0; c < a.values.length; c++) {
+      if (
+        a.values[c].pmc != b.values[c].pmc ||
+        (isNaN(a.values[c].value) || !isFinite(a.values[c].value)) != (isNaN(b.values[c].value) || !isFinite(b.values[c].value)) ||
+        //isNaN(a.values[c].value) != isNaN(b.values[c].value) ||
+        //isFinite(a.values[c].value) != isFinite(b.values[c].value) ||
+        Math.abs(a.values[c].value - b.values[c].value) > this._allowedDifferenceLuaToPIXLISE
+      ) {
+        console.log(`Difference: ${a.values[c].pmc}, ${a.values[c].value} vs ${b.values[c].pmc}, ${b.values[c].value}`);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private checkAndWarn(m: PMCDataValues, line: number, varName: string): void {
+    for (let c = 0; c < m.values.length; c++) {
+      if (!isFinite(m.values[c].value)) {
+        console.log("Not finite: " + m.values[c].pmc + " on line: " + line + ", var=" + varName);
+      } else if (isNaN(m.values[c].value)) {
+        console.log("NAN: " + m.values[c].pmc + " on line: " + line + ", var=" + varName);
+      }
+    }
+  }
 }

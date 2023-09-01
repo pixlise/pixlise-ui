@@ -27,172 +27,155 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Observable, combineLatest, from, of } from "rxjs";
+import { Observable, combineLatest, from } from "rxjs";
 import { map, mergeMap, concatMap, catchError, finalize, shareReplay } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { InterpreterDataSource } from "./interpreter-data-source";
 import { randomString } from "src/app/utils/utils";
-import { DataExpressionId } from "../models/Expression";
-import { DataModuleService } from "src/app/services/data-module.service";
+import { DataExpressionId } from "./expression-id";
+import { DataModuleHelpers } from "./data-module-helpers";
 import { environment } from "src/environments/environment";
 
 import { LuaFactory, LuaLibraries, LuaEngine } from "wasmoon";
 
+export class LuaDataQuerier {
+  // An id we use for logging about this Lua runner
+  private _id = randomString(4);
+  private _logId: string = "";
+  private _execCount: number = -1; // start here, gets incremented before first use
 
-export class LuaDataQuerier
-{
-    // An id we use for logging about this Lua runner
-    private _id = randomString(4);
-    private _logId: string = "";
-    private _execCount: number = -1; // start here, gets incremented before first use
+  private _luaInit$: Observable<void> | null = null;
+  private _lua: LuaEngine | null = null;
+  private _logTables: boolean = false;
+  private _loggedTables = new Map<string, PMCDataValues>();
+  private _makeLuaTableTime = 0; // Total time spent returning Tables to Lua from things like element() Lua call
+  //private _luaLibImports = "";
 
-    private _luaInit$: Observable<void> = null;
-    private _lua: LuaEngine = null;
-    private _logTables: boolean = false;
-    private _loggedTables = new Map<string, PMCDataValues>();
-    private _makeLuaTableTime = 0; // Total time spent returning Tables to Lua from things like element() Lua call
-    //private _luaLibImports = "";
+  private _runtimeDataRequired: Set<string> = new Set<string>();
+  private _runtimeStdOut = "";
+  private _runtimeStdErr = "";
 
-    private _runtimeDataRequired: Set<string> = new Set<string>();
-    private _runtimeStdOut = "";
-    private _runtimeStdErr = "";
+  private _dataSource: InterpreterDataSource | null = null;
 
-    private _dataSource: InterpreterDataSource = null;
+  constructor(
+    private _debug: boolean //private _luaUseReplay: boolean,
+  ) {
+    this._logId = "[" + this._id + "] ";
+  }
 
-    constructor(
-        private _debug: boolean,
-        //private _luaUseReplay: boolean,
-    )
-    {
-        this._logId = "["+this._id+"] ";
+  shutdown(): void {
+    if (!this._lua) {
+      // Not inited
+      return;
     }
 
-    shutdown(): void
-    {
-        if(!this._lua)
+    this._lua.global.setTimeout(0);
+    this._lua.global.close();
+    this._lua = null;
+    this._luaInit$ = null;
+    console.log(this._logId + "Lua interpreter shut down");
+  }
+
+  private initLua(): Observable<void> {
+    // NOTE: WE NEVER DO THIS:
+    // DataQuerier._lua.global.close()
+    // DO WE NEED TO???
+
+    const luat0 = performance.now();
+
+    console.log(this._logId + "Initializing Lua...");
+
+    // Initialize a new lua environment factory
+    // Pass our hosted wasm file location in here. Simplest method is relative path to served location
+    const wasmURI = "assets/lua/glue.wasm";
+    console.log(this._logId + "Loading WASM from: " + wasmURI);
+
+    const factory = new LuaFactory(
+      wasmURI,
+      {}
+      /*,
+      str => {
+        this._runtimeStdOut += str + "\n";
+        console.log(str);
+      },
+      str => {
+        this._runtimeStdErr += str + "\n";
+        console.error(str);
+      }*/
+    );
+    const luaOpts = {
+      openStandardLibs: true,
+      injectObjects: false,
+      enableProxy: false,
+      traceAllocations: false,
+    };
+    const lua$ = from(factory.createEngine(luaOpts));
+    return lua$.pipe(
+      mergeMap((eng: LuaEngine) => {
+        this._lua = eng;
+
+        console.log(this._logId + "Lua Engine created...");
+
+        // Load std libs we want
+        const t0 = performance.now();
+
+        this._lua.global.loadLibrary(LuaLibraries.Debug);
+
+        const t1 = performance.now();
+        console.log(this._logId + "Lua Engine std libs loaded " + (t1 - t0).toLocaleString() + "ms...");
+
+        // Set up the functions Lua can call to get data, eg element()
+        //if(!this._luaUseReplay)
         {
-            // Not inited
-            return;
+          // NOTE: we DON'T do this if we're replaying, because we want Lua implemented
+          //       functions to hijack these calls instead!
+          this.setupPIXLISELuaFunctions();
         }
 
-        this._lua.global.setTimeout(0);
-        this._lua.global.close();
-        this._lua = null;
-        this._luaInit$ = null;
-        console.log(this._logId+"Lua interpreter shut down");
-    }
+        // Add PIXLISE Lua libraries
+        const builtInLibNames = DataModuleHelpers.getBuiltInModuleNames();
+        const libFileResults$ = [];
 
-    private initLua(): Observable<void>
-    {
-        // NOTE: WE NEVER DO THIS:
-        // DataQuerier._lua.global.close()
-        // DO WE NEED TO???
+        for (const lib of builtInLibNames) {
+          libFileResults$.push(DataModuleHelpers.getBuiltInModuleSource(lib));
+        }
 
-        let luat0 = performance.now();
+        const allFiles$ = combineLatest(libFileResults$);
+        return allFiles$.pipe(
+          map(responses => {
+            for (let c = 0; c < responses.length; c++) {
+              const module = builtInLibNames[c];
+              const source = responses[c] as string;
 
-        console.log(this._logId+"Initializing Lua...");
-        
-        // Initialize a new lua environment factory
-        // Pass our hosted wasm file location in here. Simplest method is relative path to served location
-        let wasmURI = "assets/lua/glue.wasm";
-        console.log(this._logId+"Loading WASM from: "+wasmURI);
-
-        const factory = new LuaFactory(
-            wasmURI,
-            {},
-            (str)=>
-            {
-                this._runtimeStdOut += str+"\n";
-                console.log(str);
-            },
-            (str)=>
-            {
-                this._runtimeStdErr += str+"\n";
-                console.error(str);
+              this.installModule(module, source);
             }
+
+            //this.dumpLua("Init complete");
+
+            const luat1 = performance.now();
+            console.log(this._logId + "Lua Initialisation took: " + (luat1 - luat0).toLocaleString() + "ms...");
+          })
         );
-        const luaOpts = {
-            openStandardLibs: true,
-            injectObjects: false,
-            enableProxy: false,
-            traceAllocations: false
-        };
-        let lua$ = from(factory.createEngine(luaOpts));
-        return lua$.pipe(
-            mergeMap(
-                (eng: LuaEngine)=>
-                {
-                    this._lua = eng;
+      })
+    );
+  }
 
-                    console.log(this._logId+"Lua Engine created...");
-
-                    // Load std libs we want
-                    let t0 = performance.now();
-
-                    this._lua.global.loadLibrary(LuaLibraries.Debug);
-
-                    let t1 = performance.now();
-                    console.log(this._logId+"Lua Engine std libs loaded "+(t1-t0).toLocaleString()+"ms...");
-
-                    // Set up the functions Lua can call to get data, eg element()
-                    //if(!this._luaUseReplay)
-                    {
-                        // NOTE: we DON'T do this if we're replaying, because we want Lua implemented
-                        //       functions to hijack these calls instead!
-                        this.setupPIXLISELuaFunctions();
-                    }
-
-                    // Add PIXLISE Lua libraries
-                    let builtInLibNames = DataModuleService.getBuiltInModuleNames();
-                    let libFileResults$ = [];
-
-                    for(let lib of builtInLibNames)
-                    {
-                        libFileResults$.push(DataModuleService.getBuiltInModuleSource(lib));
-                    }
-                    
-                    let allFiles$ = combineLatest(libFileResults$);
-                    return allFiles$.pipe(
-                        map(
-                            (responses)=>
-                            {
-                                for(let c = 0; c < responses.length; c++)
-                                {
-                                    let module = builtInLibNames[c];
-                                    let source = responses[c] as string;
-
-                                    this.installModule(module, source);
-                                }
-
-                                //this.dumpLua("Init complete");
-
-                                let luat1 = performance.now();
-                                console.log(this._logId+"Lua Initialisation took: "+(luat1-luat0).toLocaleString()+"ms...");
-                            }
-                        )
-                    );
-                }
-            )
-        );
-    }
-
-    private installModule(moduleName: string, sourceCode: string)
-    {
-        let t0 = performance.now();
-/*
+  private installModule(moduleName: string, sourceCode: string) {
+    const t0 = performance.now();
+    /*
         let importDef = this.makeLuaModuleImport(moduleName, sourceCode);
         importDef += "\n"+this.makeLuaModuleImportStatement(moduleName);
         this.runLuaCodeSync(importDef, 10000);
 */
 
-        // Leave ample time to install a module
-        let result = this.runLuaCodeSync(sourceCode, 10000);
+    // Leave ample time to install a module
+    /*let result =*/ this.runLuaCodeSync(sourceCode, 10000);
 
-        let t1 = performance.now();
-        console.log(this._logId+" Added Lua module: "+moduleName+" in "+(t1-t0).toLocaleString()+"ms...");
-    }
-/*
+    const t1 = performance.now();
+    console.log(this._logId + " Added Lua module: " + moduleName + " in " + (t1 - t0).toLocaleString() + "ms...");
+  }
+  /*
     private makeLuaModuleImport(moduleName: string, sourceCode: string): string
     {
         let importDef = "function make"+moduleName+"Module()\n"+sourceCode+"\nend";
@@ -204,227 +187,259 @@ export class LuaDataQuerier
         return moduleName+" = make"+moduleName+"Module()\n";
     }
 */
-    private LuaFunctionArgCounts = [3, 2, 2, 3, 3, 1, 1, 2, 0, 1, 1];
-    private LuaCallableFunctions = new Map<string, any>([
-        ["element", (a,b,c)=>
-        {
-            this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantElementExpression(a, b, c));
-            return this.makeLuaTable(`elem-${a}-${b}-${c}`, this._dataSource.readElement([a, b, c]));
-        }],
-        ["elementSum", (a,b)=>
-        {
-            // Dont save runtime stat here, this works for any quant
-            return this.makeLuaTable(`elemSum-${a}-${b}`, this._dataSource.readElementSum([a, b]));
-        }],
-        ["data", (a,b)=>
-        {
-            this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantDataExpression(a, b));
-            return this.makeLuaTable(`data-${a}-${b}`, this._dataSource.readMap([a, b]));
-        }],
-        ["spectrum", (a,b,c)=>
-        {
-            this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
-            return this.makeLuaTable(`spectrum-${a}-${b}-${c}`, this._dataSource.readSpectrum([a, b, c]));
-        }],
-        ["spectrumDiff", (a,b,c)=>
-        {
-            this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
-            return this.makeLuaTable(`spectrumDiff-${a}-${b}-${c}`, this._dataSource.readSpectrumDifferences([a, b, c]));
-        }],
-        ["pseudo", (a)=>
-        {
-            this._runtimeDataRequired.add(DataExpressionId.makePredefinedPseudoIntensityExpression(a));
-            return this.makeLuaTable(`pseudo-${a}`, this._dataSource.readPseudoIntensity([a]));
-        }],
-        ["housekeeping", (a)=>
-        {
-            this._runtimeDataRequired.add(DataQueryResult.DataTypeHousekeeping+"-"+a);
-            return this.makeLuaTable(`housekeeping-${a}`, this._dataSource.readHousekeepingData([a]));
-        }],
-        ["diffractionPeaks", (a,b)=>
-        {
-            this._runtimeDataRequired.add(DataQueryResult.DataTypeDiffraction);
-            return this.makeLuaTable(`diffractionPeaks-${a}-${b}`, this._dataSource.readDiffractionData([a, b]));
-        }],
-        ["roughness", ()=>
-        {
-            this._runtimeDataRequired.add(DataQueryResult.DataTypeRoughness);
-            return this.makeLuaTable("roughness", this._dataSource.readRoughnessData([]));
-        }],
-        ["position", (a)=>
-        {
-            this._runtimeDataRequired.add(DataQueryResult.DataTypePosition);
-            return this.makeLuaTable(`position-${a}`, this._dataSource.readPosition([a]));
-        }],
-        ["makeMap", (a)=>
-        {
-            return this.makeLuaTable(`makeMap-${a}`, this._dataSource.makeMap([a]));
-        }],
-    ]);
+  private LuaFunctionArgCounts = [3, 2, 2, 3, 3, 1, 1, 2, 0, 1, 1];
+  private LuaCallableFunctions = new Map<string, any>([
+    [
+      "element",
+      (a: any, b: any, c: any) => {
+        this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantElementExpression(a, b, c));
+        return this.makeLuaTable(`elem-${a}-${b}-${c}`, this._dataSource.readElement([a, b, c]));
+      },
+    ],
+    [
+      "elementSum",
+      (a: any, b: any) => {
+        // Dont save runtime stat here, this works for any quant
+        return this.makeLuaTable(`elemSum-${a}-${b}`, this._dataSource.readElementSum([a, b]));
+      },
+    ],
+    [
+      "data",
+      (a: any, b: any) => {
+        this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantDataExpression(a, b));
+        return this.makeLuaTable(`data-${a}-${b}`, this._dataSource.readMap([a, b]));
+      },
+    ],
+    [
+      "spectrum",
+      (a: any, b: any, c: any) => {
+        this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
+        return this.makeLuaTable(`spectrum-${a}-${b}-${c}`, this._dataSource.readSpectrum([a, b, c]));
+      },
+    ],
+    [
+      "spectrumDiff",
+      (a: any, b: any, c: any) => {
+        this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
+        return this.makeLuaTable(`spectrumDiff-${a}-${b}-${c}`, this._dataSource.readSpectrumDifferences([a, b, c]));
+      },
+    ],
+    [
+      "pseudo",
+      (a: any) => {
+        this._runtimeDataRequired.add(DataExpressionId.makePredefinedPseudoIntensityExpression(a));
+        return this.makeLuaTable(`pseudo-${a}`, this._dataSource.readPseudoIntensity([a]));
+      },
+    ],
+    [
+      "housekeeping",
+      (a: any) => {
+        this._runtimeDataRequired.add(DataQueryResult.DataTypeHousekeeping + "-" + a);
+        return this.makeLuaTable(`housekeeping-${a}`, this._dataSource.readHousekeepingData([a]));
+      },
+    ],
+    [
+      "diffractionPeaks",
+      (a: any, b: any) => {
+        this._runtimeDataRequired.add(DataQueryResult.DataTypeDiffraction);
+        return this.makeLuaTable(`diffractionPeaks-${a}-${b}`, this._dataSource.readDiffractionData([a, b]));
+      },
+    ],
+    [
+      "roughness",
+      () => {
+        this._runtimeDataRequired.add(DataQueryResult.DataTypeRoughness);
+        return this.makeLuaTable("roughness", this._dataSource.readRoughnessData([]));
+      },
+    ],
+    [
+      "position",
+      (a: any) => {
+        this._runtimeDataRequired.add(DataQueryResult.DataTypePosition);
+        return this.makeLuaTable(`position-${a}`, this._dataSource.readPosition([a]));
+      },
+    ],
+    [
+      "makeMap",
+      (a: any) => {
+        return this.makeLuaTable(`makeMap-${a}`, this._dataSource.makeMap([a]));
+      },
+    ],
+  ]);
 
-    private setupPIXLISELuaFunctions(): void
-    {
-        // Implementing original expression language
-        let prefix = "";
-        if(this._debug)
-        {
-            prefix = "P";
+  private setupPIXLISELuaFunctions(): void {
+    if (!this._lua) {
+      // Not inited
+      return;
+    }
+
+    // Implementing original expression language
+    let prefix = "";
+    if (this._debug) {
+      prefix = "P";
+    }
+
+    for (const [funcName, func] of this.LuaCallableFunctions) {
+      this._lua.global.set(prefix + funcName, func);
+    }
+
+    // Special simple ones, we don't have debugging for these
+    this._lua.global.set("atomicMass", (symbol: string) => {
+      return periodicTableDB.getMolecularMass(symbol);
+    });
+    this._lua.global.set("exists", (dataType: string, column: string) => {
+      if (!this._dataSource) {
+        return false;
+      }
+      return this._dataSource.exists(dataType, column);
+    });
+  }
+
+  // See: https://github.com/ceifa/wasmoon
+  public runQuery(
+    sourceCode: string,
+    modules: Map<string, string>,
+    dataSource: InterpreterDataSource,
+    cleanupLua: boolean,
+    allowAnyResponse: boolean,
+    recordExpressionInputs: boolean
+  ): Observable<DataQueryResult> {
+    this._execCount++;
+    this._dataSource = dataSource;
+
+    const t0 = performance.now();
+    this._makeLuaTableTime = 0;
+
+    // Run our code in a unique function name for this runner. This is in case there is any possibility of clashing with
+    // another Lua runner (there shouldn't be!)
+    const exprFuncName = "expr_" + this._id + "_" + this._execCount;
+
+    if (!this._luaInit$) {
+      this._luaInit$ = this.initLua().pipe(
+        shareReplay(1),
+        catchError(err => {
+          // We failed within init$, cleaer our lua variable so we re-init in future
+          this._lua = null;
+          console.error(err);
+          throw err;
+        })
+      );
+    }
+
+    return this._luaInit$.pipe(
+      concatMap(() => {
+        //this.dumpLua("Pre installing modules");
+        // Install any modules supplied
+        //let imports = "";
+        for (const [moduleName, moduleSource] of modules) {
+          //imports += this.makeLuaModuleImportStatement(moduleName);
+          this.installModule(moduleName, moduleSource);
         }
 
-        for(let [funcName, func] of this.LuaCallableFunctions)
-        {
-            this._lua.global.set(prefix+funcName, func);
+        //this.dumpLua("Pre expression run");
+
+        // We're inited, now run!
+        const codeParts = this.formatLuaCallable(sourceCode, exprFuncName /*, imports*/);
+        return this.runQueryInternal(codeParts.join(""), cleanupLua, t0, allowAnyResponse, recordExpressionInputs);
+      })
+    );
+  }
+
+  private runLuaCode(sourceCode: string, timeoutMs: number): Observable<any> {
+    if (!this._lua) {
+      throw new Error("runLuaCode: Lua not initialised");
+    }
+
+    // Set the timeout value
+    this._lua.global.setTimeout(Date.now() + timeoutMs);
+
+    return from(this._lua.doString(sourceCode)).pipe(
+      finalize(() => {
+        // Remove timeout as it will run out if we leave it here and things in future will fail
+        if (this._lua && this._lua.global) {
+          // Check if it's still around though!
+          this._lua.global.setTimeout(0);
+        }
+      })
+    );
+  }
+
+  private runLuaCodeSync(sourceCode: string, timeoutMs: number): any {
+    if (!this._lua) {
+      return null;
+    }
+    this._lua.global.setTimeout(Date.now() + timeoutMs);
+    const result = this._lua.doStringSync(sourceCode);
+    this._lua.global.setTimeout(0);
+    return result;
+  }
+
+  private runQueryInternal(
+    sourceCode: string,
+    cleanupLua: boolean,
+    t0: number,
+    allowAnyResponse: boolean,
+    recordExpressionInputs: boolean
+  ): Observable<DataQueryResult> {
+    // Ensure the list of data required is cleared, from here on we're logging what the expression required to run!
+    this._runtimeDataRequired.clear();
+
+    // Also clear stdout and stderr here
+    this._runtimeStdOut = "";
+    this._runtimeStdErr = "";
+
+    // If we want to record tables (well, any inputs) that the expression requires to run, remember this
+    this._logTables = recordExpressionInputs;
+    this._loggedTables.clear();
+
+    return this.runLuaCode(sourceCode, environment.luaTimeoutMs).pipe(
+      map(result => {
+        if (result) {
+          // We still want to return non-PMC table values, so we need to check if we got a table back before transforming it
+          let formattedData: any = result;
+          let isPMCTable = false;
+          if (!allowAnyResponse || this.isPMCArray(result)) {
+            // We got an object back that represents a table in Lua. Here we assume this is a PMCDataValue[] effectively
+            // so lets convert it to something we'll use here (PMCDataValues)
+            formattedData = this.readLuaTable(result);
+            isPMCTable = true;
+          }
+
+          const runtimeMs = performance.now() - t0;
+          console.log(
+            this._logId + ">>> Lua expression took: " + runtimeMs.toLocaleString() + "ms, makeTable calls took: " + this._makeLuaTableTime + "ms"
+          );
+
+          //this.dumpLua("Post expression run");
+
+          return new DataQueryResult(
+            formattedData,
+            isPMCTable,
+            Array.from(this._runtimeDataRequired.keys()),
+            runtimeMs,
+            this._runtimeStdOut,
+            this._runtimeStdErr,
+            this._loggedTables
+          );
         }
 
-        // Special simple ones, we don't have debugging for these
-        this._lua.global.set("atomicMass", (symbol)=>
-        {
-            return periodicTableDB.getMolecularMass(symbol);
-        });
-        this._lua.global.set("exists", (dataType, column)=>
-        {
-            return this._dataSource.exists(dataType, column);
-        });
-    }
+        throw new Error("Expression: did not return a value");
+      }),
+      catchError(err => {
+        const parsedErr = this.parseLuaError(err, sourceCode);
 
-    // See: https://github.com/ceifa/wasmoon
-    public runQuery(sourceCode: string, modules: Map<string, string>, dataSource: InterpreterDataSource, cleanupLua: boolean, allowAnyResponse: boolean, recordExpressionInputs: boolean): Observable<DataQueryResult>
-    {
-        this._execCount++;
-        this._dataSource = dataSource;
-
-        let t0 = performance.now();
-        this._makeLuaTableTime = 0;
-
-        // Run our code in a unique function name for this runner. This is in case there is any possibility of clashing with
-        // another Lua runner (there shouldn't be!)
-        let exprFuncName = "expr_"+this._id+"_"+this._execCount;
-
-        if(!this._luaInit$)
-        {
-            this._luaInit$ = this.initLua().pipe(
-                shareReplay(1),
-                catchError(
-                    (err)=>
-                    {
-                        // We failed within init$, cleaer our lua variable so we re-init in future
-                        this._lua = null;
-                        console.error(err);
-                        throw err;
-                    }
-                )
-            );
+        // We may need to reset Lua as we seem to have a resource leak that causes an error after running about 20 expressions
+        // TODO: this will need fixing at somepoint!
+        if (parsedErr.message.indexOf("memory access out of bounds") >= 0) {
+          cleanupLua = true;
         }
 
-        return this._luaInit$.pipe(
-            concatMap(
-                ()=>
-                {
-                    //this.dumpLua("Pre installing modules");
-                    // Install any modules supplied
-                    //let imports = "";
-                    for(let [moduleName, moduleSource] of modules)
-                    {
-                        //imports += this.makeLuaModuleImportStatement(moduleName);
-                        this.installModule(moduleName, moduleSource);
-                    }
+        console.error(parsedErr);
 
-                    //this.dumpLua("Pre expression run");
+        // This prints a bunch of tables out but hasn't proven useful for debugging...
+        //this._lua.global.dumpStack(console.error);
 
-                    // We're inited, now run!
-                    let codeParts = this.formatLuaCallable(sourceCode, exprFuncName/*, imports*/);
-                    return this.runQueryInternal(codeParts.join(""), cleanupLua, t0, allowAnyResponse, recordExpressionInputs);
-                }
-            )
-        );
-    }
-
-    private runLuaCode(sourceCode: string, timeoutMs: number): Observable<any>
-    {
-        // Set the timeout value
-        this._lua.global.setTimeout(Date.now()+timeoutMs);
-
-        return from(this._lua.doString(sourceCode)).pipe(
-            finalize(
-                ()=>
-                {
-                    // Remove timeout as it will run out if we leave it here and things in future will fail
-                    if(this._lua && this._lua.global)// Check if it's still around though!
-                    {
-                        this._lua.global.setTimeout(0);
-                    }
-                }
-            )
-        );
-    }
-
-    private runLuaCodeSync(sourceCode: string, timeoutMs: number)
-    {
-        this._lua.global.setTimeout(Date.now()+timeoutMs);
-        let result = this._lua.doStringSync(sourceCode);
-        this._lua.global.setTimeout(0);
-        return result;
-    }
-
-    private runQueryInternal(sourceCode: string, cleanupLua: boolean, t0: number, allowAnyResponse: boolean, recordExpressionInputs: boolean): Observable<DataQueryResult>
-    {
-        // Ensure the list of data required is cleared, from here on we're logging what the expression required to run!
-        this._runtimeDataRequired.clear();
-
-        // Also clear stdout and stderr here
-        this._runtimeStdOut = "";
-        this._runtimeStdErr = "";
-
-        // If we want to record tables (well, any inputs) that the expression requires to run, remember this
-        this._logTables = recordExpressionInputs;
-        this._loggedTables.clear();
-
-        return this.runLuaCode(sourceCode, environment.luaTimeoutMs).pipe(
-            map(
-                (result)=>
-                {
-                    if(result)
-                    {
-                        // We still want to return non-PMC table values, so we need to check if we got a table back before transforming it
-                        let formattedData: any = result;
-                        let isPMCTable = false;
-                        if(!allowAnyResponse || this.isPMCArray(result))
-                        {
-                            // We got an object back that represents a table in Lua. Here we assume this is a PMCDataValue[] effectively
-                            // so lets convert it to something we'll use here (PMCDataValues)
-                            formattedData = this.readLuaTable(result);
-                            isPMCTable = true;
-                        }
-
-                        let runtimeMs = performance.now()-t0;
-                        console.log(this._logId+">>> Lua expression took: "+runtimeMs.toLocaleString()+"ms, makeTable calls took: "+this._makeLuaTableTime+"ms");
-
-                        //this.dumpLua("Post expression run");
-
-                        return new DataQueryResult(formattedData, isPMCTable, Array.from(this._runtimeDataRequired.keys()), runtimeMs, this._runtimeStdOut, this._runtimeStdErr, this._loggedTables);
-                    }
-
-                    throw new Error("Expression: did not return a value");
-                }
-            ),
-            catchError(
-                (err)=>
-                {
-                    let parsedErr = this.parseLuaError(err, sourceCode);
-
-                    // We may need to reset Lua as we seem to have a resource leak that causes an error after running about 20 expressions
-                    // TODO: this will need fixing at somepoint!
-                    if(parsedErr.message.indexOf("memory access out of bounds") >= 0)
-                    {
-                        cleanupLua = true;
-                    }
-
-                    console.error(parsedErr);
-
-                    // This prints a bunch of tables out but hasn't proven useful for debugging...
-                    //this._lua.global.dumpStack(console.error);
-
-                    /* NOTE: This doesn't print any more than the above...
+        /* NOTE: This doesn't print any more than the above...
                         // Print out everything...
                         for(let c = 1; c < 10; c++)
                         {
@@ -432,31 +447,25 @@ export class LuaDataQuerier
                             console.log(traceback);
                         }
                     */
-                    throw parsedErr;
-                }
-            ),
-            finalize(
-                ()=>
-                {
-                    /*
+        throw parsedErr;
+      }),
+      finalize(() => {
+        /*
                     NOTE: we used to clear the func name we just ran but it's now a local variable so Lua automatically cleans it up
                     this._lua.global.set(exprFuncName, null);
                     */
-                    // Close the lua environment, so it can be freed
-                    if(cleanupLua)
-                    {
-                        this.shutdown();
-                    }
-                }
-            )
-        );
-    }
+        // Close the lua environment, so it can be freed
+        if (cleanupLua) {
+          this.shutdown();
+        }
+      })
+    );
+  }
 
-    private isPMCArray(result: any): boolean
-    {
-        return Array.isArray(result) && result.length == 2 && result.every((resultArray) => Array.isArray(resultArray));
-    }
-/*
+  private isPMCArray(result: any): boolean {
+    return Array.isArray(result) && result.length == 2 && result.every(resultArray => Array.isArray(resultArray));
+  }
+  /*
     private dumpLua(reason: string)
     {
         if(!this._lua)
@@ -472,68 +481,58 @@ export class LuaDataQuerier
         this.runLuaCodeSync(`DebugHelp.listAllTables("", _G, false)`, 1000);
     }
 */
-    // For examples, see unit tests
-    private parseLuaError(err, sourceCode: string): Error
-    {
-        // At this point, we can look at the error Lua returned and maybe form a more useful error message for users
-        // because we supply multi-line source code to Lua, but all its error msgs print out a segment of the first line!
-        let errType = "";
-        let errMsg = "";
-        let errLine = -1;
-        let errSourceLine = "";
+  // For examples, see unit tests
+  private parseLuaError(err, sourceCode: string): Error {
+    // At this point, we can look at the error Lua returned and maybe form a more useful error message for users
+    // because we supply multi-line source code to Lua, but all its error msgs print out a segment of the first line!
+    let errType = "";
+    let errMsg = "";
+    let errLine = -1;
+    let errSourceLine = "";
 
-        if(err?.stack)
-        {
-            // We expect: "Error: Lua Error(<error type>/<error number>)\n"
-            const errToken = "Error: Lua Error(";
-            let startPos = err.stack.indexOf(errToken);
-            if(startPos > -1)
-            {
-                startPos += errToken.length;
-                let endPos = err.stack.indexOf("/", startPos+1);
-                if(endPos > -1)
-                {
-                    errType = err.stack.substring(startPos, endPos);
-                }
-            }
+    if (err?.stack) {
+      // We expect: "Error: Lua Error(<error type>/<error number>)\n"
+      const errToken = "Error: Lua Error(";
+      let startPos = err.stack.indexOf(errToken);
+      if (startPos > -1) {
+        startPos += errToken.length;
+        const endPos = err.stack.indexOf("/", startPos + 1);
+        if (endPos > -1) {
+          errType = err.stack.substring(startPos, endPos);
         }
+      }
+    }
 
-        if(err?.message)
-        {
-            // Now find the line it's on
-            // We expect: "[<some source code>]:<number>: <msg>"
-            const lineNumToken = "]:";
-            const lineNumEndToken = ": ";
-            let startPos = err.message.indexOf(lineNumToken);
-            if(startPos > -1)
-            {
-                startPos += lineNumToken.length;
-                let endPos = err.message.indexOf(lineNumEndToken, startPos+1);
-                if(endPos > -1)
-                {
-                    let errLineStr = err.message.substring(startPos, endPos);
-                    errLine = Number.parseInt(errLineStr);
-                    errMsg = err.message.substring(endPos+lineNumEndToken.length);
-                }
-            }
+    if (err?.message) {
+      // Now find the line it's on
+      // We expect: "[<some source code>]:<number>: <msg>"
+      const lineNumToken = "]:";
+      const lineNumEndToken = ": ";
+      let startPos = err.message.indexOf(lineNumToken);
+      if (startPos > -1) {
+        startPos += lineNumToken.length;
+        const endPos = err.message.indexOf(lineNumEndToken, startPos + 1);
+        if (endPos > -1) {
+          const errLineStr = err.message.substring(startPos, endPos);
+          errLine = Number.parseInt(errLineStr);
+          errMsg = err.message.substring(endPos + lineNumEndToken.length);
         }
+      }
+    }
 
-        // Try to retrieve the source line
-        if(errLine > -1)
-        {
-            // Now snip out the line from our code, assuming errLine is 1-based!!
-            let errLineIdx = errLine-1;
-            let sourceLines = sourceCode.split("\n");
-            if(errLineIdx < sourceLines.length)
-            {
-                errSourceLine = sourceLines[errLineIdx];
-            }
-        }
+    // Try to retrieve the source line
+    if (errLine > -1) {
+      // Now snip out the line from our code, assuming errLine is 1-based!!
+      const errLineIdx = errLine - 1;
+      const sourceLines = sourceCode.split("\n");
+      if (errLineIdx < sourceLines.length) {
+        errSourceLine = sourceLines[errLineIdx];
+      }
+    }
 
-
-        // If we failed to even work out an error type, stop here
-        // At time of writing, these are the possibilities Lua can return
-        /*
+    // If we failed to even work out an error type, stop here
+    // At time of writing, these are the possibilities Lua can return
+    /*
         Ok = 0,
         Yield = 1,
         ErrorRun = 2,
@@ -542,39 +541,36 @@ export class LuaDataQuerier
         ErrorErr = 5, <-- Did not see an example of this while deving
         ErrorFile = 6 <-- Did not see an example of this while deving
         */
-        if((errType == "ErrorSyntax" || errType == "ErrorRun") && errLine > -1)
-        {
-            // Process this as a syntax error, including the relevant fields pointing to source code
-            let errTypeStr = errType == "ErrorSyntax" ? "Syntax" : "Runtime";
-            let result = new Error(`${errTypeStr} error on line ${errLine}: ${errMsg}`);
-            result["stack"] = err?.stack;
-            result["line"] = errLine;
-            result["errType"] = errType;
-            if(errSourceLine.length >= 0)
-            {
-                result["sourceLine"] = errSourceLine;
-            }
+    if ((errType == "ErrorSyntax" || errType == "ErrorRun") && errLine > -1) {
+      // Process this as a syntax error, including the relevant fields pointing to source code
+      const errTypeStr = errType == "ErrorSyntax" ? "Syntax" : "Runtime";
+      let result = new Error(`${errTypeStr} error on line ${errLine}: ${errMsg}`);
+      result["stack"] = err?.stack;
+      result["line"] = errLine;
+      result["errType"] = errType;
+      if (errSourceLine.length >= 0) {
+        result["sourceLine"] = errSourceLine;
+      }
 
-            return result;
-        }
-        // else
-        
-        // Didn't know how to process it, so stop here
-        return err;
+      return result;
     }
+    // else
 
-    // Returns multiple strings:
-    // - Generated code we insert before source is run
-    // - The source code itself
-    // - Inserted code after source
+    // Didn't know how to process it, so stop here
+    return err;
+  }
 
-    private formatLuaCallable(sourceCode: string, luaExprFuncName: string/*, moduleImports: string*/): string[]
-    {
-        let result = [];
+  // Returns multiple strings:
+  // - Generated code we insert before source is run
+  // - The source code itself
+  // - Inserted code after source
 
-        // Make it into a function, so if we get called again, we overwrite
-        let genStart = "";
-        /*genStart = this._luaLibImports+moduleImports+"\n";
+  private formatLuaCallable(sourceCode: string, luaExprFuncName: string /*, moduleImports: string*/): string[] {
+    const result: string[] = [];
+
+    // Make it into a function, so if we get called again, we overwrite
+    let genStart = "";
+    /*genStart = this._luaLibImports+moduleImports+"\n";
         if(this._luaUseReplay)
         {
             // Reset replay
@@ -582,50 +578,44 @@ export class LuaDataQuerier
         }
         */
 
-        if(this._debug)
-        {
-            // If we're debugging, we wrap the user code in a function and call that, return its result
-            // and this makes us able to put some debugging/profiling around it
-            genStart += "local function "+luaExprFuncName+"()\n";
+    if (this._debug) {
+      // If we're debugging, we wrap the user code in a function and call that, return its result
+      // and this makes us able to put some debugging/profiling around it
+      genStart += "local function " + luaExprFuncName + "()\n";
+    }
+
+    result.push(genStart);
+
+    result.push(sourceCode + "\n");
+
+    if (this._debug) {
+      let genEnd = "end\n";
+
+      genEnd += "t0=os.clock()\n";
+      genEnd += "times = {}\n";
+
+      const luaFunctionNames = Array.from(this.LuaCallableFunctions.keys());
+      for (const funcName of luaFunctionNames) {
+        genEnd += `times["${funcName}"] = 0\n`;
+      }
+
+      // Add wrappers for our functions
+
+      for (let f = 0; f < luaFunctionNames.length; f++) {
+        // Add a wrapper with timing code around it that accumulates it
+        const funcName = luaFunctionNames[f];
+        genEnd += "function " + funcName + "(";
+
+        let argList = "";
+        for (let c = 0; c < this.LuaFunctionArgCounts[f]; c++) {
+          if (argList.length > 0) {
+            argList += ",";
+          }
+
+          argList += "a" + c;
         }
-
-        result.push(genStart);
-
-        result.push(sourceCode+"\n");
-
-        if(this._debug)
-        {
-            let genEnd = "end\n";
-
-            genEnd += "t0=os.clock()\n";
-            genEnd += "times = {}\n"
-
-            let luaFunctionNames = Array.from(this.LuaCallableFunctions.keys());
-            for(let funcName of luaFunctionNames)
-            {
-                genEnd += `times["${funcName}"] = 0\n`;
-            }
-
-            // Add wrappers for our functions
-
-            for(let f = 0; f < luaFunctionNames.length; f++)
-            {
-                // Add a wrapper with timing code around it that accumulates it
-                let funcName = luaFunctionNames[f];
-                genEnd += "function "+funcName+"(";
-
-                let argList = "";
-                for(let c = 0; c < this.LuaFunctionArgCounts[f]; c++)
-                {
-                    if(argList.length > 0)
-                    {
-                        argList += ",";
-                    }
-
-                    argList += "a"+c;
-                }
-                genEnd += argList+")";
-                genEnd += `
+        genEnd += argList + ")";
+        genEnd += `
   local t0=os.clock()
   local funcResult = P${funcName}(${argList})
   local t1=os.clock()
@@ -633,88 +623,81 @@ export class LuaDataQuerier
   return funcResult
 end
 `;
-            }
+      }
 
-            genEnd += "result = "+luaExprFuncName+"()\n";
+      genEnd += "result = " + luaExprFuncName + "()\n";
 
-            genEnd += "t1=os.clock()\nprint(\"Code ran for: \"..(t1-t0))\nlocal timesTotal=0\n";
-            // Print out the table too
-            genEnd += "for k, v in pairs(times) do\n  print(k..\" took: \"..v)\n  timesTotal = timesTotal+v\nend\nprint(\"Total functions: \"..timesTotal)\n"
+      genEnd += 't1=os.clock()\nprint("Code ran for: "..(t1-t0))\nlocal timesTotal=0\n';
+      // Print out the table too
+      genEnd +=
+        'for k, v in pairs(times) do\n  print(k.." took: "..v)\n  timesTotal = timesTotal+v\nend\nprint("Total functions: "..timesTotal)\n';
 
-            genEnd += "return result\n";
-            
-            result.push(genEnd);
-        }
+      genEnd += "return result\n";
 
-        return result;
+      result.push(genEnd);
     }
 
-    // Expecting results to come back as table with 2 arrays in it, one for pmc, one for values
-    // So Lua code for one:
-    // t = {{1,3,7},{3.5,5.7,1.1}}
-    // Expecting it come back as:
-    // [[1,3,7],[3.5,5.7,1.1]]
-    private readLuaTable(table: any): PMCDataValues
-    {
-        if(!(table instanceof Array) || table?.length != 2 || !(table[0] instanceof Array) || !(table[1] instanceof Array))
-        {
-            throw new Error("Expression did not return map data in expected format");
-        }
+    return result;
+  }
 
-        // It's looking like map data table, but ensure its 2 sub-tables are of the same length
-        if(table[0].length <= 0 || table[0].length != table[1].length)
-        {
-            throw new Error("Expression returned incomplete map data: number of PMCs did not match number of values")
-        }
-
-        let values: PMCDataValue[] = [];
-        let c = 0;
-        for(let pmc of table[0])
-        {
-            let value: number = table[1][c];
-            let isUndef = false;
-            if(value === null)
-            {
-                value = 0;
-                isUndef = true;
-            }
-
-            values.push(new PMCDataValue(pmc, value, isUndef));
-            c++;
-        }
-
-        return PMCDataValues.makeWithValues(values);
+  // Expecting results to come back as table with 2 arrays in it, one for pmc, one for values
+  // So Lua code for one:
+  // t = {{1,3,7},{3.5,5.7,1.1}}
+  // Expecting it come back as:
+  // [[1,3,7],[3.5,5.7,1.1]]
+  private readLuaTable(table: any): PMCDataValues {
+    if (!(table instanceof Array) || table?.length != 2 || !(table[0] instanceof Array) || !(table[1] instanceof Array)) {
+      throw new Error("Expression did not return map data in expected format");
     }
 
-    private makeLuaTable(tableSource: string, data: PMCDataValues): any
-    {
-        let t0 = performance.now();
-        let pmcs = [];
-        let values = [];
-        for(let item of data.values)
-        {
-            pmcs.push(item.pmc);
-
-            // NOTE: Lua doesn't support nil values in tables. https://www.lua.org/manual/5.3/manual.html#2.1
-            // so here we specify an undefined value as a NaN so it doesn't break. May need to consider just
-            // excluding those PMCs completely, however then the maps wont be the same size in Lua land...
-            values.push(item.isUndefined ? NaN : item.value);
-        }
-
-        let luaTable = [pmcs, values];
-
-        if(this._logTables)
-        {
-            // Save table for later
-            this._loggedTables.set(tableSource, data);
-        }
-
-        let t1 = performance.now();
-        
-        this._makeLuaTableTime += t1-t0;
-        return luaTable;
+    // It's looking like map data table, but ensure its 2 sub-tables are of the same length
+    if (table[0].length <= 0 || table[0].length != table[1].length) {
+      throw new Error("Expression returned incomplete map data: number of PMCs did not match number of values");
     }
-/*
+
+    const values: PMCDataValue[] = [];
+    let c = 0;
+    for (let pmc of table[0]) {
+      let value: number = table[1][c];
+      let isUndef = false;
+      if (value === null) {
+        value = 0;
+        isUndef = true;
+      }
+
+      values.push(new PMCDataValue(pmc, value, isUndef));
+      c++;
+    }
+
+    return PMCDataValues.makeWithValues(values);
+  }
+
+  private makeLuaTable(tableSource: string, data: PMCDataValues): any {
+    const t0 = performance.now();
+    const pmcs = [];
+    const values = [];
+    for (const item of data.values) {
+      pmcs.push(item.pmc);
+
+      // NOTE: Lua doesn't support nil values in tables. https://www.lua.org/manual/5.3/manual.html#2.1
+      // so here we specify an undefined value as a NaN so it doesn't break. May need to consider just
+      // excluding those PMCs completely, however then the maps wont be the same size in Lua land...
+      values.push(item.isUndefined ? NaN : item.value);
+    }
+
+    const luaTable = [pmcs, values];
+
+    if (this._logTables) {
+      // Save table for later
+      this._loggedTables.set(tableSource, data);
+    }
+
+    const t1 = performance.now();
+
+    this._makeLuaTableTime += t1 - t0;
+    return luaTable;
+  }
+  /*
     private logTables()
     {
         let luaTableText = "allTables = {";
