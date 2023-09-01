@@ -28,13 +28,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 /* You can add global styles to this file, and also import other style files */
-
+/*
 @use "inter-ui/default" as inter-ui with (
   $inter-font-path: "inter-ui/Inter (web latin)"
 );
 @include inter-ui.weight-400;
 @include inter-ui.weight-700;
-
+*/
 :root {
   --top-toolbar-height: 37px;
   --widget-drop-below-title: 42px; // 38px title bar + standard padding

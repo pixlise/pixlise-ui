@@ -31,16 +31,16 @@ import { Component, Input, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { first } from "rxjs/operators";
-import { AuthenticationService } from "src/app/services/authentication.service";
-import { NotificationService } from "src/app/services/notification.service";
-import { ViewStateCollectionItem, ViewStateService } from "src/app/services/view-state.service";
-import {
-  UserPromptDialogComponent,
-  UserPromptDialogDropdownItem,
-  UserPromptDialogParams,
-  UserPromptDialogResult,
-  UserPromptDialogStringItem,
-} from "src/app/UI/atoms/user-prompt-dialog/user-prompt-dialog.component";
+// import { AuthenticationService } from "src/app/services/authentication.service";
+// import { NotificationService } from "src/app/services/notification.service";
+// import { ViewStateCollectionItem, ViewStateService } from "src/app/services/view-state.service";
+// import {
+//   UserPromptDialogComponent,
+//   UserPromptDialogDropdownItem,
+//   UserPromptDialogParams,
+//   UserPromptDialogResult,
+//   UserPromptDialogStringItem,
+// } from "src/app/UI/atoms/user-prompt-dialog/user-prompt-dialog.component";
 
 // Primarily exists so we can remove the use of these services from the main toolbar, and they are only used when the toolbar
 // needs these items shown. For example, this way we don't instantiate a view state service before loading a dataset
@@ -57,18 +57,18 @@ export class ScreenCaptureButtonComponent implements OnInit {
   isPublicUser: boolean = false;
 
   constructor(
-    private _viewStateService: ViewStateService,
-    private _notificationService: NotificationService,
-    private _authService: AuthenticationService,
+    // private _viewStateService: ViewStateService,
+    // private _notificationService: NotificationService,
+    // private _authService: AuthenticationService,
     private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
-    this._subs.add(
-      this._authService.isPublicUser$.subscribe(isPublicUser => {
-        this.isPublicUser = isPublicUser;
-      })
-    );
+    // this._subs.add(
+    //   this._authService.isPublicUser$.subscribe(isPublicUser => {
+    //     this.isPublicUser = isPublicUser;
+    //   })
+    // );
   }
 
   ngOnDestroy() {
@@ -85,7 +85,7 @@ export class ScreenCaptureButtonComponent implements OnInit {
       alert("Cannot get dataset ID");
       return;
     }
-
+/*
     this._viewStateService.viewStateCollections$.pipe(first()).subscribe(
       (collections: ViewStateCollectionItem[]) => {
         let collectionNames: string[] = [];
@@ -169,6 +169,6 @@ export class ScreenCaptureButtonComponent implements OnInit {
       err => {
         alert("Failed to query collections");
       }
-    );
+    );*/
   }
 }

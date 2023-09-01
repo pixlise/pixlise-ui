@@ -115,8 +115,17 @@
               "src/assets"
             ],
             "styles": [
+              "node_modules/roboto-fontface/css/roboto/roboto-fontface.css",
+              "src/scss/material-theme.scss",
               "src/styles.scss"
             ],
+            "stylePreprocessorOptions": {
+              "includePaths": [
+                "src/scss",
+                "src/app/modules/pixlisecore/scss",
+                "./node_modules"
+              ]
+            },
             "scripts": []
           }
         },

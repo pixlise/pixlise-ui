@@ -29,10 +29,10 @@
 
 import { Component, OnInit } from "@angular/core";
 import { Subscription } from "rxjs";
-import { QuantificationLayer } from "src/app/models/Quantifications";
-import { QuantificationSelectionInfo, QuantificationSelectionService } from "src/app/services/quantification-selection.service";
-import { ViewStateService } from "src/app/services/view-state.service";
-import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
+// import { QuantificationLayer } from "src/app/models/Quantifications";
+// import { QuantificationSelectionInfo, QuantificationSelectionService } from "src/app/services/quantification-selection.service";
+// import { ViewStateService } from "src/app/services/view-state.service";
+// import { WidgetRegionDataService } from "src/app/services/widget-region-data.service";
 
 // Primarily exists so we can remove the use of these services from the main toolbar, and they are only used when the toolbar
 // needs these items shown. For example, this way we don't instantiate a widget region data service before loading a dataset
@@ -48,13 +48,13 @@ export class CurrentQuantificationComponent implements OnInit {
   loadedQuantID: string = "";
 
   constructor(
-    private _viewStateService: ViewStateService,
-    private _quantSelectionService: QuantificationSelectionService,
-    private _widgetDataService: WidgetRegionDataService
+    //private _viewStateService: ViewStateService,
+    //private _quantSelectionService: QuantificationSelectionService,
+    //private _widgetDataService: WidgetRegionDataService
   ) {}
 
   ngOnInit(): void {
-    this._subs.add(
+/*    this._subs.add(
       this._quantSelectionService.quantificationsSelected$.subscribe((selection: QuantificationSelectionInfo) => {
         // Should ONLY process ones without an ROI
         if (!selection.roiID) {
@@ -79,7 +79,7 @@ export class CurrentQuantificationComponent implements OnInit {
       this._viewStateService.appliedQuantification$.subscribe((quantID: string) => {
         this.selectedQuantID = quantID;
       })
-    );
+    );*/
   }
 
   ngOnDestroy() {

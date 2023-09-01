@@ -13,6 +13,7 @@
     "declaration": false,
     "downlevelIteration": true,
     "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true, // for jsep
     "moduleResolution": "node",
     "importHelpers": true,
     "target": "ES2022",
