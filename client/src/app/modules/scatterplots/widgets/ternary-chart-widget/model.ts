@@ -10,64 +10,119 @@ import {
   CanvasParams,
 } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { PanRestrictorToCanvas, PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
-import { Point } from "src/app/models/Geometry";
+import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
+import { Point, PointWithRayLabel, Rect, scaleVector } from "src/app/models/Geometry";
 import { RGBA } from "src/app/utils/colours";
-import { CANVAS_FONT_SIZE_TITLE } from "src/app/utils/drawing";
-
-export class TernaryChartToolHost implements CanvasInteractionHandler {
-  mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
-    return new CanvasInteractionResult(false, false);
-  }
-
-  keyEvent(event: CanvasKeyEvent): CanvasInteractionResult {
-    return CanvasInteractionResult.neither;
-  }
-}
+import { degToRad } from "src/app/utils/utils";
+import { CANVAS_FONT_SIZE_TITLE, PLOT_POINTS_SIZE, HOVER_POINT_RADIUS } from "src/app/utils/drawing";
 
 export class TernaryChartModel implements CanvasDrawNotifier {
   needsDraw$: Subject<void> = new Subject<void>();
 
   transform: PanZoom = new PanZoom(new MinMax(1), new MinMax(1), new PanRestrictorToCanvas());
-  toolhost: CanvasInteractionHandler = new TernaryChartToolHost();
+
+  // All parameters to draw a ternary diagram:
+
+  // The 3 expressions
+  expressionIdA = "";
+  expressionIdB = "";
+  expressionIdC = "";
+
+  // The scan and quantification the data will come from
+  scanId: string = "";
+  quantId: string = "";
+
+  // The visible ROIs
+  roiIds: string[] = [];
+
+  // ROI colours
+  roiColours = new Map<string, string>();
 
   // Settings of the binary chart
   showMmol: boolean = false;
   selectModeExcludeROI: boolean = false;
 
-  // What is to be drawn
-  drawModel = new TernaryDrawModel();
+  // Some commonly used constants
+  public static readonly OUTER_PADDING = 10;
+  public static readonly LABEL_PADDING = 4;
+  public static readonly FONT_SIZE = CANVAS_FONT_SIZE_TITLE - 1;
+  public static readonly SWAP_BUTTON_SIZE = 16;
 
-  constructor() {}
+  // The raw data we start with
+  private _raw: TernaryData | null = null;
+
+  // The drawable data (derived from the above)
+  private _drawModel: TernaryDrawModel = new TernaryDrawModel();
+
+  // Mouse interaction drawing
+  hoverPoint: Point | null = null;
+  hoverPointData: TernaryDataItem | null = null;
+  hoverShape: string = "circle";
+
+  cursorShown: string = CursorId.defaultPointer;
+  mouseLassoPoints: Point[] = [];
+
+  set raw(r: TernaryData) {
+    this._raw = r;
+  }
+
+  get raw(): TernaryData | null {
+    return this._raw;
+  }
+
+  get drawModel(): TernaryDrawModel {
+    return this._drawModel;
+  }
+
+  recalcDisplayData(canvasParams: CanvasParams): void {
+    this._drawModel.regenerate(this._raw, canvasParams);
+  }
 }
 
 export class TernaryDrawModel {
+  triangleWidth: number = 0;
+  triangleHeight: number = 0;
+
+  // Coordinates we draw the points at
+  pointGroupCoords: Point[][] = [];
+  totalPointCount: number = 0;
+
   // Triangle points
   //    C
   //
   // A     B
-  triangleA = new Point();
-  triangleB = new Point();
-  triangleC = new Point();
+  triangleA: Point = new Point();
+  triangleB: Point = new Point();
+  triangleC: Point = new Point();
 
-  triangleWidth = 0;
-  triangleHeight = 0;
+  dataAreaA: Point = new Point();
+  dataAreaWidth: number = 0;
 
-  regenerate(canvasParams: CanvasParams) {
-    const OUTER_PADDING = 10;
-    const LABEL_PADDING = 4;
-    const FONT_SIZE = CANVAS_FONT_SIZE_TITLE-1;
-    /*const SWAP_BUTTON_SIZE = 16;*/
+  // TODO: Replace the following with HTML things on top of the widget
+  labelA: Rect = new Rect(0, 0, 0, 0);
+  labelB: Rect = new Rect(0, 0, 0, 0);
+  labelC: Rect = new Rect(0, 0, 0, 0);
 
-    const labelHeight = FONT_SIZE+LABEL_PADDING+OUTER_PADDING;
+  // TODO: Replace the following with HTML things on top of the widget
+  hoverLabelA: Point = new Point();
+  hoverLabelB: Point = new Point();
+  hoverLabelC: Point = new Point();
+
+  // If a label is hovered over with the mouse, we set its name (A, B or C)
+  hoverLabel: string = "";
+
+  regenerate(raw: TernaryData | null, canvasParams: CanvasParams): void {
+    this.totalPointCount = 0;
+    const labelHeight = TernaryChartModel.FONT_SIZE + TernaryChartModel.LABEL_PADDING + TernaryChartModel.OUTER_PADDING;
 
     // Calculate triangle height (to make it equilateral) - assuming height is not the constraining direction
-    this.triangleWidth = canvasParams.width - OUTER_PADDING - OUTER_PADDING;
+    this.triangleWidth = canvasParams.width - TernaryChartModel.OUTER_PADDING - TernaryChartModel.OUTER_PADDING;
 
     // Equilateral triangle height = sqrt(3)*height
     const ratio = Math.sqrt(3) / 2;
     this.triangleHeight = this.triangleWidth * ratio;
 
-    let triangleLeft = OUTER_PADDING;
+    let triangleLeft = TernaryChartModel.OUTER_PADDING;
     let triangleTop = labelHeight + (canvasParams.height - this.triangleHeight - labelHeight * 2) / 2;
 
     // If this won't fit, go by the height and center it width-wise
@@ -82,8 +137,172 @@ export class TernaryDrawModel {
       triangleTop = labelHeight + (canvasParams.height - this.triangleHeight - labelHeight * 2) / 2;
     }
 
+    let xLabelOffset = (canvasParams.width - this.triangleWidth) / 4;
+    if (xLabelOffset < TernaryChartModel.OUTER_PADDING) {
+      xLabelOffset = TernaryChartModel.OUTER_PADDING;
+    }
+
+    // Calculate triangle and element label coordinates
     this.triangleA = new Point(triangleLeft, triangleTop + this.triangleHeight);
     this.triangleB = new Point(triangleLeft + this.triangleWidth, triangleTop + this.triangleHeight);
     this.triangleC = new Point(canvasParams.width / 2, triangleTop);
+    //console.log('A:'+this.triangleA.x+','+this.triangleA.y+' B:'+this.triangleB.x+','+this.triangleB.y+' C:'+this.triangleC.x+','+this.triangleC.y+' w='+this.triangleWidth+', h='+this.triangleHeight);
+    // Make sure the labels end up in the right place!
+    let labelAreaW = canvasParams.width * 0.4;
+    let bottomLabelY = canvasParams.height - (TernaryChartModel.FONT_SIZE + TernaryChartModel.LABEL_PADDING);
+    this.labelA = new Rect(xLabelOffset - labelAreaW / 2, bottomLabelY, labelAreaW, TernaryChartModel.SWAP_BUTTON_SIZE);
+    this.labelB = new Rect(canvasParams.width - xLabelOffset - labelAreaW / 2, bottomLabelY, labelAreaW, TernaryChartModel.SWAP_BUTTON_SIZE);
+    this.labelC = new Rect(
+      this.triangleC.x - labelAreaW / 2,
+      this.triangleC.y - labelHeight + TernaryChartModel.LABEL_PADDING,
+      labelAreaW,
+      TernaryChartModel.SWAP_BUTTON_SIZE
+    );
+
+    // If labels hang off view, push them in
+    if (this.labelA.x < 0) {
+      this.labelA.x = 0;
+    }
+    let rightOffset = this.labelB.maxX() - canvasParams.width;
+    if (rightOffset > 0) {
+      this.labelB.x -= rightOffset;
+    }
+
+    // Hover data positions
+    const hoverUp = 50;
+    this.hoverLabelA = new Point(this.triangleA.x + 20, this.triangleA.y - hoverUp); // left triangle point, but further up for space. Draw right-aligned!
+    this.hoverLabelB = new Point(this.triangleB.x - 20, this.triangleB.y - hoverUp); // right triangle point, but further up for space
+    this.hoverLabelC = new Point(this.triangleC.x + 10, this.triangleC.y); // right of top triangle point
+
+    // Calculate data coordinates
+    // We have to pad the drawn triangle based on point sizes we draw
+    let dataPadding = Math.max(PLOT_POINTS_SIZE, HOVER_POINT_RADIUS) * 2;
+    // This padding is applied into the corners of the triangle, differs in X and Y:
+    let dataPaddingX = Math.cos(degToRad(30)) * dataPadding;
+    let dataPaddingY = Math.sin(degToRad(30)) * dataPadding;
+
+    this.dataAreaA = new Point(this.triangleA.x + dataPaddingX, this.triangleA.y - dataPaddingY);
+    this.dataAreaWidth = this.triangleB.x - this.triangleA.x - dataPaddingX * 2;
+
+    // Loop through and calculate x/y coordinates for each point if we have any
+    if (raw) {
+      this.pointGroupCoords = [];
+      for (const item of raw.pointGroups) {
+        const coords = [];
+
+        for (const ternaryItem of item.values) {
+          coords.push(this.calcPointForTernary(ternaryItem));
+        }
+
+        this.pointGroupCoords.push(coords);
+        this.totalPointCount += coords.length;
+      }
+    }
   }
+
+  private _sin60 = Math.sin((60 * Math.PI) / 180);
+
+  private calcPointForTernary(ternaryPoint: TernaryDataItem): PointWithRayLabel {
+    const aLabel = ternaryPoint.nullMask[0] ? "null" : ternaryPoint.a;
+    const bLabel = ternaryPoint.nullMask[1] ? "null" : ternaryPoint.b;
+    const cLabel = ternaryPoint.nullMask[2] ? "null" : ternaryPoint.c;
+    const isMissingCoord = ternaryPoint.nullMask.some(x => x);
+
+    // Using https://en.wikipedia.org/wiki/Ternary_plot
+    // "Plotting a ternary plot" formula
+    const sum = ternaryPoint.a + ternaryPoint.b + ternaryPoint.c;
+
+    // If we're missing 1 point, we need to normalize the other two and then make sure the missing
+    // one is much larger so it skews the end point all the way to the missing corner of the triangle
+    // If we're missing 2 points, this is just going to point towards the middle of the 2 missing corners
+    const normalizedA = ternaryPoint.nullMask[0] ? sum * 100 : ternaryPoint.a / sum;
+    const normalizedB = ternaryPoint.nullMask[1] ? sum * 100 : ternaryPoint.b / sum;
+    const normalizedC = ternaryPoint.nullMask[2] ? sum * 100 : ternaryPoint.c / sum;
+    const normalizedSum = normalizedA + normalizedB + normalizedC;
+
+    const twoD = new PointWithRayLabel(
+      0.5 * ((2 * ternaryPoint.b + ternaryPoint.c) / sum),
+      this._sin60 * (ternaryPoint.c / sum),
+      ternaryPoint.label ? `${ternaryPoint.label} (${aLabel}, ${bLabel}, ${cLabel})` : "",
+      isMissingCoord ? 0.5 * ((2 * normalizedB + normalizedC) / normalizedSum) : null,
+      isMissingCoord ? -this._sin60 * (normalizedC / normalizedSum) : null
+    );
+
+    // NOTE: y is flipped for drawing!
+    twoD.y = -twoD.y;
+
+    //console.log('twoD: '+twoD.x+','+twoD.y);
+
+    // This fits an equilateral triangle of side length=1. We need to scale it to our triangle size, so we need
+    // to scale it. Triangle width and height are not equal, but our scale factor should be... we need the size=1
+    // triangle to scale up to our triangle size, which has a side length of triangleWidth
+    const scaled = scaleVector(twoD, this.dataAreaWidth);
+    if (twoD.endX !== null && twoD.endY !== null) {
+      const scaledEnd = scaleVector(new Point(twoD.endX, twoD.endY), this.dataAreaWidth);
+      twoD.endX = scaledEnd.x;
+      twoD.endY = scaledEnd.y;
+    }
+
+    // Now translate it so it starts where our triangle starts
+    const result = new PointWithRayLabel(scaled.x, scaled.y, twoD.label, twoD.endX, twoD.endY);
+
+    result.x += this.dataAreaA.x;
+    result.y += this.dataAreaA.y;
+
+    if (result.endX !== null) {
+      result.endX += this.dataAreaA.x;
+    }
+    if (result.endY !== null) {
+      result.endY += this.dataAreaA.y;
+    }
+
+    return result;
+  }
+}
+
+export class TernaryCorner {
+  constructor(
+    public label: string,
+    public errorMsgShort: string,
+    public errorMsgLong: string,
+    public valueRange: MinMax,
+    public modulesOutOfDate: boolean = false
+  ) {}
+}
+
+export class TernaryDataItem {
+  constructor(
+    public pmc: number,
+    public a: number,
+    public b: number,
+    public c: number,
+    public label: string = "",
+    public nullMask: boolean[] = [false, false, false]
+  ) {}
+}
+
+export class TernaryDataColour {
+  constructor(
+    public colour: RGBA,
+    public shape: string,
+    public values: TernaryDataItem[]
+  ) {}
+}
+
+export class TernaryPlotPointIndex {
+  constructor(
+    public pointGroup: number,
+    public valueIndex: number
+  ) {}
+}
+
+export class TernaryData {
+  constructor(
+    public cornerA: TernaryCorner,
+    public cornerB: TernaryCorner,
+    public cornerC: TernaryCorner,
+    public pointGroups: TernaryDataColour[],
+    public pmcToValueLookup: Map<number, TernaryPlotPointIndex>,
+    public visibleROIs: string[]
+  ) {}
 }

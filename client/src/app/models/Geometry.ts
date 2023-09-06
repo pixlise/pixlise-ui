@@ -39,14 +39,30 @@ import { environment } from "src/environments/environment";
 export class Point {
   constructor(
     public x: number = 0,
-    public y: number = 0,
-    public label: string = "",
-    public endX: number = null,
-    public endY: number = null
+    public y: number = 0
   ) {}
 
   public copy(): Point {
-    return new Point(this.x, this.y, this.label, this.endX, this.endY);
+    return new Point(this.x, this.y);
+  }
+}
+
+// This is a special "kind" of point used on some diagrams where it represents a point
+// which has an undefined "other" value, so we draw it as a line, and have a hover label
+// for it
+export class PointWithRayLabel extends Point {
+  constructor(
+    x: number,
+    y: number,
+    public label: string = "",
+    public endX: number | null = null,
+    public endY: number | null = null
+  ) {
+    super(x, y);
+  }
+
+  public override copy(): PointWithRayLabel {
+    return new PointWithRayLabel(this.x, this.y, this.label, this.endX, this.endY);
   }
 }
 
@@ -199,12 +215,12 @@ export function getVectorLength(v: Point): number {
 }
 
 export function normalizeVector(v: Point): Point {
-  let len = getVectorLength(v);
+  const len = getVectorLength(v);
   return scaleVector(v, 1 / len);
 }
 
 export function scaleVector(v: Point, s: number): Point {
-  return new Point(v.x * s, v.y * s, v.label, v.endX ? v.endX * s : undefined, v.endY ? v.endY * s : undefined);
+  return new Point(v.x * s, v.y * s);
 }
 
 export function addVectors(v1: Point, v2: Point): Point {
