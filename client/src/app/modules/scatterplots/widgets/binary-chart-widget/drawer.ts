@@ -10,8 +10,10 @@ import { CANVAS_FONT_SIZE_TITLE } from "src/app/utils/drawing";
 
 import { BinaryChartModel } from "./model";
 
-
 export class BinaryChartDrawer implements CanvasDrawer {
+  public showSwapButton: boolean = true;
+  public lightMode: boolean = false;
+
   private _ctx = {
     xAxis: new LinearChartAxis(true, 0, 100, 0, 100),
     yAxis: new LinearChartAxis(false, 0, 100, 0, 100),
@@ -23,11 +25,11 @@ export class BinaryChartDrawer implements CanvasDrawer {
 
   drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
-    if(!this._mdl.drawModel || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(drawParams.drawViewport)) {
-      this._mdl.regenerateDrawData(drawParams.drawViewport, screenContext)
+    if (!this._mdl.drawModel || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(drawParams.drawViewport)) {
+      this._mdl.regenerateDrawData(drawParams.drawViewport, screenContext);
       this._lastCalcCanvasParams = drawParams.drawViewport;
     }
-    
+
     screenContext.textAlign = "left";
     screenContext.textBaseline = "top";
     screenContext.fillStyle = Colours.ORANGE.asString();

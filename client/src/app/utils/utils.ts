@@ -31,6 +31,7 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { Rect } from "../models/Geometry";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import * as Sentry from "@sentry/browser";
+import { index } from "mathjs";
 
 export class SentryHelper {
   // Can be called from anywhere we see a weird case or an error that we used to just log to
@@ -588,9 +589,8 @@ export class SDSFields {
     public downsample: string,
     public compression: string,
     public producer: string,
-    public versionStr: string
-  ) // .
-  // EXT
+    public versionStr: string // .
+  ) // EXT
   {}
 
   static makeFromFileName(name: string): SDSFields | null {
@@ -941,4 +941,112 @@ export class SDSFields {
 
     return -1;
   }
+}
+
+// For use with API endpoints that allow encoding indexes in more compact formats:
+// Returns a list of unsigned indexes, throws an error if:
+// - A negative value is seen that is not -1
+// - <start idx>, -1, <end idx which is <= start idx>
+export function decodeIndexList(encodedIndexes: number[], arraySize: number): number[] {
+  if (encodedIndexes.length <= 0) {
+    return [];
+  }
+
+  // Defining a range, fill the gap...
+  if (encodedIndexes[0] == -1) {
+    // Can't have -1 at the start, we don't have the starting
+    // number then!
+    throw new Error("indexes start with -1");
+  } else if (encodedIndexes[encodedIndexes.length - 1] == -1) {
+    // Can't look ahead, we're at th end!
+    throw new Error("indexes end with -1");
+  }
+
+  const result = [];
+  for (let c = 0; c < encodedIndexes.length; c++) {
+    const idx = encodedIndexes[c];
+    if (idx == -1) {
+      // Find the last value (noting it was already added!)
+      const startIdx = encodedIndexes[c - 1];
+      const endIdx = encodedIndexes[c + 1];
+
+      if (endIdx >= arraySize) {
+        throw new Error(`index ${endIdx} out of bounds: ${arraySize}`);
+      }
+
+      // Ensure there is a valid range between these numbers
+      if (endIdx <= startIdx + 1) {
+        throw new Error(`invalid range: ${startIdx}->${endIdx}`);
+      }
+
+      for (let iFill = startIdx + 1; iFill < endIdx; iFill++) {
+        result.push(iFill);
+      }
+    } else if (idx < -1) {
+      throw new Error(`invalid index: ${idx}`);
+    } else {
+      if (idx >= arraySize) {
+        throw new Error(`index ${idx} out of bounds: ${arraySize}`);
+      }
+      result.push(idx);
+    }
+  }
+
+  return result;
+}
+
+export const MAXINT32 = 0x7fffffff;
+
+// Given a list of unsigned indexes, this SORTS them and encodes them such that runs of consecutive
+// numbers like 4, 5, 6, 7 are replaced with the sequence 4, -1, 7 - thereby reducing storage size
+// NOTE: even though it takes unsigned int32s, it cannot support values over maxint, it just takes
+// unsigned to signify that an array index can't be negative
+export function encodeIndexList(indexesSrc: number[]): number[] {
+  if (indexesSrc.length == 0) {
+    return [];
+  }
+
+  const indexes = Array.from(indexesSrc);
+  indexes.sort((a, b) => a - b);
+
+  const result = [];
+  let incrCount = 0;
+
+  for (let c = 0; c < indexes.length; c++) {
+    const idx = indexes[c];
+    if (idx > MAXINT32) {
+      throw new Error("index list had value > maxint");
+    }
+    if (c == 0) {
+      // First one is ALWAYS appended!
+      result.push(idx);
+    } else {
+      // Check if we're the last of a run
+      const diffPrev = idx - indexes[c - 1];
+
+      if (diffPrev == 1) {
+        incrCount++;
+      }
+
+      // A wall for last value to pick up...
+      let diffNext = MAXINT32;
+      if (c < indexes.length - 1) {
+        diffNext = indexes[c + 1] - idx;
+      }
+
+      if (diffPrev <= 1 && diffNext > 1) {
+        // We're the end of a run of incrementing numbers
+        if (incrCount > 1) {
+          result.push(-1);
+        }
+        result.push(idx);
+        incrCount = 0;
+      } else if (diffPrev > 1) {
+        // Bigger leap than 1, so write this value, as it may
+        // be the start of a run of incrementing numbers
+        result.push(idx);
+      }
+    }
+  }
+  return result;
 }

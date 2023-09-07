@@ -1,4 +1,4 @@
-import { Component, ComponentRef, ElementRef, HostListener, ViewChild, ViewContainerRef } from "@angular/core";
+import { Component, ComponentRef, ElementRef, HostListener, ViewChild, ViewContainerRef, AfterViewChecked } from "@angular/core";
 import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetToolbarButtonConfiguration } from "./models/widgets.model";
 
 @Component({
@@ -6,7 +6,7 @@ import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetToolbar
   templateUrl: "./widget.component.html",
   styleUrls: ["./widget.component.scss"],
 })
-export class WidgetComponent {
+export class WidgetComponent implements AfterViewChecked {
   @ViewChild("currentWidget", { read: ViewContainerRef }) currentWidget!: ViewContainerRef;
   private _currentWidgetRef: ComponentRef<any> | null = null;
 
@@ -25,7 +25,7 @@ export class WidgetComponent {
   visibleTopToolbarCount: number = 0;
 
   allWidgetOptions = Object.entries(WIDGETS).map(([id, value]) => ({ id, ...value }));
-  _activeWidget: keyof typeof WIDGETS = "spectrum-chart";
+  _activeWidget: keyof typeof WIDGETS = /*Object.keys(WIDGETS)[Math.random() * (Object.keys(WIDGETS).length-1)] as keyof typeof WIDGETS; */ "ternary-plot"; //"spectrum-chart";
 
   widgetConfiguration?: WidgetConfiguration;
 

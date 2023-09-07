@@ -11,6 +11,8 @@ import {
   CanvasWorldTransform,
 } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { TernaryChartModel } from "./model";
+import { TernaryChartToolHost } from "./interaction";
+import { SelectionService } from "src/app/modules/pixlisecore/services/selection.service";
 
 @Component({
   selector: "ternary-chart-widget",
@@ -19,14 +21,19 @@ import { TernaryChartModel } from "./model";
 })
 export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
   mdl = new TernaryChartModel();
+  toolhost: CanvasInteractionHandler;
   drawer: CanvasDrawer;
 
   private _subs = new Subscription();
 
-  constructor(public dialog: MatDialog) {
+  constructor(
+    public dialog: MatDialog,
+    private _selectionService: SelectionService
+  ) {
     super();
-    this.drawer = new TernaryChartDrawer(this.mdl.drawModel);
-    
+    this.drawer = new TernaryChartDrawer(this.mdl);
+    this.toolhost = new TernaryChartToolHost(this.mdl, this._selectionService);
+
     this._widgetControlConfiguration = {
       topToolbar: [
         {
@@ -78,7 +85,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   get interactionHandler() {
-    return this.mdl.toolhost;
+    return this.toolhost;
   }
 
   onExport() {}

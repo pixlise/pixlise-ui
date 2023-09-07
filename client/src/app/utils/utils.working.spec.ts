@@ -39,6 +39,8 @@ import {
   stripInvalidCharsFromPhoneNumber,
   xor_sum,
   makeValidFileName,
+  decodeIndexList,
+  encodeIndexList,
 } from "./utils";
 
 // TODO: unit test getPearsonCorrelation
@@ -443,5 +445,47 @@ describe("xor_sum", () => {
     //  3=00000001
     expect(xor_sum(24, 3)).toEqual(4);
     expect(xor_sum(3, 24)).toEqual(4);
+  });
+});
+
+describe("decodeIndexList", () => {
+  it("decodeIndexList works", () => {
+    expect(() => decodeIndexList([5], 4)).toThrow(new Error("index 5 out of bounds: 4"));
+    expect(() => decodeIndexList([5], 5)).toThrow(new Error("index 5 out of bounds: 5"));
+    expect(decodeIndexList([5], 6)).toEqual([5]);
+    expect(decodeIndexList([], 1)).toEqual([]);
+    expect(decodeIndexList([1, 5, 7, 12, 4, 10, 14], 50)).toEqual([1, 5, 7, 12, 4, 10, 14]);
+    expect(decodeIndexList([1, 5, 6, 7, 8, 12, 4, 10, 14], 50)).toEqual([1, 5, 6, 7, 8, 12, 4, 10, 14]);
+    expect(() => decodeIndexList([1, 5, -4, 8, 12, 4, 10, 14], 50)).toThrow(new Error("invalid index: -4"));
+    expect(() => decodeIndexList([-1, 5, -1, 8, 12, 4, 10, 14], 50)).toThrow(new Error("indexes start with -1"));
+    expect(() => decodeIndexList([1, 5, -1, 8, 12, 4, 10, 14, -1], 50)).toThrow(new Error("indexes end with -1"));
+    expect(decodeIndexList([1, -1, 4, -1, 8], 50)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(() => decodeIndexList([1, -1, 4, 6, -1, 5], 50)).toThrow(new Error("invalid range: 6->5"));
+    expect(() => decodeIndexList([1, -1, 4, 6, -1, 6], 50)).toThrow(new Error("invalid range: 6->6"));
+    expect(() => decodeIndexList([1, -1, 4, 6, -1, 7], 50)).toThrow(new Error("invalid range: 6->7"));
+    expect(decodeIndexList([1, -1, 4, 6, -1, 8], 50)).toEqual([1, 2, 3, 4, 6, 7, 8]);
+    expect(decodeIndexList([1, -1, 4, 2, -1, 8, 11, 13, -1, 16], 50)).toEqual([1, 2, 3, 4, 2, 3, 4, 5, 6, 7, 8, 11, 13, 14, 15, 16]);
+    expect(() => decodeIndexList([1, -1, 12], 10)).toThrow(new Error("index 12 out of bounds: 10"));
+    expect(() => decodeIndexList([1, 3, 5, 12, 2], 10)).toThrow(new Error("index 12 out of bounds: 10"));
+  });
+});
+
+describe("encodeIndexList", () => {
+  it("encodeIndexList works", () => {
+    expect(encodeIndexList([9, 22, 8])).toEqual([8, 9, 22]);
+    expect(encodeIndexList([9, 7, 9, 8])).toEqual([7, -1, 9]);
+    expect(encodeIndexList([9, 7, 8, 7])).toEqual([7, -1, 9]);
+    expect(encodeIndexList([9, 7, 8, 8])).toEqual([7, -1, 9]);
+    expect(encodeIndexList([1002, 14, 1005, 15, 1003, 1004, 13, 16])).toEqual([13, -1, 16, 1002, -1, 1005]);
+    expect(encodeIndexList([7, 8])).toEqual([7, 8]);
+    expect(encodeIndexList([9, 7, 8])).toEqual([7, -1, 9]);
+    expect(encodeIndexList([1, 3, 5, 12, 2])).toEqual([1, -1, 3, 5, 12]);
+    expect(encodeIndexList([])).toEqual([]);
+    expect(encodeIndexList([7])).toEqual([7]);
+    expect(encodeIndexList([7, 8, 2, 9, 10, 11, 12, 14, 13, 16])).toEqual([2, 7, -1, 14, 16]);
+    expect(encodeIndexList([1002, 14, 1005, 15, 1003, 1004, 13, 1100, 16])).toEqual([13, -1, 16, 1002, -1, 1005, 1100]);
+    expect(encodeIndexList([1002, 14, 1005, 15, 1003, 1004, 13, 1100, 16])).toEqual([13, -1, 16, 1002, -1, 1005, 1100]);
+    expect(encodeIndexList([9, 0x7fffffff, 8])).toEqual([8, 9, 2147483647]);
+    expect(() => encodeIndexList([9, 0x7fffffff + 1, 8])).toThrow(new Error("index list had value > maxint"));
   });
 });

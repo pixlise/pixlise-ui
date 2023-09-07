@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 // import { Point, Rect } from "src/app/models/Geometry";
-import { Point, Rect } from "../models/Geometry";
+import { Point, PointWithRayLabel, Rect } from "../models/Geometry";
 import { Colours, RGBA } from "src/app/utils/colours";
 
 ///////////////////////////////////////////////
@@ -166,10 +166,20 @@ export class PointDrawer {
   static readonly ShapeTriangle = "triangle";
   static readonly ShapeSquare = "square";
 
-  constructor(screenContext: CanvasRenderingContext2D, size: number, fillColour: RGBA, outlineColour: RGBA, shape: string = PointDrawer.ShapeCircle) {
+  constructor(
+    screenContext: CanvasRenderingContext2D,
+    size: number,
+    fillColour: RGBA | null,
+    outlineColour: RGBA | null,
+    shape: string = PointDrawer.ShapeCircle
+  ) {
     this._screenContext = screenContext;
-    this._fillColour = fillColour;
-    this._outlineColour = outlineColour;
+    if (fillColour) {
+      this._fillColour = fillColour;
+    }
+    if (outlineColour) {
+      this._outlineColour = outlineColour;
+    }
     this._size = size;
     this._shape = shape;
   }
@@ -181,12 +191,18 @@ export class PointDrawer {
       clampedCount = 50;
     }
 
-    let pointPct = 1 - (clampedCount - 50) / 4950;
-    let a = 0.2 + 0.5 * pointPct;
-    return a;
+    const pointPct = 1 - (clampedCount - 50) / 4950;
+    return 0.2 + 0.5 * pointPct;
   }
 
+  drawPointsWithRayLabel(points: PointWithRayLabel[], colourAlpha: number, showLabels: boolean = false, maxLabelLength: number = 15): void {
+    this.drawPointsInternal(true, points, colourAlpha, showLabels, maxLabelLength);
+  }
   drawPoints(points: Point[], colourAlpha: number, showLabels: boolean = false, maxLabelLength: number = 15): void {
+    this.drawPointsInternal(false, points, colourAlpha, showLabels, maxLabelLength);
+  }
+
+  protected drawPointsInternal(withRay: boolean, points: Point[], colourAlpha: number, showLabels: boolean, maxLabelLength: number): void {
     // Setup the context for drawing this
     if (this._fillColour) {
       this._screenContext.fillStyle = this._fillColour.asStringWithA(colourAlpha);
@@ -196,21 +212,24 @@ export class PointDrawer {
       this._screenContext.strokeStyle = this._outlineColour.asStringWithA(colourAlpha);
     }
 
-    for (let pt of points) {
+    for (const pt of points) {
       // If a point has an endX and endY that is not equal to x,y, draw a line from the point to the end point
       // This is used to draw an inequality for points that are missing an x or y value
-      if (pt.endX != null && pt.endY != null && (pt.endX !== pt.x || pt.endY !== pt.y)) {
-        this._screenContext.save();
+      if (withRay) {
+        const ptRay = pt as PointWithRayLabel;
+        if (ptRay.endX != null && ptRay.endY != null && (ptRay.endX !== pt.x || ptRay.endY !== pt.y)) {
+          this._screenContext.save();
 
-        this._screenContext.lineWidth = 2;
-        this._screenContext.strokeStyle = Colours.CONTEXT_PURPLE.asStringWithA(0.5);
+          this._screenContext.lineWidth = 2;
+          this._screenContext.strokeStyle = Colours.CONTEXT_PURPLE.asStringWithA(0.5);
 
-        this._screenContext.beginPath();
-        this._screenContext.moveTo(pt.x, pt.y);
-        this._screenContext.lineTo(pt.endX, pt.endY);
-        this._screenContext.stroke();
+          this._screenContext.beginPath();
+          this._screenContext.moveTo(pt.x, pt.y);
+          this._screenContext.lineTo(ptRay.endX, ptRay.endY);
+          this._screenContext.stroke();
 
-        this._screenContext.restore();
+          this._screenContext.restore();
+        }
       }
 
       if (this._shape === PointDrawer.ShapeTriangle) {
@@ -237,38 +256,40 @@ export class PointDrawer {
       if (this._outlineColour) {
         this._screenContext.stroke();
       }
-
-      if (showLabels && pt.label && pt.label !== "") {
+      if (showLabels && withRay) {
+        const ptRay = pt as PointWithRayLabel;
+      if (ptRay.label && ptRay.label !== "") {
         let label = "";
-        let labelWords = pt.label.split(" ");
+          let labelWords = ptRay.label.split(" ");
 
-        let currentSegment = "";
-        labelWords.forEach((word, i) => {
-          if (i == labelWords.length - 1) {
-            label += currentSegment + word;
-          } else if (currentSegment.length + word.length > maxLabelLength) {
-            label += currentSegment + "\n";
-            currentSegment = word + " ";
-          } else {
-            currentSegment += word + " ";
-          }
-        });
+          let currentSegment = "";
+          labelWords.forEach((word, i) => {
+            if (i == labelWords.length - 1) {
+              label += currentSegment + word;
+            } else if (currentSegment.length + word.length > maxLabelLength) {
+              label += currentSegment + "\n";
+              currentSegment = word + " ";
+            } else {
+              currentSegment += word + " ";
+            }
+          });
 
-        // Save the existing font and fill style
-        this._screenContext.save();
+          // Save the existing font and fill style
+          this._screenContext.save();
 
-        // Draw the label
-        this._screenContext.font = CANVAS_FONT_SIZE + "px Roboto";
-        this._screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
-        let labels = label.split("\n");
+          // Draw the label
+          this._screenContext.font = CANVAS_FONT_SIZE + "px Roboto";
+          this._screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
+          let labels = label.split("\n");
 
-        // Parse newline characters in the label
-        labels.forEach((label, i) => {
-          this._screenContext.fillText(label, pt.x, pt.y - (CANVAS_FONT_SIZE * (labels.length - i) + 2));
-        });
+          // Parse newline characters in the label
+          labels.forEach((label, i) => {
+            this._screenContext.fillText(label, pt.x, pt.y - (CANVAS_FONT_SIZE * (labels.length - i) + 2));
+          });
 
-        // Restore the existing font and fill style
-        this._screenContext.restore();
+          // Restore the existing font and fill style
+          this._screenContext.restore();
+        }
       }
     }
   }

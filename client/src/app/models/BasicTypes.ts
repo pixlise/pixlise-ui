@@ -26,11 +26,11 @@
 // CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-
+/*
 export type DataId = string;
 export type SCLK = number;
 export type ScanType = string;
-
+*/
 export class MinMax {
   private _min: number | null = null;
   private _max: number | null = null;
