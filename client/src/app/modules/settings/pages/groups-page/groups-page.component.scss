@@ -48,6 +48,10 @@
     padding: 8px 16px;
     .name {
       margin-left: 8px;
+
+      max-width: 200px;
+      text-overflow: ellipsis;
+      overflow: hidden;
     }
 
     icon-button {
@@ -136,6 +140,44 @@
     background: var(--gray-90, #222829);
     border-right: 1px solid var(--gray-70, #444c50);
 
+    .selected-group-card-container {
+      height: calc(100vh - 136px);
+      overflow: scroll;
+    }
+
+    .selected-group-search-container {
+      display: flex;
+      align-items: center;
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--gray-70, #444c50);
+
+      input {
+        flex: 1;
+        height: 24px;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        border-right: none;
+      }
+
+      .search-icon {
+        height: 26px;
+        display: flex;
+        align-items: center;
+        padding-right: 8px;
+        padding-left: 8px;
+        background-color: #293137;
+        border-radius: 4px;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        border: 1px solid var(--gray-60, #545f64);
+
+        &:hover {
+          cursor: pointer;
+          background-color: lighten(#293137, 5%);
+        }
+      }
+    }
+
     .group-header {
       display: flex;
       align-items: center;
@@ -186,6 +228,40 @@
       text-transform: none;
     }
   }
+
+  .user-details {
+    margin-left: 8px;
+
+    .selected-user-details {
+      display: flex;
+
+      .icon {
+        max-width: 200px;
+        margin-right: 8px;
+
+        img {
+          width: 100%;
+
+          border-radius: 8px;
+        }
+      }
+
+      .label {
+        font-weight: bold;
+        font-size: 12px;
+        color: rgb(var(--clr-gray-30));
+      }
+
+      .role {
+        display: flex;
+        flex-direction: column;
+
+        mat-select {
+          margin-left: -2px;
+        }
+      }
+    }
+  }
 }
 
 .new-group-container {
@@ -209,8 +285,13 @@
 .user-card-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 99px);
-  overflow: scroll;
+  // height: calc(100vh - 99px);
+  // overflow: scroll;
+}
+
+.request-card-container {
+  display: flex;
+  flex-direction: column;
 }
 
 .user-card {
@@ -303,6 +384,12 @@
       left: -6px;
       opacity: 0;
     }
+  }
+
+  .new-request-actions {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
   }
 }
 

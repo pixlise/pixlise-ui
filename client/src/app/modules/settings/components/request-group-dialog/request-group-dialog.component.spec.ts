@@ -27,46 +27,26 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
-@import "atoms.scss";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { RequestGroupDialogComponent } from "./request-group-dialog.component";
 
-.permissions-dlg {
-  font-family: Inter;
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 16px;
-  color: $clr-gray-30;
+describe("RequestGroupDialogComponent", () => {
+  let component: RequestGroupDialogComponent;
+  let fixture: ComponentFixture<RequestGroupDialogComponent>;
 
-  max-width: 400px;
-}
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [RequestGroupDialogComponent],
+    }).compileComponents();
+  });
 
-.button-container {
-  margin-top: $sz-double;
+  beforeEach(() => {
+    fixture = TestBed.createComponent(RequestGroupDialogComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
 
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-end;
-}
-
-.fields {
-  margin-top: 16px;
-
-  input {
-    height: 24px;
-    width: 100%;
-    margin-bottom: 8px;
-  }
-
-  textarea {
-    width: 100%;
-  }
-
-  .input-label {
-    color: #bec0c2;
-    font-size: 12px;
-    margin-bottom: 4px;
-    font-family: "Roboto";
-    font-weight: 400;
-  }
-}
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
+});

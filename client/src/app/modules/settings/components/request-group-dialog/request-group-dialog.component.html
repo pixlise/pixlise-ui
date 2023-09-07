@@ -1,0 +1,129 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<!-- <ng-template #filterMenu>
+  <div class="filter-container">FILTERS</div>
+</ng-template> -->
+
+<div class="dlg-border-with-backdrop group-access-container">
+  <div class="info">
+    <h1>
+      Group Access
+      <img class="logo" src="assets/icons/pixlise-square-logo.svg" />
+    </h1>
+    <h5 class="welcome">
+      Welcome to PIXLISE! You have access to all public datasets produced by the <a class="team-link">NASA PIXL Instrument Team</a>.
+    </h5>
+    <h5 class="description">
+      In order to access datasets from other groups and institutions, please send a request to the appropriate admin from this panel.
+    </h5>
+  </div>
+  <div class="search-filter-controls">
+    <div class="search-controls">
+      <span class="search-title">Search Group Name</span>
+      <div class="search">
+        <input type="text" [(ngModel)]="groupSearchString" placeholder="Enter Name ..." />
+        <div class="search-icon">
+          <img src="assets/button-icons/search.svg" />
+        </div>
+      </div>
+    </div>
+    <!-- <div class="filter-controls">
+      <widget-settings-menu [settingsDialog]="filterMenu" class="tag-button" [openDirDown]="false">
+        <push-button buttonStyle="normal">Filters</push-button>
+      </widget-settings-menu>
+    </div> -->
+  </div>
+  <div class="group-table">
+    <table mat-table [dataSource]="availableGroups" matSort>
+      <ng-container matColumnDef="select">
+        <th mat-header-cell *matHeaderCellDef>
+          <mat-checkbox
+            (change)="$event ? toggleAllRows() : null"
+            [checked]="selection.hasValue() && isAllSelected()"
+            [indeterminate]="selection.hasValue() && !isAllSelected()"
+            [aria-label]="checkboxLabel()">
+          </mat-checkbox>
+        </th>
+        <td mat-cell *matCellDef="let row">
+          <mat-checkbox
+            (click)="$event.stopPropagation()"
+            (change)="$event ? selection.toggle(row) : null"
+            [checked]="selection.isSelected(row)"
+            [aria-label]="checkboxLabel(row)">
+          </mat-checkbox>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="asMember">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header sortActionDescription="Sort by request type">Request Role</th>
+        <td mat-cell *matCellDef="let row">
+          <mat-select [(value)]="groupRequestAsMember[row.id]">
+            <mat-option [value]="true">Member</mat-option>
+            <mat-option [value]="false">Viewer</mat-option>
+          </mat-select>
+        </td>
+      </ng-container>
+
+      <ng-container *ngFor="let column of columns" [matColumnDef]="column.id">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header sortActionDescription="Sort by column">{{ column.displayName }}</th>
+        <td mat-cell *matCellDef="let row">{{ row[column.id] }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="administrators">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header sortActionDescription="Sort by column">Administrators</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="admin-container" *ngIf="row.administrators.length > 0">
+            <span class="admin" #tooltip="matTooltip" [matTooltip]="row.administrators[0].email">{{ row.administrators[0].name }}</span>
+            <span class="admin-others" *ngIf="row.administrators.length > 1" #tooltip="matTooltip" [matTooltip]="groupAdminTooltips[row.id]"
+              >, ...</span
+            >
+          </span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="lastUserJoinedUnixSec">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header sortActionDescription="Sort by column">Last User Joined Date</th>
+        <td mat-cell *matCellDef="let row">{{ row.lastUserJoinedUnixSec * 1000 | date }}</td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnIDs; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: columnIDs"></tr>
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell no-data-cell" colspan="7">No groups matching the filter "{{ groupSearchString }}"</td>
+      </tr>
+    </table>
+  </div>
+  <div class="gap-separated-horizontal-elements button-container">
+    <push-button buttonStyle="outline" (onClick)="onCancel()">Close</push-button>
+    <push-button buttonStyle="yellow" (onClick)="onConfirm()">Request</push-button>
+  </div>
+</div>

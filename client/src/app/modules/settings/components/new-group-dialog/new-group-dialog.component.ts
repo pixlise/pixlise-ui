@@ -38,6 +38,7 @@ import { EnvConfigurationInitService } from "src/app/services/env-configuration-
 })
 export class NewGroupDialogComponent implements OnInit {
   groupName: string = "";
+  groupDescription: string = "";
 
   constructor(public dialogRef: MatDialogRef<NewGroupDialogComponent>) {}
 
@@ -50,6 +51,7 @@ export class NewGroupDialogComponent implements OnInit {
   onConfirm(): void {
     this.dialogRef.close({
       groupName: this.groupName,
+      groupDescription: this.groupDescription,
     });
   }
 

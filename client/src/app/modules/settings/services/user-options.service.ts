@@ -99,50 +99,6 @@ export class UserOptionsService {
       });
   }
 
-  // fetchUserHints(): void {
-  //   this._dataService.sendUserHintsRequest(UserHintsReq.create({})).subscribe({
-  //     next: (resp: UserHintsResp) => {
-  //       this._hints.dismissedHints = resp.hints?.dismissedHints || [];
-  //       this._hints.enabled = resp.hints?.enabled || false;
-
-  //       this._userOptionsChanged$.next();
-  //     },
-  //     error: (err) => {
-  //       console.error("Error sendUserHintsRequest Notifications", err);
-  //       this._snackBar.openError("Error fetching user hints");
-  //     }
-  //   });
-  // }
-
-  // toggleUserHints(): void {
-  //   let enabled = !this._hints.enabled;
-
-  //   this._dataService.sendUserHintsToggleRequest(UserHintsToggleReq.create({ enabled })).subscribe({
-  //     next: (resp: UserHintsToggleResp) => {
-  //       this._hints.enabled = enabled;
-  //       this._snackBar.openSuccess("User hints updated");
-  //       this._userOptionsChanged$.next();
-  //     },
-  //     error: (err) => {
-  //       console.error("Error sendUserHintsToggleRequest Notifications", err);
-  //       this._snackBar.openError("Error updating user hints");
-  //     }
-  //   });
-  // }
-
-  // dismissHint(hint: string): void {
-  //   this._dataService.sendUserDismissHintRequest(UserDismissHintReq.create({ hint })).subscribe({
-  //     next: (resp: UserHintsToggleResp) => {
-  //       this._hints.dismissedHints.push(hint);
-  //       this._userOptionsChanged$.next();
-  //     },
-  //     error: (err) => {
-  //       console.error("Error sendUserDismissHintRequest Notifications", err);
-  //       this._snackBar.openError("Error dismissing hint");
-  //     }
-  //   });
-  // }
-
   fetchUserDetails(): void {
     this._dataService.sendUserDetailsRequest(UserDetailsReq.create({})).subscribe({
       next: (resp: UserDetailsResp) => {
@@ -190,13 +146,16 @@ export class UserOptionsService {
 
     this._dataService.sendUserDetailsWriteRequest(userDetailsWriteReq).subscribe({
       next: (resp: UserDetailsWriteResp) => {
-        this._userDetails.info!.name = name;
-        this._userDetails.info!.email = email;
-        this._userDetails.info!.iconURL = iconURL;
+        if (this._userDetails.info) {
+          this._userDetails.info.name = name;
+          this._userDetails.info.email = email;
+          this._userDetails.info.iconURL = iconURL;
+        }
         this._userDetails.dataCollectionVersion = dataCollectionVersion;
 
         this._snackBar.openSuccess("User details updated");
 
+        this.fetchUserDetails();
         this._userOptionsChanged$.next();
       },
       error: err => {

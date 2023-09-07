@@ -6,7 +6,7 @@ import { ReplaySubject, Subject } from "rxjs";
 import * as _m0 from "protobufjs/minimal";
 import { UserListReq } from "src/app/generated-protos/user-management-msgs";
 import { Auth0UserDetails, UserInfo } from "src/app/generated-protos/user";
-import { UserDetailsReq, UserSearchReq } from "src/app/generated-protos/user-msgs";
+import { UserSearchReq } from "src/app/generated-protos/user-msgs";
 
 @Injectable({
   providedIn: "root",
@@ -32,20 +32,18 @@ export class UsersService {
     });
   }
 
-  searchUsers(searchString: string, firstResultIdx: number = 0, resultCount: number = 100) {
-    this._dataService
-      .sendUserSearchRequest(UserSearchReq.create({ searchString, firstResultIdx: `${firstResultIdx}`, resultCount: `${resultCount}` }))
-      .subscribe({
-        next: res => {
-          res.users.forEach(user => {
-            this.cachedUsers[user.id] = user;
-          });
+  searchUsers(searchString: string) {
+    this._dataService.sendUserSearchRequest(UserSearchReq.create({ searchString })).subscribe({
+      next: res => {
+        res.users.forEach(user => {
+          this.cachedUsers[user.id] = user;
+        });
 
-          this.searchedUsers$.next(res.users);
-        },
-        error: err => {
-          console.error(err);
-        },
-      });
+        this.searchedUsers$.next(res.users);
+      },
+      error: err => {
+        console.error(err);
+      },
+    });
   }
 }
