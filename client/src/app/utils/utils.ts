@@ -947,7 +947,8 @@ export class SDSFields {
 // Returns a list of unsigned indexes, throws an error if:
 // - A negative value is seen that is not -1
 // - <start idx>, -1, <end idx which is <= start idx>
-export function decodeIndexList(encodedIndexes: number[], arraySize: number): number[] {
+// NOTE: if arraySizeOptional is -1, it is not checked against
+export function decodeIndexList(encodedIndexes: number[], arraySizeOptional: number = -1): number[] {
   if (encodedIndexes.length <= 0) {
     return [];
   }
@@ -970,8 +971,8 @@ export function decodeIndexList(encodedIndexes: number[], arraySize: number): nu
       const startIdx = encodedIndexes[c - 1];
       const endIdx = encodedIndexes[c + 1];
 
-      if (endIdx >= arraySize) {
-        throw new Error(`index ${endIdx} out of bounds: ${arraySize}`);
+      if (arraySizeOptional > -1 && endIdx >= arraySizeOptional) {
+        throw new Error(`index ${endIdx} out of bounds: ${arraySizeOptional}`);
       }
 
       // Ensure there is a valid range between these numbers
@@ -985,8 +986,8 @@ export function decodeIndexList(encodedIndexes: number[], arraySize: number): nu
     } else if (idx < -1) {
       throw new Error(`invalid index: ${idx}`);
     } else {
-      if (idx >= arraySize) {
-        throw new Error(`index ${idx} out of bounds: ${arraySize}`);
+      if (arraySizeOptional > -1 && idx >= arraySizeOptional) {
+        throw new Error(`index ${idx} out of bounds: ${arraySizeOptional}`);
       }
       result.push(idx);
     }
@@ -1048,5 +1049,32 @@ export function encodeIndexList(indexesSrc: number[]): number[] {
       }
     }
   }
+  return result;
+}
+
+export function decompressZeroRunLengthEncoding(input: number[], expectedCount: number): Int32Array {
+  const result = new Int32Array(expectedCount);
+  let writeIdx = 0;
+  for (let c = 0; c < input.length; c++) {
+    // Warn if we're going to see issues with overflow because we don't fit into an int!
+    if (input[c] > MAXINT32) {
+      console.warn("decompressZeroRunLengthEncoding: Value does not fit into int: " + input[c]);
+    }
+
+    if (input[c] != 0) {
+      // Just copy it across
+      result[writeIdx] = input[c];
+      writeIdx++;
+    } else {
+      // We found a 0, this is going to be followed by the number of 0's
+      // Since our array is inited with all 0's, we just have to skip the right
+      // number!
+      writeIdx += input[c + 1]; // Pretend we wrote a 0
+
+      // Skip over the count value next run
+      c++;
+    }
+  }
+
   return result;
 }

@@ -41,6 +41,7 @@ import {
   makeValidFileName,
   decodeIndexList,
   encodeIndexList,
+  decompressZeroRunLengthEncoding,
 } from "./utils";
 
 // TODO: unit test getPearsonCorrelation
@@ -467,6 +468,7 @@ describe("decodeIndexList", () => {
     expect(decodeIndexList([1, -1, 4, 2, -1, 8, 11, 13, -1, 16], 50)).toEqual([1, 2, 3, 4, 2, 3, 4, 5, 6, 7, 8, 11, 13, 14, 15, 16]);
     expect(() => decodeIndexList([1, -1, 12], 10)).toThrow(new Error("index 12 out of bounds: 10"));
     expect(() => decodeIndexList([1, 3, 5, 12, 2], 10)).toThrow(new Error("index 12 out of bounds: 10"));
+    expect(decodeIndexList([1, 3, 5, 12, 6])).toEqual([1, 3, 5, 12, 6]);
   });
 });
 
@@ -487,5 +489,22 @@ describe("encodeIndexList", () => {
     expect(encodeIndexList([1002, 14, 1005, 15, 1003, 1004, 13, 1100, 16])).toEqual([13, -1, 16, 1002, -1, 1005, 1100]);
     expect(encodeIndexList([9, 0x7fffffff, 8])).toEqual([8, 9, 2147483647]);
     expect(() => encodeIndexList([9, 0x7fffffff + 1, 8])).toThrow(new Error("index list had value > maxint"));
+  });
+});
+
+describe("decompressZeroRunLengthEncoding", () => {
+  it("decompressZeroRunLengthEncoding length limit cuts array off", () => {
+    expect(decompressZeroRunLengthEncoding([2, 3, 4, 5], 2)).toEqual(new Int32Array([2, 3]));
+    expect(decompressZeroRunLengthEncoding([2, 3, 4, 5], 4)).toEqual(new Int32Array([2, 3, 4, 5]));
+    expect(decompressZeroRunLengthEncoding([2, 3, 4, 5], 6)).toEqual(new Int32Array([2, 3, 4, 5, 0, 0]));
+  });
+  it("decompressZeroRunLengthEncoding zero run count works", () => {
+    expect(decompressZeroRunLengthEncoding([0, 0], 5)).toEqual(new Int32Array([0, 0, 0, 0, 0]));
+    expect(decompressZeroRunLengthEncoding([0, 3, 1], 5)).toEqual(new Int32Array([0, 0, 0, 1, 0]));
+    expect(decompressZeroRunLengthEncoding([0, 4, 1], 5)).toEqual(new Int32Array([0, 0, 0, 0, 1]));
+    expect(decompressZeroRunLengthEncoding([0, 5, 1], 5)).toEqual(new Int32Array([0, 0, 0, 0, 0]));
+  });
+  it("decompressZeroRunLengthEncoding multiple zero runs work", () => {
+    expect(decompressZeroRunLengthEncoding([1, 0, 2, 3, 0, 4, 7], 9)).toEqual(new Int32Array([1, 0, 0, 3, 0, 0, 0, 0, 7]));
   });
 });
