@@ -41,6 +41,91 @@
   max-width: 400px;
 }
 
+.group-access-container {
+  background: var(--gray-90, #222829);
+  border-radius: 8px;
+
+  .info {
+    h1 {
+      display: flex;
+      align-items: center;
+
+      font-size: 24px;
+      color: $clr-gray-10;
+      margin-bottom: 16px;
+      font-weight: 600;
+
+      .logo {
+        width: 24px;
+        margin-left: auto;
+      }
+    }
+
+    .welcome {
+      color: var(--gray-30, #bec0c2);
+    }
+
+    .description {
+      color: var(--yellow, #ffff8d);
+    }
+  }
+
+  .search-filter-controls {
+    display: flex;
+    margin-bottom: 8px;
+
+    .search-controls {
+      display: flex;
+      flex-direction: column;
+
+      .search-title {
+        color: #bec0c2;
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+
+      .search {
+        display: flex;
+        align-items: center;
+
+        input {
+          height: 24px;
+          width: 200px;
+
+          border-right: 0;
+          border-top-right-radius: 0;
+          border-bottom-right-radius: 0;
+        }
+
+        .search-icon {
+          display: flex;
+          align-items: center;
+
+          height: 26px;
+
+          padding-left: 8px;
+          padding-right: 8px;
+
+          border-radius: 0px 4px 4px 0px;
+          border: 1px solid var(--gray-60, #545f64);
+          background: var(--gray-80, #293137);
+
+          &:hover {
+            cursor: pointer;
+            background-color: lighten(#293137, 5%);
+          }
+        }
+      }
+    }
+
+    .filter-controls {
+      display: flex;
+      align-items: flex-end;
+      margin-left: 8px;
+    }
+  }
+}
+
 .button-container {
   margin-top: $sz-double;
 
@@ -49,24 +134,39 @@
   justify-content: flex-end;
 }
 
-.fields {
-  margin-top: 16px;
+.group-table {
+  margin-left: -16px;
+  width: calc(100% + 32px);
+  height: 300px;
+  overflow: scroll;
 
-  input {
-    height: 24px;
-    width: 100%;
-    margin-bottom: 8px;
+  th {
+    background: #1b1d1e !important;
   }
 
-  textarea {
-    width: 100%;
+  tr {
+    background: #222829 !important;
+
+    &:nth-child(even) {
+      background: #1b1d1e !important;
+    }
   }
 
-  .input-label {
-    color: #bec0c2;
-    font-size: 12px;
-    margin-bottom: 4px;
-    font-family: "Roboto";
-    font-weight: 400;
+  .no-data-cell {
+    text-align: center;
+  }
+}
+
+.admin-container {
+  display: flex;
+  .admin {
+    max-width: 120px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .admin-others {
+    white-space: nowrap;
   }
 }

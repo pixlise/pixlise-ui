@@ -1,7 +1,4 @@
 <div class="settings-container">
-  <!-- TODO: <notification-banner></notification-banner> -->
-  <!-- <app-toolbar titleToShow="Groups"></app-toolbar> -->
-
   <div class="user-groups">
     <div class="user-info">
       <user-icon size="26px"></user-icon>
@@ -13,26 +10,7 @@
         <h2>My Groups</h2>
       </div>
       <div class="content-container request">
-        <input
-          type="text"
-          matInput
-          [formControl]="requestGroupControl"
-          [matAutocomplete]="auto"
-          class="request-group-input"
-          placeholder="Request to Join a Group ..." />
-        <mat-autocomplete #auto="matAutocomplete" [displayWith]="requestGroupDisplayName">
-          <mat-option *ngFor="let group of filteredGroups | async" [value]="group">
-            {{ group?.name }}
-          </mat-option>
-        </mat-autocomplete>
-        <div class="request-submit">
-          <action-button
-            color="#BCBCBC"
-            action="add"
-            tooltipTitle="Request Access"
-            [disabled]="!selectedGroupToJoin"
-            (onClick)="onRequestGroupAccess()"></action-button>
-        </div>
+        <push-button (onClick)="onOpenGroupRequestDialog()" buttonStyle="yellow">Request Group Access</push-button>
       </div>
     </div>
     <div class="groups admin-groups">
@@ -106,50 +84,135 @@
     </div>
   </div>
   <div class="group-container">
-    <div *ngIf="selectedGroup" class="selected-group">
+    <div class="selected-group">
       <div class="group-header">
-        <h1>{{ selectedGroup.info?.name }}</h1>
+        <h1 class="{{ selectedGroup?.info?.name ? 'active' : '' }}">{{ selectedGroup?.info?.name || "Select a Group ..." }}</h1>
         <action-button
+          *ngIf="selectedGroup"
           action="add"
           [disabled]="!selectedGroup"
           tooltipTitle="Add User"
           (onClick)="onAddUserToGroup(selectedGroup.info!.id)"></action-button>
       </div>
-      <div *ngFor="let group of selectedGroupSubGroups">
-        <h3>{{ group.name }}</h3>
-      </div>
-      <div *ngFor="let user of selectedGroupMembers" class="user-card">
-        <div class="icon">
-          <img *ngIf="user.iconURL" src="{{ user.iconURL }}" />
-          <img *ngIf="!user.iconURL" src="assets/icons/default-user-icon.svg" />
-        </div>
-        <div class="details">
-          <span class="info">
-            <span class="label">Name</span>
-            <h3>{{ user.name }}</h3>
-          </span>
-          <span class="info">
-            <span class="label">Email</span>
-            <h3>{{ user.email }}</h3>
-          </span>
-        </div>
-        <div class="actions">
-          <action-button action="close" [disabled]="!user" tooltipTitle="Remove" (onClick)="onRemoveMemberFromGroup(user.id)"></action-button>
+      <div class="selected-group-search-container">
+        <input type="text" class="user-search" placeholder="Search Members ..." [(ngModel)]="userSearchString" />
+        <div class="search-icon">
+          <img src="assets/button-icons/search.svg" />
         </div>
       </div>
-    </div>
-    <div *ngIf="!canAccessSelectedGroup && selectedGroupInfo" class="no-group-access">
-      <push-button (onClick)="onRequestAccessToGroup(selectedGroupInfo, false)">Request Viewer Access</push-button>
-      <push-button (onClick)="onRequestAccessToGroup(selectedGroupInfo, true)">Request Member Access</push-button>
+      <div class="selected-group-card-container">
+        <div *ngFor="let group of selectedGroupSubGroups">
+          <h3>{{ group.name }}</h3>
+        </div>
+        <div *ngIf="isSelectedGroupAdmin && selectedGroupAccessRequestsCount > 0" class="requested-access">
+          <div class="user-header-section">
+            <h2>New Requests</h2>
+          </div>
+          <div
+            *ngFor="let request of selectedGroupAccessRequests"
+            class="access-request"
+            (click)="request.details ? onSelectUser(request.details) : null">
+            <div class="request-card-container">
+              <div class="user-card">
+                <div class="icon">
+                  <img *ngIf="request.details?.iconURL" src="{{ request.details?.iconURL }}" />
+                  <img *ngIf="!request.details?.iconURL" src="assets/icons/default-user-icon.svg" />
+                </div>
+                <div class="details">
+                  <span class="info name">
+                    <h3>{{ request.details?.name }}</h3>
+                  </span>
+                  <span class="info email">
+                    <h3>{{ request.details?.email }}</h3>
+                  </span>
+                  <span class="info as-member">
+                    <h3>Requesting: {{ request.asMember ? "Member" : "Viewer" }} Access</h3>
+                  </span>
+                </div>
+                <div class="new-request-actions">
+                  <action-button action="deny" tooltipTitle="Dismiss Request" (onClick)="onDismissAccessRequest(request)"></action-button>
+                  <action-button action="confirm" tooltipTitle="Confirm Request" (onClick)="onGrantAccessToGroup(request)"></action-button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="user-header-section">
+          <h2>Team Members</h2>
+        </div>
+        <div class="user-card-container">
+          <div *ngFor="let user of selectedGroupUsers; let i = index" class="user-card" (click)="onSelectUser(user)">
+            <div class="icon">
+              <img *ngIf="user.iconURL" src="{{ user.iconURL }}" />
+              <img *ngIf="!user.iconURL" src="assets/icons/default-user-icon.svg" />
+            </div>
+            <div class="details">
+              <span class="info name">
+                <h3>{{ user.name }}</h3>
+              </span>
+              <span class="info email">
+                <h3>{{ user.email }}</h3>
+              </span>
+            </div>
+            <div class="actions">
+              <img
+                class="user-type-badge"
+                src="{{
+                  selectedGroupUserRoles[user.id] === 'admin'
+                    ? 'assets/icons/admin-badge.svg'
+                    : selectedGroupUserRoles[user.id] === 'editor'
+                    ? 'assets/icons/member-badge.svg'
+                    : selectedGroupUserRoles[user.id] === 'viewer'
+                    ? 'assets/icons/viewer-badge.svg'
+                    : ''
+                }}" />
+              <action-button
+                action="close"
+                confirmText="Are you sure you want to remove user ({{ user.name }}) from group ({{ selectedGroup?.info?.name }})?"
+                [disabled]="!user"
+                tooltipTitle="Remove"
+                (onClick)="onRemoveFromGroup(user.id)"></action-button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="!canAccessSelectedGroup && selectedGroupInfo" class="no-group-access">
+        <push-button (onClick)="onRequestAccessToGroup(selectedGroupInfo, false)">Request Viewer Access</push-button>
+        <push-button (onClick)="onRequestAccessToGroup(selectedGroupInfo, true)">Request Member Access</push-button>
+      </div>
     </div>
   </div>
-
-  <div *ngIf="isSelectedGroupAdmin" class="requested-access">
-    Requests
-    <div *ngFor="let request of selectedGroupAccessRequests" class="access-request">
-      {{ request.userId }}
-      <push-button (onClick)="onGrantAccessToGroup(request)">Grant Access</push-button>
-      <push-button (onClick)="onDismissAccessRequest(request)">Dismiss</push-button>
+  <div class="selected-user">
+    <div class="user-header">
+      <h1 *ngIf="!selectedUser">Select a User ...</h1>
+      <h1 *ngIf="selectedUser">{{ selectedUser.name }}</h1>
+    </div>
+    <div class="user-details">
+      <div class="selected-user-details" *ngIf="selectedUser">
+        <div class="icon">
+          <img *ngIf="selectedUser?.iconURL" src="{{ selectedUser?.iconURL }}" />
+          <img *ngIf="!selectedUser?.iconURL" src="assets/icons/default-user-icon.svg" />
+        </div>
+        <div class="details">
+          <span class="info name">
+            <span class="label">Name</span>
+            <h3>{{ selectedUser?.name }}</h3>
+          </span>
+          <span class="info email">
+            <span class="label">Email</span>
+            <h3>{{ selectedUser?.email }}</h3>
+          </span>
+          <span class="info role">
+            <span class="label">Role</span>
+            <mat-select [(value)]="selectedUserRole">
+              <mat-option value="admin">Admin</mat-option>
+              <mat-option value="editor">Editor</mat-option>
+              <mat-option value="viewer">Viewer</mat-option>
+            </mat-select>
+          </span>
+        </div>
+      </div>
     </div>
   </div>
 </div>

@@ -30,11 +30,20 @@
 @import "../../../scss/public-site.scss";
 
 .page {
+  max-width: 100vw;
+  overflow: hidden;
+
   .header {
+    height: 100vh;
+    width: 100%;
+    background-size: cover !important;
+    position: relative;
+
     .header-content {
       top: 50%;
       left: $sz-border-x;
       width: 855px;
+      z-index: 9;
 
       h1 {
         font-weight: bold;

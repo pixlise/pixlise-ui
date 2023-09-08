@@ -31,7 +31,7 @@
 @import "atoms.scss";
 
 .badge {
-  line-height: 125%;
+  line-height: 0;
   color: black;
   font-size: 9px;
   font-weight: 600;
@@ -40,7 +40,7 @@
   height: 12px;
   text-align: center;
 
-  padding: 1px;
+  padding: 2px;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -17,6 +17,10 @@ import { ImageUploaderDialogComponent } from "./components/image-uploader-dialog
 import { NgxDropzoneModule } from "ngx-dropzone";
 import { UserIconComponent } from "./components/user-icon/user-icon.component";
 import { NewGroupDialogComponent } from "./components/new-group-dialog/new-group-dialog.component";
+import { RequestGroupDialogComponent } from "./components/request-group-dialog/request-group-dialog.component";
+import { MatTableModule } from "@angular/material/table";
+import { MatSortModule } from "@angular/material/sort";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 
 const APP_ROUTES: Routes = [
   {
@@ -31,6 +35,7 @@ const APP_ROUTES: Routes = [
     DataCollectionDialogComponent,
     AddUserDialogComponent,
     NewGroupDialogComponent,
+    RequestGroupDialogComponent,
     ImageUploaderDialogComponent,
     UserIconComponent,
   ],
@@ -42,9 +47,11 @@ const APP_ROUTES: Routes = [
     MatFormFieldModule,
     ReactiveFormsModule,
     NgxDropzoneModule,
+    MatTableModule,
+    MatSortModule,
+    MatCheckboxModule,
     RouterModule.forChild(APP_ROUTES),
   ],
   exports: [GroupsPageComponent, UserIconComponent],
-  providers: [UserOptionsService, GroupsService, UsersService],
 })
 export class SettingsModule {}
