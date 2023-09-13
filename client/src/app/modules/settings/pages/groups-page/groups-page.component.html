@@ -124,14 +124,14 @@
           <div class="empty-requests" *ngIf="selectedGroupAccessRequestsCount === 0">
             <span class="requests-empty">No New Requests ...</span>
           </div>
-          <div *ngFor="let request of selectedGroupAccessRequests" class="access-request" (click)="request.details ? onSelectUser(request.details) : null">
+          <div *ngFor="let request of selectedGroupAccessRequests" class="access-request">
             <div class="request-card-container">
               <div class="user-card">
-                <div class="icon">
+                <div class="icon" (click)="request.details ? onSelectUser(request.details) : null">
                   <img *ngIf="request.details?.iconURL" src="{{ request.details?.iconURL }}" />
                   <img *ngIf="!request.details?.iconURL" src="assets/icons/default-user-icon.svg" />
                 </div>
-                <div class="details">
+                <div class="details" (click)="request.details ? onSelectUser(request.details) : null">
                   <span class="info name">
                     <h3>{{ request.details?.name || request.details?.id }}</h3>
                   </span>
@@ -155,12 +155,12 @@
           <h2>Team Members</h2>
         </div>
         <div class="user-card-container">
-          <div *ngFor="let user of selectedGroupUsers; let i = index" class="user-card" (click)="onSelectUser(user)">
-            <div class="icon">
+          <div *ngFor="let user of selectedGroupUsers; let i = index" class="user-card">
+            <div class="icon" (click)="onSelectUser(user)">
               <img *ngIf="user.iconURL" src="{{ user.iconURL }}" />
               <img *ngIf="!user.iconURL" src="assets/icons/default-user-icon.svg" />
             </div>
-            <div class="details">
+            <div class="details" (click)="onSelectUser(user)">
               <span class="info name">
                 <h3>{{ user.name || user.id }}</h3>
               </span>
@@ -196,11 +196,11 @@
           <h2>Associated Sub-Groups</h2>
         </div>
         <div class="user-card-container">
-          <div *ngFor="let group of selectedGroupSubGroups; let i = index" class="user-card" (click)="onSelectGroup(group)">
-            <div class="icon">
+          <div *ngFor="let group of selectedGroupSubGroups; let i = index" class="user-card">
+            <div class="icon" (click)="onSelectGroup(group)">
               <img src="assets/icons/default-user-icon.svg" />
             </div>
-            <div class="details">
+            <div class="details" (click)="onSelectGroup(group)">
               <span class="info name">
                 <h3>{{ group.name || group.id }}</h3>
               </span>
