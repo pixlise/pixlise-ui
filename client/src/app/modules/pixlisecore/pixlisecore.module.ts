@@ -37,6 +37,8 @@ import { UserMenuPanelComponent } from "../../components/toolbar/user-menu-panel
 import { ConfirmDialogComponent } from "./components/atoms/buttons/action-button/confirm-dialog/confirm-dialog.component";
 import { TwoStateIconPushButton } from "./components/atoms/buttons/two-state-button/two-state-icon-push-button.component";
 import { MenuPanelHostComponent } from "./components/atoms/widget-settings-menu/menu-panel-host/menu-panel-host.component";
+import { NotificationsMenuPanelComponent } from "src/app/components/toolbar/notifications-menu-panel/notifications-menu-panel.component";
+import { HotkeysMenuPanelComponent } from "src/app/components/toolbar/hotkeys-menu-panel/hotkeys-menu-panel.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -63,6 +65,8 @@ export { SnackbarService } from "./services/snackbar.service";
     RouteNotFoundComponent,
     SnackBarPopupComponent,
     UserMenuPanelComponent,
+    NotificationsMenuPanelComponent,
+    HotkeysMenuPanelComponent,
     IconButtonComponent,
     ConfirmDialogComponent,
   ],

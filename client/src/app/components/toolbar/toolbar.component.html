@@ -67,6 +67,16 @@ POSSIBILITY OF SUCH DAMAGE.
     <!-- <img class="clickable user-icon {{userMenuOpen ? 'open' : ''}}" cdkOverlayOrigin #trigger="cdkOverlayOrigin"
       (click)="onUserMenu()" [src]="userIcon">
   </div> -->
-    <user-icon size="24px" cdkOverlayOrigin #trigger="cdkOverlayOrigin" (click)="onUserMenu()"></user-icon>
+    <span class="buttons">
+      <icon-button
+        (click)="onNotificationsMenu()"
+        [hoverYellow]="true"
+        [state]="notificationsMenuOpen ? 1 : 0"
+        type="notification"
+        [hasBackground]="true"
+        [notificationCount]="notificationsCount"></icon-button>
+      <icon-button (click)="onHotkeysMenu()" [hoverYellow]="true" [state]="hotKeysMenuOpen ? 1 : 0" type="hotkeys" [hasBackground]="true"></icon-button>
+      <user-icon size="24px" cdkOverlayOrigin #trigger="cdkOverlayOrigin" (click)="onUserMenu()" class="{{ userMenuOpen ? 'open' : '' }}"></user-icon>
+    </span>
   </div>
 </div>

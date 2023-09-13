@@ -29,23 +29,32 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div
-  class="clickable icon-btn"
-  [ngClass]="{
-    'no-bg': !hasBackground,
-    'button-inactive': !state && hasBackground,
-    'button-active': state == 1,
-    'button-active-overridden': state == 2,
-    'button-disabled': state == 3,
-    'icon-button-background': hasBackground,
-    'button-shadow': hasBackground,
-    'button-hoverable': hasBackground,
-    'hover-yellow': hoverYellow
-  }"
-  [ngStyle]="{ width: sizeStr, height: sizeStr }"
-  (click)="onClickInternal($event)">
-  <img src="{{ iconURL }}" />
-  <wait-spinner *ngIf="loading"></wait-spinner>
-  <!-- TODO: was <mat-spinner *ngIf="loading" [diameter]="24" [strokeWidth]="4" color="accent"> -->
-  <badge *ngIf="notificationCount > 0" class="notifications" [value]="notificationCount.toString()" title="{{ notificationCount }} active notifications"> </badge>
+<div class="dlg-border-with-backdrop group-membership-container">
+  <div class="header">
+    <h1>User Membership</h1>
+    <div class="user-info">
+      <h2>{{ data.user.name }}</h2>
+      <img src="{{ data.user.iconURL }}" />
+    </div>
+  </div>
+  <div class="info">
+    <h5 class="description">Assign this user's permissions, this can be changed from their profile page at any time in the future.</h5>
+  </div>
+  <div class="role-options">
+    <mat-radio-group [(ngModel)]="selectedRole">
+      <mat-radio-button class="role-option" value="admin"
+        >Administrator (can approve new members)
+        <img src="assets/icons/admin-badge.svg" />
+      </mat-radio-button>
+      <mat-radio-button class="role-option" value="editor"
+        >Member (editor)
+        <img src="assets/icons/member-badge.svg" />
+      </mat-radio-button>
+      <mat-radio-button class="role-option" value="viewer">Viewer (read only) <img src="assets/icons/viewer-badge.svg" /></mat-radio-button>
+    </mat-radio-group>
+  </div>
+  <div class="gap-separated-horizontal-elements button-container">
+    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button buttonStyle="yellow" (onClick)="onConfirm()">Assign</push-button>
+  </div>
 </div>

@@ -34,50 +34,52 @@ import { UserInfo } from "src/app/generated-protos/user";
 import { MatSort } from "@angular/material/sort";
 import { SelectionModel } from "@angular/cdk/collections";
 import { MatTableDataSource } from "@angular/material/table";
+import { GroupsService } from "../../services/groups.service";
+import { UserGroupJoinSummaryInfo } from "src/app/generated-protos/user-group";
 
 export interface AddUserDialogData {
   groupId: string;
 }
 
-export type Role = "viewer" | "editor" | "admin";
+export type Role = "viewer" | "editor";
 
 @Component({
-  selector: "app-add-user-dialog",
-  templateUrl: "./add-user-dialog.component.html",
-  styleUrls: ["./add-user-dialog.component.scss"],
+  selector: "app-add-subgroup-dialog",
+  templateUrl: "./add-subgroup-dialog.component.html",
+  styleUrls: ["./add-subgroup-dialog.component.scss"],
 })
-export class AddUserDialogComponent {
+export class AddSubGroupDialogComponent {
   @ViewChild(MatSort) sort: MatSort = new MatSort();
 
-  roles = ["viewer", "editor", "admin"];
+  roles = ["viewer", "editor"];
   selectedRole: Role = "viewer";
 
-  selection = new SelectionModel<UserInfo>(true, []);
+  selection = new SelectionModel<UserGroupJoinSummaryInfo>(true, []);
 
-  users = new MatTableDataSource([] as UserInfo[]);
+  groups = new MatTableDataSource([] as UserGroupJoinSummaryInfo[]);
 
-  _userSearchString: string = "";
-  columnIDs: string[] = ["select", "name", "email"];
+  _groupSearchString: string = "";
+  columnIDs: string[] = ["select", "name", "description"];
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: AddUserDialogData,
-    public dialogRef: MatDialogRef<AddUserDialogComponent>,
-    private _usersService: UsersService
+    public dialogRef: MatDialogRef<AddSubGroupDialogComponent>,
+    private _groupsService: GroupsService
   ) {
-    this._usersService.searchUsers(this._userSearchString);
+    this._groupsService.fetchJoinableGroups();
 
-    this._usersService.searchedUsers$.subscribe(searchedUsers => {
-      this.users.data = searchedUsers;
+    this._groupsService.joinableGroupsChanged$.subscribe(changedGroups => {
+      this.groups.data = this._groupsService.joinableGroups;
     });
   }
 
   ngAfterViewInit() {
-    this.users.sort = this.sort;
+    this.groups.sort = this.sort;
   }
 
   isAllSelected() {
     const numSelected = this.selection.selected.length;
-    const numRows = this.users.data.length;
+    const numRows = this.groups.data.length;
     return numSelected === numRows;
   }
 
@@ -87,23 +89,23 @@ export class AddUserDialogComponent {
       return;
     }
 
-    this.selection.select(...this.users.data);
+    this.selection.select(...this.groups.data);
   }
 
-  checkboxLabel(row?: UserInfo): string {
+  checkboxLabel(row?: UserGroupJoinSummaryInfo): string {
     if (!row) {
       return `${this.isAllSelected() ? "deselect" : "select"} all`;
     }
     return `${this.selection.isSelected(row) ? "deselect" : "select"} user ${row.name}`;
   }
 
-  get userSearchString(): string {
-    return this._userSearchString;
+  get groupSearchString(): string {
+    return this._groupSearchString;
   }
 
-  set userSearchString(value: string) {
-    this._userSearchString = value;
-    this.users.filter = value.trim().toLowerCase();
+  set groupSearchString(value: string) {
+    this._groupSearchString = value;
+    this.groups.filter = value.trim().toLowerCase();
   }
 
   onCancel(): void {
@@ -112,7 +114,7 @@ export class AddUserDialogComponent {
 
   onAccept(): void {
     this.dialogRef.close({
-      userIds: this.selection.selected.map(user => user.id),
+      groupIds: this.selection.selected.map(user => user.id),
       role: this.selectedRole,
     });
   }

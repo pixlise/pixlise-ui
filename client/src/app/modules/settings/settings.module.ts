@@ -2,11 +2,8 @@ import { NgModule } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { RouterModule, Routes } from "@angular/router";
 import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
-import { UserOptionsService } from "./services/user-options.service";
 import { DataCollectionDialogComponent } from "./components/data-collection-dialog/data-collection-dialog.component";
 import { GroupsPageComponent } from "./pages/groups-page/groups-page.component";
-import { GroupsService } from "./services/groups.service";
-import { UsersService } from "./services/users.service";
 import { AddUserDialogComponent } from "./components/add-user-dialog/add-user-dialog.component";
 
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
@@ -21,6 +18,8 @@ import { RequestGroupDialogComponent } from "./components/request-group-dialog/r
 import { MatTableModule } from "@angular/material/table";
 import { MatSortModule } from "@angular/material/sort";
 import { MatCheckboxModule } from "@angular/material/checkbox";
+import { UserGroupMembershipDialogComponent } from "./components/user-group-membership-dialog/user-group-membership-dialog.component";
+import { AddSubGroupDialogComponent } from "./components/add-subgroup-dialog/add-subgroup-dialog.component";
 
 const APP_ROUTES: Routes = [
   {
@@ -34,8 +33,10 @@ const APP_ROUTES: Routes = [
     GroupsPageComponent,
     DataCollectionDialogComponent,
     AddUserDialogComponent,
+    AddSubGroupDialogComponent,
     NewGroupDialogComponent,
     RequestGroupDialogComponent,
+    UserGroupMembershipDialogComponent,
     ImageUploaderDialogComponent,
     UserIconComponent,
   ],
