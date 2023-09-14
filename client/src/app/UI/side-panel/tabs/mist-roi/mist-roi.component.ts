@@ -230,18 +230,34 @@ export class MistROIComponent implements OnInit
                             this._datasetService.loadDatasetFile(subDatasetID).subscribe((subDataSetExperiment) =>
                             {
                                 let subDataSet = new DataSet(subDatasetID, subDataSetExperiment, null);
-
                                 let subDataSetROIs = rois.map((roi) =>
                                 {
-                                    return new ROIItem(
-                                        roi.name,
-                                        roi.locationIndexes.map((locIdx) => subDataSet.pmcToLocationIndex.get(locIdx)),
-                                        roi.description,
-                                        roi.imageName,
-                                        roi.pixelIndexes,
-                                        roi.mistROIItem,
-                                        roi.tags
-                                    );
+                                    let validLocIdxs = [];
+                                    let invalidLocIdxs = [];
+
+                                  Array.from(new Set(roi.locationIndexes)).forEach((pmc) =>
+                                  {
+                                    let subDatasetLocIdx = subDataSet.pmcToLocationIndex.get(pmc);
+                                    if(subDatasetLocIdx !== undefined)
+                                    {
+                                        validLocIdxs.push(subDatasetLocIdx);
+                                    }
+                                    else
+                                    {
+                                        invalidLocIdxs.push(pmc);
+                                    }
+                                  });
+
+
+                                  return new ROIItem(
+                                    roi.name,
+                                    validLocIdxs,
+                                    roi.description,
+                                    roi.imageName,
+                                    roi.pixelIndexes,
+                                    roi.mistROIItem,
+                                    roi.tags
+                                  );
                                 });
 
                                 // Add ROIs without offsets to sub-dataset
