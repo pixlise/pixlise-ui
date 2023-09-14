@@ -5,6 +5,7 @@ import { Subject, ReplaySubject, BehaviorSubject, Observable } from "rxjs";
 
 import { WSMessage } from "../../../generated-protos/websocket";
 import { WSMessageHandler } from "./wsMessageHandler";
+import { randomString } from "src/app/utils/utils";
 
 import * as _m0 from "protobufjs/minimal";
 
@@ -15,8 +16,11 @@ export class APIDataService extends WSMessageHandler {
   private _sendQueue: WSMessage[] = [];
   private _isConnected = false;
 
+  private _id = randomString(6);
+
   constructor(private _apiComms: APICommService) {
     super();
+    console.log(`APIDataService [${this._id}] created`);
     this.connect();
   }
 
@@ -34,17 +38,18 @@ export class APIDataService extends WSMessageHandler {
           // Not sure what we should do at this point...
         },
         complete: () => {
-          console.log("complete"); // Called when connection is closed (for whatever reason).
+          console.log(`APIDataService [${this._id}] connect received complete event`); // Called when connection is closed (for whatever reason).
           // At this point we have to clear subscriptions or something...
         },
       });
   }
 
   private onConnected() {
+    console.log(`APIDataService [${this._id}] onConnected, flushing send queue of ${this._sendQueue.length} items`);
     this._isConnected = true;
 
     // Send everything in the queue
-    for (let msg of this._sendQueue) {
+    for (const msg of this._sendQueue) {
       this._apiComms.send(msg);
     }
 
@@ -59,6 +64,8 @@ export class APIDataService extends WSMessageHandler {
   protected sendRequest(wsmsg: WSMessage): void {
     // If we're not yet connected, queue this up
     if (!this._isConnected) {
+      const jsonMsg = WSMessage.toJSON(wsmsg);
+      console.log(`APIDataService [${this._id}] sendRequest while not yet connected. Queued up: ${JSON.stringify(jsonMsg)}`);
       this._sendQueue.push(wsmsg);
     } else {
       this._apiComms.send(wsmsg);
@@ -70,7 +77,7 @@ export class APIDataService extends WSMessageHandler {
     // upd subject
     if (!this.dispatchResponse(wsmsg)) {
       if (!this.dispatchUpdate(wsmsg)) {
-        console.error("Failed to dispatch message: " + JSON.stringify(WSMessage.toJSON(wsmsg), null, 4));
+        console.error(`APIDataService [${this._id}] Failed to dispatch message: ` + JSON.stringify(WSMessage.toJSON(wsmsg), null, 4));
       }
     }
   }

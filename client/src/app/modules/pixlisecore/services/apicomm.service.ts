@@ -1,4 +1,4 @@
-import { Injectable } from "@angular/core";
+import { Injectable, OnDestroy } from "@angular/core";
 import { HttpClient, HttpErrorResponse, HttpEventType } from "@angular/common/http";
 import { webSocket, WebSocketSubject } from "rxjs/webSocket";
 
@@ -9,22 +9,28 @@ import { environment } from "src/environments/environment";
 import { WSMessage } from "../../../generated-protos/websocket";
 import { BeginWSConnectionResponse } from "../../../generated-protos/restmsgs";
 import { APIPaths } from "src/app/utils/api-helpers";
+import { randomString } from "src/app/utils/utils";
 
 @Injectable({
   providedIn: "root",
 })
-export class APICommService {
+export class APICommService implements OnDestroy {
   connection$: WebSocketSubject<any> | null = null;
   WS_RETRY_ATTEMPTS = 30;
   WS_RETRY_DELAY_MS = 2000;
 
-  constructor(private http: HttpClient) {}
+  private _id = randomString(6);
+
+  constructor(private http: HttpClient) {
+    console.log(`APICommService [${this._id}] created`);
+  }
 
   ngOnDestroy() {
     this.closeConnection();
   }
 
   private beginConnect(apiUrl: string): Observable<string> {
+    console.log(`APICommService [${this._id}] beginConnect`);
     return this.http.get<ArrayBuffer>(apiUrl + "ws-connect", { responseType: "arraybuffer" as "json" }).pipe(
       map((resp: ArrayBuffer) => {
         const arr = new Uint8Array(resp);
@@ -32,7 +38,7 @@ export class APICommService {
         return res.connToken;
       }),
       catchError((err)=>{
-        console.log(err);
+        console.error(`APICommService [${this._id}] beginConnect error: ${err}`);
         throw err;
       })
     );
@@ -43,16 +49,16 @@ export class APICommService {
       return this.connection$;
     }
 
-    let apiUrl = APIPaths.apiURL;
+    const apiUrl = APIPaths.apiURL;
     // https becomes wws, http becomes ws
-    let wsUrl = apiUrl.replace(/^http/, "ws");
+    const wsUrl = apiUrl.replace(/^http/, "ws");
 
     return this.beginConnect(apiUrl).pipe(
       switchMap((connectToken: string) => {
-        wsUrl += "ws?token=" + connectToken;
+        const urlWithToken = wsUrl + "ws?token=" + connectToken;
 
         this.connection$ = webSocket({
-          url: wsUrl,
+          url: urlWithToken,
           binaryType: "arraybuffer",
           // Decode all messages as protobuf WSMessage
           deserializer: msg => {
@@ -61,21 +67,20 @@ export class APICommService {
             return res;
           },
           serializer: (msg: WSMessage) => {
-            let writer = WSMessage.encode(msg);
-            let bytes = writer.finish();
-            let sendbuf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+            const writer = WSMessage.encode(msg);
+            const bytes = writer.finish();
+            const sendbuf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
             return sendbuf;
           },
           openObserver: {
             next: () => {
-              console.log("Websocket connected");
-
+              console.log(`APICommService [${this._id}] beginConnect: CONNECTED`);
               connectEvent();
             },
           },
           closeObserver: {
             next: () => {
-              console.log("Websocket closed");
+              console.log(`APICommService [${this._id}] beginConnect: Websocket Closed`);
               this.connection$ = null;
               //this.connect({ reconnect: true });
             },
@@ -90,7 +95,7 @@ export class APICommService {
 
   send(wsmsg: WSMessage) {
     if (!this.connection$) {
-      console.error("No connection: Cannot send data via web socket!");
+      console.error(`APICommService [${this._id}] send: No connection - cannot send data via web socket!`);
       return;
     }
 
