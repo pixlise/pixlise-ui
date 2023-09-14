@@ -127,14 +127,17 @@ export class MistRoiUploadComponent implements OnInit
                 if(this.includesMultipleDatasets)
                 {
 
-                    let datasetID = rawItem?.DatasetID || this.data.datasetID;
+                    let datasetID = rawItem?.DatasetID;
                     let datasetItems = this.mistROIsByDatasetID.get(datasetID);
                     if(datasetItems)
                     {
                         let existingMistIndex = datasetItems.findIndex((item) => item.mistROIItem.ClassificationTrail === rawItem.ClassificationTrail);
                         if(existingMistIndex >= 0)
                         {
-                            datasetItems[existingMistIndex].locationIndexes.push(rawItem.PMC);
+                            if(!datasetItems[existingMistIndex].locationIndexes.includes(rawItem.PMC))
+                            {
+                                datasetItems[existingMistIndex].locationIndexes.push(rawItem.PMC);
+                            }
                         }
                         else
                         {
@@ -143,7 +146,14 @@ export class MistRoiUploadComponent implements OnInit
                     }
                     else
                     {
-                        this.mistROIsByDatasetID.set(datasetID, [items[existingIndex]]);
+                        this.mistROIsByDatasetID.set(datasetID, [new ROIItem(
+                            items[existingIndex].name,
+                            [rawItem.PMC],
+                            rawItem.ClassificationTrail,
+                            null,
+                            null,
+                            items[existingIndex].mistROIItem
+                        )]);
                     }
                 }
             }
@@ -180,7 +190,24 @@ export class MistRoiUploadComponent implements OnInit
                     {
                         this.mistROIsByDatasetID.set(datasetID, []);
                     }
-                    this.mistROIsByDatasetID.get(datasetID).push(mistROI);
+                    this.mistROIsByDatasetID
+                      .get(datasetID)
+                      .push(
+                        new ROIItem(
+                          `mist__roi.${existingName ? rawItem.ClassificationTrail : name}`,
+                          [rawItem.PMC],
+                          rawItem.ClassificationTrail,
+                          null,
+                          null,
+                          new MistROIItem(
+                            rawItem.species,
+                            mineralGroupID,
+                            rawItem.ID_Depth,
+                            rawItem.ClassificationTrail,
+                            rawItem.formula
+                          )
+                        )
+                      );
                 }
             }
         }
