@@ -29,25 +29,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Injectable } from "@angular/core";
-import { ReplaySubject, Subject, Subscription, Observable, combineLatest, of, concatMap } from "rxjs";
-import { map, catchError, tap } from "rxjs/operators";
+import { Observable, combineLatest, of, concatMap, mergeMap } from "rxjs";
+import { map, catchError } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
-import { ExpressionRunnerService } from "src/app/services/expression-runner.service";
-import { ObjectCreator, SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
-import { DataSet } from "src/app/models/DataSet";
-import { QuantificationLayer } from "src/app/models/Quantifications";
-import { MistROIItem, PredefinedROIID, ROIItem, ROISavedItem } from "src/app/models/roi";
+import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { DataExpressionService } from "src/app/services/data-expression.service";
-import { DataSetService } from "src/app/services/data-set.service";
-import { DiffractionPeakService } from "src/app/services/diffraction-peak.service";
-import { QuantificationService, ZStackItem } from "src/app/services/quantification.service";
-import { ROIService } from "src/app/services/roi.service";
-import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
-import { ViewState, ViewStateService } from "src/app/services/view-state.service";
-import { RGBA } from "src/app/utils/colours";
-import { httpErrorToString, randomString, SentryHelper } from "src/app/utils/utils";
-import { environment } from "src/environments/environment";
+import { httpErrorToString, SentryHelper } from "src/app/utils/utils";
 import { APIDataService } from "./apidata.service";
 import { ExpressionGetReq, ExpressionGetResp, ExpressionWriteExecStatReq } from "src/app/generated-protos/expression-msgs";
 import { DataExpression } from "src/app/generated-protos/expressions";
@@ -57,8 +44,7 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { DataQuerier, EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 import { ExpressionDataSource } from "../models/expression-data-source";
 import { InterpreterDataSource } from "src/app/expression-language/interpreter-data-source";
-
-
+import { RegionSettings, RegionSettingsService } from "./region-settings.service";
 
 export enum DataUnit {
     //UNIT_WEIGHT_PCT,
@@ -91,6 +77,8 @@ export class RegionDataResultItem {
         public errorType: WidgetDataErrorType,
         public error: string,
         public warning: string,
+        public expression: DataExpression | null,
+        public region: RegionSettings | null,
         public query: DataSourceParams,
         public isPMCTable: boolean = true,
     ) {
@@ -132,16 +120,8 @@ export class WidgetDataService
     //private _resultCache: QueryResultCache = new QueryResultCache(environment.expressionResultCacheThresholdMs, 60000, 10000);
 
     constructor(
-        private _dataService: APIDataService
-        /*
-        private _roiService: ROIService,
-        private _selectionService: SelectionService,
-        private _viewStateService: ViewStateService,
-        private _exprService: DataExpressionService,
-        private _datasetService: DataSetService,
-        private _quantService: QuantificationService,
-        private _diffractionService: DiffractionPeakService,
-        private _exprRunnerService: ExpressionRunnerService,*/
+        private _dataService: APIDataService,
+        private _regionSettings: RegionSettingsService
     ) {
     }
 
@@ -188,9 +168,19 @@ export class WidgetDataService
                     }
 
                     return this.runExpression(resp.expression, query.scanId, query.quantId, query.roiId, allowAnyResponse).pipe(
+                        mergeMap(
+                            (result: DataQueryResult)=> {
+                                return this._regionSettings.getRegionSettings(query.roiId).pipe(
+                                    map((roiSettings: RegionSettings)=> {
+                                        result.region = roiSettings;
+                                        return result;
+                                    })
+                                );
+                            }
+                        ),
                         catchError(
                             (err)=> {
-                                const errorMsg = httpErrorToString(err, "WidgetDataService.getData catchError");
+                                const errorMsg = httpErrorToString(err, "WidgetDataService.getDataSingle catchError");
 
                                 // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
                                 if(
@@ -260,9 +250,11 @@ export class WidgetDataService
                                                     runtimeMs: queryResult.runtimeMs
                                                     // timeStampUnixSec - filled out by API
                                                 }
-                                            })).subscribe(); // we don't really do anything different if this passes or fails
+                                            })).subscribe({error: err=>{console.error(err)}}); // we don't really do anything different if this passes or fails
             
-                                            // Return the results, but filter for PMCs requested, if need be
+                                            // Add the other stuff we loaded along the way
+                                            queryResult.expression = expression;
+
                                             return queryResult;
                                         }
                                     )
@@ -357,6 +349,8 @@ export class WidgetDataService
                 WidgetDataErrorType.WERR_QUERY,
                 "Result is not a PMC array!",
                 "", // warning
+                result.expression,
+                result.region,
                 query,
                 false
             );
@@ -378,6 +372,8 @@ export class WidgetDataService
             WidgetDataErrorType.WERR_NONE,
             "", // error
             unitConverted.warning,
+            result.expression,
+            result.region,
             query
         );
 

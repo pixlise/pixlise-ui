@@ -44,6 +44,10 @@ export { APICommService } from "./services/apicomm.service";
 export { APIDataService } from "./services/apidata.service";
 export { HttpInterceptorService } from "./services/http-interceptor.service";
 export { SnackbarService } from "./services/snackbar.service";
+export { WidgetDataService, DataSourceParams, RegionDataResults, RegionDataResultItem, DataUnit } from "./services/widget-data.service";
+export { WidgetKeyItem } from "./models/widget-key-item";
+export { SelectionService } from "./services/selection.service";
+export { ExpressionValue, ExpressionReference, ExpressionReferences } from "./models/expression-references";
 
 @NgModule({
   declarations: [

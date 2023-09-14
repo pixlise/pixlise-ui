@@ -67,15 +67,7 @@ export class PixliseDataQuerier {
       console.log(">>> PIXLISE expression took: " + runtimeMs.toLocaleString() + "ms");
 
       return of(
-        new DataQueryResult(
-          result as PMCDataValues,
-          true,
-          Array.from(this._runtimeDataRequired.keys()),
-          runtimeMs,
-          "",
-          "",
-          new Map<string, PMCDataValues>()
-        )
+        new DataQueryResult(result as PMCDataValues, true, Array.from(this._runtimeDataRequired.keys()), runtimeMs, "", "", new Map<string, PMCDataValues>())
       );
     }
 
@@ -124,9 +116,7 @@ export class PixliseDataQuerier {
         if (expressionLine.length > 0) {
           // We found line(s) that didn't contain = then they did again
           throw new Error(
-            "Line " +
-              (c + 1) +
-              ": Detected unexpected variable declaration. Expressions should end in a statement which can be split over lines for readability."
+            "Line " + (c + 1) + ": Detected unexpected variable declaration. Expressions should end in a statement which can be split over lines for readability."
           );
         }
 

@@ -28,12 +28,7 @@ import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { DiffractionPeakManualListReq, DiffractionPeakManualListResp } from "src/app/generated-protos/diffraction-manual-msgs";
 
 export class ExpressionDataSource
-  implements
-    DiffractionPeakQuerierSource,
-    HousekeepingDataQuerierSource,
-    PseudoIntensityDataQuerierSource,
-    QuantifiedDataQuerierSource,
-    SpectrumDataQuerierSource
+  implements DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
 {
   private _scanEntryIndexesRequested: number[] = [];
 
@@ -71,13 +66,7 @@ export class ExpressionDataSource
   private _eVCalibrationDetector = "A";
 
   // Here we get the data required to honor the interfaces we implement, based on the above
-  prepare(
-    dataService: APIDataService,
-    scanId: string,
-    quantId: string,
-    roiId: string,
-    spectrumEnergyCalibration: SpectrumEnergyCalibration[]
-  ): Observable<void> {
+  prepare(dataService: APIDataService, scanId: string, quantId: string, roiId: string, spectrumEnergyCalibration: SpectrumEnergyCalibration[]): Observable<void> {
     if (roiId == PredefinedROIID.SelectedPoints || roiId == PredefinedROIID.RemainingPoints) {
       throw new Error("Cannot ExpressionDataSource with roiId: " + roiId);
     }
@@ -136,19 +125,11 @@ export class ExpressionDataSource
         // We have the indexes, request all the other data we need
         return combineLatest([
           dataService.sendQuantGetRequest(QuantGetReq.create({ quantId: quantId, summaryOnly: false })),
-          dataService.sendScanBeamLocationsRequest(
-            ScanBeamLocationsReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })
-          ),
-          dataService.sendScanEntryMetadataRequest(
-            ScanEntryMetadataReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })
-          ),
+          dataService.sendScanBeamLocationsRequest(ScanBeamLocationsReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })),
+          dataService.sendScanEntryMetadataRequest(ScanEntryMetadataReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })),
           // NOTE: We need ALL spectra because the functions that access this sum across all spectra
-          dataService.sendSpectrumRequest(
-            SpectrumReq.create({ scanId: scanId /*, entries: ScanEntryRange.create({ indexes: encodedIndexes })*/ })
-          ),
-          dataService.sendPseudoIntensityRequest(
-            PseudoIntensityReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })
-          ),
+          dataService.sendSpectrumRequest(SpectrumReq.create({ scanId: scanId /*, entries: ScanEntryRange.create({ indexes: encodedIndexes })*/ })),
+          dataService.sendPseudoIntensityRequest(PseudoIntensityReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })),
           dataService.sendDetectedDiffractionPeaksRequest(
             DetectedDiffractionPeaksReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })
           ),
@@ -425,13 +406,7 @@ export class ExpressionDataSource
     return PMCDataValues.makeWithValues(data);
   }
 
-  private getQuantifiedDataValues(
-    quantData: Quantification,
-    detectorId: string,
-    colIdx: number,
-    mult: number | null,
-    isPctColumn: boolean
-  ): PMCDataValue[] {
+  private getQuantifiedDataValues(quantData: Quantification, detectorId: string, colIdx: number, mult: number | null, isPctColumn: boolean): PMCDataValue[] {
     const resultData: PMCDataValue[] = [];
     let detectorFound = false;
     const detectors: Set<string> = new Set<string>(this.getDetectors());

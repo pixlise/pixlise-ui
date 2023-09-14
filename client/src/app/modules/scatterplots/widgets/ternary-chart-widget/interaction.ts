@@ -14,7 +14,7 @@ import { HOVER_POINT_RADIUS } from "src/app/utils/drawing";
 import { SentryHelper } from "src/app/utils/utils";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
-import { SelectionService } from "src/app/modules/pixlisecore/services/selection.service";
+import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 const DRAG_THRESHOLD = 2; // how many pixels mouse can drift before we assume we're drawing a lasso
 
@@ -40,9 +40,7 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
   }
 
   mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
-    if (!this._mdl.drawModel) {
-      this._mdl.recalcDisplayData(event.canvasParams);
-    }
+    this._mdl.recalcDisplayDataIfNeeded(event.canvasParams);
 
     /*if (event.eventId == CanvasMouseEventId.MOUSE_DOWN) {
     } else*/ if (event.eventId == CanvasMouseEventId.MOUSE_DRAG) {

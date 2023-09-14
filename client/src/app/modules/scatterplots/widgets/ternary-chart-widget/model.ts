@@ -12,9 +12,12 @@ import {
 import { PanRestrictorToCanvas, PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
 import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
 import { Point, PointWithRayLabel, Rect, scaleVector } from "src/app/models/Geometry";
-import { RGBA } from "src/app/utils/colours";
+import { Colours, RGBA } from "src/app/utils/colours";
 import { degToRad } from "src/app/utils/utils";
 import { CANVAS_FONT_SIZE_TITLE, PLOT_POINTS_SIZE, HOVER_POINT_RADIUS } from "src/app/utils/drawing";
+import { ExpressionReferences, RegionDataResultItem, RegionDataResults, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { PMCDataValues } from "src/app/expression-language/data-values";
 
 export class TernaryChartModel implements CanvasDrawNotifier {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -62,10 +65,18 @@ export class TernaryChartModel implements CanvasDrawNotifier {
   cursorShown: string = CursorId.defaultPointer;
   mouseLassoPoints: Point[] = [];
 
+  keyItems: WidgetKeyItem[] = [];
+  expressionsMissingPMCs: string = "";
+
+  private _references: string[] = [];
+
+  private _lastCalcCanvasParams: CanvasParams | null = null;
+  private _recalcNeeded = true;
+/*
   set raw(r: TernaryData) {
     this._raw = r;
   }
-
+*/
   get raw(): TernaryData | null {
     return this._raw;
   }
@@ -74,8 +85,209 @@ export class TernaryChartModel implements CanvasDrawNotifier {
     return this._drawModel;
   }
 
-  recalcDisplayData(canvasParams: CanvasParams): void {
-    this._drawModel.regenerate(this._raw, canvasParams);
+  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): void {
+    // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
+    if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
+      this._drawModel.regenerate(this._raw, canvasParams);
+      this._lastCalcCanvasParams = canvasParams;
+      this._recalcNeeded = false;
+    }
+  }
+
+  setData(data: RegionDataResults) {
+    const t0 = performance.now();
+
+    const corners: TernaryCorner[] = [
+      new TernaryCorner("", "", "", new MinMax()),
+      new TernaryCorner("", "", "", new MinMax()),
+      new TernaryCorner("", "", "", new MinMax()),
+    ];
+
+    this.keyItems = [];
+    this.expressionsMissingPMCs = "";
+
+    this.processQueryResult(t0, [this.expressionIdA, this.expressionIdB, this.expressionIdC], data, corners);
+    this._recalcNeeded = true;
+  }
+
+  private processQueryResult(t0: number, exprIds: string[], queryData: RegionDataResults, corners: TernaryCorner[]) {
+    const pointGroups: TernaryDataColour[] = [];
+    const pmcLookup: Map<number, TernaryPlotPointIndex> = new Map<number, TernaryPlotPointIndex>();
+
+    const queryWarnings: string[] = [];
+
+    for (let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx += exprIds.length) {
+      // Set up storage for our data first
+      const roiId = queryData.queryResults[queryIdx].query.roiId;
+
+      const region = queryData.queryResults[queryIdx].region;
+      if (!region || !region.colour) {
+        if (!region) {
+          console.log("Ternary failed to find region: " + roiId + ". Skipped.");
+        }
+
+        continue;
+      }
+
+      const pointGroup: TernaryDataColour = new TernaryDataColour(RGBA.fromWithA(region.colour, 1), region.shape, []);
+
+      // Filter out PMCs that don't exist in the data for all 3 corners
+      const toFilter: PMCDataValues[] = [];
+      for (let c = 0; c < exprIds.length; c++) {
+        toFilter.push(queryData.queryResults[queryIdx + c].values);
+
+        if (queryData.queryResults[queryIdx + c].warning) {
+          queryWarnings.push(queryData.queryResults[queryIdx + c].warning);
+        }
+      }
+
+      const filteredValues = PMCDataValues.filterToCommonPMCsOnly(toFilter);
+
+      // Read for each expression
+      for (let c = 0; c < exprIds.length; c++) {
+        // Did we find an error with this query?
+        if (queryData.queryResults[queryIdx + c].error) {
+          corners[c].errorMsgShort = queryData.queryResults[queryIdx + c].errorType || "";
+          corners[c].errorMsgLong = queryData.queryResults[queryIdx + c].error || "";
+
+          console.log(
+            "Ternary encountered error with expression: " + exprIds[c] + ", on region: " + roiId + ", corner: " + (c == 0 ? "left" : c == 1 ? "top" : "right")
+          );
+          continue;
+        }
+
+        const roiValues: PMCDataValues | null = filteredValues[c];
+
+        // Update corner min/max
+        if (roiValues) {
+          corners[c].valueRange.expandByMinMax(roiValues.valueRange);
+
+          // Store the A/B/C values
+          for (let i = 0; i < roiValues.values.length; i++) {
+            const value = roiValues.values[i];
+
+            // Save it in A, B or C - A also is creating the value...
+            if (c == 0) {
+              pointGroup.values.push(new TernaryDataItem(value.pmc, value.value, 0, 0));
+            } else {
+              // Ensure we're writing to the right PMC
+              // Should always be the right order because we run 3 queries with the same ROI
+              if (pointGroup.values[i].pmc != value.pmc) {
+                throw new Error("Received PMCs in unexpected order for ternary corner: " + c + ", got PMC: " + value.pmc + ", expected: " + pointGroup.values[i].pmc);
+              }
+
+              if (c == 1) {
+                pointGroup.values[i].b = value.value;
+              } // exprIds is an array of 3 so can only be: if(c == 2)
+              else {
+                pointGroup.values[i].c = value.value;
+              }
+            }
+          }
+        }
+      }
+
+      // Add to key too. We only specify an ID if it can be brought to front - all points & selection
+      // are fixed in their draw order, so don't supply for those
+      let roiIdForKey = region.region.id;
+      if (PredefinedROIID.isPredefined(roiIdForKey)) {
+        roiIdForKey = "";
+      }
+
+      this.keyItems.push(new WidgetKeyItem(roiIdForKey, region.region.name, region.colour, [], region.shape));
+
+      for (let c = 0; c < pointGroup.values.length; c++) {
+        pmcLookup.set(pointGroup.values[c].pmc, new TernaryPlotPointIndex(pointGroups.length, c));
+      }
+
+      if (pointGroup.values.length > 0) {
+        pointGroups.push(pointGroup);
+      }
+    }
+
+    this.assignQueryResult(t0, pointGroups, corners, pmcLookup, queryWarnings);
+  }
+
+  private assignEmptyQuery(t0: number, corners: TernaryCorner[]) {
+    this.assignQueryResult(t0, [], corners, new Map<number, TernaryPlotPointIndex>(), []);
+  }
+
+  private assignQueryResult(
+    t0: number,
+    pointGroups: TernaryDataColour[] = [],
+    corners: TernaryCorner[],
+    pmcLookup: Map<number, TernaryPlotPointIndex>,
+    queryWarnings: string[]
+  ) {
+    if (this._references.length > 0) {
+      const pointGroup: TernaryDataColour = new TernaryDataColour(Colours.CONTEXT_PURPLE, "circle", []);
+
+      this._references.forEach((referenceName, i) => {
+        const reference = ExpressionReferences.getByName(referenceName);
+
+        if (!reference) {
+          console.error(`TernaryPlot prepareData: Couldn't find reference ${referenceName}`);
+          return;
+        }
+
+        let refAValue = ExpressionReferences.getExpressionValue(reference, this.expressionIdA)?.weightPercentage;
+        let refBValue = ExpressionReferences.getExpressionValue(reference, this.expressionIdB)?.weightPercentage;
+        let refCValue = ExpressionReferences.getExpressionValue(reference, this.expressionIdC)?.weightPercentage;
+        const nullMask = [refAValue == null, refBValue == null, refCValue == null];
+
+        // If we have more than one null value, we can't plot this reference on a ternary plot
+        if (nullMask.filter(isNull => isNull).length > 1) {
+          console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this.expressionIdA},${this.expressionIdB},${this.expressionIdC} values`);
+          return;
+        }
+
+        if (refAValue == null) {
+          refAValue = 0;
+          console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this.expressionIdA} value`);
+        }
+        if (refBValue == null) {
+          refBValue = 0;
+          console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this.expressionIdB} value`);
+        }
+        if (refCValue == null) {
+          refCValue = 0;
+          console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this.expressionIdC} value`);
+        }
+
+        // We don't have a PMC for these, so -10 and below are now reserverd for reference values
+        const referenceIndex = ExpressionReferences.references.findIndex(ref => ref.name === referenceName);
+        const id = -10 - referenceIndex;
+
+        pointGroup.values.push(new TernaryDataItem(id, refAValue, refBValue, refCValue, referenceName, nullMask));
+        pmcLookup.set(id, new TernaryPlotPointIndex(this._references.length, i));
+      });
+
+      pointGroups.push(pointGroup);
+      this.keyItems.push(new WidgetKeyItem("references", "Ref Points", Colours.CONTEXT_PURPLE, [], "circle"));
+    }
+
+    if (queryWarnings.length > 0) {
+      this.expressionsMissingPMCs = queryWarnings.join("\n");
+    }
+
+    // If we had all points defined, add to the key. This is done here because the actual
+    // dataByRegion array would contain 2 of the same IDs if all points is turned on - one
+    // for all points, one for selection... so if we did it in the above loop we'd double up
+    /*        if(hadAllPoints)
+      {
+          this.keyItems.unshift(new KeyItem(ViewStateService.SelectedPointsLabel, ViewStateService.SelectedPointsColour));
+          this.keyItems.unshift(new KeyItem(ViewStateService.AllPointsLabel, ViewStateService.AllPointsColour));
+      }
+*/
+    const ternaryData = new TernaryData(corners[0], corners[1], corners[2], pointGroups, pmcLookup, this.roiIds);
+
+    this._raw = ternaryData;
+
+    const t1 = performance.now();
+    this.needsDraw$.next();
+    const t2 = performance.now();
+
+    console.log("  Ternary prepareData took: " + (t1 - t0).toLocaleString() + "ms, needsDraw$ took: " + (t2 - t1).toLocaleString() + "ms");
   }
 }
 
@@ -148,8 +360,8 @@ export class TernaryDrawModel {
     this.triangleC = new Point(canvasParams.width / 2, triangleTop);
     //console.log('A:'+this.triangleA.x+','+this.triangleA.y+' B:'+this.triangleB.x+','+this.triangleB.y+' C:'+this.triangleC.x+','+this.triangleC.y+' w='+this.triangleWidth+', h='+this.triangleHeight);
     // Make sure the labels end up in the right place!
-    let labelAreaW = canvasParams.width * 0.4;
-    let bottomLabelY = canvasParams.height - (TernaryChartModel.FONT_SIZE + TernaryChartModel.LABEL_PADDING);
+    const labelAreaW = canvasParams.width * 0.4;
+    const bottomLabelY = canvasParams.height - (TernaryChartModel.FONT_SIZE + TernaryChartModel.LABEL_PADDING);
     this.labelA = new Rect(xLabelOffset - labelAreaW / 2, bottomLabelY, labelAreaW, TernaryChartModel.SWAP_BUTTON_SIZE);
     this.labelB = new Rect(canvasParams.width - xLabelOffset - labelAreaW / 2, bottomLabelY, labelAreaW, TernaryChartModel.SWAP_BUTTON_SIZE);
     this.labelC = new Rect(
@@ -163,7 +375,7 @@ export class TernaryDrawModel {
     if (this.labelA.x < 0) {
       this.labelA.x = 0;
     }
-    let rightOffset = this.labelB.maxX() - canvasParams.width;
+    const rightOffset = this.labelB.maxX() - canvasParams.width;
     if (rightOffset > 0) {
       this.labelB.x -= rightOffset;
     }
@@ -176,10 +388,10 @@ export class TernaryDrawModel {
 
     // Calculate data coordinates
     // We have to pad the drawn triangle based on point sizes we draw
-    let dataPadding = Math.max(PLOT_POINTS_SIZE, HOVER_POINT_RADIUS) * 2;
+    const dataPadding = Math.max(PLOT_POINTS_SIZE, HOVER_POINT_RADIUS) * 2;
     // This padding is applied into the corners of the triangle, differs in X and Y:
-    let dataPaddingX = Math.cos(degToRad(30)) * dataPadding;
-    let dataPaddingY = Math.sin(degToRad(30)) * dataPadding;
+    const dataPaddingX = Math.cos(degToRad(30)) * dataPadding;
+    const dataPaddingY = Math.sin(degToRad(30)) * dataPadding;
 
     this.dataAreaA = new Point(this.triangleA.x + dataPaddingX, this.triangleA.y - dataPaddingY);
     this.dataAreaWidth = this.triangleB.x - this.triangleA.x - dataPaddingX * 2;

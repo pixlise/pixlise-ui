@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Observable, combineLatest } from "rxjs";
+import { Observable, combineLatest, of } from "rxjs";
 import { PixliseDataQuerier } from "./interpret-pixlise";
 import { LuaDataQuerier } from "./interpret-lua";
 import { PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
@@ -41,19 +41,13 @@ export class ResultComparer {
   ) {}
 
   // Returns -1 if they are the same
-  findDifferenceLine(
-    exprLua: string,
-    modulesLua: Map<string, string>,
-    exprPIXLISE: string,
-    afterLine: number,
-    dataSource: InterpreterDataSource
-  ): number {
+  findDifferenceLine(exprLua: string, modulesLua: Map<string, string>, exprPIXLISE: string, afterLine: number, dataSource: InterpreterDataSource): number {
     let result = -1; // No difference found
 
     // Run each expression up to the line we're checking, take the variable and check the maps generated
     // so we can stop when they differ
-    let exprLuaLines = exprLua.split("\n");
-    let exprPIXLISELines = exprPIXLISE.split("\n");
+    const exprLuaLines = exprLua.split("\n");
+    const exprPIXLISELines = exprPIXLISE.split("\n");
     if (exprLuaLines.length != exprPIXLISELines.length) {
       throw new Error("Expression line lengths didn't match");
     }
@@ -61,12 +55,12 @@ export class ResultComparer {
     let exprLuaRan = "";
     let exprPIXLISERan = "";
 
-    let lineResultsLua = new Map<string, PMCDataValues>();
-    let lineResultsPIXLISE = new Map<string, PMCDataValues>();
+    const lineResultsLua = new Map<string, PMCDataValues>();
+    const lineResultsPIXLISE = new Map<string, PMCDataValues>();
 
     for (let c = 0; c < exprLuaLines.length; c++) {
-      let luaParts = this.splitLine(exprLuaLines[c], "--");
-      let pixParts = this.splitLine(exprPIXLISELines[c], "//");
+      const luaParts = this.splitLine(exprLuaLines[c], "--");
+      const pixParts = this.splitLine(exprPIXLISELines[c], "//");
 
       if (luaParts.length != pixParts.length) {
         throw new Error("Expressions differ on line: " + (c + 1));
@@ -87,13 +81,13 @@ export class ResultComparer {
         let exprPIXLISEToRun = this.appendTo(exprPIXLISERan, exprPIXLISELines[c]);
         exprPIXLISEToRun += "\n" + pixParts[0];
 
-        let luaResult$ = this.runLua(exprLuaToRun, modulesLua, dataSource);
-        let pixResult$ = this.runPIXLISE(exprPIXLISEToRun, dataSource);
+        const luaResult$ = this.runLua(exprLuaToRun, modulesLua, dataSource);
+        const pixResult$ = this.runPIXLISE(exprPIXLISEToRun, dataSource);
 
-        let allResults$ = combineLatest([luaResult$, pixResult$]);
+        const allResults$ = combineLatest([luaResult$, pixResult$]);
         allResults$.subscribe(results => {
-          let luaResult = results[0];
-          let pixResult = results[1];
+          const luaResult = results[0];
+          const pixResult = results[1];
 
           if (!this.isEqual(luaResult.resultValues, pixResult.resultValues)) {
             console.log("PIXLISE line: " + exprLuaLines[c]);
@@ -104,10 +98,10 @@ export class ResultComparer {
             console.log(luaResult);
 
             // Run them again so we can step through it in the debugger
-            let luaResult2$ = this.runLua(exprLuaToRun, modulesLua, dataSource);
-            let pixResult2$ = this.runPIXLISE(exprPIXLISEToRun, dataSource);
+            const luaResult2$ = this.runLua(exprLuaToRun, modulesLua, dataSource);
+            const pixResult2$ = this.runPIXLISE(exprPIXLISEToRun, dataSource);
 
-            let allResults$ = combineLatest([luaResult2$, pixResult2$]);
+            const allResults$ = combineLatest([luaResult2$, pixResult2$]);
             allResults$.subscribe(results => {});
 
             if (result < 0) {
@@ -130,12 +124,12 @@ export class ResultComparer {
 
     // Final check
     if (result == -1 && exprLuaLines.length >= afterLine) {
-      let luaResultFinal$ = this.runLua(exprLua, modulesLua, dataSource);
-      let pixResultFinal$ = this.runPIXLISE(exprPIXLISE, dataSource);
+      const luaResultFinal$ = this.runLua(exprLua, modulesLua, dataSource);
+      const pixResultFinal$ = this.runPIXLISE(exprPIXLISE, dataSource);
 
-      let allResults$ = combineLatest([luaResultFinal$, pixResultFinal$]);
+      const allResults$ = combineLatest([luaResultFinal$, pixResultFinal$]);
       allResults$.subscribe(results => {
-        if (!this.isEqual(results[0].resultValues, results[1].resultValues)) {
+        if (results !== null && !this.isEqual(results[0].resultValues, results[1].resultValues)) {
           console.log("Expression final values differ!");
           result = exprLuaLines.length - 1;
         }
@@ -149,32 +143,30 @@ export class ResultComparer {
     return result;
   }
 
-  private runLua(expression: string, modules: Map<string, string>, dataSource: InterpreterDataSource): Observable<DataQueryResult> {
-    let luaResult: Observable<DataQueryResult> = null;
-
+  private runLua(expression: string, modules: Map<string, string>, dataSource: InterpreterDataSource): Observable<DataQueryResult | null> {
     try {
-      luaResult = this._interpretLua.runQuery(expression, modules, dataSource, false, false, false);
-    } catch (err) {
-      if (!err.message.startsWith("Table expected to have arrays")) {
+      return this._interpretLua.runQuery(expression, modules, dataSource, false, false, false);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message.startsWith("Table expected to have arrays")) {
         throw err;
       }
     }
 
-    return luaResult;
+    // Shut up compiler
+    return of(null);
   }
 
-  private runPIXLISE(expression: string, dataSource: InterpreterDataSource): Observable<DataQueryResult> | null {
-    let pixResult: Observable<DataQueryResult> | null = null;
-
+  private runPIXLISE(expression: string, dataSource: InterpreterDataSource): Observable<DataQueryResult | null> {
     try {
-      pixResult = this._interpretPixlise.runQuery(expression, dataSource);
+      return this._interpretPixlise.runQuery(expression, dataSource);
     } catch (err) {
-      if (err.message.indexOf("did not result in usable map data") < 0) {
+      if (err instanceof Error && err.message.indexOf("did not result in usable map data") < 0) {
         throw err;
       }
     }
 
-    return pixResult;
+    // Shut up compiler
+    return of(null);
   }
 
   private splitLine(line: string, commentStart: string): string[] {
@@ -204,7 +196,15 @@ export class ResultComparer {
     return result;
   }
 
-  private isEqual(a: PMCDataValues, b: PMCDataValues): boolean {
+  private isEqual(a: PMCDataValues | null, b: PMCDataValues | null): boolean {
+    if (a == null && b == null) {
+      return true;
+    }
+
+    if (a == null || b == null) {
+      return false;
+    }
+
     if (a.values.length != b.values.length) {
       return false;
     }

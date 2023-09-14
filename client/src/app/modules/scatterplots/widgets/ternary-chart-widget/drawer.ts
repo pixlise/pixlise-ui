@@ -26,16 +26,10 @@ export class TernaryChartDrawer implements CanvasDrawer {
   public showSwapButton: boolean = true;
   public lightMode: boolean = false;
 
-  protected _lastCalcCanvasParams: CanvasParams | null = null;
-
   constructor(private _mdl: TernaryChartModel) {}
 
   drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
-    // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
-    if (!this._mdl.drawModel || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(drawParams.drawViewport)) {
-      this._mdl.recalcDisplayData(drawParams.drawViewport);
-      this._lastCalcCanvasParams = drawParams.drawViewport;
-    }
+    this._mdl.recalcDisplayDataIfNeeded(drawParams.drawViewport);
 
     screenContext.textAlign = "left";
     screenContext.textBaseline = "top";

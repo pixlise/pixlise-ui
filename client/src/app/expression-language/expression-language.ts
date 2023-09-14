@@ -72,14 +72,7 @@ export class DataQuerier {
   ): Observable<DataQueryResult> {
     // Decide which interperter to run it in
     if (expressionLanguage == EXPR_LANGUAGE_LUA) {
-      return this._interpretLua.runQuery(
-        expression,
-        modules,
-        dataSource,
-        environment.newLuaPerExpression,
-        allowAnyResponse,
-        recordExpressionInputs
-      );
+      return this._interpretLua.runQuery(expression, modules, dataSource, environment.newLuaPerExpression, allowAnyResponse, recordExpressionInputs);
     } else {
       if (this._luaTranspiler) {
         // Transpile to Lua for debugging purposes
@@ -87,13 +80,7 @@ export class DataQuerier {
 
         // If we've got a result comparer, run that
         if (this._resultComparer) {
-          const line = this._resultComparer.findDifferenceLine(
-            asLua,
-            modules,
-            expression,
-            environment.expressionLanguageCompareSkipLines,
-            dataSource
-          );
+          const line = this._resultComparer.findDifferenceLine(asLua, modules, expression, environment.expressionLanguageCompareSkipLines, dataSource);
           if (line < 0) {
             console.log("No difference between PIXLISE and Lua expressions");
           } else {

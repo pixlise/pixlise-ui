@@ -1,4 +1,5 @@
 import { Component, Input, OnInit, OnDestroy } from "@angular/core";
+import { ActivatedRoute } from "@angular/router";
 import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
 import { Subscription } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
@@ -12,12 +13,13 @@ import {
 } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { TernaryChartModel } from "./model";
 import { TernaryChartToolHost } from "./interaction";
-import { SelectionService } from "src/app/modules/pixlisecore/services/selection.service";
+import { PredefinedROIID, orderVisibleROIs } from "src/app/models/RegionOfInterest";
+import { DataSourceParams, SelectionService, WidgetDataService, DataUnit } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 @Component({
   selector: "ternary-chart-widget",
   templateUrl: "./ternary-chart-widget.component.html",
-  styleUrls: ["./ternary-chart-widget.component.scss"]
+  styleUrls: ["./ternary-chart-widget.component.scss"],
 })
 export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
   mdl = new TernaryChartModel();
@@ -28,11 +30,45 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
   constructor(
     public dialog: MatDialog,
-    private _selectionService: SelectionService
+    private _selectionService: SelectionService,
+    private _route: ActivatedRoute,
+    private _widgetData: WidgetDataService
   ) {
     super();
+
+    const scanId = this._route.snapshot.queryParams["scan_id"];
+    this.mdl.scanId = scanId;
+
+    this.mdl.quantId = "9k8wgfzi02a9h6f8";
+    this.mdl.expressionIdA = "r4zd5s2tfgr8rahy"; // AlFe
+    this.mdl.expressionIdB = "rlqqh3wz9xball3w";
+    this.mdl.expressionIdC = "vge9tz6fkbi2ha1p"; // CaTi
+    this.mdl.roiIds = orderVisibleROIs([PredefinedROIID.AllPoints/*,"shared-6wyrtzyx0xtkw4z7"*/]);
+
+    const exprIds = [this.mdl.expressionIdA, this.mdl.expressionIdB, this.mdl.expressionIdC];
+
+    const unit = this.mdl.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT;
+    const query: DataSourceParams[] = [];
+
+    for (const roiId of this.mdl.roiIds) {
+      for (const exprId of exprIds) {
+        query.push(new DataSourceParams(this.mdl.scanId, exprId, this.mdl.quantId, roiId, unit));
+      }
+    }
+
+    this._widgetData.getData(query).subscribe(data => {
+      this.mdl.setData(data);
+    });
+
     this.drawer = new TernaryChartDrawer(this.mdl);
-    this.toolhost = new TernaryChartToolHost(this.mdl, this._selectionService);
+    const toolHost = new TernaryChartToolHost(this.mdl, this._selectionService);
+    this._subs.add(
+      toolHost.cornerClick.subscribe((corner: string) => {
+        this.onCornerSwap(corner);
+      })
+    );
+
+    this.toolhost = toolHost;
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -64,7 +100,21 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
           tooltip: "Toggle Solo View",
           onClick: () => this.onSoloView(),
         },
-      ]
+      ],
+      topLeftInsetButton: {
+        id: "selection",
+        type: "button",
+        title: "Selection",
+        tooltip: "Selection changer",
+        onClick: () => this.onClearSelection(),
+      },
+      topRightInsetButton: {
+        id: "key",
+        type: "button",
+        title: "Key",
+        tooltip: "Toggle key for plot",
+        onClick: () => this.onToggleKey(),
+      },
     };
   }
 
@@ -75,7 +125,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   ngOnDestroy() {
     this._subs.unsubscribe();
   }
-  
+
   reDraw() {
     this.mdl.needsDraw$.next();
   }
@@ -92,6 +142,9 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   onSoloView() {}
   onRegions() {}
   onReferences() {}
+  onClearSelection() {}
+  onToggleKey() {}
+  onCornerSwap(corner: string): void {}
 
   get showMmol(): boolean {
     return this.mdl.showMmol;

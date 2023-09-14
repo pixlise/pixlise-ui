@@ -406,9 +406,7 @@ export class LuaDataQuerier {
           }
 
           const runtimeMs = performance.now() - t0;
-          console.log(
-            this._logId + ">>> Lua expression took: " + runtimeMs.toLocaleString() + "ms, makeTable calls took: " + this._makeLuaTableTime + "ms"
-          );
+          console.log(this._logId + ">>> Lua expression took: " + runtimeMs.toLocaleString() + "ms, makeTable calls took: " + this._makeLuaTableTime + "ms");
 
           //this.dumpLua("Post expression run");
 
@@ -629,8 +627,7 @@ end
 
       genEnd += 't1=os.clock()\nprint("Code ran for: "..(t1-t0))\nlocal timesTotal=0\n';
       // Print out the table too
-      genEnd +=
-        'for k, v in pairs(times) do\n  print(k.." took: "..v)\n  timesTotal = timesTotal+v\nend\nprint("Total functions: "..timesTotal)\n';
+      genEnd += 'for k, v in pairs(times) do\n  print(k.." took: "..v)\n  timesTotal = timesTotal+v\nend\nprint("Total functions: "..timesTotal)\n';
 
       genEnd += "return result\n";
 

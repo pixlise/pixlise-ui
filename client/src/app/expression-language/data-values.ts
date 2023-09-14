@@ -28,6 +28,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { MinMax } from "src/app/models/BasicTypes";
+import { DataExpression } from "../generated-protos/expressions";
+import { ROIItem } from "../generated-protos/roi";
+import { RegionSettings } from "../modules/pixlisecore/services/region-settings.service";
 
 export class PMCDataValue {
   // This is a single value for a PMC. Initially it was just a number, however with multi-quant
@@ -86,7 +89,9 @@ export class DataQueryResult {
     public stdout: string,
     public stderr: string,
     public recordedExpressionInputs: Map<string, PMCDataValues>,
-    public errorMsg: string = ""
+    public errorMsg: string = "",
+    public expression: DataExpression | null = null,
+    public region: RegionSettings | null = null
   ) {}
 
   public static get DataTypeSpectrum() {
