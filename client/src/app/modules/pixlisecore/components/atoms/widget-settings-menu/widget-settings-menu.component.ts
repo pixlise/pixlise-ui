@@ -29,7 +29,7 @@
 
 import { CdkOverlayOrigin, ConnectionPositionPair, Overlay, OverlayConfig, OverlayRef } from "@angular/cdk/overlay";
 import { ComponentPortal } from "@angular/cdk/portal";
-import { Component, EventEmitter, Injector, Input, OnInit, Output, TemplateRef, ViewChild, ViewContainerRef } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Injector, Input, OnInit, Output, TemplateRef, ViewChild, ViewContainerRef } from "@angular/core";
 import { MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { MenuPanelHostComponent, MenuPanelHostData } from "./menu-panel-host/menu-panel-host.component";
 
@@ -54,11 +54,12 @@ import { MenuPanelHostComponent, MenuPanelHostData } from "./menu-panel-host/men
   styleUrls: ["./widget-settings-menu.component.scss"],
 })
 export class WidgetSettingsMenuComponent implements OnInit {
-  @ViewChild(CdkOverlayOrigin) _overlayOrigin: CdkOverlayOrigin | undefined;
+  @ViewChild(CdkOverlayOrigin, { read: ElementRef }) _overlayOrigin: ElementRef | undefined;
 
   @Input() settingsDialog: TemplateRef<any> | null = null;
   @Input() overflowSection: TemplateRef<any> | null = null;
   @Input() openDirDown: boolean = true;
+  @Input() startRight: boolean = false;
   @Input() noPadding: boolean = false;
   @Input() xOffset: number = 0;
   @Output() onClose = new EventEmitter();
@@ -110,7 +111,7 @@ export class WidgetSettingsMenuComponent implements OnInit {
     if (this._overlayRef || !this._overlayOrigin || !this.settingsDialog) {
       return;
     }
-    const strategy = this.overlay.position().flexibleConnectedTo(this._overlayOrigin.elementRef);
+    const strategy = this.overlay.position().flexibleConnectedTo(this._overlayOrigin);
 
     const positions = [
       new ConnectionPositionPair(
@@ -119,7 +120,7 @@ export class WidgetSettingsMenuComponent implements OnInit {
           originY: this.openDirDown ? "bottom" : "top",
         },
         {
-          overlayX: "end",
+          overlayX: this.startRight ? "start" : "end",
           overlayY: this.openDirDown ? "top" : "bottom",
         },
         this.xOffset, // Offset X

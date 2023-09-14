@@ -328,8 +328,7 @@ h3 {
   color: white;
 }
 
-.mdc-text-field--filled:not(.mdc-text-field--disabled):hover
-  .mdc-line-ripple::before,
+.mdc-text-field--filled:not(.mdc-text-field--disabled):hover .mdc-line-ripple::before,
 .mdc-text-field--filled .mdc-line-ripple::after {
   border-bottom-color: white;
 }
@@ -361,7 +360,7 @@ h3 {
 }
 
 .cdk-overlay-pane {
-  min-width: 215px;
+  // min-width: 215px;
 }
 
 .multiline-tooltip {
@@ -369,8 +368,7 @@ h3 {
 }
 
 .mat-primary .mat-pseudo-checkbox-checked.mat-pseudo-checkbox-minimal::after,
-.mat-primary
-  .mat-pseudo-checkbox-indeterminate.mat-pseudo-checkbox-minimal::after,
+.mat-primary .mat-pseudo-checkbox-indeterminate.mat-pseudo-checkbox-minimal::after,
 .mat-mdc-form-field.mat-focused.mat-primary .mat-mdc-select-arrow {
   color: white;
 }

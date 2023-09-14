@@ -27,34 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
-@import "atoms.scss";
+import { async, ComponentFixture, TestBed } from "@angular/core/testing";
+import { TagPickerComponent } from "./tag-picker.component";
 
-.button {
-  display: flex;
-  justify-content: center;
-}
 
-.icon-btn {
-  width: 24px;
-  height: 24px;
+describe("TagPickerComponent", () => 
+{
+    let component: TagPickerComponent;
+    let fixture: ComponentFixture<TagPickerComponent>;
 
-  background-repeat: no-repeat;
-  background-position: center;
-}
+    beforeEach(async(() => 
+    {
+        TestBed.configureTestingModule({
+            declarations: [ TagPickerComponent ]
+        })
+            .compileComponents();
+    }));
 
-.push-btn-rounded-active {
-  @extend .push-btn-rounded;
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(TagPickerComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-  color: $clr-yellow;
-  background-color: $clr-gray-60;
-}
-
-.push-btn-rounded-disabled {
-  @extend .push-btn-rounded;
-
-  color: $clr-gray-60;
-  background-color: $clr-gray-100;
-  cursor: not-allowed;
-  user-select: none;
-}
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});
