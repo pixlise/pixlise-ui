@@ -38,6 +38,7 @@ export enum IconButtonState {
 
 export const ICONS = {
   notification: "assets/button-icons/notification.svg",
+  hotkeys: "assets/button-icons/hotkeys.svg",
 };
 
 @Component({
@@ -56,6 +57,8 @@ export class IconButtonComponent implements OnInit {
   @Input() loading: boolean = false;
   @Input() notificationCount: number = 0;
   @Input() size: number = 24;
+
+  @Input() hoverYellow: boolean = false;
 
   @Output() onClick = new EventEmitter();
 

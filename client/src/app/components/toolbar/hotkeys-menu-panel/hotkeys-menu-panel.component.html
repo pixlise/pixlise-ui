@@ -29,23 +29,18 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div
-  class="clickable icon-btn"
-  [ngClass]="{
-    'no-bg': !hasBackground,
-    'button-inactive': !state && hasBackground,
-    'button-active': state == 1,
-    'button-active-overridden': state == 2,
-    'button-disabled': state == 3,
-    'icon-button-background': hasBackground,
-    'button-shadow': hasBackground,
-    'button-hoverable': hasBackground,
-    'hover-yellow': hoverYellow
-  }"
-  [ngStyle]="{ width: sizeStr, height: sizeStr }"
-  (click)="onClickInternal($event)">
-  <img src="{{ iconURL }}" />
-  <wait-spinner *ngIf="loading"></wait-spinner>
-  <!-- TODO: was <mat-spinner *ngIf="loading" [diameter]="24" [strokeWidth]="4" color="accent"> -->
-  <badge *ngIf="notificationCount > 0" class="notifications" [value]="notificationCount.toString()" title="{{ notificationCount }} active notifications"> </badge>
+<div class="panel">
+  <section class="header">
+    <h1>Hotkeys</h1>
+    <action-button action="close" (onClick)="onHidePanel()" color="#fff"></action-button>
+  </section>
+  <section class="notifications-container">
+    <div class="hotkey-section" *ngFor="let hotkeySectionTitle of hotKeySections">
+      <h2>{{ hotkeySectionTitle }}</h2>
+      <div class="hotkey" *ngFor="let hotkey of hotkeys[hotkeySectionTitle]">
+        <span class="name">{{ hotkey.name }}:</span>
+        <span class="shortcut">{{ hotkey.shortcut }}</span>
+      </div>
+    </div>
+  </section>
 </div>

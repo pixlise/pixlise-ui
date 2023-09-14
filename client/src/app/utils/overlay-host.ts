@@ -29,7 +29,7 @@
 
 import { CdkOverlayOrigin, ConnectionPositionPair, Overlay, OverlayConfig, OverlayRef } from "@angular/cdk/overlay";
 import { ComponentPortal } from "@angular/cdk/portal";
-import { Injector, ViewContainerRef } from "@angular/core";
+import { ComponentRef, Injector, ViewContainerRef } from "@angular/core";
 
 export class OverlayHost {
   private _overlayRef?: OverlayRef;
@@ -49,9 +49,9 @@ export class OverlayHost {
     return !!this._overlayRef;
   }
 
-  showPanel(): void {
+  showPanel(): ComponentRef<any> | null {
     if (this._overlayRef) {
-      return;
+      return null;
     }
 
     const strategy = this.overlay.position().flexibleConnectedTo(this.overlayOrigin.elementRef);
@@ -67,7 +67,15 @@ export class OverlayHost {
     });
 
     this._overlayRef = this.overlay.create(config);
-    this._overlayRef.attach(new ComponentPortal(this.panelComponentClassType, this.viewContainerRef, this.createInjector(this._overlayRef)));
+    let componentRef: ComponentRef<any> = this._overlayRef.attach(
+      new ComponentPortal(this.panelComponentClassType, this.viewContainerRef, this.createInjector(this._overlayRef))
+    );
+
+    if (componentRef.instance.close) {
+      componentRef.instance.close.subscribe(() => {
+        this.hidePanel();
+      });
+    }
 
     // If required, set up so we close if user clicks our background
     if (this.closeIfClickedBackground) {
@@ -80,6 +88,8 @@ export class OverlayHost {
     this._overlayRef.detachments().subscribe(() => {
       this.panelHidden();
     });
+
+    return componentRef;
   }
 
   private createInjector(overlayRef: OverlayRef): Injector {

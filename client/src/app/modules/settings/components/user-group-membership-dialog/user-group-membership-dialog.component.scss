@@ -28,86 +28,68 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 @import "variables.scss";
+@import "atoms.scss";
 
-.toolbar {
-  height: 32px;
-  padding: $sz-half $sz-double;
-  margin-bottom: $ui-border-size;
-  user-select: none;
+.permissions-dlg {
+  font-family: Inter;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 16px;
+  color: $clr-gray-30;
+
+  max-width: 400px;
+}
+
+.group-membership-container {
+  background: var(--gray-90, #222829);
+  border-radius: 8px;
+
+  .header {
+    display: flex;
+    align-items: center;
+
+    h1 {
+      font-size: 20px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      margin-left: auto;
+
+      h2 {
+        margin-right: 4px;
+        text-transform: none;
+        font-size: 16px;
+      }
+
+      img {
+        width: 24px;
+        border-radius: 4px;
+      }
+    }
+  }
+
+  .info {
+    .description {
+      color: var(--gray-30, #bec0c2);
+      max-width: 400px;
+    }
+  }
+
+  .role-options {
+    mat-radio-group {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+}
+
+.button-container {
+  margin-top: $sz-double;
 
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.dark-background {
-  background-color: $clr-gray-100;
-  margin-bottom: 0px;
-}
-
-.title-text {
-  font-weight: 900;
-  font-size: 24px;
-  line-height: 28px;
-  color: $clr-gray-40;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 20vw;
-}
-
-.pixlise {
-  color: $clr-gray-50;
-}
-
-.nav-link-normal {
-  font-family: Inter, Roboto;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 17px;
-  color: $clr-gray-30;
-  text-transform: uppercase;
-  cursor: pointer;
-  text-decoration: none;
-  white-space: nowrap;
-
-  &:hover {
-    color: $clr-gray-50;
-  }
-}
-
-.nav-link-active {
-  @extend .nav-link-normal;
-  color: $clr-yellow;
-}
-
-.nav-link-disabled {
-  @extend .nav-link-normal;
-  color: $clr-gray-60;
-  cursor: default;
-}
-
-.gap-separated-horizontal-elements-wide > * + * {
-  margin-left: $sz-double;
-}
-
-.buttons {
-  display: flex;
-  align-items: center;
-  icon-button {
-    margin-right: 4px;
-  }
-}
-
-user-icon {
-  border-radius: 4px;
-  cursor: pointer;
-
-  &:hover,
-  &.open {
-    outline: 2px solid rgb(var(--clr-yellow));
-  }
+  justify-content: flex-end;
 }

@@ -41,6 +41,9 @@ import { UserMenuPanelComponent } from "./user-menu-panel/user-menu-panel.compon
 import { PIXLISECoreModule } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { CommonModule } from "@angular/common";
 import { SettingsModule } from "src/app/modules/settings/settings.module";
+import { NotificationsMenuPanelComponent } from "./notifications-menu-panel/notifications-menu-panel.component";
+import { HotkeysMenuPanelComponent } from "./hotkeys-menu-panel/hotkeys-menu-panel.component";
+import { NotificationsService } from "src/app/modules/settings/services/notifications.service";
 // import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 // import { AnnotationEditorComponent, AnnotationEditorData, AnnotationTool } from "../annotation-editor/annotation-editor.component";
 // import { FullScreenAnnotationItem } from "../annotation-editor/annotation-display/annotation-display.component";
@@ -80,7 +83,9 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   @ViewChild(CdkOverlayOrigin) _overlayOrigin!: CdkOverlayOrigin;
 
-  private _overlayHost!: OverlayHost;
+  private _userMenuOverlayHost!: OverlayHost;
+  private _notificationsMenuOverlayHost!: OverlayHost;
+  private _hotKeysMenuOverlayHost!: OverlayHost;
 
   private _subs = new Subscription();
   private _userPiquantConfigAllowed: boolean = false;
@@ -118,9 +123,9 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     private overlay: Overlay,
     private viewContainerRef: ViewContainerRef,
     private injector: Injector,
-    private titleService: Title
-  ) // public dialog: MatDialog,
-  {}
+    private titleService: Title, // public dialog: MatDialog,
+    private _notificationsSerivce: NotificationsService
+  ) {}
 
   ngOnInit() {
     //this.UserLoggedIn = this.authService.loggedIn;
@@ -184,7 +189,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     this._subs.add(
       this.router.events.subscribe(event => {
         if (event instanceof NavigationEnd || event instanceof ResolveEnd) {
-          this._overlayHost.hidePanel();
+          this._userMenuOverlayHost.hidePanel();
           this.updateToolbar();
         }
       })
@@ -225,12 +230,32 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       ),
     ];
 
-    this._overlayHost = new OverlayHost(
+    this._userMenuOverlayHost = new OverlayHost(
       this.overlay,
       this.viewContainerRef,
       this.injector,
       this._overlayOrigin,
       UserMenuPanelComponent,
+      userOverlayPos,
+      true
+    );
+
+    this._notificationsMenuOverlayHost = new OverlayHost(
+      this.overlay,
+      this.viewContainerRef,
+      this.injector,
+      this._overlayOrigin,
+      NotificationsMenuPanelComponent,
+      userOverlayPos,
+      true
+    );
+
+    this._hotKeysMenuOverlayHost = new OverlayHost(
+      this.overlay,
+      this.viewContainerRef,
+      this.injector,
+      this._overlayOrigin,
+      HotkeysMenuPanelComponent,
       userOverlayPos,
       true
     );
@@ -316,11 +341,36 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   }
 
   onUserMenu(): void {
-    this._overlayHost.showPanel();
+    this._userMenuOverlayHost.showPanel();
   }
 
   get userMenuOpen(): boolean {
-    return this._overlayHost?.isOpen;
+    return this._userMenuOverlayHost?.isOpen;
+  }
+
+  get notificationsCount() {
+    return this._notificationsSerivce.notifications.length;
+  }
+
+  onNotificationsMenu(): void {
+    let componentRef = this._notificationsMenuOverlayHost.showPanel();
+    if (componentRef?.instance.openHotKeysMenuPanel) {
+      componentRef.instance.openHotKeysMenuPanel.subscribe(() => {
+        this._hotKeysMenuOverlayHost.showPanel();
+      });
+    }
+  }
+
+  get notificationsMenuOpen(): boolean {
+    return this._notificationsMenuOverlayHost?.isOpen;
+  }
+
+  onHotkeysMenu(): void {
+    this._hotKeysMenuOverlayHost.showPanel();
+  }
+
+  get hotKeysMenuOpen(): boolean {
+    return this._hotKeysMenuOverlayHost?.isOpen;
   }
 
   get isLoggedIn(): boolean {

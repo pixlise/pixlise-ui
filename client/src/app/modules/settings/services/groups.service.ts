@@ -9,13 +9,7 @@ import {
 import { UserGroupCreateReq, UserGroupCreateResp, UserGroupDeleteReq } from "src/app/generated-protos/user-group-management-msgs";
 import { UserGroupAddAdminReq, UserGroupDeleteAdminReq } from "src/app/generated-protos/user-group-admins-msgs";
 import { UserGroupListJoinableReq, UserGroupListReq } from "src/app/generated-protos/user-group-retrieval-msgs";
-import {
-  UserGroup,
-  UserGroupInfo,
-  UserGroupJoinRequestDB,
-  UserGroupJoinSummaryInfo,
-  UserGroupRelationship,
-} from "src/app/generated-protos/user-group";
+import { UserGroup, UserGroupInfo, UserGroupJoinRequestDB, UserGroupJoinSummaryInfo, UserGroupRelationship } from "src/app/generated-protos/user-group";
 import { ReplaySubject } from "rxjs";
 import { UserGroupReq } from "src/app/generated-protos/user-group-retrieval-msgs";
 import { UserGroupIgnoreJoinReq, UserGroupJoinListReq, UserGroupJoinReq } from "src/app/generated-protos/user-group-joining-msgs";
@@ -75,6 +69,23 @@ export class GroupsService {
     });
   }
 
+  addSubGroupMemberToGroup(groupId: string, groupMemberId: string) {
+    this._dataService.sendUserGroupAddMemberRequest(UserGroupAddMemberReq.create({ groupId, groupMemberId })).subscribe({
+      next: res => {
+        let groupIndex = this.detailedGroups.findIndex(group => group.info?.id === groupId);
+        if (groupIndex >= 0 && res.group) {
+          this.detailedGroups[groupIndex] = res.group;
+          this._snackBar.openSuccess(`Group added as editor to group ${res.group.info?.name}`);
+          this.groupsChanged$.next();
+        }
+      },
+      error: err => {
+        console.error(err);
+        this._snackBar.openError(err);
+      },
+    });
+  }
+
   addMemberToGroup(groupId: string, userMemberId: string, dismissRequestId: string | null = null) {
     this._dataService.sendUserGroupAddMemberRequest(UserGroupAddMemberReq.create({ groupId, userMemberId })).subscribe({
       next: res => {
@@ -115,6 +126,25 @@ export class GroupsService {
     });
   }
 
+  removeSubGroupMemberFromGroup(groupId: string, groupMemberId: string) {
+    this._dataService.sendUserGroupDeleteMemberRequest(UserGroupDeleteMemberReq.create({ groupId, groupMemberId })).subscribe({
+      next: res => {
+        let groupIndex = this.detailedGroups.findIndex(group => group.info?.id === groupId);
+        if (groupIndex >= 0 && res.group) {
+          this.detailedGroups[groupIndex] = res.group;
+          this._snackBar.openSuccess(`Group removed as editor to group ${res.group.info?.name}`);
+          this.groupsChanged$.next();
+        } else {
+          this._snackBar.openError(`Group (${groupId}) not found`);
+        }
+      },
+      error: err => {
+        console.error(err);
+        this._snackBar.openError(err);
+      },
+    });
+  }
+
   addViewerToGroup(groupId: string, userViewerId: string, dismissRequestId: string | null = null) {
     this._dataService.sendUserGroupAddViewerRequest(UserGroupAddViewerReq.create({ groupId, userViewerId })).subscribe({
       next: res => {
@@ -136,6 +166,23 @@ export class GroupsService {
     });
   }
 
+  addSubGroupViewerToGroup(groupId: string, groupViewerId: string) {
+    this._dataService.sendUserGroupAddViewerRequest(UserGroupAddViewerReq.create({ groupId, groupViewerId })).subscribe({
+      next: res => {
+        let groupIndex = this.detailedGroups.findIndex(group => group.info?.id === groupId);
+        if (groupIndex >= 0 && res.group) {
+          this.detailedGroups[groupIndex] = res.group;
+          this._snackBar.openSuccess(`Group added as viewer to group ${res.group.info?.name}`);
+          this.groupsChanged$.next();
+        }
+      },
+      error: err => {
+        console.error(err);
+        this._snackBar.openError(err);
+      },
+    });
+  }
+
   removeViewerFromGroup(groupId: string, userViewerId: string) {
     this._dataService.sendUserGroupDeleteViewerRequest(UserGroupDeleteViewerReq.create({ groupId, userViewerId })).subscribe({
       next: res => {
@@ -143,6 +190,25 @@ export class GroupsService {
         if (groupIndex >= 0 && res.group) {
           this.detailedGroups[groupIndex] = res.group;
           this._snackBar.openSuccess(`User removed as viewer to group ${res.group.info?.name}`);
+          this.groupsChanged$.next();
+        } else {
+          this._snackBar.openError(`Group (${groupId}) not found`);
+        }
+      },
+      error: err => {
+        console.error(err);
+        this._snackBar.openError(err);
+      },
+    });
+  }
+
+  removeSubGroupViewerFromGroup(groupId: string, groupViewerId: string) {
+    this._dataService.sendUserGroupDeleteViewerRequest(UserGroupDeleteViewerReq.create({ groupId, groupViewerId })).subscribe({
+      next: res => {
+        let groupIndex = this.detailedGroups.findIndex(group => group.info?.id === groupId);
+        if (res.group) {
+          this.detailedGroups[groupIndex] = res.group;
+          this._snackBar.openSuccess(`Group removed as viewer to group ${res.group.info?.name}`);
           this.groupsChanged$.next();
         } else {
           this._snackBar.openError(`Group (${groupId}) not found`);
@@ -236,6 +302,12 @@ export class GroupsService {
     this._dataService.sendUserGroupListRequest(UserGroupListReq.create()).subscribe({
       next: res => {
         this.groups = res.groupInfos;
+
+        // Fetch group access requests for each group
+        res.groupInfos.forEach(group => {
+          this.fetchGroupAccessRequests(group.id);
+        });
+
         this.groupsChanged$.next();
       },
       error: err => {
@@ -262,6 +334,8 @@ export class GroupsService {
     this._dataService.sendUserGroupJoinRequest(UserGroupJoinReq.create({ groupId: group.id, asMember })).subscribe({
       next: res => {
         this._snackBar.openSuccess(`Request to join group (${group.name}) sent.`);
+        this.fetchGroupAccessRequests(group.id);
+        this.groupAccessRequestsChanged$.next();
       },
       error: err => {
         console.error(err);
@@ -274,6 +348,7 @@ export class GroupsService {
     this._dataService.sendUserGroupIgnoreJoinRequest(UserGroupIgnoreJoinReq.create({ groupId, requestId })).subscribe({
       next: res => {
         this.groupAccessRequests[groupId] = this.groupAccessRequests[groupId].filter(request => request.id !== requestId);
+        this.fetchGroupAccessRequests(groupId);
         this.groupAccessRequestsChanged$.next();
       },
       error: err => {
@@ -286,7 +361,6 @@ export class GroupsService {
   fetchJoinableGroups() {
     this._dataService.sendUserGroupListJoinableRequest(UserGroupListJoinableReq.create()).subscribe({
       next: res => {
-        console.log(res);
         this.joinableGroups = res.groups;
         this.joinableGroupsChanged$.next();
       },

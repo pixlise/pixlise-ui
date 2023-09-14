@@ -11,6 +11,7 @@ import { GroupsService } from "src/app/modules/settings/services/groups.service"
 import { UserGroupInfo, UserGroupRelationship } from "src/app/generated-protos/user-group";
 import { SettingsModule } from "src/app/modules/settings/settings.module";
 import { SnackbarDataItem } from "src/app/modules/pixlisecore/services/snackbar.service";
+import { RequestGroupDialogComponent } from "src/app/modules/settings/components/request-group-dialog/request-group-dialog.component";
 
 @Component({
   selector: "app-settings-sidebar",
@@ -74,6 +75,19 @@ export class SettingsSidebarComponent {
     }
   }
 
+  getGroupIcon(group: UserGroupInfo): string {
+    switch (group.relationshipToUser) {
+      case UserGroupRelationship.UGR_ADMIN:
+        return "assets/icons/admin-badge.svg";
+      case UserGroupRelationship.UGR_MEMBER:
+        return "assets/icons/member-badge.svg";
+      case UserGroupRelationship.UGR_VIEWER:
+        return "assets/icons/viewer-badge.svg";
+      default:
+        return "";
+    }
+  }
+
   onClearEventHistory(): void {
     this._snackBar.clearHistory();
   }
@@ -91,7 +105,7 @@ export class SettingsSidebarComponent {
   }
 
   get hintAssistanceActive(): boolean {
-    return true;//this._userOptionsService.hints.enabled;
+    return true; //this._userOptionsService.hints.enabled;
   }
 
   get dataCollectionActive(): boolean {
@@ -210,6 +224,11 @@ export class SettingsSidebarComponent {
         this._userOptionsService.acceptDataCollectionAgreement(accepted);
       }
     });
+  }
+
+  onOpenRequestGroupDialog(): void {
+    const dialogConfig = new MatDialogConfig();
+    this.dialog.open(RequestGroupDialogComponent, dialogConfig);
   }
 
   onCloseSidebar(): void {

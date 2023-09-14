@@ -27,87 +27,26 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
+import { Component, EventEmitter, Output } from "@angular/core";
+import { HOTKEYS } from "./hotkeys.model";
 
-.toolbar {
-  height: 32px;
-  padding: $sz-half $sz-double;
-  margin-bottom: $ui-border-size;
-  user-select: none;
+@Component({
+  selector: "app-hotkeys-menu-panel",
+  templateUrl: "./hotkeys-menu-panel.component.html",
+  styleUrls: ["./hotkeys-menu-panel.component.scss"],
+})
+export class HotkeysMenuPanelComponent {
+  @Output() close = new EventEmitter();
 
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-}
+  hotkeys = HOTKEYS;
 
-.dark-background {
-  background-color: $clr-gray-100;
-  margin-bottom: 0px;
-}
+  constructor() {}
 
-.title-text {
-  font-weight: 900;
-  font-size: 24px;
-  line-height: 28px;
-  color: $clr-gray-40;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 20vw;
-}
-
-.pixlise {
-  color: $clr-gray-50;
-}
-
-.nav-link-normal {
-  font-family: Inter, Roboto;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 17px;
-  color: $clr-gray-30;
-  text-transform: uppercase;
-  cursor: pointer;
-  text-decoration: none;
-  white-space: nowrap;
-
-  &:hover {
-    color: $clr-gray-50;
+  get hotKeySections() {
+    return Object.keys(this.hotkeys);
   }
-}
 
-.nav-link-active {
-  @extend .nav-link-normal;
-  color: $clr-yellow;
-}
-
-.nav-link-disabled {
-  @extend .nav-link-normal;
-  color: $clr-gray-60;
-  cursor: default;
-}
-
-.gap-separated-horizontal-elements-wide > * + * {
-  margin-left: $sz-double;
-}
-
-.buttons {
-  display: flex;
-  align-items: center;
-  icon-button {
-    margin-right: 4px;
-  }
-}
-
-user-icon {
-  border-radius: 4px;
-  cursor: pointer;
-
-  &:hover,
-  &.open {
-    outline: 2px solid rgb(var(--clr-yellow));
+  onHidePanel() {
+    this.close.emit();
   }
 }

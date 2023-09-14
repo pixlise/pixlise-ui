@@ -10,6 +10,8 @@ import { NewGroupDialogComponent } from "../../components/new-group-dialog/new-g
 import { UserDetails, UserInfo } from "src/app/generated-protos/user";
 import { RequestGroupDialogComponent } from "../../components/request-group-dialog/request-group-dialog.component";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { UserGroupMembershipDialogComponent } from "../../components/user-group-membership-dialog/user-group-membership-dialog.component";
+import { AddSubGroupDialogComponent } from "../../components/add-subgroup-dialog/add-subgroup-dialog.component";
 
 @Component({
   selector: "app-groups-page",
@@ -19,6 +21,7 @@ import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module"
 export class GroupsPageComponent {
   private _selectedGroupId: string | null = null;
   private _selectedGroupUserRoles: Record<string, "viewer" | "editor" | "admin"> = {};
+  private _selectedGroupSubGroupRoles: Record<string, "viewer" | "editor"> = {};
   canAccessSelectedGroup: boolean = false;
 
   private _selectedUser: UserInfo | null = null;
@@ -59,6 +62,7 @@ export class GroupsPageComponent {
       let detailedGroup = this._groupsService.detailedGroups.find(group => group.info?.id === this._selectedGroupId);
       if (detailedGroup) {
         this._selectedGroupUserRoles = {};
+        this._selectedGroupSubGroupRoles = {};
         detailedGroup.adminUsers.forEach(admin => (this._selectedGroupUserRoles[admin.id] = "admin"));
         detailedGroup.members?.users.forEach(member => {
           if (!this._selectedGroupUserRoles[member.id]) {
@@ -68,6 +72,18 @@ export class GroupsPageComponent {
         detailedGroup.viewers?.users.forEach(viewer => {
           if (!this._selectedGroupUserRoles[viewer.id]) {
             this._selectedGroupUserRoles[viewer.id] = "viewer";
+          }
+        });
+
+        detailedGroup.members?.groups.forEach(member => {
+          if (!this._selectedGroupSubGroupRoles[member.id]) {
+            this._selectedGroupSubGroupRoles[member.id] = "editor";
+          }
+        });
+
+        detailedGroup.viewers?.groups.forEach(viewer => {
+          if (!this._selectedGroupSubGroupRoles[viewer.id]) {
+            this._selectedGroupSubGroupRoles[viewer.id] = "viewer";
           }
         });
       }
@@ -155,8 +171,7 @@ export class GroupsPageComponent {
     this._selectedUser = null;
     this._selectedGroupUserRoles = {};
     this.updateSelectedGroupUserRoles();
-    this.canAccessSelectedGroup =
-      group.relationshipToUser > UserGroupRelationship.UGR_UNKNOWN || this._userOptionsService.hasFeatureAccess("admin");
+    this.canAccessSelectedGroup = group.relationshipToUser > UserGroupRelationship.UGR_UNKNOWN || this._userOptionsService.hasFeatureAccess("admin");
 
     if (this.isSelectedGroupAdmin) {
       this._groupsService.fetchGroupAccessRequests(group.id);
@@ -166,6 +181,12 @@ export class GroupsPageComponent {
     if (!this.selectedGroup && this.canAccessSelectedGroup) {
       this._groupsService.fetchDetailedGroup(group.id);
     }
+  }
+
+  onChangeGroupMembership(user: UserInfo, role: "viewer" | "editor" | "admin") {
+    const dialogConfig = new MatDialogConfig();
+    dialogConfig.data = { user, role, group: this.selectedGroup };
+    const dialogRef = this.dialog.open(UserGroupMembershipDialogComponent, dialogConfig);
   }
 
   onOpenGroupRequestDialog() {
@@ -178,11 +199,11 @@ export class GroupsPageComponent {
   }
 
   onGrantAccessToGroup(request: UserGroupJoinRequestDB) {
-    if (request.asMember) {
-      this._groupsService.addMemberToGroup(request.joinGroupId, request.userId, request.id);
-    } else {
-      this._groupsService.addViewerToGroup(request.joinGroupId, request.userId, request.id);
-    }
+    let role = request.asMember ? "editor" : "viewer";
+    const dialogConfig = new MatDialogConfig();
+
+    dialogConfig.data = { user: request.details, role, group: this.selectedGroup, requestId: request.id };
+    const dialogRef = this.dialog.open(UserGroupMembershipDialogComponent, dialogConfig);
   }
 
   onDismissAccessRequest(request: UserGroupJoinRequestDB) {
@@ -210,12 +231,16 @@ export class GroupsPageComponent {
     }
   }
 
-  get selectedGroupSubGroups() {
+  get selectedGroupMemberSubGroups() {
     return this.selectedGroup?.members?.groups || [];
   }
 
   get selectedGroupMembers() {
     return this.selectedGroup?.members?.users || [];
+  }
+
+  get selectedGroupViewerSubGroups() {
+    return this.selectedGroup?.viewers?.groups || [];
   }
 
   get selectedGroupViewers() {
@@ -229,6 +254,19 @@ export class GroupsPageComponent {
     }
 
     return users;
+  }
+
+  get selectedGroupSubGroups() {
+    let subGroups = [...this.selectedGroupMemberSubGroups, ...this.selectedGroupViewerSubGroups];
+    if (this.userSearchString) {
+      subGroups = subGroups.filter(group => group.name.toLowerCase().includes(this.userSearchString.toLowerCase()));
+    }
+
+    return subGroups;
+  }
+
+  get groupAccessRequests() {
+    return this._groupsService.groupAccessRequests;
   }
 
   get selectedGroupAccessRequestsCount() {
@@ -271,6 +309,10 @@ export class GroupsPageComponent {
     return this._selectedGroupUserRoles;
   }
 
+  get selectedGroupSubGroupRoles() {
+    return this._selectedGroupSubGroupRoles;
+  }
+
   get selectedUserRole() {
     return this._selectedUserRole;
   }
@@ -309,6 +351,20 @@ export class GroupsPageComponent {
     }
   }
 
+  onRemoveSubGroupFromGroup(groupId: string) {
+    if (!this.selectedGroup?.info?.id) {
+      return;
+    }
+
+    if (this.selectedGroup.members?.groups.map(group => group.id)?.includes(groupId)) {
+      this._groupsService.removeSubGroupMemberFromGroup(this.selectedGroup.info.id, groupId);
+    }
+
+    if (this.selectedGroup.viewers?.groups.map(group => group.id)?.includes(groupId)) {
+      this._groupsService.removeSubGroupViewerFromGroup(this.selectedGroup.info.id, groupId);
+    }
+  }
+
   onRemoveMemberFromGroup(userId: string) {
     if (!this.selectedGroup?.info?.id) {
       return;
@@ -329,17 +385,47 @@ export class GroupsPageComponent {
     }
   }
 
+  addSubGroupToGroup(groupId: string, subGroupId: string, role: "viewer" | "editor") {
+    if (role === "editor") {
+      this._groupsService.addSubGroupMemberToGroup(groupId, subGroupId);
+    } else if (role === "viewer") {
+      this._groupsService.addSubGroupViewerToGroup(groupId, subGroupId);
+    } else {
+      this._snackBar.openError("Invalid role");
+    }
+  }
+
   onAddUserToGroup(groupId: string) {
     const dialogConfig = new MatDialogConfig();
     dialogConfig.data = { groupId };
     const dialogRef = this.dialog.open(AddUserDialogComponent, dialogConfig);
 
-    dialogRef.afterClosed().subscribe((userSelection: { userId: string; role: string }) => {
+    dialogRef.afterClosed().subscribe((userSelection: { userIds: string[]; role: string }) => {
       if (!userSelection) {
         return;
       }
 
-      this.addToGroup(groupId, userSelection.userId, userSelection.role as "viewer" | "editor" | "admin");
+      userSelection.userIds.forEach(userId => {
+        this.onRemoveFromGroup(userId);
+        this.addToGroup(groupId, userId, userSelection.role as "viewer" | "editor" | "admin");
+      });
+    });
+  }
+
+  onAddSubGroupToGroup(groupId: string) {
+    const dialogConfig = new MatDialogConfig();
+    dialogConfig.data = { groupId };
+    const dialogRef = this.dialog.open(AddSubGroupDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe((groupSelection: { groupIds: string[]; role: string }) => {
+      if (!groupSelection) {
+        return;
+      }
+
+      groupSelection.groupIds.forEach(subGroupId => {
+        this.onRemoveSubGroupFromGroup(subGroupId);
+        this.addSubGroupToGroup(groupId, subGroupId, groupSelection.role as "viewer" | "editor");
+      });
     });
   }
 }

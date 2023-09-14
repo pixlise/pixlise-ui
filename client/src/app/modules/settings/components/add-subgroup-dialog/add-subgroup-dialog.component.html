@@ -30,12 +30,12 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="dlg-border-with-backdrop permissions-dlg add-user-dialog">
-  <h1>Add User</h1>
-  <h5>Grant user(s) access, this can be changed from their profile page at any time in the future.</h5>
+  <h1>Add SubGroup</h1>
+  <h5>Grant all users in this group access to any group that you are an Admin of.</h5>
   <div class="fields">
     <div class="search-controls">
       <div class="search">
-        <input type="text" [(ngModel)]="userSearchString" placeholder="Search Users ..." />
+        <input type="text" [(ngModel)]="groupSearchString" placeholder="Search Groups ..." />
         <div class="search-icon">
           <img src="assets/button-icons/search.svg" />
         </div>
@@ -43,7 +43,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
 
     <div class="user-table-container">
-      <table mat-table [dataSource]="users" matSort>
+      <table mat-table [dataSource]="groups" matSort>
         <ng-container matColumnDef="select">
           <th mat-header-cell *matHeaderCellDef>Add</th>
           <td mat-cell *matCellDef="let row">
@@ -57,30 +57,26 @@ POSSIBILITY OF SUCH DAMAGE.
         </ng-container>
 
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header sortActionDescription="Sort by column">User Name</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header sortActionDescription="Sort by column">Group Name</th>
           <td mat-cell *matCellDef="let row">{{ row.name }}</td>
         </ng-container>
 
-        <ng-container matColumnDef="email">
-          <th mat-header-cell *matHeaderCellDef mat-sort-header sortActionDescription="Sort by column">User Email</th>
-          <td mat-cell *matCellDef="let row">{{ row.email }}</td>
+        <ng-container matColumnDef="description">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header sortActionDescription="Sort by column">Description</th>
+          <td mat-cell *matCellDef="let row">{{ row.description }}</td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="columnIDs; sticky: true"></tr>
         <tr mat-row *matRowDef="let row; columns: columnIDs"></tr>
         <tr class="mat-row" *matNoDataRow>
-          <td class="mat-cell no-data-cell" colspan="7">No groups matching the filter "{{ userSearchString }}"</td>
+          <td class="mat-cell no-data-cell" colspan="7">No groups matching the filter "{{ groupSearchString }}"</td>
         </tr>
       </table>
     </div>
 
-    <h2 class="access-level">User Access Level</h2>
+    <h2 class="access-level">Group Access Level</h2>
     <div class="role-options">
       <mat-radio-group [(ngModel)]="selectedRole">
-        <mat-radio-button class="role-option" value="admin"
-          >Administrator (can approve new members)
-          <img src="assets/icons/admin-badge.svg" />
-        </mat-radio-button>
         <mat-radio-button class="role-option" value="editor"
           >Member (editor)
           <img src="assets/icons/member-badge.svg" />

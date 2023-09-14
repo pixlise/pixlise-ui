@@ -25,11 +25,7 @@
           <div class="user-field">
             <input [(ngModel)]="userEmail" type="text" autocomplete="off" data-lpignore="true" placeholder="Email" />
             <span class="buttons">
-              <action-button
-                action="check"
-                [disabled]="!userEmailChanged"
-                tooltipTitle="Confirm"
-                (onClick)="onConfirmUserEmail()"></action-button>
+              <action-button action="check" [disabled]="!userEmailChanged" tooltipTitle="Confirm" (onClick)="onConfirmUserEmail()"></action-button>
               <action-button action="close" [disabled]="!userEmailChanged" tooltipTitle="Reset" (onClick)="onResetUserEmail()"></action-button>
             </span>
           </div>
@@ -41,10 +37,14 @@
       </div>
     </section>
     <section class="group-membership">
-      <h2>Group Membership</h2>
+      <h2>
+        Group Membership
+        <push-button class="manage-groups-btn" buttonStyle="yellow" (onClick)="onOpenRequestGroupDialog()">Manage Groups</push-button>
+      </h2>
       <div *ngFor="let group of groupsWithAccess" class="notification-item group-item">
         <span class="title" #tooltip="matTooltip" matTooltip="Relationship: {{ getGroupRelationship(group) }}">{{ group.name }}</span>
-        <action-button action="close" tooltipTitle="Leave Group" (onClick)="onLeaveGroup(group)"></action-button>
+        <img class="group-icon" src="{{ getGroupIcon(group) }}" />
+        <!-- <action-button action="close" tooltipTitle="Leave Group" (onClick)="onLeaveGroup(group)"></action-button> -->
       </div>
       <div *ngIf="groupsWithAccess.length <= 0" class="empty">
         <span class="title">No Groups</span>
@@ -59,9 +59,7 @@
         </span>
       </span>
       <div class="notifications-list">
-        <div
-          *ngFor="let notification of notifications"
-          class="notification-item {{ !notification.method.ui && !notification.method.email ? 'empty' : '' }}">
+        <div *ngFor="let notification of notifications" class="notification-item {{ !notification.method.ui && !notification.method.email ? 'empty' : '' }}">
           <span class="title">{{ notification.label }}</span>
           <span class="checkboxes">
             <two-state-icon-button
@@ -85,12 +83,7 @@
     <section class="event-history">
       <h2>
         Event History ({{ eventHistory.length }})
-        <action-button
-          class="clear-history"
-          action="delete"
-          #tooltip="matTooltip"
-          matTooltip="Clear Event History"
-          (onClick)="onClearEventHistory()"></action-button>
+        <action-button class="clear-history" action="delete" #tooltip="matTooltip" matTooltip="Clear Event History" (onClick)="onClearEventHistory()"></action-button>
       </h2>
       <div class="event-history-list">
         <div

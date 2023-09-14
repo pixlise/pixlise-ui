@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Inject } from "@angular/core";
+import { Component, EventEmitter, Inject, Output } from "@angular/core";
 import { AuthService } from "@auth0/auth0-angular";
 import { UserDetails } from "src/app/generated-protos/user";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
@@ -38,6 +38,8 @@ import { UserOptionsService } from "src/app/modules/settings/services/user-optio
   styleUrls: ["./user-menu-panel.component.scss"],
 })
 export class UserMenuPanelComponent {
+  @Output() close = new EventEmitter();
+
   user: UserDetails = {
     info: {
       id: "",
@@ -62,6 +64,10 @@ export class UserMenuPanelComponent {
     });
   }
 
+  onHidePanel() {
+    this.close.emit();
+  }
+
   onLogout(): void {
     this._authService.logout();
   }
@@ -70,6 +76,7 @@ export class UserMenuPanelComponent {
 
   onSettings(): void {
     this._userOptionsService.toggleSidebar();
+    this.onHidePanel();
   }
 
   get userName(): string {

@@ -87,7 +87,7 @@
       .notifications-header {
         display: flex;
         align-items: center;
-        height: 32px;
+        height: 40px;
         background: var(--gray-80, #293137);
 
         h2 {
@@ -216,9 +216,14 @@
       h2 {
         display: flex;
         align-items: center;
-        height: 32px;
+        height: 40px;
         padding-left: 16px;
         background: var(--gray-80, #293137);
+
+        .manage-groups-btn {
+          margin-left: auto;
+          margin-right: 8px;
+        }
       }
 
       .group-item {
@@ -226,6 +231,10 @@
         action-button {
           margin-left: auto;
           margin-right: 16px;
+        }
+
+        .group-icon {
+          margin-left: 4px;
         }
       }
 
@@ -242,7 +251,7 @@
       h2 {
         display: flex;
         align-items: center;
-        height: 32px;
+        height: 40px;
         padding-left: 16px;
         background: var(--gray-80, #293137);
 

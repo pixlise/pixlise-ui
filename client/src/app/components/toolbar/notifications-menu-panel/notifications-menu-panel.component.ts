@@ -27,87 +27,49 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
+import { Component, EventEmitter, Output } from "@angular/core";
+import { Notification, NotificationsService } from "src/app/modules/settings/services/notifications.service";
 
-.toolbar {
-  height: 32px;
-  padding: $sz-half $sz-double;
-  margin-bottom: $ui-border-size;
-  user-select: none;
+@Component({
+  selector: "app-notifications-menu-panel",
+  templateUrl: "./notifications-menu-panel.component.html",
+  styleUrls: ["./notifications-menu-panel.component.scss"],
+})
+export class NotificationsMenuPanelComponent {
+  @Output() close = new EventEmitter();
+  @Output() openHotKeysMenuPanel = new EventEmitter();
 
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-}
+  constructor(private _notificationService: NotificationsService) {}
 
-.dark-background {
-  background-color: $clr-gray-100;
-  margin-bottom: 0px;
-}
-
-.title-text {
-  font-weight: 900;
-  font-size: 24px;
-  line-height: 28px;
-  color: $clr-gray-40;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 20vw;
-}
-
-.pixlise {
-  color: $clr-gray-50;
-}
-
-.nav-link-normal {
-  font-family: Inter, Roboto;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 17px;
-  color: $clr-gray-30;
-  text-transform: uppercase;
-  cursor: pointer;
-  text-decoration: none;
-  white-space: nowrap;
-
-  &:hover {
-    color: $clr-gray-50;
+  get notifications(): Notification[] {
+    return this._notificationService.notifications;
   }
-}
 
-.nav-link-active {
-  @extend .nav-link-normal;
-  color: $clr-yellow;
-}
-
-.nav-link-disabled {
-  @extend .nav-link-normal;
-  color: $clr-gray-60;
-  cursor: default;
-}
-
-.gap-separated-horizontal-elements-wide > * + * {
-  margin-left: $sz-double;
-}
-
-.buttons {
-  display: flex;
-  align-items: center;
-  icon-button {
-    margin-right: 4px;
+  onNotificationAction(notification: Notification) {
+    if (notification.type === "action") {
+      if (notification.id === "hotkeys-panel") {
+        this.onOpenHotkeysMenuPanel();
+      } else if (notification.action?.buttonAction) {
+        notification.action.buttonAction();
+      }
+    }
   }
-}
 
-user-icon {
-  border-radius: 4px;
-  cursor: pointer;
+  onOpenHotkeysMenuPanel() {
+    this.close.emit();
+    this.openHotKeysMenuPanel.emit();
+    this.dismissNotification("hotkeys-panel");
+  }
 
-  &:hover,
-  &.open {
-    outline: 2px solid rgb(var(--clr-yellow));
+  dismissNotification(notification: Notification | string) {
+    this._notificationService.dismissNotification(notification);
+  }
+
+  dismissAllNotifications() {
+    this._notificationService.dismissAllNotifications();
+  }
+
+  onHidePanel() {
+    this.close.emit();
   }
 }
