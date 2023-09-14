@@ -141,20 +141,20 @@ export class SelectionService {
 
   private persistSelection(beams: BeamSelection, pixels: PixelSelection, isPixelCrop: boolean) {
     const wait$ = [];
-    const entries = new Map<string, number[]>();
+    const entries: { [x: string]: ScanEntryRange } = {};
+    let hasBeams = false;
 
     for (const id of beams.getScanIds()) {
-      const idxs = beams.getSelectedScanEntryIndexes(id);
-      entries.set(id, Array.from(idxs));
+      const idxs = encodeIndexList(Array.from(beams.getSelectedScanEntryIndexes(id)));
+      entries[id] = ScanEntryRange.create({ indexes: idxs });
+      hasBeams = true;
     }
 
-    if (entries.size > 0) {
+    if (hasBeams) {
       wait$.push(
         this._dataService.sendSelectedScanEntriesWriteRequest(
           SelectedScanEntriesWriteReq.create({
-            scanIdEntryIndexes: {
-              indexes: entries,
-            },
+            scanIdEntryIndexes: entries
           })
         )
       );

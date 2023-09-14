@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Injectable } from "@angular/core";
-import { Observable, of, map } from "rxjs";
+import { Observable, of, map, share } from "rxjs";
 import { ROIItem } from "src/app/generated-protos/roi";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { APIDataService } from "./apidata.service";
@@ -48,91 +48,101 @@ export class RegionSettings {
   providedIn: "root",
 })
 export class RegionSettingsService {
-  private _roiMap = new Map<string, RegionSettings>();
+  private _roiMap = new Map<string, Observable<RegionSettings>>();
   private _nextDrawConfigIdx: number = 0;
 
   constructor(private _dataService: APIDataService) {
     // Add defaults for predefined ROIs
     this._roiMap.set(
       PredefinedROIID.AllPoints,
-      new RegionSettings(
-        ROIItem.create({
-          id: PredefinedROIID.AllPoints,
-          scanId: "",
-          name: "All Points",
-          description: "All Points",
-          scanEntryIndexesEncoded: [],
-          imageName: "",
-          pixelIndexesEncoded: [],
-          tags: [],
-          modifiedUnixSec: 0,
-          //owner: null
-        }),
-        Colours.GRAY_10,
-        PointDrawer.ShapeCircle
+      of(
+        new RegionSettings(
+          ROIItem.create({
+            id: PredefinedROIID.AllPoints,
+            scanId: "",
+            name: "All Points",
+            description: "All Points",
+            scanEntryIndexesEncoded: [],
+            imageName: "",
+            pixelIndexesEncoded: [],
+            tags: [],
+            modifiedUnixSec: 0,
+            //owner: null
+          }),
+          Colours.GRAY_10,
+          PointDrawer.ShapeCircle
+        )
       )
     );
 
     this._roiMap.set(
       PredefinedROIID.SelectedPoints,
-      new RegionSettings(
-        ROIItem.create({
-          id: PredefinedROIID.SelectedPoints,
-          scanId: "",
-          name: "Selected Points",
-          description: "Selected Points",
-          scanEntryIndexesEncoded: [],
-          imageName: "",
-          pixelIndexesEncoded: [],
-          tags: [],
-          modifiedUnixSec: 0,
-          //owner: null
-        }),
-        Colours.CONTEXT_BLUE,
-        PointDrawer.ShapeCircle
+      of(
+        new RegionSettings(
+          ROIItem.create({
+            id: PredefinedROIID.SelectedPoints,
+            scanId: "",
+            name: "Selected Points",
+            description: "Selected Points",
+            scanEntryIndexesEncoded: [],
+            imageName: "",
+            pixelIndexesEncoded: [],
+            tags: [],
+            modifiedUnixSec: 0,
+            //owner: null
+          }),
+          Colours.CONTEXT_BLUE,
+          PointDrawer.ShapeCircle
+        )
       )
     );
 
     this._roiMap.set(
       PredefinedROIID.RemainingPoints,
-      new RegionSettings(
-        ROIItem.create({
-          id: PredefinedROIID.RemainingPoints,
-          scanId: "",
-          name: "Remaining Points",
-          description: "Remaining Points",
-          scanEntryIndexesEncoded: [],
-          imageName: "",
-          pixelIndexesEncoded: [],
-          tags: [],
-          modifiedUnixSec: 0,
-          //owner: null
-        }),
-        Colours.CONTEXT_GREEN,
-        PointDrawer.ShapeCircle
+      of(
+        new RegionSettings(
+          ROIItem.create({
+            id: PredefinedROIID.RemainingPoints,
+            scanId: "",
+            name: "Remaining Points",
+            description: "Remaining Points",
+            scanEntryIndexesEncoded: [],
+            imageName: "",
+            pixelIndexesEncoded: [],
+            tags: [],
+            modifiedUnixSec: 0,
+            //owner: null
+          }),
+          Colours.CONTEXT_GREEN,
+          PointDrawer.ShapeCircle
+        )
       )
     );
   }
 
   getRegionSettings(roiId: string): Observable<RegionSettings> {
-    const existing = this._roiMap.get(roiId);
-    if (existing !== undefined) {
-      return of(existing);
+    let result = this._roiMap.get(roiId);
+    if (result === undefined) {
+      // Have to request it!
+      console.log("sendRegionOfInterestGetRequest");
+      result = this._dataService.sendRegionOfInterestGetRequest(RegionOfInterestGetReq.create({ id: roiId })).pipe(
+        map((roiResp: RegionOfInterestGetResp) => {
+          if (roiResp.regionOfInterest === undefined) {
+            throw new Error("regionOfInterest data not returned for " + roiId);
+          }
+
+          const roi = new RegionSettings(roiResp.regionOfInterest, Colours.WHITE, PointDrawer.ShapeCircle);
+          this.applyNewDrawConfig(roi);
+          return roi;
+        }),
+        share()
+      );
+
+      // Add it to the map too so a subsequent request will get this
+      this._roiMap.set(roiId, result);
     }
 
-    // Get the region itself
-    return this._dataService.sendRegionOfInterestGetRequest(RegionOfInterestGetReq.create({ id: roiId })).pipe(
-      map((roiResp: RegionOfInterestGetResp) => {
-        if (roiResp.regionOfInterest === undefined) {
-          throw new Error("regionOfInterest data not returned for " + roiId);
-        }
-
-        const roi = new RegionSettings(roiResp.regionOfInterest, Colours.WHITE, PointDrawer.ShapeCircle);
-        this.applyNewDrawConfig(roi);
-
-        return roi;
-      })
-    );
+    return result;
   }
 
   private applyNewDrawConfig(item: RegionSettings) {

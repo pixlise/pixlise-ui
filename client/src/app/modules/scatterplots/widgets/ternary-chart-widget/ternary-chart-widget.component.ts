@@ -15,6 +15,7 @@ import { TernaryChartModel } from "./model";
 import { TernaryChartToolHost } from "./interaction";
 import { PredefinedROIID, orderVisibleROIs } from "src/app/models/RegionOfInterest";
 import { DataSourceParams, SelectionService, WidgetDataService, DataUnit } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 
 @Component({
   selector: "ternary-chart-widget",
@@ -36,23 +37,28 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   ) {
     super();
 
-    const scanId = this._route.snapshot.queryParams["scan_id"];
-    this.mdl.scanId = scanId;
-
-    this.mdl.quantId = "9k8wgfzi02a9h6f8";
     this.mdl.expressionIdA = "r4zd5s2tfgr8rahy"; // AlFe
-    this.mdl.expressionIdB = "rlqqh3wz9xball3w";
+    this.mdl.expressionIdB = "rlqqh3wz9xball3w"; // Ca/100
     this.mdl.expressionIdC = "vge9tz6fkbi2ha1p"; // CaTi
-    this.mdl.roiIds = orderVisibleROIs([PredefinedROIID.AllPoints/*,"shared-6wyrtzyx0xtkw4z7"*/]);
+
+    //const scanId = this._route.snapshot.queryParams["scan_id"];
+
+    // Naltsos
+    this.mdl.dataSourceIds.set("048300551", new ScanDataIds("9k8wgfzi02a9h6f8", [PredefinedROIID.AllPoints, "048300551_xo98frdyibinpjn3"]));
+    // Dourbes
+    //this.mdl.dataSourceIds.set("089063943", new ScanDataIds("9qntb8w2joq4elti", [PredefinedROIID.AllPoints, "048300551_xo98frdyibinpjn3"]));
 
     const exprIds = [this.mdl.expressionIdA, this.mdl.expressionIdB, this.mdl.expressionIdC];
 
     const unit = this.mdl.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT;
     const query: DataSourceParams[] = [];
 
-    for (const roiId of this.mdl.roiIds) {
-      for (const exprId of exprIds) {
-        query.push(new DataSourceParams(this.mdl.scanId, exprId, this.mdl.quantId, roiId, unit));
+    // NOTE: processQueryResult depends on the order of the following for loops...
+    for (const [scanId, ids] of this.mdl.dataSourceIds) {
+      for (const roiId of ids.roiIds) {
+        for (const exprId of exprIds) {
+          query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, unit));
+        }
       }
     }
 

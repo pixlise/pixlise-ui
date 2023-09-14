@@ -81,8 +81,8 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
 
   private handleMouseHover(canvasPt: Point): CanvasInteractionResult {
     // If the mouse is over the triangle area, show a lasso cursor
-    let triPts = [this._mdl.drawModel.triangleA, this._mdl.drawModel.triangleB, this._mdl.drawModel.triangleC];
-    let triBox: Rect = Rect.makeRect(this._mdl.drawModel.triangleA, 0, 0);
+    const triPts = [this._mdl.drawModel.triangleA, this._mdl.drawModel.triangleB, this._mdl.drawModel.triangleC];
+    const triBox: Rect = Rect.makeRect(this._mdl.drawModel.triangleA, 0, 0);
     triBox.expandToFitPoints(triPts);
 
     let cursor = CursorId.defaultPointer;
@@ -122,7 +122,7 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
     const mouseOverPt = this.getIndexforPoint(canvasPt);
 
     if (mouseOverPt != null) {
-      this.setSelection(new Set<number>([mouseOverPt.pmc]));
+      this.setSelection(new Map<string, Set<number>>([[mouseOverPt.scanId, new Set<number>([mouseOverPt.pmc])]]));
     }
     // TODO: Replace the following with HTML things on top of the widget
     else if (this._mdl.drawModel.labelA.containsPoint(canvasPt)) {
@@ -133,22 +133,22 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
       this.cornerClick.next("C");
     } else {
       // They clicked in region around triangle (but not on a point), clear selection
-      let triPoly = [this._mdl.drawModel.triangleA, this._mdl.drawModel.triangleB, this._mdl.drawModel.triangleC];
-      let triBBox = new Rect(this._mdl.drawModel.triangleA.x, this._mdl.drawModel.triangleA.y, 0, 0);
+      const triPoly = [this._mdl.drawModel.triangleA, this._mdl.drawModel.triangleB, this._mdl.drawModel.triangleC];
+      const triBBox = new Rect(this._mdl.drawModel.triangleA.x, this._mdl.drawModel.triangleA.y, 0, 0);
       triBBox.expandToFitPoints(triPoly);
 
       if (ptWithinPolygon(canvasPt, triPoly, triBBox)) {
-        this.setSelection(new Set<number>());
+        this.setSelection(new Map<string, Set<number>>());
       }
     }
   }
 
   private handleLassoFinish(lassoPoints: Point[]): void {
     // Loop through all data points, if they're within our lasso, select their PMC
-    let bbox = Rect.makeRect(lassoPoints[0], 0, 0);
+    const bbox = Rect.makeRect(lassoPoints[0], 0, 0);
     bbox.expandToFitPoints(lassoPoints);
 
-    let selectedPMCs = new Set<number>();
+    const selection = new Map<string, Set<number>>();
 
     if (this._mdl.raw) {
       for (let c = 0; c < this._mdl.drawModel.pointGroupCoords.length; c++) {
@@ -160,29 +160,33 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
           continue;
         }
 
+        const selected: Set<number> = selection.get(this._mdl.raw.pointGroups[c].scanId) || new Set<number>();
+
         let i = 0;
-        for (let coord of this._mdl.drawModel.pointGroupCoords[c]) {
+        for (const coord of this._mdl.drawModel.pointGroupCoords[c]) {
           if (ptWithinPolygon(coord, lassoPoints, bbox)) {
-            selectedPMCs.add(this._mdl.raw.pointGroups[c].values[i].pmc);
+            selected.add(this._mdl.raw.pointGroups[c].values[i].scanEntryId);
           }
 
           i++;
         }
+
+        selection.set(this._mdl.raw.pointGroups[c].scanId, selected);
       }
     }
 
     // Notify out
-    this.setSelection(selectedPMCs);
+    this.setSelection(selection);
   }
 
-  private setSelection(pmcs: Set<number>) {
+  private setSelection(scanEntryIndexes: Map<string, Set<number>>) {
     // 1 or more PMCs were selected, get location indexes & update the selection
     if (!this._mdl.raw) {
       return;
     }
-
-    let blockedPMCs = new Set<number>();
 /*
+    const blockedIndexes = new Set<number>();
+
     if (this._mdl.selectModeExcludeROI) {
       for (let region of this._widgetDataService.regions.values()) {
         if (
@@ -196,25 +200,21 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
         }
       }
     }
-*/
-    let set = new Set<number>();
-    for (let pmc of pmcs) {
+
+    const scanEntryIndexesToSave = new Map<string, Set<number>>();
+    for (const idx of scanEntryIndexes) {
       // If we're only selecting points that are not in any ROIs, do the filtering here:
-      if (!this._mdl.selectModeExcludeROI || !blockedPMCs.has(pmc)) {
-        let idx = 0;//dataset.pmcToLocationIndex.get(pmc);
+      if (!this._mdl.selectModeExcludeROI || !blockedIndexes.has(idx)) {
         set.add(idx);
       }
     }
-
-    this._selectionService.setSelection(
-      BeamSelection.makeSelectionFromSingleScanEntryIndexes("abc123", set),
-      PixelSelection.makeEmptySelection()
-    );
+*/
+    this._selectionService.setSelection(BeamSelection.makeSelectionFromScanEntryIndexSets(scanEntryIndexes), PixelSelection.makeEmptySelection());
   }
 
   private getIndexforPoint(pt: Point): MouseHoverPoint | null {
     if (this._mdl.raw) {
-      let boxSize = HOVER_POINT_RADIUS * 2;
+      const boxSize = HOVER_POINT_RADIUS * 2;
 
       for (let c = 0; c < this._mdl.drawModel.pointGroupCoords.length; c++) {
         if (!this._mdl.raw.pointGroups[c]) {
@@ -226,9 +226,9 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
         }
 
         let i = 0;
-        for (let coord of this._mdl.drawModel.pointGroupCoords[c]) {
+        for (const coord of this._mdl.drawModel.pointGroupCoords[c]) {
           if (ptWithinBox(pt, coord, boxSize, boxSize)) {
-            return new MouseHoverPoint(this._mdl.scanId, this._mdl.raw.pointGroups[c].values[i].pmc, c, i, coord);
+            return new MouseHoverPoint(this._mdl.raw.pointGroups[c].scanId, this._mdl.raw.pointGroups[c].values[i].scanEntryId, c, i, coord);
           }
 
           i++;

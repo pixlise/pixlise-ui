@@ -18,6 +18,8 @@ import { CANVAS_FONT_SIZE_TITLE, PLOT_POINTS_SIZE, HOVER_POINT_RADIUS } from "sr
 import { ExpressionReferences, RegionDataResultItem, RegionDataResults, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { PMCDataValues } from "src/app/expression-language/data-values";
+import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
+import { ScanDataIds, WidgetDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 
 export class TernaryChartModel implements CanvasDrawNotifier {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -32,14 +34,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
   expressionIdC = "";
 
   // The scan and quantification the data will come from
-  scanId: string = "";
-  quantId: string = "";
-
-  // The visible ROIs
-  roiIds: string[] = [];
-
-  // ROI colours
-  roiColours = new Map<string, string>();
+  dataSourceIds: WidgetDataIds = new Map<string, ScanDataIds>();
 
   // Settings of the binary chart
   showMmol: boolean = false;
@@ -111,13 +106,14 @@ export class TernaryChartModel implements CanvasDrawNotifier {
   }
 
   private processQueryResult(t0: number, exprIds: string[], queryData: RegionDataResults, corners: TernaryCorner[]) {
-    const pointGroups: TernaryDataColour[] = [];
+    const pointGroups: TernaryDataGroup[] = [];
     const pmcLookup: Map<number, TernaryPlotPointIndex> = new Map<number, TernaryPlotPointIndex>();
 
     const queryWarnings: string[] = [];
 
     for (let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx += exprIds.length) {
       // Set up storage for our data first
+      const scanId = queryData.queryResults[queryIdx].query.scanId;
       const roiId = queryData.queryResults[queryIdx].query.roiId;
 
       const region = queryData.queryResults[queryIdx].region;
@@ -129,7 +125,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
         continue;
       }
 
-      const pointGroup: TernaryDataColour = new TernaryDataColour(RGBA.fromWithA(region.colour, 1), region.shape, []);
+      const pointGroup: TernaryDataGroup = new TernaryDataGroup(scanId, roiId, [], RGBA.fromWithA(region.colour, 1), region.shape);
 
       // Filter out PMCs that don't exist in the data for all 3 corners
       const toFilter: PMCDataValues[] = [];
@@ -145,6 +141,19 @@ export class TernaryChartModel implements CanvasDrawNotifier {
 
       // Read for each expression
       for (let c = 0; c < exprIds.length; c++) {
+        // Read the name
+        const expr = queryData.queryResults[queryIdx + c].expression;
+        corners[c].label = getExpressionShortDisplayName(18, expr?.id || "", expr?.name || "?").shortName;
+
+        const mmolAppend = "(mmol)";
+        if (this.showMmol && !corners[c].label.endsWith(mmolAppend)) {
+          // Note this won't detect if (mmol) was modified by short name to be (mm...
+          corners[c].label += mmolAppend;
+        }
+
+        // TODO!!!
+        //corners[c].modulesOutOfDate = queryData.queryResults[queryIdx + c].expression?.moduleReferences || "?";
+
         // Did we find an error with this query?
         if (queryData.queryResults[queryIdx + c].error) {
           corners[c].errorMsgShort = queryData.queryResults[queryIdx + c].errorType || "";
@@ -172,8 +181,10 @@ export class TernaryChartModel implements CanvasDrawNotifier {
             } else {
               // Ensure we're writing to the right PMC
               // Should always be the right order because we run 3 queries with the same ROI
-              if (pointGroup.values[i].pmc != value.pmc) {
-                throw new Error("Received PMCs in unexpected order for ternary corner: " + c + ", got PMC: " + value.pmc + ", expected: " + pointGroup.values[i].pmc);
+              if (pointGroup.values[i].scanEntryId != value.pmc) {
+                throw new Error(
+                  "Received PMCs in unexpected order for ternary corner: " + c + ", got PMC: " + value.pmc + ", expected: " + pointGroup.values[i].scanEntryId
+                );
               }
 
               if (c == 1) {
@@ -197,7 +208,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
       this.keyItems.push(new WidgetKeyItem(roiIdForKey, region.region.name, region.colour, [], region.shape));
 
       for (let c = 0; c < pointGroup.values.length; c++) {
-        pmcLookup.set(pointGroup.values[c].pmc, new TernaryPlotPointIndex(pointGroups.length, c));
+        pmcLookup.set(pointGroup.values[c].scanEntryId, new TernaryPlotPointIndex(pointGroups.length, c));
       }
 
       if (pointGroup.values.length > 0) {
@@ -214,13 +225,13 @@ export class TernaryChartModel implements CanvasDrawNotifier {
 
   private assignQueryResult(
     t0: number,
-    pointGroups: TernaryDataColour[] = [],
+    pointGroups: TernaryDataGroup[] = [],
     corners: TernaryCorner[],
     pmcLookup: Map<number, TernaryPlotPointIndex>,
     queryWarnings: string[]
   ) {
     if (this._references.length > 0) {
-      const pointGroup: TernaryDataColour = new TernaryDataColour(Colours.CONTEXT_PURPLE, "circle", []);
+      const pointGroup: TernaryDataGroup = new TernaryDataGroup("", "", [], Colours.CONTEXT_PURPLE, "circle");
 
       this._references.forEach((referenceName, i) => {
         const reference = ExpressionReferences.getByName(referenceName);
@@ -279,7 +290,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
           this.keyItems.unshift(new KeyItem(ViewStateService.AllPointsLabel, ViewStateService.AllPointsColour));
       }
 */
-    const ternaryData = new TernaryData(corners[0], corners[1], corners[2], pointGroups, pmcLookup, this.roiIds);
+    const ternaryData = new TernaryData(corners[0], corners[1], corners[2], pointGroups, pmcLookup);
 
     this._raw = ternaryData;
 
@@ -484,7 +495,7 @@ export class TernaryCorner {
 
 export class TernaryDataItem {
   constructor(
-    public pmc: number,
+    public scanEntryId: number, // Aka PMC, id that doesn't change on scan for a data point source (spectrum id)
     public a: number,
     public b: number,
     public c: number,
@@ -493,11 +504,18 @@ export class TernaryDataItem {
   ) {}
 }
 
-export class TernaryDataColour {
+export class TernaryDataGroup {
   constructor(
+    // This group contains data for the following ROI within the following scan:
+    public scanId: string,
+    public roiId: string,
+
+    // It contains these values to show:
+    public values: TernaryDataItem[],
+
+    // And these are the draw settings for the values:
     public colour: RGBA,
-    public shape: string,
-    public values: TernaryDataItem[]
+    public shape: string
   ) {}
 }
 
@@ -513,8 +531,7 @@ export class TernaryData {
     public cornerA: TernaryCorner,
     public cornerB: TernaryCorner,
     public cornerC: TernaryCorner,
-    public pointGroups: TernaryDataColour[],
-    public pmcToValueLookup: Map<number, TernaryPlotPointIndex>,
-    public visibleROIs: string[]
+    public pointGroups: TernaryDataGroup[],
+    public pmcToValueLookup: Map<number, TernaryPlotPointIndex>
   ) {}
 }
