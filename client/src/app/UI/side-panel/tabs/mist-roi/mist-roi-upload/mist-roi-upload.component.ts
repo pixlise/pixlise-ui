@@ -122,28 +122,64 @@ export class MistRoiUploadComponent implements OnInit
             let existingIndex = items.findIndex((item) => item.mistROIItem.ClassificationTrail === rawItem.ClassificationTrail);
             if(existingIndex >= 0)
             {
-                items[existingIndex].locationIndexes.push(rawItem.PMC);
+                if(!items[existingIndex].locationIndexes.includes(rawItem.PMC))
+                {
+                    items[existingIndex].locationIndexes.push(rawItem.PMC);
+                }
 
                 if(this.includesMultipleDatasets)
                 {
 
-                    let datasetID = rawItem?.DatasetID || this.data.datasetID;
+                    let datasetID = rawItem?.DatasetID;
                     let datasetItems = this.mistROIsByDatasetID.get(datasetID);
                     if(datasetItems)
                     {
                         let existingMistIndex = datasetItems.findIndex((item) => item.mistROIItem.ClassificationTrail === rawItem.ClassificationTrail);
                         if(existingMistIndex >= 0)
                         {
-                            datasetItems[existingMistIndex].locationIndexes.push(rawItem.PMC);
+                            if(!datasetItems[existingMistIndex].locationIndexes.includes(rawItem.PMC))
+                            {
+                                datasetItems[existingMistIndex].locationIndexes.push(rawItem.PMC);
+                            }
                         }
                         else
                         {
-                            datasetItems.push(items[existingIndex]);
+                          datasetItems.push(new ROIItem(
+                            items[existingIndex].name,
+                            [rawItem.PMC],
+                            rawItem.ClassificationTrail,
+                            null,
+                            null,
+                            new MistROIItem(
+                                items[existingIndex].mistROIItem.species,
+                                items[existingIndex].mistROIItem.mineralGroupID,
+                                items[existingIndex].mistROIItem.ID_Depth,
+                                items[existingIndex].mistROIItem.ClassificationTrail,
+                                items[existingIndex].mistROIItem.formula
+                            )
+                          ));
                         }
+
+                        this.mistROIsByDatasetID.set(datasetID, datasetItems);
                     }
                     else
                     {
-                        this.mistROIsByDatasetID.set(datasetID, [items[existingIndex]]);
+                        this.mistROIsByDatasetID.set(datasetID, [
+                          new ROIItem(
+                            items[existingIndex].name,
+                            [rawItem.PMC],
+                            rawItem.ClassificationTrail,
+                            null,
+                            null,
+                            new MistROIItem(
+                              items[existingIndex].mistROIItem.species,
+                              items[existingIndex].mistROIItem.mineralGroupID,
+                              items[existingIndex].mistROIItem.ID_Depth,
+                              items[existingIndex].mistROIItem.ClassificationTrail,
+                              items[existingIndex].mistROIItem.formula
+                            )
+                          ),
+                        ]);
                     }
                 }
             }
@@ -157,30 +193,50 @@ export class MistRoiUploadComponent implements OnInit
                 let name = rawItem.species && rawItem.species.length > 0 ? rawItem.species : mineralGroupID;
                 let existingName = items.findIndex((item) => item.name.replace("mist__roi.", "") === name) >= 0;
 
-                let mistROI = new ROIItem(
+                items.push(
+                  new ROIItem(
                     `mist__roi.${existingName ? rawItem.ClassificationTrail : name}`,
                     [rawItem.PMC],
                     rawItem.ClassificationTrail,
                     null,
                     null,
                     new MistROIItem(
-                        rawItem.species,
-                        mineralGroupID,
-                        rawItem.ID_Depth,
-                        rawItem.ClassificationTrail,
-                        rawItem.formula
+                      rawItem.species,
+                      mineralGroupID,
+                      rawItem.ID_Depth,
+                      rawItem.ClassificationTrail,
+                      rawItem.formula
                     )
+                  )
                 );
-                items.push(mistROI);
 
                 if(this.includesMultipleDatasets)
                 {
-                    let datasetID = rawItem?.DatasetID || this.data.datasetID;
+                    let datasetID = rawItem?.DatasetID;
                     if(!this.mistROIsByDatasetID.has(datasetID))
                     {
                         this.mistROIsByDatasetID.set(datasetID, []);
                     }
-                    this.mistROIsByDatasetID.get(datasetID).push(mistROI);
+
+                    let mistROIDatasetItems = this.mistROIsByDatasetID.get(datasetID);
+                    mistROIDatasetItems.push(
+                      new ROIItem(
+                        `mist__roi.${existingName ? rawItem.ClassificationTrail : name}`,
+                        [rawItem.PMC],
+                        rawItem.ClassificationTrail,
+                        null,
+                        null,
+                        new MistROIItem(
+                          rawItem.species,
+                          mineralGroupID,
+                          rawItem.ID_Depth,
+                          rawItem.ClassificationTrail,
+                          rawItem.formula
+                        )
+                      )
+                    );
+
+                    this.mistROIsByDatasetID.set(datasetID, mistROIDatasetItems);
                 }
             }
         }
