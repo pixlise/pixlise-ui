@@ -188,7 +188,7 @@ export class MistROIComponent implements OnInit
                 {
                     let locIDxCorrectedROIs = response.mistROIs.map((roi) =>
                     {
-                        roi.locationIndexes = roi.locationIndexes.map((locIdx) => this._datasetService.datasetLoaded.pmcToLocationIndex.get(locIdx));
+                        roi.locationIndexes = roi.locationIndexes.map((pmc) => this._datasetService.datasetLoaded.pmcToLocationIndex.get(pmc));
                         return roi;
                     });
 
@@ -272,30 +272,32 @@ export class MistROIComponent implements OnInit
                                     }
                                 );
                             });
-
                         }
 
                         rois.forEach((roi) =>
                         {
+                            let roiWithOffset = roi.copy();
                             let offset = this._datasetService.datasetLoaded.getIdOffsetForSubDataset(subDatasetID);
-                            roi.locationIndexes = roi.locationIndexes.map((locIdx) =>
+                            roiWithOffset.locationIndexes = roiWithOffset.locationIndexes.map((locIdx) =>
                             {
                                 let offsetPMC = offset ? locIdx + offset : locIdx;
                                 return this._datasetService.datasetLoaded.pmcToLocationIndex.get(offsetPMC);
                             });
 
                             // We need to re-combine the ROIs with differing offsets into one ROI
-                            let existingIndex = mistROIsWithOffsets.findIndex((existingROI) => existingROI.name === roi.name);
+                            let existingIndex = mistROIsWithOffsets.findIndex(
+                              (existingROI) => existingROI.name === roiWithOffset.name
+                            );
                             if(existingIndex >= 0)
                             {
                                 mistROIsWithOffsets[existingIndex].locationIndexes = [
-                                    ...mistROIsWithOffsets[existingIndex].locationIndexes,
-                                    ...roi.locationIndexes
+                                  ...mistROIsWithOffsets[existingIndex].locationIndexes,
+                                  ...roiWithOffset.locationIndexes,
                                 ];
                             }
                             else
                             {
-                                mistROIsWithOffsets.push(roi);
+                                mistROIsWithOffsets.push(roiWithOffset);
                             }
                         });
                     });
