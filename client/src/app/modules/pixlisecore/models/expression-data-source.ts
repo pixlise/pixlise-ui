@@ -26,6 +26,7 @@ import { SpectrumType } from "src/app/generated-protos/spectrum";
 import { DiffractionPeak, RoughnessItem, diffractionPeakWidth } from "./diffraction";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { DiffractionPeakManualListReq, DiffractionPeakManualListResp } from "src/app/generated-protos/diffraction-manual-msgs";
+import { APICachedDataService } from "../services/apicacheddata.service";
 
 export class ExpressionDataSource
   implements DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
@@ -66,7 +67,14 @@ export class ExpressionDataSource
   private _eVCalibrationDetector = "A";
 
   // Here we get the data required to honor the interfaces we implement, based on the above
-  prepare(dataService: APIDataService, scanId: string, quantId: string, roiId: string, spectrumEnergyCalibration: SpectrumEnergyCalibration[]): Observable<void> {
+  prepare(
+    dataService: APIDataService,
+    cachedDataService: APICachedDataService,
+    scanId: string,
+    quantId: string,
+    roiId: string,
+    spectrumEnergyCalibration: SpectrumEnergyCalibration[]
+  ): Observable<void> {
     if (roiId == PredefinedROIID.SelectedPoints || roiId == PredefinedROIID.RemainingPoints) {
       throw new Error("Cannot ExpressionDataSource with roiId: " + roiId);
     }
@@ -79,7 +87,7 @@ export class ExpressionDataSource
     if (roiId.length > 0 && roiId != PredefinedROIID.AllPoints) {
       // We're looking up the ROI specified to find the list of location indexes to process BUT we still need
       // the full list of scan entries!
-      indexes = dataService.sendRegionOfInterestGetRequest(RegionOfInterestGetReq.create({ id: roiId })).pipe(
+      indexes = cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiId })).pipe(
         concatMap((resp: RegionOfInterestGetResp) => {
           if (resp.regionOfInterest === undefined) {
             throw new Error("regionOfInterest indexes not returned for " + roiId);
@@ -87,7 +95,7 @@ export class ExpressionDataSource
 
           const roiIdxs = decodeIndexList(resp.regionOfInterest?.scanEntryIndexesEncoded);
 
-          return this.getScanEntries(dataService, scanId).pipe(
+          return this.getScanEntries(cachedDataService, scanId).pipe(
             map((scanEntryResp: ScanEntryResp) => {
               // We just got the above as a side-effect, we are actually returning the index list from ROI
               return roiIdxs;
@@ -97,7 +105,7 @@ export class ExpressionDataSource
       );
     } else {
       // No ROIs, so request all scan entries, and we can just work off "all" points
-      indexes = this.getScanEntries(dataService, scanId).pipe(
+      indexes = this.getScanEntries(cachedDataService, scanId).pipe(
         map((resp: ScanEntryResp) => {
           if (resp.entries === undefined) {
             throw new Error("ScanEntryResp indexes not returned for " + scanId);
@@ -124,17 +132,17 @@ export class ExpressionDataSource
 
         // We have the indexes, request all the other data we need
         return combineLatest([
-          dataService.sendQuantGetRequest(QuantGetReq.create({ quantId: quantId, summaryOnly: false })),
-          dataService.sendScanBeamLocationsRequest(ScanBeamLocationsReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })),
-          dataService.sendScanEntryMetadataRequest(ScanEntryMetadataReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })),
+          cachedDataService.getQuant(QuantGetReq.create({ quantId: quantId, summaryOnly: false })),
+          cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })),
+          cachedDataService.getScanEntryMetadata(ScanEntryMetadataReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })),
           // NOTE: We need ALL spectra because the functions that access this sum across all spectra
-          dataService.sendSpectrumRequest(SpectrumReq.create({ scanId: scanId /*, entries: ScanEntryRange.create({ indexes: encodedIndexes })*/ })),
-          dataService.sendPseudoIntensityRequest(PseudoIntensityReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })),
-          dataService.sendDetectedDiffractionPeaksRequest(
+          cachedDataService.getSpectrum(SpectrumReq.create({ scanId: scanId /*, entries: ScanEntryRange.create({ indexes: encodedIndexes })*/ })),
+          cachedDataService.getPseudoIntensity(PseudoIntensityReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })),
+          cachedDataService.getDetectedDiffractionPeaks(
             DetectedDiffractionPeaksReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })
           ),
-          dataService.sendScanMetaLabelsAndTypesRequest(ScanMetaLabelsAndTypesReq.create({ scanId: scanId })),
-          dataService.sendDiffractionPeakManualListRequest(DiffractionPeakManualListReq.create({ scanId: scanId })),
+          cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId: scanId })),
+          cachedDataService.getDiffractionPeakManualList(DiffractionPeakManualListReq.create({ scanId: scanId })),
         ]).pipe(
           map(
             (
@@ -173,8 +181,8 @@ export class ExpressionDataSource
     );
   }
 
-  private getScanEntries(dataService: APIDataService, scanId: string): Observable<ScanEntryResp> {
-    return dataService.sendScanEntryRequest(ScanEntryReq.create({ scanId: scanId })).pipe(
+  private getScanEntries(cachedDataService: APICachedDataService, scanId: string): Observable<ScanEntryResp> {
+    return cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })).pipe(
       tap((resp: ScanEntryResp) => {
         if (resp.entries === undefined) {
           throw new Error("ScanEntryResp indexes not returned for " + scanId);

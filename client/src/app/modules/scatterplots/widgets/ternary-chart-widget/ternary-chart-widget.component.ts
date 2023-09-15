@@ -32,7 +32,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   constructor(
     public dialog: MatDialog,
     private _selectionService: SelectionService,
-    private _route: ActivatedRoute,
+    //private _route: ActivatedRoute,
     private _widgetData: WidgetDataService
   ) {
     super();
@@ -125,6 +125,11 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   ngOnInit() {
+    this._subs.add(this._selectionService.hoverChangedReplaySubject$.subscribe(
+      ()=>{
+        this.mdl.handleHoverPointChanged(this._selectionService.hoverScanId, this._selectionService.hoverEntryIdx);
+      }
+    ));
     this.reDraw();
   }
 

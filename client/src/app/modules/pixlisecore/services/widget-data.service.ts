@@ -45,6 +45,7 @@ import { DataQuerier, EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/e
 import { ExpressionDataSource } from "../models/expression-data-source";
 import { InterpreterDataSource } from "src/app/expression-language/interpreter-data-source";
 import { RegionSettings, RegionSettingsService } from "./region-settings.service";
+import { APICachedDataService } from "./apicacheddata.service";
 
 export enum DataUnit {
     //UNIT_WEIGHT_PCT,
@@ -121,6 +122,7 @@ export class WidgetDataService
 
     constructor(
         private _dataService: APIDataService,
+        private _cachedDataService: APICachedDataService,
         private _regionSettings: RegionSettingsService
     ) {
     }
@@ -160,7 +162,7 @@ export class WidgetDataService
 
     private getDataSingle(query: DataSourceParams, allowAnyResponse: boolean): Observable<DataQueryResult> {
         // Firstly, we need the expression being run
-        return this._dataService.sendExpressionGetRequest(ExpressionGetReq.create({id: query.exprId})).pipe(
+        return this._cachedDataService.getExpression(ExpressionGetReq.create({id: query.exprId})).pipe(
             concatMap(
                 (resp: ExpressionGetResp)=>{
                     if (resp.expression === undefined) {
@@ -227,7 +229,7 @@ export class WidgetDataService
                     // TODO: look up the calibration value here!!
                     const calibration: SpectrumEnergyCalibration[] = [];
                     
-                    return dataSource.prepare(this._dataService, scanId, quantId, roiId, calibration).pipe(
+                    return dataSource.prepare(this._dataService, this._cachedDataService, scanId, quantId, roiId, calibration).pipe(
                         concatMap(
                             () => {
                                 const intDataSource = new InterpreterDataSource(
@@ -300,7 +302,7 @@ export class WidgetDataService
         // Read the module sources
         const waitModules$: Observable<DataModule>[] = [];
         for(const ref of expression.moduleReferences) {
-            waitModules$.push(this._dataService.sendDataModuleGetRequest(DataModuleGetReq.create({id: ref.moduleId, version: ref.version})).pipe(
+            waitModules$.push(this._cachedDataService.getDataModule(DataModuleGetReq.create({id: ref.moduleId, version: ref.version})).pipe(
                 map(
                     (value: DataModuleGetResp)=> {
                         if (value.module === undefined) {

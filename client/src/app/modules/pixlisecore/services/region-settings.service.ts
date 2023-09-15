@@ -28,10 +28,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Injectable } from "@angular/core";
-import { Observable, of, map, share } from "rxjs";
+import { Observable, of, map, shareReplay } from "rxjs";
 import { ROIItem } from "src/app/generated-protos/roi";
 import { Colours, RGBA } from "src/app/utils/colours";
-import { APIDataService } from "./apidata.service";
+import { APICachedDataService } from "./apicacheddata.service";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
 import { PointDrawer } from "src/app/utils/drawing";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
@@ -51,7 +51,7 @@ export class RegionSettingsService {
   private _roiMap = new Map<string, Observable<RegionSettings>>();
   private _nextDrawConfigIdx: number = 0;
 
-  constructor(private _dataService: APIDataService) {
+  constructor(private _cachedDataService: APICachedDataService) {
     // Add defaults for predefined ROIs
     this._roiMap.set(
       PredefinedROIID.AllPoints,
@@ -125,7 +125,7 @@ export class RegionSettingsService {
     if (result === undefined) {
       // Have to request it!
       console.log("sendRegionOfInterestGetRequest");
-      result = this._dataService.sendRegionOfInterestGetRequest(RegionOfInterestGetReq.create({ id: roiId })).pipe(
+      result = this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiId })).pipe(
         map((roiResp: RegionOfInterestGetResp) => {
           if (roiResp.regionOfInterest === undefined) {
             throw new Error("regionOfInterest data not returned for " + roiId);
@@ -135,7 +135,7 @@ export class RegionSettingsService {
           this.applyNewDrawConfig(roi);
           return roi;
         }),
-        share()
+        shareReplay()
       );
 
       // Add it to the map too so a subsequent request will get this

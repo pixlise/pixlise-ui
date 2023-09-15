@@ -13,7 +13,7 @@ import { PanRestrictorToCanvas, PanZoom } from "src/app/modules/analysis/compone
 import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
 import { Point, PointWithRayLabel, Rect, scaleVector } from "src/app/models/Geometry";
 import { Colours, RGBA } from "src/app/utils/colours";
-import { degToRad } from "src/app/utils/utils";
+import { degToRad, invalidPMC } from "src/app/utils/utils";
 import { CANVAS_FONT_SIZE_TITLE, PLOT_POINTS_SIZE, HOVER_POINT_RADIUS } from "src/app/utils/drawing";
 import { ExpressionReferences, RegionDataResultItem, RegionDataResults, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
@@ -67,7 +67,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
 
   private _lastCalcCanvasParams: CanvasParams | null = null;
   private _recalcNeeded = true;
-/*
+  /*
   set raw(r: TernaryData) {
     this._raw = r;
   }
@@ -107,7 +107,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
 
   private processQueryResult(t0: number, exprIds: string[], queryData: RegionDataResults, corners: TernaryCorner[]) {
     const pointGroups: TernaryDataGroup[] = [];
-    const pmcLookup: Map<number, TernaryPlotPointIndex> = new Map<number, TernaryPlotPointIndex>();
+    //const pmcLookup: Map<number, TernaryPlotPointIndex> = new Map<number, TernaryPlotPointIndex>();
 
     const queryWarnings: string[] = [];
 
@@ -206,28 +206,28 @@ export class TernaryChartModel implements CanvasDrawNotifier {
       }
 
       this.keyItems.push(new WidgetKeyItem(roiIdForKey, region.region.name, region.colour, [], region.shape));
-
+      /*
       for (let c = 0; c < pointGroup.values.length; c++) {
         pmcLookup.set(pointGroup.values[c].scanEntryId, new TernaryPlotPointIndex(pointGroups.length, c));
       }
-
+*/
       if (pointGroup.values.length > 0) {
         pointGroups.push(pointGroup);
       }
     }
 
-    this.assignQueryResult(t0, pointGroups, corners, pmcLookup, queryWarnings);
+    this.assignQueryResult(t0, pointGroups, corners, /*pmcLookup,*/ queryWarnings);
   }
 
   private assignEmptyQuery(t0: number, corners: TernaryCorner[]) {
-    this.assignQueryResult(t0, [], corners, new Map<number, TernaryPlotPointIndex>(), []);
+    this.assignQueryResult(t0, [], corners /*, new Map<number, TernaryPlotPointIndex>()*/, []);
   }
 
   private assignQueryResult(
     t0: number,
     pointGroups: TernaryDataGroup[] = [],
     corners: TernaryCorner[],
-    pmcLookup: Map<number, TernaryPlotPointIndex>,
+    //pmcLookup: Map<number, TernaryPlotPointIndex>,
     queryWarnings: string[]
   ) {
     if (this._references.length > 0) {
@@ -270,7 +270,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
         const id = -10 - referenceIndex;
 
         pointGroup.values.push(new TernaryDataItem(id, refAValue, refBValue, refCValue, referenceName, nullMask));
-        pmcLookup.set(id, new TernaryPlotPointIndex(this._references.length, i));
+        //pmcLookup.set(id, new TernaryPlotPointIndex(this._references.length, i));
       });
 
       pointGroups.push(pointGroup);
@@ -290,7 +290,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
           this.keyItems.unshift(new KeyItem(ViewStateService.AllPointsLabel, ViewStateService.AllPointsColour));
       }
 */
-    const ternaryData = new TernaryData(corners[0], corners[1], corners[2], pointGroups, pmcLookup);
+    const ternaryData = new TernaryData(corners[0], corners[1], corners[2], pointGroups); //, pmcLookup);
 
     this._raw = ternaryData;
 
@@ -299,6 +299,32 @@ export class TernaryChartModel implements CanvasDrawNotifier {
     const t2 = performance.now();
 
     console.log("  Ternary prepareData took: " + (t1 - t0).toLocaleString() + "ms, needsDraw$ took: " + (t2 - t1).toLocaleString() + "ms");
+  }
+
+  handleHoverPointChanged(hoverScanId: string, hoverScanEntryId: number): void {
+    // Hover point changed, if we have a model, set it and redraw, otherwise ignore
+    if (hoverScanEntryId <= invalidPMC && hoverScanEntryId > -10) {
+      // Clearing, easy case
+      this.hoverPoint = null;
+      this.hoverPointData = null;
+      this.hoverShape = "circle";
+      this.needsDraw$.next();
+      return;
+    }
+
+    // Find the point in our draw model data
+    if (this._raw) {
+      /*let idx = this._raw.pmcToValueLookup.get(hoverScanEntryId);
+        if (idx != undefined && this.drawModel != null && this.drawModel.pointGroupCoords[idx.pointGroup]) {
+          let coords = this.drawModel.pointGroupCoords[idx.pointGroup];
+          this.hoverPoint = coords[idx.valueIndex];
+          this.hoverPointData = this._raw.pointGroups[idx.pointGroup].values[idx.valueIndex];
+          this.hoverShape = this._raw.pointGroups[idx.pointGroup].shape;
+          this.needsDraw$.next();
+          return;
+        }
+      }*/
+    }
   }
 }
 
@@ -518,20 +544,20 @@ export class TernaryDataGroup {
     public shape: string
   ) {}
 }
-
+/*
 export class TernaryPlotPointIndex {
   constructor(
     public pointGroup: number,
     public valueIndex: number
   ) {}
 }
-
+*/
 export class TernaryData {
   constructor(
     public cornerA: TernaryCorner,
     public cornerB: TernaryCorner,
     public cornerC: TernaryCorner,
-    public pointGroups: TernaryDataGroup[],
-    public pmcToValueLookup: Map<number, TernaryPlotPointIndex>
-  ) {}
+    public pointGroups: TernaryDataGroup[]
+  ) //public pmcToValueLookup: Map<number, TernaryPlotPointIndex>
+  {}
 }
