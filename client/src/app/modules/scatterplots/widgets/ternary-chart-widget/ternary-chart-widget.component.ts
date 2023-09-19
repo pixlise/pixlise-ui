@@ -47,7 +47,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     this.mdl.dataSourceIds.set(
       "048300551",
       new ScanDataIds(
-        "9k8wgfzi02a9h6f8",
+        "ox3psifd719hfo1s", //00125_Naltsos_Heirwegh_det_combined_v7_10_05_2021
         [
           PredefinedROIID.AllPoints
         ]
@@ -57,7 +57,9 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     this.mdl.dataSourceIds.set(
       "089063943",
       new ScanDataIds(
-        "ox3psifd719hfo1s", //00125_Naltsos_Heirwegh_det_combined_v7_10_05_2021
+        //"67m8870gtn5qhwr9", // Tice carbonate
+        "9qntb8w2joq4elti", // Jones_00258_v4
+        //"gzouymw0k6o7wqay", // Tice base quant', dataBucket: 'prodstack-persistencepixlisedata4f446ecf-m36oehuca7uc', datasetPath: 'Datasets/089063943/dataset.bin', datasetID: '089063943', piquantJobsBucket: 'prodstack-persistencepiquantjobs65c7175e-12qccz2o7aimo', …}
         [
           PredefinedROIID.AllPoints,
           "tzn6stfrmrypzceb", // All Olivine
