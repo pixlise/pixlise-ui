@@ -38,15 +38,32 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     super();
 
     this.mdl.expressionIdA = "r4zd5s2tfgr8rahy"; // AlFe
-    this.mdl.expressionIdB = "rlqqh3wz9xball3w"; // Ca/100
+    this.mdl.expressionIdB = "lpqtfd5lva7t2046"; // Si (mmol)
     this.mdl.expressionIdC = "vge9tz6fkbi2ha1p"; // CaTi
 
     //const scanId = this._route.snapshot.queryParams["scan_id"];
 
     // Naltsos
-    this.mdl.dataSourceIds.set("048300551", new ScanDataIds("9k8wgfzi02a9h6f8", [PredefinedROIID.AllPoints, "048300551_xo98frdyibinpjn3"]));
+    this.mdl.dataSourceIds.set(
+      "048300551",
+      new ScanDataIds(
+        "9k8wgfzi02a9h6f8",
+        [
+          PredefinedROIID.AllPoints
+        ]
+      )
+    );
     // Dourbes
-    //this.mdl.dataSourceIds.set("089063943", new ScanDataIds("9qntb8w2joq4elti", [PredefinedROIID.AllPoints, "048300551_xo98frdyibinpjn3"]));
+    this.mdl.dataSourceIds.set(
+      "089063943",
+      new ScanDataIds(
+        "ox3psifd719hfo1s", //00125_Naltsos_Heirwegh_det_combined_v7_10_05_2021
+        [
+          PredefinedROIID.AllPoints,
+          "tzn6stfrmrypzceb", // All Olivine
+        ]
+      )
+    );
 
     const exprIds = [this.mdl.expressionIdA, this.mdl.expressionIdB, this.mdl.expressionIdC];
 
@@ -125,11 +142,11 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   ngOnInit() {
-    this._subs.add(this._selectionService.hoverChangedReplaySubject$.subscribe(
-      ()=>{
+    this._subs.add(
+      this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
         this.mdl.handleHoverPointChanged(this._selectionService.hoverScanId, this._selectionService.hoverEntryIdx);
-      }
-    ));
+      })
+    );
     this.reDraw();
   }
 

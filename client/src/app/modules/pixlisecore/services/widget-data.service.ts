@@ -46,6 +46,9 @@ import { ExpressionDataSource } from "../models/expression-data-source";
 import { InterpreterDataSource } from "src/app/expression-language/interpreter-data-source";
 import { RegionSettings, RegionSettingsService } from "./region-settings.service";
 import { APICachedDataService } from "./apicacheddata.service";
+import { RegionOfInterestListReq, RegionOfInterestListResp } from "src/app/generated-protos/roi-msgs";
+import { SearchParams } from "src/app/generated-protos/search-params";
+import { QuantListReq, QuantListResp } from "src/app/generated-protos/quantification-retrieval-msgs";
 
 export enum DataUnit {
     //UNIT_WEIGHT_PCT,
@@ -119,12 +122,22 @@ export class WidgetDataService
 {
     // Query result cache - for slow queries we cache their result
     //private _resultCache: QueryResultCache = new QueryResultCache(environment.expressionResultCacheThresholdMs, 60000, 10000);
+    private _exprRunStatLastNotificationTime = new Map<string, number>();
 
     constructor(
         private _dataService: APIDataService,
         private _cachedDataService: APICachedDataService,
         private _regionSettings: RegionSettingsService
     ) {
+/*
+        // FOR TESTING ONLY
+        // TODO: remove this
+        // Query rois and quants for datasets
+        this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({searchParams: SearchParams.create({scanId: "048300551"})})).subscribe((resp: RegionOfInterestListResp)=>{console.log(resp)});
+        this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({searchParams: SearchParams.create({scanId: "089063943"})})).subscribe((resp: RegionOfInterestListResp)=>{console.log(resp)});
+        this._dataService.sendQuantListRequest(QuantListReq.create({searchParams: SearchParams.create({scanId: "048300551"})})).subscribe((resp: QuantListResp)=>{console.log(resp)});
+        this._dataService.sendQuantListRequest(QuantListReq.create({searchParams: SearchParams.create({scanId: "089063943"})})).subscribe((resp: QuantListResp)=>{console.log(resp)});
+*/
     }
 
     // This queries data based on parameters. The assumption is it either returns null, or returns an array with the same
@@ -244,16 +257,29 @@ export class WidgetDataService
                                     map(
                                         (queryResult: DataQueryResult)=>
                                         {
-                                            // Save runtime stats for this expression
-                                            this._dataService.sendExpressionWriteExecStatRequest(ExpressionWriteExecStatReq.create({
-                                                id: expression.id,
-                                                stats: {
-                                                    dataRequired: queryResult.dataRequired,
-                                                    runtimeMs: queryResult.runtimeMs
-                                                    // timeStampUnixSec - filled out by API
+                                            // Save runtime stats for this expression if we haven't done this recently (don't spam)
+                                            const nowMs = Date.now();
+                                            const lastNotify = this._exprRunStatLastNotificationTime.get(expression.id);
+                                            if (!lastNotify || (nowMs-lastNotify) > 60000) {
+                                                // Also, normalise it for runtime for 1000 points!
+                                                let runtimePer1000 = 0;
+                                                if (queryResult.runtimeMs > 0 && queryResult.resultValues > 0) {
+                                                    runtimePer1000 = queryResult.runtimeMs / (queryResult.resultValues / 1000)
                                                 }
-                                            })).subscribe({error: err=>{console.error(err)}}); // we don't really do anything different if this passes or fails
-            
+
+                                                // Remember when we notified, so we don't spam
+                                                this._exprRunStatLastNotificationTime.set(expression.id, nowMs);
+
+                                                this._dataService.sendExpressionWriteExecStatRequest(ExpressionWriteExecStatReq.create({
+                                                    id: expression.id,
+                                                    stats: {
+                                                        dataRequired: queryResult.dataRequired,
+                                                        runtimeMsPer1000Pts: runtimePer1000
+                                                        // timeStampUnixSec - filled out by API
+                                                    }
+                                                })).subscribe({error: err=>{console.error(err)}}); // we don't really do anything different if this passes or fails
+                                            }
+
                                             // Add the other stuff we loaded along the way
                                             queryResult.expression = expression;
 
