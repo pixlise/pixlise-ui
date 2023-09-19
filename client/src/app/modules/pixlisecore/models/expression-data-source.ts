@@ -17,7 +17,7 @@ import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-proto
 import { ScanEntryRange, ScanMetaDataType } from "src/app/generated-protos/scan";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
-import { decodeIndexList, encodeIndexList, decompressZeroRunLengthEncoding } from "src/app/utils/utils";
+import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
 import { DetectedDiffractionPeaksReq, DetectedDiffractionPeaksResp } from "src/app/generated-protos/diffraction-detected-peak-msgs";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { Quantification, Quantification_QuantDataType } from "src/app/generated-protos/quantification";
@@ -167,8 +167,11 @@ export class ExpressionDataSource
               this._scanMetaLabelsAndTypes = values[6];
               this._userDiffractionPeakData = values[7];
 
+              // CAREFUL NOT TO DO TOO MUCH PROCESSING HERE! It's repeated over and over and over again...
+              // If these are heavy things, move them into a service that calls the underlying things and caches results
+              // because we want this to be as light weight to get usable data as possible
+
               this.cacheElementInfo(this._quantData);
-              this.decompressSpectra(this._spectrumData);
 
               this.readDiffractionData(this._diffractionData, scanId);
 
@@ -257,16 +260,6 @@ export class ExpressionDataSource
 
     for (const quantLocSet of quantData.data.locationSet) {
       this._detectors.push(quantLocSet.detector);
-    }
-  }
-
-  private decompressSpectra(spectrumData: SpectrumResp) {
-    // We get spectra with runs of 0's run-length encoded. Here we decode them to have the full spectrum channel list in memory
-    // and this way we also don't double up on storage in memory
-    for (const loc of spectrumData.spectraPerLocation) {
-      for (const spectrum of loc.spectra) {
-        spectrum.counts = Array.from(decompressZeroRunLengthEncoding(spectrum.counts, spectrumData.channelCount));
-      }
     }
   }
 
