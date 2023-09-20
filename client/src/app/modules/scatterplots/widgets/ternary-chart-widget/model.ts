@@ -54,6 +54,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
 
   // Mouse interaction drawing
   hoverPoint: Point | null = null;
+  hoverScanId: string = "";
   hoverPointData: TernaryDataItem | null = null;
   hoverShape: string = "circle";
 
@@ -125,7 +126,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
         continue;
       }
 
-      const pointGroup: TernaryDataGroup = new TernaryDataGroup(scanId, roiId, [], RGBA.fromWithA(region.colour, 1), region.shape);
+      const pointGroup: TernaryDataGroup = new TernaryDataGroup(scanId, roiId, [], RGBA.fromWithA(region.colour, 1), region.shape, new Map<number, number>());
 
       // Filter out PMCs that don't exist in the data for all 3 corners
       const toFilter: PMCDataValues[] = [];
@@ -178,6 +179,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
             // Save it in A, B or C - A also is creating the value...
             if (c == 0) {
               pointGroup.values.push(new TernaryDataItem(value.pmc, value.value, 0, 0));
+              pointGroup.scanEntryIdToValueIdx.set(value.pmc, pointGroup.values.length-1);
             } else {
               // Ensure we're writing to the right PMC
               // Should always be the right order because we run 3 queries with the same ROI
@@ -231,7 +233,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
     queryWarnings: string[]
   ) {
     if (this._references.length > 0) {
-      const pointGroup: TernaryDataGroup = new TernaryDataGroup("", "", [], Colours.CONTEXT_PURPLE, "circle");
+      const pointGroup: TernaryDataGroup = new TernaryDataGroup("", "", [], Colours.CONTEXT_PURPLE, "circle", new Map<number, number>());
 
       this._references.forEach((referenceName, i) => {
         const reference = ExpressionReferences.getByName(referenceName);
@@ -303,9 +305,10 @@ export class TernaryChartModel implements CanvasDrawNotifier {
 
   handleHoverPointChanged(hoverScanId: string, hoverScanEntryId: number): void {
     // Hover point changed, if we have a model, set it and redraw, otherwise ignore
-    if (hoverScanEntryId <= invalidPMC && hoverScanEntryId > -10) {
+    if (hoverScanEntryId <= invalidPMC) {
       // Clearing, easy case
       this.hoverPoint = null;
+      this.hoverScanId = "";
       this.hoverPointData = null;
       this.hoverShape = "circle";
       this.needsDraw$.next();
@@ -314,16 +317,24 @@ export class TernaryChartModel implements CanvasDrawNotifier {
 
     // Find the point in our draw model data
     if (this._raw) {
-      /*let idx = this._raw.pmcToValueLookup.get(hoverScanEntryId);
-        if (idx != undefined && this.drawModel != null && this.drawModel.pointGroupCoords[idx.pointGroup]) {
-          let coords = this.drawModel.pointGroupCoords[idx.pointGroup];
-          this.hoverPoint = coords[idx.valueIndex];
-          this.hoverPointData = this._raw.pointGroups[idx.pointGroup].values[idx.valueIndex];
-          this.hoverShape = this._raw.pointGroups[idx.pointGroup].shape;
-          this.needsDraw$.next();
-          return;
+      for (let groupIdx = 0; groupIdx < this._raw.pointGroups.length; groupIdx++) {
+        const group = this._raw.pointGroups[groupIdx];
+
+        if (group.scanId == hoverScanId) {
+          // Find data to show
+          const valueIdx = group.scanEntryIdToValueIdx.get(hoverScanEntryId);
+          if (valueIdx !== undefined && valueIdx < group.values.length) {
+            const coords = this.drawModel.pointGroupCoords[groupIdx];
+
+            this.hoverPoint = coords[valueIdx];
+            this.hoverScanId = hoverScanId;
+            this.hoverPointData = group.values[valueIdx];
+            this.hoverShape = group.shape;
+            this.needsDraw$.next();
+            return;
+          }
         }
-      }*/
+      }
     }
   }
 }
@@ -541,7 +552,12 @@ export class TernaryDataGroup {
 
     // And these are the draw settings for the values:
     public colour: RGBA,
-    public shape: string
+    public shape: string,
+
+    // A reverse lookup from scan entry Id (aka PMC) to the values array
+    // This is mainly required for selection service hover notifications, so
+    // we can quickly find the valus to display
+    public scanEntryIdToValueIdx: Map<number, number>
   ) {}
 }
 /*

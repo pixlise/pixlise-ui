@@ -90,7 +90,7 @@ export class SelectionService {
   private _selectionCurrIdx: number = 0;
 
   private _hoverScanId: string = "";
-  private _hoverEntryIdx: number = -1;
+  private _hoverEntryId: number = -1;
 
   private _hoverChangedReplaySubject$ = new ReplaySubject<void>(1);
 
@@ -300,9 +300,11 @@ export class SelectionService {
   }
 
   // Mouse hovering over scan entries - we update listeners when this is called
-  setHoverEntry(scanId: string, entryIndex: number) {
+  // NOTE: we're storing the scan Id and the entry id within that scan (aka PMC)
+  // that the user hovered over 
+  setHoverEntry(scanId: string, entryId: number) {
     this._hoverScanId = scanId;
-    this._hoverEntryIdx = entryIndex;
+    this._hoverEntryId = entryId;
     this._hoverChangedReplaySubject$.next();
   }
 
@@ -314,8 +316,8 @@ export class SelectionService {
     return this._hoverScanId;
   }
 
-  get hoverEntryIdx(): number {
-    return this._hoverEntryIdx;
+  get hoverEntryId(): number {
+    return this._hoverEntryId;
   }
 
   // Chord clicking on context image, and showing that on binary diagram

@@ -129,15 +129,18 @@ export class WidgetDataService
         private _cachedDataService: APICachedDataService,
         private _regionSettings: RegionSettingsService
     ) {
-/*
+
         // FOR TESTING ONLY
         // TODO: remove this
         // Query rois and quants for datasets
-        this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({searchParams: SearchParams.create({scanId: "048300551"})})).subscribe((resp: RegionOfInterestListResp)=>{console.log(resp)});
-        this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({searchParams: SearchParams.create({scanId: "089063943"})})).subscribe((resp: RegionOfInterestListResp)=>{console.log(resp)});
-        this._dataService.sendQuantListRequest(QuantListReq.create({searchParams: SearchParams.create({scanId: "048300551"})})).subscribe((resp: QuantListResp)=>{console.log(resp)});
-        this._dataService.sendQuantListRequest(QuantListReq.create({searchParams: SearchParams.create({scanId: "089063943"})})).subscribe((resp: QuantListResp)=>{console.log(resp)});
-*/
+        //this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({searchParams: SearchParams.create({scanId: "048300551"})})).subscribe((resp: RegionOfInterestListResp)=>{console.log(resp)});
+        //this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({searchParams: SearchParams.create({scanId: "089063943"})})).subscribe((resp: RegionOfInterestListResp)=>{console.log(resp)});
+        //this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({searchParams: SearchParams.create({scanId: "101384711"})})).subscribe((resp: RegionOfInterestListResp)=>{console.log(resp)});
+        //this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({searchParams: SearchParams.create({scanId: "198509061"})})).subscribe((resp: RegionOfInterestListResp)=>{console.log(resp)});
+        //this._dataService.sendQuantListRequest(QuantListReq.create({searchParams: SearchParams.create({scanId: "048300551"})})).subscribe((resp: QuantListResp)=>{console.log(resp)});
+        //this._dataService.sendQuantListRequest(QuantListReq.create({searchParams: SearchParams.create({scanId: "089063943"})})).subscribe((resp: QuantListResp)=>{console.log(resp)});
+        //this._dataService.sendQuantListRequest(QuantListReq.create({searchParams: SearchParams.create({scanId: "101384711"})})).subscribe((resp: QuantListResp)=>{console.log(resp)});
+        //this._dataService.sendQuantListRequest(QuantListReq.create({searchParams: SearchParams.create({scanId: "198509061"})})).subscribe((resp: QuantListResp)=>{console.log(resp)});
     }
 
     // This queries data based on parameters. The assumption is it either returns null, or returns an array with the same

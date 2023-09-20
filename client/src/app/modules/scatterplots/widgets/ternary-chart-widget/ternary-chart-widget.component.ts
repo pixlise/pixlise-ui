@@ -43,26 +43,49 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     //const scanId = this._route.snapshot.queryParams["scan_id"];
 
-    // Naltsos
-    this.mdl.dataSourceIds.set(
-      "048300551",
-      new ScanDataIds(
-        "ox3psifd719hfo1s", //00125_Naltsos_Heirwegh_det_combined_v7_10_05_2021
-        [
-          PredefinedROIID.AllPoints
-        ]
-      )
-    );
+    // // Naltsos
+    // this.mdl.dataSourceIds.set(
+    //   "048300551",
+    //   new ScanDataIds(
+    //     "ox3psifd719hfo1s", //00125_Naltsos_Heirwegh_det_combined_v7_10_05_2021
+    //     [
+    //       PredefinedROIID.AllPoints
+    //     ]
+    //   )
+    // );
     // Dourbes
     this.mdl.dataSourceIds.set(
       "089063943",
       new ScanDataIds(
         //"67m8870gtn5qhwr9", // Tice carbonate
         "9qntb8w2joq4elti", // Jones_00258_v4
-        //"gzouymw0k6o7wqay", // Tice base quant', dataBucket: 'prodstack-persistencepixlisedata4f446ecf-m36oehuca7uc', datasetPath: 'Datasets/089063943/dataset.bin', datasetID: '089063943', piquantJobsBucket: 'prodstack-persistencepiquantjobs65c7175e-12qccz2o7aimo', …}
+        //"gzouymw0k6o7wqay", // Tice base quant
         [
           PredefinedROIID.AllPoints,
-          "tzn6stfrmrypzceb", // All Olivine
+          //"tzn6stfrmrypzceb", // All Olivine
+        ]
+      )
+    );
+    // Quartier
+    this.mdl.dataSourceIds.set(
+      "101384711",
+      new ScanDataIds(
+        "xyvzdae2ftvhgm48", //00294_Quartier_MJones_det_combined_v1_12_22_2021
+        [
+          PredefinedROIID.AllPoints,
+          //"jm5v20zy5ie55s7t", // "All olivine"
+          "i63koqmnmkalpcu3", // Phosphates
+        ]
+      )
+    );
+    // Novarupta 2
+    this.mdl.dataSourceIds.set(
+      "198509061",
+      new ScanDataIds(
+        "w3wf2yuo74b559mt", // novarupta_2_570_combined_jchristian
+        [
+          PredefinedROIID.AllPoints,
+          "vmy1rlymw6rxzo5p", // Olivine (points w/ CIA < 50)"
         ]
       )
     );
@@ -146,7 +169,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   ngOnInit() {
     this._subs.add(
       this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
-        this.mdl.handleHoverPointChanged(this._selectionService.hoverScanId, this._selectionService.hoverEntryIdx);
+        this.mdl.handleHoverPointChanged(this._selectionService.hoverScanId, this._selectionService.hoverEntryId);
       })
     );
     this.reDraw();

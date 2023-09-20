@@ -206,6 +206,13 @@ export class TernaryChartDrawer implements CanvasDrawer {
       screenContext.textAlign = "left";
       screenContext.fillText(this._mdl.hoverPointData.b.toLocaleString(), drawModel.hoverLabelB.x, drawModel.hoverLabelB.y);
       screenContext.fillText(this._mdl.hoverPointData.c.toLocaleString(), drawModel.hoverLabelC.x, drawModel.hoverLabelC.y);
+
+      // Also draw the scan ID and PMC
+      screenContext.fillText(
+        "Scan ID: " + this._mdl.hoverScanId + ", PMC: " + this._mdl.hoverPointData.scanEntryId,
+        drawModel.hoverLabelA.x,
+        drawModel.hoverLabelC.y
+      );
     }
   }
 
