@@ -249,7 +249,7 @@ export class WidgetDataService
                                                 id: expression.id,
                                                 stats: {
                                                     dataRequired: queryResult.dataRequired,
-                                                    runtimeMs: queryResult.runtimeMs
+                                                    runtimeMsPer1000Pts: queryResult.runtimeMs
                                                     // timeStampUnixSec - filled out by API
                                                 }
                                             })).subscribe({error: err=>{console.error(err)}}); // we don't really do anything different if this passes or fails

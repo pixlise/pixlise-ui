@@ -27,62 +27,33 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
-@import "atoms.scss";
 
-.action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-  &.btn-bg {
-    margin: 2px;
+import { MistRoiConvertComponent } from "./mist-roi-convert.component";
 
-    width: 24px;
-    height: 24px;
+describe("MistRoiConvertComponent", () => 
+{
+    let component: MistRoiConvertComponent;
+    let fixture: ComponentFixture<MistRoiConvertComponent>;
 
-    background-color: $clr-gray-60;
-    filter: drop-shadow(0px 0px $sz-half $clr-shadow);
-    border-radius: $sz-half;
-  }
+    beforeEach(async () => 
+    {
+        await TestBed.configureTestingModule({
+            declarations: [ MistRoiConvertComponent ]
+        })
+            .compileComponents();
+    });
 
-  &.check {
-    color: #7bb972;
-  }
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(MistRoiConvertComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-  &.close {
-    color: orangered;
-  }
-
-  &.disabled {
-    color: white;
-    opacity: 0.5;
-  }
-
-  mat-icon,
-  .custom-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    padding: 4px;
-    border-radius: 50%;
-  }
-}
-
-.action-btn:not(.disabled) {
-  mat-icon,
-  .custom-icon {
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.05);
-    }
-
-    &:active,
-    &:focus {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-
-    transition: all 0.2s ease;
-  }
-}
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

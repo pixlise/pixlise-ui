@@ -4,7 +4,7 @@ import { Tag } from "src/app/generated-protos/tags";
 import { APIDataService } from "../../pixlisecore/services/apidata.service";
 import { TagCreateReq, TagDeleteReq, TagListReq } from "src/app/generated-protos/tag-msgs";
 import { BuiltInTags, TagType } from "../models/tag.model";
-import { BehaviorSubject, ReplaySubject } from "rxjs";
+import { BehaviorSubject } from "rxjs";
 
 @Injectable({
   providedIn: "root",

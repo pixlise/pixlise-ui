@@ -44,7 +44,6 @@
       <div *ngFor="let group of groupsWithAccess" class="notification-item group-item">
         <span class="title" #tooltip="matTooltip" matTooltip="Relationship: {{ getGroupRelationship(group) }}">{{ group.name }}</span>
         <img class="group-icon" src="{{ getGroupIcon(group) }}" />
-        <!-- <action-button action="close" tooltipTitle="Leave Group" (onClick)="onLeaveGroup(group)"></action-button> -->
       </div>
       <div *ngIf="groupsWithAccess.length <= 0" class="empty">
         <span class="title">No Groups</span>

@@ -32,7 +32,6 @@ import { Subscription } from "rxjs";
 import { BuiltInTags, TagType } from "../../models/tag.model";
 import { TagService } from "../../services/tag.service";
 import { Tag } from "src/app/generated-protos/tags";
-import { UsersService } from "src/app/modules/settings/services/users.service";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { UserDetails } from "src/app/generated-protos/user";
 

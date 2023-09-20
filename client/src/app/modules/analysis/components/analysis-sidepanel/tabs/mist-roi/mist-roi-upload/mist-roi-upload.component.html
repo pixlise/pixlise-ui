@@ -1,0 +1,59 @@
+<!-- Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+Laboratory, nor the names of its contributors may be used to endorse or
+promote products derived from this software without specific prior written
+permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE. -->
+
+<div class="mist-upload">
+  <div class="card-toolbar card-toolbar-shadow header">
+    <div class="txt-widget-title">ROI Upload From .CSV</div>
+  </div>
+
+  <div class="upload-options">
+    <div class="upload-option">
+      <h5>Choose .CSV:</h5>
+      <input type="file" style="display: none" #csvFile (change)="onBrowse($event)" accept=".csv" />
+      <push-button class="browse-btn" buttonStyle="normal" (onClick)="csvFile.click()">Browse Files</push-button>
+    </div>
+    <mat-radio-group class="top-gap overwrite-options" [(ngModel)]="overwriteOption">
+      <mat-radio-button *ngFor="let option of overwriteOptions" [value]="option" class="overwrite-option" labelPosition="before"> {{ option }}: </mat-radio-button>
+    </mat-radio-group>
+    <mat-checkbox
+      class="top-gap upload-subdatasets"
+      [(ngModel)]="uploadToSubDatasets"
+      [disabled]="!includesMultipleDatasets"
+      #tooltip="matTooltip"
+      [matTooltip]="includesMultipleDatasets ? 'Also upload MIST ROIs to their respective sub-datasets' : 'This CSV does not contain multiple datasets'"
+      [matTooltipDisabled]="!isValidMistROIFile">
+      Upload To Sub-Datasets
+    </mat-checkbox>
+  </div>
+
+  <div class="card-toolbar gap-separated-horizontal-elements buttons">
+    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button buttonStyle="yellow" [disabled]="!isValidMistROIFile" (onClick)="onUpload()">Upload</push-button>
+  </div>
+</div>

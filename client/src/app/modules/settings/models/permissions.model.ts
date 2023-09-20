@@ -7,6 +7,7 @@ const FEATURE_TO_PERMISSION_MAPPING = {
   removeUserFromGroup: "PIXLISE_ADMIN",
   editScan: "SCAN_EDIT",
   editROI: "EDIT_ROI",
+  uploadROIs: "EDIT_ROI",
   editViewState: "EDIT_VIEW_STATE",
   editUserDetails: "EDIT_OWN_USER",
   sendUserNotifications: "PIXLISE_ADMIN",

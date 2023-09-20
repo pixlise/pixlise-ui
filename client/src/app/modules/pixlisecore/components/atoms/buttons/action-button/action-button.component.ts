@@ -44,6 +44,8 @@ const customActionIcons = {
   delete: "assets/button-icons/delete.svg",
   confirm: "assets/button-icons/radio-tick-on.svg",
   deny: "assets/button-icons/grey-circle-x.svg",
+  openAccordion: "assets/button-icons/arrow-right.svg",
+  closeAccordion: "assets/button-icons/arrow-down.svg",
 };
 
 export type ACTION_TYPE = keyof typeof customActionIcons | keyof typeof matActionIcons;

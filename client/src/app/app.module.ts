@@ -1,4 +1,4 @@
-import { APP_INITIALIZER, ErrorHandler, Injectable, NgModule } from "@angular/core";
+import { APP_INITIALIZER, ErrorHandler, NgModule } from "@angular/core";
 import { BrowserModule, Title } from "@angular/platform-browser";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
@@ -6,13 +6,12 @@ import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
 
 import { PublicSiteModule } from "./modules/public-site/public-site.module";
-import { HTTP_INTERCEPTORS, HttpBackend, HttpClientModule, HttpErrorResponse } from "@angular/common/http";
+import { HTTP_INTERCEPTORS, HttpBackend, HttpClientModule } from "@angular/common/http";
 import { AppConfig, EnvConfigurationInitService } from "./services/env-configuration-init.service";
 import { HttpInterceptorService } from "./services/http-interceptor.service";
 
 import * as Sentry from "@sentry/angular-ivy";
 import { VERSION } from "src/environments/version";
-import { SentryHelper } from "src/app/utils/utils";
 import { MAT_DIALOG_DATA, MAT_DIALOG_DEFAULT_OPTIONS, MatDialogRef } from "@angular/material/dialog";
 import { MaterialModule } from "./modules/material.module";
 import { AuthModule, AuthClientConfig } from "@auth0/auth0-angular";

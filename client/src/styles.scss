@@ -354,6 +354,17 @@ h3 {
   padding: 2px 8px;
 }
 
+.mdc-form-field {
+  width: 100%;
+  .mdc-radio {
+    margin-left: auto;
+  }
+
+  .mdc-label {
+    margin-left: 0;
+  }
+}
+
 .mat-mdc-select-min-line {
   color: white;
   font-weight: bold;

@@ -20,7 +20,6 @@ import { MatSortModule } from "@angular/material/sort";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { UserGroupMembershipDialogComponent } from "./components/user-group-membership-dialog/user-group-membership-dialog.component";
 import { AddSubGroupDialogComponent } from "./components/add-subgroup-dialog/add-subgroup-dialog.component";
-import { TagsModule } from "../tags/tags.module";
 
 const APP_ROUTES: Routes = [
   {
@@ -52,7 +51,6 @@ const APP_ROUTES: Routes = [
     MatTableModule,
     MatSortModule,
     MatCheckboxModule,
-    TagsModule,
     RouterModule.forChild(APP_ROUTES),
   ],
   exports: [GroupsPageComponent, UserIconComponent],

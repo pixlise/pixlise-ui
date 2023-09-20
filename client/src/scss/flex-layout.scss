@@ -20,19 +20,19 @@
 
 .fx-start-center {
   display: flex;
-  justify-content: start;
+  justify-content: flex-start;
   align-items: center;
 }
 
 .fx-end-center {
   display: flex;
-  justify-content: end;
+  justify-content: flex-end;
   align-items: center;
 }
 
 .fx-start-end {
   display: flex;
-  justify-content: start;
+  justify-content: flex-start;
   align-items: flex-end;
 }
 

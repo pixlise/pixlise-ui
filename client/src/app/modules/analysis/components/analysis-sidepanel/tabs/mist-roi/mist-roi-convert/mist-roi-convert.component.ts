@@ -27,62 +27,41 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
-@import "atoms.scss";
+import { Component, Inject, OnInit } from "@angular/core";
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { ROIItemSummary } from "src/app/generated-protos/roi";
 
-.action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-
-  &.btn-bg {
-    margin: 2px;
-
-    width: 24px;
-    height: 24px;
-
-    background-color: $clr-gray-60;
-    filter: drop-shadow(0px 0px $sz-half $clr-shadow);
-    border-radius: $sz-half;
-  }
-
-  &.check {
-    color: #7bb972;
-  }
-
-  &.close {
-    color: orangered;
-  }
-
-  &.disabled {
-    color: white;
-    opacity: 0.5;
-  }
-
-  mat-icon,
-  .custom-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    padding: 4px;
-    border-radius: 50%;
-  }
+export class MistROIConvertData {
+  constructor(public selected: ROIItemSummary[]) {}
 }
 
-.action-btn:not(.disabled) {
-  mat-icon,
-  .custom-icon {
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.05);
-    }
+@Component({
+  selector: "app-mist-roi-convert",
+  templateUrl: "./mist-roi-convert.component.html",
+  styleUrls: ["./mist-roi-convert.component.scss"],
+})
+export class MistRoiConvertComponent implements OnInit {
+  public selectedROIs: ROIItemSummary[] = [];
 
-    &:active,
-    &:focus {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
+  constructor(
+    @Inject(MAT_DIALOG_DATA) public data: MistROIConvertData,
+    public dialogRef: MatDialogRef<MistRoiConvertComponent>,
+    public dialog: MatDialog
+  ) {
+    this.selectedROIs = data.selected;
+  }
 
-    transition: all 0.2s ease;
+  ngOnInit(): void {}
+
+  onCancel(): void {
+    this.dialogRef.close(null);
+  }
+
+  onConvert(shareROIs: boolean = false): void {
+    if (this.selectedROIs.length > 0) {
+      this.dialogRef.close({
+        shareROIs,
+      });
+    }
   }
 }

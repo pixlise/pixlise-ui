@@ -13,6 +13,7 @@ import { UserGroup, UserGroupInfo, UserGroupJoinRequestDB, UserGroupJoinSummaryI
 import { ReplaySubject } from "rxjs";
 import { UserGroupReq } from "src/app/generated-protos/user-group-retrieval-msgs";
 import { UserGroupIgnoreJoinReq, UserGroupJoinListReq, UserGroupJoinReq } from "src/app/generated-protos/user-group-joining-msgs";
+import { UserOptionsService } from "./user-options.service";
 
 @Injectable({
   providedIn: "root",
@@ -30,7 +31,8 @@ export class GroupsService {
 
   constructor(
     private _dataService: APIDataService,
-    private _snackBar: SnackbarService
+    private _snackBar: SnackbarService,
+    private _userOptionsService: UserOptionsService
   ) {
     this.fetchGroups();
   }
@@ -305,7 +307,9 @@ export class GroupsService {
 
         // Fetch group access requests for each group
         res.groupInfos.forEach(group => {
-          this.fetchGroupAccessRequests(group.id);
+          if (this._userOptionsService.hasFeatureAccess("admin") || group.relationshipToUser === UserGroupRelationship.UGR_ADMIN) {
+            this.fetchGroupAccessRequests(group.id);
+          }
         });
 
         this.groupsChanged$.next();
