@@ -347,6 +347,11 @@ export class TernaryDrawModel {
   pointGroupCoords: Point[][] = [];
   totalPointCount: number = 0;
 
+  // The points rendered to an image
+  // NOTE: storing this does not make the above points redundant because
+  // we still have mouse interaction to deal with that needs xy coordinates
+  drawnPoints: OffscreenCanvas | null = null;
+
   // Triangle points
   //    C
   //

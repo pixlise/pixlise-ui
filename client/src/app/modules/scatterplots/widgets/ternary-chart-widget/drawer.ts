@@ -52,13 +52,25 @@ export class TernaryChartDrawer implements CanvasDrawer {
     this.drawHoverPointValueIfNeeded(screenContext, viewport, clrHover, drawData);
 
     // Draw data points
-    if (drawData && this._mdl.raw) {
-      const alpha = PointDrawer.getOpacity(drawData.totalPointCount);
-      for (let c = 0; c < drawData.pointGroupCoords.length; c++) {
-        const colourGroup = this._mdl.raw.pointGroups[c].roiId === PredefinedROIID.AllPoints && this.lightMode ? Colours.GRAY_80 : this._mdl.raw.pointGroups[c].colour;
-        const visibility = this._mdl.raw.pointGroups[c].roiId === PredefinedROIID.AllPoints && this.lightMode ? 0.4 : alpha;
-        const drawer = new PointDrawer(screenContext, PLOT_POINTS_SIZE, colourGroup, null, this._mdl.raw.pointGroups[c].shape);
-        drawer.drawPoints(drawData.pointGroupCoords[c], visibility);
+    if (drawData) {
+      if (!drawData.drawnPoints && this._mdl.raw) {
+        drawData.drawnPoints = new OffscreenCanvas(viewport.width, viewport.height);
+        const offscreenContext = drawData.drawnPoints.getContext("2d");
+        if (offscreenContext) {
+          // Render points to an image for drawing
+          const alpha = PointDrawer.getOpacity(drawData.totalPointCount);
+          for (let c = 0; c < drawData.pointGroupCoords.length; c++) {
+            const colourGroup = this._mdl.raw.pointGroups[c].roiId === PredefinedROIID.AllPoints && this.lightMode ? Colours.GRAY_80 : this._mdl.raw.pointGroups[c].colour;
+            const visibility = this._mdl.raw.pointGroups[c].roiId === PredefinedROIID.AllPoints && this.lightMode ? 0.4 : alpha;
+            const drawer = new PointDrawer(offscreenContext, PLOT_POINTS_SIZE, colourGroup, null, this._mdl.raw.pointGroups[c].shape);
+            drawer.drawPoints(drawData.pointGroupCoords[c], visibility);
+          }
+        }
+      }
+
+      if (drawData.drawnPoints) {
+        // Draw previously rendered points...
+        screenContext.drawImage(drawData.drawnPoints, 0, 0);
       }
     }
 
