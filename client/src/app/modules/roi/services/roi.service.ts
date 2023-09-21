@@ -30,7 +30,7 @@ export class ROIService {
     this.searchROIs(SearchParams.create({ scanId }), true);
   }
 
-  searchROIs(searchParams: SearchParams, isMIST: boolean) {
+  searchROIs(searchParams: SearchParams, isMIST: boolean = false) {
     this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({ searchParams, isMIST })).subscribe({
       next: res => {
         this.roiSummaries$.next({ ...this.roiSummaries$.value, ...res.regionsOfInterest });
@@ -163,6 +163,10 @@ export class ROIService {
 
   editROI(newROI: ROIItem, updateSummary: boolean = true) {
     this.writeROI(newROI, false, updateSummary);
+  }
+
+  editROISummary(newROISummary: ROIItemSummary) {
+    this.writeROI(ROIItem.create(newROISummary), false, true);
   }
 
   createROI(newROI: ROIItem) {

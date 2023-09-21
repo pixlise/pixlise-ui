@@ -59,6 +59,12 @@ export class MistROIComponent implements OnInit {
 
   private _subDataSetIDs: string[] = [];
 
+  isAllFullyIdentifiedMistROIsChecked: boolean = false;
+  fullyIdentifiedMistROIs: ROIItemSummary[] = [];
+
+  isAllGroupIdentifiedMistROIsChecked: boolean = false;
+  groupIdentifiedMistROIs: ROIItemSummary[] = [];
+
   constructor(
     private _roiService: ROIService,
     private _userOptionsService: UserOptionsService,
@@ -74,6 +80,14 @@ export class MistROIComponent implements OnInit {
     this._roiService.mistROIsByScanId$.subscribe(mistROIByScanId => {
       if (this.defaultScanId && mistROIByScanId[this.defaultScanId]) {
         this.mistROIs = Object.values(mistROIByScanId[this.defaultScanId]).sort((roiA, roiB) => roiA.name.localeCompare(roiB.name));
+
+        this.fullyIdentifiedMistROIs = this.mistROIs
+          .filter(roi => roi.mistROIItem?.idDepth !== undefined && roi.mistROIItem.idDepth >= 5)
+          .sort((roiA, roiB) => (roiB.mistROIItem?.idDepth || 0) - (roiA.mistROIItem?.idDepth || 0));
+
+        this.groupIdentifiedMistROIs = this.mistROIs
+          .filter(roi => roi.mistROIItem?.idDepth !== undefined && roi.mistROIItem?.idDepth < 5)
+          .sort((roiA, roiB) => (roiB.mistROIItem?.idDepth || 0) - (roiA.mistROIItem?.idDepth || 0));
       }
     });
   }
@@ -90,12 +104,8 @@ export class MistROIComponent implements OnInit {
     return !this._userOptionsService.hasFeatureAccess("uploadROIs");
   }
 
-  get fullyIdentifiedMistROIs(): ROIItemSummary[] {
-    return this.mistROIs.filter(roi => roi.mistROIItem?.idDepth || 0 >= 5).sort((roiA, roiB) => (roiB.mistROIItem?.idDepth || 0) - (roiA.mistROIItem?.idDepth || 0));
-  }
-
-  get groupIdentifiedMistROIs(): ROIItemSummary[] {
-    return this.mistROIs.filter(roi => roi.mistROIItem?.idDepth || 0 < 5).sort((roiA, roiB) => (roiB.mistROIItem?.idDepth || 0) - (roiA.mistROIItem?.idDepth || 0));
+  get selectionCount(): number {
+    return this._selectedROIs.length;
   }
 
   onUploadROIs(event: any): void {
@@ -144,37 +154,30 @@ export class MistROIComponent implements OnInit {
     return this._selectionEmpty;
   }
 
-  get isAllFullyIdentifiedMistROIsChecked(): boolean {
-    let isEmpty = this.fullyIdentifiedMistROIs.length === 0;
-    return !isEmpty && this.fullyIdentifiedMistROIs.filter(roi => this.checkSelected(roi)).length === this.fullyIdentifiedMistROIs.length;
-  }
-
   get roiSelectionEmpty(): boolean {
     return this._selectedROIs.length === 0;
   }
 
   toggleFullyIdentifiedMistROIs(event: any) {
     if (this.isAllFullyIdentifiedMistROIsChecked) {
-      this._selectedROIs = this._selectedROIs.filter(roi => (roi.mistROIItem?.idDepth || 0) < 5);
+      // Filter out all MIST ROIs with id depth of 5
+      this._selectedROIs = this._selectedROIs.filter(roi => roi.mistROIItem?.idDepth !== undefined && roi.mistROIItem.idDepth < 5);
+      this.isAllFullyIdentifiedMistROIsChecked = false;
     } else {
-      let allFullMistROIs = this.mistROIs.filter(roi => (roi.mistROIItem?.idDepth || 0) >= 5 && this._selectedROIs.findIndex(selected => selected.id === roi.id) < 0);
+      let allFullMistROIs = this.fullyIdentifiedMistROIs.filter(roi => !this._selectedROIs.find(selected => selected.id === roi.id));
       this._selectedROIs = [...this._selectedROIs, ...allFullMistROIs];
+      this.isAllFullyIdentifiedMistROIsChecked = true;
     }
-  }
-
-  get isAllGroupIdentifiedMistROIsChecked(): boolean {
-    let isEmpty = this.groupIdentifiedMistROIs.length === 0;
-    return !isEmpty && this.groupIdentifiedMistROIs.filter(roi => this.checkSelected(roi)).length === this.groupIdentifiedMistROIs.length;
   }
 
   toggleGroupIdentifiedMistROIs(event: any) {
     if (this.isAllGroupIdentifiedMistROIsChecked) {
       this._selectedROIs = this._selectedROIs.filter(roi => (roi.mistROIItem?.idDepth || 0) >= 5);
+      this.isAllGroupIdentifiedMistROIsChecked = false;
     } else {
-      let allPartialMistROIs = this.mistROIs.filter(
-        roi => (roi.mistROIItem?.idDepth || 0) < 5 && this._selectedROIs.findIndex(selected => selected.id === roi.id) < 0
-      );
+      let allPartialMistROIs = this.groupIdentifiedMistROIs.filter(roi => !this._selectedROIs.find(selected => selected.id === roi.id));
       this._selectedROIs = [...this._selectedROIs, ...allPartialMistROIs];
+      this.isAllGroupIdentifiedMistROIsChecked = true;
     }
   }
 
@@ -183,11 +186,25 @@ export class MistROIComponent implements OnInit {
   }
 
   onROISelectToggle(region: ROIItemSummary) {
+    let isFullyIdentified = region?.mistROIItem?.idDepth || 0 >= 5;
+    let isGroupIdentified = region?.mistROIItem?.idDepth != undefined && region?.mistROIItem?.idDepth < 5;
+
     let existingIndex = this._selectedROIs.findIndex(roi => roi.id === region.id);
     if (existingIndex >= 0) {
-      this._selectedROIs = this._selectedROIs.filter((roi, i) => i !== existingIndex);
+      this._selectedROIs = this._selectedROIs.filter((_, i) => i !== existingIndex);
+      if (isFullyIdentified) {
+        this.isAllFullyIdentifiedMistROIsChecked = false;
+      } else if (isGroupIdentified) {
+        this.isAllGroupIdentifiedMistROIsChecked = false;
+      }
     } else {
       this._selectedROIs = [...this._selectedROIs, region];
+
+      if (isFullyIdentified && this._selectedROIs.length >= this.fullyIdentifiedMistROIs.length) {
+        this.isAllFullyIdentifiedMistROIsChecked = this.fullyIdentifiedMistROIs.every(roi => this._selectedROIs.findIndex(selected => selected.id === roi.id) >= 0);
+      } else if (isGroupIdentified && this._selectedROIs.length >= this.groupIdentifiedMistROIs.length) {
+        this.isAllGroupIdentifiedMistROIsChecked = this.groupIdentifiedMistROIs.every(roi => this._selectedROIs.findIndex(selected => selected.id === roi.id) >= 0);
+      }
     }
   }
 

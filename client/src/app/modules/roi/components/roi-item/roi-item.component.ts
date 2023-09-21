@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from "@angular/core";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { ROIService } from "../../services/roi.service";
 import { SnackbarService, WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -17,6 +17,8 @@ export class ROIItemComponent {
 
   @Input() summary!: ROIItemSummary;
 
+  @Output() onROISelect = new EventEmitter();
+
   @ViewChild("settingsButton") settingsButton!: ElementRef;
   @ViewChild("editROIButton") editROIButton!: ElementRef;
 
@@ -28,8 +30,6 @@ export class ROIItemComponent {
   hoverPMC = -1;
   pmcPagePosition = 0;
   displaySelectedPMCs: any[] = [];
-
-  selectedTagIDs: string[] = [];
 
   private _name = "";
   private _description = "";
@@ -102,6 +102,14 @@ export class ROIItemComponent {
 
   get scanIds(): string[] {
     return Object.keys(this.scanEntryIndicesByDataset);
+  }
+
+  get selectedTagIDs(): string[] {
+    return this.summary.tags || [];
+  }
+
+  set selectedTagIDs(value: string[]) {
+    this.summary.tags = value;
   }
 
   onCancelEdit() {
@@ -192,5 +200,12 @@ export class ROIItemComponent {
 
   onTagSelectionChanged(tagIDs: string[]) {
     this.selectedTagIDs = tagIDs;
+    this._roiService.editROISummary(this.summary);
+  }
+
+  onCheckboxClick(checked: boolean) {
+    if (this.onROISelect) {
+      this.onROISelect.emit();
+    }
   }
 }

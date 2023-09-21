@@ -32,6 +32,10 @@
     .buttons {
       display: flex;
       margin-left: auto;
+
+      tag-picker {
+        z-index: 10;
+      }
     }
   }
 

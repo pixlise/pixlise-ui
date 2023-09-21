@@ -25,7 +25,7 @@
         placeholderText="Search ROI Tags ..."
         [selectedTagIDs]="selectedTagIDs"
         [showCurrentTagsSection]="true"
-        [editable]="isEditable"
+        [editable]="summary.owner?.canEdit"
         (onTagSelectionChanged)="onTagSelectionChanged($event)">
       </tag-picker>
     </header>
@@ -42,6 +42,15 @@
 
 <div class="roi-container" [ngStyle]="{ 'border-left-color': color }">
   <div class="summary">
+    <two-state-icon-button
+      *ngIf="isSelectable"
+      toolTip="Toggle ROI"
+      activeIcon="assets/button-icons/check-on.svg"
+      inactiveIcon="assets/button-icons/check-off.svg"
+      class="checkbox-button"
+      [active]="selected"
+      (onToggle)="onCheckboxClick($event)">
+    </two-state-icon-button>
     <div class="info" #tooltip="matTooltip" matTooltipClass="multiline-tooltip" [matTooltip]="name + (description ? '\n\n' + description : '')">
       <h4>{{ name }}</h4>
       <p>{{ createdDate | date: "dd/MMM/yy" }}</p>
@@ -55,7 +64,7 @@
         placeholderText="Search ROI Tags ..."
         [selectedTagIDs]="selectedTagIDs"
         [showCurrentTagsSection]="true"
-        [editable]="isEditable"
+        [editable]="summary.owner?.canEdit"
         (onTagSelectionChanged)="onTagSelectionChanged($event)">
       </tag-picker>
       <icon-button *ngIf="colorChangeOnly" title="Configure Colours" icon="assets/button-icons/colours.svg" (click)="onColours($event)"> </icon-button>
