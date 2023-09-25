@@ -212,7 +212,7 @@ export class MistROIComponent implements OnInit {
     if (confirm(`Are you sure you want to delete ${this._selectedROIs.length} ROIs?`)) {
       let roiIDs = this.mistROIs.filter(roi => this._selectedROIs.findIndex(selected => selected.id === roi.id) >= 0).map(roi => roi.id);
       roiIDs.forEach(roiID => {
-        this._roiService.deleteROI(roiID);
+        this._roiService.deleteROI(roiID, true);
       });
       this.mistROIs = this.mistROIs.filter(roi => this._selectedROIs.findIndex(selected => selected.id === roi.id) < 0);
       this._selectedROIs = [];

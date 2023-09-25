@@ -1,9 +1,16 @@
 import { Injectable } from "@angular/core";
 import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
-import { RegionOfInterestBulkWriteReq, RegionOfInterestGetReq, RegionOfInterestListReq, RegionOfInterestWriteReq } from "src/app/generated-protos/roi-msgs";
+import {
+  RegionOfInterestBulkWriteReq,
+  RegionOfInterestDeleteReq,
+  RegionOfInterestGetReq,
+  RegionOfInterestListReq,
+  RegionOfInterestWriteReq,
+} from "src/app/generated-protos/roi-msgs";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { SearchParams } from "src/app/generated-protos/search-params";
 import { BehaviorSubject } from "rxjs";
+import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
 
 export type ROISummaries = Record<string, ROIItemSummary>;
 
@@ -50,6 +57,7 @@ export class ROIService {
     this._dataService.sendRegionOfInterestGetRequest(RegionOfInterestGetReq.create({ id })).subscribe({
       next: res => {
         if (res.regionOfInterest) {
+          res.regionOfInterest.scanEntryIndexesEncoded = decodeIndexList(res.regionOfInterest.scanEntryIndexesEncoded);
           this.roiItems$.value[id] = res.regionOfInterest;
           this.roiItems$.next(this.roiItems$.value);
         } else {
@@ -83,13 +91,18 @@ export class ROIService {
       return;
     }
 
+    let roiToWrite = ROIItem.create(newROI);
+
     // Have to remove owner field to write
-    newROI.owner = undefined;
+    roiToWrite.owner = undefined;
+    if (roiToWrite.scanEntryIndexesEncoded && roiToWrite.scanEntryIndexesEncoded.length > 0) {
+      roiToWrite.scanEntryIndexesEncoded = encodeIndexList(roiToWrite.scanEntryIndexesEncoded);
+    }
 
     this._dataService
       .sendRegionOfInterestWriteRequest(
         RegionOfInterestWriteReq.create({
-          regionOfInterest: ROIItem.create(newROI),
+          regionOfInterest: roiToWrite,
           isMIST: newROI.mistROIItem ? true : false,
         })
       )
@@ -109,14 +122,14 @@ export class ROIService {
 
             this._snackBarService.openSuccess(isNewROI ? "ROI created!" : "ROI updated!");
           } else {
-            this._snackBarService.openError(isNewROI ? "Failed to create ROI." : `ROI (${newROI.id}) not found`);
+            this._snackBarService.openError(isNewROI ? "Failed to create ROI." : `ROI (${roiToWrite.id}) not found`);
           }
         },
         error: err => {
           this._snackBarService.openError(err);
 
-          if (newROI.isMIST) {
-            this.listMistROIs(newROI.scanId);
+          if (roiToWrite.isMIST) {
+            this.listMistROIs(roiToWrite.scanId);
           } else {
             this.listROIs();
           }
@@ -124,9 +137,21 @@ export class ROIService {
       });
   }
 
-  bulkWriteROIs(regionsOfInterest: ROIItem[], overwrite: boolean, isMIST: boolean, mistROIScanIdsToDelete: string[] = []) {
+  bulkWriteROIs(regionsOfInterest: ROIItem[], overwrite: boolean, skipDuplicates: boolean, isMIST: boolean, mistROIScanIdsToDelete: string[] = []) {
+    let writableROIs = regionsOfInterest.map(roi => {
+      let newROI = ROIItem.create(roi);
+      newROI.owner = undefined;
+      if (newROI.scanEntryIndexesEncoded && newROI.scanEntryIndexesEncoded.length > 0) {
+        newROI.scanEntryIndexesEncoded = encodeIndexList(newROI.scanEntryIndexesEncoded);
+      }
+
+      return newROI;
+    });
+
     this._dataService
-      .sendRegionOfInterestBulkWriteRequest(RegionOfInterestBulkWriteReq.create({ regionsOfInterest, overwrite, isMIST, mistROIScanIdsToDelete }))
+      .sendRegionOfInterestBulkWriteRequest(
+        RegionOfInterestBulkWriteReq.create({ regionsOfInterest: writableROIs, overwrite, skipDuplicates, isMIST, mistROIScanIdsToDelete })
+      )
       .subscribe({
         next: res => {
           if (res.regionsOfInterest) {
@@ -173,15 +198,29 @@ export class ROIService {
     this.writeROI(newROI, true);
   }
 
-  deleteROI(id: string) {
-    this._dataService.sendRegionOfInterestDeleteRequest(RegionOfInterestGetReq.create({ id })).subscribe({
+  deleteROI(id: string, isMIST: boolean = false) {
+    this._dataService.sendRegionOfInterestDeleteRequest(RegionOfInterestDeleteReq.create({ id, isMIST })).subscribe({
       next: res => {
-        // Remove cached versions
-        delete this.roiItems$.value[id];
-        this.roiItems$.next(this.roiItems$.value);
+        // Keep scan id so we can remove from mistROIsByScanId
+        let scanId = this.roiSummaries$.value[id]?.scanId || this.roiItems$.value[id]?.scanId || "";
 
-        delete this.roiSummaries$.value[id];
-        this.roiSummaries$.next(this.roiSummaries$.value);
+        // Remove cached full version
+        if (this.roiItems$.value[id]) {
+          delete this.roiItems$.value[id];
+          this.roiItems$.next(this.roiItems$.value);
+        }
+
+        // Remove cached summary
+        if (this.roiSummaries$.value[id]) {
+          delete this.roiSummaries$.value[id];
+          this.roiSummaries$.next(this.roiSummaries$.value);
+        }
+
+        // If this is a mist roi, remove cached mist roi summary
+        if (isMIST && this.mistROIsByScanId$.value[scanId] && this.mistROIsByScanId$.value[scanId][id]) {
+          delete this.mistROIsByScanId$.value[scanId][id];
+          this.mistROIsByScanId$.next(this.mistROIsByScanId$.value);
+        }
       },
       error: err => {
         this._snackBarService.openError(err);

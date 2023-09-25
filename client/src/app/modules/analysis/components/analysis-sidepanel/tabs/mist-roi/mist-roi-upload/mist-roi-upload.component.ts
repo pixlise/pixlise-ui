@@ -168,7 +168,7 @@ export class MistRoiUploadComponent implements OnInit {
       let skipDuplicates = this.overwriteOption === "Do Not Over-Write";
 
       let idsToDelete = deleteExisting ? this.uploadedScanIds : [];
-      this._roiService.bulkWriteROIs(Object.values(this.uniqueROIs), overwrite, true, idsToDelete);
+      this._roiService.bulkWriteROIs(Object.values(this.uniqueROIs), overwrite, skipDuplicates, true, idsToDelete);
 
       this.dialogRef.close({
         deleteExisting,

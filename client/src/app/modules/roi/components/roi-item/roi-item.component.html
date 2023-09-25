@@ -25,7 +25,7 @@
         placeholderText="Search ROI Tags ..."
         [selectedTagIDs]="selectedTagIDs"
         [showCurrentTagsSection]="true"
-        [editable]="summary.owner?.canEdit"
+        [editable]="summary.owner?.canEdit || false"
         (onTagSelectionChanged)="onTagSelectionChanged($event)">
       </tag-picker>
     </header>
@@ -64,7 +64,7 @@
         placeholderText="Search ROI Tags ..."
         [selectedTagIDs]="selectedTagIDs"
         [showCurrentTagsSection]="true"
-        [editable]="summary.owner?.canEdit"
+        [editable]="summary.owner?.canEdit || false"
         (onTagSelectionChanged)="onTagSelectionChanged($event)">
       </tag-picker>
       <icon-button *ngIf="colorChangeOnly" title="Configure Colours" icon="assets/button-icons/colours.svg" (click)="onColours($event)"> </icon-button>
