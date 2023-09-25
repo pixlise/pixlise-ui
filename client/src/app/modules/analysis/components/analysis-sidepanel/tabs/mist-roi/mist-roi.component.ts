@@ -216,6 +216,8 @@ export class MistROIComponent implements OnInit {
       });
       this.mistROIs = this.mistROIs.filter(roi => this._selectedROIs.findIndex(selected => selected.id === roi.id) < 0);
       this._selectedROIs = [];
+      this.isAllFullyIdentifiedMistROIsChecked = false;
+      this.isAllGroupIdentifiedMistROIsChecked = false;
     }
   }
 }
