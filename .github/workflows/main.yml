@@ -104,7 +104,7 @@ jobs:
       - name: Build UI
         uses: addnab/docker-run-action@v3
         with:
-          image: atlassianlabs/docker-node-jdk-chrome-firefox:node-16-npm-8
+          image: atlassianlabs/docker-node-jdk-chrome-firefox:latest
           options: -v ${{ github.workspace }}:/work
           run: |
             cd /work/client
