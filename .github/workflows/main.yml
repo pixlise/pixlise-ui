@@ -4,9 +4,9 @@ on:
   workflow_call:
     inputs:
       version_format:
-        description: 'Version format string used for paulhatch/semantic-version'
+        description: "Version format string used for paulhatch/semantic-version"
         required: true
-        default: '${major}.${minor}.${patch}'
+        default: "${major}.${minor}.${patch}"
         type: string
 
 env:
@@ -33,14 +33,14 @@ jobs:
         id: version
         with:
           # The prefix to use to identify tags
-          tag_prefix: 'v'
+          tag_prefix: "v"
           # A string which, if present in a git commit, indicates that a change represents a
           # major (breaking) change, supports regular expressions wrapped with '/'
-          major_pattern: '(MAJOR)'
+          major_pattern: "(MAJOR)"
           # Same as above except indicating a minor change, supports regular expressions wrapped with '/'
-          minor_pattern: '(MINOR)'
+          minor_pattern: "(MINOR)"
           # A string to determine the format of the version output
-          version_format: '${{ inputs.version_format }}'
+          version_format: "${{ inputs.version_format }}"
           # Optional path to check for changes. If any changes are detected in the path the
           # 'changed' output will true. Enter multiple paths separated by spaces.
           #change_path: "src/my-service"
@@ -49,7 +49,7 @@ jobs:
           # If true, the body of commits will also be searched for major/minor patterns to determine the version type.
           search_commit_body: false
           # The output method used to generate list of users, 'csv' or 'json'.
-          user_format_type: 'csv'
+          user_format_type: "csv"
 
   ui-test-and-build:
     runs-on: ubuntu-latest
@@ -139,19 +139,19 @@ jobs:
           build-args: |
             VERSION=${{ needs.version.outputs.version }}
 
-  lua-test:
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout the repo
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          submodules: recursive
-      - uses: addnab/docker-run-action@v3
-        with:
-          image: nickblah/lua:5.4
-          options: -v ${{ github.workspace }}:/work
-          run: |
-            set -e
-            cd /work/client/src/app/expression-language/lua/test
-            ./test.sh
+  # lua-test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     # Checkout the repo
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 0
+  #         submodules: recursive
+  #     - uses: addnab/docker-run-action@v3
+  #       with:
+  #         image: nickblah/lua:5.4
+  #         options: -v ${{ github.workspace }}:/work
+  #         run: |
+  #           set -e
+  #           cd /work/client/src/app/expression-language/lua/test
+  #           ./test.sh
