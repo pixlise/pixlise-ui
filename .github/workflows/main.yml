@@ -86,11 +86,6 @@ jobs:
           run: |
             cd /work
             ./genproto.sh
-            ls -lah /
-            ls -lah /work
-            ls -lah /work/client
-            ls -lah /work/client/src
-            ls -lah /work/client/src/app/generated-protos
 
       # Run Angular UI unit tests
       # - name: Run UI Tests
@@ -107,6 +102,10 @@ jobs:
 
       # Run the Angular build
       - name: Build UI
+      uses: addnab/docker-run-action@v3
+      with:
+        image: atlassianlabs/docker-node-jdk-chrome-firefox:node-16-npm-8
+        options: -v ${{ github.workspace }}:/work
         run: |
           cd /work/client
           npm i -g @angular/cli@16.1
