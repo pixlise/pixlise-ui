@@ -28,9 +28,17 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 .mist-convert {
-    padding: 8px;
-    
-    .card-toolbar.header {
-        margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+
+  .card-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    .header {
+      margin-bottom: 8px;
     }
+  }
 }

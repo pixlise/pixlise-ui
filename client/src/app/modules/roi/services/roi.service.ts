@@ -1,6 +1,7 @@
 import { Injectable } from "@angular/core";
 import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import {
+  RegionOfInterestBulkDuplicateReq,
   RegionOfInterestBulkWriteReq,
   RegionOfInterestDeleteReq,
   RegionOfInterestGetReq,
@@ -176,6 +177,8 @@ export class ROIService {
 
             this.roiItems$.next(this.roiItems$.value);
             this.mistROIsByScanId$.next(this.mistROIsByScanId$.value);
+
+            this._snackBarService.openSuccess(`Successfully bulk created ${res.regionsOfInterest.length} ROIs!`);
           } else {
             this._snackBarService.openError(`Failed to bulk write ROIs.`);
           }
@@ -221,12 +224,49 @@ export class ROIService {
           delete this.mistROIsByScanId$.value[scanId][id];
           this.mistROIsByScanId$.next(this.mistROIsByScanId$.value);
         }
+
+        this._snackBarService.openSuccess("ROI deleted!");
       },
       error: err => {
         this._snackBarService.openError(err);
 
         // Re-fetch summaries to verify frontend is in sync
         this.listROIs();
+      },
+    });
+  }
+
+  duplicateROIs(ids: string[], isMIST: boolean = false) {
+    this._dataService.sendRegionOfInterestBulkDuplicateRequest(RegionOfInterestBulkDuplicateReq.create({ ids, isMIST })).subscribe({
+      next: res => {
+        if (res.regionsOfInterest) {
+          Object.entries(res.regionsOfInterest).forEach(([id, roiSummary]) => {
+            this.roiSummaries$.value[id] = roiSummary;
+            if (isMIST) {
+              let scanId = roiSummary.scanId;
+              if (!scanId) {
+                this._snackBarService.openWarning(`ROI (${roiSummary.name}) does not have a scanId! Skipping...`);
+                return;
+              }
+
+              if (!this.mistROIsByScanId$.value[scanId]) {
+                this.mistROIsByScanId$.value[scanId] = {};
+              }
+
+              roiSummary.isMIST = isMIST;
+              this.mistROIsByScanId$.value[scanId][id] = roiSummary;
+            }
+          });
+
+          this.roiSummaries$.next(this.roiSummaries$.value);
+          this.mistROIsByScanId$.next(this.mistROIsByScanId$.value);
+          this._snackBarService.openSuccess(`Successfully created ${Object.keys(res.regionsOfInterest).length} ROIs!`);
+        } else {
+          this._snackBarService.openError(`Failed to duplicate ROIs.`);
+        }
+      },
+      error: err => {
+        this._snackBarService.openError(err);
       },
     });
   }

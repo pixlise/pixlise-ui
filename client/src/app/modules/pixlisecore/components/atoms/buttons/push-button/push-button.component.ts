@@ -29,18 +29,10 @@
 
 import { Component, EventEmitter, Input, OnInit, Output, TemplateRef } from "@angular/core";
 import { BadgeStyle } from "../../badge/badge.component";
-import { MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
+import { ConfirmDialogComponent } from "../action-button/confirm-dialog/confirm-dialog.component";
 
-export type PushButtonStyle =
-  | "normal"
-  | "borderless"
-  | "yellow"
-  | "outline"
-  | "gray"
-  | "light-right-outline"
-  | "orange"
-  | "dark-outline"
-  | "hover-yellow";
+export type PushButtonStyle = "normal" | "borderless" | "yellow" | "outline" | "gray" | "light-right-outline" | "orange" | "dark-outline" | "hover-yellow";
 
 @Component({
   selector: "push-button",
@@ -55,6 +47,7 @@ export class PushButtonComponent implements OnInit {
   @Input() badgeStyle: BadgeStyle = "notification";
   @Input() tooltipTitle: string = "";
 
+  @Input() confirmText: string = "";
   @Input() customDialog: TemplateRef<any> | null = null;
 
   @Output() onClick = new EventEmitter();
@@ -65,17 +58,7 @@ export class PushButtonComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    const validStyles: PushButtonStyle[] = [
-      "normal",
-      "borderless",
-      "yellow",
-      "outline",
-      "gray",
-      "light-right-outline",
-      "orange",
-      "dark-outline",
-      "hover-yellow",
-    ];
+    const validStyles: PushButtonStyle[] = ["normal", "borderless", "yellow", "outline", "gray", "light-right-outline", "orange", "dark-outline", "hover-yellow"];
     if (validStyles.indexOf(this.buttonStyle) == -1) {
       console.warn("Invalid style for push-button: " + this.buttonStyle);
       this.buttonStyle = validStyles[0];
@@ -88,10 +71,21 @@ export class PushButtonComponent implements OnInit {
 
   onClickInternal(event: MouseEvent): void {
     if (!this.disabled) {
-      if (this.customDialog) {
+      if (this.confirmText) {
+        const dialogConfig = new MatDialogConfig();
+        dialogConfig.data = { confirmText: this.confirmText };
+        this._dialogRef = this.dialog.open(ConfirmDialogComponent, dialogConfig);
+
+        this._dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+          if (confirmed) {
+            this.onClick.emit(event);
+          }
+        });
+      } else if (this.customDialog) {
         this._dialogRef = this.dialog.open(this.customDialog, {});
+      } else {
+        this.onClick.emit(event);
       }
-      this.onClick.emit(event);
     }
   }
 

@@ -41,7 +41,14 @@ POSSIBILITY OF SUCH DAMAGE. -->
       </push-button>
     </div>
     <div class="selection">
-      <push-button class="option" (onClick)="onDeleteSelected()" [disabled]="roiSelectionEmpty" buttonStyle="outline">Delete Selected </push-button>
+      <push-button
+        class="option"
+        confirmText="Are you sure you want to delete {{ selectionCount }} ROIs?"
+        (onClick)="onDeleteSelected()"
+        [disabled]="roiSelectionEmpty"
+        buttonStyle="outline"
+        >Delete Selected
+      </push-button>
       <push-button class="option" (onClick)="onConvertSelected()" [disabled]="roiSelectionEmpty" buttonStyle="outline">Convert Selected </push-button>
     </div>
   </div>

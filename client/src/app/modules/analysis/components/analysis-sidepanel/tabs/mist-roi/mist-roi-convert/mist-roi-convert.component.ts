@@ -60,7 +60,7 @@ export class MistRoiConvertComponent implements OnInit {
   onConvert(shareROIs: boolean = false): void {
     if (this.selectedROIs.length > 0) {
       this.dialogRef.close({
-        shareROIs,
+        ids: this.selectedROIs.map(roi => roi.id),
       });
     }
   }

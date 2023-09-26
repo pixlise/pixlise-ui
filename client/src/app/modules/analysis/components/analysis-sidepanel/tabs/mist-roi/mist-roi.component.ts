@@ -139,7 +139,15 @@ export class MistROIComponent implements OnInit {
     dialogConfig.data = new MistROIConvertData(this._selectedROIs);
     const dialogRef = this.dialog.open(MistRoiConvertComponent, dialogConfig);
 
-    dialogRef.afterClosed().subscribe((response: { shareROIs: boolean }) => {});
+    dialogRef.afterClosed().subscribe((response: { ids: string[] }) => {
+      if (!response || !response?.ids || response.ids.length === 0) {
+        return;
+      }
+
+      // Duplicate MIST ROIs as non-ROIs
+      this._roiService.duplicateROIs(response.ids, false);
+      this.clearSelection();
+    });
   }
 
   onToggleExpand(index: number) {
@@ -208,16 +216,18 @@ export class MistROIComponent implements OnInit {
     }
   }
 
+  clearSelection() {
+    this._selectedROIs = [];
+    this.isAllFullyIdentifiedMistROIsChecked = false;
+    this.isAllGroupIdentifiedMistROIsChecked = false;
+  }
+
   onDeleteSelected() {
-    if (confirm(`Are you sure you want to delete ${this._selectedROIs.length} ROIs?`)) {
-      let roiIDs = this.mistROIs.filter(roi => this._selectedROIs.findIndex(selected => selected.id === roi.id) >= 0).map(roi => roi.id);
-      roiIDs.forEach(roiID => {
-        this._roiService.deleteROI(roiID, true);
-      });
-      this.mistROIs = this.mistROIs.filter(roi => this._selectedROIs.findIndex(selected => selected.id === roi.id) < 0);
-      this._selectedROIs = [];
-      this.isAllFullyIdentifiedMistROIsChecked = false;
-      this.isAllGroupIdentifiedMistROIsChecked = false;
-    }
+    let roiIDs = this.mistROIs.filter(roi => this._selectedROIs.findIndex(selected => selected.id === roi.id) >= 0).map(roi => roi.id);
+    roiIDs.forEach(roiID => {
+      this._roiService.deleteROI(roiID, true);
+    });
+    this.mistROIs = this.mistROIs.filter(roi => this._selectedROIs.findIndex(selected => selected.id === roi.id) < 0);
+    this.clearSelection();
   }
 }
