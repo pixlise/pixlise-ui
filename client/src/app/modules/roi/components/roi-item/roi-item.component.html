@@ -119,21 +119,23 @@
             <action-button [action]="openScanIdxs.has(scanId) ? 'closeAccordion' : 'openAccordion'" (click)="onToggleScanMenu(scanId)"></action-button>
           </span>
           <div *ngIf="openScanIdxs.has(scanId)" class="scan-entries-container">
-            <div
-              *ngFor="let entryIdx of scanEntryIndicesByDataset[scanId]"
-              class="entry-idx-container"
-              [ngClass]="{ 'pmc-highlight': entryIdx >= 0 && entryIdx == hoverPMC }"
-              (mouseenter)="onScanEntryIdxEnter(scanId, entryIdx)"
-              (mouseleave)="onScanEntryIdxLeave(scanId, entryIdx)">
-              <div class="entry-idx">{{ entryIdx }}</div>
-              <action-button
-                *ngIf="entryIdx >= 0"
-                action="close"
-                color="rgb(188, 188, 188)"
-                (onClick)="onDeleteScanEntryIdx(entryIdx)"
-                [disabled]="scanEntryIndicesByDataset[scanId].length === 1"
-                [tooltipTitle]="scanEntryIndicesByDataset[scanId].length === 1 ? 'Cannot delete the last PMC' : 'Delete PMC'"></action-button>
-            </div>
+            <cdk-virtual-scroll-viewport [itemSize]="29" class="scan-entries-viewport">
+              <div
+                *cdkVirtualFor="let entryIdx of scanEntryIndicesByDataset[scanId]"
+                class="entry-idx-container"
+                [ngClass]="{ 'pmc-highlight': entryIdx >= 0 && entryIdx == hoverPMC }"
+                (mouseenter)="onScanEntryIdxEnter(scanId, entryIdx)"
+                (mouseleave)="onScanEntryIdxLeave(scanId, entryIdx)">
+                <div class="entry-idx">{{ entryIdx }}</div>
+                <action-button
+                  *ngIf="entryIdx >= 0"
+                  action="close"
+                  color="rgb(188, 188, 188)"
+                  (onClick)="onDeleteScanEntryIdx(entryIdx)"
+                  [disabled]="scanEntryIndicesByDataset[scanId].length === 1"
+                  [tooltipTitle]="scanEntryIndicesByDataset[scanId].length === 1 ? 'Cannot delete the last PMC' : 'Delete PMC'"></action-button>
+              </div>
+            </cdk-virtual-scroll-viewport>
           </div>
         </div>
       </div>

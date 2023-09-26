@@ -193,8 +193,12 @@
   }
 
   .scan-entries-container {
-    max-height: 200px;
+    height: 200px;
     overflow: scroll;
+
+    .scan-entries-viewport {
+      height: 100%;
+    }
 
     .entry-idx-container {
       display: flex;
