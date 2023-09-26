@@ -107,7 +107,9 @@ jobs:
           image: atlassianlabs/docker-node-jdk-chrome-firefox:latest
           options: -v ${{ github.workspace }}:/work
           run: |
-            cd /work/client
+            cd /work
+            ./genproto.sh
+            cd client
             npm i -g @angular/cli@16.1
             ng build
 
