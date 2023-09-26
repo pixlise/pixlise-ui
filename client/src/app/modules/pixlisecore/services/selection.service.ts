@@ -72,11 +72,7 @@ export class SelectionHistoryItem {
   }
 
   static makeEmptySelectionItem(): SelectionHistoryItem {
-    return new SelectionHistoryItem(
-      BeamSelection.makeEmptySelection(),
-      PixelSelection.makeEmptySelection(),
-      PixelSelection.makeEmptySelection()
-    );
+    return new SelectionHistoryItem(BeamSelection.makeEmptySelection(), PixelSelection.makeEmptySelection(), PixelSelection.makeEmptySelection());
   }
 }
 
@@ -154,7 +150,7 @@ export class SelectionService {
       wait$.push(
         this._dataService.sendSelectedScanEntriesWriteRequest(
           SelectedScanEntriesWriteReq.create({
-            scanIdEntryIndexes: entries
+            scanIdEntryIndexes: entries,
           })
         )
       );
@@ -193,9 +189,7 @@ export class SelectionService {
   cropSelection(): void {
     const currentSelection = this.getCurrentSelection();
     if (currentSelection.pixelSelection && currentSelection.pixelSelection.selectedPixels.size > 0) {
-      this.addSelection(
-        new SelectionHistoryItem(BeamSelection.makeEmptySelection(), PixelSelection.makeEmptySelection(), currentSelection.pixelSelection)
-      );
+      this.addSelection(new SelectionHistoryItem(BeamSelection.makeEmptySelection(), PixelSelection.makeEmptySelection(), currentSelection.pixelSelection));
       this.updateListeners();
       this.persistSelection(BeamSelection.makeEmptySelection(), currentSelection.pixelSelection, true);
     }
@@ -206,14 +200,10 @@ export class SelectionService {
     if (currentSelection.cropSelection && currentSelection.cropSelection.selectedPixels.size > 0) {
       let saveCrop = false;
       if (!currentSelection.pixelSelection || currentSelection.pixelSelection.selectedPixels.size === 0) {
-        this.addSelection(
-          new SelectionHistoryItem(currentSelection.beamSelection, currentSelection.cropSelection, PixelSelection.makeEmptySelection())
-        );
+        this.addSelection(new SelectionHistoryItem(currentSelection.beamSelection, currentSelection.cropSelection, PixelSelection.makeEmptySelection()));
         saveCrop = true;
       } else {
-        this.addSelection(
-          new SelectionHistoryItem(currentSelection.beamSelection, currentSelection.pixelSelection, PixelSelection.makeEmptySelection())
-        );
+        this.addSelection(new SelectionHistoryItem(currentSelection.beamSelection, currentSelection.pixelSelection, PixelSelection.makeEmptySelection()));
       }
       this.updateListeners();
       this.persistSelection(currentSelection.beamSelection, currentSelection.pixelSelection, saveCrop);

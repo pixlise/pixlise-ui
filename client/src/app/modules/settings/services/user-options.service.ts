@@ -15,13 +15,7 @@ import { UserDetails, UserInfo } from "src/app/generated-protos/user";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 import { HttpClient } from "@angular/common/http";
 import { makeHeaders } from "src/app/utils/api-helpers";
-import {
-  NotificationConfig,
-  NotificationMethod,
-  NotificationSetting,
-  NotificationSubscriptions,
-  NotificationTopic,
-} from "../models/notification.model";
+import { NotificationConfig, NotificationMethod, NotificationSetting, NotificationSubscriptions, NotificationTopic } from "../models/notification.model";
 import { AuthService } from "@auth0/auth0-angular";
 import { FeatureRequest, PermissionsModel } from "../models/permissions.model";
 
@@ -81,10 +75,7 @@ export class UserOptionsService {
   }
 
   get outdatedDataCollectionAgreementAccepted(): boolean {
-    return (
-      this._userDetails.dataCollectionVersion !== this._currentDataCollectionVersion &&
-      !this._userDetails.dataCollectionVersion.endsWith("-false")
-    );
+    return this._userDetails.dataCollectionVersion !== this._currentDataCollectionVersion && !this._userDetails.dataCollectionVersion.endsWith("-false");
   }
 
   get currentDataCollectionVersion(): string {

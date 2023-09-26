@@ -40,7 +40,6 @@ export class APICachedDataService {
   private _regionOfInterestGetReqMap = new Map<string, Observable<RegionOfInterestGetResp>>();
   private _expressionReqMap = new Map<string, Observable<ExpressionGetResp>>();
   private _dataModuleReqMap = new Map<string, Observable<DataModuleGetResp>>();
-  
 
   constructor(private _dataService: APIDataService) {}
 

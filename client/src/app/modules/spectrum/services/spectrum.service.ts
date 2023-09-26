@@ -18,8 +18,7 @@ export class SpectrumService {
   constructor(
     private _dataService: APIDataService,
     private _snackbarService: SnackbarService,
-    private _diffractionService: DiffractionService,
-    //private _viewStateService: ViewStateService
+    private _diffractionService: DiffractionService //private _viewStateService: ViewStateService
   ) {
     this.fetchSpectrum("012521_83_pressed_powder", { indexes: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }, false, false);
     this.fetchScanBeamLocations("012521_83_pressed_powder");
