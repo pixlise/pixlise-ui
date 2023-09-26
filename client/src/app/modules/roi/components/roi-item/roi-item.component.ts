@@ -1,7 +1,7 @@
 import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from "@angular/core";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { ROIService } from "../../services/roi.service";
-import { SnackbarService, WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { SelectionService, SnackbarService, WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ActionButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/action-button/action-button.component";
 import { Subscription } from "rxjs";
 
@@ -42,7 +42,8 @@ export class ROIItemComponent {
 
   constructor(
     private _snackBarService: SnackbarService,
-    private _roiService: ROIService
+    private _roiService: ROIService,
+    private _selectionService: SelectionService
   ) {
     this._subs.add(
       this._roiService.roiItems$.subscribe(roiItems => {
@@ -51,6 +52,16 @@ export class ROIItemComponent {
           this.scanEntryIndicesByDataset[this._detailedInfo.scanId] = this._detailedInfo.scanEntryIndexesEncoded;
         } else {
           this._detailedInfo = null;
+        }
+      })
+    );
+
+    this._subs.add(
+      this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
+        if (this._selectionService.hoverScanId === this.summary?.scanId) {
+          this.hoverPMC = this._selectionService.hoverEntryIdx;
+        } else {
+          this.hoverPMC = -1;
         }
       })
     );
@@ -149,8 +160,14 @@ export class ROIItemComponent {
 
   onScanEntryIdxPageNext() {}
 
-  onScanEntryIdxEnter(scanEntryIdx: number) {}
-  onScanEntryIdxLeave(scanEntryIdx: number) {}
+  onScanEntryIdxEnter(scanId: string, scanEntryIdx: number) {
+    this._selectionService.setHoverEntry(scanId, scanEntryIdx);
+  }
+
+  onScanEntryIdxLeave(scanId: string, scanEntryIdx: number) {
+    this._selectionService.setHoverEntry("", -1);
+  }
+
   onDeleteScanEntryIdx(scanEntryIdx: number) {
     if (!this.detailedInfo) {
       this._snackBarService.openError(`ROI ${this.name} (${this.summary?.id}) not found`);

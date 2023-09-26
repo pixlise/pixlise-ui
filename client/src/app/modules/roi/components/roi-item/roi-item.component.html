@@ -123,8 +123,8 @@
               *ngFor="let entryIdx of scanEntryIndicesByDataset[scanId]"
               class="entry-idx-container"
               [ngClass]="{ 'pmc-highlight': entryIdx >= 0 && entryIdx == hoverPMC }"
-              (mouseenter)="onScanEntryIdxEnter(entryIdx)"
-              (mouseleave)="onScanEntryIdxLeave(entryIdx)">
+              (mouseenter)="onScanEntryIdxEnter(scanId, entryIdx)"
+              (mouseleave)="onScanEntryIdxLeave(scanId, entryIdx)">
               <div class="entry-idx">{{ entryIdx }}</div>
               <action-button
                 *ngIf="entryIdx >= 0"
