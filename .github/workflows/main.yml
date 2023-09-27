@@ -81,7 +81,7 @@ jobs:
       - name: Generate protobuf code
         uses: addnab/docker-run-action@v3
         with:
-          image: ghcr.io/pixlise/build-container:golang-1.18-protoc-3.7.1-protobuf-3.11.4-angular-13.1.2-nodejs-16
+          image: ghcr.io/pixlise/build-container:golang-1.21-protoc-24.3-protobuf-3.19.3-angular-16.1.0-nodejs-18
           options: -v ${{ github.workspace }}:/work
           run: |
             cd /work
@@ -104,7 +104,7 @@ jobs:
       - name: Build UI
         uses: addnab/docker-run-action@v3
         with:
-          image: atlassianlabs/docker-node-jdk-chrome-firefox:latest
+          image: ghcr.io/pixlise/build-container:golang-1.21-protoc-24.3-protobuf-3.19.3-angular-16.1.0-nodejs-18
           options: -v ${{ github.workspace }}:/work
           run: |
             cd /work
