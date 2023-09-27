@@ -2,6 +2,7 @@
 set -e
 
 echo "Generating protobuf for file formats..."
+rm -rf ./client/src/app/protolibs/
 mkdir -p ./client/src/app/protolibs/
 
 protoc -I=./data-formats/file-formats --js_out=import_style=commonjs,binary:./client/src/app/protolibs/ ./data-formats/file-formats/experiment.proto
