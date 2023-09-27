@@ -14,7 +14,7 @@ import { CursorId } from "src/app/modules/analysis/components/widget/interactive
 import { Point, PointWithRayLabel, Rect, scaleVector } from "src/app/models/Geometry";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { degToRad, invalidPMC } from "src/app/utils/utils";
-import { CANVAS_FONT_SIZE_TITLE, PLOT_POINTS_SIZE, HOVER_POINT_RADIUS } from "src/app/utils/drawing";
+import { CANVAS_FONT_SIZE_TITLE, PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, PointDrawer } from "src/app/utils/drawing";
 import { ExpressionReferences, RegionDataResultItem, RegionDataResults, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { PMCDataValues } from "src/app/expression-language/data-values";
@@ -56,7 +56,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
   hoverPoint: Point | null = null;
   hoverScanId: string = "";
   hoverPointData: TernaryDataItem | null = null;
-  hoverShape: string = "circle";
+  hoverShape: string = PointDrawer.ShapeCircle;
 
   cursorShown: string = CursorId.defaultPointer;
   mouseLassoPoints: Point[] = [];
@@ -233,7 +233,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
     queryWarnings: string[]
   ) {
     if (this._references.length > 0) {
-      const pointGroup: TernaryDataGroup = new TernaryDataGroup("", "", [], Colours.CONTEXT_PURPLE, "circle", new Map<number, number>());
+      const pointGroup: TernaryDataGroup = new TernaryDataGroup("", "", [], Colours.CONTEXT_PURPLE, PointDrawer.ShapeCircle, new Map<number, number>());
 
       this._references.forEach((referenceName, i) => {
         const reference = ExpressionReferences.getByName(referenceName);
@@ -276,7 +276,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
       });
 
       pointGroups.push(pointGroup);
-      this.keyItems.push(new WidgetKeyItem("references", "Ref Points", Colours.CONTEXT_PURPLE, [], "circle"));
+      this.keyItems.push(new WidgetKeyItem("references", "Ref Points", Colours.CONTEXT_PURPLE, [], PointDrawer.ShapeCircle));
     }
 
     if (queryWarnings.length > 0) {
@@ -310,7 +310,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
       this.hoverPoint = null;
       this.hoverScanId = "";
       this.hoverPointData = null;
-      this.hoverShape = "circle";
+      this.hoverShape = PointDrawer.ShapeCircle;
       this.needsDraw$.next();
       return;
     }

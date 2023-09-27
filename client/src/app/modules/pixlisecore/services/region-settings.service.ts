@@ -48,83 +48,43 @@ export class RegionSettings {
   providedIn: "root",
 })
 export class RegionSettingsService {
+  private _shapes = [PointDrawer.ShapeCircle, PointDrawer.ShapeTriangle, PointDrawer.ShapeSquare, PointDrawer.ShapeCross];
+  private _colours = [
+    // Colour-blind safe
+    Colours.ORANGE,
+    Colours.HOPBUSH,
+    Colours.YELLOW,
+    Colours.PURPLE,
+    // "Other"
+    Colours.ROI_TEAL,
+    Colours.ROI_GREEN,
+    Colours.ROI_BROWN,
+    Colours.ROI_MAROON,
+    Colours.ROI_RED,
+    Colours.ROI_PINK,
+    Colours.ROI_BLUE,
+  ];
+
+  private _scanShapeMap = new Map<string, string>();
+  private _nextScanShapeIdx: number = 0;
   private _roiMap = new Map<string, Observable<RegionSettings>>();
-  private _nextDrawConfigIdx: number = 0;
+  private _nextColourIdx: number = 0;
 
-  constructor(private _cachedDataService: APICachedDataService) {
-    // Add defaults for predefined ROIs
-    this._roiMap.set(
-      PredefinedROIID.AllPoints,
-      of(
-        new RegionSettings(
-          ROIItem.create({
-            id: PredefinedROIID.AllPoints,
-            scanId: "",
-            name: "All Points",
-            description: "All Points",
-            scanEntryIndexesEncoded: [],
-            imageName: "",
-            pixelIndexesEncoded: [],
-            tags: [],
-            modifiedUnixSec: 0,
-            //owner: null
-          }),
-          Colours.GRAY_10,
-          PointDrawer.ShapeCircle
-        )
-      )
-    );
+  constructor(private _cachedDataService: APICachedDataService) {}
 
-    this._roiMap.set(
-      PredefinedROIID.SelectedPoints,
-      of(
-        new RegionSettings(
-          ROIItem.create({
-            id: PredefinedROIID.SelectedPoints,
-            scanId: "",
-            name: "Selected Points",
-            description: "Selected Points",
-            scanEntryIndexesEncoded: [],
-            imageName: "",
-            pixelIndexesEncoded: [],
-            tags: [],
-            modifiedUnixSec: 0,
-            //owner: null
-          }),
-          Colours.CONTEXT_BLUE,
-          PointDrawer.ShapeCircle
-        )
-      )
-    );
+  getRegionSettings(scanId: string, roiId: string): Observable<RegionSettings> {
+    // If we have not encountered this scan before, create the default ROIs for it
+    let scanShape = this._scanShapeMap.get(scanId);
+    if (!scanShape) {
+      scanShape = this.nextScanShape();
+      this._scanShapeMap.set(scanId, scanShape);
+      this.createDefaultROIs(scanId, scanShape);
+    }
 
-    this._roiMap.set(
-      PredefinedROIID.RemainingPoints,
-      of(
-        new RegionSettings(
-          ROIItem.create({
-            id: PredefinedROIID.RemainingPoints,
-            scanId: "",
-            name: "Remaining Points",
-            description: "Remaining Points",
-            scanEntryIndexesEncoded: [],
-            imageName: "",
-            pixelIndexesEncoded: [],
-            tags: [],
-            modifiedUnixSec: 0,
-            //owner: null
-          }),
-          Colours.CONTEXT_GREEN,
-          PointDrawer.ShapeCircle
-        )
-      )
-    );
-  }
-
-  getRegionSettings(roiId: string): Observable<RegionSettings> {
-    let result = this._roiMap.get(roiId);
+    // Now we check if we can service locally from our  map
+    let result = this._roiMap.get(scanId + "_" + roiId);
     if (result === undefined) {
-      // Have to request it!
-      console.log("sendRegionOfInterestGetRequest");
+      // Nothing stored, so get the ROI because we're combining that with the colour/shape we generate
       result = this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiId })).pipe(
         map((roiResp: RegionOfInterestGetResp) => {
           if (roiResp.regionOfInterest === undefined) {
@@ -132,7 +92,16 @@ export class RegionSettingsService {
           }
 
           const roi = new RegionSettings(roiResp.regionOfInterest, Colours.WHITE, PointDrawer.ShapeCircle);
-          this.applyNewDrawConfig(roi);
+
+          // Work out the shape (there should be one in our map by now)
+          const scanShape = this._scanShapeMap.get(scanId);
+          if (scanShape) {
+            roi.shape = scanShape;
+          }
+
+          // Work out a colour for this ROI
+          roi.colour = this.nextColour();
+
           return roi;
         }),
         shareReplay()
@@ -145,31 +114,84 @@ export class RegionSettingsService {
     return result;
   }
 
-  private applyNewDrawConfig(item: RegionSettings) {
-    // Return the next "free" one
-    const shapes = [PointDrawer.ShapeCircle, PointDrawer.ShapeCross, PointDrawer.ShapeTriangle, PointDrawer.ShapeSquare];
-    const colours = [
-      // Colour-blind safe
-      Colours.ORANGE,
-      Colours.HOPBUSH,
-      Colours.YELLOW,
-      Colours.PURPLE,
-      // "Other"
-      Colours.ROI_TEAL,
-      Colours.ROI_GREEN,
-      Colours.ROI_BROWN,
-      Colours.ROI_MAROON,
-      Colours.ROI_RED,
-      Colours.ROI_PINK,
-      Colours.ROI_BLUE,
-    ];
+  private createDefaultROIs(scanId: string, scanShape: string) {
+    // Add defaults for predefined ROIs
+    this._roiMap.set(
+      scanId + "_" + PredefinedROIID.AllPoints,
+      of(
+        new RegionSettings(
+          ROIItem.create({
+            id: PredefinedROIID.AllPoints,
+            scanId: scanId,
+            name: "All Points",
+            description: "All Points",
+            scanEntryIndexesEncoded: [],
+            imageName: "",
+            pixelIndexesEncoded: [],
+            tags: [],
+            modifiedUnixSec: 0,
+            //owner: null
+          }),
+          Colours.GRAY_10,
+          scanShape
+        )
+      )
+    );
 
-    const shapeIdx = Math.floor(this._nextDrawConfigIdx / colours.length);
-    const colourIdx = this._nextDrawConfigIdx % colours.length;
+    this._roiMap.set(
+      scanId + "_" + PredefinedROIID.SelectedPoints,
+      of(
+        new RegionSettings(
+          ROIItem.create({
+            id: PredefinedROIID.SelectedPoints,
+            scanId: scanId,
+            name: "Selected Points",
+            description: "Selected Points",
+            scanEntryIndexesEncoded: [],
+            imageName: "",
+            pixelIndexesEncoded: [],
+            tags: [],
+            modifiedUnixSec: 0,
+            //owner: null
+          }),
+          Colours.CONTEXT_BLUE,
+          scanShape
+        )
+      )
+    );
 
-    item.shape = shapes[shapeIdx];
-    item.colour = colours[colourIdx];
+    this._roiMap.set(
+      scanId + "_" + PredefinedROIID.RemainingPoints,
+      of(
+        new RegionSettings(
+          ROIItem.create({
+            id: PredefinedROIID.RemainingPoints,
+            scanId: scanId,
+            name: "Remaining Points",
+            description: "Remaining Points",
+            scanEntryIndexesEncoded: [],
+            imageName: "",
+            pixelIndexesEncoded: [],
+            tags: [],
+            modifiedUnixSec: 0,
+            //owner: null
+          }),
+          Colours.CONTEXT_GREEN,
+          scanShape
+        )
+      )
+    );
+  }
 
-    this._nextDrawConfigIdx++;
+  private nextScanShape(): string {
+    const shape = this._shapes[this._nextScanShapeIdx];
+    this._nextScanShapeIdx = (this._nextScanShapeIdx + 1) % this._shapes.length;
+    return shape;
+  }
+
+  private nextColour(): RGBA {
+    const colour = this._colours[this._nextColourIdx];
+    this._nextColourIdx = (this._nextColourIdx + 1) % this._colours.length;
+    return colour;
   }
 }
