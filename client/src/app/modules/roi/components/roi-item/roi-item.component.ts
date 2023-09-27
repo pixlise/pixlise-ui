@@ -59,7 +59,7 @@ export class ROIItemComponent {
     this._subs.add(
       this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
         if (this._selectionService.hoverScanId === this.summary?.scanId) {
-          this.hoverPMC = this._selectionService.hoverEntryIdx;
+          this.hoverPMC = this._selectionService.hoverEntryId;
         } else {
           this.hoverPMC = -1;
         }
