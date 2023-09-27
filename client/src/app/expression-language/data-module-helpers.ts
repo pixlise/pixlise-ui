@@ -32,7 +32,7 @@ import { mergeMap, shareReplay } from "rxjs/operators";
 
 export class DataModuleHelpers {
   // List of built in modules - static so other things can access it without a pointer to our instance
-  private static _builtInModuleNames = ["Map", "DebugHelp"];
+  private static _builtInModuleNames = ["Map", "DebugHelp", "SyncRuntime"];
   // Built-in modules that are only required for export
   private static _exportedBuiltInModuleNames = ["PixliseRuntime", "CSV"];
 

@@ -338,6 +338,7 @@ export class PixliseDataQuerier {
       }
       return r;
     } else if (callee == "elementSum") {
+      // TODO: Store the fact that we required all elements!
       return this._dataSource.readElementSum(args);
     } else if (callee == "pseudo") {
       const r = this._dataSource.readPseudoIntensity(args);

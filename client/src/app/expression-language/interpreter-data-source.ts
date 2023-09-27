@@ -126,7 +126,7 @@ export class InterpreterDataSource {
   }
 
   // Expects: %, A for example, calls element() for each element there is, and returns the sum of the values
-  public readElementSum(argList: any[]): PMCDataValues | null {
+  public readElementSum(argList: any[]): Promise<PMCDataValues> {
     if (argList.length != 2 || typeof argList[0] != "string" || typeof argList[1] != "string") {
       throw new Error("elementSum() expression expects 2 parameters: datatype, detector Id. Received: " + JSON.stringify(argList));
     }
@@ -136,23 +136,33 @@ export class InterpreterDataSource {
     }
 
     let result: PMCDataValues | null = null;
-    /*    const allElems = this.quantDataSource.getElementList();
+    return this.quantDataSource.getElementList().then((allElems: string[]) => {
+      // NOTE we want only the "most complex" states, these are the ones that were in the quant file, and the ones we should be adding
+      const elems = periodicTableDB.getOnlyMostComplexStates(allElems);
 
-    // NOTE we want only the "most complex" states, these are the ones that were in the quant file, and the ones we should be adding
-    const elems = periodicTableDB.getOnlyMostComplexStates(allElems);
-
-    for (const elem of elems) {
-      const dataLabel = elem + "_" + argList[0];
-      const vals = this.quantDataSource.getQuantifiedDataForDetector(argList[1], dataLabel);
-
-      if (!result) {
-        result = vals;
-      } else {
-        result = result.operationWithMap(QuantOp.ADD, vals);
+      const elemPromises = [];
+      for (const elem of elems) {
+        const dataLabel = elem + "_" + argList[0];
+        const vals = this.quantDataSource.getQuantifiedDataForDetector(argList[1], dataLabel);
+        elemPromises.push(vals);
       }
-    }*/
 
-    return result;
+      return Promise.all(elemPromises).then((allElemVals: PMCDataValues[]) => {
+        for (const elemVals of allElemVals) {
+          if (!result) {
+            result = elemVals;
+          } else {
+            result = result.operationWithMap(QuantOp.ADD, elemVals);
+          }
+        }
+
+        if (!result) {
+          return PMCDataValues.makeWithValues([]);
+        }
+
+        return result;
+      });
+    });
   }
 
   // Expects: chisq, A for example

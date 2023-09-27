@@ -190,77 +190,77 @@ export class LuaDataQuerier {
   private LuaFunctionArgCounts = [3, 2, 2, 3, 3, 1, 1, 2, 0, 1, 1];
   private LuaCallableFunctions = new Map<string, any>([
     [
-      "element",
+      "element_async",
       async (a: any, b: any, c: any) => {
         this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantElementExpression(a, b, c));
         return this.makeLuaTableAsync(`elem-${a}-${b}-${c}`, this._dataSource.readElement([a, b, c]));
       },
     ],
     [
-      "elementSum",
-      (a: any, b: any) => {
+      "elementSum_async",
+      async (a: any, b: any) => {
         // Dont save runtime stat here, this works for any quant
-        return this.makeLuaTable(`elemSum-${a}-${b}`, this._dataSource.readElementSum([a, b]));
+        return this.makeLuaTableAsync(`elemSum-${a}-${b}`, this._dataSource.readElementSum([a, b]));
       },
     ],
     [
-      "data",
+      "data_async",
       async (a: any, b: any) => {
         this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantDataExpression(a, b));
         return this.makeLuaTableAsync(`data-${a}-${b}`, this._dataSource.readMap([a, b]));
       },
     ],
     [
-      "spectrum",
+      "spectrum_async",
       async (a: any, b: any, c: any) => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
         return this.makeLuaTableAsync(`spectrum-${a}-${b}-${c}`, this._dataSource.readSpectrum([a, b, c]));
       },
     ],
     [
-      "spectrumDiff",
+      "spectrumDiff_async",
       async (a: any, b: any, c: any) => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
         return this.makeLuaTableAsync(`spectrumDiff-${a}-${b}-${c}`, this._dataSource.readSpectrumDifferences([a, b, c]));
       },
     ],
     [
-      "pseudo",
+      "pseudo_async",
       async (a: any) => {
         this._runtimeDataRequired.add(DataExpressionId.makePredefinedPseudoIntensityExpression(a));
         return this.makeLuaTableAsync(`pseudo-${a}`, this._dataSource.readPseudoIntensity([a]));
       },
     ],
     [
-      "housekeeping",
+      "housekeeping_async",
       async (a: any) => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeHousekeeping + "-" + a);
         return this.makeLuaTableAsync(`housekeeping-${a}`, this._dataSource.readHousekeepingData([a]));
       },
     ],
     [
-      "diffractionPeaks",
+      "diffractionPeaks_async",
       async (a: any, b: any) => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeDiffraction);
         return this.makeLuaTableAsync(`diffractionPeaks-${a}-${b}`, this._dataSource.readDiffractionData([a, b]));
       },
     ],
     [
-      "roughness",
+      "roughness_async",
       async () => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeRoughness);
         return this.makeLuaTableAsync("roughness", this._dataSource.readRoughnessData([]));
       },
     ],
     [
-      "position",
+      "position_async",
       async (a: any) => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypePosition);
         return this.makeLuaTableAsync(`position-${a}`, this._dataSource.readPosition([a]));
       },
     ],
     [
-      "makeMap",
+      "makeMap_async",
       async (a: any) => {
         return this.makeLuaTableAsync(`makeMap-${a}`, this._dataSource.makeMap([a]));
       },
