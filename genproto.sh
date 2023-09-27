@@ -11,6 +11,7 @@ protoc -I=./data-formats/file-formats --js_out=import_style=commonjs,binary:./cl
 #echo "Done"
 
 echo "Generating protobuf for web socket messaging..."
+rm -r ./client/src/app/generated-protos
 mkdir -p ./client/src/app/generated-protos
 
 echo "Detected OS: $(uname -s)"
