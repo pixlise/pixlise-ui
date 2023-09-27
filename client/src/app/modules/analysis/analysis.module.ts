@@ -12,6 +12,10 @@ import { BaseWidgetModel } from "./components/widget/models/base-widget.model";
 import { InteractiveCanvasComponent } from "./components/widget/interactive-canvas/interactive-canvas.component";
 import { WidgetKeyDisplayComponent } from "./components/widget/widget-key-display/widget-key-display.component";
 import { WidgetConfigurationButtonComponent } from "./components/widget/widget-configuration-button/widget-configuration-button.component";
+import { MistROIComponent } from "./components/analysis-sidepanel/tabs/mist-roi/mist-roi.component";
+import { CdkAccordionModule } from "@angular/cdk/accordion";
+import { MistRoiConvertComponent } from "./components/analysis-sidepanel/tabs/mist-roi/mist-roi-convert/mist-roi-convert.component";
+import { MistRoiUploadComponent } from "./components/analysis-sidepanel/tabs/mist-roi/mist-roi-upload/mist-roi-upload.component";
 
 const APP_ROUTES: Routes = [
   {
@@ -27,11 +31,14 @@ const APP_ROUTES: Routes = [
     InteractiveCanvasComponent,
     AnalysisSidepanelComponent,
     ROITabComponent,
+    MistROIComponent,
+    MistRoiConvertComponent,
+    MistRoiUploadComponent,
     BaseWidgetModel,
     WidgetKeyDisplayComponent,
     WidgetConfigurationButtonComponent,
   ],
-  imports: [CommonModule, PIXLISECoreModule, ROIModule, RouterModule.forChild(APP_ROUTES)],
+  imports: [CommonModule, PIXLISECoreModule, ROIModule, RouterModule.forChild(APP_ROUTES), CdkAccordionModule],
   exports: [AnalysisPageComponent, WidgetComponent, BaseWidgetModel, InteractiveCanvasComponent],
   providers: [AnalysisLayoutService],
 })

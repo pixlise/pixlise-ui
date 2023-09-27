@@ -32,7 +32,9 @@ import { MatDialog } from "@angular/material/dialog";
 import { ActivatedRoute, Route, Router } from "@angular/router";
 import { Subscription } from "rxjs";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
+import { SearchParams } from "src/app/generated-protos/search-params";
 import { ObjectCreator } from "src/app/models/BasicTypes";
+import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 // import { AuthenticationService } from "src/app/services/authentication.service";
 // import { ContextImageService } from "src/app/services/context-image.service";
@@ -83,16 +85,28 @@ export class ROITabComponent implements OnInit {
   newROIDescription: string = "";
   newROITags: string[] = [];
 
+  summaries: ROIItemSummary[] = [];
+
   constructor(
     // private _contextImageService: ContextImageService,
     private _roiService: ROIService,
     private _route: ActivatedRoute,
+    private _analysisLayoutService: AnalysisLayoutService,
     // private _authService: AuthenticationService,
     // private _selectionService: SelectionService,
     public dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
+    // this._roiService.listROIs();
+    this._roiService.searchROIs(SearchParams.create({ scanId: this._analysisLayoutService.defaultScanId }), false);
+
+    this._subs.add(
+      this._roiService.roiSummaries$.subscribe(summaries => {
+        this.summaries = Object.values(summaries).filter(summary => !summary.isMIST);
+      })
+    );
+
     // this._subs.add(this._contextImageService.mdl$.subscribe(
     //   () => {
     //     this.onGotModel();
@@ -112,14 +126,6 @@ export class ROITabComponent implements OnInit {
 
   ngOnDestroy() {
     this._subs.unsubscribe();
-  }
-
-  get roiSummaries(): Record<string, ROIItemSummary> {
-    return this._roiService.roiSummaries;
-  }
-
-  get roiSummaryList(): ROIItemSummary[] {
-    return Object.values(this._roiService.roiSummaries);
   }
 
   get canCreateROIs(): boolean {

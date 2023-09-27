@@ -1,9 +1,11 @@
+import { MistROIComponent } from "../components/analysis-sidepanel/tabs/mist-roi/mist-roi.component";
 import { ROITabComponent } from "../components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
 
 export interface SidebarTabItem {
   title: string;
   icon: string;
   component: any;
+  width?: string;
   tooltip?: string;
   shortcut?: string[];
   showSearchButton?: boolean;
@@ -43,7 +45,8 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
   {
     title: "MIST ROIs",
     icon: "assets/icons/mist-roi.svg",
-    component: null,
+    component: MistROIComponent,
+    width: "350px",
     tooltip: "MIST ROIs",
     shortcut: ["Cmd", "Shift", "4"],
   },

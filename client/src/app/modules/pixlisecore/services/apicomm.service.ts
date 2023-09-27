@@ -37,7 +37,7 @@ export class APICommService implements OnDestroy {
         const res = BeginWSConnectionResponse.decode(arr);
         return res.connToken;
       }),
-      catchError((err)=>{
+      catchError(err => {
         console.error(`APICommService [${this._id}] beginConnect error: ${err}`);
         throw err;
       })
@@ -100,7 +100,7 @@ export class APICommService implements OnDestroy {
     }
 
     // For verbose debugging purposes...
-    console.log("Sending: "+JSON.stringify(WSMessage.toJSON(wsmsg)));
+    console.log("Sending: " + JSON.stringify(WSMessage.toJSON(wsmsg)));
     this.connection$.next(wsmsg);
   }
 

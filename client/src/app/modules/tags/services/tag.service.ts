@@ -4,14 +4,18 @@ import { Tag } from "src/app/generated-protos/tags";
 import { APIDataService } from "../../pixlisecore/services/apidata.service";
 import { TagCreateReq, TagDeleteReq, TagListReq } from "src/app/generated-protos/tag-msgs";
 import { BuiltInTags, TagType } from "../models/tag.model";
-import { BehaviorSubject, ReplaySubject } from "rxjs";
+import { BehaviorSubject } from "rxjs";
 
 @Injectable({
   providedIn: "root",
 })
 export class TagService {
-  tags: Tag[] = [];
+  private _lastChecked: number = 0;
+  private _cachedTags: Tag[] = [];
   tags$ = new BehaviorSubject<Map<string, Tag>>(new Map<string, Tag>());
+
+  // Don't check more than once a minute
+  static MAX_CHECK_INTERVAL = 60 * 1000;
 
   constructor(
     private _snackBar: SnackbarService,
@@ -21,13 +25,21 @@ export class TagService {
   }
 
   fetchAllTags() {
+    // Don't request if we checked less than the max check interval
+    if (Date.now() - this._lastChecked < TagService.MAX_CHECK_INTERVAL) {
+      return;
+    }
+
+    // We have to update this before the request is sent, otherwise all calls made before returning will trigger another request
+    this._lastChecked = Date.now();
+
     this._dataService.sendTagListRequest(TagListReq.create({})).subscribe({
       next: res => {
-        if (res.tags.length === this.tags.length) {
+        if (res.tags.length === this._cachedTags.length) {
           // Check if tags are the same
           let tagsChanged = false;
           for (let i = 0; i < res.tags.length; i++) {
-            if (res.tags[i].id !== this.tags[i].id) {
+            if (res.tags[i].id !== this._cachedTags[i].id) {
               tagsChanged = true;
               break;
             }
@@ -39,7 +51,7 @@ export class TagService {
           }
         }
 
-        this.tags = res.tags;
+        this._cachedTags = res.tags;
 
         let tagsMap = this._getBuiltInTags();
         res.tags.forEach(tag => {
@@ -79,7 +91,7 @@ export class TagService {
     return this._dataService.sendTagCreateRequest(TagCreateReq.create({ name, type, scanId })).subscribe({
       next: res => {
         if (res.tag) {
-          this.tags.push(res.tag);
+          this._cachedTags.push(res.tag);
           this.tags$.next(this.tags$.value.set(res.tag.id, res.tag));
           this._snackBar.openSuccess(`Tag "${name}" created.`);
         }
@@ -96,7 +108,7 @@ export class TagService {
       next: res => {
         let tagName = this.tags$.value.get(tagId)?.name || tagId;
 
-        this.tags = this.tags.filter(tag => tag.id !== tagId);
+        this._cachedTags = this._cachedTags.filter(tag => tag.id !== tagId);
         if (this.tags$.value.delete(tagId)) {
           this.tags$.next(this.tags$.value);
         }

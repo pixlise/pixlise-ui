@@ -1,4 +1,4 @@
-<aside class="sidebar {{ sidepanelOpen ? 'open' : 'closed' }}">
+<aside class="sidebar {{ sidepanelOpen ? 'open' : 'closed' }}" [ngStyle]="{ width: sidepanelOpen ? (activeTab ? activeTab.width || '250px' : '250px') : '40px' }">
   <header>
     <section *ngIf="sidepanelOpen && activeTab">
       <mat-select [(ngModel)]="activeTab">
@@ -59,11 +59,7 @@
     <hr *ngIf="isAdmin" class="panel-break" />
     <div *ngIf="isAdmin" class="tab-shortcuts">
       <div *ngFor="let adminBtn of adminShortcuts" class="view-btn-container">
-        <icon-button
-          icon="{{ adminBtn.icon }}"
-          #tooltip="matTooltip"
-          [matTooltip]="adminBtn.tooltip || adminBtn.title"
-          (click)="onOpenView(adminBtn)"></icon-button>
+        <icon-button icon="{{ adminBtn.icon }}" #tooltip="matTooltip" [matTooltip]="adminBtn.tooltip || adminBtn.title" (click)="onOpenView(adminBtn)"></icon-button>
       </div>
     </div>
   </section>

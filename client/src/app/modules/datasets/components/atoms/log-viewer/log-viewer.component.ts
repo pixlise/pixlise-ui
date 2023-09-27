@@ -52,8 +52,9 @@ export class LogViewerComponent implements OnInit {
   private _logAutoRetrieveCount: number = 0;
   private _loading: boolean = false;
 
-  constructor(private _dataService: APIDataService) // TODO private _layoutService: LayoutService,
-  {}
+  constructor(
+    private _dataService: APIDataService // TODO private _layoutService: LayoutService,
+  ) {}
 
   ngOnInit(): void {
     this.onRefreshLog();

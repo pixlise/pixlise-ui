@@ -1,6 +1,7 @@
 import { Injectable } from "@angular/core";
 import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../models/sidebar.model";
 import { ReplaySubject, timer } from "rxjs";
+import { ActivatedRoute } from "@angular/router";
 
 @Injectable({
   providedIn: "root",
@@ -16,7 +17,7 @@ export class AnalysisLayoutService {
 
   activeTab: SidebarTabItem | null = null;
 
-  constructor() {}
+  constructor(private _route: ActivatedRoute) {}
 
   get resizeCanvas$(): ReplaySubject<void> {
     // Something just subscribed, schedule a notification in a second
@@ -33,7 +34,7 @@ export class AnalysisLayoutService {
     this._resizeCanvas$.next();
   }
 
-  private delayNotifyCanvasResize(delayMS: number): void {
+  delayNotifyCanvasResize(delayMS: number): void {
     // Wait a bit & then notify canvases to recalculate their size
     const source = timer(delayMS);
     const abc = source.subscribe(val => {
@@ -46,6 +47,9 @@ export class AnalysisLayoutService {
     if (this.sidepanelOpen && !this.activeTab) {
       this.activeTab = this.sidebarTabs[0];
     }
+
+    // We need to wait 100 ms before notifying resize because this is how long the transition is set for
+    this.delayNotifyCanvasResize(100);
   }
 
   get isWindows(): boolean {
@@ -54,5 +58,9 @@ export class AnalysisLayoutService {
 
   get isFirefox(): boolean {
     return !!navigator.userAgent.match(/firefox|fxios/i);
+  }
+
+  get defaultScanId(): string {
+    return this._route?.snapshot?.queryParams["scan_id"] || "";
   }
 }

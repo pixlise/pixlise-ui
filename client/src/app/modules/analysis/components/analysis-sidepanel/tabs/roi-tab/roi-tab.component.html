@@ -70,15 +70,9 @@ POSSIBILITY OF SUCH DAMAGE.
         <tag-picker type="roi" [selectedTagIDs]="filteredTagIDs" [showCurrentTagsSection]="false"
             (onTagSelectionChanged)="onTagFilterChanged($event)">
         </tag-picker> -->
-    <mat-select
-      #tooltip="matTooltip"
-      [matTooltip]="authorsTooltip"
-      multiple
-      [(ngModel)]="filteredAuthors"
-      class="authors-filter"
-      placeholder="Author ...">
+    <mat-select #tooltip="matTooltip" [matTooltip]="authorsTooltip" multiple [(ngModel)]="filteredAuthors" class="authors-filter" placeholder="Author ...">
       <mat-option *ngFor="let author of authors" [value]="author.user_id">{{ author.name }} </mat-option>
     </mat-select>
   </div>
-  <roi-item *ngFor="let item of roiSummaryList" [summary]="item"> </roi-item>
+  <roi-item *ngFor="let item of summaries" [summary]="item"> </roi-item>
 </section>
