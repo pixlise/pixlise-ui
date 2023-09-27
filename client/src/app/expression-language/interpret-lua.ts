@@ -37,7 +37,7 @@ import { DataExpressionId } from "./expression-id";
 import { DataModuleHelpers } from "./data-module-helpers";
 import { environment } from "src/environments/environment";
 
-import { LuaFactory, LuaLibraries, LuaEngine } from "../../../../../wasmoon/dist";
+import { LuaFactory, LuaLibraries, LuaEngine } from "wasmoon/dist";
 
 export class LuaDataQuerier {
   // An id we use for logging about this Lua runner
