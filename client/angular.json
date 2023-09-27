@@ -17,10 +17,6 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser-esbuild",
           "options": {
-            "externalDependencies": [
-              "url",
-              "module"
-            ],
             "outputPath": "dist/pixlise",
             "index": "src/index.html",
             "main": "src/main.ts",
