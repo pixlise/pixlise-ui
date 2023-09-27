@@ -38,15 +38,57 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     super();
 
     this.mdl.expressionIdA = "r4zd5s2tfgr8rahy"; // AlFe
-    this.mdl.expressionIdB = "rlqqh3wz9xball3w"; // Ca/100
+    this.mdl.expressionIdB = "lpqtfd5lva7t2046"; // Si (mmol)
     this.mdl.expressionIdC = "vge9tz6fkbi2ha1p"; // CaTi
 
     //const scanId = this._route.snapshot.queryParams["scan_id"];
 
-    // Naltsos
-    this.mdl.dataSourceIds.set("048300551", new ScanDataIds("9k8wgfzi02a9h6f8", [PredefinedROIID.AllPoints, "048300551_xo98frdyibinpjn3"]));
+    // // Naltsos
+    // this.mdl.dataSourceIds.set(
+    //   "048300551",
+    //   new ScanDataIds(
+    //     "ox3psifd719hfo1s", //00125_Naltsos_Heirwegh_det_combined_v7_10_05_2021
+    //     [
+    //       PredefinedROIID.AllPoints
+    //     ]
+    //   )
+    // );
     // Dourbes
-    //this.mdl.dataSourceIds.set("089063943", new ScanDataIds("9qntb8w2joq4elti", [PredefinedROIID.AllPoints, "048300551_xo98frdyibinpjn3"]));
+    this.mdl.dataSourceIds.set(
+      "089063943",
+      new ScanDataIds(
+        //"67m8870gtn5qhwr9", // Tice carbonate
+        "9qntb8w2joq4elti", // Jones_00258_v4
+        //"gzouymw0k6o7wqay", // Tice base quant
+        [
+          PredefinedROIID.AllPoints,
+          //"tzn6stfrmrypzceb", // All Olivine
+        ]
+      )
+    );
+    // Quartier
+    this.mdl.dataSourceIds.set(
+      "101384711",
+      new ScanDataIds(
+        "xyvzdae2ftvhgm48", //00294_Quartier_MJones_det_combined_v1_12_22_2021
+        [
+          PredefinedROIID.AllPoints,
+          //"jm5v20zy5ie55s7t", // "All olivine"
+          "i63koqmnmkalpcu3", // Phosphates
+        ]
+      )
+    );
+    // Novarupta 2
+    this.mdl.dataSourceIds.set(
+      "198509061",
+      new ScanDataIds(
+        "w3wf2yuo74b559mt", // novarupta_2_570_combined_jchristian
+        [
+          PredefinedROIID.AllPoints,
+          "vmy1rlymw6rxzo5p", // Olivine (points w/ CIA < 50)"
+        ]
+      )
+    );
 
     const exprIds = [this.mdl.expressionIdA, this.mdl.expressionIdB, this.mdl.expressionIdC];
 
@@ -125,11 +167,16 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   ngOnInit() {
-    this._subs.add(this._selectionService.hoverChangedReplaySubject$.subscribe(
-      ()=>{
-        this.mdl.handleHoverPointChanged(this._selectionService.hoverScanId, this._selectionService.hoverEntryIdx);
-      }
-    ));
+    this._subs.add(
+      this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
+        this.mdl.handleHoverPointChanged(this._selectionService.hoverScanId, this._selectionService.hoverEntryId);
+      })
+    );
+    /*this._subs.add(
+      this._selectionService.selection$.subscribe(() => {
+        this.mdl.handleSelection;
+      })
+    );*/
     this.reDraw();
   }
 

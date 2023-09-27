@@ -31,31 +31,31 @@ import { PMCDataValues } from "src/app/expression-language/data-values";
 
 // Query data sources (interfaces)
 export interface QuantifiedDataQuerierSource {
-  getQuantifiedDataForDetector(detectorId: string, dataLabel: string): PMCDataValues;
-  getElementList(): string[];
-  getPMCList(): number[];
-  getDetectors(): string[];
-  columnExists(col: string): boolean;
+  getQuantifiedDataForDetector(detectorId: string, dataLabel: string): Promise<PMCDataValues>;
+  getElementList(): Promise<string[]>;
+  getPMCList(): Promise<number[]>;
+  getDetectors(): Promise<string[]>;
+  columnExists(col: string): Promise<boolean>;
 }
 
 export interface PseudoIntensityDataQuerierSource {
-  getPseudoIntensityData(name: string): PMCDataValues;
-  getPseudoIntensityElementsList(): string[];
+  getPseudoIntensityData(name: string): Promise<PMCDataValues>;
+  getPseudoIntensityElementsList(): Promise<string[]>;
 }
 
 export interface SpectrumDataQuerierSource {
-  getSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): PMCDataValues;
+  getSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): Promise<PMCDataValues>;
   // If sumOrMax==true, returns sum of differences between A and B otherwise max difference seen between A and B
-  getSpectrumDifferences(channelStart: number, channelEnd: number, sumOrMax: boolean): PMCDataValues;
+  getSpectrumDifferences(channelStart: number, channelEnd: number, sumOrMax: boolean): Promise<PMCDataValues>;
 }
 
 export interface DiffractionPeakQuerierSource {
-  getDiffractionPeakEffectData(channelStart: number, channelEnd: number): PMCDataValues;
-  getRoughnessData(): PMCDataValues;
+  getDiffractionPeakEffectData(channelStart: number, channelEnd: number): Promise<PMCDataValues>;
+  getRoughnessData(): Promise<PMCDataValues>;
 }
 
 export interface HousekeepingDataQuerierSource {
-  getHousekeepingData(name: string): PMCDataValues;
-  getPositionData(axis: string): PMCDataValues;
-  hasHousekeepingData(name: string): boolean;
+  getHousekeepingData(name: string): Promise<PMCDataValues>;
+  getPositionData(axis: string): Promise<PMCDataValues>;
+  hasHousekeepingData(name: string): Promise<boolean>;
 }

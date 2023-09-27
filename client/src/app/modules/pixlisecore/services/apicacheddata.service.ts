@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { Observable, shareReplay } from "rxjs";
+import { Observable, shareReplay, map } from "rxjs";
 import { APIDataService } from "./apidata.service";
 import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
@@ -13,6 +13,9 @@ import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
 import { ExpressionGetReq, ExpressionGetResp } from "src/app/generated-protos/expression-msgs";
 import { DataModuleGetReq, DataModuleGetResp } from "src/app/generated-protos/module-msgs";
+
+import { decompressZeroRunLengthEncoding } from "src/app/utils/utils";
+
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
@@ -62,13 +65,29 @@ export class APICachedDataService {
     let result = this._spectrumReqMap.get(cacheId);
     if (result === undefined) {
       // Have to request it!
-      result = this._dataService.sendSpectrumRequest(req).pipe(shareReplay());
+      result = this._dataService.sendSpectrumRequest(req).pipe(
+        map((resp: SpectrumResp) => {
+          this.decompressSpectra(resp);
+          return resp;
+        }),
+        shareReplay()
+      );
 
       // Add it to the map too so a subsequent request will get this
       this._spectrumReqMap.set(cacheId, result);
     }
 
     return result;
+  }
+
+  private decompressSpectra(spectrumData: SpectrumResp) {
+    // We get spectra with runs of 0's run-length encoded. Here we decode them to have the full spectrum channel list in memory
+    // and this way we also don't double up on storage in memory
+    for (const loc of spectrumData.spectraPerLocation) {
+      for (const spectrum of loc.spectra) {
+        spectrum.counts = Array.from(decompressZeroRunLengthEncoding(spectrum.counts, spectrumData.channelCount));
+      }
+    }
   }
 
   getScanMetaLabelsAndTypes(req: ScanMetaLabelsAndTypesReq): Observable<ScanMetaLabelsAndTypesResp> {

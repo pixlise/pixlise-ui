@@ -49,7 +49,7 @@ export class InterpreterDataSource {
   ////////////////////////////////////// Calling Quant Data Source //////////////////////////////////////
   // Expects: Fe, %, A for example
   // Optionally supports mmol conversion for % values by specifying %-as-mmol
-  public readElement(argList: any[]): PMCDataValues {
+  public async readElement(argList: any[]): Promise<PMCDataValues> {
     if (argList.length != 3 || typeof argList[0] != "string" || typeof argList[1] != "string" || typeof argList[2] != "string") {
       throw new Error("element() expression expects 3 parameters: element, datatype, detector Id. Received: " + JSON.stringify(argList));
     }
@@ -68,13 +68,12 @@ export class InterpreterDataSource {
     }
 
     const dataLabel = argList[0] + "_" + col;
-    let result = this.quantDataSource.getQuantifiedDataForDetector(argList[2], dataLabel);
-
-    if (asMmol) {
-      result = this.convertToMmol(argList[0], result);
+    const result = await this.quantDataSource.getQuantifiedDataForDetector(argList[2], dataLabel);
+    if (!asMmol) {
+      return result;
     }
 
-    return result;
+    return this.convertToMmol(argList[0], result);
   }
 
   private convertToMmol(formula: string, values: PMCDataValues): PMCDataValues {
@@ -127,7 +126,7 @@ export class InterpreterDataSource {
   }
 
   // Expects: %, A for example, calls element() for each element there is, and returns the sum of the values
-  public readElementSum(argList: any[]): PMCDataValues | null {
+  public readElementSum(argList: any[]): Promise<PMCDataValues> {
     if (argList.length != 2 || typeof argList[0] != "string" || typeof argList[1] != "string") {
       throw new Error("elementSum() expression expects 2 parameters: datatype, detector Id. Received: " + JSON.stringify(argList));
     }
@@ -137,31 +136,39 @@ export class InterpreterDataSource {
     }
 
     let result: PMCDataValues | null = null;
-    const allElems = this.quantDataSource.getElementList();
+    return this.quantDataSource.getElementList().then((allElems: string[]) => {
+      // NOTE we want only the "most complex" states, these are the ones that were in the quant file, and the ones we should be adding
+      const elems = periodicTableDB.getOnlyMostComplexStates(allElems);
 
-    // NOTE we want only the "most complex" states, these are the ones that were in the quant file, and the ones we should be adding
-    const elems = periodicTableDB.getOnlyMostComplexStates(allElems);
-
-    for (const elem of elems) {
-      const dataLabel = elem + "_" + argList[0];
-      const vals = this.quantDataSource.getQuantifiedDataForDetector(argList[1], dataLabel);
-
-      if (!result) {
-        result = vals;
-      } else {
-        result = result.operationWithMap(QuantOp.ADD, vals);
+      const elemPromises = [];
+      for (const elem of elems) {
+        const dataLabel = elem + "_" + argList[0];
+        const vals = this.quantDataSource.getQuantifiedDataForDetector(argList[1], dataLabel);
+        elemPromises.push(vals);
       }
-    }
 
-    return result;
+      return Promise.all(elemPromises).then((allElemVals: PMCDataValues[]) => {
+        for (const elemVals of allElemVals) {
+          if (!result) {
+            result = elemVals;
+          } else {
+            result = result.operationWithMap(QuantOp.ADD, elemVals);
+          }
+        }
+
+        if (!result) {
+          return PMCDataValues.makeWithValues([]);
+        }
+
+        return result;
+      });
+    });
   }
 
   // Expects: chisq, A for example
-  public readMap(argList: any[]): PMCDataValues {
+  public async readMap(argList: any[]): Promise<PMCDataValues> {
     if (argList.length != 2 || typeof argList[0] != "string" || typeof argList[1] != "string") {
-      throw new Error(
-        "data() expression expects 2 parameters: quantified column name, detector Id. Received: " + argList.length + " parameters"
-      );
+      throw new Error("data() expression expects 2 parameters: quantified column name, detector Id. Received: " + argList.length + " parameters");
     }
 
     if (!this.quantDataSource) {
@@ -172,11 +179,9 @@ export class InterpreterDataSource {
   }
 
   // Expects: 1, 2, A|Normal for example (eV start, eV end, A|Normal or B|Normal or A|Dwell)
-  public readSpectrum(argList: any[]): PMCDataValues {
+  public async readSpectrum(argList: any[]): Promise<PMCDataValues> {
     if (argList.length != 3 || typeof argList[0] != "number" || typeof argList[1] != "number" || typeof argList[2] != "string") {
-      throw new Error(
-        "spectrum() expression expects 3 parameters: start channel, end channel, detector. Received: " + argList.length + " parameters"
-      );
+      throw new Error("spectrum() expression expects 3 parameters: start channel, end channel, detector. Received: " + argList.length + " parameters");
     }
 
     if (!this.spectrumDataSource) {
@@ -187,11 +192,9 @@ export class InterpreterDataSource {
   }
 
   // Expects: 1, 2, 'sum'|'max'
-  public readSpectrumDifferences(argList: any[]): PMCDataValues {
+  public async readSpectrumDifferences(argList: any[]): Promise<PMCDataValues> {
     if (argList.length != 3 || typeof argList[0] != "number" || typeof argList[1] != "number" || typeof argList[2] != "string") {
-      throw new Error(
-        'spectrumDiff() expression expects 3 parameters: start channel, end channel, "sum"|"max". Received: ' + argList.length + " parameters"
-      );
+      throw new Error('spectrumDiff() expression expects 3 parameters: start channel, end channel, "sum"|"max". Received: ' + argList.length + " parameters");
     }
 
     if (!this.spectrumDataSource) {
@@ -213,11 +216,9 @@ export class InterpreterDataSource {
 
   ////////////////////////////////////// Calling Diffraction Data Source //////////////////////////////////////
   // Expects: 1, 2 for example (eV start, eV end)
-  public readDiffractionData(argList: any[]): PMCDataValues {
+  public async readDiffractionData(argList: any[]): Promise<PMCDataValues> {
     if (argList.length != 2 || typeof argList[0] != "number" || typeof argList[1] != "number") {
-      throw new Error(
-        "diffractionPeaks() expression expects 2 parameters: start channel, end channel. Received: " + argList.length + " parameters"
-      );
+      throw new Error("diffractionPeaks() expression expects 2 parameters: start channel, end channel. Received: " + argList.length + " parameters");
     }
 
     if (!this.diffractionSource) {
@@ -228,7 +229,7 @@ export class InterpreterDataSource {
   }
 
   // Expects: NO parameters
-  public readRoughnessData(argList: any[]): PMCDataValues {
+  public async readRoughnessData(argList: any[]): Promise<PMCDataValues> {
     if (argList.length != 0) {
       throw new Error("roughness() expression expects NO parameters. Received: " + argList.length + " parameters");
     }
@@ -240,8 +241,8 @@ export class InterpreterDataSource {
     return this.diffractionSource.getRoughnessData();
   }
 
-  // Expects: NO parameters
-  public readPosition(argList: any[]): PMCDataValues {
+  // Expects: 1 parameter: "x", "y" or "z"
+  public async readPosition(argList: any[]): Promise<PMCDataValues> {
     if (argList.length != 1 && argList[0] != "x" && argList[0] != "y" && argList[0] != "z") {
       throw new Error("position() expression expects 1 parameter: x, y or z");
     }
@@ -254,7 +255,7 @@ export class InterpreterDataSource {
   }
 
   // Expects: 1 parameter, the values to put into each map cell
-  public makeMap(argList: any[]): PMCDataValues {
+  public async makeMap(argList: any[]): Promise<PMCDataValues> {
     if (
       argList.length != 1 || // only 1 param
       typeof argList[0] != "number" // must be a number
@@ -266,16 +267,17 @@ export class InterpreterDataSource {
       throw new Error("makeMap() expression failed, failed to determine map dimensions");
     }
 
-    const quantifiedPMCs = this.quantDataSource.getPMCList();
     const mapValue = argList[0];
 
-    const values: PMCDataValue[] = [];
+    return this.quantDataSource.getPMCList().then((pmcs: number[]) => {
+      const values: PMCDataValue[] = [];
 
-    for (const pmc of quantifiedPMCs) {
-      values.push(new PMCDataValue(pmc, mapValue));
-    }
+      for (const pmc of pmcs) {
+        values.push(new PMCDataValue(pmc, mapValue));
+      }
 
-    return PMCDataValues.makeWithValues(values);
+      return PMCDataValues.makeWithValues(values);
+    });
   }
 
   ////////////////////////////////////// Querying Periodic Table Data //////////////////////////////////////
@@ -299,7 +301,7 @@ export class InterpreterDataSource {
 
   ////////////////////////////////////// Calling Pseudo-Intensity Data Source //////////////////////////////////////
   // Expects: Fe for example
-  public readPseudoIntensity(argList: any[]): PMCDataValues {
+  public async readPseudoIntensity(argList: any[]): Promise<PMCDataValues> {
     if (argList.length != 1 || typeof argList[0] != "string") {
       throw new Error("pseudo() expects 1 parameters: pseudo-intensity-element name. Received: " + argList.length + " parameters");
     }
@@ -313,7 +315,7 @@ export class InterpreterDataSource {
 
   ////////////////////////////////////// Calling Pseudo-Intensity Data Source //////////////////////////////////////
   // Expects: Name of the housekeeping data column
-  public readHousekeepingData(argList: any[]): PMCDataValues {
+  public async readHousekeepingData(argList: any[]): Promise<PMCDataValues> {
     if (argList.length != 1 || typeof argList[0] != "string") {
       throw new Error("housekeeping() expects 1 parameters: data column name. Received: " + argList.length + " parameters");
     }
@@ -334,21 +336,24 @@ export class InterpreterDataSource {
   // - "data", "chisq".
   // - "housekeeping", "f_pixl_3_3_volt"
   // - "pseudo", "Ca"
-  public exists(dataType: string, column: string): boolean {
+  public exists(dataType: string, column: string): Promise<boolean> {
     // Check if the data is available
     if (dataType == "element") {
-      const elems = this.quantDataSource.getElementList();
-      return elems.indexOf(column) > -1;
+      return this.quantDataSource.getElementList().then((cols: string[]) => {
+        return cols.indexOf(column) > -1;
+      });
     } else if (dataType == "detector") {
-      const dets = this.quantDataSource.getDetectors();
-      return dets.indexOf(column) > -1;
+      return this.quantDataSource.getDetectors().then((detectors: string[]) => {
+        return detectors.indexOf(column) > -1;
+      });
     } else if (dataType == "data") {
       return this.quantDataSource.columnExists(column);
     } else if (dataType == "housekeeping") {
       return this.housekeepingDataSource.hasHousekeepingData(column);
     } else if (dataType == "pseudo") {
-      const elems = this.pseudoDataSource.getPseudoIntensityElementsList();
-      return elems.indexOf(column) > -1;
+      return this.pseudoDataSource.getPseudoIntensityElementsList().then((elems: string[]) => {
+        return elems.indexOf(column) > -1;
+      });
     }
 
     const validDataTypes = InterpreterDataSource.validExistsDataTypes;

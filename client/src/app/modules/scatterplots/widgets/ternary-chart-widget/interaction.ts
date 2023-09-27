@@ -11,7 +11,7 @@ import { Point, Rect, distanceBetweenPoints, ptWithinPolygon, ptWithinBox } from
 import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { HOVER_POINT_RADIUS } from "src/app/utils/drawing";
-import { SentryHelper } from "src/app/utils/utils";
+import { SentryHelper, invalidPMC } from "src/app/utils/utils";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -108,9 +108,9 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
     const mouseOverPt = this.getIndexforPoint(canvasPt);
 
     if (mouseOverPt == null) {
-      this._selectionService.setHoverEntry("", -1);
+      this._selectionService.setHoverEntry("", invalidPMC);
     } else {
-      this._selectionService.setHoverEntry(mouseOverPt.scanId, mouseOverPt.ptIdx);
+      this._selectionService.setHoverEntry(mouseOverPt.scanId, mouseOverPt.pmc);
     }
 
     // Redraw will be initiated due to selectionService hover idx change

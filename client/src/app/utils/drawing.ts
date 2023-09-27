@@ -155,7 +155,7 @@ export const PLOT_POINTS_SIZE = 3;
 export const OUTLINE_LINE_WIDTH = 1;
 
 export class PointDrawer {
-  _screenContext!: CanvasRenderingContext2D;
+  _screenContext!: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
   _fillColour: RGBA = new RGBA(0, 0, 0, 1);
   _outlineColour: RGBA = new RGBA(0, 0, 0, 1);
   _size: number = 0;
@@ -167,7 +167,7 @@ export class PointDrawer {
   static readonly ShapeSquare = "square";
 
   constructor(
-    screenContext: CanvasRenderingContext2D,
+    screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     size: number,
     fillColour: RGBA | null,
     outlineColour: RGBA | null,

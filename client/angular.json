@@ -17,6 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser-esbuild",
           "options": {
+            "externalDependencies": ["url", "module"],
             "outputPath": "dist/client",
             "index": "src/index.html",
             "main": "src/main.ts",
@@ -60,6 +61,11 @@
               },
               {
                 "glob": "PixliseRuntime.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "SyncRuntime.lua",
                 "input": "src/app/expression-language/lua",
                 "output": "assets/lua"
               },

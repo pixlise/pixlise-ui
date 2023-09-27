@@ -37,7 +37,7 @@ import { DataExpressionId } from "./expression-id";
 import { DataModuleHelpers } from "./data-module-helpers";
 import { environment } from "src/environments/environment";
 
-import { LuaFactory, LuaLibraries, LuaEngine } from "wasmoon";
+import { LuaFactory, LuaLibraries, LuaEngine } from "../../../../../wasmoon/dist";
 
 export class LuaDataQuerier {
   // An id we use for logging about this Lua runner
@@ -190,84 +190,84 @@ export class LuaDataQuerier {
   private LuaFunctionArgCounts = [3, 2, 2, 3, 3, 1, 1, 2, 0, 1, 1];
   private LuaCallableFunctions = new Map<string, any>([
     [
-      "element",
-      (a: any, b: any, c: any) => {
+      "element_async",
+      async (a: any, b: any, c: any) => {
         this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantElementExpression(a, b, c));
-        return this.makeLuaTable(`elem-${a}-${b}-${c}`, this._dataSource.readElement([a, b, c]));
+        return this.makeLuaTableAsync(`elem-${a}-${b}-${c}`, this._dataSource.readElement([a, b, c]));
       },
     ],
     [
-      "elementSum",
-      (a: any, b: any) => {
+      "elementSum_async",
+      async (a: any, b: any) => {
         // Dont save runtime stat here, this works for any quant
-        return this.makeLuaTable(`elemSum-${a}-${b}`, this._dataSource.readElementSum([a, b]));
+        return this.makeLuaTableAsync(`elemSum-${a}-${b}`, this._dataSource.readElementSum([a, b]));
       },
     ],
     [
-      "data",
-      (a: any, b: any) => {
+      "data_async",
+      async (a: any, b: any) => {
         this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantDataExpression(a, b));
-        return this.makeLuaTable(`data-${a}-${b}`, this._dataSource.readMap([a, b]));
+        return this.makeLuaTableAsync(`data-${a}-${b}`, this._dataSource.readMap([a, b]));
       },
     ],
     [
-      "spectrum",
-      (a: any, b: any, c: any) => {
+      "spectrum_async",
+      async (a: any, b: any, c: any) => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
-        return this.makeLuaTable(`spectrum-${a}-${b}-${c}`, this._dataSource.readSpectrum([a, b, c]));
+        return this.makeLuaTableAsync(`spectrum-${a}-${b}-${c}`, this._dataSource.readSpectrum([a, b, c]));
       },
     ],
     [
-      "spectrumDiff",
-      (a: any, b: any, c: any) => {
+      "spectrumDiff_async",
+      async (a: any, b: any, c: any) => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
-        return this.makeLuaTable(`spectrumDiff-${a}-${b}-${c}`, this._dataSource.readSpectrumDifferences([a, b, c]));
+        return this.makeLuaTableAsync(`spectrumDiff-${a}-${b}-${c}`, this._dataSource.readSpectrumDifferences([a, b, c]));
       },
     ],
     [
-      "pseudo",
-      (a: any) => {
+      "pseudo_async",
+      async (a: any) => {
         this._runtimeDataRequired.add(DataExpressionId.makePredefinedPseudoIntensityExpression(a));
-        return this.makeLuaTable(`pseudo-${a}`, this._dataSource.readPseudoIntensity([a]));
+        return this.makeLuaTableAsync(`pseudo-${a}`, this._dataSource.readPseudoIntensity([a]));
       },
     ],
     [
-      "housekeeping",
-      (a: any) => {
+      "housekeeping_async",
+      async (a: any) => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeHousekeeping + "-" + a);
-        return this.makeLuaTable(`housekeeping-${a}`, this._dataSource.readHousekeepingData([a]));
+        return this.makeLuaTableAsync(`housekeeping-${a}`, this._dataSource.readHousekeepingData([a]));
       },
     ],
     [
-      "diffractionPeaks",
-      (a: any, b: any) => {
+      "diffractionPeaks_async",
+      async (a: any, b: any) => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeDiffraction);
-        return this.makeLuaTable(`diffractionPeaks-${a}-${b}`, this._dataSource.readDiffractionData([a, b]));
+        return this.makeLuaTableAsync(`diffractionPeaks-${a}-${b}`, this._dataSource.readDiffractionData([a, b]));
       },
     ],
     [
-      "roughness",
-      () => {
+      "roughness_async",
+      async () => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeRoughness);
-        return this.makeLuaTable("roughness", this._dataSource.readRoughnessData([]));
+        return this.makeLuaTableAsync("roughness", this._dataSource.readRoughnessData([]));
       },
     ],
     [
-      "position",
-      (a: any) => {
+      "position_async",
+      async (a: any) => {
         this._runtimeDataRequired.add(DataQueryResult.DataTypePosition);
-        return this.makeLuaTable(`position-${a}`, this._dataSource.readPosition([a]));
+        return this.makeLuaTableAsync(`position-${a}`, this._dataSource.readPosition([a]));
       },
     ],
     [
-      "makeMap",
-      (a: any) => {
-        return this.makeLuaTable(`makeMap-${a}`, this._dataSource.makeMap([a]));
+      "makeMap_async",
+      async (a: any) => {
+        return this.makeLuaTableAsync(`makeMap-${a}`, this._dataSource.makeMap([a]));
       },
     ],
   ]);
 
-  private setupPIXLISELuaFunctions(): void {
+  private async setupPIXLISELuaFunctions(): Promise<void> {
     if (!this._lua) {
       // Not inited
       return;
@@ -283,6 +283,10 @@ export class LuaDataQuerier {
       this._lua.global.set(prefix + funcName, func);
     }
 
+    // this._lua.global.set("position", async (ms: number) => {
+    //   return new Promise(resolve => setTimeout(resolve, ms));
+    // });
+
     // Special simple ones, we don't have debugging for these
     this._lua.global.set("atomicMass", (symbol: string) => {
       return periodicTableDB.getMolecularMass(symbol);
@@ -295,7 +299,7 @@ export class LuaDataQuerier {
     });
   }
 
-  // See: https://github.com/ceifa/wasmoon
+  // See: https://github.com/pixlise/wasmoon
   public runQuery(
     sourceCode: string,
     modules: Map<string, string>,
@@ -353,7 +357,13 @@ export class LuaDataQuerier {
     // Set the timeout value
     this._lua.global.setTimeout(Date.now() + timeoutMs);
 
-    return from(this._lua.doString(sourceCode)).pipe(
+    let p = this._lua.doString(sourceCode);
+
+    return from(p).pipe(
+      // map(result => {
+      //   console.log(result);
+      //   return result;
+      // }),
       finalize(() => {
         // Remove timeout as it will run out if we leave it here and things in future will fail
         if (this._lua && this._lua.global) {
@@ -480,7 +490,7 @@ export class LuaDataQuerier {
     }
 */
   // For examples, see unit tests
-  private parseLuaError(err, sourceCode: string): Error {
+  private parseLuaError(err: any, sourceCode: string): Error {
     // At this point, we can look at the error Lua returned and maybe form a more useful error message for users
     // because we supply multi-line source code to Lua, but all its error msgs print out a segment of the first line!
     let errType = "";
@@ -502,8 +512,16 @@ export class LuaDataQuerier {
     }
 
     if (err?.message) {
-      // Now find the line it's on
-      // We expect: "[<some source code>]:<number>: <msg>"
+      // Now find the line it's on and an error message
+      // It appears it can optionally come as:
+      // error message
+      // stack traceback:
+      // [<some source code>]:<number>: <msg>
+      //
+      // OR just:
+      // [<some source code>]:<number>: <msg>
+      //
+      // So here we determine which this is and read as needed
       const lineNumToken = "]:";
       const lineNumEndToken = ": ";
       let startPos = err.message.indexOf(lineNumToken);
@@ -515,6 +533,12 @@ export class LuaDataQuerier {
           errLine = Number.parseInt(errLineStr);
           errMsg = err.message.substring(endPos + lineNumEndToken.length);
         }
+      }
+
+      // If there was a "stack traceback:", error message is at the start of the string
+      const stackTracebackPos = err.message.indexOf("stack traceback:");
+      if (stackTracebackPos > -1) {
+        errMsg = err.message.substring(0, stackTracebackPos - 1);
       }
     }
 
@@ -693,6 +717,29 @@ end
 
     this._makeLuaTableTime += t1 - t0;
     return luaTable;
+  }
+
+  private async makeLuaTableAsync(tableSource: string, data: Promise<PMCDataValues>): Promise<any> {
+    return data.then((result: PMCDataValues) => {
+      const t0 = performance.now();
+      const pmcs = [];
+      const values = [];
+      for (const item of result.values) {
+        pmcs.push(item.pmc);
+
+        // NOTE: Lua doesn't support nil values in tables. https://www.lua.org/manual/5.3/manual.html#2.1
+        // so here we specify an undefined value as a NaN so it doesn't break. May need to consider just
+        // excluding those PMCs completely, however then the maps wont be the same size in Lua land...
+        values.push(item.isUndefined ? NaN : item.value);
+      }
+
+      const luaTable = [pmcs, values];
+
+      const t1 = performance.now();
+
+      this._makeLuaTableTime += t1 - t0;
+      return luaTable;
+    });
   }
   /*
     private logTables()
