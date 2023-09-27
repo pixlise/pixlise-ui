@@ -172,6 +172,11 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         this.mdl.handleHoverPointChanged(this._selectionService.hoverScanId, this._selectionService.hoverEntryId);
       })
     );
+    /*this._subs.add(
+      this._selectionService.selection$.subscribe(() => {
+        this.mdl.handleSelection;
+      })
+    );*/
     this.reDraw();
   }
 

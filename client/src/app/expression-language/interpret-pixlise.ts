@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Observable, of } from "rxjs";
+import { Observable, from } from "rxjs";
 import jsep from "jsep";
 import { PMCDataValues, DataQueryResult, QuantOp } from "src/app/expression-language/data-values";
 import { InterpreterDataSource } from "./interpreter-data-source";
@@ -59,27 +59,30 @@ export class PixliseDataQuerier {
     // We do this in 2 stages, first we allow variables to be defined, then we expect to end in a line that has an expression in it
     // Blank lines and // comments are ignored
     const exprParts = PixliseDataQuerier.breakExpressionIntoParts(expression);
-    const variableLookup = this.parseVariables(exprParts);
-    const result = this.parseExpression(exprParts.expressionLine, variableLookup);
+
+    return from(this.runQueryInternal(expression, exprParts, t0));
+  }
+
+  private async runQueryInternal(expression: string, exprParts: ExpressionParts, t0: number) {
+    const variableLookup = await this.parseVariables(exprParts);
+    const result = await this.parseExpression(exprParts.expressionLine, variableLookup);
 
     if (result instanceof PMCDataValues) {
       const runtimeMs = performance.now() - t0;
       console.log(">>> PIXLISE expression took: " + runtimeMs.toLocaleString() + "ms");
 
-      return of(
-        new DataQueryResult(result as PMCDataValues, true, Array.from(this._runtimeDataRequired.keys()), runtimeMs, "", "", new Map<string, PMCDataValues>())
-      );
+      return new DataQueryResult(result as PMCDataValues, true, Array.from(this._runtimeDataRequired.keys()), runtimeMs, "", "", new Map<string, PMCDataValues>());
     }
 
     throw new Error("Expression: " + expression + " did not result in usable map data. Result was: " + result);
   }
 
-  private parseExpression(expression: string, variableLookup: Map<string, string | number | PMCDataValues>): any {
+  private async parseExpression(expression: string, variableLookup: Map<string, string | number | PMCDataValues>): Promise<any> {
     // Save this expression in a local var so anything printing error msgs can reference it
     this._runningExpression = '"' + expression + '"';
     const parseTree = jsep(expression);
 
-    return this.parseExpressionNode(parseTree, variableLookup);
+    return await this.parseExpressionNode(parseTree, variableLookup);
   }
 
   public static breakExpressionIntoParts(expression: string): ExpressionParts {
@@ -160,13 +163,13 @@ export class PixliseDataQuerier {
     return matched.length == 1 && matched[0] === name;
   }
 
-  private parseVariables(parts: ExpressionParts): Map<string, string | number | PMCDataValues> {
+  private async parseVariables(parts: ExpressionParts): Promise<Map<string, string | number | PMCDataValues>> {
     const varLookup: Map<string, string | number | PMCDataValues> = new Map<string, string | number | PMCDataValues>();
 
     // Run through all of them, parse each line in order
     for (let c = 0; c < parts.variableNames.length; c++) {
       try {
-        const result = this.parseExpression(parts.variableExpressions[c], varLookup);
+        const result = await this.parseExpression(parts.variableExpressions[c], varLookup);
 
         if (result instanceof PMCDataValues || typeof result == "number" || typeof result == "string") {
           varLookup.set(parts.variableNames[c], result);
@@ -185,16 +188,20 @@ export class PixliseDataQuerier {
     return varLookup;
   }
 
-  private parseExpressionNode(expressionParseTreeNode: Record<string, any>, variableLookup: Map<string, string | number | PMCDataValues>): any {
+  private async parseExpressionNode(expressionParseTreeNode: Record<string, any>, variableLookup: Map<string, string | number | PMCDataValues>): Promise<any> {
     const expType = expressionParseTreeNode["type"];
     if (expType == "BinaryExpression") {
-      return this.binaryExpression(expressionParseTreeNode, variableLookup);
+      return await this.binaryExpression(expressionParseTreeNode, variableLookup);
     } else if (expType == "CallExpression") {
-      return this.callExpression(expressionParseTreeNode, variableLookup);
+      return await this.callExpression(expressionParseTreeNode, variableLookup);
     } else if (expType == "UnaryExpression") {
-      return this.unaryExpression(expressionParseTreeNode);
+      return new Promise(resolve => {
+        resolve(this.unaryExpression(expressionParseTreeNode));
+      });
     } else if (expType == "Literal") {
-      return expressionParseTreeNode["value"];
+      return new Promise(resolve => {
+        resolve(expressionParseTreeNode["value"]);
+      });
     } else if (expType == "Identifier") {
       // Look up the value in our var lookup
       const varName = expressionParseTreeNode["name"];
@@ -202,7 +209,9 @@ export class PixliseDataQuerier {
       if (val == undefined) {
         throw new Error('Unknown identifier: "' + varName + '"');
       }
-      return val;
+      return new Promise(resolve => {
+        resolve(val);
+      });
     }
 
     throw new Error("Unexpected: " + expressionParseTreeNode["type"]);
@@ -223,10 +232,10 @@ export class PixliseDataQuerier {
     throw new Error("Unexpected unary type: " + expressionParseTreeNode["operator"] + " prefix: " + prefix + " in: " + this._runningExpression);
   }
 
-  private binaryExpression(expressionParseTreeNode: Record<string, any>, variableLookup: Map<string, string | number | PMCDataValues>): any {
+  private async binaryExpression(expressionParseTreeNode: Record<string, any>, variableLookup: Map<string, string | number | PMCDataValues>): Promise<any> {
     // Parse left, right, then combine them
-    const left = this.parseExpressionNode(expressionParseTreeNode["left"], variableLookup);
-    const right = this.parseExpressionNode(expressionParseTreeNode["right"], variableLookup);
+    const left = await this.parseExpressionNode(expressionParseTreeNode["left"], variableLookup);
+    const right = await this.parseExpressionNode(expressionParseTreeNode["right"], variableLookup);
 
     const op = this.getEnumForOp(expressionParseTreeNode["operator"]);
 
@@ -276,7 +285,7 @@ export class PixliseDataQuerier {
 
   //ALLOWED_CALLS = ['normalize', 'data', 'min', 'max', 'threshold'];
   //CALLER_PARAMS_REQUIRED = [1, 2, 2, 2, 3];
-  private callExpression(expressionParseTreeNode: Record<string, any>, variableLookup: Map<string, string | number | PMCDataValues>): any {
+  private async callExpression(expressionParseTreeNode: Record<string, any>, variableLookup: Map<string, string | number | PMCDataValues>): Promise<any> {
     if (!this._dataSource) {
       throw new Error("DataSource not initialised for pixlise expression parser");
     }
@@ -298,7 +307,7 @@ export class PixliseDataQuerier {
     // Parse each argument
     const args = [];
     for (const arg of expressionParseTreeNode["arguments"]) {
-      args.push(this.parseExpressionNode(arg, variableLookup));
+      args.push(await this.parseExpressionNode(arg, variableLookup));
     }
 
     // It's a valid call & right param count, now run it
@@ -309,7 +318,7 @@ export class PixliseDataQuerier {
     } else if (callee == "pow") {
       return this.pow(args);
     } else if (callee == "data") {
-      let r = this._dataSource.readMap(args);
+      const r = await this._dataSource.readMap(args);
       // If we didn't die so far, it must be valid
       if (args && args.length == 2) {
         this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantDataExpression(args[0], args[1]));
@@ -322,7 +331,7 @@ export class PixliseDataQuerier {
       this._runtimeDataRequired.add(DataQueryResult.DataTypeSpectrum);
       return this._dataSource.readSpectrumDifferences(args);
     } else if (callee == "element") {
-      let r = this._dataSource.readElement(args);
+      const r = await this._dataSource.readElement(args);
       // If we didn't die so far, it must be valid
       if (args && args.length == 3) {
         this._runtimeDataRequired.add(DataExpressionId.makePredefinedQuantElementExpression(args[0], args[1], args[2]));
@@ -331,14 +340,14 @@ export class PixliseDataQuerier {
     } else if (callee == "elementSum") {
       return this._dataSource.readElementSum(args);
     } else if (callee == "pseudo") {
-      let r = this._dataSource.readPseudoIntensity(args);
+      const r = this._dataSource.readPseudoIntensity(args);
       // If we didn't die so far, it must be valid
       if (args && args.length == 1) {
         this._runtimeDataRequired.add(DataExpressionId.makePredefinedPseudoIntensityExpression(args[0]));
       }
       return r;
     } else if (callee == "housekeeping") {
-      let r = this._dataSource.readHousekeepingData(args);
+      const r = this._dataSource.readHousekeepingData(args);
       // If we didn't die so far, it must be valid
       if (args && args.length == 1) {
         this._runtimeDataRequired.add(DataQueryResult.DataTypeHousekeeping + "-" + args[0]);
@@ -352,7 +361,7 @@ export class PixliseDataQuerier {
       return this._dataSource.readRoughnessData(args);
     } else if (callee == "position") {
       this._runtimeDataRequired.add(DataQueryResult.DataTypePosition);
-      return this._dataSource.readPosition(args);
+      return await this._dataSource.readPosition(args);
     } else if (callee == "under" || callee == "over" || callee == "under_undef" || callee == "over_undef") {
       return this.mapOperation(false, true, callee, args);
     } else if (callee == "avg") {

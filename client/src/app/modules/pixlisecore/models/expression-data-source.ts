@@ -1,4 +1,4 @@
-import { Observable, combineLatest, concatMap, map, tap } from "rxjs";
+import { Observable, combineLatest, concatMap, map, tap, lastValueFrom } from "rxjs";
 import {
   DiffractionPeakQuerierSource,
   HousekeepingDataQuerierSource,
@@ -34,14 +34,6 @@ export class ExpressionDataSource
   private _scanEntryIndexesRequested: number[] = [];
 
   private _scanEntries: ScanEntryResp | null = null;
-  private _quantData: QuantGetResp | null = null;
-  private _scanBeamLocationData: ScanBeamLocationsResp | null = null;
-  private _scanMetaData: ScanEntryMetadataResp | null = null;
-  private _spectrumData: SpectrumResp | null = null;
-  private _pseudoIntensityData: PseudoIntensityResp | null = null;
-  private _diffractionData: DetectedDiffractionPeaksResp | null = null;
-  private _scanMetaLabelsAndTypes: ScanMetaLabelsAndTypesResp | null = null;
-  private _userDiffractionPeakData: DiffractionPeakManualListResp | null = null;
 
   // Further-processed quant data for faster lookup later
   private _elementColumns = new Map<string, string[]>();
@@ -66,6 +58,14 @@ export class ExpressionDataSource
   // TODO: Which detectors calibration do we adopt?
   private _eVCalibrationDetector = "A";
 
+  // The things we're supposed to request on demand
+  private _scanId: string = "";
+  private _quantId: string = "";
+  private _encodedIndexes: number[] = [];
+
+  // And where to turn to get it:
+  private _cachedDataService: APICachedDataService | null = null;
+
   // Here we get the data required to honor the interfaces we implement, based on the above
   prepare(
     dataService: APIDataService,
@@ -75,6 +75,11 @@ export class ExpressionDataSource
     roiId: string,
     spectrumEnergyCalibration: SpectrumEnergyCalibration[]
   ): Observable<void> {
+    this._scanId = scanId;
+    this._quantId = quantId;
+
+    this._cachedDataService = cachedDataService;
+
     if (roiId == PredefinedROIID.SelectedPoints || roiId == PredefinedROIID.RemainingPoints) {
       throw new Error("Cannot ExpressionDataSource with roiId: " + roiId);
     }
@@ -125,61 +130,10 @@ export class ExpressionDataSource
 
     // Once we obtained the indexes, we can retrieve everything else required
     return indexes.pipe(
-      concatMap((scanEntryIndexes: number[]) => {
+      map((scanEntryIndexes: number[]) => {
         this._scanEntryIndexesRequested = scanEntryIndexes;
 
-        const encodedIndexes = encodeIndexList(scanEntryIndexes);
-
-        // We have the indexes, request all the other data we need
-        return combineLatest([
-          cachedDataService.getQuant(QuantGetReq.create({ quantId: quantId, summaryOnly: false })),
-          cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })),
-          cachedDataService.getScanEntryMetadata(ScanEntryMetadataReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })),
-          // NOTE: We need ALL spectra because the functions that access this sum across all spectra
-          cachedDataService.getSpectrum(SpectrumReq.create({ scanId: scanId /*, entries: ScanEntryRange.create({ indexes: encodedIndexes })*/ })),
-          cachedDataService.getPseudoIntensity(PseudoIntensityReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })),
-          cachedDataService.getDetectedDiffractionPeaks(
-            DetectedDiffractionPeaksReq.create({ scanId: scanId, entries: ScanEntryRange.create({ indexes: encodedIndexes }) })
-          ),
-          cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId: scanId })),
-          cachedDataService.getDiffractionPeakManualList(DiffractionPeakManualListReq.create({ scanId: scanId })),
-        ]).pipe(
-          map(
-            (
-              values: [
-                QuantGetResp,
-                ScanBeamLocationsResp,
-                ScanEntryMetadataResp,
-                SpectrumResp,
-                PseudoIntensityResp,
-                DetectedDiffractionPeaksResp,
-                ScanMetaLabelsAndTypesResp,
-                DiffractionPeakManualListResp,
-              ]
-            ) => {
-              // Here we store all the info we need
-              this._quantData = values[0];
-              this._scanBeamLocationData = values[1];
-              this._scanMetaData = values[2];
-              this._spectrumData = values[3];
-              this._pseudoIntensityData = values[4];
-              this._diffractionData = values[5];
-              this._scanMetaLabelsAndTypes = values[6];
-              this._userDiffractionPeakData = values[7];
-
-              // CAREFUL NOT TO DO TOO MUCH PROCESSING HERE! It's repeated over and over and over again...
-              // If these are heavy things, move them into a service that calls the underlying things and caches results
-              // because we want this to be as light weight to get usable data as possible
-
-              this.cacheElementInfo(this._quantData);
-
-              this.readDiffractionData(this._diffractionData, scanId);
-
-              // We are returning void!
-              return;
-            }
-          )
-        );
+        this._encodedIndexes = encodeIndexList(scanEntryIndexes);
       })
     );
   }
@@ -208,6 +162,84 @@ export class ExpressionDataSource
     return result;
   }
 */
+
+  private getQuantData(): Observable<QuantGetResp> {
+    if (!this._cachedDataService) {
+      throw new Error("getQuantData: no data available");
+    }
+    return this._cachedDataService.getQuant(QuantGetReq.create({ quantId: this._quantId, summaryOnly: false })).pipe(
+      tap(quantData => {
+        this.cacheElementInfo(quantData);
+      })
+    );
+  }
+
+  private getPseudoIntensity(): Observable<PseudoIntensityResp> {
+    if (!this._cachedDataService) {
+      throw new Error("getPseudoIntensity: no data available");
+    }
+    return this._cachedDataService.getPseudoIntensity(
+      PseudoIntensityReq.create({ scanId: this._scanId, entries: ScanEntryRange.create({ indexes: this._encodedIndexes }) })
+    );
+  }
+
+  private getDetectedDiffraction(): Observable<DetectedDiffractionPeaksResp> {
+    if (!this._cachedDataService) {
+      throw new Error("getDetectedDiffraction: no data available");
+    }
+
+    return this._cachedDataService
+      .getDetectedDiffractionPeaks(DetectedDiffractionPeaksReq.create({ scanId: this._scanId, entries: ScanEntryRange.create({ indexes: this._encodedIndexes }) }))
+      .pipe(
+        tap(diffractionData => {
+          this.readDiffractionData(diffractionData, this._scanId);
+        })
+      );
+  }
+
+  private getScanMetaLabelsAndTypes(): Observable<ScanMetaLabelsAndTypesResp> {
+    if (!this._cachedDataService) {
+      throw new Error("getScanMetaLabelsAndTypes: no data available");
+    }
+    return this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId: this._scanId }));
+  }
+
+  private getScanBeamLocations(): Observable<ScanBeamLocationsResp> {
+    if (!this._cachedDataService) {
+      throw new Error("getScanBeamLocations: no data available");
+    }
+    return this._cachedDataService.getScanBeamLocations(
+      ScanBeamLocationsReq.create({ scanId: this._scanId, entries: ScanEntryRange.create({ indexes: this._encodedIndexes }) })
+    );
+  }
+
+  private getScanEntryMetadata(): Observable<ScanEntryMetadataResp> {
+    if (!this._cachedDataService) {
+      throw new Error("getScanEntryMetadata: no data available");
+    }
+    return this._cachedDataService.getScanEntryMetadata(
+      ScanEntryMetadataReq.create({ scanId: this._scanId, entries: ScanEntryRange.create({ indexes: this._encodedIndexes }) })
+    );
+  }
+
+  private getSpectrum(): Observable<SpectrumResp> {
+    if (!this._cachedDataService) {
+      throw new Error("getSpectrum: no data available");
+    }
+
+    // NOTE: We need ALL spectra because the functions that access this sum across all spectra
+    return this._cachedDataService.getSpectrum(SpectrumReq.create({ scanId: this._scanId /*, entries: ScanEntryRange.create({ indexes: encodedIndexes })*/ }));
+  }
+
+  private getDiffractionPeakManualList(): Observable<DiffractionPeakManualListResp> {
+    if (!this._cachedDataService) {
+      throw new Error("getDiffractionPeakManualList: no data available");
+    }
+
+    // NOTE: We need ALL spectra because the functions that access this sum across all spectra
+    return this._cachedDataService.getDiffractionPeakManualList(DiffractionPeakManualListReq.create({ scanId: this._scanId }));
+  }
+
   private cacheElementInfo(quantData: QuantGetResp) {
     if (!quantData || !quantData.data || !quantData.data.labels) {
       throw new Error("cacheElementInfo: no quant data available");
@@ -362,55 +394,62 @@ export class ExpressionDataSource
   }
 
   // QuantifiedDataQuerierSource
-  getQuantifiedDataForDetector(detectorId: string, dataLabel: string): PMCDataValues {
-    if (!this._quantData || !this._quantData.data) {
-      throw new Error("getQuantifiedDataForDetector: no quant data available");
-    }
+  async getQuantifiedDataForDetector(detectorId: string, dataLabel: string): Promise<PMCDataValues> {
+    return await lastValueFrom(
+      this.getQuantData().pipe(
+        map((quantData: QuantGetResp) => {
+          if (!quantData || !quantData.data || !quantData.data.labels) {
+            throw new Error("getQuantifiedDataForDetector: no quant data available");
+          }
 
-    let idx = this._quantData.data.labels.indexOf(dataLabel);
+          let idx = quantData.data.labels.indexOf(dataLabel);
 
-    let toElemConvert = null;
-    if (idx < 0) {
-      // Since PIQUANT supporting carbonate/oxides, we may need to calculate this from an existing column
-      // (we do this for carbonate->element or oxide->element)
-      // Check what's being requested, to see if we can convert it
-      const calcFrom = this._pureElementColumnLookup.get(dataLabel);
-      if (calcFrom != undefined) {
-        // we've found a column to look up from (eg dataLabel=Si_% and this found calcFrom=SiO2_%)
-        // Get the index of that column
-        idx = this._quantData.data.labels.indexOf(calcFrom);
+          let toElemConvert = null;
+          if (idx < 0) {
+            // Since PIQUANT supporting carbonate/oxides, we may need to calculate this from an existing column
+            // (we do this for carbonate->element or oxide->element)
+            // Check what's being requested, to see if we can convert it
+            const calcFrom = this._pureElementColumnLookup.get(dataLabel);
+            if (calcFrom != undefined) {
+              // we've found a column to look up from (eg dataLabel=Si_% and this found calcFrom=SiO2_%)
+              // Get the index of that column
+              idx = quantData.data.labels.indexOf(calcFrom);
 
-        if (idx >= 0) {
-          // Also get the conversion factor we'll have to use
-          const sepIdx = calcFrom.indexOf("_");
-          if (sepIdx > -1) {
-            // Following the above examples, this should become SiO2
-            const oxideOrCarbonate = calcFrom.substring(0, sepIdx);
+              if (idx >= 0) {
+                // Also get the conversion factor we'll have to use
+                const sepIdx = calcFrom.indexOf("_");
+                if (sepIdx > -1) {
+                  // Following the above examples, this should become SiO2
+                  const oxideOrCarbonate = calcFrom.substring(0, sepIdx);
 
-            const elemState = periodicTableDB.getElementOxidationState(oxideOrCarbonate);
-            if (elemState && !elemState.isElement) {
-              toElemConvert = elemState.conversionToElementWeightPct;
+                  const elemState = periodicTableDB.getElementOxidationState(oxideOrCarbonate);
+                  if (elemState && !elemState.isElement) {
+                    toElemConvert = elemState.conversionToElementWeightPct;
+                  }
+                }
+              }
             }
           }
-        }
-      }
-    }
 
-    if (idx < 0) {
-      throw new Error(
-        `The currently loaded quantification does not contain column: "${dataLabel}". Please select (or create) a quantification with the relevant element.`
-      );
-    }
+          if (idx < 0) {
+            throw new Error(
+              `The currently loaded quantification does not contain column: "${dataLabel}". Please select (or create) a quantification with the relevant element.`
+            );
+          }
 
-    //console.log('getQuantifiedDataForDetector detector='+detectorId+', dataLabel='+dataLabel+', idx='+idx+', factor='+toElemConvert);
-    const data = this.getQuantifiedDataValues(this._quantData.data, detectorId, idx, toElemConvert, dataLabel.endsWith("_%"));
-    return PMCDataValues.makeWithValues(data);
+          //console.log('getQuantifiedDataForDetector detector='+detectorId+', dataLabel='+dataLabel+', idx='+idx+', factor='+toElemConvert);
+
+          const data = this.getQuantifiedDataValues(quantData.data, detectorId, idx, toElemConvert, dataLabel.endsWith("_%"));
+          return PMCDataValues.makeWithValues(data);
+        })
+      )
+    );
   }
 
   private getQuantifiedDataValues(quantData: Quantification, detectorId: string, colIdx: number, mult: number | null, isPctColumn: boolean): PMCDataValue[] {
     const resultData: PMCDataValue[] = [];
     let detectorFound = false;
-    const detectors: Set<string> = new Set<string>(this.getDetectors());
+    const detectors: Set<string> = new Set<string>(this._detectors);
 
     // Loop through all our locations by PMC, find the quant value, store
     for (const quantLocSet of quantData.locationSet) {
@@ -456,340 +495,422 @@ export class ExpressionDataSource
     return resultData;
   }
 
-  getElementList(): string[] {
-    if (!this._quantData || !this._quantData.data) {
-      throw new Error("getElementList: no quant data available");
-    }
-
-    return Array.from(this._elementColumns.keys());
+  async getElementList(): Promise<string[]> {
+    return await lastValueFrom(
+      this.getQuantData().pipe(
+        map((quantData: QuantGetResp) => {
+          return Array.from(this._elementColumns.keys());
+        })
+      )
+    );
   }
 
-  getPMCList(): number[] {
-    if (!this._quantData || !this._quantData.data) {
-      throw new Error("getPMCList: no quant data available");
-    }
+  async getPMCList(): Promise<number[]> {
+    return await lastValueFrom(
+      this.getQuantData().pipe(
+        map((quantData: QuantGetResp) => {
+          if (!quantData || !quantData.data) {
+            throw new Error("getPMCList: no quant data available");
+          }
 
-    // Loop through all our locations and extract PMCs we have values for
-    // NOTE: we don't care which detector...
-    const result: number[] = [];
+          // Loop through all our locations and extract PMCs we have values for
+          // NOTE: we don't care which detector...
+          const result: number[] = [];
 
-    for (const quantLocSet of this._quantData.data.locationSet) {
-      for (const quantLoc of quantLocSet.location) {
-        result.push(quantLoc.pmc);
-      }
-      break;
-    }
+          for (const quantLocSet of quantData.data.locationSet) {
+            for (const quantLoc of quantLocSet.location) {
+              result.push(quantLoc.pmc);
+            }
+            break;
+          }
 
-    return result;
+          return result;
+        })
+      )
+    );
   }
 
-  getDetectors(): string[] {
-    if (!this._quantData || !this._quantData.data) {
-      throw new Error("getDetectors: no quant data available");
-    }
-
-    return this._detectors;
+  async getDetectors(): Promise<string[]> {
+    return await lastValueFrom(
+      this.getQuantData().pipe(
+        map((quantData: QuantGetResp) => {
+          return this._detectors;
+        })
+      )
+    );
   }
 
-  columnExists(col: string): boolean {
-    if (!this._quantData || !this._quantData.data) {
-      throw new Error("columnExists: no quant data available");
-    }
+  async columnExists(col: string): Promise<boolean> {
+    return await lastValueFrom(
+      this.getQuantData().pipe(
+        map((quantData: QuantGetResp) => {
+          if (!quantData || !quantData.data) {
+            throw new Error("columnExists: no quant data available");
+          }
 
-    return this._quantData.data.labels.indexOf(col) > -1;
+          return quantData.data.labels.indexOf(col) > -1;
+        })
+      )
+    );
   }
 
   // PseudoIntensityDataQuerierSource
-  getPseudoIntensityData(name: string): PMCDataValues {
-    if (!this._pseudoIntensityData || !this._scanEntries || !this._scanEntries.entries) {
-      throw new Error("getPseudoIntensityElementsList: No intensity data");
-    }
-    if (this._scanEntryIndexesRequested.length <= 0) {
-      throw new Error("getPseudoIntensityElementsList: No indexes to return");
-    }
-    const elemIdx = this._pseudoIntensityData.intensityLabels.indexOf(name);
-    if (elemIdx == -1) {
-      throw new Error(`The currently loaded dataset does not include pseudo-intensity data with column name: "${name}"`);
-    }
+  async getPseudoIntensityData(name: string): Promise<PMCDataValues> {
+    return await lastValueFrom(
+      this.getPseudoIntensity().pipe(
+        map((pseudoData: PseudoIntensityResp) => {
+          if (!pseudoData || !this._scanEntries || !this._scanEntries.entries) {
+            throw new Error("getPseudoIntensityData: No data available");
+          }
+          if (this._scanEntryIndexesRequested.length <= 0) {
+            throw new Error("getPseudoIntensityData: No indexes to return");
+          }
+          const elemIdx = pseudoData.intensityLabels.indexOf(name);
+          if (elemIdx == -1) {
+            throw new Error(`The currently loaded dataset does not include pseudo-intensity data with column name: "${name}"`);
+          }
 
-    // Run through all locations & build it
-    const values: PMCDataValue[] = [];
-    for (const idx of this._scanEntryIndexesRequested) {
-      const pmc = this._scanEntries.entries[idx].id;
-      const value = this._pseudoIntensityData.data[idx].intensities[elemIdx];
+          // Run through all locations & build it
+          const values: PMCDataValue[] = [];
+          for (const idx of this._scanEntryIndexesRequested) {
+            const pmc = this._scanEntries.entries[idx].id;
+            const value = pseudoData.data[idx].intensities[elemIdx];
 
-      values.push(new PMCDataValue(pmc, value));
-    }
-    return PMCDataValues.makeWithValues(values);
+            values.push(new PMCDataValue(pmc, value));
+          }
+          return PMCDataValues.makeWithValues(values);
+        })
+      )
+    );
   }
 
-  getPseudoIntensityElementsList(): string[] {
-    if (!this._pseudoIntensityData) {
-      throw new Error("getPseudoIntensityElementsList: No intensity data");
-    }
-    return this._pseudoIntensityData.intensityLabels;
+  async getPseudoIntensityElementsList(): Promise<string[]> {
+    return await lastValueFrom(
+      this.getPseudoIntensity().pipe(
+        map((pseudoIntensity: PseudoIntensityResp) => {
+          if (!pseudoIntensity) {
+            throw new Error("getPseudoIntensityElementsList: No intensity data");
+          }
+          return pseudoIntensity.intensityLabels;
+        })
+      )
+    );
   }
 
   // SpectrumDataQuerierSource
-  getSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): PMCDataValues {
-    if (!this._scanMetaLabelsAndTypes || !this._scanMetaData || !this._spectrumData || !this._scanEntries || !this._scanEntries.entries) {
-      throw new Error("getSpectrumRangeMapData: No scan meta data");
-    }
+  async getSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): Promise<PMCDataValues> {
+    return await lastValueFrom(
+      combineLatest([this.getScanMetaLabelsAndTypes(), this.getSpectrum(), this.getScanEntryMetadata()]).pipe(
+        map((dataItems: [ScanMetaLabelsAndTypesResp, SpectrumResp, ScanEntryMetadataResp]) => {
+          const scanMetaLabelsAndTypes = dataItems[0];
+          const spectrumData = dataItems[1];
+          const scanMetaData = dataItems[2];
 
-    // For now, only supporting A & B for now
-    if (detectorExpr != "A" && detectorExpr != "B") {
-      throw new Error(`getSpectrumData: Invalid detectorExpr: ${detectorExpr}, must be A or B`);
-    }
-
-    if (channelStart < 0 || channelEnd < channelStart) {
-      throw new Error("getSpectrumData: Invalid start/end channel specified");
-    }
-
-    let foundRange = false;
-    const values: PMCDataValue[] = [];
-
-    // Loop through & sum all values within the channel range
-    for (let c = 0; c < this._spectrumData.spectraPerLocation.length; c++) {
-      const loc = this._spectrumData.spectraPerLocation[c];
-      for (const spectrum of loc.spectra) {
-        // At this point, we want to read from the detectors in this location. We are reading spectra for each PMC
-        // so we need to read for the detector specified (A vs B), and within there, we may have normal or dwell
-        // spectra. We can't actually combine normal vs dwell because the counts in dwell would be higher so
-        // we just hard-code here to read from normal!
-        if (detectorExpr == spectrum.detector && spectrum.type == SpectrumType.SPECTRUM_NORMAL) {
-          let channelEndToReadTo = channelEnd;
-          if (channelEndToReadTo > spectrum.counts.length) {
-            channelEndToReadTo = spectrum.counts.length;
+          if (!scanMetaLabelsAndTypes || !scanMetaData || !spectrumData || !this._scanEntries || !this._scanEntries.entries) {
+            throw new Error("getSpectrumRangeMapData: No data available");
           }
 
-          // Loop through & add it
-          let sum = 0;
-          for (let ch = channelStart; ch < channelEndToReadTo; ch++) {
-            sum += spectrum.counts[ch];
+          // For now, only supporting A & B for now
+          if (detectorExpr != "A" && detectorExpr != "B") {
+            throw new Error(`getSpectrumData: Invalid detectorExpr: ${detectorExpr}, must be A or B`);
           }
 
-          const pmc = this._scanEntries.entries[c].id;
-          values.push(new PMCDataValue(pmc, sum));
-          foundRange = true;
-        }
-      }
-    }
+          if (channelStart < 0 || channelEnd < channelStart) {
+            throw new Error("getSpectrumData: Invalid start/end channel specified");
+          }
 
-    if (!foundRange) {
-      throw new Error("getSpectrumData: Failed to find spectrum ${detectorExpr} range between ${channelStart} and ${channelEnd}");
-    }
+          let foundRange = false;
+          const values: PMCDataValue[] = [];
 
-    return PMCDataValues.makeWithValues(values);
+          // Loop through & sum all values within the channel range
+          for (let c = 0; c < spectrumData.spectraPerLocation.length; c++) {
+            const loc = spectrumData.spectraPerLocation[c];
+            for (const spectrum of loc.spectra) {
+              // At this point, we want to read from the detectors in this location. We are reading spectra for each PMC
+              // so we need to read for the detector specified (A vs B), and within there, we may have normal or dwell
+              // spectra. We can't actually combine normal vs dwell because the counts in dwell would be higher so
+              // we just hard-code here to read from normal!
+              if (detectorExpr == spectrum.detector && spectrum.type == SpectrumType.SPECTRUM_NORMAL) {
+                let channelEndToReadTo = channelEnd;
+                if (channelEndToReadTo > spectrum.counts.length) {
+                  channelEndToReadTo = spectrum.counts.length;
+                }
+
+                // Loop through & add it
+                let sum = 0;
+                for (let ch = channelStart; ch < channelEndToReadTo; ch++) {
+                  sum += spectrum.counts[ch];
+                }
+
+                const pmc = this._scanEntries.entries[c].id;
+                values.push(new PMCDataValue(pmc, sum));
+                foundRange = true;
+              }
+            }
+          }
+
+          if (!foundRange) {
+            throw new Error("getSpectrumData: Failed to find spectrum ${detectorExpr} range between ${channelStart} and ${channelEnd}");
+          }
+
+          return PMCDataValues.makeWithValues(values);
+        })
+      )
+    );
   }
 
   // If sumOrMax==true, returns sum of differences between A and B otherwise max difference seen between A and B
-  getSpectrumDifferences(channelStart: number, channelEnd: number, sumOrMax: boolean): PMCDataValues {
-    if (!this._scanMetaLabelsAndTypes || !this._scanMetaData || !this._spectrumData || !this._scanEntries || !this._scanEntries.entries) {
-      throw new Error("getSpectrumRangeMapData: No scan meta data");
-    }
-
-    const values: PMCDataValue[] = [];
-
-    for (let c = 0; c < this._spectrumData.spectraPerLocation.length; c++) {
-      const loc = this._spectrumData.spectraPerLocation[c];
-
-      let spectrumA: number[] | null = null;
-      let spectrumB: number[] | null = null;
-
-      for (const spectrum of loc.spectra) {
-        if (spectrum.type == SpectrumType.SPECTRUM_NORMAL) {
-          if (spectrum.detector == "A") {
-            spectrumA = spectrum.counts;
-          } else {
-            spectrumB = spectrum.counts;
+  async getSpectrumDifferences(channelStart: number, channelEnd: number, sumOrMax: boolean): Promise<PMCDataValues> {
+    return await lastValueFrom(
+      this.getSpectrum().pipe(
+        map((spectrumData: SpectrumResp) => {
+          if (!spectrumData || !this._scanEntries || !this._scanEntries.entries) {
+            throw new Error("getSpectrumDifferences: No data available");
           }
-        }
-      }
-      // We've now got in theory an A and B, check this, and if so, do the operation requested
-      if (spectrumA && spectrumB && spectrumA.length == spectrumB.length) {
-        let value = 0;
 
-        for (let c = channelStart; c < channelEnd; c++) {
-          const channelAbsDiff = Math.abs(spectrumA[c] - spectrumB[c]);
-          if (sumOrMax) {
-            value += channelAbsDiff;
-          } else {
-            if (channelAbsDiff > value) {
-              value = channelAbsDiff;
+          const values: PMCDataValue[] = [];
+
+          for (let c = 0; c < spectrumData.spectraPerLocation.length; c++) {
+            const loc = spectrumData.spectraPerLocation[c];
+
+            let spectrumA: number[] | null = null;
+            let spectrumB: number[] | null = null;
+
+            for (const spectrum of loc.spectra) {
+              if (spectrum.type == SpectrumType.SPECTRUM_NORMAL) {
+                if (spectrum.detector == "A") {
+                  spectrumA = spectrum.counts;
+                } else {
+                  spectrumB = spectrum.counts;
+                }
+              }
+            }
+            // We've now got in theory an A and B, check this, and if so, do the operation requested
+            if (spectrumA && spectrumB && spectrumA.length == spectrumB.length) {
+              let value = 0;
+
+              for (let c = channelStart; c < channelEnd; c++) {
+                const channelAbsDiff = Math.abs(spectrumA[c] - spectrumB[c]);
+                if (sumOrMax) {
+                  value += channelAbsDiff;
+                } else {
+                  if (channelAbsDiff > value) {
+                    value = channelAbsDiff;
+                  }
+                }
+              }
+
+              const pmc = this._scanEntries.entries[c].id;
+              values.push(new PMCDataValue(pmc, value));
             }
           }
-        }
 
-        const pmc = this._scanEntries.entries[c].id;
-        values.push(new PMCDataValue(pmc, value));
-      }
-    }
-
-    return PMCDataValues.makeWithValues(values);
+          return PMCDataValues.makeWithValues(values);
+        })
+      )
+    );
   }
 
   // DiffractionPeakQuerierSource
-  getDiffractionPeakEffectData(channelStart: number, channelEnd: number): PMCDataValues {
-    if (!this._diffractionData || !this._scanEntries) {
-      throw new Error("getDiffractionPeakEffectData: No diffraction data");
-    }
+  async getDiffractionPeakEffectData(channelStart: number, channelEnd: number): Promise<PMCDataValues> {
+    return await lastValueFrom(
+      combineLatest([this.getDetectedDiffraction(), this.getDiffractionPeakManualList()]).pipe(
+        map((dataItems: [DetectedDiffractionPeaksResp, DiffractionPeakManualListResp]) => {
+          const diffractionData = dataItems[0];
+          const userDiffractionPeakData = dataItems[1];
 
-    // Run through all our diffraction peak data and return the sum of all peaks within the given channel range
-
-    // First, add them up per PMC
-    const pmcDiffractionCount = new Map<number, number>();
-
-    // Fill the PMCs first
-    for (const entry of this._scanEntries.entries) {
-      if (entry.location && entry.spectra) {
-        pmcDiffractionCount.set(entry.id, 0);
-      }
-    }
-
-    for (const peak of this._allPeaks) {
-      if (peak.status != DiffractionPeak.statusNotAnomaly && peak.channel >= channelStart && peak.channel < channelEnd) {
-        let prev = pmcDiffractionCount.get(peak.pmc);
-        if (!prev) {
-          prev = 0;
-        }
-        pmcDiffractionCount.set(peak.pmc, prev + 1);
-      }
-    }
-
-    // Also loop through user-defined peaks
-    // If we can convert the user peak keV to a channel, do it and compare
-    if (this._spectrumEnergyCalibration.length > 0 && this._userDiffractionPeakData?.peaks) {
-      for (const id of Object.keys(this._userDiffractionPeakData.peaks)) {
-        const peak = this._userDiffractionPeakData.peaks[id];
-
-        // ONLY look at positive energies, negative means it's a user-entered roughness item!
-        if (peak.energykeV > 0) {
-          const channel = this.keVToChannel(peak.energykeV, this._eVCalibrationDetector);
-          if (channel !== null && channel >= channelStart && channel < channelEnd) {
-            let prev = pmcDiffractionCount.get(peak.pmc);
-            if (!prev) {
-              prev = 0;
-            }
-            pmcDiffractionCount.set(peak.pmc, prev + 1);
+          if (!diffractionData || !this._scanEntries) {
+            throw new Error("getDiffractionPeakEffectData: No data available");
           }
-        }
-      }
-    }
 
-    // Now turn these into data values
-    const result: PMCDataValue[] = [];
-    for (const [pmc, sum] of pmcDiffractionCount.entries()) {
-      result.push(new PMCDataValue(pmc, sum));
-    }
+          // Run through all our diffraction peak data and return the sum of all peaks within the given channel range
 
-    return PMCDataValues.makeWithValues(result);
+          // First, add them up per PMC
+          const pmcDiffractionCount = new Map<number, number>();
+
+          // Fill the PMCs first
+          for (const entry of this._scanEntries.entries) {
+            if (entry.location && entry.spectra) {
+              pmcDiffractionCount.set(entry.id, 0);
+            }
+          }
+
+          for (const peak of this._allPeaks) {
+            if (peak.status != DiffractionPeak.statusNotAnomaly && peak.channel >= channelStart && peak.channel < channelEnd) {
+              let prev = pmcDiffractionCount.get(peak.pmc);
+              if (!prev) {
+                prev = 0;
+              }
+              pmcDiffractionCount.set(peak.pmc, prev + 1);
+            }
+          }
+
+          // Also loop through user-defined peaks
+          // If we can convert the user peak keV to a channel, do it and compare
+          if (this._spectrumEnergyCalibration.length > 0 && userDiffractionPeakData?.peaks) {
+            for (const id of Object.keys(userDiffractionPeakData.peaks)) {
+              const peak = userDiffractionPeakData.peaks[id];
+
+              // ONLY look at positive energies, negative means it's a user-entered roughness item!
+              if (peak.energykeV > 0) {
+                const channel = this.keVToChannel(peak.energykeV, this._eVCalibrationDetector);
+                if (channel !== null && channel >= channelStart && channel < channelEnd) {
+                  let prev = pmcDiffractionCount.get(peak.pmc);
+                  if (!prev) {
+                    prev = 0;
+                  }
+                  pmcDiffractionCount.set(peak.pmc, prev + 1);
+                }
+              }
+            }
+          }
+
+          // Now turn these into data values
+          const result: PMCDataValue[] = [];
+          for (const [pmc, sum] of pmcDiffractionCount.entries()) {
+            result.push(new PMCDataValue(pmc, sum));
+          }
+
+          return PMCDataValues.makeWithValues(result);
+        })
+      )
+    );
   }
 
-  getRoughnessData(): PMCDataValues {
-    if (!this._diffractionData) {
-      throw new Error("getRoughnessData: No diffraction data");
-    }
+  async getRoughnessData(): Promise<PMCDataValues> {
+    return await lastValueFrom(
+      combineLatest([this.getDetectedDiffraction(), this.getDiffractionPeakManualList()]).pipe(
+        map((dataItems: [DetectedDiffractionPeaksResp, DiffractionPeakManualListResp]) => {
+          const diffractionData = dataItems[0];
+          const userDiffractionPeakData = dataItems[1];
+          if (!diffractionData) {
+            throw new Error("getRoughnessData: No diffraction data");
+          }
 
-    // Loop through all roughness items and form a map from their globalDifference value
-    const result: PMCDataValue[] = [];
+          // Loop through all roughness items and form a map from their globalDifference value
+          const result: PMCDataValue[] = [];
 
-    for (const item of this._roughnessItems) {
-      result.push(new PMCDataValue(item.pmc, item.globalDifference));
-    }
+          for (const item of this._roughnessItems) {
+            result.push(new PMCDataValue(item.pmc, item.globalDifference));
+          }
 
-    // Also run through user-defined roughness items
-    if (this._userDiffractionPeakData?.peaks) {
-      for (const id of Object.keys(this._userDiffractionPeakData.peaks)) {
-        const peak = this._userDiffractionPeakData.peaks[id];
+          // Also run through user-defined roughness items
+          if (userDiffractionPeakData?.peaks) {
+            for (const id of Object.keys(userDiffractionPeakData.peaks)) {
+              const peak = userDiffractionPeakData.peaks[id];
 
-        // ONLY negative means it's a user-entered roughness item!
-        if (peak.energykeV < 0) {
-          result.push(new PMCDataValue(peak.pmc, this._roughnessItemThreshold));
-        }
-      }
-    }
+              // ONLY negative means it's a user-entered roughness item!
+              if (peak.energykeV < 0) {
+                result.push(new PMCDataValue(peak.pmc, this._roughnessItemThreshold));
+              }
+            }
+          }
 
-    return PMCDataValues.makeWithValues(result);
+          return PMCDataValues.makeWithValues(result);
+        })
+      )
+    );
   }
 
   // HousekeepingDataQuerierSource
-  getHousekeepingData(name: string): PMCDataValues {
-    if (!this._scanMetaLabelsAndTypes || !this._scanMetaData || !this._scanEntries || !this._scanEntries.entries) {
-      throw new Error("getHousekeepingData: No scan meta data");
-    }
+  async getHousekeepingData(name: string): Promise<PMCDataValues> {
+    return await lastValueFrom(
+      combineLatest([this.getScanMetaLabelsAndTypes(), this.getScanEntryMetadata()]).pipe(
+        map((dataItems: [ScanMetaLabelsAndTypesResp, ScanEntryMetadataResp]) => {
+          const scanMetaLabelsAndTypes = dataItems[0];
+          const scanMetaData = dataItems[1];
 
-    // If it exists as a metaLabel and has a type we can return, do it
-    const metaIdx = this._scanMetaLabelsAndTypes.metaLabels.indexOf(name);
-    if (metaIdx < 0) {
-      throw new Error('The currently loaded dataset does not include housekeeping data with column name: "' + name + '"');
-    }
+          if (!scanMetaLabelsAndTypes || !scanMetaData || !this._scanEntries || !this._scanEntries.entries) {
+            throw new Error("getHousekeepingData: No data available");
+          }
 
-    const metaType = this._scanMetaLabelsAndTypes.metaTypes[metaIdx];
-    if (metaType != ScanMetaDataType.MT_FLOAT && metaType != ScanMetaDataType.MT_INT) {
-      throw new Error("Non-numeric data type for housekeeping data column: " + name);
-    }
+          // If it exists as a metaLabel and has a type we can return, do it
+          const metaIdx = scanMetaLabelsAndTypes.metaLabels.indexOf(name);
+          if (metaIdx < 0) {
+            throw new Error('The currently loaded dataset does not include housekeeping data with column name: "' + name + '"');
+          }
 
-    // Run through all locations & build it
-    const values: PMCDataValue[] = [];
+          const metaType = scanMetaLabelsAndTypes.metaTypes[metaIdx];
+          if (metaType != ScanMetaDataType.MT_FLOAT && metaType != ScanMetaDataType.MT_INT) {
+            throw new Error("Non-numeric data type for housekeeping data column: " + name);
+          }
 
-    for (const idx of this._scanEntryIndexesRequested) {
-      const entry = this._scanMetaData.entries[idx];
-      if (entry) {
-        const item = entry.meta[metaIdx];
-        let value = metaType == ScanMetaDataType.MT_FLOAT ? item.fvalue : item.ivalue;
+          // Run through all locations & build it
+          const values: PMCDataValue[] = [];
 
-        // Shut up compiler...
-        if (value === undefined) {
-          value = 0;
-        }
+          for (const idx of this._scanEntryIndexesRequested) {
+            const entry = scanMetaData.entries[idx];
+            if (entry) {
+              const item = entry.meta[metaIdx];
+              let value = metaType == ScanMetaDataType.MT_FLOAT ? item.fvalue : item.ivalue;
 
-        const pmc = this._scanEntries.entries[idx].id;
-        values.push(new PMCDataValue(pmc, value));
-      }
-    }
+              // Shut up compiler...
+              if (value === undefined) {
+                value = 0;
+              }
 
-    return PMCDataValues.makeWithValues(values);
+              const pmc = this._scanEntries.entries[idx].id;
+              values.push(new PMCDataValue(pmc, value));
+            }
+          }
+
+          return PMCDataValues.makeWithValues(values);
+        })
+      )
+    );
   }
 
-  getPositionData(axis: string): PMCDataValues {
-    if (!this._scanBeamLocationData || !this._scanEntries || !this._scanEntries.entries) {
-      throw new Error("getPositionData: No scan meta data");
-    }
+  async getPositionData(axis: string): Promise<PMCDataValues> {
+    return await lastValueFrom(
+      this.getScanBeamLocations().pipe(
+        map((beamLocationData: ScanBeamLocationsResp) => {
+          if (!beamLocationData || !this._scanEntries || !this._scanEntries.entries) {
+            throw new Error("getPositionData: No data available");
+          }
 
-    if (axis != "x" && axis != "y" && axis != "z") {
-      throw new Error("Cannot find position for axis: " + axis);
-    }
+          if (axis != "x" && axis != "y" && axis != "z") {
+            throw new Error("Cannot find position for axis: " + axis);
+          }
 
-    const values: PMCDataValue[] = [];
+          const values: PMCDataValue[] = [];
 
-    for (const idx of this._scanEntryIndexesRequested) {
-      const loc = this._scanBeamLocationData.beamLocations[idx];
-      if (loc) {
-        const pmc = this._scanEntries.entries[idx].id;
-        values.push(new PMCDataValue(pmc, axis == "x" ? loc.x : axis == "y" ? loc.y : loc.z));
-      }
-    }
+          for (const idx of this._scanEntryIndexesRequested) {
+            const loc = beamLocationData.beamLocations[idx];
+            if (loc) {
+              const pmc = this._scanEntries.entries[idx].id;
+              values.push(new PMCDataValue(pmc, axis == "x" ? loc.x : axis == "y" ? loc.y : loc.z));
+            }
+          }
 
-    return PMCDataValues.makeWithValues(values);
+          return PMCDataValues.makeWithValues(values);
+        })
+      )
+    );
   }
 
-  hasHousekeepingData(name: string): boolean {
-    if (!this._scanMetaLabelsAndTypes) {
-      throw new Error("hasHousekeepingData: No scan meta data");
-    }
+  async hasHousekeepingData(name: string): Promise<boolean> {
+    return await lastValueFrom(
+      this.getScanMetaLabelsAndTypes().pipe(
+        map((scanMetaLabelsAndTypes: ScanMetaLabelsAndTypesResp) => {
+          if (!scanMetaLabelsAndTypes) {
+            throw new Error("hasHousekeepingData: No scan meta data");
+          }
 
-    const metaIdx = this._scanMetaLabelsAndTypes.metaLabels.indexOf(name);
-    if (metaIdx < 0) {
-      // Name not found
-      return false;
-    }
+          const metaIdx = scanMetaLabelsAndTypes.metaLabels.indexOf(name);
+          if (metaIdx < 0) {
+            // Name not found
+            return false;
+          }
 
-    const metaType = this._scanMetaLabelsAndTypes.metaTypes[metaIdx];
-    if (metaType != ScanMetaDataType.MT_FLOAT && metaType != ScanMetaDataType.MT_INT) {
-      // We can only return floats & ints so say no
-      return false;
-    }
+          const metaType = scanMetaLabelsAndTypes.metaTypes[metaIdx];
+          if (metaType != ScanMetaDataType.MT_FLOAT && metaType != ScanMetaDataType.MT_INT) {
+            // We can only return floats & ints so say no
+            return false;
+          }
 
-    return true;
+          return true;
+        })
+      )
+    );
   }
 }

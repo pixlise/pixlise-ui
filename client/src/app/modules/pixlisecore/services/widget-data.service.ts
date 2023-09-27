@@ -273,6 +273,7 @@ export class WidgetDataService
                                                 // Remember when we notified, so we don't spam
                                                 this._exprRunStatLastNotificationTime.set(expression.id, nowMs);
 
+                                                if (queryResult.dataRequired.length > 0) {
                                                 this._dataService.sendExpressionWriteExecStatRequest(ExpressionWriteExecStatReq.create({
                                                     id: expression.id,
                                                     stats: {
@@ -281,6 +282,7 @@ export class WidgetDataService
                                                         // timeStampUnixSec - filled out by API
                                                     }
                                                 })).subscribe({error: err=>{console.error(err)}}); // we don't really do anything different if this passes or fails
+                                            }
                                             }
 
                                             // Add the other stuff we loaded along the way
