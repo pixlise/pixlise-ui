@@ -291,7 +291,7 @@ export class SelectionService {
 
   // Mouse hovering over scan entries - we update listeners when this is called
   // NOTE: we're storing the scan Id and the entry id within that scan (aka PMC)
-  // that the user hovered over 
+  // that the user hovered over
   setHoverEntry(scanId: string, entryId: number) {
     this._hoverScanId = scanId;
     this._hoverEntryId = entryId;

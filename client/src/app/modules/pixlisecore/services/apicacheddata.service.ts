@@ -16,7 +16,6 @@ import { DataModuleGetReq, DataModuleGetResp } from "src/app/generated-protos/mo
 
 import { decompressZeroRunLengthEncoding } from "src/app/utils/utils";
 
-
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
 // Originally intended to use local storage for this, but here we use the observable mechanism. To
