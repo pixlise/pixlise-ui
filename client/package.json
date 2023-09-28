@@ -46,7 +46,7 @@
     "rxjs": "~7.8.0",
     "ts-proto": "^1.150.0",
     "tslib": "^2.3.0",
-    "wasmoon": "^1.14.1",
+    "pixlise-wasmoon": "^1.15.1",
     "zone.js": "~0.13.0"
   },
   "devDependencies": {
