@@ -4,6 +4,9 @@
 generated-protos/
 wsMessageHandler.ts
 
+# Comes from wasmoon package:
+src/app/expression-language/lua/glue.wasm
+
 # Compiled output
 /dist
 /tmp

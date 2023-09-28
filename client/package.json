@@ -2,9 +2,10 @@
   "name": "pixlise",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
+    "copy_wasm": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua",
+    "start": "copy_wasm && ng serve",
+    "build": "copy_wasm && ng build",
+    "watch": "copy_wasm && ng build --watch --configuration development",
     "postinstall": "node src/version.js",
     "test": "ng test",
     "lint": "ng lint"
