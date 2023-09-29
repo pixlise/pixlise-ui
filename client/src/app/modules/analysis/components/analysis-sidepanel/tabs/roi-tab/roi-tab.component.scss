@@ -11,9 +11,19 @@
   min-width: 400px;
 
   header {
+    display: flex;
+    align-items: center;
+
     margin-bottom: 8px;
+
     .title {
-      font: 700 18px/24px Roboto, monospace;
+      font:
+        700 18px/24px Roboto,
+        monospace;
+    }
+
+    tag-picker {
+      margin-left: auto;
     }
   }
 
@@ -30,5 +40,17 @@
     :first-child {
       margin-right: 8px;
     }
+  }
+}
+
+roi-search-controls {
+  display: flex;
+  overflow: hidden;
+
+  transition: all 0.1s ease;
+  height: 0;
+
+  &.visible {
+    height: 82px;
   }
 }

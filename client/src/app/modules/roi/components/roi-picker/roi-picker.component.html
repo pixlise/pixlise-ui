@@ -29,44 +29,37 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<ng-template #newROIMenu>
-  <div class="new-roi">
-    <header>
-      <h1 class="title">New ROI</h1>
-      <tag-picker
-        type="roi"
-        placeholderText="Search ROI Tags ..."
-        [selectedTagIDs]="newROITags"
-        [showCurrentTagsSection]="true"
-        [editable]="true"
-        (onTagSelectionChanged)="onNewTagSelectionChanged($event)">
-      </tag-picker>
-    </header>
-
-    <input type="text" class="name" [(ngModel)]="newROIName" placeholder="ROI Name" />
-    <textarea class="description" [(ngModel)]="newROIDescription" placeholder="ROI Description" rows="4"></textarea>
-
-    <div class="buttons">
-      <push-button buttonStyle="outline" (onClick)="onCancelCreateROI()" title="Cancel creating this ROI">Cancel</push-button>
-      <push-button buttonStyle="yellow" (onClick)="onSaveNewROI()" title="Save new ROI">Save</push-button>
+<div class="roi-picker-container">
+  <header>
+    <div class="controls">
+      <h1 class="title">Regions of Interest</h1>
+      <two-state-icon-push-button
+        class="search-btn"
+        activeIcon="assets/button-icons/filter-yellow.svg"
+        inactiveIcon="assets/button-icons/filter-white.svg"
+        [active]="showSearchControls"
+        (onToggle)="onToggleSearch()"
+        #tooltip="matTooltip"
+        matTooltip="{{ showSearchControls ? 'Hide' : 'Show' }} search options">
+      </two-state-icon-push-button>
     </div>
+    <roi-search-controls class="{{ showSearchControls ? 'visible' : '' }}" [summaries]="summaries" (onFilterChanged)="onFilterChanged($event)"></roi-search-controls>
+  </header>
+  <section class="rois">
+    <roi-item
+      *ngFor="let item of filteredSummaries"
+      [showDetailsButton]="false"
+      [selected]="!!selectedROIs[item.id]"
+      (onROISelect)="onROISelect(item)"
+      [isSelectable]="true"
+      [colorChangeOnly]="true"
+      [lightVariant]="true"
+      [rightSelection]="true"
+      [summary]="item">
+    </roi-item>
+  </section>
+  <div class="button-container">
+    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button buttonStyle="yellow" (onClick)="onConfirm()">Confirm</push-button>
   </div>
-</ng-template>
-
-<section class="roi-container">
-  <div class="panel-row">
-    <push-button
-      #tooltip="matTooltip"
-      matTooltip="You don't have permission to create ROIs"
-      [matTooltipDisabled]="canCreateROIs"
-      buttonStyle="yellow"
-      [disabled]="selectionEmpty || !canCreateROIs"
-      fxFlex="100%"
-      [customDialog]="newROIMenu"
-      #newROIButton
-      >New ROI from Selection</push-button
-    >
-  </div>
-  <roi-search-controls class="{{ showSearch ? 'visible' : '' }}" [summaries]="summaries" (onFilterChanged)="onFilterChanged($event)"></roi-search-controls>
-  <roi-item *ngFor="let item of filteredSummaries" [summary]="item"> </roi-item>
-</section>
+</div>

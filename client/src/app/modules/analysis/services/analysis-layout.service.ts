@@ -1,7 +1,10 @@
 import { Injectable } from "@angular/core";
 import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../models/sidebar.model";
-import { ReplaySubject, timer } from "rxjs";
+import { BehaviorSubject, ReplaySubject, timer } from "rxjs";
 import { ActivatedRoute } from "@angular/router";
+import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
+import { ScanListReq } from "src/app/generated-protos/scan-msgs";
+import { ScanItem } from "src/app/generated-protos/scan";
 
 @Injectable({
   providedIn: "root",
@@ -15,9 +18,28 @@ export class AnalysisLayoutService {
   sidebarViewShortcuts: SidebarViewShortcut[] = SIDEBAR_VIEWS;
   sidebarAdminShortcuts: SidebarViewShortcut[] = SIDEBAR_ADMIN_SHORTCUTS;
 
-  activeTab: SidebarTabItem | null = null;
+  private _activeTab: SidebarTabItem | null = null;
+  showSearch = false;
 
-  constructor(private _route: ActivatedRoute) {}
+  availableScans$ = new BehaviorSubject<ScanItem[]>([]);
+
+  constructor(
+    private _route: ActivatedRoute,
+    private _cachedDataService: APICachedDataService
+  ) {
+    this._cachedDataService.getScanList(ScanListReq.create({})).subscribe(resp => {
+      this.availableScans$.next(resp.scans);
+    });
+  }
+
+  get activeTab(): SidebarTabItem | null {
+    return this._activeTab;
+  }
+
+  set activeTab(tab: SidebarTabItem | null) {
+    this._activeTab = tab;
+    this.showSearch = false;
+  }
 
   get resizeCanvas$(): ReplaySubject<void> {
     // Something just subscribed, schedule a notification in a second

@@ -34,7 +34,7 @@ import { Subscription } from "rxjs";
 
 import { AuthService } from "@auth0/auth0-angular";
 
-import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { ScanDataType, ScanItem } from "src/app/generated-protos/scan";
 
@@ -96,7 +96,8 @@ export class DatasetTilesPageComponent implements OnInit {
     private _dataService: APIDataService,
     //private _viewStateService: ViewStateService,
     private _authService: AuthService,
-    public dialog: MatDialog
+    public dialog: MatDialog,
+    private _snackService: SnackbarService
   ) {}
 
   ngOnInit() {
@@ -189,6 +190,8 @@ export class DatasetTilesPageComponent implements OnInit {
   protected setDatasetListingNotAllowedError(err: string): void {
     this.datasetListingAllowed = false;
     this.errorString = err;
+
+    this._snackService.openError(this.errorString);
   }
 
   onOpen(resetView: boolean): void {
@@ -269,6 +272,7 @@ export class DatasetTilesPageComponent implements OnInit {
 
         // Display the error text that came back, might be useful
         this.errorString = httpErrorToString(err, "Search Error");
+        this._snackService.openError(this.errorString);
 
         this.scans = [];
       },

@@ -375,6 +375,10 @@ h3 {
   // min-width: 215px;
 }
 
+.cdk-overlay-pane:has(.mat-mdc-select-panel) {
+  width: auto !important;
+}
+
 .multiline-tooltip {
   white-space: pre-line;
 }

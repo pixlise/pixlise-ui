@@ -104,7 +104,7 @@ export class ROIService {
       .sendRegionOfInterestWriteRequest(
         RegionOfInterestWriteReq.create({
           regionOfInterest: roiToWrite,
-          isMIST: newROI.mistROIItem ? true : false,
+          isMIST: roiToWrite.mistROIItem ? true : false,
         })
       )
       .subscribe({
@@ -117,8 +117,14 @@ export class ROIService {
               this.roiSummaries$.value[res.regionOfInterest.id] = this.formSummaryFromROI(res.regionOfInterest);
               this.roiSummaries$.next(this.roiSummaries$.value);
 
-              this.mistROIsByScanId$.value[res.regionOfInterest.scanId][res.regionOfInterest.id] = this.formSummaryFromROI(res.regionOfInterest);
-              this.mistROIsByScanId$.next(this.mistROIsByScanId$.value);
+              if (res.regionOfInterest.isMIST) {
+                if (!this.mistROIsByScanId$.value[res.regionOfInterest.scanId]) {
+                  this.mistROIsByScanId$.value[res.regionOfInterest.scanId] = {};
+                }
+
+                this.mistROIsByScanId$.value[res.regionOfInterest.scanId][res.regionOfInterest.id] = this.formSummaryFromROI(res.regionOfInterest);
+                this.mistROIsByScanId$.next(this.mistROIsByScanId$.value);
+              }
             }
 
             this._snackBarService.openSuccess(isNewROI ? "ROI created!" : "ROI updated!");

@@ -39,6 +39,7 @@ import { TwoStateIconPushButton } from "./components/atoms/buttons/two-state-but
 import { MenuPanelHostComponent } from "./components/atoms/widget-settings-menu/menu-panel-host/menu-panel-host.component";
 import { NotificationsMenuPanelComponent } from "src/app/components/toolbar/notifications-menu-panel/notifications-menu-panel.component";
 import { HotkeysMenuPanelComponent } from "src/app/components/toolbar/hotkeys-menu-panel/hotkeys-menu-panel.component";
+import { FilterBoxComponent } from "./components/atoms/filter-box/filter-box.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -73,8 +74,9 @@ export { ExpressionValue, ExpressionReference, ExpressionReferences } from "./mo
     HotkeysMenuPanelComponent,
     IconButtonComponent,
     ConfirmDialogComponent,
+    FilterBoxComponent,
   ],
-  imports: [CommonModule, OverlayModule, MaterialModule],
+  imports: [CommonModule, OverlayModule, MaterialModule, FormsModule],
   exports: [
     WaitSpinnerComponent,
     BadgeComponent,
@@ -95,6 +97,7 @@ export { ExpressionValue, ExpressionReference, ExpressionReferences } from "./mo
     FormsModule,
     MaterialModule,
     MatSnackBarModule,
+    FilterBoxComponent,
   ],
   providers: [APICommService, APIDataService, HttpInterceptorService],
 })

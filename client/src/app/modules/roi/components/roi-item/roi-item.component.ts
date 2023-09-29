@@ -11,9 +11,14 @@ import { Subscription } from "rxjs";
   styleUrls: ["./roi-item.component.scss"],
 })
 export class ROIItemComponent {
+  @Input() rightSelection: boolean = false;
   @Input() isSelectable = false;
+
   @Input() selected = false;
   @Input() colorChangeOnly = false;
+
+  @Input() lightVariant: boolean = false;
+  @Input() showDetailsButton: boolean = true;
 
   @Input() summary!: ROIItemSummary;
 
