@@ -43,7 +43,7 @@ export type ROIPickerResponse = {
   styleUrls: ["./roi-picker.component.scss"],
 })
 export class ROIPickerComponent implements OnInit {
-  showSearchControls: boolean = false;
+  showSearchControls: boolean = true;
 
   selectedROIs: ROISummaries = {};
 
@@ -95,5 +95,9 @@ export class ROIPickerComponent implements OnInit {
     this.dialogRef.close({
       selectedROIs: Object.values(this.selectedROIs),
     });
+  }
+
+  onClear(): void {
+    this.selectedROIs = {};
   }
 }

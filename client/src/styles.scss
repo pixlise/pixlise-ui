@@ -376,6 +376,7 @@ h3 {
 }
 
 .cdk-overlay-pane:has(.mat-mdc-select-panel) {
+  min-width: 215px;
   width: auto !important;
 }
 

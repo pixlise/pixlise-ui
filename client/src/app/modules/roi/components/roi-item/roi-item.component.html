@@ -1,3 +1,37 @@
+<ng-template #roiShapePicker>
+  <div class="roi-shape-picker">
+    <h2>Shapes</h2>
+    <mat-radio-group class="shape-group" [(ngModel)]="shape">
+      <mat-radio-button *ngFor="let option of shapeOptions" [value]="option" class="shape-option" labelPosition="after">
+        <roi-shape [scale]="2" [color]="color.color || '#fff'" [shape]="option"></roi-shape>
+      </mat-radio-button>
+    </mat-radio-group>
+    <div class="bottom-buttons">
+      <push-button buttonStyle="outline" title="Clear Color" (onClick)="clearShape()">Clear</push-button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #roiColorPicker>
+  <div class="roi-color-picker">
+    <h2>Colour Blind Safe</h2>
+    <mat-radio-group class="color-group" [(ngModel)]="color">
+      <mat-radio-button *ngFor="let option of colorBlindSafeOptions" [value]="option" class="color-option" labelPosition="after">
+        <roi-shape [scale]="2" [color]="option.color" [shape]="shape || 'circle'"></roi-shape>
+      </mat-radio-button>
+    </mat-radio-group>
+    <h2 class="additional-colors">Additional Colors</h2>
+    <mat-radio-group class="color-group" [(ngModel)]="color">
+      <mat-radio-button *ngFor="let option of additionalColorOptions" [value]="option" class="color-option" labelPosition="after">
+        <roi-shape [scale]="2" [color]="option.color" [shape]="shape || 'circle'"></roi-shape>
+      </mat-radio-button>
+    </mat-radio-group>
+    <div class="bottom-buttons">
+      <push-button buttonStyle="outline" title="Clear Color" (onClick)="clearColor()">Clear</push-button>
+    </div>
+  </div>
+</ng-template>
+
 <ng-template #roiSettingsMenu>
   <div class="roi-settings">
     <div class="settings-buttons">
@@ -9,7 +43,9 @@
         (onClick)="onDelete()">
       </action-button>
       <icon-button title="Share this ROI" icon="assets/button-icons/share.svg" (click)="onShare()"> </icon-button>
-      <icon-button title="Configure Colours" icon="assets/button-icons/colours.svg" (click)="onColours($event)"> </icon-button>
+      <widget-settings-menu [settingsDialog]="roiColorPicker" #roiColorPickerButton>
+        <icon-button title="Configure Colours" icon="assets/button-icons/colours.svg"></icon-button>
+      </widget-settings-menu>
     </div>
     <!-- <slider title="Opacity" [value]="opacity" [minValue]="0" [maxValue]="1" (onChange)="onChangeOpacity($event)"> -->
     <!-- </slider> -->
@@ -42,7 +78,10 @@
 
 <div
   class="roi-container"
-  [ngStyle]="{ 'border-left-color': color, 'border-bottom': lightVariant ? '1px solid rgb(var(--clr-gray-80))' : '1px solid rgb(var(--clr-gray-70))' }">
+  [ngStyle]="{
+    'border-left-color': color.color || (lightVariant ? 'rgb(var(--clr-gray-70))' : 'rgb(var(--clr-gray-80))'),
+    'border-bottom': lightVariant ? '1px solid rgb(var(--clr-gray-80))' : '1px solid rgb(var(--clr-gray-70))'
+  }">
   <div class="summary" [ngStyle]="{ 'background-color': lightVariant ? 'rgb(var(--clr-gray-70))' : 'rgb(var(--clr-gray-80))' }">
     <two-state-icon-button
       *ngIf="isSelectable && !rightSelection"
@@ -53,10 +92,15 @@
       [active]="selected"
       (onToggle)="onCheckboxClick($event)">
     </two-state-icon-button>
+    <div *ngIf="showCreatorIcon" class="creator" #tooltip="matTooltip" matTooltip="Creator: {{ creatorName || 'N/A' }}">
+      <img *ngIf="icon" [src]="icon" />
+      <span *ngIf="!icon" class="name-abbreviation">{{ creatorAbbreviation }}</span>
+    </div>
     <div class="info" #tooltip="matTooltip" matTooltipClass="multiline-tooltip" [matTooltip]="name + (description ? '\n\n' + description : '')">
       <h4>{{ name }}</h4>
       <p [ngStyle]="{ color: lightVariant ? 'rgb(var(--clr-gray-50))' : 'rgb(var(--clr-gray-60))' }">{{ createdDate | date: "dd/MMM/yy" }}</p>
     </div>
+    <roi-shape *ngIf="color.color || shape" class="current-shape" [color]="color.color || '#fff'" [shape]="shape || 'circle'"></roi-shape>
     <div class="buttons">
       <widget-settings-menu *ngIf="!colorChangeOnly" [settingsDialog]="roiSettingsMenu" #settingsButton>
         <icon-button title="Show Settings Menu" [hasBackground]="false" icon="assets/button-icons/settings-gray.svg"> </icon-button>
@@ -69,14 +113,21 @@
         [editable]="summary.owner?.canEdit || false"
         (onTagSelectionChanged)="onTagSelectionChanged($event)">
       </tag-picker>
-      <icon-button *ngIf="colorChangeOnly" title="Configure Colours" icon="assets/button-icons/colours.svg" (click)="onColours($event)"> </icon-button>
+      <widget-settings-menu *ngIf="colorChangeOnly" [settingsDialog]="roiShapePicker" #roiShapePickerButton>
+        <icon-button title="Configure Shapes" icon="assets/button-icons/shapes.svg"> </icon-button>
+      </widget-settings-menu>
+      <widget-settings-menu *ngIf="colorChangeOnly" [settingsDialog]="roiColorPicker" #roiColorPickerButton>
+        <icon-button title="Configure Colours" icon="assets/button-icons/colours.svg"> </icon-button>
+      </widget-settings-menu>
       <two-state-icon-button
+        *ngIf="showVisibilityButton"
         toolTip="Toggle visibility on Context Image"
         activeIcon="assets/button-icons/visible-on-yellow.svg"
         inactiveIcon="assets/button-icons/visible-off.svg"
         [active]="isVisible"
         (onToggle)="onVisibility($event)"></two-state-icon-button>
       <icon-button
+        class="show-details-btn"
         *ngIf="showDetailsButton"
         [icon]="showDetails ? 'assets/button-icons/arrow-down.svg' : 'assets/button-icons/arrow-right.svg'"
         [hasBackground]="false"

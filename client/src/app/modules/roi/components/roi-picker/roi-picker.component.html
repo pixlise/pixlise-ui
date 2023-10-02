@@ -55,11 +55,13 @@ POSSIBILITY OF SUCH DAMAGE.
       [colorChangeOnly]="true"
       [lightVariant]="true"
       [rightSelection]="true"
+      [showVisibilityButton]="false"
       [summary]="item">
     </roi-item>
   </section>
   <div class="button-container">
     <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-    <push-button buttonStyle="yellow" (onClick)="onConfirm()">Confirm</push-button>
+    <push-button buttonStyle="outline" (onClick)="onClear()">Clear</push-button>
+    <push-button buttonStyle="yellow" (onClick)="onConfirm()">Apply</push-button>
   </div>
 </div>

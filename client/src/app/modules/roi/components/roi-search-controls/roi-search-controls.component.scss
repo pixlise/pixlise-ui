@@ -6,7 +6,7 @@
 
   .broad-filters {
     display: flex;
-    padding: 0px 5px;
+    // padding: 0px 6px;
 
     mat-select {
       height: 19px;
@@ -28,6 +28,11 @@
 
     tag-picker {
       margin-left: 6px;
+    }
+
+    filter-box,
+    mat-select {
+      flex: 1;
     }
   }
 }
