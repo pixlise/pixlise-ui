@@ -357,7 +357,7 @@ export class LuaDataQuerier {
     // Set the timeout value
     this._lua.global.setTimeout(Date.now() + timeoutMs);
 
-    let p = this._lua.doString(sourceCode);
+    const p = this._lua.doString(sourceCode);
 
     return from(p).pipe(
       // map(result => {

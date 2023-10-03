@@ -69,6 +69,7 @@ export class ExpressionDataSource
   private _cachedDataService: APICachedDataService | null = null;
 
   private _debug = true;
+  private _prepTime = performance.now();
 
   // Here we get the data required to honor the interfaces we implement, based on the above
   prepare(
@@ -406,7 +407,7 @@ export class ExpressionDataSource
   // QuantifiedDataQuerierSource
   async getQuantifiedDataForDetector(detectorId: string, dataLabel: string): Promise<PMCDataValues> {
     if (this._debug) {
-      console.log(`getQuantifiedDataForDetector(${detectorId}, ${dataLabel})`);
+      this.logFunc(`getQuantifiedDataForDetector(${detectorId}, ${dataLabel})`);
     }
     return await lastValueFrom(
       this.getQuantData().pipe(
@@ -510,7 +511,7 @@ export class ExpressionDataSource
 
   async getElementList(): Promise<string[]> {
     if (this._debug) {
-      console.log(`getElementList()`);
+      this.logFunc(`getElementList()`);
     }
     return await lastValueFrom(
       this.getQuantData().pipe(
@@ -523,7 +524,7 @@ export class ExpressionDataSource
 
   async getPMCList(): Promise<number[]> {
     if (this._debug) {
-      console.log(`getPMCList()`);
+      this.logFunc(`getPMCList()`);
     }
     return await lastValueFrom(
       this.getQuantData().pipe(
@@ -551,7 +552,7 @@ export class ExpressionDataSource
 
   async getDetectors(): Promise<string[]> {
     if (this._debug) {
-      console.log(`getDetectors()`);
+      this.logFunc(`getDetectors()`);
     }
     return await lastValueFrom(
       this.getQuantData().pipe(
@@ -564,7 +565,7 @@ export class ExpressionDataSource
 
   async columnExists(col: string): Promise<boolean> {
     if (this._debug) {
-      console.log(`columnExists(${col})`);
+      this.logFunc(`columnExists(${col})`);
     }
     return await lastValueFrom(
       this.getQuantData().pipe(
@@ -582,7 +583,7 @@ export class ExpressionDataSource
   // PseudoIntensityDataQuerierSource
   async getPseudoIntensityData(name: string): Promise<PMCDataValues> {
     if (this._debug) {
-      console.log(`getPseudoIntensityData(${name})`);
+      this.logFunc(`getPseudoIntensityData(${name})`);
     }
     return await lastValueFrom(
       this.getPseudoIntensity().pipe(
@@ -614,7 +615,7 @@ export class ExpressionDataSource
 
   async getPseudoIntensityElementsList(): Promise<string[]> {
     if (this._debug) {
-      console.log(`getPseudoIntensityElementsList()`);
+      this.logFunc(`getPseudoIntensityElementsList()`);
     }
     return await lastValueFrom(
       this.getPseudoIntensity().pipe(
@@ -631,7 +632,7 @@ export class ExpressionDataSource
   // SpectrumDataQuerierSource
   async getSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): Promise<PMCDataValues> {
     if (this._debug) {
-      console.log(`getSpectrumRangeMapData(${channelStart}, ${channelEnd}, ${detectorExpr})`);
+      this.logFunc(`getSpectrumRangeMapData(${channelStart}, ${channelEnd}, ${detectorExpr})`);
     }
     return await lastValueFrom(
       combineLatest([this.getScanMetaLabelsAndTypes(), this.getSpectrum(), this.getScanEntryMetadata()]).pipe(
@@ -696,7 +697,7 @@ export class ExpressionDataSource
   // If sumOrMax==true, returns sum of differences between A and B otherwise max difference seen between A and B
   async getSpectrumDifferences(channelStart: number, channelEnd: number, sumOrMax: boolean): Promise<PMCDataValues> {
     if (this._debug) {
-      console.log(`getSpectrumDifferences(${channelStart}, ${channelEnd}, ${sumOrMax})`);
+      this.logFunc(`getSpectrumDifferences(${channelStart}, ${channelEnd}, ${sumOrMax})`);
     }
     return await lastValueFrom(
       this.getSpectrum().pipe(
@@ -751,7 +752,7 @@ export class ExpressionDataSource
   // DiffractionPeakQuerierSource
   async getDiffractionPeakEffectData(channelStart: number, channelEnd: number): Promise<PMCDataValues> {
     if (this._debug) {
-      console.log(`getDiffractionPeakEffectData(${channelStart}, ${channelEnd})`);
+      this.logFunc(`getDiffractionPeakEffectData(${channelStart}, ${channelEnd})`);
     }
     return await lastValueFrom(
       combineLatest([this.getDetectedDiffraction(), this.getDiffractionPeakManualList()]).pipe(
@@ -819,7 +820,7 @@ export class ExpressionDataSource
 
   async getRoughnessData(): Promise<PMCDataValues> {
     if (this._debug) {
-      console.log(`getHousekeepingData()`);
+      this.logFunc(`getHousekeepingData()`);
     }
     return await lastValueFrom(
       combineLatest([this.getDetectedDiffraction(), this.getDiffractionPeakManualList()]).pipe(
@@ -858,7 +859,7 @@ export class ExpressionDataSource
   // HousekeepingDataQuerierSource
   async getHousekeepingData(name: string): Promise<PMCDataValues> {
     if (this._debug) {
-      console.log(`getHousekeepingData(${name})`);
+      this.logFunc(`getHousekeepingData(${name})`);
     }
     return await lastValueFrom(
       combineLatest([this.getScanMetaLabelsAndTypes(), this.getScanEntryMetadata()]).pipe(
@@ -908,7 +909,7 @@ export class ExpressionDataSource
 
   async getPositionData(axis: string): Promise<PMCDataValues> {
     if (this._debug) {
-      console.log(`getPositionData(${axis})`);
+      this.logFunc(`getPositionData(${axis})`);
     }
     return await lastValueFrom(
       this.getScanBeamLocations().pipe(
@@ -939,7 +940,7 @@ export class ExpressionDataSource
 
   async hasHousekeepingData(name: string): Promise<boolean> {
     if (this._debug) {
-      console.log(`hasHousekeepingData(${name})`);
+      this.logFunc(`hasHousekeepingData(${name})`);
     }
     return await lastValueFrom(
       this.getScanMetaLabelsAndTypes().pipe(
@@ -964,5 +965,12 @@ export class ExpressionDataSource
         })
       )
     );
+  }
+
+  private logFunc(call: string): void {
+    if (this._debug) {
+      const tm = performance.now()-this._prepTime;
+      console.log(`${call}, elapsed: ${tm.toLocaleString()}ms`);
+    }
   }
 }
