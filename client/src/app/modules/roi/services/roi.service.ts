@@ -5,13 +5,25 @@ import {
   RegionOfInterestBulkWriteReq,
   RegionOfInterestDeleteReq,
   RegionOfInterestGetReq,
+  RegionOfInterestGetResp,
   RegionOfInterestListReq,
   RegionOfInterestWriteReq,
 } from "src/app/generated-protos/roi-msgs";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { SearchParams } from "src/app/generated-protos/search-params";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, Observable, map, of, scan, shareReplay } from "rxjs";
 import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
+import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
+import { ROIShape, SHAPES } from "../components/roi-shape/roi-shape.component";
+import { COLORS, ColorOption } from "../models/roi-colors";
+import {
+  RegionSettings,
+  createDefaultAllPointsRegionSettings,
+  createDefaultRemainingPointsRegionSettings,
+  createDefaultSelectedPointsRegionSettings,
+} from "../models/roi-region";
+import { Colours, RGBA } from "src/app/utils/colours";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
 export type ROISummaries = Record<string, ROIItemSummary>;
 
@@ -23,9 +35,19 @@ export class ROIService {
   roiItems$ = new BehaviorSubject<Record<string, ROIItem>>({});
   mistROIsByScanId$ = new BehaviorSubject<Record<string, ROISummaries>>({});
 
+  private _scanShapeMap = new Map<string, ROIShape>();
+  private _nextScanShapeIdx: number = 0;
+
+  private _regionMap = new Map<string, Observable<RegionSettings>>();
+  private _nextColourIdx: number = 0;
+
+  private _shapes: ROIShape[] = SHAPES;
+  private _colours: ColorOption[] = COLORS;
+
   constructor(
     private _dataService: APIDataService,
-    private _snackBarService: SnackbarService
+    private _snackBarService: SnackbarService,
+    private _cachedDataService: APICachedDataService
   ) {
     this.listROIs();
   }
@@ -54,7 +76,79 @@ export class ROIService {
     });
   }
 
-  fetchROI(id: string) {
+  getRegionSettings(scanId: string, roiId: string, useColor: RGBA | null = null, useShape: ROIShape | null = null): Observable<RegionSettings> {
+    // If we have not encountered this scan before, create the default ROIs for it
+    let scanShape = this._scanShapeMap.get(scanId);
+    if (!scanShape) {
+      scanShape = this.nextScanShape();
+      this._scanShapeMap.set(scanId, scanShape);
+      this.createDefaultROIs(scanId, scanShape);
+    }
+
+    // Now we check if we can service locally from our  map
+    let result = this._regionMap.get(`${scanId}_${roiId}`);
+    if (result === undefined) {
+      // Nothing stored, so get the ROI because we're combining that with the colour/shape we generate
+      result = this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiId })).pipe(
+        map((roiResp: RegionOfInterestGetResp) => {
+          if (roiResp.regionOfInterest === undefined) {
+            this._snackBarService.openError(`Region Of Interest data not returned from cachedDataService for ${roiId}`);
+            throw new Error("regionOfInterest data not returned for " + roiId);
+          }
+
+          const roi = new RegionSettings(roiResp.regionOfInterest);
+
+          // Work out the shape (there should be one in our map by now)
+          const scanShape = this._scanShapeMap.get(scanId);
+          if (scanShape) {
+            roi.shape = useShape || scanShape;
+          }
+
+          // Work out a colour for this ROI
+          roi.colour = useColor || this.nextColour().rgba;
+
+          return roi;
+        }),
+        shareReplay()
+      );
+
+      // Add it to the map too so a subsequent request will get this
+      this._regionMap.set(roiId, result);
+    }
+
+    return result;
+  }
+
+  updateRegionDisplaySettings(scanId: string, roiId: string, color: RGBA, shape: ROIShape) {
+    // Delete from region map and reset with new settings
+    this._regionMap.delete(roiId);
+    this.getRegionSettings(scanId, roiId, color, shape);
+  }
+
+  private createDefaultROIs(scanId: string, scanShape: ROIShape) {
+    // Add defaults for predefined ROIs
+    this._regionMap.set(`${scanId}_${PredefinedROIID.AllPoints}}`, of(createDefaultAllPointsRegionSettings(scanId, scanShape)));
+    this._regionMap.set(`${scanId}_${PredefinedROIID.SelectedPoints}}`, of(createDefaultSelectedPointsRegionSettings(scanId, scanShape)));
+    this._regionMap.set(`${scanId}_${PredefinedROIID.RemainingPoints}}`, of(createDefaultRemainingPointsRegionSettings(scanId, scanShape)));
+  }
+
+  private nextScanShape(): ROIShape {
+    const shape = this._shapes[this._nextScanShapeIdx];
+    this._nextScanShapeIdx = (this._nextScanShapeIdx + 1) % this._shapes.length;
+    return shape;
+  }
+
+  private nextColour(): ColorOption {
+    const colour = this._colours[this._nextColourIdx];
+    this._nextColourIdx = (this._nextColourIdx + 1) % this._colours.length;
+    return colour;
+  }
+
+  fetchROI(id: string, checkCacheFirst: boolean = false) {
+    if (checkCacheFirst && this.roiItems$.value[id]) {
+      return;
+    }
+
     this._dataService.sendRegionOfInterestGetRequest(RegionOfInterestGetReq.create({ id })).subscribe({
       next: res => {
         if (res.regionOfInterest) {

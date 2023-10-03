@@ -107,7 +107,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     this._widgetData.getData(query).subscribe({
       next: data => {
-      this.mdl.setData(data);
+        this.mdl.setData(data);
       },
       error: err => {
         this.mdl.setData(new RegionDataResults([], err));
@@ -205,7 +205,13 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   onExport() {}
   onSoloView() {}
   onRegions() {
-    const dialogRef = this.dialog.open(ROIPickerComponent);
+    const dialogConfig = new MatDialogConfig();
+    // Pass data to dialog
+    dialogConfig.data = {
+      requestFullROIs: true,
+    };
+
+    const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((result: ROIPickerResponse) => {
       // TODO: Make these visible
       console.log(result.selectedROIs);

@@ -27,14 +27,20 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit } from "@angular/core";
-import { MatDialogRef } from "@angular/material/dialog";
+import { Component, Inject, OnInit } from "@angular/core";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { ROIService, ROISummaries } from "../../services/roi.service";
-import { ROIItemSummary } from "src/app/generated-protos/roi";
-import { ROISearchFilter } from "../roi-search-controls/roi-search-controls.component";
+import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
+import { ROISearchFilter } from "../../models/roi-search";
+import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 export type ROIPickerResponse = {
-  selectedROIs: ROIItemSummary[];
+  selectedROISummaries: ROIItemSummary[];
+  selectedROIs: ROIItem[];
+};
+
+export type ROIPickerData = {
+  requestFullROIs: boolean;
 };
 
 @Component({
@@ -50,12 +56,27 @@ export class ROIPickerComponent implements OnInit {
   filteredSummaries: ROIItemSummary[] = [];
   summaries: ROIItemSummary[] = [];
 
+  waitingForROIs: string[] = [];
+
   constructor(
     private _roiService: ROIService,
+    private _snackBarService: SnackbarService,
+    @Inject(MAT_DIALOG_DATA) public data: ROIPickerData,
     public dialogRef: MatDialogRef<ROIPickerComponent, ROIPickerResponse>
   ) {
     this._roiService.roiSummaries$.subscribe(summaries => {
       this.summaries = Object.values(summaries);
+    });
+
+    this._roiService.roiItems$.subscribe(roiItems => {
+      let notFoundROIs: string[] = [];
+      this.waitingForROIs.forEach((roiId, i) => {
+        if (!roiItems[roiId]) {
+          notFoundROIs.push(roiId);
+        }
+      });
+
+      this.waitingForROIs = notFoundROIs;
     });
   }
 
@@ -66,6 +87,10 @@ export class ROIPickerComponent implements OnInit {
       delete this.selectedROIs[roi.id];
     } else {
       this.selectedROIs[roi.id] = roi;
+      this._roiService.fetchROI(roi.id, true);
+      if (!this._roiService.roiItems$.value[roi.id]) {
+        this.waitingForROIs.push(roi.id);
+      }
     }
   }
 
@@ -92,8 +117,18 @@ export class ROIPickerComponent implements OnInit {
   }
 
   onConfirm(): void {
+    let selectedROISummaries = Object.values(this.selectedROIs);
+    let selectedROIs: ROIItem[] = selectedROISummaries.map(summary => {
+      let roi = this._roiService.roiItems$.value[summary.id];
+      if (!roi) {
+        this._snackBarService.openError(`ROI ${summary.id} was not found in the ROI cache`);
+      }
+      return roi;
+    });
+
     this.dialogRef.close({
-      selectedROIs: Object.values(this.selectedROIs),
+      selectedROISummaries,
+      selectedROIs,
     });
   }
 

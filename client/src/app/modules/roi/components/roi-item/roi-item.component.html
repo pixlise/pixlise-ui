@@ -79,10 +79,21 @@
 <div
   class="roi-container"
   [ngStyle]="{
-    'border-left-color': color.color || (lightVariant ? 'rgb(var(--clr-gray-70))' : 'rgb(var(--clr-gray-80))'),
+    'border-left-color': color.color,
+    'border-left-width': color.color ? '4px' : '0',
     'border-bottom': lightVariant ? '1px solid rgb(var(--clr-gray-80))' : '1px solid rgb(var(--clr-gray-70))'
   }">
-  <div class="summary" [ngStyle]="{ 'background-color': lightVariant ? 'rgb(var(--clr-gray-70))' : 'rgb(var(--clr-gray-80))' }">
+  <div
+    class="summary"
+    [ngStyle]="{
+      'background-color': lightVariant
+        ? selected
+          ? 'rgb(var(--clr-gray-60))'
+          : 'rgb(var(--clr-gray-70))'
+        : selected
+        ? 'rgb(var(--clr-gray-70))'
+        : 'rgb(var(--clr-gray-80))'
+    }">
     <two-state-icon-button
       *ngIf="isSelectable && !rightSelection"
       toolTip="Toggle ROI"
@@ -96,9 +107,18 @@
       <img *ngIf="icon" [src]="icon" />
       <span *ngIf="!icon" class="name-abbreviation">{{ creatorAbbreviation }}</span>
     </div>
-    <div class="info" #tooltip="matTooltip" matTooltipClass="multiline-tooltip" [matTooltip]="name + (description ? '\n\n' + description : '')">
+    <div
+      class="info"
+      #tooltip="matTooltip"
+      matTooltipClass="multiline-tooltip"
+      [matTooltip]="name + (description ? '\n\n' + description : '') + (createdDate > 0 ? '\n\nCreated: ' + dateCreatedString : '')">
       <h4>{{ name }}</h4>
-      <p [ngStyle]="{ color: lightVariant ? 'rgb(var(--clr-gray-50))' : 'rgb(var(--clr-gray-60))' }">{{ createdDate | date: "dd/MMM/yy" }}</p>
+      <span *ngIf="summary.isMIST || createdDate > 0" class="metadata-line" title="Level">
+        <div *ngIf="summary.isMIST" class="level-dots" title="Level">
+          <div class="level-dot {{ hasLevel ? 'filled' : '' }}" *ngFor="let hasLevel of mistLevels"></div>
+        </div>
+        <p [ngStyle]="{ color: lightVariant ? 'rgb(var(--clr-gray-50))' : 'rgb(var(--clr-gray-60))' }">{{ createdDate | date: "dd/MMM/yy" }}</p>
+      </span>
     </div>
     <roi-shape *ngIf="color.color || shape" class="current-shape" [color]="color.color || '#fff'" [shape]="shape || 'circle'"></roi-shape>
     <div class="buttons">

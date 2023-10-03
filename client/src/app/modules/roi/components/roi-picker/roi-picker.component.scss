@@ -82,7 +82,10 @@
 
   .rois {
     height: 400px;
-    overflow-y: scroll;
+
+    .rois-viewport {
+      height: 100%;
+    }
   }
 }
 

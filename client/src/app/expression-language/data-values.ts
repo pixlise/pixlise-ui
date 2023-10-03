@@ -30,7 +30,7 @@
 import { MinMax } from "src/app/models/BasicTypes";
 import { DataExpression } from "../generated-protos/expressions";
 import { ROIItem } from "../generated-protos/roi";
-import { RegionSettings } from "../modules/pixlisecore/services/region-settings.service";
+import { RegionSettings } from "../modules/roi/models/roi-region";
 
 export class PMCDataValue {
   // This is a single value for a PMC. Initially it was just a number, however with multi-quant

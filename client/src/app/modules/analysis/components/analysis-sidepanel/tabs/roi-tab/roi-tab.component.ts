@@ -35,7 +35,7 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ROISearchFilter } from "src/app/modules/roi/components/roi-search-controls/roi-search-controls.component";
+import { ROISearchFilter } from "src/app/modules/roi/models/roi-search";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { Colours } from "src/app/utils/colours";
 

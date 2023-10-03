@@ -5,7 +5,7 @@ import { SelectionService, SnackbarService, WidgetSettingsMenuComponent } from "
 import { ActionButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/action-button/action-button.component";
 import { Subscription } from "rxjs";
 import { ROIShape, SHAPES } from "../roi-shape/roi-shape.component";
-import { COLORS, ColorOption } from "../../models/roi-colors";
+import { COLORS, ColorOption, generateDefaultColor } from "../../models/roi-colors";
 
 @Component({
   selector: "roi-item",
@@ -53,7 +53,7 @@ export class ROIItemComponent {
   isEditable: boolean = false;
 
   displayConfigured: boolean = false;
-  private _color: ColorOption = { name: "", color: "", colorBlindSafe: false };
+  private _color: ColorOption = generateDefaultColor();
   private _shape: ROIShape | "" = "";
 
   constructor(
@@ -121,9 +121,22 @@ export class ROIItemComponent {
 
   set shape(value: ROIShape | "") {
     this._shape = value;
+    this._roiService.updateRegionDisplaySettings(this.summary.scanId, this.summary.id, this._color.rgba, this._shape || "circle");
     if (!this.selected) {
       this.onCheckboxClick(true);
     }
+  }
+
+  get dateCreatedString(): string {
+    return this.createdDate > 0 ? new Date(this.createdDate).toLocaleDateString() : "Unknown";
+  }
+
+  get mistLevels(): boolean[] {
+    return new Array(5).fill(0).map((_, i) => i < this.mistDepth);
+  }
+
+  get mistDepth(): number {
+    return this.summary?.mistROIItem?.idDepth || 0;
   }
 
   get colorBlindSafeOptions(): ColorOption[] {
@@ -140,6 +153,7 @@ export class ROIItemComponent {
 
   set color(value: ColorOption) {
     this._color = value;
+    this._roiService.updateRegionDisplaySettings(this.summary.scanId, this.summary.id, this._color.rgba, this._shape || "circle");
     if (!this.selected) {
       this.onCheckboxClick(true);
     }
@@ -277,7 +291,7 @@ export class ROIItemComponent {
   }
 
   clearColor() {
-    this.color = { name: "", color: "", colorBlindSafe: false };
+    this.color = generateDefaultColor();
   }
 
   clearShape() {
