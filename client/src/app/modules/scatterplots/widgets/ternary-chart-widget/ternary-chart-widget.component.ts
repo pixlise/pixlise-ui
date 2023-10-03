@@ -16,6 +16,7 @@ import { TernaryChartToolHost } from "./interaction";
 import { PredefinedROIID, orderVisibleROIs } from "src/app/models/RegionOfInterest";
 import { DataSourceParams, SelectionService, WidgetDataService, DataUnit, RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
+import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 
 @Component({
   selector: "ternary-chart-widget",
@@ -203,7 +204,13 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
   onExport() {}
   onSoloView() {}
-  onRegions() {}
+  onRegions() {
+    const dialogRef = this.dialog.open(ROIPickerComponent);
+    dialogRef.afterClosed().subscribe((result: ROIPickerResponse) => {
+      // TODO: Make these visible
+      console.log(result.selectedROIs);
+    });
+  }
   onReferences() {}
   onClearSelection() {}
   onToggleKey() {}

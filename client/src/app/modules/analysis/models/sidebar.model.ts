@@ -38,6 +38,7 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
     title: "Regions of Interest",
     icon: "assets/icons/roi.svg",
     component: ROITabComponent,
+    width: "350px",
     tooltip: "Regions of Interest",
     shortcut: ["Cmd", "Shift", "3"],
     showSearchButton: true,

@@ -10,8 +10,6 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
   styleUrls: ["./analysis-sidepanel.component.scss"],
 })
 export class AnalysisSidepanelComponent {
-  showSearch = false;
-
   @ViewChild("openTab", { read: ViewContainerRef }) openTab?: ViewContainerRef;
   private _openTabRef: ComponentRef<any> | null = null;
 
@@ -58,6 +56,10 @@ export class AnalysisSidepanelComponent {
 
   get activeTab() {
     return this._analysisLayoutService.activeTab;
+  }
+
+  get showSearch() {
+    return this._analysisLayoutService.showSearch;
   }
 
   get tabs() {
@@ -109,6 +111,6 @@ export class AnalysisSidepanelComponent {
   }
 
   onToggleSearch() {
-    this.showSearch = !this.showSearch;
+    this._analysisLayoutService.showSearch = !this._analysisLayoutService.showSearch;
   }
 }

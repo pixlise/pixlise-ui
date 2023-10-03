@@ -7,7 +7,7 @@ import { ScanEntryMetadataReq, ScanEntryMetadataResp } from "src/app/generated-p
 import { SpectrumReq, SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { DetectedDiffractionPeaksReq, DetectedDiffractionPeaksResp } from "src/app/generated-protos/diffraction-detected-peak-msgs";
-import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
+import { ScanListReq, ScanListResp, ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
 import { DiffractionPeakManualListReq, DiffractionPeakManualListResp } from "src/app/generated-protos/diffraction-manual-msgs";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
@@ -37,6 +37,7 @@ export class APICachedDataService {
   private _scanEntryMetaReqMap = new Map<string, Observable<ScanEntryMetadataResp>>();
   private _pseudoIntensityReqMap = new Map<string, Observable<PseudoIntensityResp>>();
   private _detectedDiffractionReqMap = new Map<string, Observable<DetectedDiffractionPeaksResp>>();
+  private _scanListReq: Observable<ScanListResp> | undefined = undefined;
 
   // Non-scan related
   private _regionOfInterestGetReqMap = new Map<string, Observable<RegionOfInterestGetResp>>();
@@ -227,5 +228,14 @@ export class APICachedDataService {
     }
 
     return result;
+  }
+
+  getScanList(req: ScanListReq): Observable<ScanListResp> {
+    if (this._scanListReq === undefined) {
+      // Have to request it!
+      this._scanListReq = this._dataService.sendScanListRequest(req).pipe(shareReplay());
+    }
+
+    return this._scanListReq;
   }
 }

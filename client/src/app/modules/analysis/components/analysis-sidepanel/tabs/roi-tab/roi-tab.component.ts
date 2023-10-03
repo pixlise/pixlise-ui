@@ -29,21 +29,15 @@
 
 import { Component, ElementRef, OnInit, ViewChild } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
-import { ActivatedRoute, Route, Router } from "@angular/router";
 import { Subscription } from "rxjs";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
-import { SearchParams } from "src/app/generated-protos/search-params";
-import { ObjectCreator } from "src/app/models/BasicTypes";
+import { ScanItem } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
-// import { AuthenticationService } from "src/app/services/authentication.service";
-// import { ContextImageService } from "src/app/services/context-image.service";
-// import { ROIService } from "src/app/services/roi.service";
+import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ROISearchFilter } from "src/app/modules/roi/components/roi-search-controls/roi-search-controls.component";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
-// import { SelectionHistoryItem, SelectionService } from "src/app/services/selection.service";
-// import { RegionChangeInfo, RegionLayerInfo, RegionManager } from "src/app/UI/context-image-view-widget/region-manager";
 import { Colours } from "src/app/utils/colours";
-import { httpErrorToString } from "src/app/utils/utils";
 
 @Component({
   selector: "roi-tab",
@@ -55,73 +49,41 @@ export class ROITabComponent implements OnInit {
 
   @ViewChild("newROIButton") newROIButton!: ElementRef;
 
-  // private _userROIs: RegionLayerInfo[] = [];
-  // private _sharedROIs: RegionLayerInfo[] = [];
-
-  // private _filteredUserROIs: RegionLayerInfo[] = [];
-  // private _filteredSharedROIs: RegionLayerInfo[] = [];
-
-  // All the ROIs that are relevant, and we search within these to produce this.ROIs
-  // private _allROIsForDisplay: RegionLayerInfo[] = [];
-
-  // ROIs: RegionLayerInfo[] = [];
   allPointsColour = Colours.GRAY_10.asString();
 
-  // These are set directly from SidePanelComponent, not used as inputs
-  public showShared: boolean = false;
-  public showSearch: boolean = false;
-
   private _selectionEmpty: boolean = false;
-
-  roiSearchString: string = "";
-  // isPublicUser: boolean = false;
-
-  private _authors: ObjectCreator[] = [];
-  private _filteredAuthors: string[] = [];
-
-  filteredTagIDs: string[] = [];
 
   newROIName: string = "";
   newROIDescription: string = "";
   newROITags: string[] = [];
 
   summaries: ROIItemSummary[] = [];
+  filteredSummaries: ROIItemSummary[] = [];
+
+  allScans: ScanItem[] = [];
+  _visibleScanId: string = "";
 
   constructor(
-    // private _contextImageService: ContextImageService,
     private _roiService: ROIService,
-    private _route: ActivatedRoute,
     private _analysisLayoutService: AnalysisLayoutService,
-    // private _authService: AuthenticationService,
-    // private _selectionService: SelectionService,
+    private _selectionService: SelectionService,
     public dialog: MatDialog
   ) {}
 
-  ngOnInit(): void {
-    // this._roiService.listROIs();
-    this._roiService.searchROIs(SearchParams.create({ scanId: this._analysisLayoutService.defaultScanId }), false);
+  get visibleScanId(): string {
+    return this._visibleScanId;
+  }
 
+  set visibleScanId(scanId: string) {
+    this._visibleScanId = scanId;
+  }
+
+  ngOnInit(): void {
     this._subs.add(
       this._roiService.roiSummaries$.subscribe(summaries => {
         this.summaries = Object.values(summaries).filter(summary => !summary.isMIST);
       })
     );
-
-    // this._subs.add(this._contextImageService.mdl$.subscribe(
-    //   () => {
-    //     this.onGotModel();
-    //   }
-    // ));
-    // this._subs.add(this._selectionService.selection$.subscribe(
-    //   (sel: SelectionHistoryItem) => {
-    //     this._selectionEmpty = sel.beamSelection.getSelectedPMCs().size <= 0 && sel.pixelSelection.selectedPixels.size <= 0;
-    //   }
-    // ));
-    // this._subs.add(this._authService.isPublicUser$.subscribe(
-    // (isPublicUser) => {
-    // this.isPublicUser = isPublicUser;
-    //   }
-    // ));
   }
 
   ngOnDestroy() {
@@ -132,137 +94,17 @@ export class ROITabComponent implements OnInit {
     return true;
   }
 
-  // checkVisibleRegion(region: RegionLayerInfo) {
-  //   return !region?.roi?.mistROIItem || region.roi.mistROIItem.ClassificationTrail === "";
-  // }
-
-  onGotModel(): void {
-    // Listen to what layers exist...
-    // this._subs.add(this.getRegionManager().regions$.subscribe(
-    //   (change: RegionChangeInfo) => {
-    //     let regions = this.getRegionManager().getDisplayedRegions(change.regions);
-    //     let roiIDs: Set<string> = new Set<string>();
-    //     regions.forEach(region => {
-    //       if (this.checkVisibleRegion(region)) {
-    //         this.setROI(region);
-    //         roiIDs.add(region.roi.id);
-    //       }
-    //     });
-    //     // Delete any that we didn't see in the new update
-    //     this.deleteROIsNotInList(roiIDs);
-    //     // Show the list we're interested in
-    //     if (this.showShared) {
-    //       this._allROIsForDisplay = this._sharedROIs;
-    //     }
-    //     else {
-    //       this._allROIsForDisplay = this._userROIs;
-    //     }
-    //     this.filterROIsForDisplay();
-    //     this.extractAuthors();
-    //   },
-    //   (err) => {
-    //   }
-    // ));
+  get showSearch(): boolean {
+    return this._analysisLayoutService.showSearch;
   }
 
-  extractAuthors() {
-    let authorIDs = new Set<string>();
-    let authors: ObjectCreator[] = [];
-    // this._allROIsForDisplay.forEach((roi) => {
-    //   if (!authorIDs.has(roi.roi.creator.user_id)) {
-    //     authors.push(roi.roi.creator);
-    //     authorIDs.add(roi.roi.creator.user_id);
-    //   }
-    // });
-
-    this.authors = authors;
+  onFilterChanged({ filteredSummaries, scanId }: ROISearchFilter) {
+    this.filteredSummaries = filteredSummaries;
+    this.visibleScanId = scanId;
   }
-
-  private filterROIsForDisplay(): void {
-    // let filteredROIs: RegionLayerInfo[] = [];
-    // let searchString = this.roiSearchString.toLowerCase();
-    // for (let roi of this._allROIsForDisplay) {
-    //   let roiNameLower = roi.roi.name.toLowerCase();
-    //   if (
-    //     (searchString.length <= 0 || roiNameLower.indexOf(searchString) >= 0)
-    //     && (this.filteredTagIDs.length <= 0 || this.filteredTagIDs.some((tagID) => roi.roi.tags.includes(tagID)))
-    //     && (this.filteredAuthors.length <= 0 || this.filteredAuthors.some((author) => roi.roi.creator.user_id === author))
-    //   ) {
-    //     filteredROIs.push(roi);
-    //   }
-    // }
-    // this.ROIs = filteredROIs;
-  }
-
-  // private setROI(roi: RegionLayerInfo): void {
-  //   let regions = roi.roi.shared ? this._sharedROIs : this._userROIs;
-
-  //   // If it exists, we just update it, so we don't reset the whole UI for this
-  //   let regionIndex = regions.findIndex((region) => region.roi.id === roi.roi.id);
-  //   if (regionIndex >= 0) {
-  //     regions[regionIndex].roi = roi.roi;
-  //     regions[regionIndex].visible = roi.visible;
-  //     regions[regionIndex].opacity = roi.opacity;
-  //     return;
-  //   }
-
-  //   if (roi.roi.shared) {
-  //     this._sharedROIs.push(roi);
-  //   }
-  //   else {
-  //     this._userROIs.push(roi);
-  //   }
-  // }
-
-  // private deleteROIsNotInList(roiIDs: Set<string>): void {
-  //   let keepROIs: RegionLayerInfo[] = [];
-
-  //   for (let region of this._userROIs) {
-  //     if (roiIDs.has(region.roi.id)) {
-  //       // Save it in the keep list
-  //       keepROIs.push(region);
-  //     }
-  //   }
-
-  //   this._userROIs = Array.from(keepROIs);
-
-  //   // Now do shared
-  //   keepROIs = [];
-
-  //   for (let region of this._sharedROIs) {
-  //     if (roiIDs.has(region.roi.id)) {
-  //       // Save it in the keep list
-  //       keepROIs.push(region);
-  //     }
-  //   }
-
-  //   this._sharedROIs = Array.from(keepROIs);
-  // }
-
-  // private getRegionManager(): RegionManager {
-  //   return this._contextImageService.mdl.regionManager;
-  // }
 
   get selectionEmpty(): boolean {
     return this._selectionEmpty;
-  }
-
-  onNewROI() {
-    // this._roiService.makeROI(
-    //   this._selectionService.getCurrentSelection().beamSelection.locationIndexes,
-    //   this._selectionService.getCurrentSelection().pixelSelection.selectedPixels,
-    //   this._selectionService.getCurrentSelection().pixelSelection.imageName,
-    //   this.dialog
-    // ).subscribe(
-    //   (created: boolean) => {
-    //     if (created) {
-    //       this._selectionService.clearSelection();
-    //     }
-    //   },
-    //   (err) => {
-    //     alert(httpErrorToString(err, ""));
-    //   }
-    // );
   }
 
   onCancelCreateROI() {
@@ -270,19 +112,24 @@ export class ROITabComponent implements OnInit {
   }
 
   onSaveNewROI() {
-    let newROI = ROIItem.create();
-    newROI.name = this.newROIName;
-    newROI.description = this.newROIDescription;
-    newROI.tags = this.newROITags;
-    newROI.scanId = this._route.snapshot.queryParams["scan_id"];
+    let selection = this._selectionService.getCurrentSelection();
 
-    // TODO: Get the actual values from the selection
-    newROI.pixelIndexesEncoded = [1, 2, 3, 4];
-    newROI.scanEntryIndexesEncoded = [12, 213, 15415, 15, 15, 6];
-    newROI.imageName = "some_image";
-
-    this._roiService.createROI(newROI);
+    this._roiService.createROI(
+      ROIItem.create({
+        name: this.newROIName,
+        description: this.newROIDescription,
+        tags: this.newROITags,
+        scanId: this.visibleScanId,
+        pixelIndexesEncoded: Array.from(selection.pixelSelection.selectedPixels),
+        imageName: selection.pixelSelection.imageName,
+        scanEntryIndexesEncoded: Array.from(selection.beamSelection.getSelectedScanEntryIndexes(this.visibleScanId)),
+      })
+    );
     this.closeCreateROIMenu();
+  }
+
+  onNewTagSelectionChanged(tagIDs: string[]) {
+    this.newROITags = tagIDs;
   }
 
   private closeCreateROIMenu(): void {
@@ -293,37 +140,5 @@ export class ROITabComponent implements OnInit {
       this.newROIDescription = "";
       this.newROITags = [];
     }
-  }
-
-  get authors(): ObjectCreator[] {
-    return this._authors;
-  }
-
-  set authors(authors: ObjectCreator[]) {
-    this._authors = authors;
-  }
-
-  get authorsTooltip(): string {
-    let authorNames = this._authors.filter(author => this._filteredAuthors.includes(author.user_id)).map(author => author.name);
-    return this._filteredAuthors.length > 0 ? `Authors:\n${authorNames.join("\n")}` : "No Authors Selected";
-  }
-
-  get filteredAuthors(): string[] {
-    return this._filteredAuthors;
-  }
-
-  set filteredAuthors(authors: string[]) {
-    this._filteredAuthors = authors;
-    this.filterROIsForDisplay();
-  }
-
-  onTagFilterChanged(tagIDs: string[]): void {
-    this.filteredTagIDs = tagIDs;
-    this.filterROIsForDisplay();
-  }
-
-  onFilterText(filterText: string): void {
-    this.roiSearchString = filterText || "";
-    this.filterROIsForDisplay();
   }
 }

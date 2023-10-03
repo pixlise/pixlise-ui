@@ -2,13 +2,25 @@
   display: flex;
   flex-direction: column;
   border-left: 4px solid;
-  border-bottom: 1px solid rgb(var(--clr-gray-70));
 
   .summary {
     display: flex;
-    background-color: rgb(var(--clr-gray-80));
     padding: 8px 16px;
     align-items: center;
+
+    .creator {
+      img {
+        width: 28px;
+        border-radius: 4px;
+        margin-right: 8px;
+      }
+
+      .name-abbreviation {
+        width: 28px;
+        border-radius: 4px;
+        margin-right: 8px;
+      }
+    }
 
     .info {
       display: flex;
@@ -23,15 +35,23 @@
       p {
         margin: 0;
       }
+    }
 
-      p {
-        color: rgb(var(--clr-gray-60));
-      }
+    .current-shape {
+      margin-left: 8px;
     }
 
     .buttons {
       display: flex;
       margin-left: auto;
+
+      .show-details-btn {
+        margin-left: 0;
+      }
+
+      & > * {
+        margin-left: 8px;
+      }
 
       tag-picker {
         z-index: 10;
@@ -221,5 +241,57 @@
         margin-right: 16px;
       }
     }
+  }
+}
+
+.roi-color-picker {
+  h2 {
+    font-size: 12px;
+    margin-left: 8px;
+    line-height: 12px;
+    margin-right: 8px;
+
+    &.additional-colors {
+      margin-top: 16px;
+    }
+  }
+
+  .color-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+
+    mat-radio-button {
+      height: 30px;
+      margin-right: 8px;
+    }
+  }
+
+  .bottom-buttons {
+    margin-top: 16px;
+  }
+}
+
+.roi-shape-picker {
+  h2 {
+    font-size: 12px;
+    margin-left: 8px;
+    line-height: 12px;
+  }
+
+  .shape-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+
+    mat-radio-button {
+      margin-right: 8px;
+    }
+  }
+
+  .bottom-buttons {
+    margin-top: 8px;
   }
 }

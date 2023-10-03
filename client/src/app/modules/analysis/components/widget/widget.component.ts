@@ -1,5 +1,6 @@
 import { Component, ComponentRef, ElementRef, HostListener, ViewChild, ViewContainerRef, AfterViewChecked } from "@angular/core";
 import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetToolbarButtonConfiguration } from "./models/widgets.model";
+import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 
 @Component({
   selector: "widget",
@@ -29,7 +30,11 @@ export class WidgetComponent implements AfterViewChecked {
 
   widgetConfiguration?: WidgetConfiguration;
 
-  constructor() {}
+  constructor(private _analysisLayoutService: AnalysisLayoutService) {
+    this._analysisLayoutService.resizeCanvas$.subscribe(() => {
+      this.hideOverflowedButtons();
+    });
+  }
 
   @HostListener("window:resize", [])
   onResize() {

@@ -4,6 +4,8 @@ import { ROIService } from "../../services/roi.service";
 import { SelectionService, SnackbarService, WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ActionButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/action-button/action-button.component";
 import { Subscription } from "rxjs";
+import { ROIShape, SHAPES } from "../roi-shape/roi-shape.component";
+import { COLORS, ColorOption } from "../../models/roi-colors";
 
 @Component({
   selector: "roi-item",
@@ -11,9 +13,19 @@ import { Subscription } from "rxjs";
   styleUrls: ["./roi-item.component.scss"],
 })
 export class ROIItemComponent {
+  @Input() rightSelection: boolean = false;
   @Input() isSelectable = false;
+
   @Input() selected = false;
   @Input() colorChangeOnly = false;
+
+  @Input() colorOptions: ColorOption[] = COLORS;
+  @Input() shapeOptions: ROIShape[] = SHAPES;
+
+  @Input() lightVariant: boolean = false;
+  @Input() showDetailsButton: boolean = true;
+  @Input() showVisibilityButton: boolean = true;
+  @Input() showCreatorIcon: boolean = true;
 
   @Input() summary!: ROIItemSummary;
 
@@ -39,6 +51,10 @@ export class ROIItemComponent {
   openScanIdxs: Set<string> = new Set<string>();
   scanEntryIndicesByDataset: Record<string, number[]> = {};
   isEditable: boolean = false;
+
+  displayConfigured: boolean = false;
+  private _color: ColorOption = { name: "", color: "", colorBlindSafe: false };
+  private _shape: ROIShape | "" = "";
 
   constructor(
     private _snackBarService: SnackbarService,
@@ -71,6 +87,18 @@ export class ROIItemComponent {
     this.closeSettingsMenu();
   }
 
+  get creatorName(): string {
+    return this.summary.owner?.creatorUser?.name || "";
+  }
+
+  get creatorAbbreviation(): string {
+    return this.creatorName && this.creatorName.length > 0 ? this.creatorName[0] : "N/A";
+  }
+
+  get icon(): string {
+    return this.summary.owner?.creatorUser?.iconURL || "";
+  }
+
   get name(): string {
     return this._name || this.summary.name || "Unnamed";
   }
@@ -87,12 +115,38 @@ export class ROIItemComponent {
     this._description = value;
   }
 
-  get color(): string {
-    return "red";
+  get shape(): ROIShape | "" {
+    return this._shape;
+  }
+
+  set shape(value: ROIShape | "") {
+    this._shape = value;
+    if (!this.selected) {
+      this.onCheckboxClick(true);
+    }
+  }
+
+  get colorBlindSafeOptions(): ColorOption[] {
+    return this.colorOptions.filter(option => option.colorBlindSafe);
+  }
+
+  get additionalColorOptions(): ColorOption[] {
+    return this.colorOptions.filter(option => !option.colorBlindSafe);
+  }
+
+  get color(): ColorOption {
+    return this._color;
+  }
+
+  set color(value: ColorOption) {
+    this._color = value;
+    if (!this.selected) {
+      this.onCheckboxClick(true);
+    }
   }
 
   get isVisible(): boolean {
-    return true;
+    return false;
   }
 
   get createdDate(): number {
@@ -147,10 +201,6 @@ export class ROIItemComponent {
   }
 
   onShare() {
-    this.closeSettingsMenu();
-  }
-
-  onColours(evt: any) {
     this.closeSettingsMenu();
   }
 
@@ -224,5 +274,13 @@ export class ROIItemComponent {
     if (this.onROISelect) {
       this.onROISelect.emit();
     }
+  }
+
+  clearColor() {
+    this.color = { name: "", color: "", colorBlindSafe: false };
+  }
+
+  clearShape() {
+    this._shape = "";
   }
 }
