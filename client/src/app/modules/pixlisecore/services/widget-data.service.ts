@@ -189,7 +189,12 @@ export class WidgetDataService {
             );
           }),
           catchError(err => {
-            const errorMsg = httpErrorToString(err, "WidgetDataService.getDataSingle catchError");
+            const errorMsg = httpErrorToString(
+              err,
+              `WidgetDataService error scan: ${query.scanId}, expr: ${resp.expression?.name || ""} (${query.exprId}, ${
+                resp.expression?.sourceLanguage || ""
+              }), roi: ${query.roiId}, quant: ${query.quantId}`
+            );
 
             // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
             if (
@@ -202,6 +207,11 @@ export class WidgetDataService {
             return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg));
           })
         );
+      }),
+      catchError(err => {
+        const errorMsg = httpErrorToString(err, "Error getting expression: "+query.exprId);
+        console.error(errorMsg);
+        return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg));
       })
     );
   }
@@ -216,6 +226,10 @@ export class WidgetDataService {
     // TODO: calibration as a parameter?
     allowAnyResponse: boolean
   ): Observable<DataQueryResult> {
+    console.log(
+      `runExpression for scan: ${scanId}, expr: "${expression.name}" (${expression.id}, ${expression.sourceLanguage}), roi: "${roiId}", quant: "${quantId}"`
+    );
+
     return this.loadCodeForExpression(expression).pipe(
       concatMap((sources: LoadedSources) => {
         // We now have the ready-to-go source code, run the query
@@ -266,7 +280,7 @@ export class WidgetDataService {
                       )
                       .subscribe({
                         error: err => {
-                          console.error(err);
+                          console.error(httpErrorToString(err, "sendExpressionWriteExecStatRequest"));
                         },
                       }); // we don't really do anything different if this passes or fails
                   }
@@ -345,7 +359,11 @@ export class WidgetDataService {
 
   private processQueryResult(result: DataQueryResult, query: DataSourceParams): RegionDataResultItem {
     const pmcValues = result?.resultValues as PMCDataValues;
-    if (!Array.isArray(pmcValues?.values) || (pmcValues.values.length > 0 && !(pmcValues.values[0] instanceof PMCDataValue))) {
+    if (result.errorMsg || !Array.isArray(pmcValues?.values) || (pmcValues.values.length > 0 && !(pmcValues.values[0] instanceof PMCDataValue))) {
+      let msg = result.errorMsg;
+      if (!msg) {
+        msg = "Result is not a PMC array!";
+      }
       return new RegionDataResultItem(
         new DataQueryResult(
           result.resultValues,
@@ -357,7 +375,7 @@ export class WidgetDataService {
           result.recordedExpressionInputs
         ),
         WidgetDataErrorType.WERR_QUERY,
-        "Result is not a PMC array!",
+        msg,
         "", // warning
         result.expression,
         result.region,

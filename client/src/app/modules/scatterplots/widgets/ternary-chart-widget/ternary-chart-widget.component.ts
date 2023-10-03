@@ -14,7 +14,7 @@ import {
 import { TernaryChartModel } from "./model";
 import { TernaryChartToolHost } from "./interaction";
 import { PredefinedROIID, orderVisibleROIs } from "src/app/models/RegionOfInterest";
-import { DataSourceParams, SelectionService, WidgetDataService, DataUnit } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { DataSourceParams, SelectionService, WidgetDataService, DataUnit, RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 
 @Component({
@@ -104,8 +104,13 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       }
     }
 
-    this._widgetData.getData(query).subscribe(data => {
+    this._widgetData.getData(query).subscribe({
+      next: data => {
       this.mdl.setData(data);
+      },
+      error: err => {
+        this.mdl.setData(new RegionDataResults([], err));
+      },
     });
 
     this.drawer = new TernaryChartDrawer(this.mdl);

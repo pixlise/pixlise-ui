@@ -44,10 +44,12 @@ export class ExpressionDataSource
   // data for SiO2_%, here we'd store have Si_%->SiO2_%. This helps getQuantifiedDataForDetector()
   // determine what to do if a column isn't found outright in _elementColumns
   private _pureElementColumnLookup = new Map<string, string>();
+  private _quantRead = false;
 
   // Derived from diffraction data coming in
   private _allPeaks: DiffractionPeak[] = [];
   private _roughnessItems: RoughnessItem[] = [];
+  private _diffractionRead = false;
 
   // What we consider to be a "roughness" item for the purposes of diffraction:
   private _roughnessItemThreshold = 0.16;
@@ -65,6 +67,8 @@ export class ExpressionDataSource
 
   // And where to turn to get it:
   private _cachedDataService: APICachedDataService | null = null;
+
+  private _debug = true;
 
   // Here we get the data required to honor the interfaces we implement, based on the above
   prepare(
@@ -169,7 +173,10 @@ export class ExpressionDataSource
     }
     return this._cachedDataService.getQuant(QuantGetReq.create({ quantId: this._quantId, summaryOnly: false })).pipe(
       tap(quantData => {
-        this.cacheElementInfo(quantData);
+        if (!this._quantRead) {
+          this.cacheElementInfo(quantData);
+          this._quantRead = true;
+        }
       })
     );
   }
@@ -192,7 +199,10 @@ export class ExpressionDataSource
       .getDetectedDiffractionPeaks(DetectedDiffractionPeaksReq.create({ scanId: this._scanId, entries: ScanEntryRange.create({ indexes: this._encodedIndexes }) }))
       .pipe(
         tap(diffractionData => {
-          this.readDiffractionData(diffractionData, this._scanId);
+          if (!this._diffractionRead) {
+            this.readDiffractionData(diffractionData, this._scanId);
+            this._diffractionRead = true;
+          }
         })
       );
   }
@@ -395,6 +405,9 @@ export class ExpressionDataSource
 
   // QuantifiedDataQuerierSource
   async getQuantifiedDataForDetector(detectorId: string, dataLabel: string): Promise<PMCDataValues> {
+    if (this._debug) {
+      console.log(`getQuantifiedDataForDetector(${detectorId}, ${dataLabel})`);
+    }
     return await lastValueFrom(
       this.getQuantData().pipe(
         map((quantData: QuantGetResp) => {
@@ -496,6 +509,9 @@ export class ExpressionDataSource
   }
 
   async getElementList(): Promise<string[]> {
+    if (this._debug) {
+      console.log(`getElementList()`);
+    }
     return await lastValueFrom(
       this.getQuantData().pipe(
         map((quantData: QuantGetResp) => {
@@ -506,6 +522,9 @@ export class ExpressionDataSource
   }
 
   async getPMCList(): Promise<number[]> {
+    if (this._debug) {
+      console.log(`getPMCList()`);
+    }
     return await lastValueFrom(
       this.getQuantData().pipe(
         map((quantData: QuantGetResp) => {
@@ -531,6 +550,9 @@ export class ExpressionDataSource
   }
 
   async getDetectors(): Promise<string[]> {
+    if (this._debug) {
+      console.log(`getDetectors()`);
+    }
     return await lastValueFrom(
       this.getQuantData().pipe(
         map((quantData: QuantGetResp) => {
@@ -541,6 +563,9 @@ export class ExpressionDataSource
   }
 
   async columnExists(col: string): Promise<boolean> {
+    if (this._debug) {
+      console.log(`columnExists(${col})`);
+    }
     return await lastValueFrom(
       this.getQuantData().pipe(
         map((quantData: QuantGetResp) => {
@@ -556,6 +581,9 @@ export class ExpressionDataSource
 
   // PseudoIntensityDataQuerierSource
   async getPseudoIntensityData(name: string): Promise<PMCDataValues> {
+    if (this._debug) {
+      console.log(`getPseudoIntensityData(${name})`);
+    }
     return await lastValueFrom(
       this.getPseudoIntensity().pipe(
         map((pseudoData: PseudoIntensityResp) => {
@@ -585,6 +613,9 @@ export class ExpressionDataSource
   }
 
   async getPseudoIntensityElementsList(): Promise<string[]> {
+    if (this._debug) {
+      console.log(`getPseudoIntensityElementsList()`);
+    }
     return await lastValueFrom(
       this.getPseudoIntensity().pipe(
         map((pseudoIntensity: PseudoIntensityResp) => {
@@ -599,6 +630,9 @@ export class ExpressionDataSource
 
   // SpectrumDataQuerierSource
   async getSpectrumRangeMapData(channelStart: number, channelEnd: number, detectorExpr: string): Promise<PMCDataValues> {
+    if (this._debug) {
+      console.log(`getSpectrumRangeMapData(${channelStart}, ${channelEnd}, ${detectorExpr})`);
+    }
     return await lastValueFrom(
       combineLatest([this.getScanMetaLabelsAndTypes(), this.getSpectrum(), this.getScanEntryMetadata()]).pipe(
         map((dataItems: [ScanMetaLabelsAndTypesResp, SpectrumResp, ScanEntryMetadataResp]) => {
@@ -661,6 +695,9 @@ export class ExpressionDataSource
 
   // If sumOrMax==true, returns sum of differences between A and B otherwise max difference seen between A and B
   async getSpectrumDifferences(channelStart: number, channelEnd: number, sumOrMax: boolean): Promise<PMCDataValues> {
+    if (this._debug) {
+      console.log(`getSpectrumDifferences(${channelStart}, ${channelEnd}, ${sumOrMax})`);
+    }
     return await lastValueFrom(
       this.getSpectrum().pipe(
         map((spectrumData: SpectrumResp) => {
@@ -713,6 +750,9 @@ export class ExpressionDataSource
 
   // DiffractionPeakQuerierSource
   async getDiffractionPeakEffectData(channelStart: number, channelEnd: number): Promise<PMCDataValues> {
+    if (this._debug) {
+      console.log(`getDiffractionPeakEffectData(${channelStart}, ${channelEnd})`);
+    }
     return await lastValueFrom(
       combineLatest([this.getDetectedDiffraction(), this.getDiffractionPeakManualList()]).pipe(
         map((dataItems: [DetectedDiffractionPeaksResp, DiffractionPeakManualListResp]) => {
@@ -778,6 +818,9 @@ export class ExpressionDataSource
   }
 
   async getRoughnessData(): Promise<PMCDataValues> {
+    if (this._debug) {
+      console.log(`getHousekeepingData()`);
+    }
     return await lastValueFrom(
       combineLatest([this.getDetectedDiffraction(), this.getDiffractionPeakManualList()]).pipe(
         map((dataItems: [DetectedDiffractionPeaksResp, DiffractionPeakManualListResp]) => {
@@ -814,6 +857,9 @@ export class ExpressionDataSource
 
   // HousekeepingDataQuerierSource
   async getHousekeepingData(name: string): Promise<PMCDataValues> {
+    if (this._debug) {
+      console.log(`getHousekeepingData(${name})`);
+    }
     return await lastValueFrom(
       combineLatest([this.getScanMetaLabelsAndTypes(), this.getScanEntryMetadata()]).pipe(
         map((dataItems: [ScanMetaLabelsAndTypesResp, ScanEntryMetadataResp]) => {
@@ -861,6 +907,9 @@ export class ExpressionDataSource
   }
 
   async getPositionData(axis: string): Promise<PMCDataValues> {
+    if (this._debug) {
+      console.log(`getPositionData(${axis})`);
+    }
     return await lastValueFrom(
       this.getScanBeamLocations().pipe(
         map((beamLocationData: ScanBeamLocationsResp) => {
@@ -889,6 +938,9 @@ export class ExpressionDataSource
   }
 
   async hasHousekeepingData(name: string): Promise<boolean> {
+    if (this._debug) {
+      console.log(`hasHousekeepingData(${name})`);
+    }
     return await lastValueFrom(
       this.getScanMetaLabelsAndTypes().pipe(
         map((scanMetaLabelsAndTypes: ScanMetaLabelsAndTypesResp) => {

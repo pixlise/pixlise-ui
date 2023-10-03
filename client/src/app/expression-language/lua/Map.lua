@@ -41,6 +41,61 @@ Map = {
     opAverage = 11
 }
 
+local function getSourceLine(source, lineNumber)
+    local srcLine = ""
+
+    local l = 1
+    local ch = ""
+    local startPos = 1
+
+    for i = 1, #source do
+        ch = string.sub(source, i, i)
+        if ch == "\n" then
+            -- src = src..string.sub(source, i, i+8)..", ch="..i..", line="..l
+            if l == lineNumber-1 then
+                startPos = i+1
+            end
+            if l == lineNumber then
+                srcLine = string.sub(source, startPos, i-1)
+                break
+            end
+            l = l+1
+        end
+    end
+
+    return srcLine
+end
+
+local function makeStackTrace(startLevel)
+    local trace = "Stack trace:"
+
+    local level = startLevel+1
+    while true do
+        local info = debug.getinfo(level)
+        if not info then
+            break
+        end
+
+        local name = "(PIXLISE expression)"
+        if info.name ~= nil then
+            name = info.name
+        end
+
+        trace = trace..string.format("\n - [%d] %s function %s", info.currentline, info.what, name)
+
+        -- Find the source line            
+        if info.source ~= nil then
+            trace = trace..":\n        "..getSourceLine(info.source, info.currentline-1)
+            trace = trace.."\n      > "..getSourceLine(info.source, info.currentline)
+            trace = trace.."\n        "..getSourceLine(info.source, info.currentline+1)
+        end
+
+        level = level + 1
+    end
+
+    return trace
+end
+
 local function makeAssertReport(var, expType)
     local result = ""
     local caller = debug.getinfo(2, "n")
@@ -55,11 +110,7 @@ local function makeAssertReport(var, expType)
         result = result..": "..var
     end
 
-    -- Caller 1 level further up
-    caller = debug.getinfo(3)
-    if caller ~= nil and caller.source ~= nil then
-        result = result.." caller: "..caller.source
-    end
+    result = result.."\n"..makeStackTrace(2)
     return result
 end
 

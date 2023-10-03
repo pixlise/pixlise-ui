@@ -31,7 +31,6 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { Rect } from "../models/Geometry";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import * as Sentry from "@sentry/browser";
-import { index } from "mathjs";
 
 export class SentryHelper {
   // Can be called from anywhere we see a weird case or an error that we used to just log to
@@ -425,6 +424,7 @@ export function positionDialogNearParent(openerRect: any, ourWindowRect: any): o
 
 export function httpErrorToString(err: any, operationMsg: string): string {
   console.error(err);
+  console.log(operationMsg);
 
   // Interpret the error as best we can
   let msg = "";
