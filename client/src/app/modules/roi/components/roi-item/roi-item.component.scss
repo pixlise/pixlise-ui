@@ -26,6 +26,12 @@
       .name-abbreviation {
         width: 28px;
         border-radius: 4px;
+        height: 28px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgb(var(--clr-gray-60));
       }
     }
 
