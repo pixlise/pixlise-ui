@@ -48,7 +48,7 @@ POSSIBILITY OF SUCH DAMAGE.
   <section class="rois">
     <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport">
       <roi-item
-        *cdkVirtualFor="let item of filteredSummaries"
+        *cdkVirtualFor="let item of filteredSummaries; trackBy: trackBySummaryId"
         [showDetailsButton]="false"
         [selected]="!!selectedROIs[item.id]"
         (onROISelect)="onROISelect(item)"
@@ -57,7 +57,8 @@ POSSIBILITY OF SUCH DAMAGE.
         [lightVariant]="true"
         [rightSelection]="true"
         [showVisibilityButton]="false"
-        [summary]="item">
+        [summary]="item"
+        [displaySettings]="displaySettingsMap[item.id]">
       </roi-item>
     </cdk-virtual-scroll-viewport>
   </section>

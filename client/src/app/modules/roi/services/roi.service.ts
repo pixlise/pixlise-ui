@@ -14,7 +14,7 @@ import { SearchParams } from "src/app/generated-protos/search-params";
 import { BehaviorSubject, Observable, ReplaySubject, map, of, scan, shareReplay } from "rxjs";
 import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
-import { ROIShape, SHAPES } from "../components/roi-shape/roi-shape.component";
+import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../components/roi-shape/roi-shape.component";
 import { COLOURS, ColourOption } from "../models/roi-colors";
 import {
   ROIDisplaySettings,
@@ -45,7 +45,7 @@ export class ROIService {
   private _regionMap = new Map<string, Observable<RegionSettings>>();
   private _nextColourIdx: number = 0;
 
-  private _shapes: ROIShape[] = SHAPES;
+  private _shapes: ROIShape[] = ROI_SHAPES;
   private _colours: ColourOption[] = COLOURS;
 
   constructor(
@@ -108,7 +108,7 @@ export class ROIService {
             let colour = this.nextColour().rgba;
 
             // Work out the shape (there should be one in our map by now)
-            let shape = this._scanShapeMap.get(scanId) || "circle";
+            let shape = this._scanShapeMap.get(scanId) || DEFAULT_ROI_SHAPE;
 
             // Store it in our map so we can use it next time without having to fetch the ROI
             this.displaySettingsMap$.value[roiId] = { colour, shape };

@@ -15,15 +15,15 @@
 <ng-template #roiColorPicker>
   <div class="roi-color-picker">
     <h2>Colour Blind Safe</h2>
-    <mat-radio-group class="color-group" [(ngModel)]="colour">
-      <mat-radio-button *ngFor="let option of colourBlindSafeOptions" [value]="option" class="color-option" labelPosition="after">
-        <roi-shape [scale]="2" [color]="option.colour" [shape]="shape || 'circle'"></roi-shape>
+    <mat-radio-group class="color-group" [(ngModel)]="selectedColour">
+      <mat-radio-button *ngFor="let option of colourBlindSafeOptions" [value]="option.colour" class="color-option" labelPosition="after">
+        <roi-shape [scale]="2" [color]="option.colour" [shape]="shape"></roi-shape>
       </mat-radio-button>
     </mat-radio-group>
     <h2 class="additional-colors">Additional Colours</h2>
-    <mat-radio-group class="color-group" [(ngModel)]="colour">
-      <mat-radio-button *ngFor="let option of additionalColorOptions" [value]="option" class="color-option" labelPosition="after">
-        <roi-shape [scale]="2" [color]="option.colour" [shape]="shape || 'circle'"></roi-shape>
+    <mat-radio-group class="color-group" [(ngModel)]="selectedColour">
+      <mat-radio-button *ngFor="let option of additionalColorOptions" [value]="option.colour" class="color-option" labelPosition="after">
+        <roi-shape [scale]="2" [color]="option.colour" [shape]="shape"></roi-shape>
       </mat-radio-button>
     </mat-radio-group>
     <div class="bottom-buttons">

@@ -1,6 +1,6 @@
 import { ROIItem } from "src/app/generated-protos/roi";
 import { Colours, RGBA } from "src/app/utils/colours";
-import { ROIShape } from "../components/roi-shape/roi-shape.component";
+import { DEFAULT_ROI_SHAPE, ROIShape } from "../components/roi-shape/roi-shape.component";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
 export type ROIDisplaySettings = {
@@ -10,7 +10,7 @@ export type ROIDisplaySettings = {
 
 export const createDefaultROIDisplaySettings = (): ROIDisplaySettings => ({
   colour: Colours.WHITE,
-  shape: "circle",
+  shape: DEFAULT_ROI_SHAPE,
 });
 
 export class RegionSettings {

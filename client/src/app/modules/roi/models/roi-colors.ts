@@ -37,3 +37,19 @@ export const generateDefaultColour = (): ColourOption => ({
   rgba: Colours.WHITE, // This is used for widgets
   colourBlindSafe: false,
 });
+
+export const deepCopyColour = (colour: ColourOption): ColourOption => ({
+  name: colour.name,
+  colour: colour.colour,
+  rgba: new RGBA(colour.rgba.r, colour.rgba.g, colour.rgba.b, colour.rgba.a),
+  colourBlindSafe: colour.colourBlindSafe,
+});
+
+export const findColourOption = (colour: RGBA | string): ColourOption => {
+  let matchedColour = COLOUR_MAP.get(typeof colour === "string" ? colour : colour.asString());
+  if (matchedColour) {
+    return deepCopyColour(matchedColour);
+  }
+
+  return generateDefaultColour();
+};

@@ -33,6 +33,8 @@ import { ROIService, ROISummaries } from "../../services/roi.service";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { ROISearchFilter } from "../../models/roi-search";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { Subscription } from "rxjs";
+import { ROIDisplaySettings } from "../../models/roi-region";
 
 export type ROIPickerResponse = {
   selectedROISummaries: ROIItemSummary[];
@@ -49,12 +51,15 @@ export type ROIPickerData = {
   styleUrls: ["./roi-picker.component.scss"],
 })
 export class ROIPickerComponent implements OnInit {
+  private _subs = new Subscription();
+
   showSearchControls: boolean = true;
 
   selectedROIs: ROISummaries = {};
 
   filteredSummaries: ROIItemSummary[] = [];
   summaries: ROIItemSummary[] = [];
+  displaySettingsMap: Record<string, ROIDisplaySettings> = {};
 
   waitingForROIs: string[] = [];
 
@@ -63,24 +68,42 @@ export class ROIPickerComponent implements OnInit {
     private _snackBarService: SnackbarService,
     @Inject(MAT_DIALOG_DATA) public data: ROIPickerData,
     public dialogRef: MatDialogRef<ROIPickerComponent, ROIPickerResponse>
-  ) {
-    this._roiService.roiSummaries$.subscribe(summaries => {
-      this.summaries = Object.values(summaries);
-    });
+  ) {}
 
-    this._roiService.roiItems$.subscribe(roiItems => {
-      let notFoundROIs: string[] = [];
-      this.waitingForROIs.forEach((roiId, i) => {
-        if (!roiItems[roiId]) {
-          notFoundROIs.push(roiId);
-        }
-      });
+  ngOnInit(): void {
+    this._subs.add(
+      this._roiService.roiSummaries$.subscribe(summaries => {
+        this.summaries = Object.values(summaries);
+      })
+    );
 
-      this.waitingForROIs = notFoundROIs;
-    });
+    this._subs.add(
+      this._roiService.roiItems$.subscribe(roiItems => {
+        let notFoundROIs: string[] = [];
+        this.waitingForROIs.forEach((roiId, i) => {
+          if (!roiItems[roiId]) {
+            notFoundROIs.push(roiId);
+          }
+        });
+
+        this.waitingForROIs = notFoundROIs;
+      })
+    );
+
+    this._subs.add(
+      this._roiService.displaySettingsMap$.subscribe(displaySettingsMap => {
+        this.displaySettingsMap = displaySettingsMap;
+      })
+    );
   }
 
-  ngOnInit(): void {}
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
+  }
+
+  trackBySummaryId(index: number, summary: ROIItemSummary): string {
+    return summary.id;
+  }
 
   onROISelect(roi: ROIItemSummary): void {
     if (this.selectedROIs[roi.id]) {
