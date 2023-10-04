@@ -93,8 +93,7 @@ export class LuaDataQuerier {
 
     const factory = new LuaFactory(
       wasmURI,
-      {}
-      /*,
+      {},
       str => {
         this._runtimeStdOut += str + "\n";
         console.log(str);
@@ -102,7 +101,7 @@ export class LuaDataQuerier {
       str => {
         this._runtimeStdErr += str + "\n";
         console.error(str);
-      }*/
+      }
     );
     const luaOpts = {
       openStandardLibs: true,
@@ -283,10 +282,6 @@ export class LuaDataQuerier {
       this._lua.global.set(prefix + funcName, func);
     }
 
-    // this._lua.global.set("position", async (ms: number) => {
-    //   return new Promise(resolve => setTimeout(resolve, ms));
-    // });
-
     // Special simple ones, we don't have debugging for these
     this._lua.global.set("atomicMass", (symbol: string) => {
       return periodicTableDB.getMolecularMass(symbol);
@@ -355,7 +350,8 @@ export class LuaDataQuerier {
     }
 
     // Set the timeout value
-    this._lua.global.setTimeout(Date.now() + timeoutMs);
+    const endTimeMs = timeoutMs > 0 ? Date.now() + timeoutMs : 0;
+    this._lua.global.setTimeout(endTimeMs);
 
     const p = this._lua.doString(sourceCode);
 
@@ -513,32 +509,39 @@ export class LuaDataQuerier {
 
     if (err?.message) {
       // Now find the line it's on and an error message
-      // It appears it can optionally come as:
-      // error message
-      // stack traceback:
-      // [<some source code>]:<number>: <msg>
-      //
-      // OR just:
-      // [<some source code>]:<number>: <msg>
-      //
-      // So here we determine which this is and read as needed
-      const lineNumToken = "]:";
-      const lineNumEndToken = ": ";
-      let startPos = err.message.indexOf(lineNumToken);
-      if (startPos > -1) {
-        startPos += lineNumToken.length;
-        const endPos = err.message.indexOf(lineNumEndToken, startPos + 1);
-        if (endPos > -1) {
-          const errLineStr = err.message.substring(startPos, endPos);
-          errLine = Number.parseInt(errLineStr);
-          errMsg = err.message.substring(endPos + lineNumEndToken.length);
-        }
-      }
 
-      // If there was a "stack traceback:", error message is at the start of the string
-      const stackTracebackPos = err.message.indexOf("stack traceback:");
-      if (stackTracebackPos > -1) {
-        errMsg = err.message.substring(0, stackTracebackPos - 1);
+      // Sometimes its an abort message, which happens when the code times out. We don't have
+      // a better way of reporting from Lua so try to make a nicer error message here
+      if (err.message.startsWith("Aborted()")) {
+        return new Error(`Lua call took longer than limit of ${environment.luaTimeoutMs}ms. Error: ${err.message}`);
+      } else {
+        // It appears it can optionally come as:
+        // error message
+        // stack traceback:
+        // [<some source code>]:<number>: <msg>
+        //
+        // OR just:
+        // [<some source code>]:<number>: <msg>
+        //
+        // So here we determine which this is and read as needed
+        const lineNumToken = "]:";
+        const lineNumEndToken = ": ";
+        let startPos = err.message.indexOf(lineNumToken);
+        if (startPos > -1) {
+          startPos += lineNumToken.length;
+          const endPos = err.message.indexOf(lineNumEndToken, startPos + 1);
+          if (endPos > -1) {
+            const errLineStr = err.message.substring(startPos, endPos);
+            errLine = Number.parseInt(errLineStr);
+            errMsg = err.message.substring(endPos + lineNumEndToken.length);
+          }
+        }
+
+        // If there was a "stack traceback:", error message is at the start of the string
+        const stackTracebackPos = err.message.indexOf("stack traceback:");
+        if (stackTracebackPos > -1) {
+          errMsg = err.message.substring(0, stackTracebackPos - 1);
+        }
       }
     }
 

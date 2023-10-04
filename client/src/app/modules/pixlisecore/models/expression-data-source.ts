@@ -70,6 +70,7 @@ export class ExpressionDataSource
 
   private _debug = true;
   private _prepTime = performance.now();
+  private _lastTime = performance.now();
 
   // Here we get the data required to honor the interfaces we implement, based on the above
   prepare(
@@ -969,8 +970,11 @@ export class ExpressionDataSource
 
   private logFunc(call: string): void {
     if (this._debug) {
-      const tm = performance.now()-this._prepTime;
-      console.log(`${call}, elapsed: ${tm.toLocaleString()}ms`);
+      const now = performance.now();
+      const tm = now - this._prepTime;
+      const tmInterval = now - this._lastTime;
+      console.log(`${call}, elapsed total: ${tm.toLocaleString()}ms, elapsed since last: ${tmInterval.toLocaleString()}ms`);
+      this._lastTime = now;
     }
   }
 }

@@ -102,7 +102,12 @@ local function makeAssertReport(var, expType)
     if caller ~= nil and caller.name ~= nil then
         result = result..caller.name.." "
     end
-    result = result.."expected "..expType..", got "..type(var)
+
+    if expType == nil then
+        result = result.."expected nil, got "..type(var)
+    else
+       result = result.."expected "..expType..", got "..type(var)
+    end
 
     if type(var) == "table" then
         result = result..": "..#table
@@ -114,6 +119,13 @@ local function makeAssertReport(var, expType)
     return result
 end
 
+local function assertType(cond, varChecked, restrictionMsg)
+    if cond then
+        return
+    end
+    assert(false, makeAssertReport(varChecked, restrictionMsg))
+end
+
 local function handleBadValue(s)
     -- Check if it's NaN or infinite
     --if s ~= s then -- or s == infinity or s == -infinity then
@@ -123,6 +135,9 @@ local function handleBadValue(s)
 end
 
 local function unorderedOp(op, v1, v2)
+    assertType(v1 ~= nil, v1, "not nil")
+    assertType(v2 ~= nil, v2, "not nil")
+
     -- NOTE: we can only support operations where the order of params doesn't matter!
     -- NOTE2: We check for nils!
     -- if v1 == nil or v2 == nil then
@@ -234,7 +249,7 @@ end
 -- value in the map provided. Returns a new map of the
 -- same dimension an input map
 function Map.abs(m)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
+    assertType(type(m) == "table", m, "table")
     local values = {}
     for k, v in ipairs(m[2]) do
         values[k] = math.abs(v)
@@ -295,12 +310,12 @@ end
 local function opWithScalar(l, r, op)
     local s, m
     if type(l) == "number" then
-        assert(type(r) == "table", makeAssertReport(r, "table"))
+        assertType(type(r) == "table", r, "table")
         s = l
         m = r
         return opWithScalarRaw(m, s, true, op)
     elseif type(r) == "number" then
-        assert(type(l) == "table", makeAssertReport(l, "table"))
+        assertType(type(l) == "table", l, "table")
         m = l
         s = r
         return opWithScalarRaw(m, s, false, op)
@@ -338,8 +353,8 @@ end
 -- m: The map to check
 -- cmp: The value to compare to
 function Map.over(m, cmp)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    assert(type(cmp) == "number", makeAssertReport(cmp, "number"))
+    assertType(type(m) == "table", m, "table")
+    assertType(type(cmp) == "number", cmp, "number")
     local values = {}
     for k, v in ipairs(m[2]) do
         if v > cmp then
@@ -356,8 +371,8 @@ end
 -- m: The map to check
 -- cmp: The value to compare to
 function Map.over_undef(m, cmp)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    assert(type(cmp) == "number", makeAssertReport(cmp, "number"))
+    assertType(type(m) == "table", m, "table")
+    assertType(type(cmp) == "number", cmp, "number")
     local values = {}
     for k, v in ipairs(m[2]) do
         if v > cmp then
@@ -377,8 +392,8 @@ end
 -- m: The map to check
 -- cmp: The value to compare to
 function Map.under(m, cmp)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    assert(type(cmp) == "number", makeAssertReport(cmp, "number"))
+    assertType(type(m) == "table", m, "table")
+    assertType(type(cmp) == "number", cmp, "number")
     local values = {}
     for k, v in ipairs(m[2]) do
         if v < cmp then
@@ -395,8 +410,8 @@ end
 -- m: The map to check
 -- cmp: The value to compare to
 function Map.under_undef(m, cmp)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    assert(type(cmp) == "number", makeAssertReport(cmp, "number"))
+    assertType(type(m) == "table", m, "table")
+    assertType(type(cmp) == "number", cmp, "number")
     local values = {}
     for k, v in ipairs(m[2]) do
         if v < cmp then
@@ -412,7 +427,7 @@ function Map.under_undef(m, cmp)
 end
 
 local function mapFunc(m, f)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
+    assertType(type(m) == "table", m, "table")
     local values = {}
     for k, v in ipairs(m[2]) do
         values[k] = handleBadValue(f(v))
@@ -478,8 +493,8 @@ end
 -- m: Map to raise to power
 -- exp: Scalar exponent
 function Map.pow(m, exp)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    assert(type(exp) == "number", makeAssertReport(exp, "number"))
+    assertType(type(m) == "table", m, "table")
+    assertType(type(exp) == "number", exp, "number")
     local values = {}
     for k, v in ipairs(m[2]) do
         values[k] = handleBadValue(v ^ exp)
@@ -518,7 +533,7 @@ end
 -- between 0 and 1
 -- m: Map to normalise
 function Map.normalise(m)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
+    assertType(type(m) == "table", m, "table")
     local r = {}
 
     -- Find the min & max
@@ -552,9 +567,9 @@ end
 -- compare: Scalar base number
 -- range: Scalar value to define the range, being from compare-threshold to compare+threshold
 function Map.threshold(m, compare, range)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    assert(type(compare) == "number", makeAssertReport(compare, "number"))
-    assert(type(range) == "number", makeAssertReport(range, "number"))
+    assertType(type(m) == "table", m, "table")
+    assertType(type(compare) == "number", compare, "number")
+    assertType(type(range) == "number", range, "number")
     local r = {}
     for k, v in ipairs(m[2]) do
         local save = 0
@@ -582,8 +597,8 @@ end
 -- m: Map to read
 -- pmc: Scalar PMC number to find corresponding value of
 function Map.getPMCValue(m, pmc)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    assert(type(pmc) == "number", makeAssertReport(pmc, "number"))
+    assertType(type(m) == "table", m, "table")
+    assertType(type(pmc) == "number", pmc, "number")
 
     for idx, mapPMC in ipairs(m[1]) do
         if mapPMC == pmc then
@@ -600,9 +615,9 @@ end
 -- pmc: Scalar PMC number to set value of
 -- v: Scalar value to set in map for given PMC
 function Map.setPMCValue(m, pmc, v)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    assert(type(pmc) == "number", makeAssertReport(pmc, "number"))
-    assert(type(v) == "number", makeAssertReport(v, "number"))
+    assertType(type(m) == "table", m, "table")
+    assertType(type(pmc) == "number", pmc, "number")
+    assertType(type(v) == "number", v, "number")
 
     for idx, mapPMC in ipairs(m[1]) do
         if mapPMC == pmc then
@@ -622,8 +637,8 @@ end
 -- m: Map to read
 -- index: Scalar index of PMC to return
 function Map.getNthPMC(m, index)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    assert(type(index) == "number", makeAssertReport(index, "number"))
+    assertType(type(m) == "table", m, "table")
+    assertType(type(index) == "number", index, "number")
 
     return m[1][index]
 end
@@ -632,8 +647,8 @@ end
 -- m: Map to read
 -- index: Scalar PMC number to find corresponding value of
 function Map.getNthValue(m, index)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    assert(type(index) == "number", makeAssertReport(index, "number"))
+    assertType(type(m) == "table", m, "table")
+    assertType(type(index) == "number", index, "number")
 
     return m[2][index]
 end
@@ -641,8 +656,8 @@ end
 -- Retrieves all the PMCs in the map (the first sub-table of the map)
 -- m: Map to read
 function Map.getPMCs(m)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    assert(type(m[1]) == "table", makeAssertReport(m[1], "table"))
+    assertType(type(m) == "table", m, "table")
+    assertType(type(m[1]) == "table", m[1], "table")
 
     return m[1]
 end
@@ -650,8 +665,8 @@ end
 -- Retrieves all the values in the map (the second sub-table of the map)
 -- m: Map to read
 function Map.getValues(m)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    assert(type(m[2]) == "table", makeAssertReport(m[2], "table"))
+    assertType(type(m) == "table", m, "table")
+    assertType(type(m[2]) == "table", m[2], "table")
 
     return m[2]
 end
@@ -663,8 +678,8 @@ end
 -- m: Map to replace values in
 -- with: The number to replace bad values with
 function Map.replaceBadValues(m, with)
-    assert(type(m) == "table", makeAssertReport(m, "table"))
-    assert(type(with) == "number", makeAssertReport(with, "number"))
+    assertType(type(m) == "table", m, "table")
+    assertType(type(with) == "number", with, "number")
 
     for c, v in ipairs(m[2]) do
         -- NOTE: Lua has no NaN constant, but its equivalent value is math.huge, which
