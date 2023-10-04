@@ -37,6 +37,7 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
 
 @Component({
   selector: "app-mist-roi",
@@ -50,14 +51,14 @@ export class MistROIComponent implements OnInit {
 
   mistROIs: ROIItemSummary[] = [];
 
+  displaySettingsMap: Record<string, ROIDisplaySettings> = {};
+
   allPointsColour = Colours.GRAY_10.asString();
 
   public expandedIndices: number[] = [];
 
   private _selectionEmpty: boolean = true;
   roiSearchString: string = "";
-
-  private _subDataSetIDs: string[] = [];
 
   isAllFullyIdentifiedMistROIsChecked: boolean = false;
   fullyIdentifiedMistROIs: ROIItemSummary[] = [];
@@ -74,22 +75,30 @@ export class MistROIComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.defaultScanId) {
-      this._subs.add(this._roiService.listMistROIs(this.defaultScanId));
+      this._roiService.listMistROIs(this.defaultScanId);
     }
 
-    this._roiService.mistROIsByScanId$.subscribe(mistROIByScanId => {
-      if (this.defaultScanId && mistROIByScanId[this.defaultScanId]) {
-        this.mistROIs = Object.values(mistROIByScanId[this.defaultScanId]).sort((roiA, roiB) => roiA.name.localeCompare(roiB.name));
+    this._subs.add(
+      this._roiService.mistROIsByScanId$.subscribe(mistROIByScanId => {
+        if (this.defaultScanId && mistROIByScanId[this.defaultScanId]) {
+          this.mistROIs = Object.values(mistROIByScanId[this.defaultScanId]).sort((roiA, roiB) => roiA.name.localeCompare(roiB.name));
 
-        this.fullyIdentifiedMistROIs = this.mistROIs
-          .filter(roi => roi.mistROIItem?.idDepth !== undefined && roi.mistROIItem.idDepth >= 5)
-          .sort((roiA, roiB) => (roiB.mistROIItem?.idDepth || 0) - (roiA.mistROIItem?.idDepth || 0));
+          this.fullyIdentifiedMistROIs = this.mistROIs
+            .filter(roi => roi.mistROIItem?.idDepth !== undefined && roi.mistROIItem.idDepth >= 5)
+            .sort((roiA, roiB) => (roiB.mistROIItem?.idDepth || 0) - (roiA.mistROIItem?.idDepth || 0));
 
-        this.groupIdentifiedMistROIs = this.mistROIs
-          .filter(roi => roi.mistROIItem?.idDepth !== undefined && roi.mistROIItem?.idDepth < 5)
-          .sort((roiA, roiB) => (roiB.mistROIItem?.idDepth || 0) - (roiA.mistROIItem?.idDepth || 0));
-      }
-    });
+          this.groupIdentifiedMistROIs = this.mistROIs
+            .filter(roi => roi.mistROIItem?.idDepth !== undefined && roi.mistROIItem?.idDepth < 5)
+            .sort((roiA, roiB) => (roiB.mistROIItem?.idDepth || 0) - (roiA.mistROIItem?.idDepth || 0));
+        }
+      })
+    );
+
+    this._subs.add(
+      this._roiService.displaySettingsMap$.subscribe(displaySettingsMap => {
+        this.displaySettingsMap = displaySettingsMap;
+      })
+    );
   }
 
   ngOnDestroy() {

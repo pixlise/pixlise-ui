@@ -80,6 +80,7 @@ POSSIBILITY OF SUCH DAMAGE. -->
         <roi-item
           *ngFor="let region of fullyIdentifiedMistROIs"
           [summary]="region"
+          [displaySettings]="displaySettingsMap[region.id]"
           [isSelectable]="true"
           [colorChangeOnly]="true"
           [showCreatorIcon]="false"
@@ -113,6 +114,7 @@ POSSIBILITY OF SUCH DAMAGE. -->
         <roi-item
           *ngFor="let region of groupIdentifiedMistROIs"
           [summary]="region"
+          [displaySettings]="displaySettingsMap[region.id]"
           [isSelectable]="true"
           [colorChangeOnly]="true"
           [showCreatorIcon]="false"

@@ -9,16 +9,23 @@
     align-items: center;
 
     .creator {
+      margin-right: 8px;
+      border-radius: 6px;
+      display: flex;
+
+      &.filterable:hover {
+        outline: 2px solid yellow;
+        cursor: pointer;
+      }
+
       img {
         width: 28px;
         border-radius: 4px;
-        margin-right: 8px;
       }
 
       .name-abbreviation {
         width: 28px;
         border-radius: 4px;
-        margin-right: 8px;
       }
     }
 
@@ -146,13 +153,12 @@
     display: flex;
     align-items: center;
 
-    icon-button,
-    action-button {
+    > * {
       margin-right: 8px;
+    }
 
-      &:last-child {
-        margin-right: 0;
-      }
+    > :last-child {
+      margin-right: 0;
     }
   }
 }

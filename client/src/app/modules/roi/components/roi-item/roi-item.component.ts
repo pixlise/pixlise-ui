@@ -32,6 +32,9 @@ export class ROIItemComponent {
 
   @Output() onROISelect = new EventEmitter();
 
+  @Input() selectAuthorToFilter: boolean = false;
+  @Output() onFilterAuthor = new EventEmitter();
+
   @ViewChild("settingsButton") settingsButton!: ElementRef;
   @ViewChild("editROIButton") editROIButton!: ElementRef;
 
@@ -255,6 +258,12 @@ export class ROIItemComponent {
 
   set selectedTagIDs(value: string[]) {
     this.summary.tags = value;
+  }
+
+  filterToAuthor() {
+    if (this.selectAuthorToFilter && this.summary?.owner?.creatorUser?.id) {
+      this.onFilterAuthor.emit(this.summary.owner.creatorUser.id);
+    }
   }
 
   onCancelEdit() {

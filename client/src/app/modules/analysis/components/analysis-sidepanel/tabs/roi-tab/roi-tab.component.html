@@ -67,6 +67,19 @@ POSSIBILITY OF SUCH DAMAGE.
       >New ROI from Selection</push-button
     >
   </div>
-  <roi-search-controls class="{{ showSearch ? 'visible' : '' }}" [summaries]="summaries" (onFilterChanged)="onFilterChanged($event)"></roi-search-controls>
-  <roi-item *ngFor="let item of filteredSummaries" [summary]="item"> </roi-item>
+  <roi-search-controls
+    class="{{ showSearch ? 'visible' : '' }}"
+    [summaries]="summaries"
+    (onFilterChanged)="onFilterChanged($event)"
+    [manualFilters]="manualFilters"></roi-search-controls>
+  <section class="rois {{ showSearch ? 'search-controls-visible' : '' }}">
+    <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport">
+      <roi-item
+        *cdkVirtualFor="let item of filteredSummaries; trackBy: trackBySummaryId"
+        [summary]="item"
+        [selectAuthorToFilter]="showSearch"
+        (onFilterAuthor)="onFilterAuthor($event)"
+        [displaySettings]="displaySettingsMap[item.id]"></roi-item>
+    </cdk-virtual-scroll-viewport>
+  </section>
 </section>

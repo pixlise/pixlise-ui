@@ -79,6 +79,17 @@ export class ROISearchControlsComponent {
     this.filterROIsForDisplay();
   }
 
+  @Input() set manualFilters(filters: Partial<ROISearchFilter> | null) {
+    if (filters !== null) {
+      let { searchString, scanId, tagIDs, authors } = filters;
+      this.roiSearchString = searchString ?? this.roiSearchString;
+      this.visibleScanId = scanId ?? this.visibleScanId;
+      this.filteredTagIDs = tagIDs ?? this.filteredTagIDs;
+      this.filteredAuthors = authors ?? this.filteredAuthors;
+      this.filterROIsForDisplay();
+    }
+  }
+
   get visibleScanId(): string {
     return this._visibleScanId;
   }

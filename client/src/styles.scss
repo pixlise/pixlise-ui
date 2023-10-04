@@ -375,6 +375,10 @@ h3 {
   // min-width: 215px;
 }
 
+.cdk-virtual-scroll-orientation-vertical .cdk-virtual-scroll-content-wrapper {
+  max-width: 100%;
+}
+
 .cdk-overlay-pane:has(.mat-mdc-select-panel) {
   min-width: 215px;
   width: auto !important;

@@ -57,6 +57,7 @@ export class ROIPickerComponent implements OnInit {
 
   selectedROIs: ROISummaries = {};
 
+  manualFilters: Partial<ROISearchFilter> | null = null;
   filteredSummaries: ROIItemSummary[] = [];
   summaries: ROIItemSummary[] = [];
   displaySettingsMap: Record<string, ROIDisplaySettings> = {};
@@ -115,6 +116,10 @@ export class ROIPickerComponent implements OnInit {
         this.waitingForROIs.push(roi.id);
       }
     }
+  }
+
+  onFilterAuthor(author: string): void {
+    this.manualFilters = { authors: [author] };
   }
 
   onFilterChanged({ filteredSummaries }: ROISearchFilter): void {

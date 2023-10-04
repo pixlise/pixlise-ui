@@ -46,12 +46,24 @@
 roi-search-controls {
   display: flex;
   overflow: hidden;
-  // padding: 0 6px;
 
   transition: all 0.1s ease;
   height: 0;
 
   &.visible {
     height: 82px;
+  }
+}
+
+.rois {
+  height: calc(100vh - 40px - 40px - 52px);
+
+  &.search-controls-visible {
+    height: calc(100vh - 40px - 40px - 134px);
+  }
+
+  .rois-viewport {
+    height: 100%;
+    width: 100%;
   }
 }

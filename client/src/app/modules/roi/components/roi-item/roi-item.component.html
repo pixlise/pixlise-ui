@@ -43,6 +43,9 @@
         (onClick)="onDelete()">
       </action-button>
       <icon-button title="Share this ROI" icon="assets/button-icons/share.svg" (click)="onShare()"> </icon-button>
+      <widget-settings-menu [settingsDialog]="roiShapePicker" #roiShapePickerButton>
+        <icon-button title="Configure Shapes" icon="assets/button-icons/shapes.svg"> </icon-button>
+      </widget-settings-menu>
       <widget-settings-menu [settingsDialog]="roiColorPicker" #roiColorPickerButton>
         <icon-button title="Configure Colours" icon="assets/button-icons/colours.svg"></icon-button>
       </widget-settings-menu>
@@ -103,7 +106,12 @@
       [active]="selected"
       (onToggle)="onCheckboxClick($event)">
     </two-state-icon-button>
-    <div *ngIf="showCreatorIcon" class="creator" #tooltip="matTooltip" matTooltip="Creator: {{ creatorName || 'N/A' }}">
+    <div
+      *ngIf="showCreatorIcon"
+      class="creator {{ selectAuthorToFilter ? 'filterable' : '' }}"
+      #tooltip="matTooltip"
+      (click)="filterToAuthor()"
+      matTooltip="Creator: {{ creatorName || 'N/A' }} {{ selectAuthorToFilter && creatorName ? '\n\n(Click to filter)' : '' }}">
       <img *ngIf="icon" [src]="icon" />
       <span *ngIf="!icon" class="name-abbreviation">{{ creatorAbbreviation }}</span>
     </div>

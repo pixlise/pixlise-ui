@@ -35,6 +35,7 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
 import { ROISearchFilter } from "src/app/modules/roi/models/roi-search";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { Colours } from "src/app/utils/colours";
@@ -60,6 +61,10 @@ export class ROITabComponent implements OnInit {
   summaries: ROIItemSummary[] = [];
   filteredSummaries: ROIItemSummary[] = [];
 
+  manualFilters: Partial<ROISearchFilter> | null = null;
+
+  displaySettingsMap: Record<string, ROIDisplaySettings> = {};
+
   allScans: ScanItem[] = [];
   _visibleScanId: string = "";
 
@@ -70,24 +75,38 @@ export class ROITabComponent implements OnInit {
     public dialog: MatDialog
   ) {}
 
-  get visibleScanId(): string {
-    return this._visibleScanId;
-  }
-
-  set visibleScanId(scanId: string) {
-    this._visibleScanId = scanId;
-  }
-
   ngOnInit(): void {
     this._subs.add(
       this._roiService.roiSummaries$.subscribe(summaries => {
-        this.summaries = Object.values(summaries).filter(summary => !summary.isMIST);
+        this.summaries = Object.values(summaries);
+      })
+    );
+
+    this._subs.add(
+      this._roiService.displaySettingsMap$.subscribe(displaySettingsMap => {
+        this.displaySettingsMap = displaySettingsMap;
       })
     );
   }
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  trackBySummaryId(index: number, summary: ROIItemSummary) {
+    return summary.id;
+  }
+
+  onFilterAuthor(author: string) {
+    this.manualFilters = { authors: [author] };
+  }
+
+  get visibleScanId(): string {
+    return this._visibleScanId;
+  }
+
+  set visibleScanId(scanId: string) {
+    this._visibleScanId = scanId;
   }
 
   get canCreateROIs(): boolean {

@@ -43,7 +43,11 @@ POSSIBILITY OF SUCH DAMAGE.
         matTooltip="{{ showSearchControls ? 'Hide' : 'Show' }} search options">
       </two-state-icon-push-button>
     </div>
-    <roi-search-controls class="{{ showSearchControls ? 'visible' : '' }}" [summaries]="summaries" (onFilterChanged)="onFilterChanged($event)"></roi-search-controls>
+    <roi-search-controls
+      class="{{ showSearchControls ? 'visible' : '' }}"
+      [summaries]="summaries"
+      (onFilterChanged)="onFilterChanged($event)"
+      [manualFilters]="manualFilters"></roi-search-controls>
   </header>
   <section class="rois">
     <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport">
@@ -52,6 +56,8 @@ POSSIBILITY OF SUCH DAMAGE.
         [showDetailsButton]="false"
         [selected]="!!selectedROIs[item.id]"
         (onROISelect)="onROISelect(item)"
+        [selectAuthorToFilter]="showSearchControls"
+        (onFilterAuthor)="onFilterAuthor($event)"
         [isSelectable]="true"
         [colorChangeOnly]="true"
         [lightVariant]="true"
