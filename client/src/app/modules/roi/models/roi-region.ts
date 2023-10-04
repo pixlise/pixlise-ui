@@ -3,11 +3,20 @@ import { Colours, RGBA } from "src/app/utils/colours";
 import { ROIShape } from "../components/roi-shape/roi-shape.component";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
+export type ROIDisplaySettings = {
+  colour: RGBA;
+  shape: ROIShape;
+};
+
+export const createDefaultROIDisplaySettings = (): ROIDisplaySettings => ({
+  colour: Colours.WHITE,
+  shape: "circle",
+});
+
 export class RegionSettings {
   constructor(
     public region: ROIItem,
-    public colour: RGBA = Colours.WHITE,
-    public shape: ROIShape = "circle"
+    public displaySettings: ROIDisplaySettings = createDefaultROIDisplaySettings()
   ) {}
 }
 
@@ -26,7 +35,7 @@ export const createDefaultAllPointsItem = (scanId: string): ROIItem => {
 };
 
 export const createDefaultAllPointsRegionSettings = (scanId: string, scanShape: ROIShape): RegionSettings => {
-  return new RegionSettings(createDefaultAllPointsItem(scanId), Colours.GRAY_10, scanShape);
+  return new RegionSettings(createDefaultAllPointsItem(scanId), { colour: Colours.GRAY_10, shape: scanShape });
 };
 
 export const createDefaultSelectedPointsItem = (scanId: string): ROIItem => {
@@ -44,7 +53,7 @@ export const createDefaultSelectedPointsItem = (scanId: string): ROIItem => {
 };
 
 export const createDefaultSelectedPointsRegionSettings = (scanId: string, scanShape: ROIShape): RegionSettings => {
-  return new RegionSettings(createDefaultSelectedPointsItem(scanId), Colours.CONTEXT_BLUE, scanShape);
+  return new RegionSettings(createDefaultSelectedPointsItem(scanId), { colour: Colours.CONTEXT_BLUE, shape: scanShape });
 };
 
 export const createDefaultRemainingPointsItem = (scanId: string): ROIItem => {
@@ -62,5 +71,5 @@ export const createDefaultRemainingPointsItem = (scanId: string): ROIItem => {
 };
 
 export const createDefaultRemainingPointsRegionSettings = (scanId: string, scanShape: ROIShape): RegionSettings => {
-  return new RegionSettings(createDefaultRemainingPointsItem(scanId), Colours.CONTEXT_GREEN, scanShape);
+  return new RegionSettings(createDefaultRemainingPointsItem(scanId), { colour: Colours.CONTEXT_GREEN, shape: scanShape });
 };

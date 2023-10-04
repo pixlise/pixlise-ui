@@ -11,18 +11,20 @@ import {
 } from "src/app/generated-protos/roi-msgs";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { SearchParams } from "src/app/generated-protos/search-params";
-import { BehaviorSubject, Observable, map, of, scan, shareReplay } from "rxjs";
+import { BehaviorSubject, Observable, ReplaySubject, map, of, scan, shareReplay } from "rxjs";
 import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ROIShape, SHAPES } from "../components/roi-shape/roi-shape.component";
-import { COLORS, ColorOption } from "../models/roi-colors";
+import { COLOURS, ColourOption } from "../models/roi-colors";
 import {
+  ROIDisplaySettings,
   RegionSettings,
   createDefaultAllPointsRegionSettings,
+  createDefaultROIDisplaySettings,
   createDefaultRemainingPointsRegionSettings,
   createDefaultSelectedPointsRegionSettings,
 } from "../models/roi-region";
-import { Colours, RGBA } from "src/app/utils/colours";
+import { RGBA } from "src/app/utils/colours";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
 export type ROISummaries = Record<string, ROIItemSummary>;
@@ -35,6 +37,8 @@ export class ROIService {
   roiItems$ = new BehaviorSubject<Record<string, ROIItem>>({});
   mistROIsByScanId$ = new BehaviorSubject<Record<string, ROISummaries>>({});
 
+  // displaySettingsMap$ = new BehaviorSubject<Map<string, ROIDisplaySettings>>(new Map<string, ROIDisplaySettings>()); // Map of ROI ID to display settings
+  displaySettingsMap$ = new BehaviorSubject<Record<string, ROIDisplaySettings>>({}); // Map of ROI ID to display settings
   private _scanShapeMap = new Map<string, ROIShape>();
   private _nextScanShapeIdx: number = 0;
 
@@ -42,7 +46,7 @@ export class ROIService {
   private _nextColourIdx: number = 0;
 
   private _shapes: ROIShape[] = SHAPES;
-  private _colours: ColorOption[] = COLORS;
+  private _colours: ColourOption[] = COLOURS;
 
   constructor(
     private _dataService: APIDataService,
@@ -76,7 +80,7 @@ export class ROIService {
     });
   }
 
-  getRegionSettings(scanId: string, roiId: string, useColor: RGBA | null = null, useShape: ROIShape | null = null): Observable<RegionSettings> {
+  getRegionSettings(scanId: string, roiId: string): Observable<RegionSettings> {
     // If we have not encountered this scan before, create the default ROIs for it
     let scanShape = this._scanShapeMap.get(scanId);
     if (!scanShape) {
@@ -96,17 +100,26 @@ export class ROIService {
             throw new Error("regionOfInterest data not returned for " + roiId);
           }
 
-          const roi = new RegionSettings(roiResp.regionOfInterest);
+          let roi = new RegionSettings(roiResp.regionOfInterest);
 
-          // Work out the shape (there should be one in our map by now)
-          const scanShape = this._scanShapeMap.get(scanId);
-          if (scanShape) {
-            roi.shape = useShape || scanShape;
+          let displaySettings = this.displaySettingsMap$.value[roiId];
+          if (!displaySettings) {
+            // Work out a colour for this ROI
+            let colour = this.nextColour().rgba;
+
+            // Work out the shape (there should be one in our map by now)
+            let shape = this._scanShapeMap.get(scanId) || "circle";
+
+            // Store it in our map so we can use it next time without having to fetch the ROI
+            this.displaySettingsMap$.value[roiId] = { colour, shape };
+            this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+
+            // Update the ROI with the display settings
+            roi.displaySettings = { colour, shape };
+          } else {
+            // Update the ROI with the display settings
+            roi.displaySettings = { colour: displaySettings.colour, shape: displaySettings.shape };
           }
-
-          // Work out a colour for this ROI
-          roi.colour = useColor || this.nextColour().rgba;
-
           return roi;
         }),
         shareReplay()
@@ -119,10 +132,24 @@ export class ROIService {
     return result;
   }
 
-  updateRegionDisplaySettings(scanId: string, roiId: string, color: RGBA, shape: ROIShape) {
-    // Delete from region map and reset with new settings
+  updateRegionDisplaySettings(roiId: string, colour: RGBA, shape: ROIShape) {
+    // Delete from region map so we can re-fetch it with the new settings next time
     this._regionMap.delete(roiId);
-    this.getRegionSettings(scanId, roiId, color, shape);
+    this.displaySettingsMap$.value[roiId] = { colour, shape };
+    this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+  }
+
+  getRegionDisplaySettings(roiId: string): ROIDisplaySettings {
+    let cachedSettings = this.displaySettingsMap$.value[roiId];
+    if (cachedSettings) {
+      return cachedSettings;
+    } else {
+      let settings = createDefaultROIDisplaySettings();
+      this.displaySettingsMap$.value[roiId] = settings;
+      this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+
+      return settings;
+    }
   }
 
   private createDefaultROIs(scanId: string, scanShape: ROIShape) {
@@ -138,7 +165,7 @@ export class ROIService {
     return shape;
   }
 
-  private nextColour(): ColorOption {
+  private nextColour(): ColourOption {
     const colour = this._colours[this._nextColourIdx];
     this._nextColourIdx = (this._nextColourIdx + 1) % this._colours.length;
     return colour;

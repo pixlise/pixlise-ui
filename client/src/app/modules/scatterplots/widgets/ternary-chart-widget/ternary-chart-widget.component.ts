@@ -213,8 +213,10 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((result: ROIPickerResponse) => {
-      // TODO: Make these visible
-      console.log(result.selectedROIs);
+      if (result) {
+        // TODO: Make these visible
+        console.log(result.selectedROIs);
+      }
     });
   }
   onReferences() {}

@@ -1,20 +1,20 @@
 import { Colours, RGBA } from "src/app/utils/colours";
 
-export type ColorOption = {
+export type ColourOption = {
   name: string;
-  color: string;
+  colour: string;
   rgba: RGBA;
-  colorBlindSafe: boolean;
+  colourBlindSafe: boolean;
 };
 
-export const COLOR_BLIND_SAFE = {
+export const COLOUR_BLIND_SAFE = {
   Orange: Colours.ORANGE,
   Hopbush: Colours.HOPBUSH,
   Yellow: Colours.YELLOW,
   Purple: Colours.PURPLE,
 };
 
-export const ADDITIONAL_COLORS = {
+export const ADDITIONAL_COLOURS = {
   Teal: Colours.ROI_TEAL,
   Green: Colours.ROI_GREEN,
   Brown: Colours.ROI_BROWN,
@@ -24,14 +24,16 @@ export const ADDITIONAL_COLORS = {
   Blue: Colours.ROI_BLUE,
 };
 
-export const COLORS = [
-  ...Object.entries(COLOR_BLIND_SAFE).map(([name, rgba]) => ({ name, color: rgba.asString(), rgba, colorBlindSafe: true })),
-  ...Object.entries(ADDITIONAL_COLORS).map(([name, rgba]) => ({ name, color: rgba.asString(), rgba, colorBlindSafe: false })),
+export const COLOURS = [
+  ...Object.entries(COLOUR_BLIND_SAFE).map(([name, rgba]) => ({ name, colour: rgba.asString(), rgba, colourBlindSafe: true })),
+  ...Object.entries(ADDITIONAL_COLOURS).map(([name, rgba]) => ({ name, colour: rgba.asString(), rgba, colourBlindSafe: false })),
 ];
 
-export const generateDefaultColor = (): ColorOption => ({
+export const COLOUR_MAP = new Map(COLOURS.map(colour => [colour.colour, colour]));
+
+export const generateDefaultColour = (): ColourOption => ({
   name: "",
-  color: Colours.WHITE.asString(),
-  rgba: Colours.WHITE,
-  colorBlindSafe: false,
+  colour: "", // This is used for the colour picker
+  rgba: Colours.WHITE, // This is used for widgets
+  colourBlindSafe: false,
 });
