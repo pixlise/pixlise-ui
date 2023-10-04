@@ -46,22 +46,32 @@ POSSIBILITY OF SUCH DAMAGE.
     <roi-search-controls class="{{ showSearchControls ? 'visible' : '' }}" [summaries]="summaries" (onFilterChanged)="onFilterChanged($event)"></roi-search-controls>
   </header>
   <section class="rois">
-    <roi-item
-      *ngFor="let item of filteredSummaries"
-      [showDetailsButton]="false"
-      [selected]="!!selectedROIs[item.id]"
-      (onROISelect)="onROISelect(item)"
-      [isSelectable]="true"
-      [colorChangeOnly]="true"
-      [lightVariant]="true"
-      [rightSelection]="true"
-      [showVisibilityButton]="false"
-      [summary]="item">
-    </roi-item>
+    <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport">
+      <roi-item
+        *cdkVirtualFor="let item of filteredSummaries"
+        [showDetailsButton]="false"
+        [selected]="!!selectedROIs[item.id]"
+        (onROISelect)="onROISelect(item)"
+        [isSelectable]="true"
+        [colorChangeOnly]="true"
+        [lightVariant]="true"
+        [rightSelection]="true"
+        [showVisibilityButton]="false"
+        [summary]="item">
+      </roi-item>
+    </cdk-virtual-scroll-viewport>
   </section>
   <div class="button-container">
     <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
     <push-button buttonStyle="outline" (onClick)="onClear()">Clear</push-button>
-    <push-button buttonStyle="yellow" (onClick)="onConfirm()">Apply</push-button>
+    <push-button
+      buttonStyle="yellow"
+      #tooltip="matTooltip"
+      matTooltip="Waiting for ({{ waitingForROIs.length }}) ROIs to finish downloading..."
+      [matTooltipDisabled]="waitingForROIs.length === 0"
+      [disabled]="waitingForROIs.length > 0"
+      (onClick)="onConfirm()"
+      >Apply</push-button
+    >
   </div>
 </div>

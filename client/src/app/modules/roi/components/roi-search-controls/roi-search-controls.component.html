@@ -3,6 +3,9 @@
     <mat-select [(ngModel)]="visibleScanId" class="scan-filter" placeholder="Scan ...">
       <mat-option *ngFor="let scan of allScans" [value]="scan.id">{{ scan.title }} </mat-option>
     </mat-select>
+    <mat-select [multiple]="true" [(ngModel)]="selectedROITypes" class="roi-type" placeholder="ROI Type ...">
+      <mat-option *ngFor="let option of roiTypeOptions" [value]="option.type">{{ option.name }} </mat-option>
+    </mat-select>
   </div>
   <div class="option-filters">
     <filter-box placeholder="Filter Name..." (onFilterChanged)="onFilterText($event)"> </filter-box>

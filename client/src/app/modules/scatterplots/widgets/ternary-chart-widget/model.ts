@@ -118,7 +118,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
       const roiId = queryData.queryResults[queryIdx].query.roiId;
 
       const region = queryData.queryResults[queryIdx].region;
-      if (!region || !region.colour) {
+      if (!region || !region.displaySettings.colour) {
         if (!region) {
           console.log("Ternary failed to find region: " + roiId + ". Skipped.");
         }
@@ -126,7 +126,14 @@ export class TernaryChartModel implements CanvasDrawNotifier {
         continue;
       }
 
-      const pointGroup: TernaryDataGroup = new TernaryDataGroup(scanId, roiId, [], RGBA.fromWithA(region.colour, 1), region.shape, new Map<number, number>());
+      const pointGroup: TernaryDataGroup = new TernaryDataGroup(
+        scanId,
+        roiId,
+        [],
+        RGBA.fromWithA(region.displaySettings.colour, 1),
+        region.displaySettings.shape,
+        new Map<number, number>()
+      );
 
       // Filter out PMCs that don't exist in the data for all 3 corners
       const toFilter: PMCDataValues[] = [];
@@ -179,7 +186,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
             // Save it in A, B or C - A also is creating the value...
             if (c == 0) {
               pointGroup.values.push(new TernaryDataItem(value.pmc, value.value, 0, 0));
-              pointGroup.scanEntryIdToValueIdx.set(value.pmc, pointGroup.values.length-1);
+              pointGroup.scanEntryIdToValueIdx.set(value.pmc, pointGroup.values.length - 1);
             } else {
               // Ensure we're writing to the right PMC
               // Should always be the right order because we run 3 queries with the same ROI
@@ -207,7 +214,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
         roiIdForKey = "";
       }
 
-      this.keyItems.push(new WidgetKeyItem(roiIdForKey, region.region.name, region.colour, [], region.shape));
+      this.keyItems.push(new WidgetKeyItem(roiIdForKey, region.region.name, region.displaySettings.colour, [], region.displaySettings.shape));
       /*
       for (let c = 0; c < pointGroup.values.length; c++) {
         pmcLookup.set(pointGroup.values[c].scanEntryId, new TernaryPlotPointIndex(pointGroups.length, c));
@@ -578,7 +585,6 @@ export class TernaryData {
     public cornerA: TernaryCorner,
     public cornerB: TernaryCorner,
     public cornerC: TernaryCorner,
-    public pointGroups: TernaryDataGroup[]
-  ) //public pmcToValueLookup: Map<number, TernaryPlotPointIndex>
-  {}
+    public pointGroups: TernaryDataGroup[] //public pmcToValueLookup: Map<number, TernaryPlotPointIndex>
+  ) {}
 }

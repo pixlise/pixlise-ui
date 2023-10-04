@@ -5,13 +5,27 @@ import {
   RegionOfInterestBulkWriteReq,
   RegionOfInterestDeleteReq,
   RegionOfInterestGetReq,
+  RegionOfInterestGetResp,
   RegionOfInterestListReq,
   RegionOfInterestWriteReq,
 } from "src/app/generated-protos/roi-msgs";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { SearchParams } from "src/app/generated-protos/search-params";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, Observable, ReplaySubject, map, of, scan, shareReplay } from "rxjs";
 import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
+import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
+import { ROIShape, SHAPES } from "../components/roi-shape/roi-shape.component";
+import { COLOURS, ColourOption } from "../models/roi-colors";
+import {
+  ROIDisplaySettings,
+  RegionSettings,
+  createDefaultAllPointsRegionSettings,
+  createDefaultROIDisplaySettings,
+  createDefaultRemainingPointsRegionSettings,
+  createDefaultSelectedPointsRegionSettings,
+} from "../models/roi-region";
+import { RGBA } from "src/app/utils/colours";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
 export type ROISummaries = Record<string, ROIItemSummary>;
 
@@ -23,9 +37,21 @@ export class ROIService {
   roiItems$ = new BehaviorSubject<Record<string, ROIItem>>({});
   mistROIsByScanId$ = new BehaviorSubject<Record<string, ROISummaries>>({});
 
+  // displaySettingsMap$ = new BehaviorSubject<Map<string, ROIDisplaySettings>>(new Map<string, ROIDisplaySettings>()); // Map of ROI ID to display settings
+  displaySettingsMap$ = new BehaviorSubject<Record<string, ROIDisplaySettings>>({}); // Map of ROI ID to display settings
+  private _scanShapeMap = new Map<string, ROIShape>();
+  private _nextScanShapeIdx: number = 0;
+
+  private _regionMap = new Map<string, Observable<RegionSettings>>();
+  private _nextColourIdx: number = 0;
+
+  private _shapes: ROIShape[] = SHAPES;
+  private _colours: ColourOption[] = COLOURS;
+
   constructor(
     private _dataService: APIDataService,
-    private _snackBarService: SnackbarService
+    private _snackBarService: SnackbarService,
+    private _cachedDataService: APICachedDataService
   ) {
     this.listROIs();
   }
@@ -54,7 +80,102 @@ export class ROIService {
     });
   }
 
-  fetchROI(id: string) {
+  getRegionSettings(scanId: string, roiId: string): Observable<RegionSettings> {
+    // If we have not encountered this scan before, create the default ROIs for it
+    let scanShape = this._scanShapeMap.get(scanId);
+    if (!scanShape) {
+      scanShape = this.nextScanShape();
+      this._scanShapeMap.set(scanId, scanShape);
+      this.createDefaultROIs(scanId, scanShape);
+    }
+
+    // Now we check if we can service locally from our  map
+    let result = this._regionMap.get(`${scanId}_${roiId}`);
+    if (result === undefined) {
+      // Nothing stored, so get the ROI because we're combining that with the colour/shape we generate
+      result = this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiId })).pipe(
+        map((roiResp: RegionOfInterestGetResp) => {
+          if (roiResp.regionOfInterest === undefined) {
+            this._snackBarService.openError(`Region Of Interest data not returned from cachedDataService for ${roiId}`);
+            throw new Error("regionOfInterest data not returned for " + roiId);
+          }
+
+          let roi = new RegionSettings(roiResp.regionOfInterest);
+
+          let displaySettings = this.displaySettingsMap$.value[roiId];
+          if (!displaySettings) {
+            // Work out a colour for this ROI
+            let colour = this.nextColour().rgba;
+
+            // Work out the shape (there should be one in our map by now)
+            let shape = this._scanShapeMap.get(scanId) || "circle";
+
+            // Store it in our map so we can use it next time without having to fetch the ROI
+            this.displaySettingsMap$.value[roiId] = { colour, shape };
+            this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+
+            // Update the ROI with the display settings
+            roi.displaySettings = { colour, shape };
+          } else {
+            // Update the ROI with the display settings
+            roi.displaySettings = { colour: displaySettings.colour, shape: displaySettings.shape };
+          }
+          return roi;
+        }),
+        shareReplay()
+      );
+
+      // Add it to the map too so a subsequent request will get this
+      this._regionMap.set(roiId, result);
+    }
+
+    return result;
+  }
+
+  updateRegionDisplaySettings(roiId: string, colour: RGBA, shape: ROIShape) {
+    // Delete from region map so we can re-fetch it with the new settings next time
+    this._regionMap.delete(roiId);
+    this.displaySettingsMap$.value[roiId] = { colour, shape };
+    this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+  }
+
+  getRegionDisplaySettings(roiId: string): ROIDisplaySettings {
+    let cachedSettings = this.displaySettingsMap$.value[roiId];
+    if (cachedSettings) {
+      return cachedSettings;
+    } else {
+      let settings = createDefaultROIDisplaySettings();
+      this.displaySettingsMap$.value[roiId] = settings;
+      this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+
+      return settings;
+    }
+  }
+
+  private createDefaultROIs(scanId: string, scanShape: ROIShape) {
+    // Add defaults for predefined ROIs
+    this._regionMap.set(`${scanId}_${PredefinedROIID.AllPoints}}`, of(createDefaultAllPointsRegionSettings(scanId, scanShape)));
+    this._regionMap.set(`${scanId}_${PredefinedROIID.SelectedPoints}}`, of(createDefaultSelectedPointsRegionSettings(scanId, scanShape)));
+    this._regionMap.set(`${scanId}_${PredefinedROIID.RemainingPoints}}`, of(createDefaultRemainingPointsRegionSettings(scanId, scanShape)));
+  }
+
+  private nextScanShape(): ROIShape {
+    const shape = this._shapes[this._nextScanShapeIdx];
+    this._nextScanShapeIdx = (this._nextScanShapeIdx + 1) % this._shapes.length;
+    return shape;
+  }
+
+  private nextColour(): ColourOption {
+    const colour = this._colours[this._nextColourIdx];
+    this._nextColourIdx = (this._nextColourIdx + 1) % this._colours.length;
+    return colour;
+  }
+
+  fetchROI(id: string, checkCacheFirst: boolean = false) {
+    if (checkCacheFirst && this.roiItems$.value[id]) {
+      return;
+    }
+
     this._dataService.sendRegionOfInterestGetRequest(RegionOfInterestGetReq.create({ id })).subscribe({
       next: res => {
         if (res.regionOfInterest) {

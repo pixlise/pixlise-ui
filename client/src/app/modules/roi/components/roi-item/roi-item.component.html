@@ -3,7 +3,7 @@
     <h2>Shapes</h2>
     <mat-radio-group class="shape-group" [(ngModel)]="shape">
       <mat-radio-button *ngFor="let option of shapeOptions" [value]="option" class="shape-option" labelPosition="after">
-        <roi-shape [scale]="2" [color]="color.color || '#fff'" [shape]="option"></roi-shape>
+        <roi-shape [scale]="2" [color]="colour.colour || '#fff'" [shape]="option"></roi-shape>
       </mat-radio-button>
     </mat-radio-group>
     <div class="bottom-buttons">
@@ -15,19 +15,19 @@
 <ng-template #roiColorPicker>
   <div class="roi-color-picker">
     <h2>Colour Blind Safe</h2>
-    <mat-radio-group class="color-group" [(ngModel)]="color">
-      <mat-radio-button *ngFor="let option of colorBlindSafeOptions" [value]="option" class="color-option" labelPosition="after">
-        <roi-shape [scale]="2" [color]="option.color" [shape]="shape || 'circle'"></roi-shape>
+    <mat-radio-group class="color-group" [(ngModel)]="colour">
+      <mat-radio-button *ngFor="let option of colourBlindSafeOptions" [value]="option" class="color-option" labelPosition="after">
+        <roi-shape [scale]="2" [color]="option.colour" [shape]="shape || 'circle'"></roi-shape>
       </mat-radio-button>
     </mat-radio-group>
-    <h2 class="additional-colors">Additional Colors</h2>
-    <mat-radio-group class="color-group" [(ngModel)]="color">
+    <h2 class="additional-colors">Additional Colours</h2>
+    <mat-radio-group class="color-group" [(ngModel)]="colour">
       <mat-radio-button *ngFor="let option of additionalColorOptions" [value]="option" class="color-option" labelPosition="after">
-        <roi-shape [scale]="2" [color]="option.color" [shape]="shape || 'circle'"></roi-shape>
+        <roi-shape [scale]="2" [color]="option.colour" [shape]="shape || 'circle'"></roi-shape>
       </mat-radio-button>
     </mat-radio-group>
     <div class="bottom-buttons">
-      <push-button buttonStyle="outline" title="Clear Color" (onClick)="clearColor()">Clear</push-button>
+      <push-button buttonStyle="outline" title="Clear Color" (onClick)="clearColour()">Clear</push-button>
     </div>
   </div>
 </ng-template>
@@ -79,10 +79,21 @@
 <div
   class="roi-container"
   [ngStyle]="{
-    'border-left-color': color.color || (lightVariant ? 'rgb(var(--clr-gray-70))' : 'rgb(var(--clr-gray-80))'),
+    'border-left-color': colour.colour,
+    'border-left-width': colour.colour ? '4px' : '0',
     'border-bottom': lightVariant ? '1px solid rgb(var(--clr-gray-80))' : '1px solid rgb(var(--clr-gray-70))'
   }">
-  <div class="summary" [ngStyle]="{ 'background-color': lightVariant ? 'rgb(var(--clr-gray-70))' : 'rgb(var(--clr-gray-80))' }">
+  <div
+    class="summary"
+    [ngStyle]="{
+      'background-color': lightVariant
+        ? selected
+          ? 'rgb(var(--clr-gray-60))'
+          : 'rgb(var(--clr-gray-70))'
+        : selected
+        ? 'rgb(var(--clr-gray-70))'
+        : 'rgb(var(--clr-gray-80))'
+    }">
     <two-state-icon-button
       *ngIf="isSelectable && !rightSelection"
       toolTip="Toggle ROI"
@@ -96,11 +107,20 @@
       <img *ngIf="icon" [src]="icon" />
       <span *ngIf="!icon" class="name-abbreviation">{{ creatorAbbreviation }}</span>
     </div>
-    <div class="info" #tooltip="matTooltip" matTooltipClass="multiline-tooltip" [matTooltip]="name + (description ? '\n\n' + description : '')">
+    <div
+      class="info"
+      #tooltip="matTooltip"
+      matTooltipClass="multiline-tooltip"
+      [matTooltip]="name + (description ? '\n\n' + description : '') + (createdDate > 0 ? '\n\nCreated: ' + dateCreatedString : '')">
       <h4>{{ name }}</h4>
-      <p [ngStyle]="{ color: lightVariant ? 'rgb(var(--clr-gray-50))' : 'rgb(var(--clr-gray-60))' }">{{ createdDate | date: "dd/MMM/yy" }}</p>
+      <span *ngIf="summary.isMIST || createdDate > 0" class="metadata-line" title="Level">
+        <div *ngIf="summary.isMIST" class="level-dots" title="Level">
+          <div class="level-dot {{ hasLevel ? 'filled' : '' }}" *ngFor="let hasLevel of mistLevels"></div>
+        </div>
+        <p [ngStyle]="{ color: lightVariant ? 'rgb(var(--clr-gray-50))' : 'rgb(var(--clr-gray-60))' }">{{ createdDate | date: "dd/MMM/yy" }}</p>
+      </span>
     </div>
-    <roi-shape *ngIf="color.color || shape" class="current-shape" [color]="color.color || '#fff'" [shape]="shape || 'circle'"></roi-shape>
+    <roi-shape *ngIf="displayConfigured" class="current-shape" [color]="colour.colour || '#fff'" [shape]="shape || 'circle'"></roi-shape>
     <div class="buttons">
       <widget-settings-menu *ngIf="!colorChangeOnly" [settingsDialog]="roiSettingsMenu" #settingsButton>
         <icon-button title="Show Settings Menu" [hasBackground]="false" icon="assets/button-icons/settings-gray.svg"> </icon-button>

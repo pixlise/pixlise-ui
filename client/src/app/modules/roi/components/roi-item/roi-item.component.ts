@@ -5,7 +5,7 @@ import { SelectionService, SnackbarService, WidgetSettingsMenuComponent } from "
 import { ActionButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/action-button/action-button.component";
 import { Subscription } from "rxjs";
 import { ROIShape, SHAPES } from "../roi-shape/roi-shape.component";
-import { COLORS, ColorOption } from "../../models/roi-colors";
+import { COLOURS, COLOUR_MAP, ColourOption, generateDefaultColour } from "../../models/roi-colors";
 
 @Component({
   selector: "roi-item",
@@ -19,7 +19,7 @@ export class ROIItemComponent {
   @Input() selected = false;
   @Input() colorChangeOnly = false;
 
-  @Input() colorOptions: ColorOption[] = COLORS;
+  @Input() colorOptions: ColourOption[] = COLOURS;
   @Input() shapeOptions: ROIShape[] = SHAPES;
 
   @Input() lightVariant: boolean = false;
@@ -48,30 +48,18 @@ export class ROIItemComponent {
 
   private _detailedInfo: ROIItem | null = null;
 
+  private _colour: ColourOption = this.getColourOrDefault();
+  private _shape: ROIShape | "" = this._roiService.getRegionDisplaySettings(this.summary?.id).shape;
+
   openScanIdxs: Set<string> = new Set<string>();
   scanEntryIndicesByDataset: Record<string, number[]> = {};
   isEditable: boolean = false;
-
-  displayConfigured: boolean = false;
-  private _color: ColorOption = { name: "", color: "", colorBlindSafe: false };
-  private _shape: ROIShape | "" = "";
 
   constructor(
     private _snackBarService: SnackbarService,
     private _roiService: ROIService,
     private _selectionService: SelectionService
   ) {
-    this._subs.add(
-      this._roiService.roiItems$.subscribe(roiItems => {
-        if (this.summary?.id && roiItems[this.summary.id]) {
-          this._detailedInfo = roiItems[this.summary.id];
-          this.scanEntryIndicesByDataset[this._detailedInfo.scanId] = this._detailedInfo.scanEntryIndexesEncoded;
-        } else {
-          this._detailedInfo = null;
-        }
-      })
-    );
-
     this._subs.add(
       this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
         if (this._selectionService.hoverScanId === this.summary?.scanId) {
@@ -83,8 +71,40 @@ export class ROIItemComponent {
     );
   }
 
+  getColourOrDefault(): ColourOption {
+    let displaySettings = this._roiService.getRegionDisplaySettings(this.summary?.id);
+    return COLOUR_MAP.get(displaySettings.colour.asString()) || generateDefaultColour();
+  }
+
+  ngOnInit(): void {
+    this._subs.add(
+      this._roiService.roiItems$.subscribe(roiItems => {
+        if (this.summary?.id && roiItems[this.summary.id]) {
+          this._detailedInfo = roiItems[this.summary.id];
+          this.scanEntryIndicesByDataset[this._detailedInfo.scanId] = this._detailedInfo.scanEntryIndexesEncoded;
+        } else {
+          this._detailedInfo = null;
+        }
+      })
+    );
+
+    this._roiService.displaySettingsMap$.subscribe(displaySettingsMap => {
+      if (this.summary?.id) {
+        let displaySettings = displaySettingsMap[this.summary?.id];
+        if (displaySettings) {
+          this._colour = COLOUR_MAP.get(displaySettings.colour.asString()) || generateDefaultColour();
+          this._shape = displaySettings.shape;
+        }
+      }
+    });
+  }
+
   ngOnDestroy(): void {
     this.closeSettingsMenu();
+  }
+
+  get displayConfigured(): boolean {
+    return this.colour.colour.length > 0 || this.shape !== "circle";
   }
 
   get creatorName(): string {
@@ -121,25 +141,39 @@ export class ROIItemComponent {
 
   set shape(value: ROIShape | "") {
     this._shape = value;
+    this._roiService.updateRegionDisplaySettings(this.summary.id, this.colour.rgba, this._shape || "circle");
     if (!this.selected) {
       this.onCheckboxClick(true);
     }
   }
 
-  get colorBlindSafeOptions(): ColorOption[] {
-    return this.colorOptions.filter(option => option.colorBlindSafe);
+  get dateCreatedString(): string {
+    return this.createdDate > 0 ? new Date(this.createdDate).toLocaleDateString() : "Unknown";
   }
 
-  get additionalColorOptions(): ColorOption[] {
-    return this.colorOptions.filter(option => !option.colorBlindSafe);
+  get mistLevels(): boolean[] {
+    return new Array(5).fill(0).map((_, i) => i < this.mistDepth);
   }
 
-  get color(): ColorOption {
-    return this._color;
+  get mistDepth(): number {
+    return this.summary?.mistROIItem?.idDepth || 0;
   }
 
-  set color(value: ColorOption) {
-    this._color = value;
+  get colourBlindSafeOptions(): ColourOption[] {
+    return this.colorOptions.filter(option => option.colourBlindSafe);
+  }
+
+  get additionalColorOptions(): ColourOption[] {
+    return this.colorOptions.filter(option => !option.colourBlindSafe);
+  }
+
+  get colour(): ColourOption {
+    return this._colour;
+  }
+
+  set colour(value: ColourOption) {
+    this._colour = value;
+    this._roiService.updateRegionDisplaySettings(this.summary.id, this._colour.rgba, this.shape || "circle");
     if (!this.selected) {
       this.onCheckboxClick(true);
     }
@@ -276,11 +310,11 @@ export class ROIItemComponent {
     }
   }
 
-  clearColor() {
-    this.color = { name: "", color: "", colorBlindSafe: false };
+  clearColour() {
+    this.colour = generateDefaultColour();
   }
 
   clearShape() {
-    this._shape = "";
+    this.shape = "";
   }
 }

@@ -6,7 +6,6 @@
 
   .broad-filters {
     display: flex;
-    // padding: 0px 6px;
 
     mat-select {
       height: 19px;
@@ -16,9 +15,17 @@
       border-radius: 4px !important;
       border: 2px solid rgb(var(--clr-gray-60));
 
-      width: 100% !important;
+      flex: 1;
       margin-bottom: 8px;
-      margin-left: 0 !important;
+
+      &:not(.roi-type) {
+        margin-left: 0 !important;
+      }
+
+      &.roi-type {
+        max-width: 30%;
+        margin-left: 8px !important;
+      }
     }
   }
 

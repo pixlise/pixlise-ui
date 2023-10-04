@@ -35,6 +35,27 @@
       p {
         margin: 0;
       }
+
+      .metadata-line {
+        display: flex;
+        .level-dots {
+          display: flex;
+          align-items: center;
+          margin-right: 8px;
+
+          .level-dot {
+            width: 6px;
+            height: 6px;
+            background: rgb(var(--clr-gray-60));
+            border-radius: 50%;
+            margin: 0 1px;
+
+            &.filled {
+              background: rgb(var(--clr-gray-30));
+            }
+          }
+        }
+      }
     }
 
     .current-shape {

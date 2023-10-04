@@ -43,11 +43,9 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { DataQuerier, EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 import { ExpressionDataSource } from "../models/expression-data-source";
 import { InterpreterDataSource } from "src/app/expression-language/interpreter-data-source";
-import { RegionSettings, RegionSettingsService } from "./region-settings.service";
 import { APICachedDataService } from "./apicacheddata.service";
-import { RegionOfInterestListReq, RegionOfInterestListResp } from "src/app/generated-protos/roi-msgs";
-import { SearchParams } from "src/app/generated-protos/search-params";
-import { QuantListReq, QuantListResp } from "src/app/generated-protos/quantification-retrieval-msgs";
+import { RegionSettings } from "../../roi/models/roi-region";
+import { ROIService } from "../../roi/services/roi.service";
 
 export enum DataUnit {
   //UNIT_WEIGHT_PCT,
@@ -128,7 +126,7 @@ export class WidgetDataService {
   constructor(
     private _dataService: APIDataService,
     private _cachedDataService: APICachedDataService,
-    private _regionSettings: RegionSettingsService
+    private _roiService: ROIService
   ) {
     // FOR TESTING ONLY
     // TODO: remove this
@@ -181,7 +179,7 @@ export class WidgetDataService {
 
         return this.runExpression(resp.expression, query.scanId, query.quantId, query.roiId, allowAnyResponse).pipe(
           mergeMap((result: DataQueryResult) => {
-            return this._regionSettings.getRegionSettings(query.scanId, query.roiId).pipe(
+            return this._roiService.getRegionSettings(query.scanId, query.roiId).pipe(
               map((roiSettings: RegionSettings) => {
                 result.region = roiSettings;
                 return result;
@@ -209,7 +207,7 @@ export class WidgetDataService {
         );
       }),
       catchError(err => {
-        const errorMsg = httpErrorToString(err, "Error getting expression: "+query.exprId);
+        const errorMsg = httpErrorToString(err, "Error getting expression: " + query.exprId);
         console.error(errorMsg);
         return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg));
       })
