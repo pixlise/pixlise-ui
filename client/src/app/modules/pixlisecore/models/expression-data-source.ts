@@ -1,4 +1,4 @@
-import { Observable, combineLatest, concatMap, map, tap, lastValueFrom } from "rxjs";
+import { Observable, combineLatest, concatMap, map, tap, lastValueFrom, throwError, catchError } from "rxjs";
 import {
   DiffractionPeakQuerierSource,
   HousekeepingDataQuerierSource,
@@ -68,7 +68,7 @@ export class ExpressionDataSource
   // And where to turn to get it:
   private _cachedDataService: APICachedDataService | null = null;
 
-  private _debug = true;
+  private _debug = false;
   private _prepTime = performance.now();
   private _lastTime = performance.now();
 
@@ -171,8 +171,12 @@ export class ExpressionDataSource
 
   private getQuantData(): Observable<QuantGetResp> {
     if (!this._cachedDataService) {
-      throw new Error("getQuantData: no data available");
+      return throwError(() => new Error("getQuantData: no data available"));
     }
+    if (!this._quantId) {
+      return throwError(() => new Error("getQuantData: no quantification id specified"));
+    }
+
     return this._cachedDataService.getQuant(QuantGetReq.create({ quantId: this._quantId, summaryOnly: false })).pipe(
       tap(quantData => {
         if (!this._quantRead) {
@@ -185,8 +189,9 @@ export class ExpressionDataSource
 
   private getPseudoIntensity(): Observable<PseudoIntensityResp> {
     if (!this._cachedDataService) {
-      throw new Error("getPseudoIntensity: no data available");
+      return throwError(() => new Error("getPseudoIntensity: no data available"));
     }
+
     return this._cachedDataService.getPseudoIntensity(
       PseudoIntensityReq.create({ scanId: this._scanId, entries: ScanEntryRange.create({ indexes: this._encodedIndexes }) })
     );
@@ -194,7 +199,7 @@ export class ExpressionDataSource
 
   private getDetectedDiffraction(): Observable<DetectedDiffractionPeaksResp> {
     if (!this._cachedDataService) {
-      throw new Error("getDetectedDiffraction: no data available");
+      return throwError(() => new Error("getDetectedDiffraction: no data available"));
     }
 
     return this._cachedDataService
@@ -211,14 +216,14 @@ export class ExpressionDataSource
 
   private getScanMetaLabelsAndTypes(): Observable<ScanMetaLabelsAndTypesResp> {
     if (!this._cachedDataService) {
-      throw new Error("getScanMetaLabelsAndTypes: no data available");
+      return throwError(() => new Error("getScanMetaLabelsAndTypes: no data available"));
     }
     return this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId: this._scanId }));
   }
 
   private getScanBeamLocations(): Observable<ScanBeamLocationsResp> {
     if (!this._cachedDataService) {
-      throw new Error("getScanBeamLocations: no data available");
+      return throwError(() => new Error("getScanBeamLocations: no data available"));
     }
     return this._cachedDataService.getScanBeamLocations(
       ScanBeamLocationsReq.create({ scanId: this._scanId, entries: ScanEntryRange.create({ indexes: this._encodedIndexes }) })
@@ -227,7 +232,7 @@ export class ExpressionDataSource
 
   private getScanEntryMetadata(): Observable<ScanEntryMetadataResp> {
     if (!this._cachedDataService) {
-      throw new Error("getScanEntryMetadata: no data available");
+      return throwError(() => new Error("getScanEntryMetadata: no data available"));
     }
     return this._cachedDataService.getScanEntryMetadata(
       ScanEntryMetadataReq.create({ scanId: this._scanId, entries: ScanEntryRange.create({ indexes: this._encodedIndexes }) })
@@ -236,7 +241,7 @@ export class ExpressionDataSource
 
   private getSpectrum(): Observable<SpectrumResp> {
     if (!this._cachedDataService) {
-      throw new Error("getSpectrum: no data available");
+      return throwError(() => new Error("getSpectrum: no data available"));
     }
 
     // NOTE: We need ALL spectra because the functions that access this sum across all spectra
@@ -245,7 +250,7 @@ export class ExpressionDataSource
 
   private getDiffractionPeakManualList(): Observable<DiffractionPeakManualListResp> {
     if (!this._cachedDataService) {
-      throw new Error("getDiffractionPeakManualList: no data available");
+      return throwError(() => new Error("getDiffractionPeakManualList: no data available"));
     }
 
     // NOTE: We need ALL spectra because the functions that access this sum across all spectra
@@ -410,6 +415,11 @@ export class ExpressionDataSource
     if (this._debug) {
       this.logFunc(`getQuantifiedDataForDetector(${detectorId}, ${dataLabel})`);
     }
+
+    if (!this._quantId) {
+      return new Promise((_, reject) => reject(new Error("No quant id specified")));
+    }
+
     return await lastValueFrom(
       this.getQuantData().pipe(
         map((quantData: QuantGetResp) => {
@@ -513,6 +523,9 @@ export class ExpressionDataSource
   async getElementList(): Promise<string[]> {
     if (this._debug) {
       this.logFunc(`getElementList()`);
+    }
+    if (!this._quantId) {
+      return new Promise((_, reject) => reject(new Error("getElementList No quant id specified")));
     }
     return await lastValueFrom(
       this.getQuantData().pipe(
@@ -810,7 +823,9 @@ export class ExpressionDataSource
           // Now turn these into data values
           const result: PMCDataValue[] = [];
           for (const [pmc, sum] of pmcDiffractionCount.entries()) {
-            result.push(new PMCDataValue(pmc, sum));
+            if (pmc != 218) {
+              result.push(new PMCDataValue(pmc, sum));
+            }
           }
 
           return PMCDataValues.makeWithValues(result);

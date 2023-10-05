@@ -41,3 +41,7 @@ end
 function makeMap(value)
     return makeMap_async(value):await()
 end
+
+function exists(dataType, column)
+    return exists_async(dataType, column):await()
+end

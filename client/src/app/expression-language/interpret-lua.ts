@@ -147,10 +147,10 @@ export class LuaDataQuerier {
               const module = builtInLibNames[c];
               const source = responses[c] as string;
 
+              // Synchronous install - we want this done now, and expect there to be no need for
+              // promise resolution here!
               this.installModule(module, source);
             }
-
-            //this.dumpLua("Init complete");
 
             const luat1 = performance.now();
             console.log(this._logId + "Lua Initialisation took: " + (luat1 - luat0).toLocaleString() + "ms...");
@@ -160,32 +160,18 @@ export class LuaDataQuerier {
     );
   }
 
-  private installModule(moduleName: string, sourceCode: string) {
+  private installModule(moduleName: string, sourceCode: string): void {
     const t0 = performance.now();
-    /*
-        let importDef = this.makeLuaModuleImport(moduleName, sourceCode);
-        importDef += "\n"+this.makeLuaModuleImportStatement(moduleName);
-        this.runLuaCodeSync(importDef, 10000);
-*/
 
     // Leave ample time to install a module
-    /*let result =*/ this.runLuaCodeSync(sourceCode, 10000);
+    const maxRunTime = 10000;
+
+    this.runLuaCodeSync(sourceCode, maxRunTime);
 
     const t1 = performance.now();
     console.log(this._logId + " Added Lua module: " + moduleName + " in " + (t1 - t0).toLocaleString() + "ms...");
   }
-  /*
-    private makeLuaModuleImport(moduleName: string, sourceCode: string): string
-    {
-        let importDef = "function make"+moduleName+"Module()\n"+sourceCode+"\nend";
-        return importDef;
-    }
 
-    private makeLuaModuleImportStatement(moduleName: string): string
-    {
-        return moduleName+" = make"+moduleName+"Module()\n";
-    }
-*/
   private LuaFunctionArgCounts = [3, 2, 2, 3, 3, 1, 1, 2, 0, 1, 1];
   private LuaCallableFunctions = new Map<string, any>([
     [
@@ -286,7 +272,7 @@ export class LuaDataQuerier {
     this._lua.global.set("atomicMass", (symbol: string) => {
       return periodicTableDB.getMolecularMass(symbol);
     });
-    this._lua.global.set("exists", (dataType: string, column: string) => {
+    this._lua.global.set("exists_async", async (dataType: string, column: string) => {
       if (!this._dataSource) {
         return false;
       }
@@ -327,19 +313,23 @@ export class LuaDataQuerier {
 
     return this._luaInit$.pipe(
       concatMap(() => {
-        //this.dumpLua("Pre installing modules");
-        // Install any modules supplied
-        //let imports = "";
-        for (const [moduleName, moduleSource] of modules) {
-          //imports += this.makeLuaModuleImportStatement(moduleName);
-          this.installModule(moduleName, moduleSource);
+        // Here we concat modules with the source we're about to run
+        let allSource = "";
+        for (let [moduleName, moduleSource] of modules) {
+
+          const retPos = moduleSource.lastIndexOf("return " + moduleName);
+          if (retPos == -1) {
+            throw new Error("Expected module to end with return statement returning itself");
+          }
+
+          allSource += moduleSource.substring(0, retPos) + "\n";
         }
 
-        //this.dumpLua("Pre expression run");
-
         // We're inited, now run!
-        const codeParts = this.formatLuaCallable(sourceCode, exprFuncName /*, imports*/);
-        return this.runQueryInternal(codeParts.join(""), cleanupLua, t0, allowAnyResponse, recordExpressionInputs);
+        allSource += sourceCode;
+        const codeParts = this.formatLuaCallable(allSource, exprFuncName /*, imports*/);
+        const execSource = codeParts.join("");
+        return this.runQueryInternal(execSource, cleanupLua, t0, allowAnyResponse, recordExpressionInputs);
       })
     );
   }
@@ -356,10 +346,6 @@ export class LuaDataQuerier {
     const p = this._lua.doString(sourceCode);
 
     return from(p).pipe(
-      // map(result => {
-      //   console.log(result);
-      //   return result;
-      // }),
       finalize(() => {
         // Remove timeout as it will run out if we leave it here and things in future will fail
         if (this._lua && this._lua.global) {
@@ -375,7 +361,7 @@ export class LuaDataQuerier {
       return null;
     }
     this._lua.global.setTimeout(Date.now() + timeoutMs);
-    const result = this._lua.doStringSync(sourceCode);
+    const result = this._lua.doString(sourceCode);
     this._lua.global.setTimeout(0);
     return result;
   }

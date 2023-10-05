@@ -336,7 +336,7 @@ export class InterpreterDataSource {
   // - "data", "chisq".
   // - "housekeeping", "f_pixl_3_3_volt"
   // - "pseudo", "Ca"
-  public exists(dataType: string, column: string): Promise<boolean> {
+  public async exists(dataType: string, column: string): Promise<boolean> {
     // Check if the data is available
     if (dataType == "element") {
       return this.quantDataSource.getElementList().then((cols: string[]) => {
