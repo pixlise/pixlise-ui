@@ -202,7 +202,7 @@ export class WidgetDataService {
               SentryHelper.logMsg(true, errorMsg);
             }
 
-            return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg));
+            return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg, resp.expression));
           })
         );
       }),

@@ -116,24 +116,9 @@ export class TernaryChartModel implements CanvasDrawNotifier {
       // Set up storage for our data first
       const scanId = queryData.queryResults[queryIdx].query.scanId;
       const roiId = queryData.queryResults[queryIdx].query.roiId;
-
       const region = queryData.queryResults[queryIdx].region;
-      if (!region || !region.displaySettings.colour) {
-        if (!region) {
-          console.log("Ternary failed to find region: " + roiId + ". Skipped.");
-        }
 
-        continue;
-      }
-
-      const pointGroup: TernaryDataGroup = new TernaryDataGroup(
-        scanId,
-        roiId,
-        [],
-        RGBA.fromWithA(region.displaySettings.colour, 1),
-        region.displaySettings.shape,
-        new Map<number, number>()
-      );
+      let pointGroup: TernaryDataGroup | null = null;
 
       // Filter out PMCs that don't exist in the data for all 3 corners
       const toFilter: PMCDataValues[] = [];
@@ -167,10 +152,41 @@ export class TernaryChartModel implements CanvasDrawNotifier {
           corners[c].errorMsgShort = queryData.queryResults[queryIdx + c].errorType || "";
           corners[c].errorMsgLong = queryData.queryResults[queryIdx + c].error || "";
 
-          console.log(
+          console.error(
             "Ternary encountered error with expression: " + exprIds[c] + ", on region: " + roiId + ", corner: " + (c == 0 ? "left" : c == 1 ? "top" : "right")
           );
           continue;
+        }
+
+        // Expression didn't have errors, so try read its values
+        if (!region) {
+          // Show an error, we clearly don't have region data ready
+          corners[c].errorMsgShort = "Region error";
+          corners[c].errorMsgLong = "Region data not found for: " + roiId;
+
+          console.error(corners[c].errorMsgLong);
+          continue;
+        }
+
+        if (!pointGroup) {
+          // Reading the region for the first time, create a point group and key entry
+          pointGroup = new TernaryDataGroup(
+            scanId,
+            roiId,
+            [],
+            RGBA.fromWithA(region.displaySettings.colour, 1),
+            region.displaySettings.shape,
+            new Map<number, number>()
+          );
+
+          // Add to key too. We only specify an ID if it can be brought to front - all points & selection
+          // are fixed in their draw order, so don't supply for those
+          let roiIdForKey = region.region.id;
+          if (PredefinedROIID.isPredefined(roiIdForKey)) {
+            roiIdForKey = "";
+          }
+
+          this.keyItems.push(new WidgetKeyItem(roiIdForKey, region.region.name, region.displaySettings.colour, [], region.displaySettings.shape));
         }
 
         const roiValues: PMCDataValues | null = filteredValues[c];
@@ -207,29 +223,17 @@ export class TernaryChartModel implements CanvasDrawNotifier {
         }
       }
 
-      // Add to key too. We only specify an ID if it can be brought to front - all points & selection
-      // are fixed in their draw order, so don't supply for those
-      let roiIdForKey = region.region.id;
-      if (PredefinedROIID.isPredefined(roiIdForKey)) {
-        roiIdForKey = "";
-      }
-
-      this.keyItems.push(new WidgetKeyItem(roiIdForKey, region.region.name, region.displaySettings.colour, [], region.displaySettings.shape));
       /*
       for (let c = 0; c < pointGroup.values.length; c++) {
         pmcLookup.set(pointGroup.values[c].scanEntryId, new TernaryPlotPointIndex(pointGroups.length, c));
       }
 */
-      if (pointGroup.values.length > 0) {
+      if (pointGroup && pointGroup.values.length > 0) {
         pointGroups.push(pointGroup);
       }
     }
 
     this.assignQueryResult(t0, pointGroups, corners, /*pmcLookup,*/ queryWarnings);
-  }
-
-  private assignEmptyQuery(t0: number, corners: TernaryCorner[]) {
-    this.assignQueryResult(t0, [], corners /*, new Map<number, TernaryPlotPointIndex>()*/, []);
   }
 
   private assignQueryResult(
@@ -385,6 +389,8 @@ export class TernaryDrawModel {
 
   regenerate(raw: TernaryData | null, canvasParams: CanvasParams): void {
     this.totalPointCount = 0;
+    this.drawnPoints = null; // Force regen
+
     const labelHeight = TernaryChartModel.FONT_SIZE + TernaryChartModel.LABEL_PADDING + TernaryChartModel.OUTER_PADDING;
 
     // Calculate triangle height (to make it equilateral) - assuming height is not the constraining direction
