@@ -416,10 +416,6 @@ export class ExpressionDataSource
       this.logFunc(`getQuantifiedDataForDetector(${detectorId}, ${dataLabel})`);
     }
 
-    if (!this._quantId) {
-      return new Promise((_, reject) => reject(new Error("No quant id specified")));
-    }
-
     return await lastValueFrom(
       this.getQuantData().pipe(
         map((quantData: QuantGetResp) => {
@@ -524,9 +520,7 @@ export class ExpressionDataSource
     if (this._debug) {
       this.logFunc(`getElementList()`);
     }
-    if (!this._quantId) {
-      return new Promise((_, reject) => reject(new Error("getElementList No quant id specified")));
-    }
+
     return await lastValueFrom(
       this.getQuantData().pipe(
         map((quantData: QuantGetResp) => {
