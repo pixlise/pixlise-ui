@@ -8,6 +8,7 @@ import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysi
 import { SearchParams } from "src/app/generated-protos/search-params";
 import { ROISearchFilter, ROIType, ROITypeInfo, ROI_TYPES, checkMistFullyIdentified, checkROITypeIsMIST } from "../../models/roi-search";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
+import { checkBuiltinROIID } from "../../models/roi-region";
 
 @Component({
   selector: "roi-search-controls",
@@ -33,10 +34,11 @@ export class ROISearchControlsComponent {
   _visibleScanId: string = "";
 
   roiTypeOptions: ROITypeInfo[] = ROI_TYPES;
-  _selectedROITypes: ROIType[] = ["user-created", "shared"];
+  _selectedROITypes: ROIType[] = ["builtin", "user-created", "shared"];
 
   _currentUserId: string = "";
 
+  // TODO: Add in Selected Points and All Points
   constructor(
     private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService,
@@ -81,11 +83,12 @@ export class ROISearchControlsComponent {
 
   @Input() set manualFilters(filters: Partial<ROISearchFilter> | null) {
     if (filters !== null) {
-      let { searchString, scanId, tagIDs, authors } = filters;
+      let { searchString, scanId, tagIDs, authors, types } = filters;
       this.roiSearchString = searchString ?? this.roiSearchString;
       this.visibleScanId = scanId ?? this.visibleScanId;
       this.filteredTagIDs = tagIDs ?? this.filteredTagIDs;
       this.filteredAuthors = authors ?? this.filteredAuthors;
+      this.selectedROITypes = types ?? this.selectedROITypes;
       this.filterROIsForDisplay();
     }
   }
@@ -119,6 +122,10 @@ export class ROISearchControlsComponent {
     let authorIDs = new Set<string>();
     let authors: UserInfo[] = [];
     this.summaries.forEach(roi => {
+      if (roi.owner?.creatorUser?.id === "builtin") {
+        return;
+      }
+
       if (roi.owner?.creatorUser?.id && !authorIDs.has(roi.owner.creatorUser.id)) {
         authors.push(roi.owner.creatorUser);
         authorIDs.add(roi.owner.creatorUser.id);
@@ -138,22 +145,33 @@ export class ROISearchControlsComponent {
     for (let summary of this.summaries) {
       let summaryNameLower = summary.name.toLowerCase();
       if (
-        (this.visibleScanId.length <= 0 || summary.scanId === this.visibleScanId) && // No selected scan or scan matches
-        (searchString.length <= 0 || summaryNameLower.indexOf(searchString) >= 0) && // No search string or search string matches
-        (this.filteredTagIDs.length <= 0 || this.filteredTagIDs.some(tagID => summary.tags.includes(tagID))) && // No selected tags or summary has selected tag
-        (this.filteredAuthors.length <= 0 || this.filteredAuthors.some(author => summary.owner?.creatorUser?.id === author)) && // No selected authors or summary has selected author
-        ((!summary.isMIST && // Not MIST
-          ((this.selectedROITypes.includes("user-created") && this.checkUserIsAuthor(summary)) || // Not MIST and was created by user
-            (this.selectedROITypes.includes("shared") && !this.checkUserIsAuthor(summary)))) || // Not MIST and was shared, but not created by user
-          (summary.isMIST && // MIST
-            ((this.selectedROITypes.includes("mist-species") && checkMistFullyIdentified(summary)) || // MIST and fully identified
-              (this.selectedROITypes.includes("mist-group") && !checkMistFullyIdentified(summary))))) // MIST and not fully identified
+        (this.selectedROITypes.includes("builtin") && checkBuiltinROIID(summary.id)) || // Builtin
+        (!checkBuiltinROIID(summary.id) &&
+          (this.visibleScanId.length <= 0 || summary.scanId === this.visibleScanId) && // No selected scan or scan matches
+          (searchString.length <= 0 || summaryNameLower.indexOf(searchString) >= 0) && // No search string or search string matches
+          (this.filteredTagIDs.length <= 0 || this.filteredTagIDs.some(tagID => summary.tags.includes(tagID))) && // No selected tags or summary has selected tag
+          (this.filteredAuthors.length <= 0 || this.filteredAuthors.some(author => summary.owner?.creatorUser?.id === author)) && // No selected authors or summary has selected author
+          ((!summary.isMIST && // Not MIST
+            ((this.selectedROITypes.includes("user-created") && this.checkUserIsAuthor(summary)) || // Not MIST and was created by user
+              (this.selectedROITypes.includes("shared") && !this.checkUserIsAuthor(summary)))) || // Not MIST and was shared, but not created by user
+            (summary.isMIST && // MIST
+              ((this.selectedROITypes.includes("mist-species") && checkMistFullyIdentified(summary)) || // MIST and fully identified
+                (this.selectedROITypes.includes("mist-group") && !checkMistFullyIdentified(summary)))))) // MIST and not fully identified
       ) {
         filteredSummaries.push(summary);
       }
     }
-
-    this.filteredSummaries = filteredSummaries.sort((a, b) => a.name.localeCompare(b.name));
+    // Sort by name, but make sure built-in ROIs are at the top
+    // this.filteredSummaries = filteredSummaries.sort((a, b) => a.name.localeCompare(b.name));
+    this.filteredSummaries = filteredSummaries.sort((a, b) => {
+      if (checkBuiltinROIID(a.id) && !checkBuiltinROIID(b.id)) {
+        return -1;
+      } else if (!checkBuiltinROIID(a.id) && checkBuiltinROIID(b.id)) {
+        return 1;
+      } else {
+        return a.name.localeCompare(b.name);
+      }
+    });
     this.onFilterChanged.emit({ filteredSummaries, searchString, scanId: this.visibleScanId, tagIDs: this.filteredTagIDs, authors: this.filteredAuthors });
     this.extractAuthors();
   }

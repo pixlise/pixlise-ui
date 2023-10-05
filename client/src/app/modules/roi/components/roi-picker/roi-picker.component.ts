@@ -43,6 +43,8 @@ export type ROIPickerResponse = {
 
 export type ROIPickerData = {
   requestFullROIs: boolean;
+  selectedROIs?: ROIItem[];
+  selectedROISummaries?: ROIItemSummary[];
 };
 
 @Component({
@@ -69,7 +71,15 @@ export class ROIPickerComponent implements OnInit {
     private _snackBarService: SnackbarService,
     @Inject(MAT_DIALOG_DATA) public data: ROIPickerData,
     public dialogRef: MatDialogRef<ROIPickerComponent, ROIPickerResponse>
-  ) {}
+  ) {
+    if (data?.selectedROIs) {
+      this.selectedROIs = Object.fromEntries(data.selectedROIs.map(roi => [roi.id, ROIService.formSummaryFromROI(roi)]));
+    }
+
+    if (data?.selectedROISummaries) {
+      this.selectedROIs = Object.fromEntries(data.selectedROISummaries.map(roi => [roi.id, roi]));
+    }
+  }
 
   ngOnInit(): void {
     this._subs.add(
@@ -119,7 +129,11 @@ export class ROIPickerComponent implements OnInit {
   }
 
   onFilterAuthor(author: string): void {
-    this.manualFilters = { authors: [author] };
+    if (author === "builtin") {
+      this.manualFilters = { types: ["builtin"] };
+    } else {
+      this.manualFilters = { authors: [author] };
+    }
   }
 
   onFilterChanged({ filteredSummaries }: ROISearchFilter): void {

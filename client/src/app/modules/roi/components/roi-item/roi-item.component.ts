@@ -27,6 +27,7 @@ export class ROIItemComponent {
   @Input() showDetailsButton: boolean = true;
   @Input() showVisibilityButton: boolean = true;
   @Input() showCreatorIcon: boolean = true;
+  @Input() nextDisplayOnFirstToggle: boolean = true;
 
   @Input() summary!: ROIItemSummary;
 
@@ -362,6 +363,12 @@ export class ROIItemComponent {
   onCheckboxClick(checked: boolean) {
     if (this.onROISelect) {
       this.onROISelect.emit();
+
+      if (this.nextDisplayOnFirstToggle && !this.colour.colour && this.shape === DEFAULT_ROI_SHAPE) {
+        let displaySettingOption = this._roiService.nextDisplaySettings(this.summary?.scanId);
+        this.colour = displaySettingOption.colour;
+        this.shape = displaySettingOption.shape;
+      }
     }
   }
 

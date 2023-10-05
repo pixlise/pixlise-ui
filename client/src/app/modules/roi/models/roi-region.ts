@@ -1,10 +1,16 @@
-import { ROIItem } from "src/app/generated-protos/roi";
+import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { DEFAULT_ROI_SHAPE, ROIShape } from "../components/roi-shape/roi-shape.component";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { ColourOption } from "./roi-colors";
 
 export type ROIDisplaySettings = {
   colour: RGBA;
+  shape: ROIShape;
+};
+
+export type ROIDisplaySettingOption = {
+  colour: ColourOption;
   shape: ROIShape;
 };
 
@@ -20,9 +26,17 @@ export class RegionSettings {
   ) {}
 }
 
+export const getBuiltinIDFromScanID = (scanId: string, builtinType: string): string => {
+  return `${builtinType}-${scanId}`;
+};
+
+export const checkBuiltinROIID = (id: string): boolean => {
+  return id.startsWith(PredefinedROIID.AllPoints) || id.startsWith(PredefinedROIID.SelectedPoints) || id.startsWith(PredefinedROIID.RemainingPoints);
+};
+
 export const createDefaultAllPointsItem = (scanId: string): ROIItem => {
   return ROIItem.create({
-    id: PredefinedROIID.AllPoints,
+    id: `${PredefinedROIID.AllPoints}-${scanId}`,
     scanId: scanId,
     name: "All Points",
     description: "All Points",
@@ -31,6 +45,9 @@ export const createDefaultAllPointsItem = (scanId: string): ROIItem => {
     pixelIndexesEncoded: [],
     tags: [],
     modifiedUnixSec: 0,
+    owner: {
+      creatorUser: { id: "builtin", name: "Pixlise", iconURL: "assets/PIXLISE.svg" },
+    },
   });
 };
 
@@ -40,7 +57,7 @@ export const createDefaultAllPointsRegionSettings = (scanId: string, scanShape: 
 
 export const createDefaultSelectedPointsItem = (scanId: string): ROIItem => {
   return ROIItem.create({
-    id: PredefinedROIID.SelectedPoints,
+    id: `${PredefinedROIID.SelectedPoints}-${scanId}`,
     scanId: scanId,
     name: "Selected Points",
     description: "Selected Points",
@@ -49,6 +66,9 @@ export const createDefaultSelectedPointsItem = (scanId: string): ROIItem => {
     pixelIndexesEncoded: [],
     tags: [],
     modifiedUnixSec: 0,
+    owner: {
+      creatorUser: { id: "builtin", name: "Pixlise", iconURL: "assets/PIXLISE.svg" },
+    },
   });
 };
 
@@ -58,7 +78,7 @@ export const createDefaultSelectedPointsRegionSettings = (scanId: string, scanSh
 
 export const createDefaultRemainingPointsItem = (scanId: string): ROIItem => {
   return ROIItem.create({
-    id: PredefinedROIID.RemainingPoints,
+    id: `${PredefinedROIID.RemainingPoints}-${scanId}`,
     scanId: scanId,
     name: "Remaining Points",
     description: "Remaining Points",
@@ -67,6 +87,9 @@ export const createDefaultRemainingPointsItem = (scanId: string): ROIItem => {
     pixelIndexesEncoded: [],
     tags: [],
     modifiedUnixSec: 0,
+    owner: {
+      creatorUser: { id: "builtin", name: "Pixlise", iconURL: "assets/PIXLISE.svg" },
+    },
   });
 };
 
