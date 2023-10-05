@@ -15,4 +15,9 @@
   &:hover {
     background-color: $clr-gray-90;
   }
+
+  img {
+    height: 12px;
+    margin: $sz-qtr $sz-half;
+  }
 }
