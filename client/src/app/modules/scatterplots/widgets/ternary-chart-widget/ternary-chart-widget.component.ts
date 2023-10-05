@@ -17,6 +17,7 @@ import { PredefinedROIID, orderVisibleROIs } from "src/app/models/RegionOfIntere
 import { DataSourceParams, SelectionService, WidgetDataService, DataUnit, RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
+import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 
 @Component({
   selector: "ternary-chart-widget",
@@ -42,11 +43,6 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     this.drawer = new TernaryChartDrawer(this.mdl);
     const toolHost = new TernaryChartToolHost(this.mdl, this._selectionService);
-    this._subs.add(
-      toolHost.cornerClick.subscribe((corner: string) => {
-        this.onCornerSwap(corner);
-      })
-    );
 
     this.toolhost = toolHost;
 
@@ -179,6 +175,18 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     this.update();
   }
 
+  get topAxisSwitcher(): ScatterPlotAxisInfo | null {
+    return this.mdl.raw?.cornerC || null;
+  }
+
+  get bottomLeftAxisSwitcher(): ScatterPlotAxisInfo | null {
+    return this.mdl.raw?.cornerA || null;
+  }
+
+  get bottomRightAxisSwitcher(): ScatterPlotAxisInfo | null {
+    return this.mdl.raw?.cornerB || null;
+  }
+
   private update() {
     const exprIds = [this.mdl.expressionIdA, this.mdl.expressionIdB, this.mdl.expressionIdC];
 
@@ -272,7 +280,10 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   onReferences() {}
   onClearSelection() {}
   onToggleKey() {}
-  onCornerSwap(corner: string): void {}
+
+  onCornerClick(corner: string): void {
+    console.log(corner);
+  }
 
   get showMmol(): boolean {
     return this.mdl.showMmol;

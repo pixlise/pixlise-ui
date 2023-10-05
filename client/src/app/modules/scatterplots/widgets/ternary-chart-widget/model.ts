@@ -20,6 +20,7 @@ import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { PMCDataValues } from "src/app/expression-language/data-values";
 import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
 import { ScanDataIds, WidgetDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
+import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 
 export class TernaryChartModel implements CanvasDrawNotifier {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -93,10 +94,10 @@ export class TernaryChartModel implements CanvasDrawNotifier {
   setData(data: RegionDataResults) {
     const t0 = performance.now();
 
-    const corners: TernaryCorner[] = [
-      new TernaryCorner("", "", "", new MinMax()),
-      new TernaryCorner("", "", "", new MinMax()),
-      new TernaryCorner("", "", "", new MinMax()),
+    const corners: ScatterPlotAxisInfo[] = [
+      new ScatterPlotAxisInfo("", "", "", new MinMax()),
+      new ScatterPlotAxisInfo("", "", "", new MinMax()),
+      new ScatterPlotAxisInfo("", "", "", new MinMax()),
     ];
 
     this.keyItems = [];
@@ -106,7 +107,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
     this._recalcNeeded = true;
   }
 
-  private processQueryResult(t0: number, exprIds: string[], queryData: RegionDataResults, corners: TernaryCorner[]) {
+  private processQueryResult(t0: number, exprIds: string[], queryData: RegionDataResults, corners: ScatterPlotAxisInfo[]) {
     const pointGroups: TernaryDataGroup[] = [];
     //const pmcLookup: Map<number, TernaryPlotPointIndex> = new Map<number, TernaryPlotPointIndex>();
 
@@ -239,7 +240,7 @@ export class TernaryChartModel implements CanvasDrawNotifier {
   private assignQueryResult(
     t0: number,
     pointGroups: TernaryDataGroup[] = [],
-    corners: TernaryCorner[],
+    corners: ScatterPlotAxisInfo[],
     //pmcLookup: Map<number, TernaryPlotPointIndex>,
     queryWarnings: string[]
   ) {
@@ -374,18 +375,9 @@ export class TernaryDrawModel {
   dataAreaA: Point = new Point();
   dataAreaWidth: number = 0;
 
-  // TODO: Replace the following with HTML things on top of the widget
-  labelA: Rect = new Rect(0, 0, 0, 0);
-  labelB: Rect = new Rect(0, 0, 0, 0);
-  labelC: Rect = new Rect(0, 0, 0, 0);
-
-  // TODO: Replace the following with HTML things on top of the widget
   hoverLabelA: Point = new Point();
   hoverLabelB: Point = new Point();
   hoverLabelC: Point = new Point();
-
-  // If a label is hovered over with the mouse, we set its name (A, B or C)
-  hoverLabel: string = "";
 
   regenerate(raw: TernaryData | null, canvasParams: CanvasParams): void {
     this.totalPointCount = 0;
@@ -425,26 +417,6 @@ export class TernaryDrawModel {
     this.triangleB = new Point(triangleLeft + this.triangleWidth, triangleTop + this.triangleHeight);
     this.triangleC = new Point(canvasParams.width / 2, triangleTop);
     //console.log('A:'+this.triangleA.x+','+this.triangleA.y+' B:'+this.triangleB.x+','+this.triangleB.y+' C:'+this.triangleC.x+','+this.triangleC.y+' w='+this.triangleWidth+', h='+this.triangleHeight);
-    // Make sure the labels end up in the right place!
-    const labelAreaW = canvasParams.width * 0.4;
-    const bottomLabelY = canvasParams.height - (TernaryChartModel.FONT_SIZE + TernaryChartModel.LABEL_PADDING);
-    this.labelA = new Rect(xLabelOffset - labelAreaW / 2, bottomLabelY, labelAreaW, TernaryChartModel.SWAP_BUTTON_SIZE);
-    this.labelB = new Rect(canvasParams.width - xLabelOffset - labelAreaW / 2, bottomLabelY, labelAreaW, TernaryChartModel.SWAP_BUTTON_SIZE);
-    this.labelC = new Rect(
-      this.triangleC.x - labelAreaW / 2,
-      this.triangleC.y - labelHeight + TernaryChartModel.LABEL_PADDING,
-      labelAreaW,
-      TernaryChartModel.SWAP_BUTTON_SIZE
-    );
-
-    // If labels hang off view, push them in
-    if (this.labelA.x < 0) {
-      this.labelA.x = 0;
-    }
-    const rightOffset = this.labelB.maxX() - canvasParams.width;
-    if (rightOffset > 0) {
-      this.labelB.x -= rightOffset;
-    }
 
     // Hover data positions
     const hoverUp = 50;
@@ -538,16 +510,6 @@ export class TernaryDrawModel {
   }
 }
 
-export class TernaryCorner {
-  constructor(
-    public label: string,
-    public errorMsgShort: string,
-    public errorMsgLong: string,
-    public valueRange: MinMax,
-    public modulesOutOfDate: boolean = false
-  ) {}
-}
-
 export class TernaryDataItem {
   constructor(
     public scanEntryId: number, // Aka PMC, id that doesn't change on scan for a data point source (spectrum id)
@@ -588,9 +550,9 @@ export class TernaryPlotPointIndex {
 */
 export class TernaryData {
   constructor(
-    public cornerA: TernaryCorner,
-    public cornerB: TernaryCorner,
-    public cornerC: TernaryCorner,
+    public cornerA: ScatterPlotAxisInfo,
+    public cornerB: ScatterPlotAxisInfo,
+    public cornerC: ScatterPlotAxisInfo,
     public pointGroups: TernaryDataGroup[] //public pmcToValueLookup: Map<number, TernaryPlotPointIndex>
   ) {}
 }

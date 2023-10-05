@@ -1,0 +1,4 @@
+<div class="axis-switcher">
+    <img *ngIf="info && (info.errorMsgShort || info.modulesOutOfDate)" src="assets/icons/error-triangle.svg" alt="Error">
+    <span>{{info ? info.label : "?"}}</span>
+</div>

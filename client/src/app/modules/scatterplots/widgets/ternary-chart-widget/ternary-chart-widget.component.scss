@@ -1,0 +1,25 @@
+@import "variables.scss";
+@import "atoms.scss";
+
+.canvas {
+    position: relative;
+}
+
+.top-switcher {
+    position: absolute;
+    top: $sz-qtr;
+    left: 50%;
+    transform: translate(-50%, 0);
+}
+
+.bottom-left-switcher {
+    position: absolute;
+    bottom: $sz-qtr;
+    left: 20%;
+}
+
+.bottom-right-switcher {
+    position: absolute;
+    bottom: $sz-qtr;
+    right: 20%;
+}

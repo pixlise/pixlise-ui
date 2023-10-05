@@ -29,8 +29,6 @@ class MouseHoverPoint {
 }
 
 export class TernaryChartToolHost implements CanvasInteractionHandler {
-  cornerClick: Subject<string> = new Subject<string>();
-
   constructor(
     private _mdl: TernaryChartModel,
     private _selectionService: SelectionService
@@ -88,20 +86,6 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
     let cursor = CursorId.defaultPointer;
     if (ptWithinPolygon(canvasPt, triPts, triBox)) {
       cursor = CursorId.lassoCursor;
-    } else {
-      // If mouse is over a label... we may need to show hover icon or error tooltip
-      if (this._mdl.drawModel.labelA.containsPoint(canvasPt)) {
-        cursor = CursorId.pointerCursor;
-        this._mdl.drawModel.hoverLabel = "A";
-      } else if (this._mdl.drawModel.labelB.containsPoint(canvasPt)) {
-        cursor = CursorId.pointerCursor;
-        this._mdl.drawModel.hoverLabel = "B";
-      } else if (this._mdl.drawModel.labelC.containsPoint(canvasPt)) {
-        cursor = CursorId.pointerCursor;
-        this._mdl.drawModel.hoverLabel = "C";
-      } else {
-        this._mdl.drawModel.hoverLabel = "";
-      }
     }
     this._mdl.cursorShown = cursor;
 
@@ -123,14 +107,6 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
 
     if (mouseOverPt != null) {
       this.setSelection(new Map<string, Set<number>>([[mouseOverPt.scanId, new Set<number>([mouseOverPt.pmc])]]));
-    }
-    // TODO: Replace the following with HTML things on top of the widget
-    else if (this._mdl.drawModel.labelA.containsPoint(canvasPt)) {
-      this.cornerClick.next("A");
-    } else if (this._mdl.drawModel.labelB.containsPoint(canvasPt)) {
-      this.cornerClick.next("B");
-    } else if (this._mdl.drawModel.labelC.containsPoint(canvasPt)) {
-      this.cornerClick.next("C");
     } else {
       // They clicked in region around triangle (but not on a point), clear selection
       const triPoly = [this._mdl.drawModel.triangleA, this._mdl.drawModel.triangleB, this._mdl.drawModel.triangleC];
