@@ -1,4 +1,4 @@
-<div class="axis-switcher">
+<div class="axis-switcher" [ngClass]="{'axis-switcher-vertical': info && !info.horizontal}">
     <img *ngIf="info && (info.errorMsgShort || info.modulesOutOfDate)" src="assets/icons/error-triangle.svg" alt="Error">
-    <span>{{info ? info.label : "?"}}</span>
+    <span>{{info ? info.label : "(not assigned)"}}</span>
 </div>

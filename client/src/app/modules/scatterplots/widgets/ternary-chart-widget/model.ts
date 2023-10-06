@@ -45,7 +45,6 @@ export class TernaryChartModel implements CanvasDrawNotifier {
   public static readonly OUTER_PADDING = 10;
   public static readonly LABEL_PADDING = 4;
   public static readonly FONT_SIZE = CANVAS_FONT_SIZE_TITLE - 1;
-  public static readonly SWAP_BUTTON_SIZE = 16;
 
   // The raw data we start with
   private _raw: TernaryData | null = null;
@@ -95,9 +94,9 @@ export class TernaryChartModel implements CanvasDrawNotifier {
     const t0 = performance.now();
 
     const corners: ScatterPlotAxisInfo[] = [
-      new ScatterPlotAxisInfo("", "", "", new MinMax()),
-      new ScatterPlotAxisInfo("", "", "", new MinMax()),
-      new ScatterPlotAxisInfo("", "", "", new MinMax()),
+      new ScatterPlotAxisInfo("", false, "", "", new MinMax()),
+      new ScatterPlotAxisInfo("", false, "", "", new MinMax()),
+      new ScatterPlotAxisInfo("", false, "", "", new MinMax()),
     ];
 
     this.keyItems = [];

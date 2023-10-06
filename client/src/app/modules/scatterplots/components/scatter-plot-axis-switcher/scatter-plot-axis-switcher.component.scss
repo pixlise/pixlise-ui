@@ -21,3 +21,6 @@
     margin: $sz-qtr $sz-half;
   }
 }
+.axis-switcher-vertical {
+    transform: translateX(-40%) rotate(-90deg);
+}

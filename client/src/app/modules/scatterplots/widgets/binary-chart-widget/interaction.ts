@@ -1,4 +1,38 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
 import { Subject } from "rxjs";
+import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
+import { distanceBetweenPoints, Point, ptWithinBox, ptWithinPolygon, Rect } from "src/app/models/Geometry";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
 import {
   CanvasInteractionHandler,
   CanvasInteractionResult,
@@ -6,15 +40,10 @@ import {
   CanvasMouseEvent,
   CanvasMouseEventId,
 } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { TernaryChartModel } from "./model";
-import { Point, Rect, distanceBetweenPoints, ptWithinPolygon, ptWithinBox } from "src/app/models/Geometry";
-import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
-import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { HOVER_POINT_RADIUS } from "src/app/utils/drawing";
-import { SentryHelper, invalidPMC } from "src/app/utils/utils";
+import { BinaryChartModel } from "./model";
+import { invalidPMC, SentryHelper } from "src/app/utils/utils";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
-import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
-import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 const DRAG_THRESHOLD = 2; // how many pixels mouse can drift before we assume we're drawing a lasso
 
@@ -28,9 +57,11 @@ class MouseHoverPoint {
   ) {}
 }
 
-export class TernaryChartToolHost implements CanvasInteractionHandler {
+export class BinaryChartToolHost implements CanvasInteractionHandler {
+  axisClick$: Subject<string> = new Subject<string>();
+
   constructor(
-    private _mdl: TernaryChartModel,
+    private _mdl: BinaryChartModel,
     private _selectionService: SelectionService
   ) {}
 
@@ -39,9 +70,10 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
   }
 
   mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
-    this._mdl.recalcDisplayDataIfNeeded(event.canvasParams);
+    // TODO: Do we require this??? Here it requires a 2d drawing context so we can't call it here
+    //this._mdl.recalcDisplayDataIfNeeded(event.canvasParams);
 
-    /*if (event.eventId == CanvasMouseEventId.MOUSE_DOWN) {
+    /*if(event.eventId == CanvasMouseEventId.MOUSE_DOWN) {
     } else*/ if (event.eventId == CanvasMouseEventId.MOUSE_DRAG) {
       // User is mouse-dragging, if we haven't started a drag operation yet, do it
       if (this._mdl.mouseLassoPoints.length <= 0 && distanceBetweenPoints(event.canvasPoint, event.canvasMouseDown) > DRAG_THRESHOLD) {
@@ -79,17 +111,6 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
   }
 
   private handleMouseHover(canvasPt: Point): CanvasInteractionResult {
-    // If the mouse is over the triangle area, show a lasso cursor
-    const triPts = [this._mdl.drawModel.triangleA, this._mdl.drawModel.triangleB, this._mdl.drawModel.triangleC];
-    const triBox: Rect = Rect.makeRect(this._mdl.drawModel.triangleA, 0, 0);
-    triBox.expandToFitPoints(triPts);
-
-    let cursor = CursorId.defaultPointer;
-    if (ptWithinPolygon(canvasPt, triPts, triBox)) {
-      cursor = CursorId.lassoCursor;
-    }
-    this._mdl.cursorShown = cursor;
-
     const mouseOverPt = this.getIndexforPoint(canvasPt);
 
     if (mouseOverPt == null) {
@@ -100,6 +121,13 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
 
     // Redraw will be initiated due to selectionService hover idx change
 
+    // Assume not hovering over something...
+    if (this._mdl.drawModel.axisBorder.containsPoint(canvasPt)) {
+      this._mdl.cursorShown = CursorId.lassoCursor;
+    } else {
+      this._mdl.cursorShown = CursorId.defaultPointer;
+    }
+
     return CanvasInteractionResult.neither;
   }
 
@@ -109,12 +137,8 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
     if (mouseOverPt != null) {
       this.setSelection(new Map<string, Set<number>>([[mouseOverPt.scanId, new Set<number>([mouseOverPt.pmc])]]));
     } else {
-      // They clicked in region around triangle (but not on a point), clear selection
-      const triPoly = [this._mdl.drawModel.triangleA, this._mdl.drawModel.triangleB, this._mdl.drawModel.triangleC];
-      const triBBox = new Rect(this._mdl.drawModel.triangleA.x, this._mdl.drawModel.triangleA.y, 0, 0);
-      triBBox.expandToFitPoints(triPoly);
-
-      if (ptWithinPolygon(canvasPt, triPoly, triBBox)) {
+      // They clicked on chart, but not on any pmcs, clear selection
+      if (this._mdl.drawModel.axisBorder.containsPoint(canvasPt)) {
         this.setSelection(new Map<string, Set<number>>());
       }
     }
@@ -129,15 +153,6 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
 
     if (this._mdl.raw) {
       for (let c = 0; c < this._mdl.drawModel.pointGroupCoords.length; c++) {
-        // TODO: remove this? Seems to be here for legacy reasons, trying to diagnose a weird case
-        if (!this._mdl.raw.pointGroups[c]) {
-          SentryHelper.logMsg(
-            false,
-            `ternary handleLassoFinish raw.pointGroups[${c}] is null, pointGroupCoords length=${this._mdl.drawModel.pointGroupCoords.length}`
-          );
-          continue;
-        }
-
         const selected: Set<number> = selection.get(this._mdl.raw.pointGroups[c].scanId) || new Set<number>();
 
         let i = 0;
@@ -148,8 +163,6 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
 
           i++;
         }
-
-        selection.set(this._mdl.raw.pointGroups[c].scanId, selected);
       }
     }
 
@@ -163,26 +176,22 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
       return;
     }
 /*
-    const blockedIndexes = new Set<number>();
-
+    const blockedPMCs = new Set<number>();
     if (this._mdl.selectModeExcludeROI) {
-      for (let region of this._widgetDataService.regions.values()) {
-        if (
-          region.id != PredefinedROIID.AllPoints &&
-          region.id != PredefinedROIID.SelectedPoints &&
-          this._mdl.raw.visibleROIs.indexOf(region.id) > -1
-        ) {
-          for (let usedPMC of region.pmcs) {
+      for (const region of this._widgetDataService.regions.values()) {
+        if (region.id != PredefinedROIID.AllPoints && region.id != PredefinedROIID.SelectedPoints && this._mdl.raw.visibleROIs.indexOf(region.id) > -1) {
+          for (const usedPMC of region.pmcs) {
             blockedPMCs.add(usedPMC);
           }
         }
       }
     }
 
-    const scanEntryIndexesToSave = new Map<string, Set<number>>();
-    for (const idx of scanEntryIndexes) {
+    const set = new Set<number>();
+    for (const pmc of pmcs) {
       // If we're only selecting points that are not in any ROIs, do the filtering here:
-      if (!this._mdl.selectModeExcludeROI || !blockedIndexes.has(idx)) {
+      if (!this._mdl.selectModeExcludeROI || !blockedPMCs.has(pmc)) {
+        const idx = dataset.pmcToLocationIndex.get(pmc);
         set.add(idx);
       }
     }
@@ -198,7 +207,7 @@ export class TernaryChartToolHost implements CanvasInteractionHandler {
         if (!this._mdl.raw.pointGroups[c]) {
           SentryHelper.logMsg(
             false,
-            "ternary getIndexforPoint raw.pointGroups[" + c + "] is null, pointGroupCoords length=" + this._mdl.drawModel.pointGroupCoords.length
+            "binary getIndexforPoint raw.pointGroups[" + c + "] is null, pointGroupCoords length=" + this._mdl.drawModel.pointGroupCoords.length
           );
           continue;
         }

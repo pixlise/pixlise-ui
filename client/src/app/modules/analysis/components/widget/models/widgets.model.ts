@@ -1,5 +1,5 @@
 // import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/spectrum-chart-widget.component";
-import { BinaryChartWidgetComponent, TernaryChartWidgetComponent } from "src/app/modules/scatterplots/scatterplots.module";
+import { BinaryChartWidgetComponent, TernaryChartWidgetComponent, HistogramWidgetComponent } from "src/app/modules/scatterplots/scatterplots.module";
 import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/spectrum.module";
 
 export type WidgetToolbarButtonTypes = "selectable-button" | "button" | "toggle-button" | "multi-state-button";
@@ -68,6 +68,12 @@ export const WIDGETS = {
     name: "Ternary Plot",
     description: "Ternary plot",
     component: TernaryChartWidgetComponent,
+    controlConfiguration: {},
+  },
+  "histogram": {
+    name: "Histogram",
+    description: "Histogram",
+    component: HistogramWidgetComponent,
     controlConfiguration: {},
   },
 } satisfies Record<string, WidgetConfiguration>;

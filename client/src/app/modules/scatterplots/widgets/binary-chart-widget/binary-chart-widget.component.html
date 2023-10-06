@@ -8,7 +8,6 @@
         (onToggle)="setShowMmol()">
     </two-state-button>
     <two-state-push-button
-        class="exclude-btn"
         [active]="selectModeExcludeROI"
         (onToggle)="onToggleSelectModeExcludeROI()"
         title="Exclude Lasso: will not select points that are in an ROI"
@@ -17,5 +16,16 @@
   </div>
 </ng-template>
 
-<interactive-canvas [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interactionHandler" [transform]="transform">
+<interactive-canvas [ngClass]="mdl.cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interactionHandler" [transform]="transform">
 </interactive-canvas>
+
+<scatter-plot-axis-switcher
+  class="x-switcher"
+  [info]="xAxisSwitcher"
+  (click)="onAxisClick('X')">
+</scatter-plot-axis-switcher>
+<scatter-plot-axis-switcher
+  class="y-switcher"
+  [info]="yAxisSwitcher"
+  (click)="onAxisClick('Y')">
+</scatter-plot-axis-switcher>

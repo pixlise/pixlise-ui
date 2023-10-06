@@ -1,0 +1,26 @@
+<ng-template #settingsMenu>
+    <div class="settings">
+        <two-state-push-button
+            [active]="showWhiskers"
+            (onToggle)="onToggleShowWhiskers()"
+            title="Toggle box plot whiskers"
+        >Whiskers
+        </two-state-push-button>
+        <two-state-button
+            leftLabel="Std Dev"
+            rightLabel="Std Err"
+            toolTip="Allows siwtching between display of standard deviation or standard error for bars"
+            [active]="showStdError"
+            (onToggle)="toggleShowStdError()">
+        </two-state-button>
+        <two-state-push-button
+            [active]="logScale"
+            (onToggle)="onToggleLogScale()"
+            title="Toggles logarithmic y-scale"
+        >Log Scale
+        </two-state-push-button>
+    </div>
+</ng-template>
+
+<interactive-canvas [ngClass]="mdl.cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interactionHandler" [transform]="transform">
+</interactive-canvas>

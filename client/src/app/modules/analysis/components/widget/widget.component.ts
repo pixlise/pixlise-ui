@@ -26,7 +26,7 @@ export class WidgetComponent implements AfterViewChecked {
   visibleTopToolbarCount: number = 0;
 
   allWidgetOptions = Object.entries(WIDGETS).map(([id, value]) => ({ id, ...value }));
-  _activeWidget: keyof typeof WIDGETS = /*Object.keys(WIDGETS)[Math.random() * (Object.keys(WIDGETS).length-1)] as keyof typeof WIDGETS; */ "ternary-plot"; //"spectrum-chart";
+  _activeWidget: keyof typeof WIDGETS = "binary-plot"; // /*Object.keys(WIDGETS)[Math.random() * (Object.keys(WIDGETS).length-1)] as keyof typeof WIDGETS; */ "ternary-plot"; //"spectrum-chart";
 
   widgetConfiguration?: WidgetConfiguration;
 

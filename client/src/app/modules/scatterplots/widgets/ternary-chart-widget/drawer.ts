@@ -24,13 +24,6 @@ export class TernaryChartDrawer implements CanvasDrawer {
 
   drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     this._mdl.recalcDisplayDataIfNeeded(drawParams.drawViewport);
-
-    screenContext.textAlign = "left";
-    screenContext.textBaseline = "top";
-    screenContext.fillStyle = Colours.ORANGE.asString();
-    screenContext.font = CANVAS_FONT_SIZE_TITLE + "px Roboto";
-    screenContext.fillText("TERNARY PLOT", 0, 0);
-
     this.drawChart(screenContext, drawParams.drawViewport, this._mdl.drawModel);
   }
 

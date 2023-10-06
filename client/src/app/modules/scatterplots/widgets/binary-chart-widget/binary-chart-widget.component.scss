@@ -1,9 +1,13 @@
+@import "variables.scss";
+@import "atoms.scss";
+
 :host {
   display: flex;
   height: 100%;
 }
 
 interactive-canvas {
+  position: relative;
   width: 100%;
   height: 100%;
   flex: 1;
@@ -12,4 +16,17 @@ interactive-canvas {
 .settings {
   display: flex;
   flex-direction: column;
+}
+
+.y-switcher {
+  position: absolute;
+  bottom: 50%;
+  left: $sz-qtr;
+}
+
+.x-switcher {
+  position: absolute;
+  bottom: $sz-qtr;
+  left: 50%;
+  transform: translate(-50%, 0);
 }

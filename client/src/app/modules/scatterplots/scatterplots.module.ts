@@ -6,15 +6,17 @@ import { AnalysisModule } from "../analysis/analysis.module";
 
 import { BinaryChartWidgetComponent } from "./widgets/binary-chart-widget/binary-chart-widget.component";
 import { TernaryChartWidgetComponent } from "./widgets/ternary-chart-widget/ternary-chart-widget.component";
-import { ScatterPlotAxisSwitcherComponent } from './components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component';
+import { ScatterPlotAxisSwitcherComponent } from "./components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
+import { HistogramWidgetComponent } from "./widgets/histogram-widget/histogram-widget.component";
 
 export { BinaryChartWidgetComponent } from "./widgets/binary-chart-widget/binary-chart-widget.component";
 export { TernaryChartWidgetComponent } from "./widgets/ternary-chart-widget/ternary-chart-widget.component";
+export { HistogramWidgetComponent } from "./widgets/histogram-widget/histogram-widget.component";
 
 @NgModule({
-  declarations: [BinaryChartWidgetComponent, TernaryChartWidgetComponent, ScatterPlotAxisSwitcherComponent],
+  declarations: [BinaryChartWidgetComponent, TernaryChartWidgetComponent, ScatterPlotAxisSwitcherComponent, HistogramWidgetComponent],
   imports: [CommonModule, PIXLISECoreModule, AnalysisModule],
-  exports: [BinaryChartWidgetComponent, TernaryChartWidgetComponent],
+  exports: [BinaryChartWidgetComponent, TernaryChartWidgetComponent, HistogramWidgetComponent],
   providers: [],
 })
 export class ScatterPlotsModule {}

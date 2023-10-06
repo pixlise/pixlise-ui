@@ -1,44 +1,42 @@
-import { Component, Input, OnInit, OnDestroy } from "@angular/core";
-import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
-import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { Subscription } from "rxjs";
+import { Component, OnInit, OnDestroy } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { BinaryChartDrawer } from "./drawer";
-import {
-  CanvasDrawNotifier,
-  CanvasDrawer,
-  CanvasInteractionHandler,
-  CanvasWorldTransform,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { BinaryChartModel } from "./model";
-import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
+import { Subscription } from "rxjs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
+import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
+import { DataSourceParams, DataUnit, RegionDataResults, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
-import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
-import { BinaryChartToolHost } from "./interaction";
+import { HistogramModel } from "./model";
+import { HistogramDrawer } from "./drawer";
+import { HistogramToolHost } from "./interaction";
+import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
 
 @Component({
-  selector: "binary-chart-widget",
-  templateUrl: "./binary-chart-widget.component.html",
-  styleUrls: ["./binary-chart-widget.component.scss"],
+  selector: "histogram-widget",
+  templateUrl: "./histogram-widget.component.html",
+  styleUrls: ["./histogram-widget.component.scss"],
 })
-export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
-  mdl = new BinaryChartModel();
+export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
+  mdl = new HistogramModel();
   toolhost: CanvasInteractionHandler;
   drawer: CanvasDrawer;
 
+  // Just a dummy, we don't pan/zoom
+  transform: PanZoom = new PanZoom();
+
   private _subs = new Subscription();
+
   constructor(
     public dialog: MatDialog,
-    private _selectionService: SelectionService,
     private _widgetData: WidgetDataService
   ) {
     super();
 
     this.setInitialConfig();
 
-    this.drawer = new BinaryChartDrawer(this.mdl);
-    const toolHost = new BinaryChartToolHost(this.mdl, this._selectionService);
+    this.drawer = new HistogramDrawer(this.mdl);
+    const toolHost = new HistogramToolHost(this.mdl);
 
     this.toolhost = toolHost;
 
@@ -47,9 +45,9 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
         {
           id: "refs",
           type: "button",
-          title: "Refs",
-          tooltip: "Choose reference areas to display",
-          onClick: () => this.onReferences(),
+          title: "Bars",
+          tooltip: "Choose expressions to calculate bars from",
+          onClick: () => this.onBars(),
         },
         {
           id: "regions",
@@ -58,28 +56,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
         },
-        {
-          id: "export",
-          type: "button",
-          icon: "assets/button-icons/export.svg",
-          tooltip: "Export",
-          onClick: () => this.onExport(),
-        },
-        {
-          id: "solo",
-          type: "button",
-          icon: "assets/button-icons/widget-solo.svg",
-          tooltip: "Toggle Solo View",
-          onClick: () => this.onSoloView(),
-        },
       ],
-      topLeftInsetButton: {
-        id: "selection",
-        type: "button",
-        title: "Selection",
-        tooltip: "Selection changer",
-        onClick: () => this.onClearSelection(),
-      },
       topRightInsetButton: {
         id: "key",
         type: "button",
@@ -91,8 +68,10 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   private setInitialConfig() {
-    this.mdl.xExpression = "vge9tz6fkbi2ha1p"; // CaTi
-    this.mdl.yExpression = "fhb5x0qbx6lz9uec"; // Dip (deg, B to A)
+    this.mdl.expressionIds = [
+      "vge9tz6fkbi2ha1p", // CaTi
+      "fhb5x0qbx6lz9uec", // Dip (deg, B to A)
+    ];
 
     // Naltsos
     this.mdl.dataSourceIds.set(
@@ -100,37 +79,51 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       new ScanDataIds(
         "ox3psifd719hfo1s", //00125_Naltsos_Heirwegh_det_combined_v7_10_05_2021
         //"2ejylaj1suu6qyj9", // Naltsos 2nd Quant Carbonates Tim
-        [
-          PredefinedROIID.AllPoints
-        ]
+        [PredefinedROIID.AllPoints]
       )
     );
 
     this.update();
   }
 
-  get xAxisSwitcher(): ScatterPlotAxisInfo | null {
-    return this.mdl.raw?.xAxisInfo || null;
-  }
-
-  get yAxisSwitcher(): ScatterPlotAxisInfo | null {
-    return this.mdl.raw?.yAxisInfo || null;
-  }
-
   private update() {
-    const exprIds = [this.mdl.xExpression, this.mdl.yExpression];
-
-    const unit = this.mdl.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT;
+    const unit = DataUnit.UNIT_DEFAULT;
     const query: DataSourceParams[] = [];
 
     // NOTE: processQueryResult depends on the order of the following for loops...
     for (const [scanId, ids] of this.mdl.dataSourceIds) {
       for (const roiId of ids.roiIds) {
-        for (const exprId of exprIds) {
+        for (const exprId of this.mdl.expressionIds) {
           query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, unit));
         }
       }
     }
+
+    /* ALSO INCLUDE ERROR BARS:
+  protected getErrorColForExpression(exprId: string, roiId: string): Observable<PMCDataValues | null> {
+    // If we've got a corresponding error column, use that, otherwise return null
+    const elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
+    if (elem.length <= 0) {
+      return of(null);
+    }
+
+    // Get the detector too. If not specified, it will be '' which will mean some defaulting will happen
+    const detector = DataExpressionId.getPredefinedQuantExpressionDetector(exprId);
+
+    // Try query it
+    const errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
+    const query: DataSourceParams[] = [new DataSourceParams(errExprId, roiId, "")];
+    return this._widgetDataService.getData(query, false).pipe(
+      map(queryData => {
+        if (queryData.error || queryData.hasQueryErrors() || queryData.queryResults.length != 1) {
+          return null;
+        }
+
+        return queryData.queryResults[0].values;
+      })
+    );
+  }
+*/
 
     this._widgetData.getData(query).subscribe({
       next: data => {
@@ -146,7 +139,6 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     // this.drawer = new BinaryChartDrawer(this.mdl, this.mdl?.toolHost);
     this.reDraw();
   }
-
   ngOnDestroy() {
     this._subs.unsubscribe();
   }
@@ -155,16 +147,11 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     this.mdl.needsDraw$.next();
   }
 
-  get transform() {
-    return this.mdl.transform;
-  }
-
   get interactionHandler() {
     return this.toolhost;
   }
 
-  onExport() {}
-  onSoloView() {}
+  onBars() {}
   onRegions() {
     const dialogConfig = new MatDialogConfig();
     // Pass data to dialog
@@ -198,28 +185,26 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       }
     });
   }
-
-  onReferences() {}
-  onClearSelection() {}
   onToggleKey() {}
 
-  onAxisClick(axis: string): void {
-    console.log(axis);
+  get showWhiskers(): boolean {
+    return this.mdl.showWhiskers;
+  }
+  onToggleShowWhiskers() {
+    this.mdl.showWhiskers = !this.mdl.showWhiskers;
   }
 
-  get showMmol(): boolean {
-    return this.mdl.showMmol;
+  get showStdError(): boolean {
+    return this.mdl.showStdError;
+  }
+  toggleShowStdError() {
+    this.mdl.showStdError = !this.mdl.showStdError;
   }
 
-  setShowMmol() {
-    this.mdl.showMmol = !this.mdl.showMmol;
+  get logScale(): boolean {
+    return this.mdl.logScale;
   }
-
-  get selectModeExcludeROI(): boolean {
-    return this.mdl.selectModeExcludeROI;
-  }
-
-  onToggleSelectModeExcludeROI() {
-    this.mdl.selectModeExcludeROI = !this.mdl.selectModeExcludeROI;
+  onToggleLogScale() {
+    this.mdl.logScale = !this.mdl.logScale;
   }
 }
