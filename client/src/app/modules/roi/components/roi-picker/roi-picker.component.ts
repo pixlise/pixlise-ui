@@ -43,6 +43,9 @@ export type ROIPickerResponse = {
 
 export type ROIPickerData = {
   requestFullROIs: boolean;
+  selectedIds?: string[];
+  selectedROIs?: ROIItem[];
+  selectedROISummaries?: ROIItemSummary[];
 };
 
 @Component({
@@ -64,12 +67,35 @@ export class ROIPickerComponent implements OnInit {
 
   waitingForROIs: string[] = [];
 
+  fetchedAllSelectedROIs: boolean = true;
+
   constructor(
     private _roiService: ROIService,
     private _snackBarService: SnackbarService,
     @Inject(MAT_DIALOG_DATA) public data: ROIPickerData,
     public dialogRef: MatDialogRef<ROIPickerComponent, ROIPickerResponse>
-  ) {}
+  ) {
+    if (data?.selectedROIs) {
+      this.selectedROIs = Object.fromEntries(data.selectedROIs.map(roi => [roi.id, ROIService.formSummaryFromROI(roi)]));
+    }
+
+    if (data?.selectedROISummaries) {
+      this.selectedROIs = Object.fromEntries(data.selectedROISummaries.map(roi => [roi.id, roi]));
+    }
+
+    if (data?.selectedIds) {
+      data.selectedIds.forEach(id => {
+        if (!this._roiService.roiItems$.value[id]) {
+          this.fetchedAllSelectedROIs = false;
+          this._roiService.fetchROI(id, true);
+        }
+      });
+
+      if (this.fetchedAllSelectedROIs) {
+        this.selectedROIs = Object.fromEntries(data.selectedIds.map(id => [id, ROIService.formSummaryFromROI(this._roiService.roiItems$.value[id])]));
+      }
+    }
+  }
 
   ngOnInit(): void {
     this._subs.add(
@@ -86,6 +112,20 @@ export class ROIPickerComponent implements OnInit {
             notFoundROIs.push(roiId);
           }
         });
+
+        if (!this.fetchedAllSelectedROIs && this.data?.selectedIds) {
+          let fetchedAll = true;
+          this.data.selectedIds?.forEach(id => {
+            if (!this._roiService.roiItems$.value[id]) {
+              fetchedAll = false;
+            }
+          });
+
+          if (fetchedAll) {
+            this.fetchedAllSelectedROIs = true;
+            this.selectedROIs = Object.fromEntries(this.data.selectedIds.map(id => [id, ROIService.formSummaryFromROI(this._roiService.roiItems$.value[id])]));
+          }
+        }
 
         this.waitingForROIs = notFoundROIs;
       })
@@ -119,7 +159,11 @@ export class ROIPickerComponent implements OnInit {
   }
 
   onFilterAuthor(author: string): void {
-    this.manualFilters = { authors: [author] };
+    if (author === "builtin") {
+      this.manualFilters = { types: ["builtin"] };
+    } else {
+      this.manualFilters = { authors: [author] };
+    }
   }
 
   onFilterChanged({ filteredSummaries }: ROISearchFilter): void {

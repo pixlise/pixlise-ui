@@ -51,5 +51,9 @@ export const findColourOption = (colour: RGBA | string): ColourOption => {
     return deepCopyColour(matchedColour);
   }
 
-  return generateDefaultColour();
+  let unmatchedColour = generateDefaultColour();
+  unmatchedColour.colour = typeof colour === "string" ? colour : colour.asString();
+  unmatchedColour.rgba = typeof colour === "string" ? Colours.WHITE : colour;
+
+  return unmatchedColour;
 };

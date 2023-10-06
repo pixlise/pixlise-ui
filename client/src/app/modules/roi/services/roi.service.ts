@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
+import { APIDataService, SelectionService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import {
   RegionOfInterestBulkDuplicateReq,
   RegionOfInterestBulkWriteReq,
@@ -11,21 +11,29 @@ import {
 } from "src/app/generated-protos/roi-msgs";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { SearchParams } from "src/app/generated-protos/search-params";
-import { BehaviorSubject, Observable, ReplaySubject, map, of, scan, shareReplay } from "rxjs";
+import { BehaviorSubject, Observable, Subscription, firstValueFrom, map, of, shareReplay } from "rxjs";
 import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../components/roi-shape/roi-shape.component";
 import { COLOURS, ColourOption } from "../models/roi-colors";
 import {
+  ROIDisplaySettingOption,
   ROIDisplaySettings,
   RegionSettings,
+  createDefaultAllPointsItem,
   createDefaultAllPointsRegionSettings,
   createDefaultROIDisplaySettings,
   createDefaultRemainingPointsRegionSettings,
+  createDefaultSelectedPointsItem,
   createDefaultSelectedPointsRegionSettings,
+  getBuiltinIDFromScanID,
 } from "../models/roi-region";
-import { RGBA } from "src/app/utils/colours";
+import { Colours, RGBA } from "src/app/utils/colours";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { SelectionHistoryItem } from "../../pixlisecore/services/selection.service";
+import { BeamSelection } from "../../pixlisecore/models/beam-selection";
+import { PixelSelection } from "../../pixlisecore/models/pixel-selection";
+import { ScanEntryReq } from "src/app/generated-protos/scan-entry-msgs";
 
 export type ROISummaries = Record<string, ROIItemSummary>;
 
@@ -37,13 +45,15 @@ export class ROIService {
   roiItems$ = new BehaviorSubject<Record<string, ROIItem>>({});
   mistROIsByScanId$ = new BehaviorSubject<Record<string, ROISummaries>>({});
 
-  // displaySettingsMap$ = new BehaviorSubject<Map<string, ROIDisplaySettings>>(new Map<string, ROIDisplaySettings>()); // Map of ROI ID to display settings
   displaySettingsMap$ = new BehaviorSubject<Record<string, ROIDisplaySettings>>({}); // Map of ROI ID to display settings
-  private _scanShapeMap = new Map<string, ROIShape>();
-  private _nextScanShapeIdx: number = 0;
+  private _regionMap = new Map<string, Observable<RegionSettings>>(); // Cached region observables
 
-  private _regionMap = new Map<string, Observable<RegionSettings>>();
-  private _nextColourIdx: number = 0;
+  private _scanShapeMap = new Map<string, ROIShape>();
+
+  private _nextScanShapeIndices: Record<string, number> = {};
+  private _nextColourIndices: Record<string, number> = {};
+
+  private _selectionIds: string[] = [];
 
   private _shapes: ROIShape[] = ROI_SHAPES;
   private _colours: ColourOption[] = COLOURS;
@@ -51,9 +61,57 @@ export class ROIService {
   constructor(
     private _dataService: APIDataService,
     private _snackBarService: SnackbarService,
-    private _cachedDataService: APICachedDataService
+    private _cachedDataService: APICachedDataService,
+    private _selectionService: SelectionService
   ) {
     this.listROIs();
+
+    this._selectionService.selection$.subscribe(selection => {
+      this.generateSelectionROI(selection);
+    });
+  }
+
+  generateSelectionROI(selection: SelectionHistoryItem) {
+    if (!selection) {
+      return;
+    }
+
+    let selectionChanged = false;
+
+    // Remove all previous selected points ROIs so that we don't get dangling ROIs if no points in a dataset are selected next
+    this._selectionIds.forEach(id => {
+      delete this.roiItems$.value[id];
+      delete this.roiSummaries$.value[id];
+      delete this.displaySettingsMap$.value[id];
+
+      selectionChanged = true;
+    });
+
+    this._selectionIds = [];
+
+    // Everytime selection changes, update all selected points ROIs
+    selection.beamSelection.getScanIds().forEach(scanId => {
+      let selectedPointsROI = createDefaultSelectedPointsItem(scanId);
+      selectedPointsROI.scanEntryIndexesEncoded = Array.from(selection.beamSelection.getSelectedScanEntryIndexes(scanId));
+      selectedPointsROI.pixelIndexesEncoded = Array.from(selection.pixelSelection.selectedPixels);
+      selectedPointsROI.imageName = selection.pixelSelection.imageName;
+
+      if (selectedPointsROI) {
+        this.roiItems$.value[selectedPointsROI.id] = selectedPointsROI;
+        this.roiSummaries$.value[selectedPointsROI.id] = ROIService.formSummaryFromROI(selectedPointsROI);
+        this.displaySettingsMap$.value[selectedPointsROI.id] = { colour: Colours.CONTEXT_BLUE, shape: DEFAULT_ROI_SHAPE };
+
+        this._selectionIds.push(selectedPointsROI.id);
+        selectionChanged = true;
+      }
+    });
+
+    // If we added or deleted any ROIs, update the observables
+    if (selectionChanged) {
+      this.roiItems$.next(this.roiItems$.value);
+      this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+      this.roiSummaries$.next(this.roiSummaries$.value);
+    }
   }
 
   listROIs() {
@@ -64,9 +122,63 @@ export class ROIService {
     this.searchROIs(SearchParams.create({ scanId }), true);
   }
 
+  getAllPointsROI(scanId: string): Observable<ROIItem> {
+    return this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId })).pipe(
+      map(res => {
+        let entryIds = res.entries.map(entry => entry.id);
+        let allPointsROI = createDefaultAllPointsItem(scanId);
+        allPointsROI.scanEntryIndexesEncoded = entryIds;
+
+        return allPointsROI;
+      })
+    );
+  }
+
+  getSelectedPointsROI(scanId: string): ROIItem | null {
+    let currentSelection = this._selectionService.getCurrentSelection();
+    if (!currentSelection || !scanId) {
+      return null;
+    }
+
+    let selectedPointsROI = createDefaultSelectedPointsItem(scanId);
+    selectedPointsROI.scanEntryIndexesEncoded = Array.from(currentSelection.beamSelection.getSelectedScanEntryIndexes(scanId));
+    selectedPointsROI.pixelIndexesEncoded = Array.from(currentSelection.pixelSelection.selectedPixels);
+    selectedPointsROI.imageName = currentSelection.pixelSelection.imageName;
+
+    return selectedPointsROI;
+  }
+
   searchROIs(searchParams: SearchParams, isMIST: boolean = false) {
+    // Check if selection ROI exists for this scan and if not, create an empty one
+    if (searchParams.scanId && searchParams.scanId.length > 0) {
+      if (!this.roiItems$.value[getBuiltinIDFromScanID(searchParams.scanId, PredefinedROIID.SelectedPoints)]) {
+        let selectedPointsROI = this.getSelectedPointsROI(searchParams.scanId);
+        if (selectedPointsROI) {
+          this.roiItems$.value[selectedPointsROI.id] = selectedPointsROI;
+          this.roiSummaries$.value[selectedPointsROI.id] = ROIService.formSummaryFromROI(selectedPointsROI);
+          this.displaySettingsMap$.value[selectedPointsROI.id] = { colour: Colours.CONTEXT_BLUE, shape: DEFAULT_ROI_SHAPE };
+          this.roiItems$.next(this.roiItems$.value);
+          this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+        }
+      }
+    }
+
+    // Check if all points ROI exists for this scan and if not, fetch it
+    let allPointsROIID = getBuiltinIDFromScanID(searchParams.scanId, PredefinedROIID.AllPoints);
+    if (searchParams.scanId && searchParams.scanId.length > 0 && !this.roiSummaries$.value[allPointsROIID]) {
+      this.getAllPointsROI(searchParams.scanId).subscribe(allPointsROI => {
+        if (allPointsROI) {
+          this.roiItems$.value[allPointsROI.id] = allPointsROI;
+          this.roiSummaries$.value[allPointsROI.id] = ROIService.formSummaryFromROI(allPointsROI);
+          this.displaySettingsMap$.value[allPointsROI.id] = { colour: Colours.GRAY_10, shape: DEFAULT_ROI_SHAPE };
+          this.roiItems$.next(this.roiItems$.value);
+          this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+        }
+      });
+    }
+
     this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({ searchParams, isMIST })).subscribe({
-      next: res => {
+      next: async res => {
         this.roiSummaries$.next({ ...this.roiSummaries$.value, ...res.regionsOfInterest });
 
         if (isMIST && searchParams.scanId) {
@@ -84,9 +196,9 @@ export class ROIService {
     // If we have not encountered this scan before, create the default ROIs for it
     let scanShape = this._scanShapeMap.get(scanId);
     if (!scanShape) {
-      scanShape = this.nextScanShape();
+      scanShape = this.nextScanShape(scanId);
       this._scanShapeMap.set(scanId, scanShape);
-      this.createDefaultROIs(scanId, scanShape);
+      this.createDefaultScanRegions(scanId, scanShape);
     }
 
     // Now we check if we can service locally from our  map
@@ -105,7 +217,7 @@ export class ROIService {
           let displaySettings = this.displaySettingsMap$.value[roiId];
           if (!displaySettings) {
             // Work out a colour for this ROI
-            let colour = this.nextColour().rgba;
+            let colour = this.nextScanColour(scanId).rgba;
 
             // Work out the shape (there should be one in our map by now)
             let shape = this._scanShapeMap.get(scanId) || DEFAULT_ROI_SHAPE;
@@ -152,22 +264,49 @@ export class ROIService {
     }
   }
 
-  private createDefaultROIs(scanId: string, scanShape: ROIShape) {
+  private createDefaultScanRegions(scanId: string, scanShape: ROIShape) {
     // Add defaults for predefined ROIs
     this._regionMap.set(`${scanId}_${PredefinedROIID.AllPoints}`, of(createDefaultAllPointsRegionSettings(scanId, scanShape)));
     this._regionMap.set(`${scanId}_${PredefinedROIID.SelectedPoints}`, of(createDefaultSelectedPointsRegionSettings(scanId, scanShape)));
     this._regionMap.set(`${scanId}_${PredefinedROIID.RemainingPoints}`, of(createDefaultRemainingPointsRegionSettings(scanId, scanShape)));
   }
 
-  private nextScanShape(): ROIShape {
-    const shape = this._shapes[this._nextScanShapeIdx];
-    this._nextScanShapeIdx = (this._nextScanShapeIdx + 1) % this._shapes.length;
+  nextDisplaySettings(scanId: string): ROIDisplaySettingOption {
+    let colourIdx = this._nextColourIndices[scanId] || 0;
+    let shapeIdx = this._nextScanShapeIndices[scanId] || 0;
+
+    const colour = this._colours[colourIdx];
+    const shape = this._shapes[shapeIdx];
+
+    if (colourIdx + 1 >= this._colours.length) {
+      shapeIdx = (shapeIdx + 1) % this._shapes.length;
+    }
+
+    colourIdx = (colourIdx + 1) % this._colours.length;
+
+    this._nextColourIndices[scanId] = colourIdx;
+    this._nextScanShapeIndices[scanId] = shapeIdx;
+
+    return { colour, shape };
+  }
+
+  private nextScanShape(scanId: string): ROIShape {
+    let shapeIdx = this._nextScanShapeIndices[scanId] || 0;
+
+    const shape = this._shapes[shapeIdx];
+    shapeIdx = (shapeIdx + 1) % this._shapes.length;
+    this._nextScanShapeIndices[scanId] = shapeIdx;
+
     return shape;
   }
 
-  private nextColour(): ColourOption {
-    const colour = this._colours[this._nextColourIdx];
-    this._nextColourIdx = (this._nextColourIdx + 1) % this._colours.length;
+  private nextScanColour(scanId: string = ""): ColourOption {
+    let colourIdx = this._nextColourIndices[scanId] || 0;
+
+    const colour = this._colours[colourIdx];
+    colourIdx = (colourIdx + 1) % this._colours.length;
+    this._nextColourIndices[scanId] = colourIdx;
+
     return colour;
   }
 
@@ -192,7 +331,7 @@ export class ROIService {
     });
   }
 
-  formSummaryFromROI(roi: ROIItem): ROIItemSummary {
+  static formSummaryFromROI(roi: ROIItem): ROIItemSummary {
     return ROIItemSummary.create({
       id: roi.id,
       scanId: roi.scanId,
@@ -235,7 +374,7 @@ export class ROIService {
             this.roiItems$.next(this.roiItems$.value);
 
             if (updateSummary) {
-              this.roiSummaries$.value[res.regionOfInterest.id] = this.formSummaryFromROI(res.regionOfInterest);
+              this.roiSummaries$.value[res.regionOfInterest.id] = ROIService.formSummaryFromROI(res.regionOfInterest);
               this.roiSummaries$.next(this.roiSummaries$.value);
 
               if (res.regionOfInterest.isMIST) {
@@ -243,7 +382,7 @@ export class ROIService {
                   this.mistROIsByScanId$.value[res.regionOfInterest.scanId] = {};
                 }
 
-                this.mistROIsByScanId$.value[res.regionOfInterest.scanId][res.regionOfInterest.id] = this.formSummaryFromROI(res.regionOfInterest);
+                this.mistROIsByScanId$.value[res.regionOfInterest.scanId][res.regionOfInterest.id] = ROIService.formSummaryFromROI(res.regionOfInterest);
                 this.mistROIsByScanId$.next(this.mistROIsByScanId$.value);
               }
             }
@@ -298,7 +437,7 @@ export class ROIService {
                 }
 
                 roi.isMIST = isMIST;
-                this.mistROIsByScanId$.value[scanId][roi.id] = this.formSummaryFromROI(roi);
+                this.mistROIsByScanId$.value[scanId][roi.id] = ROIService.formSummaryFromROI(roi);
               }
             });
 

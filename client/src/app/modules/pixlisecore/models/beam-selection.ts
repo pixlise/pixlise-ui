@@ -53,7 +53,7 @@ export class BeamSelection {
     return new BeamSelection(new Map<string, Set<number>>([[scanId, idxs]]));
   }
 
-  private constructor(private _scanEntries: Map<string, Set<number>>) {}
+  constructor(private _scanEntries: Map<string, Set<number>>) {}
 
   isEqualTo(other: BeamSelection): boolean {
     if (!arraysEqual<string>(Array.from(this._scanEntries.keys()), Array.from(other._scanEntries.keys()))) {
