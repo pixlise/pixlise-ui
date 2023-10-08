@@ -90,8 +90,8 @@ export class BinaryChartModel implements CanvasDrawNotifier {
     this.expressionsMissingPMCs = "";
 
     this.processQueryResult(t0, [this.xExpression, this.yExpression], data, [
-      new ScatterPlotAxisInfo("", true, "", "", new MinMax()),
       new ScatterPlotAxisInfo("", false, "", "", new MinMax()),
+      new ScatterPlotAxisInfo("", true, "", "", new MinMax()),
     ]);
 
     this._recalcNeeded = true;

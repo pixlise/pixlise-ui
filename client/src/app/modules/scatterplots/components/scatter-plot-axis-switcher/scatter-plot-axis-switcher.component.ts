@@ -4,7 +4,7 @@ import { MinMax } from "src/app/models/BasicTypes";
 export class ScatterPlotAxisInfo {
   constructor(
     public label: string,
-    public horizontal: boolean,
+    public vertical: boolean,
     public errorMsgShort: string,
     public errorMsgLong: string,
     public valueRange: MinMax,
