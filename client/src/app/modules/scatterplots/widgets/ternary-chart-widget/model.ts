@@ -1,28 +1,21 @@
 import { Subject } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
-import {
-  CanvasDrawNotifier,
-  CanvasInteractionHandler,
-  CanvasInteractionResult,
-  CanvasKeyEvent,
-  CanvasMouseEvent,
-  CanvasWorldTransform,
-  CanvasParams,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { PanRestrictorToCanvas, PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
 import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
-import { Point, PointWithRayLabel, Rect, scaleVector } from "src/app/models/Geometry";
+import { Point, PointWithRayLabel, scaleVector } from "src/app/models/Geometry";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { degToRad, invalidPMC } from "src/app/utils/utils";
 import { CANVAS_FONT_SIZE_TITLE, PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, PointDrawer } from "src/app/utils/drawing";
-import { ExpressionReferences, RegionDataResultItem, RegionDataResults, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ExpressionReferences, RegionDataResults, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { PMCDataValues } from "src/app/expression-language/data-values";
 import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
 import { ScanDataIds, WidgetDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
+import { BaseChartDrawModel, BaseChartModel } from "../../base/cached-drawer";
 
-export class TernaryChartModel implements CanvasDrawNotifier {
+export class TernaryChartModel implements CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
 
   transform: PanZoom = new PanZoom(new MinMax(1), new MinMax(1), new PanRestrictorToCanvas());
@@ -73,6 +66,10 @@ export class TernaryChartModel implements CanvasDrawNotifier {
     this._raw = r;
   }
 */
+  hasRawData(): boolean {
+    return this._raw != null;
+  }
+
   get raw(): TernaryData | null {
     return this._raw;
   }
@@ -350,18 +347,17 @@ export class TernaryChartModel implements CanvasDrawNotifier {
   }
 }
 
-export class TernaryDrawModel {
+export class TernaryDrawModel implements BaseChartDrawModel {
+  // Our rendered to an image, cached and only regenerated on resolution
+  // change or data change
+  drawnData: OffscreenCanvas | null = null;
+
   triangleWidth: number = 0;
   triangleHeight: number = 0;
 
   // Coordinates we draw the points at
   pointGroupCoords: Point[][] = [];
   totalPointCount: number = 0;
-
-  // The points rendered to an image
-  // NOTE: storing this does not make the above points redundant because
-  // we still have mouse interaction to deal with that needs xy coordinates
-  drawnPoints: OffscreenCanvas | null = null;
 
   // Triangle points
   //    C
@@ -380,7 +376,7 @@ export class TernaryDrawModel {
 
   regenerate(raw: TernaryData | null, canvasParams: CanvasParams): void {
     this.totalPointCount = 0;
-    this.drawnPoints = null; // Force regen
+    this.drawnData = null; // Force regen
 
     const labelHeight = TernaryChartModel.FONT_SIZE + TernaryChartModel.LABEL_PADDING + TernaryChartModel.OUTER_PADDING;
 

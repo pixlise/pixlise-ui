@@ -1,28 +1,21 @@
 import { Subject } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
-import {
-  CanvasDrawNotifier,
-  CanvasInteractionHandler,
-  CanvasInteractionResult,
-  CanvasKeyEvent,
-  CanvasMouseEvent,
-  CanvasWorldTransform,
-  CanvasParams,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { PanRestrictorToCanvas, PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
 import { Point, PointWithRayLabel, Rect } from "src/app/models/Geometry";
 import { RGBA, Colours } from "src/app/utils/colours";
 import { ScanDataIds, WidgetDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
-import { ExpressionReferences, RegionDataResultItem, RegionDataResults, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ExpressionReferences, RegionDataResults, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ChartAxis, ChartAxisDrawer, LinearChartAxis } from "src/app/modules/analysis/components/widget/interactive-canvas/chart-axis";
 import { CANVAS_FONT_SIZE_TITLE, PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, PointDrawer } from "src/app/utils/drawing";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
-import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
+import { PMCDataValues } from "src/app/expression-language/data-values";
 import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { BaseChartDrawModel, BaseChartModel } from "../../base/cached-drawer";
 
-export class BinaryChartModel implements CanvasDrawNotifier {
+export class BinaryChartModel implements CanvasDrawNotifier, BaseChartModel {
   // Some commonly used constants
   public static readonly OUTER_PADDING = 6;
   public static readonly LABEL_PADDING = 4;
@@ -65,6 +58,10 @@ export class BinaryChartModel implements CanvasDrawNotifier {
 
   private _lastCalcCanvasParams: CanvasParams | null = null;
   private _recalcNeeded = true;
+
+  hasRawData(): boolean {
+    return this._raw != null;
+  }
 
   get raw(): BinaryData | null {
     return this._raw;
@@ -278,15 +275,17 @@ export class BinaryChartModel implements CanvasDrawNotifier {
   }
 }
 
-export class BinaryDrawModel {
+export class BinaryDrawModel implements BaseChartDrawModel {
+  // Our rendered to an image, cached and only regenerated on resolution
+  // change or data change
+  drawnData: OffscreenCanvas | null = null;
+
+  xAxis: ChartAxis | null = null;
+  yAxis: ChartAxis | null = null;
+
   // Coordinates we draw the points at
   pointGroupCoords: PointWithRayLabel[][] = [];
   totalPointCount: number = 0;
-
-  // The points rendered to an image
-  // NOTE: storing this does not make the above points redundant because
-  // we still have mouse interaction to deal with that needs xy coordinates
-  drawnPoints: OffscreenCanvas | null = null;
 
   // Axis & data labels:
   //
@@ -298,15 +297,12 @@ export class BinaryDrawModel {
 
   axisBorder: Rect = new Rect(0, 0, 0, 0);
 
-  xAxis: ChartAxis | null = null;
-  yAxis: ChartAxis | null = null;
-
   xValueRange: MinMax = new MinMax();
   yValueRange: MinMax = new MinMax();
 
   regenerate(raw: BinaryData | null, canvasParams: CanvasParams, screenContext: CanvasRenderingContext2D): void {
     this.totalPointCount = 0;
-    this.drawnPoints = null; // Force regen
+    this.drawnData = null; // Force regen
 
     // The absolute outer border (outside of this is just padding)
     const outerBorder = new Rect(

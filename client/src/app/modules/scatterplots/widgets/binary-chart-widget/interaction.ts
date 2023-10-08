@@ -58,8 +58,6 @@ class MouseHoverPoint {
 }
 
 export class BinaryChartToolHost implements CanvasInteractionHandler {
-  axisClick$: Subject<string> = new Subject<string>();
-
   constructor(
     private _mdl: BinaryChartModel,
     private _selectionService: SelectionService

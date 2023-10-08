@@ -1,68 +1,50 @@
-import { ChartAxisDrawer, LinearChartAxis } from "src/app/modules/analysis/components/widget/interactive-canvas/chart-axis";
-import {
-  CanvasDrawParameters,
-  CanvasDrawer,
-  CanvasParams,
-  CanvasWorldTransform,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawParameters } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { Colours } from "src/app/utils/colours";
-import { CANVAS_FONT_SIZE_TITLE, HOVER_POINT_RADIUS, OUTLINE_LINE_WIDTH, OutlineDrawer, PLOT_POINTS_SIZE, PointDrawer } from "src/app/utils/drawing";
+import { HOVER_POINT_RADIUS, OUTLINE_LINE_WIDTH, OutlineDrawer, PLOT_POINTS_SIZE, PointDrawer } from "src/app/utils/drawing";
 
 import { BinaryChartModel, BinaryDrawModel } from "./model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { BaseChartModel, CachedCanvasChartDrawer } from "../../base/cached-drawer";
 
-export class BinaryChartDrawer implements CanvasDrawer {
+export class BinaryChartDrawer extends CachedCanvasChartDrawer {
   public showSwapButton: boolean = true;
   public lightMode: boolean = false;
 
-  private _ctx = {
-    xAxis: new LinearChartAxis(true, 0, 100, 0, 100),
-    yAxis: new LinearChartAxis(false, 0, 100, 0, 100),
-  };
-
-  protected _lastCalcCanvasParams: CanvasParams | null = null;
-
-  constructor(private _mdl: BinaryChartModel) {}
-
-  drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
-    this._mdl.recalcDisplayDataIfNeeded(drawParams.drawViewport, screenContext);
-    this.drawChart(screenContext, drawParams, this._mdl.drawModel);
+  constructor(private _mdl: BinaryChartModel) {
+    super();
   }
 
-  drawWorldSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {}
+  protected get mdl(): BaseChartModel {
+    return this._mdl;
+  }
 
-  protected drawChart(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters, drawData: BinaryDrawModel): void {
-    const clrHover = Colours.CONTEXT_PURPLE;
-    const clrLasso = Colours.PURPLE;
-    const viewport = drawParams.drawViewport;
-
+  drawPreData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     // Draw background
     screenContext.fillStyle = this.lightMode ? Colours.WHITE.asString() : Colours.BLACK.asString();
-    screenContext.fillRect(0, 0, viewport.width, viewport.height);
+    screenContext.fillRect(0, 0, drawParams.drawViewport.width, drawParams.drawViewport.height);
+  }
 
-    // Draw data points
-    if (drawData) {
-      if (!drawData.drawnPoints && this._mdl.raw) {
-        drawData.drawnPoints = new OffscreenCanvas(viewport.width, viewport.height);
-        const offscreenContext = drawData.drawnPoints.getContext("2d");
-        if (offscreenContext) {
-          // Render points to an image for drawing
-          const alpha = PointDrawer.getOpacity(drawData.totalPointCount);
-          for (let c = 0; c < drawData.pointGroupCoords.length; c++) {
-            const colourGroup =
-              this._mdl.raw.pointGroups[c].roiId === PredefinedROIID.AllPoints && this.lightMode ? Colours.GRAY_80 : this._mdl.raw.pointGroups[c].colour;
-            const visibility = this._mdl.raw.pointGroups[c].roiId === PredefinedROIID.AllPoints && this.lightMode ? 0.4 : alpha;
-            const drawer = new PointDrawer(offscreenContext, PLOT_POINTS_SIZE, colourGroup, null, this._mdl.raw.pointGroups[c].shape);
-            drawer.drawPoints(drawData.pointGroupCoords[c], visibility);
-          }
-        }
-      }
-
-      if (drawData.drawnPoints) {
-        // Draw previously rendered points...
-        screenContext.drawImage(drawData.drawnPoints, 0, 0);
-      }
+  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    // Shut up transpiler... the null check has already actually happened...
+    if (!this._mdl.raw) {
+      return;
     }
+
+    const drawData = this._mdl.drawModel;
+
+    const alpha = PointDrawer.getOpacity(drawData.totalPointCount);
+    for (let c = 0; c < drawData.pointGroupCoords.length; c++) {
+      const colourGroup = this._mdl.raw.pointGroups[c].roiId === PredefinedROIID.AllPoints && this.lightMode ? Colours.GRAY_80 : this._mdl.raw.pointGroups[c].colour;
+      const visibility = this._mdl.raw.pointGroups[c].roiId === PredefinedROIID.AllPoints && this.lightMode ? 0.4 : alpha;
+      const drawer = new PointDrawer(screenContext, PLOT_POINTS_SIZE, colourGroup, null, this._mdl.raw.pointGroups[c].shape);
+      drawer.drawPoints(drawData.pointGroupCoords[c], visibility);
+    }
+  }
+
+  drawPostData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    const drawData = this._mdl.drawModel;
+    const clrHover = Colours.CONTEXT_PURPLE;
+    const clrLasso = Colours.PURPLE;
 
     // Draw axes
     if (drawData.xAxis !== null && drawData.yAxis !== null) {
@@ -91,8 +73,6 @@ export class BinaryChartDrawer implements CanvasDrawer {
       const drawer = new OutlineDrawer(screenContext, OUTLINE_LINE_WIDTH, clrLasso);
       drawer.drawOutline(this._mdl.mouseLassoPoints);
     }
-
-    screenContext.restore();
   }
 
   private drawHoverPoint(screenContext: CanvasRenderingContext2D, drawData: BinaryDrawModel) {

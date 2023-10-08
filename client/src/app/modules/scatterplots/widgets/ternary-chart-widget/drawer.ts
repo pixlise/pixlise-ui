@@ -13,66 +13,26 @@ import {
   wrapText,
 } from "src/app/utils/drawing";
 import { TernaryDrawModel, TernaryChartModel } from "./model";
-import { Point, Rect } from "src/app/models/Geometry";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { CachedCanvasChartDrawer, BaseChartModel } from "../../base/cached-drawer";
 
-export class TernaryChartDrawer implements CanvasDrawer {
+
+export class TernaryChartDrawer extends CachedCanvasChartDrawer {
   public showSwapButton: boolean = true;
   public lightMode: boolean = false;
 
-  constructor(private _mdl: TernaryChartModel) {}
-
-  drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
-    this._mdl.recalcDisplayDataIfNeeded(drawParams.drawViewport);
-    this.drawChart(screenContext, drawParams.drawViewport, this._mdl.drawModel);
+  constructor(private _mdl: TernaryChartModel) {
+    super();
   }
 
-  drawWorldSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {}
-
-  protected drawChart(screenContext: CanvasRenderingContext2D, viewport: CanvasParams, drawData: TernaryDrawModel): void {
-    const clrHover = Colours.CONTEXT_PURPLE;
-    const clrLasso = Colours.PURPLE;
-
-    this.drawBackground(screenContext, viewport, drawData);
-    this.drawHoverPointValueIfNeeded(screenContext, viewport, clrHover, drawData);
-
-    // Draw data points
-    if (drawData) {
-      if (!drawData.drawnPoints && this._mdl.raw) {
-        drawData.drawnPoints = new OffscreenCanvas(viewport.width, viewport.height);
-        const offscreenContext = drawData.drawnPoints.getContext("2d");
-        if (offscreenContext) {
-          // Render points to an image for drawing
-          const alpha = PointDrawer.getOpacity(drawData.totalPointCount);
-          for (let c = 0; c < drawData.pointGroupCoords.length; c++) {
-            const colourGroup = this._mdl.raw.pointGroups[c].roiId === PredefinedROIID.AllPoints && this.lightMode ? Colours.GRAY_80 : this._mdl.raw.pointGroups[c].colour;
-            const visibility = this._mdl.raw.pointGroups[c].roiId === PredefinedROIID.AllPoints && this.lightMode ? 0.4 : alpha;
-            const drawer = new PointDrawer(offscreenContext, PLOT_POINTS_SIZE, colourGroup, null, this._mdl.raw.pointGroups[c].shape);
-            drawer.drawPoints(drawData.pointGroupCoords[c], visibility);
-          }
-        }
-      }
-
-      if (drawData.drawnPoints) {
-        // Draw previously rendered points...
-        screenContext.drawImage(drawData.drawnPoints, 0, 0);
-      }
-    }
-
-    // And hover point if any
-    if (this._mdl.hoverPoint != null) {
-      const drawer = new PointDrawer(screenContext, HOVER_POINT_RADIUS, clrHover, null, this._mdl.hoverShape);
-      drawer.drawPoints([this._mdl.hoverPoint], 1, true);
-    }
-
-    // And lasso if any
-    if (this._mdl.mouseLassoPoints) {
-      const drawer = new OutlineDrawer(screenContext, OUTLINE_LINE_WIDTH, clrLasso);
-      drawer.drawOutline(this._mdl.mouseLassoPoints);
-    }
+  protected get mdl(): BaseChartModel {
+    return this._mdl;
   }
 
-  private drawBackground(ctx: CanvasRenderingContext2D, viewport: CanvasParams, drawModel: TernaryDrawModel): void {
+  drawPreData(ctx: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    const viewport = drawParams.drawViewport;
+    const drawData = this._mdl.drawModel;
+
     // Draw color background
     ctx.fillStyle = this.lightMode ? Colours.WHITE.asString() : Colours.BLACK.asString();
     ctx.fillRect(0, 0, viewport.width, viewport.height);
@@ -81,15 +41,15 @@ export class TernaryChartDrawer implements CanvasDrawer {
     ctx.strokeStyle = this.lightMode ? Colours.GRAY_90.asString() : Colours.GRAY_60.asString();
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(drawModel.triangleA.x, drawModel.triangleA.y);
-    ctx.lineTo(drawModel.triangleB.x, drawModel.triangleB.y);
-    ctx.lineTo(drawModel.triangleC.x, drawModel.triangleC.y);
-    ctx.lineTo(drawModel.triangleA.x, drawModel.triangleA.y);
+    ctx.moveTo(drawData.triangleA.x, drawData.triangleA.y);
+    ctx.lineTo(drawData.triangleB.x, drawData.triangleB.y);
+    ctx.lineTo(drawData.triangleC.x, drawData.triangleC.y);
+    ctx.lineTo(drawData.triangleA.x, drawData.triangleA.y);
     ctx.stroke();
 
     // Draw scale/lines
-    const height = drawModel.triangleC.y - drawModel.triangleA.y;
-    const width = drawModel.triangleB.x - drawModel.triangleA.x;
+    const height = drawData.triangleC.y - drawData.triangleA.y;
+    const width = drawData.triangleB.x - drawData.triangleA.x;
 
     // Thicker lines, then thinner lines
     for (let i = 0; i < 2; i++) {
@@ -101,22 +61,59 @@ export class TernaryChartDrawer implements CanvasDrawer {
       for (let t = start; t < end; t += 0.25) {
         // Horizontal
         ctx.beginPath();
-        ctx.moveTo(drawModel.triangleA.x + (t * width) / 2, drawModel.triangleA.y + t * height);
-        ctx.lineTo(drawModel.triangleB.x - (t * width) / 2, drawModel.triangleB.y + t * height);
+        ctx.moveTo(drawData.triangleA.x + (t * width) / 2, drawData.triangleA.y + t * height);
+        ctx.lineTo(drawData.triangleB.x - (t * width) / 2, drawData.triangleB.y + t * height);
         ctx.stroke();
 
         // Left edge direction
         ctx.beginPath();
-        ctx.moveTo(drawModel.triangleA.x + t * width, drawModel.triangleA.y);
-        ctx.lineTo(drawModel.triangleC.x + t * width * 0.5, drawModel.triangleC.y - t * height);
+        ctx.moveTo(drawData.triangleA.x + t * width, drawData.triangleA.y);
+        ctx.lineTo(drawData.triangleC.x + t * width * 0.5, drawData.triangleC.y - t * height);
         ctx.stroke();
 
         // Right edge direction
         ctx.beginPath();
-        ctx.moveTo(drawModel.triangleB.x - t * width, drawModel.triangleB.y);
-        ctx.lineTo(drawModel.triangleC.x - t * width * 0.5, drawModel.triangleC.y - t * height);
+        ctx.moveTo(drawData.triangleB.x - t * width, drawData.triangleB.y);
+        ctx.lineTo(drawData.triangleC.x - t * width * 0.5, drawData.triangleC.y - t * height);
         ctx.stroke();
       }
+    }
+  }
+
+  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    // Shut up transpiler... the null check has already actually happened...
+    if (!this._mdl.raw) {
+      return;
+    }
+
+    const drawData = this._mdl.drawModel;
+
+    // Render points to an image for drawing
+    const alpha = PointDrawer.getOpacity(drawData.totalPointCount);
+    for (let c = 0; c < drawData.pointGroupCoords.length; c++) {
+      const colourGroup = this._mdl.raw.pointGroups[c].roiId === PredefinedROIID.AllPoints && this.lightMode ? Colours.GRAY_80 : this._mdl.raw.pointGroups[c].colour;
+      const visibility = this._mdl.raw.pointGroups[c].roiId === PredefinedROIID.AllPoints && this.lightMode ? 0.4 : alpha;
+      const drawer = new PointDrawer(screenContext, PLOT_POINTS_SIZE, colourGroup, null, this._mdl.raw.pointGroups[c].shape);
+      drawer.drawPoints(drawData.pointGroupCoords[c], visibility);
+    }
+  }
+
+  drawPostData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    const clrHover = Colours.CONTEXT_PURPLE;
+    const clrLasso = Colours.PURPLE;
+
+    this.drawHoverPointValueIfNeeded(screenContext, drawParams.drawViewport, clrHover, this._mdl.drawModel);
+
+    // And hover point if any
+    if (this._mdl.hoverPoint != null) {
+      const drawer = new PointDrawer(screenContext, HOVER_POINT_RADIUS, clrHover, null, this._mdl.hoverShape);
+      drawer.drawPoints([this._mdl.hoverPoint], 1, true);
+    }
+
+    // And lasso if any
+    if (this._mdl.mouseLassoPoints) {
+      const drawer = new OutlineDrawer(screenContext, OUTLINE_LINE_WIDTH, clrLasso);
+      drawer.drawOutline(this._mdl.mouseLassoPoints);
     }
   }
 
@@ -135,11 +132,7 @@ export class TernaryChartDrawer implements CanvasDrawer {
       screenContext.fillText(this._mdl.hoverPointData.c.toLocaleString(), drawModel.hoverLabelC.x, drawModel.hoverLabelC.y);
 
       // Also draw the scan ID and PMC
-      screenContext.fillText(
-        "Scan ID: " + this._mdl.hoverScanId + ", PMC: " + this._mdl.hoverPointData.scanEntryId,
-        10,
-        drawModel.hoverLabelC.y
-      );
+      screenContext.fillText(`Scan ID: ${this._mdl.hoverScanId}, PMC: ${this._mdl.hoverPointData.scanEntryId}`, 10, drawModel.hoverLabelC.y);
     }
   }
 }
