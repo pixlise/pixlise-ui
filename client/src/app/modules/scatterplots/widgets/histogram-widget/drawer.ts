@@ -33,7 +33,8 @@ import { Point } from "src/app/models/Geometry";
 import { HistogramModel, HistogramDrawBar } from "./model";
 import { ChartAxisDrawer } from "src/app/modules/analysis/components/widget/interactive-canvas/chart-axis";
 import { CanvasDrawParameters } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { BaseChartModel, CachedCanvasChartDrawer } from "../../base/cached-drawer";
+import { CachedCanvasChartDrawer } from "../../base/cached-drawer";
+import { BaseChartModel } from "../../base/model-interfaces";
 
 export class HistogramDrawer extends CachedCanvasChartDrawer {
   constructor(private _mdl: HistogramModel) {

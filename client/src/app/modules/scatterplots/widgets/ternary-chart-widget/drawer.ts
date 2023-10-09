@@ -14,7 +14,8 @@ import {
 } from "src/app/utils/drawing";
 import { TernaryDrawModel, TernaryChartModel } from "./model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { CachedCanvasChartDrawer, BaseChartModel } from "../../base/cached-drawer";
+import { CachedCanvasChartDrawer } from "../../base/cached-drawer";
+import { BaseChartModel } from "../../base/model-interfaces";
 
 
 export class TernaryChartDrawer extends CachedCanvasChartDrawer {
@@ -124,12 +125,12 @@ export class TernaryChartDrawer extends CachedCanvasChartDrawer {
 
       // Right aligned - we want this near the triangle
       screenContext.textAlign = "right";
-      screenContext.fillText(this._mdl.hoverPointData.a.toLocaleString(), drawModel.hoverLabelA.x, drawModel.hoverLabelA.y);
+      screenContext.fillText(this._mdl.hoverPointData.values[0].toLocaleString(), drawModel.hoverLabelA.x, drawModel.hoverLabelA.y);
 
       // Left aligned, these are on the other side of the triangle...
       screenContext.textAlign = "left";
-      screenContext.fillText(this._mdl.hoverPointData.b.toLocaleString(), drawModel.hoverLabelB.x, drawModel.hoverLabelB.y);
-      screenContext.fillText(this._mdl.hoverPointData.c.toLocaleString(), drawModel.hoverLabelC.x, drawModel.hoverLabelC.y);
+      screenContext.fillText(this._mdl.hoverPointData.values[1].toLocaleString(), drawModel.hoverLabelB.x, drawModel.hoverLabelB.y);
+      screenContext.fillText(this._mdl.hoverPointData.values[2].toLocaleString(), drawModel.hoverLabelC.x, drawModel.hoverLabelC.y);
 
       // Also draw the scan ID and PMC
       screenContext.fillText(`Scan ID: ${this._mdl.hoverScanId}, PMC: ${this._mdl.hoverPointData.scanEntryId}`, 10, drawModel.hoverLabelC.y);

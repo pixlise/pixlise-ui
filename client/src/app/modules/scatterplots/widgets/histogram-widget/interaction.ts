@@ -37,9 +37,6 @@ import {
   CanvasKeyEvent,
 } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 
-//import { SelectionService } from 'src/app/services/selection.service';
-//import { DataSetService } from 'src/app/services/data-set.service';
-
 export class HistogramToolHost implements CanvasInteractionHandler {
   constructor(private _mdl: HistogramModel) {}
 

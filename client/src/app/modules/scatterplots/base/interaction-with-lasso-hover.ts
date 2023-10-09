@@ -41,9 +41,9 @@ import {
   CanvasMouseEventId,
 } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { HOVER_POINT_RADIUS } from "src/app/utils/drawing";
-import { BinaryChartModel } from "./model";
 import { invalidPMC, SentryHelper } from "src/app/utils/utils";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
+import { BaseChartModelWithLasso } from "./model-interfaces";
 
 const DRAG_THRESHOLD = 2; // how many pixels mouse can drift before we assume we're drawing a lasso
 
@@ -57,9 +57,9 @@ class MouseHoverPoint {
   ) {}
 }
 
-export class BinaryChartToolHost implements CanvasInteractionHandler {
+export abstract class InteractionWithLassoHover implements CanvasInteractionHandler {
   constructor(
-    private _mdl: BinaryChartModel,
+    private _mdl: BaseChartModelWithLasso,
     private _selectionService: SelectionService
   ) {}
 
@@ -99,14 +99,14 @@ export class BinaryChartToolHost implements CanvasInteractionHandler {
       }
 
       // Reset
-      this._mdl.hoverPoint = null;
-      this._mdl.hoverPointData = null;
-      this._mdl.mouseLassoPoints = [];
+      this.resetHover();
       return CanvasInteractionResult.redrawAndCatch;
     }
 
     return CanvasInteractionResult.neither;
   }
+
+  protected abstract resetHover(): void;
 
   private handleMouseHover(canvasPt: Point): CanvasInteractionResult {
     const mouseOverPt = this.getIndexforPoint(canvasPt);
@@ -119,12 +119,8 @@ export class BinaryChartToolHost implements CanvasInteractionHandler {
 
     // Redraw will be initiated due to selectionService hover idx change
 
-    // Assume not hovering over something...
-    if (this._mdl.drawModel.axisBorder.containsPoint(canvasPt)) {
-      this._mdl.cursorShown = CursorId.lassoCursor;
-    } else {
-      this._mdl.cursorShown = CursorId.defaultPointer;
-    }
+    // Adjust cursor if mouse is over data or not
+    this._mdl.cursorShown = this.isOverDataArea(canvasPt) ? CursorId.lassoCursor : CursorId.defaultPointer;
 
     return CanvasInteractionResult.neither;
   }
@@ -136,11 +132,13 @@ export class BinaryChartToolHost implements CanvasInteractionHandler {
       this.setSelection(new Map<string, Set<number>>([[mouseOverPt.scanId, new Set<number>([mouseOverPt.pmc])]]));
     } else {
       // They clicked on chart, but not on any pmcs, clear selection
-      if (this._mdl.drawModel.axisBorder.containsPoint(canvasPt)) {
+      if (this.isOverDataArea(canvasPt)) {
         this.setSelection(new Map<string, Set<number>>());
       }
     }
   }
+
+  protected abstract isOverDataArea(pt: Point): boolean;
 
   private handleLassoFinish(lassoPoints: Point[]): void {
     // Loop through all data points, if they're within our lasso, select their PMC
@@ -156,7 +154,7 @@ export class BinaryChartToolHost implements CanvasInteractionHandler {
         let i = 0;
         for (const coord of this._mdl.drawModel.pointGroupCoords[c]) {
           if (ptWithinPolygon(coord, lassoPoints, bbox)) {
-            selected.add(this._mdl.raw.pointGroups[c].values[i].scanEntryId);
+            selected.add(this._mdl.raw.pointGroups[c].valuesPerScanEntry[i].scanEntryId);
           }
 
           i++;
@@ -203,17 +201,14 @@ export class BinaryChartToolHost implements CanvasInteractionHandler {
 
       for (let c = 0; c < this._mdl.drawModel.pointGroupCoords.length; c++) {
         if (!this._mdl.raw.pointGroups[c]) {
-          SentryHelper.logMsg(
-            false,
-            "binary getIndexforPoint raw.pointGroups[" + c + "] is null, pointGroupCoords length=" + this._mdl.drawModel.pointGroupCoords.length
-          );
+          SentryHelper.logMsg(false, "getIndexforPoint raw.pointGroups[" + c + "] is null, pointGroupCoords length=" + this._mdl.drawModel.pointGroupCoords.length);
           continue;
         }
 
         let i = 0;
         for (const coord of this._mdl.drawModel.pointGroupCoords[c]) {
           if (ptWithinBox(pt, coord, boxSize, boxSize)) {
-            return new MouseHoverPoint(this._mdl.raw.pointGroups[c].scanId, this._mdl.raw.pointGroups[c].values[i].scanEntryId, c, i, coord);
+            return new MouseHoverPoint(this._mdl.raw.pointGroups[c].scanId, this._mdl.raw.pointGroups[c].valuesPerScanEntry[i].scanEntryId, c, i, coord);
           }
 
           i++;

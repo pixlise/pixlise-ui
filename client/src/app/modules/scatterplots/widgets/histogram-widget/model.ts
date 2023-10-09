@@ -11,7 +11,7 @@ import { PMCDataValues } from "src/app/expression-language/data-values";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
 import { WidgetDataIds, ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
-import { BaseChartDrawModel, BaseChartModel } from "../../base/cached-drawer";
+import { BaseChartDrawModel, BaseChartModel } from "../../base/model-interfaces";
 
 export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();

@@ -10,12 +10,33 @@ import {
   CanvasInteractionHandler,
   CanvasWorldTransform,
 } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { BinaryChartModel } from "./model";
+import { BinaryChartModel, BinaryDrawModel } from "./model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
-import { BinaryChartToolHost } from "./interaction";
+import { Point } from "src/app/models/Geometry";
+import { InteractionWithLassoHover } from "../../base/interaction-with-lasso-hover";
+
+
+class BinaryChartToolHost extends InteractionWithLassoHover {
+  constructor(
+    private _binMdl: BinaryChartModel,
+    selectionService: SelectionService
+  ) {
+    super(_binMdl, selectionService);
+  }
+
+  protected resetHover(): void {
+    this._binMdl.hoverPoint = null;
+    this._binMdl.hoverPointData = null;
+    this._binMdl.mouseLassoPoints = [];
+  }
+
+  protected isOverDataArea(canvasPt: Point): boolean {
+    return this._binMdl.drawModel.axisBorder.containsPoint(canvasPt);
+  }
+}
 
 @Component({
   selector: "binary-chart-widget",
@@ -23,7 +44,7 @@ import { BinaryChartToolHost } from "./interaction";
   styleUrls: ["./binary-chart-widget.component.scss"],
 })
 export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
-  mdl = new BinaryChartModel();
+  mdl = new BinaryChartModel(new BinaryDrawModel());
   toolhost: CanvasInteractionHandler;
   drawer: CanvasDrawer;
 
@@ -91,8 +112,8 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   private setInitialConfig() {
-    this.mdl.xExpression = "vge9tz6fkbi2ha1p"; // CaTi
-    this.mdl.yExpression = "fhb5x0qbx6lz9uec"; // Dip (deg, B to A)
+    this.mdl.expressionIds.push("vge9tz6fkbi2ha1p"); // CaTi
+    this.mdl.expressionIds.push("fhb5x0qbx6lz9uec"); // Dip (deg, B to A)
 
     // Naltsos
     this.mdl.dataSourceIds.set(
@@ -100,9 +121,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       new ScanDataIds(
         "ox3psifd719hfo1s", //00125_Naltsos_Heirwegh_det_combined_v7_10_05_2021
         //"2ejylaj1suu6qyj9", // Naltsos 2nd Quant Carbonates Tim
-        [
-          PredefinedROIID.AllPoints
-        ]
+        [PredefinedROIID.AllPoints]
       )
     );
 
@@ -118,7 +137,9 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   private update() {
-    const exprIds = [this.mdl.xExpression, this.mdl.yExpression];
+    if (this.mdl.expressionIds.length != 2) {
+      throw new Error("Expected 2 expression ids for Binary");
+    }
 
     const unit = this.mdl.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT;
     const query: DataSourceParams[] = [];
@@ -126,7 +147,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     // NOTE: processQueryResult depends on the order of the following for loops...
     for (const [scanId, ids] of this.mdl.dataSourceIds) {
       for (const roiId of ids.roiIds) {
-        for (const exprId of exprIds) {
+        for (const exprId of this.mdl.expressionIds) {
           query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, unit));
         }
       }

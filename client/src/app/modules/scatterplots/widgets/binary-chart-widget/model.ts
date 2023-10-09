@@ -1,277 +1,34 @@
-import { Subject } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
-import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { PanRestrictorToCanvas, PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
-import { Point, PointWithRayLabel, Rect } from "src/app/models/Geometry";
-import { RGBA, Colours } from "src/app/utils/colours";
-import { ScanDataIds, WidgetDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
-import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
-import { ExpressionReferences, RegionDataResults, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
+import { PointWithRayLabel, Rect } from "src/app/models/Geometry";
+import { Colours } from "src/app/utils/colours";
+import { RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ChartAxis, ChartAxisDrawer, LinearChartAxis } from "src/app/modules/analysis/components/widget/interactive-canvas/chart-axis";
-import { CANVAS_FONT_SIZE_TITLE, PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, PointDrawer } from "src/app/utils/drawing";
+import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, CANVAS_FONT_SIZE_TITLE } from "src/app/utils/drawing";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
-import { PMCDataValues } from "src/app/expression-language/data-values";
-import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
-import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { BaseChartDrawModel, BaseChartModel } from "../../base/cached-drawer";
+import { BaseChartDrawModel } from "../../base/model-interfaces";
+import { NaryChartDataGroup, NaryChartModel } from "../../base/model";
 
-export class BinaryChartModel implements CanvasDrawNotifier, BaseChartModel {
-  // Some commonly used constants
-  public static readonly OUTER_PADDING = 6;
-  public static readonly LABEL_PADDING = 4;
-  public static readonly FONT_SIZE = CANVAS_FONT_SIZE_TITLE;
+export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel> {
   public static readonly FONT_SIZE_SMALL = CANVAS_FONT_SIZE_TITLE - 4;
 
-  needsDraw$: Subject<void> = new Subject<void>();
-
-  transform: PanZoom = new PanZoom(new MinMax(1), new MinMax(1), new PanRestrictorToCanvas());
-
-  // Settings of the binary chart
-  xExpression: string = "";
-  yExpression: string = "";
-
-  // The scan and quantification the data will come from
-  dataSourceIds: WidgetDataIds = new Map<string, ScanDataIds>();
-
-  showMmol: boolean = false;
-  selectModeExcludeROI: boolean = false;
-
-  // The raw data we start with
-  private _raw: BinaryData | null = null;
-
-  // The drawable data (derived from the above)
-  private _drawModel: BinaryDrawModel = new BinaryDrawModel();
-
-  // Mouse interaction drawing
-  hoverPoint: Point | null = null;
-  hoverScanId: string = "";
-  hoverPointData: BinaryDataItem | null = null;
-  hoverShape: string = PointDrawer.ShapeCircle;
-
-  cursorShown: string = CursorId.defaultPointer;
-  mouseLassoPoints: Point[] = [];
-
-  keyItems: WidgetKeyItem[] = [];
-  expressionsMissingPMCs: string = "";
-
-  private _references: string[] = [];
-
-  private _lastCalcCanvasParams: CanvasParams | null = null;
-  private _recalcNeeded = true;
-
-  hasRawData(): boolean {
-    return this._raw != null;
+  protected regenerateDrawModel(raw: BinaryData | null, canvasParams: CanvasParams): void {
+    this._drawModel.regenerate(raw, canvasParams);
   }
 
-  get raw(): BinaryData | null {
-    return this._raw;
+  setData(data: RegionDataResults): void {
+    const axes: ScatterPlotAxisInfo[] = [new ScatterPlotAxisInfo("", false, "", "", new MinMax()), new ScatterPlotAxisInfo("", true, "", "", new MinMax())];
+
+    this.processQueryResult("Binary", data, axes);
   }
 
-  get drawModel(): BinaryDrawModel {
-    return this._drawModel;
-  }
-
-  recalcDisplayDataIfNeeded(canvasParams: CanvasParams, screenContext: CanvasRenderingContext2D): void {
-    // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
-    if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
-      this._drawModel.regenerate(this._raw, canvasParams, screenContext);
-      this._lastCalcCanvasParams = canvasParams;
-      this._recalcNeeded = false;
-    }
-  }
-
-  setData(data: RegionDataResults) {
-    const t0 = performance.now();
-
-    this.keyItems = [];
-    this.expressionsMissingPMCs = "";
-
-    this.processQueryResult(t0, [this.xExpression, this.yExpression], data, [
-      new ScatterPlotAxisInfo("", false, "", "", new MinMax()),
-      new ScatterPlotAxisInfo("", true, "", "", new MinMax()),
-    ]);
-
-    this._recalcNeeded = true;
-  }
-
-  private processQueryResult(t0: number, exprIds: string[], queryData: RegionDataResults, axes: ScatterPlotAxisInfo[]) {
-    const pointGroups: BinaryDataGroup[] = [];
-    const queryWarnings: string[] = [];
-
-    for (let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx += exprIds.length) {
-      // Set up storage for our data first
-      const scanId = queryData.queryResults[queryIdx].query.scanId;
-      const roiId = queryData.queryResults[queryIdx].query.roiId;
-      const region = queryData.queryResults[queryIdx].region;
-
-      let pointGroup: BinaryDataGroup | null = null;
-
-      // Filter out PMCs that don't exist in the data for all 3 corners
-      const toFilter: PMCDataValues[] = [];
-      for (let c = 0; c < exprIds.length; c++) {
-        toFilter.push(queryData.queryResults[queryIdx + c].values);
-
-        if (queryData.queryResults[queryIdx + c].warning) {
-          queryWarnings.push(queryData.queryResults[queryIdx + c].warning);
-        }
-      }
-
-      if (toFilter.length == 2 && (toFilter[0]?.values?.length || 0) != (toFilter[1]?.values?.length || 0)) {
-        queryWarnings.push("X and Y axes had different sets of PMCs, only showing PMCs that exist on both axes");
-      }
-
-      const filteredValues = PMCDataValues.filterToCommonPMCsOnly(toFilter);
-
-      // Read for each expression
-      for (let c = 0; c < exprIds.length; c++) {
-        // Read the name
-        const expr = queryData.queryResults[queryIdx + c].expression;
-        axes[c].label = getExpressionShortDisplayName(18, expr?.id || "", expr?.name || "?").shortName;
-
-        const mmolAppend = "(mmol)";
-        if (this.showMmol && !axes[c].label.endsWith(mmolAppend)) {
-          // Note this won't detect if (mmol) was modified by short name to be (mm...
-          axes[c].label += mmolAppend;
-        }
-
-        // TODO: handle module out of date errors
-
-        // Did we find an error with this query?
-        if (queryData.queryResults[queryIdx + c].error) {
-          axes[c].errorMsgShort = queryData.queryResults[queryIdx + c].errorType || "";
-          axes[c].errorMsgLong = queryData.queryResults[queryIdx + c].error || "";
-
-          console.error(`Binary encountered error with expression: ${exprIds[c]}, on region: ${roiId}, axis: ` + (c == 0 ? "x" : "y"));
-          continue;
-        }
-
-        // Expression didn't have errors, so try read its values
-        if (!region) {
-          // Show an error, we clearly don't have region data ready
-          axes[c].errorMsgShort = "Region error";
-          axes[c].errorMsgLong = "Region data not found for: " + roiId;
-
-          console.error(axes[c].errorMsgLong);
-          continue;
-        }
-
-        if (!pointGroup) {
-          // Reading the region for the first time, create a point group and key entry
-          pointGroup = new BinaryDataGroup(
-            scanId,
-            roiId,
-            [],
-            RGBA.fromWithA(region.displaySettings.colour, 1),
-            region.displaySettings.shape,
-            new Map<number, number>()
-          );
-
-          // Add to key too. We only specify an ID if it can be brought to front - all points & selection
-          // are fixed in their draw order, so don't supply for those
-          let roiIdForKey = region.region.id;
-          if (PredefinedROIID.isPredefined(roiIdForKey)) {
-            roiIdForKey = "";
-          }
-
-          this.keyItems.push(new WidgetKeyItem(roiIdForKey, region.region.name, region.displaySettings.colour, [], region.displaySettings.shape));
-        }
-
-        const roiValues: PMCDataValues | null = filteredValues[c];
-
-        // Update corner min/max
-        if (roiValues) {
-          axes[c].valueRange.expandByMinMax(roiValues.valueRange);
-
-          // Store the A/B/C values
-          for (let i = 0; i < roiValues.values.length; i++) {
-            const value = roiValues.values[i];
-
-            // Save it in A, B or C - A also is creating the value...
-            if (c == 0) {
-              pointGroup.values.push(new BinaryDataItem(value.pmc, value.value, 0));
-              pointGroup.scanEntryIdToValueIdx.set(value.pmc, pointGroup.values.length - 1);
-            } else {
-              // Ensure we're writing to the right PMC
-              // Should always be the right order because we run 3 queries with the same ROI
-              if (pointGroup.values[i].scanEntryId != value.pmc) {
-                throw new Error(
-                  `Received PMCs in unexpected order for binary axis: ${c == 0 ? "x" : "y"}, got PMC: ${value.pmc}, expected: ${pointGroup.values[i].scanEntryId}`
-                );
-              }
-
-              if (c > 0) {
-                pointGroup.values[i].y = value.value;
-              }
-            }
-          }
-        }
-      }
-
-      if (pointGroup && pointGroup.values.length > 0) {
-        pointGroups.push(pointGroup);
-      }
+  protected makeData(axes: ScatterPlotAxisInfo[], pointGroups: NaryChartDataGroup[]): BinaryData {
+    if (axes.length != 2) {
+      throw new Error(`Invalid axis count for binary: ${axes.length}`);
     }
 
-    this.assignQueryResult(t0, pointGroups, axes, /*pmcLookup,*/ queryWarnings);
-  }
-
-  private assignQueryResult(t0: number, pointGroups: BinaryDataGroup[], axes: ScatterPlotAxisInfo[], queryWarnings: string[]) {
-    if (this._references.length > 0) {
-      const pointGroup: BinaryDataGroup = new BinaryDataGroup("", "", [], Colours.CONTEXT_PURPLE, PointDrawer.ShapeCircle, new Map<number, number>());
-
-      this._references.forEach((referenceName, i) => {
-        const reference = ExpressionReferences.getByName(referenceName);
-
-        if (!reference) {
-          console.error(`BinaryPlot prepareData: Couldn't find reference ${referenceName}`);
-          return;
-        }
-
-        let refXValue = ExpressionReferences.getExpressionValue(reference, this.xExpression)?.weightPercentage;
-        let refYValue = ExpressionReferences.getExpressionValue(reference, this.yExpression)?.weightPercentage;
-        const nullMask = [refXValue == null, refYValue == null];
-
-        // If we have more than one null value, we can't plot this reference on a ternary plot
-        if (nullMask.filter(isNull => isNull).length > 1) {
-          console.warn(`BinaryPlot prepareData: Reference ${referenceName} has undefined ${this.xExpression},${this.yExpression} values`);
-          return;
-        }
-
-        if (refXValue == null) {
-          refXValue = 0;
-          console.warn(`BinaryPlot prepareData: Reference ${referenceName} has undefined ${this.xExpression} value`);
-        }
-        if (refYValue == null) {
-          refYValue = 0;
-          console.warn(`BinaryPlot prepareData: Reference ${referenceName} has undefined ${this.yExpression} value`);
-        }
-
-        // We don't have a PMC for these, so -10 and below are now reserverd for reference values
-        const referenceIndex = ExpressionReferences.references.findIndex(ref => ref.name === referenceName);
-        const id = -10 - referenceIndex;
-
-        console.log(`BinaryPlot prepareData: Adding reference ${referenceName} with id ${id} and values (${refXValue}, ${refYValue})`);
-
-        pointGroup.values.push(new BinaryDataItem(id, refXValue, refYValue, referenceName, nullMask));
-        //pmcLookup.set(refXDataValue.values[i].pmc, new BinaryPlotPointIndex(xPointGroup.length, i));
-      });
-
-      pointGroups.push(pointGroup);
-      this.keyItems.push(new WidgetKeyItem("references", "Ref Points", Colours.CONTEXT_PURPLE, [], PointDrawer.ShapeCircle));
-    }
-
-    if (queryWarnings.length > 0) {
-      this.expressionsMissingPMCs = Array.from(queryWarnings).join("\n");
-    }
-
-    const binaryData = new BinaryData(axes[0], axes[1], pointGroups); // , pmcLookup);
-    this._raw = binaryData;
-
-    const t1 = performance.now();
-    this.needsDraw$.next();
-    const t2 = performance.now();
-
-    console.log("  Binary prepareData took: " + (t1 - t0).toLocaleString() + "ms, needsDraw$ took: " + (t2 - t1).toLocaleString() + "ms");
+    return new BinaryData(axes[0], axes[1], pointGroups);
   }
 }
 
@@ -300,7 +57,7 @@ export class BinaryDrawModel implements BaseChartDrawModel {
   xValueRange: MinMax = new MinMax();
   yValueRange: MinMax = new MinMax();
 
-  regenerate(raw: BinaryData | null, canvasParams: CanvasParams, screenContext: CanvasRenderingContext2D): void {
+  regenerate(raw: BinaryData | null, canvasParams: CanvasParams): void {
     this.totalPointCount = 0;
     this.drawnData = null; // Force regen
 
@@ -344,7 +101,17 @@ export class BinaryDrawModel implements BaseChartDrawModel {
     // All this for variable y-axis label widths!!
     // We need to find the max sized label in pixels
     const drawer = this.makeChartAxisDrawer();
-    const longestYTickLabelPx = drawer.getLongestTickLabelPx(screenContext, this.yAxis);
+
+    // We used to pass in the screen canvas here, but this was a special case. Now that code is standardised, the only "freak"
+    // thing about this code is that it needs to calculate the pixel length of a string, so we create an off-screen canvas
+    // here for now and hope that its config matches the screen one!
+    const cnv = new OffscreenCanvas(canvasParams.width, canvasParams.height);
+    const offscreenContext = cnv.getContext("2d");
+
+    let longestYTickLabelPx = 100;
+    if (offscreenContext) {
+      longestYTickLabelPx = drawer.getLongestTickLabelPx(offscreenContext, this.yAxis);
+    }
 
     // Now we feed that back into BOTH xAxis and yAxis (recreating them is the easiest option for now)
     this.initAxes(canvasParams, panZoom, outerBorder, leftAxisSpace + longestYTickLabelPx, bottomAxisSpace);
@@ -357,12 +124,12 @@ export class BinaryDrawModel implements BaseChartDrawModel {
       for (const group of raw.pointGroups) {
         const coords: PointWithRayLabel[] = [];
 
-        for (const value of group.values) {
-          const pointXValue = value.nullMask[0] ? "null" : value.x;
-          const canvasX = this.xAxis.valueToCanvas(value.nullMask[0] ? 0 : value.x);
+        for (const value of group.valuesPerScanEntry) {
+          const pointXValue = value.nullMask[0] ? "null" : value.values[0];
+          const canvasX = this.xAxis.valueToCanvas(value.nullMask[0] ? 0 : value.values[0]);
 
-          const pointYValue = value.nullMask[1] ? "null" : value.y;
-          const canvasY = this.yAxis.valueToCanvas(value.nullMask[0] ? 0 : value.y);
+          const pointYValue = value.nullMask[1] ? "null" : value.values[1];
+          const canvasY = this.yAxis.valueToCanvas(value.nullMask[0] ? 0 : value.values[1]);
 
           coords.push(
             new PointWithRayLabel(
@@ -432,40 +199,10 @@ export class BinaryDrawModel implements BaseChartDrawModel {
   }
 }
 
-export class BinaryDataItem {
-  constructor(
-    public scanEntryId: number, // Aka PMC, id that doesn't change on scan for a data point source (spectrum id)
-    public x: number,
-    public y: number,
-    public label: string = "",
-    public nullMask: boolean[] = [false, false]
-  ) {}
-}
-
-export class BinaryDataGroup {
-  constructor(
-    // This group contains data for the following ROI within the following scan:
-    public scanId: string,
-    public roiId: string,
-
-    // It contains these values to show:
-    public values: BinaryDataItem[],
-
-    // And these are the draw settings for the values:
-    public colour: RGBA,
-    public shape: string,
-
-    // A reverse lookup from scan entry Id (aka PMC) to the values array
-    // This is mainly required for selection service hover notifications, so
-    // we can quickly find the valus to display
-    public scanEntryIdToValueIdx: Map<number, number>
-  ) {}
-}
-
 export class BinaryData {
   constructor(
     public xAxisInfo: ScatterPlotAxisInfo,
     public yAxisInfo: ScatterPlotAxisInfo,
-    public pointGroups: BinaryDataGroup[]
+    public pointGroups: NaryChartDataGroup[]
   ) {}
 }

@@ -1,314 +1,34 @@
-import { Subject } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
-import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { PanRestrictorToCanvas, PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
-import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
+import { CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { Point, PointWithRayLabel, scaleVector } from "src/app/models/Geometry";
-import { Colours, RGBA } from "src/app/utils/colours";
 import { degToRad, invalidPMC } from "src/app/utils/utils";
-import { CANVAS_FONT_SIZE_TITLE, PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, PointDrawer } from "src/app/utils/drawing";
-import { ExpressionReferences, RegionDataResults, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { PMCDataValues } from "src/app/expression-language/data-values";
-import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
-import { ScanDataIds, WidgetDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
+import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, PointDrawer } from "src/app/utils/drawing";
+import { RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
-import { BaseChartDrawModel, BaseChartModel } from "../../base/cached-drawer";
+import { BaseChartDrawModel } from "../../base/model-interfaces";
+import { NaryChartDataGroup, NaryChartDataItem, NaryChartModel } from "../../base/model";
 
-export class TernaryChartModel implements CanvasDrawNotifier, BaseChartModel {
-  needsDraw$: Subject<void> = new Subject<void>();
-
-  transform: PanZoom = new PanZoom(new MinMax(1), new MinMax(1), new PanRestrictorToCanvas());
-
-  // All parameters to draw a ternary diagram:
-
-  // The 3 expressions
-  expressionIdA = "";
-  expressionIdB = "";
-  expressionIdC = "";
-
-  // The scan and quantification the data will come from
-  dataSourceIds: WidgetDataIds = new Map<string, ScanDataIds>();
-
-  // Settings of the binary chart
-  showMmol: boolean = false;
-  selectModeExcludeROI: boolean = false;
-
-  // Some commonly used constants
-  public static readonly OUTER_PADDING = 10;
-  public static readonly LABEL_PADDING = 4;
-  public static readonly FONT_SIZE = CANVAS_FONT_SIZE_TITLE - 1;
-
-  // The raw data we start with
-  private _raw: TernaryData | null = null;
-
-  // The drawable data (derived from the above)
-  private _drawModel: TernaryDrawModel = new TernaryDrawModel();
-
-  // Mouse interaction drawing
-  hoverPoint: Point | null = null;
-  hoverScanId: string = "";
-  hoverPointData: TernaryDataItem | null = null;
-  hoverShape: string = PointDrawer.ShapeCircle;
-
-  cursorShown: string = CursorId.defaultPointer;
-  mouseLassoPoints: Point[] = [];
-
-  keyItems: WidgetKeyItem[] = [];
-  expressionsMissingPMCs: string = "";
-
-  private _references: string[] = [];
-
-  private _lastCalcCanvasParams: CanvasParams | null = null;
-  private _recalcNeeded = true;
-  /*
-  set raw(r: TernaryData) {
-    this._raw = r;
-  }
-*/
-  hasRawData(): boolean {
-    return this._raw != null;
+export class TernaryChartModel extends NaryChartModel<TernaryData, TernaryDrawModel> {
+  protected regenerateDrawModel(raw: TernaryData | null, canvasParams: CanvasParams): void {
+    this._drawModel.regenerate(raw, canvasParams);
   }
 
-  get raw(): TernaryData | null {
-    return this._raw;
-  }
-
-  get drawModel(): TernaryDrawModel {
-    return this._drawModel;
-  }
-
-  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): void {
-    // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
-    if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
-      this._drawModel.regenerate(this._raw, canvasParams);
-      this._lastCalcCanvasParams = canvasParams;
-      this._recalcNeeded = false;
-    }
-  }
-
-  setData(data: RegionDataResults) {
-    const t0 = performance.now();
-
+  setData(data: RegionDataResults): void {
     const corners: ScatterPlotAxisInfo[] = [
       new ScatterPlotAxisInfo("", false, "", "", new MinMax()),
       new ScatterPlotAxisInfo("", false, "", "", new MinMax()),
       new ScatterPlotAxisInfo("", false, "", "", new MinMax()),
     ];
 
-    this.keyItems = [];
-    this.expressionsMissingPMCs = "";
-
-    this.processQueryResult(t0, [this.expressionIdA, this.expressionIdB, this.expressionIdC], data, corners);
-    this._recalcNeeded = true;
+    this.processQueryResult("Ternary", data, corners);
   }
 
-  private processQueryResult(t0: number, exprIds: string[], queryData: RegionDataResults, corners: ScatterPlotAxisInfo[]) {
-    const pointGroups: TernaryDataGroup[] = [];
-    //const pmcLookup: Map<number, TernaryPlotPointIndex> = new Map<number, TernaryPlotPointIndex>();
-
-    const queryWarnings: string[] = [];
-
-    for (let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx += exprIds.length) {
-      // Set up storage for our data first
-      const scanId = queryData.queryResults[queryIdx].query.scanId;
-      const roiId = queryData.queryResults[queryIdx].query.roiId;
-      const region = queryData.queryResults[queryIdx].region;
-
-      let pointGroup: TernaryDataGroup | null = null;
-
-      // Filter out PMCs that don't exist in the data for all 3 corners
-      const toFilter: PMCDataValues[] = [];
-      for (let c = 0; c < exprIds.length; c++) {
-        toFilter.push(queryData.queryResults[queryIdx + c].values);
-
-        if (queryData.queryResults[queryIdx + c].warning) {
-          queryWarnings.push(queryData.queryResults[queryIdx + c].warning);
-        }
-      }
-
-      const filteredValues = PMCDataValues.filterToCommonPMCsOnly(toFilter);
-
-      // Read for each expression
-      for (let c = 0; c < exprIds.length; c++) {
-        // Read the name
-        const expr = queryData.queryResults[queryIdx + c].expression;
-        corners[c].label = getExpressionShortDisplayName(18, expr?.id || "", expr?.name || "?").shortName;
-
-        const mmolAppend = "(mmol)";
-        if (this.showMmol && !corners[c].label.endsWith(mmolAppend)) {
-          // Note this won't detect if (mmol) was modified by short name to be (mm...
-          corners[c].label += mmolAppend;
-        }
-
-        // TODO!!!
-        //corners[c].modulesOutOfDate = queryData.queryResults[queryIdx + c].expression?.moduleReferences || "?";
-
-        // Did we find an error with this query?
-        if (queryData.queryResults[queryIdx + c].error) {
-          corners[c].errorMsgShort = queryData.queryResults[queryIdx + c].errorType || "";
-          corners[c].errorMsgLong = queryData.queryResults[queryIdx + c].error || "";
-
-          console.error(
-            "Ternary encountered error with expression: " + exprIds[c] + ", on region: " + roiId + ", corner: " + (c == 0 ? "left" : c == 1 ? "top" : "right")
-          );
-          continue;
-        }
-
-        // Expression didn't have errors, so try read its values
-        if (!region) {
-          // Show an error, we clearly don't have region data ready
-          corners[c].errorMsgShort = "Region error";
-          corners[c].errorMsgLong = "Region data not found for: " + roiId;
-
-          console.error(corners[c].errorMsgLong);
-          continue;
-        }
-
-        if (!pointGroup) {
-          // Reading the region for the first time, create a point group and key entry
-          pointGroup = new TernaryDataGroup(
-            scanId,
-            roiId,
-            [],
-            RGBA.fromWithA(region.displaySettings.colour, 1),
-            region.displaySettings.shape,
-            new Map<number, number>()
-          );
-
-          // Add to key too. We only specify an ID if it can be brought to front - all points & selection
-          // are fixed in their draw order, so don't supply for those
-          let roiIdForKey = region.region.id;
-          if (PredefinedROIID.isPredefined(roiIdForKey)) {
-            roiIdForKey = "";
-          }
-
-          this.keyItems.push(new WidgetKeyItem(roiIdForKey, region.region.name, region.displaySettings.colour, [], region.displaySettings.shape));
-        }
-
-        const roiValues: PMCDataValues | null = filteredValues[c];
-
-        // Update corner min/max
-        if (roiValues) {
-          corners[c].valueRange.expandByMinMax(roiValues.valueRange);
-
-          // Store the A/B/C values
-          for (let i = 0; i < roiValues.values.length; i++) {
-            const value = roiValues.values[i];
-
-            // Save it in A, B or C - A also is creating the value...
-            if (c == 0) {
-              pointGroup.values.push(new TernaryDataItem(value.pmc, value.value, 0, 0));
-              pointGroup.scanEntryIdToValueIdx.set(value.pmc, pointGroup.values.length - 1);
-            } else {
-              // Ensure we're writing to the right PMC
-              // Should always be the right order because we run 3 queries with the same ROI
-              if (pointGroup.values[i].scanEntryId != value.pmc) {
-                throw new Error(
-                  "Received PMCs in unexpected order for ternary corner: " + c + ", got PMC: " + value.pmc + ", expected: " + pointGroup.values[i].scanEntryId
-                );
-              }
-
-              if (c == 1) {
-                pointGroup.values[i].b = value.value;
-              } // exprIds is an array of 3 so can only be: if(c == 2)
-              else {
-                pointGroup.values[i].c = value.value;
-              }
-            }
-          }
-        }
-      }
-
-      /*
-      for (let c = 0; c < pointGroup.values.length; c++) {
-        pmcLookup.set(pointGroup.values[c].scanEntryId, new TernaryPlotPointIndex(pointGroups.length, c));
-      }
-*/
-      if (pointGroup && pointGroup.values.length > 0) {
-        pointGroups.push(pointGroup);
-      }
+  protected makeData(axes: ScatterPlotAxisInfo[], pointGroups: NaryChartDataGroup[]): TernaryData {
+    if (axes.length != 3) {
+      throw new Error(`Invalid axis count for ternary: ${axes.length}`);
     }
 
-    this.assignQueryResult(t0, pointGroups, corners, /*pmcLookup,*/ queryWarnings);
-  }
-
-  private assignQueryResult(
-    t0: number,
-    pointGroups: TernaryDataGroup[] = [],
-    corners: ScatterPlotAxisInfo[],
-    //pmcLookup: Map<number, TernaryPlotPointIndex>,
-    queryWarnings: string[]
-  ) {
-    if (this._references.length > 0) {
-      const pointGroup: TernaryDataGroup = new TernaryDataGroup("", "", [], Colours.CONTEXT_PURPLE, PointDrawer.ShapeCircle, new Map<number, number>());
-
-      this._references.forEach((referenceName, i) => {
-        const reference = ExpressionReferences.getByName(referenceName);
-
-        if (!reference) {
-          console.error(`TernaryPlot prepareData: Couldn't find reference ${referenceName}`);
-          return;
-        }
-
-        let refAValue = ExpressionReferences.getExpressionValue(reference, this.expressionIdA)?.weightPercentage;
-        let refBValue = ExpressionReferences.getExpressionValue(reference, this.expressionIdB)?.weightPercentage;
-        let refCValue = ExpressionReferences.getExpressionValue(reference, this.expressionIdC)?.weightPercentage;
-        const nullMask = [refAValue == null, refBValue == null, refCValue == null];
-
-        // If we have more than one null value, we can't plot this reference on a ternary plot
-        if (nullMask.filter(isNull => isNull).length > 1) {
-          console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this.expressionIdA},${this.expressionIdB},${this.expressionIdC} values`);
-          return;
-        }
-
-        if (refAValue == null) {
-          refAValue = 0;
-          console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this.expressionIdA} value`);
-        }
-        if (refBValue == null) {
-          refBValue = 0;
-          console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this.expressionIdB} value`);
-        }
-        if (refCValue == null) {
-          refCValue = 0;
-          console.warn(`TernaryPlot prepareData: Reference ${referenceName} has undefined ${this.expressionIdC} value`);
-        }
-
-        // We don't have a PMC for these, so -10 and below are now reserverd for reference values
-        const referenceIndex = ExpressionReferences.references.findIndex(ref => ref.name === referenceName);
-        const id = -10 - referenceIndex;
-
-        pointGroup.values.push(new TernaryDataItem(id, refAValue, refBValue, refCValue, referenceName, nullMask));
-        //pmcLookup.set(id, new TernaryPlotPointIndex(this._references.length, i));
-      });
-
-      pointGroups.push(pointGroup);
-      this.keyItems.push(new WidgetKeyItem("references", "Ref Points", Colours.CONTEXT_PURPLE, [], PointDrawer.ShapeCircle));
-    }
-
-    if (queryWarnings.length > 0) {
-      this.expressionsMissingPMCs = queryWarnings.join("\n");
-    }
-
-    // If we had all points defined, add to the key. This is done here because the actual
-    // dataByRegion array would contain 2 of the same IDs if all points is turned on - one
-    // for all points, one for selection... so if we did it in the above loop we'd double up
-    /*        if(hadAllPoints)
-      {
-          this.keyItems.unshift(new KeyItem(ViewStateService.SelectedPointsLabel, ViewStateService.SelectedPointsColour));
-          this.keyItems.unshift(new KeyItem(ViewStateService.AllPointsLabel, ViewStateService.AllPointsColour));
-      }
-*/
-    const ternaryData = new TernaryData(corners[0], corners[1], corners[2], pointGroups); //, pmcLookup);
-
-    this._raw = ternaryData;
-
-    const t1 = performance.now();
-    this.needsDraw$.next();
-    const t2 = performance.now();
-
-    console.log("  Ternary prepareData took: " + (t1 - t0).toLocaleString() + "ms, needsDraw$ took: " + (t2 - t1).toLocaleString() + "ms");
+    return new TernaryData(axes[0], axes[1], axes[2], pointGroups);
   }
 
   handleHoverPointChanged(hoverScanId: string, hoverScanEntryId: number): void {
@@ -331,12 +51,12 @@ export class TernaryChartModel implements CanvasDrawNotifier, BaseChartModel {
         if (group.scanId == hoverScanId) {
           // Find data to show
           const valueIdx = group.scanEntryIdToValueIdx.get(hoverScanEntryId);
-          if (valueIdx !== undefined && valueIdx < group.values.length) {
+          if (valueIdx !== undefined && valueIdx < group.valuesPerScanEntry.length) {
             const coords = this.drawModel.pointGroupCoords[groupIdx];
 
             this.hoverPoint = coords[valueIdx];
             this.hoverScanId = hoverScanId;
-            this.hoverPointData = group.values[valueIdx];
+            this.hoverPointData = group.valuesPerScanEntry[valueIdx];
             this.hoverShape = group.shape;
             this.needsDraw$.next();
             return;
@@ -435,7 +155,7 @@ export class TernaryDrawModel implements BaseChartDrawModel {
       for (const item of raw.pointGroups) {
         const coords = [];
 
-        for (const ternaryItem of item.values) {
+        for (const ternaryItem of item.valuesPerScanEntry) {
           coords.push(this.calcPointForTernary(ternaryItem));
         }
 
@@ -447,27 +167,27 @@ export class TernaryDrawModel implements BaseChartDrawModel {
 
   private _sin60 = Math.sin((60 * Math.PI) / 180);
 
-  private calcPointForTernary(ternaryPoint: TernaryDataItem): PointWithRayLabel {
-    const aLabel = ternaryPoint.nullMask[0] ? "null" : ternaryPoint.a;
-    const bLabel = ternaryPoint.nullMask[1] ? "null" : ternaryPoint.b;
-    const cLabel = ternaryPoint.nullMask[2] ? "null" : ternaryPoint.c;
+  private calcPointForTernary(ternaryPoint: NaryChartDataItem): PointWithRayLabel {
+    const aLabel = ternaryPoint.nullMask[0] ? "null" : ternaryPoint.values[0];
+    const bLabel = ternaryPoint.nullMask[1] ? "null" : ternaryPoint.values[1];
+    const cLabel = ternaryPoint.nullMask[2] ? "null" : ternaryPoint.values[2];
     const isMissingCoord = ternaryPoint.nullMask.some(x => x);
 
     // Using https://en.wikipedia.org/wiki/Ternary_plot
     // "Plotting a ternary plot" formula
-    const sum = ternaryPoint.a + ternaryPoint.b + ternaryPoint.c;
+    const sum = ternaryPoint.values[0] + ternaryPoint.values[1] + ternaryPoint.values[2];
 
     // If we're missing 1 point, we need to normalize the other two and then make sure the missing
     // one is much larger so it skews the end point all the way to the missing corner of the triangle
     // If we're missing 2 points, this is just going to point towards the middle of the 2 missing corners
-    const normalizedA = ternaryPoint.nullMask[0] ? sum * 100 : ternaryPoint.a / sum;
-    const normalizedB = ternaryPoint.nullMask[1] ? sum * 100 : ternaryPoint.b / sum;
-    const normalizedC = ternaryPoint.nullMask[2] ? sum * 100 : ternaryPoint.c / sum;
+    const normalizedA = ternaryPoint.nullMask[0] ? sum * 100 : ternaryPoint.values[0] / sum;
+    const normalizedB = ternaryPoint.nullMask[1] ? sum * 100 : ternaryPoint.values[1] / sum;
+    const normalizedC = ternaryPoint.nullMask[2] ? sum * 100 : ternaryPoint.values[2] / sum;
     const normalizedSum = normalizedA + normalizedB + normalizedC;
 
     const twoD = new PointWithRayLabel(
-      0.5 * ((2 * ternaryPoint.b + ternaryPoint.c) / sum),
-      this._sin60 * (ternaryPoint.c / sum),
+      0.5 * ((2 * ternaryPoint.values[1] + ternaryPoint.values[2]) / sum),
+      this._sin60 * (ternaryPoint.values[2] / sum),
       ternaryPoint.label ? `${ternaryPoint.label} (${aLabel}, ${bLabel}, ${cLabel})` : "",
       isMissingCoord ? 0.5 * ((2 * normalizedB + normalizedC) / normalizedSum) : null,
       isMissingCoord ? -this._sin60 * (normalizedC / normalizedSum) : null
@@ -505,36 +225,6 @@ export class TernaryDrawModel implements BaseChartDrawModel {
   }
 }
 
-export class TernaryDataItem {
-  constructor(
-    public scanEntryId: number, // Aka PMC, id that doesn't change on scan for a data point source (spectrum id)
-    public a: number,
-    public b: number,
-    public c: number,
-    public label: string = "",
-    public nullMask: boolean[] = [false, false, false]
-  ) {}
-}
-
-export class TernaryDataGroup {
-  constructor(
-    // This group contains data for the following ROI within the following scan:
-    public scanId: string,
-    public roiId: string,
-
-    // It contains these values to show:
-    public values: TernaryDataItem[],
-
-    // And these are the draw settings for the values:
-    public colour: RGBA,
-    public shape: string,
-
-    // A reverse lookup from scan entry Id (aka PMC) to the values array
-    // This is mainly required for selection service hover notifications, so
-    // we can quickly find the valus to display
-    public scanEntryIdToValueIdx: Map<number, number>
-  ) {}
-}
 /*
 export class TernaryPlotPointIndex {
   constructor(
@@ -548,6 +238,6 @@ export class TernaryData {
     public cornerA: ScatterPlotAxisInfo,
     public cornerB: ScatterPlotAxisInfo,
     public cornerC: ScatterPlotAxisInfo,
-    public pointGroups: TernaryDataGroup[] //public pmcToValueLookup: Map<number, TernaryPlotPointIndex>
+    public pointGroups: NaryChartDataGroup[] //public pmcToValueLookup: Map<number, TernaryPlotPointIndex>
   ) {}
 }

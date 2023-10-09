@@ -79,19 +79,19 @@ export class ChartAxis {
 
   // Converts pct value (between min-max) to canvas space point
   pctToCanvas(pct: number): number {
-    let pan = this.getPan();
-    let scale = this.getScale();
-    let startPx = this.getStartPx();
+    const pan = this.getPan();
+    const scale = this.getScale();
+    const startPx = this.getStartPx();
 
-    let px = startPx + pan + scale * pct * this.pxLength + this._dataPadding;
+    const px = startPx + pan + scale * pct * this.pxLength + this._dataPadding;
     return px;
   }
 
   // The opposite of pctToCanvas
   canvasToPct(canvas: number): number {
-    let pan = this.getPan();
-    let scale = this.getScale();
-    let startPx = this.getStartPx();
+    const pan = this.getPan();
+    const scale = this.getScale();
+    const startPx = this.getStartPx();
 
     // Work out where we are in the value range
     return (canvas - this._dataPadding - startPx - pan) / (this.pxLength * scale);
@@ -99,13 +99,13 @@ export class ChartAxis {
 
   // Converting a pct value (pct within min-max) to canvas space
   valueToCanvas(value: number): number {
-    let pct = this.valueToPct(value);
+    const pct = this.valueToPct(value);
     return this.pctToCanvas(pct);
   }
 
   // The opposite of valueToCanvas
   canvasToValue(canvas: number): number {
-    let pct = this.canvasToPct(canvas);
+    const pct = this.canvasToPct(canvas);
     return this.pctToValue(pct);
   }
 
@@ -142,7 +142,7 @@ export class ChartAxis {
   }
 
   protected getPan(): number {
-    let pan = this.horizontal ? this._transform?.pan.x : this._transform?.pan.y;
+    const pan = this.horizontal ? this._transform?.pan.x : this._transform?.pan.y;
     return Math.round(pan || 0);
   }
 
@@ -207,7 +207,7 @@ export class LinearChartAxis extends ChartAxis {
       endPx = this._viewport.height - endPx;
     }
 
-    let valueStart = this.canvasToValue(startPx);
+    const valueStart = this.canvasToValue(startPx);
     let valueEnd = this.canvasToValue(endPx);
 
     if (valueEnd > this.maxValue * 2) {
@@ -215,13 +215,13 @@ export class LinearChartAxis extends ChartAxis {
     }
 
     const maxNumSpaces = Math.abs(endPx - startPx) / this._minPixelsBetweenTicks; // dont need them more than this many px apart
-    let spacing = niceNum((valueEnd - valueStart) / maxNumSpaces);
+    const spacing = niceNum((valueEnd - valueStart) / maxNumSpaces);
 
     let roundedValueStart = Math.ceil(valueStart / spacing) * spacing;
     let roundedValueEnd = Math.ceil(valueEnd / spacing) * spacing;
 
     if (roundedValueEnd < roundedValueStart) {
-      let tmp = roundedValueEnd;
+      const tmp = roundedValueEnd;
       roundedValueEnd = roundedValueStart;
       roundedValueStart = tmp;
     }
@@ -299,7 +299,7 @@ export class LogarithmicChartAxis extends ChartAxis {
       endPx = this._viewport.height - endPx;
     }
 
-    let valueStart = Math.log10(this.canvasToValue(startPx));
+    const valueStart = Math.log10(this.canvasToValue(startPx));
     let valueEnd = Math.log10(this.canvasToValue(endPx));
 
     if (valueEnd > this.maxValue * 2) {
@@ -309,10 +309,10 @@ export class LogarithmicChartAxis extends ChartAxis {
     let roundedValueStart = Math.floor(valueStart);
     let roundedValueEnd = Math.ceil(valueEnd);
 
-    let spacing = 1;
+    const spacing = 1;
 
     if (roundedValueEnd < roundedValueStart) {
-      let tmp = roundedValueEnd;
+      const tmp = roundedValueEnd;
       roundedValueEnd = roundedValueStart;
       roundedValueStart = tmp;
     }
@@ -322,8 +322,8 @@ export class LogarithmicChartAxis extends ChartAxis {
     for (let p = roundedValueStart; p <= roundedValueEnd; p += spacing) {
       if (p >= valueStart) {
         // don't draw below the axis
-        let v = Math.pow(10, p);
-        let px = this.valueToCanvas(v);
+        const v = Math.pow(10, p);
+        const px = this.valueToCanvas(v);
 
         this._ticks.push(new ChartAxisTick(v.toLocaleString(), px));
       }
@@ -343,7 +343,7 @@ export class LogarithmicChartAxis extends ChartAxis {
   }
 
   override pctToValue(pct: number): number {
-    let pow = this.minValue + this.flipIfNeeded(pct) * this.valueRange;
+    const pow = this.minValue + this.flipIfNeeded(pct) * this.valueRange;
     let result = Math.pow(10, pow);
     if (this._scaleForShowingBelow1 != 1) {
       result /= this._scaleForShowingBelow1;
@@ -397,21 +397,14 @@ export class ChartAxisDrawer {
     protected _drawGridLine: boolean = true
   ) {}
 
-  private setupForDraw(screenContext: CanvasRenderingContext2D): void {
+  private setupForDraw(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D): void {
     screenContext.strokeStyle = this._axisLineColour;
     screenContext.fillStyle = this._axisTextColour;
     screenContext.font = this._axisFont;
     screenContext.lineWidth = 1;
   }
 
-  drawAxes(
-    screenContext: CanvasRenderingContext2D,
-    viewport: CanvasParams,
-    xAxis: ChartAxis,
-    xAxisTitle: string,
-    yAxis: ChartAxis,
-    yAxisTitle: string
-  ): void {
+  drawAxes(screenContext: CanvasRenderingContext2D, viewport: CanvasParams, xAxis: ChartAxis, xAxisTitle: string, yAxis: ChartAxis, yAxisTitle: string): void {
     this.setupForDraw(screenContext);
 
     this.drawXAxis(screenContext, viewport, xAxis, yAxis, xAxisTitle);
@@ -419,14 +412,14 @@ export class ChartAxisDrawer {
   }
 
   protected drawXAxis(screenContext: CanvasRenderingContext2D, viewport: CanvasParams, xAxis: ChartAxis, yAxis: ChartAxis, title: string): void {
-    let xAxisLeftMargin = yAxis.startPx;
+    const xAxisLeftMargin = yAxis.startPx;
 
-    let ticks = xAxis.ticks;
+    const ticks = xAxis.ticks;
 
     // draw lines (these are the tick lines, if we have grid lines turned on they extend across the chart)
     const lineEnd = this._drawGridLine ? viewport.height - xAxisLeftMargin : 0;
     screenContext.beginPath();
-    for (let tick of ticks) {
+    for (const tick of ticks) {
       screenContext.moveTo(tick.px, 0);
       screenContext.lineTo(tick.px, lineEnd);
     }
@@ -442,16 +435,12 @@ export class ChartAxisDrawer {
       xOffset = (ticks[1].px - ticks[0].px) / 2;
     }
 
-    for (let tick of ticks) {
-      screenContext.fillText(
-        tick.displayValue,
-        tick.px + xOffset,
-        viewport.height - xAxisLeftMargin + this._axisTickOverhang + this._axisValueGap
-      );
+    for (const tick of ticks) {
+      screenContext.fillText(tick.displayValue, tick.px + xOffset, viewport.height - xAxisLeftMargin + this._axisTickOverhang + this._axisValueGap);
     }
 
     // Draw line at axis for labels to sit next to
-    let x = xAxis.startPx;
+    const x = xAxis.startPx;
     screenContext.beginPath();
     screenContext.moveTo(x, 0);
     screenContext.lineTo(x, viewport.height - xAxisLeftMargin + this._axisTickOverhang);
@@ -467,14 +456,14 @@ export class ChartAxisDrawer {
   }
 
   protected drawYAxis(screenContext: CanvasRenderingContext2D, viewport: CanvasParams, xAxis: ChartAxis, yAxis: ChartAxis, title: string): void {
-    let yAxisLeftMargin = xAxis.startPx;
+    const yAxisLeftMargin = xAxis.startPx;
 
-    let ticks = yAxis.ticks;
+    const ticks = yAxis.ticks;
 
     // draw lines (these are the tick lines, if we have grid lines turned on they extend across the chart)
     screenContext.beginPath();
     const lineEnd = this._drawGridLine ? viewport.width : yAxisLeftMargin;
-    for (let tick of ticks) {
+    for (const tick of ticks) {
       screenContext.moveTo(yAxisLeftMargin - this._axisTickOverhang, tick.px);
       screenContext.lineTo(lineEnd, tick.px);
     }
@@ -484,12 +473,12 @@ export class ChartAxisDrawer {
     screenContext.textAlign = "right";
     screenContext.textBaseline = "middle";
 
-    for (let tick of ticks) {
+    for (const tick of ticks) {
       screenContext.fillText(tick.displayValue, yAxisLeftMargin - this._axisTickOverhang - this._axisValueGap, tick.px);
     }
 
     // Draw line at axis for labels to sit next to
-    let y = viewport.height - yAxis.startPx;
+    const y = viewport.height - yAxis.startPx;
     screenContext.beginPath();
     screenContext.moveTo(yAxisLeftMargin, y);
     screenContext.lineTo(viewport.width, y);
@@ -508,12 +497,12 @@ export class ChartAxisDrawer {
     }
   }
 
-  public getLongestTickLabelPx(screenContext: CanvasRenderingContext2D, axis: ChartAxis): number {
+  public getLongestTickLabelPx(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, axis: ChartAxis): number {
     // NOTE: This has to be in sync with how drawYAxis does its job!
     this.setupForDraw(screenContext);
 
-    let minmax = new MinMax(0, 0);
-    for (let tick of axis.ticks) {
+    const minmax = new MinMax(0, 0);
+    for (const tick of axis.ticks) {
       minmax.expand(screenContext.measureText(tick.displayValue).width);
     }
 

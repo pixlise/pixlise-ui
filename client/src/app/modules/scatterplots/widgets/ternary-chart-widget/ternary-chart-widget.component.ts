@@ -1,23 +1,42 @@
-import { Component, Input, OnInit, OnDestroy } from "@angular/core";
-import { ActivatedRoute } from "@angular/router";
+import { Component, OnInit, OnDestroy } from "@angular/core";
 import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
 import { Subscription } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
 import { TernaryChartDrawer } from "./drawer";
-import {
-  CanvasDrawNotifier,
-  CanvasDrawer,
-  CanvasInteractionHandler,
-  CanvasWorldTransform,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { TernaryChartModel } from "./model";
-import { TernaryChartToolHost } from "./interaction";
-import { PredefinedROIID, orderVisibleROIs } from "src/app/models/RegionOfInterest";
+import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { TernaryChartModel, TernaryDrawModel } from "./model";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { DataSourceParams, SelectionService, WidgetDataService, DataUnit, RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
+import { Point, Rect, ptWithinPolygon } from "src/app/models/Geometry";
+import { InteractionWithLassoHover } from "../../base/interaction-with-lasso-hover";
+
+class TernaryChartToolHost extends InteractionWithLassoHover {
+  constructor(
+    private _terMdl: TernaryChartModel,
+    selectionService: SelectionService
+  ) {
+    super(_terMdl, selectionService);
+  }
+
+  protected resetHover(): void {
+    this._terMdl.hoverPoint = null;
+    this._terMdl.hoverPointData = null;
+    this._terMdl.mouseLassoPoints = [];
+  }
+
+  protected isOverDataArea(canvasPt: Point): boolean {
+    // If the mouse is over the triangle area, show a lasso cursor
+    const triPts = [this._terMdl.drawModel.triangleA, this._terMdl.drawModel.triangleB, this._terMdl.drawModel.triangleC];
+    const triBox: Rect = Rect.makeRect(this._terMdl.drawModel.triangleA, 0, 0);
+    triBox.expandToFitPoints(triPts);
+
+    return ptWithinPolygon(canvasPt, triPts, triBox);
+  }
+}
 
 @Component({
   selector: "ternary-chart-widget",
@@ -25,7 +44,7 @@ import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher
   styleUrls: ["./ternary-chart-widget.component.scss"],
 })
 export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
-  mdl = new TernaryChartModel();
+  mdl = new TernaryChartModel(new TernaryDrawModel());
   toolhost: CanvasInteractionHandler;
   drawer: CanvasDrawer;
 
@@ -98,18 +117,18 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     //this.mdl.expressionIdA = "r4zd5s2tfgr8rahy"; // AlFe
     //this.mdl.expressionIdA = "540d6vt1r87kb0v2"; // "Diffraction Similarity (Combined)
     // this.mdl.expressionIdA = "o77tuzf7fpjuezdd"; // lua CaO pow
-    this.mdl.expressionIdA = "lpqtfd5lva7t2046"; // Si (mmol) (PIXLANG)
+    this.mdl.expressionIds.push("lpqtfd5lva7t2046"); // Si (mmol) (PIXLANG)
 
     // this.mdl.expressionIdB = "8pwjbcbldf8gb8sx"; // High-E background (counts/keV)
     // this.mdl.expressionIdB = "d3bogvx0kfrhzpva"; // pixlang FeO pow
-    this.mdl.expressionIdB = "fhb5x0qbx6lz9uec"; // Dip (deg, B to A)
-    
+    this.mdl.expressionIds.push("fhb5x0qbx6lz9uec"); // Dip (deg, B to A)
+
     //this.mdl.expressionIdC = "3ewfmb3wu2wydydd"; // Lua Beam Wait Test
     //this.mdl.expressionIdC = "vwc45sho1kzxmveb"; // Lua Beam X*2 Test
     //this.mdl.expressionIdC = "ygrmsajfsltvw8gq"; // Lua Beam Await Test (element() call tester now)
     //this.mdl.expressionIdC = "cps70yywg4v4mrih"; // Lua position test
     //this.mdl.expressionIdC = "5kaygc64m9j7adlm"; // LuaTest
-    this.mdl.expressionIdC = "vge9tz6fkbi2ha1p"; // CaTi
+    this.mdl.expressionIds.push("vge9tz6fkbi2ha1p"); // CaTi
     //this.mdl.expressionIdC = "8v20yxvqbso7pbje"; // testing (spinels-carb)
     //this.mdl.expressionIdC = "rorp9q1ojy7w1umb"; // Merrillite (mmol/g)
     //this.mdl.expressionIdC = "p38xf02yx3ootnva"; // lua position mul 2
@@ -126,9 +145,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       new ScanDataIds(
         "ox3psifd719hfo1s", //00125_Naltsos_Heirwegh_det_combined_v7_10_05_2021
         //"2ejylaj1suu6qyj9", // Naltsos 2nd Quant Carbonates Tim
-        [
-          PredefinedROIID.AllPoints
-        ]
+        [PredefinedROIID.AllPoints]
       )
     );
     // // Dourbes
@@ -188,7 +205,9 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   private update() {
-    const exprIds = [this.mdl.expressionIdA, this.mdl.expressionIdB, this.mdl.expressionIdC];
+    if (this.mdl.expressionIds.length != 3) {
+      throw new Error("Expected 3 expression ids for Ternary");
+    }
 
     const unit = this.mdl.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT;
     const query: DataSourceParams[] = [];
@@ -196,7 +215,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     // NOTE: processQueryResult depends on the order of the following for loops...
     for (const [scanId, ids] of this.mdl.dataSourceIds) {
       for (const roiId of ids.roiIds) {
-        for (const exprId of exprIds) {
+        for (const exprId of this.mdl.expressionIds) {
           query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, unit));
         }
       }

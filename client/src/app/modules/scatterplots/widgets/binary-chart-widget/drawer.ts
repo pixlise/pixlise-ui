@@ -4,7 +4,8 @@ import { HOVER_POINT_RADIUS, OUTLINE_LINE_WIDTH, OutlineDrawer, PLOT_POINTS_SIZE
 
 import { BinaryChartModel, BinaryDrawModel } from "./model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { BaseChartModel, CachedCanvasChartDrawer } from "../../base/cached-drawer";
+import { CachedCanvasChartDrawer } from "../../base/cached-drawer";
+import { BaseChartModel } from "../../base/model-interfaces";
 
 export class BinaryChartDrawer extends CachedCanvasChartDrawer {
   public showSwapButton: boolean = true;
@@ -84,7 +85,7 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
       screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
       // x is easy
       screenContext.fillText(
-        this._mdl.hoverPointData.x.toLocaleString(),
+        this._mdl.hoverPointData.values[0].toLocaleString(),
         drawData.xAxis.pctToCanvas(0.5),
         drawData.yAxis.pctToCanvas(1) + BinaryChartModel.FONT_SIZE_SMALL * 2
       );
@@ -93,7 +94,7 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
       screenContext.save();
       screenContext.translate(BinaryChartModel.LABEL_PADDING, drawData.yAxis.pctToCanvas(0.5));
       screenContext.rotate(-Math.PI / 2);
-      screenContext.fillText(this._mdl.hoverPointData.y.toLocaleString(), 0, 0);
+      screenContext.fillText(this._mdl.hoverPointData.values[1].toLocaleString(), 0, 0);
       screenContext.restore();
     }
   }

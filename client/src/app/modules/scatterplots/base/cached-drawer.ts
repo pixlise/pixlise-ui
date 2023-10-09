@@ -1,14 +1,5 @@
 import { CanvasDrawParameters, CanvasDrawer, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-
-export interface BaseChartDrawModel {
-  drawnData: OffscreenCanvas | null;
-}
-
-export interface BaseChartModel {
-  recalcDisplayDataIfNeeded(canvasParams: CanvasParams, screenContext?: CanvasRenderingContext2D): void;
-  drawModel: BaseChartDrawModel;
-  hasRawData(): boolean;
-}
+import { BaseChartModel } from "./model-interfaces";
 
 export abstract class CachedCanvasChartDrawer implements CanvasDrawer {
   protected _lastCalcCanvasParams: CanvasParams | null = null;
