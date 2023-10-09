@@ -32,28 +32,114 @@ import { CANVAS_FONT_SIZE, drawToolTip, drawErrorIcon } from "src/app/utils/draw
 import { Point } from "src/app/models/Geometry";
 import { HistogramModel, HistogramDrawBar } from "./model";
 import { ChartAxisDrawer } from "src/app/modules/analysis/components/widget/interactive-canvas/chart-axis";
-import { CanvasDrawer, CanvasDrawParameters, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawParameters } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { BaseChartModel, CachedCanvasChartDrawer } from "../../base/cached-drawer";
 
-export class HistogramDrawer implements CanvasDrawer {
-  protected _mdl: HistogramModel;
-
-  constructor(mdl: HistogramModel) {
-    this._mdl = mdl;
+export class HistogramDrawer extends CachedCanvasChartDrawer {
+  constructor(private _mdl: HistogramModel) {
+    super();
   }
 
-  drawWorldSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {}
+  protected get mdl(): BaseChartModel {
+    return this._mdl;
+  }
 
-  drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
-    this._mdl.recalcDisplayDataIfNeeded(drawParams.drawViewport);
-
-    if (!this._mdl.drawData.xAxis || !this._mdl.drawData.yAxis) {
+  drawPreData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    if (!this._mdl.drawModel.xAxis || !this._mdl.drawModel.yAxis) {
       return;
     }
 
-    this.drawHistogram(screenContext, drawParams.drawViewport);
+    const axisDrawer = new ChartAxisDrawer();
+    axisDrawer.drawAxes(screenContext, drawParams.drawViewport, this._mdl.drawModel.xAxis, "", this._mdl.drawModel.yAxis, this._mdl.yAxisLabel);
   }
 
-  private drawDistributionBars(screenContext: CanvasRenderingContext2D, bar: HistogramDrawBar): void {
+  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    if (!this._mdl.drawModel.xAxis || !this._mdl.drawModel.yAxis) {
+      return;
+    }
+
+    const ERROR_ICON_SIZE = 16;
+
+    // Don't allow drawing over the axis now
+    screenContext.save();
+    screenContext.beginPath();
+    screenContext.rect(this._mdl.drawModel.xAxis.startPx, 0, this._mdl.drawModel.xAxis.endPx, drawParams.drawViewport.height - this._mdl.drawModel.yAxis.startPx);
+    screenContext.clip();
+
+    screenContext.strokeStyle = Colours.GRAY_30.asString();
+    screenContext.lineWidth = 1;
+
+    // Draw bars & whiskers
+    for (const bar of this._mdl.drawModel.bars) {
+      if (!bar.bar.colourRGB) {
+        continue;
+      }
+
+      // If there was an error, draw error triangle
+      if (bar.bar.errorMsg.length > 0) {
+        const iconPos = bar.rect.center();
+        iconPos.y -= ERROR_ICON_SIZE;
+
+        drawErrorIcon(screenContext, iconPos, ERROR_ICON_SIZE);
+
+        // Also draw the error msg, going vertically up!
+      } else {
+        // Draw the actual bar
+        this.drawDistributionBars(screenContext, bar);
+      }
+    }
+    screenContext.restore();
+  }
+
+  drawPostData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    // Draw any hover info on top of it
+    if (this._mdl.hoverBar && this._mdl.hoverPoint) {
+      const hoverBar = this._mdl.hoverBar;
+
+      const drawLeft = this._mdl.hoverPoint.x > drawParams.drawViewport.width / 2;
+      const offsetX = drawLeft ? -5 : 5;
+
+      const messages = [
+        {
+          text: `avg. ${hoverBar.groupLabel}: ${(Math.round(hoverBar.bar.meanValue * 100) / 100).toLocaleString()}%`,
+          colour: Colours.TEXT_MUTED_BLUE,
+          bold: true,
+        },
+      ];
+      const errorValue = hoverBar.bar.errorMsg;
+      if (errorValue) {
+        messages.push({
+          text: errorValue,
+          colour: Colours.TEXT_PURPLE,
+          bold: true,
+        });
+      } else {
+        messages.push({
+          text: `avg. error: ${hoverBar.bar.errorValue ? hoverBar.bar.errorValue.toLocaleString() : "N/A"}`,
+          colour: Colours.TEXT_PURPLE,
+          bold: false,
+        });
+
+        if (!this._mdl.showStdError) {
+          messages.push({
+            text: `standard deviation: ${hoverBar.bar.stdDev ? hoverBar.bar.stdDev.toLocaleString() : "N/A"}`,
+            colour: Colours.TEXT_GRAY,
+            bold: false,
+          });
+        } else {
+          messages.push({
+            text: `standard error: ${hoverBar.bar.stdErr ? hoverBar.bar.stdErr.toLocaleString() : "N/A"}`,
+            colour: Colours.TEXT_GRAY,
+            bold: false,
+          });
+        }
+      }
+
+      drawToolTip(screenContext, new Point(this._mdl.hoverPoint.x + offsetX, this._mdl.hoverPoint.y), drawLeft, "", messages, CANVAS_FONT_SIZE, Colours.GRAY_90);
+    }
+  }
+
+  private drawDistributionBars(screenContext: OffscreenCanvasRenderingContext2D, bar: HistogramDrawBar): void {
     if (bar.rect.h === 0) {
       return;
     }
@@ -99,93 +185,6 @@ export class HistogramDrawer implements CanvasDrawer {
 
         screenContext.stroke();
       }
-    }
-  }
-
-  private drawHistogram(screenContext: CanvasRenderingContext2D, viewport: CanvasParams): void {
-    const ERROR_ICON_SIZE = 16;
-
-    if (!this._mdl.drawData.xAxis || !this._mdl.drawData.yAxis) {
-      return;
-    }
-
-    const axisDrawer = new ChartAxisDrawer();
-    axisDrawer.drawAxes(screenContext, viewport, this._mdl.drawData.xAxis, "", this._mdl.drawData.yAxis, this._mdl.yAxisLabel);
-
-    // Don't allow drawing over the axis now
-    screenContext.save();
-    screenContext.beginPath();
-    screenContext.rect(this._mdl.drawData.xAxis.startPx, 0, this._mdl.drawData.xAxis.endPx, viewport.height - this._mdl.drawData.yAxis.startPx);
-    screenContext.clip();
-
-    screenContext.strokeStyle = Colours.GRAY_30.asString();
-    screenContext.lineWidth = 1;
-
-    // Draw bars & whiskers
-    for (const bar of this._mdl.drawData.bars) {
-      if (!bar.bar.colourRGB) {
-        continue;
-      }
-
-      // If there was an error, draw error triangle
-      if (bar.bar.errorMsg.length > 0) {
-        const iconPos = bar.rect.center();
-        iconPos.y -= ERROR_ICON_SIZE;
-
-        drawErrorIcon(screenContext, iconPos, ERROR_ICON_SIZE);
-
-        // Also draw the error msg, going vertically up!
-      } else {
-        // Draw the actual bar
-        this.drawDistributionBars(screenContext, bar);
-      }
-    }
-    screenContext.restore();
-
-    // Draw any hover info on top of it
-    if (this._mdl.hoverBar && this._mdl.hoverPoint) {
-      const hoverBar = this._mdl.hoverBar;
-
-      const drawLeft = this._mdl.hoverPoint.x > viewport.width / 2;
-      const offsetX = drawLeft ? -5 : 5;
-
-      const messages = [
-        {
-          text: `avg. ${hoverBar.groupLabel}: ${(Math.round(hoverBar.bar.meanValue * 100) / 100).toLocaleString()}%`,
-          colour: Colours.TEXT_MUTED_BLUE,
-          bold: true,
-        },
-      ];
-      const errorValue = hoverBar.bar.errorMsg;
-      if (errorValue) {
-        messages.push({
-          text: errorValue,
-          colour: Colours.TEXT_PURPLE,
-          bold: true,
-        });
-      } else {
-        messages.push({
-          text: `avg. error: ${hoverBar.bar.errorValue ? hoverBar.bar.errorValue.toLocaleString() : "N/A"}`,
-          colour: Colours.TEXT_PURPLE,
-          bold: false,
-        });
-
-        if (!this._mdl.showStdError) {
-          messages.push({
-            text: `standard deviation: ${hoverBar.bar.stdDev ? hoverBar.bar.stdDev.toLocaleString() : "N/A"}`,
-            colour: Colours.TEXT_GRAY,
-            bold: false,
-          });
-        } else {
-          messages.push({
-            text: `standard error: ${hoverBar.bar.stdErr ? hoverBar.bar.stdErr.toLocaleString() : "N/A"}`,
-            colour: Colours.TEXT_GRAY,
-            bold: false,
-          });
-        }
-      }
-
-      drawToolTip(screenContext, new Point(this._mdl.hoverPoint.x + offsetX, this._mdl.hoverPoint.y), drawLeft, "", messages, CANVAS_FONT_SIZE, Colours.GRAY_90);
     }
   }
 }

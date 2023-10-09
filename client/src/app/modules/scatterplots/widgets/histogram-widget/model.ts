@@ -11,8 +11,9 @@ import { PMCDataValues } from "src/app/expression-language/data-values";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
 import { WidgetDataIds, ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
+import { BaseChartDrawModel, BaseChartModel } from "../../base/cached-drawer";
 
-export class HistogramModel implements CanvasDrawNotifier {
+export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
 
   // The raw data we start with
@@ -45,11 +46,15 @@ export class HistogramModel implements CanvasDrawNotifier {
     this._raw = r;
   }
 
+  hasRawData(): boolean {
+    return this._raw != null;
+  }
+
   get raw(): HistogramData | null {
     return this._raw;
   }
 
-  get drawData(): HistogramDrawModel {
+  get drawModel(): HistogramDrawModel {
     return this._drawModel;
   }
 
@@ -300,9 +305,14 @@ export class HistogramDrawBar {
   ) {}
 }
 
-export class HistogramDrawModel {
+export class HistogramDrawModel implements BaseChartDrawModel {
+  // Our rendered to an image, cached and only regenerated on resolution
+  // change or data change
+  drawnData: OffscreenCanvas | null = null;
+
   xAxis: ChartAxis | null = null;
   yAxis: ChartAxis | null = null;
+
   bars: HistogramDrawBar[] = [];
 
   regenerate(raw: HistogramData | null, logScale: boolean, viewport: CanvasParams): void {

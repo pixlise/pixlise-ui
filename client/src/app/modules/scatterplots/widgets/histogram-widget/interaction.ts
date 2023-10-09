@@ -68,8 +68,8 @@ export class HistogramToolHost implements CanvasInteractionHandler {
   }
 
   protected getBar(canvasPt: Point): HistogramDrawBar | null {
-    if (this._mdl.drawData) {
-      for (const bar of this._mdl.drawData.bars) {
+    if (this._mdl.drawModel) {
+      for (const bar of this._mdl.drawModel.bars) {
         // We used to check against rectangle, but if rect is 0 in height (or small), users didn't get to see
         // a tooltip for this bar! Now easier...
         //if(bar.rect.containsPoint(canvasPt))

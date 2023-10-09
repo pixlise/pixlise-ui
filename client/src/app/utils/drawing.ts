@@ -365,7 +365,7 @@ export function drawSwapButton(screenContext: CanvasRenderingContext2D, buttonCe
   screenContext.restore();
 }
 
-export function drawErrorIcon(screenContext: CanvasRenderingContext2D, center: Point, size: number): void {
+export function drawErrorIcon(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, center: Point, size: number): void {
   const radius = size / 2;
 
   screenContext.save();
