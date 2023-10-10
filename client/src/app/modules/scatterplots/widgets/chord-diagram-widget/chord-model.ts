@@ -87,6 +87,7 @@ export class ChordDiagramModel implements CanvasDrawNotifier {
     const t0 = performance.now();
 
     this._recalcNeeded = true;
+    this.errorMessage = "";
 
     // TODO: David says we can probably average A and B values here
 

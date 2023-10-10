@@ -11,11 +11,12 @@ import { HistogramModel } from "./histogram-model";
 import { HistogramDrawer } from "./drawer";
 import { HistogramToolHost } from "./histogram-interaction";
 import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
 
 @Component({
   selector: "histogram-widget",
   templateUrl: "./histogram-widget.component.html",
-  styleUrls: ["./histogram-widget.component.scss"],
+  styleUrls: ["./histogram-widget.component.scss", "../../base/widget-common.scss"],
 })
 export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
   mdl = new HistogramModel();
@@ -71,6 +72,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     this.mdl.expressionIds = [
       "vge9tz6fkbi2ha1p", // CaTi
       "fhb5x0qbx6lz9uec", // Dip (deg, B to A)
+      DataExpressionId.makePredefinedQuantElementExpression("Ca", "%", "Combined"),
     ];
 
     // Naltsos

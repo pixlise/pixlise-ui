@@ -18,7 +18,7 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 @Component({
   selector: "app-chord-diagram-widget",
   templateUrl: "./chord-diagram-widget.component.html",
-  styleUrls: ["./chord-diagram-widget.component.scss"]
+  styleUrls: ["./chord-diagram-widget.component.scss", "../../base/widget-common.scss"]
 })
 export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
   mdl = new ChordDiagramModel();

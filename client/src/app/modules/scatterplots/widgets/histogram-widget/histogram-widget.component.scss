@@ -1,0 +1,9 @@
+@import "variables.scss";
+@import "atoms.scss";
+
+.settings {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $sz-unit;
+}
