@@ -1,5 +1,10 @@
 // import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/spectrum-chart-widget.component";
-import { BinaryChartWidgetComponent, TernaryChartWidgetComponent, HistogramWidgetComponent, ChordDiagramWidgetComponent } from "src/app/modules/scatterplots/scatterplots.module";
+import {
+  BinaryChartWidgetComponent,
+  TernaryChartWidgetComponent,
+  HistogramWidgetComponent,
+  ChordDiagramWidgetComponent,
+} from "src/app/modules/scatterplots/scatterplots.module";
 import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/spectrum.module";
 
 export type WidgetToolbarButtonTypes = "selectable-button" | "button" | "toggle-button" | "multi-state-button";
@@ -81,6 +86,5 @@ export const WIDGETS = {
     description: "Chord Diagram",
     component: ChordDiagramWidgetComponent,
     controlConfiguration: {},
-
   }
 } satisfies Record<string, WidgetConfiguration>;

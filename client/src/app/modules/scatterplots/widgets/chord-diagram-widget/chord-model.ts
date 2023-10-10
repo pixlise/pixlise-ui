@@ -136,11 +136,14 @@ export class ChordDiagramModel implements CanvasDrawNotifier {
           throw new Error("Queried data expected to all have the same number of points for all nodes");
         }
       }
+
       const elemColumns: Map<string, number[]> = new Map<string, number[]>();
       const elemColumnTotals: Map<string, number> = new Map<string, number>();
       const elemColumnError: Map<string, number> = new Map<string, number>();
+
       // TODO: bring back display warning for module out of date
       //const expressionsOutOfDate: Map<string, boolean> = new Map<string, boolean>();
+
       let allTotals = 0;
       let rowCount = 0;
 

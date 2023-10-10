@@ -7,6 +7,27 @@
   height: 100%;
 }*/
 
+interactive-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+}
+
+.error-message {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: $sz-unit;
+  background-color: $clr-gray-80;
+  color: $clr-gray-30;
+  font-weight: bold;
+  font-size: 16px;
+  max-width: 300px;
+  padding: $sz-unit;
+}
+
 .settings {
   display: flex;
   flex-direction: column;

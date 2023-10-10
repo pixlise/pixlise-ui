@@ -13,6 +13,7 @@ import { ChordDiagramInteraction } from "./chord-interaction";
 import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
 import { Colours } from "src/app/utils/colours";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
 
 @Component({
   selector: "app-chord-diagram-widget",
@@ -78,7 +79,8 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   private setInitialConfig() {
     this.mdl.expressionIds.push("lpqtfd5lva7t2046"); // Si (mmol) (PIXLANG)
     this.mdl.expressionIds.push("fhb5x0qbx6lz9uec"); // Dip (deg, B to A)
-    this.mdl.expressionIds.push("vge9tz6fkbi2ha1p"); // CaTi
+    //this.mdl.expressionIds.push("vge9tz6fkbi2ha1p"); // CaTi
+    this.mdl.expressionIds.push(DataExpressionId.makePredefinedQuantElementExpression("Ca", "%", "Combined"));
 
     // Naltsos
     this.mdl.dataSourceIds.set(
