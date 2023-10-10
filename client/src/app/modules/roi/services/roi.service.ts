@@ -4,14 +4,16 @@ import {
   RegionOfInterestBulkDuplicateReq,
   RegionOfInterestBulkWriteReq,
   RegionOfInterestDeleteReq,
+  RegionOfInterestDisplaySettingsGetReq,
+  RegionOfInterestDisplaySettingsWriteReq,
   RegionOfInterestGetReq,
   RegionOfInterestGetResp,
   RegionOfInterestListReq,
   RegionOfInterestWriteReq,
 } from "src/app/generated-protos/roi-msgs";
-import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
+import { ROIItem, ROIItemDisplaySettings, ROIItemSummary } from "src/app/generated-protos/roi";
 import { SearchParams } from "src/app/generated-protos/search-params";
-import { BehaviorSubject, Observable, Subscription, firstValueFrom, map, of, shareReplay } from "rxjs";
+import { BehaviorSubject, Observable, map, of, shareReplay } from "rxjs";
 import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../components/roi-shape/roi-shape.component";
@@ -31,8 +33,6 @@ import {
 import { Colours, RGBA } from "src/app/utils/colours";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { SelectionHistoryItem } from "../../pixlisecore/services/selection.service";
-import { BeamSelection } from "../../pixlisecore/models/beam-selection";
-import { PixelSelection } from "../../pixlisecore/models/pixel-selection";
 import { ScanEntryReq } from "src/app/generated-protos/scan-entry-msgs";
 
 export type ROISummaries = Record<string, ROIItemSummary>;
@@ -181,6 +181,17 @@ export class ROIService {
       next: async res => {
         this.roiSummaries$.next({ ...this.roiSummaries$.value, ...res.regionsOfInterest });
 
+        let displaySettingsUpdated = false;
+        Object.entries(res.regionsOfInterest).forEach(([roiId, roi]) => {
+          if (roi.displaySettings) {
+            this.displaySettingsMap$.value[roiId] = ROIService.formDisplaySettingsFromStored(roi.displaySettings);
+            displaySettingsUpdated = true;
+          }
+        });
+        if (displaySettingsUpdated) {
+          this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+        }
+
         if (isMIST && searchParams.scanId) {
           this.mistROIsByScanId$.value[searchParams.scanId] = res.regionsOfInterest;
           this.mistROIsByScanId$.next(this.mistROIsByScanId$.value);
@@ -214,20 +225,21 @@ export class ROIService {
 
           let roi = new RegionSettings(roiResp.regionOfInterest);
 
-          let displaySettings = this.displaySettingsMap$.value[roiId];
-          if (!displaySettings) {
-            // Work out a colour for this ROI
-            let colour = this.nextScanColour(scanId).rgba;
-
-            // Work out the shape (there should be one in our map by now)
-            let shape = this._scanShapeMap.get(scanId) || DEFAULT_ROI_SHAPE;
-
-            // Store it in our map so we can use it next time without having to fetch the ROI
-            this.displaySettingsMap$.value[roiId] = { colour, shape };
+          let displaySettingsUpdated = false;
+          if (roiResp.regionOfInterest?.displaySettings) {
+            this.displaySettingsMap$.value[roiId] = ROIService.formDisplaySettingsFromStored(roiResp.regionOfInterest?.displaySettings);
+            displaySettingsUpdated = true;
+          }
+          if (displaySettingsUpdated) {
             this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+          }
 
+          let displaySettings = this.displaySettingsMap$.value[roiId];
+
+          if (!displaySettings) {
+            let roiDisplaySettings = this.nextDisplaySettings(scanId, roiId);
             // Update the ROI with the display settings
-            roi.displaySettings = { colour, shape };
+            roi.displaySettings = { colour: roiDisplaySettings.colour.rgba, shape: roiDisplaySettings.shape };
           } else {
             // Update the ROI with the display settings
             roi.displaySettings = { colour: displaySettings.colour, shape: displaySettings.shape };
@@ -247,8 +259,7 @@ export class ROIService {
   updateRegionDisplaySettings(roiId: string, colour: RGBA, shape: ROIShape) {
     // Delete from region map so we can re-fetch it with the new settings next time
     this._regionMap.delete(roiId);
-    this.displaySettingsMap$.value[roiId] = { colour, shape };
-    this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+    this.writeROIDisplaySettings(roiId, { id: roiId, colour: colour.asString(), shape });
   }
 
   getRegionDisplaySettings(roiId: string): ROIDisplaySettings {
@@ -271,7 +282,7 @@ export class ROIService {
     this._regionMap.set(`${scanId}_${PredefinedROIID.RemainingPoints}`, of(createDefaultRemainingPointsRegionSettings(scanId, scanShape)));
   }
 
-  nextDisplaySettings(scanId: string): ROIDisplaySettingOption {
+  nextDisplaySettings(scanId: string, roiId: string = ""): ROIDisplaySettingOption {
     let colourIdx = this._nextColourIndices[scanId] || 0;
     let shapeIdx = this._nextScanShapeIndices[scanId] || 0;
 
@@ -286,6 +297,10 @@ export class ROIService {
 
     this._nextColourIndices[scanId] = colourIdx;
     this._nextScanShapeIndices[scanId] = shapeIdx;
+
+    if (roiId && roiId.length > 0) {
+      this.writeROIDisplaySettings(roiId, { id: roiId, colour: colour.colour, shape });
+    }
 
     return { colour, shape };
   }
@@ -341,8 +356,48 @@ export class ROIService {
       tags: roi.tags,
       modifiedUnixSec: roi.modifiedUnixSec,
       mistROIItem: roi.mistROIItem,
+      displaySettings: roi.displaySettings,
       owner: roi.owner,
       isMIST: roi.isMIST,
+    });
+  }
+
+  static formDisplaySettingsFromStored(displaySettings: ROIItemDisplaySettings): ROIDisplaySettings {
+    return {
+      colour: RGBA.fromString(displaySettings.colour),
+      shape: (displaySettings.shape as ROIShape) || DEFAULT_ROI_SHAPE,
+    };
+  }
+
+  getROIDisplaySettings(id: string) {
+    this._dataService.sendRegionOfInterestDisplaySettingsGetRequest(RegionOfInterestDisplaySettingsGetReq.create({ id })).subscribe({
+      next: res => {
+        if (res.displaySettings) {
+          this.displaySettingsMap$.value[id] = ROIService.formDisplaySettingsFromStored(res.displaySettings);
+          this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+        } else {
+          this._snackBarService.openError(`ROI (${id}) not found`);
+        }
+      },
+      error: err => {
+        this._snackBarService.openError(err);
+      },
+    });
+  }
+
+  writeROIDisplaySettings(id: string, displaySettings: ROIItemDisplaySettings) {
+    this._dataService.sendRegionOfInterestDisplaySettingsWriteRequest(RegionOfInterestDisplaySettingsWriteReq.create({ id, displaySettings })).subscribe({
+      next: res => {
+        if (res.displaySettings) {
+          this.displaySettingsMap$.value[id] = ROIService.formDisplaySettingsFromStored(res.displaySettings);
+          this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+        } else {
+          this._snackBarService.openError(`ROI (${id}) not found`);
+        }
+      },
+      error: err => {
+        this._snackBarService.openError(err);
+      },
     });
   }
 

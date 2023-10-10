@@ -27,14 +27,22 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-
+export type BuiltInROI = "AllPoints" | "SelectedPoints" | "RemainingPoints";
 export class PredefinedROIID {
-  public static readonly AllPoints = "AllPoints";
-  public static readonly SelectedPoints = "SelectedPoints";
-  public static readonly RemainingPoints = "RemainingPoints";
+  public static readonly AllPoints: BuiltInROI = "AllPoints";
+  public static readonly SelectedPoints: BuiltInROI = "SelectedPoints";
+  public static readonly RemainingPoints: BuiltInROI = "RemainingPoints";
 
-  public static isPredefined(roiID: string): boolean {
-    return roiID == PredefinedROIID.AllPoints || roiID == PredefinedROIID.SelectedPoints || roiID == PredefinedROIID.RemainingPoints;
+  public static getBuiltinIDFromScanID = (scanId: string, builtinType: string): string => {
+    return `${builtinType}-${scanId}`;
+  };
+
+  public static getAllPointsForScan(scanId: string): string {
+    return PredefinedROIID.getBuiltinIDFromScanID(scanId, PredefinedROIID.AllPoints);
+  }
+
+  public static isPredefined(id: string): boolean {
+    return id.startsWith(PredefinedROIID.AllPoints) || id.startsWith(PredefinedROIID.SelectedPoints) || id.startsWith(PredefinedROIID.RemainingPoints);
   }
 
   public static readonly defaultROIs: string[] = [PredefinedROIID.AllPoints, PredefinedROIID.SelectedPoints];
