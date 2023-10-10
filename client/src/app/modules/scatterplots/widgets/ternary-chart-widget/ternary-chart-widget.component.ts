@@ -3,9 +3,9 @@ import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/mode
 import { Subscription } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
-import { TernaryChartDrawer } from "./drawer";
+import { TernaryChartDrawer } from "./ternary-drawer";
 import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { TernaryChartModel, TernaryDrawModel } from "./model";
+import { TernaryChartModel, TernaryDrawModel } from "./ternary-model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { DataSourceParams, SelectionService, WidgetDataService, DataUnit, RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";

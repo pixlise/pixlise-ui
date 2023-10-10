@@ -109,9 +109,8 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
       yAxisLabel = "% Above Background";
     }
 
-    this.processQueryResult(t0, yAxisLabel, data, []); // TODO: error cols
-
     this._recalcNeeded = true;
+    this.processQueryResult(t0, yAxisLabel, data, []); // TODO: error cols
   }
 
   private processQueryResult(t0: number, yAxisLabel: string, queryData: RegionDataResults, errCols: PMCDataValues[]) {
@@ -233,7 +232,7 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
     this.needsDraw$.next();
     const t2 = performance.now();
 
-    console.log("  Histogram prepareData took: " + (t1 - t0).toLocaleString() + "ms, needsDraw$ took: " + (t2 - t1).toLocaleString() + "ms");
+    console.log(`  Histogram processQueryResult took: ${(t1 - t0).toLocaleString()}ms, needsDraw$ took: ${(t2 - t1).toLocaleString()}ms`);
   }
 }
 

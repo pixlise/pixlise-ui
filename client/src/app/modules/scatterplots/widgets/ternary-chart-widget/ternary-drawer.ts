@@ -12,7 +12,7 @@ import {
   PointDrawer,
   wrapText,
 } from "src/app/utils/drawing";
-import { TernaryDrawModel, TernaryChartModel } from "./model";
+import { TernaryDrawModel, TernaryChartModel } from "./ternary-model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { CachedCanvasChartDrawer } from "../../base/cached-drawer";
 import { BaseChartModel } from "../../base/model-interfaces";

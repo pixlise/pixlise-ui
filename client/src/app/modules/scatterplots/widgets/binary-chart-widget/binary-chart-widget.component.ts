@@ -3,14 +3,14 @@ import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/mode
 import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { Subscription } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { BinaryChartDrawer } from "./drawer";
+import { BinaryChartDrawer } from "./binary-drawer";
 import {
   CanvasDrawNotifier,
   CanvasDrawer,
   CanvasInteractionHandler,
   CanvasWorldTransform,
 } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { BinaryChartModel, BinaryDrawModel } from "./model";
+import { BinaryChartModel, BinaryDrawModel } from "./binary-model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
