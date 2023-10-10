@@ -28,8 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Injectable } from "@angular/core";
-import { Observable, combineLatest, of, concatMap, mergeMap } from "rxjs";
-import { map, catchError } from "rxjs/operators";
+import { Observable, combineLatest, of, concatMap, mergeMap, throwError } from "rxjs";
+import { map, catchError, shareReplay } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
@@ -46,6 +46,7 @@ import { InterpreterDataSource } from "src/app/expression-language/interpreter-d
 import { APICachedDataService } from "./apicacheddata.service";
 import { RegionSettings } from "../../roi/models/roi-region";
 import { ROIService } from "../../roi/services/roi.service";
+import { getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
 
 export enum DataUnit {
   //UNIT_WEIGHT_PCT,
@@ -170,14 +171,11 @@ export class WidgetDataService {
   }
 
   private getDataSingle(query: DataSourceParams, allowAnyResponse: boolean): Observable<DataQueryResult> {
-    // Firstly, we need the expression being run
-    return this._cachedDataService.getExpression(ExpressionGetReq.create({ id: query.exprId })).pipe(
-      concatMap((resp: ExpressionGetResp) => {
-        if (resp.expression === undefined) {
-          throw new Error(`Expression ${query.exprId} failed to be read`);
-        }
-
-        return this.runExpression(resp.expression, query.scanId, query.quantId, query.roiId, allowAnyResponse).pipe(
+    // Firstly, we need the expression being run - note it could be a "predefined" one, so we have some
+    // special handling here that ends up just returning an expression!
+    return this.getExpression(query.exprId).pipe(
+      concatMap((expr: DataExpression) => {
+        return this.runExpression(expr, query.scanId, query.quantId, query.roiId, allowAnyResponse).pipe(
           mergeMap((result: DataQueryResult) => {
             return this._roiService.getRegionSettings(query.scanId, query.roiId).pipe(
               map((roiSettings: RegionSettings) => {
@@ -189,9 +187,9 @@ export class WidgetDataService {
           catchError(err => {
             const errorMsg = httpErrorToString(
               err,
-              `WidgetDataService error scan: ${query.scanId}, expr: ${resp.expression?.name || ""} (${query.exprId}, ${
-                resp.expression?.sourceLanguage || ""
-              }), roi: ${query.roiId}, quant: ${query.quantId}`
+              `WidgetDataService error scan: ${query.scanId}, expr: ${expr?.name || ""} (${query.exprId}, ${expr?.sourceLanguage || ""}), roi: ${
+                query.roiId
+              }, quant: ${query.quantId}`
             );
 
             // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
@@ -202,7 +200,7 @@ export class WidgetDataService {
               SentryHelper.logMsg(true, errorMsg);
             }
 
-            return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg, resp.expression));
+            return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg, expr));
           })
         );
       }),
@@ -210,6 +208,28 @@ export class WidgetDataService {
         const errorMsg = httpErrorToString(err, "Error getting expression: " + query.exprId);
         console.error(errorMsg);
         return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg));
+      })
+    );
+  }
+
+  private getExpression(id: string): Observable<DataExpression> {
+    // If this is for a "predefined" expression, return one from memory here
+    if (DataExpressionId.isPredefinedExpression(id)) {
+      const expr = getPredefinedExpression(id);
+      if (!expr) {
+        return throwError(() => new Error("Failed to create predefined expression for: " + id));
+      }
+      return of(expr);
+    }
+
+    // Must be a real one, retrieve it as normal
+    return this._cachedDataService.getExpression(ExpressionGetReq.create({ id: id })).pipe(
+      map((resp: ExpressionGetResp) => {
+        if (resp.expression === undefined) {
+          throw new Error(`Expression ${id} failed to be read`);
+        }
+
+        return resp.expression;
       })
     );
   }

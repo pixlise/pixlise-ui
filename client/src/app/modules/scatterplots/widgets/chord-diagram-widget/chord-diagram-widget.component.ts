@@ -18,7 +18,7 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 @Component({
   selector: "app-chord-diagram-widget",
   templateUrl: "./chord-diagram-widget.component.html",
-  styleUrls: ["./chord-diagram-widget.component.scss", "../../base/widget-common.scss"]
+  styleUrls: ["./chord-diagram-widget.component.scss", "../../base/widget-common.scss"],
 })
 export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
   mdl = new ChordDiagramModel();
@@ -107,6 +107,15 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
       for (const roiId of ids.roiIds) {
         for (const exprId of this.mdl.expressionIds) {
           query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+
+          // If we just added a request for an element expression, also add one for the corresponding error column value
+          const elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
+          if (elem.length) {
+            const detector = DataExpressionId.getPredefinedQuantExpressionDetector(exprId);
+
+            const errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
+            query.push(new DataSourceParams(scanId, errExprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+          }
         }
       }
     }
