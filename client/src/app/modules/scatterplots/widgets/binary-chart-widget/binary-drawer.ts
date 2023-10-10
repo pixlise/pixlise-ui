@@ -2,7 +2,7 @@ import { CanvasDrawParameters } from "src/app/modules/analysis/components/widget
 import { Colours } from "src/app/utils/colours";
 import { HOVER_POINT_RADIUS, OUTLINE_LINE_WIDTH, OutlineDrawer, PLOT_POINTS_SIZE, PointDrawer } from "src/app/utils/drawing";
 
-import { BinaryChartModel, BinaryDrawModel } from "./model";
+import { BinaryChartModel, BinaryDrawModel } from "./binary-model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { CachedCanvasChartDrawer } from "../../base/cached-drawer";
 import { BaseChartModel } from "../../base/model-interfaces";

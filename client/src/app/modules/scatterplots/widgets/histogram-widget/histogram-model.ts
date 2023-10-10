@@ -34,6 +34,7 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
 
   keyItems: WidgetKeyItem[] = [];
   expressionsMissingPMCs: string = "";
+  errorMessage: string = "";
 
   private _lastCalcCanvasParams: CanvasParams | null = null;
   private _recalcNeeded = true;
@@ -82,6 +83,7 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
   setData(data: RegionDataResults) {
     const t0 = performance.now();
 
+    this.errorMessage = "";
     this.keyItems = [];
     this.expressionsMissingPMCs = "";
 
@@ -109,9 +111,8 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
       yAxisLabel = "% Above Background";
     }
 
-    this.processQueryResult(t0, yAxisLabel, data, []); // TODO: error cols
-
     this._recalcNeeded = true;
+    this.processQueryResult(t0, yAxisLabel, data, []); // TODO: error cols
   }
 
   private processQueryResult(t0: number, yAxisLabel: string, queryData: RegionDataResults, errCols: PMCDataValues[]) {
@@ -120,13 +121,19 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
     const overallValueRange: MinMax = new MinMax();
     let barGroupValueRange: MinMax = new MinMax();
 
+    if (queryData.error) {
+      this.errorMessage = queryData.error;
+    }
+
     for (let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx++) {
       const colData = queryData.queryResults[queryIdx];
       const exprId = colData.query.exprId;
       const roiId = colData.query.roiId;
 
       if (colData.error) {
-        console.error("Failed to get data for roi: " + roiId + ", expr: " + exprId + ". Error: " + colData.error);
+        const err = `Failed to get data for roi: ${roiId}, expr: ${exprId}. Error: ${colData.error}`;
+        console.error(err);
+        this.errorMessage = [this.errorMessage, err].join("\n");
         continue;
       }
 
@@ -233,7 +240,7 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
     this.needsDraw$.next();
     const t2 = performance.now();
 
-    console.log("  Histogram prepareData took: " + (t1 - t0).toLocaleString() + "ms, needsDraw$ took: " + (t2 - t1).toLocaleString() + "ms");
+    console.log(`  Histogram processQueryResult took: ${(t1 - t0).toLocaleString()}ms, needsDraw$ took: ${(t2 - t1).toLocaleString()}ms`);
   }
 }
 

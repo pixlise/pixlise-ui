@@ -1,25 +1,27 @@
-import { Component, OnInit, OnDestroy } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasInteractionHandler, CanvasDrawer } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
-import { DataSourceParams, DataUnit, RegionDataResults, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
-import { HistogramModel } from "./histogram-model";
-import { HistogramDrawer } from "./drawer";
-import { HistogramToolHost } from "./histogram-interaction";
+import { ChordDiagramModel, ChordDrawMode } from "./chord-model";
+import { ChordDiagramDrawer } from "./chord-drawer";
+import { ChordDiagramInteraction } from "./chord-interaction";
 import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
+import { Colours } from "src/app/utils/colours";
+import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 
 @Component({
-  selector: "histogram-widget",
-  templateUrl: "./histogram-widget.component.html",
-  styleUrls: ["./histogram-widget.component.scss", "../../base/widget-common.scss"],
+  selector: "app-chord-diagram-widget",
+  templateUrl: "./chord-diagram-widget.component.html",
+  styleUrls: ["./chord-diagram-widget.component.scss", "../../base/widget-common.scss"],
 })
-export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
-  mdl = new HistogramModel();
+export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
+  mdl = new ChordDiagramModel();
   toolhost: CanvasInteractionHandler;
   drawer: CanvasDrawer;
 
@@ -28,27 +30,33 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
   private _subs = new Subscription();
 
+  // For settings menu items:
+  stateNames = [ChordDrawMode.NEGATIVE, ChordDrawMode.BOTH, ChordDrawMode.POSITIVE];
+  sliderTrackColourYellow = Colours.GRAY_50.asString();
+  sliderTrackColourGray = Colours.GRAY_50.asString();
+
   constructor(
     public dialog: MatDialog,
-    private _widgetData: WidgetDataService
+    private _widgetData: WidgetDataService,
+    private _selectionService: SelectionService
   ) {
     super();
 
     this.setInitialConfig();
 
-    this.drawer = new HistogramDrawer(this.mdl);
-    const toolHost = new HistogramToolHost(this.mdl);
+    this.drawer = new ChordDiagramDrawer(this.mdl);
+    const toolHost = new ChordDiagramInteraction(this.mdl, this._selectionService);
 
     this.toolhost = toolHost;
 
     this._widgetControlConfiguration = {
       topToolbar: [
         {
-          id: "refs",
+          id: "nodes",
           type: "button",
-          title: "Bars",
-          tooltip: "Choose expressions to calculate bars from",
-          onClick: () => this.onBars(),
+          title: "Nodes",
+          tooltip: "Choose expressions to calculate nodes from",
+          onClick: () => this.onNodes(),
         },
         {
           id: "regions",
@@ -57,23 +65,22 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
         },
+        {
+          id: "solo",
+          type: "button",
+          icon: "assets/button-icons/widget-solo.svg",
+          tooltip: "Toggle Solo View",
+          onClick: () => this.onSoloView(),
+        },
       ],
-      topRightInsetButton: {
-        id: "key",
-        type: "button",
-        title: "Key",
-        tooltip: "Toggle key for plot",
-        onClick: () => this.onToggleKey(),
-      },
     };
   }
 
   private setInitialConfig() {
-    this.mdl.expressionIds = [
-      "vge9tz6fkbi2ha1p", // CaTi
-      "fhb5x0qbx6lz9uec", // Dip (deg, B to A)
-      DataExpressionId.makePredefinedQuantElementExpression("Ca", "%", "Combined"),
-    ];
+    this.mdl.expressionIds.push("lpqtfd5lva7t2046"); // Si (mmol) (PIXLANG)
+    this.mdl.expressionIds.push("fhb5x0qbx6lz9uec"); // Dip (deg, B to A)
+    //this.mdl.expressionIds.push("vge9tz6fkbi2ha1p"); // CaTi
+    this.mdl.expressionIds.push(DataExpressionId.makePredefinedQuantElementExpression("Ca", "%", "Combined"));
 
     // Naltsos
     this.mdl.dataSourceIds.set(
@@ -89,6 +96,10 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   private update() {
+    if (this.mdl.expressionIds.length != 3) {
+      throw new Error("Expected 3 expression ids for Ternary");
+    }
+
     const query: DataSourceParams[] = [];
 
     // NOTE: processQueryResult depends on the order of the following for loops...
@@ -96,35 +107,18 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       for (const roiId of ids.roiIds) {
         for (const exprId of this.mdl.expressionIds) {
           query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+
+          // If we just added a request for an element expression, also add one for the corresponding error column value
+          const elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
+          if (elem.length) {
+            const detector = DataExpressionId.getPredefinedQuantExpressionDetector(exprId);
+
+            const errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
+            query.push(new DataSourceParams(scanId, errExprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+          }
         }
       }
     }
-
-    /* ALSO INCLUDE ERROR BARS:
-  protected getErrorColForExpression(exprId: string, roiId: string): Observable<PMCDataValues | null> {
-    // If we've got a corresponding error column, use that, otherwise return null
-    const elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
-    if (elem.length <= 0) {
-      return of(null);
-    }
-
-    // Get the detector too. If not specified, it will be '' which will mean some defaulting will happen
-    const detector = DataExpressionId.getPredefinedQuantExpressionDetector(exprId);
-
-    // Try query it
-    const errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
-    const query: DataSourceParams[] = [new DataSourceParams(errExprId, roiId, "")];
-    return this._widgetDataService.getData(query, false).pipe(
-      map(queryData => {
-        if (queryData.error || queryData.hasQueryErrors() || queryData.queryResults.length != 1) {
-          return null;
-        }
-
-        return queryData.queryResults[0].values;
-      })
-    );
-  }
-*/
 
     this._widgetData.getData(query).subscribe({
       next: data => {
@@ -137,22 +131,24 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   ngOnInit() {
-    // this.drawer = new BinaryChartDrawer(this.mdl, this.mdl?.toolHost);
     this.reDraw();
   }
+
   ngOnDestroy() {
     this._subs.unsubscribe();
   }
 
   reDraw() {
-    this.mdl.needsDraw$.next();
+    //this.mdl.needsDraw$.next();
   }
 
   get interactionHandler() {
     return this.toolhost;
   }
 
-  onBars() {}
+  onNodes() {}
+  onSoloView() {}
+
   onRegions() {
     const dialogConfig = new MatDialogConfig();
     // Pass data to dialog
@@ -186,26 +182,33 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       }
     });
   }
-  onToggleKey() {}
 
-  get showWhiskers(): boolean {
-    return this.mdl.showWhiskers;
-  }
-  onToggleShowWhiskers() {
-    this.mdl.showWhiskers = !this.mdl.showWhiskers;
+  get threshold(): number {
+    return this.mdl.threshold;
   }
 
-  get showStdError(): boolean {
-    return this.mdl.showStdError;
-  }
-  toggleShowStdError() {
-    this.mdl.showStdError = !this.mdl.showStdError;
+  onChangeThreshold(value: SliderValue) {
+    this.mdl.threshold = value.value;
+
+    if (value.finish) {
+      this.reDraw();
+    }
   }
 
-  get logScale(): boolean {
-    return this.mdl.logScale;
+  get correlationDisplayMode(): ChordDrawMode {
+    return this.mdl.drawMode;
   }
-  onToggleLogScale() {
-    this.mdl.logScale = !this.mdl.logScale;
+
+  onToggleCorrelationDisplayMode(mode: ChordDrawMode) {
+    this.mdl.drawMode = mode;
+    this.reDraw();
+  }
+
+  get showSelectionOnly(): boolean {
+    return this.mdl.drawForSelection;
+  }
+
+  onToggleShowSelectionOnly() {
+    this.mdl.drawForSelection = !this.mdl.drawForSelection;
   }
 }

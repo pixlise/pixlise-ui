@@ -6,7 +6,7 @@ import { FormsModule } from "@angular/forms";
 import { MatSnackBarModule } from "@angular/material/snack-bar";
 
 import { WaitSpinnerComponent } from "./components/atoms/wait-spinner/wait-spinner.component";
-// import { MultiStateButtonComponent } from "./components/atoms/buttons/multi-state-button/multi-state-button.component";
+import { MultiStateButtonComponent } from "./components/atoms/buttons/multi-state-button/multi-state-button.component";
 // import { PanelFoldoutButtonComponent } from "./components/atoms/buttons/panel-foldout-button/panel-foldout-button.component";
 import { PushButtonComponent } from "./components/atoms/buttons/push-button/push-button.component";
 // import { TwoStateEditButtonComponent } from "./components/atoms/buttons/two-state-edit-button/two-state-edit-button.component";
@@ -40,6 +40,7 @@ import { MenuPanelHostComponent } from "./components/atoms/widget-settings-menu/
 import { NotificationsMenuPanelComponent } from "src/app/components/toolbar/notifications-menu-panel/notifications-menu-panel.component";
 import { HotkeysMenuPanelComponent } from "src/app/components/toolbar/hotkeys-menu-panel/hotkeys-menu-panel.component";
 import { FilterBoxComponent } from "./components/atoms/filter-box/filter-box.component";
+import { SliderComponent } from "./components/atoms/slider/slider.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -51,6 +52,7 @@ export { WidgetDataService, DataSourceParams, RegionDataResults, RegionDataResul
 export { WidgetKeyItem } from "./models/widget-key-item";
 export { SelectionService } from "./services/selection.service";
 export { ExpressionValue, ExpressionReference, ExpressionReferences } from "./models/expression-references";
+export { SliderComponent } from "./components/atoms/slider/slider.component";
 
 @NgModule({
   declarations: [
@@ -75,6 +77,8 @@ export { ExpressionValue, ExpressionReference, ExpressionReferences } from "./mo
     IconButtonComponent,
     ConfirmDialogComponent,
     FilterBoxComponent,
+    SliderComponent,
+    MultiStateButtonComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule],
   exports: [
@@ -98,6 +102,8 @@ export { ExpressionValue, ExpressionReference, ExpressionReferences } from "./mo
     MaterialModule,
     MatSnackBarModule,
     FilterBoxComponent,
+    SliderComponent,
+    MultiStateButtonComponent,
   ],
   providers: [APICommService, APIDataService, HttpInterceptorService],
 })

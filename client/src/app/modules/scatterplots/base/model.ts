@@ -272,7 +272,7 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
     this.needsDraw$.next();
     const t2 = performance.now();
 
-    console.log(`  ${chartName} prepareData took: ${(t1 - t0).toLocaleString()}ms, needsDraw$ took: ${(t2 - t1).toLocaleString()}ms`);
+    console.log(`  ${chartName} processQueryResult took: ${(t1 - t0).toLocaleString()}ms, needsDraw$ took: ${(t2 - t1).toLocaleString()}ms`);
 
     this._recalcNeeded = true;
   }

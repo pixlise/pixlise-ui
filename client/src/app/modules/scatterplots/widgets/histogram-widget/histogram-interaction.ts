@@ -27,38 +27,55 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-@import 'atoms.scss';
+import { Point } from "src/app/models/Geometry";
+import { HistogramDrawBar, HistogramModel } from "./histogram-model";
+import {
+  CanvasInteractionHandler,
+  CanvasMouseEvent,
+  CanvasInteractionResult,
+  CanvasMouseEventId,
+  CanvasKeyEvent,
+} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 
-.icon-btn {
-    width: 24px;
-    height: 24px;
+export class HistogramToolHost implements CanvasInteractionHandler {
+  constructor(private _mdl: HistogramModel) {}
 
-    background-repeat: no-repeat;
-    background-position: center;
-}
+  mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
+    this._mdl.recalcDisplayDataIfNeeded(event.canvasParams);
 
-.btn-bg {
-    height: 24px;
-    background-color: $clr-gray-100;
-    border-radius: $sz-half;
-    display: flex;
-    flex-direction: row;
-}
+    if (event.eventId == CanvasMouseEventId.MOUSE_MOVE) {
+      // Hover handling if mouse is over a bar
+      const bar = this.getBar(event.canvasPoint);
+      if (bar != this._mdl.hoverBar) {
+        if (bar) {
+          this._mdl.setHover(event.canvasPoint, bar);
+        } else {
+          this._mdl.setHover(null, null);
+        }
 
-.btn-on {
-    @extend .txt-button;
-    color: white;
-    background-color: $clr-gray-60;
-    border-radius: $sz-half;
-}
+        return CanvasInteractionResult.redrawOnly;
+      }
+    }
 
-.btn-off {
-    @extend .txt-button;
-    color: $clr-gray-60;
-    background-color: transparent;
-}
+    return CanvasInteractionResult.neither;
+  }
 
-.btn-text-pad {
-    padding: $sz-half;
+  keyEvent(event: CanvasKeyEvent): CanvasInteractionResult {
+    return CanvasInteractionResult.neither;
+  }
+
+  protected getBar(canvasPt: Point): HistogramDrawBar | null {
+    if (this._mdl.drawModel) {
+      for (const bar of this._mdl.drawModel.bars) {
+        // We used to check against rectangle, but if rect is 0 in height (or small), users didn't get to see
+        // a tooltip for this bar! Now easier...
+        //if(bar.rect.containsPoint(canvasPt))
+        if (canvasPt.y < bar.rect.maxY() && canvasPt.x > bar.rect.x && canvasPt.x < bar.rect.maxX()) {
+          return bar;
+        }
+      }
+    }
+
+    return null;
+  }
 }

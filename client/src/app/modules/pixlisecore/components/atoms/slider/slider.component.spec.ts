@@ -27,55 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Point } from "src/app/models/Geometry";
-import { HistogramDrawBar, HistogramModel } from "./model";
-import {
-  CanvasInteractionHandler,
-  CanvasMouseEvent,
-  CanvasInteractionResult,
-  CanvasMouseEventId,
-  CanvasKeyEvent,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { async, ComponentFixture, TestBed } from "@angular/core/testing";
+import { SliderComponent } from "./slider.component";
 
-export class HistogramToolHost implements CanvasInteractionHandler {
-  constructor(private _mdl: HistogramModel) {}
 
-  mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
-    this._mdl.recalcDisplayDataIfNeeded(event.canvasParams);
+describe("SliderComponent", () => 
+{
+    let component: SliderComponent;
+    let fixture: ComponentFixture<SliderComponent>;
 
-    if (event.eventId == CanvasMouseEventId.MOUSE_MOVE) {
-      // Hover handling if mouse is over a bar
-      const bar = this.getBar(event.canvasPoint);
-      if (bar != this._mdl.hoverBar) {
-        if (bar) {
-          this._mdl.setHover(event.canvasPoint, bar);
-        } else {
-          this._mdl.setHover(null, null);
-        }
+    beforeEach(async(() => 
+    {
+        TestBed.configureTestingModule({
+            declarations: [ SliderComponent ]
+        })
+            .compileComponents();
+    }));
 
-        return CanvasInteractionResult.redrawOnly;
-      }
-    }
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(SliderComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-    return CanvasInteractionResult.neither;
-  }
-
-  keyEvent(event: CanvasKeyEvent): CanvasInteractionResult {
-    return CanvasInteractionResult.neither;
-  }
-
-  protected getBar(canvasPt: Point): HistogramDrawBar | null {
-    if (this._mdl.drawModel) {
-      for (const bar of this._mdl.drawModel.bars) {
-        // We used to check against rectangle, but if rect is 0 in height (or small), users didn't get to see
-        // a tooltip for this bar! Now easier...
-        //if(bar.rect.containsPoint(canvasPt))
-        if (canvasPt.y < bar.rect.maxY() && canvasPt.x > bar.rect.x && canvasPt.x < bar.rect.maxX()) {
-          return bar;
-        }
-      }
-    }
-
-    return null;
-  }
-}
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

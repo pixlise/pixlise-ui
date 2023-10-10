@@ -37,7 +37,7 @@ export class DataExpressionId {
   private static PredefinedQuantElementLayerPrefix = "elem-";
   private static PredefinedLayerPrefix = "expr-";
   private static PredefinedLayerRoughness = "roughness";
-  private static PredefinedLayerDiffractionCounts = "diffraction";
+//  private static PredefinedLayerDiffractionCounts = "diffraction";
   private static SuffixUnquantified = "unquantified";
   private static SuffixZHeight = "zheight";
 
@@ -191,11 +191,13 @@ export class DataExpressionId {
   public static readonly predefinedUnquantifiedPercentDataExpression =
     DataExpressionId.PredefinedLayerPrefix + DataExpressionId.PredefinedQuantElementLayerPrefix + DataExpressionId.SuffixUnquantified;
   public static readonly predefinedRoughnessDataExpression = DataExpressionId.PredefinedLayerPrefix + DataExpressionId.PredefinedLayerRoughness;
-  public static readonly predefinedDiffractionCountDataExpression =
-    DataExpressionId.PredefinedLayerPrefix + DataExpressionId.PredefinedLayerDiffractionCounts;
+
+  // Temporarily disabled - previously this referenced an expression that could be changed by user selecting bars on the diffraction histogram (sidebar)
+  // public static readonly predefinedDiffractionCountDataExpression =
+  //   DataExpressionId.PredefinedLayerPrefix + DataExpressionId.PredefinedLayerDiffractionCounts;
+
   public static readonly predefinedHeightZDataExpression = DataExpressionId.PredefinedLayerPrefix + DataExpressionId.SuffixZHeight;
-  public static readonly predefinedQuantDataExpression =
-    DataExpressionId.PredefinedLayerPrefix + DataExpressionId.PredefinedQuantDataLayerPrefix;
+  public static readonly predefinedQuantDataExpression = DataExpressionId.PredefinedLayerPrefix + DataExpressionId.PredefinedQuantDataLayerPrefix;
 
   public static hasPseudoIntensityExpressions(exprIds: string[]): boolean {
     for (const exprId of exprIds) {

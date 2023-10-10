@@ -1,0 +1,35 @@
+@import "variables.scss";
+@import "atoms.scss";
+
+/* Resulted in canvas getting a width of 0px
+:host {
+  display: flex;
+  height: 100%;
+}*/
+
+interactive-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+}
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  h4 {
+    color: $clr-gray-30;
+    font-weight: bold;
+    text-align: center;
+    margin: $sz-double 0px $sz-unit 0px;
+  }
+
+  .row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $sz-unit;
+  }
+}
