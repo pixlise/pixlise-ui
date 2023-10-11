@@ -12,6 +12,7 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
 import { WidgetDataIds, ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { BaseChartDrawModel, BaseChartModel } from "../../base/model-interfaces";
+import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 
 export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -34,7 +35,6 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
 
   keyItems: WidgetKeyItem[] = [];
   expressionsMissingPMCs: string = "";
-  errorMessage: string = "";
 
   private _lastCalcCanvasParams: CanvasParams | null = null;
   private _recalcNeeded = true;
@@ -47,12 +47,12 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
     this._raw = r;
   }
 
-  hasRawData(): boolean {
-    return this._raw != null;
-  }
-
   get raw(): HistogramData | null {
     return this._raw;
+  }
+
+  hasRawData(): boolean {
+    return this._raw != null;
   }
 
   get drawModel(): HistogramDrawModel {
@@ -80,10 +80,10 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
     }
   }
 
-  setData(data: RegionDataResults) {
+  // Returns error message if one is generated
+  setData(data: RegionDataResults): WidgetError[] {
     const t0 = performance.now();
 
-    this.errorMessage = "";
     this.keyItems = [];
     this.expressionsMissingPMCs = "";
 
@@ -112,39 +112,42 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
     }
 
     this._recalcNeeded = true;
-    this.processQueryResult(t0, yAxisLabel, data, []); // TODO: error cols
+    return this.processQueryResult(t0, yAxisLabel, data, []); // TODO: error column loading
   }
 
-  private processQueryResult(t0: number, yAxisLabel: string, queryData: RegionDataResults, errCols: PMCDataValues[]) {
+  // Returns error message if one is generated
+  private processQueryResult(t0: number, yAxisLabel: string, queryData: RegionDataResults, errCols: PMCDataValues[]): WidgetError[] {
+    const errorMessages: WidgetError[] = [];
+
     const histogramBars: HistogramBars[] = [];
     let bars: HistogramBar[] = [];
     const overallValueRange: MinMax = new MinMax();
     let barGroupValueRange: MinMax = new MinMax();
 
     if (queryData.error) {
-      this.errorMessage = queryData.error;
+      errorMessages.push(new WidgetError(queryData.error, ""));
     }
 
     for (let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx++) {
       const colData = queryData.queryResults[queryIdx];
       const exprId = colData.query.exprId;
-      const roiId = colData.query.roiId;
+      //const roiId = colData.query.roiId;
 
       if (colData.error) {
-        const err = `Failed to get data for roi: ${roiId}, expr: ${exprId}. Error: ${colData.error}`;
-        console.error(err);
-        this.errorMessage = [this.errorMessage, err].join("\n");
+        errorMessages.push(colData.error);
         continue;
       }
 
       const concentrationCol = colData.values;
 
       // If we get no values for the given PMCs, display an error and stop here
-      let errorMsg = "";
-
+      let barErrorMsg = "";
       if (concentrationCol.values.length <= 0) {
-        console.log("  Histogram got no values back for expression: " + exprId + ", roi: " + roiId);
-        errorMsg = "No values found for: " + (colData?.region?.region?.name || "<unknown ROI " + roiId + ">");
+        barErrorMsg = "Histogram got no values back for query: " + colData.identity();
+
+        console.log(barErrorMsg);
+        errorMessages.push(new WidgetError(barErrorMsg, ""));
+        // Don't stop here!! Let this bar appear with the error on it
         //continue;
       }
 
@@ -205,7 +208,7 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
 
       if (colData.region) {
         bars.push(
-          new HistogramBar(colData.region.region.name, colData.region.displaySettings.colour, avg, minMax, avgError, errorMsg, stdDev, stdErr, concentrationBands)
+          new HistogramBar(colData.region.region.name, colData.region.displaySettings.colour, avg, minMax, avgError, barErrorMsg, stdDev, stdErr, concentrationBands)
         );
         barGroupValueRange.expandByMinMax(minMax);
 
@@ -241,6 +244,7 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
     const t2 = performance.now();
 
     console.log(`  Histogram processQueryResult took: ${(t1 - t0).toLocaleString()}ms, needsDraw$ took: ${(t2 - t1).toLocaleString()}ms`);
+    return errorMessages;
   }
 }
 

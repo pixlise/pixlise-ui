@@ -7,7 +7,7 @@ import { TernaryChartDrawer } from "./ternary-drawer";
 import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { TernaryChartModel, TernaryDrawModel } from "./ternary-model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { DataSourceParams, SelectionService, WidgetDataService, DataUnit, RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { DataSourceParams, SelectionService, WidgetDataService, DataUnit, RegionDataResults, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
@@ -57,7 +57,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     private _selectionService: SelectionService,
     //private _route: ActivatedRoute,
     private _analysisLayoutService: AnalysisLayoutService,
-    private _widgetData: WidgetDataService
+    private _widgetData: WidgetDataService,
+    private _snackService: SnackbarService
   ) {
     super();
 
@@ -226,12 +227,21 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     this._widgetData.getData(query).subscribe({
       next: data => {
-        this.mdl.setData(data);
+        this.setData(data);
       },
       error: err => {
-        this.mdl.setData(new RegionDataResults([], err));
+        this.setData(new RegionDataResults([], err));
       },
     });
+  }
+
+  private setData(data: RegionDataResults) {
+    const errs = this.mdl.setData(data);
+    if (errs.length > 0) {
+      for (const err of errs) {
+        this._snackService.openError(err.message, err.description);
+      }
+    }
   }
 
   ngOnInit() {

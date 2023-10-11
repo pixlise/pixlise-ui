@@ -9,6 +9,7 @@ import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, CANVAS_FONT_SIZE_TITLE } from "sr
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { BaseChartDrawModel } from "../../base/model-interfaces";
 import { NaryChartDataGroup, NaryChartModel } from "../../base/model";
+import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 
 export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel> {
   public static readonly FONT_SIZE_SMALL = CANVAS_FONT_SIZE_TITLE - 4;
@@ -17,10 +18,10 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
     this._drawModel.regenerate(raw, canvasParams);
   }
 
-  setData(data: RegionDataResults): void {
+  setData(data: RegionDataResults): WidgetError[] {
     const axes: ScatterPlotAxisInfo[] = [new ScatterPlotAxisInfo("", false, "", "", new MinMax()), new ScatterPlotAxisInfo("", true, "", "", new MinMax())];
 
-    this.processQueryResult("Binary", data, axes);
+    return this.processQueryResult("Binary", data, axes);
   }
 
   protected makeData(axes: ScatterPlotAxisInfo[], pointGroups: NaryChartDataGroup[]): BinaryData {

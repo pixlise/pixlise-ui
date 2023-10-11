@@ -65,18 +65,20 @@ export class DataSourceParams {
   ) {}
 }
 
-export enum WidgetDataErrorType {
-  WERR_NONE = "none",
-  WERR_ROI = "roi",
-  WERR_EXPR = "expr",
-  WERR_QUERY = "query",
+export class WidgetError extends Error {
+  constructor(
+    message: string,
+    public description: string
+  ) {
+    super(message);
+    this.name = "WidgetError";
+  }
 }
 
 export class RegionDataResultItem {
   constructor(
     public exprResult: DataQueryResult,
-    public errorType: WidgetDataErrorType,
-    public error: string,
+    public error: WidgetError | null,
     public warning: string,
     public expression: DataExpression | null,
     public region: RegionSettings | null,
@@ -86,6 +88,15 @@ export class RegionDataResultItem {
 
   get values(): PMCDataValues {
     return this.exprResult?.resultValues;
+  }
+
+  // Returns a human-readable identity string that allows working out which query is which. For example
+  // in case of an error message on a widget where multiple queries have run, we call this to say
+  // this is the query that the error was generated for
+  public identity(): string {
+    return `scan: ${this.query.scanId}, expr: ${this.expression?.name || ""} (${this.query.exprId}, ${this.expression?.sourceLanguage || ""}), roi: ${
+      this.query.roiId
+    }, quant: ${this.query.quantId}`;
   }
 }
 
@@ -392,8 +403,7 @@ export class WidgetDataService {
           result.stderr,
           result.recordedExpressionInputs
         ),
-        WidgetDataErrorType.WERR_QUERY,
-        msg,
+        new WidgetError("Query returned unexpected data type", msg),
         "", // warning
         result.expression,
         result.region,
@@ -415,8 +425,7 @@ export class WidgetDataService {
         result.stderr,
         result.recordedExpressionInputs
       ),
-      WidgetDataErrorType.WERR_NONE,
-      "", // error
+      null,
       unitConverted.warning,
       result.expression,
       result.region,

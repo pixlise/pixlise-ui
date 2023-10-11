@@ -11,6 +11,7 @@ import { RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.modul
 import { getPearsonCorrelation, httpErrorToString } from "src/app/utils/utils";
 import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
 import { DataExpression } from "src/app/generated-protos/expressions";
+import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 
 export class ChordDiagramModel implements CanvasDrawNotifier {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -87,11 +88,12 @@ export class ChordDiagramModel implements CanvasDrawNotifier {
     }
   }
 
-  setData(queryData: RegionDataResults) {
+  // Returns error msg if one is generated
+  setData(queryData: RegionDataResults): WidgetError[] {
+    const errResult: WidgetError[] = [];
     const t0 = performance.now();
 
     this._recalcNeeded = true;
-    this.errorMessage = "";
 
     // TODO: David says we can probably average A and B values here
 
@@ -109,7 +111,7 @@ export class ChordDiagramModel implements CanvasDrawNotifier {
       for (let c = 0; c < queryData.queryResults.length; c++) {
         const result = queryData.queryResults[c];
         if (result.error) {
-          throw new Error(`Node expression ${result.query.exprId} had ${result.errorType} error: ${result.error}`);
+          throw new Error(`Node expression ${result.query.exprId} error: ${result.error.message}. Description: ${result.error.description}`);
         }
 
         if (!result.expression) {
@@ -273,7 +275,11 @@ export class ChordDiagramModel implements CanvasDrawNotifier {
 
       this.raw = rawNodes;
     } catch (err) {
-      this.errorMessage = httpErrorToString(err, "Chord diagram");
+      if (err instanceof WidgetError) {
+        errResult.push(err as WidgetError);
+      } else {
+        errResult.push(new WidgetError(httpErrorToString(err, "Chord diagram"), ""));
+      }
     }
 
     const t1 = performance.now();
@@ -281,6 +287,7 @@ export class ChordDiagramModel implements CanvasDrawNotifier {
     const t2 = performance.now();
 
     console.log(`  Chord processQueryResult took: ${(t1 - t0).toLocaleString()}ms, needsDraw$ took: ${(t2 - t1).toLocaleString()}ms`);
+    return errResult;
   }
 }
 

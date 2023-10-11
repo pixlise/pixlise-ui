@@ -7,20 +7,21 @@ import { RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.modul
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { BaseChartDrawModel } from "../../base/model-interfaces";
 import { NaryChartDataGroup, NaryChartDataItem, NaryChartModel } from "../../base/model";
+import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 
 export class TernaryChartModel extends NaryChartModel<TernaryData, TernaryDrawModel> {
   protected regenerateDrawModel(raw: TernaryData | null, canvasParams: CanvasParams): void {
     this._drawModel.regenerate(raw, canvasParams);
   }
 
-  setData(data: RegionDataResults): void {
+  setData(data: RegionDataResults): WidgetError[] {
     const corners: ScatterPlotAxisInfo[] = [
       new ScatterPlotAxisInfo("", false, "", "", new MinMax()),
       new ScatterPlotAxisInfo("", false, "", "", new MinMax()),
       new ScatterPlotAxisInfo("", false, "", "", new MinMax()),
     ];
 
-    this.processQueryResult("Ternary", data, corners);
+    return this.processQueryResult("Ternary", data, corners);
   }
 
   protected makeData(axes: ScatterPlotAxisInfo[], pointGroups: NaryChartDataGroup[]): TernaryData {

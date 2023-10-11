@@ -13,6 +13,7 @@ import { WidgetDataIds, ScanDataIds } from "../../pixlisecore/models/widget-data
 import { WidgetKeyItem, RegionDataResults, ExpressionReferences } from "../../pixlisecore/pixlisecore.module";
 import { ScatterPlotAxisInfo } from "../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { BaseChartDataItem, BaseChartDataValueItem, BaseChartDrawModel, BaseChartModel } from "./model-interfaces";
+import { WidgetError } from "../../pixlisecore/services/widget-data.service";
 
 export class NaryChartDataItem implements BaseChartDataValueItem {
   constructor(
@@ -112,13 +113,14 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
   protected abstract regenerateDrawModel(raw: RawModel | null, canvasParams: CanvasParams): void;
 
   // Should just call this.processQueryResult, providing axis infoss along with the results
-  abstract setData(data: RegionDataResults): void;
+  abstract setData(data: RegionDataResults): WidgetError[];
 
   protected processQueryResult(
     chartName: string, // Expecting Binary or Ternary here, just used in error msgs
     queryData: RegionDataResults,
     axes: ScatterPlotAxisInfo[]
-  ) {
+  ): WidgetError[] {
+    const errs: WidgetError[] = [];
     const t0 = performance.now();
 
     this.keyItems = [];
@@ -164,13 +166,18 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
         //axes[c].modulesOutOfDate = queryData.queryResults[queryIdx + c].expression?.moduleReferences || "?";
 
         // Did we find an error with this query?
-        if (queryData.queryResults[queryIdx + c].error) {
-          axes[c].errorMsgShort = queryData.queryResults[queryIdx + c].errorType || "";
-          axes[c].errorMsgLong = queryData.queryResults[queryIdx + c].error || "";
+        const qryErr = queryData.queryResults[queryIdx + c]?.error;
+        if (qryErr) {
+          axes[c].errorMsgShort = qryErr?.message || "";
+          axes[c].errorMsgLong = qryErr?.description || "";
 
-          console.error(
-            `${chartName} encountered error with expression: ${this.expressionIds[c]}, on region: ${roiId}, axes: ${c == 0 ? "left" : c == 1 ? "top" : "right"}`
+          const err = new WidgetError(
+            `${chartName} encountered error with ${queryData.queryResults[queryIdx + c].identity()}, axes: ${c == 0 ? "left" : c == 1 ? "top" : "right"}`,
+            axes[c].errorMsgLong
           );
+
+          console.error(err);
+          errs.push(err);
           continue;
         }
 
@@ -180,7 +187,13 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
           axes[c].errorMsgShort = "Region error";
           axes[c].errorMsgLong = "Region data not found for: " + roiId;
 
-          console.error(axes[c].errorMsgLong);
+          const err = new WidgetError(
+            `${chartName} Region missing for ${queryData.queryResults[queryIdx + c].identity()}, axes: ${c == 0 ? "left" : c == 1 ? "top" : "right"}`,
+            axes[c].errorMsgLong
+          );
+
+          console.error(err);
+          errs.push(err);
           continue;
         }
 
@@ -275,6 +288,7 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
     console.log(`  ${chartName} processQueryResult took: ${(t1 - t0).toLocaleString()}ms, needsDraw$ took: ${(t2 - t1).toLocaleString()}ms`);
 
     this._recalcNeeded = true;
+    return errs;
   }
 
   private makeReferenceGroup(chartName: string) {

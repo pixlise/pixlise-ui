@@ -52,7 +52,8 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   constructor(
     public dialog: MatDialog,
     private _selectionService: SelectionService,
-    private _widgetData: WidgetDataService
+    private _widgetData: WidgetDataService,
+    private _snackService: SnackbarService
   ) {
     super();
 
@@ -144,7 +145,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     const unit = this.mdl.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT;
     const query: DataSourceParams[] = [];
 
-    // NOTE: processQueryResult depends on the order of the following for loops...
+    // NOTE: setData depends on the order of the following for loops...
     for (const [scanId, ids] of this.mdl.dataSourceIds) {
       for (const roiId of ids.roiIds) {
         for (const exprId of this.mdl.expressionIds) {
@@ -155,12 +156,21 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
     this._widgetData.getData(query).subscribe({
       next: data => {
-        this.mdl.setData(data);
+        this.setData(data);
       },
       error: err => {
-        this.mdl.setData(new RegionDataResults([], err));
+        this.setData(new RegionDataResults([], err));
       },
     });
+  }
+
+  private setData(data: RegionDataResults) {
+    const errs = this.mdl.setData(data);
+    if (errs.length > 0) {
+      for (const err of errs) {
+        this._snackService.openError(err.message, err.description);
+      }
+    }
   }
 
   ngOnInit() {

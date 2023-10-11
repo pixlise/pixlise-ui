@@ -5,7 +5,7 @@ import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { CanvasInteractionHandler, CanvasDrawer } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
-import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ChordDiagramModel, ChordDrawMode } from "./chord-model";
 import { ChordDiagramDrawer } from "./chord-drawer";
@@ -38,7 +38,8 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   constructor(
     public dialog: MatDialog,
     private _widgetData: WidgetDataService,
-    private _selectionService: SelectionService
+    private _selectionService: SelectionService,
+    private _snackService: SnackbarService
   ) {
     super();
 
@@ -122,12 +123,21 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
 
     this._widgetData.getData(query).subscribe({
       next: data => {
-        this.mdl.setData(data);
+        this.setData(data);
       },
       error: err => {
-        this.mdl.setData(new RegionDataResults([], err));
+        this.setData(new RegionDataResults([], err));
       },
     });
+  }
+
+  private setData(data: RegionDataResults) {
+    const errs = this.mdl.setData(data);
+    if (errs.length > 0) {
+      for (const err of errs) {
+        this._snackService.openError(err.message, err.description);
+      }
+    }
   }
 
   ngOnInit() {
