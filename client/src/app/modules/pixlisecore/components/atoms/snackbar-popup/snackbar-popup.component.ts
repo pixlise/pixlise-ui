@@ -27,8 +27,9 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Inject } from "@angular/core";
+import { Component, ElementRef, Inject, ViewChild } from "@angular/core";
 import { MAT_SNACK_BAR_DATA, MatSnackBarRef } from "@angular/material/snack-bar";
+import { PushButtonComponent } from "../buttons/push-button/push-button.component";
 
 interface SnackBarPopupData {
   message: string;
@@ -43,12 +44,15 @@ interface SnackBarPopupData {
   styleUrls: ["./snackbar-popup.component.scss"],
 })
 export class SnackBarPopupComponent {
+  @ViewChild("detailsModal") detailsModal!: ElementRef;
+
   constructor(
     public snackBarRef: MatSnackBarRef<SnackBarPopupComponent>,
     @Inject(MAT_SNACK_BAR_DATA) public data: SnackBarPopupData
   ) {}
 
   public close(): void {
+    this.closeDetailsModal();
     this.snackBarRef.dismiss();
   }
 
@@ -63,5 +67,9 @@ export class SnackBarPopupComponent {
     }
   }
 
-  showDetails() {}
+  private closeDetailsModal(): void {
+    if (this.detailsModal && this.detailsModal instanceof PushButtonComponent) {
+      (this.detailsModal as PushButtonComponent).closeDialog();
+    }
+  }
 }
