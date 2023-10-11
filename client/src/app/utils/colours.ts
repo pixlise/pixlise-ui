@@ -54,18 +54,27 @@ export class RGBA {
         return false;
     }
 */
+
+  // Converts rgb(r,g,b) and rgba(r,g,b,a) strings into RGBA objects. r, g, and b are integers between 0 and 255
+  // "a" is the alpha channel and is an optional decimal between 0 and 1. It will be converted to an integer between 0 and 255
+  // If the string is not a valid rgb or rgba string, the result will be white
   static fromString(rgbaStr: string): RGBA {
     let result = Colours.WHITE;
 
-    const start = "rgba(";
-    const end = ")";
+    const regex = /^rgb(?<isAlpha>a)?\((?<r>\d+),\s*(?<g>\d+),\s*(?<b>\d+)(?:,\s*(?<a>\d+(?:\.\d+)?))?\)$/;
+    const match = rgbaStr.match(regex);
+    if (match && match.groups) {
+      // Ensures we only capture the alpha channel if this is an rgba string (if it's an rgb string with 4 params, only the first 3 are used)
+      let alpha = match.groups["isAlpha"] && match.groups["a"] ? match.groups["a"] : "1";
 
-    if (rgbaStr.startsWith(start) && rgbaStr.endsWith(end)) {
-      let rgba = rgbaStr.substring(start.length, rgbaStr.length - end.length).split(",");
-      if (rgba.length == 4) {
-        result = new RGBA(Number.parseFloat(rgba[0]), Number.parseFloat(rgba[1]), Number.parseFloat(rgba[2]), Number.parseFloat(rgba[3]) * 255);
-      }
+      result = new RGBA(
+        Number.parseFloat(match.groups["r"]),
+        Number.parseFloat(match.groups["g"]),
+        Number.parseFloat(match.groups["b"]),
+        Number.parseFloat(alpha) * 255
+      );
     }
+
     return result;
   }
 

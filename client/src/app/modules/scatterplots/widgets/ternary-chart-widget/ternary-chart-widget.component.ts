@@ -9,10 +9,12 @@ import { TernaryChartModel, TernaryDrawModel } from "./ternary-model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { DataSourceParams, SelectionService, WidgetDataService, DataUnit, RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
-import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
+import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { Point, Rect, ptWithinPolygon } from "src/app/models/Geometry";
 import { InteractionWithLassoHover } from "../../base/interaction-with-lasso-hover";
+// import { ExpressionPickerComponent, ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
+import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -54,6 +56,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     public dialog: MatDialog,
     private _selectionService: SelectionService,
     //private _route: ActivatedRoute,
+    private _analysisLayoutService: AnalysisLayoutService,
     private _widgetData: WidgetDataService
   ) {
     super();
@@ -145,7 +148,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       new ScanDataIds(
         "ox3psifd719hfo1s", //00125_Naltsos_Heirwegh_det_combined_v7_10_05_2021
         //"2ejylaj1suu6qyj9", // Naltsos 2nd Quant Carbonates Tim
-        [PredefinedROIID.AllPoints]
+        [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)]
       )
     );
     // // Dourbes
@@ -264,10 +267,17 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   onExport() {}
   onSoloView() {}
   onRegions() {
-    const dialogConfig = new MatDialogConfig();
+    const dialogConfig = new MatDialogConfig<ROIPickerData>();
+
+    let selectedIds: string[] = [];
+    this.mdl.dataSourceIds.forEach(rois => {
+      selectedIds.push(...rois.roiIds);
+    });
+
     // Pass data to dialog
     dialogConfig.data = {
       requestFullROIs: true,
+      selectedIds,
     };
 
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
@@ -300,8 +310,23 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   onClearSelection() {}
   onToggleKey() {}
 
+  // openExpressionPicker() {
+  //   const dialogConfig = new MatDialogConfig();
+  //   // Pass data to dialog
+  //   dialogConfig.data = {};
+
+  //   const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
+  //   dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
+  //     if (result) {
+  //       // TODO: Make these visible
+  //       console.log(result.selectedExpressions);
+  //     }
+  //   });
+  // }
+
   onCornerClick(corner: string): void {
     console.log(corner);
+    // this.openExpressionPicker();
   }
 
   get showMmol(): boolean {

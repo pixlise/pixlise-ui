@@ -365,7 +365,7 @@ export class ROIItemComponent {
       this.onROISelect.emit();
 
       if (this.nextDisplayOnFirstToggle && !this.colour.colour && this.shape === DEFAULT_ROI_SHAPE) {
-        let displaySettingOption = this._roiService.nextDisplaySettings(this.summary?.scanId);
+        let displaySettingOption = this._roiService.nextDisplaySettings(this.summary?.scanId, this.summary?.id);
         this.colour = displaySettingOption.colour;
         this.shape = displaySettingOption.shape;
       }
