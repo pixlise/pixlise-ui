@@ -463,7 +463,7 @@ export class WidgetDataService {
       //console.log('applyUnitConversion for '+col+' in '+sourceExpression.id+', conversion='+conversion);
       if (conversion != 1) {
         const values: PMCDataValue[] = [];
-        for (let val of data.values) {
+        for (const val of data.values) {
           let valToSave = val.value * conversion;
           if (val.isUndefined) {
             valToSave = 0;

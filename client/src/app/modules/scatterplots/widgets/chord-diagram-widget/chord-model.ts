@@ -111,23 +111,23 @@ export class ChordDiagramModel implements CanvasDrawNotifier {
       for (let c = 0; c < queryData.queryResults.length; c++) {
         const result = queryData.queryResults[c];
         if (result.error) {
-          throw new Error(`Node expression ${result.query.exprId} error: ${result.error.message}. Description: ${result.error.description}`);
+          throw new Error(`Node expression ${result.identity()} error: ${result.error.message}. Description: ${result.error.description}`);
         }
 
         if (!result.expression) {
-          throw new Error(`Node expression ${result.query.exprId} failed to be read`);
+          throw new Error(`Node expression ${result.identity()} failed to be read`);
         }
 
         if (!result.region) {
-          throw new Error(`Node with expression ${result.query.exprId} failed to find region ${result.query.roiId}`);
+          throw new Error(`Node with expression ${result.identity()} failed to find region ${result.query.roiId}`);
         }
 
         if (!result.isPMCTable) {
-          throw new Error(`Node with expression ${result.query.exprId} did not return data in correct format`);
+          throw new Error(`Node with expression ${result.identity()} did not return data in correct format`);
         }
 
         if (result.values.values.length <= 0) {
-          throw new Error(`Node with expression ${result.query.exprId} did not return data`);
+          throw new Error(`Node with expression ${result.identity()} did not return data`);
         }
 
         if (
