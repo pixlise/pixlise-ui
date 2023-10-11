@@ -84,6 +84,22 @@
   }
 }
 
+.btn-white-outline {
+  @extend .btn-base;
+  color: white;
+  border: 1px solid white;
+  box-sizing: border-box;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  &:focus,
+  &:active {
+    background-color: rgba(255, 255, 255, 0.15);
+  }
+}
+
 .btn-dark-outline {
   @extend .btn-base;
   color: $clr-gray-100;

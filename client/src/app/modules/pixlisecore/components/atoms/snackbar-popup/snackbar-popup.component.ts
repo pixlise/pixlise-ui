@@ -32,6 +32,7 @@ import { MAT_SNACK_BAR_DATA, MatSnackBarRef } from "@angular/material/snack-bar"
 
 interface SnackBarPopupData {
   message: string;
+  details?: string;
   action: string;
   type: "warning" | "error" | "success";
 }
@@ -61,4 +62,6 @@ export class SnackBarPopupComponent {
         return "check_circle";
     }
   }
+
+  showDetails() {}
 }

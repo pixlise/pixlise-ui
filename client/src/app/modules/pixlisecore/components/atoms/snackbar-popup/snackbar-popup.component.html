@@ -29,11 +29,27 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
+<ng-template #detailsPopup>
+  <div class="details-container">
+    <header>
+      <h1>Details</h1>
+    </header>
+    <section class="content">
+      <h2>{{ data.message }}</h2>
+      <span class="details">{{ data.details }}</span>
+    </section>
+    <div class="buttons">
+      <push-button buttonStyle="outline" (onClick)="close()">Close</push-button>
+    </div>
+  </div>
+</ng-template>
+
 <div class="snackbar {{ data.type }}">
   <span class="icon">
     <mat-icon>{{ icon }}</mat-icon>
   </span>
   <span class="message">{{ data.message }}</span>
+  <push-button *ngIf="data.details" buttonStyle="white-outline" [customDialog]="detailsPopup" class="details">Details</push-button>
   <span class="close-btn {{ data.action ? 'rounded' : '' }}" (click)="close()">
     <span *ngIf="data.action">{{ data.action }}</span>
     <mat-icon *ngIf="!data.action">close</mat-icon>

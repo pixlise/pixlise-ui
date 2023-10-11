@@ -32,7 +32,17 @@ import { BadgeStyle } from "../../badge/badge.component";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 import { ConfirmDialogComponent } from "../action-button/confirm-dialog/confirm-dialog.component";
 
-export type PushButtonStyle = "normal" | "borderless" | "yellow" | "outline" | "gray" | "light-right-outline" | "orange" | "dark-outline" | "hover-yellow";
+export type PushButtonStyle =
+  | "normal"
+  | "white-outline"
+  | "borderless"
+  | "yellow"
+  | "outline"
+  | "gray"
+  | "light-right-outline"
+  | "orange"
+  | "dark-outline"
+  | "hover-yellow";
 
 @Component({
   selector: "push-button",
@@ -58,7 +68,18 @@ export class PushButtonComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    const validStyles: PushButtonStyle[] = ["normal", "borderless", "yellow", "outline", "gray", "light-right-outline", "orange", "dark-outline", "hover-yellow"];
+    const validStyles: PushButtonStyle[] = [
+      "normal",
+      "white-outline",
+      "borderless",
+      "yellow",
+      "outline",
+      "gray",
+      "light-right-outline",
+      "orange",
+      "dark-outline",
+      "hover-yellow",
+    ];
     if (validStyles.indexOf(this.buttonStyle) == -1) {
       console.warn("Invalid style for push-button: " + this.buttonStyle);
       this.buttonStyle = validStyles[0];
