@@ -26,12 +26,14 @@ export class ChordDiagramDrawer implements CanvasDrawer {
   }
 
   private drawChordDiagram(drawModel: ChordDiagramDrawModel, screenContext: CanvasRenderingContext2D, viewport: CanvasParams): void {
+    const restrictToElementIdx = this._mdl.hoverElementIdx == -1 ? this._mdl.selectedElementIdx : this._mdl.hoverElementIdx;
+
     // If there's a chord being highlighted, draw something under there first
-    let i = 0;
     let chordHighlightIdx1 = -1;
     let chordHighlightIdx2 = -1;
 
-    for (const node of drawModel.nodes) {
+    for (let i = 0; i < drawModel.nodes.length; i++) {
+      const node = drawModel.nodes[i];
       if (this._mdl.hoverChordExprIds.length == 2) {
         if (node.item.exprId == this._mdl.hoverChordExprIds[0]) {
           chordHighlightIdx1 = i;
@@ -39,30 +41,46 @@ export class ChordDiagramDrawer implements CanvasDrawer {
           chordHighlightIdx2 = i;
         }
       }
-
-      i++;
     }
 
+    let usrMsg = "";
+    let usrMsgInBottomHalf = true;
     if (chordHighlightIdx1 != -1 && chordHighlightIdx1 != chordHighlightIdx2) {
       this.drawChordHighlight(drawModel, screenContext, chordHighlightIdx1, chordHighlightIdx2);
+
+      // Also draw text to describe it, and advice that user can click on this chord to select these 2 expressions
+      const chordValue = this._mdl.drawModel.nodes[chordHighlightIdx1].item.chords[chordHighlightIdx2];
+
+      if (chordValue > 0) {
+        usrMsg = "Positive";
+      } else {
+        usrMsg = "Negative";
+      }
+      usrMsg += " correlation\n";
+      usrMsg += "Click chord to view in binary chart (if one is open)";
+
+      // If both are towards the bottom, reposition the message
+      usrMsgInBottomHalf = !(
+        this._mdl.drawModel.nodes[chordHighlightIdx1].coord.y > viewport.height / 2 && this._mdl.drawModel.nodes[chordHighlightIdx2].coord.y > viewport.height / 2
+      );
     }
 
-    // Draw chords (only draw for the selected hovered item if there is one)
-    i = 0;
-    for (const node of drawModel.nodes) {
-      if (this._mdl.hoverElementIdx < 0 || this._mdl.hoverElementIdx == i) {
+    // Draw chords (only draw for the selected hovered item if there is one, or ALL nodes if nothing selected/highlighted)
+    if (restrictToElementIdx < 0) {
+      for (let i = 0; i < drawModel.nodes.length; i++) {
+        const node = drawModel.nodes[i];
         this.drawChords(drawModel, screenContext, this._mdl.drawMode, node, i, this.COLOUR_CHORD_POSITIVE, this.COLOUR_CHORD_NEGATIVE);
       }
-
-      if (this._mdl.hoverChordExprIds.length == 2) {
-        if (node.item.exprId == this._mdl.hoverChordExprIds[0]) {
-          chordHighlightIdx1 = i;
-        } else if (node.item.exprId == this._mdl.hoverChordExprIds[1]) {
-          chordHighlightIdx2 = i;
-        }
-      }
-
-      i++;
+    } else {
+      this.drawChords(
+        drawModel,
+        screenContext,
+        this._mdl.drawMode,
+        drawModel.nodes[restrictToElementIdx],
+        restrictToElementIdx,
+        this.COLOUR_CHORD_POSITIVE,
+        this.COLOUR_CHORD_NEGATIVE
+      );
     }
 
     // Then draw nodes/elements on top
@@ -82,8 +100,12 @@ export class ChordDiagramDrawer implements CanvasDrawer {
     }
 
     // Draw label for hovered node (if any)
-    if (this._mdl.hoverElementIdx > -1 && this._mdl.hoverElementIdx < drawModel.nodes.length) {
-      this.drawNodeInfo(screenContext, viewport, drawModel.nodes[this._mdl.hoverElementIdx]);
+    if (restrictToElementIdx > -1 && restrictToElementIdx < drawModel.nodes.length) {
+      this.drawNodeInfo(screenContext, viewport, drawModel.nodes[restrictToElementIdx]);
+    }
+
+    if (usrMsg) {
+      this.drawMessage(screenContext, viewport, usrMsg, usrMsgInBottomHalf);
     }
   }
 
@@ -190,8 +212,8 @@ export class ChordDiagramDrawer implements CanvasDrawer {
     const chordThresholdValue = Math.abs(this._mdl.threshold * drawModel.maxChordValueMagnitude);
 
     // Draw chords to other elements
-    let c = 0;
-    for (const chordValue of node.item.chords) {
+    for (let c = 0; c < node.item.chords.length; c++) {
+      const chordValue = node.item.chords[c];
       //console.log('chord: '+Math.abs(chordValue)+', threshold: '+chordThresholdValue);
 
       // Work out if we're drawing this one
@@ -217,8 +239,6 @@ export class ChordDiagramDrawer implements CanvasDrawer {
         screenContext.lineTo(drawModel.nodes[c].coord.x, drawModel.nodes[c].coord.y);
         screenContext.stroke();
       }
-
-      c++;
     }
   }
 
@@ -236,5 +256,50 @@ export class ChordDiagramDrawer implements CanvasDrawer {
     screenContext.lineTo(pt2.x, pt2.y);
     screenContext.stroke();
     screenContext.restore();
+  }
+
+  private drawMessage(screenContext: CanvasRenderingContext2D, viewport: CanvasParams, msg: string, bottomHalf: boolean): void {
+    const textScale = 1.3;
+    const padding = 4;
+
+    // We just draw the values in the top-left corner, should generally be out of the way of other things
+    screenContext.textBaseline = "top";
+    screenContext.font = CANVAS_FONT_SIZE * textScale + "px Roboto";
+
+    const lines = msg.split("\n");
+
+    // Find longest line
+    let msgSize = 0;
+    for (const line of lines) {
+      const lineSize = screenContext.measureText(line);
+      if (lineSize.width > msgSize) {
+        msgSize = lineSize.width;
+      }
+    }
+
+    const w = msgSize + padding * 2;
+    const lineH = CANVAS_FONT_SIZE * textScale + padding;
+    const h = lineH * lines.length + padding * 2;
+
+    const pos = viewport.getCenterPoint();
+    pos.y += bottomHalf ? pos.y * 0.5 : pos.y * -0.5; // We want this a bit away from center so other hover info can still be read
+
+    const textX = pos.x;
+
+    pos.x -= w / 2;
+    pos.y -= h / 2;
+
+    screenContext.textAlign = "center";
+
+    // Draw background
+    screenContext.fillStyle = Colours.GRAY_90.asString();
+    screenContext.fillRect(pos.x, pos.y, w, h);
+
+    // Draw the text
+    screenContext.fillStyle = Colours.GRAY_10.asString();
+    for (let c = 0; c < lines.length; c++) {
+      const line = lines[c];
+      screenContext.fillText(line, textX, pos.y + padding + c * lineH);
+    }
   }
 }

@@ -34,8 +34,12 @@ export class ChordDiagramModel implements CanvasDrawNotifier {
   private _drawMode: ChordDrawMode = ChordDrawMode.BOTH;
   private _threshold: number = 0;
 
+  // Hovering displays only the connections to the node you're over
   hoverElementIdx = -1;
   hoverChordExprIds: string[] = [];
+
+  // If user clicks on hovered node, the view freezes this way
+  selectedElementIdx: number = -1;
 
   cursorShown: string = CursorId.defaultPointer;
   errorMessage: string = "";

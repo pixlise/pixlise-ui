@@ -72,7 +72,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     this.mdl.expressionIds = [
       "vge9tz6fkbi2ha1p", // CaTi
       "fhb5x0qbx6lz9uec", // Dip (deg, B to A)
-      DataExpressionId.makePredefinedQuantElementExpression("Ca", "%", "Combined"),
+      DataExpressionId.makePredefinedQuantElementExpression("CaO", "%", "Combined"),
     ];
 
     // Naltsos

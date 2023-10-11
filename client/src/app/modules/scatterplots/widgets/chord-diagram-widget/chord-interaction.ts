@@ -126,40 +126,48 @@ export class ChordDiagramInteraction implements CanvasInteractionHandler {
     const chordThresholdValue = Math.abs(this._mdl.threshold * drawModel.maxChordValueMagnitude);
 
     // Run through all chords, if mouse is over one, return it as a string of comma separated elements
-    let node1Idx = 0;
-    for (const node1 of drawModel.nodes) {
-      let node2Idx = 0;
-      for (const node2 of drawModel.nodes) {
-        if (node1.item.exprId != node2.item.exprId) {
-          const lineVec = getVectorBetweenPoints(node1.coord, node2.coord);
-          const lineLength = getVectorLength(lineVec);
-          const lineNormalVec = normalizeVector(lineVec);
+    for (let node1Idx = 0; node1Idx < drawModel.nodes.length; node1Idx++) {
+      const node1 = drawModel.nodes[node1Idx];
+      for (let node2Idx = 0; node2Idx < drawModel.nodes.length; node2Idx++) {
+        const node2 = drawModel.nodes[node2Idx];
 
-          const dist = closestDistanceBetweenPointAndLine(canvasPt, node1.coord, lineNormalVec, lineLength);
-          /*if(node1.item.element == 'Ni' && node2.item.element == 'Al' && dist !== null)
+        // Don't check same node
+        if (node1Idx == node2Idx) {
+          continue;
+        }
+
+        // If we have a selection, also don't check combinations where one of the nodes
+        // is not the selection
+        if (this._mdl.selectedElementIdx > -1 && !(this._mdl.selectedElementIdx == node1Idx || this._mdl.selectedElementIdx == node2Idx)) {
+          continue;
+        }
+
+        const lineVec = getVectorBetweenPoints(node1.coord, node2.coord);
+        const lineLength = getVectorLength(lineVec);
+        const lineNormalVec = normalizeVector(lineVec);
+
+        const dist = closestDistanceBetweenPointAndLine(canvasPt, node1.coord, lineNormalVec, lineLength);
+        /*if(node1.item.element == 'Ni' && node2.item.element == 'Al' && dist !== null)
 {
 console.log('isPointOverChord: '+node1.item.element+'->'+node2.item.element+' dist='+dist+', pt1='+JSON.stringify(node1.coord)+', pt2='+JSON.stringify(node2.coord)+', mouse='+JSON.stringify(canvasPt)+', vec='+JSON.stringify(lineVec)+', norm='+JSON.stringify(lineNormalVec)+', lineLen='+lineLength);
 }
 */
-          if (dist !== null && Math.abs(dist) < ChordDiagramDrawModel.MAX_CHORD_WIDTH) {
-            // We're close to this one, check that it's actually within the chord width
-            // This is tricky, because they both have chords towards each other, and we want
-            // the thicker of the 2
-            const chordValue = Math.max(node1.item.chords[node2Idx], node2.item.chords[node1Idx]);
+        if (dist !== null && Math.abs(dist) < ChordDiagramDrawModel.MAX_CHORD_WIDTH) {
+          // We're close to this one, check that it's actually within the chord width
+          // This is tricky, because they both have chords towards each other, and we want
+          // the thicker of the 2
+          const chordValue = Math.max(node1.item.chords[node2Idx], node2.item.chords[node1Idx]);
 
-            if (Math.abs(chordValue) > chordThresholdValue) {
-              // We also can't make the distance too small...
-              const chordWidthPx = Math.min(drawModel.getChordWidthPx(chordValue), 2);
+          if (Math.abs(chordValue) > chordThresholdValue) {
+            // We also can't make the distance too small...
+            const chordWidthPx = Math.min(drawModel.getChordWidthPx(chordValue), 2);
 
-              if (Math.abs(dist) < chordWidthPx) {
-                return [node1.item.exprId, node2.item.exprId];
-              }
+            if (Math.abs(dist) < chordWidthPx) {
+              return [node1.item.exprId, node2.item.exprId];
             }
           }
         }
-        node2Idx++;
       }
-      node1Idx++;
     }
 
     // Not close to anything
@@ -173,7 +181,13 @@ console.log('isPointOverChord: '+node1.item.element+'->'+node2.item.element+' di
       const nodeElems = this.isPointOverChord(canvasPt);
       if (nodeElems.length > 0) {
         this._selectionService.chordClicks$.next(nodeElems);
+      } else {
+        // Make sure no node is selected now...
+        this._mdl.selectedElementIdx = -1;
       }
+    } else {
+      // They clicked on a node, so make it selected
+      this._mdl.selectedElementIdx = hoverNode;
     }
 
     // Never show it highlighted after click

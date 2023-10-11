@@ -77,10 +77,14 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   private setInitialConfig() {
-    this.mdl.expressionIds.push("lpqtfd5lva7t2046"); // Si (mmol) (PIXLANG)
-    this.mdl.expressionIds.push("fhb5x0qbx6lz9uec"); // Dip (deg, B to A)
+    //this.mdl.expressionIds.push("lpqtfd5lva7t2046"); // Si (mmol) (PIXLANG)
+    //this.mdl.expressionIds.push("fhb5x0qbx6lz9uec"); // Dip (deg, B to A)
     //this.mdl.expressionIds.push("vge9tz6fkbi2ha1p"); // CaTi
-    this.mdl.expressionIds.push(DataExpressionId.makePredefinedQuantElementExpression("Ca", "%", "Combined"));
+    const elems = ["Na2O", "MgO", "Al2O3", "SiO2", "P2O5", "SO3", "Cl", "K2O", "CaO", "TiO2", "Cr2O3", "MnO", "FeO-T", "NiO", "CuO", "ZnO", "GeO2", "Br", "Rb2O", "SrO", "ZrO2"];
+
+    for (const elem of elems) {
+      this.mdl.expressionIds.push(DataExpressionId.makePredefinedQuantElementExpression(elem, "%", "Combined"));
+    }
 
     // Naltsos
     this.mdl.dataSourceIds.set(
@@ -96,10 +100,6 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   private update() {
-    if (this.mdl.expressionIds.length != 3) {
-      throw new Error("Expected 3 expression ids for Ternary");
-    }
-
     const query: DataSourceParams[] = [];
 
     // NOTE: processQueryResult depends on the order of the following for loops...
