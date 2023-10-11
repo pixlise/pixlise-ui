@@ -94,8 +94,24 @@
   background-color: (var(--clr-gray-80));
 
   header {
+    display: flex;
     box-shadow: 0 4px 4px #00000040;
     margin-bottom: 8px;
+
+    padding: 8px;
+
+    .icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 8px;
+
+      mat-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
 
     h1 {
       color: rgb(var(--clr-gray-30));
@@ -108,7 +124,6 @@
       -webkit-user-select: none;
       user-select: none;
       white-space: nowrap;
-      padding: 8px;
     }
   }
 
