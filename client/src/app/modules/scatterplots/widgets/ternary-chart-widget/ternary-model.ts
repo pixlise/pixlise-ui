@@ -32,6 +32,10 @@ export class TernaryChartModel extends NaryChartModel<TernaryData, TernaryDrawMo
     return new TernaryData(axes[0], axes[1], axes[2], pointGroups);
   }
 
+  protected axisName(axisIdx: number): string {
+    return axisIdx == 0 ? "left" : axisIdx == 1 ? "top" : "right";
+  }
+
   handleHoverPointChanged(hoverScanId: string, hoverScanEntryId: number): void {
     // Hover point changed, if we have a model, set it and redraw, otherwise ignore
     if (hoverScanEntryId <= invalidPMC) {

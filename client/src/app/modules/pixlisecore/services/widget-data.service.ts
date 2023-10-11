@@ -94,9 +94,9 @@ export class RegionDataResultItem {
   // in case of an error message on a widget where multiple queries have run, we call this to say
   // this is the query that the error was generated for
   public identity(): string {
-    return `scan: ${this.query.scanId}, expr: ${this.expression?.name || ""} (${this.query.exprId}, ${this.expression?.sourceLanguage || ""}), roi: ${
+    return `scan: "${this.query.scanId}", expr: "${this.expression?.name || ""}" (${this.query.exprId}, ${this.expression?.sourceLanguage || ""}), roi: "${
       this.query.roiId
-    }, quant: ${this.query.quantId}`;
+    }", quant: "${this.query.quantId}"`;
   }
 }
 
@@ -196,12 +196,7 @@ export class WidgetDataService {
             );
           }),
           catchError(err => {
-            const errorMsg = httpErrorToString(
-              err,
-              `WidgetDataService error scan: ${query.scanId}, expr: ${expr?.name || ""} (${query.exprId}, ${expr?.sourceLanguage || ""}), roi: ${
-                query.roiId
-              }, quant: ${query.quantId}`
-            );
+            const errorMsg = httpErrorToString(err, "Expression runtime error"); // We use this function because it can decode many kinds of error class/type
 
             // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
             if (

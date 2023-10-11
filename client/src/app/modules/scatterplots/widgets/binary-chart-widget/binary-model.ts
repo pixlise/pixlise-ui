@@ -19,7 +19,10 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
   }
 
   setData(data: RegionDataResults): WidgetError[] {
-    const axes: ScatterPlotAxisInfo[] = [new ScatterPlotAxisInfo("", false, "", "", new MinMax()), new ScatterPlotAxisInfo("", true, "", "", new MinMax())];
+    const axes: ScatterPlotAxisInfo[] = [
+      new ScatterPlotAxisInfo("", false, "", "", new MinMax()), // X
+      new ScatterPlotAxisInfo("", true, "", "", new MinMax()),  // Y
+    ];
 
     return this.processQueryResult("Binary", data, axes);
   }
@@ -30,6 +33,10 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
     }
 
     return new BinaryData(axes[0], axes[1], pointGroups);
+  }
+
+  protected axisName(axisIdx: number): string {
+    return axisIdx == 0 ? "x" : "y";
   }
 }
 

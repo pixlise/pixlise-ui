@@ -171,10 +171,7 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
           axes[c].errorMsgShort = qryErr?.message || "";
           axes[c].errorMsgLong = qryErr?.description || "";
 
-          const err = new WidgetError(
-            `${chartName} encountered error with ${queryData.queryResults[queryIdx + c].identity()}, axes: ${c == 0 ? "left" : c == 1 ? "top" : "right"}`,
-            axes[c].errorMsgLong
-          );
+          const err = new WidgetError(`${chartName} ${this.axisName(c)} axis error for ${queryData.queryResults[queryIdx + c].identity()}`, axes[c].errorMsgLong);
 
           console.error(err);
           errs.push(err);
@@ -188,7 +185,7 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
           axes[c].errorMsgLong = "Region data not found for: " + roiId;
 
           const err = new WidgetError(
-            `${chartName} Region missing for ${queryData.queryResults[queryIdx + c].identity()}, axes: ${c == 0 ? "left" : c == 1 ? "top" : "right"}`,
+            `${chartName} ${this.axisName(c)} axis region missing for ${queryData.queryResults[queryIdx + c].identity()}`,
             axes[c].errorMsgLong
           );
 
@@ -236,7 +233,9 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
               // Should always be the right order because we run 3 queries with the same ROI
               if (pointGroup.valuesPerScanEntry[i].scanEntryId != value.pmc) {
                 throw new Error(
-                  `Received PMCs in unexpected order for ${chartName} axis: ${c}, got PMC: ${value.pmc}, expected: ${pointGroup.valuesPerScanEntry[i].scanEntryId}`
+                  `${chartName} ${this.axisName(c)} axis received PMCs in unexpected order. Got PMC: ${value.pmc}, expected: ${
+                    pointGroup.valuesPerScanEntry[i].scanEntryId
+                  }`
                 );
               }
 
@@ -328,4 +327,5 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
   }
 
   protected abstract makeData(axes: ScatterPlotAxisInfo[], pointGroups: NaryChartDataGroup[]): RawModel;
+  protected abstract axisName(axisIdx: number): string; // Expected to return a text name for the axis, eg on binary we'd return x or y
 }

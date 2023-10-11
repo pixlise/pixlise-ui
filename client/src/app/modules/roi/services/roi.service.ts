@@ -277,9 +277,9 @@ export class ROIService {
 
   private createDefaultScanRegions(scanId: string, scanShape: ROIShape) {
     // Add defaults for predefined ROIs
-    this._regionMap.set(`${scanId}_${PredefinedROIID.AllPoints}`, of(createDefaultAllPointsRegionSettings(scanId, scanShape)));
-    this._regionMap.set(`${scanId}_${PredefinedROIID.SelectedPoints}`, of(createDefaultSelectedPointsRegionSettings(scanId, scanShape)));
-    this._regionMap.set(`${scanId}_${PredefinedROIID.RemainingPoints}`, of(createDefaultRemainingPointsRegionSettings(scanId, scanShape)));
+    this._regionMap.set(`${getBuiltinIDFromScanID(scanId, PredefinedROIID.AllPoints)}`, of(createDefaultAllPointsRegionSettings(scanId, scanShape)));
+    this._regionMap.set(`${getBuiltinIDFromScanID(scanId, PredefinedROIID.SelectedPoints)}`, of(createDefaultSelectedPointsRegionSettings(scanId, scanShape)));
+    this._regionMap.set(`${getBuiltinIDFromScanID(scanId, PredefinedROIID.RemainingPoints)}`, of(createDefaultRemainingPointsRegionSettings(scanId, scanShape)));
   }
 
   nextDisplaySettings(scanId: string, roiId: string = ""): ROIDisplaySettingOption {
