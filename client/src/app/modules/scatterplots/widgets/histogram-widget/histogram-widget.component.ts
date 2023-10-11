@@ -16,7 +16,7 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 @Component({
   selector: "histogram-widget",
   templateUrl: "./histogram-widget.component.html",
-  styleUrls: ["./histogram-widget.component.scss", "../../base/widget-common.scss"],
+  styleUrls: ["./histogram-widget.component.scss"],
 })
 export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
   mdl = new HistogramModel();
