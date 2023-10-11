@@ -81,7 +81,29 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
     //this.mdl.expressionIds.push("lpqtfd5lva7t2046"); // Si (mmol) (PIXLANG)
     //this.mdl.expressionIds.push("fhb5x0qbx6lz9uec"); // Dip (deg, B to A)
     //this.mdl.expressionIds.push("vge9tz6fkbi2ha1p"); // CaTi
-    const elems = ["Na2O", "MgO", "Al2O3", "SiO2", "P2O5", "SO3", "Cl", "K2O", "CaO", "TiO2", "Cr2O3", "MnO", "FeO-T", "NiO", "CuO", "ZnO", "GeO2", "Br", "Rb2O", "SrO", "ZrO2"];
+    const elems = [
+      "Na2O",
+      "MgO",
+      "Al2O3",
+      "SiO2",
+      "P2O5",
+      "SO3",
+      "Cl",
+      "K2O",
+      "CaO",
+      "TiO2",
+      "Cr2O3",
+      "MnO",
+      "FeO-T",
+      "NiO",
+      "CuO",
+      "ZnO",
+      "GeO2",
+      "Br",
+      "Rb2O",
+      "SrO",
+      "ZrO2",
+    ];
 
     for (const elem of elems) {
       this.mdl.expressionIds.push(DataExpressionId.makePredefinedQuantElementExpression(elem, "%", "Combined"));

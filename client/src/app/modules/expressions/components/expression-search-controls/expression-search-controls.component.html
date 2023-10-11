@@ -1,0 +1,17 @@
+<div class="filters-row">
+  <div class="broad-filters">
+    <mat-select [(ngModel)]="visibleScanId" class="scan-filter" placeholder="Scan ...">
+      <mat-option *ngFor="let scan of allScans" [value]="scan.id">{{ scan.title }} </mat-option>
+    </mat-select>
+    <mat-select [multiple]="true" [(ngModel)]="selectedQuantId" class="quant" placeholder="Quant ...">
+      <mat-option *ngFor="let option of filteredQuants" [value]="option.id">{{ option.params?.name || option.id }} </mat-option>
+    </mat-select>
+  </div>
+  <div class="option-filters">
+    <filter-box placeholder="Filter Name..." (onFilterChanged)="onFilterText($event)"> </filter-box>
+    <tag-picker type="roi" [selectedTagIDs]="filteredTagIDs" [showCurrentTagsSection]="false" (onTagSelectionChanged)="onTagFilterChanged($event)"> </tag-picker>
+    <mat-select #tooltip="matTooltip" [matTooltip]="authorsTooltip" multiple [(ngModel)]="filteredAuthors" class="authors-filter" placeholder="Author ...">
+      <mat-option *ngFor="let author of authors" [value]="author.id">{{ author.name }} </mat-option>
+    </mat-select>
+  </div>
+</div>

@@ -18,6 +18,7 @@ import { MistRoiConvertComponent } from "./components/analysis-sidepanel/tabs/mi
 import { MistRoiUploadComponent } from "./components/analysis-sidepanel/tabs/mist-roi/mist-roi-upload/mist-roi-upload.component";
 import { TagsModule } from "../tags/tags.module";
 import { ScrollingModule } from "@angular/cdk/scrolling";
+import { ExpressionModule } from "../expressions/expressions.module";
 
 const APP_ROUTES: Routes = [
   {
@@ -40,7 +41,7 @@ const APP_ROUTES: Routes = [
     WidgetKeyDisplayComponent,
     WidgetConfigurationButtonComponent,
   ],
-  imports: [CommonModule, PIXLISECoreModule, ROIModule, RouterModule.forChild(APP_ROUTES), CdkAccordionModule, TagsModule, ScrollingModule],
+  imports: [CommonModule, PIXLISECoreModule, ROIModule, ExpressionModule, RouterModule.forChild(APP_ROUTES), CdkAccordionModule, TagsModule, ScrollingModule],
   exports: [AnalysisPageComponent, WidgetComponent, BaseWidgetModel, InteractiveCanvasComponent],
   providers: [AnalysisLayoutService],
 })

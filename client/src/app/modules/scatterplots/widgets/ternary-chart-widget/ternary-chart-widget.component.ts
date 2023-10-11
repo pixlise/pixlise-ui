@@ -13,7 +13,11 @@ import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/mo
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { Point, Rect, ptWithinPolygon } from "src/app/models/Geometry";
 import { InteractionWithLassoHover } from "../../base/interaction-with-lasso-hover";
-// import { ExpressionPickerComponent, ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
+import {
+  ExpressionPickerComponent,
+  ExpressionPickerData,
+  ExpressionPickerResponse,
+} from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
@@ -309,7 +313,14 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
         // Now fill in the data source ids using the above
         for (const [scanId, roiIds] of roisPerScan) {
-          this.mdl.dataSourceIds.set(scanId, new ScanDataIds("" /* No quant yet? */, roiIds));
+          let quantId = "";
+
+          // If we already have a data source for this scan, keep the quant id
+          let existingSource = this.mdl.dataSourceIds.get(scanId);
+          if (existingSource && existingSource.quantId) {
+            quantId = existingSource.quantId;
+          }
+          this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, roiIds));
         }
 
         this.update();
@@ -320,23 +331,43 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   onClearSelection() {}
   onToggleKey() {}
 
-  // openExpressionPicker() {
-  //   const dialogConfig = new MatDialogConfig();
-  //   // Pass data to dialog
-  //   dialogConfig.data = {};
+  openExpressionPicker(corner: string) {
+    let cornerExpressionId = "";
+    let cornerExpressionIndex = ["A", "B", "C"].indexOf(corner);
 
-  //   const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
-  //   dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
-  //     if (result) {
-  //       // TODO: Make these visible
-  //       console.log(result.selectedExpressions);
-  //     }
-  //   });
-  // }
+    if (cornerExpressionIndex < 0) {
+      this._snackService.openError(`Invalid corner "${corner}"`);
+      return;
+    } else {
+      cornerExpressionId = this.mdl.expressionIds[cornerExpressionIndex];
+    }
+
+    const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
+    dialogConfig.data = {
+      selectedIds: [cornerExpressionId],
+    };
+
+    const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
+      if (result && result.selectedExpressions?.length > 0) {
+        this.mdl.expressionIds[cornerExpressionIndex] = result.selectedExpressions[0].id;
+
+        let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];
+
+        // If we already have a data source for this scan, keep the ROI ids
+        let existingSource = this.mdl.dataSourceIds.get(result.scanId);
+        if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
+          roiIds = existingSource.roiIds;
+        }
+        this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
+
+        this.update();
+      }
+    });
+  }
 
   onCornerClick(corner: string): void {
-    console.log(corner);
-    // this.openExpressionPicker();
+    this.openExpressionPicker(corner);
   }
 
   get showMmol(): boolean {

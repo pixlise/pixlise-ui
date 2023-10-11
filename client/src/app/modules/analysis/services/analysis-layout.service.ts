@@ -5,6 +5,9 @@ import { ActivatedRoute } from "@angular/router";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
+import { APIDataService } from "../../pixlisecore/pixlisecore.module";
+import { QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
+import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 
 @Injectable({
   providedIn: "root",
@@ -21,14 +24,29 @@ export class AnalysisLayoutService {
   private _activeTab: SidebarTabItem | null = null;
   showSearch = false;
 
+  availableScanQuants$ = new BehaviorSubject<Record<string, QuantificationSummary[]>>({});
   availableScans$ = new BehaviorSubject<ScanItem[]>([]);
 
   constructor(
     private _route: ActivatedRoute,
+    private _dataService: APIDataService,
     private _cachedDataService: APICachedDataService
   ) {
+    this.fetchAvailableScans();
+    if (this.defaultScanId) {
+      this.fetchQuantsForScan(this.defaultScanId);
+    }
+  }
+
+  fetchAvailableScans() {
     this._cachedDataService.getScanList(ScanListReq.create({})).subscribe(resp => {
       this.availableScans$.next(resp.scans);
+    });
+  }
+
+  fetchQuantsForScan(scanId: string) {
+    this._dataService.sendQuantListRequest(QuantListReq.create({ searchParams: { scanId } })).subscribe(res => {
+      this.availableScanQuants$.next({ ...this.availableScanQuants$.value, [scanId]: res.quants });
     });
   }
 
