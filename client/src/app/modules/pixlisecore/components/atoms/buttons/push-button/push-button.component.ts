@@ -111,6 +111,8 @@ export class PushButtonComponent implements OnInit {
   }
 
   closeDialog() {
-    this._dialogRef.close();
+    if (this._dialogRef.close) {
+      this._dialogRef.close();
+    }
   }
 }

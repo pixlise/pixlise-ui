@@ -3,7 +3,7 @@
     <mat-select [(ngModel)]="visibleScanId" class="scan-filter" placeholder="Scan ...">
       <mat-option *ngFor="let scan of allScans" [value]="scan.id">{{ scan.title }} </mat-option>
     </mat-select>
-    <mat-select [multiple]="true" [(ngModel)]="selectedQuantId" class="quant" placeholder="Quant ...">
+    <mat-select [(ngModel)]="selectedQuantId" class="quant" placeholder="Quant ...">
       <mat-option *ngFor="let option of filteredQuants" [value]="option.id">{{ option.params?.name || option.id }} </mat-option>
     </mat-select>
   </div>

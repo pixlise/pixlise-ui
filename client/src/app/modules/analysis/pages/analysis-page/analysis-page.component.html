@@ -1,12 +1,22 @@
 <section class="page analysis-container">
   <analysis-sidepanel></analysis-sidepanel>
-  <section class="widgets-container">
-    <widget></widget>
-    <widget></widget>
-
-    <widget></widget>
-    <widget></widget>
-    <widget></widget>
-    <widget></widget>
+  <section class="screen-container">
+    <section
+      *ngFor="let screenConfig of screenConfigurations"
+      class="widgets-container"
+      [ngStyle]="{
+        'grid-template-columns': screenConfig.layoutCSS.templateColumns,
+        'grid-template-rows': screenConfig.layoutCSS.templateRows
+      }">
+      <widget
+        *ngFor="let widget of screenConfig.widgets"
+        [initWidget]="widget.type"
+        [ngStyle]="{
+          'grid-column-start': widget.startColumn,
+          'grid-column-end': widget.endColumn,
+          'grid-row-start': widget.startRow,
+          'grid-row-end': widget.endRow
+        }"></widget>
+    </section>
   </section>
 </section>

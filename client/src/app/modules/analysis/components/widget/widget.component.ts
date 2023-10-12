@@ -1,4 +1,4 @@
-import { Component, OnInit, ComponentRef, ElementRef, HostListener, ViewChild, ViewContainerRef, AfterViewChecked } from "@angular/core";
+import { Component, OnInit, ComponentRef, ElementRef, HostListener, ViewChild, ViewContainerRef, AfterViewChecked, Input } from "@angular/core";
 import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetToolbarButtonConfiguration } from "./models/widgets.model";
 import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 
@@ -27,7 +27,7 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
 
   allWidgetOptions = Object.entries(WIDGETS).map(([id, value]) => ({ id, ...value }));
   // _activeWidget: keyof typeof WIDGETS = "chord-diagram"; // /*Object.keys(WIDGETS)[Math.random() * (Object.keys(WIDGETS).length-1)] as keyof typeof WIDGETS; */ "ternary-plot"; //"spectrum-chart";
-  _activeWidget: keyof typeof WIDGETS = "ternary-plot";//spectrum-chart"; // /*Object.keys(WIDGETS)[Math.random() * (Object.keys(WIDGETS).length-1)] as keyof typeof WIDGETS; */ "ternary-plot"; //"spectrum-chart";
+  _activeWidget: keyof typeof WIDGETS = "ternary-plot"; //spectrum-chart"; // /*Object.keys(WIDGETS)[Math.random() * (Object.keys(WIDGETS).length-1)] as keyof typeof WIDGETS; */ "ternary-plot"; //"spectrum-chart";
 
   widgetConfiguration?: WidgetConfiguration;
 
@@ -107,6 +107,12 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
   set activeWidget(widget: keyof typeof WIDGETS) {
     this._activeWidget = widget;
     this.loadWidget();
+  }
+
+  @Input() set initWidget(initWidget: keyof typeof WIDGETS) {
+    setTimeout(() => {
+      this.activeWidget = initWidget;
+    }, 0);
   }
 
   get topToolbarButtons() {

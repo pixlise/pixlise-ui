@@ -5,17 +5,25 @@
   .widgets-container {
     display: grid;
     grid-gap: 8px;
-    grid-template-columns: 3fr repeat(3, 2fr);
-    grid-template-rows: 3fr 2fr;
 
-    width: 100%;
-    height: calc(100vh - 50px);
+    width: calc(100vw - 42px - 16px);
+    min-width: calc(100vw - 42px - 16px);
+    height: calc(100vh - 42px - 16px);
 
-    widget {
-      &:nth-of-type(2) {
-        grid-column-start: 2;
-        grid-column-end: 5;
-      }
+    margin-left: 16px;
+    padding-left: 16px;
+    border-left: 1px dashed #545f64;
+
+    &:first-of-type {
+      margin-left: 0;
+      padding-left: 0;
+      border-left: none;
     }
   }
+}
+
+.screen-container {
+  max-width: calc(100vw - 42px - 16px);
+  overflow: scroll;
+  display: flex;
 }

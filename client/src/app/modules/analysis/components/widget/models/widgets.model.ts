@@ -75,7 +75,7 @@ export const WIDGETS = {
     component: TernaryChartWidgetComponent,
     controlConfiguration: {},
   },
-  "histogram": {
+  histogram: {
     name: "Histogram",
     description: "Histogram",
     component: HistogramWidgetComponent,
@@ -86,5 +86,7 @@ export const WIDGETS = {
     description: "Chord Diagram",
     component: ChordDiagramWidgetComponent,
     controlConfiguration: {},
-  }
+  },
 } satisfies Record<string, WidgetConfiguration>;
+
+export type WidgetType = keyof typeof WIDGETS;

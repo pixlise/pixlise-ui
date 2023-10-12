@@ -141,11 +141,7 @@ export class ExpressionPickerComponent implements OnInit {
   onFilterChanged({ filteredExpressions, scanId, quantId }: ExpressionSearchFilter) {
     this.filteredExpressions = filteredExpressions;
     this.scanId = scanId;
-
-    // NOTE: quant ID comes back as a list...
-    if (quantId && quantId.length > 0) {
-      this.quantId = quantId[0];
-    }
+    this.quantId = quantId;
 
     // Remove any ROIs from the selection that are no longer visible
     let newSelection: Record<string, DataExpression> = {};
