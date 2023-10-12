@@ -45,11 +45,11 @@ export class MinMax {
   }
 
   get min(): number | null {
-    return this._min || null;
+    return this._min;
   }
 
   get max(): number | null {
-    return this._max || null;
+    return this._max;
   }
 
   setMin(val: number): void {
@@ -113,7 +113,7 @@ export class MinMax {
       return 0;
     }
 
-    let range = this.getRange();
+    const range = this.getRange();
 
     // Prevent div by 0 and unbounded values
     if (range === 0) {
@@ -142,7 +142,7 @@ export class MinMax {
       return this._min || 0;
     }
 
-    let range = this.getRange();
+    const range = this.getRange();
 
     let value = pct * range + (this._min || 0);
 
@@ -167,8 +167,8 @@ export class MinMax {
   }
 
   getTightestRange(otherRange: MinMax): MinMax {
-    let otherRangeMin = typeof otherRange.min === "number" ? otherRange.min : this._min;
-    let otherRangeMax = typeof otherRange.max === "number" ? otherRange.max : this._max;
+    const otherRangeMin = typeof otherRange.min === "number" ? otherRange.min : this._min;
+    const otherRangeMax = typeof otherRange.max === "number" ? otherRange.max : this._max;
 
     return new MinMax(
       this._min !== null ? Math.max(otherRangeMin || 0, this._min) : otherRange.min || 0,

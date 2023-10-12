@@ -333,9 +333,9 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   onToggleKey() {}
 
   openExpressionPicker(corner: string) {
-    const cornerExpressionIndex = ["A", "B", "C"].indexOf(corner);
+    const axisExpressionIndex = ["A", "B", "C"].indexOf(corner);
 
-    if (cornerExpressionIndex < 0) {
+    if (axisExpressionIndex < 0) {
       this._snackService.openError(`Invalid corner "${corner}"`);
       return;
     }
@@ -343,8 +343,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.data = {};
 
-    if (this.mdl.expressionIds.length > cornerExpressionIndex) {
-      dialogConfig.data.selectedIds = [this.mdl.expressionIds[cornerExpressionIndex]];
+    if (this.mdl.expressionIds.length > axisExpressionIndex) {
+      dialogConfig.data.selectedIds = [this.mdl.expressionIds[axisExpressionIndex]];
     }
 
     const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
@@ -353,7 +353,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         // If there are 1-3, set them all
         const last = Math.min(3, result.selectedExpressions.length);
         for (let i = 0; i < last; i++) {
-          this.mdl.expressionIds[(cornerExpressionIndex + i) % 3] = result.selectedExpressions[i].id;
+          this.mdl.expressionIds[(axisExpressionIndex + i) % 3] = result.selectedExpressions[i].id;
         }
 
         let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];

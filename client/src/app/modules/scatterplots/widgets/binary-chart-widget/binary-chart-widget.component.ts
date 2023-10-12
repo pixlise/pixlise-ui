@@ -17,6 +17,8 @@ import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/compo
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { Point } from "src/app/models/Geometry";
 import { InteractionWithLassoHover } from "../../base/interaction-with-lasso-hover";
+import { ExpressionPickerData, ExpressionPickerComponent, ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
+import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
@@ -53,6 +55,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     public dialog: MatDialog,
     private _selectionService: SelectionService,
     private _widgetData: WidgetDataService,
+    private _analysisLayoutService: AnalysisLayoutService,
     private _snackService: SnackbarService
   ) {
     super();
@@ -236,7 +239,41 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   onToggleKey() {}
 
   onAxisClick(axis: string): void {
-    console.log(axis);
+    const axisExpressionIndex = ["X", "Y"].indexOf(axis);
+
+    if (axisExpressionIndex < 0) {
+      this._snackService.openError(`Invalid axis "${axis}"`);
+      return;
+    }
+
+    const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
+    dialogConfig.data = {};
+
+    if (this.mdl.expressionIds.length > axisExpressionIndex) {
+      dialogConfig.data.selectedIds = [this.mdl.expressionIds[axisExpressionIndex]];
+    }
+
+    const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
+      if (result && result.selectedExpressions?.length > 0) {
+        // If there are 1-3, set them all
+        const last = Math.min(2, result.selectedExpressions.length);
+        for (let i = 0; i < last; i++) {
+          this.mdl.expressionIds[(axisExpressionIndex + i) % 2] = result.selectedExpressions[i].id;
+        }
+
+        let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];
+
+        // If we already have a data source for this scan, keep the ROI ids
+        const existingSource = this.mdl.dataSourceIds.get(result.scanId);
+        if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
+          roiIds = existingSource.roiIds;
+        }
+        this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
+
+        this.update();
+      }
+    });
   }
 
   get showMmol(): boolean {

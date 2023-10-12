@@ -226,7 +226,7 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
 
             // Save it in A, B or C - A also is creating the value...
             if (c == 0) {
-              pointGroup.valuesPerScanEntry.push(new NaryChartDataItem(value.pmc, [value.value, 0, 0]));
+              pointGroup.valuesPerScanEntry.push(new NaryChartDataItem(value.pmc, [value.value]));
               pointGroup.scanEntryIdToValueIdx.set(value.pmc, pointGroup.valuesPerScanEntry.length - 1);
             } else {
               // Ensure we're writing to the right PMC
@@ -239,7 +239,7 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
                 );
               }
 
-              pointGroup.valuesPerScanEntry[i].values[c] = value.value;
+              pointGroup.valuesPerScanEntry[i].values.push(value.value);
             }
           }
         }
