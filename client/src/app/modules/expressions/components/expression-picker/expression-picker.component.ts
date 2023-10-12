@@ -72,20 +72,7 @@ export class ExpressionPickerComponent implements OnInit {
     private _expressionService: ExpressionsService,
     @Inject(MAT_DIALOG_DATA) public data: ExpressionPickerData,
     public dialogRef: MatDialogRef<ExpressionPickerComponent, ExpressionPickerResponse>
-  ) {
-    if (data?.selectedIds) {
-      data.selectedIds.forEach(id => {
-        if (!this._expressionService.expressions$.value[id]) {
-          this.fetchedAllSelectedExpressions = false;
-          this._expressionService.fetchExpression(id);
-        }
-      });
-
-      if (this.fetchedAllSelectedExpressions) {
-        this.selectedExpressions = Object.fromEntries(data.selectedIds.map(id => [id, this._expressionService.expressions$.value[id]]));
-      }
-    }
-  }
+  ) {}
 
   ngOnInit(): void {
     this._expressionService.expressions$.subscribe(expressions => {
@@ -112,6 +99,19 @@ export class ExpressionPickerComponent implements OnInit {
 
       this.waitingForExpressions = notFoundExpressions;
     });
+
+    if (this.data?.selectedIds) {
+      this.data.selectedIds.forEach(id => {
+        if (!this._expressionService.expressions$.value[id]) {
+          this.fetchedAllSelectedExpressions = false;
+          this._expressionService.fetchExpression(id);
+        }
+      });
+
+      if (this.fetchedAllSelectedExpressions) {
+        this.selectedExpressions = Object.fromEntries(this.data.selectedIds.map(id => [id, this._expressionService.expressions$.value[id]]));
+      }
+    }
   }
 
   ngOnDestroy(): void {
@@ -141,7 +141,11 @@ export class ExpressionPickerComponent implements OnInit {
   onFilterChanged({ filteredExpressions, scanId, quantId }: ExpressionSearchFilter) {
     this.filteredExpressions = filteredExpressions;
     this.scanId = scanId;
-    this.quantId = quantId;
+
+    // NOTE: quant ID comes back as a list...
+    if (quantId && quantId.length > 0) {
+      this.quantId = quantId[0];
+    }
 
     // Remove any ROIs from the selection that are no longer visible
     let newSelection: Record<string, DataExpression> = {};

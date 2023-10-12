@@ -79,10 +79,16 @@ export class APICommService implements OnDestroy {
             },
           },
           closeObserver: {
-            next: () => {
-              console.log(`APICommService [${this._id}] beginConnect: Websocket Closed`);
+            next: (closeEvent: CloseEvent) => {
+              console.log(`APICommService [${this._id}] beginConnect: Websocket Closed. Close event:`);
+              console.log(closeEvent);
               this.connection$ = null;
               //this.connect({ reconnect: true });
+            },
+          },
+          closingObserver: {
+            next: () => {
+              console.log(`APICommService [${this._id}] beginConnect: Websocket closing...`);
             },
           },
         });

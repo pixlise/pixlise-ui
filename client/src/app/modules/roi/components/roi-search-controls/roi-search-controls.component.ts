@@ -8,7 +8,7 @@ import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysi
 import { SearchParams } from "src/app/generated-protos/search-params";
 import { ROISearchFilter, ROIType, ROITypeInfo, ROI_TYPES, checkMistFullyIdentified, checkROITypeIsMIST } from "../../models/roi-search";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
-import { checkBuiltinROIID } from "../../models/roi-region";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
 @Component({
   selector: "roi-search-controls",
@@ -140,13 +140,13 @@ export class ROISearchControlsComponent {
   }
 
   private filterROIsForDisplay(): void {
-    let filteredSummaries: ROIItemSummary[] = [];
-    let searchString = this.roiSearchString.toLowerCase();
-    for (let summary of this.summaries) {
-      let summaryNameLower = summary.name.toLowerCase();
+    const filteredSummaries: ROIItemSummary[] = [];
+    const searchString = this.roiSearchString.toLowerCase();
+    for (const summary of this.summaries) {
+      const summaryNameLower = summary.name.toLowerCase();
       if (
-        (this.selectedROITypes.includes("builtin") && checkBuiltinROIID(summary.id)) || // Builtin
-        (!checkBuiltinROIID(summary.id) &&
+        (this.selectedROITypes.includes("builtin") && PredefinedROIID.isPredefined(summary.id)) || // Builtin
+        (!PredefinedROIID.isPredefined(summary.id) &&
           (this.visibleScanId.length <= 0 || summary.scanId === this.visibleScanId) && // No selected scan or scan matches
           (searchString.length <= 0 || summaryNameLower.indexOf(searchString) >= 0) && // No search string or search string matches
           (this.filteredTagIDs.length <= 0 || this.filteredTagIDs.some(tagID => summary.tags.includes(tagID))) && // No selected tags or summary has selected tag
@@ -164,9 +164,9 @@ export class ROISearchControlsComponent {
     // Sort by name, but make sure built-in ROIs are at the top
     // this.filteredSummaries = filteredSummaries.sort((a, b) => a.name.localeCompare(b.name));
     this.filteredSummaries = filteredSummaries.sort((a, b) => {
-      if (checkBuiltinROIID(a.id) && !checkBuiltinROIID(b.id)) {
+      if (PredefinedROIID.isPredefined(a.id) && !PredefinedROIID.isPredefined(b.id)) {
         return -1;
-      } else if (!checkBuiltinROIID(a.id) && checkBuiltinROIID(b.id)) {
+      } else if (!PredefinedROIID.isPredefined(a.id) && PredefinedROIID.isPredefined(b.id)) {
         return 1;
       } else {
         return a.name.localeCompare(b.name);

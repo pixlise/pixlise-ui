@@ -70,6 +70,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   private setInitialConfig() {
+    return;
     this.mdl.expressionIds = [
       "vge9tz6fkbi2ha1p", // CaTi
       "fhb5x0qbx6lz9uec", // Dip (deg, B to A)
@@ -82,7 +83,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       new ScanDataIds(
         "ox3psifd719hfo1s", //00125_Naltsos_Heirwegh_det_combined_v7_10_05_2021
         //"2ejylaj1suu6qyj9", // Naltsos 2nd Quant Carbonates Tim
-        [PredefinedROIID.AllPoints]
+        [PredefinedROIID.getAllPointsForScan("048300551")]
       )
     );
 

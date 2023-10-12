@@ -35,8 +35,9 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
 
     const alpha = PointDrawer.getOpacity(drawData.totalPointCount);
     for (let c = 0; c < drawData.pointGroupCoords.length; c++) {
-      const colourGroup = this._mdl.raw.pointGroups[c].roiId === PredefinedROIID.AllPoints && this.lightMode ? Colours.GRAY_80 : this._mdl.raw.pointGroups[c].colour;
-      const visibility = this._mdl.raw.pointGroups[c].roiId === PredefinedROIID.AllPoints && this.lightMode ? 0.4 : alpha;
+      const isAllPoints = PredefinedROIID.isAllPointsROI(this._mdl.raw.pointGroups[c].roiId);
+      const colourGroup = isAllPoints && this.lightMode ? Colours.GRAY_80 : this._mdl.raw.pointGroups[c].colour;
+      const visibility = isAllPoints && this.lightMode ? 0.4 : alpha;
       const drawer = new PointDrawer(screenContext, PLOT_POINTS_SIZE, colourGroup, null, this._mdl.raw.pointGroups[c].shape);
       drawer.drawPoints(drawData.pointGroupCoords[c], visibility);
     }

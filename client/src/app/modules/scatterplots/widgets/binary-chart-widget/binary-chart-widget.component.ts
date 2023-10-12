@@ -113,6 +113,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   private setInitialConfig() {
+    return;
     this.mdl.expressionIds.push("vge9tz6fkbi2ha1p"); // CaTi
     this.mdl.expressionIds.push("fhb5x0qbx6lz9uec"); // Dip (deg, B to A)
 
@@ -122,7 +123,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       new ScanDataIds(
         "ox3psifd719hfo1s", //00125_Naltsos_Heirwegh_det_combined_v7_10_05_2021
         //"2ejylaj1suu6qyj9", // Naltsos 2nd Quant Carbonates Tim
-        [PredefinedROIID.AllPoints]
+        [PredefinedROIID.getAllPointsForScan("048300551")]
       )
     );
 

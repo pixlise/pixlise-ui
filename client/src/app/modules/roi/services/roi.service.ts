@@ -25,10 +25,9 @@ import {
   createDefaultAllPointsItem,
   createDefaultAllPointsRegionSettings,
   createDefaultROIDisplaySettings,
-  createDefaultRemainingPointsRegionSettings,
+  //createDefaultRemainingPointsRegionSettings,
   createDefaultSelectedPointsItem,
   createDefaultSelectedPointsRegionSettings,
-  getBuiltinIDFromScanID,
 } from "../models/roi-region";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
@@ -91,7 +90,7 @@ export class ROIService {
 
     // Everytime selection changes, update all selected points ROIs
     selection.beamSelection.getScanIds().forEach(scanId => {
-      let selectedPointsROI = createDefaultSelectedPointsItem(scanId);
+      const selectedPointsROI = createDefaultSelectedPointsItem(scanId);
       selectedPointsROI.scanEntryIndexesEncoded = Array.from(selection.beamSelection.getSelectedScanEntryIndexes(scanId));
       selectedPointsROI.pixelIndexesEncoded = Array.from(selection.pixelSelection.selectedPixels);
       selectedPointsROI.imageName = selection.pixelSelection.imageName;
@@ -125,8 +124,8 @@ export class ROIService {
   getAllPointsROI(scanId: string): Observable<ROIItem> {
     return this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId })).pipe(
       map(res => {
-        let entryIds = res.entries.map(entry => entry.id);
-        let allPointsROI = createDefaultAllPointsItem(scanId);
+        const entryIds = res.entries.map(entry => entry.id);
+        const allPointsROI = createDefaultAllPointsItem(scanId);
         allPointsROI.scanEntryIndexesEncoded = entryIds;
 
         return allPointsROI;
@@ -135,12 +134,12 @@ export class ROIService {
   }
 
   getSelectedPointsROI(scanId: string): ROIItem | null {
-    let currentSelection = this._selectionService.getCurrentSelection();
+    const currentSelection = this._selectionService.getCurrentSelection();
     if (!currentSelection || !scanId) {
       return null;
     }
 
-    let selectedPointsROI = createDefaultSelectedPointsItem(scanId);
+    const selectedPointsROI = createDefaultSelectedPointsItem(scanId);
     selectedPointsROI.scanEntryIndexesEncoded = Array.from(currentSelection.beamSelection.getSelectedScanEntryIndexes(scanId));
     selectedPointsROI.pixelIndexesEncoded = Array.from(currentSelection.pixelSelection.selectedPixels);
     selectedPointsROI.imageName = currentSelection.pixelSelection.imageName;
@@ -151,8 +150,8 @@ export class ROIService {
   searchROIs(searchParams: SearchParams, isMIST: boolean = false) {
     // Check if selection ROI exists for this scan and if not, create an empty one
     if (searchParams.scanId && searchParams.scanId.length > 0) {
-      if (!this.roiItems$.value[getBuiltinIDFromScanID(searchParams.scanId, PredefinedROIID.SelectedPoints)]) {
-        let selectedPointsROI = this.getSelectedPointsROI(searchParams.scanId);
+      if (!this.roiItems$.value[PredefinedROIID.getSelectedPointsForScan(searchParams.scanId)]) {
+        const selectedPointsROI = this.getSelectedPointsROI(searchParams.scanId);
         if (selectedPointsROI) {
           this.roiItems$.value[selectedPointsROI.id] = selectedPointsROI;
           this.roiSummaries$.value[selectedPointsROI.id] = ROIService.formSummaryFromROI(selectedPointsROI);
@@ -164,7 +163,7 @@ export class ROIService {
     }
 
     // Check if all points ROI exists for this scan and if not, fetch it
-    let allPointsROIID = getBuiltinIDFromScanID(searchParams.scanId, PredefinedROIID.AllPoints);
+    const allPointsROIID = PredefinedROIID.getAllPointsForScan(searchParams.scanId);
     if (searchParams.scanId && searchParams.scanId.length > 0 && !this.roiSummaries$.value[allPointsROIID]) {
       this.getAllPointsROI(searchParams.scanId).subscribe(allPointsROI => {
         if (allPointsROI) {
@@ -213,7 +212,7 @@ export class ROIService {
     }
 
     // Now we check if we can service locally from our  map
-    let result = this._regionMap.get(`${scanId}_${roiId}`);
+    let result = this._regionMap.get(roiId);
     if (result === undefined) {
       // Nothing stored, so get the ROI because we're combining that with the colour/shape we generate
       result = this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiId })).pipe(
@@ -223,7 +222,7 @@ export class ROIService {
             throw new Error("regionOfInterest data not returned for " + roiId);
           }
 
-          let roi = new RegionSettings(roiResp.regionOfInterest);
+          const roi = new RegionSettings(roiResp.regionOfInterest);
 
           let displaySettingsUpdated = false;
           if (roiResp.regionOfInterest?.displaySettings) {
@@ -234,10 +233,10 @@ export class ROIService {
             this.displaySettingsMap$.next(this.displaySettingsMap$.value);
           }
 
-          let displaySettings = this.displaySettingsMap$.value[roiId];
+          const displaySettings = this.displaySettingsMap$.value[roiId];
 
           if (!displaySettings) {
-            let roiDisplaySettings = this.nextDisplaySettings(scanId, roiId);
+            const roiDisplaySettings = this.nextDisplaySettings(scanId, roiId);
             // Update the ROI with the display settings
             roi.displaySettings = { colour: roiDisplaySettings.colour.rgba, shape: roiDisplaySettings.shape };
           } else {
@@ -263,11 +262,11 @@ export class ROIService {
   }
 
   getRegionDisplaySettings(roiId: string): ROIDisplaySettings {
-    let cachedSettings = this.displaySettingsMap$.value[roiId];
+    const cachedSettings = this.displaySettingsMap$.value[roiId];
     if (cachedSettings) {
       return cachedSettings;
     } else {
-      let settings = createDefaultROIDisplaySettings();
+      const settings = createDefaultROIDisplaySettings();
       this.displaySettingsMap$.value[roiId] = settings;
       this.displaySettingsMap$.next(this.displaySettingsMap$.value);
 
@@ -277,9 +276,9 @@ export class ROIService {
 
   private createDefaultScanRegions(scanId: string, scanShape: ROIShape) {
     // Add defaults for predefined ROIs
-    this._regionMap.set(`${getBuiltinIDFromScanID(scanId, PredefinedROIID.AllPoints)}`, of(createDefaultAllPointsRegionSettings(scanId, scanShape)));
-    this._regionMap.set(`${getBuiltinIDFromScanID(scanId, PredefinedROIID.SelectedPoints)}`, of(createDefaultSelectedPointsRegionSettings(scanId, scanShape)));
-    this._regionMap.set(`${getBuiltinIDFromScanID(scanId, PredefinedROIID.RemainingPoints)}`, of(createDefaultRemainingPointsRegionSettings(scanId, scanShape)));
+    this._regionMap.set(PredefinedROIID.getAllPointsForScan(scanId), of(createDefaultAllPointsRegionSettings(scanId, scanShape)));
+    this._regionMap.set(PredefinedROIID.getSelectedPointsForScan(scanId), of(createDefaultSelectedPointsRegionSettings(scanId, scanShape)));
+    //this._regionMap.set(`${getBuiltinIDFromScanID(scanId, PredefinedROIID.RemainingPoints)}`, of(createDefaultRemainingPointsRegionSettings(scanId, scanShape)));
   }
 
   nextDisplaySettings(scanId: string, roiId: string = ""): ROIDisplaySettingOption {

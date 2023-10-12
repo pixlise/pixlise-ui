@@ -1,4 +1,4 @@
-import { Component, ComponentRef, ElementRef, HostListener, ViewChild, ViewContainerRef, AfterViewChecked } from "@angular/core";
+import { Component, OnInit, ComponentRef, ElementRef, HostListener, ViewChild, ViewContainerRef, AfterViewChecked } from "@angular/core";
 import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetToolbarButtonConfiguration } from "./models/widgets.model";
 import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 
@@ -7,7 +7,7 @@ import { AnalysisLayoutService } from "../../services/analysis-layout.service";
   templateUrl: "./widget.component.html",
   styleUrls: ["./widget.component.scss"],
 })
-export class WidgetComponent implements AfterViewChecked {
+export class WidgetComponent implements OnInit, AfterViewChecked {
   @ViewChild("currentWidget", { read: ViewContainerRef }) currentWidget!: ViewContainerRef;
   private _currentWidgetRef: ComponentRef<any> | null = null;
 
@@ -27,14 +27,22 @@ export class WidgetComponent implements AfterViewChecked {
 
   allWidgetOptions = Object.entries(WIDGETS).map(([id, value]) => ({ id, ...value }));
   // _activeWidget: keyof typeof WIDGETS = "chord-diagram"; // /*Object.keys(WIDGETS)[Math.random() * (Object.keys(WIDGETS).length-1)] as keyof typeof WIDGETS; */ "ternary-plot"; //"spectrum-chart";
-  _activeWidget: keyof typeof WIDGETS = "ternary-plot"; // /*Object.keys(WIDGETS)[Math.random() * (Object.keys(WIDGETS).length-1)] as keyof typeof WIDGETS; */ "ternary-plot"; //"spectrum-chart";
+  _activeWidget: keyof typeof WIDGETS = "ternary-plot";//spectrum-chart"; // /*Object.keys(WIDGETS)[Math.random() * (Object.keys(WIDGETS).length-1)] as keyof typeof WIDGETS; */ "ternary-plot"; //"spectrum-chart";
 
   widgetConfiguration?: WidgetConfiguration;
 
-  constructor(private _analysisLayoutService: AnalysisLayoutService) {
+  constructor(private _analysisLayoutService: AnalysisLayoutService) {}
+
+  ngOnInit(): void {
     this._analysisLayoutService.resizeCanvas$.subscribe(() => {
       this.hideOverflowedButtons();
     });
+  }
+
+  ngAfterViewChecked(): void {
+    if (!this._currentWidgetRef) {
+      this.loadWidget();
+    }
   }
 
   @HostListener("window:resize", [])
@@ -149,12 +157,6 @@ export class WidgetComponent implements AfterViewChecked {
         this.widgetConfiguration!.controlConfiguration = config;
         this.initOverflowState();
       });
-    }
-  }
-
-  ngAfterViewChecked(): void {
-    if (!this._currentWidgetRef) {
-      this.loadWidget();
     }
   }
 }

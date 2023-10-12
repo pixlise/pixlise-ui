@@ -26,17 +26,9 @@ export class RegionSettings {
   ) {}
 }
 
-export const getBuiltinIDFromScanID = (scanId: string, builtinType: string): string => {
-  return `${builtinType}-${scanId}`;
-};
-
-export const checkBuiltinROIID = (id: string): boolean => {
-  return id.startsWith(PredefinedROIID.AllPoints) || id.startsWith(PredefinedROIID.SelectedPoints) || id.startsWith(PredefinedROIID.RemainingPoints);
-};
-
 export const createDefaultAllPointsItem = (scanId: string): ROIItem => {
   return ROIItem.create({
-    id: `${PredefinedROIID.AllPoints}-${scanId}`,
+    id: PredefinedROIID.getAllPointsForScan(scanId),
     scanId: scanId,
     name: "All Points",
     description: "All Points",
@@ -57,7 +49,7 @@ export const createDefaultAllPointsRegionSettings = (scanId: string, scanShape: 
 
 export const createDefaultSelectedPointsItem = (scanId: string): ROIItem => {
   return ROIItem.create({
-    id: `${PredefinedROIID.SelectedPoints}-${scanId}`,
+    id: PredefinedROIID.getSelectedPointsForScan(scanId),
     scanId: scanId,
     name: "Selected Points",
     description: "Selected Points",
@@ -75,10 +67,10 @@ export const createDefaultSelectedPointsItem = (scanId: string): ROIItem => {
 export const createDefaultSelectedPointsRegionSettings = (scanId: string, scanShape: ROIShape): RegionSettings => {
   return new RegionSettings(createDefaultSelectedPointsItem(scanId), { colour: Colours.CONTEXT_BLUE, shape: scanShape });
 };
-
+/*
 export const createDefaultRemainingPointsItem = (scanId: string): ROIItem => {
   return ROIItem.create({
-    id: `${PredefinedROIID.RemainingPoints}-${scanId}`,
+    id: PredefinedROIID.getRemainingPointsForScan(scanId),
     scanId: scanId,
     name: "Remaining Points",
     description: "Remaining Points",
@@ -96,3 +88,4 @@ export const createDefaultRemainingPointsItem = (scanId: string): ROIItem => {
 export const createDefaultRemainingPointsRegionSettings = (scanId: string, scanShape: ROIShape): RegionSettings => {
   return new RegionSettings(createDefaultRemainingPointsItem(scanId), { colour: Colours.CONTEXT_GREEN, shape: scanShape });
 };
+*/

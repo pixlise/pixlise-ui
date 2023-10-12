@@ -122,6 +122,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   private setInitialConfig() {
+    return;
     //this.mdl.expressionIdA = "r4zd5s2tfgr8rahy"; // AlFe
     //this.mdl.expressionIdA = "540d6vt1r87kb0v2"; // "Diffraction Similarity (Combined)
     // this.mdl.expressionIdA = "o77tuzf7fpjuezdd"; // lua CaO pow
@@ -332,30 +333,33 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   onToggleKey() {}
 
   openExpressionPicker(corner: string) {
-    let cornerExpressionId = "";
-    let cornerExpressionIndex = ["A", "B", "C"].indexOf(corner);
+    const cornerExpressionIndex = ["A", "B", "C"].indexOf(corner);
 
     if (cornerExpressionIndex < 0) {
       this._snackService.openError(`Invalid corner "${corner}"`);
       return;
-    } else {
-      cornerExpressionId = this.mdl.expressionIds[cornerExpressionIndex];
     }
 
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
-    dialogConfig.data = {
-      selectedIds: [cornerExpressionId],
-    };
+    dialogConfig.data = {};
+
+    if (this.mdl.expressionIds.length > cornerExpressionIndex) {
+      dialogConfig.data.selectedIds = [this.mdl.expressionIds[cornerExpressionIndex]];
+    }
 
     const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
       if (result && result.selectedExpressions?.length > 0) {
-        this.mdl.expressionIds[cornerExpressionIndex] = result.selectedExpressions[0].id;
+        // If there are 1-3, set them all
+        const last = Math.min(3, result.selectedExpressions.length);
+        for (let i = 0; i < last; i++) {
+          this.mdl.expressionIds[(cornerExpressionIndex + i) % 3] = result.selectedExpressions[i].id;
+        }
 
         let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];
 
         // If we already have a data source for this scan, keep the ROI ids
-        let existingSource = this.mdl.dataSourceIds.get(result.scanId);
+        const existingSource = this.mdl.dataSourceIds.get(result.scanId);
         if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
           roiIds = existingSource.roiIds;
         }

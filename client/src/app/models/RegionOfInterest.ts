@@ -29,25 +29,38 @@
 
 export type BuiltInROI = "AllPoints" | "SelectedPoints" | "RemainingPoints";
 export class PredefinedROIID {
-  public static readonly AllPoints: BuiltInROI = "AllPoints";
-  public static readonly SelectedPoints: BuiltInROI = "SelectedPoints";
-  public static readonly RemainingPoints: BuiltInROI = "RemainingPoints";
+  private static readonly JoinChar = "-";
+  private static readonly AllPoints: BuiltInROI = "AllPoints";
+  private static readonly SelectedPoints: BuiltInROI = "SelectedPoints";
+  //private static readonly RemainingPoints: BuiltInROI = "RemainingPoints";
 
-  public static getBuiltinIDFromScanID = (scanId: string, builtinType: string): string => {
-    return `${builtinType}-${scanId}`;
+  private static makeBuiltinIDFromScanID = (scanId: string, builtinType: string): string => {
+    return `${builtinType}${PredefinedROIID.JoinChar}${scanId}`;
   };
 
   public static getAllPointsForScan(scanId: string): string {
-    return PredefinedROIID.getBuiltinIDFromScanID(scanId, PredefinedROIID.AllPoints);
+    return PredefinedROIID.makeBuiltinIDFromScanID(scanId, PredefinedROIID.AllPoints);
+  }
+
+  public static isAllPointsROI(id: string): boolean {
+    return id.startsWith(PredefinedROIID.AllPoints + PredefinedROIID.JoinChar);
+  }
+
+  public static getSelectedPointsForScan(scanId: string): string {
+    return PredefinedROIID.makeBuiltinIDFromScanID(scanId, PredefinedROIID.SelectedPoints);
+  }
+
+  public static isSelectedPointsROI(id: string): boolean {
+    return id.startsWith(PredefinedROIID.SelectedPoints + PredefinedROIID.JoinChar);
   }
 
   public static isPredefined(id: string): boolean {
-    return id.startsWith(PredefinedROIID.AllPoints) || id.startsWith(PredefinedROIID.SelectedPoints) || id.startsWith(PredefinedROIID.RemainingPoints);
+    return id.startsWith(PredefinedROIID.AllPoints + PredefinedROIID.JoinChar) || id.startsWith(PredefinedROIID.SelectedPoints + PredefinedROIID.JoinChar); // || id.startsWith(PredefinedROIID.RemainingPoints);
   }
 
-  public static readonly defaultROIs: string[] = [PredefinedROIID.AllPoints, PredefinedROIID.SelectedPoints];
+  //public static readonly defaultROIs: string[] = [PredefinedROIID.AllPoints, PredefinedROIID.SelectedPoints];
 }
-
+/*
 export function orderVisibleROIs(rois: string[]): string[] {
   // Run through, make sure AllPoints is first, SelectedPoints is last (if they exist)
   let result = [];
@@ -79,3 +92,4 @@ export function orderVisibleROIs(rois: string[]): string[] {
   }
   return result;
 }
+*/

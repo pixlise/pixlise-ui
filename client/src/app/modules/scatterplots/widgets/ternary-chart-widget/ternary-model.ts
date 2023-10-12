@@ -33,7 +33,7 @@ export class TernaryChartModel extends NaryChartModel<TernaryData, TernaryDrawMo
   }
 
   protected axisName(axisIdx: number): string {
-    return axisIdx == 0 ? "left" : axisIdx == 1 ? "top" : "right";
+    return axisIdx == 0 ? "left" : axisIdx == 1 ? "right" : "top";
   }
 
   handleHoverPointChanged(hoverScanId: string, hoverScanEntryId: number): void {

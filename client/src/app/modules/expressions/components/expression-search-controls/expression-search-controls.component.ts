@@ -1,10 +1,9 @@
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from "@angular/core";
 import { ROIItemSummary } from "src/app/generated-protos/roi";
 import { Subscription } from "rxjs";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { UserInfo } from "src/app/generated-protos/user";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { SearchParams } from "src/app/generated-protos/search-params";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { ExpressionSearchFilter } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
@@ -16,7 +15,7 @@ import { QuantificationSummary } from "src/app/generated-protos/quantification-m
   templateUrl: "./expression-search-controls.component.html",
   styleUrls: ["./expression-search-controls.component.scss"],
 })
-export class ExpressionSearchControlsComponent {
+export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   private _expressions: DataExpression[] = [];
@@ -45,14 +44,18 @@ export class ExpressionSearchControlsComponent {
     private _expressionsService: ExpressionsService,
     private _userOptionsService: UserOptionsService
   ) {
-    let quants = this._analysisLayoutService.availableScanQuants$.value?.[this.visibleScanId];
+    const quants = this._analysisLayoutService.availableScanQuants$.value?.[this.visibleScanId];
     if (this.visibleScanId && quants && quants.length > 0) {
       this.selectedQuantId = quants[0].id;
       this.filteredQuants = quants;
     } else {
       this.selectedQuantId = "";
       this.filteredQuants = [];
-      this._analysisLayoutService.fetchQuantsForScan(this.visibleScanId);
+
+      // Only request if we have a scan ID!
+      if (this.visibleScanId) {
+        this._analysisLayoutService.fetchQuantsForScan(this.visibleScanId);
+      }
     }
   }
 
