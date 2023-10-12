@@ -100,6 +100,7 @@ export class ROISearchControlsComponent {
   set visibleScanId(scanId: string) {
     this._visibleScanId = scanId;
     this._roiService.searchROIs(SearchParams.create({ scanId }), false);
+    this.filterROIsForDisplay();
   }
 
   get selectedROITypes(): ROIType[] {
@@ -145,7 +146,7 @@ export class ROISearchControlsComponent {
     for (const summary of this.summaries) {
       const summaryNameLower = summary.name.toLowerCase();
       if (
-        (this.selectedROITypes.includes("builtin") && PredefinedROIID.isPredefined(summary.id)) || // Builtin
+        (this.selectedROITypes.includes("builtin") && PredefinedROIID.isPredefined(summary.id) && summary.scanId === this.visibleScanId) || // Builtin
         (!PredefinedROIID.isPredefined(summary.id) &&
           (this.visibleScanId.length <= 0 || summary.scanId === this.visibleScanId) && // No selected scan or scan matches
           (searchString.length <= 0 || summaryNameLower.indexOf(searchString) >= 0) && // No search string or search string matches
