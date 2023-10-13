@@ -29,7 +29,7 @@
 
 import { Injectable } from "@angular/core";
 import { Observable, combineLatest, of, concatMap, mergeMap, throwError } from "rxjs";
-import { map, catchError, shareReplay } from "rxjs/operators";
+import { map, catchError } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
@@ -40,7 +40,7 @@ import { DataExpression } from "src/app/generated-protos/expressions";
 import { DataModule } from "src/app/generated-protos/modules";
 import { DataModuleGetReq, DataModuleGetResp } from "src/app/generated-protos/module-msgs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
-import { DataQuerier, EXPR_LANGUAGE_LUA, EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
+import { DataQuerier, EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { ExpressionDataSource } from "../models/expression-data-source";
 import { InterpreterDataSource } from "src/app/expression-language/interpreter-data-source";
 import { APICachedDataService } from "./apicacheddata.service";
@@ -140,17 +140,6 @@ export class WidgetDataService {
     private _cachedDataService: APICachedDataService,
     private _roiService: ROIService
   ) {
-    // FOR TESTING ONLY
-    // TODO: remove this
-    // Query rois and quants for datasets
-    //this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({searchParams: SearchParams.create({scanId: "048300551"})})).subscribe((resp: RegionOfInterestListResp)=>{console.log(resp)});
-    //this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({searchParams: SearchParams.create({scanId: "089063943"})})).subscribe((resp: RegionOfInterestListResp)=>{console.log(resp)});
-    //this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({searchParams: SearchParams.create({scanId: "101384711"})})).subscribe((resp: RegionOfInterestListResp)=>{console.log(resp)});
-    //this._dataService.sendRegionOfInterestListRequest(RegionOfInterestListReq.create({searchParams: SearchParams.create({scanId: "198509061"})})).subscribe((resp: RegionOfInterestListResp)=>{console.log(resp)});
-    //this._dataService.sendQuantListRequest(QuantListReq.create({searchParams: SearchParams.create({scanId: "048300551"})})).subscribe((resp: QuantListResp)=>{console.log(resp)});
-    //this._dataService.sendQuantListRequest(QuantListReq.create({searchParams: SearchParams.create({scanId: "089063943"})})).subscribe((resp: QuantListResp)=>{console.log(resp)});
-    //this._dataService.sendQuantListRequest(QuantListReq.create({searchParams: SearchParams.create({scanId: "101384711"})})).subscribe((resp: QuantListResp)=>{console.log(resp)});
-    //this._dataService.sendQuantListRequest(QuantListReq.create({searchParams: SearchParams.create({scanId: "198509061"})})).subscribe((resp: QuantListResp)=>{console.log(resp)});
   }
 
   // This queries data based on parameters. The assumption is it either returns null, or returns an array with the same

@@ -12,6 +12,8 @@ import { HistogramDrawer } from "./drawer";
 import { HistogramToolHost } from "./histogram-interaction";
 import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { ExpressionPickerData, ExpressionPickerComponent, ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
+import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 
 @Component({
   selector: "histogram-widget",
@@ -31,6 +33,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   constructor(
     public dialog: MatDialog,
     private _widgetData: WidgetDataService,
+    private _analysisLayoutService: AnalysisLayoutService,
     private _snackService: SnackbarService
   ) {
     super();
@@ -38,9 +41,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     this.setInitialConfig();
 
     this.drawer = new HistogramDrawer(this.mdl);
-    const toolHost = new HistogramToolHost(this.mdl);
-
-    this.toolhost = toolHost;
+    this.toolhost = new HistogramToolHost(this.mdl);
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -70,8 +71,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   private setInitialConfig() {
-    return;
-    this.mdl.expressionIds = [
+    /*this.mdl.expressionIds = [
       "vge9tz6fkbi2ha1p", // CaTi
       "fhb5x0qbx6lz9uec", // Dip (deg, B to A)
       DataExpressionId.makePredefinedQuantElementExpression("CaO", "%", "Combined"),
@@ -87,7 +87,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       )
     );
 
-    this.update();
+    this.update();*/
   }
 
   private update() {
@@ -148,7 +148,6 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   ngOnInit() {
-    // this.drawer = new BinaryChartDrawer(this.mdl, this.mdl?.toolHost);
     this.reDraw();
   }
   ngOnDestroy() {
@@ -163,7 +162,34 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     return this.toolhost;
   }
 
-  onBars() {}
+  onBars() {
+    const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
+    dialogConfig.data = {
+      selectedIds: this.mdl.expressionIds,
+    };
+
+    const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
+      this.mdl.expressionIds = [];
+
+      if (result && result.selectedExpressions?.length > 0) {
+        for (const expr of result.selectedExpressions) {
+          this.mdl.expressionIds.push(expr.id);
+        }
+
+        let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];
+
+        // If we already have a data source for this scan, keep the ROI ids
+        const existingSource = this.mdl.dataSourceIds.get(result.scanId);
+        if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
+          roiIds = existingSource.roiIds;
+        }
+        this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
+      }
+
+      this.update();
+    });
+  }
   onRegions() {
     const dialogConfig = new MatDialogConfig();
     // Pass data to dialog

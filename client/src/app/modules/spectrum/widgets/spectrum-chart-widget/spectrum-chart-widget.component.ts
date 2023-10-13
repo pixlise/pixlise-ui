@@ -1,24 +1,24 @@
-import { Component, Input, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SpectrumService } from "../../services/spectrum.service";
 import { Subscription } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { SpectrumChartDrawer } from "./drawer";
-import {
-  CanvasDrawNotifier,
-  CanvasDrawer,
-  CanvasInteractionHandler,
-  CanvasWorldTransform,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { SpectrumChartModel } from "./model";
+import { Clipboard } from "@angular/cdk/clipboard";
+import { SpectrumChartDrawer } from "./spectrum-drawer";
+import { CanvasDrawer } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { SpectrumChartModel } from "./spectrum-model";
+import { EnvConfigurationService } from "src/app/services/env-configuration.service";
+import { SpectrumChartToolHost } from "./tools/tool-host";
+import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
+import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 
 @Component({
   selector: "app-spectrum-chart-widget",
   templateUrl: "./spectrum-chart-widget.component.html",
   styleUrls: ["./spectrum-chart-widget.component.scss"],
 })
-export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnInit {
+export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
   activeTool: string = "pan";
 
   resizeSpectraY = false;
@@ -26,16 +26,23 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   countsPerMin = false;
   countsPerPMC = true;
 
-  drawNotifier = new SpectrumChartModel();
-  drawer: CanvasDrawer = new SpectrumChartDrawer();
+  mdl: SpectrumChartModel;
+  drawer: CanvasDrawer;
+  toolhost: SpectrumChartToolHost;
 
   private _subs = new Subscription();
   constructor(
     private _spectrumService: SpectrumService,
     private _snackService: SnackbarService,
-    public dialog: MatDialog
+    private _envService: EnvConfigurationService,
+    public dialog: MatDialog,
+    public clipboard: Clipboard
   ) {
     super();
+
+    this.mdl = new SpectrumChartModel(this._envService /*, dialog, clipboard*/);
+    this.toolhost = new SpectrumChartToolHost(this.mdl, dialog, clipboard);
+    this.drawer = new SpectrumChartDrawer(this.mdl, this.toolhost);
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -98,7 +105,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           type: "button",
           title: "Display Spectra",
           value: false,
-          onClick: () => {},
+          onClick: () => this.onSelectSpectra(),
         },
         {
           id: "fit",
@@ -133,7 +140,6 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   ngOnInit() {
-    // this.drawer = new SpectrumChartDrawer(this.mdl, this.mdl?.toolHost);
     this.reDraw();
   }
 
@@ -142,15 +148,15 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   reDraw() {
-    this.drawNotifier.needsDraw$.next();
+    this.mdl.needsDraw$.next();
   }
 
   get transform() {
-    return this.drawNotifier.transform;
+    return this.mdl.transform;
   }
 
   get interactionHandler() {
-    return this.drawNotifier.toolhost;
+    return this.toolhost;
   }
 
   onToggleResizeSpectraY() {}
@@ -179,9 +185,34 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
   onToolSelected(tool: string) {
     this.activeTool = tool;
-    this._widgetControlConfiguration["topToolbar"]!.forEach((button: any) => {
+    /*this._widgetControlConfiguration["topToolbar"]!.forEach((button: any) => {
       button.value = button.id === tool;
     });
-    console.log("Tool selected: ", this.activeTool);
+    console.log("Tool selected: ", this.activeTool);*/
+  }
+
+  onSelectSpectra() {
+    const dialogConfig = new MatDialogConfig();
+    // Pass data to dialog
+    dialogConfig.data = {
+      requestFullROIs: false,
+    };
+
+    const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((result: ROIPickerResponse) => {
+      if (result) {
+        // Create entries for each scan
+        const roisPerScan = new Map<string, string[]>();
+        for (const roi of result.selectedROISummaries) {
+          let existing = roisPerScan.get(roi.scanId);
+          if (existing === undefined) {
+            existing = [];
+          }
+
+          existing.push(roi.id);
+          roisPerScan.set(roi.scanId, existing);
+        }
+      }
+    });
   }
 }

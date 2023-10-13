@@ -63,9 +63,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     this.setInitialConfig();
 
     this.drawer = new BinaryChartDrawer(this.mdl);
-    const toolHost = new BinaryChartToolHost(this.mdl, this._selectionService);
-
-    this.toolhost = toolHost;
+    this.toolhost = new BinaryChartToolHost(this.mdl, this._selectionService);
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -116,21 +114,6 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   private setInitialConfig() {
-    return;
-    this.mdl.expressionIds.push("vge9tz6fkbi2ha1p"); // CaTi
-    this.mdl.expressionIds.push("fhb5x0qbx6lz9uec"); // Dip (deg, B to A)
-
-    // Naltsos
-    this.mdl.dataSourceIds.set(
-      "048300551",
-      new ScanDataIds(
-        "ox3psifd719hfo1s", //00125_Naltsos_Heirwegh_det_combined_v7_10_05_2021
-        //"2ejylaj1suu6qyj9", // Naltsos 2nd Quant Carbonates Tim
-        [PredefinedROIID.getAllPointsForScan("048300551")]
-      )
-    );
-
-    this.update();
   }
 
   get xAxisSwitcher(): ScatterPlotAxisInfo | null {
@@ -178,7 +161,6 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   ngOnInit() {
-    // this.drawer = new BinaryChartDrawer(this.mdl, this.mdl?.toolHost);
     this.reDraw();
   }
 

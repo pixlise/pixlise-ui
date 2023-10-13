@@ -43,18 +43,13 @@ export class SpectrumValues {
       return null;
     }
 
-    let firstSpectra = spectra[0] as SpectrumValues;
+    const firstSpectra = spectra[0] as SpectrumValues;
     if (!firstSpectra) {
       return null;
     }
-    let result = new SpectrumValues(
-      new Float32Array(firstSpectra.values),
-      firstSpectra.maxValue,
-      firstSpectra.sourceDetectorID,
-      firstSpectra.liveTimeSec
-    );
+    const result = new SpectrumValues(new Float32Array(firstSpectra.values), firstSpectra.maxValue, firstSpectra.sourceDetectorID, firstSpectra.liveTimeSec);
     for (let c = 1; c < spectra.length; c++) {
-      let spectraPoints = spectra[c];
+      const spectraPoints = spectra[c];
       if (!spectraPoints) {
         continue;
       }
@@ -82,12 +77,7 @@ export class SpectrumValues {
       return null;
     }
 
-    let result = new SpectrumValues(
-      new Float32Array(spectra[0].values),
-      spectra[0].maxValue,
-      spectra[0].sourceDetectorID,
-      spectra[0].liveTimeSec
-    );
+    const result = new SpectrumValues(new Float32Array(spectra[0].values), spectra[0].maxValue, spectra[0].sourceDetectorID, spectra[0].liveTimeSec);
     let totalLiveTime = spectra[0].liveTimeSec;
 
     for (let c = 1; c < spectra.length; c++) {
@@ -109,7 +99,7 @@ export class SpectrumValues {
 
     // Now that we have all the values decided, we can find the max value again
     result.maxValue = result.values[0];
-    for (let val of result.values) {
+    for (const val of result.values) {
       if (val > result.maxValue) {
         result.maxValue = val;
       }
@@ -125,12 +115,7 @@ export class SpectrumValues {
       return null;
     }
 
-    let result = new SpectrumValues(
-      new Float32Array(spectra[0].values),
-      spectra[0].maxValue,
-      spectra[0].sourceDetectorID,
-      spectra[0].liveTimeSec
-    );
+    const result = new SpectrumValues(new Float32Array(spectra[0].values), spectra[0].maxValue, spectra[0].sourceDetectorID, spectra[0].liveTimeSec);
     let totalLiveTime = spectra[0].liveTimeSec;
 
     for (let c = 1; c < spectra.length; c++) {
@@ -164,7 +149,7 @@ export class SpectrumValues {
     if (A === null || A === undefined || B === null || B === undefined) {
       return null;
     }
-    let result = new SpectrumValues(
+    const result = new SpectrumValues(
       new Float32Array(A.values.length),
       0,
       A.sourceDetectorID == B.sourceDetectorID ? A.sourceDetectorID : "", // TODO: use Combined in this case?
@@ -187,7 +172,7 @@ export class SpectrumValues {
     const A = 2;
     const n = 2;
 
-    let result = new SpectrumValues(
+    const result = new SpectrumValues(
       new Float32Array(checkDetector.values.length),
       0,
       checkDetector.sourceDetectorID, // Return check detector
@@ -195,10 +180,10 @@ export class SpectrumValues {
     );
 
     for (let c = 0; c < checkDetector.values.length; c++) {
-      let minOfDetectors = Math.min(checkDetector.values[c], otherDetector.values[c]);
+      const minOfDetectors = Math.min(checkDetector.values[c], otherDetector.values[c]);
 
       // Calculate threshold
-      let T = A * Math.sqrt(minOfDetectors + n);
+      const T = A * Math.sqrt(minOfDetectors + n);
 
       if (Math.abs(checkDetector.values[c] - otherDetector.values[c]) > T) {
         // Use minimum
@@ -219,7 +204,7 @@ export class SpectrumValues {
   public getAsCountsPerMin(): SpectrumValues {
     const sec = 60;
     // Divide each value by liveTime
-    let result = new SpectrumValues(
+    const result = new SpectrumValues(
       new Float32Array(this.values),
       Math.floor((sec * this.maxValue) / this.liveTimeSec),
       this.sourceDetectorID,
@@ -241,12 +226,7 @@ export class SpectrumValues {
       return spectrum;
     }
 
-    let result = new SpectrumValues(
-      new Float32Array(spectrum.values),
-      spectrum.maxValue / denominator,
-      spectrum.sourceDetectorID,
-      spectrum.liveTimeSec
-    );
+    const result = new SpectrumValues(new Float32Array(spectrum.values), spectrum.maxValue / denominator, spectrum.sourceDetectorID, spectrum.liveTimeSec);
 
     // Divide each count
     for (let c = 0; c < result.values.length; c++) {
@@ -275,16 +255,16 @@ export class SpectrumExpressionParser {
   ): Map<string, SpectrumValues> {
     // Build it based on the expression... we're pretty tight in what we can interpret, this is not at the moment a general purpose expression evaluator!!
     // This can return multiple lines, depending on the expression
-    let exprTerms: Map<string, SpectrumValues> = new Map<string, SpectrumValues>();
+    const exprTerms: Map<string, SpectrumValues> = new Map<string, SpectrumValues>();
 
-    for (let exprTerm of this.getTerms(lineExpression)) {
+    for (const exprTerm of this.getTerms(lineExpression)) {
       if (exprTerm.startsWith("max(")) {
-        let spectrum = this.getMaxTerm(spectrumSource, locationIndexes, lineExpression, exprTerm, readType);
+        const spectrum = this.getMaxTerm(spectrumSource, locationIndexes, lineExpression, exprTerm, readType);
         if (spectrum) {
           exprTerms.set(exprTerm, spectrum);
         }
       } else if (exprTerm.startsWith("bulk(")) {
-        let spectrum = this.getBulkTerm(spectrumSource, locationIndexes, lineExpression, exprTerm, readType);
+        const spectrum = this.getBulkTerm(spectrumSource, locationIndexes, lineExpression, exprTerm, readType);
         if (spectrum) {
           exprTerms.set(exprTerm, spectrum);
         }
@@ -351,16 +331,16 @@ export class SpectrumExpressionParser {
 
   private combineSpectraWithExpression(lineExpression: string, exprTerms: Map<string, SpectrumValues>): SpectrumValues | null {
     // Check the combining function
-    let funcEndIdx = lineExpression.indexOf("(");
+    const funcEndIdx = lineExpression.indexOf("(");
     if (funcEndIdx == -1) {
       throw new Error("Failed to read combining func in expression: " + lineExpression);
     }
 
-    let func = lineExpression.substring(0, funcEndIdx);
+    const func = lineExpression.substring(0, funcEndIdx);
 
     // Split up the parameters
-    let paramsStr = lineExpression.substring(funcEndIdx + 1, lineExpression.length - 1);
-    let params = paramsStr.split(",");
+    const paramsStr = lineExpression.substring(funcEndIdx + 1, lineExpression.length - 1);
+    const params = paramsStr.split(",");
 
     // There should be 2 params, and both should exist in our terms
     if (params.length != 2 || !exprTerms.has(params[0]) || !exprTerms.has(params[1])) {
@@ -372,22 +352,22 @@ export class SpectrumExpressionParser {
     } else if (func == "sum") {
       return SpectrumValues.bulkSum([exprTerms.get(params[0]), exprTerms.get(params[1])]);
     } else if (func == "minOf") {
-      let firstParam = exprTerms.get(params[0]);
-      let secondParam = exprTerms.get(params[1]);
+      const firstParam = exprTerms.get(params[0]);
+      const secondParam = exprTerms.get(params[1]);
       if (!firstParam || !secondParam) {
         return null;
       }
       return SpectrumValues.minValue([firstParam, secondParam]);
     } else if (func == "maxOf") {
-      let firstParam = exprTerms.get(params[0]);
-      let secondParam = exprTerms.get(params[1]);
+      const firstParam = exprTerms.get(params[0]);
+      const secondParam = exprTerms.get(params[1]);
       if (!firstParam || !secondParam) {
         return null;
       }
       return SpectrumValues.maxValue([firstParam, secondParam]);
     } else if (func == "removeDiffraction") {
-      let firstParam = exprTerms.get(params[0]);
-      let secondParam = exprTerms.get(params[1]);
+      const firstParam = exprTerms.get(params[0]);
+      const secondParam = exprTerms.get(params[1]);
       if (!firstParam || !secondParam) {
         return null;
       }
@@ -444,7 +424,7 @@ export class SpectrumExpressionParser {
     // by PIQUANT in the GDS pipeline
     // There may be datasets where this is not available, so as a fallback measure we can still calculate bulk sum
     // for all location indexes
-    let spectra: SpectrumValues[] = [];
+    const spectra: SpectrumValues[] = [];
 
     if (locationIndexes.length <= 0) {
       if (spectrumSource.idxForBulkMaxValueLocation == null) {
@@ -468,7 +448,7 @@ export class SpectrumExpressionParser {
         spectra.push(spectrum);
       }
     } else {
-      for (let idx of locationIndexes) {
+      for (const idx of locationIndexes) {
         let spectrum = spectrumSource.getSpectrum(idx, detector, readType);
         if (spectrum) {
           if (countsPerMinWhenReading) {
@@ -497,11 +477,11 @@ export class SpectrumExpressionParser {
   }
 
   private getTerms(lineExpression: string): string[] {
-    let result = [];
+    const result = [];
 
     const toCheck = ["bulk(A)", "bulk(B)", "max(A)", "max(B)"];
-    for (let check of toCheck) {
-      let idx = lineExpression.indexOf(check);
+    for (const check of toCheck) {
+      const idx = lineExpression.indexOf(check);
       if (idx >= 0) {
         result.push(check);
       }

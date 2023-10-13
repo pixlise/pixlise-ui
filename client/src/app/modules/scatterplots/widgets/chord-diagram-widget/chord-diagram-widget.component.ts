@@ -46,9 +46,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
     this.setInitialConfig();
 
     this.drawer = new ChordDiagramDrawer(this.mdl);
-    const toolHost = new ChordDiagramInteraction(this.mdl, this._selectionService);
-
-    this.toolhost = toolHost;
+    this.toolhost = new ChordDiagramInteraction(this.mdl, this._selectionService);
 
     this._widgetControlConfiguration = {
       topToolbar: [
@@ -78,11 +76,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   private setInitialConfig() {
-    return;
-    //this.mdl.expressionIds.push("lpqtfd5lva7t2046"); // Si (mmol) (PIXLANG)
-    //this.mdl.expressionIds.push("fhb5x0qbx6lz9uec"); // Dip (deg, B to A)
-    //this.mdl.expressionIds.push("vge9tz6fkbi2ha1p"); // CaTi
-    const elems = [
+    /*const elems = [
       "Na2O",
       "MgO",
       "Al2O3",
@@ -120,7 +114,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
       )
     );
 
-    this.update();
+    this.update();*/
   }
 
   private update() {

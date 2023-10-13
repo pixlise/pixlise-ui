@@ -189,9 +189,7 @@ export class MinMax {
   }
 
   isValid(): boolean {
-    return (
-      typeof this._min === "number" && typeof this._max === "number" && isFinite(this._min) && isFinite(this._max) && this._max >= this._min
-    );
+    return typeof this._min === "number" && typeof this._max === "number" && isFinite(this._min) && isFinite(this._max) && this._max >= this._min;
   }
 
   equals(other: MinMax): boolean {
