@@ -1,3 +1,24 @@
+<ng-template #customSelectDialog>
+  <div class="custom-select-picker">
+    <div *ngFor="let section of selectionOptions" class="option-section">
+      <h2>{{ section.title }}</h2>
+      <span class="checkbox-group" *ngFor="let option of section.options">
+        <two-state-icon-button
+          activeIcon="assets/button-icons/check-on.svg"
+          inactiveIcon="assets/button-icons/check-off.svg"
+          class="checkbox-button"
+          [active]="selectedOptions.includes(option.value)"
+          (onToggle)="onToggleCustomSelect(option.value)">
+        </two-state-icon-button>
+        <span>{{ option.title }}</span>
+      </span>
+    </div>
+    <div class="bottom-buttons">
+      <push-button buttonStyle="outline" title="Clear Color" (onClick)="clearCustomSelection()">Clear</push-button>
+    </div>
+  </div>
+</ng-template>
+
 <ng-template #roiShapePicker>
   <div class="roi-shape-picker">
     <h2>Shapes</h2>
@@ -98,7 +119,7 @@
         : 'rgb(var(--clr-gray-80))'
     }">
     <two-state-icon-button
-      *ngIf="isSelectable && !rightSelection"
+      *ngIf="isSelectable && !rightSelection && !isSubItemSelectionEnabled"
       toolTip="Toggle ROI"
       activeIcon="assets/button-icons/check-on.svg"
       inactiveIcon="assets/button-icons/check-off.svg"
@@ -163,7 +184,7 @@
         title="Toggle showing ROI details"></icon-button>
     </div>
     <two-state-icon-button
-      *ngIf="isSelectable && rightSelection"
+      *ngIf="isSelectable && rightSelection && !isSubItemSelectionEnabled"
       toolTip="Toggle ROI"
       activeIcon="assets/button-icons/check-on.svg"
       inactiveIcon="assets/button-icons/check-off.svg"
@@ -171,6 +192,7 @@
       [active]="selected"
       (onToggle)="onCheckboxClick($event)">
     </two-state-icon-button>
+    <push-button *ngIf="selectionLabel && isSubItemSelectionEnabled" class="selection-button" [customDialog]="customSelectDialog">{{ selectionLabel }}</push-button>
   </div>
   <div *ngIf="showDetails" class="details">
     <wait-spinner *ngIf="!showDetails"></wait-spinner>

@@ -8,6 +8,11 @@ import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../roi-shape/roi-shape.
 import { COLOURS, ColourOption, findColourOption, generateDefaultColour } from "../../models/roi-colors";
 import { ROIDisplaySettings, createDefaultROIDisplaySettings } from "../../models/roi-region";
 
+export type SubItemOptionSection = {
+  title: string;
+  options: { title: string; value: string }[]; // { title, value }
+};
+
 @Component({
   selector: "roi-item",
   templateUrl: "./roi-item.component.html",
@@ -17,6 +22,11 @@ export class ROIItemComponent {
   @Input() rightSelection: boolean = false;
   @Input() isSelectable = false;
 
+  // If these are specified and isSelectable, they will replace the checkbox selection
+  @Input() selectionOptions: SubItemOptionSection[] = [];
+  @Input() selectionLabel: string = "";
+
+  @Input() selectedOptions: string[] = [];
   @Input() selected = false;
   @Input() colorChangeOnly = false;
 
@@ -119,6 +129,10 @@ export class ROIItemComponent {
         }
       }
     }
+  }
+
+  get isSubItemSelectionEnabled(): boolean {
+    return this.isSelectable && this.selectionOptions.length > 0 && this.selectionLabel.length > 0;
   }
 
   get displaySettings(): ROIDisplaySettings {
@@ -370,6 +384,27 @@ export class ROIItemComponent {
         this.shape = displaySettingOption.shape;
       }
     }
+  }
+
+  onToggleCustomSelect(value: string) {
+    let newSelectedOptions = [];
+    if (this.onROISelect) {
+      if (this.selectedOptions.includes(value)) {
+        newSelectedOptions = this.selectedOptions.filter(option => option !== value);
+      } else {
+        newSelectedOptions = [...this.selectedOptions, value];
+      }
+
+      this.onROISelect.emit({
+        selectedOptions: newSelectedOptions,
+      });
+    }
+  }
+
+  clearCustomSelection() {
+    this.onROISelect.emit({
+      selectedOptions: [],
+    });
   }
 
   clearColour() {

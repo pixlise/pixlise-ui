@@ -45,6 +45,7 @@ import { ISpectrumChartModel, SpectrumChartLine } from "./spectrum-model-interfa
 import { SpectrumXRFLinesNearMouse } from "./xrf-near-mouse";
 import { EnergyCalibrationManager } from "./energy-calibration-manager";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
+import { SubItemOptionSection } from "src/app/modules/roi/components/roi-item/roi-item.component";
 
 export class SpectrumLineChoice {
   constructor(
@@ -113,6 +114,37 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   public static readonly fitBackgroundCalc = "Background Calc";
   public static readonly fitBackgroundSNIP = "Background SNIP";
 
+  public static readonly allLineChoiceOptions: SubItemOptionSection[] = [
+    {
+      title: "Summed Across an Area",
+      options: [
+        { title: "A", value: "SpectrumChartModel.lineExpressionBulkA" },
+        { title: "B", value: "SpectrumChartModel.lineExpressionBulkB" },
+        { title: "Sum of A + B", value: "sum(bulk(A),bulk(B))" },
+        { title: "Difference A - B", value: "diff(bulk(A),bulk(B))" },
+        { title: "Difference B - A", value: "diff(bulk(B),bulk(A))" },
+        { title: "Min of A and B", value: "minOf(bulk(A),bulk(B))" },
+        { title: "Max of A and B", value: "maxOf(bulk(A),bulk(B))" },
+        { title: "A without Diffraction", value: "removeDiffraction(bulk(A),bulk(B))" },
+        { title: "B without Diffraction", value: "removeDiffraction(bulk(B),bulk(A))" },
+      ],
+    },
+    {
+      title: "Max Value in an Area",
+      options: [
+        { title: "A", value: "SpectrumChartModel.lineExpressionMaxA" },
+        { title: "B", value: "max(B)" },
+        { title: "Sum of A + B", value: "sum(max(A),max(B))" },
+        { title: "Difference A - B", value: "diff(max(A),max(B))" },
+        { title: "Difference B - A", value: "diff(max(B),max(A))" },
+        { title: "Min of A and B", value: "minOf(max(A),max(B))" },
+        { title: "Max of A and B", value: "maxOf(max(A),max(B))" },
+        { title: "A without Diffraction", value: "removeDiffraction(max(A),max(B))" },
+        { title: "B without Diffraction", value: "removeDiffraction(max(B),max(A))" },
+      ],
+    },
+  ];
+
   private _drawTransform: PanZoom = new PanZoom(new MinMax(1, undefined), new MinMax(1, undefined), new PanRestrictorToCanvas());
 
   // Display settings
@@ -179,8 +211,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   constructor(
     public envService: EnvConfigurationService //,
-  ) // public dialog: MatDialog,
-  // public clipboard: Clipboard
+    // public dialog: MatDialog,
+  ) // public clipboard: Clipboard
   {}
 
   setDataset(): void {

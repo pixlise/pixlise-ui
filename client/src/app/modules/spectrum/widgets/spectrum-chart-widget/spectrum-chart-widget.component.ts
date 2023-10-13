@@ -11,7 +11,7 @@ import { SpectrumChartModel } from "./spectrum-model";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { SpectrumChartToolHost } from "./tools/tool-host";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
-import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
+import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -192,27 +192,41 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   onSelectSpectra() {
-    const dialogConfig = new MatDialogConfig();
+    const dialogConfig = new MatDialogConfig<ROIPickerData>();
     // Pass data to dialog
     dialogConfig.data = {
       requestFullROIs: false,
+      draggable: true,
+      liveUpdate: true,
+      selectableSubItemOptions: SpectrumChartModel.allLineChoiceOptions,
+      subItemButtonName: "Select Spectra",
+      // selectedItems: new Map(selectedIds.map(id => [id, []])), // TODO: Need to hook this up somewhere
     };
 
-    const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe((result: ROIPickerResponse) => {
-      if (result) {
-        // Create entries for each scan
-        const roisPerScan = new Map<string, string[]>();
-        for (const roi of result.selectedROISummaries) {
-          let existing = roisPerScan.get(roi.scanId);
-          if (existing === undefined) {
-            existing = [];
-          }
+    dialogConfig.hasBackdrop = false;
+    dialogConfig.disableClose = true;
 
-          existing.push(roi.id);
-          roisPerScan.set(roi.scanId, existing);
-        }
-      }
+    const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
+    // dialogRef.afterClosed().subscribe((result: ROIPickerResponse) => {
+    //   if (result) {
+    //     // Create entries for each scan
+    //     const roisPerScan = new Map<string, string[]>();
+    //     for (const roi of result.selectedROISummaries) {
+    //       let existing = roisPerScan.get(roi.scanId);
+    //       if (existing === undefined) {
+    //         existing = [];
+    //       }
+
+    //       existing.push(roi.id);
+    //       roisPerScan.set(roi.scanId, existing);
+    //     }
+    //   }
+    // });
+
+    dialogRef.componentInstance.onChange.subscribe((result: ROIPickerResponse) => {
+      // TODO: Use new result.selectedItems. This is a map of roiId to selected spectrum line options (from SpectrumChartModel.allLineChoiceOptions)
+      // It uses the expression as the unique id.
+      console.log("LIVE UPDATE FROM SPECTRUM ROI PICKER", result);
     });
   }
 }

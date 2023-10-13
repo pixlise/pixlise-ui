@@ -32,7 +32,15 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="roi-picker-container">
   <header>
     <div class="controls">
-      <h1 class="title">Regions of Interest</h1>
+      <h1
+        mat-dialog-title
+        cdkDrag
+        cdkDragRootElement=".cdk-overlay-pane"
+        cdkDragHandle
+        [cdkDragDisabled]="!data.draggable"
+        class="title {{ data.draggable ? 'drag' : '' }}">
+        Regions of Interest
+      </h1>
       <two-state-icon-push-button
         class="search-btn"
         activeIcon="assets/button-icons/filter-yellow.svg"
@@ -55,7 +63,7 @@ POSSIBILITY OF SUCH DAMAGE.
         *cdkVirtualFor="let item of filteredSummaries; trackBy: trackBySummaryId"
         [showDetailsButton]="false"
         [selected]="!!selectedROIs[item.id]"
-        (onROISelect)="onROISelect(item)"
+        (onROISelect)="onROISelect(item, $event)"
         [selectAuthorToFilter]="showSearchControls"
         (onFilterAuthor)="onFilterAuthor($event)"
         [isSelectable]="true"
@@ -64,14 +72,22 @@ POSSIBILITY OF SUCH DAMAGE.
         [rightSelection]="true"
         [showVisibilityButton]="false"
         [summary]="item"
-        [displaySettings]="displaySettingsMap[item.id]">
+        [selectedOptions]="selectedItems.get(item.id) || []"
+        [displaySettings]="displaySettingsMap[item.id]"
+        [selectionOptions]="data.selectableSubItemOptions || []"
+        [selectionLabel]="data.subItemButtonName || ''">
       </roi-item>
     </cdk-virtual-scroll-viewport>
   </section>
   <div class="button-container">
-    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <span *ngIf="data.liveUpdate" class="live-indicator">
+      <span class="status-indicator"></span>
+      <span class="label">Live Update</span>
+    </span>
+    <push-button buttonStyle="outline" (onClick)="onCancel()">{{ data.liveUpdate ? "Close" : "Cancel" }}</push-button>
     <push-button buttonStyle="outline" (onClick)="onClear()">Clear</push-button>
     <push-button
+      *ngIf="!data.liveUpdate"
       buttonStyle="yellow"
       #tooltip="matTooltip"
       matTooltip="Waiting for ({{ waitingForROIs.length }}) ROIs to finish downloading..."

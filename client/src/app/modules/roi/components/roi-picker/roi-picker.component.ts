@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Inject, OnInit } from "@angular/core";
+import { Component, EventEmitter, Inject, OnInit, Output } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { ROIService, ROISummaries } from "../../services/roi.service";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
@@ -35,17 +35,27 @@ import { ROISearchFilter } from "../../models/roi-search";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { Subscription } from "rxjs";
 import { ROIDisplaySettings } from "../../models/roi-region";
+import { SubItemOptionSection } from "../roi-item/roi-item.component";
 
 export type ROIPickerResponse = {
   selectedROISummaries: ROIItemSummary[];
   selectedROIs: ROIItem[];
+  selectedItems?: Map<string, string[]>;
 };
 
 export type ROIPickerData = {
   requestFullROIs: boolean;
+  draggable?: boolean;
+  liveUpdate?: boolean;
   selectedIds?: string[];
   selectedROIs?: ROIItem[];
   selectedROISummaries?: ROIItemSummary[];
+
+  // If these are specified, they will replace the checkbox selection
+  selectableSubItemOptions?: SubItemOptionSection[];
+  subItemButtonName?: string;
+
+  selectedItems?: Map<string, string[]>;
 };
 
 @Component({
@@ -58,6 +68,7 @@ export class ROIPickerComponent implements OnInit {
 
   showSearchControls: boolean = true;
 
+  selectedItems: Map<string, string[]> = new Map();
   selectedROIs: ROISummaries = {};
 
   manualFilters: Partial<ROISearchFilter> | null = null;
@@ -68,6 +79,8 @@ export class ROIPickerComponent implements OnInit {
   waitingForROIs: string[] = [];
 
   fetchedAllSelectedROIs: boolean = true;
+
+  @Output() onChange: EventEmitter<ROIPickerResponse> = new EventEmitter();
 
   constructor(
     private _roiService: ROIService,
@@ -94,6 +107,17 @@ export class ROIPickerComponent implements OnInit {
       if (this.fetchedAllSelectedROIs) {
         this.selectedROIs = Object.fromEntries(data.selectedIds.map(id => [id, ROIService.formSummaryFromROI(this._roiService.roiItems$.value[id])]));
       }
+    }
+
+    if (data?.selectedItems) {
+      data.selectedItems.forEach((subItems, roiId) => {
+        if (!this._roiService.roiItems$.value[roiId]) {
+          this.fetchedAllSelectedROIs = false;
+          this._roiService.fetchROI(roiId, true);
+        }
+
+        this.selectedItems.set(roiId, subItems);
+      });
     }
   }
 
@@ -146,15 +170,26 @@ export class ROIPickerComponent implements OnInit {
     return summary.id;
   }
 
-  onROISelect(roi: ROIItemSummary): void {
-    if (this.selectedROIs[roi.id]) {
+  onROISelect(roi: ROIItemSummary, customSelection: { selectedOptions: string[] }): void {
+    let hasSubItemsSelected = customSelection?.selectedOptions && customSelection.selectedOptions.length > 0;
+
+    if (!hasSubItemsSelected && this.selectedROIs[roi.id]) {
       delete this.selectedROIs[roi.id];
+      this.selectedItems.delete(roi.id);
     } else {
       this.selectedROIs[roi.id] = roi;
       this._roiService.fetchROI(roi.id, true);
       if (!this._roiService.roiItems$.value[roi.id]) {
         this.waitingForROIs.push(roi.id);
       }
+
+      if (hasSubItemsSelected) {
+        this.selectedItems.set(roi.id, customSelection.selectedOptions);
+      }
+    }
+
+    if (this.data.liveUpdate) {
+      this.onConfirm();
     }
   }
 
@@ -198,13 +233,25 @@ export class ROIPickerComponent implements OnInit {
       return roi;
     });
 
-    this.dialogRef.close({
+    let pickerResponse = {
       selectedROISummaries,
       selectedROIs,
-    });
+      selectedItems: this.selectedItems,
+    };
+
+    if (this.data.liveUpdate) {
+      this.onChange.emit(pickerResponse);
+    } else {
+      this.dialogRef.close(pickerResponse);
+    }
   }
 
   onClear(): void {
     this.selectedROIs = {};
+    this.selectedItems.clear();
+
+    if (this.data.liveUpdate) {
+      this.onConfirm();
+    }
   }
 }

@@ -64,6 +64,17 @@
         -moz-user-select: none;
         user-select: none;
         white-space: nowrap;
+
+        padding: 0;
+
+        &.drag {
+          cursor: move;
+          flex: 1;
+        }
+
+        &::before {
+          height: 0;
+        }
       }
     }
 
@@ -101,6 +112,39 @@
 
     &:first-of-type {
       margin-left: 0;
+    }
+  }
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  margin-right: auto;
+  .label {
+    color: #969696;
+    font-size: 12px;
+    margin-left: 4px;
+  }
+
+  .status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background-color: gray;
+    border-radius: 50%; /* Makes it a circle */
+    animation: pulse 2s infinite; /* Apply the animation */
+  }
+
+  /* Animation definition */
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.25);
+    }
+    100% {
+      transform: scale(1);
     }
   }
 }

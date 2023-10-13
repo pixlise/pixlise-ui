@@ -7,10 +7,11 @@ import { TagsModule } from "../tags/tags.module";
 import { ROISearchControlsComponent } from "./components/roi-search-controls/roi-search-controls.component";
 import { ROIPickerComponent } from "./components/roi-picker/roi-picker.component";
 import { ROIShapeComponent } from "./components/roi-shape/roi-shape.component";
+import { DragDropModule } from "@angular/cdk/drag-drop";
 
 @NgModule({
   declarations: [ROIItemComponent, ROISearchControlsComponent, ROIPickerComponent, ROIShapeComponent],
-  imports: [CommonModule, PIXLISECoreModule, TagsModule, ScrollingModule],
+  imports: [CommonModule, PIXLISECoreModule, TagsModule, ScrollingModule, DragDropModule],
   exports: [ROIItemComponent, ROISearchControlsComponent, ROIPickerComponent, ROIShapeComponent],
   providers: [],
 })
