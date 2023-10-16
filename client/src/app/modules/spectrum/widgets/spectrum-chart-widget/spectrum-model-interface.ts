@@ -34,19 +34,17 @@ import { ChartAxis } from "src/app/modules/analysis/components/widget/interactiv
 import { CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
-import { ViewStateService } from "src/app/modules/viewstate/services/viewstate.service";
 import { XRFLine } from "src/app/periodic-table/XRFLine";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { SpectrumXRFLinesNearMouse } from "./xrf-near-mouse";
-import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { SpectrumChartToolHost } from "./tools/tool-host";
 import { EnergyCalibrationManager } from "./energy-calibration-manager";
 
 // Spectrum lines are drawn using this structure. This is recalculated from source information as needed
 export class SpectrumChartLine {
   constructor(
-    public roiID: string,
+    public scanId: string,
+    public roiId: string,
     public roiName: string,
     public expression: string,
     public expressionLabel: string,

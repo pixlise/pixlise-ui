@@ -10,8 +10,15 @@ import { CanvasDrawer } from "src/app/modules/analysis/components/widget/interac
 import { SpectrumChartModel } from "./spectrum-model";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { SpectrumChartToolHost } from "./tools/tool-host";
-import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
+import { SpectrumExpressionDataSource, SpectrumExpressionParser, SpectrumValues } from "../../models/Spectrum";
+import { SpectrumReq, SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
+import { Spectrum, SpectrumType } from "src/app/generated-protos/spectrum";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { RegionSettings } from "src/app/modules/roi/models/roi-region";
+import { ScanMetaDataType } from "src/app/generated-protos/scan";
+import { Point, Rect } from "src/app/models/Geometry";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -22,9 +29,6 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   activeTool: string = "pan";
 
   resizeSpectraY = false;
-  yAxislogScale = false;
-  countsPerMin = false;
-  countsPerPMC = true;
 
   mdl: SpectrumChartModel;
   drawer: CanvasDrawer;
@@ -34,6 +38,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   constructor(
     private _spectrumService: SpectrumService,
     private _snackService: SnackbarService,
+    private _cachedDataService: APICachedDataService,
+    private _roiService: ROIService,
     private _envService: EnvConfigurationService,
     public dialog: MatDialog,
     public clipboard: Clipboard
@@ -62,14 +68,14 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           value: false,
           onClick: () => this.onToolSelected("zoom"),
         },
-        {
-          id: "spectrum-range",
-          type: "selectable-button",
-          icon: "assets/button-icons/tool-spectrum-range.svg",
-          tooltip: "Range Selection Tool\nAllows selection of a range of the spectrum for analysis as maps on context image",
-          value: false,
-          onClick: () => this.onToolSelected("spectrum-range"),
-        },
+        // {
+        //   id: "spectrum-range",
+        //   type: "selectable-button",
+        //   icon: "assets/button-icons/tool-spectrum-range.svg",
+        //   tooltip: "Range Selection Tool\nAllows selection of a range of the spectrum for analysis as maps on context image",
+        //   value: false,
+        //   onClick: () => this.onToolSelected("spectrum-range"),
+        // },
         {
           id: "zoom-in",
           type: "button",
@@ -159,29 +165,59 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     return this.toolhost;
   }
 
-  onToggleResizeSpectraY() {}
+  get countsPerMin(): boolean {
+    return this.mdl.yAxisCountsPerMin;
+  }
+
+  get countsPerPMC(): boolean {
+    return this.mdl.yAxisCountsPerPMC;
+  }
+
+  get yAxislogScale(): boolean {
+    return this.mdl.yAxislogScale;
+  }
+
+  onToggleResizeSpectraY() {
+    this.mdl.chartYResize = !this.mdl.chartYResize;
+    this.updateLines();
+  }
 
   onToggleYAxislogScale() {
-    this.yAxislogScale = !this.yAxislogScale;
+    this.mdl.yAxislogScale = !this.mdl.yAxislogScale;
+    this.updateLines();
   }
 
   onToggleCountsPerMin() {
-    this.countsPerMin = !this.countsPerMin;
+    this.mdl.yAxisCountsPerMin = !this.mdl.yAxisCountsPerMin;
+    this.updateLines();
   }
 
   onToggleCountsPerPMC() {
-    this.countsPerPMC = !this.countsPerPMC;
+    this.mdl.yAxisCountsPerPMC = !this.mdl.yAxisCountsPerPMC;
+    this.updateLines();
   }
 
   onShowXRayTubeLines() {}
 
-  onResetZoom() {}
+  onResetZoom() {
+    const canvasParams = this.mdl.transform.canvasParams;
+    if (canvasParams) {
+      this.mdl.transform.resetViewToRect(new Rect(0, 0, canvasParams.width, canvasParams.height), false);
+      this.reDraw();
+    }
+  }
 
   onZoomIn() {
+    const newScale = new Point(this.mdl.transform.scale.x * (1 + 4 / 100), this.mdl.transform.scale.y * (1 + 4 / 100));
+    this.mdl.transform.setScaleRelativeTo(newScale, this.mdl.transform.calcViewportCentreInWorldspace(), true);
     this.reDraw();
   }
 
-  onZoomOut() {}
+  onZoomOut() {
+    const newScale = new Point(this.mdl.transform.scale.x * (1 - 4 / 100), this.mdl.transform.scale.y * (1 - 4 / 100));
+    this.mdl.transform.setScaleRelativeTo(newScale, this.mdl.transform.calcViewportCentreInWorldspace(), true);
+    this.reDraw();
+  }
 
   onToolSelected(tool: string) {
     this.activeTool = tool;
@@ -200,33 +236,133 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       liveUpdate: true,
       selectableSubItemOptions: SpectrumChartModel.allLineChoiceOptions,
       subItemButtonName: "Select Spectra",
-      // selectedItems: new Map(selectedIds.map(id => [id, []])), // TODO: Need to hook this up somewhere
+      selectedItems: this.mdl.getLineList(),
     };
 
     dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
 
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
-    // dialogRef.afterClosed().subscribe((result: ROIPickerResponse) => {
-    //   if (result) {
-    //     // Create entries for each scan
-    //     const roisPerScan = new Map<string, string[]>();
-    //     for (const roi of result.selectedROISummaries) {
-    //       let existing = roisPerScan.get(roi.scanId);
-    //       if (existing === undefined) {
-    //         existing = [];
-    //       }
-
-    //       existing.push(roi.id);
-    //       roisPerScan.set(roi.scanId, existing);
-    //     }
-    //   }
-    // });
-
     dialogRef.componentInstance.onChange.subscribe((result: ROIPickerResponse) => {
-      // TODO: Use new result.selectedItems. This is a map of roiId to selected spectrum line options (from SpectrumChartModel.allLineChoiceOptions)
-      // It uses the expression as the unique id.
-      console.log("LIVE UPDATE FROM SPECTRUM ROI PICKER", result);
+      if (!result.selectedItems) {
+        return;
+      }
+
+      // Get the region/display settings and spectra, then add
+      // a line for each to the chart
+
+      this.mdl.setLineList(result.selectedItems);
+      this.updateLines();
     });
+  }
+
+  private updateLines() {
+    // TODO: should we hard code this? Probably not... how does user ask for something else?
+    const readType = SpectrumType.SPECTRUM_NORMAL;
+
+    for (const [roiId, options] of this.mdl.getLineList()) {
+      this._roiService.getRegionSettings(roiId).subscribe((roi: RegionSettings) => {
+        // Now we know the scan Id for this one, request spectra
+        this._cachedDataService
+          .getSpectrum(
+            SpectrumReq.create({
+              scanId: roi.region.scanId,
+              bulkSum: true,
+              maxValue: true,
+              //entries: ScanEntryRange.create({ indexes: encodedIndexes })
+            })
+          )
+          .subscribe((spectrumResp: SpectrumResp) => {
+            // Read what each roi/option entry requires and form a spectrum source that we can use with the spectrum expression parser
+            let values = new Map<string, SpectrumValues>();
+
+            const dataSrc = new SpectrumExpressionDataSourceImpl(spectrumResp);
+            const parser = new SpectrumExpressionParser();
+
+            for (const lineExpr of options) {
+              // Find the title
+              const title = SpectrumChartModel.getTitleForLineExpression(lineExpr);
+
+              // Normal line data retrieval
+              values = parser.getSpectrumValues(
+                dataSrc,
+                // TODO: Convert from PMC to location indexes???
+                roi.region.scanEntryIndexesEncoded,
+                lineExpr,
+                title,
+                readType,
+                this.mdl.yAxisCountsPerMin,
+                this.mdl.yAxisCountsPerPMC
+              );
+
+              this.mdl.addLineDataForLine(roiId, lineExpr, roi.region.scanId, roi.region.name, roi.displaySettings.colour, values);
+              this.mdl.updateRangesAndKey();
+              this.mdl.clearDisplayData(); // This should trigger a redraw
+            }
+          });
+      });
+    }
+  }
+}
+
+class SpectrumExpressionDataSourceImpl implements SpectrumExpressionDataSource {
+  constructor(private _spectraResp: SpectrumResp) {}
+
+  getSpectrum(locationIndex: number, detectorId: string, readType: SpectrumType): SpectrumValues {
+    if (locationIndex < 0) {
+      // Must be bulk or max
+      if (readType != SpectrumType.SPECTRUM_BULK && readType != SpectrumType.SPECTRUM_MAX) {
+        throw new Error("getSpectrum readType must be BulkSum or MaxValue if no locationIndex specified");
+      }
+
+      const readList: Spectrum[] = readType == SpectrumType.SPECTRUM_BULK ? this._spectraResp.bulkSpectra : this._spectraResp.maxSpectra;
+      for (const spectrum of readList) {
+        if (spectrum.detector == detectorId) {
+          return this.convertSpectrum(spectrum);
+        }
+      }
+    } else {
+      // Must be bulk or max
+      if (readType != SpectrumType.SPECTRUM_NORMAL && readType != SpectrumType.SPECTRUM_DWELL) {
+        throw new Error("getSpectrum readType must be Normal or Dwell if locationIndex is specified");
+      }
+
+      for (const spectrum of this._spectraResp.spectraPerLocation[locationIndex].spectra) {
+        if (spectrum.detector == detectorId && spectrum.type == readType) {
+          return this.convertSpectrum(spectrum);
+        }
+      }
+    }
+
+    throw new Error(`No ${readType} spectrum found for detector: ${detectorId} and location ${locationIndex}`);
+  }
+
+  private convertSpectrum(s: Spectrum): SpectrumValues {
+    const vals = new Float32Array(s.counts);
+
+    // Get the live time
+    let liveTime = 0;
+    let found = false;
+
+    const liveTimeValue = s.meta[this._spectraResp.liveTimeMetaIndex];
+    if (liveTimeValue !== undefined) {
+      if (liveTimeValue.fvalue !== undefined) {
+        liveTime = liveTimeValue.fvalue;
+        found = true;
+      } else if (liveTimeValue.ivalue !== undefined) {
+        liveTime = liveTimeValue.ivalue;
+        found = true;
+      }
+    }
+
+    if (!found) {
+      throw new Error("Failed to get live time for spectrum");
+    }
+
+    return new SpectrumValues(vals, s.maxCount, s.detector, liveTime);
+  }
+
+  get locationsWithNormalSpectra(): number {
+    return this._spectraResp.normalSpectraForScan;
   }
 }

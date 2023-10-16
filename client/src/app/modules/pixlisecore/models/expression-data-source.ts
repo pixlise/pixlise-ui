@@ -104,12 +104,10 @@ export class ExpressionDataSource
             throw new Error("regionOfInterest indexes not returned for " + roiId);
           }
 
-          const roiIdxs = decodeIndexList(resp.regionOfInterest?.scanEntryIndexesEncoded);
-
           return this.getScanEntries(cachedDataService, scanId).pipe(
             map((scanEntryResp: ScanEntryResp) => {
               // We just got the above as a side-effect, we are actually returning the index list from ROI
-              return roiIdxs;
+              return resp.regionOfInterest.scanEntryIndexesEncoded;
             })
           );
         })

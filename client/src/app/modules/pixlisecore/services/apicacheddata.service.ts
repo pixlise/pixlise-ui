@@ -14,7 +14,7 @@ import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generat
 import { ExpressionGetReq, ExpressionGetResp } from "src/app/generated-protos/expression-msgs";
 import { DataModuleGetReq, DataModuleGetResp } from "src/app/generated-protos/module-msgs";
 
-import { decompressZeroRunLengthEncoding } from "src/app/utils/utils";
+import { decodeIndexList, decompressZeroRunLengthEncoding } from "src/app/utils/utils";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
@@ -193,7 +193,13 @@ export class APICachedDataService {
     let result = this._regionOfInterestGetReqMap.get(cacheId);
     if (result === undefined) {
       // Have to request it!
-      result = this._dataService.sendRegionOfInterestGetRequest(req).pipe(shareReplay());
+      result = this._dataService.sendRegionOfInterestGetRequest(req).pipe(
+        map((resp: RegionOfInterestGetResp) => {
+          resp.regionOfInterest.scanEntryIndexesEncoded = decodeIndexList(resp.regionOfInterest.scanEntryIndexesEncoded);
+          return resp;
+        }),
+        shareReplay()
+      );
 
       // Add it to the map too so a subsequent request will get this
       this._regionOfInterestGetReqMap.set(cacheId, result);

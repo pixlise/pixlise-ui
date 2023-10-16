@@ -27,6 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+import { SpectrumType } from "src/app/generated-protos/spectrum";
+
 export class SpectrumValues {
   constructor(
     public values: Float32Array,
@@ -238,9 +240,12 @@ export class SpectrumValues {
 }
 
 export interface SpectrumExpressionDataSource {
-  getSpectrum(locationIndex: number, detectorId: string, readType: string): SpectrumValues;
+  // If locationIndex is negative, assume it's an aggregation, so look at readType to determine
+  // if it's bulk or max. Anything else should fail in this case.
+  // If locationIndex is >= 0 then we assume it's just requesting a specific spectrum, in which case
+  // readType should be normal or dwell, anything else should fail
+  getSpectrum(locationIndex: number, detectorId: string, readType: SpectrumType): SpectrumValues;
   locationsWithNormalSpectra: number;
-  idxForBulkMaxValueLocation: number;
 }
 
 export class SpectrumExpressionParser {
@@ -249,7 +254,7 @@ export class SpectrumExpressionParser {
     locationIndexes: number[],
     lineExpression: string,
     lineLabel: string,
-    readType: string,
+    readType: SpectrumType,
     countsPerMin: boolean,
     countsPerPMC: boolean
   ): Map<string, SpectrumValues> {
@@ -383,7 +388,7 @@ export class SpectrumExpressionParser {
     locationIndexes: number[],
     lineExpression: string,
     exprTerm: string,
-    readType: string
+    readType: SpectrumType
   ): SpectrumValues | null {
     return this.getTermSpectra(spectrumSource, locationIndexes, lineExpression, exprTerm, readType, false);
   }
@@ -393,7 +398,7 @@ export class SpectrumExpressionParser {
     locationIndexes: number[],
     lineExpression: string,
     exprTerm: string,
-    readType: string
+    readType: SpectrumType
   ): SpectrumValues | null {
     return this.getTermSpectra(spectrumSource, locationIndexes, lineExpression, exprTerm, readType, true);
   }
@@ -406,7 +411,7 @@ export class SpectrumExpressionParser {
     locationIndexes: number[],
     lineExpression: string,
     exprTerm: string,
-    readType: string,
+    readType: SpectrumType,
     countsPerMinWhenReading: boolean
   ): SpectrumValues | null {
     let detector = "";
@@ -427,20 +432,16 @@ export class SpectrumExpressionParser {
     const spectra: SpectrumValues[] = [];
 
     if (locationIndexes.length <= 0) {
-      if (spectrumSource.idxForBulkMaxValueLocation == null) {
-        throw new Error("getExpressionTerms: failed to get bulk/max location idx from dataset, expression: " + lineExpression);
-      }
-
-      let datasetSpectrumReadType = "";
+      let datasetSpectrumReadType = SpectrumType.SPECTRUM_UNKNOWN;
       if (exprTerm.startsWith("bulk(")) {
-        datasetSpectrumReadType = "BulkSum";
+        datasetSpectrumReadType = SpectrumType.SPECTRUM_BULK;
       } else if (exprTerm.startsWith("max(")) {
-        datasetSpectrumReadType = "MaxValue";
+        datasetSpectrumReadType = SpectrumType.SPECTRUM_MAX;
       } else {
         throw new Error('getExpressionTerms: unknown function in term: "' + exprTerm + '" in expression: ' + lineExpression);
       }
 
-      let spectrum = spectrumSource.getSpectrum(spectrumSource.idxForBulkMaxValueLocation, detector, datasetSpectrumReadType);
+      let spectrum = spectrumSource.getSpectrum(-1, detector, datasetSpectrumReadType);
       if (spectrum) {
         if (countsPerMinWhenReading) {
           spectrum = spectrum.getAsCountsPerMin();

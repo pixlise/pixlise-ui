@@ -202,18 +202,25 @@ export class ROIService {
     });
   }
 
-  getRegionSettings(scanId: string, roiId: string): Observable<RegionSettings> {
-    // If we have not encountered this scan before, create the default ROIs for it
-    let scanShape = this._scanShapeMap.get(scanId);
-    if (!scanShape) {
-      scanShape = this.nextScanShape(scanId);
-      this._scanShapeMap.set(scanId, scanShape);
-      this.createDefaultScanRegions(scanId, scanShape);
-    }
-
+  getRegionSettings(roiId: string): Observable<RegionSettings> {
     // Now we check if we can service locally from our  map
     let result = this._regionMap.get(roiId);
     if (result === undefined) {
+      // Check if this is a predefined ROI for a scan Id, in which case we can add the default ROIs
+      // here
+      const predefScanId = PredefinedROIID.getScanIdIfPredefined(roiId);
+      if (predefScanId) {
+        // Add the defaults here
+        this.createDefaultScanRegionsIfNeeded(predefScanId);
+
+        // Read it again from the map
+        result = this._regionMap.get(roiId);
+
+        if (result !== undefined) {
+          return result;
+        }
+      }
+
       // Nothing stored, so get the ROI because we're combining that with the colour/shape we generate
       result = this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiId })).pipe(
         map((roiResp: RegionOfInterestGetResp) => {
@@ -221,6 +228,10 @@ export class ROIService {
             this._snackBarService.openError(`Region Of Interest data not returned from cachedDataService for ${roiId}`);
             throw new Error("regionOfInterest data not returned for " + roiId);
           }
+
+          // We just got the ROI, maybe it's for a new scan ID, so check if we need to create the default ROIs for it
+          const scanId = roiResp.regionOfInterest.scanId;
+          this.createDefaultScanRegionsIfNeeded(scanId);
 
           const roi = new RegionSettings(roiResp.regionOfInterest);
 
@@ -274,10 +285,16 @@ export class ROIService {
     }
   }
 
-  private createDefaultScanRegions(scanId: string, scanShape: ROIShape) {
+  private createDefaultScanRegionsIfNeeded(scanId: string) {
     // Add defaults for predefined ROIs
-    this._regionMap.set(PredefinedROIID.getAllPointsForScan(scanId), of(createDefaultAllPointsRegionSettings(scanId, scanShape)));
-    this._regionMap.set(PredefinedROIID.getSelectedPointsForScan(scanId), of(createDefaultSelectedPointsRegionSettings(scanId, scanShape)));
+    const allPointsROI = PredefinedROIID.getAllPointsForScan(scanId);
+    if (this._regionMap.get(allPointsROI) === undefined) {
+      // Must be new, add them
+      const scanDisp = this.nextDisplaySettings(scanId);
+      this._regionMap.set(PredefinedROIID.getAllPointsForScan(scanId), of(createDefaultAllPointsRegionSettings(scanId, scanDisp.shape)));
+      this._regionMap.set(PredefinedROIID.getSelectedPointsForScan(scanId), of(createDefaultSelectedPointsRegionSettings(scanId, scanDisp.shape)));
+    }
+
     //this._regionMap.set(`${getBuiltinIDFromScanID(scanId, PredefinedROIID.RemainingPoints)}`, of(createDefaultRemainingPointsRegionSettings(scanId, scanShape)));
   }
 
@@ -302,26 +319,6 @@ export class ROIService {
     }
 
     return { colour, shape };
-  }
-
-  private nextScanShape(scanId: string): ROIShape {
-    let shapeIdx = this._nextScanShapeIndices[scanId] || 0;
-
-    const shape = this._shapes[shapeIdx];
-    shapeIdx = (shapeIdx + 1) % this._shapes.length;
-    this._nextScanShapeIndices[scanId] = shapeIdx;
-
-    return shape;
-  }
-
-  private nextScanColour(scanId: string = ""): ColourOption {
-    let colourIdx = this._nextColourIndices[scanId] || 0;
-
-    const colour = this._colours[colourIdx];
-    colourIdx = (colourIdx + 1) % this._colours.length;
-    this._nextColourIndices[scanId] = colourIdx;
-
-    return colour;
   }
 
   fetchROI(id: string, checkCacheFirst: boolean = false) {

@@ -58,6 +58,15 @@ export class PredefinedROIID {
     return id.startsWith(PredefinedROIID.AllPoints + PredefinedROIID.JoinChar) || id.startsWith(PredefinedROIID.SelectedPoints + PredefinedROIID.JoinChar); // || id.startsWith(PredefinedROIID.RemainingPoints);
   }
 
+  public static getScanIdIfPredefined(id: string): string {
+    if (PredefinedROIID.isAllPointsROI(id)) {
+      return id.substring(PredefinedROIID.AllPoints.length + 1);
+    } else if (PredefinedROIID.isSelectedPointsROI(id)) {
+      return id.substring(PredefinedROIID.SelectedPoints.length + 1);
+    }
+    return "";
+  }
+
   //public static readonly defaultROIs: string[] = [PredefinedROIID.AllPoints, PredefinedROIID.SelectedPoints];
 }
 /*

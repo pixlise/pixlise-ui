@@ -177,7 +177,7 @@ export class WidgetDataService {
       concatMap((expr: DataExpression) => {
         return this.runExpression(expr, query.scanId, query.quantId, query.roiId, allowAnyResponse).pipe(
           mergeMap((result: DataQueryResult) => {
-            return this._roiService.getRegionSettings(query.scanId, query.roiId).pipe(
+            return this._roiService.getRegionSettings(query.roiId).pipe(
               map((roiSettings: RegionSettings) => {
                 result.region = roiSettings;
                 return result;

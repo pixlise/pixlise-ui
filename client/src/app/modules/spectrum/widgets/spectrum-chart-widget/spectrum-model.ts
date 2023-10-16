@@ -118,8 +118,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     {
       title: "Summed Across an Area",
       options: [
-        { title: "A", value: "SpectrumChartModel.lineExpressionBulkA" },
-        { title: "B", value: "SpectrumChartModel.lineExpressionBulkB" },
+        { title: "A", value: SpectrumChartModel.lineExpressionBulkA },
+        { title: "B", value: SpectrumChartModel.lineExpressionBulkB },
         { title: "Sum of A + B", value: "sum(bulk(A),bulk(B))" },
         { title: "Difference A - B", value: "diff(bulk(A),bulk(B))" },
         { title: "Difference B - A", value: "diff(bulk(B),bulk(A))" },
@@ -132,7 +132,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     {
       title: "Max Value in an Area",
       options: [
-        { title: "A", value: "SpectrumChartModel.lineExpressionMaxA" },
+        { title: "A", value: SpectrumChartModel.lineExpressionMaxA },
         { title: "B", value: "max(B)" },
         { title: "Sum of A + B", value: "sum(max(A),max(B))" },
         { title: "Difference A - B", value: "diff(max(A),max(B))" },
@@ -145,11 +145,25 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     },
   ];
 
+  static getTitleForLineExpression(expr: string): string {
+    for (const optSec of SpectrumChartModel.allLineChoiceOptions) {
+      for (const opt of optSec.options) {
+        if (opt.value == expr) {
+          return opt.title;
+        }
+      }
+    }
+    return expr;
+  }
+
   private _drawTransform: PanZoom = new PanZoom(new MinMax(1, undefined), new MinMax(1, undefined), new PanRestrictorToCanvas());
 
   // Display settings
   private _logScale: boolean = true;
-  private _showXAsEnergy: boolean = true;
+  private _showXAsEnergy: boolean = false;
+  private _yAxisCountsPerMin: boolean = true;
+  private _yAxisCountsPerPMC: boolean = false;
+  private _linesShown: Map<string, string[]> = new Map<string, string[]>();
   private _shownElementPeakLabels: XRFLine[] = [];
 
   private _energyCalibrationManager: EnergyCalibrationManager = new EnergyCalibrationManager();
@@ -194,9 +208,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   private _chartYMaxValue: number | null = null;
   private _chartYResize: boolean = true;
-  private _yAxisCountsPerMin: boolean = true;
-  private _yAxisCountsPerPMC: boolean = false;
-
   private _xrfeVLowerBound: number = 0;
   private _xrfeVUpperBound: number = 0;
 
@@ -363,9 +374,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   }
 
   setSpectrumLineDarken(lineExprs: string[]): void {
-    // Make sure we start with the "current" list
-    this.recalcSpectrumLines();
-
     this._spectrumLineDarkenIdxs = [];
     for (let c = 0; c < this._spectrumLines.length; c++) {
       const line = this._spectrumLines[c];
@@ -414,9 +422,9 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   set xAxisEnergyScale(val: boolean) {
     this._showXAsEnergy = val;
-    this.recalcSpectrumLines();
+    /*this.recalcSpectrumLines();
     this.clearDisplayData();
-    this.saveState("xAxisEnergyScale");
+    this.saveState("xAxisEnergyScale");*/
   }
 
   get xAxisLabel(): string {
@@ -442,6 +450,10 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     return this._logScale;
   }
 
+  set yAxislogScale(val: boolean) {
+    this._logScale = val;
+  }
+
   get xAxis(): ChartAxis | null {
     return this._xAxis;
   }
@@ -465,8 +477,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   set yAxisCountsPerMin(val: boolean) {
     this._yAxisCountsPerMin = val;
-    this.recalcSpectrumLines();
-    this.clearDisplayData();
+    // this.recalcSpectrumLines();
+    // this.clearDisplayData();
     //this.saveState('set yAxisCountsPerMin');
   }
 
@@ -476,8 +488,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   set yAxisCountsPerPMC(val: boolean) {
     this._yAxisCountsPerPMC = val;
-    this.recalcSpectrumLines();
-    this.clearDisplayData();
+    // this.recalcSpectrumLines();
+    // this.clearDisplayData();
     //this.saveState('set yAxisCountsPerPMC');
   }
 
@@ -577,7 +589,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     // This is mainly used by chart annotation (ui element) to see how we have to draw an annotation
     // so if we are drawing any lines for the given roiID, we say it's active
     for (const line of this._spectrumLines) {
-      if (line.roiID == roiID) {
+      if (line.roiId == roiID) {
         return true;
       }
     }
@@ -646,8 +658,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   // Setting display options
   setYAxisLogScale(logScale: boolean): void {
     this._logScale = logScale;
-    this.clearDisplayData();
-    this.saveState("setYAxisLogScale");
+    // this.clearDisplayData();
+    // this.saveState("setYAxisLogScale");
   }
   /*
   updateSpectrumSources(widgetDataService: WidgetRegionService) {
@@ -776,7 +788,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 */
   setFitLineMode(enabled: boolean): void {
     this._showFitLines = enabled;
-    this.recalcSpectrumLines();
+    //this.recalcSpectrumLines();
   }
 
   setFitLineData(scanId: string, csv: string): void {
@@ -1047,97 +1059,68 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     return -1;
   }
 
-  addSpectrumLine(roiID: string, lineExpression: string): boolean {
-    // Enable the flag
-    const roiIdx = this.getSpectrumSourceIdx(roiID);
-    if (roiIdx == -1) {
-      console.error("Failed to find spectrum source for ROI ID: " + roiID);
-      return false;
-    }
-
-    const lineIdx = this._spectrumSources[roiIdx].getLineChoiceIdx(lineExpression);
-    if (lineIdx == -1) {
-      console.error("Failed to find line: " + lineExpression + " in spectrum source for ROI ID: " + roiID);
-      return false;
-    }
-
-    this._spectrumSources[roiIdx].lineChoices[lineIdx].enabled = true;
-
-    // We don't do this:
-    // this._spectrumSources$.next();
-    // Because this doesn't update the state of the lines, just the list of lines (on SpectrumRegionPickerComponent)
-
-    // Recalculate
-    this.recalcSpectrumLines();
-    this.saveState("addSpectrumLine");
-    return true;
+  getLineList(): Map<string, string[]> {
+    return this._linesShown;
   }
 
-  removeSpectrumLine(roiID: string, lineExpression: string): void {
-    // Enable the flag
-    const roiIdx = this.getSpectrumSourceIdx(roiID);
-    if (roiIdx == -1) {
-      console.error("Failed to find spectrum source for ROI ID: " + roiID);
-      return;
-    }
+  // Allows setting the list of lines. NOTE: this does not result in lines showing up in the chart
+  // because this is just the models list of lines to show. The lines need to be calculated
+  // and added via addLineForSpectrumValues(), then updateRangesAndKey() called
+  setLineList(lines: Map<string, string[]>) {
+    this._linesShown = lines;
 
-    const lineIdx = this._spectrumSources[roiIdx].getLineChoiceIdx(lineExpression);
-    if (lineIdx == -1) {
-      console.error("Failed to find line: " + lineExpression + " in spectrum source for ROI ID: " + roiID);
-      return;
-    }
-
-    this._spectrumSources[roiIdx].lineChoices[lineIdx].enabled = false;
-
-    // We don't do this:
-    // this._spectrumSources$.next();
-    // Because this doesn't update the state of the lines, just the list of lines (on SpectrumRegionPickerComponent)
-
-    // Recalculate
-    this.recalcSpectrumLines();
-    this.saveState("removeSpectrumLine");
-  }
-
-  recalcSpectrumLines(): void {
-    const t0 = performance.now();
-
-    // Run through all sources, and where something is enabled, calculate a line for it and store it in our list of lines
+    // Also clear the actual line data for display, because it's going to need recalc anyway
     this._spectrumLines = [];
+  }
 
-    const lineSources = this._showFitLines ? this._fitLineSources : this._spectrumSources;
-
-    // Find max channels from all spectra
-    let maxX = 0;
-    for (const source of lineSources) {
-      for (const line of source.lineChoices) {
-        if (line.values && line.values.values.length > maxX) {
-          maxX = line.values?.values.length;
-        }
+/*
+  getLines(): Map<string, Map<string, string[]>> {
+    const result = new Map<string, Map<string, string[]>>();
+    for (const line of this._spectrumLines) {
+      // Ensure we have an entry
+      let scanEntry = result.get(line.scanId);
+      if (scanEntry === undefined) {
+        scanEntry = new Map<string, string[]>();
+        result.set(line.scanId, scanEntry);
       }
+
+      // Add ROIs from this scan id into this entry
+      let lineExpressions = scanEntry.get(line.roiId);
+      if (lineExpressions === undefined) {
+        lineExpressions = [];
+        scanEntry.set(line.roiId, lineExpressions);
+      }
+
+      lineExpressions.push(line.expression);
+    }
+
+    return result;
+  }
+*/
+
+  updateRangesAndKey(): void {
+    this._lineRangeX = new MinMax(0, 0);
+    this._lineRangeY = new MinMax(0, 0);
+
+    // Find max channels and max Y from all spectra
+    for (const line of this._spectrumLines) {
+      if (line.xValues.length > 0) {
+        const thisMaxX = line.xValues[line.xValues.length - 1];
+        this._lineRangeX.expandMax(thisMaxX);
+      }
+
+      this._lineRangeY.expand(line.maxValue);
     }
 
     // Get min/max data values
     if (this._showXAsEnergy) {
-      maxX = Math.max(this._energyCalibrationManager.channelTokeV(maxX, "A"), this._energyCalibrationManager.channelTokeV(maxX, "B"));
-    }
-
-    this._lineRangeX = new MinMax(0, maxX);
-    this._lineRangeY = new MinMax(0, 0);
-
-    for (const source of lineSources) {
-      for (const line of source.lineChoices) {
-        // If there are no location indexes, we allow this if it's AllPoints ROI, but for any others (eg selection)
-        // we don't want to add a line as that would default to looking like the all points ROI
-        if (line.enabled && source.colourRGBA && (PredefinedROIID.isAllPointsROI(source.roiID) || source.locationIndexes.length > 0)) {
-          this.addLine(source, line);
-
-          // Update the max value
-          const idx = this._spectrumLines.length - 1;
-          if (idx >= 0) {
-            this._lineRangeY.expand(this._spectrumLines[idx].maxValue);
-          }
-        }
-      }
+      this._lineRangeX = new MinMax(
+        0,
+        Math.max(
+          this._energyCalibrationManager.channelTokeV(this._lineRangeX.max || 0, "A"),
+          this._energyCalibrationManager.channelTokeV(this._lineRangeX.max || 0, "B")
+        )
+      );
     }
 
     this._keyItems = [];
@@ -1145,63 +1128,43 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     // Run through and regenerate key items from all lines
     let lastROI = "";
     for (const line of this._spectrumLines) {
-      if (lastROI != line.roiID) {
+      if (lastROI != line.roiId) {
         this._keyItems.push(new KeyItem("", line.roiName, line.color));
-        lastROI = line.roiID;
+        lastROI = line.roiId;
       }
       this._keyItems.push(new KeyItem("", line.expressionLabel, line.color, line.dashPattern));
     }
 
-    const t1 = performance.now();
-
     this.needsDraw$.next();
-
-    const t2 = performance.now();
-
-    console.log(
-      "  Spectrum recalcSpectrumLines for " +
-        this._spectrumLines.length +
-        " lines took: " +
-        (t1 - t0).toLocaleString() +
-        "ms, needsDraw$ took: " +
-        (t2 - t1).toLocaleString() +
-        "ms"
-    );
   }
 
-  private addLine(source: SpectrumSource, line: SpectrumLineChoice): void {
-    // TODO: should we hard code this? Probably not... how does user ask for something else?
-    /*const readType = "Normal";
-
-    const parser = new SpectrumExpressionParser();
-    let values = new Map<string, SpectrumValues>();
-
-    try {
-      if (line.values) {
-        // It's a fit line, unfortunately this stuff was added after the originals, so it's a bit of a hack here :(
-        values.set(line.label, line.values);
-      } else {
-        // Normal line data retrieval
-        values = parser.getSpectrumValues(
-          this._datasetService.datasetLoaded,
-          source.locationIndexes,
-          line.lineExpression,
-          line.label,
-          readType,
-          this._yAxisCountsPerMin,
-          this._yAxisCountsPerPMC
-        );
-      }
-    } catch (error) {
-      // Just write to console
-      console.error(error);
-      return;
+  addLineDataForLine(
+    roiId: string,
+    lineExpression: string,
+    scanId: string,
+    roiName: string,
+    colourRGB: RGBA,
+    lineValues: Map<string, SpectrumValues>,
+    lineWidth: number = 1.0, // OPTIONAL! Can make lines wider by changing this
+    opacity: number = 1.0, // OPTIONAL! Can change opacity
+    drawFilled: boolean = false // OPTIONAL! Can draw as filled polygon between line and x axis. NOTE: In this case, the line itself is not drawn
+  ): void {
+    // Find the line
+    const roiLines = this._linesShown.get(roiId);
+    if (!roiLines || roiLines.indexOf(lineExpression) < 0) {
+      throw new Error(`addLineDataForLine called for non-existant line: ${roiId}-${lineExpression}`);
     }
 
-    this.addLineForSpectrumValues(source.roiID, source.roiName, source.colourRGBA, line, values);*/
-  }
+    // It's actually stored in a separate list for drawing, so delete any existing entry
+    for (let c = 0; c < this._spectrumLines.length; c++) {
+      const line = this._spectrumLines[c];
+      if (line.roiId == roiId && line.expression == lineExpression) {
+        this._spectrumLines.splice(c, 1);
+        break;
+      }
+    }
 
-  private addLineForSpectrumValues(roiID: string, roiName: string, colourRGB: RGBA, line: SpectrumLineChoice, lineValues: Map<string, SpectrumValues>): void {
+    // Add as a new line
     const colourStr = colourRGB.asString();
 
     for (const [label, valuesForLine] of lineValues) {
@@ -1209,19 +1172,21 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
       const xValues = this.calcXValues(valuesForLine.values.length, valuesForLine.sourceDetectorID);
       const spectrumLine = new SpectrumChartLine(
-        roiID,
+        scanId,
+        roiId,
         roiName,
-        line.lineExpression,
+        lineExpression,
         label,
         colourRGB.asString(),
         dashPattern,
-        line.lineWidth,
-        line.opacity,
-        line.drawFilled,
+        lineWidth,
+        opacity,
+        drawFilled,
         valuesForLine.values,
         valuesForLine.maxValue,
         xValues
       );
+
       this._spectrumLines.push(spectrumLine);
     }
   }

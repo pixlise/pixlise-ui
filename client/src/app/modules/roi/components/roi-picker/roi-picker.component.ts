@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Inject, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, Inject, OnDestroy, OnInit, Output } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { ROIService, ROISummaries } from "../../services/roi.service";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
@@ -63,7 +63,7 @@ export type ROIPickerData = {
   templateUrl: "./roi-picker.component.html",
   styleUrls: ["./roi-picker.component.scss"],
 })
-export class ROIPickerComponent implements OnInit {
+export class ROIPickerComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   showSearchControls: boolean = true;
@@ -130,7 +130,7 @@ export class ROIPickerComponent implements OnInit {
 
     this._subs.add(
       this._roiService.roiItems$.subscribe(roiItems => {
-        let notFoundROIs: string[] = [];
+        const notFoundROIs: string[] = [];
         this.waitingForROIs.forEach((roiId, i) => {
           if (!roiItems[roiId]) {
             notFoundROIs.push(roiId);
@@ -171,9 +171,9 @@ export class ROIPickerComponent implements OnInit {
   }
 
   onROISelect(roi: ROIItemSummary, customSelection: { selectedOptions: string[] }): void {
-    let hasSubItemsSelected = customSelection?.selectedOptions && customSelection.selectedOptions.length > 0;
+    const hasSubItemsSelected = customSelection?.selectedOptions && customSelection.selectedOptions.length > 0;
 
-    if (!hasSubItemsSelected && this.selectedROIs[roi.id]) {
+    if (!hasSubItemsSelected && (this.selectedROIs[roi.id] || this.selectedItems.has(roi.id))) {
       delete this.selectedROIs[roi.id];
       this.selectedItems.delete(roi.id);
     } else {
@@ -205,7 +205,7 @@ export class ROIPickerComponent implements OnInit {
     this.filteredSummaries = filteredSummaries;
 
     // Remove any ROIs from the selection that are no longer visible
-    let newSelection: ROISummaries = {};
+    const newSelection: ROISummaries = {};
     this.filteredSummaries.forEach(summary => {
       if (this.selectedROIs[summary.id]) {
         newSelection[summary.id] = summary;
@@ -224,16 +224,16 @@ export class ROIPickerComponent implements OnInit {
   }
 
   onConfirm(): void {
-    let selectedROISummaries = Object.values(this.selectedROIs);
-    let selectedROIs: ROIItem[] = selectedROISummaries.map(summary => {
-      let roi = this._roiService.roiItems$.value[summary.id];
+    const selectedROISummaries = Object.values(this.selectedROIs);
+    const selectedROIs: ROIItem[] = selectedROISummaries.map(summary => {
+      const roi = this._roiService.roiItems$.value[summary.id];
       if (!roi) {
         this._snackBarService.openError(`ROI ${summary.id} was not found in the ROI cache`);
       }
       return roi;
     });
 
-    let pickerResponse = {
+    const pickerResponse = {
       selectedROISummaries,
       selectedROIs,
       selectedItems: this.selectedItems,
