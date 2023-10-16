@@ -168,9 +168,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   private _energyCalibrationManager: EnergyCalibrationManager = new EnergyCalibrationManager();
 
-  private _spectrumSources: SpectrumSource[] = [];
-  private _spectrumSources$ = new ReplaySubject<void>(1);
-
   // Special spectrum source for fit lines, these come back when the user asks to fit a spectrum by PIQUANT and contains
   // all the component lines that make up the spectrum
   private _fitLineSources: SpectrumSource[] = [];
@@ -226,22 +223,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   ) // public clipboard: Clipboard
   {}
 
-  setDataset(): void {
-    console.log("Spectrum Chart setDataset - resetting state");
-
-    // We just pass on to energy calibration
-    //this._energyCalibrationManager.setDataset(dataset);
-
-    // Reset anything we have stored at this point, we've loaded a dataset so anything happening after this is
-    // is fresh
-    this._spectrumSources = [];
-    this._fitLineSources = [];
-    this._fitSelectedElementZs = [];
-    this._spectrumLines = [];
-    this._xrfLinesPicked = [];
-    this._xrfLinesHighlighted = null;
-  }
-
   setQuantificationeVCalibration(calib: SpectrumEnergyCalibration[]): void {
     // We just pass on to energy calibration
     this._energyCalibrationManager.setQuantificationeVCalibration(calib);
@@ -264,97 +245,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
     this.viewStateService.setSpectrumState(this.getViewState(), this._widgetPosition);*/
   }
-  /*
-  private getViewState(): spectrumWidgetState {
-    let spectra = [];
-    for (let roi of this._spectrumSources) {
-      let enabledLineExpressions = [];
-      for (let line of roi.lineChoices) {
-        if (line.enabled) {
-          enabledLineExpressions.push(line.lineExpression);
-        }
-      }
-      if (enabledLineExpressions.length > 0) {
-        spectra.push(new spectrumLines(roi.roiID, enabledLineExpressions));
-      }
-    }
-
-    let pickedLines = [];
-    for (let line of this._xrfLinesPicked) {
-      pickedLines.push(new spectrumXRFLineState(new ElementSetItemLines(line.atomicNumber, line.k, line.l, line.m, line.esc), line.visible));
-    }
-
-    let const = new spectrumWidgetState(
-      this._drawTransform.pan.x,
-      this._drawTransform.pan.y,
-      this._drawTransform.scale.x,
-      this._drawTransform.scale.y,
-      spectra,
-      this._logScale,
-      pickedLines,
-      this._showXAsEnergy,
-      [
-        new energyCalibration("A", this._energyCalibrationManager.eVCalibrationA.eVstart, this._energyCalibrationManager.eVCalibrationA.eVperChannel),
-        new energyCalibration("B", this._energyCalibrationManager.eVCalibrationB.eVstart, this._energyCalibrationManager.eVCalibrationB.eVperChannel),
-      ]
-    );
-    return toSave;
-  }
-
-  setViewState(state: spectrumWidgetState): void {
-    this._drawTransform.pan.x = state.panX;
-    this._drawTransform.pan.y = state.panY;
-
-    this._drawTransform.scale.x = state.zoomX;
-    this._drawTransform.scale.y = state.zoomY;
-
-    this._logScale = state.logScale;
-    this._showXAsEnergy = state.showXAsEnergy;
-
-    // Save the line state as it's reported by view state service. This is because we're combining this
-    // with locally built spectrum sources that updates when ROIs arrive (or for other reasons). This
-    // is a race condition, so it's safer to store it here and call the same update function from here
-    // as is called in other scenarios, and have it sort it out
-
-    // Note, we also used to have a line setting for showing bulkA,bulkB (2 lines), this has been replaced by simply
-    // having an A and B line enabled. If we ever see the old value coming in, here we convert it to the valid new way
-    this._viewStateLineList = [];
-    for (const line of state.spectrumLines) {
-      if (line.lineExpressions.length > 0 && line.lineExpressions[0] == "bulk(A),bulk(B)") {
-        // Replace with 2 lines
-        line.lineExpressions = ["bulk(A)", "bulk(B)"];
-      }
-
-      this._viewStateLineList.push(line);
-    }
-    //this._viewStateLineList = Array.from(state.spectrumLines);
-
-    // We removed
-
-    // Restore the XRF lines
-    this._xrfLinesPicked = [];
-    for (const line of state.xrflines) {
-      if (line.visible) {
-        this.internalPickXRFLine(line.line_info.Z);
-      }
-    }
-
-    // Restore X axis calibration
-    if (this._showXAsEnergy && state.energyCalibration.length == 2 && state.energyCalibration[0].detector == "A" && state.energyCalibration[1].detector == "B") {
-      this._energyCalibrationManager.setXAxisEnergyCalibration(
-        "view-state",
-        new SpectrumEnergyCalibration(state.energyCalibration[0].eVStart, state.energyCalibration[0].eVPerChannel, state.energyCalibration[0].detector),
-        new SpectrumEnergyCalibration(state.energyCalibration[1].eVStart, state.energyCalibration[1].eVPerChannel, state.energyCalibration[1].detector)
-      );
-    }
-
-    // Fire off any changes to be notified
-    this._xrfLinesChanged$.next();
-
-    // And finally, redraw
-    this.needsDraw$.next();
-  }
-*/
 
   get keyItems(): KeyItem[] {
     return this._keyItems;
@@ -381,14 +271,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         this._spectrumLineDarkenIdxs.push(c);
       }
     }
-  }
-
-  get spectrumSources(): SpectrumSource[] {
-    return this._spectrumSources;
-  }
-
-  get spectrumSources$(): ReplaySubject<void> {
-    return this._spectrumSources$;
   }
 
   get fitLineSources(): SpectrumSource[] {
@@ -661,131 +543,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     // this.clearDisplayData();
     // this.saveState("setYAxisLogScale");
   }
-  /*
-  updateSpectrumSources(widgetDataService: WidgetRegionService) {
-    const t0 = performance.now();
 
-    const regions = widgetDataService.regions;
-
-    // Sync our spectrum sources to the list of regions - if something exists, update, otherwise add, and delete if not in regions
-    const updatedSources: SpectrumSource[] = [];
-    const sourceROIs: Set<string> = new Set<string>();
-
-    for (const source of this._spectrumSources) {
-      // Add if exists in regions
-      const region = regions.get(source.roiID);
-      if (region) {
-        // Was trying to be too smart about it... there are other factors that affect this, so just let it always regenerate
-        // and if it's too slow, optimise later
-
-        // If we have to update its colour, add as new item so it gets noticed by angulars mechanisms, and ends up on
-        // SpectrumRegionSettingsComponent as expected
-        /*                if(RGBA.equal(region.colour, source.colourRGBA) && source.locationIndexes == region.locationIndexes)
-                {
-                    updatedSources.push(source);
-                }
-                else*/
-  /*        {
-          const lineChoices = this.getLinesStates(source.roiID, region.pmcs.size > 1);
-
-          updatedSources.push(
-            new SpectrumSource(
-              source.roiID,
-              region.name,
-              region.shared,
-              region.creator,
-              region.tags,
-              (region.mistROIItem && region?.mistROIItem.ID_Depth >= 5) || false,
-              region.colour == null ? null : RGBA.fromWithA(region.colour, 1),
-              lineChoices,
-              region.locationIndexes
-            )
-          );
-        }
-
-        // Remember we've got this one, so we can find what's new
-        sourceROIs.add(source.roiID);
-      }
-      // else it'll get deleted...
-    }
-
-    for (const [roiID, region] of regions) {
-      if (!sourceROIs.has(roiID)) {
-        // Add it
-        updatedSources.push(
-          new SpectrumSource(
-            roiID,
-            region.name,
-            region.shared,
-            region.creator,
-            region.tags,
-            (region.mistROIItem && region?.mistROIItem.ID_Depth >= 5) || false,
-            region.colour == null ? null : RGBA.fromWithA(region.colour, 1),
-            this.getLinesStates(roiID, region.pmcs.size > 1),
-            region.locationIndexes
-          )
-        );
-
-        sourceROIs.add(roiID);
-      }
-    }
-
-    // Move all points and selected points to the start of the list
-    let allPointsSource: SpectrumSource = null;
-    let selectedPointsSource: SpectrumSource = null;
-    let remainingPointsSource: SpectrumSource = null;
-
-    this._spectrumSources = [];
-
-    for (let c = 0; c < updatedSources.length; c++) {
-      const source = updatedSources[c];
-      if (source.roiID == PredefinedROIID.AllPoints) {
-        allPointsSource = source;
-      } else if (source.roiID == PredefinedROIID.SelectedPoints) {
-        selectedPointsSource = source;
-      } else if (source.roiID == PredefinedROIID.RemainingPoints) {
-        remainingPointsSource = source;
-      } else {
-        this._spectrumSources.push(source);
-      }
-    }
-
-    // Now add the predefined ROIs to the start
-    if (remainingPointsSource) {
-      this._spectrumSources.unshift(remainingPointsSource);
-    }
-    if (selectedPointsSource) {
-      this._spectrumSources.unshift(selectedPointsSource);
-    }
-    if (allPointsSource) {
-      this._spectrumSources.unshift(allPointsSource);
-    }
-
-    // If no view state yet, show a default...
-    if (!this._viewStateLineList || this._viewStateLineList.length <= 0) {
-      this.addSpectrumLine(PredefinedROIID.AllPoints, SpectrumChartModel.lineExpressionBulkA);
-      this.addSpectrumLine(PredefinedROIID.AllPoints, SpectrumChartModel.lineExpressionBulkB);
-
-      this.addSpectrumLine(PredefinedROIID.SelectedPoints, SpectrumChartModel.lineExpressionBulkA);
-      this.addSpectrumLine(PredefinedROIID.SelectedPoints, SpectrumChartModel.lineExpressionBulkB);
-
-      // Make it eV calibrated
-      this._showXAsEnergy = true;
-    }
-
-    const t1 = performance.now();
-
-    this.recalcSpectrumLines();
-
-    const t2 = performance.now();
-
-    this._spectrumSources$.next();
-
-    const t3 = performance.now();
-
-    console.log("Spectrum updateSpectrumSources took: " + (t1 - t0).toLocaleString() + "ms, spectrumSources$ took: " + (t3 - t2).toLocaleString() + "ms");
-  }
-*/
   setFitLineMode(enabled: boolean): void {
     this._showFitLines = enabled;
     //this.recalcSpectrumLines();
@@ -991,74 +749,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     return new SpectrumValues(vals, maxVal, "", 0);
   }
 
-  private getLinesStates(roiID: string, hasMultiplePMCs: boolean): SpectrumLineChoice[] {
-    let lines: SpectrumLineChoice[] = [];
-
-    if (hasMultiplePMCs) {
-      lines = [
-        new SpectrumLineChoice(SpectrumChartModel.lineExpressionBulkA, "A", false),
-        new SpectrumLineChoice(SpectrumChartModel.lineExpressionBulkB, "B", false),
-        new SpectrumLineChoice("sum(bulk(A),bulk(B))", "Sum of A + B", false),
-        new SpectrumLineChoice("diff(bulk(A),bulk(B))", "Difference A - B", false),
-        new SpectrumLineChoice("diff(bulk(B),bulk(A))", "Difference B - A", false),
-        new SpectrumLineChoice("minOf(bulk(A),bulk(B))", "Min of A and B", false),
-        new SpectrumLineChoice("maxOf(bulk(A),bulk(B))", "Max of A and B", false),
-        new SpectrumLineChoice("removeDiffraction(bulk(A),bulk(B))", "A without Diffraction", false),
-        new SpectrumLineChoice("removeDiffraction(bulk(B),bulk(A))", "B without Diffraction", false),
-
-        new SpectrumLineChoice(SpectrumChartModel.lineExpressionMaxA, "A", false),
-        new SpectrumLineChoice("max(B)", "B", false),
-        new SpectrumLineChoice("sum(max(A),max(B))", "Sum of A + B", false),
-        new SpectrumLineChoice("diff(max(A),max(B))", "Difference A - B", false),
-        new SpectrumLineChoice("diff(max(B),max(A))", "Difference B - A", false),
-        new SpectrumLineChoice("minOf(max(A),max(B))", "Min of A and B", false),
-        new SpectrumLineChoice("maxOf(max(A),max(B))", "Max of A and B", false),
-      ];
-    } else {
-      // If there is only 1 PMC (eg only 1 selected point, or only 1 in the ROI), we have less options to show
-      // as all the bulk/max options are only adding up 1 spectrum, so don't show those
-      lines = [
-        new SpectrumLineChoice(SpectrumChartModel.lineExpressionBulkA, "A", false),
-        new SpectrumLineChoice(SpectrumChartModel.lineExpressionBulkB, "B", false),
-        new SpectrumLineChoice("sum(bulk(A),bulk(B))", "Sum of A + B", false),
-        new SpectrumLineChoice("diff(bulk(A),bulk(B))", "Difference A - B", false),
-        new SpectrumLineChoice("diff(bulk(B),bulk(A))", "Difference B - A", false),
-        new SpectrumLineChoice("minOf(bulk(A),bulk(B))", "Min of A and B", false),
-        new SpectrumLineChoice("maxOf(bulk(A),bulk(B))", "Max of A and B", false),
-        new SpectrumLineChoice("removeDiffraction(bulk(A),bulk(B))", "A without Diffraction", false),
-        new SpectrumLineChoice("removeDiffraction(bulk(B),bulk(A))", "B without Diffraction", false),
-      ];
-    }
-
-    // Check if we have saved state info for this, if we do, apply the enabled flag as we have stored
-    if (this._viewStateLineList) {
-      for (let roiIdx = 0; roiIdx < this._viewStateLineList.length; roiIdx++) {
-        const savedLineState = this._viewStateLineList[roiIdx];
-
-        if (roiID == savedLineState.roiID) {
-          for (let c = 0; c < lines.length; c++) {
-            const savedLineEnabled = savedLineState.lineExpressions.indexOf(lines[c].lineExpression) > -1;
-            if (savedLineEnabled) {
-              lines[c].enabled = true;
-            }
-          }
-        }
-      }
-    }
-
-    return lines;
-  }
-
-  private getSpectrumSourceIdx(roiID: string): number {
-    for (let roiIdx = 0; roiIdx < this._spectrumSources.length; roiIdx++) {
-      const src = this._spectrumSources[roiIdx];
-      if (src.roiID == roiID) {
-        return roiIdx;
-      }
-    }
-    return -1;
-  }
-
   getLineList(): Map<string, string[]> {
     return this._linesShown;
   }
@@ -1072,31 +762,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     // Also clear the actual line data for display, because it's going to need recalc anyway
     this._spectrumLines = [];
   }
-
-/*
-  getLines(): Map<string, Map<string, string[]>> {
-    const result = new Map<string, Map<string, string[]>>();
-    for (const line of this._spectrumLines) {
-      // Ensure we have an entry
-      let scanEntry = result.get(line.scanId);
-      if (scanEntry === undefined) {
-        scanEntry = new Map<string, string[]>();
-        result.set(line.scanId, scanEntry);
-      }
-
-      // Add ROIs from this scan id into this entry
-      let lineExpressions = scanEntry.get(line.roiId);
-      if (lineExpressions === undefined) {
-        lineExpressions = [];
-        scanEntry.set(line.roiId, lineExpressions);
-      }
-
-      lineExpressions.push(line.expression);
-    }
-
-    return result;
-  }
-*/
 
   updateRangesAndKey(): void {
     this._lineRangeX = new MinMax(0, 0);
