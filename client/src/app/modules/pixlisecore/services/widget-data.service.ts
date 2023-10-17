@@ -260,7 +260,7 @@ export class WidgetDataService {
         // TODO: look up the calibration value here!!
         const calibration: SpectrumEnergyCalibration[] = [];
 
-        return dataSource.prepare(this._dataService, this._cachedDataService, scanId, quantId, roiId, calibration).pipe(
+        return dataSource.prepare(this._cachedDataService, scanId, quantId, roiId, calibration).pipe(
           concatMap(() => {
             const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource);
 

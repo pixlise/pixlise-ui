@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { ReplaySubject, Subject } from "rxjs";
+import { ReplaySubject, Subject, scan } from "rxjs";
 import { ObjectCreator, MinMax, SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { Rect } from "src/app/models/Geometry";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
@@ -43,7 +43,6 @@ import { RGBA, Colours } from "src/app/utils/colours";
 import { SpectrumValues } from "../../models/Spectrum";
 import { ISpectrumChartModel, SpectrumChartLine } from "./spectrum-model-interface";
 import { SpectrumXRFLinesNearMouse } from "./xrf-near-mouse";
-import { EnergyCalibrationManager } from "./energy-calibration-manager";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { SubItemOptionSection } from "src/app/modules/roi/components/roi-item/roi-item.component";
 
@@ -166,7 +165,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   private _linesShown: Map<string, string[]> = new Map<string, string[]>();
   private _shownElementPeakLabels: XRFLine[] = [];
 
-  private _energyCalibrationManager: EnergyCalibrationManager = new EnergyCalibrationManager();
+  private _calibration: Map<string, SpectrumEnergyCalibration> = new Map<string, SpectrumEnergyCalibration>();
 
   // Special spectrum source for fit lines, these come back when the user asks to fit a spectrum by PIQUANT and contains
   // all the component lines that make up the spectrum
@@ -195,6 +194,9 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   private _lineRangeX: MinMax = new MinMax();
   private _lineRangeY: MinMax = new MinMax();
 
+  private _lastCalcCanvasParams: CanvasParams | null = null;
+  private _recalcNeeded = true;
+
   // Indexes of which lines which we darken relative to others
   // This was added as part of spectrum fit line changes. If an index is invalid
   // this should be ignored. Can be set on the model, and the drawer picks it up while
@@ -212,39 +214,14 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   private _diffractionPeaksShown: DiffractionPeak[] = [];
 
-  private _viewStateLineList: spectrumLines[] = [];
-
   // CanvasDrawNotifier
   needsDraw$: Subject<void> = new Subject<void>();
 
   constructor(
     public envService: EnvConfigurationService //,
-    // public dialog: MatDialog,
-  ) // public clipboard: Clipboard
+    // public clipboard: Clipboard
+  ) // public dialog: MatDialog,
   {}
-
-  setQuantificationeVCalibration(calib: SpectrumEnergyCalibration[]): void {
-    // We just pass on to energy calibration
-    this._energyCalibrationManager.setQuantificationeVCalibration(calib);
-  }
-
-  // Things that can trigger state saving:
-  // eV calibration change
-  // Pan/zoom
-  // Region/line expression choices
-  // Resize button (or should we ignore?)
-  // Log scale button
-  saveState(reason: string): void {
-    console.log("spectrum model saveState called due to: " + reason);
-    /*let viewState = this.getViewState();
-
-    // Update our list of lines that we have saved. This is required so when we're rebuilding lines, we have the current
-    // state saved to look up what's enabled, not just what came back from view state when the widget started up. User can
-    // change line visibility and gets saved to view state API, but for a time we weren't saving this locally
-    this._viewStateLineList = Array.from(viewState.spectrumLines);
-
-    this.viewStateService.setSpectrumState(this.getViewState(), this._widgetPosition);*/
-  }
 
   get keyItems(): KeyItem[] {
     return this._keyItems;
@@ -257,6 +234,12 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   get spectrumLines(): SpectrumChartLine[] {
     return this._spectrumLines;
+  }
+
+  setEnergyCalibration(scanId: string, calibration: SpectrumEnergyCalibration) {
+    this._calibration.set(scanId + "-" + calibration.detector, calibration);
+    this._recalcNeeded = true;
+    this.needsDraw$.next();
   }
 
   get spectrumLineDarkenIdxs(): number[] {
@@ -304,9 +287,9 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   set xAxisEnergyScale(val: boolean) {
     this._showXAsEnergy = val;
-    /*this.recalcSpectrumLines();
-    this.clearDisplayData();
-    this.saveState("xAxisEnergyScale");*/
+    //this.recalcSpectrumLines();
+    //this.clearDisplayData();
+    //this.saveState("xAxisEnergyScale");
   }
 
   get xAxisLabel(): string {
@@ -322,10 +305,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       label += "/pmc";
     }
     return label;
-  }
-
-  get energyCalibrationManager(): EnergyCalibrationManager {
-    return this._energyCalibrationManager;
   }
 
   get yAxislogScale(): boolean {
@@ -350,7 +329,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   set chartYResize(val: boolean) {
     this._chartYResize = val;
-    this.saveState("set chartYResize");
+    //this.saveState("set chartYResize");
   }
 
   get yAxisCountsPerMin(): boolean {
@@ -395,7 +374,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     this._xrfLinesPicked = val;
     this._xrfLinesChanged$.next();
     this.needsDraw$.next();
-    this.saveState("xrf lines picked");
+    //this.saveState("xrf lines picked");
   }
 
   get xrfLinesHighlighted(): XRFLineGroup | null {
@@ -512,7 +491,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
     // And finally, redraw
     this.needsDraw$.next();
-    this.saveState("unpickXRFLine");
+    //this.saveState("unpickXRFLine");
   }
 
   isPickedXRFLine(atomicNumber: number): boolean {
@@ -768,7 +747,11 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     this._lineRangeY = new MinMax(0, 0);
 
     // Find max channels and max Y from all spectra
+    const scanIds = new Set<string>();
+
     for (const line of this._spectrumLines) {
+      scanIds.add(line.scanId);
+
       if (line.xValues.length > 0) {
         const thisMaxX = line.xValues[line.xValues.length - 1];
         this._lineRangeX.expandMax(thisMaxX);
@@ -777,15 +760,17 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       this._lineRangeY.expand(line.maxValue);
     }
 
-    // Get min/max data values
+    // Get min/max data values. Need to check against every scan id
     if (this._showXAsEnergy) {
-      this._lineRangeX = new MinMax(
-        0,
-        Math.max(
-          this._energyCalibrationManager.channelTokeV(this._lineRangeX.max || 0, "A"),
-          this._energyCalibrationManager.channelTokeV(this._lineRangeX.max || 0, "B")
-        )
-      );
+      const maxChannel = this._lineRangeX.max || 0;
+      this._lineRangeX = new MinMax(0, 0);
+
+      for (const scanId of scanIds) {
+        const maxEnergyA = this.channelTokeV(maxChannel, scanId, "A") || 0;
+        const maxEnergyB = this.channelTokeV(maxChannel, scanId, "B") || 0;
+
+        this._lineRangeX.expandMax(Math.max(maxEnergyA, maxEnergyB));
+      }
     }
 
     this._keyItems = [];
@@ -800,6 +785,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       this._keyItems.push(new KeyItem("", line.expressionLabel, line.color, line.dashPattern));
     }
 
+    this._recalcNeeded = true;
     this.needsDraw$.next();
   }
 
@@ -835,7 +821,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     for (const [label, valuesForLine] of lineValues) {
       const dashPattern = this.getDashPattern(colourStr);
 
-      const xValues = this.calcXValues(valuesForLine.values.length, valuesForLine.sourceDetectorID);
+      const xValues = this.calcXValues(valuesForLine.values.length, scanId, valuesForLine.sourceDetectorID);
       const spectrumLine = new SpectrumChartLine(
         scanId,
         roiId,
@@ -869,7 +855,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     return spectrumLineDashPatterns[dashPatternIdx % spectrumLineDashPatterns.length];
   }
 
-  private calcXValues(channelCount: number, forDetectorId: string): Float32Array {
+  private calcXValues(channelCount: number, scanId: string, forDetectorId: string): Float32Array {
     // If we're drawing fit lines, we already have implicity x-axis values from the CSV returned
     if (this._showFitLines && this._fitXValues) {
       return this._fitXValues;
@@ -890,28 +876,35 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         detectorCalib = "B";
       }
 
-      let energy = 0;
+      let energy: number | null = 0;
+      let lastVal = 0;
       for (let c = 0; c < xvalues.length; c++) {
-        energy = this._energyCalibrationManager.channelTokeV(c, detectorCalib);
+        energy = this.channelTokeV(c, scanId, detectorCalib);
+        if (energy === null) {
+          energy = lastVal;
+        }
+
         xvalues[c] = energy; //this._xAxis.valueToPx(energy);
+        lastVal = energy;
       }
     }
 
     return xvalues;
   }
 
-  getMaxSpectrumValueAtEnergy(keV: number): number {
-    let value = 0;
+  getMaxSpectrumValueAtEnergy(keV: number): number | null {
+    let value = null;
 
     if (this.spectrumLines.length > 0) {
-      const channel = this._energyCalibrationManager.keVToChannel(keV, "A");
-
       for (const spectrum of this.spectrumLines) {
-        // Take the eV of the line, find its channel index
-        if (channel >= 0 && channel < spectrum.values.length) {
-          const thisVal = spectrum.values[channel];
-          if (value == null || thisVal > value) {
-            value = thisVal;
+        const channel = this.keVToChannel(keV, spectrum.scanId, "A");
+        if (channel !== null) {
+          // Take the eV of the line, find its channel index
+          if (channel >= 0 && channel < spectrum.values.length) {
+            const thisVal = spectrum.values[channel];
+            if (value === null || thisVal > value) {
+              value = thisVal;
+            }
           }
         }
       }
@@ -928,18 +921,27 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   }
 
   // Rebuilding this models display data
-  recalcDisplayData(viewport: CanvasParams) {
+  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): void {
+    // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
+    if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
+      this.regenerateDrawModel(canvasParams);
+      this._lastCalcCanvasParams = canvasParams;
+      this._recalcNeeded = false;
+    }
+  }
+
+  private regenerateDrawModel(viewport: CanvasParams) {
     if (!this._drawTransform.canvasParams || this._drawTransform.canvasParams.width <= 0 || this._drawTransform.canvasParams.height <= 0) {
-      console.error("SpectrumChart recalcDisplayData: failed because canvas dimensions not known");
+      console.error("SpectrumChart regenerateDrawModel: failed because canvas dimensions not known");
       return;
     }
 
     if (!this._lineRangeX.isValid()) {
-      console.error("SpectrumChart recalcDisplayData: failed due to X axis range being invalid");
+      console.error("SpectrumChart regenerateDrawModel: failed due to X axis range being invalid");
       return;
     }
     if (!this._lineRangeY.isValid()) {
-      console.error("SpectrumChart recalcDisplayData: failed due to Y axis range being invalid");
+      console.error("SpectrumChart regenerateDrawModel: failed due to Y axis range being invalid");
       return;
     }
 
@@ -991,6 +993,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   clearDisplayData() {
     this._xAxis = null;
     this._yAxis = null;
+    this._recalcNeeded = true;
     this.needsDraw$.next();
   }
 
@@ -1031,5 +1034,24 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       this._drawTransform.pan.y = origPanY;
       this._drawTransform.scale.y = origScaleY;
     }
+  }
+
+  channelTokeV(channel: number, scanId: string, detector: string): number | null {
+    const cal = this._calibration.get(scanId + "-" + detector);
+    if (!cal) {
+      return null;
+    }
+
+    return cal.eVstart + channel * cal.eVperChannel * 0.001; // eV->keV conversion
+  }
+
+  keVToChannel(keV: number, scanId: string, detector: string): number | null {
+    const cal = this._calibration.get(scanId + "-" + detector);
+    if (!cal) {
+      return null;
+    }
+
+    const eV = keV * 1000; // keV->eV conversion
+    return Math.floor((eV - cal.eVstart) / cal.eVperChannel);
   }
 }

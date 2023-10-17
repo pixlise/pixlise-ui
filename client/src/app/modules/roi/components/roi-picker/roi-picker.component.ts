@@ -44,6 +44,8 @@ export type ROIPickerResponse = {
 };
 
 export type ROIPickerData = {
+  title?: string;
+
   requestFullROIs: boolean;
   draggable?: boolean;
   liveUpdate?: boolean;

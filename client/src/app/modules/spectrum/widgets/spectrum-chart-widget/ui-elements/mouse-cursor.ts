@@ -170,7 +170,10 @@ console.log('mouse value: '+this._ctx.xAxis.canvasToValue(event.canvasPoint.x).t
           det = "A";
         }
 
-        idx = this._ctx.energyCalibrationManager.keVToChannel(xValue, det);
+        const ch = this._ctx.keVToChannel(xValue, line.scanId, det);
+        if (ch !== null) {
+          idx = ch;
+        }
       }
 
       // Might find one that's a little further away, so check previous one

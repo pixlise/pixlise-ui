@@ -74,7 +74,6 @@ export class ExpressionDataSource
 
   // Here we get the data required to honor the interfaces we implement, based on the above
   prepare(
-    dataService: APIDataService,
     cachedDataService: APICachedDataService,
     scanId: string,
     quantId: string,
@@ -458,17 +457,16 @@ export class ExpressionDataSource
 
           //console.log('getQuantifiedDataForDetector detector='+detectorId+', dataLabel='+dataLabel+', idx='+idx+', factor='+toElemConvert);
 
-          const data = this.getQuantifiedDataValues(quantData.data, detectorId, idx, toElemConvert, dataLabel.endsWith("_%"));
+          const data = ExpressionDataSource.getQuantifiedDataValues(quantData.data, detectorId, idx, toElemConvert, dataLabel.endsWith("_%"));
           return PMCDataValues.makeWithValues(data);
         })
       )
     );
   }
 
-  private getQuantifiedDataValues(quantData: Quantification, detectorId: string, colIdx: number, mult: number | null, isPctColumn: boolean): PMCDataValue[] {
+  public static getQuantifiedDataValues(quantData: Quantification, detectorId: string, colIdx: number, mult: number | null, isPctColumn: boolean): PMCDataValue[] {
     const resultData: PMCDataValue[] = [];
     let detectorFound = false;
-    const detectors: Set<string> = new Set<string>(this._detectors);
 
     // Loop through all our locations by PMC, find the quant value, store
     for (const quantLocSet of quantData.locationSet) {
@@ -502,6 +500,11 @@ export class ExpressionDataSource
     }
 
     if (!detectorFound) {
+      const detectors: Set<string> = new Set<string>();
+      for (const quantLocSet of quantData.locationSet) {
+        detectors.add(quantLocSet.detector);
+      }
+
       throw new Error(
         'The currently loaded quantification does not contain data for detector: "' +
           detectorId +

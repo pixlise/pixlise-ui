@@ -38,7 +38,6 @@ import { XRFLine } from "src/app/periodic-table/XRFLine";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { SpectrumXRFLinesNearMouse } from "./xrf-near-mouse";
-import { EnergyCalibrationManager } from "./energy-calibration-manager";
 
 // Spectrum lines are drawn using this structure. This is recalculated from source information as needed
 export class SpectrumChartLine {
@@ -77,7 +76,7 @@ export interface ISpectrumChartModel {
 
   transform: PanZoom;
 
-  recalcDisplayData(viewport: CanvasParams): void;
+  recalcDisplayDataIfNeeded(viewport: CanvasParams): void;
 
   spectrumLines: SpectrumChartLine[];
   spectrumLineDarkenIdxs: number[];
@@ -99,8 +98,6 @@ export interface ISpectrumChartModel {
 
   shownElementPeakLabels: XRFLine[];
 
-  energyCalibrationManager: EnergyCalibrationManager;
-
   xrfeVLowerBound: number;
   xrfeVUpperBound: number;
 
@@ -120,7 +117,7 @@ export interface ISpectrumChartModel {
   isROIActive(roiID: string): boolean;
 
   // Returns 0 if none
-  getMaxSpectrumValueAtEnergy(keV: number): number;
+  getMaxSpectrumValueAtEnergy(keV: number): number | null;
 
   makePrintableXValue(value: number): string;
 
@@ -128,4 +125,6 @@ export interface ISpectrumChartModel {
   unpickXRFLine(atomicNumber: number): void;
 
   isPickedXRFLine(atomicNumber: number): boolean;
+
+  keVToChannel(keV: number, scanId: string, detector: string): number | null;
 }

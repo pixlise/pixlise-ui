@@ -19,6 +19,8 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { RegionSettings } from "src/app/modules/roi/models/roi-region";
 import { ScanMetaDataType } from "src/app/generated-protos/scan";
 import { Point, Rect } from "src/app/models/Geometry";
+import { SpectrumEnergyCalibrationComponent, SpectrumEnergyCalibrationResult } from "./spectrum-energy-calibration/spectrum-energy-calibration.component";
+import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -40,6 +42,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     private _snackService: SnackbarService,
     private _cachedDataService: APICachedDataService,
     private _roiService: ROIService,
+    private _energyCalibrationService: EnergyCalibrationService,
     private _envService: EnvConfigurationService,
     public dialog: MatDialog,
     public clipboard: Clipboard
@@ -139,7 +142,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           type: "button",
           title: "Calibration",
           value: false,
-          onClick: () => {},
+          onClick: () => this.onCalibration(),
         },
       ],
     };
@@ -221,10 +224,44 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
   onToolSelected(tool: string) {
     this.activeTool = tool;
-    /*this._widgetControlConfiguration["topToolbar"]!.forEach((button: any) => {
+    this._widgetControlConfiguration["topToolbar"]!.forEach((button: any) => {
       button.value = button.id === tool;
     });
-    console.log("Tool selected: ", this.activeTool);*/
+    console.log("Tool selected: ", this.activeTool);
+  }
+
+  onCalibration() {
+    const dialogConfig = new MatDialogConfig();
+    //dialogConfig.backdropClass = 'empty-overlay-backdrop';
+
+    const scanIds = new Set<string>();
+    for (const line of this.mdl.spectrumLines) {
+      scanIds.add(line.scanId);
+    }
+
+    dialogConfig.data = {
+      draggable: true,
+      scanIds: Array.from(scanIds)
+    };
+
+    const dialogRef = this.dialog.open(SpectrumEnergyCalibrationComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe((result: SpectrumEnergyCalibrationResult) => {
+      if (result) {
+        // Set the overall flag
+        this.mdl.xAxisEnergyScale = result.useCalibration;
+        if (this.mdl.xAxisEnergyScale) {
+          // Set the new values in service, save for all
+          for (const [scanId, cal] of result.calibrationForScans.entries()) {
+            this._energyCalibrationService.setCurrentCalibration(scanId, cal);
+            for (const detCal of cal) {
+              this.mdl.setEnergyCalibration(scanId, detCal);
+            }
+          }
+        }
+        this.updateLines();
+      }
+    });
   }
 
   onSelectSpectra() {
@@ -237,6 +274,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       selectableSubItemOptions: SpectrumChartModel.allLineChoiceOptions,
       subItemButtonName: "Select Spectra",
       selectedItems: this.mdl.getLineList(),
+      title: "Spectrum Lines To Display",
     };
 
     dialogConfig.hasBackdrop = false;

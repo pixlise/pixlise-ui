@@ -56,12 +56,7 @@ export class SpectrumChartDrawer implements CanvasDrawer {
   }
 
   drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
-    //let t0 = performance.now();
-    // Bit ugly: TODO: do this in a better way
-    //if(!this._ctx.xAxis)
-    {
-      this._ctx.recalcDisplayData(drawParams.drawViewport);
-    }
+    this._ctx.recalcDisplayDataIfNeeded(drawParams.drawViewport);
 
     if (!this._ctx.xAxis || !this._ctx.yAxis) {
       return;

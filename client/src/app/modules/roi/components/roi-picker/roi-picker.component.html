@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
         cdkDragHandle
         [cdkDragDisabled]="!data.draggable"
         class="title {{ data.draggable ? 'drag' : '' }}">
-        Regions of Interest
+        {{data.title || "Regions of Interest"}}
       </h1>
       <two-state-icon-push-button
         class="search-btn"
