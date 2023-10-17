@@ -1,6 +1,7 @@
 import { Component, OnInit, ComponentRef, ElementRef, HostListener, ViewChild, ViewContainerRef, AfterViewChecked, Input } from "@angular/core";
-import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetToolbarButtonConfiguration } from "./models/widgets.model";
+import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetToolbarButtonConfiguration, WidgetType } from "./models/widgets.model";
 import { AnalysisLayoutService } from "../../services/analysis-layout.service";
+import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 
 @Component({
   selector: "widget",
@@ -23,11 +24,13 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
   @ViewChild("bottomLeftInset") bottomLeftInset!: ElementRef;
   @ViewChild("bottomRightInset") bottomRightInset!: ElementRef;
 
+  @Input() widgetLayoutConfig: WidgetLayoutConfiguration = WidgetLayoutConfiguration.create();
+  @Input() layoutIndex: number = 0;
+
   visibleTopToolbarCount: number = 0;
 
   allWidgetOptions = Object.entries(WIDGETS).map(([id, value]) => ({ id, ...value }));
-  // _activeWidget: keyof typeof WIDGETS = "chord-diagram"; // /*Object.keys(WIDGETS)[Math.random() * (Object.keys(WIDGETS).length-1)] as keyof typeof WIDGETS; */ "ternary-plot"; //"spectrum-chart";
-  _activeWidget: keyof typeof WIDGETS = "ternary-plot"; //spectrum-chart"; // /*Object.keys(WIDGETS)[Math.random() * (Object.keys(WIDGETS).length-1)] as keyof typeof WIDGETS; */ "ternary-plot"; //"spectrum-chart";
+  _activeWidget: WidgetType = "ternary-plot";
 
   widgetConfiguration?: WidgetConfiguration;
 
@@ -68,8 +71,11 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
   }
 
   hideOverflowedButtons() {
-    let buttonsContainerWidth = this.buttonsContainer.nativeElement.offsetWidth;
-    let topToolbarWidth = this.topToolbar.nativeElement.offsetWidth;
+    let buttonsContainerWidth = this.buttonsContainer?.nativeElement?.offsetWidth;
+    let topToolbarWidth = this.topToolbar?.nativeElement?.offsetWidth;
+    if (buttonsContainerWidth === undefined || topToolbarWidth === undefined) {
+      return;
+    }
 
     if (this.widgetConfiguration?.controlConfiguration?.topToolbar) {
       if (buttonsContainerWidth - topToolbarWidth <= 60 && this.visibleTopToolbarCount > 0) {
@@ -104,15 +110,15 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
     return this._activeWidget;
   }
 
-  set activeWidget(widget: keyof typeof WIDGETS) {
+  set activeWidget(widget: WidgetType) {
     this._activeWidget = widget;
+    this._analysisLayoutService.updateActiveLayoutWidgetType(this.widgetLayoutConfig.id, this.layoutIndex, widget);
     this.loadWidget();
   }
 
-  @Input() set initWidget(initWidget: keyof typeof WIDGETS) {
-    setTimeout(() => {
-      this.activeWidget = initWidget;
-    }, 0);
+  @Input() set initWidget(initWidget: string) {
+    this._activeWidget = initWidget as WidgetType;
+    this.loadWidget();
   }
 
   get topToolbarButtons() {
@@ -156,9 +162,9 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
     }
 
     this.widgetConfiguration = this.copyConfiguration();
-    this._currentWidgetRef = this.currentWidget.createComponent(this.widgetConfiguration!.component);
+    this._currentWidgetRef = this.currentWidget?.createComponent(this.widgetConfiguration!.component);
 
-    if (this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration) {
+    if (this._currentWidgetRef?.instance?.onUpdateWidgetControlConfiguration) {
       this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration.subscribe((config: WidgetControlConfiguration) => {
         this.widgetConfiguration!.controlConfiguration = config;
         this.initOverflowState();
