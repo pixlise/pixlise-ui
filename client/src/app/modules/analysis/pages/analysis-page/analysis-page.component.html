@@ -2,14 +2,16 @@
   <analysis-sidepanel></analysis-sidepanel>
   <section class="screen-container">
     <section
-      *ngFor="let screenConfig of screenConfigurations"
+      *ngFor="let layout of loadedScreenConfiguration.layouts; let i = index"
       class="widgets-container"
       [ngStyle]="{
-        'grid-template-columns': screenConfig.layoutCSS.templateColumns,
-        'grid-template-rows': screenConfig.layoutCSS.templateRows
+        'grid-template-columns': computedLayouts[i].templateColumns,
+        'grid-template-rows': computedLayouts[i].templateRows
       }">
       <widget
-        *ngFor="let widget of screenConfig.widgets"
+        *ngFor="let widget of layout.widgets"
+        [widgetLayoutConfig]="widget"
+        [layoutIndex]="i"
         [initWidget]="widget.type"
         [ngStyle]="{
           'grid-column-start': widget.startColumn,

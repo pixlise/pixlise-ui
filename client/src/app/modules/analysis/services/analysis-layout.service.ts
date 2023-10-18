@@ -8,6 +8,9 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { APIDataService } from "../../pixlisecore/pixlisecore.module";
 import { QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
+import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
+import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+import { DEFAULT_SCREEN_CONFIGURATION, createDefaultScreenConfiguration } from "../models/screen-configuration.model";
 
 @Injectable({
   providedIn: "root",
@@ -27,6 +30,11 @@ export class AnalysisLayoutService {
   availableScanQuants$ = new BehaviorSubject<Record<string, QuantificationSummary[]>>({});
   availableScans$ = new BehaviorSubject<ScanItem[]>([]);
 
+  activeScreenConfigurationId$ = new BehaviorSubject<string>("");
+  activeScreenConfiguration$ = new BehaviorSubject<ScreenConfiguration>(DEFAULT_SCREEN_CONFIGURATION);
+
+  screenConfigurations$ = new BehaviorSubject<Map<string, ScreenConfiguration>>(new Map());
+
   constructor(
     private _route: ActivatedRoute,
     private _dataService: APIDataService,
@@ -41,6 +49,9 @@ export class AnalysisLayoutService {
   fetchAvailableScans() {
     this._cachedDataService.getScanList(ScanListReq.create({})).subscribe(resp => {
       this.availableScans$.next(resp.scans);
+      if (this.defaultScanId) {
+        this.loadScreenConfigurationFromScan(this.defaultScanId);
+      }
     });
   }
 
@@ -48,6 +59,70 @@ export class AnalysisLayoutService {
     this._dataService.sendQuantListRequest(QuantListReq.create({ searchParams: { scanId } })).subscribe(res => {
       this.availableScanQuants$.next({ ...this.availableScanQuants$.value, [scanId]: res.quants });
     });
+  }
+
+  fetchScreenConfiguration(id: string = "", scanId: string = "", setActive: boolean = true) {
+    this._dataService.sendScreenConfigurationGetRequest(ScreenConfigurationGetReq.create({ id, scanId })).subscribe(res => {
+      if (res.screenConfiguration) {
+        if (setActive) {
+          this.activeScreenConfiguration$.next(res.screenConfiguration);
+          this.activeScreenConfigurationId$.next(res.screenConfiguration.id);
+        }
+
+        // Store the screen configuration
+        this.screenConfigurations$.next(this.screenConfigurations$.value.set(res.screenConfiguration.id, res.screenConfiguration));
+      } else {
+        if (!id && scanId) {
+          // No screen configuration found, create a new one for this scan
+          let newScreenConfiguration = createDefaultScreenConfiguration();
+          let matchedScan = this.availableScans$.value.find(scan => scan.id === scanId);
+          if (matchedScan) {
+            newScreenConfiguration.name = matchedScan.title;
+            newScreenConfiguration.description = matchedScan.description;
+          }
+
+          this.writeScreenConfiguration(newScreenConfiguration, scanId);
+        }
+      }
+    });
+  }
+
+  loadScreenConfigurationFromScan(scanId: string) {
+    this.fetchScreenConfiguration("", scanId);
+  }
+
+  writeScreenConfiguration(screenConfiguration: ScreenConfiguration, scanId: string = "") {
+    if (!screenConfiguration || screenConfiguration.layouts.length === 0) {
+      return;
+    }
+
+    this._dataService.sendScreenConfigurationWriteRequest(ScreenConfigurationWriteReq.create({ scanId, screenConfiguration })).subscribe(res => {
+      if (res.screenConfiguration) {
+        this.activeScreenConfiguration$.next(res.screenConfiguration);
+
+        if (res.screenConfiguration.id !== this.activeScreenConfigurationId$.value) {
+          this.activeScreenConfigurationId$.next(res.screenConfiguration.id);
+        }
+
+        // Store the screen configuration
+        this.screenConfigurations$.next(this.screenConfigurations$.value.set(res.screenConfiguration.id, res.screenConfiguration));
+      }
+    });
+  }
+
+  updateActiveLayoutWidgetType(widgetId: string, layoutIndex: number, widgetType: string) {
+    let screenConfiguration = this.activeScreenConfiguration$.value;
+    if (screenConfiguration.id && screenConfiguration.layouts.length > layoutIndex) {
+      let widget = screenConfiguration.layouts[layoutIndex].widgets.find(widget => widget.id === widgetId);
+      if (widget) {
+        widget.type = widgetType;
+        this.writeScreenConfiguration(screenConfiguration);
+      }
+    }
+  }
+
+  changeActiveScreenConfiguration(id: string) {
+    this.activeScreenConfigurationId$.next(id);
   }
 
   get activeTab(): SidebarTabItem | null {
@@ -76,10 +151,9 @@ export class AnalysisLayoutService {
 
   delayNotifyCanvasResize(delayMS: number): void {
     // Wait a bit & then notify canvases to recalculate their size
-    const source = timer(delayMS);
-    const abc = source.subscribe(val => {
+    setTimeout(() => {
       this._resizeCanvas$.next();
-    });
+    }, delayMS);
   }
 
   toggleSidePanel() {
