@@ -45,6 +45,7 @@ import { ISpectrumChartModel, SpectrumChartLine } from "./spectrum-model-interfa
 import { SpectrumXRFLinesNearMouse } from "./xrf-near-mouse";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { SubItemOptionSection } from "src/app/modules/roi/components/roi-item/roi-item.component";
+import { BaseChartDrawModel, BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
 
 export class SpectrumLineChoice {
   constructor(
@@ -95,63 +96,11 @@ export class spectrumLines {
 
 const fitLinePrefix = "fit_";
 
-export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifier {
-  public static readonly lineExpressionBulkA = "bulk(A)";
-  public static readonly lineExpressionBulkB = "bulk(B)";
-  public static readonly lineExpressionMaxA = "max(A)";
+export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifier, BaseChartModel {
+  needsDraw$: Subject<void> = new Subject<void>();
 
-  public static readonly fitMeasuredSpectrum = "Measured Spectrum";
-  public static readonly fitCaclulatedTotalSpectrum = "Calculated Total Spectrum";
-  public static readonly fitResiduals = "Residuals";
-  public static readonly fitPileupPeaks = "Pileup Peaks";
-  public static readonly fitBackground = "Background";
-
-  public static readonly fitBackgroundDetC = "Background detC";
-  public static readonly fitBackgroundTotal = "Background Total";
-  public static readonly fitBackgroundCalc = "Background Calc";
-  public static readonly fitBackgroundSNIP = "Background SNIP";
-
-  public static readonly allLineChoiceOptions: SubItemOptionSection[] = [
-    {
-      title: "Summed Across an Area",
-      options: [
-        { title: "A", value: SpectrumChartModel.lineExpressionBulkA },
-        { title: "B", value: SpectrumChartModel.lineExpressionBulkB },
-        { title: "Sum of A + B", value: "sum(bulk(A),bulk(B))" },
-        { title: "Difference A - B", value: "diff(bulk(A),bulk(B))" },
-        { title: "Difference B - A", value: "diff(bulk(B),bulk(A))" },
-        { title: "Min of A and B", value: "minOf(bulk(A),bulk(B))" },
-        { title: "Max of A and B", value: "maxOf(bulk(A),bulk(B))" },
-        { title: "A without Diffraction", value: "removeDiffraction(bulk(A),bulk(B))" },
-        { title: "B without Diffraction", value: "removeDiffraction(bulk(B),bulk(A))" },
-      ],
-    },
-    {
-      title: "Max Value in an Area",
-      options: [
-        { title: "A", value: SpectrumChartModel.lineExpressionMaxA },
-        { title: "B", value: "max(B)" },
-        { title: "Sum of A + B", value: "sum(max(A),max(B))" },
-        { title: "Difference A - B", value: "diff(max(A),max(B))" },
-        { title: "Difference B - A", value: "diff(max(B),max(A))" },
-        { title: "Min of A and B", value: "minOf(max(A),max(B))" },
-        { title: "Max of A and B", value: "maxOf(max(A),max(B))" },
-        { title: "A without Diffraction", value: "removeDiffraction(max(A),max(B))" },
-        { title: "B without Diffraction", value: "removeDiffraction(max(B),max(A))" },
-      ],
-    },
-  ];
-
-  static getTitleForLineExpression(expr: string): string {
-    for (const optSec of SpectrumChartModel.allLineChoiceOptions) {
-      for (const opt of optSec.options) {
-        if (opt.value == expr) {
-          return opt.title;
-        }
-      }
-    }
-    return expr;
-  }
+  // The drawable data
+  private _drawModel: SpectrumDrawModel = new SpectrumDrawModel();
 
   private _drawTransform: PanZoom = new PanZoom(new MinMax(1, undefined), new MinMax(1, undefined), new PanRestrictorToCanvas());
 
@@ -212,9 +161,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   private _diffractionPeaksShown: DiffractionPeak[] = [];
 
-  // CanvasDrawNotifier
-  needsDraw$: Subject<void> = new Subject<void>();
-
   constructor(
     public envService: EnvConfigurationService //,
     // public clipboard: Clipboard
@@ -224,6 +170,14 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       // Remember we need to recalc
       this._recalcNeeded = true;
     });
+  }
+
+  get drawModel(): SpectrumDrawModel {
+    return this._drawModel;
+  }
+
+  hasRawData(): boolean {
+    return this._spectrumLines.length > 0;
   }
 
   get keyItems(): KeyItem[] {
@@ -239,8 +193,10 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     return this._spectrumLines;
   }
 
-  setEnergyCalibration(scanId: string, calibration: SpectrumEnergyCalibration) {
-    this._calibration.set(scanId + "-" + calibration.detector, calibration);
+  setEnergyCalibration(scanId: string, calibration: SpectrumEnergyCalibration[]) {
+    for (const cal of calibration) {
+      this._calibration.set(scanId + "-" + cal.detector, cal);
+    }
     this._recalcNeeded = true;
     this.needsDraw$.next();
   }
@@ -960,6 +916,9 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
     this._xAxis.updateAxis(viewport, this._drawTransform);
     this._yAxis.updateAxis(viewport, this._drawTransform);
+
+    // Clear the draw data so it gets regenerated on next draw call
+    this._drawModel.drawnData = null;
   }
 
   clearDisplayData() {
@@ -1016,4 +975,67 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
     return cal.keVsToChannel([keV])[0];
   }
+
+  public static readonly lineExpressionBulkA = "bulk(A)";
+  public static readonly lineExpressionBulkB = "bulk(B)";
+  public static readonly lineExpressionMaxA = "max(A)";
+
+  public static readonly fitMeasuredSpectrum = "Measured Spectrum";
+  public static readonly fitCaclulatedTotalSpectrum = "Calculated Total Spectrum";
+  public static readonly fitResiduals = "Residuals";
+  public static readonly fitPileupPeaks = "Pileup Peaks";
+  public static readonly fitBackground = "Background";
+
+  public static readonly fitBackgroundDetC = "Background detC";
+  public static readonly fitBackgroundTotal = "Background Total";
+  public static readonly fitBackgroundCalc = "Background Calc";
+  public static readonly fitBackgroundSNIP = "Background SNIP";
+
+  public static readonly allLineChoiceOptions: SubItemOptionSection[] = [
+    {
+      title: "Summed Across an Area",
+      options: [
+        { title: "A", value: SpectrumChartModel.lineExpressionBulkA },
+        { title: "B", value: SpectrumChartModel.lineExpressionBulkB },
+        { title: "Sum of A + B", value: "sum(bulk(A),bulk(B))" },
+        { title: "Difference A - B", value: "diff(bulk(A),bulk(B))" },
+        { title: "Difference B - A", value: "diff(bulk(B),bulk(A))" },
+        { title: "Min of A and B", value: "minOf(bulk(A),bulk(B))" },
+        { title: "Max of A and B", value: "maxOf(bulk(A),bulk(B))" },
+        { title: "A without Diffraction", value: "removeDiffraction(bulk(A),bulk(B))" },
+        { title: "B without Diffraction", value: "removeDiffraction(bulk(B),bulk(A))" },
+      ],
+    },
+    {
+      title: "Max Value in an Area",
+      options: [
+        { title: "A", value: SpectrumChartModel.lineExpressionMaxA },
+        { title: "B", value: "max(B)" },
+        { title: "Sum of A + B", value: "sum(max(A),max(B))" },
+        { title: "Difference A - B", value: "diff(max(A),max(B))" },
+        { title: "Difference B - A", value: "diff(max(B),max(A))" },
+        { title: "Min of A and B", value: "minOf(max(A),max(B))" },
+        { title: "Max of A and B", value: "maxOf(max(A),max(B))" },
+        { title: "A without Diffraction", value: "removeDiffraction(max(A),max(B))" },
+        { title: "B without Diffraction", value: "removeDiffraction(max(B),max(A))" },
+      ],
+    },
+  ];
+
+  static getTitleForLineExpression(expr: string): string {
+    for (const optSec of SpectrumChartModel.allLineChoiceOptions) {
+      for (const opt of optSec.options) {
+        if (opt.value == expr) {
+          return opt.title;
+        }
+      }
+    }
+    return expr;
+  }
+}
+
+export class SpectrumDrawModel implements BaseChartDrawModel {
+  // Our rendered to an image, cached and only regenerated on resolution
+  // change or data change
+  drawnData: OffscreenCanvas | null = null;
 }

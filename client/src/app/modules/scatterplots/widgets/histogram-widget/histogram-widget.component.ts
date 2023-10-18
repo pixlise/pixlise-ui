@@ -8,7 +8,7 @@ import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-sour
 import { DataSourceParams, DataUnit, RegionDataResults, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { HistogramModel } from "./histogram-model";
-import { HistogramDrawer } from "./drawer";
+import { HistogramDrawer } from "./histogram-drawer";
 import { HistogramToolHost } from "./histogram-interaction";
 import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
 import { DataExpressionId } from "src/app/expression-language/expression-id";

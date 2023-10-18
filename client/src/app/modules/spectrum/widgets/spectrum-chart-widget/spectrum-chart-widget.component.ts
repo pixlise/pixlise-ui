@@ -25,6 +25,7 @@ import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysi
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { ROIShape } from "src/app/modules/roi/components/roi-shape/roi-shape.component";
 import { PointDrawer } from "src/app/utils/drawing";
+import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -163,12 +164,21 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
   private setInitialConfig() {
     // Show allpoints A/B and selection A/B from the default scan
-    if (this._analysisLayoutService.defaultScanId.length > 0) {
+    const scanId = this._analysisLayoutService.defaultScanId;
+
+    if (scanId.length > 0) {
       const items = new Map<string, string[]>();
-      items.set(PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId), [
-        SpectrumChartModel.lineExpressionBulkA,
-        SpectrumChartModel.lineExpressionBulkB,
-      ]);
+      items.set(PredefinedROIID.getAllPointsForScan(scanId), [SpectrumChartModel.lineExpressionBulkA, SpectrumChartModel.lineExpressionBulkB]);
+      //items.set(PredefinedROIID.getSelectedPointsForScan(scanId), [SpectrumChartModel.lineExpressionBulkA, SpectrumChartModel.lineExpressionBulkB]);
+
+      // Set the calibration
+      this._energyCalibrationService.getScanCalibration(scanId).subscribe((cal: SpectrumEnergyCalibration[]) => {
+        this._energyCalibrationService.setCurrentCalibration(scanId, cal);
+        this.mdl.setEnergyCalibration(scanId, cal);
+        this.mdl.xAxisEnergyScale = true;
+        this.updateLines();
+      });
+
       this.mdl.setLineList(items);
       this.updateLines();
     }
@@ -277,9 +287,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         // Set the calibration in service and in our model
         for (const [scanId, cal] of result.calibrationForScans.entries()) {
           this._energyCalibrationService.setCurrentCalibration(scanId, cal);
-          for (const detCal of cal) {
-            this.mdl.setEnergyCalibration(scanId, detCal);
-          }
+          this.mdl.setEnergyCalibration(scanId, cal);
         }
         this.updateLines();
       }

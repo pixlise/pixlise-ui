@@ -30,46 +30,83 @@
 import { CANVAS_FONT_SIZE_TITLE } from "src/app/utils/drawing";
 import { RGBA, Colours } from "src/app/utils/colours";
 import { ChartAxis, ChartAxisDrawer } from "src/app/modules/analysis/components/widget/interactive-canvas/chart-axis";
-import {
-  CanvasDrawer,
-  CanvasDrawParameters,
-  CanvasParams,
-  CanvasWorldTransform,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawParameters, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
 import { ISpectrumChartModel, SpectrumChartLine } from "./spectrum-model-interface";
 import { SpectrumChartToolHost } from "./tools/tool-host";
+import { CachedCanvasChartDrawer } from "src/app/modules/scatterplots/base/cached-drawer";
+import { BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
+import { SpectrumChartModel } from "./spectrum-model";
 
-export class SpectrumChartDrawer implements CanvasDrawer {
+export class SpectrumChartDrawer extends CachedCanvasChartDrawer {
   protected _dbg: string = "";
-  protected _ctx: ISpectrumChartModel;
+  protected _mdl: SpectrumChartModel;
   protected _toolHost: SpectrumChartToolHost;
 
-  constructor(ctx: ISpectrumChartModel, toolHost: SpectrumChartToolHost) {
-    this._ctx = ctx;
+  constructor(ctx: SpectrumChartModel, toolHost: SpectrumChartToolHost) {
+    super();
+
+    this._mdl = ctx;
     this._toolHost = toolHost;
   }
 
-  drawWorldSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  protected get mdl(): BaseChartModel {
+    return this._mdl;
+  }
+
+  override drawWorldSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     // Draw tool UI on top
     this.drawWorldSpaceToolUIs(screenContext, drawParams);
   }
 
-  drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
-    this._ctx.recalcDisplayDataIfNeeded(drawParams.drawViewport);
-
-    if (!this._ctx.xAxis || !this._ctx.yAxis) {
+  drawPreData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    if (!this._mdl.xAxis || !this._mdl.yAxis) {
       return;
     }
 
-    // Flip things so bottom-left is 0,0
-    //screenContext.transform(1, 0, 0, -1, 0, viewport.height);
+    const axisDrawer = new ChartAxisDrawer();
+    axisDrawer.drawAxes(screenContext, drawParams.drawViewport, this._mdl.xAxis, this._mdl.xAxisLabel, this._mdl.yAxis, this._mdl.yAxisLabel);
+  }
 
-    //this._dbg = 'pan='+this._ctx.transform.pan.x+','+this._ctx.transform.pan.y+' scale='+this._ctx.transform.scale.x+','+this._ctx.transform.scale.y;
+  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    if (!this._mdl.xAxis || !this._mdl.yAxis) {
+      return;
+    }
+/*
+    // Don't allow drawing over the axis now
+    screenContext.save();
+    screenContext.beginPath();
+    screenContext.rect(this._mdl.xAxis.startPx, 0, this._mdl.xAxis.endPx, drawParams.drawViewport.height - this._mdl.yAxis.startPx);
+    screenContext.clip();
+*/
+    for (let c = 0; c < this._mdl.spectrumLines.length; c++) {
+      const spectrum = this._mdl.spectrumLines[c];
+      this.drawSpectrum(screenContext, spectrum, this._mdl.spectrumLineDarkenIdxs.indexOf(c) > -1, this._mdl.xAxis, this._mdl.yAxis);
+    }
 
-    //let t1 = performance.now();
-    this.drawChart(screenContext, drawParams.drawViewport, drawParams.worldTransform, this._ctx.xAxis, this._ctx.yAxis);
-    //let t2 = performance.now();
+    //screenContext.restore();
+  }
+
+  drawPostData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    if (this._mdl.xAxis && this._mdl.yAxis) {
+      // Don't allow drawing over the axis now
+      screenContext.save();
+      screenContext.beginPath();
+      screenContext.rect(this._mdl.xAxis.startPx, 0, this._mdl.xAxis.endPx, drawParams.drawViewport.height - this._mdl.yAxis.startPx);
+      screenContext.clip();
+/*
+    for (let c = 0; c < this._mdl.spectrumLines.length; c++) {
+      const spectrum = this._mdl.spectrumLines[c];
+      this.drawSpectrum(screenContext, spectrum, this._mdl.spectrumLineDarkenIdxs.indexOf(c) > -1, this._mdl.xAxis, this._mdl.yAxis);
+    }
+*/
+      for (const peak of this._mdl.diffractionPeaksShown) {
+        this.drawDiffractionPeakBand(screenContext, drawParams.drawViewport, peak, this._mdl.xAxis);
+      }
+
+      screenContext.restore();
+    }
+
     this.drawScreenSpaceToolUIs(screenContext, drawParams);
 
     if (this._dbg.length) {
@@ -79,19 +116,8 @@ export class SpectrumChartDrawer implements CanvasDrawer {
       screenContext.font = CANVAS_FONT_SIZE_TITLE + "px Roboto";
       screenContext.fillText(this._dbg, CANVAS_FONT_SIZE_TITLE, drawParams.drawViewport.height - CANVAS_FONT_SIZE_TITLE);
     }
-
-    //let t3 = performance.now();
-    //let total=t3-t0;
-
-    //console.log('['+this._draws+'] '+this.drawStats('recalcDisplayData', t1-t0, total)+' '+this.drawStats('drawChart', t2-t1, total)+' '+this.drawStats('drawScreenSpaceToolUIs', t3-t2, total)+' total='+(t3-t0).toPrecision(4)+'ms');
-    //this._draws++;
   }
-  /*private _draws: number = 0;
-private drawStats(name: string, elapsed: number, total: number): string
-{
-    return name+'='+elapsed.toPrecision(4)+'ms ('+(100*elapsed/total).toPrecision(3)+'%)';
-}
-*/
+
   protected drawWorldSpaceToolUIs(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     //screenContext.save();
     for (const drawer of this._toolHost.getDrawers()) {
@@ -112,35 +138,7 @@ private drawStats(name: string, elapsed: number, total: number): string
     //screenContext.restore();
   }
 
-  protected drawChart(
-    screenContext: CanvasRenderingContext2D,
-    viewport: CanvasParams,
-    worldTransform: CanvasWorldTransform,
-    xAxis: ChartAxis,
-    yAxis: ChartAxis
-  ): void {
-    const axisDrawer = new ChartAxisDrawer();
-
-    axisDrawer.drawAxes(screenContext, viewport, xAxis, this._ctx.xAxisLabel, yAxis, this._ctx.yAxisLabel);
-
-    // Don't allow drawing over the axis now
-    screenContext.save();
-    screenContext.beginPath();
-    screenContext.rect(xAxis.startPx, 0, xAxis.endPx, viewport.height - yAxis.startPx);
-    screenContext.clip();
-
-    for (let c = 0; c < this._ctx.spectrumLines.length; c++) {
-      const spectrum = this._ctx.spectrumLines[c];
-      this.drawSpectrum(screenContext, spectrum, this._ctx.spectrumLineDarkenIdxs.indexOf(c) > -1, xAxis, yAxis);
-    }
-
-    for (const peak of this._ctx.diffractionPeaksShown) {
-      this.drawDiffractionPeakBand(screenContext, viewport, peak, xAxis);
-    }
-    screenContext.restore();
-  }
-
-  protected drawSpectrum(screenContext: CanvasRenderingContext2D, spectrum: SpectrumChartLine, darken: boolean, xAxis: ChartAxis, yAxis: ChartAxis) {
+  protected drawSpectrum(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, spectrum: SpectrumChartLine, darken: boolean, xAxis: ChartAxis, yAxis: ChartAxis) {
     if (spectrum.values.length <= 0) {
       return;
     }

@@ -20,7 +20,10 @@ export abstract class CachedCanvasChartDrawer implements CanvasDrawer {
     if (this.mdl.drawModel) {
       const drawMdl = this.mdl.drawModel;
       if (!drawMdl.drawnData && this.mdl.hasRawData()) {
-        drawMdl.drawnData = new OffscreenCanvas(drawParams.drawViewport.width, drawParams.drawViewport.height);
+        drawMdl.drawnData = new OffscreenCanvas(
+          drawParams.drawViewport.width * drawParams.drawViewport.dpi,
+          drawParams.drawViewport.height * drawParams.drawViewport.dpi
+        );
         const offscreenContext = drawMdl.drawnData.getContext("2d");
         if (offscreenContext) {
           // Render data to an image which is cached and drawn as needed

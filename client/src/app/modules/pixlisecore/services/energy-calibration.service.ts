@@ -34,7 +34,7 @@ export class EnergyCalibrationService {
   getScanCalibration(scanId: string): Observable<SpectrumEnergyCalibration[]> {
     return combineLatest([
       this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId: scanId })),
-      this._cachedDataService.getSpectrum(SpectrumReq.create({ scanId: scanId, bulkSum: true })),
+      this._cachedDataService.getSpectrum(SpectrumReq.create({ scanId: scanId, bulkSum: true, entries: { indexes: [] } })),
     ]).pipe(
       map(values => {
         const metaResp = values[0] as ScanMetaLabelsAndTypesResp;
