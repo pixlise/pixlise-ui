@@ -21,7 +21,7 @@ import { ScanMetaDataType } from "src/app/generated-protos/scan";
 import { Point, Rect } from "src/app/models/Geometry";
 import { SpectrumEnergyCalibrationComponent, SpectrumEnergyCalibrationResult } from "./spectrum-energy-calibration/spectrum-energy-calibration.component";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
-import { SpectrumWidgetData, WidgetData } from "src/app/generated-protos/widget-data";
+import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/viewstate";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -151,11 +151,10 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
   ngOnInit() {
     this.widgetData$.subscribe((data: any) => {
-      if (data?.rois) {
+      if (data?.spectrumLines) {
         let lines = new Map<string, string[]>();
-        let rois = data.rois as Record<string, { options: string[] }>;
-        Object.entries(rois).forEach(([roiId, roi]) => {
-          lines.set(roiId, roi.options);
+        data.spectrumLines.forEach((line: SpectrumLines) => {
+          lines.set(line.roiID, line.lineExpressions);
         });
 
         this.mdl.setLineList(lines);
@@ -305,11 +304,12 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
       this.mdl.setLineList(result.selectedItems);
 
-      let rois: Record<string, { options: string[] }> = {};
-      for (const [roiId, options] of this.mdl.getLineList()) {
-        rois[roiId] = { options };
-      }
-      this.onSaveWidgetData.emit(SpectrumWidgetData.create({ rois }));
+      let spectrumLines: SpectrumLines[] = [];
+      this.mdl.getLineList().forEach((lineExpressions, roiID) => {
+        spectrumLines.push(SpectrumLines.create({ roiID, lineExpressions }));
+      });
+
+      this.onSaveWidgetData.emit(SpectrumWidgetState.create({ spectrumLines }));
 
       this.updateLines();
     });
