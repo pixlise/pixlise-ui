@@ -1,4 +1,5 @@
 // import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/spectrum-chart-widget.component";
+import { WidgetData } from "src/app/generated-protos/widget-data";
 import {
   BinaryChartWidgetComponent,
   TernaryChartWidgetComponent,
@@ -54,6 +55,8 @@ export type WidgetConfiguration = {
 
   // Toolbar and settings options - define this in the component
   controlConfiguration: WidgetControlConfiguration;
+
+  dataKey: keyof WidgetData;
 };
 
 export const WIDGETS = {
@@ -61,30 +64,35 @@ export const WIDGETS = {
     name: "Spectrum",
     description: "Spectrum chart",
     component: SpectrumChartWidgetComponent,
+    dataKey: "spectrum",
     controlConfiguration: {},
   },
   "binary-plot": {
     name: "Binary Plot",
     description: "Binary plot",
     component: BinaryChartWidgetComponent,
+    dataKey: "binary",
     controlConfiguration: {},
   },
   "ternary-plot": {
     name: "Ternary Plot",
     description: "Ternary plot",
     component: TernaryChartWidgetComponent,
+    dataKey: "ternary",
     controlConfiguration: {},
   },
   histogram: {
     name: "Histogram",
     description: "Histogram",
     component: HistogramWidgetComponent,
+    dataKey: "histogram",
     controlConfiguration: {},
   },
   "chord-diagram": {
     name: "Chord Diagram",
     description: "Chord Diagram",
     component: ChordDiagramWidgetComponent,
+    dataKey: "chord",
     controlConfiguration: {},
   },
 } satisfies Record<string, WidgetConfiguration>;

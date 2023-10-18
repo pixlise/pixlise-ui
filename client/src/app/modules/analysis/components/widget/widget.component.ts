@@ -2,6 +2,7 @@ import { Component, OnInit, ComponentRef, ElementRef, HostListener, ViewChild, V
 import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetToolbarButtonConfiguration, WidgetType } from "./models/widgets.model";
 import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+import { WidgetData } from "src/app/generated-protos/widget-data";
 
 @Component({
   selector: "widget",
@@ -164,11 +165,26 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
     this.widgetConfiguration = this.copyConfiguration();
     this._currentWidgetRef = this.currentWidget?.createComponent(this.widgetConfiguration!.component);
 
-    if (this._currentWidgetRef?.instance?.onUpdateWidgetControlConfiguration) {
-      this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration.subscribe((config: WidgetControlConfiguration) => {
-        this.widgetConfiguration!.controlConfiguration = config;
-        this.initOverflowState();
-      });
+    if (this._currentWidgetRef?.instance) {
+      if (this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration) {
+        this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration.subscribe((config: WidgetControlConfiguration) => {
+          this.widgetConfiguration!.controlConfiguration = config;
+          this.initOverflowState();
+        });
+      }
+
+      // Set the widget data stored for this location
+      if (this._currentWidgetRef.instance.widgetData$) {
+        this._currentWidgetRef.instance.widgetData$.next(this.widgetLayoutConfig.data?.[this.widgetConfiguration.dataKey]);
+      }
+
+      if (this._currentWidgetRef.instance.onSaveWidgetData) {
+        this._currentWidgetRef.instance.onSaveWidgetData.subscribe((widgetData: any) => {
+          let data = this.widgetLayoutConfig.data || WidgetData.create({ id: this.widgetLayoutConfig.id });
+          data[this.widgetConfiguration!.dataKey] = widgetData;
+          this._analysisLayoutService.writeWidgetData(data);
+        });
+      }
     }
   }
 }

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChange, SimpleChanges } from "@angular/core";
 import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SpectrumService } from "../../services/spectrum.service";
@@ -21,6 +21,7 @@ import { ScanMetaDataType } from "src/app/generated-protos/scan";
 import { Point, Rect } from "src/app/models/Geometry";
 import { SpectrumEnergyCalibrationComponent, SpectrumEnergyCalibrationResult } from "./spectrum-energy-calibration/spectrum-energy-calibration.component";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
+import { SpectrumWidgetData, WidgetData } from "src/app/generated-protos/widget-data";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -149,6 +150,19 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   ngOnInit() {
+    this.widgetData$.subscribe((data: any) => {
+      if (data?.rois) {
+        let lines = new Map<string, string[]>();
+        let rois = data.rois as Record<string, { options: string[] }>;
+        Object.entries(rois).forEach(([roiId, roi]) => {
+          lines.set(roiId, roi.options);
+        });
+
+        this.mdl.setLineList(lines);
+        this.updateLines();
+      }
+    });
+
     this.reDraw();
   }
 
@@ -241,7 +255,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
     dialogConfig.data = {
       draggable: true,
-      scanIds: Array.from(scanIds)
+      scanIds: Array.from(scanIds),
     };
 
     const dialogRef = this.dialog.open(SpectrumEnergyCalibrationComponent, dialogConfig);
@@ -290,6 +304,13 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       // a line for each to the chart
 
       this.mdl.setLineList(result.selectedItems);
+
+      let rois: Record<string, { options: string[] }> = {};
+      for (const [roiId, options] of this.mdl.getLineList()) {
+        rois[roiId] = { options };
+      }
+      this.onSaveWidgetData.emit(SpectrumWidgetData.create({ rois }));
+
       this.updateLines();
     });
   }

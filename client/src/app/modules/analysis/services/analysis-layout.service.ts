@@ -11,6 +11,8 @@ import { QuantificationSummary } from "src/app/generated-protos/quantification-m
 import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
 import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { DEFAULT_SCREEN_CONFIGURATION, createDefaultScreenConfiguration } from "../models/screen-configuration.model";
+import { WidgetData } from "src/app/generated-protos/widget-data";
+import { WidgetDataGetReq, WidgetDataWriteReq } from "src/app/generated-protos/widget-data-msgs";
 
 @Injectable({
   providedIn: "root",
@@ -34,6 +36,8 @@ export class AnalysisLayoutService {
   activeScreenConfiguration$ = new BehaviorSubject<ScreenConfiguration>(DEFAULT_SCREEN_CONFIGURATION);
 
   screenConfigurations$ = new BehaviorSubject<Map<string, ScreenConfiguration>>(new Map());
+
+  widgetData$ = new BehaviorSubject<Map<string, WidgetData>>(new Map());
 
   constructor(
     private _route: ActivatedRoute,
@@ -88,7 +92,7 @@ export class AnalysisLayoutService {
   }
 
   loadScreenConfigurationFromScan(scanId: string) {
-    this.fetchScreenConfiguration("", scanId);
+    this.fetchScreenConfiguration("", scanId, true);
   }
 
   writeScreenConfiguration(screenConfiguration: ScreenConfiguration, scanId: string = "") {
@@ -96,13 +100,18 @@ export class AnalysisLayoutService {
       return;
     }
 
+    let updateId = this.activeScreenConfigurationId$.value;
+    if (!updateId && screenConfiguration.id !== updateId) {
+      // Update the active screen configuration ID
+      this.activeScreenConfigurationId$.next(screenConfiguration.id);
+      updateId = screenConfiguration.id;
+    }
+
+    screenConfiguration.id = updateId;
+
     this._dataService.sendScreenConfigurationWriteRequest(ScreenConfigurationWriteReq.create({ scanId, screenConfiguration })).subscribe(res => {
       if (res.screenConfiguration) {
         this.activeScreenConfiguration$.next(res.screenConfiguration);
-
-        if (res.screenConfiguration.id !== this.activeScreenConfigurationId$.value) {
-          this.activeScreenConfigurationId$.next(res.screenConfiguration.id);
-        }
 
         // Store the screen configuration
         this.screenConfigurations$.next(this.screenConfigurations$.value.set(res.screenConfiguration.id, res.screenConfiguration));
@@ -119,6 +128,22 @@ export class AnalysisLayoutService {
         this.writeScreenConfiguration(screenConfiguration);
       }
     }
+  }
+
+  writeWidgetData(widgetData: WidgetData) {
+    this._dataService.sendWidgetDataWriteRequest(WidgetDataWriteReq.create({ widgetData })).subscribe(res => {
+      if (res.widgetData) {
+        this.widgetData$.next(this.widgetData$.value.set(res.widgetData.id, res.widgetData));
+      }
+    });
+  }
+
+  fetchWidgetData(id: string) {
+    this._dataService.sendWidgetDataGetRequest(WidgetDataGetReq.create({ id })).subscribe(res => {
+      if (res.widgetData) {
+        this.widgetData$.next(this.widgetData$.value.set(res.widgetData.id, res.widgetData));
+      }
+    });
   }
 
   changeActiveScreenConfiguration(id: string) {
