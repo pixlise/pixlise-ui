@@ -10,11 +10,12 @@ import { AnalysisModule } from "../analysis/analysis.module";
 import { FormsModule } from "@angular/forms";
 import { MaterialModule } from "../material.module";
 import { SpectrumEnergyCalibrationComponent } from "./widgets/spectrum-chart-widget/spectrum-energy-calibration/spectrum-energy-calibration.component";
+import { SingleScanEnergyCalibrationComponent } from "./widgets/spectrum-chart-widget/spectrum-energy-calibration/single-scan-energy-calibration/single-scan-energy-calibration.component";
 
 export { SpectrumChartWidgetComponent } from "./widgets/spectrum-chart-widget/spectrum-chart-widget.component";
 
 @NgModule({
-  declarations: [SpectrumChartWidgetComponent, SpectrumEnergyCalibrationComponent],
+  declarations: [SpectrumChartWidgetComponent, SpectrumEnergyCalibrationComponent, SingleScanEnergyCalibrationComponent],
   imports: [CommonModule, PIXLISECoreModule, AnalysisModule, FormsModule, DragDropModule, MaterialModule],
   exports: [SpectrumChartWidgetComponent, SpectrumEnergyCalibrationComponent],
   providers: [DiffractionService, SpectrumService],

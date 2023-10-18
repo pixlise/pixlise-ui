@@ -93,8 +93,6 @@ export class spectrumLines {
   ) {}
 }
 
-const spectrumLineDashPatterns = [[], [6, 2], [2, 2], [1, 2, 1, 2, 1, 2, 8, 2]];
-
 const fitLinePrefix = "fit_";
 
 export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifier {
@@ -792,11 +790,15 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     opacity: number = 1.0, // OPTIONAL! Can change opacity
     drawFilled: boolean = false // OPTIONAL! Can draw as filled polygon between line and x axis. NOTE: In this case, the line itself is not drawn
   ): void {
-    // Find the line
+    // Find the line and get its index (need this for dash pattern generation)
     const roiLines = this._linesShown.get(roiId);
-    if (!roiLines || roiLines.indexOf(lineExpression) < 0) {
+    const roiIdx = roiLines ? roiLines.indexOf(lineExpression) : -1;
+    if (!roiLines || roiIdx < 0) {
       throw new Error(`addLineDataForLine called for non-existant line: ${roiId}-${lineExpression}`);
     }
+
+    const lineDashPatterns = [[], [6, 2], [2, 2], [1, 2, 1, 2, 1, 2, 8, 2]];
+    const dashPattern = lineDashPatterns[roiIdx % lineDashPatterns.length];
 
     // It's actually stored in a separate list for drawing, so delete any existing entry
     for (let c = 0; c < this._spectrumLines.length; c++) {
@@ -807,12 +809,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       }
     }
 
-    // Add as a new line
-    const colourStr = colourRGB.asString();
-
+    // Add all lines
     for (const [label, valuesForLine] of lineValues) {
-      const dashPattern = this.getDashPattern(colourStr);
-
       const xValues = this.calcXValues(valuesForLine.values.length, scanId, valuesForLine.sourceDetectorID);
       const spectrumLine = new SpectrumChartLine(
         scanId,
@@ -832,19 +830,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
       this._spectrumLines.push(spectrumLine);
     }
-  }
-
-  private getDashPattern(colourRGB: string): number[] {
-    // Loop through all existing lines, if any have the same colour we increment the dash pattern, thereby ensuring that lines
-    // with the same colour have differing dash patterns
-    let dashPatternIdx = 0;
-    for (let c = 0; c < this._spectrumLines.length; c++) {
-      if (this._spectrumLines[c].color == colourRGB) {
-        dashPatternIdx++;
-      }
-    }
-
-    return spectrumLineDashPatterns[dashPatternIdx % spectrumLineDashPatterns.length];
   }
 
   private calcXValues(channelCount: number, scanId: string, forDetectorId: string): Float32Array {

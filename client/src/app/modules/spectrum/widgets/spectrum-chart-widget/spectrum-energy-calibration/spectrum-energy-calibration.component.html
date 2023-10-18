@@ -44,46 +44,22 @@ POSSIBILITY OF SUCH DAMAGE.
       <img class="title-icon" [alt]="calibrationIcon" [src]="calibrationIcon">
     </div>
   </header>
+  <section class="settings">
+    <span>Show energy on X axis</span>
+    <two-state-icon-button
+      activeIcon="assets/button-icons/check-on.svg"
+      inactiveIcon="assets/button-icons/check-off.svg"
+      class="checkbox-button"
+      [active]="xAxisEnergyScale"
+      (onToggle)="xAxisEnergyScale = !xAxisEnergyScale">
+    </two-state-icon-button>
+  </section>
   <section class="calibration">
-    <h3>Scan</h3>
-    <mat-select [(ngModel)]="visibleScanId" class="scan-filter" placeholder="Scan ...">
-      <mat-option *ngFor="let scan of allScans" [value]="scan.id">{{ scan.title }} </mat-option>
-    </mat-select>
-    <h3>Calibration Source</h3>
-    <mat-select [(ngModel)]="selectedSource" (selectionChange)="onSwitchSource($event)">
-        <mat-option *ngFor="let src of sources" [value]="src.name" [disabled]="!src.enabled">{{src.name}}</mat-option>
-    </mat-select>
-    <h3>Detector A</h3>
-    <input
-      type="text"
-      placeholder="eV Start..."
-      title='eV Start (Detector A)'
-      [disabled]="editDisabled"
-      [(ngModel)]="eVStartA"
-      (change)="onValueChanged()"
-      autofocus>
-    <input
-      type="text"
-      placeholder="eV/Channel..."
-      title='eV/Channel (Detector A)'
-      [disabled]="editDisabled"
-      [(ngModel)]="eVPerChannelA"
-      (change)="onValueChanged()">
-    <h3>Detector B</h3>
-    <input
-      type="text"
-      placeholder="eV Start..."
-      title='eV Start (Detector B)'
-      [disabled]="editDisabled"
-      [(ngModel)]="eVStartB"
-      (change)="onValueChanged()">
-    <input
-      type="text"
-      placeholder="eV/Channel..."
-      title='eV/Channel (Detector B)'
-      [disabled]="editDisabled"
-      [(ngModel)]="eVPerChannelB"
-      (change)="onValueChanged()">
+    <div *ngIf="allScans.length <= 0" class="no-scan-msg">
+      <h3>No scans available for calibration</h3>
+      <div>Add some data to widgets for scans to appear here</div>
+    </div>
+    <single-scan-energy-calibration *ngFor="let scan of allScans" [calibration]="scan" class="scan-calibration"></single-scan-energy-calibration>
   </section>
   <div class="button-container">
     <push-button class="apply-btn" buttonStyle="yellow" (onClick)="onApply()">Apply</push-button>

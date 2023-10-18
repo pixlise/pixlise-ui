@@ -23,6 +23,8 @@ import { SpectrumEnergyCalibrationComponent, SpectrumEnergyCalibrationResult } f
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { ROIShape } from "src/app/modules/roi/components/roi-shape/roi-shape.component";
+import { PointDrawer } from "src/app/utils/drawing";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -37,6 +39,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   mdl: SpectrumChartModel;
   drawer: CanvasDrawer;
   toolhost: SpectrumChartToolHost;
+
+  private _showingDisplaySpectra = false;
 
   private _subs = new Subscription();
   constructor(
@@ -116,6 +120,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           id: "spectra",
           type: "button",
           title: "Display Spectra",
+          disabled: !this._showingDisplaySpectra,
           value: false,
           onClick: () => this.onSelectSpectra(),
         },
@@ -258,7 +263,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
     dialogConfig.data = {
       draggable: true,
-      scanIds: Array.from(scanIds)
+      scanIds: Array.from(scanIds),
+      xAxisEnergyScale: this.mdl.xAxisEnergyScale,
     };
 
     const dialogRef = this.dialog.open(SpectrumEnergyCalibrationComponent, dialogConfig);
@@ -267,13 +273,12 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       if (result) {
         // Set the overall flag
         this.mdl.xAxisEnergyScale = result.useCalibration;
-        if (this.mdl.xAxisEnergyScale) {
-          // Set the new values in service, save for all
-          for (const [scanId, cal] of result.calibrationForScans.entries()) {
-            this._energyCalibrationService.setCurrentCalibration(scanId, cal);
-            for (const detCal of cal) {
-              this.mdl.setEnergyCalibration(scanId, detCal);
-            }
+
+        // Set the calibration in service and in our model
+        for (const [scanId, cal] of result.calibrationForScans.entries()) {
+          this._energyCalibrationService.setCurrentCalibration(scanId, cal);
+          for (const detCal of cal) {
+            this.mdl.setEnergyCalibration(scanId, detCal);
           }
         }
         this.updateLines();
@@ -282,6 +287,10 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   onSelectSpectra() {
+    if (this._showingDisplaySpectra) {
+      return;
+    }
+
     const dialogConfig = new MatDialogConfig<ROIPickerData>();
     // Pass data to dialog
     dialogConfig.data = {
@@ -297,6 +306,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
 
+    this._showingDisplaySpectra = true;
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
     dialogRef.componentInstance.onChange.subscribe((result: ROIPickerResponse) => {
       if (!result.selectedItems) {
@@ -308,6 +318,10 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
       this.mdl.setLineList(result.selectedItems);
       this.updateLines();
+    });
+
+    dialogRef.afterClosed().subscribe(() => {
+      this._showingDisplaySpectra = false;
     });
   }
 
@@ -351,9 +365,10 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
               );
 
               this.mdl.addLineDataForLine(roiId, lineExpr, roi.region.scanId, roi.region.name, roi.displaySettings.colour, values);
-              this.mdl.updateRangesAndKey();
-              this.mdl.clearDisplayData(); // This should trigger a redraw
             }
+
+            this.mdl.updateRangesAndKey();
+            this.mdl.clearDisplayData(); // This should trigger a redraw
           });
       });
     }

@@ -1,0 +1,44 @@
+<div *ngIf="calibration !== null" class="scan-calibration">
+    <h2>{{calibration.scan.title}}</h2>
+    <h3>Detector A</h3>
+    <input
+      type="text"
+      placeholder="eV Start..."
+      title='eV Start (Detector A)'
+      [disabled]="editDisabled"
+      [(ngModel)]="eVStartA"
+      (change)="onValueChanged()">
+    <input
+      type="text"
+      placeholder="eV/Channel..."
+      title='eV/Channel (Detector A)'
+      [disabled]="editDisabled"
+      [(ngModel)]="eVPerChannelA"
+      (change)="onValueChanged()">
+    <h3>Detector B</h3>
+    <input
+      type="text"
+      placeholder="eV Start..."
+      title='eV Start (Detector B)'
+      [disabled]="editDisabled"
+      [(ngModel)]="eVStartB"
+      (change)="onValueChanged()">
+    <input
+      type="text"
+      placeholder="eV/Channel..."
+      title='eV/Channel (Detector B)'
+      [disabled]="editDisabled"
+      [(ngModel)]="eVPerChannelB"
+      (change)="onValueChanged()">
+      <push-button
+        buttonStyle="outline"
+        (onClick)="onLoadCurrent()">Load Current</push-button>
+      <push-button
+        [disabled]="!hasDatasetCalibration"
+        buttonStyle="outline"
+        (onClick)="onLoadDataset()">Load From Dataset</push-button>
+      <push-button 
+        [disabled]="!hasQuantCalibration"
+        buttonStyle="outline"
+        (onClick)="onLoadQuant()">Load From Quant</push-button>
+  </div>
