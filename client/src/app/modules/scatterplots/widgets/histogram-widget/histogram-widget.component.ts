@@ -38,8 +38,6 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   ) {
     super();
 
-    this.setInitialConfig();
-
     this.drawer = new HistogramDrawer(this.mdl);
     this.toolhost = new HistogramToolHost(this.mdl);
 
@@ -148,6 +146,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   ngOnInit() {
+    this.setInitialConfig();
     this.reDraw();
   }
   ngOnDestroy() {

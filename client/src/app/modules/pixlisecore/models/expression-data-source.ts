@@ -340,26 +340,34 @@ export class ExpressionDataSource
             const startChannel = peak.peakChannel - diffractionPeakWidth / 2;
             const endChannel = peak.peakChannel + diffractionPeakWidth / 2;
 
-            this._allPeaks.push(
-              new DiffractionPeak(
-                pmc,
+            // keV values will be calculated later
+            const channels = [peak.peakChannel, startChannel, endChannel];
+            let keVs: number[] = [];
+            for (const calibration of this._spectrumEnergyCalibration) {
+              if (calibration.detector == this._eVCalibrationDetector) {
+                keVs = calibration.channelsTokeV(channels);
+              }
+            }
 
-                Math.min(100, peak.effectSize), // Found in SOL139 some spectra were corrupt and effect size was bazillions, so now capping at 100
-                peak.baselineVariation,
-                peak.globalDifference,
-                peak.differenceSigma,
-                peak.peakHeight,
-                peak.detector,
-                peak.peakChannel,
+            if (keVs.length == 3) {
+              this._allPeaks.push(
+                new DiffractionPeak(
+                  pmc,
 
-                // keV values will be calculated later
-                this.channelTokeV(peak.peakChannel, this._eVCalibrationDetector),
-                this.channelTokeV(startChannel, this._eVCalibrationDetector),
-                this.channelTokeV(endChannel, this._eVCalibrationDetector),
-
-                DiffractionPeak.statusUnspecified
-              )
-            );
+                  Math.min(100, peak.effectSize), // Found in SOL139 some spectra were corrupt and effect size was bazillions, so now capping at 100
+                  peak.baselineVariation,
+                  peak.globalDifference,
+                  peak.differenceSigma,
+                  peak.peakHeight,
+                  peak.detector,
+                  peak.peakChannel,
+                  keVs[0],
+                  keVs[1],
+                  keVs[2],
+                  DiffractionPeak.statusUnspecified
+                )
+              );
+              }
           }
           // else ignore
         }
@@ -380,31 +388,6 @@ export class ExpressionDataSource
     this._roughnessItems.sort((a: RoughnessItem, b: RoughnessItem) => {
       return a.pmc == b.pmc ? 0 : a.pmc < b.pmc ? -1 : 1;
     });
-  }
-
-  private channelTokeV(channel: number, detector: string) {
-    let calibrated = 0;
-
-    for (const calibration of this._spectrumEnergyCalibration) {
-      if (calibration.detector == detector) {
-        calibrated = calibration.eVstart + channel * calibration.eVperChannel;
-        break;
-      }
-    }
-
-    return calibrated * 0.001; // keV conversion
-  }
-
-  private keVToChannel(keV: number, detector: string): number | null {
-    const eV = keV * 1000;
-
-    for (const calibration of this._spectrumEnergyCalibration) {
-      if (calibration.detector == detector) {
-        return Math.floor((eV - calibration.eVstart) / calibration.eVperChannel);
-      }
-    }
-
-    return null;
   }
 
   // QuantifiedDataQuerierSource
@@ -798,19 +781,26 @@ export class ExpressionDataSource
           // Also loop through user-defined peaks
           // If we can convert the user peak keV to a channel, do it and compare
           if (this._spectrumEnergyCalibration.length > 0 && userDiffractionPeakData?.peaks) {
-            for (const id of Object.keys(userDiffractionPeakData.peaks)) {
-              const peak = userDiffractionPeakData.peaks[id];
 
-              // ONLY look at positive energies, negative means it's a user-entered roughness item!
-              if (peak.energykeV > 0) {
-                const channel = this.keVToChannel(peak.energykeV, this._eVCalibrationDetector);
-                if (channel !== null && channel >= channelStart && channel < channelEnd) {
-                  let prev = pmcDiffractionCount.get(peak.pmc);
-                  if (!prev) {
-                    prev = 0;
+            for (const cal of this._spectrumEnergyCalibration) {
+              if (cal.detector == this._eVCalibrationDetector) {
+                for (const id of Object.keys(userDiffractionPeakData.peaks)) {
+                  const peak = userDiffractionPeakData.peaks[id];
+
+                  // ONLY look at positive energies, negative means it's a user-entered roughness item!
+                  if (peak.energykeV > 0) {
+                    const ch = cal.keVsToChannel([peak.energykeV]);
+                    if (ch.length == 1 && ch[0] >= channelStart && ch[0] < channelEnd) {
+                      let prev = pmcDiffractionCount.get(peak.pmc);
+                      if (!prev) {
+                        prev = 0;
+                      }
+                      pmcDiffractionCount.set(peak.pmc, prev + 1);
+                    }
                   }
-                  pmcDiffractionCount.set(peak.pmc, prev + 1);
                 }
+
+                break;
               }
             }
           }

@@ -88,6 +88,18 @@ export class APICachedDataService {
         spectrum.counts = Array.from(decompressZeroRunLengthEncoding(spectrum.counts, spectrumData.channelCount));
       }
     }
+
+    if (spectrumData.bulkSpectra) {
+      for (const spectrum of spectrumData.bulkSpectra) {
+        spectrum.counts = Array.from(decompressZeroRunLengthEncoding(spectrum.counts, spectrumData.channelCount));
+      }
+    }
+
+    if (spectrumData.maxSpectra) {
+      for (const spectrum of spectrumData.maxSpectra) {
+        spectrum.counts = Array.from(decompressZeroRunLengthEncoding(spectrum.counts, spectrumData.channelCount));
+      }
+    }
   }
 
   getScanMetaLabelsAndTypes(req: ScanMetaLabelsAndTypesReq): Observable<ScanMetaLabelsAndTypesResp> {

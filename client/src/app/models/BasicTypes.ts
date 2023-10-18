@@ -311,4 +311,20 @@ export class SpectrumEnergyCalibration {
             this.detector == another.detector*/
     );
   }
+
+  channelsTokeV(channels: number[]): number[] {
+    const result: number[] = [];
+    for (const ch of channels) {
+      result.push((this.eVstart + ch * this.eVperChannel) * 0.001 /*eV->keV conversion*/);
+    }
+    return result;
+  }
+
+  keVsToChannel(keVs: number[]): number[] {
+    const result: number[] = [];
+    for (const keV of keVs) {
+      Math.floor((keV * 1000 /*keV->eV conversion*/ - this.eVstart) / this.eVperChannel);
+    }
+    return result;
+  }
 }

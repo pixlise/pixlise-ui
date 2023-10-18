@@ -221,7 +221,12 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     public envService: EnvConfigurationService //,
     // public clipboard: Clipboard
   ) // public dialog: MatDialog,
-  {}
+  {
+    this.transform.transformChangeComplete$.subscribe((complete: boolean) => {
+      // Remember we need to recalc
+      this._recalcNeeded = true;
+    });
+  }
 
   get keyItems(): KeyItem[] {
     return this._keyItems;
@@ -760,19 +765,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       this._lineRangeY.expand(line.maxValue);
     }
 
-    // Get min/max data values. Need to check against every scan id
-    if (this._showXAsEnergy) {
-      const maxChannel = this._lineRangeX.max || 0;
-      this._lineRangeX = new MinMax(0, 0);
-
-      for (const scanId of scanIds) {
-        const maxEnergyA = this.channelTokeV(maxChannel, scanId, "A") || 0;
-        const maxEnergyB = this.channelTokeV(maxChannel, scanId, "B") || 0;
-
-        this._lineRangeX.expandMax(Math.max(maxEnergyA, maxEnergyB));
-      }
-    }
-
     this._keyItems = [];
 
     // Run through and regenerate key items from all lines
@@ -862,34 +854,28 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     }
 
     // Calculate x values
-    const xvalues = new Float32Array(channelCount);
+    let xvalues: number[] = [];
 
-    if (!this._showXAsEnergy) {
-      // Make incrementing x values (channel)
-      for (let c = 0; c < xvalues.length; c++) {
-        xvalues[c] = c + 1; //this._xAxis.valueToPx(c+1);
-      }
-    } else {
-      // calculate eV for x axis
+    // Make incrementing x values (channel)
+    const incr = this._showXAsEnergy ? 0 : 1;
+    for (let c = 0; c < channelCount; c++) {
+      xvalues.push(c + incr);
+    }
+
+    // Calc as energy if needed
+    if (this._showXAsEnergy) {
       let detectorCalib = "A";
       if (forDetectorId == "B") {
         detectorCalib = "B";
       }
 
-      let energy: number | null = 0;
-      let lastVal = 0;
-      for (let c = 0; c < xvalues.length; c++) {
-        energy = this.channelTokeV(c, scanId, detectorCalib);
-        if (energy === null) {
-          energy = lastVal;
-        }
-
-        xvalues[c] = energy; //this._xAxis.valueToPx(energy);
-        lastVal = energy;
+      const cal = this._calibration.get(scanId + "-" + detectorCalib);
+      if (cal) {
+        xvalues = cal.channelsTokeV(xvalues);
       }
     }
 
-    return xvalues;
+    return new Float32Array(xvalues);
   }
 
   getMaxSpectrumValueAtEnergy(keV: number): number | null {
@@ -897,11 +883,12 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
     if (this.spectrumLines.length > 0) {
       for (const spectrum of this.spectrumLines) {
-        const channel = this.keVToChannel(keV, spectrum.scanId, "A");
-        if (channel !== null) {
+        const cal = this._calibration.get(spectrum.scanId + "-" + "A");
+        if (cal) {
           // Take the eV of the line, find its channel index
-          if (channel >= 0 && channel < spectrum.values.length) {
-            const thisVal = spectrum.values[channel];
+          const ch = cal.keVsToChannel([keV]);
+          if (ch.length > 0 && ch[0] >= 0 && ch[0] < spectrum.values.length) {
+            const thisVal = spectrum.values[ch[0]];
             if (value === null || thisVal > value) {
               value = thisVal;
             }
@@ -1036,22 +1023,12 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     }
   }
 
-  channelTokeV(channel: number, scanId: string, detector: string): number | null {
-    const cal = this._calibration.get(scanId + "-" + detector);
-    if (!cal) {
-      return null;
-    }
-
-    return cal.eVstart + channel * cal.eVperChannel * 0.001; // eV->keV conversion
-  }
-
   keVToChannel(keV: number, scanId: string, detector: string): number | null {
     const cal = this._calibration.get(scanId + "-" + detector);
     if (!cal) {
       return null;
     }
 
-    const eV = keV * 1000; // keV->eV conversion
-    return Math.floor((eV - cal.eVstart) / cal.eVperChannel);
+    return cal.keVsToChannel([keV])[0];
   }
 }

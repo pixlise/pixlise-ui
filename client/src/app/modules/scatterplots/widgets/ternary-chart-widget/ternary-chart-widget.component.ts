@@ -66,8 +66,6 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   ) {
     super();
 
-    this.setInitialConfig();
-
     this.drawer = new TernaryChartDrawer(this.mdl);
     this.toolhost = new TernaryChartToolHost(this.mdl, this._selectionService);
 
@@ -172,6 +170,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   ngOnInit() {
+    this.setInitialConfig();
+
     this._subs.add(
       this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
         this.mdl.handleHoverPointChanged(this._selectionService.hoverScanId, this._selectionService.hoverEntryId);

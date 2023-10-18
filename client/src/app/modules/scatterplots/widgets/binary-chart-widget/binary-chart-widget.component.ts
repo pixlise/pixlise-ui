@@ -60,8 +60,6 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   ) {
     super();
 
-    this.setInitialConfig();
-
     this.drawer = new BinaryChartDrawer(this.mdl);
     this.toolhost = new BinaryChartToolHost(this.mdl, this._selectionService);
 
@@ -161,6 +159,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   ngOnInit() {
+    this.setInitialConfig();
     this.reDraw();
   }
 

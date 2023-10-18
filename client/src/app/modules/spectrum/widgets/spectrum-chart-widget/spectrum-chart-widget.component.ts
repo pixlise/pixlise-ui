@@ -21,6 +21,8 @@ import { ScanMetaDataType } from "src/app/generated-protos/scan";
 import { Point, Rect } from "src/app/models/Geometry";
 import { SpectrumEnergyCalibrationComponent, SpectrumEnergyCalibrationResult } from "./spectrum-energy-calibration/spectrum-energy-calibration.component";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
+import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -38,6 +40,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
   private _subs = new Subscription();
   constructor(
+    private _analysisLayoutService: AnalysisLayoutService,
     private _spectrumService: SpectrumService,
     private _snackService: SnackbarService,
     private _cachedDataService: APICachedDataService,
@@ -149,7 +152,21 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   ngOnInit() {
+    this.setInitialConfig();
     this.reDraw();
+  }
+
+  private setInitialConfig() {
+    // Show allpoints A/B and selection A/B from the default scan
+    if (this._analysisLayoutService.defaultScanId.length > 0) {
+      const items = new Map<string, string[]>();
+      items.set(PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId), [
+        SpectrumChartModel.lineExpressionBulkA,
+        SpectrumChartModel.lineExpressionBulkB,
+      ]);
+      this.mdl.setLineList(items);
+      this.updateLines();
+    }
   }
 
   ngOnDestroy() {

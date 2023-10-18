@@ -43,8 +43,6 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   ) {
     super();
 
-    this.setInitialConfig();
-
     this.drawer = new ChordDiagramDrawer(this.mdl);
     this.toolhost = new ChordDiagramInteraction(this.mdl, this._selectionService);
 
@@ -158,6 +156,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   ngOnInit() {
+    this.setInitialConfig();
     this.reDraw();
   }
 

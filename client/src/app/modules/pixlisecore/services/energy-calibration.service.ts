@@ -46,10 +46,10 @@ export class EnergyCalibrationService {
         let eVperChannelMetaIdx = -1;
 
         for (let c = 0; c < metaResp.metaLabels.length; c++) {
-          if (metaResp.metaLabels[c] == "XPERCHAN") {
+          if (metaResp.metaLabels[c] == "OFFSET") {
             eVStartMetaIdx = c;
           }
-          if (metaResp.metaLabels[c] == "OFFSET") {
+          if (metaResp.metaLabels[c] == "XPERCHAN") {
             eVperChannelMetaIdx = c;
           }
 
