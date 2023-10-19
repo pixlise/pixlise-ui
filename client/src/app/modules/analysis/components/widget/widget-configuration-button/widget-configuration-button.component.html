@@ -1,11 +1,12 @@
 <div class="button">
   <span
+    #buttonTrigger
     *ngIf="buttonConfiguration"
     #tooltip="matTooltip"
     [matTooltip]="buttonConfiguration.tooltip || ''"
     [matTooltipDisabled]="!buttonConfiguration.tooltip"
     class="btn-container"
-    (click)="buttonConfiguration.onClick(buttonConfiguration.value)">
+    (click)="buttonConfiguration.onClick(buttonConfiguration.value, buttonTrigger)">
     <two-state-push-button *ngIf="buttonConfiguration.title">{{ buttonConfiguration.title }}</two-state-push-button>
     <icon-button
       *ngIf="['button', 'selectable-button'].includes(buttonConfiguration.type) && buttonConfiguration.icon"

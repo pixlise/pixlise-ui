@@ -34,6 +34,8 @@ import { Subscription } from "rxjs";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { ExpressionSearchFilter } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
+import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
 
 export type ExpressionPickerResponse = {
   selectedExpressions: DataExpression[];
@@ -68,6 +70,7 @@ export class ExpressionPickerComponent implements OnInit {
   quantId: string = "";
 
   constructor(
+    private _analysisLayoutService: AnalysisLayoutService,
     private _snackBarService: SnackbarService,
     private _expressionService: ExpressionsService,
     @Inject(MAT_DIALOG_DATA) public data: ExpressionPickerData,
@@ -140,6 +143,20 @@ export class ExpressionPickerComponent implements OnInit {
 
   onFilterChanged({ filteredExpressions, scanId, quantId }: ExpressionSearchFilter) {
     this.filteredExpressions = filteredExpressions;
+
+    if (this.scanId !== scanId || this.quantId !== quantId) {
+      let config = this._analysisLayoutService.activeScreenConfiguration$.value;
+      if (config) {
+        if (config.scanConfigurations[scanId]) {
+          config.scanConfigurations[scanId].quantId = quantId;
+        } else {
+          config.scanConfigurations[scanId] = ScanConfiguration.create({ quantId });
+        }
+
+        this._analysisLayoutService.writeScreenConfiguration(config);
+      }
+    }
+
     this.scanId = scanId;
     this.quantId = quantId;
 

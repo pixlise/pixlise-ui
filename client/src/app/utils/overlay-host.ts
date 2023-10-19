@@ -31,6 +31,25 @@ import { CdkOverlayOrigin, ConnectionPositionPair, Overlay, OverlayConfig, Overl
 import { ComponentPortal } from "@angular/cdk/portal";
 import { ComponentRef, Injector, ViewContainerRef } from "@angular/core";
 
+export const getInitialModalPositionRelativeToTrigger = (trigger: Element | undefined, height: number, width: number) => {
+  let position = {};
+  if (trigger) {
+    let boundingRect = trigger.getBoundingClientRect();
+
+    // Position the dialog in the middle of the trigger, but make sure it stays fully on screen
+    let top = Math.min(boundingRect.top - height / 2, window.innerHeight - height);
+
+    // 6px is the marginLeft of the button, 8px is the grid spacing (assuming it's not a widget all the way on the left)
+    // If it is all the way on the left, we want to make sure the dialog is still fully on screen (left: 0)
+    let left = Math.max(boundingRect.left - width - 6 - 8, 0);
+    position = {
+      top: `${top}px`,
+      left: `${left}px`,
+    };
+  }
+  return position;
+};
+
 export class OverlayHost {
   private _overlayRef?: OverlayRef;
 

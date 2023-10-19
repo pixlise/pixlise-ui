@@ -1,4 +1,3 @@
-// import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/spectrum-chart-widget.component";
 import { WidgetData } from "src/app/generated-protos/widget-data";
 import {
   BinaryChartWidgetComponent,
@@ -18,7 +17,7 @@ export type WidgetToolbarButtonConfiguration = {
   tooltip?: string;
   value?: any;
   disabled?: boolean;
-  onClick: (value: any) => void;
+  onClick: (value: any, trigger?: Element) => void;
 
   // Controls whether the value is copied over in a template
   templateable?: boolean;

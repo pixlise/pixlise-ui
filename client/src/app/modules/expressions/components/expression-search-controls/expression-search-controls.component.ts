@@ -33,6 +33,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   allScans: ScanItem[] = [];
   _visibleScanId: string = "";
 
+  private _defaultQuantsForScans: Record<string, string> = {};
   private _availableQuants: Record<string, QuantificationSummary[]> = {};
   filteredQuants: QuantificationSummary[] = [];
   _selectedQuantId: string = "";
@@ -86,6 +87,21 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
         this.filteredQuants = quants[this.visibleScanId] || [];
       })
     );
+
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
+        if (screenConfiguration) {
+          this._defaultQuantsForScans = {};
+          Object.entries(screenConfiguration.scanConfigurations).map(([scanId, scanConfig]) => {
+            this._defaultQuantsForScans[scanId] = scanConfig.quantId;
+          });
+
+          if (this.visibleScanId && !this.selectedQuantId) {
+            this.selectedQuantId = this._defaultQuantsForScans[this.visibleScanId] || "";
+          }
+        }
+      })
+    );
   }
 
   ngOnDestroy() {
@@ -119,6 +135,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
     this._visibleScanId = scanId;
     this._analysisLayoutService.fetchQuantsForScan(scanId);
     this.filteredQuants = this._availableQuants[scanId] || [];
+    this.selectedQuantId = this._defaultQuantsForScans[this.visibleScanId] || "";
     this.emitFilters();
   }
 

@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChange, SimpleChanges } from "@angular/core";
+import { Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChange, SimpleChanges } from "@angular/core";
 import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SpectrumService } from "../../services/spectrum.service";
@@ -26,10 +26,11 @@ import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { ROIShape } from "src/app/modules/roi/components/roi-shape/roi-shape.component";
 import { PointDrawer } from "src/app/utils/drawing";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
-import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/viewstate";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { SpectrumToolId } from "./tools/base-tool";
 import { PeakIdentificationData, SpectrumPeakIdentificationComponent } from "./spectrum-peak-identification/spectrum-peak-identification.component";
+import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
+import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/widget-data";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -128,7 +129,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           title: "Display Spectra",
           disabled: !this._showingDisplaySpectra,
           value: false,
-          onClick: () => this.onSelectSpectra(),
+          onClick: (value, trigger) => this.onSelectSpectra(trigger),
         },
         {
           id: "fit",
@@ -318,7 +319,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     });
   }
 
-  onSelectSpectra() {
+  onSelectSpectra(trigger: Element | undefined) {
     if (this._showingDisplaySpectra) {
       return;
     }
@@ -337,6 +338,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
     dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
+    dialogConfig.position = getInitialModalPositionRelativeToTrigger(trigger, ROIPickerComponent.HEIGHT, ROIPickerComponent.WIDTH);
 
     this._showingDisplaySpectra = true;
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
@@ -382,8 +384,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     this._showingPiquant = true;
     const dialogRef = this.dialog.open(SpectrumPeakIdentificationComponent, dialogConfig);
 
-    dialogRef.componentInstance.onChange.subscribe((result: PeakIdentificationData) => {
-    });
+    dialogRef.componentInstance.onChange.subscribe((result: PeakIdentificationData) => {});
 
     dialogRef.afterClosed().subscribe((result: PeakIdentificationData) => {
       this._showingPiquant = false;

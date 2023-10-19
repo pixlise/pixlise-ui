@@ -68,6 +68,11 @@ export type ROIPickerData = {
 export class ROIPickerComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
+  // These are computed values that can be used for initial positioning dialogs.
+  // They need to be manually updated if the dialog size changes, but this shouldn't happen often, so not worth making smarter.
+  static readonly HEIGHT = 564;
+  static readonly WIDTH = 400;
+
   showSearchControls: boolean = true;
 
   selectedItems: Map<string, string[]> = new Map();

@@ -1,4 +1,4 @@
-import { Injectable } from "@angular/core";
+import { Injectable, OnInit } from "@angular/core";
 import { Observable, combineLatest, map, of, shareReplay } from "rxjs";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { APICachedDataService } from "./apicacheddata.service";
@@ -6,20 +6,70 @@ import { SpectrumReq, SpectrumResp } from "src/app/generated-protos/spectrum-msg
 import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
 import { QuantGetReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { ExpressionDataSource } from "../models/expression-data-source";
+import { AnalysisLayoutService } from "../../analysis/services/analysis-layout.service";
+import { ScanCalibrationConfiguration, ScanConfiguration } from "src/app/generated-protos/screen-configuration";
 
 @Injectable({
   providedIn: "root",
 })
-export class EnergyCalibrationService {
+export class EnergyCalibrationService implements OnInit {
   // The currently applied calibration
   private _currentCalibration: Map<string, SpectrumEnergyCalibration[]> = new Map<string, SpectrumEnergyCalibration[]>();
 
-  constructor(private _cachedDataService: APICachedDataService) {
-    this._currentCalibration = new Map<string, SpectrumEnergyCalibration[]>();
+  constructor(
+    private _analysisLayoutService: AnalysisLayoutService,
+    private _cachedDataService: APICachedDataService
+  ) {
+    // this._currentCalibration = new Map<string, SpectrumEnergyCalibration[]>();
+  }
+
+  ngOnInit(): void {
+    this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
+      if (config.scanConfigurations) {
+        Object.entries(config.scanConfigurations).forEach(([scanId, scanConfig]) => {
+          let calibrations = scanConfig.calibrations.map(
+            calibration => new SpectrumEnergyCalibration(calibration.eVstart, calibration.eVperChannel, calibration.detector)
+          );
+          this._currentCalibration.set(scanId, calibrations);
+        });
+      }
+    });
   }
 
   setCurrentCalibration(scanId: string, values: SpectrumEnergyCalibration[]) {
     this._currentCalibration.set(scanId, values);
+    let currentConfig = this._analysisLayoutService.activeScreenConfiguration$.value;
+    if (currentConfig && currentConfig.id) {
+      if (!currentConfig.scanConfigurations) {
+        currentConfig.scanConfigurations = {};
+      }
+
+      if (!currentConfig.scanConfigurations[scanId]) {
+        currentConfig.scanConfigurations[scanId] = ScanConfiguration.create({ id: scanId });
+      }
+
+      let isNewCalibration = false;
+
+      let existingCalibrations = currentConfig.scanConfigurations[scanId].calibrations;
+      let calibrations: ScanCalibrationConfiguration[] = [];
+      values.forEach(({ eVstart, eVperChannel, detector }, i) => {
+        if (
+          i >= existingCalibrations.length ||
+          existingCalibrations[i].eVstart !== eVstart ||
+          existingCalibrations[i].eVperChannel !== eVperChannel ||
+          existingCalibrations[i].detector !== detector
+        ) {
+          isNewCalibration = true;
+        }
+
+        calibrations.push(ScanCalibrationConfiguration.create({ eVstart, eVperChannel, detector }));
+      });
+
+      if (isNewCalibration) {
+        currentConfig.scanConfigurations[scanId].calibrations = calibrations;
+        this._analysisLayoutService.writeScreenConfiguration(currentConfig);
+      }
+    }
   }
 
   getCurrentCalibration(scanId: string): Observable<SpectrumEnergyCalibration[]> {
@@ -32,6 +82,10 @@ export class EnergyCalibrationService {
   }
 
   getScanCalibration(scanId: string): Observable<SpectrumEnergyCalibration[]> {
+    if (this._currentCalibration.has(scanId)) {
+      return this.getCurrentCalibration(scanId);
+    }
+
     return combineLatest([
       this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId: scanId })),
       this._cachedDataService.getSpectrum(SpectrumReq.create({ scanId: scanId, bulkSum: true, entries: { indexes: [] } })),

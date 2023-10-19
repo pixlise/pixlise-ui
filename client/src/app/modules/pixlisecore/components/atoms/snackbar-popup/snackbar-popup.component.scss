@@ -52,6 +52,11 @@
   }
 
   .message {
+    max-width: 100%;
+    overflow: hidden;
+    white-space: pre;
+    text-overflow: ellipsis;
+    margin-right: 4px;
   }
 
   .close-btn {

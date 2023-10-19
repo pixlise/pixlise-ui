@@ -19,6 +19,7 @@ import {
   ExpressionPickerResponse,
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { TernaryState, VisibleROI } from "src/app/generated-protos/widget-data";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -170,11 +171,65 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   ngOnInit() {
-    this.setInitialConfig();
+    // this.setInitialConfig();
 
     this._subs.add(
       this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
         this.mdl.handleHoverPointChanged(this._selectionService.hoverScanId, this._selectionService.hoverEntryId);
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
+        let updated = false;
+        if (screenConfiguration) {
+          if (screenConfiguration.scanConfigurations) {
+            // Update all existing data source ids with the new quant id for the scan
+            Object.entries(screenConfiguration.scanConfigurations).forEach(([scanId, scanConfig]) => {
+              if (this.mdl.dataSourceIds.has(scanId)) {
+                let dataSource = this.mdl.dataSourceIds.get(scanId);
+                if (dataSource?.quantId !== scanConfig.quantId) {
+                  this.mdl.dataSourceIds.set(scanId, new ScanDataIds(scanConfig.quantId, dataSource?.roiIds || []));
+                  updated = true;
+                }
+              }
+            });
+          }
+        }
+
+        if (updated) {
+          this.update();
+        }
+      })
+    );
+
+    this._subs.add(
+      this.widgetData$.subscribe((data: any) => {
+        let ternaryData: TernaryState = data as TernaryState;
+
+        if (ternaryData) {
+          if (ternaryData.expressionIDs) {
+            this.mdl.expressionIds = ternaryData.expressionIDs;
+          }
+
+          if (ternaryData.visibleROIs) {
+            this.mdl.dataSourceIds.clear();
+            ternaryData.visibleROIs.forEach(roi => {
+              if (this.mdl.dataSourceIds.has(roi.scanId)) {
+                let dataSource = this.mdl.dataSourceIds.get(roi.scanId);
+                dataSource!.roiIds.push(roi.id);
+                this.mdl.dataSourceIds.set(roi.scanId, dataSource!);
+              } else {
+                let quantId = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[roi.scanId]?.quantId || "";
+                this.mdl.dataSourceIds.set(roi.scanId, new ScanDataIds(quantId, [roi.id]));
+              }
+            });
+
+            this.update();
+          }
+        } else {
+          this.setInitialConfig();
+        }
       })
     );
     /*this._subs.add(
@@ -234,6 +289,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
           roisPerScan.set(roi.scanId, existing);
         }
 
+        let visibleROIs: VisibleROI[] = [];
         // Now fill in the data source ids using the above
         for (const [scanId, roiIds] of roisPerScan) {
           let quantId = "";
@@ -244,7 +300,19 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
             quantId = existingSource.quantId;
           }
           this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, roiIds));
+
+          roiIds.forEach(id => {
+            visibleROIs.push(VisibleROI.create({ id, scanId }));
+          });
         }
+
+        this.onSaveWidgetData.emit(
+          TernaryState.create({
+            expressionIDs: this.mdl.expressionIds,
+            visibleROIs,
+            showMmol: this.mdl.showMmol,
+          })
+        );
 
         this.update();
       }
@@ -287,9 +355,28 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         }
         this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
 
+        this.onSaveWidgetData.emit(
+          TernaryState.create({
+            expressionIDs: this.mdl.expressionIds,
+            visibleROIs: this.getVisibleROIs(),
+            showMmol: this.mdl.showMmol,
+          })
+        );
+
         this.update();
       }
     });
+  }
+
+  getVisibleROIs(): VisibleROI[] {
+    let visibleROIs: VisibleROI[] = [];
+    this.mdl.dataSourceIds.forEach((ids, scanId) => {
+      ids.roiIds.forEach(id => {
+        visibleROIs.push(VisibleROI.create({ id, scanId }));
+      });
+    });
+
+    return visibleROIs;
   }
 
   onCornerClick(corner: string): void {
@@ -302,6 +389,13 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
   setShowMmol() {
     this.mdl.showMmol = !this.mdl.showMmol;
+    this.onSaveWidgetData.emit(
+      TernaryState.create({
+        expressionIDs: this.mdl.expressionIds,
+        visibleROIs: this.getVisibleROIs(),
+        showMmol: this.mdl.showMmol,
+      })
+    );
   }
 
   get selectModeExcludeROI(): boolean {

@@ -7,6 +7,7 @@ export const DEFAULT_SCREEN_CONFIGURATION: ScreenConfiguration = {
   tags: [],
   modifiedUnixSec: 0,
   owner: undefined,
+  scanConfigurations: {},
   layouts: [
     {
       rows: [{ height: 3 }, { height: 2 }],
