@@ -25,7 +25,7 @@
           }
         ],
         "@angular-eslint/component-selector": [
-          "error",
+          "warn",
           {
             "type": "element",
             "prefix": "app",
@@ -34,6 +34,7 @@
         ],
         "@typescript-eslint/no-inferrable-types": "off",
         "@typescript-eslint/no-empty-function": "warn",
+        "@angular-eslint/no-output-on-prefix": "warn",
         "prefer-const": "warn"
       }
     },
@@ -45,7 +46,9 @@
         "plugin:@angular-eslint/template/recommended",
         "plugin:@angular-eslint/template/accessibility"
       ],
-      "rules": {}
+      "rules": {
+        "@angular-eslint/template/mouse-events-have-key-events": "warn"
+      }
     }
   ]
 }

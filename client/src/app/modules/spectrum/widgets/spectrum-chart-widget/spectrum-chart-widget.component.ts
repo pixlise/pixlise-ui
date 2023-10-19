@@ -29,6 +29,7 @@ import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/viewstate";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { SpectrumToolId } from "./tools/base-tool";
+import { PeakIdentificationData, SpectrumPeakIdentificationComponent } from "./spectrum-peak-identification/spectrum-peak-identification.component";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -45,6 +46,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   toolhost: SpectrumChartToolHost;
 
   private _showingDisplaySpectra = false;
+  private _showingPiquant = false;
 
   private _subs = new Subscription();
   constructor(
@@ -139,8 +141,9 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           id: "piquant",
           type: "button",
           title: "Run PIQUANT",
+          disabled: !this._showingPiquant,
           value: false,
-          onClick: () => {},
+          onClick: () => this.onPiquant(),
         },
         {
           id: "peakLabels",
@@ -296,6 +299,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       xAxisEnergyScale: this.mdl.xAxisEnergyScale,
     };
 
+    //dialogConfig.hasBackdrop = false;
+
     const dialogRef = this.dialog.open(SpectrumEnergyCalibrationComponent, dialogConfig);
 
     dialogRef.afterClosed().subscribe((result: SpectrumEnergyCalibrationResult) => {
@@ -357,6 +362,31 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
     dialogRef.afterClosed().subscribe(() => {
       this._showingDisplaySpectra = false;
+    });
+  }
+
+  onPiquant() {
+    if (this._showingPiquant) {
+      return;
+    }
+    const dialogConfig = new MatDialogConfig();
+    //dialogConfig.backdropClass = 'empty-overlay-backdrop';
+
+    dialogConfig.data = {
+      mdl: this.mdl,
+      draggable: true,
+    };
+
+    dialogConfig.hasBackdrop = false;
+
+    this._showingPiquant = true;
+    const dialogRef = this.dialog.open(SpectrumPeakIdentificationComponent, dialogConfig);
+
+    dialogRef.componentInstance.onChange.subscribe((result: PeakIdentificationData) => {
+    });
+
+    dialogRef.afterClosed().subscribe((result: PeakIdentificationData) => {
+      this._showingPiquant = false;
     });
   }
 

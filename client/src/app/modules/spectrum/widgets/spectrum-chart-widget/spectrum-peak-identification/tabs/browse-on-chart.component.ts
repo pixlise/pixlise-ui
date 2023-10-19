@@ -27,90 +27,24 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-@import 'atoms.scss';
+import { Component, OnInit } from "@angular/core";
+import { TabSelectors } from "../tab-selectors";
 
-.calibration-container {
-  display: flex;
-  flex-direction: column;
+@Component({
+  selector: TabSelectors.tabBrowseOnChart,
+  templateUrl: "./browse-on-chart.component.html",
+  styleUrls: ["./browse-on-chart.component.scss"],
+})
+export class BrowseOnChartComponent implements OnInit {
+  constructor(/*private _spectrumService: SpectrumChartService*/) {}
 
-  .controls {
-    flex-direction: row;
-    align-items: center;
-    box-sizing: border-box;
-    display: flex;
-    place-content: center space-between;
-    gap: $sz-unit;
-    box-shadow: 0 4px 4px #00000040;
+  ngOnInit() {}
 
-    padding: $sz-unit;
-
-    .title {
-      color: rgb(var(--clr-gray-30));
-      font-family: Roboto;
-      font-style: normal;
-      font-weight: 900;
-      font-size: 16px;
-      line-height: 19px;
-      text-transform: uppercase;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      user-select: none;
-      white-space: nowrap;
-
-      padding: 0;
-
-      &.drag {
-        cursor: move;
-        flex: 1;
-      }
-
-      &::before {
-        height: 0;
-      }
-    }
+  get showAllElements(): boolean {
+    return false;//return !this._spectrumService.mdl.browseCommonElementsXRF;
   }
 
-  .settings {
-    display: flex;
-    flex-direction: row;
-    padding: $sz-unit;
-    gap: $sz-unit;
-    align-items: center;
-  }
-
-  .calibration {
-    display: flex;
-    flex-direction: row;
-    padding: $sz-unit;
-
-    .scan-calibration:not(:first-child) {
-        border-left: 1px solid $clr-gray-100;
-    }
-
-    .no-scan-msg {
-        color: $clr-gray-30;
-        padding: $sz-double;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: $sz-unit;
-    }
-  }
-
-  .button-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-end;
-  
-    padding: $sz-unit;
-  
-    push-button {
-      margin-left: $sz-unit;
-  
-      &:first-of-type {
-        margin-left: 0;
-      }
-    }
+  toggleAllElements(): void {
+    //this._spectrumService.mdl.browseCommonElementsXRF = !this._spectrumService.mdl.browseCommonElementsXRF;
   }
 }

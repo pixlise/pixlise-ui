@@ -29,7 +29,7 @@
 
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { XRFLine, XRFLineType } from "src/app/periodic-table/XRFLine";
-import { ElementSetItemLines } from "../modules/element-sets/services/element-set.service";
+import { ElementLine } from "../generated-protos/element-set";
 
 export class XRFLineGroup {
   private _lines: XRFLine[] = [];
@@ -54,7 +54,7 @@ export class XRFLineGroup {
   ) {
     // Check if we have K, L or M lines at all
 
-    let elemItem = periodicTableDB.getElementByAtomicNumber(this.atomicNumber);
+    const elemItem = periodicTableDB.getElementByAtomicNumber(this.atomicNumber);
 
     if (!elemItem) {
       console.error("XRFLineGroup failed to get element info for Z=" + atomicNumber);
@@ -62,7 +62,7 @@ export class XRFLineGroup {
     }
 
     for (let c = 0; c < elemItem.lines.length; c++) {
-      let line = elemItem.lines[c].Siegbahn[0];
+      const line = elemItem.lines[c].Siegbahn[0];
       if (line == "K") {
         this._hasK = true;
       }
@@ -81,12 +81,12 @@ export class XRFLineGroup {
     this.updateLineFlags();
   }
 
-  static makeFromElementSetItem(item: ElementSetItemLines): XRFLineGroup {
-    let group = new XRFLineGroup(item.Z, [], []);
+  static makeFromElementSetItem(item: ElementLine): XRFLineGroup {
+    const group = new XRFLineGroup(item.Z, [], []);
 
-    let lines = ["K", "L", "M", "Esc"];
-    for (let line of lines) {
-      if (item[line as keyof ElementSetItemLines]) {
+    const lines = ["K", "L", "M", "Esc"];
+    for (const line of lines) {
+      if (item[line as keyof ElementLine]) {
         group.addLine(line);
       }
     }
@@ -95,7 +95,7 @@ export class XRFLineGroup {
   }
 
   static makeFromAtomicNumber(atomicNumber: number): XRFLineGroup {
-    let group = new XRFLineGroup(atomicNumber, [], []);
+    const group = new XRFLineGroup(atomicNumber, [], []);
 
     group.addLine("K");
     group.addLine("L");
@@ -166,13 +166,13 @@ export class XRFLineGroup {
     if (line == "Esc") {
       this.addEscapeLines();
     } else {
-      let elemItem = periodicTableDB.getElementByAtomicNumber(this.atomicNumber);
+      const elemItem = periodicTableDB.getElementByAtomicNumber(this.atomicNumber);
       if (!elemItem) {
         return;
       }
 
       for (let c = 0; c < elemItem.lines.length; c++) {
-        let elemLine = elemItem.lines[c];
+        const elemLine = elemItem.lines[c];
         if (elemLine.Siegbahn[0] == line) {
           this._lines.push(XRFLine.makeXRFLineFromPeriodicTableItem(elemItem.symbol, this.atomicNumber, elemLine));
         }
@@ -186,7 +186,7 @@ export class XRFLineGroup {
     if (line == "Esc") {
       this._escapeLines = [];
     } else {
-      let linesToKeep: XRFLine[] = [];
+      const linesToKeep: XRFLine[] = [];
 
       for (let c = 0; c < this._lines.length; c++) {
         if (this._lines[c].siegbahn[0] != line) {
@@ -206,9 +206,9 @@ export class XRFLineGroup {
     this._escapeLines = [];
 
     // Read the escape lines from the DB
-    let elem = periodicTableDB.getElementByAtomicNumber(this.atomicNumber);
+    const elem = periodicTableDB.getElementByAtomicNumber(this.atomicNumber);
     if (elem) {
-      for (let line of elem.escapeLines) {
+      for (const line of elem.escapeLines) {
         this._escapeLines.push(XRFLine.makeXRFLineFromEscapeLine(elem.symbol, elem.Z, line));
       }
     }

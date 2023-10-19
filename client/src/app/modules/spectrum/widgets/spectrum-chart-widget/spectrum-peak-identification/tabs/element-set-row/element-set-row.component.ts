@@ -27,19 +27,50 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { TestBed } from "@angular/core/testing";
-import { ElementSetService } from "./element-set.service";
-import { HttpClientModule } from "@angular/common/http";
+import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { ElementSetSummary } from "src/app/generated-protos/element-set";
 
-describe("ElementSetService", () => {
-  beforeEach(() =>
-    TestBed.configureTestingModule({
-      imports: [HttpClientModule],
-    })
-  );
+export const SPECIAL_QUANT_ID = "loaded_quantification";
 
-  it("should be created", () => {
-    const service: ElementSetService = TestBed.get(ElementSetService);
-    expect(service).toBeTruthy();
-  });
-});
+@Component({
+  selector: "element-set-row",
+  templateUrl: "./element-set-row.component.html",
+  styleUrls: ["./element-set-row.component.scss"],
+})
+export class ElementSetRowComponent implements OnInit {
+  @Input() showShareButton: boolean = false;
+  @Input() showDeleteButton: boolean = false;
+  @Input() item: ElementSetSummary | null = null;
+
+  @Output() onUse = new EventEmitter();
+  @Output() onDelete = new EventEmitter();
+  @Output() onShare = new EventEmitter();
+
+  constructor() {}
+
+  ngOnInit(): void {}
+
+  onUseElementSet(): void {
+    this.onUse.emit(this.item);
+  }
+
+  onShareElementSet(): void {
+    this.onShare.emit(this.item);
+  }
+
+  onDeleteElementSet(): void {
+    this.onDelete.emit(this.item);
+  }
+
+  get createdTime(): number {
+    let t = 0;
+    if (this.item?.owner?.createdUnixSec) {
+      t = this.item.owner.createdUnixSec * 1000;
+    }
+    return t;
+  }
+
+  get shared(): boolean {
+    return this.item?.owner?.sharedWithOthers || false;
+  }
+}

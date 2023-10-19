@@ -1,0 +1,179 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+import { Component, ComponentFactoryResolver, EventEmitter, Inject, OnDestroy, OnInit, Output, ViewChild, ViewContainerRef } from "@angular/core";
+import { Subscription, timer } from "rxjs";
+import { BrowseOnChartComponent } from "./tabs/browse-on-chart.component";
+import { ElementSetsComponent } from "./tabs/element-sets.component";
+import { PeriodicTableTabComponent } from "./tabs/periodic-table-tab.component";
+import { TabSelectors } from "./tab-selectors";
+import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { SpectrumChartModel } from "../spectrum-model";
+
+export class SpectrumPeakIdentificationData {
+  constructor(public mdl: SpectrumChartModel, public draggable: boolean) {}
+}
+
+export class PeakIdentificationData {
+}
+
+@Component({
+  selector: "spectrum-peak-identification",
+  templateUrl: "./spectrum-peak-identification.component.html",
+  styleUrls: ["./spectrum-peak-identification.component.scss"],
+})
+export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
+  @ViewChild("peakTab", { read: ViewContainerRef }) tabAreaContainer;
+
+  private _subs = new Subscription();
+
+  private _tabComponent: any = null;
+  private _tabSelector: string = "";
+
+  @Output() onChange: EventEmitter<PeakIdentificationData> = new EventEmitter();
+
+  constructor(
+    private resolver: ComponentFactoryResolver,
+    public dialogRef: MatDialogRef<SpectrumPeakIdentificationComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: SpectrumPeakIdentificationData
+  ) {}
+
+  ngOnInit() {}
+
+  ngAfterViewInit() {
+    // Run this after this function finished, else we get ExpressionChangedAfterItHasBeenCheckedError
+    const source = timer(1);
+    /*const sub =*/ source.subscribe(() => {
+      this.onTabPeriodicTable();
+    });
+  }
+
+  ngOnDestroy() {
+    this.mdl.xrfNearMouse.clear();
+    this.clearTabArea();
+    this._subs.unsubscribe();
+  }
+
+  private get mdl(): SpectrumChartModel {
+    return this.data.mdl;
+  }
+
+  onTabPeriodicTable() {
+    this.setTab(TabSelectors.tabPeriodicTable);
+  }
+
+  onTabBrowseOnChart() {
+    this.setTab(TabSelectors.tabBrowseOnChart);
+  }
+
+  onTabElementSets() {
+    this.setTab(TabSelectors.tabElementSets);
+  }
+
+  onClose() {
+    this.dialogRef.close();
+  }
+
+  get isPeriodicTableSelected(): boolean {
+    return this._tabSelector == TabSelectors.tabPeriodicTable;
+  }
+
+  get isBrowseOnChartSelected(): boolean {
+    return this._tabSelector == TabSelectors.tabBrowseOnChart;
+  }
+
+  get isElementSetsSelected(): boolean {
+    return this._tabSelector == TabSelectors.tabElementSets;
+  }
+
+  protected setTab(selector: string) {
+    this.tabAreaContainer.clear();
+    this.clearTabArea();
+
+    const factory = this.makeComponentFactory(selector);
+    if (!factory) {
+      return;
+    }
+
+    //console.log('createUnderContextImageComponent made factory for: '+selector);
+    this._tabComponent = this.tabAreaContainer.createComponent(factory);
+    this._tabSelector = selector;
+
+    // Set model if needed
+    if (selector == TabSelectors.tabPeriodicTable) {
+      const comp = this._tabComponent.instance as PeriodicTableTabComponent;
+      comp.mdl = this.mdl;
+    }
+
+    if (selector == TabSelectors.tabBrowseOnChart) {
+      // We've switched to the browse-by-chart tab, set the browseOnChart value to
+      // be in the middle of the chart so user can start dragging it
+      if (this.mdl.transform && this.mdl.transform.canvasParams && this.mdl.xAxis) {
+        const middleX = this.mdl.transform.canvasParams.width / 2;
+        const browseOnChartEnergy = this.mdl.xAxis.canvasToValue(middleX);
+        this.mdl.setEnergyAtMouse(browseOnChartEnergy);
+      }
+    } else {
+      this.mdl.xrfNearMouse.clear();
+    }
+
+    this.mdl.needsDraw$.next();
+  }
+
+  // NOTE: there are ways to go from selector string to ComponentFactory:
+  //       eg. https://indepth.dev/posts/1400/components-by-selector-name-angular
+  //       but we're only really doing this for 5 components, and don't actually want
+  //       it to work for any number of components, so hard-coding here will suffice
+  private getComponentClassForSelector(selector: string): any {
+    // Widgets
+    if (selector == TabSelectors.tabBrowseOnChart) {
+      return BrowseOnChartComponent;
+    } else if (selector == TabSelectors.tabElementSets) {
+      return ElementSetsComponent;
+    } else if (selector != TabSelectors.tabPeriodicTable) {
+      console.error("getComponentClassForSelector unknown selector: " + selector + ". Substituting periodic table");
+    }
+    return PeriodicTableTabComponent;
+  }
+
+  private makeComponentFactory(selector: string): object {
+    const klass = this.getComponentClassForSelector(selector);
+    const factory = this.resolver.resolveComponentFactory(klass);
+    return factory;
+  }
+
+  private clearTabArea(): void {
+    // Under context image
+    if (this._tabComponent != null) {
+      this._tabComponent.destroy();
+      this._tabComponent = null;
+      this._tabSelector = TabSelectors.tabPeriodicTable;
+    }
+  }
+}
