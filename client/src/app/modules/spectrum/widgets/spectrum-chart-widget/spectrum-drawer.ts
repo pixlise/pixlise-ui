@@ -32,7 +32,7 @@ import { RGBA, Colours } from "src/app/utils/colours";
 import { ChartAxis, ChartAxisDrawer } from "src/app/modules/analysis/components/widget/interactive-canvas/chart-axis";
 import { CanvasDrawParameters, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
-import { ISpectrumChartModel, SpectrumChartLine } from "./spectrum-model-interface";
+import { SpectrumChartLine } from "./spectrum-model-interface";
 import { SpectrumChartToolHost } from "./tools/tool-host";
 import { CachedCanvasChartDrawer } from "src/app/modules/scatterplots/base/cached-drawer";
 import { BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
@@ -94,12 +94,7 @@ export class SpectrumChartDrawer extends CachedCanvasChartDrawer {
       screenContext.beginPath();
       screenContext.rect(this._mdl.xAxis.startPx, 0, this._mdl.xAxis.endPx, drawParams.drawViewport.height - this._mdl.yAxis.startPx);
       screenContext.clip();
-/*
-    for (let c = 0; c < this._mdl.spectrumLines.length; c++) {
-      const spectrum = this._mdl.spectrumLines[c];
-      this.drawSpectrum(screenContext, spectrum, this._mdl.spectrumLineDarkenIdxs.indexOf(c) > -1, this._mdl.xAxis, this._mdl.yAxis);
-    }
-*/
+
       for (const peak of this._mdl.diffractionPeaksShown) {
         this.drawDiffractionPeakBand(screenContext, drawParams.drawViewport, peak, this._mdl.xAxis);
       }
@@ -138,7 +133,13 @@ export class SpectrumChartDrawer extends CachedCanvasChartDrawer {
     //screenContext.restore();
   }
 
-  protected drawSpectrum(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, spectrum: SpectrumChartLine, darken: boolean, xAxis: ChartAxis, yAxis: ChartAxis) {
+  protected drawSpectrum(
+    screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    spectrum: SpectrumChartLine,
+    darken: boolean,
+    xAxis: ChartAxis,
+    yAxis: ChartAxis
+  ) {
     if (spectrum.values.length <= 0) {
       return;
     }

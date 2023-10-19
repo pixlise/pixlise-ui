@@ -159,16 +159,17 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   ngOnInit() {
-    // this.setInitialConfig();
     this.widgetData$.subscribe((data: any) => {
       if (data?.spectrumLines) {
-        let lines = new Map<string, string[]>();
+        const lines = new Map<string, string[]>();
         data.spectrumLines.forEach((line: SpectrumLines) => {
           lines.set(line.roiID, line.lineExpressions);
         });
 
         this.mdl.setLineList(lines);
         this.updateLines();
+      } else {
+        this.setInitialConfig();
       }
     });
 

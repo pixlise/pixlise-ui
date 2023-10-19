@@ -24,8 +24,10 @@ export abstract class CachedCanvasChartDrawer implements CanvasDrawer {
           drawParams.drawViewport.width * drawParams.drawViewport.dpi,
           drawParams.drawViewport.height * drawParams.drawViewport.dpi
         );
+
         const offscreenContext = drawMdl.drawnData.getContext("2d");
         if (offscreenContext) {
+          offscreenContext.scale(drawParams.drawViewport.dpi, drawParams.drawViewport.dpi);
           // Render data to an image which is cached and drawn as needed
           this.drawData(offscreenContext, drawParams);
         }
@@ -33,7 +35,17 @@ export abstract class CachedCanvasChartDrawer implements CanvasDrawer {
 
       if (drawMdl.drawnData) {
         // Draw previously rendered points...
-        screenContext.drawImage(drawMdl.drawnData, 0, 0);
+        screenContext.drawImage(
+          drawMdl.drawnData,
+          0,
+          0,
+          drawMdl.drawnData.width,
+          drawMdl.drawnData.height,
+          0,
+          0,
+          drawParams.drawViewport.width,
+          drawParams.drawViewport.height
+        );
       }
     }
 
