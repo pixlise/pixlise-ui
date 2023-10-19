@@ -36,7 +36,7 @@ import {
   CanvasParams,
 } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { Colours } from "src/app/utils/colours";
-import { CANVAS_FONT_SIZE, CANVAS_FONT_SIZE_TITLE, drawToolTip } from "src/app/utils/drawing";
+import { CANVAS_FONT_SIZE, CANVAS_FONT_SIZE_TITLE, TooltipText, drawToolTip } from "src/app/utils/drawing";
 import { ISpectrumChartModel } from "../spectrum-model-interface";
 import { BaseUIElement } from "./base-ui-element";
 
@@ -46,7 +46,7 @@ const HOVER_POINT_RADIUS = 8;
 export class MouseCursor extends BaseUIElement {
   private _lastMousePos: Point | null = null;
   private _hoverTitle: string = "";
-  private _hoverText: string = "";
+  private _hoverText: TooltipText[] = [];
   private _hoverPoint: Point | null = null;
   private _hoverOverlayPos: Point | null = null;
   private _hoverOverlayLeftOfCursor: boolean = true;
@@ -135,13 +135,21 @@ console.log('mouse value: '+this._ctx.xAxis.canvasToValue(event.canvasPoint.x).t
 
     // Draw hover info overlay
     if (this._hoverOverlayPos) {
-      drawToolTip(screenContext, this._hoverOverlayPos, this._hoverOverlayLeftOfCursor, this._hoverTitle, this._hoverText, CANVAS_FONT_SIZE);
+      drawToolTip(
+        screenContext,
+        this._hoverOverlayPos,
+        this._hoverOverlayLeftOfCursor,
+        this._hoverOverlayPos.y > viewport.height * 0.75,
+        this._hoverTitle,
+        this._hoverText,
+        CANVAS_FONT_SIZE
+      );
     }
   }
 
   private checkHover(canvasPt: Point): void {
     this._hoverTitle = "";
-    this._hoverText = "";
+    this._hoverText = [];
     this._hoverPoint = null;
     this._hoverOverlayPos = null;
 
@@ -198,8 +206,11 @@ console.log('mouse value: '+this._ctx.xAxis.canvasToValue(event.canvasPoint.x).t
       if (Math.abs(canvasPt.y - linePt.y) < COMPARE_DISTANCE_PIXELS && Math.abs(canvasPt.x - linePt.x) < COMPARE_DISTANCE_PIXELS) {
         const lineXValue = line.xValues[idx];
 
-        this._hoverTitle = this._ctx.makePrintableXValue(lineXValue);
-        this._hoverText = line.roiName + " " + line.expressionLabel + ": " + line.values[idx];
+        this._hoverTitle = "Scan: " + line.scanName;
+        this._hoverText = [
+          { text: this._ctx.makePrintableXValue(lineXValue), colour: Colours.GRAY_10 },
+          { text: line.roiName + " " + line.expressionLabel + ": " + line.values[idx].toLocaleString(), colour: Colours.GRAY_10 },
+        ];
         this._hoverPoint = new Point(this._ctx.xAxis.valueToCanvas(lineXValue), linePt.y);
 
         // Figure out where the hover label rect will go

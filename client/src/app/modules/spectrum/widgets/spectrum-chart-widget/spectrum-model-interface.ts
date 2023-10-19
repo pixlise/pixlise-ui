@@ -43,8 +43,11 @@ import { SpectrumXRFLinesNearMouse } from "./xrf-near-mouse";
 export class SpectrumChartLine {
   constructor(
     public scanId: string,
+    public scanName: string,
+
     public roiId: string,
     public roiName: string,
+
     public expression: string,
     public expressionLabel: string,
 

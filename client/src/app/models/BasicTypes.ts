@@ -323,7 +323,7 @@ export class SpectrumEnergyCalibration {
   keVsToChannel(keVs: number[]): number[] {
     const result: number[] = [];
     for (const keV of keVs) {
-      Math.floor((keV * 1000 /*keV->eV conversion*/ - this.eVstart) / this.eVperChannel);
+      result.push(Math.floor((keV * 1000 /*keV->eV conversion*/ - this.eVstart) / this.eVperChannel));
     }
     return result;
   }

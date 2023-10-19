@@ -37,7 +37,7 @@ export class APICachedDataService {
   private _scanEntryMetaReqMap = new Map<string, Observable<ScanEntryMetadataResp>>();
   private _pseudoIntensityReqMap = new Map<string, Observable<PseudoIntensityResp>>();
   private _detectedDiffractionReqMap = new Map<string, Observable<DetectedDiffractionPeaksResp>>();
-  private _scanListReq: Observable<ScanListResp> | undefined = undefined;
+  private _scanListReq = new Map<string, Observable<ScanListResp>>();
 
   // Non-scan related
   private _regionOfInterestGetReqMap = new Map<string, Observable<RegionOfInterestGetResp>>();
@@ -249,11 +249,16 @@ export class APICachedDataService {
   }
 
   getScanList(req: ScanListReq): Observable<ScanListResp> {
-    if (this._scanListReq === undefined) {
+    const cacheId = JSON.stringify(ScanListReq.toJSON(req));
+    let result = this._scanListReq.get(cacheId);
+    if (result === undefined) {
       // Have to request it!
-      this._scanListReq = this._dataService.sendScanListRequest(req).pipe(shareReplay());
+      result = this._dataService.sendScanListRequest(req).pipe(shareReplay());
+
+      // Add it to the map too so a subsequent request will get this
+      this._scanListReq.set(cacheId, result);
     }
 
-    return this._scanListReq;
+    return result;
   }
 }

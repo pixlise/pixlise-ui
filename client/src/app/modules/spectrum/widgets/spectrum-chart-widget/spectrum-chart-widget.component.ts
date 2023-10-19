@@ -2,7 +2,7 @@ import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChange, SimpleCha
 import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SpectrumService } from "../../services/spectrum.service";
-import { Subscription } from "rxjs";
+import { Subscription, combineLatest } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Clipboard } from "@angular/cdk/clipboard";
 import { SpectrumChartDrawer } from "./spectrum-drawer";
@@ -27,6 +27,8 @@ import { ROIShape } from "src/app/modules/roi/components/roi-shape/roi-shape.com
 import { PointDrawer } from "src/app/utils/drawing";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/viewstate";
+import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
+import { SpectrumToolId } from "./tools/base-tool";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -159,6 +161,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   ngOnInit() {
+    this.onToolSelected("pan");
+
     this.widgetData$.subscribe((data: any) => {
       if (data?.spectrumLines) {
         const lines = new Map<string, string[]>();
@@ -273,7 +277,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     this._widgetControlConfiguration["topToolbar"]!.forEach((button: any) => {
       button.value = button.id === tool;
     });
-    console.log("Tool selected: ", this.activeTool);
+
+    this.toolhost.setTool(tool == "pan" ? SpectrumToolId.PAN : SpectrumToolId.ZOOM);
   }
 
   onCalibration() {
@@ -340,7 +345,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
       this.mdl.setLineList(result.selectedItems);
 
-      let spectrumLines: SpectrumLines[] = [];
+      const spectrumLines: SpectrumLines[] = [];
       this.mdl.getLineList().forEach((lineExpressions, roiID) => {
         spectrumLines.push(SpectrumLines.create({ roiID, lineExpressions }));
       });
@@ -361,45 +366,57 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
     for (const [roiId, options] of this.mdl.getLineList()) {
       this._roiService.getRegionSettings(roiId).subscribe((roi: RegionSettings) => {
-        // Now we know the scan Id for this one, request spectra
-        this._cachedDataService
-          .getSpectrum(
+        // Now we know the scan Id for this one, request spectra and find the scan name
+        combineLatest([
+          this._cachedDataService.getSpectrum(
             SpectrumReq.create({
               scanId: roi.region.scanId,
               bulkSum: true,
               maxValue: true,
               //entries: ScanEntryRange.create({ indexes: encodedIndexes })
             })
-          )
-          .subscribe((spectrumResp: SpectrumResp) => {
-            // Read what each roi/option entry requires and form a spectrum source that we can use with the spectrum expression parser
-            let values = new Map<string, SpectrumValues>();
+          ),
+          this._cachedDataService.getScanList(
+            ScanListReq.create({
+              searchFilters: { RTT: roi.region.scanId },
+            })
+          ),
+        ]).subscribe(loadedItems => {
+          const spectrumResp = loadedItems[0] as SpectrumResp;
+          const scanListResp = loadedItems[1] as ScanListResp;
+          let scanName = roi.region.scanId;
+          if (scanListResp.scans.length > 0) {
+            scanName = scanListResp.scans[0].title;
+          }
 
-            const dataSrc = new SpectrumExpressionDataSourceImpl(spectrumResp);
-            const parser = new SpectrumExpressionParser();
+          // Read what each roi/option entry requires and form a spectrum source that we can use with the spectrum expression parser
+          let values = new Map<string, SpectrumValues>();
 
-            for (const lineExpr of options) {
-              // Find the title
-              const title = SpectrumChartModel.getTitleForLineExpression(lineExpr);
+          const dataSrc = new SpectrumExpressionDataSourceImpl(spectrumResp);
+          const parser = new SpectrumExpressionParser();
 
-              // Normal line data retrieval
-              values = parser.getSpectrumValues(
-                dataSrc,
-                // TODO: Convert from PMC to location indexes???
-                roi.region.scanEntryIndexesEncoded,
-                lineExpr,
-                title,
-                readType,
-                this.mdl.yAxisCountsPerMin,
-                this.mdl.yAxisCountsPerPMC
-              );
+          for (const lineExpr of options) {
+            // Find the title
+            const title = SpectrumChartModel.getTitleForLineExpression(lineExpr);
 
-              this.mdl.addLineDataForLine(roiId, lineExpr, roi.region.scanId, roi.region.name, roi.displaySettings.colour, values);
-            }
+            // Normal line data retrieval
+            values = parser.getSpectrumValues(
+              dataSrc,
+              // TODO: Convert from PMC to location indexes???
+              roi.region.scanEntryIndexesEncoded,
+              lineExpr,
+              title,
+              readType,
+              this.mdl.yAxisCountsPerMin,
+              this.mdl.yAxisCountsPerPMC
+            );
 
-            this.mdl.updateRangesAndKey();
-            this.mdl.clearDisplayData(); // This should trigger a redraw
-          });
+            this.mdl.addLineDataForLine(roiId, lineExpr, roi.region.scanId, scanName, roi.region.name, roi.displaySettings.colour, values);
+          }
+
+          this.mdl.updateRangesAndKey();
+          this.mdl.clearDisplayData(); // This should trigger a redraw
+        });
       });
     }
   }

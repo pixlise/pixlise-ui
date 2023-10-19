@@ -74,6 +74,7 @@ export class SpectrumEnergyCalibrationComponent implements OnInit, OnDestroy {
     }
 
     this._subs.add(
+      // TODO: This should only get scans which have been added to our layout!!!
       this._analysisLayoutService.availableScans$.subscribe(scans => {
         this.allScans = [];
         if (!this.data.scanIds) {

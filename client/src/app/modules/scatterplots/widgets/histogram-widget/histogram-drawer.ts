@@ -136,7 +136,16 @@ export class HistogramDrawer extends CachedCanvasChartDrawer {
         }
       }
 
-      drawToolTip(screenContext, new Point(this._mdl.hoverPoint.x + offsetX, this._mdl.hoverPoint.y), drawLeft, "", messages, CANVAS_FONT_SIZE, Colours.GRAY_90);
+      drawToolTip(
+        screenContext,
+        new Point(this._mdl.hoverPoint.x + offsetX, this._mdl.hoverPoint.y),
+        drawLeft,
+        this._mdl.hoverPoint.y > drawParams.drawViewport.height * 0.75,
+        "",
+        messages,
+        CANVAS_FONT_SIZE,
+        Colours.GRAY_90
+      );
     }
   }
 

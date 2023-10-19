@@ -739,6 +739,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     roiId: string,
     lineExpression: string,
     scanId: string,
+    scanName: string,
     roiName: string,
     colourRGB: RGBA,
     lineValues: Map<string, SpectrumValues>,
@@ -770,6 +771,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       const xValues = this.calcXValues(valuesForLine.values.length, scanId, valuesForLine.sourceDetectorID);
       const spectrumLine = new SpectrumChartLine(
         scanId,
+        scanName,
         roiId,
         roiName,
         lineExpression,
@@ -845,7 +847,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     if (this._showXAsEnergy) {
       return value.toLocaleString() + " keV";
     }
-    return "Ch: " + Math.round(value).toString();
+    return "Channel: " + Math.round(value).toString();
   }
 
   // Rebuilding this models display data
