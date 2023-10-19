@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, Input, OnChanges, OnDestroy, OnInit, SimpleChange, SimpleChanges } from "@angular/core";
 import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SpectrumService } from "../../services/spectrum.service";
@@ -26,6 +26,7 @@ import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { ROIShape } from "src/app/modules/roi/components/roi-shape/roi-shape.component";
 import { PointDrawer } from "src/app/utils/drawing";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
+import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/viewstate";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -158,7 +159,19 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   }
 
   ngOnInit() {
-    this.setInitialConfig();
+    // this.setInitialConfig();
+    this.widgetData$.subscribe((data: any) => {
+      if (data?.spectrumLines) {
+        let lines = new Map<string, string[]>();
+        data.spectrumLines.forEach((line: SpectrumLines) => {
+          lines.set(line.roiID, line.lineExpressions);
+        });
+
+        this.mdl.setLineList(lines);
+        this.updateLines();
+      }
+    });
+
     this.reDraw();
   }
 
@@ -325,6 +338,14 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       // a line for each to the chart
 
       this.mdl.setLineList(result.selectedItems);
+
+      let spectrumLines: SpectrumLines[] = [];
+      this.mdl.getLineList().forEach((lineExpressions, roiID) => {
+        spectrumLines.push(SpectrumLines.create({ roiID, lineExpressions }));
+      });
+
+      this.onSaveWidgetData.emit(SpectrumWidgetState.create({ spectrumLines }));
+
       this.updateLines();
     });
 

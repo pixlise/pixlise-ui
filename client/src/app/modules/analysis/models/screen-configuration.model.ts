@@ -19,6 +19,7 @@ export const DEFAULT_SCREEN_CONFIGURATION: ScreenConfiguration = {
           startColumn: 1,
           endRow: 2,
           endColumn: 2,
+          data: undefined,
         },
         {
           id: "",
@@ -27,6 +28,7 @@ export const DEFAULT_SCREEN_CONFIGURATION: ScreenConfiguration = {
           startColumn: 2,
           endRow: 2,
           endColumn: 5,
+          data: undefined,
         },
         {
           id: "",
@@ -35,6 +37,7 @@ export const DEFAULT_SCREEN_CONFIGURATION: ScreenConfiguration = {
           startColumn: 1,
           endRow: 3,
           endColumn: 2,
+          data: undefined,
         },
         {
           id: "",
@@ -43,6 +46,7 @@ export const DEFAULT_SCREEN_CONFIGURATION: ScreenConfiguration = {
           startColumn: 2,
           endRow: 3,
           endColumn: 3,
+          data: undefined,
         },
         {
           id: "",
@@ -51,6 +55,7 @@ export const DEFAULT_SCREEN_CONFIGURATION: ScreenConfiguration = {
           startColumn: 3,
           endRow: 3,
           endColumn: 4,
+          data: undefined,
         },
         {
           id: "",
@@ -59,6 +64,7 @@ export const DEFAULT_SCREEN_CONFIGURATION: ScreenConfiguration = {
           startColumn: 4,
           endRow: 3,
           endColumn: 5,
+          data: undefined,
         },
       ],
     },

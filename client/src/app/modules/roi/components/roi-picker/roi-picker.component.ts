@@ -98,6 +98,10 @@ export class ROIPickerComponent implements OnInit, OnDestroy {
       this.selectedROIs = Object.fromEntries(data.selectedROISummaries.map(roi => [roi.id, roi]));
     }
 
+    if (data?.selectedItems) {
+      data.selectedIds = [...data.selectedItems.keys()];
+    }
+
     if (data?.selectedIds) {
       data.selectedIds.forEach(id => {
         if (!this._roiService.roiItems$.value[id]) {
@@ -113,11 +117,6 @@ export class ROIPickerComponent implements OnInit, OnDestroy {
 
     if (data?.selectedItems) {
       data.selectedItems.forEach((subItems, roiId) => {
-        if (!this._roiService.roiItems$.value[roiId]) {
-          this.fetchedAllSelectedROIs = false;
-          this._roiService.fetchROI(roiId, true);
-        }
-
         this.selectedItems.set(roiId, subItems);
       });
     }

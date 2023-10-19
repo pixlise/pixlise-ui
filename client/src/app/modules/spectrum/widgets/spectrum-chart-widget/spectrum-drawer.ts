@@ -72,19 +72,19 @@ export class SpectrumChartDrawer extends CachedCanvasChartDrawer {
     if (!this._mdl.xAxis || !this._mdl.yAxis) {
       return;
     }
-/*
+
     // Don't allow drawing over the axis now
     screenContext.save();
     screenContext.beginPath();
     screenContext.rect(this._mdl.xAxis.startPx, 0, this._mdl.xAxis.endPx, drawParams.drawViewport.height - this._mdl.yAxis.startPx);
     screenContext.clip();
-*/
+
     for (let c = 0; c < this._mdl.spectrumLines.length; c++) {
       const spectrum = this._mdl.spectrumLines[c];
       this.drawSpectrum(screenContext, spectrum, this._mdl.spectrumLineDarkenIdxs.indexOf(c) > -1, this._mdl.xAxis, this._mdl.yAxis);
     }
 
-    //screenContext.restore();
+    screenContext.restore();
   }
 
   drawPostData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
