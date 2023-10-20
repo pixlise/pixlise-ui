@@ -253,7 +253,32 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     this.updateLines();
   }
 
-  onShowXRayTubeLines() {}
+  onShowXRayTubeLines() {
+    // Can't do anything if X axis isn't calibrated, so complain if this is the case
+    if (!this.mdl.xAxisEnergyScale) {
+      this._snackService.openError("X axis needs to be energy-calibrated for this to show");
+      return;
+    }
+
+    if (!this.mdl.xrfDBService.tubeElementZ) {
+      this._snackService.openError("X-ray tube element unknown, did you add any spectrum lines (from scans) so a detector configuration can be loaded?");
+      return;
+    }
+
+    this._widgetControlConfiguration["topToolbar"]!.forEach((button: any) => {
+      if (button.id === "xray-tube-element") {
+        // This is the button we're dealing with. If it's active, we disable, otherwise enable
+        if (button.value) {
+          this.mdl.unpickXRFLine(this.mdl.xrfDBService.tubeElementZ);
+          button.value = false;
+        } else {
+          this.mdl.pickXRFLine(this.mdl.xrfDBService.tubeElementZ);
+          button.value = true;
+        }
+        button.value = this.mdl.xrfLinesPicked;
+      }
+    });
+  }
 
   onResetZoom() {
     const canvasParams = this.mdl.transform.canvasParams;
@@ -278,7 +303,9 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   onToolSelected(tool: string) {
     this.activeTool = tool;
     this._widgetControlConfiguration["topToolbar"]!.forEach((button: any) => {
-      button.value = button.id === tool;
+      if (button.id === "pan" || button.id === "zoom") {
+        button.value = button.id === tool;
+      }
     });
 
     this.toolhost.setTool(tool == "pan" ? SpectrumToolId.PAN : SpectrumToolId.ZOOM);
