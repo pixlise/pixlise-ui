@@ -15,6 +15,7 @@ import { ExpressionGetReq, ExpressionGetResp } from "src/app/generated-protos/ex
 import { DataModuleGetReq, DataModuleGetResp } from "src/app/generated-protos/module-msgs";
 
 import { decodeIndexList, decompressZeroRunLengthEncoding } from "src/app/utils/utils";
+import { DetectorConfigListReq, DetectorConfigListResp, DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
@@ -37,7 +38,9 @@ export class APICachedDataService {
   private _scanEntryMetaReqMap = new Map<string, Observable<ScanEntryMetadataResp>>();
   private _pseudoIntensityReqMap = new Map<string, Observable<PseudoIntensityResp>>();
   private _detectedDiffractionReqMap = new Map<string, Observable<DetectedDiffractionPeaksResp>>();
-  private _scanListReq = new Map<string, Observable<ScanListResp>>();
+  private _scanListReqMap = new Map<string, Observable<ScanListResp>>();
+  private _detectorConfigReqMap = new Map<string, Observable<DetectorConfigResp>>();
+  private _detectorConfigListReq: Observable<DetectorConfigListResp> | null = null;
 
   // Non-scan related
   private _regionOfInterestGetReqMap = new Map<string, Observable<RegionOfInterestGetResp>>();
@@ -250,15 +253,37 @@ export class APICachedDataService {
 
   getScanList(req: ScanListReq): Observable<ScanListResp> {
     const cacheId = JSON.stringify(ScanListReq.toJSON(req));
-    let result = this._scanListReq.get(cacheId);
+    let result = this._scanListReqMap.get(cacheId);
     if (result === undefined) {
       // Have to request it!
       result = this._dataService.sendScanListRequest(req).pipe(shareReplay());
 
       // Add it to the map too so a subsequent request will get this
-      this._scanListReq.set(cacheId, result);
+      this._scanListReqMap.set(cacheId, result);
     }
 
     return result;
+  }
+
+  getDetectorConfig(req: DetectorConfigReq): Observable<DetectorConfigResp> {
+    const cacheId = JSON.stringify(DetectorConfigReq.toJSON(req));
+    let result = this._detectorConfigReqMap.get(cacheId);
+    if (result === undefined) {
+      // Have to request it!
+      result = this._dataService.sendDetectorConfigRequest(req).pipe(shareReplay());
+
+      // Add it to the map too so a subsequent request will get this
+      this._detectorConfigReqMap.set(cacheId, result);
+    }
+
+    return result;
+  }
+
+  getDetectorConfigList(req: DetectorConfigListReq): Observable<DetectorConfigListResp> {
+    if (!this._detectorConfigListReq) {
+      this._detectorConfigListReq = this._dataService.sendDetectorConfigListRequest(req).pipe(shareReplay());
+    }
+
+    return this._detectorConfigListReq;
   }
 }

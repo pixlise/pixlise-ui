@@ -122,10 +122,7 @@ export class ChartXRFLines extends BaseUIElement {
     const isPickedHighlighted = this.isPickedLineHighlighted();
 
     // Work out which element is the x-ray tube one. If it's in our picked list, we draw it differently...
-    let tubeZ = 0;
-    if (this._ctx.envService.detectorConfig) {
-      tubeZ = this._ctx.envService.detectorConfig.tubeElement;
-    }
+    const tubeZ = this._ctx.xrfDBService.tubeElementZ || 0; // TODO: This is wrong if we have more than 1 detectors scans showing...
 
     // Draw picked lines
     for (const group of this._ctx.xrfLinesPicked) {

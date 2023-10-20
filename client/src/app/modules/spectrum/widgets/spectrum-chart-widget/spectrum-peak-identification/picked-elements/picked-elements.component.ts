@@ -27,17 +27,19 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { Subscription } from "rxjs";
+import { SpectrumService } from "src/app/modules/spectrum/services/spectrum.service";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
 import { httpErrorToString } from "src/app/utils/utils";
+import { ISpectrumChartModel } from "../../spectrum-model-interface";
 
 @Component({
   selector: "peak-id-picked-elements",
   templateUrl: "./picked-elements.component.html",
   styleUrls: ["./picked-elements.component.scss", "../spectrum-peak-identification.component.scss"],
 })
-export class PickedElementsComponent implements OnInit {
+export class PickedElementsComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   pickedLines: XRFLineGroup[] = [];
@@ -46,17 +48,17 @@ export class PickedElementsComponent implements OnInit {
 
   constructor(
     // private _elementSetService: ElementSetService,
-    // private _spectrumService: SpectrumChartService,
+    private _spectrumService: SpectrumService,
     // private _quantService: QuantificationService,
     // private _authService: AuthenticationService
   ) {}
 
   ngOnInit(): void {
-    // this._subs.add(
-    //   this._spectrumService.mdl.xrfLinesChanged$.subscribe(() => {
-    //     this.pickedLines = this._spectrumService.mdl.xrfLinesPicked;
-    //   })
-    // );
+    this._subs.add(
+      this.mdl.xrfLinesChanged$.subscribe(() => {
+        this.pickedLines = this.mdl.xrfLinesPicked;
+      })
+    );
 
     // this._authService.getIdTokenClaims$().subscribe(claims => {
     //   this.quantificationEnabled = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionCreateQuantification);
@@ -71,6 +73,10 @@ export class PickedElementsComponent implements OnInit {
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  private get mdl(): ISpectrumChartModel {
+    return this._spectrumService.mdl;
   }
 
   onSaveElementSet() {
@@ -101,15 +107,15 @@ export class PickedElementsComponent implements OnInit {
     }
 
     // Notify the service
-    // this._spectrumService.mdl.xrfLinesPicked = all;
+    this.mdl.xrfLinesPicked = all;
   }
 
   onDeletePickedElement(atomicNumber: number) {
-    // this._spectrumService.mdl.unpickXRFLine(atomicNumber);
+    this.mdl.unpickXRFLine(atomicNumber);
   }
 
   onClearPickedList() {
-    // this._spectrumService.mdl.xrfLinesPicked = [];
+    this.mdl.xrfLinesPicked = [];
   }
 
   onQuantify() {

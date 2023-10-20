@@ -49,56 +49,10 @@ import { APIPaths, makeHeaders } from "../utils/api-helpers";
 export class EnvConfigurationService {
   private _subs = new Subscription();
 
-  private _detectorConfig!: DetectorConfig;
-  private _detectorConfig$ = new ReplaySubject<DetectorConfig>(1);
-
   constructor(
     private http: HttpClient // private datasetService: DataSetService
-  ) {
-    this.resubscribeDataset();
-  }
-
-  get detectorConfig(): DetectorConfig {
-    return this._detectorConfig;
-  }
-
-  get detectorConfig$(): Subject<DetectorConfig> {
-    return this._detectorConfig$;
-  }
-
-  private resubscribeDataset() {
-    // this._subs.add(
-    //   this.datasetService.dataset$.subscribe(
-    //     (dataset: DataSet) => {
-    //       if (dataset) {
-    //         this.refresh(dataset.experiment.getDetectorConfig());
-    //       }
-    //     },
-    //     (err) => {},
-    //     () => {
-    //       this.resubscribeDataset();
-    //     }
-    //   )
-    // );
-  }
-
-  refresh(config: string) {
-    console.log("Refreshing detector config: " + config);
-    let apiURL = APIPaths.getWithHost(APIPaths.api_detector_config + "/" + config);
-    this.http.get<DetectorConfig>(apiURL, makeHeaders()).subscribe(
-      (resp: DetectorConfig) => {
-        this._detectorConfig = resp;
-        this._detectorConfig$.next(this._detectorConfig);
-
-        // Re-init the XRF line cache
-        periodicTableDB.notifyDetectorConfig(this._detectorConfig);
-      },
-      err => {
-        console.error('Failed to refresh detector config: "' + config + '"');
-      }
-    );
-  }
-
+  ) {}
+/*
   listConfigs(): Observable<DetectorConfigList> {
     console.log("Loading quant config list");
     let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root + "/config");
@@ -134,14 +88,14 @@ export class EnvConfigurationService {
 
     return this.http.post<void>(apiURL, body, makeHeaders());
   }
-
+*/
   // TODO: If we've requested these before, cache them locally
   getComponentVersions(): Observable<ComponentVersions> {
     let apiUrl = APIPaths.getWithHost(APIPaths.api_componentVersions);
 
     return this.http.get<ComponentVersions>(apiUrl, makeHeaders());
   }
-
+/*
   // For testing only, calls API endpoints that return specific errors
   test500(): Observable<string> {
     let apiUrl = APIPaths.getWithHost(APIPaths.api_test + "/500");
@@ -156,5 +110,5 @@ export class EnvConfigurationService {
   test404(): Observable<string> {
     let apiUrl = APIPaths.getWithHost(APIPaths.api_test + "/404"); // literally doesn't exist on API side, so should get real 404 back
     return this.http.get<string>(apiUrl, makeHeaders());
-  }
+  }*/
 }

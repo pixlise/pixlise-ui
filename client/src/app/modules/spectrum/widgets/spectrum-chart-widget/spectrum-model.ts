@@ -43,9 +43,10 @@ import { RGBA, Colours } from "src/app/utils/colours";
 import { SpectrumValues } from "../../models/Spectrum";
 import { ISpectrumChartModel, SpectrumChartLine } from "./spectrum-model-interface";
 import { SpectrumXRFLinesNearMouse } from "./xrf-near-mouse";
-import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { SubItemOptionSection } from "src/app/modules/roi/components/roi-item/roi-item.component";
 import { BaseChartDrawModel, BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
+import { XRFDatabaseService } from "src/app/services/xrf-database.service";
+import { XRFLineDatabase } from "src/app/periodic-table/xrf-line-database";
 
 export class SpectrumLineChoice {
   constructor(
@@ -114,6 +115,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   private _calibration: Map<string, SpectrumEnergyCalibration> = new Map<string, SpectrumEnergyCalibration>();
 
+  private _xrfLineDB: XRFLineDatabase | null = null;
+
   // Special spectrum source for fit lines, these come back when the user asks to fit a spectrum by PIQUANT and contains
   // all the component lines that make up the spectrum
   private _fitLineSources: SpectrumSource[] = [];
@@ -162,9 +165,9 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   private _diffractionPeaksShown: DiffractionPeak[] = [];
 
   constructor(
-    public envService: EnvConfigurationService //,
-    // public clipboard: Clipboard
-  ) // public dialog: MatDialog,
+    public xrfDBService: XRFDatabaseService //,
+    // public dialog: MatDialog,
+  ) // public clipboard: Clipboard
   {
     this.transform.transformChangeComplete$.subscribe((complete: boolean) => {
       // Remember we need to recalc
@@ -178,6 +181,10 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   hasRawData(): boolean {
     return this._spectrumLines.length > 0;
+  }
+
+  get activeXRFDB(): XRFLineDatabase | null {
+    return this._xrfLineDB;
   }
 
   get keyItems(): KeyItem[] {
@@ -365,7 +372,9 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     this._browseCommonElementsXRF = val;
 
     // Refresh table if needed
-    this._xrfNearMouse.setEnergy(this._xrfNearMouse.keV, this._browseCommonElementsXRF);
+    if (this._xrfLineDB) {
+      this._xrfNearMouse.setEnergy(this._xrfNearMouse.keV, this._browseCommonElementsXRF, this._xrfLineDB);
+    }
 
     // Notify stuff
     this._xrfNearMouseChanged$.next();
@@ -398,7 +407,9 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     if (keV <= 0) {
       this._xrfNearMouse.clear();
     } else {
-      this._xrfNearMouse.setEnergy(keV, this._browseCommonElementsXRF);
+      if (this._xrfLineDB) {
+        this._xrfNearMouse.setEnergy(keV, this._browseCommonElementsXRF, this._xrfLineDB);
+      }
     }
 
     this._xrfNearMouseChanged$.next();
@@ -440,8 +451,10 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   }
 
   private internalPickXRFLine(atomicNumber: number): void {
-    const group = XRFLineGroup.makeFromAtomicNumber(atomicNumber);
-    this._xrfLinesPicked.push(group);
+    if (this._xrfLineDB) {
+      const group = XRFLineGroup.makeFromAtomicNumber(atomicNumber, this._xrfLineDB);
+      this._xrfLinesPicked.push(group);
+    }
   }
 
   unpickXRFLine(atomicNumber: number): void {
@@ -699,6 +712,11 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
     // Also clear the actual line data for display, because it's going to need recalc anyway
     this._spectrumLines = [];
+
+    // If we just got cleared, clear our XRF DB
+    if (this._linesShown.size == 0) {
+      this._xrfLineDB = null;
+    }
   }
 
   updateRangesAndKey(): void {
@@ -752,6 +770,14 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     const roiIdx = roiLines ? roiLines.indexOf(lineExpression) : -1;
     if (!roiLines || roiIdx < 0) {
       throw new Error(`addLineDataForLine called for non-existant line: ${roiId}-${lineExpression}`);
+    }
+
+    if (!this._xrfLineDB) {
+      // No DB yet, create one for this scan
+      // TODO: what about when we have scans from different instruments, therefore different XRF db requirements?
+      this.xrfDBService.getXRFLines(scanId).subscribe(xrfdb => {
+        this._xrfLineDB = xrfdb;
+      });
     }
 
     const lineDashPatterns = [[], [6, 2], [2, 2], [1, 2, 1, 2, 1, 2, 8, 2]];

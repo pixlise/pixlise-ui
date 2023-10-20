@@ -27,24 +27,28 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit } from "@angular/core";
+import { Component } from "@angular/core";
 import { TabSelectors } from "../tab-selectors";
+import { SpectrumService } from "src/app/modules/spectrum/services/spectrum.service";
+import { ISpectrumChartModel } from "../../spectrum-model-interface";
 
 @Component({
   selector: TabSelectors.tabBrowseOnChart,
   templateUrl: "./browse-on-chart.component.html",
   styleUrls: ["./browse-on-chart.component.scss"],
 })
-export class BrowseOnChartComponent implements OnInit {
-  constructor(/*private _spectrumService: SpectrumChartService*/) {}
+export class BrowseOnChartComponent {
+  constructor(private _spectrumService: SpectrumService) {}
 
-  ngOnInit() {}
+  private get mdl(): ISpectrumChartModel {
+    return this._spectrumService.mdl;
+  }
 
   get showAllElements(): boolean {
-    return false;//return !this._spectrumService.mdl.browseCommonElementsXRF;
+    return !this.mdl.browseCommonElementsXRF;
   }
 
   toggleAllElements(): void {
-    //this._spectrumService.mdl.browseCommonElementsXRF = !this._spectrumService.mdl.browseCommonElementsXRF;
+    this.mdl.browseCommonElementsXRF = !this.mdl.browseCommonElementsXRF;
   }
 }

@@ -33,6 +33,9 @@ import { DetectorConfigList } from "src/app/models/BasicTypes";
 import { DatasetFilter } from "../../../dataset-filter";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { positionDialogNearParent } from "src/app/utils/utils";
+import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { DetectorConfigListReq, DetectorConfigListResp } from "src/app/generated-protos/detector-config-msgs";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 
 export class FilterDialogData {
   constructor(
@@ -51,14 +54,14 @@ export class FilterDialogComponent implements OnInit {
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: FilterDialogData,
-    private _envService: EnvConfigurationService,
+    private _cachedDataService: APICachedDataService,
     public dialogRef: MatDialogRef<FilterDialogComponent>,
     private _ViewContainerRef: ViewContainerRef
   ) {}
 
   ngOnInit(): void {
-    this._envService.listConfigs().subscribe((configs: DetectorConfigList) => {
-      this.allDetectorConfigs = ["", ...configs.configNames];
+    this._cachedDataService.getDetectorConfigList(DetectorConfigListReq.create({})).subscribe((configListResp: DetectorConfigListResp) => {
+      this.allDetectorConfigs = ["", ...configListResp.configs];
     });
   }
 

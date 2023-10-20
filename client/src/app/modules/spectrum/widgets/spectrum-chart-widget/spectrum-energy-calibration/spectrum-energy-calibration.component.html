@@ -44,16 +44,6 @@ POSSIBILITY OF SUCH DAMAGE.
       <img class="title-icon" [alt]="calibrationIcon" [src]="calibrationIcon">
     </div>
   </header>
-  <section class="settings">
-    <span>Show energy on X axis</span>
-    <two-state-icon-button
-      activeIcon="assets/button-icons/check-on.svg"
-      inactiveIcon="assets/button-icons/check-off.svg"
-      class="checkbox-button"
-      [active]="xAxisEnergyScale"
-      (onToggle)="xAxisEnergyScale = !xAxisEnergyScale">
-    </two-state-icon-button>
-  </section>
   <section class="calibration">
     <div *ngIf="allScans.length <= 0" class="no-scan-msg">
       <h3>No scans available for calibration</h3>
@@ -62,6 +52,15 @@ POSSIBILITY OF SUCH DAMAGE.
     <single-scan-energy-calibration *ngFor="let scan of allScans" [calibration]="scan" class="scan-calibration"></single-scan-energy-calibration>
   </section>
   <div class="button-container">
+    <span>Show energy on X axis</span>
+    <two-state-icon-button
+      activeIcon="assets/button-icons/check-on.svg"
+      inactiveIcon="assets/button-icons/check-off.svg"
+      class="checkbox-button"
+      [active]="xAxisEnergyScale"
+      (onToggle)="xAxisEnergyScale = !xAxisEnergyScale">
+    </two-state-icon-button>
+
     <push-button class="apply-btn" buttonStyle="yellow" (onClick)="onApply()">Apply</push-button>
   </div>
 </div>

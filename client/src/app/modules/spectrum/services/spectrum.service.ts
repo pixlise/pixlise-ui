@@ -1,28 +1,20 @@
 import { Injectable } from "@angular/core";
+import { SpectrumChartModel } from "../widgets/spectrum-chart-widget/spectrum-model";
+import { XRFDatabaseService } from "src/app/services/xrf-database.service";
 
-import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
-import { ReplaySubject, Subscription } from "rxjs";
+// NOTE: This is scoped to the spectrum widget (and its children) ONLY!
 
-import { SpectrumReq } from "src/app/generated-protos/spectrum-msgs";
-import { ScanEntryRange } from "src/app/generated-protos/scan";
-import { ScanBeamLocationsReq } from "src/app/generated-protos/scan-beam-location-msgs";
-import { DiffractionService } from "./diffraction.service";
-//import { ViewStateService } from "../../viewstate/services/viewstate.service";
-
-@Injectable({
-  providedIn: "root",
-})
+@Injectable()
 export class SpectrumService {
-  private _subs = new Subscription();
+  //private _subs = new Subscription();
 
-  constructor(
-    private _dataService: APIDataService,
-    private _snackbarService: SnackbarService,
-    private _diffractionService: DiffractionService //private _viewStateService: ViewStateService
-  ) {
+  mdl: SpectrumChartModel;
+
+  constructor(private _xrfDBService: XRFDatabaseService) {
+    this.mdl = new SpectrumChartModel(this._xrfDBService /*, dialog, clipboard*/);
   }
 
-  ngOnDestroy() {
-    this._subs.unsubscribe();
-  }
+  // ngOnDestroy() {
+  //   this._subs.unsubscribe();
+  // }
 }

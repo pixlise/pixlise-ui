@@ -29,39 +29,14 @@
 
 // The raw output from periodic table generator
 // We read this in on startup and store it in our typesafe structures
-import { DetectorConfig } from "../models/BasicTypes";
-import { XRFLine } from "src/app/periodic-table/XRFLine";
-import { calcEscapeLines, XrayMaterial } from "./escape-line-calc";
 import { rawPeriodicTable } from "./rawPeriodicTable";
-
-export class ElementLine {
-  constructor(
-    public IUPAC: string,
-    public Siegbahn: string,
-    public energy: number, // eV
-    public intensity: number, // arbitrary comparative intensity
-    public tags: string[],
-    public width: number
-  ) {}
-}
-
-export class EscapeLine {
-  constructor(
-    public name: string,
-    public parentSiegbahn: string,
-    public energy: number, // eV
-    public intensity: number // arbitrary comparative intensity
-  ) {}
-}
 
 export class PeriodicTableItem {
   constructor(
     public name: string,
     public atomicMass: number,
     public Z: number,
-    public symbol: string,
-    public lines: ElementLine[],
-    public escapeLines: EscapeLine[]
+    public symbol: string
   ) {}
 }
 
@@ -75,73 +50,9 @@ export class ElementOxidationState {
   ) {}
 }
 
-// These came from: "Xray lines cheat sheet" by Ben Clark
-// Specifically the file name this came from was Cheatsheet_Xray_lines_Ben_13Aug2013
-// and says adapted from: Cheatsheet.X-ray.Energies.Ben
-const commonLines: Map<string, string[]> = new Map<string, string[]>([
-  ["Al", ["Ka1", "Ka2"]],
-  ["Ar", ["EscAr Ka1", "Ka1", "Ka2", "Kb1", "Kb3"]],
-  ["As", ["La1", "La2", "Lb1", "Ka1", "Ka2"]],
-  ["Au", ["Lb1", "Lb2,15"]], // added ,15
-  ["Ba", ["La1", "Lb1"]],
-  ["Br", ["La1", "La2", "Lb1", "Ka1", "Ka2"]],
-  ["Ca", ["EscCa Ka1", "Ka1", "Ka2", "Kb1", "Kb3"]], // pileup Ka+Ka, Ka+Kb, "Ca,Si": Ka+Ka, "Ca,Ti": Ka+Ka
-  ["Ce", ["La1", "Lb1", "Lb2,15"]], // added ,15
-  ["Cl", ["Ka1", "Ka2", "Kb1"]],
-  ["Co", ["Ka1", "Ka2", "Kb1", "Kb3"]],
-  ["Cr", ["Ka1", "Ka2", "Kb1", "Kb3"]],
-  ["Cu", ["Ka1", "Ka2", "Kb1", "Kb3"]],
-  ["Fe", ["EscFe Ka1", "Ka1", "Ka2", "Kb1", "Kb3"]], // pileup "Fe-Ca" Ka+Ka, "Fe-Fe" Ka+Ka, "Fe-Fe", Ka+Kb
-  ["Ga", ["Ka1", "Ka2", "Kb1"]],
-  ["Ge", ["Ka1", "Ka2", "Kb1"]],
-  ["Hg", ["La1", "Lb1", "Lb2,15"]], // added ,15
-  ["I", ["Lb1", "Lb2,15"]],
-  ["K", ["Ka1", "Ka2"]],
-  ["Mg", ["Ka1", "Ka2"]],
-  ["Mn", ["Ka1", "Ka2", "Kb1", "Kb3"]],
-  ["Mo", ["Ka1", "Kb1"]],
-  ["Na", ["Ka1", "Ka2"]],
-  ["Ni", ["Ka1", "Ka2", "Kb1", "Kb3"]],
-  ["P", ["Ka1", "Ka2"]],
-  ["Pb", ["La1", "Lb1", "Lb2,15"]], // added ,15
-  ["Pu", [/*Compt La1,*/ "La1", /*Compt Lb, */ "Lb2,15", "Lb1", "Lg1"]], // added ,15
-  ["Rb", ["Ka1", "Ka2"]],
-  [
-    "Rh",
-    [
-      "EscRh La1",
-      "EscRh La2",
-      "EscRh Lb1",
-      "EscRh Lb4",
-      "EscRh Lb3",
-      "EscRh Lb6",
-      "EscRh Lb2,15",
-      "La1",
-      "La2",
-      "Lb1",
-      "Lg1",
-      /*Compt Ka1,*/ "Ka1",
-      /*Compt Kb,*/ "Kb1",
-    ],
-  ],
-  ["S", ["Ka1", "Ka2", "Kb1"]],
-  ["Sc", ["EscSc Ka1", "Ka1", "Ka2", "Kb1", "Kb3"]],
-  ["Se", ["Ka1", "Ka2"]],
-  ["Si", ["Ka1", "Ka2", "Kb1"]],
-  ["Sr", ["Ka1", "Ka2", "Kb1", "Kb2", "Kb3"]],
-  ["Ti", ["EscTi Ka1", "Ka1", "Ka2", "Kb1", "Kb3"]],
-  ["U", ["Ma", "La1", "Lb1", "Lb2,15", "Lg1"]], // added ,15
-  ["V", ["Ka1", "Ka2", "Kb1", "Kb3"]],
-  ["Y", ["Ka1", "Ka2", "Kb1"]],
-  ["Zn", ["Ka1", "Ka2", "Kb1", "Kb3"]],
-  ["Zr", ["Ka1", "Ka2", "Kb1"]],
-]);
-
-class PeriodicTableDB {
+export class PeriodicTableDB {
   private _periodicTable: PeriodicTableItem[] = [];
-  private _commonElementsTable: PeriodicTableItem[] = [];
   private _symbolToIdx: Map<string, number> = new Map<string, number>();
-  private _dbgOutput: boolean = false;
 
   // Consts for some elements... these mainly because of limits on PIXL sensitivity, easy to find the code
   // that may care about it instead of searching for atomic numbers
@@ -151,28 +62,6 @@ class PeriodicTableDB {
 
   constructor() {
     this.fillTable();
-  }
-
-  notifyDetectorConfig(forDetector: DetectorConfig): void {
-    // Recalculate the periodic table, so we have ALL lines available to us, and we can then generate the combined line set
-    this.fillTable();
-
-    let t0 = performance.now();
-
-    // Calculate escape lines (dependent on detector config). This is needed for common lines to be found correctly
-    this.calculateEscapeLines(forDetector, false);
-
-    // Now that we have escape lines, we can find the "common" element set
-    this.findCommonXRFLines();
-
-    // Finally, we combine XRF lines that are too close for PIXL resolution to see
-    this.combineCloseXRFLines(forDetector);
-
-    // Calculate escape lines (dependent on detector config). This is re-run so our escape lines are based on combined XRF lines
-    this.calculateEscapeLines(forDetector, true);
-
-    let t1 = performance.now();
-    console.log("Periodic table configuration for detector took: " + (t1 - t0).toLocaleString() + "ms");
   }
 
   get maxAtomicNumber(): number {
@@ -187,7 +76,7 @@ class PeriodicTableDB {
   }
 
   getElementBySymbol(formula: string): PeriodicTableItem | null {
-    let idx = this.getElementIndex(formula);
+    const idx = this.getElementIndex(formula);
     if (idx == -1) {
       return null;
     }
@@ -214,9 +103,9 @@ class PeriodicTableDB {
     ) {
       let thisWeight = 0;
 
-      let elem = this.getFirstElement(formulaRemainder);
+      const elem = this.getFirstElement(formulaRemainder);
       if (elem) {
-        let elemItem = this.getElementBySymbol(elem);
+        const elemItem = this.getElementBySymbol(elem);
         thisWeight = elemItem?.atomicMass || 0;
 
         // consume these chars
@@ -235,7 +124,7 @@ class PeriodicTableDB {
       }
 
       // See if it is followed by a multiplier, eg CO2 - O finding it's x2
-      let mult = this.getMultiplier(formulaRemainder);
+      const mult = PeriodicTableDB.getMultiplier(formulaRemainder);
 
       if (mult > 0) {
         thisWeight *= mult;
@@ -277,8 +166,8 @@ class PeriodicTableDB {
   // Returns the multiplier at the start of the formula string (or 0 if none)
   // Really just returns a number if string starts with one, used when parsing
   // a chemical formula
-  private getMultiplier(formula: string): number {
-    let num = Number.parseInt(formula);
+  private static getMultiplier(formula: string): number {
+    const num = Number.parseInt(formula);
     if (isNaN(num)) {
       return 0;
     }
@@ -289,10 +178,10 @@ class PeriodicTableDB {
   }
 
   getAtomicNumbersForSymbolList(formulaList: string[]): Set<number> {
-    let result = new Set<number>();
+    const result = new Set<number>();
 
-    for (let formula of formulaList) {
-      let idx = this.getElementIndex(formula);
+    for (const formula of formulaList) {
+      const idx = this.getElementIndex(formula);
 
       // Look up the value (it's really idx-1 but this is probably more future-proof)
       if (idx >= 0 && idx < this._periodicTable.length) {
@@ -323,11 +212,11 @@ class PeriodicTableDB {
   getElementOxidationState(formula: string): ElementOxidationState | null {
     let result: ElementOxidationState | null = null;
 
-    let idx = this.getElementIndex(formula);
+    const idx = this.getElementIndex(formula);
     if (idx != -1) {
       // We found an element in it, check if this formula is longer than just the symbol and form
       // the result
-      let elem = this._periodicTable[idx];
+      const elem = this._periodicTable[idx];
       result = new ElementOxidationState(
         formula,
         elem.symbol,
@@ -345,14 +234,14 @@ class PeriodicTableDB {
   // we need to be able to show just the oxide/carbonate or element (if nothing else is quantified), this forms the list.
   getOnlyMostComplexStates(formulae: string[]): string[] {
     // Run through them all, find the oxides/carbonates and build a list of elements to exclude, and a list of elements we encounter
-    let excludeElements: Set<string> = new Set<string>();
-    let elementsSeen: Set<string> = new Set<string>();
-    let result: Set<string> = new Set<string>();
+    const excludeElements: Set<string> = new Set<string>();
+    const elementsSeen: Set<string> = new Set<string>();
+    const result: Set<string> = new Set<string>();
 
-    for (let formula of formulae) {
-      let idx = this.getElementIndex(formula);
+    for (const formula of formulae) {
+      const idx = this.getElementIndex(formula);
       if (idx != -1) {
-        let elem = this._periodicTable[idx];
+        const elem = this._periodicTable[idx];
         if (formula.length > elem.symbol.length) {
           // This is an oxide or carbonate, because its formula is longer than the element symbol
           // Eg: FeCO3 vs Fe
@@ -368,7 +257,7 @@ class PeriodicTableDB {
     }
 
     // Now run through again and add any elements that aren't to be excluded
-    for (let elem of elementsSeen.keys()) {
+    for (const elem of elementsSeen.keys()) {
       if (!excludeElements.has(elem)) {
         result.add(elem);
       }
@@ -381,7 +270,7 @@ class PeriodicTableDB {
     let result = 1;
 
     //console.log('getFormulaToElementConversionFactor: '+formula+'->'+element);
-    let elementData = this.getElementBySymbol(element);
+    const elementData = this.getElementBySymbol(element);
     if (elementData) {
       let elementMass = elementData.atomicMass;
       //console.log('elementMass: '+elementMass);
@@ -394,7 +283,7 @@ class PeriodicTableDB {
 
       let tmp = "";
       while (pos < formula.length) {
-        let ch = formula.substring(pos, pos + 1);
+        const ch = formula.substring(pos, pos + 1);
         //console.log('Read ch: '+ch);
         // Add to the last one
         tmp += ch;
@@ -402,7 +291,7 @@ class PeriodicTableDB {
         //console.log('tmp: '+tmp);
 
         // See if it's an element
-        let tmpData = this.getElementBySymbol(tmp);
+        const tmpData = this.getElementBySymbol(tmp);
         if (tmpData) {
           // If we already have a mass read, add it
           otherElementMass += lastElementMass;
@@ -415,13 +304,13 @@ class PeriodicTableDB {
           //console.log('lastElementMass: '+lastElementMass);
         } else {
           // See if it's a multiplier
-          let mult = Number.parseInt(tmp);
+          const mult = Number.parseInt(tmp);
           if (!isNaN(mult) && mult > 0) {
             if (lastElementMass == 0) {
               // It's a multiplier for the element...
               elementMass *= mult;
             }
-            let massToAdd = mult * lastElementMass;
+            const massToAdd = mult * lastElementMass;
             //console.log('change: '+massToAdd);
             otherElementMass += massToAdd;
             //console.log('otherElementMass: '+otherElementMass);
@@ -457,23 +346,23 @@ class PeriodicTableDB {
   }
 
   getElementSymbolsForAtomicNumbers(atomicNumbers: Set<number>): string[] {
-    let symbols: string[] = [];
-    for (let z of atomicNumbers) {
+    const symbols: string[] = [];
+    for (const z of atomicNumbers) {
       symbols.push(this._periodicTable[z - 1].symbol);
     }
     return symbols;
   }
 
   getElementsInAtomicNumberOrder(elements: string[]): string[] {
-    let result = Array.from(elements);
+    const result = Array.from(elements);
     result.sort((a: string, b: string) => {
       // Get their atomic numbers
-      let aElem = this.getElementBySymbol(a);
-      let bElem = this.getElementBySymbol(b);
+      const aElem = this.getElementBySymbol(a);
+      const bElem = this.getElementBySymbol(b);
 
       if (aElem != null && bElem != null) {
-        let aZ = aElem.Z;
-        let bZ = bElem.Z;
+        const aZ = aElem.Z;
+        const bZ = bElem.Z;
 
         if (aZ < bZ) {
           return -1;
@@ -489,64 +378,23 @@ class PeriodicTableDB {
     return result;
   }
 
-  findAllXRFLinesForEnergy(commonElementsOnly: boolean, minkeV: number, maxkeV: number): XRFLine[] {
-    let result: XRFLine[] = [];
-
-    let table = this._periodicTable;
-    if (commonElementsOnly) {
-      table = this._commonElementsTable;
-    }
-
-    for (let item of table) {
-      for (let line of item.lines) {
-        let linekeV = line.energy / 1000; // It's stored in eV!
-        if (linekeV > minkeV && linekeV < maxkeV) {
-          result.push(XRFLine.makeXRFLineFromPeriodicTableItem(item.symbol, item.Z, line));
-        }
-      }
-
-      for (let esc of item.escapeLines) {
-        let linekeV = esc.energy / 1000; // It's stored in eV!
-        if (linekeV > minkeV && linekeV < maxkeV) {
-          result.push(XRFLine.makeXRFLineFromEscapeLine(item.symbol, item.Z, esc));
-        }
-      }
-    }
-
-    result.sort((a, b) => (a.eV < b.eV ? 1 : -1));
-    return result;
-  }
-
   private fillTable() {
-    let t0 = performance.now();
+    const t0 = performance.now();
 
     this._periodicTable = [];
     this._symbolToIdx.clear();
 
     // Read the periodic table data into our typesafe structures
-    for (let zStr of Object.keys(rawPeriodicTable)) {
-      let z = Number.parseInt(zStr);
+    for (const zStr of Object.keys(rawPeriodicTable)) {
+      const z = Number.parseInt(zStr);
       if (z >= 119) {
         // Ignoring really exotic stuff...
         break;
       }
 
-      let rawItem = rawPeriodicTable[z];
+      const rawItem = rawPeriodicTable[z];
 
-      let item = new PeriodicTableItem(rawItem["name"], rawItem["atomic_mass"], rawItem["number"], rawItem["symbol"], [], []);
-
-      // Add the lines
-      let lines = rawItem["lines"];
-      for (let c = 0; c < lines.length; c++) {
-        let tags: string[] = [];
-        if (lines[c]["tags"] !== undefined) {
-          for (let i = 0; i < lines[c]["tags"].length; i++) {
-            tags.push(lines[c]["tags"][i]);
-          }
-        }
-
-        item.lines.push(new ElementLine(lines[c]["IUPAC"], lines[c]["Siegbahn"], lines[c]["energy"], lines[c]["intensity"], tags, 0));
-      }
+      const item = new PeriodicTableItem(rawItem["name"], rawItem["atomic_mass"], rawItem["number"], rawItem["symbol"]);
 
       if (z != this._periodicTable.length + 1) {
         console.error("Failed to initialize periodic table DB at Z=" + z);
@@ -560,437 +408,8 @@ class PeriodicTableDB {
       this._periodicTable.push(item);
     }
 
-    let t1 = performance.now();
+    const t1 = performance.now();
     console.log("Periodic table filled with " + this._periodicTable.length + " elements. Took: " + (t1 - t0).toLocaleString() + "ms");
-  }
-
-  private calculateEscapeLines(forDetector: DetectorConfig, reducedSet: boolean): void {
-    let t0 = performance.now();
-
-    let detectorActiveLayer: XrayMaterial = new XrayMaterial([forDetector.windowElement]);
-    let lineCachedCount = 0;
-
-    // Below Ba we only want to show escapes for K lines, above Ba we show for K and L
-    // In either case, we only show the top 2-3 lines.
-
-    for (let atomicNum = forDetector.minElement; atomicNum <= forDetector.maxElement; atomicNum++) {
-      let elemItem = this.getElementByAtomicNumber(atomicNum);
-      if (!elemItem) {
-        continue;
-      }
-
-      // Should be the same...
-      if (elemItem.Z != atomicNum) {
-        console.error("calculateEscapeLines failed, atomicNum: " + atomicNum + " mismatch: " + elemItem.Z);
-        return;
-      }
-
-      // Clear escape lines for this element
-      elemItem.escapeLines = [];
-
-      let linesToCalc: ElementLine[] = [];
-      if (reducedSet) {
-        // Z < BA:  We now only calculate escapes for the 2 most intense K lines
-        // Z >= BA: We now only calculate escapes for the 2 most intense K and L lines
-        let linesByIntensity = Array.from(elemItem?.lines || []).sort((a, b) => (a.intensity < b.intensity ? 1 : -1));
-
-        let kCount = 0;
-        let lCount = 0;
-
-        for (let line of linesByIntensity) {
-          if (atomicNum < 56) {
-            if (line.Siegbahn[0] == "K") {
-              linesToCalc.push(line);
-              if (linesToCalc.length >= 2) {
-                break;
-              }
-            }
-          } else {
-            if (line.Siegbahn[0] == "K") {
-              if (kCount < 2) {
-                linesToCalc.push(line);
-                kCount++;
-              }
-            } else if (line.Siegbahn[0] == "L") {
-              if (lCount < 2) {
-                linesToCalc.push(line);
-                lCount++;
-              }
-            }
-
-            if (lCount >= 2 && kCount >= 2) {
-              break;
-            }
-          }
-        }
-      } else {
-        // Calculating all (so we find all lines from the cheat sheet!)
-        linesToCalc = elemItem?.lines ? elemItem.lines : [];
-      }
-
-      // Calculate new ones
-      for (let line of linesToCalc) {
-        let symbol = elemItem?.symbol;
-        let siegbahn = line.Siegbahn;
-
-        let escapes = calcEscapeLines(line.energy, detectorActiveLayer);
-
-        for (let esc of escapes) {
-          elemItem?.escapeLines.push(new EscapeLine("Esc" + symbol + " " + siegbahn, siegbahn, esc.energy, esc.fraction));
-
-          lineCachedCount++;
-        }
-      }
-    }
-
-    let t1 = performance.now();
-    console.log("Escape line calculation took: " + (t1 - t0).toLocaleString() + "ms, cached " + lineCachedCount + " lines");
-  }
-
-  private findCommonXRFLines() {
-    let t0 = performance.now();
-
-    this._commonElementsTable = [];
-
-    // Run through all elements and copy the common lines into this table
-    for (let [symbol, siegbahns] of commonLines) {
-      // Get the element, find the lines by siegbahn name
-      let elem = this.getElementBySymbol(symbol);
-      if (!elem) {
-        console.error("Failed to find element: " + symbol + " when marking common XRF lines");
-        return;
-      }
-
-      let saveItem = new PeriodicTableItem(elem.name, elem.atomicMass, elem.Z, elem.symbol, [], []);
-
-      let foundNames = [];
-      for (let line of elem.lines) {
-        if (siegbahns.indexOf(line.Siegbahn) > -1) {
-          // Store this one!
-          saveItem.lines.push(new ElementLine(line.IUPAC, line.Siegbahn, line.energy, line.intensity, Array.from(line.tags), line.width));
-
-          if (foundNames.indexOf(line.Siegbahn) < 0) {
-            foundNames.push(line.Siegbahn);
-          }
-        }
-      }
-
-      for (let esc of elem.escapeLines) {
-        if (siegbahns.indexOf(esc.name) > -1) {
-          // Store this one!
-          saveItem.escapeLines.push(new EscapeLine(esc.name, esc.parentSiegbahn, esc.energy, esc.intensity));
-
-          if (foundNames.indexOf(esc.name) < 0) {
-            foundNames.push(esc.name);
-          }
-        }
-      }
-
-      // Check we found all
-      let sortedExpected = siegbahns.sort((one, two) => (one > two ? -1 : 1));
-      let sortedFound = foundNames.sort((one, two) => (one > two ? -1 : 1));
-
-      if (sortedExpected.length != sortedFound.length) {
-        console.error(
-          "Failed to find all lines for: " + symbol + ", exp: " + JSON.stringify(siegbahns) + ", got: " + JSON.stringify(sortedFound)
-        );
-      } else {
-        for (let c = 0; c < sortedExpected.length; c++) {
-          if (sortedExpected[c] != sortedFound[c]) {
-            console.error(
-              "Mismatched lines for: " + symbol + ", exp: " + JSON.stringify(sortedExpected) + ", got: " + JSON.stringify(sortedFound)
-            );
-          }
-        }
-      }
-
-      if (saveItem.lines.length > 0 || saveItem.escapeLines.length > 0) {
-        this._commonElementsTable.push(saveItem);
-      }
-    }
-
-    let t1 = performance.now();
-    console.log(
-      "Finding common element XRF lines took: " + (t1 - t0).toLocaleString() + "ms, found " + this._commonElementsTable.length + " elements"
-    );
-  }
-
-  private combineCloseXRFLines(forDetector: DetectorConfig) {
-    let t0 = performance.now();
-    /*
-let item = this.getElementBySymbol("Ni");
-console.log(item.symbol);
-this.dbgPrintLines(item.lines);
-
-item = this.getElementBySymbol("Fe");
-console.log(item.symbol);
-this.dbgPrintLines(item.lines);
-
-item = this.getElementBySymbol("Ca");
-console.log(item.symbol);
-this.dbgPrintLines(item.lines);
-
-item = this.getElementBySymbol("Rh");
-console.log(item.symbol);
-this.dbgPrintLines(item.lines);
-*/
-    // Loop through each element and find lines that are too close for our detector resolution, and combine those
-    let preCount = 0;
-    let postCount = 0;
-    //let preCountEsc = 0;
-    //let postCountEsc = 0;
-
-    for (let Z = forDetector.minElement; Z <= forDetector.maxElement; Z++) {
-      let item = this._periodicTable[Z - 1];
-      if (this._dbgOutput) {
-        console.log("Combining lines for: " + item.symbol);
-      }
-      preCount += item.lines.length;
-      item.lines = this.combineCloseElementLines(forDetector, item.lines, false);
-      postCount += item.lines.length;
-    }
-
-    let t1 = performance.now();
-    console.log(
-      "Combined XRF lines too close to see at detector resolution: " +
-        forDetector.xrfeVResolution +
-        ". Took: " +
-        (t1 - t0).toLocaleString() +
-        "ms, lines reduced from " +
-        preCount +
-        " to " +
-        postCount
-    ); //+', escapes reduced from '+preCountEsc+' to '+postCountEsc);
-
-    /*
-item = this.getElementBySymbol("Ni");
-console.log(item.symbol);
-this.dbgPrintLines(item.lines);
-
-item = this.getElementBySymbol("Fe");
-console.log(item.symbol);
-this.dbgPrintLines(item.lines);
-
-item = this.getElementBySymbol("Ca");
-console.log(item.symbol);
-this.dbgPrintLines(item.lines);
-
-item = this.getElementBySymbol("Rh");
-console.log(item.symbol);
-this.dbgPrintLines(item.lines);
-*/
-  }
-
-  private combineCloseElementLines(forDetector: DetectorConfig, elementLines: ElementLine[], dbg: boolean): ElementLine[] {
-    if (dbg) {
-      this.dbgPrintLines(elementLines, "combineCloseElementLines input lines:");
-    }
-
-    const defaultWidth = 155; // TODO: how do we get this from detector resolution?
-    const energyWithinRange = 180;
-    const energyWithinRangeIntensityVariable = forDetector.xrfeVResolution - energyWithinRange;
-    const allowedWidthRatio = 5;
-    const deltaCompareFactor = Math.sqrt(0.5);
-
-    // 1. Assign all lines a width, σ, of 155 eV. Every line should have a location, E, an intensity, I, and a width, σ.
-    // NOTE: line already has width, energy, intensity set.
-    for (let line of elementLines) {
-      line.width = defaultWidth;
-    }
-
-    // 2. For all lines in the line database in order of decreasing line intensity, do the following:
-    let linesByIntensity = Array.from(elementLines);
-    linesByIntensity.sort((a, b) => (a.intensity < b.intensity ? 1 : -1));
-
-    let c = 0;
-    while (c < linesByIntensity.length) {
-      // a. Call the current line 1.
-      let line1 = linesByIntensity[c];
-
-      let sMainLineSq = line1.width * line1.width;
-
-      // b. Identify all other lines within 230 eV. This is the potentially combined set
-      let potentiallyCombinedIdxSet: number[] = [];
-      for (let i = 0; i < linesByIntensity.length; i++) {
-        let energyDiffToMainLine = line1.energy - linesByIntensity[i].energy;
-        if (c != i && Math.abs(energyDiffToMainLine) < forDetector.xrfeVResolution) {
-          let thisLine = linesByIntensity[i];
-
-          // c. For each of these other lines, calculate the ratio of the width squared to the width of the main potentially combined line squared
-          let sThisLineSq = thisLine.width * thisLine.width;
-          let s = sMainLineSq / sThisLineSq;
-
-          // d. For each of these lines, also calculate the ratio of line intensities:
-          let p = thisLine.intensity / line1.intensity;
-
-          // e. For any line with s<5, remove from the potentially combined set if not within 180 "eV"+(50 "eV")ρ of the main line.
-          let allowedEnergyRange = energyWithinRange + energyWithinRangeIntensityVariable * p;
-
-          // In other words, if s>5 add, or if s<5 add if within the above...
-          if (s > allowedWidthRatio || Math.abs(energyDiffToMainLine) < allowedEnergyRange) {
-            potentiallyCombinedIdxSet.push(i);
-          }
-        }
-      }
-
-      // f. If the potentially combined set has at least one line in it, do the following:
-      if (potentiallyCombinedIdxSet.length > 0) {
-        // i. Pick the most intense line within the set of potentially combined line and combine according to the following rules
-        //    (∆^* and ∆ are intermediate variables for calculation that should not be stored for the combined line):
-        let maxIntensity = linesByIntensity[potentiallyCombinedIdxSet[0]].intensity;
-        let maxIntensityIdx = potentiallyCombinedIdxSet[0];
-        for (let i = 1; i < potentiallyCombinedIdxSet.length; i++) {
-          const idx = potentiallyCombinedIdxSet[i];
-          if (linesByIntensity[idx].intensity > maxIntensity) {
-            maxIntensity = linesByIntensity[idx].intensity;
-            maxIntensityIdx = idx;
-          }
-        }
-
-        let thisLine = linesByIntensity[maxIntensityIdx];
-        let sThisLineSq = thisLine.width * thisLine.width;
-
-        let s = sMainLineSq / sThisLineSq;
-        let p = thisLine.intensity / line1.intensity;
-
-        // ∆^*=(ρs^(1⁄2))/(1+ρs^(1⁄2) )
-        let psSqrt = Math.sqrt(p * s);
-        let deltaStar = psSqrt / (1 + psSqrt);
-
-        let delta = 0;
-        if (deltaStar < deltaCompareFactor) {
-          delta = deltaStar / 2;
-        } else {
-          delta = (1 + deltaStar) / 2;
-        }
-
-        let Ecombined = line1.energy + delta * (thisLine.energy - line1.energy);
-        let Icombined =
-          line1.intensity * Math.exp(-Math.pow((Ecombined - line1.energy) / line1.width, 2)) +
-          thisLine.intensity * Math.exp(-Math.pow((Ecombined - thisLine.energy) / thisLine.width, 2));
-        let widthcombined = (line1.intensity * line1.width + thisLine.intensity * thisLine.width) / Icombined;
-
-        // ii. Add the combined line to the line database and remove the two lines that were combined. Clear the potentially combined
-        //     set. (These may be combined later, but not necessarily now.)
-        let combinedTags = Array.from(new Set<string>([...line1.tags, ...thisLine.tags]).values());
-        let combinedSiegbahn = this.makeCombinedSiegbahn(line1.Siegbahn, thisLine.Siegbahn);
-        let combinedLine = new ElementLine(
-          line1.IUPAC + " + " + thisLine.IUPAC,
-          combinedSiegbahn,
-          Ecombined,
-          Icombined,
-          combinedTags,
-          widthcombined
-        );
-
-        if (maxIntensityIdx > c) {
-          // Remove bigger idx first, so we don't mess up the second removal
-          linesByIntensity.splice(maxIntensityIdx, 1);
-          linesByIntensity.splice(c, 1);
-        } else {
-          linesByIntensity.splice(c, 1);
-          linesByIntensity.splice(maxIntensityIdx, 1);
-        }
-
-        linesByIntensity.push(combinedLine);
-
-        // iii. Restart the for loop (2) with the new line dataset
-        c = 0;
-
-        if (dbg) {
-          this.dbgPrintLines(linesByIntensity, "Printing lines at end of iteration:");
-        }
-      }
-      // g. Else continue to loop through all lines.
-      else {
-        c++;
-      }
-    }
-
-    return linesByIntensity;
-  }
-
-  private dbgPrintLines(elementLines: ElementLine[], title: string): void {
-    let copy = Array.from(elementLines);
-    copy.sort((a, b) => (a.energy > b.energy ? 1 : -1));
-
-    let c = 0;
-    let w = title + "\n";
-    for (let l of copy) {
-      w +=
-        "  [" +
-        c +
-        "] siegbahn=" +
-        l.Siegbahn +
-        " eV=" +
-        l.energy.toLocaleString() +
-        ", intensity=" +
-        l.intensity.toLocaleString() +
-        ", width=" +
-        l.width.toLocaleString() +
-        ", tags=[" +
-        l.tags.join(",") +
-        "]\n";
-      c++;
-    }
-    console.log(w);
-  }
-
-  private makeCombinedSiegbahn(siegbahn1: string, siegbahn2: string): string {
-    // Find the idx where number starts in both
-    let siegbahn1Bits = this.splitSiegbahn(siegbahn1);
-    let siegbahn2Bits = this.splitSiegbahn(siegbahn2);
-
-    if (siegbahn1Bits.length < 2 || siegbahn2Bits.length < 2) {
-      return siegbahn1 + "," + siegbahn2;
-    }
-
-    // ensure they start the same way
-    if (siegbahn1Bits[0] != siegbahn2Bits[0]) {
-      if (this._dbgOutput) {
-        console.log("Siegbahn combine failed for: " + siegbahn1 + " + " + siegbahn2);
-      }
-      return siegbahn1 + "," + siegbahn2;
-    }
-
-    // Combine them with the lowest number first
-    let lineNums: number[] = [];
-    for (let c = 1; c < siegbahn1Bits.length; c++) {
-      lineNums.push(Number.parseInt(siegbahn1Bits[c]));
-    }
-    for (let c = 1; c < siegbahn2Bits.length; c++) {
-      lineNums.push(Number.parseInt(siegbahn2Bits[c]));
-    }
-    lineNums.sort((a, b) => (a > b ? 1 : -1));
-
-    return siegbahn1Bits[0] + lineNums.join(",");
-  }
-
-  private splitSiegbahn(siegbahn: string): string[] {
-    let splitIdx = -1;
-    for (let c = 0; c < siegbahn.length; c++) {
-      if (siegbahn[c] >= "0" && siegbahn[c] <= "9") {
-        if (splitIdx < 0) {
-          splitIdx = c;
-        }
-      } else {
-        if (splitIdx > 0 && siegbahn[c] != ",") {
-          // Found non-digit after digits started, bail
-          if (this._dbgOutput) {
-            console.log("Failed to parse number in siegbahn: " + siegbahn);
-          }
-          return [];
-        }
-      }
-    }
-
-    if (splitIdx > 0 && splitIdx < 3) {
-      return [siegbahn.substr(0, splitIdx), ...siegbahn.substr(splitIdx, siegbahn.length - splitIdx).split(",")];
-    }
-    if (this._dbgOutput) {
-      console.log("Failed to parse siegbahn: " + siegbahn);
-    }
-    return [];
   }
 }
 

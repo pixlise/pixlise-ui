@@ -30,6 +30,11 @@
 @import 'variables.scss';
 
 .item {
+    flex-direction: row;
+    display: flex;
+    justify-content: start;
+    align-items: center;
+
     font-family: Roboto;
     font-size: 14px;
     font-weight: 700;
@@ -44,4 +49,11 @@
     height: 28px;
 
     user-select: none;
+
+    span {
+        display: flex;
+        flex-grow: 1;
+        flex-shrink: 1;
+        flex-basis: 100%;
+    }
 }

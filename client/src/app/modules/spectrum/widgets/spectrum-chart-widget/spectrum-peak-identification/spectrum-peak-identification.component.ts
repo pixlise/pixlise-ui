@@ -35,6 +35,7 @@ import { PeriodicTableTabComponent } from "./tabs/periodic-table-tab.component";
 import { TabSelectors } from "./tab-selectors";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { SpectrumChartModel } from "../spectrum-model";
+import { XRFDatabaseService } from "src/app/services/xrf-database.service";
 
 export class SpectrumPeakIdentificationData {
   constructor(public mdl: SpectrumChartModel, public draggable: boolean) {}
@@ -61,7 +62,8 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
   constructor(
     private resolver: ComponentFactoryResolver,
     public dialogRef: MatDialogRef<SpectrumPeakIdentificationComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: SpectrumPeakIdentificationData
+    @Inject(MAT_DIALOG_DATA) public data: SpectrumPeakIdentificationData,
+    private _xrfDBService: XRFDatabaseService
   ) {}
 
   ngOnInit() {}
@@ -124,12 +126,6 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
     //console.log('createUnderContextImageComponent made factory for: '+selector);
     this._tabComponent = this.tabAreaContainer.createComponent(factory);
     this._tabSelector = selector;
-
-    // Set model if needed
-    if (selector == TabSelectors.tabPeriodicTable) {
-      const comp = this._tabComponent.instance as PeriodicTableTabComponent;
-      comp.mdl = this.mdl;
-    }
 
     if (selector == TabSelectors.tabBrowseOnChart) {
       // We've switched to the browse-by-chart tab, set the browseOnChart value to

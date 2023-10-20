@@ -27,7 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { ElementLine, EscapeLine } from "./periodic-table-db";
+import { EscapeLine, ElementLine } from "./xrf-line-database";
+
 
 export enum XRFLineType {
   K_MAX,

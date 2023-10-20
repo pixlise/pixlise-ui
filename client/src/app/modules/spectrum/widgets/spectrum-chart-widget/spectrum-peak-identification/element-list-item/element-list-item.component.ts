@@ -48,51 +48,39 @@ import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
 
-
-
-
-
 @Component({
-    selector: "peak-id-element-list-item",
-    templateUrl: "./element-list-item.component.html",
-    styleUrls: ["./element-list-item.component.scss"]
+  selector: "peak-id-element-list-item",
+  templateUrl: "./element-list-item.component.html",
+  styleUrls: ["./element-list-item.component.scss"],
 })
-export class ElementListItemComponent implements OnInit
-{
-    @Input() item: XRFLineGroup;
+export class ElementListItemComponent implements OnInit {
+  @Input() item: XRFLineGroup;
 
-    @Output() onToggleVisible = new EventEmitter();
-    @Output() onDelete = new EventEmitter();
+  @Output() onToggleVisible = new EventEmitter();
+  @Output() onDelete = new EventEmitter();
 
-    symbol: string = "";
+  symbol: string = "";
 
-    constructor()
-    {
+  constructor() {}
+
+  ngOnInit(): void {
+    this.symbol = this.getElementSymbol(this.item.atomicNumber);
+  }
+
+  onToggleVisibility(): void {
+    this.onToggleVisible.emit(this.item.atomicNumber);
+  }
+
+  onDeleteElement(): void {
+    this.onDelete.emit(this.item.atomicNumber);
+  }
+
+  protected getElementSymbol(atomicNumber: number): string {
+    let result = "?";
+    const elem = periodicTableDB.getElementByAtomicNumber(atomicNumber);
+    if (elem) {
+      result = elem.symbol;
     }
-
-    ngOnInit(): void
-    {
-        this.symbol = this.getElementSymbol(this.item.atomicNumber);
-    }
-
-    onToggleVisibility(): void
-    {
-        this.onToggleVisible.emit(this.item.atomicNumber);
-    }
-
-    onDeleteElement(): void
-    {
-        this.onDelete.emit(this.item.atomicNumber);
-    }
-
-    protected getElementSymbol(atomicNumber: number): string
-    {
-        let result = "?";
-        let elem = periodicTableDB.getElementByAtomicNumber(atomicNumber);
-        if(elem)
-        {
-            result = elem.symbol;
-        }
-        return result;
-    }
+    return result;
+  }
 }

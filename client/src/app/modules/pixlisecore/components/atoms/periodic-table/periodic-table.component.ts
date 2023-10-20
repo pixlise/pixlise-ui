@@ -29,11 +29,10 @@
 
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from "@angular/core";
 import { Subscription } from "rxjs";
-import { DetectorConfig } from "src/app/models/BasicTypes";
-import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { setsEqual } from "src/app/utils/utils";
 import { ElementTileClickEvent, ElementTileState, PeriodicElement } from "./element-tile/element-tile.component";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
+import { MinMax } from "src/app/models/BasicTypes";
 
 @Component({
   selector: "periodic-table",
@@ -42,6 +41,8 @@ import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 })
 export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges {
   private _subs = new Subscription();
+
+  @Input() detectorConfigZRange: MinMax = new MinMax(periodicTableDB.zSodium, periodicTableDB.zUranium);
 
   @Input() selectedElements: Set<number> = new Set<number>(); // Shown as selected (purple)
   @Input() selectedAltElements: Set<number> = new Set<number>(); // Shown as selected (yellow)
@@ -62,15 +63,9 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges {
   private _lastSelectedAltElements: Set<number> = new Set<number>();
   private _grayedElementLookup: Set<number> = new Set<number>();
 
-  constructor(private envService: EnvConfigurationService) {}
+  constructor() {}
 
   ngOnInit() {
-    this._subs.add(
-      this.envService.detectorConfig$.subscribe((cfg: DetectorConfig) => {
-        this.rebuild();
-      })
-    );
-
     this.rebuild();
   }
 
@@ -106,15 +101,8 @@ export class PeriodicTableComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private rebuild(): void {
-    let minZ = periodicTableDB.zSodium;
-    let maxZ = periodicTableDB.zUranium;
-
-    if (this.envService.detectorConfig) {
-      // Grayed symbols - if we have selectables, everything else is grayed
-      // otherwise we have a list of hard-coded symbols we want to gray out...
-      minZ = this.envService.detectorConfig.minElement;
-      maxZ = this.envService.detectorConfig.maxElement;
-    }
+    const minZ = this.detectorConfigZRange.min || periodicTableDB.zSodium;
+    const maxZ = this.detectorConfigZRange.max || periodicTableDB.zUranium;
 
     this.makeGrayedLookup(minZ, maxZ);
     this.buildTable();

@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { MinMax } from "src/app/models/BasicTypes";
-import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
+import { XRFLineDatabase } from "src/app/periodic-table/xrf-line-database";
 import { XRFLine } from "src/app/periodic-table/XRFLine";
 
 export class SpectrumXRFLinesNearMouse {
@@ -60,7 +60,7 @@ export class SpectrumXRFLinesNearMouse {
     return this._keVDisplayed;
   }
 
-  setEnergy(keV: number, browseCommonElementsXRF: boolean): void {
+  setEnergy(keV: number, browseCommonElementsXRF: boolean, lineDB: XRFLineDatabase): void {
     //console.warn('setEnergyAtMouse: '+keV);
     let keVTableThreshold = 0.8;
     let keVTableExtraFill = 0.2; // So we don't reach the very end of the table!
@@ -74,20 +74,12 @@ export class SpectrumXRFLinesNearMouse {
     this._keV = keV;
 
     // Re-fill the table if required (because last filled value is vastly different to current keV value)
-    if (
-      this._lastCachekeV == 0 ||
-      Math.abs(this._lastCachekeV - keV) > keVTableThreshold ||
-      this._lastBrowseCommonElementsXRF != browseCommonElementsXRF
-    ) {
+    if (this._lastCachekeV == 0 || Math.abs(this._lastCachekeV - keV) > keVTableThreshold || this._lastBrowseCommonElementsXRF != browseCommonElementsXRF) {
       // Yep, refill table
       console.log("Refill table for: " + keV);
 
       this._keVDisplayed = new MinMax(keV - (keVTableThreshold + keVTableExtraFill), keV + (keVTableThreshold + keVTableExtraFill));
-      this._lines = periodicTableDB.findAllXRFLinesForEnergy(
-        browseCommonElementsXRF,
-        this._keVDisplayed?.min || 0,
-        this._keVDisplayed?.max || 0
-      );
+      this._lines = lineDB.findAllXRFLinesForEnergy(browseCommonElementsXRF, this._keVDisplayed?.min || 0, this._keVDisplayed?.max || 0);
 
       this._lastCachekeV = keV;
       this._lastBrowseCommonElementsXRF = browseCommonElementsXRF;

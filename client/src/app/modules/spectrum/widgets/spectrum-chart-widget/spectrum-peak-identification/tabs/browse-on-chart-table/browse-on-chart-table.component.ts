@@ -27,19 +27,21 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, OnInit, QueryList, ViewChildren } from "@angular/core";
+import { Component, ElementRef, OnDestroy, OnInit, QueryList, ViewChildren } from "@angular/core";
 import { Subscription } from "rxjs";
 import { ElementTileState } from "src/app/modules/pixlisecore/components/atoms/periodic-table/element-tile/element-tile.component";
+import { SpectrumService } from "src/app/modules/spectrum/services/spectrum.service";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { XRFLine } from "src/app/periodic-table/XRFLine";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
+import { ISpectrumChartModel } from "../../../spectrum-model-interface";
 
 @Component({
   selector: "browse-on-chart-table",
   templateUrl: "./browse-on-chart-table.component.html",
   styleUrls: ["./browse-on-chart-table.component.scss"],
 })
-export class BrowseOnChartTableComponent implements OnInit {
+export class BrowseOnChartTableComponent implements OnInit, OnDestroy {
   private subs = new Subscription();
 
   @ViewChildren("foundLineRow") foundLineElements: QueryList<ElementRef> = new QueryList<ElementRef>();
@@ -49,42 +51,46 @@ export class BrowseOnChartTableComponent implements OnInit {
   private _lineGroups: XRFLineGroup[] = [];
   foundLines: XRFLine[] = [];
 
-  constructor(/*private _spectrumService: SpectrumChartService*/) {}
+  constructor(private _spectrumService: SpectrumService) {}
 
   ngOnInit() {
-    // this.subs.add(
-    //   this._spectrumService.mdl.xrfLinesChanged$.subscribe(() => {
-    //     this._lineGroups = Array.from(this._spectrumService.mdl.xrfLinesPicked);
-    //     this.highlightElementLookup.clear();
-    //     for (let line of this._lineGroups) {
-    //       this.highlightElementLookup.add(line.atomicNumber);
-    //     }
-    //   })
-    // );
-    // this.subs.add(
-    //   this._spectrumService.mdl.xrfNearMouseChanged$.subscribe(() => {
-    //     let linesNearMouse = this._spectrumService.mdl.xrfNearMouse;
-    //     if (!linesNearMouse) {
-    //       return;
-    //     }
-    //     // Only update lines if they've actualy changed, otherwise this is quite slow
-    //     if (
-    //       this.foundLines.length <= 0 ||
-    //       linesNearMouse.lines.length <= 0 ||
-    //       this.foundLines.length != linesNearMouse.lines.length ||
-    //       this.foundLines[0].eV != linesNearMouse.lines[0].eV
-    //     ) {
-    //       this.foundLines = linesNearMouse.lines;
-    //     }
-    //     // Set our table scroll position
-    //     this.setMouseEnergy(linesNearMouse.keV);
-    //   })
-    // );
+    this.subs.add(
+      this.mdl.xrfLinesChanged$.subscribe(() => {
+        this._lineGroups = Array.from(this.mdl.xrfLinesPicked);
+        this.highlightElementLookup.clear();
+        for (const line of this._lineGroups) {
+          this.highlightElementLookup.add(line.atomicNumber);
+        }
+      })
+    );
+    this.subs.add(
+      this.mdl.xrfNearMouseChanged$.subscribe(() => {
+        const linesNearMouse = this.mdl.xrfNearMouse;
+        if (!linesNearMouse) {
+          return;
+        }
+        // Only update lines if they've actualy changed, otherwise this is quite slow
+        if (
+          this.foundLines.length <= 0 ||
+          linesNearMouse.lines.length <= 0 ||
+          this.foundLines.length != linesNearMouse.lines.length ||
+          this.foundLines[0].eV != linesNearMouse.lines[0].eV
+        ) {
+          this.foundLines = linesNearMouse.lines;
+        }
+        // Set our table scroll position
+        this.setMouseEnergy(linesNearMouse.keV);
+      })
+    );
   }
 
   ngOnDestroy() {
     // Ensure we get deleted
     this.subs.unsubscribe();
+  }
+
+  get mdl(): ISpectrumChartModel {
+    return this._spectrumService.mdl;
   }
 
   private setMouseEnergy(keV: number): void {
@@ -135,7 +141,7 @@ export class BrowseOnChartTableComponent implements OnInit {
       return;
     }
 
-    //this._spectrumService.mdl.pickXRFLine(elem.Z);
+    this.mdl.pickXRFLine(elem.Z);
   }
 
   getElementState(line: XRFLine): ElementTileState {

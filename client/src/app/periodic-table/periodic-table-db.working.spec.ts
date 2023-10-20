@@ -28,7 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { DetectorConfig } from "src/app/models/BasicTypes";
-import { ElementLine, periodicTableDB } from "./periodic-table-db";
+import { periodicTableDB } from "./periodic-table-db";
+import { ElementLine } from "./xrf-line-database";
 
 describe("combineCloseXRFLines()", () => {
   let p = periodicTableDB;

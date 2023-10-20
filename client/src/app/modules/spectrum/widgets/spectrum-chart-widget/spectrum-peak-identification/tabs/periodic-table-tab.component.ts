@@ -34,6 +34,9 @@ import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
 import { TabSelectors } from "../tab-selectors";
 import { ElementTileClickEvent } from "src/app/modules/pixlisecore/components/atoms/periodic-table/element-tile/element-tile.component";
 import { ISpectrumChartModel } from "../../spectrum-model-interface";
+import { SpectrumService } from "src/app/modules/spectrum/services/spectrum.service";
+import { XRFDatabaseService } from "src/app/services/xrf-database.service";
+import { MinMax } from "src/app/models/BasicTypes";
 
 @Component({
   selector: TabSelectors.tabPeriodicTable,
@@ -44,17 +47,18 @@ export class PeriodicTableTabComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   selectedElements = new Set<number>();
-
   lineGroups: XRFLineGroup[] = [];
-
-  mdl: ISpectrumChartModel | null = null;
+  detectorConfigZRange: MinMax = new MinMax(periodicTableDB.zSodium, periodicTableDB.zUranium);
 
   // Removed when trying to fix #1182. The comment about ExpressionChangedAfterItHasBeenCheckedError seems no longer relevant
   // but can't determine why randomly and rarely periodic table doesn't show up at all. If loading==true is left on, that's
   // one reason for it. Otherwise all subscriptions involved seem to be ReplaySubjects so should always do something!
   //loading: boolean = false;
 
-  constructor(/*private _spectrumService: SpectrumChartService*/) {}
+  constructor(
+    private _spectrumService: SpectrumService,
+    private _xrfDBService: XRFDatabaseService
+  ) {}
 
   ngOnInit() {
     //this.loading = true; // This is a workaround for ExpressionChangedAfterItHasBeenCheckedError on pickedElements
@@ -69,7 +73,7 @@ export class PeriodicTableTabComponent implements OnInit, OnDestroy {
 
         // Specifically creating a new Set here to trigger change detection, so periodic table knows to update
         this.selectedElements = new Set<number>();
-        for (const line of this.mdl!.xrfLinesPicked) {
+        for (const line of this.mdl.xrfLinesPicked) {
           this.selectedElements.add(line.atomicNumber);
         }
       })
@@ -78,6 +82,10 @@ export class PeriodicTableTabComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  private get mdl(): ISpectrumChartModel {
+    return this._spectrumService.mdl;
   }
 
   onElementClicked(event: ElementTileClickEvent): void {
@@ -114,8 +122,8 @@ export class PeriodicTableTabComponent implements OnInit, OnDestroy {
     // line gets dimmed)
     let group: XRFLineGroup | null = null;
 
-    if (atomicNumber > 0) {
-      group = XRFLineGroup.makeFromAtomicNumber(atomicNumber);
+    if (atomicNumber > 0 && this.mdl.activeXRFDB) {
+      group = XRFLineGroup.makeFromAtomicNumber(atomicNumber, this.mdl.activeXRFDB);
     }
 
     this.mdl.xrfLinesHighlighted = group;

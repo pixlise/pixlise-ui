@@ -35,6 +35,9 @@ import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { TabSelectors } from "../tab-selectors";
 import { SPECIAL_QUANT_ID } from "./element-set-row/element-set-row.component";
+import { string, boolean } from "mathjs";
+import { SpectrumService } from "src/app/modules/spectrum/services/spectrum.service";
+import { ISpectrumChartModel } from "../../spectrum-model-interface";
 
 @Component({
   selector: TabSelectors.tabElementSets,
@@ -51,11 +54,10 @@ export class ElementSetsComponent implements OnInit, OnDestroy {
   sharedElementSetSummaries: ElementSetSummary[] = [];
 
   constructor(
-    // private _spectrumService: SpectrumChartService,
-    // private _elementSetService: ElementSetService,
-    // private _widgetDataService: WidgetRegionDataService,
-    // private _authService: AuthenticationService
-  ) {}
+    private _spectrumService: SpectrumService // private _elementSetService: ElementSetService,
+  ) // private _widgetDataService: WidgetRegionDataService,
+  // private _authService: AuthenticationService
+  {}
 
   ngOnInit() {
     // We show a "special" synthetic element set for the elements in loaded quant(s)
@@ -65,7 +67,6 @@ export class ElementSetsComponent implements OnInit, OnDestroy {
     //     this.updateElementSets();
     //   })
     // );
-
     // this._subs.add(
     //   this._elementSetService.elementSets$.subscribe(summaries => {
     //     this._rawElementSetSummaries = summaries;
@@ -77,6 +78,10 @@ export class ElementSetsComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     // Ensure we get deleted
     this._subs.unsubscribe();
+  }
+
+  private get mdl(): ISpectrumChartModel {
+    return this._spectrumService.mdl;
   }
 
   private updateElementSets(): void {
@@ -111,11 +116,15 @@ export class ElementSetsComponent implements OnInit, OnDestroy {
   }
 
   onUseElementSet(item: ElementSetSummary): void {
+    if (!this.mdl.activeXRFDB) {
+      return;
+    }
+
     // If it's the "special" one we handle it separately
     if (item.id == SPECIAL_QUANT_ID) {
       const groups = [];
       for (const Z of item.atomicNumbers) {
-        const group = XRFLineGroup.makeFromAtomicNumber(Z);
+        const group = XRFLineGroup.makeFromAtomicNumber(Z, this.mdl.activeXRFDB);
         groups.push(group);
       }
 
@@ -146,28 +155,28 @@ export class ElementSetsComponent implements OnInit, OnDestroy {
 
   onShareElementSet(item: ElementSetSummary): void {
     if (confirm('Are you sure you want to share a copy of element set "' + item.name + '" with other users?')) {
-    //   this._elementSetService.share(item.id).subscribe(
-    //     (sharedId: string) => {
-    //       // Don't need to do anything, this would force a listing...
-    //     },
-    //     err => {
-    //       alert("Failed to share element set: " + name);
-    //     }
-    //   );
+      //   this._elementSetService.share(item.id).subscribe(
+      //     (sharedId: string) => {
+      //       // Don't need to do anything, this would force a listing...
+      //     },
+      //     err => {
+      //       alert("Failed to share element set: " + name);
+      //     }
+      //   );
     }
   }
 
   onDeleteElementSet(item: ElementSetSummary): void {
     if (confirm('Are you sure you want to delete element set: "' + item.name + '"?')) {
       // Delete it, note it should then refresh and update our list...
-    //   this._elementSetService.del(item.id).subscribe(
-    //     () => {
-    //       console.log("Deleted element set: " + item.id);
-    //     },
-    //     err => {
-    //       alert("Failed to delete element set: " + item.name);
-    //     }
-    //   );
+      //   this._elementSetService.del(item.id).subscribe(
+      //     () => {
+      //       console.log("Deleted element set: " + item.id);
+      //     },
+      //     err => {
+      //       alert("Failed to delete element set: " + item.name);
+      //     }
+      //   );
     }
   }
 

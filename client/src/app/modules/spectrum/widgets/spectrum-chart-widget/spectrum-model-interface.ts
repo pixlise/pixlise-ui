@@ -36,8 +36,9 @@ import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
 import { XRFLine } from "src/app/periodic-table/XRFLine";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
-import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { SpectrumXRFLinesNearMouse } from "./xrf-near-mouse";
+import { XRFDatabaseService } from "src/app/services/xrf-database.service";
+import { XRFLineDatabase } from "src/app/periodic-table/xrf-line-database";
 
 // Spectrum lines are drawn using this structure. This is recalculated from source information as needed
 export class SpectrumChartLine {
@@ -75,7 +76,8 @@ export class SpectrumChartLine {
 }
 
 export interface ISpectrumChartModel {
-  envService: EnvConfigurationService;
+  xrfDBService: XRFDatabaseService;
+  activeXRFDB: XRFLineDatabase | null;
 
   transform: PanZoom;
 
