@@ -110,12 +110,12 @@ export class DatasetTilesPageComponent implements OnInit {
             // this.setDatasetListingNotAllowedError(HelpMessage.AWAITING_ADMIN_APPROVAL);
           } else {
             // If the user is set to have no permissions, we show that error and don't bother requesting
-            if (Permissions.hasPermissionSet(claims, Permissions.permissionNone)) {
+            //if (Permissions.hasPermissionSet(claims, Permissions.permissionNone)) {
               // Show a special error in this case - user has been set to have no permissions
               // this.setDatasetListingNotAllowedError(HelpMessage.NO_PERMISSIONS);
-            } else {
+            /*} else*/ {
               // Don't have no-permission set, so see if the user is allowed to access any groups
-              this._allGroups = Permissions.getGroupsPermissionAllows(claims);
+              // this._allGroups = Permissions.getGroupsPermissionAllows(claims);
               this._selectedGroups = Array.from(this._allGroups);
               // if(this._allGroups.length <= 0)
               // {

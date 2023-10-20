@@ -30,6 +30,11 @@
 @import 'variables.scss';
 
 .elem-set-row {
+    flex-direction: row;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
     padding: $sz-half $sz-unit;
     border-bottom: 1px solid $clr-gray-100;
     background-color: $clr-gray-70;
@@ -38,9 +43,34 @@
     &:hover {
         background-color: $clr-gray-60;
     }
-}
 
-.elements {
-    margin-top: $sz-qtr;
-    max-width: 480px
+    .left-container {
+        flex-direction: column;
+        display: flex;
+
+        .left-naming {
+            flex-direction: row;
+            display: flex;
+            justify-content: start;
+            align-items: center;
+            gap: $sz-unit;
+        } 
+
+        .elements {
+            flex-direction: row;
+            display: flex;
+            flex-wrap: wrap;
+
+            margin-top: $sz-qtr;
+            max-width: 480px
+        }
+    }
+
+    .right-container {
+        flex-direction: row;
+        display: flex;
+        justify-content: end;
+        align-items: center;
+        gap: $sz-unit;
+    }
 }

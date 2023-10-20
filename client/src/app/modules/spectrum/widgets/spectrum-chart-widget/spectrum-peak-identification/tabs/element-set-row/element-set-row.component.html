@@ -29,21 +29,21 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="elem-set-row" fxLayout="row" fxLayoutAlign="space-between center">
-    <div *ngIf="item" fxLayout="column">
-        <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements">
+<div class="elem-set-row">
+    <div *ngIf="item" class="left-container">
+        <div class="left-naming">
             <span title="Id: {{item.id}}">{{item.name}}</span>
             <span *ngIf="createdTime > 0" class="obj-create-time">Created: {{createdTime|date:'medium'}}</span>
             <span *ngIf="shared && item.owner && item.owner?.creatorUser" class="obj-creator">By: {{item.owner?.creatorUser?.name || ""}}</span>
         </div>
-        <div fxLayout="row wrap" class="elements">
+        <div class="elements">
             <element-tile
                 *ngFor="let Z of item.atomicNumbers"
                 [atomicNumber]="Z">
             </element-tile>
         </div>
     </div>
-    <div fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements">
+    <div class="right-container">
         <!-- *ngIf="item.creator && !item.shared" -->
         <icon-button
             *ngIf="showShareButton"

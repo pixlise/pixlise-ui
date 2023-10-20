@@ -38,6 +38,15 @@ import { SPECIAL_QUANT_ID } from "./element-set-row/element-set-row.component";
 import { string, boolean } from "mathjs";
 import { SpectrumService } from "src/app/modules/spectrum/services/spectrum.service";
 import { ISpectrumChartModel } from "../../spectrum-model-interface";
+import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import {
+  ElementSetDeleteReq,
+  ElementSetDeleteResp,
+  ElementSetGetReq,
+  ElementSetGetResp,
+  ElementSetListReq,
+  ElementSetListResp,
+} from "src/app/generated-protos/element-set-msgs";
 
 @Component({
   selector: TabSelectors.tabElementSets,
@@ -46,7 +55,7 @@ import { ISpectrumChartModel } from "../../spectrum-model-interface";
 })
 export class ElementSetsComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
-  private _rawElementSetSummaries: ElementSetSummary[] = [];
+  private _rawElementSetSummaries: Map<string, ElementSetSummary> = new Map<string, ElementSetSummary>();
 
   // The one used for display, updated when both quant & element sets update
   quantElementSet: ElementSetSummary | null = null;
@@ -54,9 +63,11 @@ export class ElementSetsComponent implements OnInit, OnDestroy {
   sharedElementSetSummaries: ElementSetSummary[] = [];
 
   constructor(
-    private _spectrumService: SpectrumService // private _elementSetService: ElementSetService,
-  ) // private _widgetDataService: WidgetRegionDataService,
-  // private _authService: AuthenticationService
+    private _spectrumService: SpectrumService,
+    private _dataService: APIDataService,
+    private _snackBarService: SnackbarService
+    // private _widgetDataService: WidgetRegionDataService,
+  ) // private _authService: AuthenticationService
   {}
 
   ngOnInit() {
@@ -67,12 +78,17 @@ export class ElementSetsComponent implements OnInit, OnDestroy {
     //     this.updateElementSets();
     //   })
     // );
-    // this._subs.add(
-    //   this._elementSetService.elementSets$.subscribe(summaries => {
-    //     this._rawElementSetSummaries = summaries;
-    //     this.updateElementSets();
-    //   })
-    // );
+    this._subs.add(
+      this._dataService.sendElementSetListRequest(ElementSetListReq.create()).subscribe((elemResp: ElementSetListResp) => {
+        if (elemResp.elementSets) {
+          this._rawElementSetSummaries.clear();
+          for (const [key, item] of Object.entries(elemResp.elementSets)) {
+            this._rawElementSetSummaries.set(key, item);
+          }
+        }
+        this.updateElementSets();
+      })
+    );
   }
 
   ngOnDestroy() {
@@ -106,7 +122,7 @@ export class ElementSetsComponent implements OnInit, OnDestroy {
     }
 
     // And add all others
-    for (const eset of this._rawElementSetSummaries) {
+    for (const eset of this._rawElementSetSummaries.values()) {
       if (!eset.owner?.sharedWithOthers) {
         this.userElementSetSummaries.push(eset);
       } else {
@@ -133,27 +149,33 @@ export class ElementSetsComponent implements OnInit, OnDestroy {
     }
 
     // Download the element set
-    // this._elementSetService.get(item.id).subscribe(
-    //   (elemSet: ElementSetItem) => {
-    //     // Replace any lines in the annotation with the lines coming from this element set
-    //     let groups: XRFLineGroup[] = [];
-    //     for (let l of elemSet.lines) {
-    //       groups.push(XRFLineGroup.makeFromElementSetItem(l));
-    //     }
+    this._dataService.sendElementSetGetRequest(ElementSetGetReq.create({ id: item.id })).subscribe(
+      (resp: ElementSetGetResp) => {
+        if (resp.elementSet) {
+          // Replace any lines in the annotation with the lines coming from this element set
+          const groups: XRFLineGroup[] = [];
+          for (const l of resp.elementSet.lines) {
+            groups.push(XRFLineGroup.makeFromElementSetItem(l, this.mdl.activeXRFDB!));
+          }
 
-    //     this.applyElementSet(item.id, groups);
-    //   },
-    //   err => {
-    //     alert("Failed to get element set: " + item.id);
-    //   }
-    // );
+          this.applyElementSet(item.id, groups);
+        } else {
+          this._snackBarService.openError(`Failed to get element set ${item.name}`);
+        }
+      },
+      err => {
+        this._snackBarService.openError(`Failed to apply element set ${item.name}`, err);
+      }
+    );
   }
 
   private applyElementSet(id: string, lines: XRFLineGroup[]): void {
-    // this._spectrumService.mdl.xrfLinesPicked = lines;
+    this.mdl.xrfLinesPicked = lines;
   }
 
   onShareElementSet(item: ElementSetSummary): void {
+    alert("Not implemented yet");
+    return;
     if (confirm('Are you sure you want to share a copy of element set "' + item.name + '" with other users?')) {
       //   this._elementSetService.share(item.id).subscribe(
       //     (sharedId: string) => {
@@ -168,19 +190,21 @@ export class ElementSetsComponent implements OnInit, OnDestroy {
 
   onDeleteElementSet(item: ElementSetSummary): void {
     if (confirm('Are you sure you want to delete element set: "' + item.name + '"?')) {
-      // Delete it, note it should then refresh and update our list...
-      //   this._elementSetService.del(item.id).subscribe(
-      //     () => {
-      //       console.log("Deleted element set: " + item.id);
-      //     },
-      //     err => {
-      //       alert("Failed to delete element set: " + item.name);
-      //     }
-      //   );
+      // Delete it, and clear from our list if success
+      this._dataService.sendElementSetDeleteRequest(ElementSetDeleteReq.create({ id: item.id })).subscribe({
+        next: (resp: ElementSetDeleteResp) => {
+          this._snackBarService.openSuccess(`Element set ${item.name} deleted successfully`);
+          this._rawElementSetSummaries.delete(item.id);
+          this.updateElementSets();
+        },
+        error: err => {
+          this._snackBarService.openError(`Failed to delete element set ${item.name}`, err);
+        },
+      });
     }
   }
 
   canDelete(id: string, creator: ObjectCreator, shared: boolean): boolean {
-    return false; //return id != SPECIAL_QUANT_ID && (!shared || creator.user_id == this._authService.getUserID());
+    return true; //return id != SPECIAL_QUANT_ID && (!shared || creator.user_id == this._authService.getUserID());
   }
 }

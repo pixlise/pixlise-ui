@@ -33,6 +33,11 @@ import { SpectrumService } from "src/app/modules/spectrum/services/spectrum.serv
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
 import { httpErrorToString } from "src/app/utils/utils";
 import { ISpectrumChartModel } from "../../spectrum-model-interface";
+import { AuthService } from "@auth0/auth0-angular";
+import { Permissions } from "src/app/utils/permissions";
+import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ElementSetWriteReq, ElementSetWriteResp } from "src/app/generated-protos/element-set-msgs";
+import { ElementLine } from "src/app/generated-protos/element-set";
 
 @Component({
   selector: "peak-id-picked-elements",
@@ -44,13 +49,15 @@ export class PickedElementsComponent implements OnInit, OnDestroy {
 
   pickedLines: XRFLineGroup[] = [];
   quantificationEnabled: boolean = false;
-  isPublicUser: boolean = true;
+  private _isUserElementSetEditor: boolean = true;
 
   constructor(
     // private _elementSetService: ElementSetService,
     private _spectrumService: SpectrumService,
     // private _quantService: QuantificationService,
-    // private _authService: AuthenticationService
+    private _authService: AuthService,
+    private _dataService: APIDataService,
+    private _snackBarService: SnackbarService
   ) {}
 
   ngOnInit(): void {
@@ -60,15 +67,14 @@ export class PickedElementsComponent implements OnInit, OnDestroy {
       })
     );
 
-    // this._authService.getIdTokenClaims$().subscribe(claims => {
-    //   this.quantificationEnabled = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionCreateQuantification);
-    // });
-
-    // this._subs.add(
-    //   this._authService.isPublicUser$.subscribe(isPublicUser => {
-    //     this.isPublicUser = isPublicUser;
-    //   })
-    // );
+    this._subs.add(
+      this._authService.idTokenClaims$.subscribe(idToken => {
+        if (idToken) {
+          this.quantificationEnabled = Permissions.hasPermissionSet(idToken, Permissions.permissionCreateQuantification);
+          this._isUserElementSetEditor = Permissions.hasPermissionSet(idToken, Permissions.permissionEditElementSet);
+        }
+      })
+    );
   }
 
   ngOnDestroy() {
@@ -79,19 +85,59 @@ export class PickedElementsComponent implements OnInit, OnDestroy {
     return this._spectrumService.mdl;
   }
 
+  get isSaveEnabled(): boolean {
+    return this._isUserElementSetEditor;
+  }
+
   onSaveElementSet() {
+    if (this.pickedLines.length <= 0) {
+      return;
+    }
+
     // Get a name for it
     const name = prompt("Enter name for Element Set");
     if (name) {
       // Save it
-    //   this._elementSetService.add(name, this.pickedLines).subscribe(
-    //     result => {
-    //       console.log("Saved new element set: " + name);
-    //     },
-    //     err => {
-    //       console.error("Failed to save element set: " + name);
-    //     }
-    //   );
+      const req = ElementSetWriteReq.create({
+        elementSet: {
+          // no id, signifies create
+          name: name,
+          lines: [],
+        },
+      });
+
+      for (const line of this.pickedLines) {
+        const lineItem = ElementLine.create({
+          Z: line.atomicNumber,
+        });
+
+        if (line.hasK) {
+          lineItem.K = line.k;
+        }
+        if (line.hasL) {
+          lineItem.L = line.l;
+        }
+        if (line.hasM) {
+          lineItem.M = line.m;
+        }
+        if (line.hasEsc) {
+          lineItem.Esc = line.esc;
+        }
+
+        req.elementSet!.lines.push(lineItem);
+      }
+
+      this._dataService.sendElementSetWriteRequest(req).subscribe(
+        (resp: ElementSetWriteResp) => {
+          if (resp.elementSet) {
+            // TODO: Add it to our local list
+            this._snackBarService.openSuccess("Element set saved", "Generated id: " + resp.elementSet.id);
+          }
+        },
+        err => {
+          this._snackBarService.openError("Failed to save element set", err);
+        }
+      );
     }
   }
 
@@ -125,6 +171,7 @@ export class PickedElementsComponent implements OnInit, OnDestroy {
       atomicNumbers.add(group.atomicNumber);
     }
 
+    alert("Not implemented yet");
     // this._quantService.showQuantificationDialog("", atomicNumbers).subscribe((params: QuantCreateParameters) => {
     //   if (params) {
     //     this._quantService.createQuantification(params).subscribe(

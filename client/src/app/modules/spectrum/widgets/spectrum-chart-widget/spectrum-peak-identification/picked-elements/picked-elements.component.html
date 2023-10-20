@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="picks-container">
     <div class="picks-header top-toolbar-shadow">
         <span>Elements</span>
-        <push-button buttonStyle="outline" [disabled]="isPublicUser" (onClick)="onSaveElementSet()">Save Set</push-button>
+        <push-button buttonStyle="outline" [disabled]="!isSaveEnabled" (onClick)="onSaveElementSet()">Save Set</push-button>
     </div>
     <div class="scrollable">
         <peak-id-element-list-item

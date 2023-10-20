@@ -35,7 +35,6 @@ import { TabSelectors } from "../tab-selectors";
 import { ElementTileClickEvent } from "src/app/modules/pixlisecore/components/atoms/periodic-table/element-tile/element-tile.component";
 import { ISpectrumChartModel } from "../../spectrum-model-interface";
 import { SpectrumService } from "src/app/modules/spectrum/services/spectrum.service";
-import { XRFDatabaseService } from "src/app/services/xrf-database.service";
 import { MinMax } from "src/app/models/BasicTypes";
 
 @Component({
@@ -55,10 +54,7 @@ export class PeriodicTableTabComponent implements OnInit, OnDestroy {
   // one reason for it. Otherwise all subscriptions involved seem to be ReplaySubjects so should always do something!
   //loading: boolean = false;
 
-  constructor(
-    private _spectrumService: SpectrumService,
-    private _xrfDBService: XRFDatabaseService
-  ) {}
+  constructor(private _spectrumService: SpectrumService) {}
 
   ngOnInit() {
     //this.loading = true; // This is a workaround for ExpressionChangedAfterItHasBeenCheckedError on pickedElements
