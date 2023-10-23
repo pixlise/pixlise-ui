@@ -51,6 +51,9 @@ export class AddDatasetDialogComponent implements OnInit
     mode: string = this.modeEntry;
     modeTitle: string = "";
 
+    detector: string = "";
+    detectors = ["jpl-breadboard", "sbu-breadboard", "pixl-em"];
+
     constructor(
         //@Inject(MAT_DIALOG_DATA) public params: AddDatasetParameters,
         public dialogRef: MatDialogRef<boolean>,
@@ -67,7 +70,13 @@ export class AddDatasetDialogComponent implements OnInit
     {
         if(this.droppedFiles.length != 1)
         {
-            alert("Please drop one image to upload");
+            alert("Please drop one zip file to upload");
+            return;
+        }
+
+        if(this.detector.length <= 0)
+        {
+            alert("Please choose an instrument");
             return;
         }
 
@@ -84,7 +93,7 @@ export class AddDatasetDialogComponent implements OnInit
                 this.mode = this.modeCreate;
                 this.modeTitle = "Creating dataset: "+this.nameHint+"...";
 
-                this._datasetService.createDataset(this.nameHint, fileBytes).subscribe(
+                this._datasetService.createDataset(this.nameHint, this.detector, fileBytes).subscribe(
                     (logID: string)=>
                     {
                         this.modeTitle = "Dataset: "+this.nameHint+" created";
@@ -110,6 +119,25 @@ export class AddDatasetDialogComponent implements OnInit
     get acceptTypes(): string
     {
         return "application/zip,application/x-zip-compressed";
+    }
+
+    get formatHelp(): string
+    {
+        if(this.detector == "pixl-em")
+        {
+            return "Zip file must contain files organised in sub-directories named by the 3-character product type, the same way as how FM datasets are generated. Also note that DATASET NAME must match the RTT encoded into the file names of the EM dataset being uploaded, otherwise the import will fail.";
+        }
+        else if(this.detector.endsWith("breadboard")) 
+        {
+            return "Zip files added must contain only .msa files, with no other files, and no directories in the zip file.";
+        }
+
+        return "";
+    }
+
+    onChangeDetector(detector: string)
+    {
+        this.detector = detector;
     }
 
     onCancel()
