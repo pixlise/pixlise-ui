@@ -44,10 +44,23 @@ POSSIBILITY OF SUCH DAMAGE.
                     fxLayout="row"
                     fxLayoutAlign="start center"
                     class="gap-separated-horizontal-elements">
+                    <span>Source Instrument</span>
+                    <mat-select
+                        [value]="detector"
+                        (selectionChange)="onChangeDetector($event.value)">
+                        <mat-option
+                            *ngFor="let detector of detectors"
+                            [value]="detector">{{detector}}</mat-option>
+                    </mat-select>
+                </div>
+                <div
+                    fxLayout="row"
+                    fxLayoutAlign="start center"
+                    class="gap-separated-horizontal-elements">
                     <span>Dataset Name</span>
                     <input [(ngModel)]="nameHint" type="text" placeholder="Name of dataset">
                 </div>
-                <div class="important">NOTE: Only JPL Breadboard datasets are supported at present. Zip files added must contain only .msa files, with no other files, and no directories in the zip file.</div>
+                <div class="important">{{formatHelp}}</div>
             </div>
 
             <div class="dropzone" ngx-dropzone [accept]="acceptTypes" [multiple]="false" (change)="onDropFile($event)">
