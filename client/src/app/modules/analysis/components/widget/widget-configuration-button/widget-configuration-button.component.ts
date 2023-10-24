@@ -10,4 +10,10 @@ export class WidgetConfigurationButtonComponent {
   @Input() buttonConfiguration?: WidgetToolbarButtonConfiguration;
 
   constructor() {}
+
+  buttonClick(buttonTrigger: Element) {
+    if (this.buttonConfiguration && this.buttonConfiguration.onClick && !this.buttonConfiguration.disabled) {
+      this.buttonConfiguration.onClick(this.buttonConfiguration.value, buttonTrigger);
+    }
+  }
 }

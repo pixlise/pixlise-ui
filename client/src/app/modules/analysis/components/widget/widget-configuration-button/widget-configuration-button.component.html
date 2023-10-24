@@ -1,5 +1,4 @@
 <div class="button">
-  <!-- Add disabled state -->
   <span
     #buttonTrigger
     *ngIf="buttonConfiguration"
@@ -7,11 +6,10 @@
     [matTooltip]="buttonConfiguration.tooltip || ''"
     [matTooltipDisabled]="!buttonConfiguration.tooltip"
     class="btn-container"
-    (click)="buttonConfiguration.onClick(buttonConfiguration.value, buttonTrigger)">
+    (click)="buttonClick(buttonTrigger)">
     <two-state-push-button [disabled]="buttonConfiguration.disabled" *ngIf="buttonConfiguration.title">{{ buttonConfiguration.title }}</two-state-push-button>
     <icon-button
       *ngIf="['button', 'selectable-button'].includes(buttonConfiguration.type) && buttonConfiguration.icon"
-      [disabled]="buttonConfiguration.disabled"
       [state]="buttonConfiguration.type === 'selectable-button' && buttonConfiguration.value ? 1 : buttonConfiguration.disabled ? 3 : 0"
       class="{{ buttonConfiguration.type }}"
       [icon]="buttonConfiguration.icon"></icon-button>
