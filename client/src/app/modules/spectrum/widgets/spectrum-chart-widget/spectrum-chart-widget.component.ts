@@ -179,21 +179,21 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       this.widgetData$.subscribe((data: any) => {
         const spectrumData = data as SpectrumWidgetState;
         if (spectrumData) {
+          this.mdl.xAxisEnergyScale = spectrumData.showXAsEnergy;
+          this.mdl.yAxisCountsPerMin = spectrumData.yCountsPerMin;
+          this.mdl.yAxisCountsPerPMC = spectrumData.yCountsPerPMC;
+          this.mdl.yAxislogScale = spectrumData.logScale;
+          this.mdl.transform.pan.x = spectrumData.panX;
+          this.mdl.transform.pan.y = spectrumData.panY;
+          this.mdl.transform.scale.x = spectrumData.zoomX;
+          this.mdl.transform.scale.y = spectrumData.zoomY;
+
           const lines = new Map<string, string[]>();
           spectrumData.spectrumLines.forEach((line: SpectrumLines) => {
             lines.set(line.roiID, line.lineExpressions);
           });
 
           this.mdl.setLineList(lines);
-
-          this.mdl.xAxisEnergyScale = spectrumData.showXAsEnergy;
-          //this.mdl.yAxisCountsPerMin
-          //this.mdl.yAxisCountsPerPMC
-          this.mdl.yAxislogScale = spectrumData.logScale;
-          this.mdl.transform.pan.x = spectrumData.panX;
-          this.mdl.transform.pan.y = spectrumData.panY;
-          this.mdl.transform.scale.x = spectrumData.zoomX;
-          this.mdl.transform.scale.y = spectrumData.zoomY;
 
           this.updateLines();
         } else {
@@ -467,8 +467,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
     const spectrumData = SpectrumWidgetState.create({
       showXAsEnergy: this.mdl.xAxisEnergyScale,
-      //this.mdl.yAxisCountsPerMin
-      //this.mdl.yAxisCountsPerPMC
+      yCountsPerMin: this.mdl.yAxisCountsPerMin,
+      yCountsPerPMC: this.mdl.yAxisCountsPerPMC,
       logScale: this.mdl.yAxislogScale,
       panX: this.mdl.transform.pan.x,
       panY: this.mdl.transform.pan.y,
