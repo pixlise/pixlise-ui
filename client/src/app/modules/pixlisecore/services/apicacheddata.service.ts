@@ -73,7 +73,7 @@ export class APICachedDataService {
           this.decompressSpectra(resp);
           return resp;
         }),
-        shareReplay()
+        shareReplay(1)
       );
 
       // Add it to the map too so a subsequent request will get this
@@ -213,7 +213,7 @@ export class APICachedDataService {
           resp.regionOfInterest.scanEntryIndexesEncoded = decodeIndexList(resp.regionOfInterest.scanEntryIndexesEncoded);
           return resp;
         }),
-        shareReplay()
+        shareReplay(1)
       );
 
       // Add it to the map too so a subsequent request will get this

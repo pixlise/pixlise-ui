@@ -29,48 +29,104 @@
 
 @import 'variables.scss';
 
-.elem-set-row {
-    flex-direction: row;
+$input-width: 368px;
+
+.quant-dialog {
+    flex-direction: column;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    padding: $sz-double;
 
-    padding: $sz-half $sz-unit;
-    border-bottom: 1px solid $clr-gray-100;
-    background-color: $clr-gray-70;
-    color: $clr-gray-10;
-
-    &:hover {
-        background-color: $clr-gray-60;
-    }
-
-    .left-container {
-        flex-direction: column;
+    .header {
+        flex-direction: row;
         display: flex;
+        justify-content: space-between;
+        gap: $sz-unit;
 
-        .left-naming {
-            flex-direction: row;
-            display: flex;
-            justify-content: flex-start;
-            align-items: center;
-            gap: $sz-unit;
-        } 
+        .title {
+            color: rgb(var(--clr-gray-30));
+            font-family: Roboto;
+            font-style: normal;
+            font-weight: 900;
+            font-size: 16px;
+            line-height: 19px;
+            text-transform: uppercase;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            user-select: none;
+            white-space: nowrap;
+    
+            padding: 0;
+        }
 
-        .elements {
-            flex-direction: row;
-            display: flex;
-            flex-wrap: wrap;
-
-            margin-top: $sz-qtr;
-            max-width: 480px
+        .logo {
+            width: 40px;
+            height: 40px;
+            border-radius: $sz-half;
         }
     }
 
-    .right-container {
+    .label {
+        color: $clr-gray-30;
+        font-family: Inter, Roboto;
+        font-weight: 500;
+        font-size: 12px;
+        line-height: 16px;
+        margin-top: $sz-double;
+        margin-bottom: $sz-unit;
+    }
+
+    .row-centered {
+        flex-direction: row;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+    }
+
+    .row-space-between {
+        flex-direction: row;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .row-end {
         flex-direction: row;
         display: flex;
         justify-content: flex-end;
         align-items: center;
-        gap: $sz-unit;
     }
+}
+
+.selection {
+    color: $clr-gray-10;
+    font-weight: bold;
+}
+
+input {
+    min-width: $input-width;
+}
+
+.short-input {
+    min-width: 50px;
+}
+
+.label-disabled {
+    color: $clr-gray-60;
+}
+
+mat-select {
+    width: $input-width !important;
+    margin: 0px;
+}
+
+.bottom-button-gap {
+    margin-top: 24px;
+}
+
+.nogap {
+    margin: 0px;
+}
+
+.top-gap {
+    margin-top: $sz-half;
 }

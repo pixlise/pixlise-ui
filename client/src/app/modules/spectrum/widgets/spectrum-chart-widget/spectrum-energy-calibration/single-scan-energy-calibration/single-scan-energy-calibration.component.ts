@@ -137,7 +137,6 @@ export class SingleScanEnergyCalibrationComponent implements OnInit {
     }
 
     // Read them into whatever scan ID is asked
-    this._scanCalibration = [new SpectrumEnergyCalibration(eVStartNumA, eVPerChannelNumA, "A"), new SpectrumEnergyCalibration(eVStartNumB, eVPerChannelNumB, "B")];
-    this.setCalibration(this._scanCalibration);
+    this.setCalibration([new SpectrumEnergyCalibration(eVStartNumA, eVPerChannelNumA, "A"), new SpectrumEnergyCalibration(eVStartNumB, eVPerChannelNumB, "B")]);
   }
 }

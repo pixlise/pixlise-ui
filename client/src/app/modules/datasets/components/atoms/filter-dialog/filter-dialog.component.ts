@@ -29,11 +29,8 @@
 
 import { Component, ElementRef, Inject, OnInit, ViewContainerRef } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
-import { DetectorConfigList } from "src/app/models/BasicTypes";
 import { DatasetFilter } from "../../../dataset-filter";
-import { EnvConfigurationService } from "src/app/services/env-configuration.service";
 import { positionDialogNearParent } from "src/app/utils/utils";
-import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { DetectorConfigListReq, DetectorConfigListResp } from "src/app/generated-protos/detector-config-msgs";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 

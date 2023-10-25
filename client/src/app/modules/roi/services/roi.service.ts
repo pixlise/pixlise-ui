@@ -256,7 +256,7 @@ export class ROIService {
           }
           return roi;
         }),
-        shareReplay()
+        shareReplay(1)
       );
 
       // Add it to the map too so a subsequent request will get this

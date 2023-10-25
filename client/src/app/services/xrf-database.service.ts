@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { XRFLineDatabase } from "../periodic-table/xrf-line-database";
-import { Observable, concatMap, map } from "rxjs";
+import { Observable, concatMap, map, shareReplay } from "rxjs";
 import { APICachedDataService } from "../modules/pixlisecore/services/apicacheddata.service";
 import { ScanListReq, ScanListResp } from "../generated-protos/scan-msgs";
 import { DetectorConfigReq, DetectorConfigResp } from "../generated-protos/detector-config-msgs";
@@ -49,7 +49,8 @@ export class XRFDatabaseService {
                 return new XRFLineDatabase(detResp.config, periodicTableDB);
               })
             );
-          })
+          }),
+          shareReplay(1)
         );
 
       // Add it to the map too so a subsequent request will get this

@@ -29,19 +29,9 @@
 
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable, ReplaySubject, Subject, Subscription } from "rxjs";
-import {
-  ComponentVersions,
-  DetectorConfig,
-  DetectorConfigList,
-  PiquantConfig,
-  PiquantDownloadables,
-  PiquantVersionConfig,
-} from "../models/BasicTypes";
-// import { DataSet } from "src/app/models/DataSet";
-import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { APIPaths, makeHeaders } from "../utils/api-helpers";
-// import { DataSetService } from "./data-set.service";
+import { Observable, Subscription } from "rxjs";
+import { ComponentVersions } from "../models/BasicTypes";
 
 @Injectable({
   providedIn: "root",
@@ -52,47 +42,10 @@ export class EnvConfigurationService {
   constructor(
     private http: HttpClient // private datasetService: DataSetService
   ) {}
-/*
-  listConfigs(): Observable<DetectorConfigList> {
-    console.log("Loading quant config list");
-    let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root + "/config");
-    return this.http.get<DetectorConfigList>(apiURL, makeHeaders());
-  }
 
-  getPiquantConfigVersions(config: string): Observable<string[]> {
-    console.log("Loading quant config version for: " + config);
-    let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root + "/config/" + config + "/versions");
-    return this.http.get<string[]>(apiURL, makeHeaders());
-  }
-
-  getPiquantConfig(config: string, version: string): Observable<PiquantConfig> {
-    console.log("Loading quant config: " + config + ", version: " + version);
-    let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root + "/config/" + config + "/version/" + version);
-    return this.http.get<PiquantConfig>(apiURL, makeHeaders());
-  }
-
-  listPiquantDownloads(): Observable<PiquantDownloadables> {
-    console.log("Loading piquant downloadable list");
-    let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root + "/download");
-    return this.http.get<PiquantDownloadables>(apiURL, makeHeaders());
-  }
-
-  getPiquantVersion(): Observable<PiquantVersionConfig> {
-    let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root + "/version");
-    return this.http.get<PiquantVersionConfig>(apiURL, makeHeaders());
-  }
-
-  setPiquantVersion(version: string): Observable<void> {
-    let apiURL = APIPaths.getWithHost(APIPaths.api_piquant_root + "/version");
-    let body = { version: version };
-
-    return this.http.post<void>(apiURL, body, makeHeaders());
-  }
-*/
   // TODO: If we've requested these before, cache them locally
   getComponentVersions(): Observable<ComponentVersions> {
-    let apiUrl = APIPaths.getWithHost(APIPaths.api_componentVersions);
-
+    const apiUrl = APIPaths.getWithHost(APIPaths.api_componentVersions);
     return this.http.get<ComponentVersions>(apiUrl, makeHeaders());
   }
 /*

@@ -38,6 +38,7 @@ import { Permissions } from "src/app/utils/permissions";
 import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ElementSetWriteReq, ElementSetWriteResp } from "src/app/generated-protos/element-set-msgs";
 import { ElementLine } from "src/app/generated-protos/element-set";
+import { QuantCreateParameters } from "../../quantification-start-options/quantification-start-options.component";
 
 @Component({
   selector: "peak-id-picked-elements",
@@ -171,19 +172,19 @@ export class PickedElementsComponent implements OnInit, OnDestroy {
       atomicNumbers.add(group.atomicNumber);
     }
 
-    alert("Not implemented yet");
-    // this._quantService.showQuantificationDialog("", atomicNumbers).subscribe((params: QuantCreateParameters) => {
-    //   if (params) {
-    //     this._quantService.createQuantification(params).subscribe(
-    //       (jobID: string) => {
-    //         console.log("Job ID: " + jobID);
-    //       },
-    //       err => {
-    //         let msg = httpErrorToString(err, "Failed to start map quantification with PIQUANT. See logs. Error");
-    //         alert(msg);
-    //       }
-    //     );
-    //   }
-    // });
+    this._spectrumService.showQuantificationDialog("", atomicNumbers).subscribe((params: QuantCreateParameters) => {
+      if (params) {
+        alert("Not implemented yet");
+        // this._quantService.createQuantification(params).subscribe(
+        //   (jobID: string) => {
+        //     console.log("Job ID: " + jobID);
+        //   },
+        //   err => {
+        //     let msg = httpErrorToString(err, "Failed to start map quantification with PIQUANT. See logs. Error");
+        //     alert(msg);
+        //   }
+        // );
+      }
+    });
   }
 }

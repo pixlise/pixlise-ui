@@ -19,15 +19,13 @@ export class EnergyCalibrationService implements OnInit {
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _cachedDataService: APICachedDataService
-  ) {
-    // this._currentCalibration = new Map<string, SpectrumEnergyCalibration[]>();
-  }
+  ) {}
 
   ngOnInit(): void {
     this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
       if (config.scanConfigurations) {
         Object.entries(config.scanConfigurations).forEach(([scanId, scanConfig]) => {
-          let calibrations = scanConfig.calibrations.map(
+          const calibrations = scanConfig.calibrations.map(
             calibration => new SpectrumEnergyCalibration(calibration.eVstart, calibration.eVperChannel, calibration.detector)
           );
           this._currentCalibration.set(scanId, calibrations);
@@ -38,7 +36,7 @@ export class EnergyCalibrationService implements OnInit {
 
   setCurrentCalibration(scanId: string, values: SpectrumEnergyCalibration[]) {
     this._currentCalibration.set(scanId, values);
-    let currentConfig = this._analysisLayoutService.activeScreenConfiguration$.value;
+    const currentConfig = this._analysisLayoutService.activeScreenConfiguration$.value;
     if (currentConfig && currentConfig.id) {
       if (!currentConfig.scanConfigurations) {
         currentConfig.scanConfigurations = {};
@@ -50,8 +48,8 @@ export class EnergyCalibrationService implements OnInit {
 
       let isNewCalibration = false;
 
-      let existingCalibrations = currentConfig.scanConfigurations[scanId].calibrations;
-      let calibrations: ScanCalibrationConfiguration[] = [];
+      const existingCalibrations = currentConfig.scanConfigurations[scanId].calibrations;
+      const calibrations: ScanCalibrationConfiguration[] = [];
       values.forEach(({ eVstart, eVperChannel, detector }, i) => {
         if (
           i >= existingCalibrations.length ||
@@ -82,10 +80,6 @@ export class EnergyCalibrationService implements OnInit {
   }
 
   getScanCalibration(scanId: string): Observable<SpectrumEnergyCalibration[]> {
-    if (this._currentCalibration.has(scanId)) {
-      return this.getCurrentCalibration(scanId);
-    }
-
     return combineLatest([
       this._cachedDataService.getScanMetaLabelsAndTypes(ScanMetaLabelsAndTypesReq.create({ scanId: scanId })),
       this._cachedDataService.getSpectrum(SpectrumReq.create({ scanId: scanId, bulkSum: true, entries: { indexes: [] } })),
@@ -135,7 +129,7 @@ export class EnergyCalibrationService implements OnInit {
 
         return calibration;
       }),
-      shareReplay()
+      shareReplay(1)
     );
   }
 
@@ -192,7 +186,7 @@ export class EnergyCalibrationService implements OnInit {
 
         return result;
       }),
-      shareReplay()
+      shareReplay(1)
     );
   }
 }

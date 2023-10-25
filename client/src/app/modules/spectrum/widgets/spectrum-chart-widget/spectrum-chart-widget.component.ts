@@ -27,6 +27,7 @@ import { SpectrumToolId } from "./tools/base-tool";
 import { PeakIdentificationData, SpectrumPeakIdentificationComponent } from "./spectrum-peak-identification/spectrum-peak-identification.component";
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/widget-data";
+import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -115,9 +116,10 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         },
         {
           id: "xray-tube-element",
-          type: "button",
+          type: "selectable-button",
           icon: "assets/button-icons/xray-tube-element.svg",
           tooltip: "Show XRF Lines for X-ray Tube Element",
+          value: false,
           onClick: () => this.onShowXRayTubeLines(),
         },
       ],
@@ -126,7 +128,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           id: "spectra",
           type: "button",
           title: "Display Spectra",
-          //disabled: !this._showingDisplaySpectra,
+          tooltip: "Choose what spectra to display",
           value: false,
           onClick: (value, trigger) => this.onSelectSpectra(trigger),
         },
@@ -135,6 +137,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           type: "button",
           title: "Display Fit",
           value: false,
+          disabled: true,
+          tooltip: "Not implemented yet",
           onClick: () => {},
         },
         {
@@ -143,6 +147,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           title: "Run PIQUANT",
           //disabled: !this._showingPiquant,
           value: false,
+          disabled: !this.mdl.xAxisEnergyScale,
+          tooltip: "Allows choosing elements and run PIQUANT. Only available if x-axis is calibrated.",
           onClick: (value, trigger) => this.onPiquant(trigger),
         },
         {
@@ -150,12 +156,15 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           type: "button",
           title: "Peak Labels",
           value: false,
+          disabled: true,
+          tooltip: "Not implemented yet",
           onClick: () => {},
         },
         {
           id: "calibration",
           type: "button",
           title: "Calibration",
+          tooltip: "Allows calibration of x-axis",
           value: false,
           onClick: () => this.onCalibration(),
         },
@@ -166,19 +175,68 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   ngOnInit() {
     this.onToolSelected("pan");
 
-    this.widgetData$.subscribe((data: any) => {
-      if (data?.spectrumLines) {
-        const lines = new Map<string, string[]>();
-        data.spectrumLines.forEach((line: SpectrumLines) => {
-          lines.set(line.roiID, line.lineExpressions);
-        });
+    this._subs.add(
+      this.widgetData$.subscribe((data: any) => {
+        const spectrumData = data as SpectrumWidgetState;
+        if (spectrumData) {
+          const lines = new Map<string, string[]>();
+          spectrumData.spectrumLines.forEach((line: SpectrumLines) => {
+            lines.set(line.roiID, line.lineExpressions);
+          });
 
-        this.mdl.setLineList(lines);
-        this.updateLines();
-      } else {
-        this.setInitialConfig();
-      }
-    });
+          this.mdl.setLineList(lines);
+
+          this.mdl.xAxisEnergyScale = spectrumData.showXAsEnergy;
+          //this.mdl.yAxisCountsPerMin
+          //this.mdl.yAxisCountsPerPMC
+          this.mdl.yAxislogScale = spectrumData.logScale;
+          this.mdl.transform.pan.x = spectrumData.panX;
+          this.mdl.transform.pan.y = spectrumData.panY;
+          this.mdl.transform.scale.x = spectrumData.zoomX;
+          this.mdl.transform.scale.y = spectrumData.zoomY;
+
+          this.updateLines();
+        } else {
+          this.setInitialConfig();
+        }
+      })
+    );
+
+    this._subs.add(
+      this.mdl.xAxisEnergyScale$.subscribe((xAxisEnergyScale: boolean) => {
+        // Update our button too
+        if (this._widgetControlConfiguration.bottomToolbar) {
+          for (const cfg of this._widgetControlConfiguration.bottomToolbar) {
+            if (cfg.id == "piquant") {
+              cfg.disabled = !xAxisEnergyScale;
+            }
+          }
+        }
+      })
+    );
+
+    this._subs.add(
+      this.mdl.xrfLinesChanged$.subscribe(() => {
+        const tubeZ = this.mdl?.activeXRFDB?.configDetector.tubeElement || 0;
+        if (tubeZ) {
+          // Check if the xray tube characteristic element is enabled, if so, enable the toolbar button
+          let foundZ = false;
+          for (const line of this.mdl.xrfLinesPicked) {
+            if (line.atomicNumber == tubeZ) {
+              foundZ = true;
+              break;
+            }
+          }
+
+          // Set the button state
+          for (const button of this._widgetControlConfiguration?.topToolbar || []) {
+            if (button.id === "xray-tube-element") {
+              button.value = foundZ;
+            }
+          }
+        }
+      })
+    );
 
     this.reDraw();
   }
@@ -265,19 +323,19 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       return;
     }
 
-    this._widgetControlConfiguration["topToolbar"]!.forEach((button: any) => {
-      if (button.id === "xray-tube-element") {
-        // This is the button we're dealing with. If it's active, we disable, otherwise enable
-        if (button.value) {
-          this.mdl.unpickXRFLine(this.mdl.xrfDBService.tubeElementZ);
-          button.value = false;
-        } else {
-          this.mdl.pickXRFLine(this.mdl.xrfDBService.tubeElementZ);
-          button.value = true;
+    if (this._widgetControlConfiguration.topToolbar) {
+      for (const button of this._widgetControlConfiguration.topToolbar) {
+        if (button.id === "xray-tube-element") {
+          // This is the button we're dealing with. If it's active, we disable, otherwise enable
+          if (button.value) {
+            this.mdl.unpickXRFLine(this.mdl.xrfDBService.tubeElementZ);
+          } else {
+            this.mdl.pickXRFLine(this.mdl.xrfDBService.tubeElementZ);
+          }
+          break;
         }
-        button.value = this.mdl.xrfLinesPicked;
       }
-    });
+    }
   }
 
   onResetZoom() {
@@ -302,11 +360,20 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
   onToolSelected(tool: string) {
     this.activeTool = tool;
-    this._widgetControlConfiguration["topToolbar"]!.forEach((button: any) => {
-      if (button.id === "pan" || button.id === "zoom") {
-        button.value = button.id === tool;
+
+    if (this._widgetControlConfiguration.topToolbar) {
+      let setCount = 0;
+      for (const button of this._widgetControlConfiguration.topToolbar) {
+        if (button.id === "pan" || button.id === "zoom") {
+          button.value = button.id === tool;
+          setCount++;
+
+          if (setCount > 1) {
+            break;
+          }
+        }
       }
-    });
+    }
 
     this.toolhost.setTool(tool == "pan" ? SpectrumToolId.PAN : SpectrumToolId.ZOOM);
   }
@@ -380,23 +447,37 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       }
 
       // Get the region/display settings and spectra, then add
-      // a line for each to the chart
-
+      // a line for each to the chart.
       this.mdl.setLineList(result.selectedItems);
-
-      const spectrumLines: SpectrumLines[] = [];
-      this.mdl.getLineList().forEach((lineExpressions, roiID) => {
-        spectrumLines.push(SpectrumLines.create({ roiID, lineExpressions }));
-      });
-
-      this.onSaveWidgetData.emit(SpectrumWidgetState.create({ spectrumLines }));
-
       this.updateLines();
+
+      this.saveState();
     });
 
     this._shownDisplaySpectra.afterClosed().subscribe(() => {
       this._shownDisplaySpectra = null;
     });
+  }
+
+  private saveState(): void {
+    const spectrumLines: SpectrumLines[] = [];
+    this.mdl.getLineList().forEach((lineExpressions, roiID) => {
+      spectrumLines.push(SpectrumLines.create({ roiID, lineExpressions }));
+    });
+
+    const spectrumData = SpectrumWidgetState.create({
+      showXAsEnergy: this.mdl.xAxisEnergyScale,
+      //this.mdl.yAxisCountsPerMin
+      //this.mdl.yAxisCountsPerPMC
+      logScale: this.mdl.yAxislogScale,
+      panX: this.mdl.transform.pan.x,
+      panY: this.mdl.transform.pan.y,
+      zoomX: this.mdl.transform.scale.x,
+      zoomY: this.mdl.transform.scale.y,
+      spectrumLines: spectrumLines,
+    });
+
+    this.onSaveWidgetData.emit(spectrumData);
   }
 
   onPiquant(trigger: Element | undefined) {
@@ -441,9 +522,35 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   private updateLines() {
     // TODO: should we hard code this? Probably not... how does user ask for something else?
     const readType = SpectrumType.SPECTRUM_NORMAL;
+    const scanIds = new Set<string>();
 
     for (const [roiId, options] of this.mdl.getLineList()) {
       this._roiService.getRegionSettings(roiId).subscribe((roi: RegionSettings) => {
+        if (!scanIds.has(roi.region.scanId)) {
+          scanIds.add(roi.region.scanId);
+
+          // For any scans coming in that are not yet calibrated, set them to
+          // dataset calibration
+          if (this.mdl.xAxisEnergyScale) {
+            this._energyCalibrationService.getCurrentCalibration(roi.region.scanId).subscribe((cals: SpectrumEnergyCalibration[]) => {
+              // If any are empty...
+              let emptyCount = 0;
+              for (const cal of cals) {
+                if (cal.isEmpty()) {
+                  emptyCount++;
+                }
+              }
+
+              if (cals.length <= 0 || emptyCount > 0) {
+                this._energyCalibrationService.getScanCalibration(roi.region.scanId).subscribe((scanCals: SpectrumEnergyCalibration[]) => {
+                  this._energyCalibrationService.setCurrentCalibration(roi.region.scanId, scanCals);
+                  this.mdl.setEnergyCalibration(roi.region.scanId, scanCals);
+                });
+              }
+            });
+          }
+        }
+
         // Now we know the scan Id for this one, request spectra and find the scan name
         combineLatest([
           this._cachedDataService.getSpectrum(

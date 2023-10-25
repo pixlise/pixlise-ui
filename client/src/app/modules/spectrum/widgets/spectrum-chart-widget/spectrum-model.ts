@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { ReplaySubject, Subject, scan } from "rxjs";
+import { BehaviorSubject, ReplaySubject, Subject, scan } from "rxjs";
 import { ObjectCreator, MinMax, SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { Rect } from "src/app/models/Geometry";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
@@ -107,7 +107,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   // Display settings
   private _logScale: boolean = true;
-  private _showXAsEnergy: boolean = false;
+  private _showXAsEnergy$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   private _yAxisCountsPerMin: boolean = true;
   private _yAxisCountsPerPMC: boolean = false;
   private _linesShown: Map<string, string[]> = new Map<string, string[]>();
@@ -115,7 +115,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   private _calibration: Map<string, SpectrumEnergyCalibration> = new Map<string, SpectrumEnergyCalibration>();
 
-  private _xrfLineDB: XRFLineDatabase | null = null;
+  private _activeXRFDB: XRFLineDatabase | null = null;
 
   // Special spectrum source for fit lines, these come back when the user asks to fit a spectrum by PIQUANT and contains
   // all the component lines that make up the spectrum
@@ -157,8 +157,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   private _chartYMaxValue: number | null = null;
   private _chartYResize: boolean = true;
-  private _xrfeVLowerBound: number = 0;
-  private _xrfeVUpperBound: number = 0;
 
   private _chartArea: Rect = new Rect(0, 0, 0, 0);
 
@@ -184,7 +182,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   }
 
   get activeXRFDB(): XRFLineDatabase | null {
-    return this._xrfLineDB;
+    return this._activeXRFDB;
   }
 
   get keyItems(): KeyItem[] {
@@ -248,18 +246,22 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   }
 
   get xAxisEnergyScale(): boolean {
-    return this._showXAsEnergy;
+    return this._showXAsEnergy$.value;
+  }
+
+  get xAxisEnergyScale$(): BehaviorSubject<boolean> {
+    return this._showXAsEnergy$;
   }
 
   set xAxisEnergyScale(val: boolean) {
-    this._showXAsEnergy = val;
+    this._showXAsEnergy$.next(val);
     //this.recalcSpectrumLines();
     //this.clearDisplayData();
     //this.saveState("xAxisEnergyScale");
   }
 
   get xAxisLabel(): string {
-    return this._showXAsEnergy ? "keV" : "Channel";
+    return this._showXAsEnergy$.value ? "keV" : "Channel";
   }
 
   get yAxisLabel(): string {
@@ -372,8 +374,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     this._browseCommonElementsXRF = val;
 
     // Refresh table if needed
-    if (this._xrfLineDB) {
-      this._xrfNearMouse.setEnergy(this._xrfNearMouse.keV, this._browseCommonElementsXRF, this._xrfLineDB);
+    if (this._activeXRFDB) {
+      this._xrfNearMouse.setEnergy(this._xrfNearMouse.keV, this._browseCommonElementsXRF, this._activeXRFDB);
     }
 
     // Notify stuff
@@ -382,21 +384,17 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   }
 
   get xrfeVLowerBound(): number {
-    return this._xrfeVLowerBound;
-  }
-
-  set xrfeVLowerBound(val: number) {
-    this._xrfeVLowerBound = val;
-    this.needsDraw$.next();
+    if (this._activeXRFDB && this._activeXRFDB.configDetector) {
+      return this._activeXRFDB.configDetector.xrfeVLowerBound;
+    }
+    return 0;
   }
 
   get xrfeVUpperBound(): number {
-    return this._xrfeVUpperBound;
-  }
-
-  set xrfeVUpperBound(val: number) {
-    this._xrfeVUpperBound = val;
-    this.needsDraw$.next();
+    if (this._activeXRFDB && this._activeXRFDB.configDetector) {
+      return this._activeXRFDB.configDetector.xrfeVUpperBound;
+    }
+    return 0;
   }
 
   get diffractionPeaksShown(): DiffractionPeak[] {
@@ -407,8 +405,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     if (keV <= 0) {
       this._xrfNearMouse.clear();
     } else {
-      if (this._xrfLineDB) {
-        this._xrfNearMouse.setEnergy(keV, this._browseCommonElementsXRF, this._xrfLineDB);
+      if (this._activeXRFDB) {
+        this._xrfNearMouse.setEnergy(keV, this._browseCommonElementsXRF, this._activeXRFDB);
       }
     }
 
@@ -451,8 +449,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   }
 
   private internalPickXRFLine(atomicNumber: number): void {
-    if (this._xrfLineDB) {
-      const group = XRFLineGroup.makeFromAtomicNumber(atomicNumber, this._xrfLineDB);
+    if (this._activeXRFDB) {
+      const group = XRFLineGroup.makeFromAtomicNumber(atomicNumber, this._activeXRFDB);
       this._xrfLinesPicked.push(group);
     }
   }
@@ -715,7 +713,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
     // If we just got cleared, clear our XRF DB
     if (this._linesShown.size == 0) {
-      this._xrfLineDB = null;
+      this._activeXRFDB = null;
     }
   }
 
@@ -772,11 +770,11 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       throw new Error(`addLineDataForLine called for non-existant line: ${roiId}-${lineExpression}`);
     }
 
-    if (!this._xrfLineDB) {
+    if (!this._activeXRFDB) {
       // No DB yet, create one for this scan
       // TODO: what about when we have scans from different instruments, therefore different XRF db requirements?
       this.xrfDBService.getXRFLines(scanId).subscribe(xrfdb => {
-        this._xrfLineDB = xrfdb;
+        this._activeXRFDB = xrfdb;
       });
     }
 
@@ -826,13 +824,13 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     let xvalues: number[] = [];
 
     // Make incrementing x values (channel)
-    const incr = this._showXAsEnergy ? 0 : 1;
+    const incr = this._showXAsEnergy$.value ? 0 : 1;
     for (let c = 0; c < channelCount; c++) {
       xvalues.push(c + incr);
     }
 
     // Calc as energy if needed
-    if (this._showXAsEnergy) {
+    if (this._showXAsEnergy$.value) {
       let detectorCalib = "A";
       if (forDetectorId == "B") {
         detectorCalib = "B";
@@ -870,7 +868,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   }
 
   makePrintableXValue(value: number): string {
-    if (this._showXAsEnergy) {
+    if (this._showXAsEnergy$.value) {
       return value.toLocaleString() + " keV";
     }
     return "Channel: " + Math.round(value).toString();

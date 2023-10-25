@@ -209,68 +209,6 @@ export class ComponentVersions {
   constructor(public components: ComponentVersion[]) {}
 }
 
-// PIXLISE config related to detector of current dataset
-export class DetectorConfig {
-  constructor(
-    public minElement: number,
-    public maxElement: number,
-    public xrfeVLowerBound: number,
-    public xrfeVUpperBound: number,
-    public xrfeVResolution: number,
-    public windowElement: number,
-    public tubeElement: number,
-    public defaultParams: string,
-    public mmBeamRadius: number,
-    public piquantConfigVersions: string[]
-  ) {}
-}
-
-// Detector config list
-export class DetectorConfigList {
-  constructor(public configNames: string[]) {}
-}
-
-// Config file contents for PIQUANT to run
-export class DetectorQuantConfig {
-  constructor(
-    public description: string,
-    public configFile: string,
-    public opticEfficiencyFile: string,
-    public calibrationFile: string,
-    public standardsFile: string
-  ) {}
-}
-
-// The overall piquant config that can be modified/viewed by spectroscopists
-export class PiquantConfig {
-  constructor(
-    public pixliseConfig: DetectorConfig,
-    public quantConfig: DetectorQuantConfig
-  ) {}
-}
-
-export class PiquantDownloadable {
-  constructor(
-    public buildVersion: string,
-    public buildDateUnixSec: number,
-    public fileName: string,
-    public fileSizeBytes: number,
-    public downloadUrl: string,
-    public os: string
-  ) {}
-}
-
-export class PiquantDownloadables {
-  constructor(public downloadItems: PiquantDownloadable[]) {}
-}
-
-export class PiquantVersionConfig {
-  constructor(
-    public version: string,
-    public changedUnixTimeSec: number,
-    public creator: ObjectCreator
-  ) {}
-}
 
 export class LoadProgress {
   constructor(

@@ -1,0 +1,119 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div class="quant-dialog">
+    <div class="header">
+        <h1 class="title">PIQUANT</h1>
+        <img class="logo" src="assets/piquant-inside.png">
+    </div>
+
+    <div class="label">Region of Interest</div>
+    <div class="row-space-between top-gap">
+        <span class="selection" #tooltip="matTooltip" [matTooltip]="roiSelectedDisplayTooltip">{{currentROI}}</span>
+        <push-button buttonStyle="outline" (onClick)="onSelectROI()">Change</push-button>
+    </div>
+
+    <div class="label">Mode</div>
+    <mat-select [(ngModel)]="quantModeId" (selectionChange)="onQuantModeChanged($event)">
+        <mat-option *ngFor="let mode of quantModes" [value]="mode.id">{{mode.label}}</mat-option>
+    </mat-select>
+
+    <div class="label" [ngClass]="{'label-disabled': !canSetName}">Name</div>
+    <input type="text" [placeholder]="canSetName ? 'Enter Quantification Name' : 'Disabled'" [(ngModel)]="quantName" [disabled]="!canSetName">
+
+    <div class="row-centered top-gap">
+        <multi-state-button
+            [stateNames]='detectorSettingChoices'
+            [items]="detectorSettingLabels"
+            [activeState]='detectorSetting'
+            (onChange)="onChangeDetectorSetting($event)">
+        </multi-state-button>
+    </div>
+
+    <div class="row-space-between top-gap">
+        <div class="label nogap">Include dwell spectra (summed with Normals):</div>
+        <two-state-icon-button
+            activeIcon="assets/button-icons/check-on.svg"
+            inactiveIcon="assets/button-icons/check-off.svg"
+            [active]="includeDwells"
+            (onToggle)="onToggleIncludeDwells()">
+        </two-state-icon-button>
+    </div>
+
+    <div class="label">PIQUANT Config</div>
+    <div *ngIf="multiDetectorError" class="error">There are multiple detectors in the ROIs selected</div>
+    <mat-select *ngIf="!multiDetectorError" [(ngModel)]="selectedDetectorConfig">
+        <mat-option *ngFor="let cfg of configVersions" [value]="cfg">{{cfg}}</mat-option>
+    </mat-select>
+
+    <div class="label">Elements</div>
+    <input type="text" placeholder="Enter Element List" [(ngModel)]="elements">
+
+    <div class="row-space-between top-gap">
+        <div class="label nogap">Quantify as Carbonates:</div>
+        <two-state-icon-button
+            activeIcon="assets/button-icons/check-on.svg"
+            inactiveIcon="assets/button-icons/check-off.svg"
+            [active]="asCarbonates"
+            (onToggle)="onToggleAsCarbonates()">
+        </two-state-icon-button>
+    </div>
+
+    <div class="row-space-between top-gap">
+        <div class="label nogap">Ignore Ar as gas (Use Ar_I):</div>
+        <two-state-icon-button
+            activeIcon="assets/button-icons/check-on.svg"
+            inactiveIcon="assets/button-icons/check-off.svg"
+            [active]="ignoreArgon"
+            (onToggle)="onToggleIgnoreArgon()">
+        </two-state-icon-button>
+    </div>
+
+    <div class="row-space-between top-gap">
+        <div class="label nogap">Fe to O Ratio:</div>
+        <input type="text" placeholder="" class="short-input" [(ngModel)]="ironProportion">
+    </div>
+
+    <div class="label" title="Anything entered in here is appended to the PIQUANT command line when executing it">Extra Parameters</div>
+    <input type="text" placeholder="" [(ngModel)]="parameters">
+
+<!--
+    <label>Speed vs Cost</label>
+    <mat-select [(ngModel)]="runTimeSec">
+        <mat-option value="60">Urgent (~$2)</mat-option>
+        <mat-option value="900">Low Priority (~20c)</mat-option>
+    </mat-select>
+-->
+    <div class="row-end bottom-button-gap gap-separated-horizontal-elements">
+        <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+        <push-button buttonStyle="yellow" (onClick)="onOK()">Run</push-button>
+    </div>
+</div>

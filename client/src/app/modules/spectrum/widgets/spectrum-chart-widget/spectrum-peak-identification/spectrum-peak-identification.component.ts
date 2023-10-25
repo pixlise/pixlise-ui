@@ -62,8 +62,7 @@ export class SpectrumPeakIdentificationComponent implements OnInit, OnDestroy {
   constructor(
     private resolver: ComponentFactoryResolver,
     public dialogRef: MatDialogRef<SpectrumPeakIdentificationComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: SpectrumPeakIdentificationData,
-    private _xrfDBService: XRFDatabaseService
+    @Inject(MAT_DIALOG_DATA) public data: SpectrumPeakIdentificationData
   ) {}
 
   ngOnInit() {}
