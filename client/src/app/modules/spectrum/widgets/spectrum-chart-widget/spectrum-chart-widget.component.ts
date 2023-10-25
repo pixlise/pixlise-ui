@@ -187,6 +187,14 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           this.mdl.transform.scale.x = spectrumData.zoomX;
           this.mdl.transform.scale.y = spectrumData.zoomY;
 
+          if (this.mdl.transform.scale.x <= 0) {
+            this.mdl.transform.scale.x = 1;
+          }
+
+          if (this.mdl.transform.scale.y <= 0) {
+            this.mdl.transform.scale.y = 1;
+          }
+
           const lines = new Map<string, string[]>();
           spectrumData.spectrumLines.forEach((line: SpectrumLines) => {
             lines.set(line.roiID, line.lineExpressions);
