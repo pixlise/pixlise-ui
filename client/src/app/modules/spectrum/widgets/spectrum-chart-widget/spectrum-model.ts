@@ -249,15 +249,12 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     return this._showXAsEnergy$.value;
   }
 
-  get xAxisEnergyScale$(): BehaviorSubject<boolean> {
-    return this._showXAsEnergy$;
-  }
-
   set xAxisEnergyScale(val: boolean) {
     this._showXAsEnergy$.next(val);
-    //this.recalcSpectrumLines();
-    //this.clearDisplayData();
-    //this.saveState("xAxisEnergyScale");
+  }
+
+  get xAxisEnergyScale$(): BehaviorSubject<boolean> {
+    return this._showXAsEnergy$;
   }
 
   get xAxisLabel(): string {
@@ -297,7 +294,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   set chartYResize(val: boolean) {
     this._chartYResize = val;
-    //this.saveState("set chartYResize");
   }
 
   get yAxisCountsPerMin(): boolean {
@@ -306,9 +302,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   set yAxisCountsPerMin(val: boolean) {
     this._yAxisCountsPerMin = val;
-    // this.recalcSpectrumLines();
-    // this.clearDisplayData();
-    //this.saveState('set yAxisCountsPerMin');
   }
 
   get yAxisCountsPerPMC(): boolean {
@@ -317,9 +310,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   set yAxisCountsPerPMC(val: boolean) {
     this._yAxisCountsPerPMC = val;
-    // this.recalcSpectrumLines();
-    // this.clearDisplayData();
-    //this.saveState('set yAxisCountsPerPMC');
   }
 
   get chartArea(): Rect {
@@ -342,7 +332,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     this._xrfLinesPicked = val;
     this._xrfLinesChanged$.next();
     this.needsDraw$.next();
-    //this.saveState("xrf lines picked");
   }
 
   get xrfLinesHighlighted(): XRFLineGroup | null {
@@ -461,7 +450,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
     // And finally, redraw
     this.needsDraw$.next();
-    //this.saveState("unpickXRFLine");
   }
 
   isPickedXRFLine(atomicNumber: number): boolean {
@@ -489,8 +477,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   // Setting display options
   setYAxisLogScale(logScale: boolean): void {
     this._logScale = logScale;
-    // this.clearDisplayData();
-    // this.saveState("setYAxisLogScale");
   }
 
   setFitLineMode(enabled: boolean): void {

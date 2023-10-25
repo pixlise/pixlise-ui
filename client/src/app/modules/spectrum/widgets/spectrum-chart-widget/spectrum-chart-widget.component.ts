@@ -27,7 +27,6 @@ import { SpectrumToolId } from "./tools/base-tool";
 import { PeakIdentificationData, SpectrumPeakIdentificationComponent } from "./spectrum-peak-identification/spectrum-peak-identification.component";
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/widget-data";
-import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -238,6 +237,14 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       })
     );
 
+    this._subs.add(
+      this.mdl.transform.transformChangeComplete$.subscribe((complete: boolean) => {
+        if (complete) {
+          this.saveState();
+        }
+      })
+    )
+
     this.reDraw();
   }
 
@@ -294,21 +301,25 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   onToggleResizeSpectraY() {
     this.mdl.chartYResize = !this.mdl.chartYResize;
     this.updateLines();
+    this.saveState();
   }
 
   onToggleYAxislogScale() {
     this.mdl.yAxislogScale = !this.mdl.yAxislogScale;
     this.updateLines();
+    this.saveState();
   }
 
   onToggleCountsPerMin() {
     this.mdl.yAxisCountsPerMin = !this.mdl.yAxisCountsPerMin;
     this.updateLines();
+    this.saveState();
   }
 
   onToggleCountsPerPMC() {
     this.mdl.yAxisCountsPerPMC = !this.mdl.yAxisCountsPerPMC;
     this.updateLines();
+    this.saveState();
   }
 
   onShowXRayTubeLines() {
@@ -343,6 +354,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     if (canvasParams) {
       this.mdl.transform.resetViewToRect(new Rect(0, 0, canvasParams.width, canvasParams.height), false);
       this.reDraw();
+      this.saveState();
     }
   }
 
@@ -350,12 +362,14 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     const newScale = new Point(this.mdl.transform.scale.x * (1 + 4 / 100), this.mdl.transform.scale.y * (1 + 4 / 100));
     this.mdl.transform.setScaleRelativeTo(newScale, this.mdl.transform.calcViewportCentreInWorldspace(), true);
     this.reDraw();
+    this.saveState();
   }
 
   onZoomOut() {
     const newScale = new Point(this.mdl.transform.scale.x * (1 - 4 / 100), this.mdl.transform.scale.y * (1 - 4 / 100));
     this.mdl.transform.setScaleRelativeTo(newScale, this.mdl.transform.calcViewportCentreInWorldspace(), true);
     this.reDraw();
+    this.saveState();
   }
 
   onToolSelected(tool: string) {
@@ -413,6 +427,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           this.mdl.setEnergyCalibration(scanId, cal);
         }
         this.updateLines();
+        this.saveState();
       }
     });
   }
@@ -450,7 +465,6 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       // a line for each to the chart.
       this.mdl.setLineList(result.selectedItems);
       this.updateLines();
-
       this.saveState();
     });
 
