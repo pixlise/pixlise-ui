@@ -121,7 +121,7 @@ export class HistogramDrawer extends CachedCanvasChartDrawer {
           bold: false,
         });
 
-        if (!this._mdl.showStdError) {
+        if (this._mdl.showStdDeviation) {
           messages.push({
             text: `standard deviation: ${hoverBar.bar.stdDev ? hoverBar.bar.stdDev.toLocaleString() : "N/A"}`,
             colour: Colours.TEXT_GRAY,

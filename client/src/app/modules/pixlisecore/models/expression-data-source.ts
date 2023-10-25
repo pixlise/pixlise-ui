@@ -593,9 +593,11 @@ export class ExpressionDataSource
 
           // Run through all locations & build it
           const values: PMCDataValue[] = [];
-          for (const idx of this._scanEntryIndexesRequested) {
-            const pmc = this._scanEntries.entries[idx].id;
-            const value = pseudoData.data[idx].intensities[elemIdx];
+          // TODO: filter by scan entry ids requested...
+          // for (const idx of this._scanEntryIndexesRequested) {
+          for (const item of pseudoData.data) {
+            const pmc = item.id;
+            const value = item.intensities[elemIdx];
 
             values.push(new PMCDataValue(pmc, value));
           }

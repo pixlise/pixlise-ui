@@ -20,6 +20,7 @@ import {
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { TernaryState, VisibleROI } from "src/app/generated-protos/widget-data";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -119,7 +120,24 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   private setInitialConfig() {
-    //this.update();
+    const scanId = this._analysisLayoutService.defaultScanId;
+    if (scanId.length > 0) {
+      let quantId = ""; // TODO: get this!
+
+      if (quantId.length <= 0) {
+        // default to pseudo intensities
+        this.mdl.expressionIds = [
+          DataExpressionId.makePredefinedPseudoIntensityExpression("Mg"),
+          DataExpressionId.makePredefinedPseudoIntensityExpression("Na"),
+          DataExpressionId.makePredefinedPseudoIntensityExpression("Al"),
+        ]
+      } else {
+        // default to showing some quantified data... TODO: get this from the quant!
+      }
+
+      this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(scanId)]));
+      this.update();
+    }
   }
 
   get topAxisSwitcher(): ScatterPlotAxisInfo | null {
@@ -171,8 +189,6 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   ngOnInit() {
-    // this.setInitialConfig();
-
     this._subs.add(
       this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
         this.mdl.handleHoverPointChanged(this._selectionService.hoverScanId, this._selectionService.hoverEntryId);
@@ -187,7 +203,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
             // Update all existing data source ids with the new quant id for the scan
             Object.entries(screenConfiguration.scanConfigurations).forEach(([scanId, scanConfig]) => {
               if (this.mdl.dataSourceIds.has(scanId)) {
-                let dataSource = this.mdl.dataSourceIds.get(scanId);
+                const dataSource = this.mdl.dataSourceIds.get(scanId);
                 if (dataSource?.quantId !== scanConfig.quantId) {
                   this.mdl.dataSourceIds.set(scanId, new ScanDataIds(scanConfig.quantId, dataSource?.roiIds || []));
                   updated = true;
@@ -205,22 +221,24 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     this._subs.add(
       this.widgetData$.subscribe((data: any) => {
-        let ternaryData: TernaryState = data as TernaryState;
+        const ternaryData: TernaryState = data as TernaryState;
 
         if (ternaryData) {
           if (ternaryData.expressionIDs) {
             this.mdl.expressionIds = ternaryData.expressionIDs;
           }
 
+          this.mdl.showMmol = ternaryData.showMmol;
+
           if (ternaryData.visibleROIs) {
             this.mdl.dataSourceIds.clear();
             ternaryData.visibleROIs.forEach(roi => {
               if (this.mdl.dataSourceIds.has(roi.scanId)) {
-                let dataSource = this.mdl.dataSourceIds.get(roi.scanId);
+                const dataSource = this.mdl.dataSourceIds.get(roi.scanId);
                 dataSource!.roiIds.push(roi.id);
                 this.mdl.dataSourceIds.set(roi.scanId, dataSource!);
               } else {
-                let quantId = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[roi.scanId]?.quantId || "";
+                const quantId = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[roi.scanId]?.quantId || "";
                 this.mdl.dataSourceIds.set(roi.scanId, new ScanDataIds(quantId, [roi.id]));
               }
             });
@@ -289,38 +307,44 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
           roisPerScan.set(roi.scanId, existing);
         }
 
-        let visibleROIs: VisibleROI[] = [];
         // Now fill in the data source ids using the above
         for (const [scanId, roiIds] of roisPerScan) {
           let quantId = "";
 
           // If we already have a data source for this scan, keep the quant id
-          let existingSource = this.mdl.dataSourceIds.get(scanId);
+          const existingSource = this.mdl.dataSourceIds.get(scanId);
           if (existingSource && existingSource.quantId) {
             quantId = existingSource.quantId;
           }
           this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, roiIds));
-
-          roiIds.forEach(id => {
-            visibleROIs.push(VisibleROI.create({ id, scanId }));
-          });
         }
 
-        this.onSaveWidgetData.emit(
-          TernaryState.create({
-            expressionIDs: this.mdl.expressionIds,
-            visibleROIs,
-            showMmol: this.mdl.showMmol,
-          })
-        );
-
         this.update();
+        this.saveState();
       }
     });
   }
   onReferences() {}
   onClearSelection() {}
   onToggleKey() {}
+
+  private saveState(): void {
+    const visibleROIs: VisibleROI[] = [];
+
+    for (const [scanId, item] of this.mdl.dataSourceIds.entries()) {
+      for (const roiId of item.roiIds) {
+        visibleROIs.push(VisibleROI.create({ id: roiId, scanId: scanId }));
+      }
+    }
+
+    this.onSaveWidgetData.emit(
+      TernaryState.create({
+        expressionIDs: this.mdl.expressionIds,
+        visibleROIs: visibleROIs,
+        showMmol: this.mdl.showMmol,
+      })
+    );
+  }
 
   openExpressionPicker(corner: string) {
     const axisExpressionIndex = ["A", "B", "C"].indexOf(corner);
@@ -355,28 +379,10 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         }
         this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
 
-        this.onSaveWidgetData.emit(
-          TernaryState.create({
-            expressionIDs: this.mdl.expressionIds,
-            visibleROIs: this.getVisibleROIs(),
-            showMmol: this.mdl.showMmol,
-          })
-        );
-
         this.update();
+        this.saveState();
       }
     });
-  }
-
-  getVisibleROIs(): VisibleROI[] {
-    let visibleROIs: VisibleROI[] = [];
-    this.mdl.dataSourceIds.forEach((ids, scanId) => {
-      ids.roiIds.forEach(id => {
-        visibleROIs.push(VisibleROI.create({ id, scanId }));
-      });
-    });
-
-    return visibleROIs;
   }
 
   onCornerClick(corner: string): void {
@@ -389,13 +395,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
   setShowMmol() {
     this.mdl.showMmol = !this.mdl.showMmol;
-    this.onSaveWidgetData.emit(
-      TernaryState.create({
-        expressionIDs: this.mdl.expressionIds,
-        visibleROIs: this.getVisibleROIs(),
-        showMmol: this.mdl.showMmol,
-      })
-    );
+    this.saveState();
   }
 
   get selectModeExcludeROI(): boolean {

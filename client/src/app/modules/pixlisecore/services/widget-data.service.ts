@@ -279,7 +279,7 @@ export class WidgetDataService {
                   // Remember when we notified, so we don't spam
                   this._exprRunStatLastNotificationTime.set(expression.id, nowMs);
 
-                  if (queryResult.dataRequired.length > 0) {
+                  if (!DataExpressionId.isPredefinedExpression(expression.id) && queryResult.dataRequired.length > 0) {
                     this._dataService
                       .sendExpressionWriteExecStatRequest(
                         ExpressionWriteExecStatReq.create({

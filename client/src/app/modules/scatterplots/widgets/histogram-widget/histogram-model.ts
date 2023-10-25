@@ -40,7 +40,7 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
   private _recalcNeeded = true;
 
   showWhiskers: boolean = false;
-  showStdError: boolean = true;
+  showStdDeviation: boolean = false;
   logScale: boolean = false;
 
   set raw(r: HistogramData) {
@@ -187,7 +187,7 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
       const stdDev = concentrationCol.values.length > 0 && stdDevSum > 0 ? Math.sqrt(stdDevSum / (concentrationCol.values.length - 1)) : 0;
       let stdErr = 0;
 
-      if (!this.showStdError) {
+      if (this.showStdDeviation) {
         minMax = new MinMax(avg - stdDev, avg + stdDev);
       } else {
         // std error calculated from std dev

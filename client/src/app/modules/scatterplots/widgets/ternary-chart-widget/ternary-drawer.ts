@@ -131,10 +131,10 @@ export class TernaryChartDrawer extends CachedCanvasChartDrawer {
       // Left aligned, these are on the other side of the triangle...
       screenContext.textAlign = "left";
       screenContext.fillText(this._mdl.hoverPointData.values[1].toLocaleString(), drawModel.hoverLabelB.x, drawModel.hoverLabelB.y);
-      screenContext.fillText(this._mdl.hoverPointData.values[2].toLocaleString(), drawModel.hoverLabelC.x, drawModel.hoverLabelC.y);
+      screenContext.fillText(this._mdl.hoverPointData.values[2].toLocaleString(), drawModel.hoverLabelC.x + 12, drawModel.hoverLabelC.y + 12);
 
       // Also draw the scan ID and PMC
-      screenContext.fillText(`Scan ID: ${this._mdl.hoverScanId}, PMC: ${this._mdl.hoverPointData.scanEntryId}`, 10, drawModel.hoverLabelC.y);
+      screenContext.fillText(`Scan ID: ${this._mdl.hoverScanId}, PMC: ${this._mdl.hoverPointData.scanEntryId}`, 10, drawModel.hoverLabelC.y + 12);
     }
   }
 }

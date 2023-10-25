@@ -19,6 +19,8 @@ import { Point } from "src/app/models/Geometry";
 import { InteractionWithLassoHover } from "../../base/interaction-with-lasso-hover";
 import { ExpressionPickerData, ExpressionPickerComponent, ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { VisibleROI, BinaryState } from "src/app/generated-protos/widget-data";
 
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
@@ -112,6 +114,20 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   private setInitialConfig() {
+    const scanId = this._analysisLayoutService.defaultScanId;
+    if (scanId.length > 0) {
+      let quantId = ""; // TODO: get this!
+
+      if (quantId.length <= 0) {
+        // default to pseudo intensities
+        this.mdl.expressionIds = [DataExpressionId.makePredefinedPseudoIntensityExpression("Mg"), DataExpressionId.makePredefinedPseudoIntensityExpression("Na")];
+      } else {
+        // default to showing some quantified data... TODO: get this from the quant!
+      }
+
+      this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(scanId)]));
+      this.update();
+    }
   }
 
   get xAxisSwitcher(): ScatterPlotAxisInfo | null {
@@ -159,7 +175,37 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   ngOnInit() {
-    this.setInitialConfig();
+    this._subs.add(
+      this.widgetData$.subscribe((data: any) => {
+        const binaryData: BinaryState = data as BinaryState;
+
+        if (binaryData) {
+          if (binaryData.expressionIDs) {
+            this.mdl.expressionIds = binaryData.expressionIDs;
+          }
+
+          this.mdl.showMmol = binaryData.showMmol;
+
+          if (binaryData.visibleROIs) {
+            this.mdl.dataSourceIds.clear();
+            binaryData.visibleROIs.forEach(roi => {
+              if (this.mdl.dataSourceIds.has(roi.scanId)) {
+                const dataSource = this.mdl.dataSourceIds.get(roi.scanId);
+                dataSource!.roiIds.push(roi.id);
+                this.mdl.dataSourceIds.set(roi.scanId, dataSource!);
+              } else {
+                const quantId = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[roi.scanId]?.quantId || "";
+                this.mdl.dataSourceIds.set(roi.scanId, new ScanDataIds(quantId, [roi.id]));
+              }
+            });
+
+            this.update();
+          }
+        } else {
+          this.setInitialConfig();
+        }
+      })
+    );
     this.reDraw();
   }
 
@@ -211,6 +257,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
         }
 
         this.update();
+        this.saveState();
       }
     });
   }
@@ -218,6 +265,24 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   onReferences() {}
   onClearSelection() {}
   onToggleKey() {}
+
+  private saveState(): void {
+    const visibleROIs: VisibleROI[] = [];
+
+    for (const [scanId, item] of this.mdl.dataSourceIds.entries()) {
+      for (const roiId of item.roiIds) {
+        visibleROIs.push(VisibleROI.create({ id: roiId, scanId: scanId }));
+      }
+    }
+
+    this.onSaveWidgetData.emit(
+      BinaryState.create({
+        expressionIDs: this.mdl.expressionIds,
+        visibleROIs: visibleROIs,
+        showMmol: this.mdl.showMmol,
+      })
+    );
+  }
 
   onAxisClick(axis: string): void {
     const axisExpressionIndex = ["X", "Y"].indexOf(axis);
@@ -253,6 +318,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
         this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
 
         this.update();
+        this.saveState();
       }
     });
   }
@@ -263,6 +329,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
   setShowMmol() {
     this.mdl.showMmol = !this.mdl.showMmol;
+    this.saveState();
   }
 
   get selectModeExcludeROI(): boolean {

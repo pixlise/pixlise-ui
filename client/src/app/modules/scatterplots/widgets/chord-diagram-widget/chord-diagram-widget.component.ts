@@ -14,6 +14,11 @@ import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-
 import { Colours } from "src/app/utils/colours";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { ChordState, VisibleROI } from "src/app/generated-protos/widget-data";
+import { ExpressionPickerData, ExpressionPickerComponent, ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
+import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 
 @Component({
   selector: "app-chord-diagram-widget",
@@ -39,7 +44,9 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
     public dialog: MatDialog,
     private _widgetData: WidgetDataService,
     private _selectionService: SelectionService,
-    private _snackService: SnackbarService
+    private _snackService: SnackbarService,
+    private _cachedDataService: APICachedDataService,
+    private _analysisLayoutService: AnalysisLayoutService
   ) {
     super();
 
@@ -74,45 +81,24 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   private setInitialConfig() {
-    /*const elems = [
-      "Na2O",
-      "MgO",
-      "Al2O3",
-      "SiO2",
-      "P2O5",
-      "SO3",
-      "Cl",
-      "K2O",
-      "CaO",
-      "TiO2",
-      "Cr2O3",
-      "MnO",
-      "FeO-T",
-      "NiO",
-      "CuO",
-      "ZnO",
-      "GeO2",
-      "Br",
-      "Rb2O",
-      "SrO",
-      "ZrO2",
-    ];
+    const scanId = this._analysisLayoutService.defaultScanId;
+    if (scanId.length > 0) {
+      let quantId = ""; // TODO: get this!
 
-    for (const elem of elems) {
-      this.mdl.expressionIds.push(DataExpressionId.makePredefinedQuantElementExpression(elem, "%", "Combined"));
+      if (quantId.length <= 0) {
+        // default to pseudo intensities
+        this.mdl.expressionIds = [
+          DataExpressionId.makePredefinedPseudoIntensityExpression("Mg"),
+          DataExpressionId.makePredefinedPseudoIntensityExpression("Na"),
+          DataExpressionId.makePredefinedPseudoIntensityExpression("Ca")
+        ];
+      } else {
+        // default to showing some quantified data... TODO: get this from the quant!
+      }
+
+      this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(scanId)]));
+      this.update();
     }
-
-    // Naltsos
-    this.mdl.dataSourceIds.set(
-      "048300551",
-      new ScanDataIds(
-        "ox3psifd719hfo1s", //00125_Naltsos_Heirwegh_det_combined_v7_10_05_2021
-        //"2ejylaj1suu6qyj9", // Naltsos 2nd Quant Carbonates Tim
-        [PredefinedROIID.getAllPointsForScan("048300551")]
-      )
-    );
-
-    this.update();*/
   }
 
   private update() {
@@ -156,7 +142,35 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   ngOnInit() {
-    this.setInitialConfig();
+    this._subs.add(
+      this.widgetData$.subscribe((data: any) => {
+        const chordData: ChordState = data as ChordState;
+
+        if (chordData) {
+          if (chordData.expressionIDs) {
+            this.mdl.expressionIds = chordData.expressionIDs;
+          }
+
+          this.mdl.threshold = chordData.threshold;
+          this.mdl.drawMode = chordData.drawMode as ChordDrawMode;
+          this.mdl.drawForSelection = chordData.showForSelection;
+
+          // Get the ROI to work out the scan id... this will be retrieved soon anyway...
+          if (chordData.displayROI) {
+            this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: chordData.displayROI })).subscribe((resp: RegionOfInterestGetResp) => {
+              if (resp.regionOfInterest) {
+                let quantId = "";
+                this.mdl.dataSourceIds.set(resp.regionOfInterest.scanId, new ScanDataIds(quantId, [chordData.displayROI]));
+              }
+            });
+          } else {
+            this.update();
+          }
+        } else {
+          this.setInitialConfig();
+        }
+      })
+    );
     this.reDraw();
   }
 
@@ -172,8 +186,45 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
     return this.toolhost;
   }
 
-  onNodes() {}
+  onNodes() {
+    const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
+    dialogConfig.data = {};
+    dialogConfig.data.selectedIds = this.mdl.expressionIds;
+
+    const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
+      if (result && result.selectedExpressions) {
+        this.mdl.expressionIds = [];
+        for (const expr of result.selectedExpressions) {
+          this.mdl.expressionIds.push(expr.id);
+        }
+
+        this.update();
+        this.saveState();
+      }
+    });
+  }
   onSoloView() {}
+
+  private saveState(): void {
+    const visibleROIs: VisibleROI[] = [];
+
+    for (const [scanId, item] of this.mdl.dataSourceIds.entries()) {
+      for (const roiId of item.roiIds) {
+        visibleROIs.push(VisibleROI.create({ id: roiId, scanId: scanId }));
+      }
+    }
+
+    this.onSaveWidgetData.emit(
+      ChordState.create({
+        expressionIDs: this.mdl.expressionIds,
+        displayROI: visibleROIs[0].id,
+        threshold: this.mdl.threshold,
+        drawMode: this.mdl.drawMode,
+        showForSelection: this.mdl.drawForSelection,
+      })
+    );
+  }
 
   onRegions() {
     const dialogConfig = new MatDialogConfig();
@@ -186,6 +237,12 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
     dialogRef.afterClosed().subscribe((result: ROIPickerResponse) => {
       if (result) {
         this.mdl.dataSourceIds.clear();
+
+        // Should ONLY be one ROI
+        if (result.selectedROISummaries.length > 1) {
+          alert("Too many ROIs, must select only one");
+          return;
+        }
 
         // Create entries for each scan
         const roisPerScan = new Map<string, string[]>();
@@ -205,6 +262,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
         }
 
         this.update();
+        this.saveState();
       }
     });
   }
@@ -218,6 +276,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
 
     if (value.finish) {
       this.reDraw();
+      this.saveState();
     }
   }
 
@@ -228,6 +287,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   onToggleCorrelationDisplayMode(mode: ChordDrawMode) {
     this.mdl.drawMode = mode;
     this.reDraw();
+    this.saveState();
   }
 
   get showSelectionOnly(): boolean {
@@ -236,5 +296,6 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
 
   onToggleShowSelectionOnly() {
     this.mdl.drawForSelection = !this.mdl.drawForSelection;
+    this.saveState();
   }
 }

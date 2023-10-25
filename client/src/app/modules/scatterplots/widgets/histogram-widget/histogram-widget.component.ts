@@ -14,6 +14,7 @@ import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { ExpressionPickerData, ExpressionPickerComponent, ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { HistogramState, VisibleROI } from "src/app/generated-protos/widget-data";
 
 @Component({
   selector: "histogram-widget",
@@ -69,23 +70,24 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   private setInitialConfig() {
-    /*this.mdl.expressionIds = [
-      "vge9tz6fkbi2ha1p", // CaTi
-      "fhb5x0qbx6lz9uec", // Dip (deg, B to A)
-      DataExpressionId.makePredefinedQuantElementExpression("CaO", "%", "Combined"),
-    ];
+    const scanId = this._analysisLayoutService.defaultScanId;
+    if (scanId.length > 0) {
+      let quantId = ""; // TODO: get this!
 
-    // Naltsos
-    this.mdl.dataSourceIds.set(
-      "048300551",
-      new ScanDataIds(
-        "ox3psifd719hfo1s", //00125_Naltsos_Heirwegh_det_combined_v7_10_05_2021
-        //"2ejylaj1suu6qyj9", // Naltsos 2nd Quant Carbonates Tim
-        [PredefinedROIID.getAllPointsForScan("048300551")]
-      )
-    );
+      if (quantId.length <= 0) {
+        // default to pseudo intensities
+        this.mdl.expressionIds = [
+          DataExpressionId.makePredefinedPseudoIntensityExpression("Mg"),
+          DataExpressionId.makePredefinedPseudoIntensityExpression("Na"),
+          DataExpressionId.makePredefinedPseudoIntensityExpression("Ca")
+        ];
+      } else {
+        // default to showing some quantified data... TODO: get this from the quant!
+      }
 
-    this.update();*/
+      this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(scanId)]));
+      this.update();
+    }
   }
 
   private update() {
@@ -146,7 +148,39 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   ngOnInit() {
-    this.setInitialConfig();
+    this._subs.add(
+      this.widgetData$.subscribe((data: any) => {
+        const histogramData: HistogramState = data as HistogramState;
+
+        if (histogramData) {
+          if (histogramData.expressionIDs) {
+            this.mdl.expressionIds = histogramData.expressionIDs;
+          }
+
+          this.mdl.logScale = histogramData.logScale;
+          this.mdl.showStdDeviation = !histogramData.showStdDeviation;
+          this.mdl.showWhiskers = histogramData.showWhiskers;
+
+          if (histogramData.visibleROIs) {
+            this.mdl.dataSourceIds.clear();
+            histogramData.visibleROIs.forEach(roi => {
+              if (this.mdl.dataSourceIds.has(roi.scanId)) {
+                const dataSource = this.mdl.dataSourceIds.get(roi.scanId);
+                dataSource!.roiIds.push(roi.id);
+                this.mdl.dataSourceIds.set(roi.scanId, dataSource!);
+              } else {
+                const quantId = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[roi.scanId]?.quantId || "";
+                this.mdl.dataSourceIds.set(roi.scanId, new ScanDataIds(quantId, [roi.id]));
+              }
+            });
+
+            this.update();
+          }
+        } else {
+          this.setInitialConfig();
+        }
+      })
+    );
     this.reDraw();
   }
   ngOnDestroy() {
@@ -187,6 +221,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       }
 
       this.update();
+      this.saveState();
     });
   }
   onRegions() {
@@ -219,23 +254,46 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
         }
 
         this.update();
+        this.saveState();
       }
     });
   }
   onToggleKey() {}
+
+  private saveState(): void {
+    const visibleROIs: VisibleROI[] = [];
+
+    for (const [scanId, item] of this.mdl.dataSourceIds.entries()) {
+      for (const roiId of item.roiIds) {
+        visibleROIs.push(VisibleROI.create({ id: roiId, scanId: scanId }));
+      }
+    }
+
+    this.onSaveWidgetData.emit(
+      HistogramState.create({
+        expressionIDs: this.mdl.expressionIds,
+        visibleROIs: visibleROIs,
+        logScale: this.mdl.logScale,
+        showStdDeviation: this.mdl.showStdDeviation,
+      })
+    );
+  }
+
 
   get showWhiskers(): boolean {
     return this.mdl.showWhiskers;
   }
   onToggleShowWhiskers() {
     this.mdl.showWhiskers = !this.mdl.showWhiskers;
+    this.saveState();
   }
 
   get showStdError(): boolean {
-    return this.mdl.showStdError;
+    return !this.mdl.showStdDeviation;
   }
   toggleShowStdError() {
-    this.mdl.showStdError = !this.mdl.showStdError;
+    this.mdl.showStdDeviation = !this.mdl.showStdDeviation;
+    this.saveState();
   }
 
   get logScale(): boolean {
@@ -243,5 +301,6 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
   onToggleLogScale() {
     this.mdl.logScale = !this.mdl.logScale;
+    this.saveState();
   }
 }
