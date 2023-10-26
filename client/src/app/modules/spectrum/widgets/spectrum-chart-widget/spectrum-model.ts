@@ -31,10 +31,10 @@ import { BehaviorSubject, ReplaySubject, Subject, scan } from "rxjs";
 import { ObjectCreator, MinMax, SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { Rect } from "src/app/models/Geometry";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { ChartAxis, LinearChartAxis, LogarithmicChartAxis } from "src/app/modules/analysis/components/widget/interactive-canvas/chart-axis";
-import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { PanZoom, PanRestrictorToCanvas } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
-import { KeyItem } from "src/app/modules/analysis/components/widget/widget-key-display/widget-key-display.component";
+import { ChartAxis, LinearChartAxis, LogarithmicChartAxis } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
+import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { PanZoom, PanRestrictorToCanvas } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
+import { KeyItem } from "src/app/modules/widget/components/widget-key-display/widget-key-display.component";
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
 import { XRFLine } from "src/app/periodic-table/XRFLine";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
@@ -164,8 +164,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   constructor(
     public xrfDBService: XRFDatabaseService //,
-    // public dialog: MatDialog,
-  ) // public clipboard: Clipboard
+    // public clipboard: Clipboard
+  ) // public dialog: MatDialog,
   {
     this.transform.transformChangeComplete$.subscribe((complete: boolean) => {
       // Remember we need to recalc

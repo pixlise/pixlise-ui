@@ -1,5 +1,5 @@
 import { Component, Input } from "@angular/core";
-import { WidgetToolbarButtonConfiguration } from "../models/widgets.model";
+import { WidgetToolbarButtonConfiguration } from "../../models/widgets.model";
 
 @Component({
   selector: "widget-configuration-button",

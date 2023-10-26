@@ -1,6 +1,440 @@
-<div class="code-editor-container">
-  <!-- TODO: <notification-banner></notification-banner> -->
-  <!-- <app-toolbar></app-toolbar> -->
+<div class="code-editor">
+  <section class="explorer {{ isSidebarOpen ? 'open' : 'closed' }}">
+    <div class="top-header">
+      <h2 *ngIf="isSidebarOpen">Explorer</h2>
+      <div class="sidebar-header-toggle-btn" (click)="onToggleSidebar()">
+        <img src="assets/button-icons/double-arrow-left.svg" class="{{ isSidebarOpen ? 'open' : 'closed' }}" />
+      </div>
+    </div>
+    <section class="expressions">
+      <push-button buttonStyle="yellow" (onClick)="addExpressions()" class="add-expressions-btn">Add Expressions</push-button>
+    </section>
+  </section>
+  <section class="editors-container">
+    <div class="top-header {{ isSidebarOpen ? 'sidebar-open' : 'sidebar-closed' }}">
+      <input class="expression-name" />
+      <multi-switch-button class="split-screen-btn" [options]="['Single', 'Split']" [value]="isSplitScreen ? 'Split' : 'Single'" (onChange)="onToggleSplitScreen()">
+      </multi-switch-button>
+      <expression-metadata-editor></expression-metadata-editor>
 
-  Code Editor Page
+      <push-button class="run-btn" [flexBtn]="true" buttonStyle="yellow" (onClick)="runExpression()"> <img src="assets/button-icons/play.svg" />Run </push-button>
+      <push-button class="run-highlighted-btn" buttonStyle="yellow" (onClick)="runHighlightedExpression()"
+        >{{ textHighlighted === "" ? "Run Code To Line #" : "Run Selected Code" }}
+      </push-button>
+    </div>
+    <section class="editors">
+      <section class="editor top-editor {{ isSplitScreen ? 'split' : 'full' }}">
+        <expression-text-editor></expression-text-editor>
+      </section>
+      <section class="editor bottom-editor {{ isSplitScreen ? 'open' : 'hidden' }}">
+        <expression-text-editor *ngIf="isSplitScreen"></expression-text-editor>
+      </section>
+    </section>
+  </section>
+  <section class="visualization-container">
+    <div class="top-header">
+      <h2>Visualization: Viz</h2>
+    </div>
+    <section class="widget-container">
+      <widget></widget>
+    </section>
+    <section class="output-container">
+      <expression-console></expression-console>
+    </section>
+  </section>
 </div>
+
+<!-- <div fxLayout="column" class="code-editor">
+  <div class="editor-header {{ isSidebarOpen ? 'sidebar-open' : '' }}">
+    <div class="{{ isSidebarOpen ? 'sidebar-header' : 'sidebar-header-closed' }}">
+      <h2 *ngIf="isSidebarOpen">Explorer</h2>
+      <div class="sidebar-header-toggle-btn" (click)="onToggleSidebar()" #tooltip="matTooltip" [matTooltip]="moduleSidebarTooltip">
+        <img src="assets/button-icons/double-arrow-left.svg" />
+      </div>
+    </div>
+    <div class="text-container">
+      <input
+        #tooltip="matTooltip"
+        [matTooltip]="topEditor.isModule ? moduleNameTooltip : ''"
+        class="expression-name {{ topEditor.emptyName ? 'invalid-input' : '' }}"
+        [disabled]="!topEditor.editable || (topEditor.isModule && !isNewID)"
+        type="text"
+        placeholder="{{ topEditor.isModule ? 'Module' : 'Expression' }} Name"
+        [(ngModel)]="topEditor.name" />
+      <push-button
+        *ngIf="isNewID && topEditor.isModule"
+        class="confirm-name-btn"
+        buttonStyle="yellow"
+        (onClick)="onConfirmNewModuleName()"
+        #tooltip="matTooltip"
+        matTooltip="Confirm the name of your module. This can't be changed later."
+        >Confirm
+      </push-button>
+      <status-indicator
+        *ngIf="!isNewID"
+        [valid]="topEditor.isExpressionSaved"
+        [status]="topEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"></status-indicator>
+      <mat-select *ngIf="topEditor.isModule && topEditor.version" [value]="topEditor.version.version" (selectionChange)="onModuleVersionChange($event.value, 'top')">
+        <mat-option *ngFor="let version of topEditor.versionList" [value]="version.version">v{{ version.version }} </mat-option>
+      </mat-select>
+      <status-indicator
+        *ngIf="!isNewID && topEditor.isModule"
+        [valid]="topEditor.isLatestVersionReleased && (!topEditor.isModule || topEditor.isLoadedVersionLatest)"
+        [status]="
+          topEditor.isLatestVersionReleased
+            ? !topEditor.isLoadedVersionLatest
+              ? 'Switch to latest version to edit'
+              : 'Latest version is publicly available'
+            : 'Latest version hasn\'t been released'
+        "></status-indicator>
+      <icon-button
+        *ngIf="!topEditor.isExpressionSaved"
+        icon="assets/button-icons/refresh-light.svg"
+        (onClick)="onRevertChanges('top')"
+        [hasBackground]="false"
+        [state]="topEditorRevertableState"
+        #tooltip="matTooltip"
+        matTooltip="Revert changes to the last saved version">
+      </icon-button>
+      <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
+        <multi-switch-button
+          #tooltip="matTooltip"
+          [matTooltip]="splitScreenTooltip"
+          class="split-screen-btn"
+          [options]="['Single', 'Split']"
+          [value]="isSplitScreen ? 'Split' : 'Single'"
+          [disabled]="topEditor.modules.length === 0 && !isSplitScreen && bottomEditor.isExpressionSaved"
+          (onChange)="onToggleSplitScreen()">
+        </multi-switch-button>
+        <icon-button
+          *ngIf="!topEditor.isLua && topEditor.editable"
+          icon="assets/button-icons/lua-language.svg"
+          (onClick)="convertToLua()"
+          #tooltip="matTooltip"
+          matTooltip="Convert Pixlang Expression to Lua">
+        </icon-button>
+        <expression-metadata-editor
+          [expression]="topEditor.expression"
+          [isModule]="topEditor.isModule"
+          [isSharedByOtherUser]="topEditor.isSharedByOtherUser"
+          [currentVersion]="topEditor.version"
+          [versions]="topEditor.versionList"
+          (changeName)="topEditor.onNameChange($event)"
+          (changeDescription)="topEditor.onDescriptionChange($event)"
+          (changeTags)="topEditor.onTagSelectionChanged($event)"
+          (updateMetadata)="onUpdateMetadata()"
+          [buttonStyle]="topEditor.isModule && !topEditor.isLoadedVersionLatest ? 'orange' : 'normal'"
+          [showDiff]="topEditor.isModule && !topEditor.isLoadedVersionLatest"
+          (onShowDiff)="onShowDiff($event)"
+          (publishDOI)="publishDOI($event)">
+        </expression-metadata-editor>
+        <push-button class="run-btn" buttonStyle="yellow" (onClick)="runExpression()" #tooltip="matTooltip" [matTooltip]="runCodeTooltip">
+          <img src="assets/button-icons/play.svg" />Run
+        </push-button>
+        <push-button
+          class="run-highlighted-btn"
+          buttonStyle="yellow"
+          [disabled]="textHighlighted === '' && !isEmptySelection"
+          (onClick)="runHighlightedExpression()"
+          #tooltip="matTooltip"
+          [matTooltip]="runHighlightedCodeTooltip"
+          >{{ textHighlighted === "" ? "Run Code To Line #" : "Run Selected Code" }}
+        </push-button>
+      </div>
+    </div>
+    <div class="viz-container">
+      <span fxLayout="row" fxLayoutAlign="center center">
+        <h2>Visualisation{{ displayExpressionTitle ? ": " + displayExpressionTitle : "" }}</h2>
+        <icon-button
+          *ngIf="topEditor.isCodeChanged || bottomEditor.isCodeChanged"
+          icon="assets/button-icons/disabled-orange.svg"
+          [hasBackground]="false"
+          #tooltip="matTooltip"
+          matTooltip="Expression has changed since last run"></icon-button>
+      </span>
+      <div class="right-btn-group">
+        <icon-button icon="assets/button-icons/close-cross-gray.svg" (click)="onClose()" [hasBackground]="false"></icon-button>
+      </div>
+    </div>
+  </div>
+  <div fxLayout="row" class="editor-body {{ isSidebarOpen ? 'sidebar-open' : 'sidebar-closed' }}">
+    <div class="sidebar">
+      <div *ngIf="isSidebarOpen" fxLayout="row" class="filter-container">
+        <filter-box placeholder="Filter Name..." (onFilterChanged)="onFilterExpressions($event)"> </filter-box>
+        <tag-picker
+          type="expression"
+          [selectedTagIDs]="filteredTagIDs"
+          [showCurrentTagsSection]="false"
+          (onTagSelectionChanged)="onFilterTagSelectionChanged($event)"
+          [additionalVisibleTagType]="['module', 'builtin']">
+        </tag-picker>
+        <mat-select #tooltip="matTooltip" [matTooltip]="authorsTooltip" multiple [(ngModel)]="filteredAuthors" class="authors-filter" placeholder="Author ...">
+          <mat-option *ngFor="let author of authors" [value]="author.user_id">{{ author.name }} </mat-option>
+        </mat-select>
+      </div>
+      <expression-list
+        [headerSectionsOpen]="headerSectionsOpen"
+        [items]="items"
+        [downloadable]="false"
+        [showOpacitySliders]="false"
+        [showColourOptions]="false"
+        [showPureSwitchOnElements]="true"
+        [selectedIcon]="activeIcon"
+        [unselectedIcon]="inactiveIcon"
+        [initialScrollToIdx]="initialScrollToIdx"
+        (headerSectionToggle)="onToggleLayerSectionOpen($event)"
+        (visibilityChange)="onLayerVisibilityChange($event)"
+        (onLayerImmediateSelection)="onLayerImmediateSelection($event)"
+        (openSplitScreen)="onOpenSplitScreen($event)"
+        (onDelete)="onDeleteExpression($event)"
+        [isPreviewMode]="true"
+        [isSidePanel]="true"
+        [isSplitScreen]="isSplitScreen"
+        [isSelectable]="!topEditor.isModule && topEditor.isLua"
+        [liveLayerConfigs]="sidePanelLayerConfigs"
+        (onAllExpressionsUpdated)="onAllExpressionsUpdated($event)"
+        fxFlex="100%">
+        <icon-button
+          #tooltip="matTooltip"
+          matTooltip="Create a new expression"
+          icon="assets/button-icons/plus-white.svg"
+          (click)="onAddExpression()"
+          expressionHeader></icon-button>
+        <icon-button
+          #tooltip="matTooltip"
+          matTooltip="Create a new module"
+          icon="assets/button-icons/plus-white.svg"
+          (click)="onAddModule()"
+          modulesHeader></icon-button>
+      </expression-list>
+    </div>
+    <div
+      class="text-editor {{ topEditor?.isModule ? 'module' : '' }} {{ topEditor?.isHeaderOpen ? 'top-open' : '' }} {{
+        bottomEditor?.isHeaderOpen ? 'bottom-open' : ''
+      }} {{ isSplitScreen ? 'split-screen-mode' : '' }}">
+      <expression-text-editor
+        *ngIf="topEditor && topEditor.expression && (!topEditor.isModule || (topEditor.isModule && !isNewID))"
+        class="top-expression {{ isTopEditorActive && isSplitScreen ? 'active' : '' }}"
+        [expression]="topEditor.expression"
+        [allowEdit]="topEditor.editable && (!topEditor.isModule || (topEditor.isModule && topEditor.isLoadedLatestEditableVersion))"
+        [isImmediatelyAppliable]="false"
+        [applyNow]="false"
+        (onTextChange)="onTextChange($event, 'top')"
+        (onTextSelect)="onTextSelect($event)"
+        (runExpression)="runExpression(true)"
+        (runHighlightedExpression)="runHighlightedExpression()"
+        (saveExpression)="onSave(true)"
+        (toggleSidebar)="onToggleSidebar()"
+        (toggleSplitView)="onToggleSplitScreen()"
+        [range]="isSubsetExpression ? executedTextSelection.range : null"
+        [showHelp]="topEditor.useAutocomplete && topEditor.editable"
+        [isLua]="topEditor.isLua"
+        [isHeaderOpen]="topEditor.isHeaderOpen"
+        (toggleHeader)="topEditor.onToggleHeader()"
+        [installedModules]="topEditor.modules"
+        [showInstalledModules]="!topEditor.isModule"
+        (onModuleChange)="onModuleChange($event, 'top')"
+        (onClick)="setTopEditorActive()"
+        [linkedModuleID]="topEditor.linkedModuleID"
+        (linkModule)="onLinkModule($event)"
+        [isSplitScreen]="isSplitScreen"
+        [runtimeError]="topEditor.runtimeError">
+      </expression-text-editor>
+      <div *ngIf="bottomEditor.expression && isSplitScreen" class="split-screen-header">
+        <input
+          #tooltip="matTooltip"
+          class="expression-name {{ bottomEditor.invalidExpression ? 'invalid-input' : '' }} {{ isNewID ? '' : 'confirmed-module' }}"
+          [matTooltip]="bottomEditor.isModule ? moduleNameTooltip : ''"
+          [disabled]="!bottomEditor.editable || (bottomEditor.isModule && !isNewID)"
+          type="text"
+          placeholder="{{ bottomEditor.isModule ? 'Module' : 'Expression' }} Name"
+          [(ngModel)]="bottomEditor.name" />
+        <status-indicator
+          class="{{ isBottomEditorLinked ? 'linked' : '' }}"
+          [useLinkIcon]="isBottomEditorLinked"
+          [valid]="bottomEditor.isExpressionSaved"
+          [status]="bottomEditor.isExpressionSaved ? 'Latest version is saved' : 'Latest version is not saved'"
+          (click)="onLinkModule(null)"></status-indicator>
+        <mat-select
+          *ngIf="bottomEditor.isModule"
+          [value]="bottomEditor.version.version"
+          (selectionChange)="onModuleVersionChange($event.value, 'bottom')"
+          [disabled]="isBottomEditorLinked">
+          <mat-option *ngFor="let version of bottomEditor.versionList" [value]="version.version">v{{ version.version }} </mat-option>
+        </mat-select>
+        <status-indicator
+          *ngIf="bottomEditor.isModule"
+          class="{{ isBottomEditorLinked ? 'linked' : '' }}"
+          [useLinkIcon]="isBottomEditorLinked"
+          [valid]="bottomEditor.isLatestVersionReleased && (!bottomEditor.isModule || bottomEditor.isLoadedVersionLatest)"
+          [status]="
+            bottomEditor.isLatestVersionReleased
+              ? !bottomEditor.isLoadedVersionLatest
+                ? 'Switch to latest version to edit'
+                : 'Latest version is publicly available'
+              : 'Latest version hasn\'t been released'
+          "
+          (click)="onLinkModule(null)"></status-indicator>
+        <icon-button
+          *ngIf="!bottomEditor.isExpressionSaved"
+          icon="assets/button-icons/refresh-light.svg"
+          (onClick)="onRevertChanges('bottom')"
+          [hasBackground]="false"
+          [state]="bottomEditorRevertableState"
+          #tooltip="matTooltip"
+          matTooltip="Revert changes to the last saved version">
+        </icon-button>
+        <expression-metadata-editor
+          *ngIf="bottomEditor.isModule && !bottomEditor.isLoadedVersionLatest"
+          class="bottom-metadata-editor"
+          [expression]="bottomEditor.expression"
+          [isSharedByOtherUser]="bottomEditor.isSharedByOtherUser"
+          [isModule]="bottomEditor.isModule"
+          [currentVersion]="bottomEditor.version"
+          [versions]="bottomEditor.versionList"
+          (changeName)="bottomEditor.onNameChange($event)"
+          (changeDescription)="bottomEditor.onDescriptionChange($event)"
+          (changeTags)="bottomEditor.onTagSelectionChanged($event)"
+          (updateMetadata)="onUpdateMetadata()"
+          title="View Updates"
+          buttonStyle="orange"
+          [showDiff]="true"
+          (onShowDiff)="onShowDiff($event)"
+          [isShowingDifference]="isShowingDifference"
+          (publishDOI)="publishDOI($event)">
+        </expression-metadata-editor>
+        <div fxLayout="row" fxLayoutAlign="start center" class="gap-separated-horizontal-elements right-btn-group">
+          <expression-metadata-editor
+            class="bottom-metadata-editor"
+            [expression]="bottomEditor.expression"
+            [isSharedByOtherUser]="bottomEditor.isSharedByOtherUser"
+            [isModule]="bottomEditor.isModule"
+            [currentVersion]="bottomEditor.version"
+            [versions]="bottomEditor.versionList"
+            (changeName)="bottomEditor.onNameChange($event)"
+            (changeDescription)="bottomEditor.onDescriptionChange($event)"
+            (changeTags)="bottomEditor.onTagSelectionChanged($event)"
+            (updateMetadata)="onUpdateMetadata()"
+            (publishDOI)="publishDOI($event)">
+          </expression-metadata-editor>
+        </div>
+      </div>
+      <expression-text-editor
+        *ngIf="bottomEditor && bottomEditor.expression && isSplitScreen"
+        class="bottom-expression {{ !isTopEditorActive && isSplitScreen ? 'active' : '' }}"
+        [expression]="bottomEditor.expression"
+        [allowEdit]="bottomEditor.editable && (!bottomEditor.isModule || bottomEditor.isLoadedLatestEditableVersion)"
+        [isImmediatelyAppliable]="false"
+        [applyNow]="false"
+        (onTextChange)="onTextChange($event, 'bottom')"
+        (onTextSelect)="onTextSelect($event)"
+        (runExpression)="runExpression(false)"
+        (runHighlightedExpression)="runHighlightedExpression()"
+        (saveExpression)="onSave(false)"
+        (toggleSidebar)="onToggleSidebar()"
+        (toggleSplitView)="onToggleSplitScreen()"
+        [range]="isSubsetExpression ? executedTextSelection.range : null"
+        [showHelp]="bottomEditor.useAutocomplete && bottomEditor.editable"
+        [isLua]="bottomEditor.isLua"
+        [isHeaderOpen]="bottomEditor.isHeaderOpen"
+        (toggleHeader)="bottomEditor.onToggleHeader()"
+        [installedModules]="bottomEditor.modules"
+        [showInstalledModules]="!bottomEditor.isModule"
+        (onModuleChange)="onModuleChange($event, 'bottom')"
+        (onClick)="setBottomEditorActive()"
+        [isSplitScreen]="isSplitScreen"
+        [diffText]="diffText"
+        [runtimeError]="bottomEditor.runtimeError">
+      </expression-text-editor>
+    </div>
+
+    <div class="viz-panels">
+      <div class="preview-container {{ isPMCDataGridSolo ? 'hidden' : '' }}">
+        <template #preview></template>
+      </div>
+      <pmc-data-grid
+        class="{{ isPMCDataGridSolo ? 'solo' : '' }}"
+        [header]="pmcGridExpressionTitle"
+        [evaluatedExpression]="evaluatedExpression"
+        [expression]="expressionToEvaluate"
+        [columnCount]="15"
+        (onToggleSolo)="onTogglePMCDataGridSolo($event)"
+        [stdout]="stdout"
+        [stderr]="stderr"></pmc-data-grid>
+    </div>
+  </div>
+  <div class="editor-footer {{ isSidebarOpen ? 'sidebar-open' : '' }}">
+    <div class="text-container">
+      <mat-select [(ngModel)]="topEditor.isLua" [disabled]="topEditor.isModule">
+        <mat-option [value]="true">Lua</mat-option>
+        <mat-option [value]="false">PIXLang</mat-option>
+      </mat-select>
+      <div class="right-btn-group">
+        <icon-button
+          *ngIf="topEditor.isLua && !topEditor.isModule"
+          class="export-btn"
+          title="Export Code"
+          (onClick)="onExportLuaCode()"
+          icon="assets/button-icons/export.svg">
+        </icon-button>
+        <push-button
+          *ngIf="hasVisibleModule"
+          class="save-btn"
+          buttonStyle="yellow"
+          [disabled]="!isVisibleModuleEditable || !visibleModuleCodeEditor?.isLoadedVersionLatest"
+          (onClick)="onRelease()"
+          #tooltip="matTooltip"
+          [matTooltip]="releaseModuleTooltip"
+          >Release Module
+        </push-button>
+        <push-button
+          *ngIf="isSplitScreen"
+          class="save-btn"
+          [buttonStyle]="bottomEditor.invalidExpression ? 'orange' : 'yellow'"
+          [disabled]="!bottomEditor.editable || bottomEditor.isExpressionSaved || bottomEditor.invalidExpression"
+          (onClick)="onSave(false)"
+          #tooltip="matTooltip"
+          [matTooltip]="saveModuleTooltip"
+          >Save Module
+        </push-button>
+        <push-button
+          *ngIf="topEditor.isModule"
+          class="save-btn"
+          [buttonStyle]="topEditor.invalidExpression ? 'orange' : 'yellow'"
+          [disabled]="!topEditor.editable || topEditor.isExpressionSaved || topEditor.invalidExpression"
+          (onClick)="onSave(false)"
+          #tooltip="matTooltip"
+          [matTooltip]="saveModuleTooltip"
+          >Save Module
+        </push-button>
+        <push-button
+          *ngIf="!topEditor.isModule && topEditor.isSharedByOtherUser"
+          class="save-btn"
+          buttonStyle="yellow"
+          (onClick)="onCopyToNewExpression()"
+          #tooltip="matTooltip"
+          matTooltip="Copy the open expression to a new expression."
+          >Copy To New
+        </push-button>
+        <push-button
+          *ngIf="!topEditor.isModule && topEditor.editable"
+          class="save-btn"
+          [buttonStyle]="topEditor.invalidExpression ? 'orange' : 'yellow'"
+          [disabled]="!topEditor.editable || topEditor.isExpressionSaved || topEditor.invalidExpression"
+          (onClick)="onSave(true)"
+          #tooltip="matTooltip"
+          [matTooltip]="saveExpressionTooltip"
+          >Save Expression
+        </push-button>
+      </div>
+    </div>
+    <div class="viz-container">
+      <div *ngIf="runtimeSeconds" class="runtime-container">
+        <span class="runtime-seconds"> Runtime: {{ runtimeSeconds }} seconds</span>
+      </div>
+      <div class="right-btn-group">
+        <push-button buttonStyle="outline" (onClick)="onClose()">Cancel</push-button>
+      </div>
+    </div>
+  </div>
+</div> -->

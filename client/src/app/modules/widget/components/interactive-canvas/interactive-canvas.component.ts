@@ -33,7 +33,7 @@ import { tap, throttleTime, debounceTime } from "rxjs/operators";
 
 import { getMatrixAs2x3Array, Point, Rect } from "src/app/models/Geometry";
 // import { LayoutService } from "src/app/services/layout.service";
-import { AnalysisLayoutService } from "../../../services/analysis-layout.service";
+import { AnalysisLayoutService } from "../../../analysis/services/analysis-layout.service";
 
 export class CanvasParams {
   constructor(

@@ -34,7 +34,7 @@ import {
   CanvasMouseEventId,
   CanvasDrawParameters,
   CanvasParams,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { XRFLine, XRFLineType } from "src/app/periodic-table/XRFLine";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
 import { Colours, RGBA } from "src/app/utils/colours";

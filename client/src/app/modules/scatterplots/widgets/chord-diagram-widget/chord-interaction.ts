@@ -28,14 +28,14 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Point, getVectorBetweenPoints, getVectorLength, normalizeVector, closestDistanceBetweenPointAndLine } from "src/app/models/Geometry";
-import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
+import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import {
   CanvasInteractionHandler,
   CanvasMouseEvent,
   CanvasInteractionResult,
   CanvasMouseEventId,
   CanvasKeyEvent,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ChordDiagramDrawModel, ChordDiagramModel, ChordViewNode } from "./chord-model";
 

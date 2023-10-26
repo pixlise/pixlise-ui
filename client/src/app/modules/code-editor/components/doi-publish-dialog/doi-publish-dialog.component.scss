@@ -1,0 +1,131 @@
+// Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+// Government sponsorship acknowledged.
+// All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+// * Neither the name of Caltech nor its operating division, the Jet Propulsion
+//   Laboratory, nor the names of its contributors may be used to endorse or
+//   promote products derived from this software without specific prior written
+//   permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+input, textarea {
+    width: 400px;
+}
+
+.metadata {
+    max-height: 600px;
+    overflow: scroll;
+
+    > div {
+        margin-top: 8px;
+    }
+
+    .title, .version {
+        display: flex;
+        align-items: center;
+
+        input {
+            width: 275px;
+            margin-left: auto;
+        }
+    }
+
+    .creators, .contributors, .related-ids {
+        border: 1px solid #454c50;
+        border-radius: 8px;
+        padding: 8px;
+
+        .creator {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 4px;
+
+            input {
+                width: 115px;
+            }
+
+            img {
+                margin-left: 4px;
+                cursor: pointer;
+                filter: brightness(0.5);
+
+                &:hover {
+                    filter: brightness(1);
+                }
+            }
+        }
+
+        .add-creator {
+            margin-top: 8px;
+            display: flex;
+            justify-content: center;
+
+            img {
+                cursor: pointer;
+                filter: brightness(0.5);
+
+                &:hover {
+                    filter: brightness(1);
+                }
+            }
+        }
+    }
+
+    .contributors {
+        .creator {
+            input {
+                width: 80px;
+            }
+
+            mat-select {
+                width: 85px !important;
+                margin-left: 0!important;
+            }
+        }
+    }
+
+    .related-ids {
+        .creator {
+            input {
+                flex: 1;
+            }
+
+            mat-select {
+                width: 125px !important;
+            }
+        }
+    }
+}
+
+.required {
+    color: rgb(255,107,37);
+    margin-left: 2px;
+}
+
+.footer-btns {
+    margin-top: 8px;
+}
+
+.save-btn {
+    margin-top: 1px;
+}

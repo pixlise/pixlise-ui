@@ -1,5 +1,5 @@
 import { Component, Input, OnInit, OnDestroy } from "@angular/core";
-import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
+import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { Subscription } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
@@ -9,7 +9,7 @@ import {
   CanvasDrawer,
   CanvasInteractionHandler,
   CanvasWorldTransform,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BinaryChartModel, BinaryDrawModel } from "./binary-model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
@@ -17,11 +17,14 @@ import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/compo
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { Point } from "src/app/models/Geometry";
 import { InteractionWithLassoHover } from "../../base/interaction-with-lasso-hover";
-import { ExpressionPickerData, ExpressionPickerComponent, ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
+import {
+  ExpressionPickerData,
+  ExpressionPickerComponent,
+  ExpressionPickerResponse,
+} from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { VisibleROI, BinaryState } from "src/app/generated-protos/widget-data";
-
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
   constructor(

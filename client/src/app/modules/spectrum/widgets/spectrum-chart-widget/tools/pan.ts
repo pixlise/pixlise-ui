@@ -28,12 +28,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Point, vectorsEqual } from "src/app/models/Geometry";
-import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
-import {
-  CanvasMouseEvent,
-  CanvasInteractionResult,
-  CanvasMouseEventId,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
+import { CanvasMouseEvent, CanvasInteractionResult, CanvasMouseEventId } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { ISpectrumChartModel } from "../spectrum-model-interface";
 import { BaseSpectrumTool, ISpectrumToolHost, SpectrumToolId } from "./base-tool";
 

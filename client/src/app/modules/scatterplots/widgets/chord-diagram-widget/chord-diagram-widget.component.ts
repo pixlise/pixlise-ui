@@ -2,20 +2,24 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { CanvasInteractionHandler, CanvasDrawer } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
+import { CanvasInteractionHandler, CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ChordDiagramModel, ChordDrawMode } from "./chord-model";
 import { ChordDiagramDrawer } from "./chord-drawer";
 import { ChordDiagramInteraction } from "./chord-interaction";
-import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
+import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { Colours } from "src/app/utils/colours";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { ChordState, VisibleROI } from "src/app/generated-protos/widget-data";
-import { ExpressionPickerData, ExpressionPickerComponent, ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
+import {
+  ExpressionPickerData,
+  ExpressionPickerComponent,
+  ExpressionPickerResponse,
+} from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
@@ -90,7 +94,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
         this.mdl.expressionIds = [
           DataExpressionId.makePredefinedPseudoIntensityExpression("Mg"),
           DataExpressionId.makePredefinedPseudoIntensityExpression("Na"),
-          DataExpressionId.makePredefinedPseudoIntensityExpression("Ca")
+          DataExpressionId.makePredefinedPseudoIntensityExpression("Ca"),
         ];
       } else {
         // default to showing some quantified data... TODO: get this from the quant!

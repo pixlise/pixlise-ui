@@ -1,4 +1,4 @@
-import { CanvasDrawParameters, CanvasDrawer, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawParameters, CanvasDrawer, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Colours, RGBA } from "src/app/utils/colours";
 import {
   CANVAS_FONT_SIZE,
@@ -16,7 +16,6 @@ import { TernaryDrawModel, TernaryChartModel } from "./ternary-model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { CachedCanvasChartDrawer } from "../../base/cached-drawer";
 import { BaseChartModel } from "../../base/model-interfaces";
-
 
 export class TernaryChartDrawer extends CachedCanvasChartDrawer {
   public showSwapButton: boolean = true;

@@ -294,6 +294,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       this.tabs = [
         //new TabNav('Help', 'help', true),
         new TabNav("Datasets", "datasets", true),
+        new TabNav("Code Editor", "datasets/code-editor", true),
       ];
     } else {
       const datasetPrefix = "datasets/";

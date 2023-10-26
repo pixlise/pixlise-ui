@@ -35,7 +35,7 @@ import {
   CanvasInteractionResult,
   CanvasMouseEventId,
   CanvasKeyEvent,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 
 export class HistogramToolHost implements CanvasInteractionHandler {
   constructor(private _mdl: HistogramModel) {}

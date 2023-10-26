@@ -1,5 +1,5 @@
 import { Point } from "src/app/models/Geometry";
-import { CanvasDrawer, CanvasParams, CanvasDrawParameters } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawer, CanvasParams, CanvasDrawParameters } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Colours } from "src/app/utils/colours";
 import { CANVAS_FONT_SIZE, drawErrorIcon } from "src/app/utils/drawing";
 import { ChordViewNode, ChordDrawMode, ChordDiagramModel, ChordDiagramDrawModel } from "./chord-model";
@@ -201,7 +201,7 @@ export class ChordDiagramDrawer implements CanvasDrawer {
   }
 
   private drawChords(
-    drawModel: ChordDiagramDrawModel, 
+    drawModel: ChordDiagramDrawModel,
     screenContext: CanvasRenderingContext2D,
     drawMode: ChordDrawMode,
     node: ChordViewNode,

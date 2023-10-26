@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
+import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import {
   CanvasInteractionHandler,
   CanvasDrawer,
@@ -35,7 +35,7 @@ import {
   CanvasInteractionResult,
   CanvasKeyEvent,
   CanvasDrawParameters,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { ISpectrumChartModel } from "../spectrum-model-interface";
 
 export enum SpectrumToolId {

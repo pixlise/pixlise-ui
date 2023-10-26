@@ -27,9 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ContentChild, TemplateRef } from "@angular/core";
-
-// import { MonacoEditorService } from "src/app/services/monaco-editor.service";
+import { Component } from "@angular/core";
+import { MonacoEditorService } from "./modules/code-editor/services/monaco-editor.service";
 
 @Component({
   selector: "app-root",
@@ -37,10 +36,9 @@ import { Component, ContentChild, TemplateRef } from "@angular/core";
   styleUrls: ["./app.component.scss"],
 })
 export class AppComponent {
-  constructor() // private _monacoService: MonacoEditorService,
-  {
+  constructor(private _monacoService: MonacoEditorService) {
     // We trigger loading the service once, here, right on startup. This will end up creating a monaco object tied
     // to the window, which our child components can listen for being ready and create code editor views as needed
-    // this._monacoService.load();
+    this._monacoService.load();
   }
 }

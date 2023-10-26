@@ -1,6 +1,6 @@
-import { Injectable } from "@angular/core";
+import { Injectable, OnInit } from "@angular/core";
 import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../models/sidebar.model";
-import { BehaviorSubject, ReplaySubject, timer } from "rxjs";
+import { BehaviorSubject, ReplaySubject, Subscription, timer } from "rxjs";
 import { ActivatedRoute } from "@angular/router";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
@@ -10,7 +10,7 @@ import { QuantListReq } from "src/app/generated-protos/quantification-retrieval-
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
 import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
-import { DEFAULT_SCREEN_CONFIGURATION, createDefaultScreenConfiguration } from "../models/screen-configuration.model";
+import { createDefaultScreenConfiguration } from "../models/screen-configuration.model";
 import { WidgetData } from "src/app/generated-protos/widget-data";
 import { WidgetDataGetReq, WidgetDataWriteReq } from "src/app/generated-protos/widget-data-msgs";
 
@@ -19,6 +19,8 @@ import { WidgetDataGetReq, WidgetDataWriteReq } from "src/app/generated-protos/w
 })
 export class AnalysisLayoutService {
   sidepanelOpen: boolean = false;
+
+  private _subs = new Subscription();
 
   private _resizeCanvas$ = new ReplaySubject<void>(1);
 
@@ -33,7 +35,7 @@ export class AnalysisLayoutService {
   availableScans$ = new BehaviorSubject<ScanItem[]>([]);
 
   activeScreenConfigurationId$ = new BehaviorSubject<string>("");
-  activeScreenConfiguration$ = new BehaviorSubject<ScreenConfiguration>(DEFAULT_SCREEN_CONFIGURATION);
+  activeScreenConfiguration$ = new BehaviorSubject<ScreenConfiguration>(createDefaultScreenConfiguration());
 
   screenConfigurations$ = new BehaviorSubject<Map<string, ScreenConfiguration>>(new Map());
 
@@ -48,6 +50,24 @@ export class AnalysisLayoutService {
     if (this.defaultScanId) {
       this.fetchQuantsForScan(this.defaultScanId);
     }
+
+    this._subs.add(
+      this._route.queryParams.subscribe(params => {
+        if (params["id"]) {
+          this.fetchScreenConfiguration(params["id"]);
+        } else if (params["scan_id"]) {
+          this.loadScreenConfigurationFromScan(params["scan_id"]);
+          this.fetchQuantsForScan(params["scan_id"]);
+        } else {
+          this.activeScreenConfigurationId$.next("");
+          this.activeScreenConfiguration$.next(createDefaultScreenConfiguration());
+        }
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
   }
 
   fetchAvailableScans() {
@@ -115,6 +135,20 @@ export class AnalysisLayoutService {
 
         // Store the screen configuration
         this.screenConfigurations$.next(this.screenConfigurations$.value.set(res.screenConfiguration.id, res.screenConfiguration));
+      }
+    });
+  }
+
+  deleteScreenConfiguration(id: string) {
+    this._dataService.sendScreenConfigurationDeleteRequest({ id }).subscribe(res => {
+      if (res.id) {
+        this.screenConfigurations$.value.delete(id);
+        this.screenConfigurations$.next(this.screenConfigurations$.value);
+
+        if (this.activeScreenConfigurationId$.value === id) {
+          this.activeScreenConfigurationId$.next("");
+          this.activeScreenConfiguration$.next(createDefaultScreenConfiguration());
+        }
       }
     });
   }

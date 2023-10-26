@@ -32,14 +32,14 @@ import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection
 import { distanceBetweenPoints, Point, ptWithinBox, ptWithinPolygon, Rect } from "src/app/models/Geometry";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
+import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import {
   CanvasInteractionHandler,
   CanvasInteractionResult,
   CanvasKeyEvent,
   CanvasMouseEvent,
   CanvasMouseEventId,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { HOVER_POINT_RADIUS } from "src/app/utils/drawing";
 import { invalidPMC, SentryHelper } from "src/app/utils/utils";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
@@ -171,7 +171,7 @@ export abstract class InteractionWithLassoHover implements CanvasInteractionHand
     if (!this._mdl.raw) {
       return;
     }
-/*
+    /*
     const blockedPMCs = new Set<number>();
     if (this._mdl.selectModeExcludeROI) {
       for (const region of this._widgetDataService.regions.values()) {

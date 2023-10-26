@@ -29,8 +29,8 @@
 
 import { CANVAS_FONT_SIZE_TITLE } from "src/app/utils/drawing";
 import { RGBA, Colours } from "src/app/utils/colours";
-import { ChartAxis, ChartAxisDrawer } from "src/app/modules/analysis/components/widget/interactive-canvas/chart-axis";
-import { CanvasDrawParameters, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { ChartAxis, ChartAxisDrawer } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
+import { CanvasDrawParameters, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
 import { SpectrumChartLine } from "./spectrum-model-interface";
 import { SpectrumChartToolHost } from "./tools/tool-host";

@@ -30,9 +30,9 @@
 import { Subject } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { Rect } from "src/app/models/Geometry";
-import { ChartAxis } from "src/app/modules/analysis/components/widget/interactive-canvas/chart-axis";
-import { CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
+import { ChartAxis } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
+import { CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
 import { XRFLine } from "src/app/periodic-table/XRFLine";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
