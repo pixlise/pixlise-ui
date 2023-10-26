@@ -34,7 +34,7 @@ import {
   CanvasMouseEventId,
   CanvasDrawParameters,
   CanvasParams,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { XRFLine } from "src/app/periodic-table/XRFLine";
 import { Colours } from "src/app/utils/colours";
 import { ISpectrumChartModel } from "../spectrum-model-interface";
@@ -166,10 +166,7 @@ export class XRFBrowser extends BaseUIElement {
     }
 
     // eslint-disable-next-line prettier/prettier
-    return new Point(
-      Math.floor(this._ctx.xAxis.valueToCanvas(line.eV / 1000)),
-      Math.floor(this._ctx.yAxis.valueToCanvas(line.intensity * yMax))
-    );
+    return new Point(Math.floor(this._ctx.xAxis.valueToCanvas(line.eV / 1000)), Math.floor(this._ctx.yAxis.valueToCanvas(line.intensity * yMax)));
   }
 
   private drawGhostLines(screenContext: CanvasRenderingContext2D, viewport: CanvasParams): void {

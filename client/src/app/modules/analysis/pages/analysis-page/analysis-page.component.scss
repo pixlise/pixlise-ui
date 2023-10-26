@@ -26,4 +26,8 @@
   max-width: calc(100vw - 42px - 16px);
   overflow: scroll;
   display: flex;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

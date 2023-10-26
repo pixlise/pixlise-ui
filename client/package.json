@@ -41,6 +41,7 @@
     "inter-ui": "^3.19.3",
     "jsep": "^1.2.0",
     "mathjs": "^11.8.2",
+    "monaco-editor": "^0.44.0",
     "ngx-dropzone": "^3.1.0",
     "papaparse": "^5.4.1",
     "pixlise-wasmoon": "^1.15.3",

@@ -7,7 +7,7 @@ import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/g
 import { QuantGetReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { ExpressionDataSource } from "../models/expression-data-source";
 import { AnalysisLayoutService } from "../../analysis/services/analysis-layout.service";
-import { ScanCalibrationConfiguration, ScanConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ScanCalibrationConfiguration, ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 
 @Injectable({
   providedIn: "root",
@@ -23,15 +23,19 @@ export class EnergyCalibrationService implements OnInit {
 
   ngOnInit(): void {
     this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
-      if (config.scanConfigurations) {
-        Object.entries(config.scanConfigurations).forEach(([scanId, scanConfig]) => {
-          const calibrations = scanConfig.calibrations.map(
-            calibration => new SpectrumEnergyCalibration(calibration.eVstart, calibration.eVperChannel, calibration.detector)
-          );
-          this._currentCalibration.set(scanId, calibrations);
-        });
-      }
+      this.loadCalibrationFromScreenConfiguration(config);
     });
+  }
+
+  private loadCalibrationFromScreenConfiguration(config: ScreenConfiguration) {
+    if (config.scanConfigurations) {
+      Object.entries(config.scanConfigurations).forEach(([scanId, scanConfig]) => {
+        let calibrations = scanConfig.calibrations.map(
+          calibration => new SpectrumEnergyCalibration(calibration.eVstart, calibration.eVperChannel, calibration.detector)
+        );
+        this._currentCalibration.set(scanId, calibrations);
+      });
+    }
   }
 
   setCurrentCalibration(scanId: string, values: SpectrumEnergyCalibration[]) {

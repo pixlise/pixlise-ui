@@ -38,7 +38,7 @@ import {
   CanvasInteractionResult,
   CanvasMouseEventId,
   CanvasKeyEvent,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { IconButtonState } from "src/app/modules/pixlisecore/components/atoms/buttons/icon-button/icon-button.component";
 import { ISpectrumChartModel } from "../spectrum-model-interface";
 import { SpectrumToolId, ISpectrumToolHost, BaseSpectrumTool } from "./base-tool";
@@ -49,7 +49,7 @@ import { ChartXRFLines } from "../ui-elements/chart-xrf-lines";
 import { MouseCursor } from "../ui-elements/mouse-cursor";
 import { XRFBrowser } from "../ui-elements/xrf-browser";
 import { ZoomMap } from "../ui-elements/zoom-map";
-import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
+import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 
 // TODO: Mostly copied from context image, can probably unify
 export enum ToolState {

@@ -1,5 +1,5 @@
 import { Point, PointWithRayLabel } from "src/app/models/Geometry";
-import { CanvasParams } from "../../analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasParams } from "../../widget/components/interactive-canvas/interactive-canvas.component";
 
 // For use with cached drawer
 export interface BaseChartDrawModel {

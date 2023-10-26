@@ -1,4 +1,4 @@
-import { CanvasDrawParameters, CanvasDrawer, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawParameters, CanvasDrawer, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseChartModel } from "./model-interfaces";
 
 export abstract class CachedCanvasChartDrawer implements CanvasDrawer {

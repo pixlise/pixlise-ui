@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div
-  class="clickable"
+  class="clickable {{ flexBtn ? 'flex-btn' : '' }}"
   [ngClass]="styleCSS"
   (click)="onClickInternal($event)"
   #tooltip="matTooltip"

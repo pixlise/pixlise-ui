@@ -167,6 +167,10 @@
 
 .clickable {
   position: relative;
+
+  &.flex-btn {
+    display: flex;
+  }
 }
 
 .notifications {

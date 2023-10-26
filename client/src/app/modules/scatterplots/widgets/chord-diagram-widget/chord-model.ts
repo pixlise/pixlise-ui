@@ -1,10 +1,10 @@
 import { MinMax } from "src/app/models/BasicTypes";
-import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Point, Rect } from "src/app/models/Geometry";
 import { CANVAS_FONT_SIZE, CANVAS_FONT_WIDTH_PERCENT } from "src/app/utils/drawing";
 import { Subject } from "rxjs";
 import { WidgetDataIds, ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
-import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
+import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import { PMCDataValues } from "src/app/expression-language/data-values";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";

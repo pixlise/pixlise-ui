@@ -15,7 +15,7 @@ import { TwoStateButtonComponent } from "./components/atoms/buttons/two-state-bu
 // import { BulkSelectionSwitchComponent } from "./components/atoms/buttons/two-state-button/bulk-selection-switch.component";
 // import { PlusMinusSwitchComponent } from "./components/atoms/buttons/two-state-button/plus-minus-switch.component";
 import { SwitchButtonComponent } from "./components/atoms/buttons/switch-button/switch-button.component";
-// import { MultiSwitchButtonComponent } from "./components/atoms/buttons/multi-switch-button/multi-switch-button.component";
+import { MultiSwitchButtonComponent } from "./components/atoms/buttons/multi-switch-button/multi-switch-button.component";
 import { TwoStateIconButton } from "./components/atoms/buttons/two-state-button/two-state-icon-button.component";
 // import { TwoStateIconPushButton } from "./components/atoms/buttons/two-state-button/two-state-icon-push-button.component";
 import { TwoStatePushButton } from "./components/atoms/buttons/two-state-button/two-state-push-button.component";
@@ -64,6 +64,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     PushButtonComponent,
     TwoStateButtonComponent,
     SwitchButtonComponent,
+    MultiSwitchButtonComponent,
     TwoStateIconButton,
     TwoStatePushButton,
     TwoStateIconPushButton,
@@ -92,6 +93,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     PushButtonComponent,
     TwoStateButtonComponent,
     SwitchButtonComponent,
+    MultiSwitchButtonComponent,
     TwoStateIconButton,
     TwoStatePushButton,
     TwoStateIconPushButton,

@@ -1,10 +1,10 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
-import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
+import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { Subscription } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
 import { TernaryChartDrawer } from "./ternary-drawer";
-import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { TernaryChartModel, TernaryDrawModel } from "./ternary-model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { DataSourceParams, SelectionService, WidgetDataService, DataUnit, RegionDataResults, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -130,7 +130,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
           DataExpressionId.makePredefinedPseudoIntensityExpression("Mg"),
           DataExpressionId.makePredefinedPseudoIntensityExpression("Na"),
           DataExpressionId.makePredefinedPseudoIntensityExpression("Al"),
-        ]
+        ];
       } else {
         // default to showing some quantified data... TODO: get this from the quant!
       }

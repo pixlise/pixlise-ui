@@ -34,7 +34,7 @@ import {
   CanvasMouseEventId,
   CanvasDrawParameters,
   CanvasParams,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Colours } from "src/app/utils/colours";
 import { ISpectrumChartModel } from "../spectrum-model-interface";
 import { BaseUIElement } from "./base-ui-element";

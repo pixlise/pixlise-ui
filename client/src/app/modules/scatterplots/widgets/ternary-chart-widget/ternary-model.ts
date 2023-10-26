@@ -1,5 +1,5 @@
 import { MinMax } from "src/app/models/BasicTypes";
-import { CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Point, PointWithRayLabel, scaleVector } from "src/app/models/Geometry";
 import { degToRad, invalidPMC } from "src/app/utils/utils";
 import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, PointDrawer } from "src/app/utils/drawing";

@@ -56,6 +56,7 @@ export class PushButtonComponent implements OnInit {
   @Input() notificationCount: number = 0;
   @Input() badgeStyle: BadgeStyle = "notification";
   @Input() tooltipTitle: string = "";
+  @Input() flexBtn: boolean = false;
 
   @Input() confirmText: string = "";
   @Input() customDialog: TemplateRef<any> | null = null;

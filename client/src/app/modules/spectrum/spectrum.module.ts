@@ -20,6 +20,7 @@ import { BrowseOnChartTableComponent } from "./widgets/spectrum-chart-widget/spe
 import { PickedElementsComponent } from "./widgets/spectrum-chart-widget/spectrum-peak-identification/picked-elements/picked-elements.component";
 import { ElementListItemComponent } from "./widgets/spectrum-chart-widget/spectrum-peak-identification/element-list-item/element-list-item.component";
 import { QuantificationStartOptionsComponent } from "./widgets/spectrum-chart-widget/quantification-start-options/quantification-start-options.component";
+import { WidgetModule } from "../widget/widget.module";
 
 export { SpectrumChartWidgetComponent } from "./widgets/spectrum-chart-widget/spectrum-chart-widget.component";
 
@@ -38,7 +39,7 @@ export { SpectrumChartWidgetComponent } from "./widgets/spectrum-chart-widget/sp
     ElementListItemComponent,
     QuantificationStartOptionsComponent,
   ],
-  imports: [CommonModule, PIXLISECoreModule, AnalysisModule, FormsModule, DragDropModule, MaterialModule],
+  imports: [CommonModule, PIXLISECoreModule, AnalysisModule, FormsModule, DragDropModule, MaterialModule, WidgetModule],
   exports: [SpectrumChartWidgetComponent, SpectrumEnergyCalibrationComponent],
   providers: [DiffractionService, SpectrumService],
 })

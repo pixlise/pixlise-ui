@@ -1,10 +1,10 @@
 import { Subject } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { Point, Rect } from "src/app/models/Geometry";
-import { ChartAxis, LabelledChartAxis, LinearChartAxis, LogarithmicChartAxis } from "src/app/modules/analysis/components/widget/interactive-canvas/chart-axis";
-import { CursorId } from "src/app/modules/analysis/components/widget/interactive-canvas/cursor-id";
-import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
+import { ChartAxis, LabelledChartAxis, LinearChartAxis, LogarithmicChartAxis } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
+import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
+import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { RegionDataResults, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { RGBA } from "src/app/utils/colours";
 import { PMCDataValues } from "src/app/expression-language/data-values";

@@ -31,8 +31,8 @@ import { Colours, RGBA } from "src/app/utils/colours";
 import { CANVAS_FONT_SIZE, drawToolTip, drawErrorIcon } from "src/app/utils/drawing";
 import { Point } from "src/app/models/Geometry";
 import { HistogramModel, HistogramDrawBar } from "./histogram-model";
-import { ChartAxisDrawer } from "src/app/modules/analysis/components/widget/interactive-canvas/chart-axis";
-import { CanvasDrawParameters } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { ChartAxisDrawer } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
+import { CanvasDrawParameters } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { CachedCanvasChartDrawer } from "../../base/cached-drawer";
 import { BaseChartModel } from "../../base/model-interfaces";
 

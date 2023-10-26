@@ -1,12 +1,12 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewContainerRef } from "@angular/core";
-import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
+import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SpectrumService } from "../../services/spectrum.service";
 import { Subscription, combineLatest } from "rxjs";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 import { Clipboard } from "@angular/cdk/clipboard";
 import { SpectrumChartDrawer } from "./spectrum-drawer";
-import { CanvasDrawer } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { SpectrumChartModel } from "./spectrum-model";
 import { SpectrumChartToolHost } from "./tools/tool-host";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
@@ -249,7 +249,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           this.saveState();
         }
       })
-    )
+    );
 
     this.reDraw();
   }

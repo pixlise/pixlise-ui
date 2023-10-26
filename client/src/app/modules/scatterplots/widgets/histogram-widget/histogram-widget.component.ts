@@ -2,17 +2,21 @@ import { Component, OnInit, OnDestroy } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
+import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { DataSourceParams, DataUnit, RegionDataResults, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { HistogramModel } from "./histogram-model";
 import { HistogramDrawer } from "./histogram-drawer";
 import { HistogramToolHost } from "./histogram-interaction";
-import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
+import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
-import { ExpressionPickerData, ExpressionPickerComponent, ExpressionPickerResponse } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
+import {
+  ExpressionPickerData,
+  ExpressionPickerComponent,
+  ExpressionPickerResponse,
+} from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { HistogramState, VisibleROI } from "src/app/generated-protos/widget-data";
 
@@ -79,7 +83,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
         this.mdl.expressionIds = [
           DataExpressionId.makePredefinedPseudoIntensityExpression("Mg"),
           DataExpressionId.makePredefinedPseudoIntensityExpression("Na"),
-          DataExpressionId.makePredefinedPseudoIntensityExpression("Ca")
+          DataExpressionId.makePredefinedPseudoIntensityExpression("Ca"),
         ];
       } else {
         // default to showing some quantified data... TODO: get this from the quant!
@@ -278,7 +282,6 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       })
     );
   }
-
 
   get showWhiskers(): boolean {
     return this.mdl.showWhiskers;

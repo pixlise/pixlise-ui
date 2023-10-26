@@ -1,4 +1,4 @@
-import { CanvasDrawParameters, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawParameters, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { HOVER_POINT_RADIUS, OutlineDrawer, PLOT_POINTS_SIZE, PointDrawer } from "src/app/utils/drawing";
 import { TernaryDrawModel, TernaryChartModel } from "./ternary-model";

@@ -1,10 +1,10 @@
 import { MinMax } from "src/app/models/BasicTypes";
-import { CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
+import { CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { PointWithRayLabel, Rect } from "src/app/models/Geometry";
 import { Colours } from "src/app/utils/colours";
 import { RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ChartAxis, ChartAxisDrawer, LinearChartAxis } from "src/app/modules/analysis/components/widget/interactive-canvas/chart-axis";
+import { ChartAxis, ChartAxisDrawer, LinearChartAxis } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
 import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, CANVAS_FONT_SIZE_TITLE } from "src/app/utils/drawing";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { BaseChartDrawModel } from "../../base/model-interfaces";
@@ -21,7 +21,7 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
   setData(data: RegionDataResults): WidgetError[] {
     const axes: ScatterPlotAxisInfo[] = [
       new ScatterPlotAxisInfo("", false, "", "", new MinMax()), // X
-      new ScatterPlotAxisInfo("", true, "", "", new MinMax()),  // Y
+      new ScatterPlotAxisInfo("", true, "", "", new MinMax()), // Y
     ];
 
     return this.processQueryResult("Binary", data, axes);
