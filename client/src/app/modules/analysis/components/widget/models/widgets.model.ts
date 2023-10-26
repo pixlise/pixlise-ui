@@ -1,4 +1,5 @@
 import { WidgetData } from "src/app/generated-protos/widget-data";
+import { ContextImageComponent } from "src/app/modules/image-viewers/image-viewers.module";
 import {
   BinaryChartWidgetComponent,
   TernaryChartWidgetComponent,
@@ -92,6 +93,13 @@ export const WIDGETS = {
     description: "Chord Diagram",
     component: ChordDiagramWidgetComponent,
     dataKey: "chord",
+    controlConfiguration: {},
+  },
+  "context-image": {
+    name: "Context Image",
+    description: "Context Image",
+    component: ContextImageComponent,
+    dataKey: "contextImage",
     controlConfiguration: {},
   },
 } satisfies Record<string, WidgetConfiguration>;
