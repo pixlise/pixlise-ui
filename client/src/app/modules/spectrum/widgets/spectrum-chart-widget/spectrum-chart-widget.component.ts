@@ -37,8 +37,6 @@ import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/wid
 export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnInit, OnDestroy {
   activeTool: string = "pan";
 
-  resizeSpectraY = false;
-
   mdl: SpectrumChartModel;
   drawer: CanvasDrawer;
   toolhost: SpectrumChartToolHost;
@@ -304,6 +302,10 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
   get yAxislogScale(): boolean {
     return this.mdl.yAxislogScale;
+  }
+
+  get resizeSpectraY(): boolean {
+    return this.mdl.chartYResize;
   }
 
   onToggleResizeSpectraY() {
