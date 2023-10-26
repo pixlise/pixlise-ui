@@ -72,7 +72,7 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
 
     // And lasso if any
     if (this._mdl.mouseLassoPoints) {
-      const drawer = new OutlineDrawer(screenContext, OUTLINE_LINE_WIDTH, clrLasso);
+      const drawer = new OutlineDrawer(screenContext, clrLasso);
       drawer.drawOutline(this._mdl.mouseLassoPoints);
     }
   }

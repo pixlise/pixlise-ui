@@ -155,34 +155,18 @@ export const PLOT_POINTS_SIZE = 3;
 export const OUTLINE_LINE_WIDTH = 1;
 
 export class PointDrawer {
-  _screenContext!: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
-  _fillColour: RGBA = new RGBA(0, 0, 0, 1);
-  _outlineColour: RGBA = new RGBA(0, 0, 0, 1);
-  _size: number = 0;
-  _shape: string = "";
-
   static readonly ShapeCross = "cross";
   static readonly ShapeCircle = "circle";
   static readonly ShapeTriangle = "triangle";
   static readonly ShapeSquare = "square";
 
   constructor(
-    screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-    size: number,
-    fillColour: RGBA | null,
-    outlineColour: RGBA | null,
-    shape: string = PointDrawer.ShapeCircle
-  ) {
-    this._screenContext = screenContext;
-    if (fillColour) {
-      this._fillColour = fillColour;
-    }
-    if (outlineColour) {
-      this._outlineColour = outlineColour;
-    }
-    this._size = size;
-    this._shape = shape;
-  }
+    private _screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    private _size: number,
+    private _fillColour: RGBA,
+    private _outlineColour: RGBA,
+    private _shape: string = PointDrawer.ShapeCircle
+  ) {}
 
   static getOpacity(pointCount: number): number {
     // At 5000 points, we want 20% opacity, ramping up to 70% opacity at 50 points
@@ -258,8 +242,8 @@ export class PointDrawer {
       }
       if (showLabels && withRay) {
         const ptRay = pt as PointWithRayLabel;
-      if (ptRay.label && ptRay.label !== "") {
-        let label = "";
+        if (ptRay.label && ptRay.label !== "") {
+          let label = "";
           let labelWords = ptRay.label.split(" ");
 
           let currentSegment = "";
@@ -280,7 +264,7 @@ export class PointDrawer {
           // Draw the label
           this._screenContext.font = CANVAS_FONT_SIZE + "px Roboto";
           this._screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
-          let labels = label.split("\n");
+          const labels = label.split("\n");
 
           // Parse newline characters in the label
           labels.forEach((label, i) => {
@@ -299,70 +283,29 @@ export class PointDrawer {
 // Line drawing
 
 export class OutlineDrawer {
-  _screenContext: CanvasRenderingContext2D;
-  _outlineColour: RGBA;
-  _lineWidth: number;
-
-  constructor(screenContext: CanvasRenderingContext2D, lineWidth: number, outlineColour: RGBA) {
-    this._screenContext = screenContext;
-    this._lineWidth = lineWidth;
-    this._outlineColour = outlineColour;
-
+  constructor(
+    private _screenContext: CanvasRenderingContext2D,
+    //private _lineWidth: number,
+    private _outlineColour: RGBA
+  ) {
     // Setup the context for drawing this
     this._screenContext.strokeStyle = this._outlineColour.asString();
   }
 
   drawOutline(points: Point[]): void {
-    let count = points.length;
-    if (count <= 0) {
+    if (points.length <= 0) {
       return;
     }
 
     this._screenContext.beginPath();
     this._screenContext.moveTo(points[0].x, points[0].y);
-    for (let c = 1; c < count; c++) {
+    for (let c = 1; c < points.length; c++) {
       this._screenContext.lineTo(points[c].x, points[c].y);
     }
 
     this._screenContext.closePath();
     this._screenContext.stroke();
   }
-}
-
-export function drawSwapButton(screenContext: CanvasRenderingContext2D, buttonCenter: Point, buttonSize: number): void {
-  const buttonSizeHalf = buttonSize / 2;
-
-  screenContext.save();
-
-  // Background
-  screenContext.fillStyle = Colours.GRAY_60.asString();
-  screenContext.fillRect(buttonCenter.x - buttonSizeHalf, buttonCenter.y - buttonSizeHalf, buttonSize, buttonSize);
-
-  // Swap circle
-  let radius = buttonSize * 0.28;
-  screenContext.strokeStyle = Colours.GRAY_10.asString();
-  screenContext.lineWidth = 1;
-  screenContext.beginPath();
-  screenContext.arc(buttonCenter.x, buttonCenter.y, radius, 0, 2 * Math.PI);
-  screenContext.stroke();
-
-  // And arrow head triangles
-  let arrowHeadHalfSize = 2;
-  screenContext.fillStyle = Colours.GRAY_10.asString();
-
-  screenContext.beginPath();
-  screenContext.moveTo(buttonCenter.x - radius - arrowHeadHalfSize, buttonCenter.y);
-  screenContext.lineTo(buttonCenter.x - radius + arrowHeadHalfSize, buttonCenter.y);
-  screenContext.lineTo(buttonCenter.x - radius, buttonCenter.y + arrowHeadHalfSize);
-  screenContext.fill();
-
-  screenContext.beginPath();
-  screenContext.moveTo(buttonCenter.x + radius - arrowHeadHalfSize, buttonCenter.y);
-  screenContext.lineTo(buttonCenter.x + radius + arrowHeadHalfSize, buttonCenter.y);
-  screenContext.lineTo(buttonCenter.x + radius, buttonCenter.y - arrowHeadHalfSize);
-  screenContext.fill();
-
-  screenContext.restore();
 }
 
 export function drawErrorIcon(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, center: Point, size: number): void {
@@ -454,17 +397,17 @@ export function drawToolTip(
 }
 
 export function rgbBytesToImage(bytes: Uint8Array, width: number, height: number): HTMLImageElement {
-  let canvas = document.createElement("canvas");
+  const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
 
-  let context = canvas.getContext("2d");
+  const context = canvas.getContext("2d");
   if (!context) {
     console.error("Failed to get 2d context (rgbBytesToImage)");
     return new HTMLImageElement();
   }
 
-  let imgData = context.createImageData(width, height);
+  const imgData = context.createImageData(width, height);
 
   let srcIndex = 0;
   let dstIndex = 0;
@@ -481,7 +424,7 @@ export function rgbBytesToImage(bytes: Uint8Array, width: number, height: number
 
   context.putImageData(imgData, 0, 0);
 
-  let result = document.createElement("img");
+  const result = document.createElement("img");
   result.src = canvas.toDataURL(); // make base64 string of image, yuck, slow...
   result.width = width;
   result.height = height;
@@ -489,17 +432,17 @@ export function rgbBytesToImage(bytes: Uint8Array, width: number, height: number
 }
 
 export function alphaBytesToImage(alphaBytes: Uint8Array, width: number, height: number, rgb: RGBA): HTMLImageElement {
-  let canvas = document.createElement("canvas");
+  const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
 
-  let context = canvas.getContext("2d");
+  const context = canvas.getContext("2d");
   if (!context) {
     console.error("Failed to get 2d context (alphaBytesToImage)");
     return new HTMLImageElement();
   }
 
-  let imgData = context.createImageData(width, height);
+  const imgData = context.createImageData(width, height);
 
   let srcIndex = 0;
   let dstIndex = 0;
@@ -516,7 +459,7 @@ export function alphaBytesToImage(alphaBytes: Uint8Array, width: number, height:
 
   context.putImageData(imgData, 0, 0);
 
-  let result = document.createElement("img");
+  const result = document.createElement("img");
   result.src = canvas.toDataURL(); // make base64 string of image, yuck, slow...
   return result;
 }
@@ -534,9 +477,9 @@ export function drawTextWithBackground(
 ): void {
   ctx.save();
   // Measure, so we can position it
-  let sz = ctx.measureText(text);
+  const sz = ctx.measureText(text);
 
-  let labelRect = new Rect(textX - padding, textY - padding, sz.width + padding + padding, fontSize + padding + padding);
+  const labelRect = new Rect(textX - padding, textY - padding, sz.width + padding + padding, fontSize + padding + padding);
 
   if (ctx.textAlign == "end" || ctx.textAlign == "right") {
     // Text alignment is to the end, so our specified textX and textY points are the right end of the text
@@ -575,7 +518,7 @@ export function adjustImageRGB(img: HTMLImageElement, brightness: number): HTMLI
     brightness = 0;
   }
 
-  let raw = getRawImageData(img, null);
+  const raw = getRawImageData(img, null);
   if (!raw) {
     console.error("Failed to get raw image data, cant adjust. (adjustImageRGB)");
     return img;
@@ -585,7 +528,7 @@ export function adjustImageRGB(img: HTMLImageElement, brightness: number): HTMLI
   const pixels = raw.width * raw.height;
   const pixelBytes = pixels * 4;
 
-  let newImageBytes = new Uint8Array(pixels * 3);
+  const newImageBytes = new Uint8Array(pixels * 3);
 
   let writeIdx = 0;
   for (let c = 0; c < pixelBytes; c += 4) {
@@ -597,20 +540,20 @@ export function adjustImageRGB(img: HTMLImageElement, brightness: number): HTMLI
 
   return rgbBytesToImage(newImageBytes, raw.width, raw.height);
 }
-
+/*
 // https://stackoverflow.com/questions/5026961/html5-canvas-ctx-filltext-wont-do-line-breaks
 // http: //www.html5canvastutorials.com/tutorials/html5-canvas-wrap-text-tutorial/
 export function wrapText(context: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
-  let cars = text.split("\n");
+  const cars = text.split("\n");
 
   for (let ii = 0; ii < cars.length; ii++) {
     let line = "";
-    let words = cars[ii].split(" ");
+    const words = cars[ii].split(" ");
 
     for (let n = 0; n < words.length; n++) {
-      let testLine = line + words[n] + " ";
-      let metrics = context.measureText(testLine);
-      let testWidth = metrics.width;
+      const testLine = line + words[n] + " ";
+      const metrics = context.measureText(testLine);
+      const testWidth = metrics.width;
 
       if (testWidth > maxWidth) {
         context.fillText(line, x, y);
@@ -625,3 +568,4 @@ export function wrapText(context: CanvasRenderingContext2D, text: string, x: num
     y += lineHeight;
   }
 }
+*/

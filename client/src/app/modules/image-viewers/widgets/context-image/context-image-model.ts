@@ -2,7 +2,8 @@ import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-
 import { ColourScheme, IContextImageModel } from "./context-image-model-interface";
 import { Subject } from "rxjs";
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { BaseChartDrawModel, BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
+import { BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
+import { ContextImageDrawModel } from "../../models/context-image-draw-model";
 
 export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -60,10 +61,4 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   get pointBBoxColourScheme(): ColourScheme {
     return this._pointBBoxColourScheme;
   }
-}
-
-export class ContextImageDrawModel implements BaseChartDrawModel {
-  // Our rendered to an image, cached and only regenerated on resolution
-  // change or data change
-  drawnData: OffscreenCanvas | null = null;
 }

@@ -1,22 +1,10 @@
-import { CanvasDrawParameters, CanvasDrawer, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawParameters, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
 import { Colours, RGBA } from "src/app/utils/colours";
-import {
-  CANVAS_FONT_SIZE,
-  CANVAS_FONT_SIZE_TITLE,
-  drawErrorIcon,
-  drawSwapButton,
-  HOVER_POINT_RADIUS,
-  OutlineDrawer,
-  OUTLINE_LINE_WIDTH,
-  PLOT_POINTS_SIZE,
-  PointDrawer,
-  wrapText,
-} from "src/app/utils/drawing";
+import { HOVER_POINT_RADIUS, OutlineDrawer, PLOT_POINTS_SIZE, PointDrawer } from "src/app/utils/drawing";
 import { TernaryDrawModel, TernaryChartModel } from "./ternary-model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { CachedCanvasChartDrawer } from "../../base/cached-drawer";
 import { BaseChartModel } from "../../base/model-interfaces";
-
 
 export class TernaryChartDrawer extends CachedCanvasChartDrawer {
   public showSwapButton: boolean = true;
@@ -114,7 +102,7 @@ export class TernaryChartDrawer extends CachedCanvasChartDrawer {
 
     // And lasso if any
     if (this._mdl.mouseLassoPoints) {
-      const drawer = new OutlineDrawer(screenContext, OUTLINE_LINE_WIDTH, clrLasso);
+      const drawer = new OutlineDrawer(screenContext, clrLasso);
       drawer.drawOutline(this._mdl.mouseLassoPoints);
     }
   }
