@@ -1,8 +1,8 @@
 import { CachedCanvasChartDrawer } from "src/app/modules/scatterplots/base/cached-drawer";
 import { ContextImageModel } from "./context-image-model";
 import { ContextImageToolHost } from "./tools/tool-host";
-import { ChartAxisDrawer } from "src/app/modules/analysis/components/widget/interactive-canvas/chart-axis";
-import { CanvasDrawParameters } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { ChartAxisDrawer } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
+import { CanvasDrawParameters } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
 
 export class ContextImageDrawer extends CachedCanvasChartDrawer {

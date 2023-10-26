@@ -1,8 +1,8 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
-import { CanvasDrawer } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
-import { BaseWidgetModel } from "src/app/modules/analysis/components/widget/models/base-widget.model";
+import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { ContextImageModel } from "./context-image-model";
 import { ContextImageToolHost, ToolHostCreateSettings } from "./tools/tool-host";
 import { ContextImageDrawer } from "./context-image-drawer";

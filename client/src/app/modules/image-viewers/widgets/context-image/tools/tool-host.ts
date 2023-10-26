@@ -37,7 +37,7 @@ import {
   CanvasInteractionResult,
   CanvasMouseEventId,
   CanvasKeyEvent,
-} from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { IconButtonState } from "src/app/modules/pixlisecore/components/atoms/buttons/icon-button/icon-button.component";
 import { BaseUIElement } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/ui-elements/base-ui-element";
 import { IContextImageModel } from "../context-image-model-interface";

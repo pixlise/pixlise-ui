@@ -7,12 +7,13 @@ import { MaterialModule } from "../material.module";
 import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 
 import { ContextImageComponent } from "./widgets/context-image/context-image.component";
+import { WidgetModule } from "../widget/widget.module";
 
 export { ContextImageComponent } from "./widgets/context-image/context-image.component";
 
 @NgModule({
   declarations: [ContextImageComponent],
-  imports: [CommonModule, PIXLISECoreModule, AnalysisModule, FormsModule, DragDropModule, MaterialModule],
+  imports: [CommonModule, PIXLISECoreModule, AnalysisModule, FormsModule, DragDropModule, MaterialModule, WidgetModule],
   exports: [ContextImageComponent],
 })
 export class ImageViewersModule {}

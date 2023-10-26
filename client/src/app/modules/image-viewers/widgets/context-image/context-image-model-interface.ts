@@ -1,4 +1,4 @@
-import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
+import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { RGBA, Colours } from "src/app/utils/colours";
 
 export interface IContextImageModel {

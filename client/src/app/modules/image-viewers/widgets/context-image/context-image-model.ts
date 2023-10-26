@@ -1,7 +1,7 @@
-import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
+import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { ColourScheme, IContextImageModel } from "./context-image-model-interface";
 import { Subject } from "rxjs";
-import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
 import { ContextImageDrawModel } from "../../models/context-image-draw-model";
 
