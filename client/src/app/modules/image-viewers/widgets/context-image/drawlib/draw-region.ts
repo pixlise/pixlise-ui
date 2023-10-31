@@ -1,11 +1,11 @@
-import { CanvasWorldTransform } from "src/app/modules/analysis/components/widget/interactive-canvas/interactive-canvas.component";
+import { CanvasWorldTransform } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { ContextImageItemTransform } from "../../../models/image-transform";
 import { ContextImageRegionLayer, RegionDisplayPolygon } from "../../../models/region";
 import { drawImageOrMaskWithOptionalTransform } from "./draw-image";
 import { RGBA } from "src/app/utils/colours";
 
 export function drawRegion(
-  screenContext: CanvasRenderingContext2D,
+  screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   region: ContextImageRegionLayer,
   worldTransform: CanvasWorldTransform,
   imageTransform: ContextImageItemTransform | null,
@@ -44,7 +44,7 @@ export function drawRegion(
   }
 }
 
-function drawPolygon(ctx: CanvasRenderingContext2D, polygon: RegionDisplayPolygon): void {
+function drawPolygon(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, polygon: RegionDisplayPolygon): void {
   ctx.beginPath();
 
   // Draw the polygon

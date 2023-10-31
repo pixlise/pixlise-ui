@@ -1,8 +1,8 @@
 import { addVectors, scaleVector, Point } from "src/app/models/Geometry";
-import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
 import { Footprint } from "../../../models/footprint";
+import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 
-export function drawFootprint(screenContext: CanvasRenderingContext2D, footprint: Footprint, transform: PanZoom): void {
+export function drawFootprint(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, footprint: Footprint, transform: PanZoom): void {
   const lineWidth = 2 / transform.scale.x;
 
   const innerInflate = 0;
@@ -17,7 +17,13 @@ export function drawFootprint(screenContext: CanvasRenderingContext2D, footprint
 // Inflate: how many pixels to inflate the hull points by
 // If fillStyle is not null, the area will be filled with that style.
 // If strokeStyle is not null, the area will be outlined with that style.
-function drawFootprintLine(screenContext: CanvasRenderingContext2D, footprint: Footprint, inflate: number, fillStyle: string, strokeStyle: string): void {
+function drawFootprintLine(
+  screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  footprint: Footprint,
+  inflate: number,
+  fillStyle: string,
+  strokeStyle: string
+): void {
   if (fillStyle) {
     screenContext.fillStyle = fillStyle;
   }

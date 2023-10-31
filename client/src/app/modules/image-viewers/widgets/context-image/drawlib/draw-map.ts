@@ -1,32 +1,29 @@
 import { Point, Rect } from "src/app/models/Geometry";
 import { degToRad } from "src/app/utils/utils";
+import { ContextImageMapLayer, MapPointShape } from "../../../models/map-layer";
 
-export enum MapPointShape {
-  CIRCLE,
-  CROSSED_CIRCLE, // Like a no-entry sign
-  DIAMOND,
-  EX,
-  POLYGON,
-  // PLUS
-}
-
-export function drawMapData(screenContext: CanvasRenderingContext2D, points: , pointSize: number, opacity: number): void {
+export function drawMapData(
+  screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  mapData: ContextImageMapLayer,
+  pointSize: number,
+  opacity: number
+): void {
   const ptHalfSize = pointSize * 0.5;
 
   const drawFuncs = [drawCircle, drawCrossedCircle, drawDiamond, drawX];
 
-  for (const loc of this._points) {
-    screenContext.fillStyle = loc.rep.colour.asStringWithA(opacity);
+  for (const pt of mapData.points) {
+    screenContext.fillStyle = pt.drawParams.colour.asStringWithA(opacity);
 
-    if (loc.shape === MapPointShape.POLYGON) {
-      drawPolygon(screenContext, loc.polygon);
+    if (pt.drawParams.shape === MapPointShape.POLYGON) {
+      drawPolygon(screenContext, pt.polygon);
     } else {
-      drawFuncs[loc.shape](screenContext, loc, ptHalfSize, loc.rep.scale)
+      drawFuncs[pt.drawParams.shape](screenContext, pt.coord, ptHalfSize, pt.drawParams.scale);
     }
   }
 }
 
-function drawCircle(screenContext: CanvasRenderingContext2D, pos: Point, halfSize: number, scale: number | null) {
+function drawCircle(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, pos: Point, halfSize: number, scale: number | null) {
   screenContext.beginPath();
 
   // save a multiply TODO: maybe it's not worth it doing the if??
@@ -35,7 +32,7 @@ function drawCircle(screenContext: CanvasRenderingContext2D, pos: Point, halfSiz
   screenContext.fill();
 }
 
-function drawCrossedCircle(screenContext: CanvasRenderingContext2D, pos: Point, halfSize: number, scale: number | null) {
+function drawCrossedCircle(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, pos: Point, halfSize: number, scale: number | null) {
   let rad = halfSize * 0.5;
   screenContext.beginPath();
 
@@ -52,7 +49,7 @@ function drawCrossedCircle(screenContext: CanvasRenderingContext2D, pos: Point, 
 }
 
 const rad45 = degToRad(45);
-function drawDiamond(screenContext: CanvasRenderingContext2D, pos: Point, halfSize: number, scale: number | null) {
+function drawDiamond(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, pos: Point, halfSize: number, scale: number | null) {
   screenContext.save();
   screenContext.translate(pos.x, pos.y);
   screenContext.rotate(rad45);
@@ -69,7 +66,7 @@ function drawDiamond(screenContext: CanvasRenderingContext2D, pos: Point, halfSi
 }
 
 // Draw an X
-function drawX(screenContext: CanvasRenderingContext2D, pos: Point, halfSize: number, scale: number | null) {
+function drawX(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, pos: Point, halfSize: number, scale: number | null) {
   const xscale = 0.6;
 
   // save a multiply TODO: maybe it's not worth it doing the if??
@@ -96,7 +93,7 @@ function drawX(screenContext: CanvasRenderingContext2D, pos: Point, halfSize: nu
   screenContext.stroke();
 }
 
-function drawPolygon(screenContext: CanvasRenderingContext2D, pts: Point[]) {
+function drawPolygon(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, pts: Point[]) {
   screenContext.beginPath();
   screenContext.moveTo(pts[0].x, pts[0].y);
 

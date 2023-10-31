@@ -107,7 +107,7 @@ export class ChartXRFLines extends BaseUIElement {
     return CanvasInteractionResult.neither;
   }
 
-  override drawScreenSpace(ctx: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  override draw(ctx: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     // If x-axis isn't calibrated, we don't draw
     if (!this._ctx.xAxisEnergyScale) {
       return;

@@ -74,7 +74,7 @@ console.log('mouse value: '+this._ctx.xAxis.canvasToValue(event.canvasPoint.x).t
     return CanvasInteractionResult.redrawOnly;
   }
 
-  override drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     // Don't show in left margin or if no mouse detected yet
     if (this._lastMousePos === null || !this._ctx.xAxis || this._lastMousePos.x < this._ctx.xAxis.startPx) {
       return;

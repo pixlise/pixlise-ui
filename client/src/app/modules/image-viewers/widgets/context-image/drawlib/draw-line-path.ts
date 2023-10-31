@@ -1,8 +1,8 @@
 import { Colours } from "src/app/utils/colours";
 import { Point } from "src/app/models/Geometry";
-import { PanZoom } from "src/app/modules/analysis/components/widget/interactive-canvas/pan-zoom";
+import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 
-export function drawUserLine(screenContext: CanvasRenderingContext2D, points: Point[], transform: PanZoom): void {
+export function drawUserLine(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, points: Point[], transform: PanZoom): void {
   if (points.length <= 1) {
     return;
   }
@@ -22,7 +22,7 @@ export function drawUserLine(screenContext: CanvasRenderingContext2D, points: Po
   screenContext.restore();
 }
 
-function drawLinePath(screenContext: CanvasRenderingContext2D, points: Point[]): void {
+function drawLinePath(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, points: Point[]): void {
   screenContext.beginPath();
   screenContext.moveTo(points[0].x, points[0].y);
 

@@ -27,60 +27,28 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
-import {
-  CanvasInteractionHandler,
-  CanvasDrawer,
-  CanvasMouseEvent,
-  CanvasInteractionResult,
-  CanvasKeyEvent,
-  CanvasDrawParameters,
-} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
-import { ISpectrumChartModel } from "../spectrum-model-interface";
+import { MinMax } from "src/app/models/BasicTypes";
+import { Histogram } from "./histogram";
+import { MapPointDrawParams } from "../modules/image-viewers/models/map-layer";
 
-export enum SpectrumToolId {
-  PAN,
-  ZOOM,
-  RANGE_SELECT,
-}
+export interface IColourScaleDataSource {
+  getValueRange(channel: number): MinMax;
+  getDisplayValueRange(channel: number): MinMax;
+  getSpecularRemovedValueRange?(channel: number): MinMax;
+  setDisplayValueRangeMin(channel: number, val: number): void;
+  setDisplayValueRangeMax(channel: number, val: number): void;
 
-// TODO: Copied from context image, can probably unify
-export interface ISpectrumToolHost {
-  //springActivate(id: ContextImageToolId): void;
-  setCursor(cursor: CursorId): void;
-  notifyToolStateChanged(): void;
-  setTool(selectedTool: SpectrumToolId): void;
-}
+  channelCount: number;
+  isBinary: boolean;
+  displayScalingAllowed: boolean;
+  name: string;
 
-// TODO: Mostly copied from context image, can probably unify
-export class BaseSpectrumTool implements CanvasInteractionHandler, CanvasDrawer {
-  constructor(
-    protected _id: SpectrumToolId,
-    protected _ctx: ISpectrumChartModel,
-    protected _host: ISpectrumToolHost,
-    public toolTip: string,
-    public buttonIcon: string
-  ) {}
+  expressionID?: string;
+  source?: any;
 
-  activate(): void {}
+  getHistogram(channel: number): Histogram;
+  setHistogramSteps(steps: number): void;
 
-  deactivate(): void {}
-
-  get id(): SpectrumToolId {
-    return this._id;
-  }
-
-  // CanvasInteractionHandler
-  mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
-    return CanvasInteractionResult.neither;
-  }
-
-  keyEvent(event: CanvasKeyEvent): CanvasInteractionResult {
-    return CanvasInteractionResult.neither;
-  }
-
-  // CanvasDrawer
-  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
-    // Default is do nothing...
-  }
+  getChannelName(channel: number): string;
+  getDrawParamsForRawValue(channel: number, rawValue: number, rawRange: MinMax): MapPointDrawParams;
 }

@@ -51,11 +51,7 @@ export class BaseUIElement implements CanvasInteractionHandler, CanvasDrawer {
   }
 
   // CanvasDrawer
-  drawWorldSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
-    // Default is do nothing...
-  }
-
-  drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     // Default is do nothing...
   }
 }

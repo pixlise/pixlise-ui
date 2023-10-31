@@ -29,7 +29,7 @@
 
 import { Subject, Subscription, timer } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
-import { getTransformMatrix, inverseMatrix, Point, pointByMatrix, Rect, vectorsEqual } from "src/app/models/Geometry";
+import { getMatrixAs2x3Array, getTransformMatrix, inverseMatrix, Point, pointByMatrix, Rect, vectorsEqual } from "src/app/models/Geometry";
 // import { CanvasParams, CanvasWorldTransform } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 import { CanvasParams, CanvasWorldTransform } from "./interactive-canvas.component";
 
@@ -135,10 +135,10 @@ export class PanZoom implements CanvasWorldTransform {
   // Getting transform info
   canvasToWorldSpace(canvasPt: Point): Point {
     // Take the transform that is used when drawing and apply it
-    let xform = this.getTransformMatrix();
-    let invxform = inverseMatrix(xform);
+    const xform = this.getTransformMatrix();
+    const invxform = inverseMatrix(xform);
 
-    let worldPt = pointByMatrix(invxform, canvasPt);
+    const worldPt = pointByMatrix(invxform, canvasPt);
     //worldPt.x = Math.round(worldPt.x);
     //worldPt.y = Math.round(worldPt.y);
     //console.log('World Pt: '+worldPt.x+','+worldPt.y);
@@ -147,6 +147,13 @@ export class PanZoom implements CanvasWorldTransform {
 
   getTransformMatrix(): math.Matrix {
     return getTransformMatrix(this.scale.x, this.scale.y, this.pan.x, this.pan.y);
+  }
+
+  applyTransform(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D): void {
+    const xformMat = this.getTransformMatrix();
+    const xform = getMatrixAs2x3Array(xformMat);
+
+    screenContext.transform(xform[0], xform[1], xform[2], xform[3], xform[4], xform[5]);
   }
 
   getScale(): Point {

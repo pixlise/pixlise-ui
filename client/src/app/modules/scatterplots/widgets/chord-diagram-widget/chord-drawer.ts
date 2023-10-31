@@ -17,9 +17,7 @@ export class ChordDiagramDrawer implements CanvasDrawer {
 
   constructor(protected _mdl: ChordDiagramModel) {}
 
-  drawWorldSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {}
-
-  drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     this._mdl.recalcDisplayDataIfNeeded(drawParams.drawViewport);
 
     this.drawChordDiagram(this._mdl.drawModel, screenContext, drawParams.drawViewport);

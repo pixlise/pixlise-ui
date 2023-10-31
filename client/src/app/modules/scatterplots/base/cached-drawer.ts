@@ -6,12 +6,9 @@ export abstract class CachedCanvasChartDrawer implements CanvasDrawer {
 
   protected abstract get mdl(): BaseChartModel;
 
-  // Kind of went unused...
-  drawWorldSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {}
-
   // Where we do our actual drawing... This wraps recalc if needed and drawing to cached layer (in offscreen canvas)
   // and allows derived classes to do drawing before and after the cached layer is blit-ed in
-  drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     this.mdl.recalcDisplayDataIfNeeded(drawParams.drawViewport, screenContext);
 
     this.drawPreData(screenContext, drawParams);

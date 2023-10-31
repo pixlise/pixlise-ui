@@ -85,7 +85,7 @@ export class XRFBrowser extends BaseUIElement {
     return CanvasInteractionResult.neither;
   }
 
-  override drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     if (this._ctx.xrfNearMouse.keV <= 0) {
       return;
     }

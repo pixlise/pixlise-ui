@@ -5,7 +5,7 @@ import { ScanPoint } from "../../../models/scan-point";
 // The actual selectable locations, small circles (currently blue)
 // We draw enlarged borders around these a little faded out to not interfere too much
 export function drawScanPoints(
-  screenContext: CanvasRenderingContext2D,
+  screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   points: ScanPoint[],
   selectionIdxs: Set<number>,
   excludeIdx: number,
@@ -51,9 +51,10 @@ export function drawScanPoints(
     // First the transparent backgrounds...
     for (const unselIdx of unselectedLocationIndexes) {
       const loc = points[unselIdx];
-
-      lastSetColour = setPointColour(screenContext, loc.PMC, pmcColourLookup, clrDataPoint, true, lastSetColour);
-      drawFilledCircle(screenContext, loc.coord, pointRadius);
+      if (loc.coord) {
+        lastSetColour = setPointColour(screenContext, loc.PMC, pmcColourLookup, clrDataPoint, true, lastSetColour);
+        drawFilledCircle(screenContext, loc.coord, pointRadius);
+      }
     }
 
     // Now solid inner shapes
@@ -63,14 +64,16 @@ export function drawScanPoints(
     for (const unselIdx of unselectedLocationIndexes) {
       const loc = points[unselIdx];
 
-      lastSetColour = setPointColour(screenContext, loc.PMC, pmcColourLookup, clrDataPoint, false, lastSetColour);
+      if (loc.coord) {
+        lastSetColour = setPointColour(screenContext, loc.PMC, pmcColourLookup, clrDataPoint, false, lastSetColour);
 
-      if (loc.hasDwellSpectra) {
-        screenContext.beginPath();
-        drawPlusCoordinates(screenContext, loc.coord, pointRadius * 2);
-        screenContext.fill();
-      } else {
-        drawFilledCircle(screenContext, loc.coord, innerRadius);
+        if (loc.hasDwellSpectra) {
+          screenContext.beginPath();
+          drawPlusCoordinates(screenContext, loc.coord, pointRadius * 2);
+          screenContext.fill();
+        } else {
+          drawFilledCircle(screenContext, loc.coord, innerRadius);
+        }
       }
     }
   }
@@ -96,7 +99,7 @@ export function drawScanPoints(
 }
 
 function setPointColour(
-  screenContext: CanvasRenderingContext2D,
+  screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   pmc: number,
   pmcColourLookup: Map<number, RGBA>,
   defaultColour: RGBA,

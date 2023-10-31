@@ -1,4 +1,4 @@
-import { Observable, combineLatest, concatMap, map, tap, lastValueFrom, throwError, catchError } from "rxjs";
+import { Observable, combineLatest, concatMap, map, tap, lastValueFrom, throwError } from "rxjs";
 import {
   DiffractionPeakQuerierSource,
   HousekeepingDataQuerierSource,
@@ -7,7 +7,6 @@ import {
   SpectrumDataQuerierSource,
 } from "src/app/expression-language/data-sources";
 import { PMCDataValue, PMCDataValues } from "src/app/expression-language/data-values";
-import { APIDataService } from "../services/apidata.service";
 import { QuantGetReq, QuantGetResp } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { ScanBeamLocationsReq, ScanBeamLocationsResp } from "src/app/generated-protos/scan-beam-location-msgs";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
@@ -15,13 +14,13 @@ import { ScanEntryMetadataReq, ScanEntryMetadataResp } from "src/app/generated-p
 import { SpectrumReq, SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { ScanEntryRange, ScanMetaDataType } from "src/app/generated-protos/scan";
-import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
-import { decodeIndexList, encodeIndexList } from "src/app/utils/utils";
-import { DetectedDiffractionPeaksReq, DetectedDiffractionPeaksResp } from "src/app/generated-protos/diffraction-detected-peak-msgs";
-import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { Quantification, Quantification_QuantDataType } from "src/app/generated-protos/quantification";
 import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { encodeIndexList } from "src/app/utils/utils";
+import { DetectedDiffractionPeaksReq, DetectedDiffractionPeaksResp } from "src/app/generated-protos/diffraction-detected-peak-msgs";
+import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { SpectrumType } from "src/app/generated-protos/spectrum";
 import { DiffractionPeak, RoughnessItem, diffractionPeakWidth } from "./diffraction";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
@@ -106,7 +105,7 @@ export class ExpressionDataSource
           return this.getScanEntries(cachedDataService, scanId).pipe(
             map((scanEntryResp: ScanEntryResp) => {
               // We just got the above as a side-effect, we are actually returning the index list from ROI
-              return resp.regionOfInterest.scanEntryIndexesEncoded;
+              return resp.regionOfInterest!.scanEntryIndexesEncoded;
             })
           );
         })
@@ -122,7 +121,7 @@ export class ExpressionDataSource
           const idxs = [];
           for (let c = 0; c < resp.entries.length; c++) {
             const entry = resp.entries[c];
-            if (entry.spectra) {
+            if (entry.normalSpectra || entry.dwellSpectra || entry.bulkSpectra || entry.maxSpectra) {
               idxs.push(c);
             }
           }
@@ -765,7 +764,7 @@ export class ExpressionDataSource
 
           // Fill the PMCs first
           for (const entry of this._scanEntries.entries) {
-            if (entry.location && entry.spectra) {
+            if (entry.location && (entry.normalSpectra || entry.dwellSpectra || entry.bulkSpectra || entry.maxSpectra)) {
               pmcDiffractionCount.set(entry.id, 0);
             }
           }

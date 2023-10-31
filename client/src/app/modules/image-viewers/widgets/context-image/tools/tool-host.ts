@@ -41,6 +41,11 @@ import {
 import { IconButtonState } from "src/app/modules/pixlisecore/components/atoms/buttons/icon-button/icon-button.component";
 import { BaseUIElement } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/ui-elements/base-ui-element";
 import { IContextImageModel } from "../context-image-model-interface";
+import { LineDrawing } from "./line-drawing";
+import { ContextImagePan } from "./pan";
+import { ContextImageZoom } from "./zoom";
+import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { LassoSelection } from "./lasso-selection";
 
 export enum ToolState {
   OFF, // A tool that is not active, but can be clicked on/spring key used to activate
@@ -99,9 +104,14 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
 
   constructor(
     private _settings: ToolHostCreateSettings,
-    private _ctx: IContextImageModel
+    private _ctx: IContextImageModel,
+    private _selService: SelectionService
   ) {
     this.reset();
+  }
+
+  getSelectionService(): SelectionService {
+    return this._selService;
   }
 
   // Intended to be called on major events, like new datasets loading
@@ -113,7 +123,7 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
     // this._uiPhysicalScale = null;
     this._activeTool = null;
     this._springOverriddenTool = null;
-    /*
+
     if (this._settings.showLineDrawTool) {
       this._tools.push(new LineDrawing(this._ctx, this));
     }
@@ -129,12 +139,12 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
     }
 
     if (this._settings.showSelectionTools) {
-      this._tools.push(new PointSelection(this._ctx, this));
+      // this._tools.push(new PointSelection(this._ctx, this));
       this._tools.push(new LassoSelection(this._ctx, this));
-      this._tools.push(new ColourSelection(this._ctx, this));
-      this._tools.push(new LineSelection(this._ctx, this));
+      //   this._tools.push(new ColourSelection(this._ctx, this));
+      //   this._tools.push(new LineSelection(this._ctx, this));
     }
-
+    /*
     // Tools that have line separators before them, we set this up here...
     this._toolsAfterLineSeparator = [ContextImageToolId.ZOOM, ContextImageToolId.SELECT_POINT];
 
@@ -154,10 +164,18 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
     this.setTool(ContextImageToolId.PAN);
   }
 
-  getDrawers(): CanvasDrawer[] {
-    // Draw active tool after UI elements, draw cursor ui elem last
-    return []; //[...this._uiElems.slice(0, this._uiElems.length - 1), this._activeTool, this._uiElems[this._uiElems.length - 1]];
+  getToolDrawers(): CanvasDrawer[] {
+    const drawers: CanvasDrawer[] = [];
+    if (this._activeTool) {
+      drawers.push(this._activeTool);
+    }
+    return drawers;
   }
+
+  getUIDrawers(): CanvasDrawer[] {
+    return this._uiElems;
+  }
+  
   /*
   getMapColourScaleDrawer(): CanvasDrawer {
     return this._uiMapColourScale;

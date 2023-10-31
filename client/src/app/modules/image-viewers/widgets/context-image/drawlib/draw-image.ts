@@ -1,6 +1,10 @@
 import { ContextImageItemTransform } from "../../../models/image-transform";
 
-export function drawImageOrMaskWithOptionalTransform(screenContext: CanvasRenderingContext2D, img: HTMLImageElement, transform: ContextImageItemTransform | null) {
+export function drawImageOrMaskWithOptionalTransform(
+  screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  img: HTMLImageElement,
+  transform: ContextImageItemTransform | null
+) {
   let imgW = img.width;
   let imgH = img.height;
 

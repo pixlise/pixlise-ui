@@ -171,15 +171,14 @@ export function getRotationMatrix(angleRad: number): math.Matrix {
 }
 
 export function getMatrixAs2x3Array(mat: Matrix): number[] {
-  let result = [mat.get([0, 0]), mat.get([1, 0]), mat.get([0, 1]), mat.get([1, 1]), mat.get([0, 2]), mat.get([1, 2])];
-  return result;
+  return [mat.get([0, 0]), mat.get([1, 0]), mat.get([0, 1]), mat.get([1, 1]), mat.get([0, 2]), mat.get([1, 2])];
 }
 
 export function pointByMatrix(matrix3x3: Matrix, pt: Point): Point {
   //console.log('multiply:');
   //console.log(matrix3x3);
   //console.log(pt.x+','+pt.y);
-  let result = /*math.*/ multiply(matrix3x3, [[pt.x], [pt.y], [1]]) as Matrix;
+  const result = /*math.*/ multiply(matrix3x3, [[pt.x], [pt.y], [1]]) as Matrix;
   //console.log('equals:');
   //console.log(result);
   return new Point(result.get([0, 0]), result.get([1, 0]));

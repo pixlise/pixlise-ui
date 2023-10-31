@@ -66,18 +66,22 @@ export class CanvasDrawParameters {
 }
 
 export interface CanvasDrawer {
-  // The distinction has been lost over time. The intent was that drawing transformed objects was done
-  // in drawWorldSpace, while overlays that are screen-aligned, eg buttons/colour scales, etc are drawn
-  // in drawScreenSpace. These can probably be merged and instead built with some kind of draw pass number
-  // passed into the draw function via CanvasDrawParameters, though currently the transform is applied
-  // only before drawWorldSpace so it still makes sense. Left it as a refactoring exercise for now
-  // because a lot of code already splits this way and works fine.
+  // Previously we had 2 draw functions:
+  // - drawWorldSpace for drawing with the transform applied
+  // - drawScreenSpace for drawing screen-aligned overlays like buttons/colour scales
+  // This only ended up really being used in the Context Image and for the image uploader tool which
+  // both support pan/zoom. Charts which have pan/zoom support usually implement this separately
+  // through the use of the x/y axis and it doesn't make sense to transform these via a matrix because
+  // we want to limit the number of line segments drawn to just what's on the screen.
+  //
+  // Therefore, this has been refactored to only a single draw function but we supply the
+  // transformation in drawParams and it can be applied at will by the drawing code.
 
-  // Refactored to supply everything via CanvasDrawParameters in case we want to implement future draw
-  // modes (eg forExport) and we don't have to then refactor a huge amount of code
+  // NOTE: parameters are supplied via CanvasDrawParameters in case we want to implement future draw
+  // modes (eg for Export) and we don't have to then refactor everything implementing this interface
+  // as this has happened in the past too!
 
-  drawWorldSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void;
-  drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void;
+  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void;
 
   // Optional parameters just for export
   showSwapButton?: boolean;
@@ -161,6 +165,8 @@ export interface CanvasWorldTransform {
 
   canvasToWorldSpace(canvasPt: Point): Point;
   getTransformMatrix(): math.Matrix;
+
+  applyTransform(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D): void;
 
   clone(): CanvasWorldTransform;
 }
@@ -512,7 +518,11 @@ console.log(canvasElem);
     }
 
     // Clear the frame as we know its dimensions
-    screenContext.clearRect(0, 0, viewport.width, viewport.height);
+    // NOTE: strange bug - for 4 years this was just 0, 0, width, height but after v4 rewrite the context
+    // image would not clear properly leaving a trail behind the context image. After multiplying by dpi
+    // it was still not clearing the top line. This may be an introduced bug but for the time being
+    // clearing slightly larger than the canvas does seem to fix it
+    screenContext.clearRect(-1, -1, viewport.width * viewport.dpi + 2, viewport.height * viewport.dpi + 2);
 
     // Set a transform that will scale all points we generate by the dpi value, thereby giving us
     // native scaling on a high res monitor, for eg macbook pros 3000x2000-ish monitor, if we ignore
@@ -521,22 +531,10 @@ console.log(canvasElem);
     // points by 2, and it still looks the same but is at native resolution.
     screenContext.setTransform(viewport.dpi, 0, 0, viewport.dpi, 0, 0);
 
-    let drawParams = new CanvasDrawParameters(transform, viewport, exportItemIDs);
+    const drawParams = new CanvasDrawParameters(transform, viewport, exportItemIDs);
 
-    // Set the transform as needed
     screenContext.save();
-    let xformMat = transform.getTransformMatrix();
-    let xform = getMatrixAs2x3Array(xformMat);
-
-    screenContext.transform(xform[0], xform[1], xform[2], xform[3], xform[4], xform[5]);
-    //this.screenContext.rotate(degToRad(15));
-
-    drawer.drawWorldSpace(screenContext, drawParams);
-    screenContext.restore();
-
-    // Draw the untransformed stuff (overlays, scales, etc)
-    screenContext.save();
-    drawer.drawScreenSpace(screenContext, drawParams);
+    drawer.draw(screenContext, drawParams);
     screenContext.restore();
 
     //let t1 = performance.now();
@@ -549,9 +547,13 @@ console.log(canvasElem);
     }
 
     // Make it relative to our canvas
-    let canvasScreenRect = this._imgCanvas?.nativeElement.getBoundingClientRect();
+    if (!this._imgCanvas) {
+      return new Point(0, 0);
+    }
 
-    let canvasPt = new Point(pt.x - canvasScreenRect.left, pt.y - canvasScreenRect.top);
+    const canvasScreenRect = this._imgCanvas.nativeElement.getBoundingClientRect();
+
+    const canvasPt = new Point(pt.x - canvasScreenRect.left, pt.y - canvasScreenRect.top);
     return canvasPt;
   }
 
@@ -560,7 +562,7 @@ console.log(canvasElem);
       return pt;
     }
 
-    let canvasPt = this.screenToCanvasSpace(pt);
+    const canvasPt = this.screenToCanvasSpace(pt);
 
     // Transform to worldspace
     return this.transform?.canvasToWorldSpace(canvasPt) || null;

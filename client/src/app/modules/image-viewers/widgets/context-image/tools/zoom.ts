@@ -28,6 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Point, Rect } from "src/app/models/Geometry";
+import { BaseContextImageTool, ContextImageToolId, IToolHost } from "./base-context-image-tool";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import {
   CanvasMouseEvent,
@@ -36,27 +37,19 @@ import {
   CanvasDrawParameters,
 } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Colours } from "src/app/utils/colours";
-import { ISpectrumChartModel } from "../spectrum-model-interface";
-import { BaseSpectrumTool, ISpectrumToolHost, SpectrumToolId } from "./base-tool";
+import { IContextImageModel } from "../context-image-model-interface";
 
-// Mostly copied from context image zoom tool, but different because:
-// We have non-uniform x/y scaling, so we'd have to draw our rect in worldspace with different x/y scaling, so instead
-// we just draw in canvas space and convert to worldspace when needed
-export class SpectrumZoom extends BaseSpectrumTool {
-  private _zoomRectStartCanvasPt: Point | null = null;
-  private _zoomRectCurrCanvasPt: Point | null = null;
-  private _zoomRectStartWorldPt: Point | null = null;
-  private _zoomRectCurrWorldPt: Point | null = null;
+export class ContextImageZoom extends BaseContextImageTool {
+  private _zoomRectStartPt: Point | null = null;
+  private _zoomRectCurrPt: Point | null = null;
 
-  constructor(ctx: ISpectrumChartModel, host: ISpectrumToolHost) {
-    super(SpectrumToolId.ZOOM, ctx, host, "Zoom Tool (Z)\nClick to zoom, or draw a box around area of interest", "assets/button-icons/tool-zoom.svg");
+  constructor(ctx: IContextImageModel, host: IToolHost) {
+    super(ContextImageToolId.ZOOM, ctx, host, "Zoom Tool (Z)\nClick to zoom, or draw a box around area of interest", "assets/button-icons/tool-zoom.svg");
   }
 
   protected reset() {
-    this._zoomRectStartCanvasPt = null;
-    this._zoomRectCurrCanvasPt = null;
-    this._zoomRectStartWorldPt = null;
-    this._zoomRectCurrWorldPt = null;
+    this._zoomRectStartPt = null;
+    this._zoomRectCurrPt = null;
   }
 
   override activate(): void {
@@ -66,25 +59,23 @@ export class SpectrumZoom extends BaseSpectrumTool {
 
   override mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
     if (event.eventId == CanvasMouseEventId.MOUSE_DOWN) {
-      if (!this._zoomRectStartCanvasPt) {
+      if (!this._zoomRectStartPt) {
         // Set start & curr point
-        this._zoomRectStartCanvasPt = this._zoomRectCurrCanvasPt = event.canvasPoint;
-        this._zoomRectStartWorldPt = this._zoomRectCurrWorldPt = event.point;
+        this._zoomRectStartPt = this._zoomRectCurrPt = event.point;
         return CanvasInteractionResult.redrawAndCatch;
       }
     } else if (event.eventId == CanvasMouseEventId.MOUSE_MOVE || event.eventId == CanvasMouseEventId.MOUSE_DRAG) {
       // If we've started drawing, set curr poitn to this one, so rect will get redrawn reflecting mouse movement
-      if (this._zoomRectStartCanvasPt) {
-        this._zoomRectCurrCanvasPt = event.canvasPoint;
-        this._zoomRectCurrWorldPt = event.point;
+      if (this._zoomRectStartPt) {
+        this._zoomRectCurrPt = event.point;
         return CanvasInteractionResult.redrawAndCatch;
       }
     } else if (event.eventId == CanvasMouseEventId.MOUSE_UP) {
-      if (this._zoomRectStartWorldPt && this._zoomRectCurrWorldPt && this._ctx.xAxis) {
+      if (this._zoomRectStartPt && this._zoomRectCurrPt) {
         // Calculate the rect & apply zoom
-        const rect = this.makeWorldZoomRect(this._zoomRectStartWorldPt, this._zoomRectCurrWorldPt, this._ctx.xAxis.startPx);
+        const rect = this.makeZoomRect();
         if (rect.w > 0 && rect.h > 0) {
-          this._ctx.transform.resetViewToRect(rect, false);
+          this._ctx.transform.resetViewToRect(rect, true);
         }
         // else: Invalid rect drawn, prevent div by 0...
 
@@ -97,40 +88,22 @@ export class SpectrumZoom extends BaseSpectrumTool {
     return CanvasInteractionResult.neither;
   }
 
-  // Calculates the "world-space" transformed zoom rect, so this is still in canvas coordinates, but includes the
-  // transform that the user has set by previous zoom/pan operations
-  protected makeWorldZoomRect(zoomRectStartWorldPt: Point, zoomRectCurrWorldPt: Point, startPx: number): Rect {
-    const rect = Rect.makeRect(zoomRectStartWorldPt, 0, 0);
-    rect.expandToFitPoint(zoomRectCurrWorldPt);
-
-    // The chart axes each add an offset, so apply that to the zoom rect, so it's relative to the data
-    const offset = startPx / this._ctx.transform.scale.x;
-    rect.x -= offset;
-    // FIXME: Known issue - somehow zoom box does not exactly match what we end up showing. Right side of zoom area seems to
-    // be contracted towards the left.
-
-    //rect.y -= this._ctx.yAxis.startPx;
-
-    return rect;
-  }
-
-  // The following all deal in screen space (well, canvas space), so no transform applied
-  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
-    if (this._zoomRectStartCanvasPt && this._zoomRectCurrCanvasPt) {
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
+    if (this._zoomRectStartPt && this._zoomRectCurrPt) {
       // Draw zoom rect preview
-      const rect = this.makeZoomRect(this._zoomRectStartCanvasPt, this._zoomRectCurrCanvasPt);
+      const rect = this.makeZoomRect();
 
       this.drawZoomRect(screenContext, rect);
 
       // And control points
-      this.drawCtrlPoint(screenContext, this._zoomRectStartCanvasPt);
-      this.drawCtrlPoint(screenContext, this._zoomRectCurrCanvasPt);
+      this.drawCtrlPoint(screenContext, this._zoomRectStartPt);
+      this.drawCtrlPoint(screenContext, this._zoomRectCurrPt);
     }
   }
 
-  protected makeZoomRect(zoomRectStartCanvasPt: Point, zoomRectCurrCanvasPt: Point): Rect {
-    const rect = Rect.makeRect(zoomRectStartCanvasPt, 0, 0);
-    rect.expandToFitPoint(zoomRectCurrCanvasPt);
+  protected makeZoomRect(): Rect {
+    const rect = Rect.makeRect(this._zoomRectStartPt!, 0, 0);
+    rect.expandToFitPoint(this._zoomRectCurrPt!);
     return rect;
   }
 
@@ -138,7 +111,7 @@ export class SpectrumZoom extends BaseSpectrumTool {
     screenContext.fillStyle = Colours.BLUE.asStringWithA(0.5);
     screenContext.fillRect(rect.x, rect.y, rect.w, rect.h);
 
-    screenContext.lineWidth = 1;
+    screenContext.lineWidth = 1 / this._ctx.transform.scale.x;
     screenContext.strokeStyle = Colours.BLUE.asString();
     screenContext.strokeRect(rect.x, rect.y, rect.w, rect.h);
   }
@@ -147,7 +120,7 @@ export class SpectrumZoom extends BaseSpectrumTool {
     // Draw outer
     screenContext.fillStyle = Colours.BLUE.asString();
 
-    const ctrlPtSize = 4;
+    const ctrlPtSize = 4 / this._ctx.transform.scale.x;
     const ctrlPtHalfSize = ctrlPtSize / 2;
     screenContext.fillRect(coord.x - ctrlPtHalfSize, coord.y - ctrlPtHalfSize, ctrlPtSize, ctrlPtSize);
 

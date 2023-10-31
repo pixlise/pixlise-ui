@@ -16,6 +16,8 @@ import { DataModuleGetReq, DataModuleGetResp } from "src/app/generated-protos/mo
 
 import { decodeIndexList, decompressZeroRunLengthEncoding } from "src/app/utils/utils";
 import { DetectorConfigListReq, DetectorConfigListResp, DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
+import { ImageGetDefaultReq, ImageGetDefaultResp, ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
+import { ImageBeamLocationsReq, ImageBeamLocationsResp } from "src/app/generated-protos/image-beam-location-msgs";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
@@ -41,6 +43,9 @@ export class APICachedDataService {
   private _scanListReqMap = new Map<string, Observable<ScanListResp>>();
   private _detectorConfigReqMap = new Map<string, Observable<DetectorConfigResp>>();
   private _detectorConfigListReq: Observable<DetectorConfigListResp> | null = null;
+  private _defaultImageReqMap = new Map<string, Observable<ImageGetDefaultResp>>();
+  private _imageBeamLocationsReqMap = new Map<string, Observable<ImageBeamLocationsResp>>();
+  private _imageReqMap = new Map<string, Observable<ImageGetResp>>();
 
   // Non-scan related
   private _regionOfInterestGetReqMap = new Map<string, Observable<RegionOfInterestGetResp>>();
@@ -54,7 +59,7 @@ export class APICachedDataService {
     let result = this._quantReqMap.get(cacheId);
     if (result === undefined) {
       // Have to request it!
-      result = this._dataService.sendQuantGetRequest(req).pipe(shareReplay());
+      result = this._dataService.sendQuantGetRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
       this._quantReqMap.set(cacheId, result);
@@ -110,7 +115,7 @@ export class APICachedDataService {
     let result = this._scanMetaLabelsReqMap.get(cacheId);
     if (result === undefined) {
       // Have to request it!
-      result = this._dataService.sendScanMetaLabelsAndTypesRequest(req).pipe(shareReplay());
+      result = this._dataService.sendScanMetaLabelsAndTypesRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
       this._scanMetaLabelsReqMap.set(cacheId, result);
@@ -124,7 +129,7 @@ export class APICachedDataService {
     let result = this._manualDiffractionReqMap.get(cacheId);
     if (result === undefined) {
       // Have to request it!
-      result = this._dataService.sendDiffractionPeakManualListRequest(req).pipe(shareReplay());
+      result = this._dataService.sendDiffractionPeakManualListRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
       this._manualDiffractionReqMap.set(cacheId, result);
@@ -138,7 +143,7 @@ export class APICachedDataService {
     let result = this._scanEntryMap.get(cacheId);
     if (result === undefined) {
       // Have to request it!
-      result = this._dataService.sendScanEntryRequest(req).pipe(shareReplay());
+      result = this._dataService.sendScanEntryRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
       this._scanEntryMap.set(cacheId, result);
@@ -152,7 +157,7 @@ export class APICachedDataService {
     let result = this._scanBeamLocationReqMap.get(cacheId);
     if (result === undefined) {
       // Have to request it!
-      result = this._dataService.sendScanBeamLocationsRequest(req).pipe(shareReplay());
+      result = this._dataService.sendScanBeamLocationsRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
       this._scanBeamLocationReqMap.set(cacheId, result);
@@ -166,7 +171,7 @@ export class APICachedDataService {
     let result = this._scanEntryMetaReqMap.get(cacheId);
     if (result === undefined) {
       // Have to request it!
-      result = this._dataService.sendScanEntryMetadataRequest(req).pipe(shareReplay());
+      result = this._dataService.sendScanEntryMetadataRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
       this._scanEntryMetaReqMap.set(cacheId, result);
@@ -180,7 +185,7 @@ export class APICachedDataService {
     let result = this._pseudoIntensityReqMap.get(cacheId);
     if (result === undefined) {
       // Have to request it!
-      result = this._dataService.sendPseudoIntensityRequest(req).pipe(shareReplay());
+      result = this._dataService.sendPseudoIntensityRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
       this._pseudoIntensityReqMap.set(cacheId, result);
@@ -194,7 +199,7 @@ export class APICachedDataService {
     let result = this._detectedDiffractionReqMap.get(cacheId);
     if (result === undefined) {
       // Have to request it!
-      result = this._dataService.sendDetectedDiffractionPeaksRequest(req).pipe(shareReplay());
+      result = this._dataService.sendDetectedDiffractionPeaksRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
       this._detectedDiffractionReqMap.set(cacheId, result);
@@ -228,7 +233,7 @@ export class APICachedDataService {
     let result = this._expressionReqMap.get(cacheId);
     if (result === undefined) {
       // Have to request it!
-      result = this._dataService.sendExpressionGetRequest(req).pipe(shareReplay());
+      result = this._dataService.sendExpressionGetRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
       this._expressionReqMap.set(cacheId, result);
@@ -242,7 +247,7 @@ export class APICachedDataService {
     let result = this._dataModuleReqMap.get(cacheId);
     if (result === undefined) {
       // Have to request it!
-      result = this._dataService.sendDataModuleGetRequest(req).pipe(shareReplay());
+      result = this._dataService.sendDataModuleGetRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
       this._dataModuleReqMap.set(cacheId, result);
@@ -256,7 +261,7 @@ export class APICachedDataService {
     let result = this._scanListReqMap.get(cacheId);
     if (result === undefined) {
       // Have to request it!
-      result = this._dataService.sendScanListRequest(req).pipe(shareReplay());
+      result = this._dataService.sendScanListRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
       this._scanListReqMap.set(cacheId, result);
@@ -270,7 +275,7 @@ export class APICachedDataService {
     let result = this._detectorConfigReqMap.get(cacheId);
     if (result === undefined) {
       // Have to request it!
-      result = this._dataService.sendDetectorConfigRequest(req).pipe(shareReplay());
+      result = this._dataService.sendDetectorConfigRequest(req).pipe(shareReplay(1));
 
       // Add it to the map too so a subsequent request will get this
       this._detectorConfigReqMap.set(cacheId, result);
@@ -281,9 +286,51 @@ export class APICachedDataService {
 
   getDetectorConfigList(req: DetectorConfigListReq): Observable<DetectorConfigListResp> {
     if (!this._detectorConfigListReq) {
-      this._detectorConfigListReq = this._dataService.sendDetectorConfigListRequest(req).pipe(shareReplay());
+      this._detectorConfigListReq = this._dataService.sendDetectorConfigListRequest(req).pipe(shareReplay(1));
     }
 
     return this._detectorConfigListReq;
+  }
+
+  getDefaultImage(req: ImageGetDefaultReq): Observable<ImageGetDefaultResp> {
+    const cacheId = JSON.stringify(ImageGetDefaultReq.toJSON(req));
+    let result = this._defaultImageReqMap.get(cacheId);
+    if (result === undefined) {
+      // Have to request it!
+      result = this._dataService.sendImageGetDefaultRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this._defaultImageReqMap.set(cacheId, result);
+    }
+
+    return result;
+  }
+
+  getImageBeamLocations(req: ImageBeamLocationsReq): Observable<ImageBeamLocationsResp> {
+    const cacheId = JSON.stringify(ImageBeamLocationsReq.toJSON(req));
+    let result = this._imageBeamLocationsReqMap.get(cacheId);
+    if (result === undefined) {
+      // Have to request it!
+      result = this._dataService.sendImageBeamLocationsRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this._imageBeamLocationsReqMap.set(cacheId, result);
+    }
+
+    return result;
+  }
+
+  getImageMeta(req: ImageGetReq): Observable<ImageGetResp> {
+    const cacheId = JSON.stringify(ImageGetReq.toJSON(req));
+    let result = this._imageReqMap.get(cacheId);
+    if (result === undefined) {
+      // Have to request it!
+      result = this._dataService.sendImageGetRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this._imageReqMap.set(cacheId, result);
+    }
+
+    return result;
   }
 }

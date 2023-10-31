@@ -29,7 +29,7 @@
 
 import { Clipboard } from "@angular/cdk/clipboard";
 import { MatDialog } from "@angular/material/dialog";
-import { ReplaySubject, Subject } from "rxjs";
+import { Subject } from "rxjs";
 import { Point } from "src/app/models/Geometry";
 import {
   CanvasInteractionHandler,

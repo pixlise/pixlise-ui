@@ -50,13 +50,13 @@ export function getRawImageData(img: HTMLImageElement, rect: Rect | null = null)
 ///////////////////////////////////////////////
 // Drawing circles (filled vs outline)
 
-export function drawFilledCircle(screenContext: CanvasRenderingContext2D, pt: Point, radius: number): void {
+export function drawFilledCircle(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, pt: Point, radius: number): void {
   screenContext.beginPath();
   screenContext.arc(pt.x, pt.y, radius, 0, 2 * Math.PI);
   screenContext.fill();
 }
 
-export function drawEmptyCircle(screenContext: CanvasRenderingContext2D, pt: Point, radius: number): void {
+export function drawEmptyCircle(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, pt: Point, radius: number): void {
   screenContext.beginPath();
   screenContext.arc(pt.x, pt.y, radius, 0, 2 * Math.PI);
   screenContext.stroke();
@@ -83,7 +83,7 @@ export function drawTriangleCoordinates(screenContext: CanvasRenderingContext2D,
 }
 */
 
-export function drawPlusCoordinates(screenContext: CanvasRenderingContext2D, pt: Point, size: number): void {
+export function drawPlusCoordinates(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, pt: Point, size: number): void {
   // Draw centered around pt. Need half-width of 1 arm:
   const armHalfWidth = size / 8;
   const armLength = size / 2; //-armHalfWidth;
@@ -113,7 +113,13 @@ export function drawPlusCoordinates(screenContext: CanvasRenderingContext2D, pt:
   screenContext.lineTo(pt.x - armHalfWidth, pt.y - armHalfWidth);
 }
 
-export function drawPointCrosshair(screenContext: CanvasRenderingContext2D, pt: Point, radius: number, zoomFactor: number, crossLength: number) {
+export function drawPointCrosshair(
+  screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  pt: Point,
+  radius: number,
+  zoomFactor: number,
+  crossLength: number
+) {
   screenContext.strokeStyle = Colours.CONTEXT_PURPLE.asString();
   screenContext.lineWidth = 3 / zoomFactor;
 
