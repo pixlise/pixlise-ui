@@ -46,6 +46,9 @@ import { ContextImagePan } from "./pan";
 import { ContextImageZoom } from "./zoom";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { LassoSelection } from "./lasso-selection";
+import { ColourSelection } from "./colour-selection";
+import { LineSelection } from "./line-selection";
+import { PointSelection } from "./point-selection";
 
 export enum ToolState {
   OFF, // A tool that is not active, but can be clicked on/spring key used to activate
@@ -139,10 +142,10 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
     }
 
     if (this._settings.showSelectionTools) {
-      // this._tools.push(new PointSelection(this._ctx, this));
+      this._tools.push(new PointSelection(this._ctx, this));
       this._tools.push(new LassoSelection(this._ctx, this));
-      //   this._tools.push(new ColourSelection(this._ctx, this));
-      //   this._tools.push(new LineSelection(this._ctx, this));
+      this._tools.push(new ColourSelection(this._ctx, this));
+      this._tools.push(new LineSelection(this._ctx, this));
     }
     /*
     // Tools that have line separators before them, we set this up here...
@@ -175,7 +178,7 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
   getUIDrawers(): CanvasDrawer[] {
     return this._uiElems;
   }
-  
+
   /*
   getMapColourScaleDrawer(): CanvasDrawer {
     return this._uiMapColourScale;

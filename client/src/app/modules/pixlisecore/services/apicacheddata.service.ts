@@ -215,7 +215,9 @@ export class APICachedDataService {
       // Have to request it!
       result = this._dataService.sendRegionOfInterestGetRequest(req).pipe(
         map((resp: RegionOfInterestGetResp) => {
-          resp.regionOfInterest.scanEntryIndexesEncoded = decodeIndexList(resp.regionOfInterest.scanEntryIndexesEncoded);
+          if (resp.regionOfInterest) {
+            resp.regionOfInterest.scanEntryIndexesEncoded = decodeIndexList(resp.regionOfInterest.scanEntryIndexesEncoded);
+          }
           return resp;
         }),
         shareReplay(1)

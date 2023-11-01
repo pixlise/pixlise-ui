@@ -5,6 +5,7 @@ import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pa
 import { RGBA, Colours } from "src/app/utils/colours";
 import { ContextImageItemTransform } from "../../models/image-transform";
 import { ScanPoint } from "../../models/scan-point";
+import { ContextImageDrawModel } from "../../models/context-image-draw-model";
 
 export interface IContextImageModel {
   //needsDraw$: Subject<void>;
@@ -24,6 +25,8 @@ export interface IContextImageModel {
 
   get scanIds(): string[];
   getScanPointsFor(scanId: string): ScanPoint[];
+
+  get drawModel(): ContextImageDrawModel;
 }
 
 export enum ColourScheme {

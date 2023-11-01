@@ -34,6 +34,7 @@ import polygonClipping, { MultiPolygon, Polygon } from "polygon-clipping";
 import { DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
 import { Colours } from "src/app/utils/colours";
 import { ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
+import { convertLocationComponentToPixelPosition } from "../widgets/context-image/context-image-model";
 
 class PointCluster {
   constructor(
@@ -275,7 +276,7 @@ export class ContextImageDrawModelService {
         // And the i,j bbox
         // Not sure why this was rounded in past, but keeping this convention going forward until
         // a need arises to change it
-        const roundedIJ = new Point(Math.round(imageIJ.i), Math.round(imageIJ.j));
+        const roundedIJ = convertLocationComponentToPixelPosition(imageIJ.i, imageIJ.j);
         if (firstBeam) {
           destMdl.locationPointBBox = new Rect(roundedIJ.x, roundedIJ.y, 0, 0);
           firstBeam = false;

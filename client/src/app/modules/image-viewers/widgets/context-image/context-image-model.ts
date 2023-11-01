@@ -29,7 +29,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   beamResp: ScanBeamLocationsResp | null = null;
 
   rgbuSourceImage: RGBUImage | null = null;
-/*
+  /*
   get scanPoints(): ScanPoint[] {
     return this._drawModel.scanPoints;
   }
@@ -141,4 +141,8 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   private regenerateDrawModel(viewport: CanvasParams) {
     this._drawModel.drawnData = null; // Force regen
   }
+}
+
+export function convertLocationComponentToPixelPosition(x: number, y: number): Point {
+  return new Point(Math.round(x), Math.round(y));
 }

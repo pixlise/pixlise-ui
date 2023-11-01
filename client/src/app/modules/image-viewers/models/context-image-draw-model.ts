@@ -1,4 +1,4 @@
-import { Point, Rect } from "src/app/models/Geometry";
+import { Point, Rect, distanceBetweenPoints } from "src/app/models/Geometry";
 import { BaseChartDrawModel } from "../../scatterplots/base/model-interfaces";
 import { Footprint } from "./footprint";
 import { ContextImageItemTransform } from "./image-transform";
@@ -73,4 +73,58 @@ export class ContextImageScanDrawModel {
 
   mmBeamRadius: number = 0.06; // Defaults to a radius of 60um, changed once we read the detector config
   pixelBeamRadius: number = 1; // Calculated by taking the above and converting from mm->pixel
+}
+
+export function getClosestLocationIdxToPoint(mdl: ContextImageDrawModel, worldPt: Point, maxDistance: number = 3): { scanId: string; idx: number } {
+  let closestScanId = "";
+  let closestScanIdx = -1;
+  let closestDist = -1;
+
+  for (const [scanId, scanMdl] of mdl.perScanDrawModel) {
+    const result = getClosestLocationIdxToPointForScan(scanMdl, worldPt, maxDistance);
+    if (closestDist < 0 || result[1] < closestDist) {
+      closestDist = result[1];
+      closestScanIdx = result[0];
+      closestScanId = scanId;
+    }
+  }
+
+  return { scanId: closestScanId, idx: closestScanIdx };
+}
+
+// Returns index and distance in array of 2 numbers
+function getClosestLocationIdxToPointForScan(mdl: ContextImageScanDrawModel, worldPt: Point, maxDistance: number): number[] {
+  const idxs = [];
+  for (const loc of mdl.scanPoints) {
+    if (loc.coord && Math.abs(worldPt.x - loc.coord.x) < maxDistance && Math.abs(worldPt.y - loc.coord.y) < maxDistance) {
+      idxs.push(loc.locationIdx);
+    }
+  }
+
+  // If we've got multiple, find the closest one geometrically
+  let closestDist = -1;
+  let closestIdx = -1;
+  for (const idx of idxs) {
+    const comparePt = mdl.scanPoints[idx].coord;
+    if (comparePt) {
+      if (closestIdx == -1) {
+        closestIdx = idx;
+
+        if (idxs.length > 0) {
+          closestDist = distanceBetweenPoints(worldPt, comparePt);
+          //console.log(idx+': '+worldPt.x+','+worldPt.y+' dist to: '+comparePt.x+','+comparePt.y+' distance='+closestDist);
+        }
+      } else {
+        const dist = distanceBetweenPoints(worldPt, comparePt);
+        //console.log(idx+': '+worldPt.x+','+worldPt.y+' dist to: '+comparePt.x+','+comparePt.y+' distance='+closestDist);
+        if (closestDist < 0 || dist < closestDist) {
+          closestIdx = idx;
+          closestDist = dist;
+        }
+      }
+    }
+  }
+
+  //console.log('Closest: '+closestIdx);
+  return [closestIdx, closestDist];
 }
