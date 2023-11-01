@@ -10,6 +10,10 @@ import { ContextImageDrawModel } from "../../models/context-image-draw-model";
 export interface IContextImageModel {
   //needsDraw$: Subject<void>;
 
+  imageName: string;
+  expressionIds: string[];
+  roiIds: string[];
+
   transform: PanZoom;
   selectionModeAdd: boolean;
   pointColourScheme: ColourScheme;

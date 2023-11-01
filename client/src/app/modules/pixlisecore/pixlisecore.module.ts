@@ -21,6 +21,8 @@ import { TwoStateIconButton } from "./components/atoms/buttons/two-state-button/
 import { TwoStatePushButton } from "./components/atoms/buttons/two-state-button/two-state-push-button.component";
 // import { TwoStateIconSwitchComponent } from "./components/atoms/buttons/two-state-button/two-state-icon-switch.component";
 
+import { SelectionChangerComponent } from "./components/atoms/selection-changer/selection-changer.component";
+
 import { WidgetDisplayMessageComponent } from "./components/atoms/widget-display-message/widget-display-message.component";
 import { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
 import { MaterialModule } from "../material.module";
@@ -84,6 +86,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     MultiStateButtonComponent,
     PeriodicTableComponent,
     ElementTileComponent,
+    SelectionChangerComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule],
   exports: [
@@ -112,6 +115,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     MultiStateButtonComponent,
     PeriodicTableComponent,
     ElementTileComponent,
+    SelectionChangerComponent,
   ],
   providers: [APICommService, APIDataService, HttpInterceptorService],
 })

@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
-import { MatDialog } from "@angular/material/dialog";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
@@ -14,8 +14,20 @@ import { ContextImageToolId } from "./tools/base-context-image-tool";
 import { ContextImageDrawModelService } from "../../services/context-image-draw-model.service";
 import { ContextImageDrawModel } from "../../models/context-image-draw-model";
 import { Point, Rect } from "src/app/models/Geometry";
-import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import {
+  ExpressionPickerData,
+  ExpressionPickerComponent,
+  ExpressionPickerResponse,
+} from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
+import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
+import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
+import { ColourRamp } from "src/app/utils/colours";
+import { ContextImageMapLayer } from "../../models/map-layer";
+import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { httpErrorToString } from "src/app/utils/utils";
 
 @Component({
   selector: "app-context-image",
@@ -29,6 +41,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
   cursorShown: string = "";
 
+  TEMP_QUANT_ID = "";
+
   private _subs = new Subscription();
 
   constructor(
@@ -36,6 +50,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     private _cachedDataService: APICachedDataService,
     private _contextDataService: ContextImageDrawModelService,
     private _selectionService: SelectionService,
+    private _snackService: SnackbarService,
     public dialog: MatDialog
   ) {
     super();
@@ -116,6 +131,12 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           onClick: () => this.onResetViewToExperiment(),
         },
       ],
+      topLeftInsetButton: {
+        id: "selection",
+        type: "selection-changer",
+        tooltip: "Selection changer",
+        onClick: () => {},
+      },
       bottomToolbar: [
         {
           id: "layers",
@@ -124,6 +145,14 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           tooltip: "Manage layers of data drawn",
           value: false,
           onClick: (value, trigger) => this.onToggleLayersView(trigger),
+        },
+        {
+          id: "regions",
+          type: "button",
+          title: "Regions",
+          tooltip: "Manage regions drawn",
+          value: false,
+          onClick: () => this.onRegions(),
         },
         {
           id: "image",
@@ -244,21 +273,70 @@ bool removeBottomSpecularArtifacts = 21;
     const scanId = this._analysisLayoutService.defaultScanId;
 
     if (scanId.length > 0) {
-      this._cachedDataService.getDefaultImage(ImageGetDefaultReq.create({ scanIds: [scanId] })).subscribe((resp: ImageGetDefaultResp) => {
-        const img = resp.defaultImagesPerScanId[scanId];
-        if (img) {
-          // Set this as our default image
-          this.mdl.imageName = img;
-          this.updateView();
-        }
+      this._cachedDataService.getDefaultImage(ImageGetDefaultReq.create({ scanIds: [scanId] })).subscribe({
+        next: (resp: ImageGetDefaultResp) => {
+          const img = resp.defaultImagesPerScanId[scanId];
+          if (img) {
+            // Set this as our default image
+            this.mdl.imageName = img;
+            this.updateView();
+          }
+        },
+        error: err => {
+          if (err instanceof WidgetError) {
+            const werr = err as WidgetError;
+            this._snackService.openError(werr.message, werr.description);
+          } else {
+            this._snackService.openError(httpErrorToString(err, "Failed to add layer"), "");
+          }
+        },
       });
     }
   }
 
   private updateView() {
-    this._contextDataService.getDrawModel(this.mdl.imageName).subscribe((drawMdl: ContextImageDrawModel) => {
-      const sel = this._selectionService.getCurrentSelection();
-      this.mdl.setData(drawMdl, sel.beamSelection, sel.pixelSelection);
+    this._contextDataService.getDrawModel(this.mdl.imageName).subscribe({
+      next: (drawMdl: ContextImageDrawModel) => {
+        const sel = this._selectionService.getCurrentSelection();
+        this.mdl.setData(drawMdl, sel.beamSelection, sel.pixelSelection);
+
+        // Get the expression layers
+        if (this.mdl.expressionIds.length > 0) {
+          for (const scanId of this.mdl.scanIds) {
+            const pts = this.mdl.getScanPointsFor(scanId);
+            const pmcToIndexLookup = new Map<number, number>();
+            for (const pt of pts) {
+              pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
+            }
+
+            for (const exprId of this.mdl.expressionIds) {
+              this._contextDataService
+                .getLayerModel(scanId, exprId, this.TEMP_QUANT_ID, PredefinedROIID.getAllPointsForScan(scanId), ColourRamp.SHADE_MAGMA, pmcToIndexLookup)
+                .subscribe({
+                  next: (layer: ContextImageMapLayer) => {
+                    this.mdl.addLayer(layer);
+                  },
+                  error: err => {
+                    if (err instanceof WidgetError) {
+                      const werr = err as WidgetError;
+                      this._snackService.openError(werr.message, werr.description);
+                    } else {
+                      this._snackService.openError(httpErrorToString(err, "Failed to add layer"), "");
+                    }
+                  },
+                });
+            }
+          }
+        }
+      },
+      error: err => {
+        if (err instanceof WidgetError) {
+          const werr = err as WidgetError;
+          this._snackService.openError(werr.message, werr.description);
+        } else {
+          this._snackService.openError(httpErrorToString(err, "Failed to load data for context image display"), "");
+        }
+      },
     });
   }
 
@@ -304,7 +382,9 @@ bool removeBottomSpecularArtifacts = 21;
 
   onExport(trigger: Element | undefined) {}
   onCrop(trigger: Element | undefined) {}
+
   onSoloView() {}
+
   onToggleShowPoints() {
     this.mdl.showPoints = !this.mdl.showPoints;
   }
@@ -328,7 +408,65 @@ bool removeBottomSpecularArtifacts = 21;
       this.mdl.transform.resetViewToRect(this.mdl.drawModel.allLocationPointsBBox, true);
     }
   }
-  onToggleLayersView(trigger: Element | undefined) {}
+  onToggleLayersView(trigger: Element | undefined) {
+    const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
+    dialogConfig.data = {
+      selectedIds: this.mdl.expressionIds,
+    };
+
+    const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
+      if (result) {
+        this.mdl.expressionIds = [];
+
+        if (result && result.selectedExpressions?.length > 0) {
+          for (const expr of result.selectedExpressions) {
+            this.mdl.expressionIds.push(expr.id);
+          }
+        }
+
+        this.TEMP_QUANT_ID = result.quantId;
+
+        this.updateView();
+        //this.saveState();
+      }
+    });
+  }
+
+  onRegions() {
+    const dialogConfig = new MatDialogConfig();
+    // Pass data to dialog
+    dialogConfig.data = {
+      requestFullROIs: true,
+    };
+
+    const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((result: ROIPickerResponse) => {
+      if (result) {
+        this.mdl.roiIds = [];
+
+        // Create entries for each scan
+        const roisPerScan = new Map<string, string[]>();
+        for (const roi of result.selectedROISummaries) {
+          let existing = roisPerScan.get(roi.scanId);
+          if (existing === undefined) {
+            existing = [];
+          }
+
+          existing.push(roi.id);
+          roisPerScan.set(roi.scanId, existing);
+        }
+
+        // Now fill in the data source ids using the above
+        for (const [scanId, roiIds] of roisPerScan) {
+          this.mdl.roiIds.push(...roiIds);
+        }
+
+        this.updateView();
+        //this.saveState();
+      }
+    });
+  }
   onToggleImageOptionsView(trigger: Element | undefined) {}
 
   onToggleSelectionMode() {

@@ -1,10 +1,13 @@
 import { Point, Rect } from "src/app/models/Geometry";
 import { degToRad } from "src/app/utils/utils";
 import { ContextImageMapLayer, MapPointShape } from "../../../models/map-layer";
+import { ScanPoint } from "../../../models/scan-point";
 
 export function drawMapData(
   screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   mapData: ContextImageMapLayer,
+  scanPoints: ScanPoint[],
+  scanPolygons: Point[][],
   pointSize: number,
   opacity: number
 ): void {
@@ -16,9 +19,12 @@ export function drawMapData(
     screenContext.fillStyle = pt.drawParams.colour.asStringWithA(opacity);
 
     if (pt.drawParams.shape === MapPointShape.POLYGON) {
-      drawPolygon(screenContext, pt.polygon);
+      drawPolygon(screenContext, scanPolygons[pt.scanEntryIndex]);
     } else {
-      drawFuncs[pt.drawParams.shape](screenContext, pt.coord, ptHalfSize, pt.drawParams.scale);
+      const coord = scanPoints[pt.scanEntryIndex].coord;
+      if (coord) {
+        drawFuncs[pt.drawParams.shape](screenContext, coord, ptHalfSize, pt.drawParams.scale);
+      }
     }
   }
 }

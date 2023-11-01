@@ -32,9 +32,11 @@ import QuickHull from "quickhull";
 import Voronoi from "voronoi";
 import polygonClipping, { MultiPolygon, Polygon } from "polygon-clipping";
 import { DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
-import { Colours } from "src/app/utils/colours";
+import { ColourRamp, Colours, RGBA } from "src/app/utils/colours";
 import { ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
 import { convertLocationComponentToPixelPosition } from "../widgets/context-image/context-image-model";
+import { DataSourceParams, RegionDataResults, WidgetDataService } from "../../pixlisecore/pixlisecore.module";
+import { ContextImageMapLayer, MapPoint, MapPointDrawParams, MapPointShape, MapPointState } from "../models/map-layer";
 
 class PointCluster {
   constructor(
@@ -53,6 +55,7 @@ export class ContextImageDrawModelService {
 
   constructor(
     private _cachedDataService: APICachedDataService,
+    private _widgetDataService: WidgetDataService,
     private _endpointsService: APIEndpointsService
   ) {}
 
@@ -69,6 +72,64 @@ export class ContextImageDrawModelService {
     }
 
     return result;
+  }
+
+  getRegionModel(roiId: string) {}
+
+  getLayerModel(
+    scanId: string,
+    expressionId: string,
+    quantId: string,
+    roiId: string,
+    colourRamp: ColourRamp,
+    pmcToIndexLookup: Map<number, number>
+  ): Observable<ContextImageMapLayer> {
+    const query = [new DataSourceParams(scanId, expressionId, quantId, roiId)];
+    return this._widgetDataService.getData(query).pipe(
+      map((results: RegionDataResults) => {
+        if (results.error) {
+          throw new Error(results.error);
+        }
+
+        if (results.queryResults.length != query.length) {
+          throw new Error(`getLayerModel: expected ${query.length} results, received ${results.queryResults.length}`);
+        }
+
+        if (results.queryResults[0].error) {
+          throw new Error(`getLayerModel: expression ${results.queryResults[0].expression?.name} (${expressionId}) had error: ${results.queryResults[0].error}`);
+        }
+
+        const pts: MapPoint[] = [];
+        for (const item of results.queryResults[0].values.values) {
+          const idx = pmcToIndexLookup.get(item.pmc);
+          if (idx !== undefined) {
+            const drawParams = this.makeDrawParams(colourRamp, item.value, results.queryResults[0].values.valueRange);
+            pts.push(new MapPoint(item.pmc, idx, item.value, drawParams));
+          }
+        }
+
+        const layer = new ContextImageMapLayer(scanId, expressionId, quantId, roiId, pts, 1, colourRamp);
+        return layer;
+      }),
+      shareReplay(1)
+    );
+  }
+
+  private makeDrawParams(colourRamp: ColourRamp, rawValue: number, range: MinMax): MapPointDrawParams {
+    // If we're outside the range, use the flat colours
+    if (!isFinite(rawValue) || !range.isValid()) {
+      return new MapPointDrawParams(RGBA.fromWithA(Colours.BLACK, 0.4), MapPointState.BELOW, MapPointShape.EX);
+    } else if (rawValue < range.min!) {
+      return new MapPointDrawParams(Colours.CONTEXT_BLUE, MapPointState.BELOW, MapPointShape.EX);
+    } else if (rawValue > range.max!) {
+      return new MapPointDrawParams(Colours.CONTEXT_PURPLE, MapPointState.ABOVE, MapPointShape.EX);
+    }
+
+    // Pick a colour based on where it is in the range between min-max.
+    const pct = range.getAsPercentageOfRange(rawValue, true);
+
+    // Return the colour to use
+    return new MapPointDrawParams(Colours.sampleColourRamp(colourRamp, pct), MapPointState.IN_RANGE, MapPointShape.POLYGON);
   }
 
   private makeDrawModel(imageName: string): Observable<ContextImageDrawModel> {

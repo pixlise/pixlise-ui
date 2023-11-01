@@ -8,7 +8,7 @@ import {
 } from "src/app/modules/scatterplots/scatterplots.module";
 import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/spectrum.module";
 
-export type WidgetToolbarButtonTypes = "selectable-button" | "button" | "toggle-button" | "multi-state-button";
+export type WidgetToolbarButtonTypes = "selectable-button" | "button" | "toggle-button" | "multi-state-button" | "selection-changer";
 
 export type WidgetToolbarButtonConfiguration = {
   id: string;

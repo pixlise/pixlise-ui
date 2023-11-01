@@ -5,7 +5,16 @@ import { Point } from "src/app/models/Geometry";
 export class ContextImageMapLayer {
   histogram: Histogram = new Histogram();
   constructor(
+    // What made us
+    public scanId: string,
+    public expressionId: string,
+    public quantId: string,
+    public roiId: string,
+
+    // Point data generated
     public points: MapPoint[],
+
+    // Draw parameters
     public opacity: number = 1.0,
     public shading: ColourRamp = ColourRamp.SHADE_VIRIDIS
   ) {}
@@ -35,13 +44,17 @@ export class MapPointDrawParams {
   ) {}
 }
 
-class MapPoint {
+export class MapPoint {
   constructor(
-    public coord: Point,
+    // A MapPoint is constructed from expression results, and stores the index
+    // of the scan point and polygon that may be required when drawing it
+
+    public scanEntryId: number, // AKA PMC
+    public scanEntryIndex: number, // AKA Location Index (index within the scan file)
+
+    // The numerical value for this point
     public value: number,
 
-    public drawParams: MapPointDrawParams,
-
-    public polygon: Point[]
+    public drawParams: MapPointDrawParams
   ) {}
 }

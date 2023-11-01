@@ -9,6 +9,7 @@ import { drawUserLine } from "./drawlib/draw-line-path";
 import { drawScanPoints } from "./drawlib/draw-scan-points";
 import { RGBA } from "src/app/utils/colours";
 import { drawFootprint } from "./drawlib/draw-footprint";
+import { drawMapData } from "./drawlib/draw-map";
 
 export class ContextImageDrawer extends CachedCanvasChartDrawer {
   protected _dbg: string = "";
@@ -75,6 +76,10 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
 
       for (const region of scanDrawMdl.regions) {
         drawRegion(screenContext, region, drawParams.worldTransform, drawMdl.imageTransform, null, false);
+      }
+
+      for (const mapLayer of scanDrawMdl.maps) {
+        drawMapData(screenContext, mapLayer, scanDrawMdl.scanPoints, scanDrawMdl.scanPointPolygons, scanDrawMdl.locationDisplayPointRadius, 1);
       }
     }
 

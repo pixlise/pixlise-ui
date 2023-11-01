@@ -207,9 +207,9 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
     const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
-      this.mdl.expressionIds = [];
-
       if (result && result.selectedExpressions?.length > 0) {
+        this.mdl.expressionIds = [];
+
         for (const expr of result.selectedExpressions) {
           this.mdl.expressionIds.push(expr.id);
         }

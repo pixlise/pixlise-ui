@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, OnInit, ViewChild } from "@angular/core";
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ActivatedRoute, Route, Router } from "@angular/router";
 import { Subscription } from "rxjs";
@@ -62,7 +62,7 @@ class SummaryItem {
   templateUrl: "./dataset-tiles-page.component.html",
   styleUrls: ["./dataset-tiles-page.component.scss"],
 })
-export class DatasetTilesPageComponent implements OnInit {
+export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   // Unfortunately we had to include this hack again :(
@@ -101,36 +101,38 @@ export class DatasetTilesPageComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this._authService.idTokenClaims$.subscribe({
-      next: claims => {
-        if (claims) {
-          // This all went unused during public user feature additions
-          if (Permissions.permissionCount(claims) <= 0) {
-            // User has no permissions at all, admins would've set them this way!
-            // this.setDatasetListingNotAllowedError(HelpMessage.AWAITING_ADMIN_APPROVAL);
-          } else {
-            // If the user is set to have no permissions, we show that error and don't bother requesting
-            //if (Permissions.hasPermissionSet(claims, Permissions.permissionNone)) {
-              // Show a special error in this case - user has been set to have no permissions
-              // this.setDatasetListingNotAllowedError(HelpMessage.NO_PERMISSIONS);
-            /*} else*/ {
-              // Don't have no-permission set, so see if the user is allowed to access any groups
-              // this._allGroups = Permissions.getGroupsPermissionAllows(claims);
-              this._selectedGroups = Array.from(this._allGroups);
-              // if(this._allGroups.length <= 0)
-              // {
-              //     this.setDatasetListingNotAllowedError(HelpMessage.NO_DATASET_GROUPS);
-              // }
-            }
+    this._subs.add(
+      this._authService.idTokenClaims$.subscribe({
+        next: claims => {
+          if (claims) {
+            // This all went unused during public user feature additions
+            if (Permissions.permissionCount(claims) <= 0) {
+              // User has no permissions at all, admins would've set them this way!
+              // this.setDatasetListingNotAllowedError(HelpMessage.AWAITING_ADMIN_APPROVAL);
+            } else {
+              // If the user is set to have no permissions, we show that error and don't bother requesting
+              //if (Permissions.hasPermissionSet(claims, Permissions.permissionNone)) {
+                // Show a special error in this case - user has been set to have no permissions
+                // this.setDatasetListingNotAllowedError(HelpMessage.NO_PERMISSIONS);
+              /*} else*/ {
+                // Don't have no-permission set, so see if the user is allowed to access any groups
+                // this._allGroups = Permissions.getGroupsPermissionAllows(claims);
+                this._selectedGroups = Array.from(this._allGroups);
+                // if(this._allGroups.length <= 0)
+                // {
+                //     this.setDatasetListingNotAllowedError(HelpMessage.NO_DATASET_GROUPS);
+                // }
+              }
 
-            this._userCanEdit = Permissions.hasPermissionSet(claims, Permissions.permissionEditDataset);
+              this._userCanEdit = Permissions.hasPermissionSet(claims, Permissions.permissionEditDataset);
+            }
           }
-        }
-      },
-      error: err => {
-        this.setDatasetListingNotAllowedError(HelpMessage.GET_CLAIMS_FAILED);
-      },
-    });
+        },
+        error: err => {
+          this.setDatasetListingNotAllowedError(HelpMessage.GET_CLAIMS_FAILED);
+        },
+      })
+    );
     /* TODO:
                 this._subs.add(this._authService.isPublicUser$.subscribe(
                     (isPublicUser)=>

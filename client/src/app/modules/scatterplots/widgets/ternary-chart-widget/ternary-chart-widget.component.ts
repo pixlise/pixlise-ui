@@ -104,10 +104,9 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       ],
       topLeftInsetButton: {
         id: "selection",
-        type: "button",
-        title: "Selection",
+        type: "selection-changer",
         tooltip: "Selection changer",
-        onClick: () => this.onClearSelection(),
+        onClick: () => {},
       },
       topRightInsetButton: {
         id: "key",
@@ -325,7 +324,6 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     });
   }
   onReferences() {}
-  onClearSelection() {}
   onToggleKey() {}
 
   private saveState(): void {

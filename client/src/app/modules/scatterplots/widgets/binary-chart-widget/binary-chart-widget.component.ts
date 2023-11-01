@@ -101,10 +101,9 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       ],
       topLeftInsetButton: {
         id: "selection",
-        type: "button",
-        title: "Selection",
+        type: "selection-changer",
         tooltip: "Selection changer",
-        onClick: () => this.onClearSelection(),
+        onClick: () => {},
       },
       topRightInsetButton: {
         id: "key",
@@ -266,7 +265,6 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   onReferences() {}
-  onClearSelection() {}
   onToggleKey() {}
 
   private saveState(): void {

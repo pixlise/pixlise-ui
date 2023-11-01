@@ -199,6 +199,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
     dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
       if (result && result.selectedExpressions) {
         this.mdl.expressionIds = [];
+
         for (const expr of result.selectedExpressions) {
           this.mdl.expressionIds.push(expr.id);
         }

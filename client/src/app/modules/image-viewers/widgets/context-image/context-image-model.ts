@@ -11,6 +11,7 @@ import { RGBUImage } from "src/app/models/RGBUImage";
 import { ScanPoint } from "../../models/scan-point";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
+import { ContextImageMapLayer } from "../../models/map-layer";
 
 export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -21,6 +22,9 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
   // Settings/Layers
   imageName: string = "";
+  expressionIds: string[] = [];
+  roiIds: string[] = [];
+
   smoothing: boolean = false;
   showPoints: boolean = true;
 
@@ -79,6 +83,13 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
     this._recalcNeeded = true;
     this.needsDraw$.next();
+  }
+
+  addLayer(layer: ContextImageMapLayer) {
+    const scanDrawMdl = this._drawModel.perScanDrawModel.get(layer.scanId);
+    if (scanDrawMdl) {
+      scanDrawMdl.maps.push(layer);
+    }
   }
 
   clearDrawnLinePoints(): void {
