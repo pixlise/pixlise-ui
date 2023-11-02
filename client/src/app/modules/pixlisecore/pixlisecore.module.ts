@@ -117,6 +117,6 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     ElementTileComponent,
     SelectionChangerComponent,
   ],
-  providers: [APICommService, APIDataService, HttpInterceptorService],
+  providers: [/*APICommService, APIDataService, HttpInterceptorService*/], // Don't register them so they don't duplicate due to lazy load
 })
 export class PIXLISECoreModule {}

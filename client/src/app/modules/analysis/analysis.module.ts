@@ -37,6 +37,6 @@ const APP_ROUTES: Routes = [
     WidgetModule,
   ],
   exports: [AnalysisPageComponent],
-  providers: [AnalysisLayoutService],
+  //providers: [AnalysisLayoutService], <-- If registered here, we get duplicate copies of the service!
 })
 export class AnalysisModule {}
