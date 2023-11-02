@@ -5,7 +5,7 @@ import { ActivatedRoute } from "@angular/router";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
-import { APIDataService } from "../../pixlisecore/pixlisecore.module";
+import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
 import { QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
@@ -13,12 +13,15 @@ import { ScreenConfiguration } from "src/app/generated-protos/screen-configurati
 import { createDefaultScreenConfiguration } from "../models/screen-configuration.model";
 import { WidgetData } from "src/app/generated-protos/widget-data";
 import { WidgetDataGetReq, WidgetDataWriteReq } from "src/app/generated-protos/widget-data-msgs";
+import { WSError } from "../../pixlisecore/services/wsMessageHandler";
+import { ResponseStatus } from "src/app/generated-protos/websocket";
 
 @Injectable({
   providedIn: "root",
 })
 export class AnalysisLayoutService {
   sidepanelOpen: boolean = false;
+  //private _id = randomString(6);
 
   private _subs = new Subscription();
 
@@ -44,8 +47,11 @@ export class AnalysisLayoutService {
   constructor(
     private _route: ActivatedRoute,
     private _dataService: APIDataService,
-    private _cachedDataService: APICachedDataService
+    private _cachedDataService: APICachedDataService,
+    private _snackService: SnackbarService
   ) {
+    //console.log(`AnalysisLayoutService [${this._id}] created`);
+
     this.fetchAvailableScans();
     if (this.defaultScanId) {
       this.fetchQuantsForScan(this.defaultScanId);
@@ -73,9 +79,11 @@ export class AnalysisLayoutService {
   fetchAvailableScans() {
     this._cachedDataService.getScanList(ScanListReq.create({})).subscribe(resp => {
       this.availableScans$.next(resp.scans);
-      if (this.defaultScanId) {
-        this.loadScreenConfigurationFromScan(this.defaultScanId);
-      }
+      // Causes multiple calls to loadScreenConfigurationFromScan, probably best to reduce them so we don't
+      // reconfigure stuff multiple times on startup
+      // if (this.defaultScanId) {
+      //   this.loadScreenConfigurationFromScan(this.defaultScanId);
+      // }
     });
   }
 
@@ -86,28 +94,35 @@ export class AnalysisLayoutService {
   }
 
   fetchScreenConfiguration(id: string = "", scanId: string = "", setActive: boolean = true) {
-    this._dataService.sendScreenConfigurationGetRequest(ScreenConfigurationGetReq.create({ id, scanId })).subscribe(res => {
-      if (res.screenConfiguration) {
-        if (setActive) {
-          this.activeScreenConfiguration$.next(res.screenConfiguration);
-          this.activeScreenConfigurationId$.next(res.screenConfiguration.id);
-        }
+    this._dataService.sendScreenConfigurationGetRequest(ScreenConfigurationGetReq.create({ id, scanId })).subscribe({
+      next: res => {
+        if (res.screenConfiguration) {
+          if (setActive) {
+            this.activeScreenConfiguration$.next(res.screenConfiguration);
+            this.activeScreenConfigurationId$.next(res.screenConfiguration.id);
+          }
 
-        // Store the screen configuration
-        this.screenConfigurations$.next(this.screenConfigurations$.value.set(res.screenConfiguration.id, res.screenConfiguration));
-      } else {
-        if (!id && scanId) {
+          // Store the screen configuration
+          this.screenConfigurations$.next(this.screenConfigurations$.value.set(res.screenConfiguration.id, res.screenConfiguration));
+        }
+      },
+      error: err => {
+        // If we got a not found error, it may be because we're requesting a "default" screen config with blank ids
+        // in this case we should write out a default one
+        if (err instanceof WSError && (err as WSError).status == ResponseStatus.WS_NOT_FOUND && !id && scanId) {
           // No screen configuration found, create a new one for this scan
-          let newScreenConfiguration = createDefaultScreenConfiguration();
-          let matchedScan = this.availableScans$.value.find(scan => scan.id === scanId);
+          const newScreenConfiguration = createDefaultScreenConfiguration();
+          const matchedScan = this.availableScans$.value.find(scan => scan.id === scanId);
           if (matchedScan) {
             newScreenConfiguration.name = matchedScan.title;
             newScreenConfiguration.description = matchedScan.description;
           }
 
           this.writeScreenConfiguration(newScreenConfiguration, scanId);
+        } else {
+          this._snackService.openError(err);
         }
-      }
+      },
     });
   }
 
