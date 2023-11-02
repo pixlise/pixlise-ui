@@ -55,6 +55,9 @@ export class HistogramToolHost implements CanvasInteractionHandler {
 
         return CanvasInteractionResult.redrawOnly;
       }
+    } else if (event.eventId == CanvasMouseEventId.MOUSE_LEAVE) {
+      this._mdl.setHover(null, null);
+      return CanvasInteractionResult.redrawOnly;
     }
 
     return CanvasInteractionResult.neither;
