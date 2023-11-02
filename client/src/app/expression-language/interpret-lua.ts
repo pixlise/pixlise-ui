@@ -316,7 +316,6 @@ export class LuaDataQuerier {
         // Here we concat modules with the source we're about to run
         let allSource = "";
         for (let [moduleName, moduleSource] of modules) {
-
           const retPos = moduleSource.lastIndexOf("return " + moduleName);
           if (retPos == -1) {
             throw new Error("Expected module to end with return statement returning itself");
@@ -398,10 +397,6 @@ export class LuaDataQuerier {
           }
 
           const runtimeMs = performance.now() - t0;
-          console.log(this._logId + ">>> Lua expression took: " + runtimeMs.toLocaleString() + "ms, makeTable calls took: " + this._makeLuaTableTime + "ms");
-
-          //this.dumpLua("Post expression run");
-
           return new DataQueryResult(
             formattedData,
             isPMCTable,
@@ -667,7 +662,7 @@ end
 
     const values: PMCDataValue[] = [];
     let c = 0;
-    for (let pmc of table[0]) {
+    for (const pmc of table[0]) {
       let value: number = table[1][c];
       let isUndef = false;
       if (value === null) {

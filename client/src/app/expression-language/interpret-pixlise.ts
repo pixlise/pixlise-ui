@@ -69,12 +69,10 @@ export class PixliseDataQuerier {
 
     if (result instanceof PMCDataValues) {
       const runtimeMs = performance.now() - t0;
-      console.log(">>> PIXLISE expression took: " + runtimeMs.toLocaleString() + "ms");
-
       return new DataQueryResult(result as PMCDataValues, true, Array.from(this._runtimeDataRequired.keys()), runtimeMs, "", "", new Map<string, PMCDataValues>());
     }
 
-    throw new Error("Expression: " + expression + " did not result in usable map data. Result was: " + result);
+    throw new Error("Expression did not result in usable map data. Result was: " + result);
   }
 
   private async parseExpression(expression: string, variableLookup: Map<string, string | number | PMCDataValues>): Promise<any> {

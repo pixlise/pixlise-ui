@@ -266,6 +266,8 @@ export class WidgetDataService {
 
             return querier.runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, intDataSource, allowAnyResponse, false).pipe(
               map((queryResult: DataQueryResult) => {
+                console.log(`>>> ${expression.sourceLanguage} expression "${expression.name}" took: ${queryResult.runtimeMs}ms`);
+
                 // Save runtime stats for this expression if we haven't done this recently (don't spam)
                 const nowMs = Date.now();
                 const lastNotify = this._exprRunStatLastNotificationTime.get(expression.id);
