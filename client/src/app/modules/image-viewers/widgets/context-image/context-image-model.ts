@@ -12,6 +12,7 @@ import { ScanPoint } from "../../models/scan-point";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { ContextImageMapLayer } from "../../models/map-layer";
+import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
 
 export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -22,6 +23,8 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
   // Settings/Layers
   imageName: string = "";
+  displayedChannels: string = "";
+
   expressionIds: string[] = [];
   roiIds: string[] = [];
 
@@ -33,6 +36,12 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   beamResp: ScanBeamLocationsResp | null = null;
 
   rgbuSourceImage: RGBUImage | null = null;
+  private _rgbuImageLayerForScale: IColourScaleDataSource;
+
+  // Where UI elements are moved
+  uiPhysicalScaleTranslation: Point = new Point(0, 0);
+  uiLayerScaleTranslation: Point = new Point(0, 0);
+
   /*
   get scanPoints(): ScanPoint[] {
     return this._drawModel.scanPoints;
@@ -55,7 +64,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     return true;
   }
 
-  setData(drawModel: ContextImageDrawModel, beamSel: BeamSelection, pixelSel: PixelSelection) {
+  setData(drawModel: ContextImageDrawModel, beamSel: BeamSelection, pixelSel: PixelSelection, hoverScanId: string, hoverEntryIdx: number) {
     this._drawModel = drawModel;
 
     // Set the drawn points, we create those here...
@@ -65,6 +74,12 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     this._drawModel.allLocationPointsBBox = new Rect();
     for (const [scanId, scanDrawMdl] of this._drawModel.perScanDrawModel) {
       scanDrawMdl.selectedPointIdxs = beamSel.getSelectedScanEntryIndexes(scanId);
+
+      if (scanId == hoverScanId) {
+        scanDrawMdl.hoverEntryIdx = hoverEntryIdx;
+      } else {
+        scanDrawMdl.hoverEntryIdx = -1;
+      }
 
       const footprintColours = getSchemeColours(this._pointBBoxColourScheme);
 
@@ -124,6 +139,10 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
   get pointBBoxColourScheme(): ColourScheme {
     return this._pointBBoxColourScheme;
+  }
+
+  get rgbuImageLayerForScale(): IColourScaleDataSource {
+    return this._rgbuImageLayerForScale;
   }
 
   get scanIds(): string[] {

@@ -7,6 +7,7 @@ import { Subscription } from "rxjs";
 import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../roi-shape/roi-shape.component";
 import { COLOURS, ColourOption, findColourOption, generateDefaultColour } from "../../models/roi-colors";
 import { ROIDisplaySettings, createDefaultROIDisplaySettings } from "../../models/roi-region";
+import { invalidPMC } from "src/app/utils/utils";
 
 export type SubItemOptionSection = {
   title: string;
@@ -54,7 +55,7 @@ export class ROIItemComponent {
   showDetails = false;
   showScanEntryPoints = false;
 
-  hoverPMC = -1;
+  hoverIndex = -1;
   pmcPagePosition = 0;
   displaySelectedPMCs: any[] = [];
 
@@ -86,9 +87,9 @@ export class ROIItemComponent {
     this._subs.add(
       this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
         if (this._selectionService.hoverScanId === this.summary?.scanId) {
-          this.hoverPMC = this._selectionService.hoverEntryId;
+          this.hoverIndex = this._selectionService.hoverEntryIdx;
         } else {
-          this.hoverPMC = -1;
+          this.hoverIndex = -1;
         }
       })
     );
@@ -315,11 +316,11 @@ export class ROIItemComponent {
   onScanEntryIdxPageNext() {}
 
   onScanEntryIdxEnter(scanId: string, scanEntryIdx: number) {
-    this._selectionService.setHoverEntry(scanId, scanEntryIdx);
+    this._selectionService.setHoverEntryIndex(scanId, scanEntryIdx);
   }
 
-  onScanEntryIdxLeave(scanId: string, scanEntryIdx: number) {
-    this._selectionService.setHoverEntry("", -1);
+  onScanEntryIdxLeave(scanId: string) {
+    this._selectionService.clearHoverEntry();
   }
 
   onDeleteScanEntryIdx(scanEntryIdx: number) {

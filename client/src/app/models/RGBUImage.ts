@@ -319,7 +319,7 @@ export class RGBUImage {
     return new RGBUImageGenerated(csScaleData, rgbImage);
   }
 
-  private channelImageForName(nameRGBU: string): FloatImage | null {
+  channelImageForName(nameRGBU: string): FloatImage | null {
     if (nameRGBU == RGBUImage.channels[0]) {
       return this.r;
     } else if (nameRGBU == RGBUImage.channels[1]) {

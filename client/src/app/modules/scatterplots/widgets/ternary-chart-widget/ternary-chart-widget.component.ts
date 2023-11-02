@@ -190,7 +190,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   ngOnInit() {
     this._subs.add(
       this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
-        this.mdl.handleHoverPointChanged(this._selectionService.hoverScanId, this._selectionService.hoverEntryId);
+        this.mdl.handleHoverPointChanged(this._selectionService.hoverScanId, this._selectionService.hoverEntryPMC);
       })
     );
 

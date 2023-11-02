@@ -236,9 +236,9 @@
               <div
                 *cdkVirtualFor="let entryIdx of scanEntryIndicesByDataset[scanId]"
                 class="entry-idx-container"
-                [ngClass]="{ 'pmc-highlight': entryIdx >= 0 && entryIdx == hoverPMC }"
+                [ngClass]="{ 'pmc-highlight': entryIdx >= 0 && entryIdx === hoverIndex }"
                 (mouseenter)="onScanEntryIdxEnter(scanId, entryIdx)"
-                (mouseleave)="onScanEntryIdxLeave(scanId, entryIdx)">
+                (mouseleave)="onScanEntryIdxLeave(scanId)">
                 <div class="entry-idx">{{ entryIdx }}</div>
                 <action-button
                   *ngIf="entryIdx >= 0"

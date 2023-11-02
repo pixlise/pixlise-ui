@@ -36,9 +36,9 @@ export class TernaryChartModel extends NaryChartModel<TernaryData, TernaryDrawMo
     return axisIdx == 0 ? "left" : axisIdx == 1 ? "right" : "top";
   }
 
-  handleHoverPointChanged(hoverScanId: string, hoverScanEntryId: number): void {
+  handleHoverPointChanged(hoverScanId: string, hoverScanEntryIndex: number): void {
     // Hover point changed, if we have a model, set it and redraw, otherwise ignore
-    if (hoverScanEntryId <= invalidPMC) {
+    if (hoverScanEntryIndex < 0) {
       // Clearing, easy case
       this.hoverPoint = null;
       this.hoverScanId = "";
@@ -55,17 +55,14 @@ export class TernaryChartModel extends NaryChartModel<TernaryData, TernaryDrawMo
 
         if (group.scanId == hoverScanId) {
           // Find data to show
-          const valueIdx = group.scanEntryIdToValueIdx.get(hoverScanEntryId);
-          if (valueIdx !== undefined && valueIdx < group.valuesPerScanEntry.length) {
-            const coords = this.drawModel.pointGroupCoords[groupIdx];
+          const coords = this.drawModel.pointGroupCoords[groupIdx];
 
-            this.hoverPoint = coords[valueIdx];
-            this.hoverScanId = hoverScanId;
-            this.hoverPointData = group.valuesPerScanEntry[valueIdx];
-            this.hoverShape = group.shape;
-            this.needsDraw$.next();
-            return;
-          }
+          this.hoverPoint = coords[hoverScanEntryIndex];
+          this.hoverScanId = hoverScanId;
+          this.hoverPointData = group.valuesPerScanEntry[hoverScanEntryIndex];
+          this.hoverShape = group.shape;
+          this.needsDraw$.next();
+          return;
         }
       }
     }

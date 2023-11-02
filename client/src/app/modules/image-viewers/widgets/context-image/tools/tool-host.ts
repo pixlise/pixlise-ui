@@ -39,7 +39,6 @@ import {
   CanvasKeyEvent,
 } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { IconButtonState } from "src/app/modules/pixlisecore/components/atoms/buttons/icon-button/icon-button.component";
-import { BaseUIElement } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/ui-elements/base-ui-element";
 import { IContextImageModel } from "../context-image-model-interface";
 import { LineDrawing } from "./line-drawing";
 import { ContextImagePan } from "./pan";
@@ -49,6 +48,9 @@ import { LassoSelection } from "./lasso-selection";
 import { ColourSelection } from "./colour-selection";
 import { LineSelection } from "./line-selection";
 import { PointSelection } from "./point-selection";
+import { HoverPointCursor } from "../ui-elements/hover-point-cursor";
+import { BaseUIElement } from "../ui-elements/base-ui-element";
+import { PhysicalScale } from "../ui-elements/physical-scale";
 
 export enum ToolState {
   OFF, // A tool that is not active, but can be clicked on/spring key used to activate
@@ -94,12 +96,12 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
   private _springOverriddenTool: BaseContextImageTool | null = null;
 
   private _uiElems: BaseUIElement[] = [];
-  /*
+
   // These are contained in _uiElems, we just keep a separate reference here because we specifically
   // need these for drawing exports
-  private _uiMapColourScale: MapColourScale = null;
-  private _uiPhysicalScale: PhysicalScale = null;
-*/
+  //private _uiMapColourScale: MapColourScale = null;
+  private _uiPhysicalScale: PhysicalScale | null = null;
+
   private _toolsAfterLineSeparator: ContextImageToolId[] = [];
 
   toolStateChanged$ = new Subject<void>();
@@ -122,8 +124,8 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
   private reset(): void {
     this._tools = [];
     this._uiElems = [];
-    // this._uiMapColourScale = null;
-    // this._uiPhysicalScale = null;
+    //this._uiMapColourScale = null;
+    this._uiPhysicalScale = null;
     this._activeTool = null;
     this._springOverriddenTool = null;
 
@@ -150,20 +152,20 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
     /*
     // Tools that have line separators before them, we set this up here...
     this._toolsAfterLineSeparator = [ContextImageToolId.ZOOM, ContextImageToolId.SELECT_POINT];
-
-    if (this._settings.showPhysicalScale && !this._ctx.dataset.isRGBUDataset()) {
-      this._uiPhysicalScale = new PhysicalScale(this._ctx);
+*/
+    if (this._settings.showPhysicalScale) {
+      this._uiPhysicalScale = new PhysicalScale(this._ctx, this);
       this._uiElems.push(this._uiPhysicalScale);
     }
 
     if (this._settings.showMapColourScale) {
-      this._uiMapColourScale = new MapColourScale(this._ctx);
-      this._uiElems.push(this._uiMapColourScale);
-      this._uiElems.push(new ROIToolTip(this._ctx));
+      //this._uiMapColourScale = new MapColourScale(this._ctx);
+      //this._uiElems.push(this._uiMapColourScale);
+      //this._uiElems.push(new ROIToolTip(this._ctx));
     }
 
-    this._uiElems.push(new HoverPointCursor(this._ctx));
-*/
+    this._uiElems.push(new HoverPointCursor(this._ctx, this));
+
     this.setTool(ContextImageToolId.PAN);
   }
 

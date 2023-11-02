@@ -73,6 +73,8 @@ export class ContextImageScanDrawModel {
 
   mmBeamRadius: number = 0.06; // Defaults to a radius of 60um, changed once we read the detector config
   pixelBeamRadius: number = 1; // Calculated by taking the above and converting from mm->pixel
+
+  hoverEntryIdx: number = -1; // Which index is hovered over by mouse
 }
 
 export function getClosestLocationIdxToPoint(mdl: ContextImageDrawModel, worldPt: Point, maxDistance: number = 3): { scanId: string; idx: number } {

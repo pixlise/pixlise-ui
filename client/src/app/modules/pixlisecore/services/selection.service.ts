@@ -28,12 +28,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Injectable } from "@angular/core";
-import { ReplaySubject, Subscription, combineLatest } from "rxjs";
+import { ReplaySubject, combineLatest } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
 import { BeamSelection } from "../models/beam-selection";
 import { PixelSelection } from "../models/pixel-selection";
-import { parseNumberRangeString, invalidPMC, encodeIndexList } from "src/app/utils/utils";
+import { parseNumberRangeString, invalidPMC, encodeIndexList, httpErrorToString } from "src/app/utils/utils";
 
 import {
   UserPromptDialogComponent,
@@ -45,6 +45,7 @@ import { APIDataService } from "./apidata.service";
 import { SelectedScanEntriesWriteReq } from "src/app/generated-protos/selection-entry-msgs";
 import { SelectedImagePixelsWriteReq } from "src/app/generated-protos/selection-pixel-msgs";
 import { ScanEntryRange } from "src/app/generated-protos/scan";
+import { ScanIdConverterService } from "./scan-id-converter.service";
 
 // The Selection service. It should probably be named something like CrossViewLinkingService though!
 //
@@ -86,13 +87,18 @@ export class SelectionService {
   private _selectionCurrIdx: number = 0;
 
   private _hoverScanId: string = "";
-  private _hoverEntryId: number = -1;
+  private _hoverEntryIndex: number = -1;
+  private _hoverEntryPMC: number = invalidPMC; // We want to name these entry ID to make it more generic, but in code
+  // id and idx (for index) are too similar and confusing so PMC all the way!
 
   private _hoverChangedReplaySubject$ = new ReplaySubject<void>(1);
 
   private _chordClicks$ = new ReplaySubject<string[]>(1);
 
-  constructor(private _dataService: APIDataService) {}
+  constructor(
+    private _dataService: APIDataService,
+    private _scanIdConverterService: ScanIdConverterService
+  ) {}
 
   private updateListeners(): void {
     const currSel = this._selectionStack[this._selectionCurrIdx];
@@ -290,11 +296,42 @@ export class SelectionService {
   }
 
   // Mouse hovering over scan entries - we update listeners when this is called
-  // NOTE: we're storing the scan Id and the entry id within that scan (aka PMC)
-  // that the user hovered over
-  setHoverEntry(scanId: string, entryId: number) {
-    this._hoverScanId = scanId;
-    this._hoverEntryId = entryId;
+  setHoverEntryPMC(scanId: string, entryPMC: number) {
+    this._scanIdConverterService.convertScanEntryPMCToIndex(scanId, [entryPMC]).subscribe({
+      next: (idxs: number[]) => {
+        this._hoverScanId = scanId;
+        this._hoverEntryPMC = entryPMC;
+        this._hoverEntryIndex = idxs[0];
+        this._hoverChangedReplaySubject$.next();
+      },
+      error: err => {
+        console.log(httpErrorToString(err, "Failed to set hover PMC"));
+
+        this.clearHoverEntry();
+      },
+    });
+  }
+
+  setHoverEntryIndex(scanId: string, entryIdx: number) {
+    this._scanIdConverterService.convertScanEntryIndexToPMC(scanId, [entryIdx]).subscribe({
+      next: (pmcs: number[]) => {
+        this._hoverScanId = scanId;
+        this._hoverEntryPMC = pmcs[0];
+        this._hoverEntryIndex = entryIdx;
+        this._hoverChangedReplaySubject$.next();
+      },
+      error: err => {
+        console.log(httpErrorToString(err, "Failed to set hover index"));
+
+        this.clearHoverEntry();
+      },
+    });
+  }
+
+  clearHoverEntry() {
+    this._hoverScanId = "";
+    this._hoverEntryPMC = invalidPMC;
+    this._hoverEntryIndex = -1;
     this._hoverChangedReplaySubject$.next();
   }
 
@@ -306,8 +343,12 @@ export class SelectionService {
     return this._hoverScanId;
   }
 
-  get hoverEntryId(): number {
-    return this._hoverEntryId;
+  get hoverEntryPMC(): number {
+    return this._hoverEntryPMC;
+  }
+
+  get hoverEntryIdx(): number {
+    return this._hoverEntryIndex;
   }
 
   // Chord clicking on context image, and showing that on binary diagram

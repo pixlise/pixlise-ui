@@ -196,9 +196,16 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
     this._subs.add(
       this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
-        if (this.mdl.scanIds.indexOf(this._selectionService.hoverScanId) > -1) {
-          this.updateView();
+        // Hover should be light-weight, look up the hover point and issue a redraw only, don't call updateView()!
+        for (const [scanId, scanMdl] of this.mdl.drawModel.perScanDrawModel) {
+          if (scanId == this._selectionService.hoverScanId) {
+            scanMdl.hoverEntryIdx = this._selectionService.hoverEntryIdx;
+          } else {
+            scanMdl.hoverEntryIdx = -1;
+          }
         }
+
+        this.reDraw();
       })
     );
 
@@ -293,7 +300,7 @@ bool removeBottomSpecularArtifacts = 21;
     this._contextDataService.getDrawModel(this.mdl.imageName).subscribe({
       next: (drawMdl: ContextImageDrawModel) => {
         const sel = this._selectionService.getCurrentSelection();
-        this.mdl.setData(drawMdl, sel.beamSelection, sel.pixelSelection);
+        this.mdl.setData(drawMdl, sel.beamSelection, sel.pixelSelection, this._selectionService.hoverScanId, this._selectionService.hoverEntryIdx);
 
         // Get the expression layers
         if (this.mdl.expressionIds.length > 0) {

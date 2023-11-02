@@ -6,11 +6,14 @@ import { RGBA, Colours } from "src/app/utils/colours";
 import { ContextImageItemTransform } from "../../models/image-transform";
 import { ScanPoint } from "../../models/scan-point";
 import { ContextImageDrawModel } from "../../models/context-image-draw-model";
+import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
 
 export interface IContextImageModel {
   //needsDraw$: Subject<void>;
 
   imageName: string;
+  displayedChannels: string; // String of what channels to show for R,G,B or a division of 2 channels. Can contain R,G,B,U. Examples: RGB, RBU, R/G
+
   expressionIds: string[];
   roiIds: string[];
 
@@ -26,6 +29,10 @@ export interface IContextImageModel {
   imageTransform: ContextImageItemTransform | null;
 
   rgbuSourceImage: RGBUImage | null;
+  rgbuImageLayerForScale: IColourScaleDataSource;
+
+  uiPhysicalScaleTranslation: Point;
+  uiLayerScaleTranslation: Point;
 
   get scanIds(): string[];
   getScanPointsFor(scanId: string): ScanPoint[];

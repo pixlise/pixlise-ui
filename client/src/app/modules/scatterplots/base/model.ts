@@ -35,12 +35,13 @@ export class NaryChartDataGroup implements BaseChartDataItem {
 
     // And these are the draw settings for the values:
     public colour: RGBA,
-    public shape: string,
+    public shape: string
 
     // A reverse lookup from scan entry Id (aka PMC) to the values array
     // This is mainly required for selection service hover notifications, so
     // we can quickly find the valus to display
-    public scanEntryIdToValueIdx: Map<number, number>
+    //public scanEntryIdToValueIdx: Map<number, number>
+
   ) {}
 }
 
@@ -196,14 +197,7 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
 
         if (!pointGroup) {
           // Reading the region for the first time, create a point group and key entry
-          pointGroup = new NaryChartDataGroup(
-            scanId,
-            roiId,
-            [],
-            RGBA.fromWithA(region.displaySettings.colour, 1),
-            region.displaySettings.shape,
-            new Map<number, number>()
-          );
+          pointGroup = new NaryChartDataGroup(scanId, roiId, [], RGBA.fromWithA(region.displaySettings.colour, 1), region.displaySettings.shape);
 
           // Add to key too. We only specify an ID if it can be brought to front - all points & selection
           // are fixed in their draw order, so don't supply for those
@@ -227,7 +221,6 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
             // Save it in A, B or C - A also is creating the value...
             if (c == 0) {
               pointGroup.valuesPerScanEntry.push(new NaryChartDataItem(value.pmc, [value.value]));
-              pointGroup.scanEntryIdToValueIdx.set(value.pmc, pointGroup.valuesPerScanEntry.length - 1);
             } else {
               // Ensure we're writing to the right PMC
               // Should always be the right order because we run 3 queries with the same ROI
@@ -291,7 +284,7 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
   }
 
   private makeReferenceGroup(chartName: string) {
-    const refPointGroup: NaryChartDataGroup = new NaryChartDataGroup("", "", [], Colours.CONTEXT_PURPLE, PointDrawer.ShapeCircle, new Map<number, number>());
+    const refPointGroup: NaryChartDataGroup = new NaryChartDataGroup("", "", [], Colours.CONTEXT_PURPLE, PointDrawer.ShapeCircle);
 
     this._references.forEach((referenceName, i) => {
       const reference = ExpressionReferences.getByName(referenceName);

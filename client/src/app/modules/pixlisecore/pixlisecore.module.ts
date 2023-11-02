@@ -22,6 +22,7 @@ import { TwoStatePushButton } from "./components/atoms/buttons/two-state-button/
 // import { TwoStateIconSwitchComponent } from "./components/atoms/buttons/two-state-button/two-state-icon-switch.component";
 
 import { SelectionChangerComponent } from "./components/atoms/selection-changer/selection-changer.component";
+import { SelectionOptionsComponent } from "./components/atoms/selection-changer/selection-options/selection-options.component";
 
 import { WidgetDisplayMessageComponent } from "./components/atoms/widget-display-message/widget-display-message.component";
 import { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -30,9 +31,7 @@ import { BadgeComponent } from "./components/atoms/badge/badge.component";
 import { AuthenticateComponent } from "./components/pages/authenticate/authenticate.component";
 
 import { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
-import { APICommService } from "./services/apicomm.service";
-import { APIDataService } from "./services/apidata.service";
-import { HttpInterceptorService } from "./services/http-interceptor.service";
+
 import { SnackBarPopupComponent } from "./components/atoms/snackbar-popup/snackbar-popup.component";
 import { ActionButtonComponent } from "./components/atoms/buttons/action-button/action-button.component";
 import { UserMenuPanelComponent } from "../../components/toolbar/user-menu-panel/user-menu-panel.component";
@@ -87,6 +86,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     PeriodicTableComponent,
     ElementTileComponent,
     SelectionChangerComponent,
+    SelectionOptionsComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule],
   exports: [
@@ -116,6 +116,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     PeriodicTableComponent,
     ElementTileComponent,
     SelectionChangerComponent,
+    SelectionOptionsComponent,
   ],
   providers: [/*APICommService, APIDataService, HttpInterceptorService*/], // Don't register them so they don't duplicate due to lazy load
 })

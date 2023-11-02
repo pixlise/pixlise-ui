@@ -112,9 +112,9 @@ export abstract class InteractionWithLassoHover implements CanvasInteractionHand
     const mouseOverPt = this.getIndexforPoint(canvasPt);
 
     if (mouseOverPt == null) {
-      this._selectionService.setHoverEntry("", invalidPMC);
+      this._selectionService.setHoverEntryPMC("", invalidPMC);
     } else {
-      this._selectionService.setHoverEntry(mouseOverPt.scanId, mouseOverPt.pmc);
+      this._selectionService.setHoverEntryPMC(mouseOverPt.scanId, mouseOverPt.pmc);
     }
 
     // Redraw will be initiated due to selectionService hover idx change
