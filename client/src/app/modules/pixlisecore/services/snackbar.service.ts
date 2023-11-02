@@ -2,6 +2,9 @@ import { Injectable } from "@angular/core";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { SnackBarPopupComponent } from "../components/atoms/snackbar-popup/snackbar-popup.component";
 import { LocalStorageService } from "./local-storage.service";
+import { WSError } from "./wsMessageHandler";
+import { WidgetError } from "./widget-data.service";
+import { httpErrorToString } from "src/app/utils/utils";
 
 export type SnackbarType = "warning" | "error" | "info" | "success";
 
@@ -49,12 +52,30 @@ export class SnackbarService {
     });
   }
 
-  openError(message: any, details: string = "", action: string = ""): void {
+  openError(message: any, details: string | Error = "", action: string = ""): void {
     let messageText = "";
-    if (typeof message === "object" && message?.errorText) {
+    let newDetails = "";
+    if (message instanceof WidgetError) {
+      messageText = (message as WidgetError).message;
+      newDetails = (message as WidgetError).description;
+    } else if (message instanceof WSError) {
+      messageText = "Request failed: " + (message as WSError).message;
+      newDetails = (message as WSError).errorText;
+    } else if (typeof message === "object" && message?.errorText) {
       messageText = message.errorText;
     } else {
       messageText = message;
+    }
+
+    // If the details has an error in it, interpret it a bit nicer
+    if (details instanceof Error) {
+      // Badly named, but this interprets lots of kinds of errors...
+      details = httpErrorToString(details, newDetails.length > 0 ? newDetails : message);
+    } else {
+      if (details.length > 0) {
+        newDetails += ". " + details;
+      }
+      details = newDetails;
     }
 
     this.addMessageToHistory(messageText, details, action, "error");

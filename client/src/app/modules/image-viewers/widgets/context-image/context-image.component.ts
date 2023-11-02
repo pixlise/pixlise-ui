@@ -283,12 +283,7 @@ bool removeBottomSpecularArtifacts = 21;
           }
         },
         error: err => {
-          if (err instanceof WidgetError) {
-            const werr = err as WidgetError;
-            this._snackService.openError(werr.message, werr.description);
-          } else {
-            this._snackService.openError(httpErrorToString(err, "Failed to add layer"), "");
-          }
+          this._snackService.openError("Failed to get default image for scan: " + scanId, err);
         },
       });
     }
@@ -317,12 +312,7 @@ bool removeBottomSpecularArtifacts = 21;
                     this.mdl.addLayer(layer);
                   },
                   error: err => {
-                    if (err instanceof WidgetError) {
-                      const werr = err as WidgetError;
-                      this._snackService.openError(werr.message, werr.description);
-                    } else {
-                      this._snackService.openError(httpErrorToString(err, "Failed to add layer"), "");
-                    }
+                    this._snackService.openError("Failed to add layer: " + exprId + " scan: " + scanId, err);
                   },
                 });
             }
@@ -330,12 +320,7 @@ bool removeBottomSpecularArtifacts = 21;
         }
       },
       error: err => {
-        if (err instanceof WidgetError) {
-          const werr = err as WidgetError;
-          this._snackService.openError(werr.message, werr.description);
-        } else {
-          this._snackService.openError(httpErrorToString(err, "Failed to load data for context image display"), "");
-        }
+        this._snackService.openError("Failed to load data for displaying context image: " + this.mdl.imageName, err);
       },
     });
   }
