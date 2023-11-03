@@ -42,6 +42,8 @@ export interface IContextImageModel {
 
   getClosestLocationIdxToPoint(worldPt: Point): { scanId: string; idx: number };
   get drawModel(): ContextImageDrawModel;
+
+  get colourScaleData(): IColourScaleDataSource | null;
 }
 
 export enum ColourScheme {

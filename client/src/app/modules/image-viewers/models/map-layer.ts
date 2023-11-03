@@ -1,6 +1,7 @@
-import { ColourRamp, RGBA } from "src/app/utils/colours";
+import { ColourRamp, Colours, RGBA } from "src/app/utils/colours";
 import { Histogram } from "../../../models/histogram";
 import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
+import { MinMax } from "src/app/models/BasicTypes";
 
 export class ContextImageMapLayer /*implements IColourScaleDataSource*/ {
   histogram: Histogram = new Histogram();
@@ -78,4 +79,21 @@ export class MapPoint {
 
     public drawParams: MapPointDrawParams
   ) {}
+}
+
+export function getDrawParamsForRawValue(colourRamp: ColourRamp, rawValue: number, range: MinMax): MapPointDrawParams {
+  // If we're outside the range, use the flat colours
+  if (!isFinite(rawValue) || !range.isValid()) {
+    return new MapPointDrawParams(RGBA.fromWithA(Colours.BLACK, 0.4), MapPointState.BELOW, MapPointShape.EX);
+  } else if (rawValue < range.min!) {
+    return new MapPointDrawParams(Colours.CONTEXT_BLUE, MapPointState.BELOW, MapPointShape.EX);
+  } else if (rawValue > range.max!) {
+    return new MapPointDrawParams(Colours.CONTEXT_PURPLE, MapPointState.ABOVE, MapPointShape.EX);
+  }
+
+  // Pick a colour based on where it is in the range between min-max.
+  const pct = range.getAsPercentageOfRange(rawValue, true);
+
+  // Return the colour to use
+  return new MapPointDrawParams(Colours.sampleColourRamp(colourRamp, pct), MapPointState.IN_RANGE, MapPointShape.POLYGON);
 }

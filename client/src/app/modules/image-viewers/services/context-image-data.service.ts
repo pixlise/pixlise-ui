@@ -72,7 +72,7 @@ export class ContextImageDataService {
         for (const item of results.queryResults[0].values.values) {
           const idx = pmcToIndexLookup.get(item.pmc);
           if (idx !== undefined) {
-            const drawParams = this.makeDrawParams(colourRamp, item.value, results.queryResults[0].values.valueRange);
+            const drawParams = getDrawParamsForRawValue(colourRamp, item.value, results.queryResults[0].values.valueRange);
             pts.push(new MapPoint(item.pmc, idx, item.value, drawParams));
           }
         }
@@ -82,23 +82,6 @@ export class ContextImageDataService {
       }),
       shareReplay(1)
     );
-  }
-
-  private makeDrawParams(colourRamp: ColourRamp, rawValue: number, range: MinMax): MapPointDrawParams {
-    // If we're outside the range, use the flat colours
-    if (!isFinite(rawValue) || !range.isValid()) {
-      return new MapPointDrawParams(RGBA.fromWithA(Colours.BLACK, 0.4), MapPointState.BELOW, MapPointShape.EX);
-    } else if (rawValue < range.min!) {
-      return new MapPointDrawParams(Colours.CONTEXT_BLUE, MapPointState.BELOW, MapPointShape.EX);
-    } else if (rawValue > range.max!) {
-      return new MapPointDrawParams(Colours.CONTEXT_PURPLE, MapPointState.ABOVE, MapPointShape.EX);
-    }
-
-    // Pick a colour based on where it is in the range between min-max.
-    const pct = range.getAsPercentageOfRange(rawValue, true);
-
-    // Return the colour to use
-    return new MapPointDrawParams(Colours.sampleColourRamp(colourRamp, pct), MapPointState.IN_RANGE, MapPointShape.POLYGON);
   }
 
   private fetchModelData(imageName: string): Observable<ContextImageModelLoadedData> {
