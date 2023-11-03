@@ -40,7 +40,6 @@ import {
 } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { IContextImageModel } from "../context-image-model-interface";
 import { convertLocationComponentToPixelPosition } from "../context-image-model";
-import { ContextImageDrawModel } from "../../../models/context-image-draw-model";
 
 export class ColourSelection extends BaseContextImageTool {
   // We take a backup of the selection when we start operating (mouse down). This way when
@@ -150,9 +149,9 @@ export class ColourSelection extends BaseContextImageTool {
     screenContext.lineWidth = this.getDrawLineWidth();
 
     for (const [scanId, idxs] of this.selectedIdxs) {
-      const scanMdl = this._ctx.drawModel.perScanDrawModel.get(scanId);
+      const scanMdl = this._ctx.getScanModelFor(scanId);
       if (scanMdl) {
-        const halfSize = scanMdl.pixelBeamRadius;
+        const halfSize = scanMdl.beamRadius_pixels;
         for (const selIdx of idxs) {
           const loc = scanMdl.scanPoints[selIdx];
           if (loc.coord) {
@@ -324,11 +323,17 @@ export class ColourSelection extends BaseContextImageTool {
     return selectedImgIdxs;
   }
 
-  private getLocationsForSelectedContextImageLocations(selectedImgIdxs: Set<number>, contextWidth: number, mdl: ContextImageDrawModel): Map<string, Set<number>> {
+  // Static so we explicitly don't use "this"
+  private static getLocationsForSelectedContextImageLocations(selectedImgIdxs: Set<number>, contextWidth: number, mdl: IContextImageModel): Map<string, Set<number>> {
     // Set the pixel at each location to be shown on the mask
     const selectedIdxs = new Map<string, Set<number>>();
 
-    for (const [scanId, scanMdl] of mdl.perScanDrawModel) {
+    for (const scanId of mdl.scanIds) {
+      const scanMdl = mdl.getScanModelFor(scanId);
+      if (!scanMdl) {
+        continue;
+      }
+
       for (let idx = 0; idx < scanMdl.scanPoints.length; idx++) {
         const loc = scanMdl.scanPoints[idx];
         if (loc.coord) {
@@ -411,30 +416,35 @@ export class ColourSelection extends BaseContextImageTool {
       this.threshold = 0;
     }
 
-    if (this._ctx.drawModel.image) {
+    if (this._ctx.raw?.image) {
+      const img = this._ctx.raw.image;
+
       // If we're dealing with just an RGB context image, behave as normal... If dealing with RGBU, we also select pixels
       const scanLocBBoxes: Rect[] = [];
-      for (const scanMdl of this._ctx.drawModel.perScanDrawModel.values()) {
-        scanLocBBoxes.push(scanMdl.locationPointBBox);
+      for (const scanId of this._ctx.scanIds) {
+        const scanMdl = this._ctx.getScanModelFor(scanId);
+        if (scanMdl) {
+          scanLocBBoxes.push(scanMdl.scanPointsBBox);
+        }
       }
-      const selectedImgIdxs = this.findSelectionPoints(this.mouseDown, this.threshold, this._ctx.drawModel.image, scanLocBBoxes);
+      const selectedImgIdxs = this.findSelectionPoints(this.mouseDown, this.threshold, img, scanLocBBoxes);
 
       // Now find what location indexes are within the flood-filled area defined above
-      this.selectedIdxs = this.getLocationsForSelectedContextImageLocations(selectedImgIdxs, this._ctx.drawModel.image.width, this._ctx.drawModel);
+      this.selectedIdxs = ColourSelection.getLocationsForSelectedContextImageLocations(selectedImgIdxs, img.width, this._ctx);
 
       // If we're working with RGBU data, select pixels on the image
       if (this._ctx.rgbuSourceImage) {
         this.selectedPixelIdxs = new Set<number>(selectedImgIdxs);
 
         // Generate a mask image to show what pixels are being selected
-        const selectionMaskBytes = new Uint8Array(this._ctx.drawModel.image.width * this._ctx.drawModel.image.height);
+        const selectionMaskBytes = new Uint8Array(img.width * img.height);
 
         // Set the bytes that are selected within the current threshold as non-transparent pixels
         for (const idx of selectedImgIdxs) {
           selectionMaskBytes[idx] = 255;
         }
 
-        this.selectedPixelsMask = alphaBytesToImage(selectionMaskBytes, this._ctx.drawModel.image.width, this._ctx.drawModel.image.height, Colours.CONTEXT_BLUE);
+        this.selectedPixelsMask = alphaBytesToImage(selectionMaskBytes, img.width, img.height, Colours.CONTEXT_BLUE);
       }
     }
   }

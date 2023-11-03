@@ -1,9 +1,3 @@
-import { Injectable } from "@angular/core";
-import { ContextImageDrawModel, ContextImageScanDrawModel } from "../models/context-image-draw-model";
-import { Observable, combineLatest, concatMap, map, mergeMap, shareReplay, switchMap, throwError } from "rxjs";
-import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
-import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
-import { ScanBeamLocationsResp, ScanBeamLocationsReq } from "src/app/generated-protos/scan-beam-location-msgs";
 import {
   Point,
   Rect,
@@ -17,292 +11,98 @@ import {
   subtractVectors,
   vectorsEqual,
 } from "src/app/models/Geometry";
-import { radToDeg } from "src/app/utils/utils";
-import { Footprint, HullPoint } from "../models/footprint";
-import { MinMax } from "src/app/models/BasicTypes";
-import { ScanPoint } from "../models/scan-point";
-import { ImageBeamLocationsReq, ImageBeamLocationsResp } from "src/app/generated-protos/image-beam-location-msgs";
-import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
-import { ScanEntry } from "src/app/generated-protos/scan-entry";
-import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
-import { Coordinate2D } from "src/app/generated-protos/image-beam-location";
-import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
-import { ScanInstrument } from "src/app/generated-protos/scan";
+import { ScanPoint } from "../../models/scan-point";
+import { HullPoint } from "../../models/footprint";
+
 import QuickHull from "quickhull";
 import Voronoi from "voronoi";
 import polygonClipping, { MultiPolygon, Polygon } from "polygon-clipping";
-import { DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
-import { ColourRamp, Colours, RGBA } from "src/app/utils/colours";
-import { ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
-import { convertLocationComponentToPixelPosition } from "../widgets/context-image/context-image-model";
-import { DataSourceParams, RegionDataResults, WidgetDataService } from "../../pixlisecore/pixlisecore.module";
-import { ContextImageMapLayer, MapPoint, MapPointDrawParams, MapPointShape, MapPointState } from "../models/map-layer";
+import { Coordinate2D } from "src/app/generated-protos/image-beam-location";
+import { ScanInstrument, ScanItem } from "src/app/generated-protos/scan";
+import { Coordinate3D } from "src/app/generated-protos/scan-beam-location";
+import { ScanEntry } from "src/app/generated-protos/scan-entry";
+import { MinMax } from "src/app/models/BasicTypes";
+import { radToDeg } from "src/app/utils/utils";
+import { DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
+import { RGBA } from "src/app/utils/colours";
+import { ContextImageScanModel, convertLocationComponentToPixelPosition } from "./context-image-model";
 
-class PointCluster {
-  constructor(
-    public locIdxs: number[],
-    public pointDistance: number,
-    public footprintPoints: HullPoint[],
-    public angleRadiansToContextImage: number
-  ) {}
-}
+// Just a namespace really that collects a bunch of code that calculates the model data (footprints, polygons, bounding boxes, etc)
+export class ContextImageScanModelGenerator {
+  private _locationPointBBox: Rect = new Rect(0, 0, 0, 0);
+  private _locationPointXSize = 0;
+  private _locationPointYSize = 0;
+  private _locationPointZSize = 0;
+  private _locationPointZMax = 0;
+  private _locationCount: number = 0; // How many actual beam locations we have (PMCs may not have a coordinate set! This counts the ones that do)
+  private _locationsWithNormalSpectra: number = 0;
+  private _locationDisplayPointRadius: number = 1;
+  private _minXYDistance_mm = 0;
 
-@Injectable({
-  providedIn: "root",
-})
-export class ContextImageDrawModelService {
-  private _contextModelMap = new Map<string, Observable<ContextImageDrawModel>>();
+  private _beamUnitsInMeters: boolean = false;
+  private _beamRadius_mm: number = 0.06; // Defaults to a radius of 60um, changed once we read the detector config
 
-  constructor(
-    private _cachedDataService: APICachedDataService,
-    private _widgetDataService: WidgetDataService,
-    private _endpointsService: APIEndpointsService
-  ) {}
-
-  getDrawModel(imageName: string): Observable<ContextImageDrawModel> {
-    const cacheId = imageName;
-
-    let result = this._contextModelMap.get(cacheId);
-    if (result === undefined) {
-      // Have to request it!
-      result = this.makeDrawModel(imageName).pipe(shareReplay(1));
-
-      // Add it to the map too so a subsequent request will get this
-      this._contextModelMap.set(cacheId, result);
-    }
-
-    return result;
-  }
-
-  getRegionModel(roiId: string) {}
-
-  getLayerModel(
-    scanId: string,
-    expressionId: string,
-    quantId: string,
-    roiId: string,
-    colourRamp: ColourRamp,
-    pmcToIndexLookup: Map<number, number>
-  ): Observable<ContextImageMapLayer> {
-    const query = [new DataSourceParams(scanId, expressionId, quantId, roiId)];
-    return this._widgetDataService.getData(query).pipe(
-      map((results: RegionDataResults) => {
-        if (results.error) {
-          throw new Error(results.error);
-        }
-
-        if (results.queryResults.length != query.length) {
-          throw new Error(`getLayerModel: expected ${query.length} results, received ${results.queryResults.length}`);
-        }
-
-        if (results.queryResults[0].error) {
-          throw new Error(`getLayerModel: expression ${results.queryResults[0].expression?.name} (${expressionId}) had error: ${results.queryResults[0].error}`);
-        }
-
-        const pts: MapPoint[] = [];
-        for (const item of results.queryResults[0].values.values) {
-          const idx = pmcToIndexLookup.get(item.pmc);
-          if (idx !== undefined) {
-            const drawParams = this.makeDrawParams(colourRamp, item.value, results.queryResults[0].values.valueRange);
-            pts.push(new MapPoint(item.pmc, idx, item.value, drawParams));
-          }
-        }
-
-        const layer = new ContextImageMapLayer(scanId, expressionId, quantId, roiId, pts, 1, colourRamp);
-        return layer;
-      }),
-      shareReplay(1)
-    );
-  }
-
-  private makeDrawParams(colourRamp: ColourRamp, rawValue: number, range: MinMax): MapPointDrawParams {
-    // If we're outside the range, use the flat colours
-    if (!isFinite(rawValue) || !range.isValid()) {
-      return new MapPointDrawParams(RGBA.fromWithA(Colours.BLACK, 0.4), MapPointState.BELOW, MapPointShape.EX);
-    } else if (rawValue < range.min!) {
-      return new MapPointDrawParams(Colours.CONTEXT_BLUE, MapPointState.BELOW, MapPointShape.EX);
-    } else if (rawValue > range.max!) {
-      return new MapPointDrawParams(Colours.CONTEXT_PURPLE, MapPointState.ABOVE, MapPointShape.EX);
-    }
-
-    // Pick a colour based on where it is in the range between min-max.
-    const pct = range.getAsPercentageOfRange(rawValue, true);
-
-    // Return the colour to use
-    return new MapPointDrawParams(Colours.sampleColourRamp(colourRamp, pct), MapPointState.IN_RANGE, MapPointShape.POLYGON);
-  }
-
-  private makeDrawModel(imageName: string): Observable<ContextImageDrawModel> {
-    // First, get the image metadata so we know what scans it's associated with and its path, then download image and scan-related data
-    return combineLatest([
-      this._cachedDataService.getImageMeta(ImageGetReq.create({ imageName: imageName })),
-      this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ imageName: imageName })),
-    ]).pipe(
-      concatMap((imgResps: (ImageGetResp | ImageBeamLocationsResp)[]) => {
-        const imgResp = imgResps[0] as ImageGetResp;
-        const imgBeamResp = imgResps[1] as ImageBeamLocationsResp;
-
-        if (!imgResp.image) {
-          throw new Error("No image returned for: " + imageName);
-        }
-
-        if (!imgBeamResp.locations) {
-          throw new Error("No image beam locations returned for: " + imageName);
-        }
-
-        if (imgBeamResp.locations.imageName != imageName) {
-          throw new Error(`Expected beams for image: ${imageName} but received for image: ${imgBeamResp.locations.imageName}`);
-        }
-
-        // We want the image and scan-specific draw models here
-        const requests: any[] = [this._endpointsService.loadImageForPath(imgResp.image.path)];
-
-        const beamsForScan = new Map<string, Coordinate2D[]>();
-        for (const locs of imgBeamResp.locations.locationPerScan) {
-          beamsForScan.set(locs.scanId, locs.locations);
-        }
-
-        for (const scanId of imgResp.image.associatedScanIds) {
-          // There should be beam locations for each of these associated images, if not, error!
-          const beamIJs = beamsForScan.get(scanId);
-          if (!beamIJs) {
-            throw new Error(`Image associated scan: ${scanId} has no beam locations`);
-          }
-
-          requests.push(this.buildScanDrawModel(scanId, imageName, beamIJs));
-        }
-
-        // Load the image
-        return combineLatest(requests).pipe(
-          map(results => {
-            const mdl = new ContextImageDrawModel();
-            mdl.image = results[0] as HTMLImageElement;
-
-            // Now read each scan-specific draw model and store it
-            for (let c = 1; c < results.length; c++) {
-              const scanMdl = results[c] as ContextImageScanDrawModel;
-              mdl.perScanDrawModel.set(scanMdl.scanId, scanMdl);
-            }
-
-            return mdl;
-          })
-        );
-      })
-    );
-  }
-
-  private buildScanDrawModel(scanId: string, imageName: string, beamIJs: Coordinate2D[]): Observable<ContextImageScanDrawModel> {
-    // First request the scan summary so we have the detector to use
-    return this._cachedDataService
-      .getScanList(
-        ScanListReq.create({
-          searchFilters: { RTT: scanId },
-        })
-      )
-      .pipe(
-        switchMap((scanListResp: ScanListResp) => {
-          // Now that we know the scan's detector, we can request the rest of the stuff we want
-          const requests = [
-            this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId: scanId })),
-            this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })),
-            this._cachedDataService.getDetectorConfig(DetectorConfigReq.create({ id: scanListResp.scans[0].instrumentConfig })),
-          ];
-
-          return combineLatest(requests).pipe(
-            map((results: (ScanBeamLocationsResp | ScanEntryResp | DetectorConfigResp | HTMLImageElement | ImageBeamLocationsResp)[]) => {
-              const beamResp: ScanBeamLocationsResp = results[0] as ScanBeamLocationsResp;
-              const scanEntryResp: ScanEntryResp = results[1] as ScanEntryResp;
-              const detConfResp: DetectorConfigResp = results[2] as DetectorConfigResp;
-
-              const mdl = new ContextImageScanDrawModel(scanId);
-
-              if (scanListResp && scanEntryResp && beamResp) {
-                if (!scanListResp.scans || scanListResp.scans.length != 1 || !scanListResp.scans[0]) {
-                  throw new Error(`Failed to get scan summary for ${scanId}`);
-                }
-
-                if (!detConfResp.config) {
-                  throw new Error(`Failed to get detector config: ${scanListResp.scans[0].instrumentConfig}`);
-                }
-
-                // Set beam data (this reads beams & turns it into scan points, polygons for each point and calculates a footprint)
-                this.processBeamData(imageName, beamIJs, scanListResp, scanEntryResp, beamResp, detConfResp, mdl);
-              }
-
-              return mdl;
-            }),
-            shareReplay(1)
-          );
-        })
-      );
-  }
-
-  private processBeamData(
+  processBeamData(
     imageName: string,
+    scanItem: ScanItem,
+    scanEntries: ScanEntry[],
+    beamXYZs: Coordinate3D[],
     beamIJs: Coordinate2D[],
-    scanListResp: ScanListResp,
-    scanEntryResp: ScanEntryResp,
-    beamResp: ScanBeamLocationsResp,
-    detectorConfig: DetectorConfigResp | null,
-    destMdl: ContextImageScanDrawModel
-  ) {
-    destMdl.mmBeamRadius = detectorConfig?.config?.mmBeamRadius || destMdl.mmBeamRadius;
+    detectorConfig: DetectorConfigResp
+  ): ContextImageScanModel {
+    const scanPoints = this.initLocationCachingForBeams(scanItem.instrument, scanEntries, beamXYZs, beamIJs, imageName);
 
-    if (scanListResp.scans.length == 1 && scanEntryResp.entries.length > 0 && beamResp.beamLocations.length) {
-      ContextImageDrawModelService.initLocationCachingForBeams(
-        scanListResp.scans[0].instrument,
-        scanEntryResp.entries,
-        beamResp.beamLocations,
-        beamIJs,
-        imageName,
-        destMdl
-      );
-    } /*else {
-      ContextImageDrawModelService.initLocationCachingWithoutBeams();
-      return;
-    }*/
-
-    if (destMdl.locationCount <= 0) {
-      console.log("  Location data not found for loaded dataset, coord caching skipped");
-      return;
+    if (this._locationCount <= 0) {
+      throw new Error("Failed to generate scan points for scan: " + scanItem.id);
     }
 
-    ContextImageDrawModelService.findMinPointDistances(scanEntryResp.entries, beamResp.beamLocations, destMdl);
+    // Work out what units we're in, original test data had mm but at one point in about 2020 we switched to meters
+    // and FM delivers it that way since
+    const beamUnitsInMeters = ContextImageScanModelGenerator.decideBeamUnitsIsMeters(scanItem.instrument, this._locationPointZMax);
 
-    const clusters = ContextImageDrawModelService.makePointClusters(destMdl.scanPoints);
+    const beamRadius_mm = detectorConfig?.config?.mmBeamRadius || this._beamRadius_mm; // If we don't get one, use the default
+    const contextPixelsTommConversion = this.calcImagePixelsToPhysicalmm(beamUnitsInMeters);
+    console.log("  Conversion factor for image pixels to mm: " + contextPixelsTommConversion);
+
+    const beamRadius_pixels = beamRadius_mm / contextPixelsTommConversion;
+
+    this.findMinPointDistances(scanPoints, scanEntries, beamXYZs);
+
+    const clusters = ContextImageScanModelGenerator.makePointClusters(scanPoints);
 
     // Clear footprints, get from clusters as we process them
     const wholeFootprintHullPoints = [];
 
     // Allocate blank polygons for each...
-    destMdl.scanPointPolygons = [];
-    for (let c = 0; c < destMdl.scanPoints.length; c++) {
-      destMdl.scanPointPolygons.push([]);
+    const scanPointPolygons = [];
+    for (let c = 0; c < scanPoints.length; c++) {
+      scanPointPolygons.push([]);
     }
 
     for (const cluster of clusters) {
-      this.makeScanPointPolygons(cluster, destMdl.scanPoints, destMdl.scanPointPolygons);
+      this.makeScanPointPolygons(cluster, scanPoints, scanPointPolygons);
       wholeFootprintHullPoints.push(cluster.footprintPoints);
     }
 
-    if (wholeFootprintHullPoints.length > 0) {
-      destMdl.experimentAngleRadiansOnContextImage = ContextImageDrawModelService.findExperimentAngle(wholeFootprintHullPoints[0]);
-    }
-
-    destMdl.footprint = new Footprint(wholeFootprintHullPoints, Colours.WHITE, Colours.BLACK);
+    const result = new ContextImageScanModel(
+      scanItem.id,
+      imageName,
+      scanPoints,
+      scanPointPolygons,
+      wholeFootprintHullPoints,
+      contextPixelsTommConversion,
+      beamRadius_pixels,
+      this._locationDisplayPointRadius,
+      this._locationPointBBox,
+      new Map<number, RGBA>()
+    );
+    return result;
   }
 
-  private static initLocationCachingForBeams(
-    detector: ScanInstrument,
-    scanEntries: ScanEntry[],
-    beamLocations: Coordinate3D[],
-    beamIJs: Coordinate2D[],
-    imageName: string,
-    destMdl: ContextImageScanDrawModel
-  ) {
-    destMdl.scanPoints = [];
-    destMdl.locationCount = 0;
-    destMdl.locationsWithNormalSpectra = 0;
+  private initLocationCachingForBeams(detector: ScanInstrument, scanEntries: ScanEntry[], beamLocations: Coordinate3D[], beamIJs: Coordinate2D[], imageName: string) {
+    const scanPoints = [];
+    this._locationCount = 0;
+    this._locationsWithNormalSpectra = 0;
 
     const locPointXMinMax = new MinMax();
     const locPointYMinMax = new MinMax();
@@ -339,13 +139,13 @@ export class ContextImageDrawModelService {
         // a need arises to change it
         const roundedIJ = convertLocationComponentToPixelPosition(imageIJ.i, imageIJ.j);
         if (firstBeam) {
-          destMdl.locationPointBBox = new Rect(roundedIJ.x, roundedIJ.y, 0, 0);
+          this._locationPointBBox = new Rect(roundedIJ.x, roundedIJ.y, 0, 0);
           firstBeam = false;
         } else {
-          destMdl.locationPointBBox.expandToFitPoint(roundedIJ);
+          this._locationPointBBox.expandToFitPoint(roundedIJ);
         }
 
-        destMdl.locationCount++;
+        this._locationCount++;
       }
 
       const scanPt = new ScanPoint(
@@ -357,35 +157,30 @@ export class ContextImageDrawModelService {
         scanEntry.pseudoIntensities,
         scanEntry.pseudoIntensities && scanEntry.normalSpectra == 0
       );
-      destMdl.scanPoints.push(scanPt);
+      scanPoints.push(scanPt);
 
       if (scanEntry.dwellSpectra > 0 || scanEntry.normalSpectra > 0) {
-        destMdl.locationsWithNormalSpectra++;
+        this._locationsWithNormalSpectra++;
       }
     }
 
-    if (destMdl.locationCount <= 0) {
+    if (this._locationCount <= 0) {
       throw new Error("No location information found");
     }
 
     console.log(
-      `  Location position relative to context image: (x,y)=${destMdl.locationPointBBox.x},${destMdl.locationPointBBox.y}, (w,h)=${destMdl.locationPointBBox.w},${destMdl.locationPointBBox.h}`
+      `  Location position relative to context image: (x,y)=${this._locationPointBBox.x},${this._locationPointBBox.y}, (w,h)=${this._locationPointBBox.w},${this._locationPointBBox.h}`
     );
 
     // store sizing
-    destMdl.locationPointXSize = locPointXMinMax.getRange();
-    destMdl.locationPointYSize = locPointYMinMax.getRange();
-    destMdl.locationPointZSize = locPointZMinMax.getRange();
+    this._locationPointXSize = locPointXMinMax.getRange();
+    this._locationPointYSize = locPointYMinMax.getRange();
+    this._locationPointZSize = locPointZMinMax.getRange();
 
-    console.log(`  Location data physical size X=${destMdl.locationPointXSize}, Y=${destMdl.locationPointYSize}, Z=${destMdl.locationPointZSize}`);
+    this._locationPointZMax = locPointZMinMax.max || 0;
 
-    // Work out what units we're in
-    destMdl.beamUnitsInMeters = ContextImageDrawModelService.decideBeamUnitsIsMeters(detector, locPointZMinMax.max || 0);
-
-    destMdl.contextPixelsTommConversion = ContextImageDrawModelService.calcImagePixelsToPhysicalmm(destMdl);
-    console.log("  Conversion factor for image pixels to mm: " + destMdl.contextPixelsTommConversion);
-
-    destMdl.pixelBeamRadius = destMdl.mmBeamRadius / destMdl.contextPixelsTommConversion;
+    console.log(`  Location data physical size X=${this._locationPointXSize}, Y=${this._locationPointYSize}, Z=${this._locationPointZSize}`);
+    return scanPoints;
   }
   /*
   private static initLocationCachingWithoutBeams() {
@@ -427,8 +222,8 @@ export class ContextImageDrawModelService {
 */
   // Sets some local stats about point coordinates:
   // locationDisplayPointRadius, minXYDistance_mm
-  private static findMinPointDistances(scanEntries: ScanEntry[], beamLocations: Coordinate3D[], mdl: ContextImageScanDrawModel): void {
-    if (mdl.locationCount <= 0) {
+  private findMinPointDistances(scanPoints: ScanPoint[], scanEntries: ScanEntry[], beamLocations: Coordinate3D[]): void {
+    if (this._locationCount <= 0) {
       throw new Error("findMinPointDistances with no location data");
     }
 
@@ -444,8 +239,8 @@ export class ContextImageDrawModelService {
 
       // Make sure it's got a location
       while (sampleIdx == null) {
-        sampleIdx = Math.floor(Math.random() * (mdl.scanPoints.length - 1));
-        if (mdl.scanPoints[sampleIdx].coord == null) {
+        sampleIdx = Math.floor(Math.random() * (scanPoints.length - 1));
+        if (scanPoints[sampleIdx].coord == null) {
           sampleIdx = null;
         }
       }
@@ -454,18 +249,18 @@ export class ContextImageDrawModelService {
     }
 
     // Now loop through all and find the nearest point to each sample in distance-squared units
-    const ExclusionBoxSize = (mdl.locationPointBBox.w + mdl.locationPointBBox.h) / 2 / 10;
+    const ExclusionBoxSize = (this._locationPointBBox.w + this._locationPointBBox.h) / 2 / 10;
 
     for (let c = 0; c < NumSamples; c++) {
       const sampleIdx = samples[c];
-      const samplePt = mdl.scanPoints[sampleIdx].coord!;
+      const samplePt = scanPoints[sampleIdx].coord!;
 
       let nearestIdx = -1;
       let nearestDistSq = ExclusionBoxSize * ExclusionBoxSize;
 
       // Find the distance of the nearest point - we can exclude most of the points fast by bounding box
       let locIdx = 0;
-      for (const locPt of mdl.scanPoints) {
+      for (const locPt of scanPoints) {
         // Don't compare to itself, don't compare to PMCs without locations!
         if (locPt.coord && locIdx != sampleIdx) {
           const xDiff = Math.abs(samplePt.x - locPt.coord.x);
@@ -491,19 +286,19 @@ export class ContextImageDrawModelService {
     }
 
     // Now we have an array of nearest distances, average them and get to a single radius to use
-    mdl.locationDisplayPointRadius = nearestDistanceToSamples.reduce((a, b) => a + b, 0) / nearestDistanceToSamples.length;
+    this._locationDisplayPointRadius = nearestDistanceToSamples.reduce((a, b) => a + b, 0) / nearestDistanceToSamples.length;
 
     // Increase it a bit, to make sure things are covered nicely
-    mdl.locationDisplayPointRadius = mdl.locationDisplayPointRadius * 1.1;
+    this._locationDisplayPointRadius = this._locationDisplayPointRadius * 1.1;
 
-    if (isNaN(mdl.locationDisplayPointRadius)) {
-      mdl.locationDisplayPointRadius = 1;
+    if (isNaN(this._locationDisplayPointRadius)) {
+      this._locationDisplayPointRadius = 1;
     }
 
-    console.log("  Generated locationDisplayPointRadius: " + mdl.locationDisplayPointRadius);
+    console.log("  Generated locationDisplayPointRadius: " + this._locationDisplayPointRadius);
 
     // The above was done in image space (context image pixels, i/j coordinates). We now do the same in physical XYZ coordinates
-    mdl.minXYDistance_mm = mdl.locationPointXSize + mdl.locationPointYSize + mdl.locationPointZSize;
+    this._minXYDistance_mm = this._locationPointXSize + this._locationPointYSize + this._locationPointZSize;
 
     for (let c = 0; c < scanEntries.length; c++) {
       const scanEntry = scanEntries[c];
@@ -520,18 +315,18 @@ export class ContextImageDrawModelService {
             const vec = getVectorBetweenPoints(cPt, iPt);
 
             const distSq = getVectorDotProduct(vec, vec);
-            if (distSq > 0 && distSq < mdl.minXYDistance_mm) {
-              mdl.minXYDistance_mm = distSq;
+            if (distSq > 0 && distSq < this._minXYDistance_mm) {
+              this._minXYDistance_mm = distSq;
             }
           }
         }
       }
 
-      mdl.minXYDistance_mm = Math.sqrt(mdl.minXYDistance_mm);
+      this._minXYDistance_mm = Math.sqrt(this._minXYDistance_mm);
 
       // If we're in meters, convert
-      if (mdl.beamUnitsInMeters) {
-        mdl.minXYDistance_mm *= 1000.0;
+      if (this._beamUnitsInMeters) {
+        this._minXYDistance_mm *= 1000.0;
       }
     }
   }
@@ -550,14 +345,14 @@ export class ContextImageDrawModelService {
   }
 
   // Returns the conversion multiplier to go from context image pixels to physical units in mm (based on beam location)
-  private static calcImagePixelsToPhysicalmm(mdl: ContextImageScanDrawModel): number {
+  private calcImagePixelsToPhysicalmm(beamUnitsInMeters: boolean): number {
     // We see the diagonal size of the location points bbox vs the widest X distance between points
     let mmConversion = Math.sqrt(
-      (mdl.locationPointXSize * mdl.locationPointXSize + mdl.locationPointYSize * mdl.locationPointYSize) /
-        (mdl.locationPointBBox.w * mdl.locationPointBBox.w + mdl.locationPointBBox.h * mdl.locationPointBBox.h)
+      (this._locationPointXSize * this._locationPointXSize + this._locationPointYSize * this._locationPointYSize) /
+        (this._locationPointBBox.w * this._locationPointBBox.w + this._locationPointBBox.h * this._locationPointBBox.h)
     );
 
-    if (mdl.beamUnitsInMeters) {
+    if (beamUnitsInMeters) {
       mmConversion *= 1000.0;
     }
 
@@ -727,10 +522,14 @@ export class ContextImageDrawModelService {
     // Calculate footprints for all clusters
     let c = 0;
     for (const cluster of clusters) {
-      cluster.footprintPoints = ContextImageDrawModelService.makeConvexHull(cluster.locIdxs, scanPoints);
-      cluster.angleRadiansToContextImage = ContextImageDrawModelService.findExperimentAngle(cluster.footprintPoints);
+      cluster.footprintPoints = ContextImageScanModelGenerator.makeConvexHull(cluster.locIdxs, scanPoints);
+      cluster.angleRadiansToContextImage = ContextImageScanModelGenerator.findExperimentAngle(cluster.footprintPoints);
 
-      cluster.footprintPoints = ContextImageDrawModelService.fattenFootprint(cluster.footprintPoints, cluster.pointDistance / 2, cluster.angleRadiansToContextImage);
+      cluster.footprintPoints = ContextImageScanModelGenerator.fattenFootprint(
+        cluster.footprintPoints,
+        cluster.pointDistance / 2,
+        cluster.angleRadiansToContextImage
+      );
 
       console.log(
         `  Point cluster ${c + 1} contains ${cluster.locIdxs.length} PMCs, ${cluster.footprintPoints.length} footprint points, ${radToDeg(
@@ -809,7 +608,7 @@ export class ContextImageDrawModelService {
       centers.push(new Point(pt.x, pt.y));
     }
 
-    const boxes = ContextImageDrawModelService.makeRotatedBoxes(centers, enlargeBy, angleRad);
+    const boxes = ContextImageScanModelGenerator.makeRotatedBoxes(centers, enlargeBy, angleRad);
 
     const fatHullPoints = [];
 
@@ -827,7 +626,7 @@ export class ContextImageDrawModelService {
     // Remove the last point (it's a duplicate of the first)
     result.splice(result.length - 1, 1);
 
-    ContextImageDrawModelService.calcFootprintNormals(result);
+    ContextImageScanModelGenerator.calcFootprintNormals(result);
 
     /* METHOD WITHOUT RECTS:
       // Run through all normals and push the point out by that much
@@ -942,17 +741,17 @@ export class ContextImageDrawModelService {
           //let clippedPolyPts = [[polyPts]];
 
           // TESTING: only clip against max poly, not footprint
-          //let clippedPolyPts = ContextImageDrawModelService.clipAgainstLargestPolyAllowed([polyPts], this.locationPointCache[siteLocIdx], (cluster.pointDistance/2)*1.25, cluster.angleRadiansToContextImage);
+          //let clippedPolyPts = ContextImageScanModelGenerator.clipAgainstLargestPolyAllowed([polyPts], this.locationPointCache[siteLocIdx], (cluster.pointDistance/2)*1.25, cluster.angleRadiansToContextImage);
 
           // Clip polygon against the hull
           const hullClippedPolyPts = polygonClipping.intersection([polyPts], hullPoly);
 
           // Also against the biggest polygon we want to allow
-          const clippedPolyPts = ContextImageDrawModelService.clipAgainstLargestPolyAllowed(
+          const clippedPolyPts = ContextImageScanModelGenerator.clipAgainstLargestPolyAllowed(
             hullClippedPolyPts,
             scanPoints[siteLocIdx],
             (cluster.pointDistance / 2) * 1.25,
-            ContextImageDrawModelService.getAngleForLocation(siteLocIdx, cluster.angleRadiansToContextImage, scanPoints)
+            ContextImageScanModelGenerator.getAngleForLocation(siteLocIdx, cluster.angleRadiansToContextImage, scanPoints)
           );
 
           // Now we convert it back to Points
@@ -1026,7 +825,7 @@ export class ContextImageDrawModelService {
       return [];
     }
 
-    const boxes = ContextImageDrawModelService.makeRotatedBoxes([loc.coord], maxBoxSize, clusterAngleRad);
+    const boxes = ContextImageScanModelGenerator.makeRotatedBoxes([loc.coord], maxBoxSize, clusterAngleRad);
     if (boxes.length != 1 && boxes[0].length != 4) {
       return [];
     }
@@ -1045,4 +844,13 @@ export class ContextImageDrawModelService {
     }
     return [];
   }
+}
+
+class PointCluster {
+  constructor(
+    public locIdxs: number[],
+    public pointDistance: number,
+    public footprintPoints: HullPoint[],
+    public angleRadiansToContextImage: number
+  ) {}
 }

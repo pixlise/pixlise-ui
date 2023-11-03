@@ -101,11 +101,11 @@ export class PhysicalScale extends BaseUIElement {
     let mmConversion = 0;
     let uniformConversion = true;
 
-    for (const scanMdl of this._ctx.drawModel.perScanDrawModel.values()) {
+    for (const scanMdl of this._ctx.drawModel.scanDrawModels.values()) {
       if (mmConversion > 0 && mmConversion != scanMdl.contextPixelsTommConversion) {
         uniformConversion = false;
       }
-      mmConversion = scanMdl.contextPixelsTommConversion
+      mmConversion = scanMdl.contextPixelsTommConversion;
     }
 
     const scaleTextPadY = 7;

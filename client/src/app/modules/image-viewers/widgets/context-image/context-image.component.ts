@@ -3,16 +3,15 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
-import { ContextImageModel } from "./context-image-model";
-import { ContextImageToolHost, ToolButtonState, ToolHostCreateSettings, ToolState } from "./tools/tool-host";
+import { ContextImageModel, ContextImageModelLoadedData } from "./context-image-model";
+import { ContextImageToolHost, ToolHostCreateSettings, ToolState } from "./tools/tool-host";
 import { ContextImageDrawer } from "./context-image-drawer";
 import { ContextImageState } from "src/app/generated-protos/widget-data";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageToolId } from "./tools/base-context-image-tool";
-import { ContextImageDrawModelService } from "../../services/context-image-draw-model.service";
-import { ContextImageDrawModel } from "../../models/context-image-draw-model";
+import { ContextImageDataService } from "../../services/context-image-data.service";
 import { Point, Rect } from "src/app/models/Geometry";
 import { SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
@@ -22,12 +21,9 @@ import {
   ExpressionPickerComponent,
   ExpressionPickerResponse,
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
-import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ColourRamp } from "src/app/utils/colours";
 import { ContextImageMapLayer } from "../../models/map-layer";
-import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
-import { httpErrorToString } from "src/app/utils/utils";
 
 @Component({
   selector: "app-context-image",
@@ -48,7 +44,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _cachedDataService: APICachedDataService,
-    private _contextDataService: ContextImageDrawModelService,
+    private _contextDataService: ContextImageDataService,
     private _selectionService: SelectionService,
     private _snackService: SnackbarService,
     public dialog: MatDialog
@@ -190,22 +186,13 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
     this._subs.add(
       this._selectionService.selection$.subscribe((currSel: SelectionHistoryItem) => {
-        this.updateView();
+        this.updateSelection();
       })
     );
 
     this._subs.add(
       this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
-        // Hover should be light-weight, look up the hover point and issue a redraw only, don't call updateView()!
-        for (const [scanId, scanMdl] of this.mdl.drawModel.perScanDrawModel) {
-          if (scanId == this._selectionService.hoverScanId) {
-            scanMdl.hoverEntryIdx = this._selectionService.hoverEntryIdx;
-          } else {
-            scanMdl.hoverEntryIdx = -1;
-          }
-        }
-
-        this.reDraw();
+        this.updateSelection();
       })
     );
 
@@ -249,7 +236,7 @@ float colourRatioMax = 19;
 bool removeTopSpecularArtifacts = 20;
 bool removeBottomSpecularArtifacts = 21;
 */
-          this.updateView();
+          this.reloadModel();
         } else {
           this.setInitialConfig();
         }
@@ -286,7 +273,7 @@ bool removeBottomSpecularArtifacts = 21;
           if (img) {
             // Set this as our default image
             this.mdl.imageName = img;
-            this.updateView();
+            this.reloadModel();
           }
         },
         error: err => {
@@ -296,32 +283,40 @@ bool removeBottomSpecularArtifacts = 21;
     }
   }
 
-  private updateView() {
-    this._contextDataService.getDrawModel(this.mdl.imageName).subscribe({
-      next: (drawMdl: ContextImageDrawModel) => {
-        const sel = this._selectionService.getCurrentSelection();
-        this.mdl.setData(drawMdl, sel.beamSelection, sel.pixelSelection, this._selectionService.hoverScanId, this._selectionService.hoverEntryIdx);
+  private updateSelection() {
+    const sel = this._selectionService.getCurrentSelection();
+    this.mdl.setSelection(sel.beamSelection, sel.pixelSelection, this._selectionService.hoverScanId, this._selectionService.hoverEntryIdx);
+    this.reDraw();
+  }
+
+  private reloadModel() {
+    this._contextDataService.getModelData(this.mdl.imageName).subscribe({
+      next: (data: ContextImageModelLoadedData) => {
+        this.mdl.setData(data);
 
         // Get the expression layers
         if (this.mdl.expressionIds.length > 0) {
           for (const scanId of this.mdl.scanIds) {
-            const pts = this.mdl.getScanPointsFor(scanId);
-            const pmcToIndexLookup = new Map<number, number>();
-            for (const pt of pts) {
-              pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
-            }
+            const scanMdl = this.mdl.getScanModelFor(scanId);
+            if (scanMdl) {
+              const pts = scanMdl.scanPoints;
+              const pmcToIndexLookup = new Map<number, number>();
+              for (const pt of pts) {
+                pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
+              }
 
-            for (const exprId of this.mdl.expressionIds) {
-              this._contextDataService
-                .getLayerModel(scanId, exprId, this.TEMP_QUANT_ID, PredefinedROIID.getAllPointsForScan(scanId), ColourRamp.SHADE_MAGMA, pmcToIndexLookup)
-                .subscribe({
-                  next: (layer: ContextImageMapLayer) => {
-                    this.mdl.addLayer(layer);
-                  },
-                  error: err => {
-                    this._snackService.openError("Failed to add layer: " + exprId + " scan: " + scanId, err);
-                  },
-                });
+              for (const exprId of this.mdl.expressionIds) {
+                this._contextDataService
+                  .getLayerModel(scanId, exprId, this.TEMP_QUANT_ID, PredefinedROIID.getAllPointsForScan(scanId), ColourRamp.SHADE_MAGMA, pmcToIndexLookup)
+                  .subscribe({
+                    next: (layer: ContextImageMapLayer) => {
+                      this.mdl.setMapLayer(layer);
+                    },
+                    error: err => {
+                      this._snackService.openError("Failed to add layer: " + exprId + " scan: " + scanId, err);
+                    },
+                  });
+              }
             }
           }
         }
@@ -419,7 +414,7 @@ bool removeBottomSpecularArtifacts = 21;
 
         this.TEMP_QUANT_ID = result.quantId;
 
-        this.updateView();
+        this.reloadModel();
         //this.saveState();
       }
     });
@@ -454,7 +449,7 @@ bool removeBottomSpecularArtifacts = 21;
           this.mdl.roiIds.push(...roiIds);
         }
 
-        this.updateView();
+        this.reloadModel();
         //this.saveState();
       }
     });

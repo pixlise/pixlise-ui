@@ -43,10 +43,6 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
   showStdDeviation: boolean = false;
   logScale: boolean = false;
 
-  set raw(r: HistogramData) {
-    this._raw = r;
-  }
-
   get raw(): HistogramData | null {
     return this._raw;
   }
@@ -237,7 +233,7 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
     }
 
     // Make raw data structure
-    this.raw = new HistogramData(histogramBars, overallValueRange, yAxisLabel);
+    this._raw = new HistogramData(histogramBars, overallValueRange, yAxisLabel);
 
     const t1 = performance.now();
     this.needsDraw$.next();

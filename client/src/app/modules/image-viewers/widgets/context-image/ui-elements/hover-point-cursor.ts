@@ -39,7 +39,7 @@ import { drawPointCrosshair } from "src/app/utils/drawing";
 import { IContextImageModel } from "../context-image-model-interface";
 import { BaseUIElement } from "./base-ui-element";
 import { ScanPoint } from "../../../models/scan-point";
-import { ContextImageScanDrawModel, getClosestLocationIdxToPoint } from "../../../models/context-image-draw-model";
+import { ContextImageScanDrawModel } from "../../../models/context-image-draw-model";
 import { IToolHost } from "../tools/base-context-image-tool";
 
 // Draws the highlighted point. Also listens for any stray mouse events and sets the point hovered over as the hover point
@@ -96,7 +96,7 @@ export class HoverPointCursor extends BaseUIElement {
     if (event.eventId == CanvasMouseEventId.MOUSE_MOVE) {
       this.updateHoverRatioValue(event.point);
 
-      const closestPt = getClosestLocationIdxToPoint(this._ctx.drawModel, event.point);
+      const closestPt = this._ctx.getClosestLocationIdxToPoint(event.point);
       if (closestPt.idx < 0) {
         this._host.getSelectionService().clearHoverEntry();
       } else {
@@ -111,7 +111,7 @@ export class HoverPointCursor extends BaseUIElement {
 
   override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
     let drawnCornerBoxWidth = 0;
-    for (const mdl of this._ctx.drawModel.perScanDrawModel.values()) {
+    for (const mdl of this._ctx.drawModel.scanDrawModels.values()) {
       if (mdl.hoverEntryIdx >= 0 && mdl.scanPoints[mdl.hoverEntryIdx].coord) {
         drawnCornerBoxWidth = this.drawForScanPoint(screenContext, drawParams, mdl.scanPoints[mdl.hoverEntryIdx], mdl);
 
@@ -136,7 +136,7 @@ export class HoverPointCursor extends BaseUIElement {
       drawParams.worldTransform.applyTransform(screenContext);
       // Drawing in transformed space...
 
-      drawPointCrosshair(screenContext, scanPoint.coord, mdl.pixelBeamRadius, this._ctx.transform.scale.x, mdl.pixelBeamRadius / 2);
+      drawPointCrosshair(screenContext, scanPoint.coord, mdl.beamRadius_pixels, this._ctx.transform.scale.x, mdl.beamRadius_pixels / 2);
 
       // Done with transformed space
       screenContext.restore();

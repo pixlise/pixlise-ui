@@ -49,10 +49,6 @@ export class ChordDiagramModel implements CanvasDrawNotifier {
     return this._raw != null;
   }
 
-  set raw(r: ChordDiagramData) {
-    this._raw = r;
-  }
-
   get raw(): ChordDiagramData | null {
     return this._raw;
   }
@@ -273,7 +269,7 @@ export class ChordDiagramModel implements CanvasDrawNotifier {
         rawNodes.push(item);
       }
 
-      this.raw = rawNodes;
+      this._raw = rawNodes;
     } catch (err) {
       if (err instanceof WidgetError) {
         errResult.push(err as WidgetError);

@@ -116,9 +116,12 @@ export class LassoSelection extends BaseContextImageTool {
     const selectedIdxsPerScan = new Map<string, Set<number>>();
     for (const scanId of this._ctx.scanIds) {
       const selectedIdxs = new Set<number>();
-      for (const loc of this._ctx.getScanPointsFor(scanId)) {
-        if (loc.coord && ptWithinPolygon(loc.coord, this.lassoPoints, bbox)) {
-          selectedIdxs.add(loc.locationIdx);
+      const mdl = this._ctx.getScanModelFor(scanId);
+      if (mdl) {
+        for (const loc of mdl.scanPoints) {
+          if (loc.coord && ptWithinPolygon(loc.coord, this.lassoPoints, bbox)) {
+            selectedIdxs.add(loc.locationIdx);
+          }
         }
       }
       selectedIdxsPerScan.set(scanId, selectedIdxs);

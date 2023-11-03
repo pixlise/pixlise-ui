@@ -7,7 +7,6 @@ import { drawImageOrMaskWithOptionalTransform } from "./drawlib/draw-image";
 import { drawRegion } from "./drawlib/draw-region";
 import { drawUserLine } from "./drawlib/draw-line-path";
 import { drawScanPoints } from "./drawlib/draw-scan-points";
-import { RGBA } from "src/app/utils/colours";
 import { drawFootprint } from "./drawlib/draw-footprint";
 import { drawMapData } from "./drawlib/draw-map";
 
@@ -56,7 +55,7 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
       drawImageOrMaskWithOptionalTransform(screenContext, drawMdl.image, drawMdl.imageTransform);
     }
 
-    for (const [scanId, scanDrawMdl] of drawMdl.perScanDrawModel) {
+    for (const [scanId, scanDrawMdl] of drawMdl.scanDrawModels) {
       if (scanDrawMdl.footprint) {
         drawFootprint(screenContext, scanDrawMdl.footprint, this._mdl.transform);
       }
@@ -68,10 +67,10 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
         scanDrawMdl.hoverEntryIdx,
         true,
         true,
-        scanDrawMdl.pixelBeamRadius,
+        scanDrawMdl.beamRadius_pixels,
         drawMdl.lineWidthPixels,
         drawMdl.secondaryColour,
-        scanDrawMdl.drawPointColours
+        scanDrawMdl.drawPointColourOverrides
       );
 
       for (const region of scanDrawMdl.regions) {
@@ -79,7 +78,7 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
       }
 
       for (const mapLayer of scanDrawMdl.maps) {
-        drawMapData(screenContext, mapLayer, scanDrawMdl.scanPoints, scanDrawMdl.scanPointPolygons, scanDrawMdl.locationDisplayPointRadius, 1);
+        drawMapData(screenContext, mapLayer, scanDrawMdl.scanPoints, scanDrawMdl.scanPointPolygons, scanDrawMdl.scanPointDisplayRadius, 1);
       }
     }
 

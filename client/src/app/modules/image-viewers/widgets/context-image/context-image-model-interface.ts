@@ -1,13 +1,13 @@
-import { Subject } from "rxjs";
 import { Point } from "src/app/models/Geometry";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { RGBA, Colours } from "src/app/utils/colours";
 import { ContextImageItemTransform } from "../../models/image-transform";
-import { ScanPoint } from "../../models/scan-point";
-import { ContextImageDrawModel } from "../../models/context-image-draw-model";
 import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
+import { ContextImageDrawModel, ContextImageModelLoadedData, ContextImageScanModel } from "./context-image-model";
 
+// Over time this has probably become a little redundant, but it's an interface that the tools and UI elements use to access
+// the model, and therefore describes what these parts of the system need to interact with
 export interface IContextImageModel {
   //needsDraw$: Subject<void>;
 
@@ -35,8 +35,12 @@ export interface IContextImageModel {
   uiLayerScaleTranslation: Point;
 
   get scanIds(): string[];
-  getScanPointsFor(scanId: string): ScanPoint[];
 
+  get raw(): ContextImageModelLoadedData | null;
+
+  getScanModelFor(scanId: string): ContextImageScanModel | null;
+
+  getClosestLocationIdxToPoint(worldPt: Point): { scanId: string; idx: number };
   get drawModel(): ContextImageDrawModel;
 }
 

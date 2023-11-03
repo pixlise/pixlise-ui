@@ -150,8 +150,13 @@ export class LineSelection extends BaseContextImageTool {
 
     const selectedIdxs = new Map<string, Set<number>>();
 
-    for (const [scanId, scanMdl] of this._ctx.drawModel.perScanDrawModel) {
-      const threshold = scanMdl.locationDisplayPointRadius / 2;
+    for (const scanId of this._ctx.scanIds) {
+      const scanMdl = this._ctx.getScanModelFor(scanId);
+      if (!scanMdl) {
+        continue;
+      }
+
+      const threshold = scanMdl.scanPointDisplayRadius / 2;
 
       for (const loc of scanMdl.scanPoints) {
         if (loc.coord) {

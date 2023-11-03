@@ -38,7 +38,6 @@ import {
   CanvasDrawParameters,
 } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { IContextImageModel } from "../context-image-model-interface";
-import { getClosestLocationIdxToPoint } from "../../../models/context-image-draw-model";
 import { Point } from "src/app/models/Geometry";
 
 const buttonIconPaintBrush = "assets/button-icons/tool-paint-brush.svg";
@@ -134,13 +133,13 @@ export class PointSelection extends BaseContextImageTool {
     screenContext.lineWidth = this.getDrawLineWidth();
 
     for (const [scanId, idxs] of this.selectedIdxs) {
-      const scanDrawMdl = this._ctx.drawModel.perScanDrawModel.get(scanId);
-      if (scanDrawMdl) {
-        const halfSize = scanDrawMdl.pixelBeamRadius;
+      const scanMdl = this._ctx.getScanModelFor(scanId);
+      if (scanMdl) {
+        const halfSize = scanMdl.beamRadius_pixels;
 
         // Draw what we're operating on
         for (const selIdx of idxs) {
-          const loc = scanDrawMdl.scanPoints[selIdx];
+          const loc = scanMdl.scanPoints[selIdx];
           if (loc.coord) {
             drawEmptyCircle(screenContext, loc.coord, halfSize);
           }
@@ -151,7 +150,7 @@ export class PointSelection extends BaseContextImageTool {
 
   // Return true if something was changed
   private processPoint(ptWorld: Point): boolean {
-    const closestPt = getClosestLocationIdxToPoint(this._ctx.drawModel, ptWorld);
+    const closestPt = this._ctx.getClosestLocationIdxToPoint(ptWorld);
 
     if (closestPt.scanId.length > 0 && closestPt.idx > -1) {
       // Firstly, add to the list of selected points

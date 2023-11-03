@@ -1,8 +1,8 @@
 import { ColourRamp, RGBA } from "src/app/utils/colours";
 import { Histogram } from "../../../models/histogram";
-import { Point } from "src/app/models/Geometry";
+import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
 
-export class ContextImageMapLayer {
+export class ContextImageMapLayer /*implements IColourScaleDataSource*/ {
   histogram: Histogram = new Histogram();
   constructor(
     // What made us
@@ -18,6 +18,27 @@ export class ContextImageMapLayer {
     public opacity: number = 1.0,
     public shading: ColourRamp = ColourRamp.SHADE_VIRIDIS
   ) {}
+/*
+  // IColourScaleDataSource
+  getValueRange(channel: number): MinMax;
+  getDisplayValueRange(channel: number): MinMax;
+  getSpecularRemovedValueRange?(channel: number): MinMax;
+  setDisplayValueRangeMin(channel: number, val: number): void;
+  setDisplayValueRangeMax(channel: number, val: number): void;
+
+  channelCount: number;
+  isBinary: boolean;
+  displayScalingAllowed: boolean;
+  name: string;
+
+  expressionID?: string;
+  source?: any;
+
+  getHistogram(channel: number): Histogram;
+  setHistogramSteps(steps: number): void;
+
+  getChannelName(channel: number): string;
+  getDrawParamsForRawValue(channel: number, rawValue: number, rawRange: MinMax): MapPointDrawParams;*/
 }
 
 export enum MapPointShape {
