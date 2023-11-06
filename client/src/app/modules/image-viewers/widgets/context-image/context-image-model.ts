@@ -15,6 +15,8 @@ import { Footprint, HullPoint } from "../../models/footprint";
 import { RGBA, Colours } from "src/app/utils/colours";
 import { ContextImageScanDrawModel } from "../../models/context-image-draw-model";
 import { ContextImageRegionLayer } from "../../models/region";
+import { MapColourScaleModel } from "./ui-elements/map-colour-scale/map-colour-scale-model";
+import { randomString } from "src/app/utils/utils";
 
 export class ContextImageModelLoadedData {
   constructor(
@@ -29,6 +31,9 @@ export class ContextImageModelLoadedData {
 export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
 
+  // For debugging
+  private _id: string = randomString(6);
+
   // Settings/Layers
   imageName: string = "";
   displayedChannels: string = "";
@@ -39,6 +44,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   smoothing: boolean = false;
   showPoints: boolean = true;
   selectionModeAdd: boolean = true; // Add or Subtract, nothing else!
+  elementRelativeShading: boolean = false; // A toggle available in Element Maps tab version of context image only!
 
   private _pointColourScheme: ColourScheme = ColourScheme.PURPLE_CYAN;
   private _pointBBoxColourScheme: ColourScheme = ColourScheme.PURPLE_CYAN;
@@ -51,6 +57,18 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   uiLayerScaleTranslation: Point = new Point(0, 0);
 
   transform: PanZoom = new PanZoom();
+
+  private _colourScales: MapColourScaleModel[];
+
+  // If nothing else, somewhere to put a breakpoint!
+  constructor() {
+    console.log(` *** ContextImageModel ${this._id} CREATE`);
+    this._colourScales = [];
+  }
+
+  get colourScales(): MapColourScaleModel[] {
+    return this._colourScales;
+  }
 
   // Loaded data, based on the above, we load these. Draw models are generated from these
   // on the fly
@@ -70,7 +88,11 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     // It's processed externally so we just take it and save it
     this._raw = loadedData;
 
+    // Clear other stuff, out of date from any previous loads...
+    this._colourScales = [];
+
     this._recalcNeeded = true;
+    console.log(` *** ContextImageModel ${this._id} setData recalcNeeded=${this._recalcNeeded}`);
     this.needsDraw$.next();
   }
 
@@ -93,6 +115,24 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
       if (scanDrawMdl) {
         scanDrawMdl.hoverEntryIdx = hoverEntryIdx;
       }
+
+      // Also update the colour scale if there is one
+      for (const scale of this._colourScales) {
+        // TODO: do we want a scan ID here, to specify which one the scale is for??? Does the scale just get all
+        // expression output for a given scan???
+        if (scale.scanId == hoverScanId) {
+          // Set a hover value for the scan
+          const scanDrawMdl = this._drawModel.scanDrawModels.get(hoverScanId);
+
+          // Find the map
+          if (scanDrawMdl) {
+            for (const scanMap of scanDrawMdl.maps) {
+              if (scanMap.expressionId == scale.expressionId && hoverEntryIdx >= 0 && hoverEntryIdx < scanMap.points.length)
+                scale.hoverValue = scanMap.points[hoverEntryIdx].value;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -113,7 +153,49 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
       throw new Error(`Adding map layer ${layer.expressionId} to context image before where scan id ${layer.scanId} doesn't exist`);
     }
 
-    scanMdl.maps.push(layer);
+    // If already added, remove it
+    let found = false;
+    for (let c = 0; c < scanMdl.maps.length; c++) {
+      if (scanMdl.maps[c].expressionId == layer.expressionId) {
+        scanMdl.maps[c] = layer;
+        found = true;
+      }
+    }
+    if (!found) {
+      scanMdl.maps.push(layer);
+    }
+
+    // if this is the first visible map layer, generate a colour scale from it
+    if (this.getMapLayerCount() == 1) {
+      this._colourScales.push(
+        new MapColourScaleModel(
+          layer.scanId,
+          layer.expressionId,
+          layer.expressionName,
+          layer,
+          layer.valueRange,
+          false,
+          1, // hover value
+          true, // We always allow scale tags to be moved on layer colour scales
+          0, // Scale number
+          1, // Total scales we're drawing TODO: figure out a way to add RGB mixes
+          layer.shading
+        )
+      );
+    }
+
+    this._recalcNeeded = true;
+    console.log(` *** ContextImageModel ${this._id} setMapLayer recalcNeeded=${this._recalcNeeded} scales: ${this.colourScales.length}`);
+  }
+
+  private getMapLayerCount(): number {
+    let count = 0;
+    if (this._raw) {
+      for (const mdl of this._raw.scanModels.values()) {
+        count += mdl.maps.length;
+      }
+    }
+    return count;
   }
 
   clearDrawnLinePoints(): void {
@@ -184,9 +266,17 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
   // Rebuilding this models display data
   recalcDisplayDataIfNeeded(canvasParams: CanvasParams): void {
+    //console.log(` *** ContextImageModel ${this._id} recalcDisplayDataIfNeeded recalcNeeded=${this._recalcNeeded}`);
+
     // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
     if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
       this._drawModel.regenerate(canvasParams, this);
+
+      // Also recalculate draw models of any colour scales we're showing
+      for (const scale of this._colourScales) {
+        scale.recalcDisplayData(canvasParams);
+      }
+
       this._lastCalcCanvasParams = canvasParams;
       this._recalcNeeded = false;
     }

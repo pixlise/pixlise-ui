@@ -112,7 +112,7 @@ export abstract class InteractionWithLassoHover implements CanvasInteractionHand
     const mouseOverPt = this.getIndexforPoint(canvasPt);
 
     if (mouseOverPt == null) {
-      this._selectionService.setHoverEntryPMC("", invalidPMC);
+      this._selectionService.clearHoverEntry();
     } else {
       this._selectionService.setHoverEntryPMC(mouseOverPt.scanId, mouseOverPt.pmc);
     }

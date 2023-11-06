@@ -1,36 +1,40 @@
 import { MinMax } from "src/app/models/BasicTypes";
-import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
 import { Rect } from "src/app/models/Geometry";
-import { MapPointState } from "src/app/modules/image-viewers/models/map-layer";
+import { MapPointState, getDrawParamsForRawValue } from "src/app/modules/image-viewers/models/map-layer";
 import { Colours } from "src/app/utils/colours";
 import { drawTextWithBackground, CANVAS_FONT_WIDTH_PERCENT } from "src/app/utils/drawing";
 import { getValueDecimals } from "src/app/utils/utils";
 import { drawStrokedText } from "../base-ui-element";
-import { MapColourScale } from "./map-colour-scale";
-import { MapColourScaleDrawModel } from "./map-colour-scale-model";
+import { MapColourScaleDrawModel, MapColourScaleModel, ScaleInfo } from "./map-colour-scale-model";
+import { Histogram } from "src/app/models/histogram";
 
 export class MapColourScaleDrawer {
   drawColourScale(
     screenContext: CanvasRenderingContext2D,
-    mdl: MapColourScaleDrawModel,
+    mdl: MapColourScaleModel,
+    drawMdl: MapColourScaleDrawModel,
     viewportHeight: number,
-    viewportWidth: number,
-    layer: IColourScaleDataSource
+    viewportWidth: number
   ): void {
+    const pos = drawMdl.pos;
+    if (!pos) {
+      return; // can't draw
+    }
+
     const clrBlack = Colours.BLACK.asString();
     const clrBottomTag = Colours.CONTEXT_BLUE.asString();
     const clrTopTag = Colours.CONTEXT_PURPLE.asString();
 
-    screenContext.font = mdl.pos.fontSize + "px Roboto";
+    screenContext.font = pos.fontSize + "px Roboto";
     screenContext.textAlign = "left";
 
-    if (!MapColourScale.isMapDataValid(mdl.histogram)) {
+    if (!drawMdl.isValid) {
       // Quantification returned all 0's, so don't draw the usual scale, just
       // draw an error msg to the middle of the viewport
       screenContext.textBaseline = "middle";
       screenContext.textAlign = "center";
 
-      const msg = layer.name + " Not Detected";
+      const msg = mdl.scaleName + " Not Detected";
       drawStrokedText(screenContext, msg, viewportWidth / 2, viewportHeight / 2);
       return;
     }
@@ -38,11 +42,9 @@ export class MapColourScaleDrawer {
     screenContext.textBaseline = "top";
 
     // Draw the actual scale
-    this.drawScale(screenContext, mdl, layer, clrBlack);
+    this.drawScale(screenContext, mdl, pos, mdl.drawModel.histogram, clrBlack);
 
     // Draw the title at the top
-    const pos = mdl.pos;
-
     drawTextWithBackground(
       screenContext,
       mdl.scaleName,
@@ -53,30 +55,29 @@ export class MapColourScaleDrawer {
       Colours.GRAY_100.asStringWithA(0.5),
       mdl.hasOutOfDateModules ? Colours.ORANGE.asString() : Colours.GRAY_10.asString()
     );
-    //drawStrokedText(screenContext, layer.getChannelName(this._channel), pos.rect.x+pos.histBarMaxSize, pos.rect.y);
 
     // Draw the tags for above/below the range. If it's hovered, the tags are bigger so it's clear theyre draggable
-    if (mdl.histogram.values.length > 2 && layer.displayScalingAllowed) {
+    if (drawMdl.histogram.values.length > 2 && mdl.displayScalingAllowed) {
       // Draw the tag if we're hovering over the ctrl in general, but if we're hovering over a given tag
       // only draw that one
-      const tags = mdl.scaleTagValues;
+      const tags = mdl.displayValueRange;
       if (!tags || !tags.isValid()) {
         return;
       }
 
-      const topTagValue = mdl.topTagOverrideValue === null ? tags.max! : mdl.topTagOverrideValue;
-      const bottomTagValue = mdl.bottomTagOverrideValue === null ? tags.min! : mdl.bottomTagOverrideValue;
+      const topTagValue = drawMdl.topTagValue === null ? tags.max! : drawMdl.topTagValue;
+      const bottomTagValue = drawMdl.bottomTagValue === null ? tags.min! : drawMdl.bottomTagValue;
 
       // Bottom tag
       if (!isNaN(bottomTagValue) && bottomTagValue !== null) {
         // We had instances where expression failed, min/max/value were null, don't want to draw then!
-        this.drawTag(screenContext, pos.bottomTagRect, mdl, clrBottomTag, bottomTagValue, mdl.scaleRange);
+        this.drawTag(screenContext, pos.bottomTagRect, mdl, drawMdl, clrBottomTag, bottomTagValue, mdl.valueRange);
       }
 
       // Top tag
       if (!isNaN(topTagValue) && topTagValue !== null) {
         // We had instances where expression failed, min/max/value were null, don't want to draw then!
-        this.drawTag(screenContext, pos.topTagRect, mdl, clrTopTag, topTagValue, mdl.scaleRange);
+        this.drawTag(screenContext, pos.topTagRect, mdl, drawMdl, clrTopTag, topTagValue, mdl.valueRange);
       }
     }
   }
@@ -91,9 +92,8 @@ export class MapColourScaleDrawer {
   |__|  "bottomFrame", drawn if our gradient range doesn't extend to the top of the scale
   
   */
-  private drawScale(screenContext: CanvasRenderingContext2D, mdl: MapColourScaleDrawModel, layer: IColourScaleDataSource, labelStyle: string) {
-    const pos = mdl.pos;
-    const scaleRange = mdl.scaleRange;
+  private drawScale(screenContext: CanvasRenderingContext2D, mdl: MapColourScaleModel, pos: ScaleInfo, histogram: Histogram, labelStyle: string) {
+    const scaleRange = mdl.displayValueRange;
 
     if (scaleRange.min === null || scaleRange.max === null) {
       return;
@@ -133,7 +133,7 @@ export class MapColourScaleDrawer {
     let lastState: MapPointState | null = null;
     for (let c = 0; c < pos.stepsShown; c++) {
       // Draw the rect
-      const rep = mdl.getDrawParamsForRawValue(rawValue, mdl.displayValueRange);
+      const rep = getDrawParamsForRawValue(mdl.scaleColourRamp, rawValue, mdl.displayValueRange);
       if (rep.state == MapPointState.IN_RANGE) {
         // Get the color of the top-most gradient rectangle
         topFrameColour = rep.colour.asString();
@@ -160,8 +160,8 @@ export class MapColourScaleDrawer {
       // NOTE: for binary we calculate position differently...
       let printValue = "";
       let lblYOffset = 0;
-      if (mdl.histogram.values.length == 2) {
-        if (mdl.histogram.max() != 0) {
+      if (histogram.values.length == 2) {
+        if (histogram.max() != 0) {
           // If it's binary, show text labels, otherwise the values (it may be a map of say all 3 and 8's)
           if (scaleRange.min == 0 && scaleRange.max == 1) {
             // Assume 0==false, 1==true
@@ -216,8 +216,8 @@ export class MapColourScaleDrawer {
       }
 
       // Draw histogram bar if there is one
-      if (mdl.histogram.values.length && mdl.histogram.values.length > 2) {
-        const histBarLength = (mdl.histogram.values[c] / mdl.histogram.max()) * pos.histBarMaxSize;
+      if (histogram.values.length && histogram.values.length > 2) {
+        const histBarLength = (histogram.values[c] / histogram.max()) * pos.histBarMaxSize;
         screenContext.fillRect(x - histBarLength - 1, y, histBarLength, pos.boxHeight);
 
         // Draw a white tip (for dark background situations)
@@ -237,14 +237,14 @@ export class MapColourScaleDrawer {
 
     // If we have anything to draw outside the range, do it
     if (bottomFrameYPos != null) {
-      if (layer.channelCount > 1) {
+      if (mdl.scaleTotalCount > 1) {
         if (bottomFrameColour.length > 0) {
           screenContext.fillStyle = bottomFrameColour;
         }
         screenContext.fillRect(x, startingY, pos.boxWidth, bottomFrameYPos - startingY);
       } else {
         // Color for blue bottom slider bar
-        const minRep = mdl.getDrawParamsForRawValue(scaleRange.min, mdl.displayValueRange);
+        const minRep = getDrawParamsForRawValue(mdl.scaleColourRamp, scaleRange.min, mdl.displayValueRange);
         screenContext.strokeStyle = minRep.colour.asString();
         screenContext.lineWidth = 2;
         screenContext.beginPath();
@@ -257,14 +257,14 @@ export class MapColourScaleDrawer {
     }
 
     if (topFrameYPos != null) {
-      if (layer.channelCount > 1) {
+      if (mdl.scaleTotalCount > 1) {
         if (topFrameColour.length > 0) {
           screenContext.fillStyle = topFrameColour;
         }
         screenContext.fillRect(x, topFrameYPos + 4, pos.boxWidth, y - topFrameYPos - 2);
       } else {
         // Color for pink top slider bar
-        const maxRep = mdl.getDrawParamsForRawValue(scaleRange.max, mdl.displayValueRange);
+        const maxRep = getDrawParamsForRawValue(mdl.scaleColourRamp, scaleRange.max, mdl.displayValueRange);
         screenContext.strokeStyle = maxRep.colour.asString();
         screenContext.lineWidth = 2;
 
@@ -288,10 +288,18 @@ export class MapColourScaleDrawer {
        "sample box"   Tag
   
   */
-  private drawTag(screenContext: CanvasRenderingContext2D, rect: Rect, mdl: MapColourScaleDrawModel, colour: string, value: number, scaleRange: MinMax) {
+  private drawTag(
+    screenContext: CanvasRenderingContext2D,
+    rect: Rect,
+    mdl: MapColourScaleModel,
+    drawMdl: MapColourScaleDrawModel,
+    colour: string,
+    value: number,
+    scaleRange: MinMax
+  ) {
     screenContext.lineWidth = 2;
 
-    const pos = mdl.pos;
+    const pos = drawMdl.pos!;
 
     const midY = rect.midY();
     const tagTextX = rect.x + pos.boxWidth;
@@ -300,7 +308,7 @@ export class MapColourScaleDrawer {
     const yHeight = 4;
 
     // Fill in the area behind the sample box
-    const rep = mdl.getDrawParamsForRawValue(value, mdl.displayValueRange);
+    const rep = getDrawParamsForRawValue(mdl.scaleColourRamp, value, mdl.displayValueRange);
     if (rep.state == MapPointState.IN_RANGE) {
       screenContext.fillStyle = rep.colour.asString();
       screenContext.fillRect(rect.x + shrink + 1, midY - yHeight / 2 + 1, pos.boxWidth - shrink - shrink - 2, yHeight - 2);
@@ -319,14 +327,14 @@ export class MapColourScaleDrawer {
     screenContext.stroke();
 
     // And colour sample box
-    if (mdl.showTagValue) {
+    if (drawMdl.showTagValue) {
       screenContext.lineWidth = 3;
     }
 
     screenContext.strokeRect(rect.x + shrink, midY - yHeight / 2, pos.boxWidth - shrink - shrink, yHeight);
 
     // And the label if needed
-    if (mdl.showTagValue) {
+    if (drawMdl.showTagValue) {
       // Draw a box for the value with a triangle pointing towards the line
       const tagBoxLeft = tagTextX + 6;
 

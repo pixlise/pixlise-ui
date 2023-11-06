@@ -1,10 +1,7 @@
 import { ColourRamp, Colours, RGBA } from "src/app/utils/colours";
-import { Histogram } from "../../../models/histogram";
-import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
 import { MinMax } from "src/app/models/BasicTypes";
 
 export class ContextImageMapLayer /*implements IColourScaleDataSource*/ {
-  histogram: Histogram = new Histogram();
   constructor(
     // What made us
     public scanId: string,
@@ -12,8 +9,14 @@ export class ContextImageMapLayer /*implements IColourScaleDataSource*/ {
     public quantId: string,
     public roiId: string,
 
+    // Some properties that affect how we display
+    public hasOutOfDateModules: boolean,
+    public expressionName: string,
+
     // Point data generated
     public points: MapPoint[],
+    public valueRange: MinMax,
+    public isBinary: boolean,
 
     // Draw parameters
     public opacity: number = 1.0,

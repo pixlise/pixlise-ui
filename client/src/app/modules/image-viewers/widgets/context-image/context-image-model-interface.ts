@@ -5,6 +5,7 @@ import { RGBA, Colours } from "src/app/utils/colours";
 import { ContextImageItemTransform } from "../../models/image-transform";
 import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
 import { ContextImageDrawModel, ContextImageModelLoadedData, ContextImageScanModel } from "./context-image-model";
+import { MapColourScaleModel } from "./ui-elements/map-colour-scale/map-colour-scale-model";
 
 // Over time this has probably become a little redundant, but it's an interface that the tools and UI elements use to access
 // the model, and therefore describes what these parts of the system need to interact with
@@ -19,6 +20,7 @@ export interface IContextImageModel {
 
   transform: PanZoom;
   selectionModeAdd: boolean;
+  elementRelativeShading: boolean;
   pointColourScheme: ColourScheme;
   pointBBoxColourScheme: ColourScheme;
 
@@ -43,7 +45,8 @@ export interface IContextImageModel {
   getClosestLocationIdxToPoint(worldPt: Point): { scanId: string; idx: number };
   get drawModel(): ContextImageDrawModel;
 
-  get colourScaleData(): IColourScaleDataSource | null;
+  // Any colour scales we need to draw
+  get colourScales(): MapColourScaleModel[];
 }
 
 export enum ColourScheme {

@@ -12,6 +12,10 @@ export class ScanIdConverterService {
   constructor(private _cachedDataService: APICachedDataService) {}
 
   getScanEntryPMCToIndexLookup(scanId: string): Observable<Map<number, number>> {
+    if (!scanId) {
+      throw new Error("getScanEntryPMCToIndexLookup called with empty scanId");
+    }
+
     return this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })).pipe(
       map((resp: ScanEntryResp) => {
         if (!resp.entries) {
@@ -36,6 +40,10 @@ export class ScanIdConverterService {
   }
 
   convertScanEntryPMCToIndex(scanId: string, pmcs: number[]): Observable<number[]> {
+    if (!scanId) {
+      throw new Error("convertScanEntryPMCToIndex called with empty scanId");
+    }
+
     return this.getScanEntryPMCToIndexLookup(scanId).pipe(
       map((lookup: Map<number, number>) => {
         const result: number[] = [];
@@ -54,6 +62,10 @@ export class ScanIdConverterService {
   }
 
   convertScanEntryIndexToPMC(scanId: string, indexes: number[]): Observable<number[]> {
+    if (!scanId) {
+      throw new Error("convertScanEntryIndexToPMC called with empty scanId");
+    }
+
     return this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })).pipe(
       map((resp: ScanEntryResp) => {
         if (!resp.entries) {

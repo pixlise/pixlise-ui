@@ -27,18 +27,27 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
-import { Histogram } from "src/app/models/histogram";
-import { CanvasDrawParameters, CanvasMouseEvent, CanvasInteractionResult } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import {
+  CanvasDrawParameters,
+  CanvasMouseEvent,
+  CanvasInteractionResult,
+  CanvasMouseEventId,
+} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { IContextImageModel } from "../../context-image-model-interface";
 import { BaseUIElement } from "../base-ui-element";
 import { IToolHost } from "../../tools/base-context-image-tool";
-import { ClientSideExportGenerator } from "src/app/utils/client-side-export";
-import { LayerChannelScale } from "./map-colour-scale-single";
+import { MapColourScaleDrawer } from "./map-colour-scale-drawer";
+import { MapColourScaleModel } from "./map-colour-scale-model";
+import { MapColourScaleInteraction } from "./map-colour-scale-interaction";
+import { Point, Rect, addVectors, getVectorBetweenPoints } from "src/app/models/Geometry";
 
-
+// NOTE: this draws one or more colour scale as a movable and interactive UI element. The model it operates
+// on must be created as part of the ContextImageModel
 export class MapColourScale extends BaseUIElement {
-  private _channelScales: LayerChannelScale[] = [];
+  private _interactions = new Map<string, MapColourScaleInteraction>();
+  private _boundingBox: Rect = new Rect(0, 0, 0, 0);
+  private _mouseDragging = false;
+  private _mouseDragPos = new Point(0, 0);
 
   constructor(
     ctx: IContextImageModel,
@@ -47,32 +56,72 @@ export class MapColourScale extends BaseUIElement {
   ) {
     super(ctx, host);
   }
-
+  /*
   // This is included here as a static so we can easily find code that depends on it. Ideally should be some helper
   // function, or maybe a function on the histogram itself
   public static isMapDataValid(histogram: Histogram): boolean {
     return histogram.values.length != 2 || histogram.max() != 0;
   }
+*/
+  override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    if (this._ctx.colourScales.length <= 0) {
+      return;
+    }
 
-  drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
-    this.updateChannelScales(drawParams);
+    // Translate to where it actually should be
+    screenContext.save();
+    screenContext.translate(this._ctx.uiLayerScaleTranslation.x, this._ctx.uiLayerScaleTranslation.y);
+
+    // Update anything we need before drawing
+    this.updateScales(drawParams);
 
     // If we have channel scales, draw them
-    for (const scale of this._channelScales) {
-      scale.drawScreenSpace(screenContext, drawParams);
+    for (const scale of this._ctx.colourScales) {
+      this.drawScreenSpaceScale(screenContext, drawParams, scale);
     }
+
+    screenContext.restore();
+  }
+
+  private drawScreenSpaceScale(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters, mdl: MapColourScaleModel) {
+    const drawer = new MapColourScaleDrawer();
+    drawer.drawColourScale(screenContext, mdl, mdl.drawModel, drawParams.drawViewport.height, drawParams.drawViewport.width);
   }
 
   override mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
-    this.updateChannelScales(null);
+    if (event.eventId != CanvasMouseEventId.MOUSE_MOVE && event.eventId != CanvasMouseEventId.MOUSE_ENTER) {
+      console.log("NOT Mouse move");
+    }
 
-    // If we have channel scales, draw them
+    if (this._mouseDragging) {
+      // User is already dragging our object, so just handle anything related to it here
+      if (event.eventId == CanvasMouseEventId.MOUSE_DRAG) {
+        const moved = getVectorBetweenPoints(event.canvasMouseDown, event.canvasPoint);
+        this._ctx.uiLayerScaleTranslation = addVectors(this._mouseDragPos, moved);
+
+        //console.log(`moved: ${this._ctx.uiLayerScaleTranslation.x}, ${this._ctx.uiLayerScaleTranslation.y}`);
+
+        return CanvasInteractionResult.redrawAndCatch;
+      } else if (event.eventId == CanvasMouseEventId.MOUSE_UP) {
+        this._mouseDragging = false;
+        return CanvasInteractionResult.redrawAndCatch;
+      }
+    }
+
+    this.updateScales(null);
+
+    // Run through and let any colour scale interactions handle the message if they want
+    // NOTE: we need to be in "colour scale" space, so we subtract the draw offset coordinate
+    const translatedEvent = CanvasMouseEvent.makeCanvasTranslatedCopy(event, new Point(-this._ctx.uiLayerScaleTranslation.x, -this._ctx.uiLayerScaleTranslation.y));
+
     let redraw = false;
-    for (const scale of this._channelScales) {
-      const result = scale.mouseEvent(event);
+    for (const scale of this._ctx.colourScales) {
+      const result = this.mouseEventForScale(translatedEvent, scale);
       if (result.catchEvent) {
+        // Was handled by this scale
         return result;
       }
+
       if (result.redraw) {
         redraw = true;
       }
@@ -82,70 +131,54 @@ export class MapColourScale extends BaseUIElement {
       return CanvasInteractionResult.redrawOnly;
     }
 
+    // Check if it's within our overall bounding box, if so, assume it's a drag of the whole thing
+    if (event.eventId == CanvasMouseEventId.MOUSE_DOWN) {
+      if (this._boundingBox.containsPoint(translatedEvent.canvasPoint)) {
+        this._mouseDragging = true;
+        // Here we save the initial position it was at before we started dragging
+        this._mouseDragPos = this._ctx.uiLayerScaleTranslation.copy();
+        return CanvasInteractionResult.redrawAndCatch;
+      }
+    }
+
     return CanvasInteractionResult.neither;
   }
 
-  // Call to ensure that our channel scales stored are valid. This is because we aren't notified externally when things changed,
-  // we just receive draw or input events and check what we're doing at the time. This ensures that if we had a valid set of
-  // model data last time, we keep it, otherwise recreate
-  private updateChannelScales(drawParams: CanvasDrawParameters | null): void {
-    let activeLayer: IColourScaleDataSource | null = null;
-
-    if (this.layerId.length > 0) {
-      // We're forced to use this ID so nothing to change really, except make sure it's initially loaded
-      activeLayer = this.getLayerById(this.layerId);
-    } else {
-      // Check if draw params specify a layer id we're exporting to
-      if (drawParams) {
-        const exprId = ClientSideExportGenerator.getExportExpressionID(drawParams.exportItemIDs);
-        if (exprId) {
-          activeLayer = this.getLayerById(exprId);
-        }
-      }
-
-      if (!activeLayer) {
-        activeLayer = this._ctx.colourScaleData;
-      }
+  private mouseEventForScale(event: CanvasMouseEvent, mdl: MapColourScaleModel): CanvasInteractionResult {
+    let interaction = this._interactions.get(mdl.id);
+    if (!interaction) {
+      interaction = new MapColourScaleInteraction(mdl);
+      this._interactions.set(mdl.id, interaction);
     }
 
-    // If nothing else to draw, we may need to draw a colour scale for the RGBU ratio image displayed (if there is one)
-    if (!activeLayer && this._ctx.rgbuImageLayerForScale) {
-      activeLayer = this._ctx.rgbuImageLayerForScale;
-    }
-
-    // See if we need to reset
-    if (!activeLayer) {
-      this._channelScales = [];
-      return;
-    }
-
-    if (this._channelScales.length != activeLayer.channelCount || (this._channelScales.length > 0 && this._channelScales[0].layer != activeLayer)) {
-      // Create the right channel scale drawers
-      this._channelScales = [];
-      for (let c = 0; c < activeLayer.channelCount; c++) {
-        this._channelScales.push(new LayerChannelScale(this._ctx, activeLayer, c));
-      }
-    }
+    return interaction.mouseEvent(event);
   }
 
-  private getLayerById(id: string): IColourScaleDataSource | null {
-    for (const scanId of this._ctx.scanIds) {
-      const scanMdl = this._ctx.getScanModelFor(scanId);
-      if (scanMdl) {
-        for (const mapLayer of scanMdl.maps) {
-          // TODO: in old implementation id could be an rgb mix ID too... so we'll have to search
-          // through expression groups here somehow too
-          if (mapLayer.expressionId == id) {
-            return mapLayer;
-          }
+  private updateScales(drawParams: CanvasDrawParameters | null) {
+    this._boundingBox = new Rect();
+
+    const scaleIds = [];
+    let first = true;
+    for (const mdl of this._ctx.colourScales) {
+      scaleIds.push(mdl.id);
+
+      // Also inflate bounding box
+      if (mdl.drawModel.pos) {
+        if (first) {
+          this._boundingBox = mdl.drawModel.pos.rect.copy();
+          first = false;
+        } else {
+          this._boundingBox.expandToFitPoint(new Point(mdl.drawModel.pos.rect.x, mdl.drawModel.pos.rect.y));
+          this._boundingBox.expandToFitPoint(new Point(mdl.drawModel.pos.rect.maxX(), mdl.drawModel.pos.rect.maxY()));
         }
       }
     }
 
-    return null;
-  }
-
-  get channelScales(): LayerChannelScale[] {
-    return this._channelScales;
+    // Delete old interactions if any
+    for (const id of this._interactions.keys()) {
+      if (scaleIds.indexOf(id) < 0) {
+        this._interactions.delete(id);
+      }
+    }
   }
 }

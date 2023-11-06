@@ -438,22 +438,22 @@ export class RGBUImage {
     // If remove specular artifacts is toggled, then we need to remove top 1% of pixels
     if (removeTopSpecularArtifacts) {
       // Remap the seen min max so that the color scale is updated as well
-      seenMinMax = new MinMax(seenMinMax.min === null ? undefined : seenMinMax.min, maxValueWithoutSpecular);
+      seenMinMax = new MinMax(seenMinMax.min, maxValueWithoutSpecular);
 
       // Remap the ratio values if the new max value is less than the specified color ratio max or no color ratio is specified
       if (colourRatioMax === null || maxValueWithoutSpecular < colourRatioMax) {
-        ratioMinMax = new MinMax(ratioMinMax.min === null ? undefined : ratioMinMax.min, maxValueWithoutSpecular / brightness);
+        ratioMinMax = new MinMax(ratioMinMax.min, maxValueWithoutSpecular / brightness);
         ratioValues = ratioValues.map(ratioValue => Math.min(ratioValue, maxValueWithoutSpecular * brightness));
       }
     }
 
     if (removeBottomSpecularArtifacts) {
       // Remap the seen min max so that the color scale is updated as well
-      seenMinMax = new MinMax(minValueWithoutSpecular, seenMinMax.max === null ? undefined : seenMinMax.max);
+      seenMinMax = new MinMax(minValueWithoutSpecular, seenMinMax.max);
 
       // Remap the ratio values if the new min value is greater than the specified color ratio max or no color ratio is specified
       if (colourRatioMax === null || minValueWithoutSpecular > colourRatioMin) {
-        ratioMinMax = new MinMax(minValueWithoutSpecular, ratioMinMax.max === null ? undefined : ratioMinMax.max);
+        ratioMinMax = new MinMax(minValueWithoutSpecular, ratioMinMax.max);
         ratioValues = ratioValues.map(ratioValue => Math.max(minValueWithoutSpecular * brightness, ratioValue));
       }
     }

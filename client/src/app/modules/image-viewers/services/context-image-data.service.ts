@@ -13,7 +13,7 @@ import { ColourRamp, Colours, RGBA } from "src/app/utils/colours";
 import { ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageScanModelGenerator } from "../widgets/context-image/context-image-scan-model-generator";
 import { DataSourceParams, RegionDataResults, WidgetDataService } from "../../pixlisecore/pixlisecore.module";
-import { ContextImageMapLayer, MapPoint, MapPointDrawParams, MapPointShape, MapPointState } from "../models/map-layer";
+import { ContextImageMapLayer, MapPoint, MapPointDrawParams, MapPointShape, MapPointState, getDrawParamsForRawValue } from "../models/map-layer";
 import { ContextImageModelLoadedData, ContextImageScanModel } from "../widgets/context-image/context-image-model";
 
 @Injectable({
@@ -77,7 +77,19 @@ export class ContextImageDataService {
           }
         }
 
-        const layer = new ContextImageMapLayer(scanId, expressionId, quantId, roiId, pts, 1, colourRamp);
+        const layer = new ContextImageMapLayer(
+          scanId,
+          expressionId,
+          quantId,
+          roiId,
+          false,
+          results.queryResults[0].expression?.name || expressionId,
+          pts,
+          results.queryResults[0].values.valueRange,
+          results.queryResults[0].values.isBinary,
+          1, // TODO: Map opacity
+          colourRamp
+        );
         return layer;
       }),
       shareReplay(1)
