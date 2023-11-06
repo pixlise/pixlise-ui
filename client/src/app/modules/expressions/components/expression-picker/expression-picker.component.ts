@@ -153,7 +153,8 @@ export class ExpressionPickerComponent implements OnInit {
           config.scanConfigurations[scanId] = ScanConfiguration.create({ quantId });
         }
 
-        this._analysisLayoutService.writeScreenConfiguration(config);
+        // TODO: Figure out a way for this not to blow away the view multiple times when an expression picker dialog is shown
+        //this._analysisLayoutService.writeScreenConfiguration(config);
       }
     }
 
