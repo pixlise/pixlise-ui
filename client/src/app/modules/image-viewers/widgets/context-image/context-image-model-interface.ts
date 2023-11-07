@@ -42,11 +42,18 @@ export interface IContextImageModel {
 
   getScanModelFor(scanId: string): ContextImageScanModel | null;
 
-  getClosestLocationIdxToPoint(worldPt: Point): { scanId: string; idx: number };
+  getClosestLocationIdxToPoint(worldPt: Point): ClosestPoint;
   get drawModel(): ContextImageDrawModel;
 
   // Any colour scales we need to draw
   get colourScales(): MapColourScaleModel[];
+}
+
+export class ClosestPoint {
+  constructor(
+    public scanId: string,
+    public idx: number
+  ) {}
 }
 
 export enum ColourScheme {

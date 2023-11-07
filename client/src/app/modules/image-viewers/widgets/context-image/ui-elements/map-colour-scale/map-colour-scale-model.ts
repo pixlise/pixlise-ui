@@ -45,6 +45,10 @@ export class MapColourScaleModel {
   get mouseMode(): MouseMode {
     return this._mouseMode;
   }
+  set mouseMode(x: MouseMode) {
+    this._mouseMode = x;
+    this._drawModel.updateForMouse(x, this._tagRawValue);
+  }
   get tagDragYPos(): number {
     return this._tagDragYPos;
   }
@@ -56,6 +60,7 @@ export class MapColourScaleModel {
   }
   set tagRawValue(x: number) {
     this._tagRawValue = x;
+    this._drawModel.updateForMouse(this._mouseMode, x);
   }
   get displayValueRange(): MinMax {
     return this._displayValueRange;
@@ -71,7 +76,8 @@ export class MapColourScaleModel {
 
 export class MapColourScaleDrawModel {
   pos: ScaleInfo | null = null;
-  showTagValue: boolean = false;
+  showTopTagValue: boolean = false;
+  showBottomTagValue: boolean = false;
   isValid: boolean = true;
   topTagValue: number | null = null;
   bottomTagValue: number | null = null;
@@ -83,15 +89,20 @@ export class MapColourScaleDrawModel {
     this.histogram = this.generateHistogram(mapData, this.pos.stepsShown);
     this.isValid = this.histogram.values.length != 2 || this.histogram.max() != 0;
 
-    this.showTagValue = mdl.mouseMode == MouseMode.HOVER_MOVE || mdl.mouseMode == MouseMode.DRAG_BOTTOM_TAG || mdl.mouseMode == MouseMode.HOVER_BOTTOM_TAG;
+    this.updateForMouse(mdl.mouseMode, mdl.tagRawValue);
+  }
+
+  updateForMouse(mouseMode: MouseMode, tagRawValue: number) {
+    this.showTopTagValue = mouseMode == MouseMode.HOVER_MOVE || mouseMode == MouseMode.DRAG_TOP_TAG || mouseMode == MouseMode.HOVER_TOP_TAG;
+    this.showBottomTagValue = mouseMode == MouseMode.HOVER_MOVE || mouseMode == MouseMode.DRAG_BOTTOM_TAG || mouseMode == MouseMode.HOVER_BOTTOM_TAG;
 
     this.topTagValue = null;
     this.bottomTagValue = null;
     // If user is dragging it, get the current value at the mouse
-    if (mdl.mouseMode == MouseMode.DRAG_TOP_TAG) {
-      this.topTagValue = mdl.tagRawValue;
-    } else if (mdl.mouseMode == MouseMode.DRAG_BOTTOM_TAG) {
-      this.bottomTagValue = mdl.tagRawValue;
+    if (mouseMode == MouseMode.DRAG_TOP_TAG) {
+      this.topTagValue = tagRawValue;
+    } else if (mouseMode == MouseMode.DRAG_BOTTOM_TAG) {
+      this.bottomTagValue = tagRawValue;
     }
   }
 
@@ -103,7 +114,7 @@ export class MapColourScaleDrawModel {
     // We now have a bunch of 0's, now run through all values and make sure their counts are in the right bin
     const stepSize = data.valueRange.getRange() / (stepsShown - 1);
     if (stepSize > 0) {
-      for (const p of data.points) {
+      for (const p of data.mapPoints) {
         const val = p.value - data.valueRange.min!;
 
         // Find where to slot it in

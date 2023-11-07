@@ -36,7 +36,7 @@ import {
 } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Colours } from "src/app/utils/colours";
 import { drawPointCrosshair } from "src/app/utils/drawing";
-import { IContextImageModel } from "../context-image-model-interface";
+import { ClosestPoint, IContextImageModel } from "../context-image-model-interface";
 import { BaseUIElement } from "./base-ui-element";
 import { ScanPoint } from "../../../models/scan-point";
 import { ContextImageScanDrawModel } from "../../../models/context-image-draw-model";
@@ -45,6 +45,7 @@ import { IToolHost } from "../tools/base-context-image-tool";
 // Draws the highlighted point. Also listens for any stray mouse events and sets the point hovered over as the hover point
 export class HoverPointCursor extends BaseUIElement {
   private _ratioValue: number | null = null;
+  private _lastClosestPoint: ClosestPoint | null = null;
 
   constructor(ctx: IContextImageModel, host: IToolHost) {
     super(ctx, host);
@@ -97,10 +98,15 @@ export class HoverPointCursor extends BaseUIElement {
       this.updateHoverRatioValue(event.point);
 
       const closestPt = this._ctx.getClosestLocationIdxToPoint(event.point);
-      if (closestPt.idx < 0) {
-        this._host.getSelectionService().clearHoverEntry();
-      } else {
-        this._host.getSelectionService().setHoverEntryIndex(closestPt.scanId, closestPt.idx);
+      // If it's the same as the last one, don't do anything
+      if (!this._lastClosestPoint || this._lastClosestPoint.scanId != closestPt.scanId || this._lastClosestPoint.idx != closestPt.idx) {
+        if (closestPt.idx < 0) {
+          this._host.getSelectionService().clearHoverEntry();
+        } else {
+          this._host.getSelectionService().setHoverEntryIndex(closestPt.scanId, closestPt.idx);
+        }
+
+        this._lastClosestPoint = closestPt;
       }
 
       // Redraw will be initiated due to selectionService hover idx change

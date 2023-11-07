@@ -14,7 +14,7 @@ export class ContextImageMapLayer /*implements IColourScaleDataSource*/ {
     public expressionName: string,
 
     // Point data generated
-    public points: MapPoint[],
+    public mapPoints: MapPoint[],
     public valueRange: MinMax,
     public isBinary: boolean,
 

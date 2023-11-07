@@ -3,18 +3,11 @@ import { CanvasMouseEvent, CanvasInteractionResult, CanvasMouseEventId } from "s
 import { MouseMode, ScaleInfo, MapColourScaleModel, MapColourScaleDrawModel } from "./map-colour-scale-model";
 
 export class MapColourScaleInteraction {
-  private _mouseMode: MouseMode = MouseMode.NONE;
-
-  private _tagDragYPos: number = 0;
   private _tagDragYInitialPos: number = 0;
   private _tagDragYTopLimit: number = 0;
   private _tagDragYBottomLimit: number = 0;
 
-  private _tagRawValue: number = 0;
-
   private _dragPosCache: ScaleInfo | null = null;
-
-  private _boxHeight: number = 0;
 
   private _manualScaleMin: number | null = null;
   private _manualScaleMax: number | null = null;
@@ -57,28 +50,29 @@ export class MapColourScaleInteraction {
     switch (this._mdl.mouseMode) {
       case MouseMode.DRAG_TOP_TAG:
       case MouseMode.DRAG_BOTTOM_TAG:
-        this._tagDragYPos = this._tagDragYInitialPos + moved.y;
+        this._mdl.tagDragYPos = this._tagDragYInitialPos + moved.y;
 
         // NOTE: This is in canvas space, increasing values are DOWN the screen...
         // For eg, top might be 30, bottom might be 280
         // So we want to check we're within that range...
-        if (this._tagDragYPos < this._tagDragYTopLimit) {
-          this._tagDragYPos = this._tagDragYTopLimit;
+        if (this._mdl.tagDragYPos < this._tagDragYTopLimit) {
+          this._mdl.tagDragYPos = this._tagDragYTopLimit;
         }
-        if (this._tagDragYPos > this._tagDragYBottomLimit) {
-          this._tagDragYPos = this._tagDragYBottomLimit;
+        if (this._mdl.tagDragYPos > this._tagDragYBottomLimit) {
+          this._mdl.tagDragYPos = this._tagDragYBottomLimit;
         }
 
         if (this._dragPosCache) {
           this._mdl.tagRawValue = this.getRawValueForYPos(
-            this._tagDragYPos,
+            this._mdl.tagDragYPos,
             this._dragPosCache.stepsShown,
             this._dragPosCache.rect.maxY(),
-            this._dragPosCache.tagHeight
+            this._dragPosCache.tagHeight,
+            this._dragPosCache.boxHeight
           );
         }
 
-        //console.log('DRAG: '+this._tagDragYPos+', down='+event.canvasMouseDown.x+','+event.canvasMouseDown.y+', pt='+event.canvasPoint.x+','+event.canvasPoint.y+' moved='+moved.x+','+moved.y+', initial='+this._tagDragYInitialPos+', bottom='+this._tagDragYBottomLimit+', top='+this._tagDragYTopLimit);
+        //console.log('DRAG: '+this._mdl.tagDragYPos+', down='+event.canvasMouseDown.x+','+event.canvasMouseDown.y+', pt='+event.canvasPoint.x+','+event.canvasPoint.y+' moved='+moved.x+','+moved.y+', initial='+this._tagDragYInitialPos+', bottom='+this._tagDragYBottomLimit+', top='+this._tagDragYTopLimit);
         break;
     }
     return CanvasInteractionResult.redrawAndCatch;
@@ -91,9 +85,9 @@ export class MapColourScaleInteraction {
     const distanceMoved = getVectorBetweenPoints(event.canvasMouseDown, event.canvasPoint);
     const distance = Math.sqrt(distanceMoved.x * distanceMoved.x + distanceMoved.y * distanceMoved.y);
     if (distance < 1) {
-      if (this._mouseMode === MouseMode.DRAG_TOP_TAG) {
+      if (this._mdl.mouseMode === MouseMode.DRAG_TOP_TAG) {
         isClickEvent = true;
-        const newMax = prompt("Enter new max value", this._tagRawValue.toString());
+        const newMax = prompt("Enter new max value", this._mdl.tagRawValue.toString());
         if (newMax !== null) {
           const newMaxNum = parseFloat(newMax);
           if (!isNaN(newMaxNum)) {
@@ -104,13 +98,13 @@ export class MapColourScaleInteraction {
             this._manualScaleMax = null;
             if (scaleRange.max !== null) {
               this._mdl.displayValueRange.setMax(scaleRange.max);
-              this._tagRawValue = scaleRange.max;
+              this._mdl.tagRawValue = scaleRange.max;
             }
           }
         }
-      } else if (this._mouseMode == MouseMode.DRAG_BOTTOM_TAG) {
+      } else if (this._mdl.mouseMode == MouseMode.DRAG_BOTTOM_TAG) {
         isClickEvent = true;
-        const newMin = prompt("Enter new min value", this._tagRawValue.toString());
+        const newMin = prompt("Enter new min value", this._mdl.tagRawValue.toString());
         if (newMin !== null) {
           const newMinNum = parseFloat(newMin);
           if (!isNaN(newMinNum)) {
@@ -121,7 +115,7 @@ export class MapColourScaleInteraction {
             this._manualScaleMin = null;
             if (scaleRange.min !== null) {
               this._mdl.displayValueRange.setMin(scaleRange.min);
-              // TODO: don't need to set this._tagRawValue ??
+              // TODO: don't need to set this._mdl.tagRawValue ??
             }
           }
         }
@@ -139,27 +133,27 @@ export class MapColourScaleInteraction {
 
     if (pos && this.checkAndHandleTagClickEvent(event)) {
       const valueRange = this._mdl.valueRange;
-      this._tagDragYPos = valueRange.max
+      this._mdl.tagDragYPos = valueRange.max
         ? MapColourScaleDrawModel.getScaleYPos(valueRange.max, valueRange, pos.stepsShown, pos.boxHeight, pos.rect.maxY(), pos.tagHeight)
         : 0;
 
       this._dragPosCache = null;
-      this._tagRawValue = 0;
+      this._mdl.tagRawValue = 0;
 
       return CanvasInteractionResult.redrawAndCatch;
     }
 
     let result = false;
 
-    if (this._mouseMode == MouseMode.DRAG_TOP_TAG || this._mouseMode == MouseMode.DRAG_BOTTOM_TAG) {
+    if (this._mdl.mouseMode == MouseMode.DRAG_TOP_TAG || this._mdl.mouseMode == MouseMode.DRAG_BOTTOM_TAG) {
       // Apply changes
       const moved = getVectorBetweenPoints(event.canvasMouseDown, event.canvasPoint);
       const dragEndY = this._tagDragYInitialPos + moved.y;
 
       // Work out the raw value & set it
-      const rawValue = this.getRawValueForYPos(dragEndY, pos.stepsShown, pos.rect.maxY(), pos.tagHeight);
-      //console.log('mouse UP mode: '+this._mouseMode+', tagDrag['+this._tagDragYMin+', '+this._tagDragYMax+'], y='+this._tagDragYPos+', rawValue='+rawValue);
-      if (this._mouseMode == MouseMode.DRAG_TOP_TAG) {
+      const rawValue = this.getRawValueForYPos(dragEndY, pos.stepsShown, pos.rect.maxY(), pos.tagHeight, pos.boxHeight);
+      //console.log('mouse UP mode: '+this._mdl.mouseMode+', tagDrag['+this._tagDragYMin+', '+this._tagDragYMax+'], y='+this._mdl.tagDragYPos+', rawValue='+rawValue);
+      if (this._mdl.mouseMode == MouseMode.DRAG_TOP_TAG) {
         this._mdl.displayValueRange.setMax(rawValue);
         this._manualScaleMax = null;
 
@@ -169,7 +163,7 @@ export class MapColourScaleInteraction {
         }
 
         // Now remain in "hover" mode for this tag...
-        this._mouseMode = MouseMode.HOVER_TOP_TAG;
+        this._mdl.mouseMode = MouseMode.HOVER_TOP_TAG;
       } else {
         this._mdl.displayValueRange.setMin(rawValue);
         this._manualScaleMin = null;
@@ -180,18 +174,18 @@ export class MapColourScaleInteraction {
         }
 
         // Now remain in "hover" mode for this tag...
-        this._mouseMode = MouseMode.HOVER_BOTTOM_TAG;
+        this._mdl.mouseMode = MouseMode.HOVER_BOTTOM_TAG;
       }
 
       //this._ctx.saveState("layer scale tab");
       result = true;
     } else {
-      this._mouseMode = MouseMode.NONE;
+      this._mdl.mouseMode = MouseMode.NONE;
     }
 
-    this._tagDragYPos = 0;
+    this._mdl.tagDragYPos = 0;
     this._dragPosCache = null;
-    this._tagRawValue = 0;
+    this._mdl.tagRawValue = 0;
 
     if (result) {
       return CanvasInteractionResult.redrawAndCatch;
@@ -207,8 +201,8 @@ export class MapColourScaleInteraction {
       if (this._mdl.displayScalingAllowed && scaleTagValues.isValid()) {
         // At this point, check if we're at least hovering over the buttons
         if (pos.topTagRect.containsPoint(event.canvasPoint)) {
-          this._mouseMode = MouseMode.DRAG_TOP_TAG;
-          this._tagDragYPos = MapColourScaleDrawModel.getScaleYPos(
+          this._mdl.mouseMode = MouseMode.DRAG_TOP_TAG;
+          this._mdl.tagDragYPos = MapColourScaleDrawModel.getScaleYPos(
             scaleTagValues.max!,
             scaleTagValues,
             pos.stepsShown,
@@ -218,8 +212,8 @@ export class MapColourScaleInteraction {
           );
           return CanvasInteractionResult.redrawAndCatch;
         } else if (pos.bottomTagRect.containsPoint(event.canvasPoint)) {
-          this._mouseMode = MouseMode.DRAG_BOTTOM_TAG;
-          this._tagDragYPos = MapColourScaleDrawModel.getScaleYPos(
+          this._mdl.mouseMode = MouseMode.DRAG_BOTTOM_TAG;
+          this._mdl.tagDragYPos = MapColourScaleDrawModel.getScaleYPos(
             scaleTagValues.min!,
             scaleTagValues,
             pos.stepsShown,
@@ -232,7 +226,7 @@ export class MapColourScaleInteraction {
       }
 
       // If we're dragging tags, remember how far they can go
-      if (this._mouseMode == MouseMode.DRAG_TOP_TAG || this._mouseMode == MouseMode.DRAG_BOTTOM_TAG) {
+      if (this._mdl.mouseMode == MouseMode.DRAG_TOP_TAG || this._mdl.mouseMode == MouseMode.DRAG_BOTTOM_TAG) {
         // Work out the min/max values we're allowed to drag between. When we're done
         // we apply the value as a % between these values, so it's important!
         const valueRange = this._mdl.valueRange;
@@ -249,19 +243,19 @@ export class MapColourScaleInteraction {
           this._tagDragYTopLimit = MapColourScaleDrawModel.getScaleYPos(valueRange.max!, valueRange, pos.stepsShown, pos.boxHeight, pos.rect.maxY(), pos.tagHeight);
         }
 
-        this._tagDragYInitialPos = this._tagDragYPos;
+        this._tagDragYInitialPos = this._mdl.tagDragYPos;
 
         this._dragPosCache = pos;
 
         // Set the initial value...
-        this._tagRawValue = this.getRawValueForYPos(this._tagDragYPos, this._dragPosCache.stepsShown, this._dragPosCache.rect.maxY(), pos.tagHeight);
-        //console.log('mouse DOWN mode: '+this._mouseMode+', tagDrag['+this._tagDragYMin+', '+this._tagDragYMax+'], y='+this._tagDragYPos);
+        this._mdl.tagRawValue = this.getRawValueForYPos(this._mdl.tagDragYPos, this._dragPosCache.stepsShown, this._dragPosCache.rect.maxY(), pos.tagHeight, pos.boxHeight);
+        //console.log('mouse DOWN mode: '+this._mdl.mouseMode+', tagDrag['+this._tagDragYMin+', '+this._tagDragYMax+'], y='+this._mdl.tagDragYPos);
         //console.log(pos);
         return CanvasInteractionResult.redrawAndCatch;
       }
     }
 
-    this._mouseMode = MouseMode.NONE;
+    this._mdl.mouseMode = MouseMode.NONE;
     return CanvasInteractionResult.neither;
   }
 
@@ -270,25 +264,25 @@ export class MapColourScaleInteraction {
     if (pos.rect.containsPoint(event.canvasPoint)) {
       // At this point, check if we're at least hovering over the buttons
       if (this._mdl.displayScalingAllowed && pos.topTagRect.containsPoint(event.canvasPoint)) {
-        this._mouseMode = MouseMode.HOVER_TOP_TAG;
+        this._mdl.mouseMode = MouseMode.HOVER_TOP_TAG;
       } else if (this._mdl.displayScalingAllowed && pos.bottomTagRect.containsPoint(event.canvasPoint)) {
-        this._mouseMode = MouseMode.HOVER_BOTTOM_TAG;
+        this._mdl.mouseMode = MouseMode.HOVER_BOTTOM_TAG;
       } else {
-        this._mouseMode = MouseMode.HOVER_MOVE;
+        this._mdl.mouseMode = MouseMode.HOVER_MOVE;
       }
       return CanvasInteractionResult.redrawAndCatch;
     }
 
-    if (this._mouseMode != MouseMode.NONE) {
-      this._mouseMode = MouseMode.NONE;
+    if (this._mdl.mouseMode != MouseMode.NONE) {
+      this._mdl.mouseMode = MouseMode.NONE;
       return CanvasInteractionResult.redrawAndCatch;
     }
     return CanvasInteractionResult.neither;
   }
 
-  protected getRawValueForYPos(y: number, stepsShown: number, bottomY: number, tagHeight: number): number {
+  protected getRawValueForYPos(y: number, stepsShown: number, bottomY: number, tagHeight: number, boxHeight: number): number {
     // Y pixel position -> rawValue
-    const scaleH = stepsShown * this._boxHeight;
+    const scaleH = stepsShown * boxHeight;
     const scaleY = bottomY - tagHeight - scaleH;
 
     // NOTE: have to flip Y!

@@ -1,6 +1,6 @@
 import { MinMax } from "src/app/models/BasicTypes";
 import { Rect } from "src/app/models/Geometry";
-import { MapPointState, getDrawParamsForRawValue } from "src/app/modules/image-viewers/models/map-layer";
+import { MapPointDrawParams, MapPointState, getDrawParamsForRawValue } from "src/app/modules/image-viewers/models/map-layer";
 import { Colours } from "src/app/utils/colours";
 import { drawTextWithBackground, CANVAS_FONT_WIDTH_PERCENT } from "src/app/utils/drawing";
 import { getValueDecimals } from "src/app/utils/utils";
@@ -71,13 +71,15 @@ export class MapColourScaleDrawer {
       // Bottom tag
       if (!isNaN(bottomTagValue) && bottomTagValue !== null) {
         // We had instances where expression failed, min/max/value were null, don't want to draw then!
-        this.drawTag(screenContext, pos.bottomTagRect, mdl, drawMdl, clrBottomTag, bottomTagValue, mdl.valueRange);
+        const rep = getDrawParamsForRawValue(mdl.scaleColourRamp, bottomTagValue, mdl.displayValueRange);
+        this.drawTag(screenContext, pos.bottomTagRect, drawMdl.pos!, clrBottomTag, bottomTagValue, rep, mdl.valueRange, drawMdl.showBottomTagValue);
       }
 
       // Top tag
       if (!isNaN(topTagValue) && topTagValue !== null) {
         // We had instances where expression failed, min/max/value were null, don't want to draw then!
-        this.drawTag(screenContext, pos.topTagRect, mdl, drawMdl, clrTopTag, topTagValue, mdl.valueRange);
+        const rep = getDrawParamsForRawValue(mdl.scaleColourRamp, topTagValue, mdl.displayValueRange);
+        this.drawTag(screenContext, pos.topTagRect, drawMdl.pos!, clrTopTag, topTagValue, rep, mdl.valueRange, drawMdl.showTopTagValue);
       }
     }
   }
@@ -291,15 +293,14 @@ export class MapColourScaleDrawer {
   private drawTag(
     screenContext: CanvasRenderingContext2D,
     rect: Rect,
-    mdl: MapColourScaleModel,
-    drawMdl: MapColourScaleDrawModel,
+    pos: ScaleInfo,
     colour: string,
     value: number,
-    scaleRange: MinMax
+    valueBackground: MapPointDrawParams,
+    scaleRange: MinMax,
+    showTagValue: boolean
   ) {
     screenContext.lineWidth = 2;
-
-    const pos = drawMdl.pos!;
 
     const midY = rect.midY();
     const tagTextX = rect.x + pos.boxWidth;
@@ -308,9 +309,8 @@ export class MapColourScaleDrawer {
     const yHeight = 4;
 
     // Fill in the area behind the sample box
-    const rep = getDrawParamsForRawValue(mdl.scaleColourRamp, value, mdl.displayValueRange);
-    if (rep.state == MapPointState.IN_RANGE) {
-      screenContext.fillStyle = rep.colour.asString();
+    if (valueBackground.state == MapPointState.IN_RANGE) {
+      screenContext.fillStyle = valueBackground.colour.asString();
       screenContext.fillRect(rect.x + shrink + 1, midY - yHeight / 2 + 1, pos.boxWidth - shrink - shrink - 2, yHeight - 2);
     }
 
@@ -327,14 +327,14 @@ export class MapColourScaleDrawer {
     screenContext.stroke();
 
     // And colour sample box
-    if (drawMdl.showTagValue) {
+    if (showTagValue) {
       screenContext.lineWidth = 3;
     }
 
     screenContext.strokeRect(rect.x + shrink, midY - yHeight / 2, pos.boxWidth - shrink - shrink, yHeight);
 
     // And the label if needed
-    if (drawMdl.showTagValue) {
+    if (showTagValue) {
       // Draw a box for the value with a triangle pointing towards the line
       const tagBoxLeft = tagTextX + 6;
 

@@ -1,5 +1,5 @@
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
-import { ColourScheme, IContextImageModel, getSchemeColours } from "./context-image-model-interface";
+import { ClosestPoint, ColourScheme, IContextImageModel, getSchemeColours } from "./context-image-model-interface";
 import { Subject } from "rxjs";
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseChartDrawModel, BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
@@ -127,11 +127,27 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
           // Find the map
           if (scanDrawMdl) {
             for (const scanMap of scanDrawMdl.maps) {
-              if (scanMap.expressionId == scale.expressionId && hoverEntryIdx >= 0 && hoverEntryIdx < scanMap.points.length)
-                scale.hoverValue = scanMap.points[hoverEntryIdx].value;
+              if (scanMap.expressionId == scale.expressionId) {
+                // Find the value among our map points
+                for (const pt of scanMap.mapPoints) {
+                  if (pt.scanEntryIndex == hoverEntryIdx) {
+                    scale.hoverValue = pt.value;
+                    break;
+                  }
+                }
+                break;
+              }
             }
           }
         }
+      }
+    } else {
+      // Make sure nothing is hovering
+      for (const mdl of this._drawModel.scanDrawModels.values()) {
+        mdl.hoverEntryIdx = -1;
+      }
+      for (const scale of this._colourScales) {
+        scale.hoverValue = null;
       }
     }
   }
@@ -282,7 +298,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     }
   }
 
-  getClosestLocationIdxToPoint(worldPt: Point): { scanId: string; idx: number } {
+  getClosestLocationIdxToPoint(worldPt: Point): ClosestPoint {
     const maxDistance: number = 3;
 
     let closestScanId = "";
@@ -300,7 +316,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
       }
     }
 
-    return { scanId: closestScanId, idx: closestScanIdx };
+    return new ClosestPoint(closestScanId, closestScanIdx);
   }
 }
 
