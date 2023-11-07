@@ -210,7 +210,6 @@ export class MapColourScaleInteraction {
             pos.rect.maxY(),
             pos.tagHeight
           );
-          return CanvasInteractionResult.redrawAndCatch;
         } else if (pos.bottomTagRect.containsPoint(event.canvasPoint)) {
           this._mdl.mouseMode = MouseMode.DRAG_BOTTOM_TAG;
           this._mdl.tagDragYPos = MapColourScaleDrawModel.getScaleYPos(
@@ -221,7 +220,6 @@ export class MapColourScaleInteraction {
             pos.rect.maxY(),
             pos.tagHeight
           );
-          return CanvasInteractionResult.redrawAndCatch;
         }
       }
 
@@ -248,9 +246,13 @@ export class MapColourScaleInteraction {
         this._dragPosCache = pos;
 
         // Set the initial value...
-        this._mdl.tagRawValue = this.getRawValueForYPos(this._mdl.tagDragYPos, this._dragPosCache.stepsShown, this._dragPosCache.rect.maxY(), pos.tagHeight, pos.boxHeight);
-        //console.log('mouse DOWN mode: '+this._mdl.mouseMode+', tagDrag['+this._tagDragYMin+', '+this._tagDragYMax+'], y='+this._mdl.tagDragYPos);
-        //console.log(pos);
+        this._mdl.tagRawValue = this.getRawValueForYPos(
+          this._mdl.tagDragYPos,
+          this._dragPosCache.stepsShown,
+          this._dragPosCache.rect.maxY(),
+          pos.tagHeight,
+          pos.boxHeight
+        );
         return CanvasInteractionResult.redrawAndCatch;
       }
     }
