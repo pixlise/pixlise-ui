@@ -24,6 +24,15 @@ import {
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ColourRamp } from "src/app/utils/colours";
 import { ContextImageMapLayer } from "../../models/map-layer";
+import {
+  SectionedSelectDialogComponent,
+  SectionedSelectDialogInputs,
+  SelectedOptions,
+  SubItemOptionSection,
+} from "src/app/modules/pixlisecore/components/atoms/sectioned-select-dialog/sectioned-select-dialog.component";
+import { string } from "mathjs";
+import { SpectrumChartModel } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/spectrum-model";
+import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 
 @Component({
   selector: "app-context-image",
@@ -91,12 +100,12 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           onClick: () => this.onSoloView(),
         },
         {
-          id: "show-points",
+          id: "show-options",
           type: "button",
-          title: "Show Points",
-          tooltip: "Toggle drawing of experiment location points",
+          title: "Visibility",
+          tooltip: "Toggle visibility of scan data",
           value: false,
-          onClick: () => this.onToggleShowPoints(),
+          onClick: (value, trigger) => this.onToggleShowPoints(trigger),
         },
         {
           id: "zoom-in",
@@ -372,8 +381,88 @@ bool removeBottomSpecularArtifacts = 21;
 
   onSoloView() {}
 
-  onToggleShowPoints() {
-    this.mdl.showPoints = !this.mdl.showPoints;
+  onToggleShowPoints(trigger: Element | undefined) {
+    const options: SubItemOptionSection[] = [
+      {
+        title: "Points",
+        options: [],
+      },
+      {
+        title: "Footprints",
+        options: [],
+      },
+      {
+        title: "Map Data",
+        options: [],
+      },
+    ];
+    // Add options for showing/hiding all scan footprints, maps and points
+    const allOptions = new Set<string>();
+    const appendage = ["-points", "-footprints", "-maps"];
+    for (const scanId of this.mdl.scanIds) {
+      for (let c = 0; c < appendage.length; c++) {
+        const opt = `${scanId}${appendage[c]}`;
+        options[c].options.push({ title: `${scanId}`, value: opt });
+        allOptions.add(opt);
+      }
+    }
+
+    // NOTE: model only stores items in lists that need to be hidden, so here we build selected options
+    // but as an inverse, these are visible if picked
+    const selection: string[] = [];
+    const source: string[][] = [this.mdl.hidePointsForScans, this.mdl.hideFootprintsForScans, this.mdl.hideMapsForScans];
+    for (let c = 0; c < source.length; c++) {
+      for (const scanId of this.mdl.scanIds) {
+        // If this is in the list, it means it's hidden, so it's NOT selected
+        if (source[c].indexOf(scanId) == -1) {
+          selection.push(scanId + appendage[c]);
+        }
+      }
+    }
+
+    const dialogConfig = new MatDialogConfig<SectionedSelectDialogInputs>();
+    dialogConfig.data = {
+      selectionOptions: options,
+      selectedOptions: selection,
+    };
+
+    dialogConfig.hasBackdrop = false;
+    //dialogConfig.disableClose = true;
+    const rect = trigger?.parentElement?.getBoundingClientRect();
+    if (rect) {
+      dialogConfig.position = getInitialModalPositionRelativeToTrigger(trigger, rect.height, rect.width);
+    }
+
+    const dialogRef = this.dialog.open(SectionedSelectDialogComponent, dialogConfig);
+    dialogRef.componentInstance.selectionChanged.subscribe((sel: SelectedOptions) => {
+      if (sel && sel.selectedOptions) {
+        // If it's selected, make sure it is NOT in the hidden list, otherwise it should be there...
+        const hiddenOptions = new Set(allOptions);
+        for (const opt of sel.selectedOptions) {
+          hiddenOptions.delete(opt);
+        }
+
+        // Fill our lists
+        const newHiddenLists: string[][] = [];
+        for (let c = 0; c < appendage.length; c++) {
+          newHiddenLists.push([]);
+        }
+
+        for (const opt of hiddenOptions) {
+          for (let c = 0; c < appendage.length; c++) {
+            if (opt.endsWith(appendage[c])) {
+              newHiddenLists[c].push(opt.substring(0, opt.length - appendage[c].length));
+            }
+          }
+        }
+
+        this.mdl.hidePointsForScans = newHiddenLists[0];
+        this.mdl.hideFootprintsForScans = newHiddenLists[1];
+        this.mdl.hideMapsForScans = newHiddenLists[2];
+
+        this.reDraw();
+      }
+    });
   }
   onZoomIn() {
     const newScale = this.mdl.transform.scale.x * (1 + 4 / 100);

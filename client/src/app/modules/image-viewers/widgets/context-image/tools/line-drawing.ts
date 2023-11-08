@@ -89,14 +89,4 @@ export class LineDrawing extends BaseContextImageTool {
 
     return CanvasInteractionResult.neither;
   }
-  /*
-  drawWorldSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
-    this.drawSelectableLocations(screenContext, this._ctx.highlighedLocationIdx, this._ctx.showPointBBox, this._ctx.showPoints, this._ctx.showPoints);
-
-    // draw the line segments
-    if (this._ctx.drawnLinePoints.length > 1) {
-      let drawer = new UserLineDrawer(this._ctx);
-      drawer.drawWorldSpace(screenContext, drawParams);
-    }
-  }*/
 }

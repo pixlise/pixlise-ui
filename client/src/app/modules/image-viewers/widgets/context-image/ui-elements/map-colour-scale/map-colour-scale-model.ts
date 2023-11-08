@@ -1,10 +1,31 @@
 import { MinMax } from "src/app/models/BasicTypes";
 import { Rect } from "src/app/models/Geometry";
 import { Histogram } from "src/app/models/histogram";
-import { ContextImageMapLayer } from "src/app/modules/image-viewers/models/map-layer";
+import { MapPoint } from "src/app/modules/image-viewers/models/map-layer";
 import { CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { ColourRamp } from "src/app/utils/colours";
 import { randomString } from "src/app/utils/utils";
+
+export class MapColourScaleSourceData {
+  isBinary = true;
+  valueRange = new MinMax();
+  private _values: number[] = [];
+
+  addValues(mapPoints: MapPoint[], valueRange: MinMax, isBinary: boolean) {
+    for (const p of mapPoints) {
+      this.values.push(p.value);
+    }
+
+    this.valueRange.expandByMinMax(valueRange);
+    if (!isBinary) {
+      this.isBinary = false;
+    }
+  }
+
+  get values(): number[] {
+    return this._values;
+  }
+}
 
 export class MapColourScaleModel {
   private _id: string = randomString(6);
@@ -16,26 +37,23 @@ export class MapColourScaleModel {
   private _mouseMode: MouseMode = MouseMode.NONE;
   private _tagDragYPos: number = 0;
   private _tagRawValue: number = -1;
-  private _displayValueRange: MinMax; // How much of that we have visible (controlled by mouse-draggable tags)
 
   constructor(
     // Raw data
-    public scanId: string,
+    public scanIds: string[],
     public expressionId: string,
     public scaleName: string,
-    private _mapData: ContextImageMapLayer,
-    public valueRange: MinMax, // Range of all data points
+    private _mapData: MapColourScaleSourceData,
     public hasOutOfDateModules: boolean, // So we can visually indicate...
     public hoverValue: number | null,
+    private _displayValueRange: MinMax, // How much of that we have visible (controlled by mouse-draggable tags)
 
     // Settings used for drawing
     public displayScalingAllowed: boolean, // Do we allow the drawing/movement of little tags?
     public scaleNumber: number, // Which scale are we of...
     public scaleTotalCount: number, // how many total scales
     public scaleColourRamp: ColourRamp
-  ) {
-    this._displayValueRange = new MinMax(valueRange.min, valueRange.max);
-  }
+  ) {}
 
   get id(): string {
     return this._id;
@@ -47,23 +65,33 @@ export class MapColourScaleModel {
   }
   set mouseMode(x: MouseMode) {
     this._mouseMode = x;
-    this._drawModel.updateForMouse(x, this._tagRawValue);
+    this._drawModel.updateForMouse(x, this._tagRawValue, this._tagDragYPos);
   }
   get tagDragYPos(): number {
     return this._tagDragYPos;
   }
   set tagDragYPos(x: number) {
     this._tagDragYPos = x;
+    this._drawModel.updateForMouse(this._mouseMode, this._tagRawValue, x);
   }
   get tagRawValue(): number {
     return this._tagRawValue;
   }
   set tagRawValue(x: number) {
     this._tagRawValue = x;
-    this._drawModel.updateForMouse(this._mouseMode, x);
+    this._drawModel.updateForMouse(this._mouseMode, x, this._tagDragYPos);
   }
   get displayValueRange(): MinMax {
-    return this._displayValueRange;
+    return new MinMax(
+      this._displayValueRange.min === null ? this.valueRange.min : this._displayValueRange.min,
+      this._displayValueRange.max === null ? this.valueRange.max : this._displayValueRange.max
+    );
+  }
+  setDisplayValueRange(r: MinMax) {
+    this._displayValueRange = r;
+  }
+  get valueRange(): MinMax {
+    return this._mapData.valueRange;
   }
   get drawModel(): MapColourScaleDrawModel {
     return this._drawModel;
@@ -83,30 +111,41 @@ export class MapColourScaleDrawModel {
   bottomTagValue: number | null = null;
   histogram: Histogram = new Histogram();
 
-  regenerate(canvasParams: CanvasParams, mdl: MapColourScaleModel, mapData: ContextImageMapLayer) {
-    this.pos = this.getPosition(canvasParams, mdl.scaleTotalCount > 1, mdl.scaleNumber, mapData.isBinary, mdl.mouseMode, mdl.tagDragYPos, mdl.valueRange);
+  regenerate(canvasParams: CanvasParams, mdl: MapColourScaleModel, mapData: MapColourScaleSourceData) {
+    this.pos = this.getPosition(canvasParams, mdl.scaleTotalCount > 1, mdl.scaleNumber, mapData.isBinary, mdl.valueRange);
 
     this.histogram = this.generateHistogram(mapData, this.pos.stepsShown);
     this.isValid = this.histogram.values.length != 2 || this.histogram.max() != 0;
 
-    this.updateForMouse(mdl.mouseMode, mdl.tagRawValue);
+    this.updateForMouse(mdl.mouseMode, mdl.tagRawValue, mdl.tagDragYPos);
   }
 
-  updateForMouse(mouseMode: MouseMode, tagRawValue: number) {
+  updateForMouse(mouseMode: MouseMode, tagRawValue: number, tagDragYPos: number) {
     this.showTopTagValue = mouseMode == MouseMode.HOVER_MOVE || mouseMode == MouseMode.DRAG_TOP_TAG || mouseMode == MouseMode.HOVER_TOP_TAG;
     this.showBottomTagValue = mouseMode == MouseMode.HOVER_MOVE || mouseMode == MouseMode.DRAG_BOTTOM_TAG || mouseMode == MouseMode.HOVER_BOTTOM_TAG;
 
     this.topTagValue = null;
     this.bottomTagValue = null;
+    if (this.pos) {
+      this.pos.topTagYOverride = null;
+      this.pos.bottomTagYOverride = null;
+    }
+
     // If user is dragging it, get the current value at the mouse
     if (mouseMode == MouseMode.DRAG_TOP_TAG) {
       this.topTagValue = tagRawValue;
+      if (this.pos && tagDragYPos != -1) {
+        this.pos.topTagYOverride = tagDragYPos;
+      }
     } else if (mouseMode == MouseMode.DRAG_BOTTOM_TAG) {
       this.bottomTagValue = tagRawValue;
+      if (this.pos && tagDragYPos != -1) {
+        this.pos.bottomTagYOverride = tagDragYPos;
+      }
     }
   }
 
-  private generateHistogram(data: ContextImageMapLayer, stepsShown: number): Histogram {
+  private generateHistogram(data: MapColourScaleSourceData, stepsShown: number): Histogram {
     // Generate a histogram using the stepping defined in "pos"
     const histogram: Histogram = new Histogram();
     histogram.clear(stepsShown);
@@ -114,8 +153,8 @@ export class MapColourScaleDrawModel {
     // We now have a bunch of 0's, now run through all values and make sure their counts are in the right bin
     const stepSize = data.valueRange.getRange() / (stepsShown - 1);
     if (stepSize > 0) {
-      for (const p of data.mapPoints) {
-        const val = p.value - data.valueRange.min!;
+      for (const v of data.values) {
+        const val = v - data.valueRange.min!;
 
         // Find where to slot it in
         const idx = Math.floor(val / stepSize);
@@ -126,15 +165,7 @@ export class MapColourScaleDrawModel {
     return histogram;
   }
 
-  protected getPosition(
-    viewport: CanvasParams,
-    isCompressedY: boolean,
-    scaleNumber: number,
-    isDataBinary: boolean,
-    mouseMode: MouseMode,
-    tagDragYPos: number,
-    scaleRange: MinMax
-  ): ScaleInfo {
+  protected getPosition(viewport: CanvasParams, isCompressedY: boolean, scaleNumber: number, isDataBinary: boolean, scaleRange: MinMax): ScaleInfo {
     const baseSize = 16;
 
     // Make everything a calc from the above, can easily scale it!
@@ -158,25 +189,12 @@ export class MapColourScaleDrawModel {
     const idxForHeight = scaleNumber;
 
     const rect = new Rect(Math.floor(edgeMargin), Math.floor(viewport.height - edgeMargin - h) - idxForHeight * h, histBarMaxSize + boxWidth + labelMaxWidth, h);
-
     const tagX = Math.floor(rect.x + histBarMaxSize);
-
-    let topTagY = MapColourScaleDrawModel.getScaleYPos(scaleRange.max || 0, scaleRange, stepsShown, boxHeight, rect.maxY(), tagHeight);
-    if (mouseMode == MouseMode.DRAG_TOP_TAG) {
-      topTagY = tagDragYPos;
-    }
-
-    let bottomTagY = MapColourScaleDrawModel.getScaleYPos(scaleRange.min || 0, scaleRange, stepsShown, boxHeight, rect.maxY(), tagHeight);
-    if (mouseMode == MouseMode.DRAG_BOTTOM_TAG) {
-      bottomTagY = tagDragYPos;
-    }
 
     return new ScaleInfo(
       rect,
       boxHeight,
       stepsShown,
-      new Rect(tagX, Math.floor(topTagY), labelMaxWidth + boxWidth, tagHeight),
-      new Rect(tagX, Math.floor(bottomTagY), labelMaxWidth + boxWidth, tagHeight),
       baseSize,
       boxWidth,
       histBarMaxSize,
@@ -184,7 +202,14 @@ export class MapColourScaleDrawModel {
       fontSize,
       labelMaxWidth,
       tagHeight,
-      tagYPadding
+      tagYPadding,
+
+      MapColourScaleDrawModel.getScaleYPos(scaleRange.max || 0, scaleRange, stepsShown, boxHeight, rect.maxY(), tagHeight),
+      MapColourScaleDrawModel.getScaleYPos(scaleRange.min || 0, scaleRange, stepsShown, boxHeight, rect.maxY(), tagHeight),
+
+      tagX,
+      labelMaxWidth + boxWidth,
+      tagHeight
     );
   }
 
@@ -199,12 +224,13 @@ export class MapColourScaleDrawModel {
 }
 
 export class ScaleInfo {
+  private _topTagYOverride: number | null = null;
+  private _bottomTagYOverride: number | null = null;
+
   constructor(
     public rect: Rect,
     public boxHeight: number,
     public stepsShown: number,
-    public topTagRect: Rect,
-    public bottomTagRect: Rect,
 
     // Fine grained sizing
     public baseSize: number,
@@ -214,8 +240,34 @@ export class ScaleInfo {
     public fontSize: number,
     public labelMaxWidth: number,
     public tagHeight: number,
-    public tagYPadding: number
+    public tagYPadding: number,
+
+    private _topTagY: number,
+    private _bottomTagY: number,
+
+    private _tagX: number,
+    private _tagWidth: number,
+    private _tagHeight: number
   ) {}
+
+  getTagRect(top: boolean): Rect {
+    let tagY = top ? this._topTagY : this._bottomTagY;
+    if (top && this._topTagYOverride !== null) {
+      tagY = this._topTagYOverride;
+    } else if (!top && this._bottomTagYOverride !== null) {
+      tagY = this._bottomTagYOverride;
+    }
+
+    return new Rect(this._tagX, tagY, this._tagWidth, this._tagHeight);
+  }
+
+  set topTagYOverride(y: number | null) {
+    this._topTagYOverride = y;
+  }
+
+  set bottomTagYOverride(y: number | null) {
+    this._bottomTagYOverride = y;
+  }
 }
 
 export enum MouseMode {

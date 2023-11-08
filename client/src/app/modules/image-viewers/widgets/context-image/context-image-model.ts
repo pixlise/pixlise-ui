@@ -12,11 +12,12 @@ import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection
 import { ContextImageMapLayer } from "../../models/map-layer";
 import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
 import { Footprint, HullPoint } from "../../models/footprint";
-import { RGBA, Colours } from "src/app/utils/colours";
+import { RGBA, Colours, ColourRamp } from "src/app/utils/colours";
 import { ContextImageScanDrawModel } from "../../models/context-image-draw-model";
 import { ContextImageRegionLayer } from "../../models/region";
-import { MapColourScaleModel } from "./ui-elements/map-colour-scale/map-colour-scale-model";
+import { MapColourScaleModel, MapColourScaleSourceData } from "./ui-elements/map-colour-scale/map-colour-scale-model";
 import { randomString } from "src/app/utils/utils";
+import { MinMax } from "src/app/models/BasicTypes";
 
 export class ContextImageModelLoadedData {
   constructor(
@@ -41,8 +42,11 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   expressionIds: string[] = [];
   roiIds: string[] = [];
 
+  hidePointsForScans: string[] = [];
+  hideFootprintsForScans: string[] = [];
+  hideMapsForScans: string[] = [];
+
   smoothing: boolean = false;
-  showPoints: boolean = true;
   selectionModeAdd: boolean = true; // Add or Subtract, nothing else!
   elementRelativeShading: boolean = false; // A toggle available in Element Maps tab version of context image only!
 
@@ -59,6 +63,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   transform: PanZoom = new PanZoom();
 
   private _colourScales: MapColourScaleModel[];
+  private _colourScaleDisplayValueRanges = new Map<string, MinMax>();
 
   // If nothing else, somewhere to put a breakpoint!
   constructor() {
@@ -120,7 +125,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
       for (const scale of this._colourScales) {
         // TODO: do we want a scan ID here, to specify which one the scale is for??? Does the scale just get all
         // expression output for a given scan???
-        if (scale.scanId == hoverScanId) {
+        if (scale.scanIds.indexOf(hoverScanId) > -1) {
           // Set a hover value for the scan
           const scanDrawMdl = this._drawModel.scanDrawModels.get(hoverScanId);
 
@@ -177,41 +182,73 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
         found = true;
       }
     }
+
     if (!found) {
       scanMdl.maps.push(layer);
     }
 
-    // if this is the first visible map layer, generate a colour scale from it
-    if (this.getMapLayerCount() == 1) {
-      this._colourScales.push(
-        new MapColourScaleModel(
-          layer.scanId,
-          layer.expressionId,
-          layer.expressionName,
-          layer,
-          layer.valueRange,
-          false,
-          1, // hover value
-          true, // We always allow scale tags to be moved on layer colour scales
-          0, // Scale number
-          1, // Total scales we're drawing TODO: figure out a way to add RGB mixes
-          layer.shading
-        )
-      );
+    if (this.expressionIds[0] == layer.expressionId) {
+      this.rebuildColourScale();
     }
 
     this._recalcNeeded = true;
     console.log(` *** ContextImageModel ${this._id} setMapLayer recalcNeeded=${this._recalcNeeded} scales: ${this.colourScales.length}`);
   }
 
-  private getMapLayerCount(): number {
-    let count = 0;
-    if (this._raw) {
-      for (const mdl of this._raw.scanModels.values()) {
-        count += mdl.maps.length;
+  rebuildColourScale() {
+    if (this.expressionIds.length <= 0 || !this._raw) {
+      return;
+    }
+
+    // If we're the "top" expression (first one in the list), we have to update the colour scale
+    const topExpressionId = this.expressionIds[0];
+
+    // Now find all layers for this expression (expression per scan id... so we want all copies of the expression into same id)
+    const scaleData = new MapColourScaleSourceData();
+    const scaleScanIds = [];
+
+    let layerName = "";
+    let layerShading = ColourRamp.SHADE_INFERNO;
+
+    for (const [scanId, scanMdl] of this._raw.scanModels) {
+      for (const mapLayer of scanMdl.maps) {
+        if (mapLayer.expressionId == topExpressionId) {
+          // This has to be included
+          scaleData.addValues(mapLayer.mapPoints, mapLayer.valueRange, mapLayer.isBinary);
+          scaleScanIds.push(scanId);
+
+          // If we haven't yet, pick off the layer name and we just use the first shading setting we find
+          if (!layerName) {
+            layerName = mapLayer.expressionName;
+            layerShading = mapLayer.shading;
+          }
+        }
       }
     }
-    return count;
+
+    // Ensure we have a saved min/max for this (a blank one)
+    let displayValueRange = this._colourScaleDisplayValueRanges.get(topExpressionId);
+    if (!displayValueRange) {
+      displayValueRange = new MinMax();
+      this._colourScaleDisplayValueRanges.set(topExpressionId, displayValueRange);
+    }
+
+    // Generate colour scale
+    this._colourScales.push(
+      new MapColourScaleModel(
+        scaleScanIds,
+        topExpressionId,
+        layerName,
+        scaleData,
+        false,
+        null, // hover value
+        displayValueRange, // The display value range to show (top and bottom tags)
+        true, // We always allow scale tags to be moved on layer colour scales
+        0, // Scale number
+        1, // Total scales we're drawing TODO: figure out a way to add RGB mixes
+        layerShading
+      )
+    );
   }
 
   clearDrawnLinePoints(): void {

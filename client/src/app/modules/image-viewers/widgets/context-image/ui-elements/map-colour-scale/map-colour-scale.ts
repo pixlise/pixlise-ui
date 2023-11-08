@@ -89,9 +89,9 @@ export class MapColourScale extends BaseUIElement {
   }
 
   override mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
-    if (event.eventId != CanvasMouseEventId.MOUSE_MOVE && event.eventId != CanvasMouseEventId.MOUSE_ENTER) {
+    /*if (event.eventId != CanvasMouseEventId.MOUSE_MOVE && event.eventId != CanvasMouseEventId.MOUSE_ENTER) {
       console.log("NOT Mouse move");
-    }
+    }*/
 
     if (this._mouseDragging) {
       // User is already dragging our object, so just handle anything related to it here

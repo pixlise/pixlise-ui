@@ -72,14 +72,14 @@ export class MapColourScaleDrawer {
       if (!isNaN(bottomTagValue) && bottomTagValue !== null) {
         // We had instances where expression failed, min/max/value were null, don't want to draw then!
         const rep = getDrawParamsForRawValue(mdl.scaleColourRamp, bottomTagValue, mdl.displayValueRange);
-        this.drawTag(screenContext, pos.bottomTagRect, drawMdl.pos!, clrBottomTag, bottomTagValue, rep, mdl.valueRange, drawMdl.showBottomTagValue);
+        this.drawTag(screenContext, pos.getTagRect(false), drawMdl.pos!, clrBottomTag, bottomTagValue, rep, mdl.valueRange, drawMdl.showBottomTagValue);
       }
 
       // Top tag
       if (!isNaN(topTagValue) && topTagValue !== null) {
         // We had instances where expression failed, min/max/value were null, don't want to draw then!
         const rep = getDrawParamsForRawValue(mdl.scaleColourRamp, topTagValue, mdl.displayValueRange);
-        this.drawTag(screenContext, pos.topTagRect, drawMdl.pos!, clrTopTag, topTagValue, rep, mdl.valueRange, drawMdl.showTopTagValue);
+        this.drawTag(screenContext, pos.getTagRect(true), drawMdl.pos!, clrTopTag, topTagValue, rep, mdl.valueRange, drawMdl.showTopTagValue);
       }
     }
   }
@@ -247,13 +247,15 @@ export class MapColourScaleDrawer {
       } else {
         // Color for blue bottom slider bar
         const minRep = getDrawParamsForRawValue(mdl.scaleColourRamp, scaleRange.min, mdl.displayValueRange);
+        const bottomTagRect = pos.getTagRect(false);
+
         screenContext.strokeStyle = minRep.colour.asString();
         screenContext.lineWidth = 2;
         screenContext.beginPath();
-        screenContext.moveTo(x, pos.bottomTagRect.midY());
+        screenContext.moveTo(x, bottomTagRect.midY());
         screenContext.lineTo(x, startingY);
         screenContext.lineTo(x + pos.boxWidth, startingY);
-        screenContext.lineTo(x + pos.boxWidth, pos.bottomTagRect.midY());
+        screenContext.lineTo(x + pos.boxWidth, bottomTagRect.midY());
         screenContext.stroke();
       }
     }
@@ -272,11 +274,13 @@ export class MapColourScaleDrawer {
 
         // y is the top of the box, we don't want it to quite extend that far
         y += 2;
+        const topTagRect = pos.getTagRect(true);
+
         screenContext.beginPath();
-        screenContext.moveTo(x, pos.topTagRect.midY());
+        screenContext.moveTo(x, topTagRect.midY());
         screenContext.lineTo(x, y);
         screenContext.lineTo(x + pos.boxWidth, y);
-        screenContext.lineTo(x + pos.boxWidth, pos.topTagRect.midY());
+        screenContext.lineTo(x + pos.boxWidth, topTagRect.midY());
         screenContext.stroke();
       }
     }

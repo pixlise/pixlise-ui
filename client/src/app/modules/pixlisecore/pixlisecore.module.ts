@@ -44,6 +44,7 @@ import { FilterBoxComponent } from "./components/atoms/filter-box/filter-box.com
 import { SliderComponent } from "./components/atoms/slider/slider.component";
 import { PeriodicTableComponent } from "./components/atoms/periodic-table/periodic-table.component";
 import { ElementTileComponent } from "./components/atoms/periodic-table/element-tile/element-tile.component";
+import { SectionedSelectDialogComponent } from './components/atoms/sectioned-select-dialog/sectioned-select-dialog.component';
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -87,6 +88,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     ElementTileComponent,
     SelectionChangerComponent,
     SelectionOptionsComponent,
+    SectionedSelectDialogComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule],
   exports: [

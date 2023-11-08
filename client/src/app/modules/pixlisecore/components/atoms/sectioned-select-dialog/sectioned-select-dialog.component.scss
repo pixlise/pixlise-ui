@@ -1,0 +1,35 @@
+
+.custom-select-picker {
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+    padding: 8px;
+  
+    .option-section {
+      margin-bottom: 8px;
+  
+      h2 {
+        color: rgb(var(--clr-gray-30));
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 400;
+        font-size: 12px;
+        line-height: 14px;
+        text-transform: uppercase;
+      }
+  
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+      }
+    }
+    
+    .bottom-buttons {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 8px;
+    }
+}
+  
