@@ -9,7 +9,7 @@ import { RGBUImage } from "src/app/models/RGBUImage";
 import { ScanPoint } from "../../models/scan-point";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
-import { ContextImageMapLayer } from "../../models/map-layer";
+import { ContextImageMapLayer, getDrawParamsForRawValue } from "../../models/map-layer";
 import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
 import { Footprint, HullPoint } from "../../models/footprint";
 import { RGBA, Colours, ColourRamp } from "src/app/utils/colours";
@@ -288,6 +288,10 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     return null;
   }
 
+  get colourScaleDisplayValueRanges(): Map<string, MinMax> {
+    return this._colourScaleDisplayValueRanges;
+  }
+
   get rgbuSourceImage(): RGBUImage | null {
     if (this._raw) {
       return this._raw.rgbuSourceImage;
@@ -321,8 +325,16 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   recalcDisplayDataIfNeeded(canvasParams: CanvasParams): void {
     //console.log(` *** ContextImageModel ${this._id} recalcDisplayDataIfNeeded recalcNeeded=${this._recalcNeeded}`);
 
+    // Sometimes the colour scale wants a recalc, so check for that here
+    let forceRecalcDrawModel = false;
+    for (const scale of this._colourScales) {
+      if (scale.needsRecalc) {
+        forceRecalcDrawModel = true;
+      }
+    }
+
     // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
-    if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
+    if (forceRecalcDrawModel || this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
       this._drawModel.regenerate(canvasParams, this);
 
       // Also recalculate draw models of any colour scales we're showing
@@ -489,7 +501,18 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
         );
 
         if (scanMdl.maps) {
-          scanDrawMdl.maps = Array.from(scanMdl.maps);
+          // Recolour each one
+          for (const layerMap of scanMdl.maps) {
+            let displayRange = from.colourScaleDisplayValueRanges.get(layerMap.expressionId);
+            if (!displayRange || !displayRange.isValid()) {
+              displayRange = layerMap.valueRange;
+            }
+
+            for (const pt of layerMap.mapPoints) {
+              pt.drawParams = getDrawParamsForRawValue(layerMap.shading, pt.value, displayRange);
+            }
+            scanDrawMdl.maps.push(layerMap);
+          }
         }
 
         if (scanMdl.regions) {

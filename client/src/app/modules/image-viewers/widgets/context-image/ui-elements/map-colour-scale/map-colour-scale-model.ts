@@ -38,6 +38,9 @@ export class MapColourScaleModel {
   private _tagDragYPos: number = 0;
   private _tagRawValue: number = -1;
 
+  // Signalling that we need recalculation
+  private _needsRecalc: boolean = false;
+
   constructor(
     // Raw data
     public scanIds: string[],
@@ -88,7 +91,38 @@ export class MapColourScaleModel {
     );
   }
   setDisplayValueRange(r: MinMax) {
-    this._displayValueRange = r;
+    if (r.min !== null) {
+      this._displayValueRange.setMin(r.min);
+    }
+    if (r.max !== null) {
+      this._displayValueRange.setMax(r.max);
+    }
+
+    // Check against the value range
+    if (
+      this._displayValueRange.max !== null &&
+      this._displayValueRange.min !== null &&
+      this._mapData.valueRange.max !== null &&
+      this._mapData.valueRange.min !== null
+    ) {
+      // Don't allow overlap...
+      if (this._displayValueRange.max < this._displayValueRange.min) {
+        this._displayValueRange.setMax(this._displayValueRange.min + Math.abs(this._displayValueRange.getRange()) * 0.001);
+      }
+      if (this._displayValueRange.min > this._displayValueRange.max) {
+        this._displayValueRange.setMin(this._displayValueRange.max - Math.abs(this._displayValueRange.getRange()) * 0.001);
+      }
+
+      // Keep it within the data limits
+      if (this._displayValueRange.max > this._mapData.valueRange.max) {
+        this._displayValueRange.setMax(this._mapData.valueRange.max);
+      }
+      if (this._displayValueRange.min < this._mapData.valueRange.min) {
+        this._displayValueRange.setMin(this._mapData.valueRange.min);
+      }
+    }
+
+    this._needsRecalc = true;
   }
   get valueRange(): MinMax {
     return this._mapData.valueRange;
@@ -96,9 +130,13 @@ export class MapColourScaleModel {
   get drawModel(): MapColourScaleDrawModel {
     return this._drawModel;
   }
+  get needsRecalc(): boolean {
+    return this._needsRecalc;
+  }
 
   recalcDisplayData(canvasParams: CanvasParams): void {
     this._drawModel.regenerate(canvasParams, this, this._mapData);
+    this._needsRecalc = false;
   }
 }
 
@@ -112,7 +150,7 @@ export class MapColourScaleDrawModel {
   histogram: Histogram = new Histogram();
 
   regenerate(canvasParams: CanvasParams, mdl: MapColourScaleModel, mapData: MapColourScaleSourceData) {
-    this.pos = this.getPosition(canvasParams, mdl.scaleTotalCount > 1, mdl.scaleNumber, mapData.isBinary, mdl.valueRange);
+    this.pos = this.getPosition(canvasParams, mdl.scaleTotalCount > 1, mdl.scaleNumber, mapData.isBinary, mdl.valueRange, mdl.displayValueRange);
 
     this.histogram = this.generateHistogram(mapData, this.pos.stepsShown);
     this.isValid = this.histogram.values.length != 2 || this.histogram.max() != 0;
@@ -165,7 +203,14 @@ export class MapColourScaleDrawModel {
     return histogram;
   }
 
-  protected getPosition(viewport: CanvasParams, isCompressedY: boolean, scaleNumber: number, isDataBinary: boolean, scaleRange: MinMax): ScaleInfo {
+  protected getPosition(
+    viewport: CanvasParams,
+    isCompressedY: boolean,
+    scaleNumber: number,
+    isDataBinary: boolean,
+    scaleRange: MinMax,
+    displayRange: MinMax
+  ): ScaleInfo {
     const baseSize = 16;
 
     // Make everything a calc from the above, can easily scale it!
@@ -204,8 +249,8 @@ export class MapColourScaleDrawModel {
       tagHeight,
       tagYPadding,
 
-      MapColourScaleDrawModel.getScaleYPos(scaleRange.max || 0, scaleRange, stepsShown, boxHeight, rect.maxY(), tagHeight),
-      MapColourScaleDrawModel.getScaleYPos(scaleRange.min || 0, scaleRange, stepsShown, boxHeight, rect.maxY(), tagHeight),
+      MapColourScaleDrawModel.getScaleYPos(displayRange.max || 0, scaleRange, stepsShown, boxHeight, rect.maxY(), tagHeight),
+      MapColourScaleDrawModel.getScaleYPos(displayRange.min || 0, scaleRange, stepsShown, boxHeight, rect.maxY(), tagHeight),
 
       tagX,
       labelMaxWidth + boxWidth,

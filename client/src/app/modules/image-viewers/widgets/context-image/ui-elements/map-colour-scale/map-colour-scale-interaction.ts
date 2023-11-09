@@ -193,6 +193,7 @@ export class MapColourScaleInteraction {
     // Check if we're starting any sort of drag...
     if (pos.rect.containsPoint(event.canvasPoint)) {
       const scaleTagValues = this._mdl.displayValueRange;
+      const dataValueRange = this._mdl.valueRange;
 
       if (this._mdl.displayScalingAllowed && scaleTagValues.isValid()) {
         // At this point, check if we're at least hovering over the buttons
@@ -200,7 +201,7 @@ export class MapColourScaleInteraction {
           this._mdl.mouseMode = MouseMode.DRAG_TOP_TAG;
           this._mdl.tagDragYPos = MapColourScaleDrawModel.getScaleYPos(
             scaleTagValues.max!,
-            scaleTagValues,
+            dataValueRange,
             pos.stepsShown,
             pos.boxHeight,
             pos.rect.maxY(),
@@ -210,7 +211,7 @@ export class MapColourScaleInteraction {
           this._mdl.mouseMode = MouseMode.DRAG_BOTTOM_TAG;
           this._mdl.tagDragYPos = MapColourScaleDrawModel.getScaleYPos(
             scaleTagValues.min!,
-            scaleTagValues,
+            dataValueRange,
             pos.stepsShown,
             pos.boxHeight,
             pos.rect.maxY(),
@@ -223,18 +224,23 @@ export class MapColourScaleInteraction {
       if (this._mdl.mouseMode == MouseMode.DRAG_TOP_TAG || this._mdl.mouseMode == MouseMode.DRAG_BOTTOM_TAG) {
         // Work out the min/max values we're allowed to drag between. When we're done
         // we apply the value as a % between these values, so it's important!
-        const valueRange = this._mdl.valueRange;
-
-        if (valueRange.isValid()) {
+        if (dataValueRange.isValid()) {
           this._tagDragYBottomLimit = MapColourScaleDrawModel.getScaleYPos(
-            valueRange.min!,
-            valueRange,
+            dataValueRange.min!,
+            dataValueRange,
             pos.stepsShown,
             pos.boxHeight,
             pos.rect.maxY(),
             pos.tagHeight
           );
-          this._tagDragYTopLimit = MapColourScaleDrawModel.getScaleYPos(valueRange.max!, valueRange, pos.stepsShown, pos.boxHeight, pos.rect.maxY(), pos.tagHeight);
+          this._tagDragYTopLimit = MapColourScaleDrawModel.getScaleYPos(
+            dataValueRange.max!,
+            dataValueRange,
+            pos.stepsShown,
+            pos.boxHeight,
+            pos.rect.maxY(),
+            pos.tagHeight
+          );
         }
 
         this._tagDragYInitialPos = this._mdl.tagDragYPos;
