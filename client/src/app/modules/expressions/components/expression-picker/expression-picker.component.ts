@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Inject, OnInit } from "@angular/core";
+import { Component, Inject, OnDestroy, OnInit } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { Subscription } from "rxjs";
@@ -36,9 +36,10 @@ import { ExpressionSearchFilter } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ExpressionGroup } from "src/app/generated-protos/expression-group";
 
 export type ExpressionPickerResponse = {
-  selectedExpressions: DataExpression[];
+  selectedExpressions: (DataExpression | ExpressionGroup)[];
   scanId: string;
   quantId: string;
 };
@@ -52,11 +53,11 @@ export type ExpressionPickerData = {
   templateUrl: "./expression-picker.component.html",
   styleUrls: ["./expression-picker.component.scss"],
 })
-export class ExpressionPickerComponent implements OnInit {
+export class ExpressionPickerComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
-  filteredExpressions: DataExpression[] = [];
-  selectedExpressions: Record<string, DataExpression> = {};
+  filteredExpressions: (DataExpression | ExpressionGroup)[] = [];
+  selectedExpressions: Record<string, DataExpression | ExpressionGroup> = {};
 
   manualFilters: Partial<ExpressionSearchFilter> | null = null;
 
@@ -121,7 +122,7 @@ export class ExpressionPickerComponent implements OnInit {
     this._subs.unsubscribe();
   }
 
-  trackById(index: number, item: DataExpression): string {
+  trackById(index: number, item: DataExpression | ExpressionGroup): string {
     return item.id;
   }
 
@@ -162,7 +163,7 @@ export class ExpressionPickerComponent implements OnInit {
     this.quantId = quantId;
 
     // Remove any ROIs from the selection that are no longer visible
-    let newSelection: Record<string, DataExpression> = {};
+    let newSelection: Record<string, DataExpression | ExpressionGroup> = {};
     this.filteredExpressions.forEach(summary => {
       if (this.selectedExpressions[summary.id]) {
         newSelection[summary.id] = summary;
@@ -181,7 +182,7 @@ export class ExpressionPickerComponent implements OnInit {
   }
 
   onConfirm(): void {
-    let selectedExpressions = Object.values(this.selectedExpressions);
+    const selectedExpressions = Object.values(this.selectedExpressions);
 
     this.dialogRef.close({
       selectedExpressions,

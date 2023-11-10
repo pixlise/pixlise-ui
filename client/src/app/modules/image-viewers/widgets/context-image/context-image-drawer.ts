@@ -60,6 +60,16 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
         drawFootprint(screenContext, scanDrawMdl.footprint, this._mdl.transform);
       }
 
+      for (const region of scanDrawMdl.regions) {
+        drawRegion(screenContext, region, drawParams.worldTransform, drawMdl.imageTransform, null, false);
+      }
+
+      if (this._mdl.hideMapsForScans.indexOf(scanId) == -1) {
+        for (const mapLayer of scanDrawMdl.maps) {
+          drawMapData(screenContext, mapLayer, scanDrawMdl.scanPoints, scanDrawMdl.scanPointPolygons, scanDrawMdl.scanPointDisplayRadius, 1);
+        }
+      }
+
       if (this._mdl.hidePointsForScans.indexOf(scanId) == -1) {
         drawScanPoints(
           screenContext,
@@ -73,16 +83,6 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
           drawMdl.secondaryColour,
           scanDrawMdl.drawPointColourOverrides
         );
-      }
-
-      for (const region of scanDrawMdl.regions) {
-        drawRegion(screenContext, region, drawParams.worldTransform, drawMdl.imageTransform, null, false);
-      }
-
-      if (this._mdl.hideMapsForScans.indexOf(scanId) == -1) {
-        for (const mapLayer of scanDrawMdl.maps) {
-          drawMapData(screenContext, mapLayer, scanDrawMdl.scanPoints, scanDrawMdl.scanPointPolygons, scanDrawMdl.scanPointDisplayRadius, 1);
-        }
       }
     }
 

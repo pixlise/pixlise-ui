@@ -193,7 +193,7 @@ export interface CanvasWorldTransform {
   templateUrl: "./interactive-canvas.component.html",
   styleUrls: ["./interactive-canvas.component.scss"],
 })
-export class InteractiveCanvasComponent implements OnInit, OnDestroy {
+export class InteractiveCanvasComponent implements /*OnInit,*/ OnDestroy {
   @Input() drawer: CanvasDrawer | null = null;
   _drawNotifier: CanvasDrawNotifier | null = null;
   @Input() interactionHandler: CanvasInteractionHandler | null = null;
@@ -206,19 +206,12 @@ export class InteractiveCanvasComponent implements OnInit, OnDestroy {
   private _mouseDown: Point | null = null;
   private _mouseLast: Point | null = null;
 
-  //private _mouseWheelDeltaAccum: number = 0;
-  //private _mouseWheelDeltaAccumWheel: number = 0;
-  private _mouseWheelDeltaAccumX: number = 0;
-  //private _mouseWheelDeltaAccumWheelX: number = 0;
-  private _mouseWheelDeltaAccumY: number = 0;
-  //private _mouseWheelDeltaAccumWheelY: number = 0;
-
   protected _subs = new Subscription();
   protected _viewport: CanvasParams = new CanvasParams(0, 0, 1);
 
   constructor(private _layoutService: AnalysisLayoutService) {}
 
-  ngOnInit() {}
+  //ngOnInit() {}
 
   ngOnDestroy() {
     this._subs.unsubscribe();

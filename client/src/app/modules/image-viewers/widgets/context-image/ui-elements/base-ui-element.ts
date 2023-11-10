@@ -38,6 +38,7 @@ import {
 import { Colours } from "src/app/utils/colours";
 import { IContextImageModel } from "../context-image-model-interface";
 import { IToolHost } from "../tools/base-context-image-tool";
+import { Rect } from "src/app/models/Geometry";
 
 export class BaseUIElement implements CanvasInteractionHandler, CanvasDrawer {
   constructor(
@@ -62,6 +63,35 @@ export class BaseUIElement implements CanvasInteractionHandler, CanvasDrawer {
   // Internal draw helpers
   protected drawStrokedText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number): void {
     drawStrokedText(ctx, text, x, y);
+  }
+
+  public static keepOnScreen(rect: Rect, screenWidth: number, screenHeight: number, allowOverhangPercent: number): Rect {
+    const result = new Rect(rect.x, rect.y, rect.w, rect.h);
+
+    // If more than half of it is off screen in X or Y directions, move it back
+
+    const maxOverhangX = rect.w * allowOverhangPercent;
+    const maxOverhangY = rect.h * allowOverhangPercent;
+
+    let overhang = result.maxX() - screenWidth;
+    if (overhang >= maxOverhangX) {
+      result.x = screenWidth - (rect.w - maxOverhangX);
+    }
+
+    if (result.x <= -maxOverhangX) {
+      result.x = -maxOverhangX;
+    }
+
+    overhang = result.maxY() - screenHeight;
+    if (overhang >= maxOverhangY) {
+      result.y = screenHeight - (rect.h - maxOverhangY);
+    }
+
+    if (result.y <= -maxOverhangY) {
+      result.y = -maxOverhangY;
+    }
+
+    return result;
   }
 }
 

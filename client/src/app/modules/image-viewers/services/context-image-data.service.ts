@@ -9,12 +9,14 @@ import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry
 import { Coordinate2D } from "src/app/generated-protos/image-beam-location";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
-import { ColourRamp, Colours, RGBA } from "src/app/utils/colours";
+import { ColourRamp } from "src/app/utils/colours";
 import { ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageScanModelGenerator } from "../widgets/context-image/context-image-scan-model-generator";
 import { DataSourceParams, RegionDataResults, WidgetDataService } from "../../pixlisecore/pixlisecore.module";
-import { ContextImageMapLayer, MapPoint, MapPointDrawParams, MapPointShape, MapPointState, getDrawParamsForRawValue } from "../models/map-layer";
+import { ContextImageMapLayer, MapPoint, getDrawParamsForRawValue } from "../models/map-layer";
 import { ContextImageModelLoadedData, ContextImageScanModel } from "../widgets/context-image/context-image-model";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { ExpressionGroupGetReq, ExpressionGroupGetResp } from "src/app/generated-protos/expression-group-msgs";
 
 @Injectable({
   providedIn: "root",
@@ -53,47 +55,149 @@ export class ContextImageDataService {
     colourRamp: ColourRamp,
     pmcToIndexLookup: Map<number, number>
   ): Observable<ContextImageMapLayer> {
+    // If we're dealing with an expression group, we need to load the group first and run each expression in the group
+    if (!DataExpressionId.isExpressionGroupId(expressionId)) {
+      // It's just a simple layer, load it
+      return this.getExpressionLayerModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup);
+    }
+
+    // Load the expression group first, run the first 3 expressions
+    return this.getExpressionGroupModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup);
+  }
+
+  private getExpressionLayerModel(
+    scanId: string,
+    expressionId: string,
+    quantId: string,
+    roiId: string,
+    colourRamp: ColourRamp,
+    pmcToIndexLookup: Map<number, number>
+  ): Observable<ContextImageMapLayer> {
     const query = [new DataSourceParams(scanId, expressionId, quantId, roiId)];
     return this._widgetDataService.getData(query).pipe(
       map((results: RegionDataResults) => {
-        if (results.error) {
-          throw new Error(results.error);
-        }
-
-        if (results.queryResults.length != query.length) {
-          throw new Error(`getLayerModel: expected ${query.length} results, received ${results.queryResults.length}`);
-        }
-
-        if (results.queryResults[0].error) {
-          throw new Error(`getLayerModel: expression ${results.queryResults[0].expression?.name} (${expressionId}) had error: ${results.queryResults[0].error}`);
-        }
-
-        const pts: MapPoint[] = [];
-        for (const item of results.queryResults[0].values.values) {
-          const idx = pmcToIndexLookup.get(item.pmc);
-          if (idx !== undefined) {
-            const drawParams = getDrawParamsForRawValue(colourRamp, item.value, results.queryResults[0].values.valueRange);
-            pts.push(new MapPoint(item.pmc, idx, item.value, drawParams));
-          }
-        }
-
-        const layer = new ContextImageMapLayer(
-          scanId,
-          expressionId,
-          quantId,
-          roiId,
-          false,
-          results.queryResults[0].expression?.name || expressionId,
-          pts,
-          results.queryResults[0].values.valueRange,
-          results.queryResults[0].values.isBinary,
-          1, // TODO: Map opacity
-          colourRamp
-        );
-        return layer;
+        return this.processQueryResults(results, scanId, expressionId, quantId, roiId, query, colourRamp, pmcToIndexLookup);
       }),
       shareReplay(1)
     );
+  }
+
+  private getExpressionGroupModel(
+    scanId: string,
+    expressionId: string,
+    quantId: string,
+    roiId: string,
+    colourRamp: ColourRamp,
+    pmcToIndexLookup: Map<number, number>
+  ): Observable<ContextImageMapLayer> {
+    return this._cachedDataService.getExpressionGroup(ExpressionGroupGetReq.create({ id: expressionId })).pipe(
+      concatMap((resp: ExpressionGroupGetResp) => {
+        if (!resp.group) {
+          throw new Error("Failed to query expression group: " + expressionId);
+        }
+
+        if (resp.group.groupItems.length != 3) {
+          throw new Error("Can only add expression group containing 3 items to context image");
+        }
+
+        const query: DataSourceParams[] = [];
+        for (const groupMember of resp.group.groupItems) {
+          query.push(new DataSourceParams(scanId, groupMember.expressionId, quantId, roiId));
+        }
+
+        return this._widgetDataService.getData(query).pipe(
+          map((results: RegionDataResults) => {
+            return this.processQueryResults(results, scanId, expressionId, quantId, roiId, query, colourRamp, pmcToIndexLookup);
+          }),
+          shareReplay(1)
+        );
+      })
+    );
+  }
+
+  private processQueryResults(
+    results: RegionDataResults,
+    scanId: string,
+    expressionId: string, // NOTE: this may be the Expression Group ID! Query contains the individual actual expression IDs
+    quantId: string,
+    roiId: string,
+    query: DataSourceParams[],
+    colourRamp: ColourRamp,
+    pmcToIndexLookup: Map<number, number>
+  ): ContextImageMapLayer {
+    if (results.error) {
+      throw new Error(results.error);
+    }
+
+    if (results.queryResults.length != query.length) {
+      throw new Error(`getExpressionGroupModel: expected ${query.length} results, received ${results.queryResults.length}`);
+    }
+
+    const valueRanges: MinMax[] = [];
+    const pts: MapPoint[] = [];
+    const subExpressionNames: string[] = [];
+    let subExpressionShading: ColourRamp[] = [colourRamp];
+    const isBinary: boolean[] = [];
+
+    // If we have 3 query results, assume RGB colouring
+    if (results.queryResults.length == 3) {
+      subExpressionShading = [ColourRamp.SHADE_MONO_FULL_RED, ColourRamp.SHADE_MONO_FULL_GREEN, ColourRamp.SHADE_MONO_FULL_BLUE];
+    }
+
+    for (let c = 0; c < results.queryResults.length; c++) {
+      const result = results.queryResults[c];
+      if (result.error) {
+        throw new Error(`getExpressionGroupModel: group ${expressionId} expression ${result.expression?.name} (${expressionId}) had error: ${result.error}`);
+      }
+
+      if (c > 0 && results.queryResults[0].values.values.length != result.values.values.length) {
+        throw new Error(
+          `getExpressionGroupModel: group ${expressionId} results differed in length, ${results.queryResults[0].values.values.length} vs ${result.values.values.length}`
+        );
+      }
+
+      valueRanges.push(result.values.valueRange);
+      isBinary.push(result.values.isBinary);
+      subExpressionNames.push(result.expression?.name || result.query.exprId);
+
+      // First run, we create the points!
+      for (let i = 0; i < result.values.values.length; i++) {
+        const item = result.values.values[i];
+        const idx = pmcToIndexLookup.get(item.pmc);
+
+        if (idx !== undefined) {
+          if (c == 0) {
+            const drawParams = getDrawParamsForRawValue(colourRamp, item.value, results.queryResults[0].values.valueRange);
+            pts.push(new MapPoint(item.pmc, idx, [item.value], drawParams));
+          } else {
+            if (pts[i].scanEntryId == item.pmc && pts[i].scanEntryIndex == idx) {
+              pts[i].values.push(item.value);
+            } else {
+              throw new Error(`getExpressionGroupModel: group ${expressionId} value ${i} of ${result.expression?.id || "?"} had non-matching PMC/index`);
+            }
+          }
+        } else {
+          throw new Error(`getExpressionGroupModel: group ${expressionId} PMC ${item.pmc} doesn't exist`);
+        }
+      }
+    }
+
+    const layer = new ContextImageMapLayer(
+      scanId,
+      expressionId,
+      quantId,
+      roiId,
+      false,
+      results.queryResults[0].expression?.name || expressionId,
+      1, // TODO: Map opacity
+      colourRamp,
+      subExpressionNames,
+      subExpressionShading,
+      pts,
+      valueRanges,
+      isBinary
+    );
+    return layer;
   }
 
   private fetchModelData(imageName: string): Observable<ContextImageModelLoadedData> {

@@ -104,6 +104,32 @@ export class MapColourScale extends BaseUIElement {
         return CanvasInteractionResult.redrawAndCatch;
       } else if (event.eventId == CanvasMouseEventId.MOUSE_UP) {
         this._mouseDragging = false;
+
+        // Build a rect for the whole thing
+        let rect = new Rect(0, 0, 0, 0); // Don't init with null/undefined
+        let first = true;
+        for (let c = 0; c < this._ctx.colourScales.length; c++) {
+          const scale = this._ctx.colourScales[c];
+          const pos = scale.drawModel.pos;
+          if (pos) {
+            if (first) {
+              rect = pos.rect.copy();
+              first = false;
+            } else {
+              rect.expandToFitRect(pos.rect);
+            }
+          }
+        }
+
+        // Screen-space rect
+        rect.x += this._ctx.uiLayerScaleTranslation.x;
+        rect.y += this._ctx.uiLayerScaleTranslation.y;
+
+        const moveTo = BaseUIElement.keepOnScreen(rect, event.canvasParams.width, event.canvasParams.height, 0.1);
+
+        this._ctx.uiLayerScaleTranslation.x += moveTo.x - rect.x;
+        this._ctx.uiLayerScaleTranslation.y += moveTo.y - rect.y;
+
         return CanvasInteractionResult.redrawAndCatch;
       }
     }
@@ -168,8 +194,7 @@ export class MapColourScale extends BaseUIElement {
           this._boundingBox = mdl.drawModel.pos.rect.copy();
           first = false;
         } else {
-          this._boundingBox.expandToFitPoint(new Point(mdl.drawModel.pos.rect.x, mdl.drawModel.pos.rect.y));
-          this._boundingBox.expandToFitPoint(new Point(mdl.drawModel.pos.rect.maxX(), mdl.drawModel.pos.rect.maxY()));
+          this._boundingBox.expandToFitRect(mdl.drawModel.pos.rect);
         }
       }
     }

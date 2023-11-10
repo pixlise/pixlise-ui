@@ -140,6 +140,10 @@ export class EnergyCalibrationService implements OnInit {
   getQuantCalibration(quantId: string): Observable<SpectrumEnergyCalibration[]> {
     return this._cachedDataService.getQuant(QuantGetReq.create({ quantId: quantId, summaryOnly: true })).pipe(
       map(resp => {
+        if (!resp.data) {
+          throw new Error(`Query for quantification ${quantId} didn't return data`);
+        }
+
         const eVstartIdx = resp.data.labels.indexOf("eVstart");
         const eVperChannelIdx = resp.data.labels.indexOf("eV/ch");
         if (eVstartIdx < 0 || eVperChannelIdx < 0) {

@@ -25,8 +25,8 @@ export class MapColourScaleInteraction {
       // Continue drag operation
       return this.handleMouseDrag(event);
     } else if (
-      event.eventId == CanvasMouseEventId.MOUSE_UP ||
-      (event.eventId == CanvasMouseEventId.MOUSE_LEAVE && (this._mdl.mouseMode == MouseMode.DRAG_TOP_TAG || this._mdl.mouseMode == MouseMode.DRAG_BOTTOM_TAG))
+      event.eventId == CanvasMouseEventId.MOUSE_UP //||
+      //(event.eventId == CanvasMouseEventId.MOUSE_LEAVE && (this._mdl.mouseMode == MouseMode.DRAG_TOP_TAG || this._mdl.mouseMode == MouseMode.DRAG_BOTTOM_TAG))
     ) {
       // Finish drag operation
       return this.handleMouseDragEnd(event, this._mdl.drawModel.pos);

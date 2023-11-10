@@ -9,6 +9,13 @@ import { ExpressionSearchFilter } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
+import { ExpressionGroup } from "src/app/generated-protos/expression-group";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+import { string, boolean } from "mathjs";
+import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
+import { ExpressionGroupListReq, ExpressionGroupListResp } from "src/app/generated-protos/expression-group-msgs";
 
 @Component({
   selector: "expression-search-controls",
@@ -19,7 +26,11 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   private _expressions: DataExpression[] = [];
-  filteredExpressions: DataExpression[] = [];
+  private _loadedExpressions: DataExpression[] = [];
+  private _pseudoIntensities: DataExpression[] = [];
+  private _quantifiedExpressions: DataExpression[] = [];
+  private _expressionGroups: ExpressionGroup[] = [];
+  filteredExpressions: (DataExpression | ExpressionGroup)[] = [];
 
   @Output() onFilterChanged = new EventEmitter<ExpressionSearchFilter>();
 
@@ -31,19 +42,27 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   filteredTagIDs: string[] = [];
 
   allScans: ScanItem[] = [];
-  _visibleScanId: string = "";
+  private _visibleScanId: string = "";
 
   private _defaultQuantsForScans: Record<string, string> = {};
   private _availableQuants: Record<string, QuantificationSummary[]> = {};
   filteredQuants: QuantificationSummary[] = [];
-  _selectedQuantId: string = "";
+  private _selectedQuantId: string = "";
 
-  _currentUserId: string = "";
+  // private _currentUserId: string = "";
+
+  private _et_Expression = "Expressions";
+  private _et_ExpressionGroups = "Expression Groups";
+  private _et_QuantifiedElements = "Quantified Elements";
+  private _et_PseudoIntensities = "Pseudo-Intensities";
+  expressionListTypes = [this._et_Expression, this._et_ExpressionGroups, this._et_QuantifiedElements, this._et_PseudoIntensities];
+  expressionListType = this.expressionListTypes[0];
 
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _expressionsService: ExpressionsService,
-    private _userOptionsService: UserOptionsService
+    private _userOptionsService: UserOptionsService,
+    private _cachedDataSerivce: APICachedDataService
   ) {
     const quants = this._analysisLayoutService.availableScanQuants$.value?.[this.visibleScanId];
     if (this.visibleScanId && quants && quants.length > 0) {
@@ -56,20 +75,30 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
       // Only request if we have a scan ID!
       if (this.visibleScanId) {
         this._analysisLayoutService.fetchQuantsForScan(this.visibleScanId);
+        this.refreshPseudointensities(this.visibleScanId);
       }
     }
   }
 
   ngOnInit(): void {
-    this._subs.add(
+    /*this._subs.add(
       this._userOptionsService.userOptionsChanged$.subscribe(() => {
         this._currentUserId = this._userOptionsService.userDetails.info?.id || "";
       })
-    );
+    );*/
+
+    // Get a list of groups
+    this._cachedDataSerivce.getExpressionGroupList(ExpressionGroupListReq.create({})).subscribe((resp: ExpressionGroupListResp) => {
+      this._expressionGroups = [];
+      for (const group of Object.values(resp.groups)) {
+        this._expressionGroups.push(group);
+      }
+    });
 
     this._subs.add(
       this._expressionsService.expressions$.subscribe(expressions => {
-        this.expressions = Object.values(expressions);
+        this._loadedExpressions = Object.values(expressions);
+        this.filterExpressionsForDisplay();
       })
     );
 
@@ -107,16 +136,12 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this._subs.unsubscribe();
   }
-
-  get expressions(): DataExpression[] {
-    return this._expressions;
-  }
-
+  /*
   @Input() set expressions(expressions: DataExpression[]) {
     this._expressions = expressions;
     this.filterExpressionsForDisplay();
   }
-
+*/
   @Input() set manualFilters(filters: Partial<ExpressionSearchFilter> | null) {
     if (filters !== null) {
       let { searchString, tagIDs, authors } = filters;
@@ -127,6 +152,19 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
     }
   }
 
+  private refreshPseudointensities(scanId: string) {
+    this._cachedDataSerivce.getPseudoIntensity(PseudoIntensityReq.create({ scanId: scanId })).subscribe((resp: PseudoIntensityResp) => {
+      this._pseudoIntensities = [];
+      for (const label of resp.intensityLabels) {
+        const id = DataExpressionId.makePredefinedPseudoIntensityExpression(label);
+        const expr = getPredefinedExpression(id);
+        if (expr) {
+          this._pseudoIntensities.push(expr);
+        }
+      }
+    });
+  }
+
   get visibleScanId(): string {
     return this._visibleScanId;
   }
@@ -134,6 +172,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   set visibleScanId(scanId: string) {
     this._visibleScanId = scanId;
     this._analysisLayoutService.fetchQuantsForScan(scanId);
+    this.refreshPseudointensities(scanId);
     this.filteredQuants = this._availableQuants[scanId] || [];
     this.selectedQuantId = this._defaultQuantsForScans[this.visibleScanId] || "";
     this.emitFilters();
@@ -145,6 +184,25 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
 
   set selectedQuantId(quantId: string) {
     this._selectedQuantId = quantId;
+
+    // Build the list of expressions for the quantified elements
+    this._quantifiedExpressions = [];
+    for (const quant of this.filteredQuants) {
+      if (quant.id == this._selectedQuantId) {
+        for (const elem of quant.elements) {
+          let det = quant.params?.quantMode || "";
+          if (det.length > 0 && det != "Combined") {
+            det = det.substring(0, 1);
+          }
+
+          const id = DataExpressionId.makePredefinedQuantElementExpression(elem, "%", det);
+          const expr = getPredefinedExpression(id);
+          if (expr) {
+            this._quantifiedExpressions.push(expr);
+          }
+        }
+      }
+    }
     this.emitFilters();
   }
 
@@ -166,7 +224,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   extractAuthors() {
     let authorIDs = new Set<string>();
     let authors: UserInfo[] = [];
-    this.expressions.forEach(expression => {
+    this._loadedExpressions.forEach(expression => {
       if (expression.owner?.creatorUser?.id === "builtin") {
         return;
       }
@@ -180,14 +238,22 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
     this.authors = authors;
   }
 
-  private checkUserIsAuthor(roi: ROIItemSummary): boolean {
-    return roi.owner?.creatorUser?.id === this._currentUserId;
-  }
-
   private filterExpressionsForDisplay(): void {
-    let filteredExpressions: DataExpression[] = [];
+    // Find the source data depending on what list type is requested...
+    let expressions: (DataExpression | ExpressionGroup)[] = [];
+    if (this.expressionListType == this._et_Expression) {
+      expressions = this._loadedExpressions;
+    } else if (this.expressionListType == this._et_QuantifiedElements) {
+      expressions = this._quantifiedExpressions;
+    } else if (this.expressionListType == this._et_PseudoIntensities) {
+      expressions = this._pseudoIntensities;
+    } else if (this.expressionListType == this._et_ExpressionGroups) {
+      expressions = this._expressionGroups;
+    }
+
+    let filteredExpressions: (DataExpression | ExpressionGroup)[] = [];
     let searchString = this.searchString.toLowerCase();
-    for (let expression of this.expressions) {
+    for (let expression of expressions) {
       let expressionNameLower = expression.name.toLowerCase();
       if (
         (searchString.length <= 0 || expressionNameLower.indexOf(searchString) >= 0) && // No search string or search string matches
@@ -197,6 +263,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
         filteredExpressions.push(expression);
       }
     }
+
     this.filteredExpressions = filteredExpressions.sort((a, b) => a.name.localeCompare(b.name));
     this.onFilterChanged.emit({
       scanId: this.visibleScanId,
@@ -238,6 +305,11 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
 
   onFilterText(filterText: string): void {
     this.searchString = filterText || "";
+    this.filterExpressionsForDisplay();
+  }
+
+  onChangeExpressionListType(expressionListType: string) {
+    this.expressionListType = expressionListType;
     this.filterExpressionsForDisplay();
   }
 }

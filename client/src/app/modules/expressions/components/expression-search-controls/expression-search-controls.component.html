@@ -1,5 +1,8 @@
 <div class="filters-row">
   <div class="broad-filters">
+    <mat-select [(ngModel)]="expressionListType" placeholder="List Type ..." (valueChange)="onChangeExpressionListType($event)">
+      <mat-option *ngFor="let option of expressionListTypes" [value]="option">{{ option }} </mat-option>
+    </mat-select>
     <mat-select [(ngModel)]="visibleScanId" class="scan-filter" placeholder="Scan ...">
       <mat-option *ngFor="let scan of allScans" [value]="scan.id">{{ scan.title }} </mat-option>
     </mat-select>

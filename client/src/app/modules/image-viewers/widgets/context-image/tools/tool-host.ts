@@ -301,7 +301,7 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
       this._ctx.transform.setScaleRelativeTo(new Point(newScale, newScale), event.point, false);
       return CanvasInteractionResult.redrawAndCatch;
     }
-    //console.log(event);
+
     // See if any of the UI elements wants to handle it
     for (const uiElem of this._uiElems) {
       //console.log(uiElem);

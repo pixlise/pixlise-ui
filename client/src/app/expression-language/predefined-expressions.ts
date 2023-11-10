@@ -2,6 +2,8 @@ import { DataExpression } from "../generated-protos/expressions";
 import { DataExpressionId } from "./expression-id";
 import { EXPR_LANGUAGE_PIXLANG } from "./expression-language";
 
+export const DefaultDetectorId = "Default";
+
 // Returns a predefined expression. The only complication is what detector to have in the expression generated!
 // Previously we used to pass in the valid detector list and it would pick the first one (meaning A or Combined)
 // but at time of writing we may introduce a new concept of the "default" detector, which the expression
@@ -13,7 +15,10 @@ export function getPredefinedExpression(id: string): DataExpression | undefined 
 
   // Default means if the expression ID didn't specify one, use whatever is the
   // user-chosen "active" detector for the given quant
-  let detectorId = "Default";
+  let detectorId = DefaultDetectorId;
+
+  // We don't want to add -Combined or -Default to the expression name, only add if it's something else
+  const detectorSuffix = ["Combined", DefaultDetectorId].indexOf(detectorId) == -1 ? "-" + detectorId : "";
 
   const exprDetector = DataExpressionId.getPredefinedQuantExpressionDetector(id);
   if (exprDetector.length > 0) {
@@ -26,19 +31,13 @@ export function getPredefinedExpression(id: string): DataExpression | undefined 
 
     if (column.length > 0) {
       expr = "element('" + elem + "','" + column + "','" + detectorId + "')";
-      name = elem + " " + getPrintableColumnName(column);
-      if (detectorId != "Combined") {
-        name += "-" + detectorId;
-      }
+      name = elem + " " + getPrintableColumnName(column) + detectorSuffix;
     }
   } else {
     // If the element is actually saying we want the unquantified expression, return that
     if (id.startsWith(DataExpressionId.predefinedUnquantifiedPercentDataExpression)) {
       expr = '100-elementSum("%","' + detectorId + '")';
-      name = "Unquantified Weight %";
-      if (detectorId != "Combined") {
-        name += "-" + detectorId;
-      }
+      name = "Unquantified Weight %" + detectorSuffix;
     } else if (id == DataExpressionId.predefinedHeightZDataExpression) {
       expr = 'position("z")';
       name = "Height in Z";
@@ -73,9 +72,7 @@ export function getPredefinedExpression(id: string): DataExpression | undefined 
         if (name == "chisq") {
           name = "Chi\u00B2 uncertainty/spectrum";
         }
-        if (detectorId != "Combined") {
-          name += "-" + detectorId;
-        }
+        name += detectorSuffix;
       }
     }
   }

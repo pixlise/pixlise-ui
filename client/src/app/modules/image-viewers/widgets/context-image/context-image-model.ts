@@ -9,7 +9,7 @@ import { RGBUImage } from "src/app/models/RGBUImage";
 import { ScanPoint } from "../../models/scan-point";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
-import { ContextImageMapLayer, getDrawParamsForRawValue } from "../../models/map-layer";
+import { ContextImageMapLayer, MapPointDrawParams, MapPointShape, MapPointState, getDrawParamsForRawValue } from "../../models/map-layer";
 import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
 import { Footprint, HullPoint } from "../../models/footprint";
 import { RGBA, Colours, ColourRamp } from "src/app/utils/colours";
@@ -96,6 +96,11 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     // Clear other stuff, out of date from any previous loads...
     this._colourScales = [];
 
+    // Clear maps (TODO: do we want this?)
+    for (const m of this._raw.scanModels.values()) {
+      m.maps = [];
+    }
+
     this._recalcNeeded = true;
     console.log(` *** ContextImageModel ${this._id} setData recalcNeeded=${this._recalcNeeded}`);
     this.needsDraw$.next();
@@ -122,7 +127,9 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
       }
 
       // Also update the colour scale if there is one
-      for (const scale of this._colourScales) {
+      for (let c = 0; c < this._colourScales.length; c++) {
+        const scale = this._colourScales[c];
+
         // TODO: do we want a scan ID here, to specify which one the scale is for??? Does the scale just get all
         // expression output for a given scan???
         if (scale.scanIds.indexOf(hoverScanId) > -1) {
@@ -136,7 +143,9 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
                 // Find the value among our map points
                 for (const pt of scanMap.mapPoints) {
                   if (pt.scanEntryIndex == hoverEntryIdx) {
-                    scale.hoverValue = pt.value;
+                    if (c < pt.values.length) {
+                      scale.hoverValue = pt.values[c];
+                    }
                     break;
                   }
                 }
@@ -187,21 +196,22 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
       scanMdl.maps.push(layer);
     }
 
+    // If we're the "top" expression (first one in the list), we have to update the colour scale
     if (this.expressionIds[0] == layer.expressionId) {
-      this.rebuildColourScale();
+      this._colourScales = [];
+      for (let c = 0; c < layer.valueRanges.length; c++) {
+        this.rebuildColourScale(this.expressionIds[0], c, layer.valueRanges.length);
+      }
     }
 
     this._recalcNeeded = true;
     console.log(` *** ContextImageModel ${this._id} setMapLayer recalcNeeded=${this._recalcNeeded} scales: ${this.colourScales.length}`);
   }
 
-  rebuildColourScale() {
-    if (this.expressionIds.length <= 0 || !this._raw) {
+  private rebuildColourScale(forExpressionId: string, forValuesIdx: number, totalScales: number) {
+    if (!this._raw) {
       return;
     }
-
-    // If we're the "top" expression (first one in the list), we have to update the colour scale
-    const topExpressionId = this.expressionIds[0];
 
     // Now find all layers for this expression (expression per scan id... so we want all copies of the expression into same id)
     const scaleData = new MapColourScaleSourceData();
@@ -212,40 +222,41 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
     for (const [scanId, scanMdl] of this._raw.scanModels) {
       for (const mapLayer of scanMdl.maps) {
-        if (mapLayer.expressionId == topExpressionId) {
+        if (mapLayer.expressionId == forExpressionId) {
           // This has to be included
-          scaleData.addValues(mapLayer.mapPoints, mapLayer.valueRange, mapLayer.isBinary);
+          scaleData.addValues(mapLayer.mapPoints, forValuesIdx, mapLayer.valueRanges[forValuesIdx], mapLayer.isBinary[forValuesIdx]);
           scaleScanIds.push(scanId);
 
           // If we haven't yet, pick off the layer name and we just use the first shading setting we find
           if (!layerName) {
-            layerName = mapLayer.expressionName;
-            layerShading = mapLayer.shading;
+            layerName = mapLayer.subExpressionNames[forValuesIdx];
+            layerShading = mapLayer.subExpressionShading[forValuesIdx];
           }
         }
       }
     }
 
     // Ensure we have a saved min/max for this (a blank one)
-    let displayValueRange = this._colourScaleDisplayValueRanges.get(topExpressionId);
+    const colourScaleRangeId = forExpressionId + "-" + forValuesIdx;
+    let displayValueRange = this._colourScaleDisplayValueRanges.get(colourScaleRangeId);
     if (!displayValueRange) {
       displayValueRange = new MinMax();
-      this._colourScaleDisplayValueRanges.set(topExpressionId, displayValueRange);
+      this._colourScaleDisplayValueRanges.set(colourScaleRangeId, displayValueRange);
     }
 
     // Generate colour scale
     this._colourScales.push(
       new MapColourScaleModel(
         scaleScanIds,
-        topExpressionId,
+        forExpressionId,
         layerName,
         scaleData,
         false,
         null, // hover value
         displayValueRange, // The display value range to show (top and bottom tags)
         true, // We always allow scale tags to be moved on layer colour scales
-        0, // Scale number
-        1, // Total scales we're drawing TODO: figure out a way to add RGB mixes
+        totalScales - forValuesIdx - 1, // Scale number, but flipped so first one (R) is on top
+        totalScales, // Total scales we're drawing TODO: figure out a way to add RGB mixes
         layerShading
       )
     );
@@ -482,8 +493,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
       this.scanDrawModels.clear();
 
       for (const [scanId, scanMdl] of from.raw.scanModels) {
-        this.allLocationPointsBBox.expandToFitPoint(new Point(scanMdl.scanPointsBBox.x, scanMdl.scanPointsBBox.y));
-        this.allLocationPointsBBox.expandToFitPoint(new Point(scanMdl.scanPointsBBox.maxX(), scanMdl.scanPointsBBox.maxY()));
+        this.allLocationPointsBBox.expandToFitRect(scanMdl.scanPointsBBox);
 
         const footprintColours = getSchemeColours(from.pointBBoxColourScheme);
         const footprint = new Footprint(scanMdl.footprint, footprintColours[0], footprintColours[1]);
@@ -503,13 +513,36 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
         if (scanMdl.maps) {
           // Recolour each one
           for (const layerMap of scanMdl.maps) {
-            let displayRange = from.colourScaleDisplayValueRanges.get(layerMap.expressionId);
-            if (!displayRange || !displayRange.isValid()) {
-              displayRange = layerMap.valueRange;
+            const displayRanges: MinMax[] = [];
+
+            for (let c = 0; c < layerMap.valueRanges.length; c++) {
+              const colourScaleRangeId = layerMap.expressionId + "-" + c;
+              let range = from.colourScaleDisplayValueRanges.get(colourScaleRangeId);
+              if (!range || !range.isValid()) {
+                range = layerMap.valueRanges[c];
+              }
+              if (!range) {
+                range = new MinMax(0, 0); // just don't leave dangling nulls around...
+              }
+
+              displayRanges.push(range);
             }
 
             for (const pt of layerMap.mapPoints) {
-              pt.drawParams = getDrawParamsForRawValue(layerMap.shading, pt.value, displayRange);
+              if (pt.values.length == 1) {
+                pt.drawParams = getDrawParamsForRawValue(layerMap.shading, pt.values[0], displayRanges[0]);
+              } else if (pt.values.length == 3) {
+                pt.drawParams = new MapPointDrawParams(
+                  new RGBA(
+                    displayRanges[0].getAsPercentageOfRange(pt.values[0], true) * 255,
+                    displayRanges[1].getAsPercentageOfRange(pt.values[1], true) * 255,
+                    displayRanges[2].getAsPercentageOfRange(pt.values[2], true) * 255,
+                    255
+                  ),
+                  MapPointState.IN_RANGE,
+                  MapPointShape.POLYGON
+                );
+              }
             }
             scanDrawMdl.maps.push(layerMap);
           }

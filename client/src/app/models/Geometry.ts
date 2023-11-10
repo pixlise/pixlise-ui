@@ -143,6 +143,10 @@ export class Rect {
     }
   }
 
+  public expandToFitRect(rect: Rect): void {
+    this.expandToFitPoints([new Point(rect.x, rect.y), new Point(rect.maxX(), rect.maxY())]);
+  }
+
   public inflate(xDir: number, yDir: number): void {
     this.x -= xDir;
     this.w += xDir;

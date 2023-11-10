@@ -13,14 +13,23 @@ export class ContextImageMapLayer /*implements IColourScaleDataSource*/ {
     public hasOutOfDateModules: boolean,
     public expressionName: string,
 
-    // Point data generated
-    public mapPoints: MapPoint[],
-    public valueRange: MinMax,
-    public isBinary: boolean,
-
     // Draw parameters
     public opacity: number = 1.0,
-    public shading: ColourRamp = ColourRamp.SHADE_VIRIDIS
+    public shading: ColourRamp = ColourRamp.SHADE_VIRIDIS,
+
+    // NOTE: We may be storing data for multiple expressions (in case of expression group)
+    // The following parameters are all indexable, (including mapPoints.values[]), and we
+    // expect these arrays to be the same size
+
+    // If we have sub-expressions, we have their names here too... if not, this
+    // just has expressionName in it
+    public subExpressionNames: string[] = [],
+    public subExpressionShading: ColourRamp[] = [],
+
+    // Point data generated
+    public mapPoints: MapPoint[],
+    public valueRanges: MinMax[],
+    public isBinary: boolean[]
   ) {}
 /*
   // IColourScaleDataSource
@@ -78,7 +87,7 @@ export class MapPoint {
     public scanEntryIndex: number, // AKA Location Index (index within the scan file)
 
     // The numerical value for this point
-    public value: number,
+    public values: number[],
 
     public drawParams: MapPointDrawParams
   ) {}

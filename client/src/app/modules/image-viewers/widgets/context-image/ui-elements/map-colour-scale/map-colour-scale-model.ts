@@ -11,9 +11,9 @@ export class MapColourScaleSourceData {
   valueRange = new MinMax();
   private _values: number[] = [];
 
-  addValues(mapPoints: MapPoint[], valueRange: MinMax, isBinary: boolean) {
+  addValues(mapPoints: MapPoint[], valueIdx: number, valueRange: MinMax, isBinary: boolean) {
     for (const p of mapPoints) {
-      this.values.push(p.value);
+      this._values.push(p.values[valueIdx]);
     }
 
     this.valueRange.expandByMinMax(valueRange);
