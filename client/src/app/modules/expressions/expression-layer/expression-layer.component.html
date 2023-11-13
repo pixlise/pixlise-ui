@@ -52,6 +52,25 @@ POSSIBILITY OF SUCH DAMAGE.
       </span>
     </div>
     <div class="buttons">
+      <!-- <icon-button
+        #tooltip="matTooltip"
+        matTooltip="Show {{ isModule ? 'module' : 'expression' }} preview"
+        icon="assets/button-icons/code.svg"
+        (click)="onPreviewCode()">
+      </icon-button> -->
+      <icon-button
+        *ngIf="showSplitScreenButton"
+        #tooltip="matTooltip"
+        matTooltip="Open {{ isModule ? 'module' : 'expression' }} in split screen"
+        [icon]="isModule ? 'assets/button-icons/layout-split-bottom-view.svg' : 'assets/button-icons/layout-split-top-view.svg'"
+        (click)="onSplitScreenCodeEditor()">
+      </icon-button>
+      <icon-button
+        #tooltip="matTooltip"
+        matTooltip="Open {{ isModule ? 'module' : 'expression' }}"
+        icon="{{ 'assets/button-icons/layout-single-view.svg' }}"
+        (click)="onFullScreenCodeEditor()">
+      </icon-button>
       <tag-picker
         type="expression"
         placeholderText="Search Expression Tags ..."

@@ -37,7 +37,7 @@ import { httpErrorToString, SentryHelper } from "src/app/utils/utils";
 import { APIDataService } from "./apidata.service";
 import { ExpressionGetReq, ExpressionGetResp, ExpressionWriteExecStatReq } from "src/app/generated-protos/expression-msgs";
 import { DataExpression } from "src/app/generated-protos/expressions";
-import { DataModule } from "src/app/generated-protos/modules";
+import { DataModule, DataModuleVersion } from "src/app/generated-protos/modules";
 import { DataModuleGetReq, DataModuleGetResp } from "src/app/generated-protos/module-msgs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { DataQuerier, EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
@@ -47,6 +47,12 @@ import { APICachedDataService } from "./apicacheddata.service";
 import { RegionSettings } from "../../roi/models/roi-region";
 import { ROIService } from "../../roi/services/roi.service";
 import { getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
+
+export type DataModuleVersionWithRef = {
+  id: string;
+  name: string;
+  moduleVersion: DataModuleVersion;
+};
 
 export enum DataUnit {
   //UNIT_WEIGHT_PCT,
@@ -123,7 +129,7 @@ export class RegionDataResults {
 class LoadedSources {
   constructor(
     public expressionSrc: string,
-    public modules: Map<string, DataModule>
+    public modules: Map<string, DataModuleVersion>
   ) {}
 }
 
@@ -135,12 +141,13 @@ export class WidgetDataService {
   //private _resultCache: QueryResultCache = new QueryResultCache(environment.expressionResultCacheThresholdMs, 60000, 10000);
   private _exprRunStatLastNotificationTime = new Map<string, number>();
 
+  public unsavedExpressions: Map<string, DataExpression> = new Map<string, DataExpression>();
+
   constructor(
     private _dataService: APIDataService,
     private _cachedDataService: APICachedDataService,
     private _roiService: ROIService
-  ) {
-  }
+  ) {}
 
   // This queries data based on parameters. The assumption is it either returns null, or returns an array with the same
   // amount of items as the input parameters array (what). This is required because code calling this can then know which
@@ -217,8 +224,13 @@ export class WidgetDataService {
       return of(expr);
     }
 
+    // If we have an unsaved one, return that
+    if (this.unsavedExpressions.has(id)) {
+      return of(this.unsavedExpressions.get(id)) as Observable<DataExpression>;
+    }
+
     // Must be a real one, retrieve it as normal
-    return this._cachedDataService.getExpression(ExpressionGetReq.create({ id: id })).pipe(
+    return this._cachedDataService.getExpression(ExpressionGetReq.create({ id })).pipe(
       map((resp: ExpressionGetResp) => {
         if (resp.expression === undefined) {
           throw new Error(`Expression ${id} failed to be read`);
@@ -229,19 +241,28 @@ export class WidgetDataService {
     );
   }
 
+  clearUnsavedExpressions(): void {
+    this.unsavedExpressions.clear();
+  }
+
   // Runs an expression with given parameters. If errors are encountered, they will be returned as part of the Observables own
   // error handling interface.
-  private runExpression(
+  runExpression(
     expression: DataExpression,
     scanId: string,
     quantId: string,
     roiId: string,
     // TODO: calibration as a parameter?
-    allowAnyResponse: boolean
+    allowAnyResponse: boolean,
+    isUnsaved: boolean = false
   ): Observable<DataQueryResult> {
     console.log(
       `runExpression for scan: ${scanId}, expr: "${expression.name}" (${expression.id}, ${expression.sourceLanguage}), roi: "${roiId}", quant: "${quantId}"`
     );
+
+    if (isUnsaved) {
+      this.unsavedExpressions.set(expression.id, expression);
+    }
 
     return this.loadCodeForExpression(expression).pipe(
       concatMap((sources: LoadedSources) => {
@@ -313,15 +334,11 @@ export class WidgetDataService {
     );
   }
 
-  private makeRunnableModules(loadedmodules: Map<string, DataModule>): Map<string, string> {
+  private makeRunnableModules(loadedModules: Map<string, DataModuleVersion>): Map<string, string> {
     // Build the map required by runQuery. NOTE: here we pass the module name, not the ID!
     const modSources = new Map<string, string>();
-    for (const [modId, mod] of loadedmodules) {
-      if (mod.versions.length != 1) {
-        throw new Error(`Module ${modId} expected 1 version, got: ${mod.versions.length}`);
-      }
-
-      modSources.set(mod.name, mod.versions[0].sourceCode);
+    for (const [modName, mod] of loadedModules) {
+      modSources.set(modName, mod.sourceCode);
     }
 
     return modSources;
@@ -338,13 +355,13 @@ export class WidgetDataService {
     }
 
     // If we are a simple loaded expression that doesn't have references, early out!
-    const result = new LoadedSources(expression.sourceCode, new Map<string, DataModule>());
+    const result = new LoadedSources(expression.sourceCode, new Map<string, DataModuleVersion>());
     if (expression.sourceCode.length > 0 && expression.moduleReferences.length <= 0) {
       return of(result);
     }
 
     // Read the module sources
-    const waitModules$: Observable<DataModule>[] = [];
+    const waitModules$: Observable<DataModuleVersionWithRef>[] = [];
     for (const ref of expression.moduleReferences) {
       waitModules$.push(
         this._cachedDataService.getDataModule(DataModuleGetReq.create({ id: ref.moduleId, version: ref.version })).pipe(
@@ -352,7 +369,15 @@ export class WidgetDataService {
             if (value.module === undefined) {
               throw new Error(`Module ${ref.moduleId} version ${ref.version} came back empty`);
             }
-            return value.module;
+
+            let moduleVersion = value.module.versions.find(
+              v => v.version?.major === ref.version?.major && v.version?.minor === ref.version?.minor && v.version?.patch === ref.version?.patch
+            );
+            if (!moduleVersion) {
+              throw new Error(`Module (${ref.moduleId}) does not contain version: ${ref.version}`);
+            }
+
+            return { id: value.module.id, name: value.module.name, moduleVersion };
           })
         )
       );
@@ -363,8 +388,8 @@ export class WidgetDataService {
       map((sources: unknown[]) => {
         // At this point, we should have all the source code we're interested in. Combine them!
         for (const src of sources) {
-          const moduleVersion = src as DataModule;
-          result.modules.set(moduleVersion.id, moduleVersion);
+          const version = src as DataModuleVersionWithRef;
+          result.modules.set(version.name, version.moduleVersion);
         }
 
         return result;

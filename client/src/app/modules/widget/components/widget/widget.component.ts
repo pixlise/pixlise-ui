@@ -3,6 +3,8 @@ import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetToolbar
 import { AnalysisLayoutService } from "../../../analysis/services/analysis-layout.service";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { WidgetData } from "src/app/generated-protos/widget-data";
+import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
 @Component({
   selector: "widget",
@@ -120,6 +122,20 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
   @Input() set initWidget(initWidget: string) {
     this._activeWidget = initWidget as WidgetType;
     this.loadWidget();
+  }
+
+  @Input() set liveExpression({ expressionId, scanId, quantId }: { expressionId: string; scanId: string; quantId: string }) {
+    if (this._currentWidgetRef?.instance?.mdl?.expressionIds && this._currentWidgetRef?.instance?.mdl.dataSourceIds) {
+      if (this._currentWidgetRef?.instance?.mdl.expressionIds.length > 0) {
+        this._currentWidgetRef.instance.mdl.expressionIds[0] = expressionId;
+      } else {
+        this._currentWidgetRef.instance.mdl.expressionIds = [expressionId];
+      }
+      this._currentWidgetRef?.instance?.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(scanId)]));
+    }
+    if (this._currentWidgetRef?.instance?.update) {
+      this._currentWidgetRef?.instance?.update();
+    }
   }
 
   get topToolbarButtons() {

@@ -44,6 +44,7 @@ import { FilterBoxComponent } from "./components/atoms/filter-box/filter-box.com
 import { SliderComponent } from "./components/atoms/slider/slider.component";
 import { PeriodicTableComponent } from "./components/atoms/periodic-table/periodic-table.component";
 import { ElementTileComponent } from "./components/atoms/periodic-table/element-tile/element-tile.component";
+import { StatusIndicatorComponent } from "./components/atoms/status-indicator/status-indicator.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -87,6 +88,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     ElementTileComponent,
     SelectionChangerComponent,
     SelectionOptionsComponent,
+    StatusIndicatorComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule],
   exports: [
@@ -117,7 +119,10 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     ElementTileComponent,
     SelectionChangerComponent,
     SelectionOptionsComponent,
+    StatusIndicatorComponent,
   ],
-  providers: [/*APICommService, APIDataService, HttpInterceptorService*/], // Don't register them so they don't duplicate due to lazy load
+  providers: [
+    /*APICommService, APIDataService, HttpInterceptorService*/
+  ], // Don't register them so they don't duplicate due to lazy load
 })
 export class PIXLISECoreModule {}

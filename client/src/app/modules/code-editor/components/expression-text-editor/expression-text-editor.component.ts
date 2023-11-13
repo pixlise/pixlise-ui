@@ -27,29 +27,49 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, SimpleChange, ViewChild } from "@angular/core";
 import { Subscription } from "rxjs";
 // import { DataExpression } from "src/app/models/Expression";
 import { ObjectCreator } from "src/app/models/BasicTypes";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
-import { DataExpression } from "src/app/generated-protos/expressions";
+import { DataExpression, ModuleReference } from "src/app/generated-protos/expressions";
 import { LuaRuntimeError } from "../../models/editor-config";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { UserInfo } from "src/app/generated-protos/user";
 import { MONACO_LUA_LANGUAGE_NAME, MonacoEditorService } from "../../services/monaco-editor.service";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+import { DataModuleGetReq } from "src/app/generated-protos/module-msgs";
+import { DataModule } from "src/app/generated-protos/modules";
+import { SemanticVersion } from "src/app/generated-protos/version";
 // import { AuthenticationService } from "src/app/services/authentication.service";
 // import { MonacoEditorService, MONACO_LUA_LANGUAGE_NAME } from "src/app/services/monaco-editor.service";
 // import { LuaRuntimeError } from "src/app/routes/dataset/code-editor/editor-config";
 
 export class DataExpressionModule {
+  allVersions: SemanticVersion[] = [];
+
+  printableVersion: string = "";
+
   constructor(
-    public id: string,
-    public name: string,
-    public description: string = "",
-    public version: string = "",
-    public author: ObjectCreator = new ObjectCreator("", ""),
-    public allVersions: string[] = []
-  ) {}
+    public module: DataModule,
+    public reference: ModuleReference // public version: SemanticVersion = SemanticVersion.create(),
+  ) // public allVersions: string[] = []
+  {
+    let versions: SemanticVersion[] = [];
+    module.versions.forEach(version => {
+      if (version.version) {
+        versions.push(version.version);
+      }
+    });
+
+    this.allVersions = versions.sort((aVersion: SemanticVersion, bVersion: SemanticVersion) => {
+      return bVersion.major - aVersion.major || bVersion.minor - aVersion.minor || bVersion.patch - aVersion.patch;
+    });
+
+    if (this.reference.version) {
+      this.printableVersion = `${this.reference.version.major}.${this.reference.version.minor}.${this.reference.version.patch}`;
+    }
+  }
 }
 
 export class TextSelection {
@@ -76,6 +96,7 @@ export class MarkPosition {
   selector: "expression-text-editor",
   templateUrl: "./expression-text-editor.component.html",
   styleUrls: ["./expression-text-editor.component.scss"],
+  providers: [MonacoEditorService],
 })
 export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
@@ -88,7 +109,10 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
 
   public moduleContainerWidths: Record<string, number> = {};
 
-  @Input() isLua: boolean = false;
+  private _isLua: boolean = false;
+
+  public textEditorVisible = true;
+
   @Input() expression: DataExpression = DataExpression.create();
   @Input() allowEdit: boolean = true;
   @Input() applyNow: boolean = false;
@@ -124,6 +148,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
 
   constructor(
     private _monacoService: MonacoEditorService,
+    private _apiCachedDataService: APICachedDataService,
     // private _authService: AuthenticationService,
     private _userOptionsService: UserOptionsService,
     private elementRef: ElementRef // private _monacoService: MonacoEditorService,
@@ -132,6 +157,25 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Make a copy of incoming expression, so we don't edit what's there!
     this._expr = this.copyExpression(this.expression);
+  }
+
+  ngOnChanges(changes: any) {
+    if (changes["expression"]) {
+      this._expr = this.copyExpression(this.expression);
+      this._diffText = "";
+      this._runtimeError = null;
+      this.createMonacoModel();
+    }
+  }
+
+  @Input() set isLua(isLuaLang: boolean) {
+    this._isLua = isLuaLang;
+
+    this.createMonacoModel();
+  }
+
+  get isLua(): boolean {
+    return this._isLua;
   }
 
   get userInfo(): UserInfo {
@@ -206,10 +250,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
     }
 
     // Create the model the editor will use
-    let mdl /*: ITextModel*/ = this.monaco.editor.createModel(
-      this._expr.sourceCode,
-      this._expr.sourceLanguage == EXPR_LANGUAGE_LUA ? MONACO_LUA_LANGUAGE_NAME : this._expr.sourceLanguage
-    );
+    let mdl /*: ITextModel*/ = this.monaco.editor.createModel(this._expr.sourceCode, this.isLua ? MONACO_LUA_LANGUAGE_NAME : this._expr.sourceLanguage);
 
     // Add handlers to this model
     mdl.onDidChangeContent((e: any /*: IModelContentChangedEvent*/) => {
@@ -221,7 +262,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
     });
 
     this._editor.setModel(mdl);
-    this.monaco.editor.setTheme(this._expr.sourceLanguage === EXPR_LANGUAGE_LUA ? "vs-dark-lua" : "vs-dark-pixlang");
+    this.monaco.editor.setTheme(this.isLua ? "vs-dark-lua" : "vs-dark-pixlang");
     this.registerKeyBindings();
     this._editor.onDidChangeCursorSelection((event: any) => {
       let range = event.selection;
@@ -319,9 +360,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
   }
 
   private refreshMonaco(): void {
-    console.log("REFRESIHNG", this._monacoService);
     this._monacoService.loadingFinished.subscribe(() => {
-      console.log("LOADING FINISHED");
       this.createMonacoModel();
     });
   }
@@ -378,7 +417,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
   }
 
   checkIsOwner(module: DataExpressionModule): boolean {
-    return module.author.user_id === this.userInfo.id;
+    return module.module.creator?.creatorUser?.id === this.userInfo.id;
   }
 
   onLinkModule(moduleID: string): void {
@@ -398,20 +437,39 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
 
   @Input() set installedModules(modules: DataExpressionModule[]) {
     this._installedModules = modules;
-    modules.forEach(module => {
-      module.allVersions.sort((aVersion: string, bVersion: string) => {
-        if (!aVersion || !bVersion) {
-          return 0;
-        }
-
-        // Sort by major version, then minor version, then patch version, descending
-        let [aMajor, aMinor, aPatch] = aVersion.split(".").map(version => parseInt(version));
-        let [bMajor, bMinor, bPatch] = bVersion.split(".").map(version => parseInt(version));
-        return bMajor - aMajor || bMinor - aMinor || bPatch - aPatch;
-      });
-    });
-    this.calculateModuleContainerWidths();
+    // modules.forEach(reference => {
+    //   this._apiCachedDataService.getDataModule(DataModuleGetReq.create({ id: reference.moduleId, version: reference.version })).subscribe(response => {
+    //     if (response.module) {
+    //       this._installedModules.push(new DataModule(response.module, reference.version));
+    //     }
+    //   });
+    // });
   }
+
+  // get installedModuleReferences(): ModuleReference[] {
+  //   return this._installedModuleReferences;
+  // }
+
+  // @Input() set installedModuleReferences(references: ModuleReference[]) {
+  //   this._installedModuleReferences = references;
+  // }
+
+  // @Input() set installedModules(modules: DataExpressionModule[]) {
+  //   this._installedModules = modules;
+  //   modules.forEach(module => {
+  //     module.allVersions.sort((aVersion: string, bVersion: string) => {
+  //       if (!aVersion || !bVersion) {
+  //         return 0;
+  //       }
+
+  //       // Sort by major version, then minor version, then patch version, descending
+  //       let [aMajor, aMinor, aPatch] = aVersion.split(".").map(version => parseInt(version));
+  //       let [bMajor, bMinor, bPatch] = bVersion.split(".").map(version => parseInt(version));
+  //       return bMajor - aMajor || bMinor - aMinor || bPatch - aPatch;
+  //     });
+  //   });
+  //   this.calculateModuleContainerWidths();
+  // }
 
   get isHeaderOpen(): boolean {
     return this._isHeaderOpen;
@@ -422,8 +480,17 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
     this.calculateModuleContainerWidths();
   }
 
+  getVersionID(version: SemanticVersion | undefined) {
+    return JSON.stringify(version || {});
+  }
+
+  getSemanticVersion(version: string): SemanticVersion {
+    let versionJSON = JSON.parse(version);
+    return SemanticVersion.create(versionJSON);
+  }
+
   onModuleVersionChange(event: any, i: number): void {
-    this.installedModules[i].version = event.value;
+    this.installedModules[i].reference.version = this.getSemanticVersion(event.value);
     this.onModuleChange.emit(this.installedModules);
   }
 
@@ -443,7 +510,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
       this.moduleContainerWidths = {};
       this.elementRef?.nativeElement?.querySelectorAll("div.module-import-line").forEach((element: HTMLElement) => {
         let moduleID = element.id.replace("module-", "");
-        let module = this.installedModules.find(module => module.id === moduleID);
+        let module = this.installedModules.find(module => module.module.id === moduleID);
         if (module) {
           this.moduleContainerWidths[moduleID] = element.querySelector(".module-container")?.clientWidth || 0;
         }
@@ -455,9 +522,9 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
     let maxLength = 0;
     let maxWidthModule: DataExpressionModule | null = null;
     this.installedModules.forEach(module => {
-      if (module.name.length > maxLength) {
+      if (module.module.name.length > maxLength) {
         maxWidthModule = module;
-        maxLength = module.name.length;
+        maxLength = module.module.name.length;
       }
     });
 
@@ -474,7 +541,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
     }
 
     let maxWidthModule = this.getMaxWidthModule();
-    let maxWidth = maxWidthModule ? this.moduleContainerWidths[maxWidthModule.id] : 0;
+    let maxWidth = maxWidthModule ? this.moduleContainerWidths[maxWidthModule.module.id] : 0;
     let thisWidth = this.moduleContainerWidths[moduleID] || 0;
 
     return maxWidth && thisWidth ? maxWidth - thisWidth : 0;
@@ -487,7 +554,7 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
 
     let maxLength = 0;
     this.installedModules.forEach(module => {
-      maxLength = Math.max(maxLength, module.name.length);
+      maxLength = Math.max(maxLength, module.module.name.length);
     });
 
     return maxLength;

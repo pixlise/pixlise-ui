@@ -45,6 +45,9 @@ export type ExpressionPickerResponse = {
 
 export type ExpressionPickerData = {
   selectedIds?: string[];
+  scanId?: string;
+  quantId?: string;
+  noActiveScreenConfig?: boolean;
 };
 
 @Component({
@@ -56,14 +59,13 @@ export class ExpressionPickerComponent implements OnInit {
   private _subs = new Subscription();
 
   filteredExpressions: DataExpression[] = [];
-  selectedExpressions: Record<string, DataExpression> = {};
+  selectedExpressions: Set<string> = new Set();
 
   manualFilters: Partial<ExpressionSearchFilter> | null = null;
 
   showSearchControls: boolean = true;
 
   waitingForExpressions: string[] = [];
-
   fetchedAllSelectedExpressions: boolean = true;
 
   scanId: string = "";
@@ -78,6 +80,10 @@ export class ExpressionPickerComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.scanId = this.data.scanId || "";
+    this.quantId = this.data.quantId || "";
+    this.selectedExpressions = new Set(this.data.selectedIds || []);
+
     this._expressionService.expressions$.subscribe(expressions => {
       let notFoundExpressions: string[] = [];
       this.waitingForExpressions.forEach((id, i) => {
@@ -96,7 +102,6 @@ export class ExpressionPickerComponent implements OnInit {
 
         if (fetchedAll) {
           this.fetchedAllSelectedExpressions = true;
-          this.selectedExpressions = Object.fromEntries(this.data.selectedIds.map(id => [id, this._expressionService.expressions$.value[id]]));
         }
       }
 
@@ -110,10 +115,6 @@ export class ExpressionPickerComponent implements OnInit {
           this._expressionService.fetchExpression(id);
         }
       });
-
-      if (this.fetchedAllSelectedExpressions) {
-        this.selectedExpressions = Object.fromEntries(this.data.selectedIds.map(id => [id, this._expressionService.expressions$.value[id]]));
-      }
     }
   }
 
@@ -125,11 +126,15 @@ export class ExpressionPickerComponent implements OnInit {
     return item.id;
   }
 
+  checkSelected(id: string): boolean {
+    return this.selectedExpressions.has(id);
+  }
+
   onSelect(expression: DataExpression): void {
-    if (this.selectedExpressions[expression.id]) {
-      delete this.selectedExpressions[expression.id];
+    if (this.selectedExpressions.has(expression.id)) {
+      this.selectedExpressions.delete(expression.id);
     } else {
-      this.selectedExpressions[expression.id] = expression;
+      this.selectedExpressions.add(expression.id);
     }
   }
 
@@ -141,10 +146,13 @@ export class ExpressionPickerComponent implements OnInit {
     }
   }
 
-  onFilterChanged({ filteredExpressions, scanId, quantId }: ExpressionSearchFilter) {
+  onFilterChanged({ filteredExpressions, scanId, quantId, valueChanged }: ExpressionSearchFilter) {
     this.filteredExpressions = filteredExpressions;
+    if (!this.fetchedAllSelectedExpressions) {
+      return;
+    }
 
-    if (this.scanId !== scanId || this.quantId !== quantId) {
+    if (!this.data.noActiveScreenConfig && (this.scanId !== scanId || this.quantId !== quantId)) {
       let config = this._analysisLayoutService.activeScreenConfiguration$.value;
       if (config) {
         if (config.scanConfigurations[scanId]) {
@@ -158,17 +166,9 @@ export class ExpressionPickerComponent implements OnInit {
     }
 
     this.scanId = scanId;
-    this.quantId = quantId;
-
-    // Remove any ROIs from the selection that are no longer visible
-    let newSelection: Record<string, DataExpression> = {};
-    this.filteredExpressions.forEach(summary => {
-      if (this.selectedExpressions[summary.id]) {
-        newSelection[summary.id] = summary;
-      }
-    });
-
-    this.selectedExpressions = newSelection;
+    if (quantId && !this.quantId) {
+      this.quantId = quantId;
+    }
   }
 
   onToggleSearch(): void {
@@ -180,7 +180,9 @@ export class ExpressionPickerComponent implements OnInit {
   }
 
   onConfirm(): void {
-    let selectedExpressions = Object.values(this.selectedExpressions);
+    let selectedExpressions = Array.from(this.selectedExpressions)
+      .map(id => this._expressionService.expressions$.value[id])
+      .filter(expression => expression);
 
     this.dialogRef.close({
       selectedExpressions,
@@ -190,6 +192,6 @@ export class ExpressionPickerComponent implements OnInit {
   }
 
   onClear(): void {
-    this.selectedExpressions = {};
+    this.selectedExpressions.clear();
   }
 }

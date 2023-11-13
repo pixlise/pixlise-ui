@@ -1,5 +1,8 @@
 import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { DataExpression } from "src/app/generated-protos/expressions";
+import { DataModule } from "src/app/generated-protos/modules";
 
 @Component({
   selector: "expression-layer",
@@ -7,6 +10,7 @@ import { DataExpression } from "src/app/generated-protos/expressions";
   styleUrls: ["./expression-layer.component.scss"],
 })
 export class ExpressionLayerComponent {
+  private _module: DataModule | null = null;
   @Input() expression: DataExpression | null = null;
 
   private _name: string = "";
@@ -25,7 +29,28 @@ export class ExpressionLayerComponent {
   @Output() onFilterAuthor = new EventEmitter<string>();
   @Output() onSelect = new EventEmitter();
 
-  constructor() {}
+  constructor(
+    private _route: ActivatedRoute,
+    private _router: Router
+  ) {}
+
+  get isModule(): boolean {
+    return this._module !== null;
+  }
+
+  @Input() set module(module: DataModule) {
+    this._module = module;
+    this.expression = DataExpression.create({
+      id: module.id,
+      name: module.name,
+      comments: module.comments,
+      owner: module.creator,
+      sourceCode: module.versions[module.versions.length - 1].sourceCode,
+      sourceLanguage: EXPR_LANGUAGE_LUA,
+      tags: [],
+      modifiedUnixSec: module.modifiedUnixSec,
+    });
+  }
 
   get creatorName(): string {
     return this.expression?.owner?.creatorUser?.name || "";
@@ -73,6 +98,55 @@ export class ExpressionLayerComponent {
 
   set selectedTagIDs(tagIDs: string[]) {
     this.expression!.tags = tagIDs;
+  }
+
+  get showSplitScreenButton(): boolean {
+    if (this.isModule) {
+      // Only split screen a module if a top expression is open
+      return !!this._route.snapshot.queryParams["topExpressionId"];
+    } else {
+      // Only split screen an expression if a bottom module is open
+      return !!this._route.snapshot.queryParams["bottomExpressionId"];
+    }
+  }
+
+  onSplitScreenCodeEditor() {
+    let queryParams = { ...this._route.snapshot.queryParams };
+    if (this.isModule) {
+      delete queryParams["topModuleVersion"];
+      delete queryParams["bottomModuleVersion"];
+      queryParams["bottomExpressionId"] = this.expression?.id;
+    } else {
+      delete queryParams["topModuleId"];
+      queryParams["topExpressionId"] = this.expression?.id;
+    }
+    this._router.navigate(["/datasets/code-editor"], { queryParams });
+  }
+  onPreviewCode() {
+    let queryParams = { ...this._route.snapshot.queryParams };
+    if (this.isModule) {
+      delete queryParams["topExpressionId"];
+      delete queryParams["topModuleVersion"];
+      queryParams["topModuleId"] = this.expression?.id;
+    } else {
+      delete queryParams["topModuleId"];
+      queryParams["topExpressionId"] = this.expression?.id;
+    }
+    this._router.navigate(["/datasets/code-editor"], { queryParams });
+  }
+  onFullScreenCodeEditor() {
+    let queryParams = { ...this._route.snapshot.queryParams };
+    if (this.isModule) {
+      delete queryParams["topExpressionId"];
+      delete queryParams["topModuleVersion"];
+      delete queryParams["bottomExpressionId"];
+      delete queryParams["bottomModuleVersion"];
+      queryParams["topModuleId"] = this.expression?.id;
+    } else {
+      delete queryParams["topModuleId"];
+      queryParams["topExpressionId"] = this.expression?.id;
+    }
+    this._router.navigate(["/datasets/code-editor"], { queryParams });
   }
 
   onVisibility(): void {

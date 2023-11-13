@@ -244,6 +244,11 @@ export class APICachedDataService {
     return result;
   }
 
+  cacheExpression(req: ExpressionGetReq, resp: ExpressionGetResp) {
+    const cacheId = JSON.stringify(ExpressionGetReq.toJSON(req));
+    this._expressionReqMap.set(cacheId, new Observable<ExpressionGetResp>(subscriber => subscriber.next(resp)));
+  }
+
   getDataModule(req: DataModuleGetReq): Observable<DataModuleGetResp> {
     const cacheId = JSON.stringify(DataModuleGetReq.toJSON(req));
     let result = this._dataModuleReqMap.get(cacheId);

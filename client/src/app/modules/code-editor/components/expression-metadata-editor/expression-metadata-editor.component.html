@@ -88,8 +88,8 @@ POSSIBILITY OF SUCH DAMAGE.
             {{ release.majorVersion.comments || "No release notes" }}
           </div>
         </div>
-        <h2 *ngIf="release?.minorVersions?.length > 0" class="minor-release-title">Minor Releases</h2>
-        <div *ngIf="release?.minorVersions?.length > 0" class="minor-releases">
+        <h2 *ngIf="release?.minorVersions && release.minorVersions.length > 0" class="minor-release-title">Minor Releases</h2>
+        <div *ngIf="release?.minorVersions && release.minorVersions.length > 0" class="minor-releases">
           <div *ngFor="let minorRelease of release.minorVersions; let j = index" class="minor-release">
             <h3>
               <b>{{ getVersionDisplayName(minorRelease) }}</b> ({{ getVersionReleaseDate(minorRelease) }})

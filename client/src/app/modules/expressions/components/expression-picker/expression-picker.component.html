@@ -46,6 +46,8 @@ POSSIBILITY OF SUCH DAMAGE.
     <expression-search-controls
       class="{{ showSearchControls ? 'visible' : '' }}"
       (onFilterChanged)="onFilterChanged($event)"
+      [scanId]="scanId"
+      [quantId]="quantId"
       [manualFilters]="manualFilters"></expression-search-controls>
   </header>
   <section class="expressions">
@@ -54,7 +56,7 @@ POSSIBILITY OF SUCH DAMAGE.
         *cdkVirtualFor="let item of filteredExpressions; trackBy: trackById"
         [expression]="item"
         (onFilterAuthor)="onFilterAuthor($event)"
-        [selected]="!!selectedExpressions[item.id]"
+        [selected]="checkSelected(item.id)"
         (onSelect)="onSelect(item)"></expression-layer>
     </cdk-virtual-scroll-viewport>
   </section>

@@ -62,7 +62,8 @@ export class ExpressionMetadataEditorComponent implements OnInit {
   @Input() expression: DataExpression = DataExpression.create({});
   @Input() isModule: boolean = false;
   @Input() isSharedByOtherUser: boolean = false;
-  @Input() currentVersion: DataModuleVersion = DataModuleVersion.create();
+
+  private _currentVersion: DataModuleVersion = DataModuleVersion.create();
   @Input() versions: DataModuleVersion[] = [];
 
   @Input() showDiff: boolean = false;
@@ -93,6 +94,15 @@ export class ExpressionMetadataEditorComponent implements OnInit {
     // this._moduleService.modulesUpdated$.subscribe(() => {
     //   this.groupReleaseNotes();
     // });
+  }
+
+  @Input() set currentVersion(version: DataModuleVersion | null) {
+    this._currentVersion = version ? version : DataModuleVersion.create();
+    this.groupReleaseNotes();
+  }
+
+  get currentVersion(): DataModuleVersion {
+    return this._currentVersion;
   }
 
   onClose(): void {

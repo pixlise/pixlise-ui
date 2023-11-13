@@ -28,79 +28,67 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
-<div class="code-container {{isSplitScreen ? 'split' : ''}} {{showInstalledModules ? 'installed-modules' : ''}} {{isHeaderOpen ? 'header-open' : ''}}" fxFlex (click)="onSetActive()">
+<div
+  class="code-container {{ isSplitScreen ? 'split' : '' }} {{ showInstalledModules ? 'installed-modules' : '' }} {{ isHeaderOpen ? 'header-open' : '' }}"
+  (click)="onSetActive()">
   <div *ngIf="expression && showInstalledModules" class="installed-modules-text">
-      <div *ngIf="isHeaderOpen" class="imports">
-          <div 
-              *ngFor="let module of installedModules; index as i"
-              class="module-import-line"
-              id="module-{{module.id}}"
-          >
-              <div class="line-gutter">
-                  <span class="line-number">
-                    <img src="assets/button-icons/x.svg" (click)="deleteModule(i)">
-                  </span>
-              </div>
-              <span class="header-code cm-s-pixlise">
-                  <span class="mtk3">local </span>
-                  <span 
-                    class="mtk7"
-                    [ngStyle]="{'marginRight': maxInstalledModuleCharacterLength ? maxInstalledModuleCharacterLength - module.name.length + 'ch' : 0}"
-                  >{{module.name}}</span><span class="mtk6"> = </span><span class="mtk3">require </span>
-                  <div class="module-container">
-                      <mat-select
-                          #tooltip="matTooltip"
-                          matTooltip="{{module.id === linkedModuleID ? 'Linked to latest version' : 'Select a version for this module'}}"
-                          [value]="module.version"
-                          (selectionChange)="onModuleVersionChange($event, i)"
-                          class="module-version {{module.id === linkedModuleID ? 'linked' : 'unlinked'}}"
-                          placeholder="Version"
-                          [disabled]="module.id === linkedModuleID"
-                      >
-                          <mat-option
-                              class="module-version-type"
-                              *ngFor="let version of module.allVersions;"
-                              [value]="version"
-                          >{{module.name}}@{{version}}
-                          </mat-option>
-                      </mat-select>
-                  </div>
-                  <img
-                    *ngIf="checkIsOwner(module)"
-                    class="{{module.id === linkedModuleID ? 'linked' : 'unlinked'}}"
-                    [ngStyle]="{'marginLeft': getVersionContainerWidthDifference(module.id) + 'px'}"
-                    #tooltip="matTooltip"
-                    matTooltip="{{module.id === linkedModuleID ? 'Unlink Expression and Module' : 'Link expression to the latest version of the module'}}"
-                    src="{{module.id === linkedModuleID ? 'assets/button-icons/blue-link.svg' : 'assets/button-icons/grey-link.svg'}}"
-                    (click)="onLinkModule(module.id === linkedModuleID ? '' : module.id)"
-                  >
-              </span>
+    <div *ngIf="isHeaderOpen" class="imports">
+      <div *ngFor="let module of installedModules; index as i" class="module-import-line" id="module-{{ module.module.id }}">
+        <div class="line-gutter">
+          <span class="line-number">
+            <img src="assets/button-icons/x.svg" (click)="deleteModule(i)" />
+          </span>
+        </div>
+        <span class="header-code cm-s-pixlise">
+          <span class="mtk3">local </span>
+          <span
+            class="mtk7"
+            [ngStyle]="{ marginRight: maxInstalledModuleCharacterLength ? maxInstalledModuleCharacterLength - module.module.name.length + 'ch' : 0 }"
+            >{{ module.module.name }}</span
+          ><span class="mtk6"> = </span><span class="mtk3">require </span>
+          <div class="module-container">
+            <mat-select
+              #tooltip="matTooltip"
+              matTooltip="{{ module.module.id === linkedModuleID ? 'Linked to latest version' : 'Select a version for this module' }}"
+              [value]="getVersionID(module.reference.version)"
+              (selectionChange)="onModuleVersionChange($event, i)"
+              class="module-version {{ module.module.id === linkedModuleID ? 'linked' : 'unlinked' }}"
+              placeholder="Version"
+              [disabled]="module.module.id === linkedModuleID">
+              <mat-option class="module-version-type" *ngFor="let version of module.allVersions" [value]="getVersionID(version)"
+                >{{ module.module.name }}@{{ version.major }}.{{ version.minor }}.{{ version.patch }}
+              </mat-option>
+            </mat-select>
           </div>
-          <div class="empty-line">
-            <div class="line-gutter">
-            </div>
-          </div>
+          <img
+            *ngIf="checkIsOwner(module)"
+            class="{{ module.module.id === linkedModuleID ? 'linked' : 'unlinked' }}"
+            [ngStyle]="{ marginLeft: getVersionContainerWidthDifference(module.module.id) + 'px' }"
+            #tooltip="matTooltip"
+            matTooltip="{{ module.module.id === linkedModuleID ? 'Unlink Expression and Module' : 'Link expression to the latest version of the module' }}"
+            src="{{ module.module.id === linkedModuleID ? 'assets/button-icons/blue-link.svg' : 'assets/button-icons/grey-link.svg' }}"
+            (click)="onLinkModule(module.module.id === linkedModuleID ? '' : module.module.id)" />
+        </span>
       </div>
-      <div class="header-divider" [ngStyle]="{'margin-top': isHeaderNonEmptyAndOpen ? '-12px' : '0px'}">
-          <div class="line-gutter">
-              <icon-button
-                  #tooltip="matTooltip"
-                  class="{{isHeaderOpen ? 'open' : 'closed'}}"
-                  [matTooltip]="toggleHeaderTooltip"
-                  icon="assets/button-icons/arrow-right.svg"
-                  [size]="16"
-                  (click)="onToggleHeader()"
-              >
-              </icon-button>
-          </div>
-          <div class="dots"></div>
-          <h2>{{isHeaderOpen ? "^ Installed Modules ^" : "Installed Modules"}}</h2>
-          <div class="dots"></div>
+      <div class="empty-line">
+        <div class="line-gutter"></div>
       </div>
+    </div>
+    <div class="header-divider" [ngStyle]="{ 'margin-top': isHeaderNonEmptyAndOpen ? '-12px' : '0px' }">
+      <div class="line-gutter">
+        <icon-button
+          #tooltip="matTooltip"
+          class="{{ isHeaderOpen ? 'open' : 'closed' }}"
+          [matTooltip]="toggleHeaderTooltip"
+          icon="assets/button-icons/arrow-right.svg"
+          [size]="16"
+          (click)="onToggleHeader()">
+        </icon-button>
+      </div>
+      <div class="dots"></div>
+      <h2>{{ isHeaderOpen ? "^ Installed Modules ^" : "Installed Modules" }}</h2>
+      <div class="dots"></div>
+    </div>
   </div>
-  <div 
-    fxFlex="100%"
-    class="editor-container"
-    #editorContainer>
-  </div>
+  <div class="editor-container" #editorContainer></div>
 </div>

@@ -371,6 +371,28 @@ h3 {
   font-weight: bold;
 }
 
+.module-container {
+  .mat-mdc-select-trigger {
+    width: auto !important;
+
+    .mat-mdc-select-value {
+      width: auto;
+      max-width: 100%;
+    }
+  }
+
+  .mat-mdc-select-value-text {
+    .mat-mdc-select-min-line {
+      color: #c3e88d !important;
+      line-height: 16px;
+    }
+  }
+
+  .mat-mdc-select-arrow-wrapper {
+    height: 16px;
+  }
+}
+
 .cdk-overlay-pane {
   // min-width: 215px;
 }

@@ -9,4 +9,6 @@ export type ExpressionSearchFilter = {
   searchString: string;
   tagIDs: string[];
   authors: string[];
+
+  valueChanged?: boolean;
 };

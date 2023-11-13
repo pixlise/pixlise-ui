@@ -29,80 +29,76 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 <div fxLayout="column" class="dlg-border-with-backdrop">
-    <h1>DOI Metadata</h1>
-    <div class="metadata">
-        <div class="title">
-            <div class="label">Title<span class="required">*</span></div>
-            <input [(ngModel)]="doiMetadata.title" placeholder="Title">
-        </div>
-        <div class="version">
-            <div class="label">Version</div>
-            <input [(ngModel)]="doiMetadata.version" placeholder="Version">
-        </div>
-        <div class="description">
-            <div class="label">Description<span class="required">*</span></div>
-            <textarea rows="5" [(ngModel)]="doiMetadata.description" placeholder="Description"></textarea>
-        </div>
-        <div class="references">
-            <div class="label">References</div>
-            <textarea rows="1" [(ngModel)]="doiMetadata.references"
-                placeholder="References (comma separated)"></textarea>
-        </div>
-        <div class="keywords">
-            <div class="label">Keywords</div>
-            <textarea rows="1" [(ngModel)]="doiMetadata.keywords" placeholder="Keywords (comma separated)"></textarea>
-        </div>
-        <div class="notes">
-            <div class="label">Notes</div>
-            <textarea rows="3" [(ngModel)]="doiMetadata.notes" placeholder="Notes"></textarea>
-        </div>
-        <div class="creators">
-            <div class="label">Creators<span class="required">*</span></div>
-            <div class="creator" *ngFor="let creator of doiMetadata.creators; let i = index">
-                <input [(ngModel)]="creator.name" placeholder="Name">
-                <input [(ngModel)]="creator.affiliation" placeholder="Affiliation">
-                <input [(ngModel)]="creator.orcid" placeholder="ORCID">
-                <img src="assets/button-icons/x.svg" (click)="removeCreator(i)" />
-            </div>
-            <div class="add-creator" (click)="addCreator()">
-                <img src="assets/button-icons/plus-white.svg">
-            </div>
-        </div>
-        <div class="contributors">
-            <div class="label">Contributors</div>
-            <div class="creator" *ngFor="let contributor of doiMetadata.contributors; let i = index">
-                <input [(ngModel)]="contributor.name" placeholder="Name">
-                <input [(ngModel)]="contributor.affiliation" placeholder="Affiliation">
-                <input [(ngModel)]="contributor.orcid" placeholder="ORCID">
-                <mat-select [(ngModel)]="contributor.type">
-                    <mat-option *ngFor="let contributorType of affiliationTypes"
-                        [value]="contributorType">{{contributorType}}</mat-option>
-                </mat-select>
-                <img src="assets/button-icons/x.svg" (click)="removeContributor(i)" />
-            </div>
-            <div class="add-creator" (click)="addContributor()">
-                <img src="assets/button-icons/plus-white.svg">
-            </div>
-        </div>
-        <div class="related-ids">
-            <div class="label">Related DOIs</div>
-            <div class="creator" *ngFor="let relatedID of doiMetadata.relatedIdentifiers; let i = index">
-                <input [(ngModel)]="relatedID.identifier" placeholder="12.3456/zenodo.1234567">
-                <mat-select [(ngModel)]="relatedID.relation">
-                    <mat-option *ngFor="let relationType of relationTypes"
-                        [value]="relationType">{{relationType}}</mat-option>
-                </mat-select>
-                <img src="assets/button-icons/x.svg" (click)="removeRelatedDOI(i)" />
-            </div>
-            <div class="add-creator" (click)="addRelatedDOI()">
-                <img src="assets/button-icons/plus-white.svg">
-            </div>
-        </div>
+  <h1>DOI Metadata</h1>
+  <div class="metadata">
+    <div class="title">
+      <div class="label">Title<span class="required">*</span></div>
+      <input [(ngModel)]="doiMetadata.title" placeholder="Title" />
     </div>
+    <div class="version">
+      <div class="label">Version</div>
+      <input [(ngModel)]="doiMetadata.version" placeholder="Version" />
+    </div>
+    <div class="description">
+      <div class="label">Description<span class="required">*</span></div>
+      <textarea rows="5" [(ngModel)]="doiMetadata.description" placeholder="Description"></textarea>
+    </div>
+    <div class="references">
+      <div class="label">References</div>
+      <textarea rows="1" [(ngModel)]="doiMetadata.references" placeholder="References (comma separated)"></textarea>
+    </div>
+    <div class="keywords">
+      <div class="label">Keywords</div>
+      <textarea rows="1" [(ngModel)]="doiMetadata.keywords" placeholder="Keywords (comma separated)"></textarea>
+    </div>
+    <div class="notes">
+      <div class="label">Notes</div>
+      <textarea rows="3" [(ngModel)]="doiMetadata.notes" placeholder="Notes"></textarea>
+    </div>
+    <div class="creators">
+      <div class="label">Creators<span class="required">*</span></div>
+      <div class="creator" *ngFor="let creator of doiMetadata.creators; let i = index">
+        <input [(ngModel)]="creator.name" placeholder="Name" />
+        <input [(ngModel)]="creator.affiliation" placeholder="Affiliation" />
+        <input [(ngModel)]="creator.orcid" placeholder="ORCID" />
+        <img src="assets/button-icons/x.svg" (click)="removeCreator(i)" />
+      </div>
+      <div class="add-creator" (click)="addCreator()">
+        <img src="assets/button-icons/plus-white.svg" />
+      </div>
+    </div>
+    <div class="contributors">
+      <div class="label">Contributors</div>
+      <div class="creator" *ngFor="let contributor of doiMetadata.contributors; let i = index">
+        <input [(ngModel)]="contributor.name" placeholder="Name" />
+        <input [(ngModel)]="contributor.affiliation" placeholder="Affiliation" />
+        <input [(ngModel)]="contributor.orcid" placeholder="ORCID" />
+        <mat-select [(ngModel)]="contributor.type">
+          <mat-option *ngFor="let contributorType of affiliationTypes" [value]="contributorType">{{ contributorType }}</mat-option>
+        </mat-select>
+        <img src="assets/button-icons/x.svg" (click)="removeContributor(i)" />
+      </div>
+      <div class="add-creator" (click)="addContributor()">
+        <img src="assets/button-icons/plus-white.svg" />
+      </div>
+    </div>
+    <div class="related-ids">
+      <div class="label">Related DOIs</div>
+      <div class="creator" *ngFor="let relatedID of doiMetadata.relatedIdentifiers; let i = index">
+        <input [(ngModel)]="relatedID.identifier" placeholder="12.3456/zenodo.1234567" />
+        <mat-select [(ngModel)]="relatedID.relation">
+          <mat-option *ngFor="let relationType of relationTypes" [value]="relationType">{{ relationType }}</mat-option>
+        </mat-select>
+        <img src="assets/button-icons/x.svg" (click)="removeRelatedDOI(i)" />
+      </div>
+      <div class="add-creator" (click)="addRelatedDOI()">
+        <img src="assets/button-icons/plus-white.svg" />
+      </div>
+    </div>
+  </div>
 
-    <div fxLayout="row" fxLayoutAlign="end" class="footer-btns gap-separated-horizontal-elements gap-above">
-        <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-        <push-button class="save-btn" buttonStyle="yellow" (onClick)="onSave()">{{data.isModule ? "Save" :
-            "Publish"}}</push-button>
-    </div>
+  <div class="footer-btns gap-separated-horizontal-elements gap-above">
+    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button class="save-btn" buttonStyle="yellow" (onClick)="onSave()">{{ data.isModule ? "Save" : "Publish" }}</push-button>
+  </div>
 </div>

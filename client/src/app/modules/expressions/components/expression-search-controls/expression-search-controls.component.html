@@ -9,7 +9,8 @@
   </div>
   <div class="option-filters">
     <filter-box placeholder="Filter Name..." (onFilterChanged)="onFilterText($event)"> </filter-box>
-    <tag-picker type="roi" [selectedTagIDs]="filteredTagIDs" [showCurrentTagsSection]="false" (onTagSelectionChanged)="onTagFilterChanged($event)"> </tag-picker>
+    <tag-picker type="expression" [selectedTagIDs]="filteredTagIDs" [showCurrentTagsSection]="false" (onTagSelectionChanged)="onTagFilterChanged($event)">
+    </tag-picker>
     <mat-select #tooltip="matTooltip" [matTooltip]="authorsTooltip" multiple [(ngModel)]="filteredAuthors" class="authors-filter" placeholder="Author ...">
       <mat-option *ngFor="let author of authors" [value]="author.id">{{ author.name }} </mat-option>
     </mat-select>

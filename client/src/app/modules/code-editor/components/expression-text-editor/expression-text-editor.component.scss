@@ -150,7 +150,7 @@ h3 {
         white-space: pre;
 
         .module-version {
-          width: calc(100% - 15px) !important;
+          width: calc(100% - 12px) !important;
           border: 2px dashed #444c50;
           border-radius: 4px;
           padding: 2px 4px;
@@ -266,23 +266,38 @@ img {
 }
 
 .code-container {
+  flex: 1;
+
   &.installed-modules {
     .editor-container {
       height: 100%;
-      max-height: calc(100% - 28px) !important;
+      max-height: calc(100% - 32px) !important;
     }
 
     &.split {
       flex: unset !important;
-      height: calc(50vh - 55px);
+      height: calc(50vh - 72px);
     }
   }
 
   &.header-open {
     .editor-container {
-      height: 100%;
-      max-height: calc(100% - 116px) !important;
+      // height: 100%;
+      height: calc(100% - 132px) !important;
     }
+
+    &.installed-modules {
+      flex: unset !important;
+      height: calc(100vh - 118px);
+
+      &.split {
+        height: calc(50vh - 72px);
+      }
+    }
+  }
+
+  .editor-container {
+    flex: 1;
   }
 }
 

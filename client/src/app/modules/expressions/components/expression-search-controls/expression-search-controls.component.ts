@@ -44,23 +44,23 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
     private _analysisLayoutService: AnalysisLayoutService,
     private _expressionsService: ExpressionsService,
     private _userOptionsService: UserOptionsService
-  ) {
+  ) {}
+
+  ngOnInit(): void {
     const quants = this._analysisLayoutService.availableScanQuants$.value?.[this.visibleScanId];
     if (this.visibleScanId && quants && quants.length > 0) {
       this.selectedQuantId = quants[0].id;
       this.filteredQuants = quants;
     } else {
-      this.selectedQuantId = "";
-      this.filteredQuants = [];
+      // this.selectedQuantId = "";
+      // this.filteredQuants = [];
 
       // Only request if we have a scan ID!
       if (this.visibleScanId) {
         this._analysisLayoutService.fetchQuantsForScan(this.visibleScanId);
       }
     }
-  }
 
-  ngOnInit(): void {
     this._subs.add(
       this._userOptionsService.userOptionsChanged$.subscribe(() => {
         this._currentUserId = this._userOptionsService.userDetails.info?.id || "";
@@ -73,7 +73,9 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
       })
     );
 
-    this.visibleScanId = this._analysisLayoutService.defaultScanId;
+    if (!this.visibleScanId) {
+      this.visibleScanId = this._analysisLayoutService.defaultScanId;
+    }
 
     this._subs.add(
       this._analysisLayoutService.availableScans$.subscribe(scans => {
@@ -139,6 +141,16 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
     this.emitFilters();
   }
 
+  // This allows the parent component to set the scan ID without triggering a fetch of the quants
+  @Input() set scanId(scanId: string) {
+    if (scanId && this._visibleScanId !== scanId) {
+      this._visibleScanId = scanId;
+      this._analysisLayoutService.fetchQuantsForScan(scanId);
+      this.filteredQuants = this._availableQuants[scanId] || [];
+      this.selectedQuantId = this._defaultQuantsForScans[this.visibleScanId] || "";
+    }
+  }
+
   get selectedQuantId(): string {
     return this._selectedQuantId;
   }
@@ -146,6 +158,13 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   set selectedQuantId(quantId: string) {
     this._selectedQuantId = quantId;
     this.emitFilters();
+  }
+
+  // This allows the parent component to set the quant ID without emitting a filter change
+  @Input() set quantId(quantId: string) {
+    if (quantId && this._selectedQuantId !== quantId) {
+      this._selectedQuantId = quantId;
+    }
   }
 
   get canCreateExpressions(): boolean {
@@ -180,11 +199,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
     this.authors = authors;
   }
 
-  private checkUserIsAuthor(roi: ROIItemSummary): boolean {
-    return roi.owner?.creatorUser?.id === this._currentUserId;
-  }
-
-  private filterExpressionsForDisplay(): void {
+  private filterExpressionsForDisplay(valueChanged: boolean = false): void {
     let filteredExpressions: DataExpression[] = [];
     let searchString = this.searchString.toLowerCase();
     for (let expression of this.expressions) {
@@ -205,6 +220,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
       searchString,
       tagIDs: this.filteredTagIDs,
       authors: this.filteredAuthors,
+      valueChanged,
     });
     this.extractAuthors();
   }
@@ -228,16 +244,16 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
 
   set filteredAuthors(authors: string[]) {
     this._filteredAuthors = authors;
-    this.filterExpressionsForDisplay();
+    this.filterExpressionsForDisplay(true);
   }
 
   onTagFilterChanged(tagIDs: string[]): void {
     this.filteredTagIDs = tagIDs;
-    this.filterExpressionsForDisplay();
+    this.filterExpressionsForDisplay(true);
   }
 
   onFilterText(filterText: string): void {
     this.searchString = filterText || "";
-    this.filterExpressionsForDisplay();
+    this.filterExpressionsForDisplay(true);
   }
 }

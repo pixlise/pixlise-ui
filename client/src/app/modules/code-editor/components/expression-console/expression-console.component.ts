@@ -38,7 +38,8 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 // import { BeamSelection } from "src/app/models/BeamSelection";
 import { DataQueryResult } from "src/app/expression-language/data-values";
 import { DataExpression } from "src/app/generated-protos/expressions";
-import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
+import { SelectionHistoryItem, SelectionService } from "src/app/modules/pixlisecore/services/selection.service";
+import { invalidPMC } from "src/app/utils/utils";
 // import { DataExpression } from "src/app/models/Expression";
 
 export interface DataCell {
@@ -59,6 +60,7 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   @Input() header: string = "Console";
   // @Input() evaluatedExpression: DataQueryResult = null;
   @Input() expression: DataExpression | null = null;
+  @Input() scanId: string = "";
   @Input() columnCount: number = 0;
   @Input() stdout: string = "";
   @Input() stderr: string = "";
@@ -84,12 +86,13 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
 
   selectedPMCs: Set<number> = new Set();
   currentSelection: SelectionHistoryItem | null = null;
+  hoverIndex: number = -1;
 
   public copyIcon: string = "content_copy";
 
   public showAllPMCs: boolean = true;
   constructor(
-    // private _selectionService: SelectionService,
+    private _selectionService: SelectionService,
     // private _datasetService: DataSetService,
     private _dialog: MatDialog
   ) {}
@@ -100,6 +103,25 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
     //     this.currentSelection = selection;
     //     this.selectedPMCs = this._datasetService.datasetLoaded.getPMCsForLocationIndexes(Array.from(selection.beamSelection.locationIndexes), false)
     // });
+
+    this._subs.add(
+      this._selectionService.selection$.subscribe(selection => {
+        this.currentSelection = selection;
+        if (this.scanId) {
+          this.selectedPMCs = new Set(selection.beamSelection.getSelectedScanEntryIndexes(this.scanId));
+        }
+      })
+    );
+
+    this._subs.add(
+      this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
+        if (this._selectionService.hoverScanId === this.scanId) {
+          this.hoverIndex = this._selectionService.hoverEntryIdx;
+        } else {
+          this.hoverIndex = -1;
+        }
+      })
+    );
   }
 
   ngOnDestroy() {
@@ -110,10 +132,23 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
     return this._evaluatedExpression;
   }
 
-  @Input() set evaluatedExpression(value: DataQueryResult) {
-    this._evaluatedExpression = value;
-
-    this.preComputeData();
+  @Input() set evaluatedExpression(value: DataQueryResult | null) {
+    if (value) {
+      this._evaluatedExpression = value;
+      this.preComputeData();
+    } else {
+      this._evaluatedExpression = null;
+      this._values = [];
+      this.rowCount = 0;
+      this.printableResultValue = "";
+      this.isValidData = false;
+      this.isValidTableData = false;
+      this.minDataValue = 0;
+      this.maxDataValue = 0;
+      this.avgDataValue = 0;
+      this.data = [];
+      this._pmcToValueIdx.clear();
+    }
   }
 
   preComputeData() {
@@ -262,15 +297,18 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   }
 
   get hoveredIndex(): number[] {
+    if (this.isValidTableData && this._selectionService.hoverEntryPMC !== invalidPMC && this._pmcToValueIdx.size > 0) {
+      let point = this._pmcToValueIdx.get(this._selectionService.hoverEntryPMC);
+      if (point !== undefined) {
+        return [point.row, point.col];
+      }
+      // let point = this._pmcToValueIdx.get(this._selectionService.hoverPMC);
+      //     if(point !== undefined)
+      //     {
+      //         return [point.row, point.col];
+      //     }
+    }
     return [];
-    // if(this.isValidTableData && this._selectionService.hoverPMC !== -1 && this._pmcToValueIdx.size > 0)
-    // {
-    //     let point = this._pmcToValueIdx.get(this._selectionService.hoverPMC);
-    //     if(point !== undefined)
-    //     {
-    //         return [point.row, point.col];
-    //     }
-    // }
     // return null;
   }
 
@@ -290,16 +328,17 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
 
   onMouseEnter(row: number, col: number) {
     let point = this.data[row][col];
-    // if (point !== null && point !== undefined) {
-    //   this._selectionService.setHoverPMC(point.pmc);
-    // }
+    if (point !== null && point !== undefined && this.scanId) {
+      this._selectionService.setHoverEntryPMC(this.scanId, point.pmc);
+    }
   }
 
   onMouseLeave(row: number, col: number) {
     let point = this.data[row][col];
-    // if (point !== null && point !== undefined && this._selectionService.hoverPMC === point.pmc) {
-    //   this._selectionService.setHoverPMC(-1);
-    // }
+    this._selectionService.hoverEntryPMC;
+    if (point !== null && point !== undefined && this._selectionService.hoverEntryPMC === point.pmc) {
+      this._selectionService.clearHoverEntry();
+    }
   }
 
   onClickPMC(row: number, col: number) {

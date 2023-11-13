@@ -27,112 +27,116 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-input,
-textarea {
-  width: 400px;
-}
+.module-container {
+  display: flex;
+  flex-direction: column;
 
-.metadata {
-  max-height: 600px;
-  overflow: scroll;
+  min-width: 400px;
 
-  > div {
-    margin-top: 8px;
+  h1 {
+    margin-bottom: 8px;
   }
 
-  .title,
-  .version {
+  .versions {
+    display: flex;
+    width: 100%;
+
+    .version {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+
+      &:first-of-type {
+        margin-right: 4px;
+      }
+
+      &:last-of-type {
+        margin-left: 4px;
+      }
+
+      .version-label {
+        color: #bec0c2;
+
+        font-weight: 400;
+        font-size: 12px;
+        line-height: 16px;
+
+        margin-bottom: 4px;
+      }
+
+      .version-value {
+        padding: 4px;
+        background: #222829;
+        border: 1px solid #444c50;
+        border-radius: 4px;
+        color: #bcbcbc;
+      }
+    }
+  }
+
+  .release-type {
+    margin-top: 16px;
+    padding: 0 8px;
+
+    mat-radio-group {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .release-options {
+      .release-option {
+        color: #bec0c2;
+
+        &.mat-radio-checked {
+          color: #f8f8f8;
+        }
+      }
+    }
+  }
+
+  .release-notes {
+    margin-top: 16px;
+
+    .label {
+      color: #bec0c2;
+
+      font-weight: 400;
+      font-size: 12px;
+      line-height: 16px;
+
+      margin-bottom: 4px;
+    }
+
+    textarea {
+      width: 100%;
+      font-family: "Roboto";
+    }
+  }
+
+  .btn-container {
+    display: flex;
+    justify-content: flex-end;
+
+    margin-top: 16px;
+  }
+}
+
+.doi-edit {
+  display: flex;
+  align-items: center;
+  margin-right: auto;
+
+  two-state-icon-button {
     display: flex;
     align-items: center;
-
-    input {
-      width: 275px;
-      margin-left: auto;
-    }
   }
 
-  .creators,
-  .contributors,
-  .related-ids {
-    border: 1px solid #454c50;
-    border-radius: 8px;
-    padding: 8px;
+  .edit-doi-btn {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
 
-    .creator {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 4px;
-
-      input {
-        width: 115px;
-      }
-
-      img {
-        margin-left: 4px;
-        cursor: pointer;
-        filter: brightness(0.5);
-
-        &:hover {
-          filter: brightness(1);
-        }
-      }
-    }
-
-    .add-creator {
-      margin-top: 8px;
-      display: flex;
-      justify-content: center;
-
-      img {
-        cursor: pointer;
-        filter: brightness(0.5);
-
-        &:hover {
-          filter: brightness(1);
-        }
-      }
-    }
+    margin-left: 0 !important;
   }
-
-  .contributors {
-    .creator {
-      input {
-        width: 80px;
-      }
-
-      mat-select {
-        width: 85px !important;
-        margin-left: 0 !important;
-      }
-    }
-  }
-
-  .related-ids {
-    .creator {
-      input {
-        flex: 1;
-      }
-
-      mat-select {
-        width: 125px !important;
-      }
-    }
-  }
-}
-
-.required {
-  color: rgb(255, 107, 37);
-  margin-left: 2px;
-}
-
-.footer-btns {
-  display: flex;
-  justify-content: flex-end;
-
-  margin-top: 8px;
-}
-
-.save-btn {
-  margin-top: 1px;
 }

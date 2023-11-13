@@ -10,6 +10,8 @@ import { ExpressionTextEditorComponent } from "./components/expression-text-edit
 import { TagsModule } from "../tags/tags.module";
 import { WidgetModule } from "../widget/widget.module";
 import { ExpressionConsoleComponent } from "./components/expression-console/expression-console.component";
+import { ExpressionModule } from "../expressions/expressions.module";
+import { ModuleReleaseDialogComponent } from "./components/module-release-dialog/module-release-dialog.component";
 
 const APP_ROUTES: Routes = [
   {
@@ -26,8 +28,9 @@ const APP_ROUTES: Routes = [
     ExpressionMetadataEditorComponent,
     ExpressionTextEditorComponent,
     ExpressionConsoleComponent,
+    ModuleReleaseDialogComponent,
   ],
-  imports: [CommonModule, PIXLISECoreModule, RouterModule.forChild(APP_ROUTES), TagsModule, WidgetModule],
+  imports: [CommonModule, PIXLISECoreModule, RouterModule.forChild(APP_ROUTES), TagsModule, WidgetModule, ExpressionModule],
   exports: [
     CodeEditorPageComponent,
     DOIPublishDialog,
@@ -35,6 +38,7 @@ const APP_ROUTES: Routes = [
     ExpressionMetadataEditorComponent,
     ExpressionTextEditorComponent,
     ExpressionConsoleComponent,
+    ModuleReleaseDialogComponent,
   ],
 })
 export class CodeEditorModule {}

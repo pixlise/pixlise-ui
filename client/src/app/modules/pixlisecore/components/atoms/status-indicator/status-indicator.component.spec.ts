@@ -27,112 +27,31 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-input,
-textarea {
-  width: 400px;
-}
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-.metadata {
-  max-height: 600px;
-  overflow: scroll;
+import { StatusIndicatorComponent } from "./status-indicator.component";
 
-  > div {
-    margin-top: 8px;
-  }
+describe("StatusIndicatorComponent", () =>
+{
+    let component: StatusIndicatorComponent;
+    let fixture: ComponentFixture<StatusIndicatorComponent>;
 
-  .title,
-  .version {
-    display: flex;
-    align-items: center;
+    beforeEach(async () =>
+    {
+        await TestBed.configureTestingModule({
+            declarations: [ StatusIndicatorComponent ]
+        }).compileComponents();
+    });
 
-    input {
-      width: 275px;
-      margin-left: auto;
-    }
-  }
+    beforeEach(() =>
+    {
+        fixture = TestBed.createComponent(StatusIndicatorComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
 
-  .creators,
-  .contributors,
-  .related-ids {
-    border: 1px solid #454c50;
-    border-radius: 8px;
-    padding: 8px;
-
-    .creator {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 4px;
-
-      input {
-        width: 115px;
-      }
-
-      img {
-        margin-left: 4px;
-        cursor: pointer;
-        filter: brightness(0.5);
-
-        &:hover {
-          filter: brightness(1);
-        }
-      }
-    }
-
-    .add-creator {
-      margin-top: 8px;
-      display: flex;
-      justify-content: center;
-
-      img {
-        cursor: pointer;
-        filter: brightness(0.5);
-
-        &:hover {
-          filter: brightness(1);
-        }
-      }
-    }
-  }
-
-  .contributors {
-    .creator {
-      input {
-        width: 80px;
-      }
-
-      mat-select {
-        width: 85px !important;
-        margin-left: 0 !important;
-      }
-    }
-  }
-
-  .related-ids {
-    .creator {
-      input {
-        flex: 1;
-      }
-
-      mat-select {
-        width: 125px !important;
-      }
-    }
-  }
-}
-
-.required {
-  color: rgb(255, 107, 37);
-  margin-left: 2px;
-}
-
-.footer-btns {
-  display: flex;
-  justify-content: flex-end;
-
-  margin-top: 8px;
-}
-
-.save-btn {
-  margin-top: 1px;
-}
+    it("should create", () =>
+    {
+        expect(component).toBeTruthy();
+    });
+});
