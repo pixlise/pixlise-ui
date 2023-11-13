@@ -228,8 +228,8 @@ export class RGBUImage {
     unselectedOpacity: number,
     unselectedGrayscale: boolean,
     pixelSelection: PixelSelection,
-    colourRatioMin: number,
-    colourRatioMax: number,
+    colourRatioMin: number | null,
+    colourRatioMax: number | null,
     cropSelection: PixelSelection = PixelSelection.makeEmptySelection(),
     removeTopSpecularArtifacts: boolean = false,
     removeBottomSpecularArtifacts: boolean = false
@@ -381,8 +381,8 @@ export class RGBUImage {
     denominator: string,
     pixelCount: number,
     brightness: number,
-    colourRatioMin: number,
-    colourRatioMax: number,
+    colourRatioMin: number | null,
+    colourRatioMax: number | null,
     cropSelection: PixelSelection,
     removeTopSpecularArtifacts: boolean,
     removeBottomSpecularArtifacts: boolean

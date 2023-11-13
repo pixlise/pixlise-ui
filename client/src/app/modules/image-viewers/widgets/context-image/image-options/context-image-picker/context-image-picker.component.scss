@@ -27,26 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// Specialised case of two-state-button which is used often
-import { Component, Input } from "@angular/core";
-import { TwoStateButtonComponent } from "./two-state-button.component";
+@import 'variables.scss';
 
-@Component({
-  selector: "two-state-icon-switch",
-  templateUrl: "./two-state-icon-switch.component.html",
-  styleUrls: ["./two-state-button.component.scss", "./two-state-icon-button.component.scss", "./plus-minus-switch.component.scss"],
-})
-export class TwoStateIconSwitchComponent extends TwoStateButtonComponent {
-  @Input() leftIcon: string = "";
-  @Input() rightIcon: string = "";
+.img-list {
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: $clr-gray-80;
+    color: $clr-gray-30;
+    font-family: monospace;
+    white-space: nowrap;
+}
 
-  constructor() {
-    super();
-    this.leftLabel = "";
-    this.rightLabel = "";
-  }
+.img-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
 
-  get isRight(): boolean {
-    return this.active;
-  }
+    padding: $sz-unit $sz-double $sz-unit $sz-unit;
+    &:hover {
+        background-color: $clr-gray-70;
+    }
+}
+
+.img-item-selected {
+    color: $clr-yellow;
+}
+
+.selectable {
+    user-select: text;
 }

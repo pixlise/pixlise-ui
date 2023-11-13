@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
-import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
@@ -30,9 +30,8 @@ import {
   SelectedOptions,
   SubItemOptionSection,
 } from "src/app/modules/pixlisecore/components/atoms/sectioned-select-dialog/sectioned-select-dialog.component";
-import { string } from "mathjs";
-import { SpectrumChartModel } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/spectrum-model";
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
+import { ImageOptionsComponent, ImageDisplayOptions, ImagePickerParams, ImagePickerResult } from "./image-options/image-options.component";
 
 @Component({
   selector: "app-context-image",
@@ -49,6 +48,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   TEMP_QUANT_ID = "";
 
   private _subs = new Subscription();
+
+  private _shownImageOptions: MatDialogRef<ImageOptionsComponent> | null = null;
 
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
@@ -224,7 +225,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           }
 
           this.mdl.imageName = contextData.contextImage;
-          this.mdl.smoothing = contextData.contextImageSmoothing.length > 0;
+          this.mdl.imageSmoothing = contextData.contextImageSmoothing.length > 0;
 
           /*
 bool showPoints = 5;
@@ -543,7 +544,63 @@ bool removeBottomSpecularArtifacts = 21;
       }
     });
   }
-  onToggleImageOptionsView(trigger: Element | undefined) {}
+
+  onToggleImageOptionsView(trigger: Element | undefined) {
+    if (this._shownImageOptions) {
+      // Hide it
+      this._shownImageOptions.close();
+      return;
+    }
+
+    const dialogConfig = new MatDialogConfig();
+    // Pass data to dialog
+    dialogConfig.data = new ImagePickerParams(
+      [this._analysisLayoutService.defaultScanId],
+      new ImageDisplayOptions(
+        this.mdl.imageName,
+        this.mdl.imageSmoothing,
+        this.mdl.imageBrightness,
+        this.mdl.removeTopSpecularArtifacts,
+        this.mdl.removeBottomSpecularArtifacts,
+        this.mdl.colourRatioMin,
+        this.mdl.colourRatioMax,
+        this.mdl.rgbuChannels,
+        this.mdl.unselectedOpacity,
+        this.mdl.unselectedGrayscale
+      )
+    );
+
+    dialogConfig.hasBackdrop = false;
+    dialogConfig.disableClose = true;
+    dialogConfig.position = getInitialModalPositionRelativeToTrigger(trigger, 500, 500);
+
+    this._shownImageOptions = this.dialog.open(ImageOptionsComponent, dialogConfig);
+    this._shownImageOptions.componentInstance.optionChange.subscribe((result: ImagePickerResult) => {
+      // NOTE: it must be the path though... so must be like: <scanId>/<image>.png
+      this.mdl.drawImage = result.options.currentImage.length > 0;
+      // If user wants to draw the image, we got an image name back so apply to model. If it's
+      // an empty name, we just set the draw flag to false and don't change the imageName
+      // so reloading still works (and does almost nothing because it's the same image!)
+      if (this.mdl.drawImage) {
+        this.mdl.imageName = result.options.currentImage;
+      }
+      this.mdl.imageSmoothing = result.options.imageSmoothing;
+      this.mdl.imageBrightness = result.options.imageBrightness;
+      this.mdl.removeTopSpecularArtifacts = result.options.removeTopSpecularArtifacts;
+      this.mdl.removeBottomSpecularArtifacts = result.options.removeBottomSpecularArtifacts;
+      this.mdl.colourRatioMin = result.options.colourRatioMin;
+      this.mdl.colourRatioMax = result.options.colourRatioMax;
+      this.mdl.rgbuChannels = result.options.rgbuChannels;
+      this.mdl.unselectedOpacity = result.options.unselectedOpacity;
+      this.mdl.unselectedGrayscale = result.options.unselectedGrayscale;
+
+      this.reloadModel();
+    });
+
+    this._shownImageOptions.afterClosed().subscribe(() => {
+      this._shownImageOptions = null;
+    });
+  }
 
   onToggleSelectionMode() {
     this.mdl.selectionModeAdd = !this.mdl.selectionModeAdd;

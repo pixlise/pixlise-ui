@@ -17,6 +17,8 @@ import { ContextImageMapLayer, MapPoint, getDrawParamsForRawValue } from "../mod
 import { ContextImageModelLoadedData, ContextImageScanModel } from "../widgets/context-image/context-image-model";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { ExpressionGroupGetReq, ExpressionGroupGetResp } from "src/app/generated-protos/expression-group-msgs";
+import { ScanImagePurpose } from "src/app/generated-protos/image";
+import { RGBUImage } from "src/app/models/RGBUImage";
 
 @Injectable({
   providedIn: "root",
@@ -201,58 +203,74 @@ export class ContextImageDataService {
   }
 
   private fetchModelData(imageName: string): Observable<ContextImageModelLoadedData> {
-    // First, get the image metadata so we know what scans it's associated with and its path, then download image and scan-related data
-    return combineLatest([
-      this._cachedDataService.getImageMeta(ImageGetReq.create({ imageName: imageName })),
-      this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ imageName: imageName })),
-    ]).pipe(
-      concatMap((imgResps: (ImageGetResp | ImageBeamLocationsResp)[]) => {
-        const imgResp = imgResps[0] as ImageGetResp;
-        const imgBeamResp = imgResps[1] as ImageBeamLocationsResp;
-
+    // First, get the image metadata so we know what image to query beam locations for (uploaded images can reference other images!)
+    return this._cachedDataService.getImageMeta(ImageGetReq.create({ imageName: imageName })).pipe(
+      concatMap((imgResp: ImageGetResp) => {
+        // If this is a "matched" image, we should have a file name to request beam locations for, otherwise use the same file name
         if (!imgResp.image) {
           throw new Error("No image returned for: " + imageName);
         }
 
-        if (!imgBeamResp.locations) {
-          throw new Error("No image beam locations returned for: " + imageName);
-        }
-
-        if (imgBeamResp.locations.imageName != imageName) {
-          throw new Error(`Expected beams for image: ${imageName} but received for image: ${imgBeamResp.locations.imageName}`);
-        }
-
-        // We want the image and scan-specific draw models here
-        const requests: any[] = [this._endpointsService.loadImageForPath(imgResp.image.path)];
-
-        const beamsForScan = new Map<string, Coordinate2D[]>();
-        for (const locs of imgBeamResp.locations.locationPerScan) {
-          beamsForScan.set(locs.scanId, locs.locations);
-        }
-
-        for (const scanId of imgResp.image.associatedScanIds) {
-          // There should be beam locations for each of these associated images, if not, error!
-          const beamIJs = beamsForScan.get(scanId);
-          if (!beamIJs) {
-            throw new Error(`Image associated scan: ${scanId} has no beam locations`);
-          }
-
-          requests.push(this.buildScanModel(scanId, imageName, beamIJs));
-        }
-
-        // Load the image
-        return combineLatest(requests).pipe(
-          map(results => {
-            const image = results[0] as HTMLImageElement;
-
-            // Now read each scan-specific model and store it
-            const scanModels = new Map<string, ContextImageScanModel>();
-            for (let c = 1; c < results.length; c++) {
-              const scanMdl = results[c] as ContextImageScanModel;
-              scanModels.set(scanMdl.scanId, scanMdl);
+        const beamFileName = imgResp.image.matchInfo?.beamImageFileName || imageName;
+        return this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ imageName: beamFileName })).pipe(
+          concatMap((imgBeamResp: ImageBeamLocationsResp) => {
+            if (!imgBeamResp.locations) {
+              throw new Error("No image beam locations returned for: " + imageName);
             }
 
-            return new ContextImageModelLoadedData(image, null, scanModels, null, null);
+            if (imgBeamResp.locations.imageName != beamFileName) {
+              throw new Error(`Expected beams for image: ${beamFileName} but received for image: ${imgBeamResp.locations.imageName}`);
+            }
+
+            // We want the image and scan-specific draw models here
+            const requests: Observable<HTMLImageElement | RGBUImage | ContextImageScanModel>[] = [];
+
+            if (imgResp.image!.purpose == ScanImagePurpose.SIP_MULTICHANNEL) {
+              // We use a different function to request multi-channel TIF images, because we will have to process it further
+              // to get a visible image
+              requests.push(this._endpointsService.loadRGBUImageTIF(imgResp.image!.path));
+            } else {
+              // Simply load the image for displaying
+              requests.push(this._endpointsService.loadImageForPath(imgResp.image!.path));
+            }
+
+            const beamsForScan = new Map<string, Coordinate2D[]>();
+            for (const locs of imgBeamResp.locations.locationPerScan) {
+              beamsForScan.set(locs.scanId, locs.locations);
+            }
+
+            for (const scanId of imgResp.image!.associatedScanIds) {
+              // There should be beam locations for each of these associated images, if not, error!
+              const beamIJs = beamsForScan.get(scanId);
+              if (!beamIJs) {
+                throw new Error(`Image associated scan: ${scanId} has no beam locations`);
+              }
+
+              requests.push(this.buildScanModel(scanId, imageName, beamIJs));
+            }
+
+            // Load the image
+            return combineLatest(requests).pipe(
+              map(results => {
+                let displayImage: HTMLImageElement | null = null;
+                let rgbuImage: RGBUImage | null = null;
+
+                if (imgResp.image!.purpose == ScanImagePurpose.SIP_MULTICHANNEL) {
+                  rgbuImage = results[0] as RGBUImage;
+                } else {
+                  displayImage = results[0] as HTMLImageElement;
+                }
+
+                // Now read each scan-specific model and store it
+                const scanModels = new Map<string, ContextImageScanModel>();
+                for (let c = 1; c < results.length; c++) {
+                  const scanMdl = results[c] as ContextImageScanModel;
+                  scanModels.set(scanMdl.scanId, scanMdl);
+                }
+
+                return new ContextImageModelLoadedData(displayImage, null, scanModels, rgbuImage, null);
+              })
+            );
           })
         );
       })

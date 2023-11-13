@@ -31,22 +31,26 @@
 import { Component, Input } from "@angular/core";
 import { TwoStateButtonComponent } from "./two-state-button.component";
 
+
 @Component({
-  selector: "two-state-icon-switch",
-  templateUrl: "./two-state-icon-switch.component.html",
-  styleUrls: ["./two-state-button.component.scss", "./two-state-icon-button.component.scss", "./plus-minus-switch.component.scss"],
+    selector: "two-state-icon-switch",
+    templateUrl: "./two-state-icon-switch.component.html",
+    styleUrls: ["./two-state-button.component.scss", "./two-state-icon-button.component.scss", "./plus-minus-switch.component.scss"]
 })
-export class TwoStateIconSwitchComponent extends TwoStateButtonComponent {
-  @Input() leftIcon: string = "";
-  @Input() rightIcon: string = "";
+export class TwoStateIconSwitchComponent extends TwoStateButtonComponent
+{
+    @Input() leftIcon: string;
+    @Input() rightIcon: string;
 
-  constructor() {
-    super();
-    this.leftLabel = "";
-    this.rightLabel = "";
-  }
+    constructor()
+    {
+        super();
+        this.leftLabel = "";
+        this.rightLabel = "";
+    }
 
-  get isRight(): boolean {
-    return this.active;
-  }
+    get isRight(): boolean
+    {
+        return this.active;
+    }
 }

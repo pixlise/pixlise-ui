@@ -27,26 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// Specialised case of two-state-button which is used often
-import { Component, Input } from "@angular/core";
-import { TwoStateButtonComponent } from "./two-state-button.component";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ImageOptionsComponent } from "./image-options.component";
 
-@Component({
-  selector: "two-state-icon-switch",
-  templateUrl: "./two-state-icon-switch.component.html",
-  styleUrls: ["./two-state-button.component.scss", "./two-state-icon-button.component.scss", "./plus-minus-switch.component.scss"],
-})
-export class TwoStateIconSwitchComponent extends TwoStateButtonComponent {
-  @Input() leftIcon: string = "";
-  @Input() rightIcon: string = "";
 
-  constructor() {
-    super();
-    this.leftLabel = "";
-    this.rightLabel = "";
-  }
+describe("ImageOptionsComponent", () => 
+{
+    let component: ImageOptionsComponent;
+    let fixture: ComponentFixture<ImageOptionsComponent>;
 
-  get isRight(): boolean {
-    return this.active;
-  }
-}
+    beforeEach(async () => 
+    {
+        await TestBed.configureTestingModule({
+            declarations: [ ImageOptionsComponent ]
+        })
+            .compileComponents();
+    });
+
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(ImageOptionsComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
+
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});

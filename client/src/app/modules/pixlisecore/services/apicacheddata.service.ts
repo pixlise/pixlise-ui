@@ -16,7 +16,7 @@ import { DataModuleGetReq, DataModuleGetResp } from "src/app/generated-protos/mo
 
 import { decodeIndexList, decompressZeroRunLengthEncoding } from "src/app/utils/utils";
 import { DetectorConfigListReq, DetectorConfigListResp, DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
-import { ImageGetDefaultReq, ImageGetDefaultResp, ImageGetReq, ImageGetResp } from "src/app/generated-protos/image-msgs";
+import { ImageGetDefaultReq, ImageGetDefaultResp, ImageGetReq, ImageGetResp, ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { ImageBeamLocationsReq, ImageBeamLocationsResp } from "src/app/generated-protos/image-beam-location-msgs";
 import { ExpressionGroupGetReq, ExpressionGroupGetResp, ExpressionGroupListReq, ExpressionGroupListResp } from "src/app/generated-protos/expression-group-msgs";
 
@@ -49,6 +49,7 @@ export class APICachedDataService {
   private _imageReqMap = new Map<string, Observable<ImageGetResp>>();
   private _exprGroupListReqMap = new Map<string, Observable<ExpressionGroupListResp>>();
   private _exprGroupReqMap = new Map<string, Observable<ExpressionGroupGetResp>>();
+  private _imageListReqMap = new Map<string, Observable<ImageListResp>>();
 
   // Non-scan related
   private _regionOfInterestGetReqMap = new Map<string, Observable<RegionOfInterestGetResp>>();
@@ -362,6 +363,20 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._exprGroupReqMap.set(cacheId, result);
+    }
+
+    return result;
+  }
+
+  getImageList(req: ImageListReq): Observable<ImageListResp> {
+    const cacheId = JSON.stringify(ImageListReq.toJSON(req));
+    let result = this._imageListReqMap.get(cacheId);
+    if (result === undefined) {
+      // Have to request it!
+      result = this._dataService.sendImageListRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this._imageListReqMap.set(cacheId, result);
     }
 
     return result;

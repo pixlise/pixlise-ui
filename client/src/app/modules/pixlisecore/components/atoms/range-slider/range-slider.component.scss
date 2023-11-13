@@ -27,26 +27,74 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// Specialised case of two-state-button which is used often
-import { Component, Input } from "@angular/core";
-import { TwoStateButtonComponent } from "./two-state-button.component";
+.handle {
+    position: absolute;
 
-@Component({
-  selector: "two-state-icon-switch",
-  templateUrl: "./two-state-icon-switch.component.html",
-  styleUrls: ["./two-state-button.component.scss", "./two-state-icon-button.component.scss", "./plus-minus-switch.component.scss"],
-})
-export class TwoStateIconSwitchComponent extends TwoStateButtonComponent {
-  @Input() leftIcon: string = "";
-  @Input() rightIcon: string = "";
+    &.left-handle {
+        padding-right: 3px;
+        padding-left: 5px;
+        margin-left: -5px;
+    }
 
-  constructor() {
-    super();
-    this.leftLabel = "";
-    this.rightLabel = "";
-  }
+    &.right-handle {
+        padding-right: 5px;
+        padding-left: 3px;
+        margin-left: -3px;
+    }
+}
 
-  get isRight(): boolean {
-    return this.active;
-  }
+.range-svg {
+    overflow: visible;
+
+    &.vertical {
+        .handle-tooltip {
+            transform: rotate(90deg);
+
+            top: -12.5px;
+            left: -40px;
+
+            &:before {
+                top: -23px;
+                left: 0px;
+                border: solid 12px transparent;
+                border-bottom-color: #293136;
+            }
+        }
+    }
+
+    &.horizontal {
+        .handle-tooltip {
+            top: -30px;
+            left: -12.5px;
+        }
+    }
+}
+
+.foreign-handle {
+    overflow: auto;
+
+    &:hover {
+        overflow: visible;
+    }
+
+    .circle-handle {
+        position: relative;
+
+        .handle-tooltip {
+            position: absolute;
+            padding: 5px;
+            background: #293136;
+            color: white;
+
+            &:before {
+                content: "";
+                position: absolute;
+                z-index: 1;
+            }
+
+            h5 {
+                all: unset;
+            }
+        }
+    }
 }

@@ -18,6 +18,7 @@ import { ContextImageRegionLayer } from "../../models/region";
 import { MapColourScaleModel, MapColourScaleSourceData } from "./ui-elements/map-colour-scale/map-colour-scale-model";
 import { randomString } from "src/app/utils/utils";
 import { MinMax } from "src/app/models/BasicTypes";
+import { adjustImageRGB } from "src/app/utils/drawing";
 
 export class ContextImageModelLoadedData {
   constructor(
@@ -46,9 +47,19 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   hideFootprintsForScans: string[] = [];
   hideMapsForScans: string[] = [];
 
-  smoothing: boolean = false;
+  drawImage: boolean = true;
+  imageSmoothing: boolean = true;
+  imageBrightness: number = 1;
   selectionModeAdd: boolean = true; // Add or Subtract, nothing else!
   elementRelativeShading: boolean = false; // A toggle available in Element Maps tab version of context image only!
+
+  removeTopSpecularArtifacts: boolean = true;
+  removeBottomSpecularArtifacts: boolean = true;
+  colourRatioMin: number | null = null;
+  colourRatioMax: number | null = null;
+  rgbuChannels: string = "RGB";
+  unselectedOpacity: number = 0.3;
+  unselectedGrayscale: boolean = false;
 
   private _pointColourScheme: ColourScheme = ColourScheme.PURPLE_CYAN;
   private _pointBBoxColourScheme: ColourScheme = ColourScheme.PURPLE_CYAN;
@@ -64,6 +75,8 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
   private _colourScales: MapColourScaleModel[];
   private _colourScaleDisplayValueRanges = new Map<string, MinMax>();
+
+  private _currentPixelSelection: PixelSelection | null = null;
 
   // If nothing else, somewhere to put a breakpoint!
   constructor() {
@@ -107,6 +120,12 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   }
 
   setSelection(beamSel: BeamSelection, pixelSel: PixelSelection, hoverScanId: string, hoverEntryIdx: number) {
+    // Save pixel selection if it's different (this causes more regeneration on next draw)
+    if (!this._currentPixelSelection || !this._currentPixelSelection.isEqualTo(pixelSel)) {
+      this._currentPixelSelection = pixelSel;
+      this._recalcNeeded = true;
+    }
+
     // We don't want to regenerate everything when selection (and especially hover) changes, so here we just update the existing model
     // if we have one
     for (const scanId of beamSel.getScanIds()) {
@@ -303,6 +322,10 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     return this._colourScaleDisplayValueRanges;
   }
 
+  get currentPixelSelection(): PixelSelection | null {
+    return this._currentPixelSelection;
+  }
+
   get rgbuSourceImage(): RGBUImage | null {
     if (this._raw) {
       return this._raw.rgbuSourceImage;
@@ -448,7 +471,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
   drawnData: OffscreenCanvas | null = null;
 
   // Drawing the image
-  smoothing: boolean = true;
+  imageSmoothing: boolean = true;
   image: HTMLImageElement | null = null;
   imageTransform: ContextImageItemTransform | null = null;
 
@@ -479,8 +502,37 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
     // Copy settings across. IDEALLY all this stuff should be copied or we should provide it read-only so no buggy drawing
     // code could modify our model state, but that's a bit luxurious. We're providing objects, which can be modified easily.
     this.drawnLinePoints = from.drawnLinePoints;
-    this.smoothing = from.smoothing;
-    this.image = from.raw?.image || null;
+    this.imageSmoothing = from.imageSmoothing;
+    if (!from.drawImage) {
+      this.image = null;
+    } else {
+      this.image = from.raw?.image || null;
+    }
+
+    // Apply brightness
+    if (this.image) {
+      this.image = adjustImageRGB(this.image, from.imageBrightness);
+    }
+
+    // If we still don't have an image, maybe it's an RGBU and needs to be generated here
+    if (!this.image && from.raw?.rgbuSourceImage) {
+      const rgbuGen = from.raw.rgbuSourceImage.generateRGBDisplayImage(
+        from.imageBrightness,
+        from.rgbuChannels,
+        false,
+        from.unselectedOpacity,
+        from.unselectedGrayscale,
+        from.currentPixelSelection ? from.currentPixelSelection : PixelSelection.makeEmptySelection(),
+        from.colourRatioMin,
+        from.colourRatioMax,
+        PixelSelection.makeEmptySelection(),
+        from.removeTopSpecularArtifacts,
+        from.removeBottomSpecularArtifacts
+      );
+
+      this.image = rgbuGen.image;
+    }
+
     this.imageTransform = from.raw?.imageTransform || null;
 
     const pointColours = getSchemeColours(from.pointColourScheme);

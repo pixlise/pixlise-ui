@@ -37,6 +37,7 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
     screenContext.save();
     drawParams.worldTransform.applyTransform(screenContext);
     //this.screenContext.rotate(degToRad(15));
+    screenContext.imageSmoothingEnabled = this._mdl.drawModel.imageSmoothing;
 
     this.drawWorldSpace(screenContext, drawParams);
 

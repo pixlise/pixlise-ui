@@ -27,26 +27,32 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-// Specialised case of two-state-button which is used often
-import { Component, Input } from "@angular/core";
-import { TwoStateButtonComponent } from "./two-state-button.component";
+import { async, ComponentFixture, TestBed } from "@angular/core/testing";
+import { ContextImagePickerComponent } from "./context-image-picker.component";
 
-@Component({
-  selector: "two-state-icon-switch",
-  templateUrl: "./two-state-icon-switch.component.html",
-  styleUrls: ["./two-state-button.component.scss", "./two-state-icon-button.component.scss", "./plus-minus-switch.component.scss"],
-})
-export class TwoStateIconSwitchComponent extends TwoStateButtonComponent {
-  @Input() leftIcon: string = "";
-  @Input() rightIcon: string = "";
 
-  constructor() {
-    super();
-    this.leftLabel = "";
-    this.rightLabel = "";
-  }
+describe("ContextImagePickerComponent", () => 
+{
+    let component: ContextImagePickerComponent;
+    let fixture: ComponentFixture<ContextImagePickerComponent>;
 
-  get isRight(): boolean {
-    return this.active;
-  }
-}
+    beforeEach(async(() => 
+    {
+        TestBed.configureTestingModule({
+            declarations: [ ContextImagePickerComponent ]
+        })
+            .compileComponents();
+    }));
+
+    beforeEach(() => 
+    {
+        fixture = TestBed.createComponent(ContextImagePickerComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+    });
+
+    it("should create", () => 
+    {
+        expect(component).toBeTruthy();
+    });
+});
