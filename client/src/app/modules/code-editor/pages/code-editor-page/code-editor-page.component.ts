@@ -606,7 +606,7 @@ export class CodeEditorPageComponent implements OnInit {
 
   get isTopExpressionIdNew(): boolean {
     let topExpressionId = this._route.snapshot.queryParams["topExpressionId"];
-    return !topExpressionId || topExpressionId === ExpressionsService.NewExpressionId;
+    return topExpressionId && topExpressionId === ExpressionsService.NewExpressionId;
   }
 
   get isTopModuleIdNew(): boolean {
@@ -616,7 +616,7 @@ export class CodeEditorPageComponent implements OnInit {
 
   get isBottomExpressionIdNew(): boolean {
     let bottomExpressionId = this._route.snapshot.queryParams["bottomExpressionId"];
-    return !bottomExpressionId || bottomExpressionId === ExpressionsService.NewExpressionId;
+    return bottomExpressionId && bottomExpressionId === ExpressionsService.NewExpressionId;
   }
 
   addExpressions() {
@@ -626,7 +626,7 @@ export class CodeEditorPageComponent implements OnInit {
     };
     dialogConfig.data.selectedIds = [];
     let topExpressionId = this._route.snapshot.queryParams["topExpressionId"];
-    if (!this.isTopExpressionIdNew) {
+    if (topExpressionId && !this.isTopExpressionIdNew) {
       dialogConfig.data.selectedIds.push(topExpressionId);
     }
 
