@@ -31,7 +31,7 @@ import { Component, ElementRef, HostListener, Input, OnDestroy, OnInit, ViewChil
 import { Subject, Subscription, fromEvent } from "rxjs";
 import { tap, throttleTime, debounceTime } from "rxjs/operators";
 
-import { getMatrixAs2x3Array, Point, Rect } from "src/app/models/Geometry";
+import { addVectors, getMatrixAs2x3Array, Point, Rect, subtractVectors } from "src/app/models/Geometry";
 // import { LayoutService } from "src/app/services/layout.service";
 import { AnalysisLayoutService } from "../../../analysis/services/analysis-layout.service";
 
@@ -123,6 +123,23 @@ export class CanvasMouseEvent {
     public ctrlKey: boolean,
     public metaKey: boolean
   ) {}
+
+  public static makeCanvasTranslatedCopy(of: CanvasMouseEvent, translation: Point): CanvasMouseEvent {
+    return new CanvasMouseEvent(
+      of.eventId,
+      of.point,
+      of.mouseDown,
+      of.mouseLast,
+      addVectors(of.canvasPoint, translation),
+      addVectors(of.canvasMouseDown, translation),
+      addVectors(of.canvasMouseLast, translation),
+      of.canvasParams,
+      of.deltaY,
+      of.shiftKey,
+      of.ctrlKey,
+      of.metaKey
+    );
+  }
 }
 
 export class CanvasKeyEvent {
@@ -176,7 +193,7 @@ export interface CanvasWorldTransform {
   templateUrl: "./interactive-canvas.component.html",
   styleUrls: ["./interactive-canvas.component.scss"],
 })
-export class InteractiveCanvasComponent implements OnInit, OnDestroy {
+export class InteractiveCanvasComponent implements /*OnInit,*/ OnDestroy {
   @Input() drawer: CanvasDrawer | null = null;
   _drawNotifier: CanvasDrawNotifier | null = null;
   @Input() interactionHandler: CanvasInteractionHandler | null = null;
@@ -189,19 +206,12 @@ export class InteractiveCanvasComponent implements OnInit, OnDestroy {
   private _mouseDown: Point | null = null;
   private _mouseLast: Point | null = null;
 
-  //private _mouseWheelDeltaAccum: number = 0;
-  //private _mouseWheelDeltaAccumWheel: number = 0;
-  private _mouseWheelDeltaAccumX: number = 0;
-  //private _mouseWheelDeltaAccumWheelX: number = 0;
-  private _mouseWheelDeltaAccumY: number = 0;
-  //private _mouseWheelDeltaAccumWheelY: number = 0;
-
   protected _subs = new Subscription();
   protected _viewport: CanvasParams = new CanvasParams(0, 0, 1);
 
   constructor(private _layoutService: AnalysisLayoutService) {}
 
-  ngOnInit() {}
+  //ngOnInit() {}
 
   ngOnDestroy() {
     this._subs.unsubscribe();
@@ -281,9 +291,9 @@ console.log(canvasElem);
     }
 
     //this.printDbg('callFitCanvasToContainer');
-    let canvasElem = this._imgCanvas.nativeElement;
+    const canvasElem = this._imgCanvas.nativeElement;
 
-    let newViewport = this.fitCanvasToContainer(this._imgCanvas);
+    const newViewport = this.fitCanvasToContainer(this._imgCanvas);
     if (newViewport) {
       //console.log('callFitCanvasToContainer viewport: '+newViewport.width+'x'+newViewport.height+', dpi='+newViewport.dpi);
       //console.log(canvasElem);
@@ -293,7 +303,7 @@ console.log(canvasElem);
       this.triggerRedraw();
     }
 
-    let canvasContext = (<HTMLCanvasElement>canvasElem).getContext("2d");
+    const canvasContext = (<HTMLCanvasElement>canvasElem).getContext("2d");
     if (canvasContext) {
       this._screenContext = canvasContext;
     }
@@ -307,16 +317,16 @@ console.log(canvasElem);
 
     const dpi = window.devicePixelRatio;
 
-    let canvasElem = canvas.nativeElement;
+    const canvasElem = canvas.nativeElement;
     if (canvasElem.width == canvasElem.parentNode.clientWidth * dpi && canvasElem.height == canvasElem.parentNode.clientHeight * dpi) {
       //console.error('fitCanvasToContainer failed: size already matched');
       return null;
     }
 
-    let width = canvasElem.parentNode.clientWidth;
-    let height = canvasElem.parentNode.clientHeight;
+    const width = canvasElem.parentNode.clientWidth;
+    const height = canvasElem.parentNode.clientHeight;
 
-    let displayBackup = canvasElem.style.display;
+    const displayBackup = canvasElem.style.display;
     canvasElem.style.display = "none";
 
     canvasElem.width = width * dpi;
@@ -357,7 +367,7 @@ console.log(canvasElem);
     if (this._imgCanvas) {
       this._imgCanvas.nativeElement.focus();
     }
-    let mouse = new Point(event.clientX, event.clientY);
+    const mouse = new Point(event.clientX, event.clientY);
     this.sendMouseEvent(mouse, 0, CanvasMouseEventId.MOUSE_ENTER, event.shiftKey, event.ctrlKey, event.metaKey);
     //this.mouseEntered = true;
   }
@@ -369,7 +379,7 @@ console.log(canvasElem);
       this._imgCanvas.nativeElement.blur();
     }
 
-    let mouse = new Point(event.clientX, event.clientY);
+    const mouse = new Point(event.clientX, event.clientY);
     this.sendMouseEvent(mouse, 0, CanvasMouseEventId.MOUSE_LEAVE, event.shiftKey, event.ctrlKey, event.metaKey);
     //this.mouseEntered = false;
   }
@@ -383,7 +393,7 @@ console.log(canvasElem);
 
   onMouseMoveCanvas(event: MouseEvent) {
     event.preventDefault();
-    let mouse = new Point(event.clientX, event.clientY);
+    const mouse = new Point(event.clientX, event.clientY);
 
     let sendEvent = CanvasMouseEventId.MOUSE_MOVE;
     if (this._mouseDown) {
@@ -404,7 +414,7 @@ console.log(canvasElem);
 
     // We only consider it a mouse up if it's the left mouse button
     if (event.button == 0) {
-      let mouse = new Point(event.clientX, event.clientY);
+      const mouse = new Point(event.clientX, event.clientY);
       this.sendMouseEvent(mouse, 0, CanvasMouseEventId.MOUSE_UP, event.shiftKey, event.ctrlKey, event.metaKey);
       this._mouseDown = null;
     }
@@ -438,7 +448,7 @@ console.log(canvasElem);
       delta = -deltaStep;
     }
 
-    let mouse = new Point(event.clientX, event.clientY);
+    const mouse = new Point(event.clientX, event.clientY);
     this.sendMouseEvent(mouse, delta, CanvasMouseEventId.MOUSE_WHEEL, event.shiftKey, event.ctrlKey, event.metaKey);
   }
 
@@ -457,8 +467,7 @@ console.log(canvasElem);
       return;
     }
 
-    let redraw = this.interactionHandler.keyEvent(new CanvasKeyEvent(key, down));
-
+    const redraw = this.interactionHandler.keyEvent(new CanvasKeyEvent(key, down));
     if (redraw) {
       this.triggerRedraw();
     }
@@ -473,16 +482,16 @@ console.log(canvasElem);
     if (!this.interactionHandler) {
       console.warn("sendMouseEvent: No interaction handler defined");
     } else {
-      let redraw = this.interactionHandler.mouseEvent(
+      const redraw = this.interactionHandler.mouseEvent(
         new CanvasMouseEvent(
           eventId,
 
           mousePos ? (this.screenToWorldSpace(mousePos) as Point) : new Point(0, 0),
           this._mouseDown ? (this.screenToWorldSpace(this._mouseDown!) as Point) : new Point(0, 0),
-          this._mouseLast ? (this.screenToWorldSpace(this._mouseLast) as Point) : new Point(0, 0),
+          this.screenToWorldSpace(this._mouseLast) as Point,
 
           this.screenToCanvasSpace(mousePos),
-          this.screenToCanvasSpace(this._mouseDown!),
+          this._mouseDown ? this.screenToCanvasSpace(this._mouseDown!) : new Point(0, 0),
           this.screenToCanvasSpace(this._mouseLast),
 
           this._viewport,

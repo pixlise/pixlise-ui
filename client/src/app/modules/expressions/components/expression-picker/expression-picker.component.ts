@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Inject, OnInit } from "@angular/core";
+import { Component, Inject, OnDestroy, OnInit } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { Subscription } from "rxjs";
@@ -36,9 +36,10 @@ import { ExpressionSearchFilter } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ExpressionGroup } from "src/app/generated-protos/expression-group";
 
 export type ExpressionPickerResponse = {
-  selectedExpressions: DataExpression[];
+  selectedExpressions: (DataExpression | ExpressionGroup)[];
   scanId: string;
   quantId: string;
 };
@@ -55,10 +56,10 @@ export type ExpressionPickerData = {
   templateUrl: "./expression-picker.component.html",
   styleUrls: ["./expression-picker.component.scss"],
 })
-export class ExpressionPickerComponent implements OnInit {
+export class ExpressionPickerComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
-  filteredExpressions: DataExpression[] = [];
+  filteredExpressions: (DataExpression | ExpressionGroup)[] = [];
   selectedExpressions: Set<string> = new Set();
 
   manualFilters: Partial<ExpressionSearchFilter> | null = null;
@@ -122,7 +123,7 @@ export class ExpressionPickerComponent implements OnInit {
     this._subs.unsubscribe();
   }
 
-  trackById(index: number, item: DataExpression): string {
+  trackById(index: number, item: DataExpression | ExpressionGroup): string {
     return item.id;
   }
 
@@ -161,7 +162,8 @@ export class ExpressionPickerComponent implements OnInit {
           config.scanConfigurations[scanId] = ScanConfiguration.create({ quantId });
         }
 
-        this._analysisLayoutService.writeScreenConfiguration(config);
+        // TODO: Figure out a way for this not to blow away the view multiple times when an expression picker dialog is shown
+        //this._analysisLayoutService.writeScreenConfiguration(config);
       }
     }
 
@@ -180,7 +182,7 @@ export class ExpressionPickerComponent implements OnInit {
   }
 
   onConfirm(): void {
-    let selectedExpressions = Array.from(this.selectedExpressions)
+    const selectedExpressions = Array.from(this.selectedExpressions)
       .map(id => this._expressionService.expressions$.value[id])
       .filter(expression => expression);
 

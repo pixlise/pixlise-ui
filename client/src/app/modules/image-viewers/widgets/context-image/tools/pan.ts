@@ -42,17 +42,7 @@ export class ContextImagePan extends BaseContextImageTool {
   override activate(): void {
     this._host.setCursor(CursorId.panCursor);
   }
-  /*
-  drawWorldSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
-    this.drawSelectableLocations(screenContext, this._ctx.highlighedLocationIdx, this._ctx.showPointBBox, this._ctx.showPoints, this._ctx.showPoints);
 
-    // draw the line segments
-    if (this._ctx.drawnLinePoints.length > 1) {
-      const drawer = new UserLineDrawer(this._ctx);
-      drawer.drawWorldSpace(screenContext, drawParams);
-    }
-  }
-*/
   override mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
     return ContextImagePan.panZoomMouseMove(event.eventId, event.point, event.mouseDown != null, event.mouseLast, this._ctx.transform);
   }

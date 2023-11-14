@@ -27,28 +27,30 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { MinMax } from "src/app/models/BasicTypes";
-import { Histogram } from "./histogram";
-import { MapPointDrawParams } from "../modules/image-viewers/models/map-layer";
+// Specialised case of two-state-button which is used often
+import { Component, Input } from "@angular/core";
+import { TwoStateButtonComponent } from "./two-state-button.component";
 
-export interface IColourScaleDataSource {
-  getValueRange(channel: number): MinMax;
-  getDisplayValueRange(channel: number): MinMax;
-  getSpecularRemovedValueRange?(channel: number): MinMax;
-  setDisplayValueRangeMin(channel: number, val: number): void;
-  setDisplayValueRangeMax(channel: number, val: number): void;
 
-  channelCount: number;
-  isBinary: boolean;
-  displayScalingAllowed: boolean;
-  name: string;
+@Component({
+    selector: "two-state-icon-switch",
+    templateUrl: "./two-state-icon-switch.component.html",
+    styleUrls: ["./two-state-button.component.scss", "./two-state-icon-button.component.scss", "./plus-minus-switch.component.scss"]
+})
+export class TwoStateIconSwitchComponent extends TwoStateButtonComponent
+{
+    @Input() leftIcon: string;
+    @Input() rightIcon: string;
 
-  expressionID?: string;
-  source?: any;
+    constructor()
+    {
+        super();
+        this.leftLabel = "";
+        this.rightLabel = "";
+    }
 
-  getHistogram(channel: number): Histogram;
-  setHistogramSteps(steps: number): void;
-
-  getChannelName(channel: number): string;
-  getDrawParamsForRawValue(channel: number, rawValue: number, rawRange: MinMax): MapPointDrawParams;
+    get isRight(): boolean
+    {
+        return this.active;
+    }
 }

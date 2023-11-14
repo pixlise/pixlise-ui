@@ -103,7 +103,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   // The drawable data
   private _drawModel: SpectrumDrawModel = new SpectrumDrawModel();
 
-  private _drawTransform: PanZoom = new PanZoom(new MinMax(1, undefined), new MinMax(1, undefined), new PanRestrictorToCanvas());
+  private _drawTransform: PanZoom = new PanZoom(new MinMax(1, null), new MinMax(1, null), new PanRestrictorToCanvas());
 
   // Display settings
   private _logScale: boolean = true;

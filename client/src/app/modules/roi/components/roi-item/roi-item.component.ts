@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, Output, SimpleChanges, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild } from "@angular/core";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { ROIService } from "../../services/roi.service";
 import { SelectionService, SnackbarService, WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -19,7 +19,7 @@ export type SubItemOptionSection = {
   templateUrl: "./roi-item.component.html",
   styleUrls: ["./roi-item.component.scss"],
 })
-export class ROIItemComponent {
+export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   @Input() rightSelection: boolean = false;
   @Input() isSelectable = false;
 

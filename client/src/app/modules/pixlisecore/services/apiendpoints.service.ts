@@ -32,13 +32,15 @@ export class APIEndpointsService {
         (arrayBuf: ArrayBuffer) => {
           const img = new Image();
 
-          img.onload = () => {
+          img.onload = (event) => {
             console.log("  Loaded image: " + url + ". Dimensions: " + img.width + "x" + img.height);
             observer.next(img);
             observer.complete();
           };
 
-          img.onerror = () => {
+          img.onerror = (event) => {
+            // event doesn't seem to provide us much, usually just says "error" inside it... found that this
+            // last occurred when a bug allowed us to try to load a tif image with this function!
             const errStr = "Failed to download context image: " + url;
             console.error(errStr);
             observer.error(errStr);
@@ -69,10 +71,11 @@ export class APIEndpointsService {
 
   // Used by dataset customisation RGBU loading and from loadRGBUImage()
   // Gets and decodes image
-  loadRGBUImageTIF(url: string, imgName: string): Observable<RGBUImage> {
-    return this.http.get(url, { responseType: "arraybuffer" }).pipe(
+  loadRGBUImageTIF(imagePath: string): Observable<RGBUImage> {
+    const apiUrl = APIPaths.getWithHost(`/images/download/${imagePath}`);
+    return this.http.get(apiUrl, { responseType: "arraybuffer" }).pipe(
       mergeMap((bytes: ArrayBuffer) => {
-        return RGBUImage.readImage(bytes, imgName);
+        return RGBUImage.readImage(bytes, imagePath);
       })
     );
   }

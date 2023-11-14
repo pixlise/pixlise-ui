@@ -18,13 +18,8 @@
       flex: 1;
       margin-bottom: 8px;
 
-      &:not(.quant) {
-        margin-left: 0 !important;
-      }
-
       &.quant {
         max-width: 30%;
-        margin-left: 8px !important;
       }
     }
   }

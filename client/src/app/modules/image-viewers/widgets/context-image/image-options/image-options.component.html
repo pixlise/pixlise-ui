@@ -1,0 +1,202 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div class="image-options">
+    <header>
+      <div class="controls">
+        <h1
+            mat-dialog-title
+            cdkDrag
+            cdkDragRootElement=".cdk-overlay-pane"
+            cdkDragHandle
+            class="title drag">Image Options</h1>
+        <icon-button (click)="onExport()" title="Download all images" icon="assets/button-icons/export.svg" [loading]="downloadLoading"></icon-button>
+      </div>
+    </header>
+    <section class="image-choice">
+        <!-- <div class="subheading-line">Image Selection</div> -->
+        <div class="ctrl-column">
+            <div class="setting-label">Selected Image: </div>
+            <app-context-image-picker [scanIds]="data.scanIds" [currentImage]="options.currentImage" (selectedImage)="onSelectedImageChanged($event)"></app-context-image-picker>
+        </div>
+
+        <div class="ctrl-row centered-row" [ngClass]="{'disabled-area': !isRGBU}" [title]="rgbuOnlyHelpText">
+            <two-state-icon-button
+                activeIcon="assets/button-icons/radio-on.svg"
+                inactiveIcon="assets/button-icons/radio-off.svg"
+                disabledIcon="assets/button-icons/radio-disabled.svg"
+                [active]="rgbuAsChannels&&isRGBU"
+                (onToggle)="onRGBUAsChannels()">
+            </two-state-icon-button>
+            <div class="centered-row">
+                <div class="channel-setting-label">RGB Image: </div>
+                <div class="centered-row">
+                    <div class="column">
+                        <div><strong>Red Channel</strong></div>
+                        <mat-select [(ngModel)]="channelForRed" [disabled]="!isRGBU || !rgbuAsChannels">
+                            <mat-option *ngFor="let ch of displayedChannelsWithNone" [value]="ch">{{ch}}</mat-option>
+                        </mat-select>
+                    </div>
+                    <div class="column">
+                        <div><strong>Green Channel</strong></div>
+                        <mat-select [(ngModel)]="channelForGreen" [disabled]="!isRGBU || !rgbuAsChannels">
+                            <mat-option *ngFor="let ch of displayedChannelsWithNone" [value]="ch">{{ch}}</mat-option>
+                        </mat-select>
+                    </div>
+                    <div class="column">
+                        <div><strong>Blue Channel</strong></div>
+                        <mat-select [(ngModel)]="channelForBlue" [disabled]="!isRGBU || !rgbuAsChannels">
+                            <mat-option *ngFor="let ch of displayedChannelsWithNone" [value]="ch">{{ch}}</mat-option>
+                        </mat-select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ctrl-row centered-row" [ngClass]="{'disabled-area': !isRGBU}" [title]="rgbuOnlyHelpText">
+            <two-state-icon-button
+                activeIcon="assets/button-icons/radio-on.svg"
+                inactiveIcon="assets/button-icons/radio-off.svg"
+                disabledIcon="assets/button-icons/radio-disabled.svg"
+                [active]="!rgbuAsChannels&&isRGBU"
+                (onToggle)="onRGBUAsRatio()">
+            </two-state-icon-button>
+
+            <div class="centered-row">
+                <div class="channel-setting-label">Ratio Image: </div>
+                <mat-select [(ngModel)]="channelForNumerator" [disabled]="!isRGBU || rgbuAsChannels">
+                    <mat-option *ngFor="let ch of displayedChannels" [value]="ch">{{ch}}</mat-option>
+                </mat-select>
+                <div><strong>/</strong></div>
+                <mat-select [(ngModel)]="channelForDenominator" [disabled]="!isRGBU || rgbuAsChannels">
+                    <mat-option *ngFor="let ch of displayedChannels" [value]="ch">{{ch}}</mat-option>
+                </mat-select>
+            </div>
+        </div>
+
+        <div class="subheading-line">Display Options</div>
+        <div class="ctrl-row">
+            <div class="setting-label">Image Smoothing:</div>
+            <switch-button
+                [active]="options.imageSmoothing"
+                title="Toggle smoothing of context image"
+                (onToggle)="onToggleImageSmoothing()"></switch-button>
+        </div>
+        <div *ngIf="!isRGBU || rgbuAsChannels" class="ctrl-row">
+            <div class="setting-label">Image Brightness:</div>
+            <div class="centered-row">
+                <input class="setting-label" type="number" step="0.1" [(ngModel)]="imageBrightnessStr">
+                <slider
+                    title="Image Brightness"
+                    [value]="options.imageBrightness"
+                    [minValue]="0"
+                    [maxValue]="10"
+                    [pxLength]="140"
+                    (onChange)="onChangeBrightness($event)">
+                </slider>
+                <push-button title="Reset brightness to 1.0" (onClick)="onResetBrightness()">Reset</push-button>
+            </div>
+        </div>
+        <div *ngIf="isRGBU && !rgbuAsChannels" class="ctrl-row">
+            <div class="setting-label">Colour Remapping:</div>
+            <div class="centered-row">
+                <input [(ngModel)]="colourRatioMinStr" type="number" step="0.1" placeholder="">
+
+                <range-slider
+                    *ngIf="(options.removeBottomSpecularArtifacts || options.removeTopSpecularArtifacts) && (options.colourRatioMin || options.colourRatioMax)"
+                    [minValue]="colourRatioRangeMin"
+                    [selectedMinValue]="options.colourRatioMin !== null ? options.colourRatioMin : colourRatioRangeMin"
+                    [maxValue]="colourRatioRangeMax"
+                    [selectedMaxValue]="options.colourRatioMax !== null ? options.colourRatioMax : colourRatioRangeMax"
+                    [pxLength]="scaleImageWidth"
+                    trackColour="viridis"
+                    (onChange)="onChangeRatioMinMaxSlider($event)">
+                </range-slider>
+                <range-slider
+                    *ngIf="!(options.removeBottomSpecularArtifacts || options.removeTopSpecularArtifacts)"
+                    [minValue]="colourRatioRangeMin"
+                    [selectedMinValue]="options.colourRatioMin !== null ? options.colourRatioMin : colourRatioRangeMin"
+                    [maxValue]="colourRatioRangeMax"
+                    [selectedMaxValue]="options.colourRatioMax !== null ? options.colourRatioMax : colourRatioRangeMax"
+                    [pxLength]="scaleImageWidth"
+                    trackColour="viridis"
+                    (onChange)="onChangeRatioMinMaxSlider($event)">
+                </range-slider>
+
+                <input [(ngModel)]="colourRatioMaxStr" type="number" step="0.1" placeholder="">
+                <push-button title="Reset colour remapping" (onClick)="onResetRatioColourRemapping()">Reset</push-button>
+            </div>
+        </div>
+        <div class="ctrl-row">
+            <div class="setting-label">Opacity of Unselected Pixels:</div>
+            <div class="centered-row">
+                <div class="setting-label">{{(options.unselectedOpacity*100)|number:'1.0-0'}}%</div>
+                <slider
+                    [value]="options.unselectedOpacity"
+                    [minValue]="0.2"
+                    [maxValue]="0.5"
+                    (onChange)="onChangeUnselectedOpacity($event)">
+                </slider>
+                <push-button title="Reset unselected opacity" (onClick)="onResetUnselectedOpacity()">Reset</push-button>
+            </div>
+        </div>
+        <div class="ctrl-row">
+            <div class="setting-label">Unselected Pixel Colouring:</div>
+            <two-state-icon-switch
+                leftIcon="assets/button-icons/monochrome.svg"
+                rightIcon="assets/button-icons/colour.svg"
+                toolTip="Toggles colouring of unselected pixels"
+                [active]="!options.unselectedGrayscale"
+                (onToggle)="onToggleUnselectedGrayscale()">
+            </two-state-icon-switch>
+        </div>
+        <div *ngIf="isRGBU && !rgbuAsChannels" class="ctrl-row">
+            <div class="setting-label">Remove Top 1% Fractile:</div>
+            <switch-button 
+                [active]="options.removeTopSpecularArtifacts" 
+                title="Toggle top 1% of specular artifacts"
+                (onToggle)="onToggleRemoveTopSpecularArtifacts()"
+            ></switch-button>
+        </div>
+        <div *ngIf="isRGBU && !rgbuAsChannels" class="ctrl-row">
+            <div class="setting-label">Remove Bottom 1% Fractile:</div>
+            <switch-button [active]="options.removeBottomSpecularArtifacts" title="Toggle bottom 1% of specular artifacts"
+                (onToggle)="onToggleRemoveBottomSpecularArtifacts()"></switch-button>
+        </div>
+    </section>
+    <div class="button-container">
+      <span class="live-indicator">
+        <span class="status-indicator"></span>
+        <span class="label">Live Update</span>
+      </span>
+      <push-button buttonStyle="outline" (onClick)="onClose()">Close</push-button>
+    </div>
+</div>

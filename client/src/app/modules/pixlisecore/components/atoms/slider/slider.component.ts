@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from "@angular/core";
 import { fromEvent, Subscription } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { Colours } from "src/app/utils/colours";
@@ -53,7 +53,7 @@ class SliderHistogramBar {
   templateUrl: "./slider.component.html",
   styleUrls: ["./slider.component.scss"],
 })
-export class SliderComponent implements OnInit {
+export class SliderComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   @Input() value: number = 0;
@@ -111,7 +111,8 @@ export class SliderComponent implements OnInit {
   }
 
   get sliderXPos(): number {
-    return ThumbRadius + (this.pxLength - 2 * ThumbRadius) * this._minMaxValue.getAsPercentageOfRange(this.value, false);
+    const pos = ThumbRadius + (this.pxLength - 2 * ThumbRadius) * this._minMaxValue.getAsPercentageOfRange(this.value, false);
+    return pos;
   }
 
   get sliderRightTrackWidth(): number {

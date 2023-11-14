@@ -15,7 +15,7 @@ export function drawMapData(
 
   const drawFuncs = [drawCircle, drawCrossedCircle, drawDiamond, drawX];
 
-  for (const pt of mapData.points) {
+  for (const pt of mapData.mapPoints) {
     screenContext.fillStyle = pt.drawParams.colour.asStringWithA(opacity);
 
     if (pt.drawParams.shape === MapPointShape.POLYGON) {

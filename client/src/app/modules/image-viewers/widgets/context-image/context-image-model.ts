@@ -1,5 +1,5 @@
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
-import { ColourScheme, IContextImageModel, getSchemeColours } from "./context-image-model-interface";
+import { ClosestPoint, ColourScheme, IContextImageModel, getSchemeColours } from "./context-image-model-interface";
 import { Subject } from "rxjs";
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseChartDrawModel, BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
@@ -9,36 +9,54 @@ import { RGBUImage } from "src/app/models/RGBUImage";
 import { ScanPoint } from "../../models/scan-point";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
-import { ContextImageMapLayer } from "../../models/map-layer";
-import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
+import { ContextImageMapLayer, MapPointDrawParams, MapPointShape, MapPointState, getDrawParamsForRawValue } from "../../models/map-layer";
 import { Footprint, HullPoint } from "../../models/footprint";
-import { RGBA, Colours } from "src/app/utils/colours";
+import { RGBA, Colours, ColourRamp } from "src/app/utils/colours";
 import { ContextImageScanDrawModel } from "../../models/context-image-draw-model";
 import { ContextImageRegionLayer } from "../../models/region";
+import { MapColourScaleModel, MapColourScaleSourceData } from "./ui-elements/map-colour-scale/map-colour-scale-model";
+import { randomString } from "src/app/utils/utils";
+import { MinMax } from "src/app/models/BasicTypes";
+import { adjustImageRGB } from "src/app/utils/drawing";
 
 export class ContextImageModelLoadedData {
   constructor(
     public image: HTMLImageElement | null = null,
     public imageTransform: ContextImageItemTransform | null = null,
     public scanModels: Map<string, ContextImageScanModel>,
-    public rgbuSourceImage: RGBUImage | null = null,
-    public rgbuImageLayerForScale: IColourScaleDataSource | null
+    public rgbuSourceImage: RGBUImage | null = null
   ) {}
 }
 
 export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
 
+  // For debugging
+  private _id: string = randomString(6);
+
   // Settings/Layers
   imageName: string = "";
-  displayedChannels: string = "";
 
   expressionIds: string[] = [];
   roiIds: string[] = [];
 
-  smoothing: boolean = false;
-  showPoints: boolean = true;
+  hidePointsForScans: string[] = [];
+  hideFootprintsForScans: string[] = [];
+  hideMapsForScans: string[] = [];
+
+  drawImage: boolean = true;
+  imageSmoothing: boolean = true;
+  imageBrightness: number = 1;
   selectionModeAdd: boolean = true; // Add or Subtract, nothing else!
+  elementRelativeShading: boolean = false; // A toggle available in Element Maps tab version of context image only!
+
+  removeTopSpecularArtifacts: boolean = true;
+  removeBottomSpecularArtifacts: boolean = true;
+  colourRatioMin: number | null = null;
+  colourRatioMax: number | null = null;
+  rgbuChannels: string = "";
+  unselectedOpacity: number = 0.3;
+  unselectedGrayscale: boolean = false;
 
   private _pointColourScheme: ColourScheme = ColourScheme.PURPLE_CYAN;
   private _pointBBoxColourScheme: ColourScheme = ColourScheme.PURPLE_CYAN;
@@ -51,6 +69,21 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   uiLayerScaleTranslation: Point = new Point(0, 0);
 
   transform: PanZoom = new PanZoom();
+
+  private _colourScales: MapColourScaleModel[];
+  private _colourScaleDisplayValueRanges = new Map<string, MinMax>();
+
+  private _currentPixelSelection: PixelSelection | null = null;
+
+  // If nothing else, somewhere to put a breakpoint!
+  constructor() {
+    console.log(` *** ContextImageModel ${this._id} CREATE`);
+    this._colourScales = [];
+  }
+
+  get colourScales(): MapColourScaleModel[] {
+    return this._colourScales;
+  }
 
   // Loaded data, based on the above, we load these. Draw models are generated from these
   // on the fly
@@ -70,21 +103,37 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     // It's processed externally so we just take it and save it
     this._raw = loadedData;
 
+    if (this._raw.rgbuSourceImage && this.rgbuChannels.length <= 0) {
+      this.rgbuChannels = "RGB";
+    }
+
+    // Clear other stuff, out of date from any previous loads...
+    this._colourScales = [];
+
+    // Clear maps (TODO: do we want this?)
+    for (const m of this._raw.scanModels.values()) {
+      m.maps = [];
+    }
+
     this._recalcNeeded = true;
+    console.log(` *** ContextImageModel ${this._id} setData recalcNeeded=${this._recalcNeeded}`);
     this.needsDraw$.next();
   }
 
   setSelection(beamSel: BeamSelection, pixelSel: PixelSelection, hoverScanId: string, hoverEntryIdx: number) {
+    // Save pixel selection if it's different (this causes more regeneration on next draw)
+    if (!this._currentPixelSelection || !this._currentPixelSelection.isEqualTo(pixelSel)) {
+      this._currentPixelSelection = pixelSel;
+      this._recalcNeeded = true;
+    }
+
     // We don't want to regenerate everything when selection (and especially hover) changes, so here we just update the existing model
     // if we have one
-    for (const scanId of beamSel.getScanIds()) {
-      const scanDrawMdl = this._drawModel.scanDrawModels.get(scanId);
-
-      // Are we showing data for the scan that the selection happened for? We don't necessarily have it showing... not an error!
-      if (scanDrawMdl) {
-        scanDrawMdl.hoverEntryIdx = -1;
-        scanDrawMdl.selectedPointIdxs = beamSel.getSelectedScanEntryIndexes(scanId);
-      }
+    // Loop through all the models we have, and if there is nothing in the selection for it, set it to an empty set
+    // NOTE: we also clear all hovers...
+    for (const [scanId, scanDrawMdl] of this._drawModel.scanDrawModels) {
+      scanDrawMdl.selectedPointIdxs = beamSel.getSelectedScanEntryIndexes(scanId);
+      scanDrawMdl.hoverEntryIdx = -1;
     }
 
     // Finally, update the hover index
@@ -92,6 +141,42 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
       const scanDrawMdl = this._drawModel.scanDrawModels.get(hoverScanId);
       if (scanDrawMdl) {
         scanDrawMdl.hoverEntryIdx = hoverEntryIdx;
+      }
+
+      // Also update the colour scale if there is one
+      for (let c = 0; c < this._colourScales.length; c++) {
+        const scale = this._colourScales[c];
+
+        // TODO: do we want a scan ID here, to specify which one the scale is for??? Does the scale just get all
+        // expression output for a given scan???
+        if (scale.scanIds.indexOf(hoverScanId) > -1) {
+          // Set a hover value for the scan
+          const scanDrawMdl = this._drawModel.scanDrawModels.get(hoverScanId);
+
+          // Find the map
+          if (scanDrawMdl) {
+            for (const scanMap of scanDrawMdl.maps) {
+              if (scanMap.expressionId == scale.expressionId) {
+                // Find the value among our map points
+                for (const pt of scanMap.mapPoints) {
+                  if (pt.scanEntryIndex == hoverEntryIdx) {
+                    if (c < pt.values.length) {
+                      scale.hoverValue = pt.values[c];
+                    }
+                    break;
+                  }
+                }
+                break;
+              }
+            }
+          }
+        }
+      }
+    } else {
+      // Make sure nothing is hovering
+      // NOTE: draw models already cleared hover above
+      for (const scale of this._colourScales) {
+        scale.hoverValue = null;
       }
     }
   }
@@ -113,7 +198,112 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
       throw new Error(`Adding map layer ${layer.expressionId} to context image before where scan id ${layer.scanId} doesn't exist`);
     }
 
-    scanMdl.maps.push(layer);
+    // If already added, remove it
+    let found = false;
+    for (let c = 0; c < scanMdl.maps.length; c++) {
+      if (scanMdl.maps[c].expressionId == layer.expressionId) {
+        scanMdl.maps[c] = layer;
+        found = true;
+      }
+    }
+
+    if (!found) {
+      scanMdl.maps.push(layer);
+    }
+
+    // If we're the "top" expression (first one in the list), we have to update the colour scale
+    if (this.expressionIds[0] == layer.expressionId) {
+      this._colourScales = [];
+      for (let c = 0; c < layer.valueRanges.length; c++) {
+        this.rebuildColourScale(this.expressionIds[0], c, layer.valueRanges.length);
+      }
+    }
+
+    this._recalcNeeded = true;
+    console.log(` *** ContextImageModel ${this._id} setMapLayer recalcNeeded=${this._recalcNeeded} scales: ${this.colourScales.length}`);
+  }
+
+  private rebuildColourScale(forExpressionId: string, forValuesIdx: number, totalScales: number) {
+    if (!this._raw) {
+      return;
+    }
+
+    // Now find all layers for this expression (expression per scan id... so we want all copies of the expression into same id)
+    const scaleData = new MapColourScaleSourceData();
+    const scaleScanIds = [];
+
+    let layerName = "";
+    let layerShading = ColourRamp.SHADE_INFERNO;
+
+    for (const [scanId, scanMdl] of this._raw.scanModels) {
+      for (const mapLayer of scanMdl.maps) {
+        if (mapLayer.expressionId == forExpressionId) {
+          // This has to be included
+          scaleData.addMapValues(mapLayer.mapPoints, forValuesIdx, mapLayer.valueRanges[forValuesIdx], mapLayer.isBinary[forValuesIdx]);
+          scaleScanIds.push(scanId);
+
+          // If we haven't yet, pick off the layer name and we just use the first shading setting we find
+          if (!layerName) {
+            layerName = mapLayer.subExpressionNames[forValuesIdx];
+            layerShading = mapLayer.subExpressionShading[forValuesIdx];
+          }
+        }
+      }
+    }
+
+    // Ensure we have a saved min/max for this (a blank one)
+    const colourScaleRangeId = forExpressionId + "-" + forValuesIdx;
+    let displayValueRange = this._colourScaleDisplayValueRanges.get(colourScaleRangeId);
+    if (!displayValueRange) {
+      displayValueRange = new MinMax();
+      this._colourScaleDisplayValueRanges.set(colourScaleRangeId, displayValueRange);
+    }
+
+    // Generate colour scale
+    this._colourScales.push(
+      new MapColourScaleModel(
+        scaleScanIds,
+        forExpressionId,
+        layerName,
+        scaleData,
+        false,
+        null, // hover value
+        displayValueRange, // The display value range to show (top and bottom tags)
+        true, // We always allow scale tags to be moved on layer colour scales
+        totalScales - forValuesIdx - 1, // Scale number, but flipped so first one (R) is on top
+        totalScales, // Total scales we're drawing TODO: figure out a way to add RGB mixes
+        layerShading
+      )
+    );
+  }
+
+  buildRGBUColourScaleIfNeeded(): void {
+    // Only build the colour scale if we don't:
+    // - Already have a colour scale (eg from expressions)
+    // - Are showing an RGBU image in ratio mode
+    if (this._colourScales.length == 0 && this.rgbuChannels.indexOf("/") == 1 && this._raw && this._raw.rgbuSourceImage && this._drawModel.rgbuImageScaleData) {
+      const layerShading = ColourRamp.SHADE_MAGMA;
+
+      //const clr = Colours.sampleColourRamp(ColourRamp.SHADE_MAGMA, pct);
+      //return new MapPointDrawParams(clr, MapPointState.IN_RANGE, MapPointShape.POLYGON, null);
+      //this._drawModel.rgbuImageScaleData;
+
+      this._colourScales.push(
+        new MapColourScaleModel(
+          [],
+          "",
+          this._drawModel.rgbuImageScaleData.name,
+          this._drawModel.rgbuImageScaleData,
+          false, // no modules
+          null, // hover value
+          this._drawModel.rgbuImageScaleData.specularRemovedValueRange, // The display value range to show (top and bottom tags)
+          false, // Scale tags not movable
+          0, // Scale number, but flipped so first one (R) is on top
+          1, // Total scales we're drawing TODO: figure out a way to add RGB mixes
+          layerShading
+        )
+      );
+    }
   }
 
   clearDrawnLinePoints(): void {
@@ -153,6 +343,14 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     return null;
   }
 
+  get colourScaleDisplayValueRanges(): Map<string, MinMax> {
+    return this._colourScaleDisplayValueRanges;
+  }
+
+  get currentPixelSelection(): PixelSelection | null {
+    return this._currentPixelSelection;
+  }
+
   get rgbuSourceImage(): RGBUImage | null {
     if (this._raw) {
       return this._raw.rgbuSourceImage;
@@ -160,8 +358,8 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     return null;
   }
 
-  get rgbuImageLayerForScale(): IColourScaleDataSource | null {
-    return this._drawModel.colourScaleData;
+  get rgbuImageScaleData(): MapColourScaleSourceData | null {
+    return this._drawModel.rgbuImageScaleData;
   }
 
   get scanIds(): string[] {
@@ -184,15 +382,34 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
   // Rebuilding this models display data
   recalcDisplayDataIfNeeded(canvasParams: CanvasParams): void {
+    //console.log(` *** ContextImageModel ${this._id} recalcDisplayDataIfNeeded recalcNeeded=${this._recalcNeeded}`);
+
+    // Sometimes the colour scale wants a recalc, so check for that here
+    let forceRecalcDrawModel = false;
+    for (const scale of this._colourScales) {
+      if (scale.needsRecalc) {
+        forceRecalcDrawModel = true;
+      }
+    }
+
     // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
-    if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
+    if (forceRecalcDrawModel || this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
       this._drawModel.regenerate(canvasParams, this);
+
+      // If we don't have colour scales, but do have RGBU data and are in ratio mode, we can generate a scale from that
+      this.buildRGBUColourScaleIfNeeded();
+
+      // Also recalculate draw models of any colour scales we're showing
+      for (const scale of this._colourScales) {
+        scale.recalcDisplayData(canvasParams);
+      }
+
       this._lastCalcCanvasParams = canvasParams;
       this._recalcNeeded = false;
     }
   }
 
-  getClosestLocationIdxToPoint(worldPt: Point): { scanId: string; idx: number } {
+  getClosestLocationIdxToPoint(worldPt: Point): ClosestPoint {
     const maxDistance: number = 3;
 
     let closestScanId = "";
@@ -210,7 +427,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
       }
     }
 
-    return { scanId: closestScanId, idx: closestScanIdx };
+    return new ClosestPoint(closestScanId, closestScanIdx);
   }
 }
 
@@ -282,7 +499,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
   drawnData: OffscreenCanvas | null = null;
 
   // Drawing the image
-  smoothing: boolean = true;
+  imageSmoothing: boolean = true;
   image: HTMLImageElement | null = null;
   imageTransform: ContextImageItemTransform | null = null;
 
@@ -297,11 +514,8 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
   // Bounding box of everything (besides image), in image coordinates. This is primarily used for zooming
   allLocationPointsBBox: Rect = new Rect(0, 0, 0, 0);
 
-  // This is the data shown by the Map Colour Scale UI Element. This can be pointed at either:
-  // 1. A map layer from an expression (stored in one of our scanDrawModels)
-  // 2. A map layer from an expression group (also stored there). This is the equivalent of "RGB Mixes" from the old system
-  // 3. If the above 2 don't exist but we have an RGBU image displayed with ratio mode, it'll read from the ratio image
-  colourScaleData: IColourScaleDataSource | null = null;
+  // If we have an RGBU image showing, this is the data source to build a colour scale for it
+  rgbuImageScaleData: MapColourScaleSourceData | null = null;
 
   // Drawn line over the top of it all
   drawnLinePoints: Point[] = [];
@@ -313,8 +527,41 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
     // Copy settings across. IDEALLY all this stuff should be copied or we should provide it read-only so no buggy drawing
     // code could modify our model state, but that's a bit luxurious. We're providing objects, which can be modified easily.
     this.drawnLinePoints = from.drawnLinePoints;
-    this.smoothing = from.smoothing;
-    this.image = from.raw?.image || null;
+    this.imageSmoothing = from.imageSmoothing;
+    if (!from.drawImage) {
+      this.image = null;
+    } else {
+      this.image = from.raw?.image || null;
+    }
+
+    // Apply brightness
+    if (this.image) {
+      this.image = adjustImageRGB(this.image, from.imageBrightness);
+    }
+
+    // If we still don't have an image, maybe it's an RGBU and needs to be generated here
+    if (!this.image && from.raw?.rgbuSourceImage) {
+      const rgbuGen = from.raw.rgbuSourceImage.generateRGBDisplayImage(
+        from.imageBrightness,
+        from.rgbuChannels,
+        //false, log colour
+        from.unselectedOpacity,
+        from.unselectedGrayscale,
+        from.currentPixelSelection ? from.currentPixelSelection : PixelSelection.makeEmptySelection(),
+        from.colourRatioMin,
+        from.colourRatioMax,
+        PixelSelection.makeEmptySelection(),
+        from.removeTopSpecularArtifacts,
+        from.removeBottomSpecularArtifacts
+      );
+
+      if (rgbuGen) {
+        // Save the display image and scale data
+        this.image = rgbuGen.image;
+        this.rgbuImageScaleData = rgbuGen.layerForScale;
+      }
+    }
+
     this.imageTransform = from.raw?.imageTransform || null;
 
     const pointColours = getSchemeColours(from.pointColourScheme);
@@ -327,8 +574,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
       this.scanDrawModels.clear();
 
       for (const [scanId, scanMdl] of from.raw.scanModels) {
-        this.allLocationPointsBBox.expandToFitPoint(new Point(scanMdl.scanPointsBBox.x, scanMdl.scanPointsBBox.y));
-        this.allLocationPointsBBox.expandToFitPoint(new Point(scanMdl.scanPointsBBox.maxX(), scanMdl.scanPointsBBox.maxY()));
+        this.allLocationPointsBBox.expandToFitRect(scanMdl.scanPointsBBox);
 
         const footprintColours = getSchemeColours(from.pointBBoxColourScheme);
         const footprint = new Footprint(scanMdl.footprint, footprintColours[0], footprintColours[1]);
@@ -346,7 +592,41 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
         );
 
         if (scanMdl.maps) {
-          scanDrawMdl.maps = Array.from(scanMdl.maps);
+          // Recolour each one
+          for (const layerMap of scanMdl.maps) {
+            const displayRanges: MinMax[] = [];
+
+            for (let c = 0; c < layerMap.valueRanges.length; c++) {
+              const colourScaleRangeId = layerMap.expressionId + "-" + c;
+              let range = from.colourScaleDisplayValueRanges.get(colourScaleRangeId);
+              if (!range || !range.isValid()) {
+                range = layerMap.valueRanges[c];
+              }
+              if (!range) {
+                range = new MinMax(0, 0); // just don't leave dangling nulls around...
+              }
+
+              displayRanges.push(range);
+            }
+
+            for (const pt of layerMap.mapPoints) {
+              if (pt.values.length == 1) {
+                pt.drawParams = getDrawParamsForRawValue(layerMap.shading, pt.values[0], displayRanges[0]);
+              } else if (pt.values.length == 3) {
+                pt.drawParams = new MapPointDrawParams(
+                  new RGBA(
+                    displayRanges[0].getAsPercentageOfRange(pt.values[0], true) * 255,
+                    displayRanges[1].getAsPercentageOfRange(pt.values[1], true) * 255,
+                    displayRanges[2].getAsPercentageOfRange(pt.values[2], true) * 255,
+                    255
+                  ),
+                  MapPointState.IN_RANGE,
+                  MapPointShape.POLYGON
+                );
+              }
+            }
+            scanDrawMdl.maps.push(layerMap);
+          }
         }
 
         if (scanMdl.regions) {

@@ -19,7 +19,7 @@ import { MultiSwitchButtonComponent } from "./components/atoms/buttons/multi-swi
 import { TwoStateIconButton } from "./components/atoms/buttons/two-state-button/two-state-icon-button.component";
 // import { TwoStateIconPushButton } from "./components/atoms/buttons/two-state-button/two-state-icon-push-button.component";
 import { TwoStatePushButton } from "./components/atoms/buttons/two-state-button/two-state-push-button.component";
-// import { TwoStateIconSwitchComponent } from "./components/atoms/buttons/two-state-button/two-state-icon-switch.component";
+import { TwoStateIconSwitchComponent } from "./components/atoms/buttons/two-state-button/two-state-icon-switch.component";
 
 import { SelectionChangerComponent } from "./components/atoms/selection-changer/selection-changer.component";
 import { SelectionOptionsComponent } from "./components/atoms/selection-changer/selection-options/selection-options.component";
@@ -42,9 +42,11 @@ import { NotificationsMenuPanelComponent } from "src/app/components/toolbar/noti
 import { HotkeysMenuPanelComponent } from "src/app/components/toolbar/hotkeys-menu-panel/hotkeys-menu-panel.component";
 import { FilterBoxComponent } from "./components/atoms/filter-box/filter-box.component";
 import { SliderComponent } from "./components/atoms/slider/slider.component";
+import { RangeSliderComponent } from "./components/atoms/range-slider/range-slider.component";
 import { PeriodicTableComponent } from "./components/atoms/periodic-table/periodic-table.component";
 import { ElementTileComponent } from "./components/atoms/periodic-table/element-tile/element-tile.component";
 import { StatusIndicatorComponent } from "./components/atoms/status-indicator/status-indicator.component";
+import { SectionedSelectDialogComponent } from './components/atoms/sectioned-select-dialog/sectioned-select-dialog.component';
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -69,6 +71,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     MultiSwitchButtonComponent,
     TwoStateIconButton,
     TwoStatePushButton,
+    TwoStateIconSwitchComponent,
     TwoStateIconPushButton,
     WidgetDisplayMessageComponent,
     WidgetSettingsMenuComponent,
@@ -83,12 +86,14 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     ConfirmDialogComponent,
     FilterBoxComponent,
     SliderComponent,
+    RangeSliderComponent,
     MultiStateButtonComponent,
     PeriodicTableComponent,
     ElementTileComponent,
     SelectionChangerComponent,
     SelectionOptionsComponent,
     StatusIndicatorComponent,
+    SectionedSelectDialogComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule],
   exports: [
@@ -101,6 +106,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     MultiSwitchButtonComponent,
     TwoStateIconButton,
     TwoStatePushButton,
+    TwoStateIconSwitchComponent,
     TwoStateIconPushButton,
     WidgetDisplayMessageComponent,
     WidgetSettingsMenuComponent,
@@ -114,6 +120,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     MatSnackBarModule,
     FilterBoxComponent,
     SliderComponent,
+    RangeSliderComponent,
     MultiStateButtonComponent,
     PeriodicTableComponent,
     ElementTileComponent,

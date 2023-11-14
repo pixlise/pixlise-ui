@@ -35,11 +35,11 @@ export class MinMax {
   private _min: number | null = null;
   private _max: number | null = null;
 
-  constructor(min?: number, max?: number) {
-    if (typeof min === "number") {
+  constructor(min: number | null = null, max: number | null = null) {
+    if (min !== null) {
       this.setMin(min);
     }
-    if (typeof max === "number") {
+    if (max !== null) {
       this.setMax(max);
     }
   }

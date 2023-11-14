@@ -7,12 +7,15 @@ import { MaterialModule } from "../material.module";
 import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
 
 import { ContextImageComponent } from "./widgets/context-image/context-image.component";
+import { ContextImagePickerComponent } from "./widgets/context-image/image-options/context-image-picker/context-image-picker.component";
+import { ImageOptionsComponent } from "./widgets/context-image/image-options/image-options.component";
+
 import { WidgetModule } from "../widget/widget.module";
 
 export { ContextImageComponent } from "./widgets/context-image/context-image.component";
 
 @NgModule({
-  declarations: [ContextImageComponent],
+  declarations: [ContextImageComponent, ImageOptionsComponent, ContextImagePickerComponent],
   imports: [CommonModule, PIXLISECoreModule, AnalysisModule, FormsModule, DragDropModule, MaterialModule, WidgetModule],
   exports: [ContextImageComponent],
 })

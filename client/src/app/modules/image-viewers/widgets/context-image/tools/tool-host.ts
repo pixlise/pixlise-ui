@@ -51,6 +51,7 @@ import { PointSelection } from "./point-selection";
 import { HoverPointCursor } from "../ui-elements/hover-point-cursor";
 import { BaseUIElement } from "../ui-elements/base-ui-element";
 import { PhysicalScale } from "../ui-elements/physical-scale";
+import { MapColourScale } from "../ui-elements/map-colour-scale/map-colour-scale";
 
 export enum ToolState {
   OFF, // A tool that is not active, but can be clicked on/spring key used to activate
@@ -99,7 +100,7 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
 
   // These are contained in _uiElems, we just keep a separate reference here because we specifically
   // need these for drawing exports
-  //private _uiMapColourScale: MapColourScale = null;
+  private _uiMapColourScale: MapColourScale = null;
   private _uiPhysicalScale: PhysicalScale | null = null;
 
   private _toolsAfterLineSeparator: ContextImageToolId[] = [];
@@ -124,7 +125,7 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
   private reset(): void {
     this._tools = [];
     this._uiElems = [];
-    //this._uiMapColourScale = null;
+    this._uiMapColourScale = null;
     this._uiPhysicalScale = null;
     this._activeTool = null;
     this._springOverriddenTool = null;
@@ -159,8 +160,8 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
     }
 
     if (this._settings.showMapColourScale) {
-      //this._uiMapColourScale = new MapColourScale(this._ctx);
-      //this._uiElems.push(this._uiMapColourScale);
+      this._uiMapColourScale = new MapColourScale(this._ctx, this, "");
+      this._uiElems.push(this._uiMapColourScale);
       //this._uiElems.push(new ROIToolTip(this._ctx));
     }
 
@@ -300,7 +301,7 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
       this._ctx.transform.setScaleRelativeTo(new Point(newScale, newScale), event.point, false);
       return CanvasInteractionResult.redrawAndCatch;
     }
-    //console.log(event);
+
     // See if any of the UI elements wants to handle it
     for (const uiElem of this._uiElems) {
       //console.log(uiElem);

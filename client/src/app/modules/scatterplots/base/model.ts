@@ -48,7 +48,7 @@ export class NaryChartDataGroup implements BaseChartDataItem {
 export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawModel> implements CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
 
-  transform: PanZoom = new PanZoom(new MinMax(1), new MinMax(1), new PanRestrictorToCanvas());
+  transform: PanZoom = new PanZoom(new MinMax(1, null), new MinMax(1, null), new PanRestrictorToCanvas());
 
   // All expressions required
   expressionIds: string[] = [];

@@ -37,8 +37,8 @@ import { TwoStateButtonComponent } from "./two-state-button.component";
   styleUrls: ["./two-state-button.component.scss", "./two-state-icon-button.component.scss", "./plus-minus-switch.component.scss"],
 })
 export class TwoStateIconSwitchComponent extends TwoStateButtonComponent {
-  @Input() leftIcon: string;
-  @Input() rightIcon: string;
+  @Input() leftIcon: string = "";
+  @Input() rightIcon: string = "";
 
   constructor() {
     super();

@@ -80,8 +80,20 @@ export class PhysicalScale extends BaseUIElement {
           this._ctx.uiPhysicalScaleTranslation.y += this._startTranslation.y;
         }
         return CanvasInteractionResult.redrawAndCatch;
-      } else if (event.eventId == CanvasMouseEventId.MOUSE_UP || event.eventId == CanvasMouseEventId.MOUSE_LEAVE) {
+      } else if (event.eventId == CanvasMouseEventId.MOUSE_UP /*|| event.eventId == CanvasMouseEventId.MOUSE_LEAVE*/) {
         this._captureMouse = false;
+
+        const pos = this.getPosition(event.canvasParams, this._ctx.transform);
+        const moveTo = BaseUIElement.keepOnScreen(
+          new Rect(pos.rect.x, pos.rect.y, pos.rect.w, pos.rect.h),
+          event.canvasParams.width,
+          event.canvasParams.height,
+          0.25
+        );
+
+        this._ctx.uiPhysicalScaleTranslation.x += moveTo.x - pos.rect.x;
+        this._ctx.uiPhysicalScaleTranslation.y += moveTo.y - pos.rect.y;
+
         this._startTranslation = new Point(0, 0);
       }
     }

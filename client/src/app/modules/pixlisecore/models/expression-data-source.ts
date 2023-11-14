@@ -26,6 +26,7 @@ import { DiffractionPeak, RoughnessItem, diffractionPeakWidth } from "./diffract
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { DiffractionPeakManualListReq, DiffractionPeakManualListResp } from "src/app/generated-protos/diffraction-manual-msgs";
 import { APICachedDataService } from "../services/apicacheddata.service";
+import { DefaultDetectorId } from "src/app/expression-language/predefined-expressions";
 
 export class ExpressionDataSource
   implements DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
@@ -449,6 +450,11 @@ export class ExpressionDataSource
   public static getQuantifiedDataValues(quantData: Quantification, detectorId: string, colIdx: number, mult: number | null, isPctColumn: boolean): PMCDataValue[] {
     const resultData: PMCDataValue[] = [];
     let detectorFound = false;
+
+    // NOTE: if requesting "default" detector, just pick the first one
+    if (detectorId === DefaultDetectorId && quantData.locationSet.length > 0) {
+      detectorId = quantData.locationSet[0].detector;
+    }
 
     // Loop through all our locations by PMC, find the quant value, store
     for (const quantLocSet of quantData.locationSet) {
