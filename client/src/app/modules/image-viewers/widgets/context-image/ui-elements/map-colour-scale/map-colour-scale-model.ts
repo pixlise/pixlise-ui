@@ -6,12 +6,20 @@ import { CanvasParams } from "src/app/modules/widget/components/interactive-canv
 import { ColourRamp } from "src/app/utils/colours";
 import { randomString } from "src/app/utils/utils";
 
+// This is what we build our colour scales from. It can originate from map data (PMCDataValues), where it comes in
+// via addMapValues, or it can originate from an RGBU ratio image calculated on the fly, where it comes in via
+// addSimpleValues. Note that when it comes from the RGBU ratio image, more parameters are provided
 export class MapColourScaleSourceData {
   isBinary = true;
-  valueRange = new MinMax();
+  valueRange = new MinMax(); // Range of values actually stored, would be clamped to a specified min/max
   private _values: number[] = [];
 
-  addValues(mapPoints: MapPoint[], valueIdx: number, valueRange: MinMax, isBinary: boolean) {
+  // ONLY for the case of reading from RGBU image
+  specularRemovedValueRange = new MinMax(); // Optional range of values after specular removal for caching
+  seenMinMax = new MinMax(); // Range of values we have seen but didn't store
+  name: string = "";
+
+  addMapValues(mapPoints: MapPoint[], valueIdx: number, valueRange: MinMax, isBinary: boolean) {
     for (const p of mapPoints) {
       this._values.push(p.values[valueIdx]);
     }
@@ -20,6 +28,16 @@ export class MapColourScaleSourceData {
     if (!isBinary) {
       this.isBinary = false;
     }
+  }
+
+  addSimpleValues(values: Float32Array, valueRange: MinMax, specularRemovedValueRange: MinMax, seenMinMax: MinMax) {
+    // Never treat this as binary as it comes from an image...
+    this.isBinary = false;
+    this._values = Array.from(values);
+    this.valueRange = new MinMax(valueRange.min, valueRange.max);
+
+    this.specularRemovedValueRange = specularRemovedValueRange;
+    this.seenMinMax = seenMinMax;
   }
 
   get values(): number[] {

@@ -268,7 +268,7 @@ export class ContextImageDataService {
                   scanModels.set(scanMdl.scanId, scanMdl);
                 }
 
-                return new ContextImageModelLoadedData(displayImage, null, scanModels, rgbuImage, null);
+                return new ContextImageModelLoadedData(displayImage, null, scanModels, rgbuImage);
               })
             );
           })

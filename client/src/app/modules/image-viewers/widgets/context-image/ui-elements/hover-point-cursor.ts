@@ -53,14 +53,14 @@ export class HoverPointCursor extends BaseUIElement {
 
   private updateHoverRatioValue(point: Point) {
     // Validate context before continuing
-    if (!this._ctx || !this._ctx.displayedChannels || !this._ctx.rgbuSourceImage) {
+    if (!this._ctx || !this._ctx.rgbuChannels || !this._ctx.rgbuSourceImage) {
       this._ratioValue = null;
       return;
     }
 
     let ratioValue: number | null = null;
     // Get channel acronym names, validate that they are individual r,g,b,u channels, and confirm there are 2 channels selected as a ratio
-    const channelAcronyms = this._ctx.displayedChannels
+    const channelAcronyms = this._ctx.rgbuChannels
       .toUpperCase()
       .split("/")
       .filter(acronym => ["R", "G", "B", "U"].includes(acronym));
@@ -126,8 +126,8 @@ export class HoverPointCursor extends BaseUIElement {
       }
     }
 
-    if (this._ctx.rgbuImageLayerForScale && this._ratioValue !== null) {
-      this.drawForRatioImage(screenContext, drawParams, this._ratioValue, this._ctx.rgbuImageLayerForScale.name, drawnCornerBoxWidth);
+    if (this._ctx.rgbuImageScaleData && this._ratioValue !== null) {
+      this.drawForRatioImage(screenContext, drawParams, this._ratioValue, this._ctx.rgbuImageScaleData.name, drawnCornerBoxWidth);
     }
   }
 
@@ -159,7 +159,7 @@ export class HoverPointCursor extends BaseUIElement {
   private drawForRatioImage(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters, ratioValue: number, ratioName: string, xOffset: number) {
     const displayRatio = Math.round(ratioValue * 100) / 100;
     if (!isNaN(displayRatio)) {
-      this.drawCornerTextBox(`${ratioName}: ${displayRatio}`, screenContext, drawParams, xOffset, this._drawPadding);
+      this.drawCornerTextBox(`${ratioName}: ${displayRatio}`, screenContext, drawParams, -xOffset, this._drawPadding);
     }
   }
 

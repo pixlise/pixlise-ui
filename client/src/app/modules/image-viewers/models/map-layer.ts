@@ -1,7 +1,7 @@
 import { ColourRamp, Colours, RGBA } from "src/app/utils/colours";
 import { MinMax } from "src/app/models/BasicTypes";
 
-export class ContextImageMapLayer /*implements IColourScaleDataSource*/ {
+export class ContextImageMapLayer {
   constructor(
     // What made us
     public scanId: string,
@@ -31,27 +31,6 @@ export class ContextImageMapLayer /*implements IColourScaleDataSource*/ {
     public valueRanges: MinMax[],
     public isBinary: boolean[]
   ) {}
-/*
-  // IColourScaleDataSource
-  getValueRange(channel: number): MinMax;
-  getDisplayValueRange(channel: number): MinMax;
-  getSpecularRemovedValueRange?(channel: number): MinMax;
-  setDisplayValueRangeMin(channel: number, val: number): void;
-  setDisplayValueRangeMax(channel: number, val: number): void;
-
-  channelCount: number;
-  isBinary: boolean;
-  displayScalingAllowed: boolean;
-  name: string;
-
-  expressionID?: string;
-  source?: any;
-
-  getHistogram(channel: number): Histogram;
-  setHistogramSteps(steps: number): void;
-
-  getChannelName(channel: number): string;
-  getDrawParamsForRawValue(channel: number, rawValue: number, rawRange: MinMax): MapPointDrawParams;*/
 }
 
 export enum MapPointShape {

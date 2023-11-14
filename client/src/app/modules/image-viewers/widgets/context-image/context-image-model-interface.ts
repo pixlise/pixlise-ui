@@ -3,9 +3,8 @@ import { RGBUImage } from "src/app/models/RGBUImage";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { RGBA, Colours } from "src/app/utils/colours";
 import { ContextImageItemTransform } from "../../models/image-transform";
-import { IColourScaleDataSource } from "src/app/models/ColourScaleDataSource";
 import { ContextImageDrawModel, ContextImageModelLoadedData, ContextImageScanModel } from "./context-image-model";
-import { MapColourScaleModel } from "./ui-elements/map-colour-scale/map-colour-scale-model";
+import { MapColourScaleModel, MapColourScaleSourceData } from "./ui-elements/map-colour-scale/map-colour-scale-model";
 
 // Over time this has probably become a little redundant, but it's an interface that the tools and UI elements use to access
 // the model, and therefore describes what these parts of the system need to interact with
@@ -13,7 +12,7 @@ export interface IContextImageModel {
   //needsDraw$: Subject<void>;
 
   imageName: string;
-  displayedChannels: string; // String of what channels to show for R,G,B or a division of 2 channels. Can contain R,G,B,U. Examples: RGB, RBU, R/G
+  rgbuChannels: string; // String of what channels to show for R,G,B or a division of 2 channels. Can contain R,G,B,U. Examples: RGB, RBU, R/G
 
   expressionIds: string[];
   roiIds: string[];
@@ -31,7 +30,7 @@ export interface IContextImageModel {
   imageTransform: ContextImageItemTransform | null;
 
   rgbuSourceImage: RGBUImage | null;
-  rgbuImageLayerForScale: IColourScaleDataSource;
+  rgbuImageScaleData: MapColourScaleSourceData | null;
 
   uiPhysicalScaleTranslation: Point;
   uiLayerScaleTranslation: Point;

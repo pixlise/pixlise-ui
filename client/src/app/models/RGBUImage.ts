@@ -34,9 +34,9 @@ import { ColourRamp, Colours } from "src/app/utils/colours";
 import { rgbBytesToImage } from "src/app/utils/drawing";
 import { Histogram } from "./histogram";
 import { PixelSelection } from "../modules/pixlisecore/models/pixel-selection";
-import { IColourScaleDataSource } from "./ColourScaleDataSource";
 import { fromArrayBuffer } from "geotiff";
 import { MapPointDrawParams, MapPointShape, MapPointState } from "../modules/image-viewers/models/map-layer";
+import { MapColourScaleSourceData } from "../modules/image-viewers/widgets/context-image/ui-elements/map-colour-scale/map-colour-scale-model";
 
 export class FloatImage {
   constructor(
@@ -70,107 +70,16 @@ export class FloatImage {
   }
 }
 
-class ColourScalePixelDataSource implements IColourScaleDataSource {
-  private _histogram: Histogram = new Histogram();
-
-  constructor(
-    public name: string,
-    private _pixelCount: number,
-    private _pixelValues: Float32Array,
-    private _valueRange: MinMax,
-    private _displayRange: MinMax,
-    private _specularRemovedRange: MinMax | null = null
-  ) {}
-
-  // IColourScaleDataSource - returns dummy values if they're not required/associated with our functionality
-  getValueRange(channel: number): MinMax {
-    return this._valueRange;
-  }
-
-  getDisplayValueRange(channel: number): MinMax {
-    return this._displayRange;
-  }
-
-  getSpecularRemovedValueRange(channel: number): MinMax {
-    if (!this._specularRemovedRange) {
-      return new MinMax();
-    }
-    return this._specularRemovedRange;
-  }
-
-  setDisplayValueRangeMin(channel: number, val: number): void {
-    this._displayRange.setMin(val);
-  }
-
-  setDisplayValueRangeMax(channel: number, val: number): void {
-    this._displayRange.setMax(val);
-  }
-
-  get channelCount(): number {
-    return 1;
-  }
-
-  get isBinary(): boolean {
-    return false;
-  }
-
-  get displayScalingAllowed(): boolean {
-    return false; // we DON'T allow the little tags that set display colour scale values
-  }
-
-  getHistogram(channel: number): Histogram {
-    return this._histogram;
-  }
-
-  setHistogramSteps(steps: number): void {
-    this._histogram.clear(steps);
-
-    if (steps <= 1) {
-      return;
-    }
-
-    // We now have a bunch of 0's, now run through all values and make sure their counts are in the right bin
-    const stepSize = this._displayRange.getRange() / (steps - 1);
-    if (stepSize == 0) {
-      // Map is all 0's most likely
-      return;
-    }
-
-    for (const p of this._pixelValues) {
-      const val = p - (this._displayRange.min || 0);
-
-      // Find where to slot it in
-      const idx = Math.floor(val / stepSize);
-
-      this._histogram.increment(idx);
-    }
-  }
-
-  getChannelName(channel: number): string {
-    return this.name;
-  }
-
-  getDrawParamsForRawValue(channel: number, rawValue: number, rawRange: MinMax): MapPointDrawParams {
-    // Clamping: This can happen because we're sampled by stepping through histogram, float rounding may get us a little past max
-    const pct = rawRange.getAsPercentageOfRange(rawValue, true);
-    const clr = Colours.sampleColourRamp(ColourRamp.SHADE_MAGMA, pct);
-    return new MapPointDrawParams(clr, MapPointState.IN_RANGE, MapPointShape.POLYGON, null);
-  }
-}
-
 class RatioData {
   constructor(
     public bytes: Uint8Array,
-    public values: Float32Array,
-    public minmax: MinMax, // Range of values actually stored, would be clamped to a specified min/max
-    public seenMinMax: MinMax, // Range of values we have seen but didn't store
-    public specularRemovedMinMax: MinMax | null = null // Optional range of values after specular removal for caching
+    public scaleData: MapColourScaleSourceData
   ) {}
 }
 
 class RGBUImageGenerated {
   constructor(
-    public layerForScale: IColourScaleDataSource | null,
+    public layerForScale: MapColourScaleSourceData | null,
     public image: HTMLImageElement | null
   ) {}
 }
@@ -224,7 +133,7 @@ export class RGBUImage {
   generateRGBDisplayImage(
     brightness: number,
     channelOrder: string,
-    logColour: boolean,
+    //logColour: boolean,
     unselectedOpacity: number,
     unselectedGrayscale: boolean,
     pixelSelection: PixelSelection,
@@ -233,19 +142,20 @@ export class RGBUImage {
     cropSelection: PixelSelection = PixelSelection.makeEmptySelection(),
     removeTopSpecularArtifacts: boolean = false,
     removeBottomSpecularArtifacts: boolean = false
-  ): RGBUImageGenerated {
+  ): RGBUImageGenerated | null {
     if (channelOrder.length != 3) {
-      return new RGBUImageGenerated(null, null);
+      return null;
     }
 
     if (!this._loadComplete) {
-      return new RGBUImageGenerated(null, null);
+      return null;
     }
 
     const pixelCount = this.r.width * this.r.height;
 
     let overallImgBytes: Uint8Array | null = null;
-    let csScaleData: ColourScalePixelDataSource | null = null;
+
+    let csScaleData: MapColourScaleSourceData | null = null;
     if (channelOrder[1] == "/") {
       const result = this.makeRatioImageBytes(
         channelOrder[0],
@@ -261,8 +171,8 @@ export class RGBUImage {
 
       if (result) {
         // Make a nice display name
-        const dispName = RGBUImage.channelToDisplayChannel(channelOrder[0]) + " / " + RGBUImage.channelToDisplayChannel(channelOrder[2]);
-        csScaleData = new ColourScalePixelDataSource(dispName, pixelCount, result.values, result.seenMinMax, result.minmax, result.specularRemovedMinMax);
+        result.scaleData.name = RGBUImage.channelToDisplayChannel(channelOrder[0]) + " / " + RGBUImage.channelToDisplayChannel(channelOrder[2]);
+        csScaleData = result.scaleData;
         overallImgBytes = result.bytes;
       }
     } else {
@@ -452,7 +362,7 @@ export class RGBUImage {
       seenMinMax = new MinMax(minValueWithoutSpecular, seenMinMax.max);
 
       // Remap the ratio values if the new min value is greater than the specified color ratio max or no color ratio is specified
-      if (colourRatioMax === null || minValueWithoutSpecular > colourRatioMin) {
+      if (colourRatioMax === null || minValueWithoutSpecular > (colourRatioMin || 0)) {
         ratioMinMax = new MinMax(minValueWithoutSpecular, ratioMinMax.max);
         ratioValues = ratioValues.map(ratioValue => Math.max(minValueWithoutSpecular * brightness, ratioValue));
       }
@@ -483,7 +393,10 @@ export class RGBUImage {
       writeIdx += 3;
     }
 
-    return new RatioData(overallImgBytes, ratioValues, ratioMinMax, seenMinMax, specularRemovedMinMax);
+    const csScaleData = new MapColourScaleSourceData();
+    csScaleData.addSimpleValues(ratioValues, ratioMinMax, specularRemovedMinMax, seenMinMax);
+
+    return new RatioData(overallImgBytes, csScaleData);
   }
 
   static readImage(data: ArrayBuffer, imgName: string): Observable<RGBUImage> {
