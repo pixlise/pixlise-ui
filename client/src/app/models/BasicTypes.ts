@@ -69,7 +69,7 @@ export class MinMax {
   }
 
   scale(by: number): void {
-    if (!Number.isFinite(by) || this._max == null || this._min == null) {
+    if (!Number.isFinite(by) || this._max === null || this._min === null) {
       return;
     }
 
@@ -78,10 +78,10 @@ export class MinMax {
   }
 
   expandByMinMax(range: MinMax): void {
-    if (range.min) {
+    if (range.min !== null) {
       this.expand(range.min);
     }
-    if (range.max) {
+    if (range.max !== null) {
       this.expand(range.max);
     }
   }
@@ -92,7 +92,7 @@ export class MinMax {
   }
 
   expandMin(value: number): boolean {
-    if (Number.isFinite(value) && (this._min == null || value < this._min)) {
+    if (Number.isFinite(value) && (this._min === null || value < this._min)) {
       this._min = value;
       return true;
     }
@@ -100,7 +100,7 @@ export class MinMax {
   }
 
   expandMax(value: number): boolean {
-    if (Number.isFinite(value) && (this._max == null || value > this._max)) {
+    if (Number.isFinite(value) && (this._max === null || value > this._max)) {
       this._max = value;
       return true;
     }
@@ -160,7 +160,7 @@ export class MinMax {
   }
 
   getRange(): number {
-    if (this._max == null || this._min == null) {
+    if (this._max === null || this._min === null) {
       return 0;
     }
     return this._max - this._min;
@@ -181,7 +181,7 @@ export class MinMax {
       return false;
     }
 
-    if (this._min == null || this._max == null) {
+    if (this._min === null || this._max === null) {
       return false;
     }
 
