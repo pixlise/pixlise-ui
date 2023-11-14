@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { DataModule } from "src/app/generated-protos/modules";
+import { ExpressionsService } from "../services/expressions.service";
 
 @Component({
   selector: "expression-layer",
@@ -31,14 +32,19 @@ export class ExpressionLayerComponent {
 
   constructor(
     private _route: ActivatedRoute,
-    private _router: Router
+    private _router: Router,
+    private _expressionsService: ExpressionsService
   ) {}
 
   get isModule(): boolean {
     return this._module !== null;
   }
 
-  @Input() set module(module: DataModule) {
+  @Input() set module(module: DataModule | null) {
+    if (!module) {
+      return;
+    }
+
     this._module = module;
     this.expression = DataExpression.create({
       id: module.id,
@@ -97,7 +103,9 @@ export class ExpressionLayerComponent {
   }
 
   set selectedTagIDs(tagIDs: string[]) {
-    this.expression!.tags = tagIDs;
+    if (this.expression) {
+      this.expression.tags = tagIDs;
+    }
   }
 
   get showSplitScreenButton(): boolean {
@@ -122,6 +130,7 @@ export class ExpressionLayerComponent {
     }
     this._router.navigate(["/datasets/code-editor"], { queryParams });
   }
+
   onPreviewCode() {
     let queryParams = { ...this._route.snapshot.queryParams };
     if (this.isModule) {
@@ -134,17 +143,24 @@ export class ExpressionLayerComponent {
     }
     this._router.navigate(["/datasets/code-editor"], { queryParams });
   }
+
   onFullScreenCodeEditor() {
-    let queryParams = { ...this._route.snapshot.queryParams };
+    let scanId = this._route.snapshot.queryParams["scanId"];
+    let quantId = this._route.snapshot.queryParams["quantId"];
+    let queryParams: Record<string, string> = {};
+
+    if (scanId) {
+      queryParams["scanId"] = scanId;
+    }
+
+    if (quantId) {
+      queryParams["quantId"] = quantId;
+    }
+
     if (this.isModule) {
-      delete queryParams["topExpressionId"];
-      delete queryParams["topModuleVersion"];
-      delete queryParams["bottomExpressionId"];
-      delete queryParams["bottomModuleVersion"];
-      queryParams["topModuleId"] = this.expression?.id;
+      queryParams["topModuleId"] = this.expression?.id || "";
     } else {
-      delete queryParams["topModuleId"];
-      queryParams["topExpressionId"] = this.expression?.id;
+      queryParams["topExpressionId"] = this.expression?.id || "";
     }
     this._router.navigate(["/datasets/code-editor"], { queryParams });
   }
@@ -155,7 +171,9 @@ export class ExpressionLayerComponent {
 
   onTagSelectionChanged(tagIDs: string[]): void {
     console.log("Tag selection changed", tagIDs);
-    // this._expressionService.updateExpressionTags(this.expression.id, tagIDs);
+    if (this.expression) {
+      // this._expressionsService.updateExpressionTags(this.expression.id, tagIDs);
+    }
   }
 
   onCheckboxClick(event: Event): void {
