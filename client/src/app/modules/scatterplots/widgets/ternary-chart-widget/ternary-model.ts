@@ -1,17 +1,18 @@
 import { MinMax } from "src/app/models/BasicTypes";
 import { CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Point, PointWithRayLabel, scaleVector } from "src/app/models/Geometry";
-import { degToRad, invalidPMC } from "src/app/utils/utils";
-import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, PointDrawer } from "src/app/utils/drawing";
+import { degToRad } from "src/app/utils/utils";
+import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS } from "src/app/utils/drawing";
 import { RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { BaseChartDrawModel } from "../../base/model-interfaces";
 import { NaryChartDataGroup, NaryChartDataItem, NaryChartModel } from "../../base/model";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 
 export class TernaryChartModel extends NaryChartModel<TernaryData, TernaryDrawModel> {
   protected regenerateDrawModel(raw: TernaryData | null, canvasParams: CanvasParams): void {
-    this._drawModel.regenerate(raw, canvasParams);
+    this._drawModel.regenerate(raw, this._beamSelection, canvasParams);
   }
 
   setData(data: RegionDataResults): WidgetError[] {
@@ -34,38 +35,6 @@ export class TernaryChartModel extends NaryChartModel<TernaryData, TernaryDrawMo
 
   protected axisName(axisIdx: number): string {
     return axisIdx == 0 ? "left" : axisIdx == 1 ? "right" : "top";
-  }
-
-  handleHoverPointChanged(hoverScanId: string, hoverScanEntryIndex: number): void {
-    // Hover point changed, if we have a model, set it and redraw, otherwise ignore
-    if (hoverScanEntryIndex < 0) {
-      // Clearing, easy case
-      this.hoverPoint = null;
-      this.hoverScanId = "";
-      this.hoverPointData = null;
-      this.hoverShape = PointDrawer.ShapeCircle;
-      this.needsDraw$.next();
-      return;
-    }
-
-    // Find the point in our draw model data
-    if (this._raw) {
-      for (let groupIdx = 0; groupIdx < this._raw.pointGroups.length; groupIdx++) {
-        const group = this._raw.pointGroups[groupIdx];
-
-        if (group.scanId == hoverScanId) {
-          // Find data to show
-          const coords = this.drawModel.pointGroupCoords[groupIdx];
-
-          this.hoverPoint = coords[hoverScanEntryIndex];
-          this.hoverScanId = hoverScanId;
-          this.hoverPointData = group.valuesPerScanEntry[hoverScanEntryIndex];
-          this.hoverShape = group.shape;
-          this.needsDraw$.next();
-          return;
-        }
-      }
-    }
   }
 }
 
@@ -96,7 +65,7 @@ export class TernaryDrawModel implements BaseChartDrawModel {
   hoverLabelB: Point = new Point();
   hoverLabelC: Point = new Point();
 
-  regenerate(raw: TernaryData | null, canvasParams: CanvasParams): void {
+  regenerate(raw: TernaryData | null, beamSelection: BeamSelection, canvasParams: CanvasParams): void {
     this.totalPointCount = 0;
     this.drawnData = null; // Force regen
 
@@ -157,7 +126,13 @@ export class TernaryDrawModel implements BaseChartDrawModel {
       for (const item of raw.pointGroups) {
         const coords = [];
 
-        for (const ternaryItem of item.valuesPerScanEntry) {
+        for (let c = 0; c < item.valuesPerScanEntry.length; c++) {
+          const ternaryItem = item.valuesPerScanEntry[c];
+          if (beamSelection.getSelectedScanEntryIndexes(item.scanId).has(c)) {
+            // It's selected, don't add it
+            continue;
+          }
+
           coords.push(this.calcPointForTernary(ternaryItem));
         }
 

@@ -61,7 +61,7 @@ export class ScanIdConverterService {
     );
   }
 
-  convertScanEntryIndexToPMC(scanId: string, indexes: number[]): Observable<number[]> {
+  convertScanEntryIndexToPMC(scanId: string, indexes: Iterable<number>): Observable<number[]> {
     if (!scanId) {
       throw new Error("convertScanEntryIndexToPMC called with empty scanId");
     }

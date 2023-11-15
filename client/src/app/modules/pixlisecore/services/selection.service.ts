@@ -33,7 +33,7 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
 import { BeamSelection } from "../models/beam-selection";
 import { PixelSelection } from "../models/pixel-selection";
-import { parseNumberRangeString, invalidPMC, encodeIndexList, httpErrorToString } from "src/app/utils/utils";
+import { invalidPMC, encodeIndexList, httpErrorToString } from "src/app/utils/utils";
 
 import {
   UserPromptDialogComponent,
@@ -128,17 +128,31 @@ export class SelectionService {
 
   // Sets the selection. If beam or pixels isn't required, use makeEmptySelection() on the selection class!
   setSelection(beams: BeamSelection, pixels: PixelSelection, persist: boolean = true): void {
-    const currentSelection = this.getCurrentSelection();
+    // At this point, beams contains indexes, we want to also have PMCs stored so start with that
+    const scanIds = beams.getScanIds();
+    const conversions = [];
 
-    console.log("Set selection to " + beams.getSelectedEntryCount() + " PMCs, " + pixels.selectedPixels.size + " pixels...");
-    this.addSelection(new SelectionHistoryItem(beams, pixels, currentSelection.cropSelection));
-
-    this.updateListeners();
-
-    if (persist) {
-      // We write out each item to API separately
-      this.persistSelection(beams, pixels, false);
+    for (const scanId of scanIds) {
+      conversions.push(this._scanIdConverterService.convertScanEntryIndexToPMC(scanId, beams.getSelectedScanEntryIndexes(scanId)));
     }
+
+    combineLatest(conversions).subscribe((allScanPMCs: number[][]) => {
+      const currentSelection = this.getCurrentSelection();
+
+      for (let c = 0; c < scanIds.length; c++) {
+        beams.setScanSelectedPMCs(scanIds[c], allScanPMCs[c]);
+      }
+
+      console.log("Set selection to " + beams.getSelectedEntryCount() + " PMCs, " + pixels.selectedPixels.size + " pixels...");
+      this.addSelection(new SelectionHistoryItem(beams, pixels, currentSelection.cropSelection));
+
+      this.updateListeners();
+
+      if (persist) {
+        // We write out each item to API separately
+        this.persistSelection(beams, pixels, false);
+      }
+    });
   }
 
   private persistSelection(beams: BeamSelection, pixels: PixelSelection, isPixelCrop: boolean) {

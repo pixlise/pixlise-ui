@@ -21,6 +21,7 @@ import {
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { TernaryState, VisibleROI } from "src/app/generated-protos/widget-data";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -195,6 +196,12 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     );
 
     this._subs.add(
+      this._selectionService.selection$.subscribe((sel: SelectionHistoryItem) => {
+        this.mdl.handleSelectionChange(sel.beamSelection);
+      })
+    );
+
+    this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
         let updated = false;
         if (screenConfiguration) {
@@ -249,11 +256,6 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         }
       })
     );
-    /*this._subs.add(
-      this._selectionService.selection$.subscribe(() => {
-        this.mdl.handleSelection;
-      })
-    );*/
     this.reDraw();
   }
 

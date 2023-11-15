@@ -5,17 +5,18 @@ import { PointWithRayLabel, Rect } from "src/app/models/Geometry";
 import { Colours } from "src/app/utils/colours";
 import { RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ChartAxis, ChartAxisDrawer, LinearChartAxis } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
-import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, CANVAS_FONT_SIZE_TITLE } from "src/app/utils/drawing";
+import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, CANVAS_FONT_SIZE_TITLE, PointDrawer } from "src/app/utils/drawing";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { BaseChartDrawModel } from "../../base/model-interfaces";
 import { NaryChartDataGroup, NaryChartModel } from "../../base/model";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
+import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 
 export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel> {
   public static readonly FONT_SIZE_SMALL = CANVAS_FONT_SIZE_TITLE - 4;
 
   protected regenerateDrawModel(raw: BinaryData | null, canvasParams: CanvasParams): void {
-    this._drawModel.regenerate(raw, canvasParams);
+    this._drawModel.regenerate(raw, this._beamSelection, canvasParams);
   }
 
   setData(data: RegionDataResults): WidgetError[] {
@@ -65,7 +66,7 @@ export class BinaryDrawModel implements BaseChartDrawModel {
   xValueRange: MinMax = new MinMax();
   yValueRange: MinMax = new MinMax();
 
-  regenerate(raw: BinaryData | null, canvasParams: CanvasParams): void {
+  regenerate(raw: BinaryData | null, beamSelection: BeamSelection, canvasParams: CanvasParams): void {
     this.totalPointCount = 0;
     this.drawnData = null; // Force regen
 
@@ -132,12 +133,19 @@ export class BinaryDrawModel implements BaseChartDrawModel {
       for (const group of raw.pointGroups) {
         const coords: PointWithRayLabel[] = [];
 
-        for (const value of group.valuesPerScanEntry) {
+        for (let c = 0; c < group.valuesPerScanEntry.length; c++) {
+          const value = group.valuesPerScanEntry[c];
+
           const pointXValue = value.nullMask[0] ? "null" : value.values[0];
           const canvasX = this.xAxis.valueToCanvas(value.nullMask[0] ? 0 : value.values[0]);
 
           const pointYValue = value.nullMask[1] ? "null" : value.values[1];
           const canvasY = this.yAxis.valueToCanvas(value.nullMask[0] ? 0 : value.values[1]);
+
+          if (beamSelection.getSelectedScanEntryPMCs(group.scanId).has(value.scanEntryId)) {
+            // It's selected, don't add it
+            continue;
+          }
 
           coords.push(
             new PointWithRayLabel(
@@ -158,14 +166,14 @@ export class BinaryDrawModel implements BaseChartDrawModel {
 
   private initAxes(canvasParams: CanvasParams, transform: PanZoom, outerBorder: Rect, leftAxisSpace: number, bottomAxisSpace: number): void {
     // The data has to be drawn a bit in from the axis border due to point size
-    const dataPadding = Math.max(PLOT_POINTS_SIZE, HOVER_POINT_RADIUS) + 1;
+    const dataPadding = (Math.max(PLOT_POINTS_SIZE, HOVER_POINT_RADIUS) + 1) * 0.5;
 
     if (this.xValueRange.min !== null && this.xValueRange.max !== null) {
       // Setup x-axis:
       const xAxis = new LinearChartAxis(
         true,
-        outerBorder.x + leftAxisSpace,
-        canvasParams.width - leftAxisSpace - dataPadding - dataPadding,
+        outerBorder.x + leftAxisSpace + dataPadding,
+        outerBorder.w - leftAxisSpace - dataPadding * 2,
         this.xValueRange.min,
         this.xValueRange.max,
         dataPadding
@@ -179,8 +187,8 @@ export class BinaryDrawModel implements BaseChartDrawModel {
       // Setup y-axis:
       const yAxis = new LinearChartAxis(
         false,
-        outerBorder.y + bottomAxisSpace,
-        canvasParams.height - bottomAxisSpace - dataPadding - dataPadding,
+        outerBorder.y + bottomAxisSpace + dataPadding,
+        outerBorder.h - bottomAxisSpace - dataPadding * 2,
         this.yValueRange.min,
         this.yValueRange.max,
         dataPadding

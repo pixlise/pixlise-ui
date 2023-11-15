@@ -2,7 +2,7 @@ import { Subject } from "rxjs";
 import { PMCDataValues } from "src/app/expression-language/data-values";
 import { getExpressionShortDisplayName } from "src/app/expression-language/expression-short-name";
 import { MinMax } from "src/app/models/BasicTypes";
-import { Point } from "src/app/models/Geometry";
+import { Point, PointWithRayLabel } from "src/app/models/Geometry";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { RGBA, Colours } from "src/app/utils/colours";
 import { CANVAS_FONT_SIZE_TITLE, PointDrawer } from "src/app/utils/drawing";
@@ -14,6 +14,8 @@ import { WidgetKeyItem, RegionDataResults, ExpressionReferences } from "../../pi
 import { ScatterPlotAxisInfo } from "../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { BaseChartDataItem, BaseChartDataValueItem, BaseChartDrawModel, BaseChartModel } from "./model-interfaces";
 import { WidgetError } from "../../pixlisecore/services/widget-data.service";
+import { BeamSelection } from "../../pixlisecore/models/beam-selection";
+import { invalidPMC } from "src/app/utils/utils";
 
 export class NaryChartDataItem implements BaseChartDataValueItem {
   constructor(
@@ -25,6 +27,11 @@ export class NaryChartDataItem implements BaseChartDataValueItem {
 }
 
 export class NaryChartDataGroup implements BaseChartDataItem {
+  // A reverse lookup from scan entry Id (aka PMC) to the values array
+  // This is mainly required for selection service hover notifications, so
+  // we can quickly find the valus to display
+  public scanEntryPMCToValueIdx: Map<number, number> = new Map<number, number>();
+
   constructor(
     // This group contains data for the following ROI within the following scan:
     public scanId: string,
@@ -36,16 +43,18 @@ export class NaryChartDataGroup implements BaseChartDataItem {
     // And these are the draw settings for the values:
     public colour: RGBA,
     public shape: string
-
-    // A reverse lookup from scan entry Id (aka PMC) to the values array
-    // This is mainly required for selection service hover notifications, so
-    // we can quickly find the valus to display
-    //public scanEntryIdToValueIdx: Map<number, number>
-
   ) {}
 }
 
-export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawModel> implements CanvasDrawNotifier, BaseChartModel {
+export interface NaryData {
+  get pointGroups(): NaryChartDataGroup[];
+}
+
+export interface DrawModelWithPointGroup extends BaseChartDrawModel {
+  pointGroupCoords: (Point | PointWithRayLabel)[][];
+}
+
+export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extends DrawModelWithPointGroup> implements CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
 
   transform: PanZoom = new PanZoom(new MinMax(1, null), new MinMax(1, null), new PanRestrictorToCanvas());
@@ -67,6 +76,9 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
 
   // The raw data we start with
   protected _raw: RawModel | null = null;
+
+  // Selection
+  protected _beamSelection: BeamSelection = BeamSelection.makeEmptySelection();
 
   // Mouse interaction drawing
   hoverPoint: Point | null = null;
@@ -98,6 +110,51 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
 
   get drawModel(): DrawModel {
     return this._drawModel;
+  }
+
+  get beamSelection(): BeamSelection {
+    return this._beamSelection;
+  }
+
+  handleSelectionChange(beamSelection: BeamSelection) {
+    this._beamSelection = beamSelection;
+    this._recalcNeeded = true;
+    this.needsDraw$.next();
+  }
+
+  handleHoverPointChanged(hoverScanId: string, hoverScanEntryPMC: number): void {
+    // Hover point changed, if we have a model, set it and redraw, otherwise ignore
+    if (hoverScanEntryPMC == invalidPMC) {
+      // Clearing, easy case
+      this.hoverPoint = null;
+      this.hoverScanId = "";
+      this.hoverPointData = null;
+      this.hoverShape = PointDrawer.ShapeCircle;
+      this.needsDraw$.next();
+      return;
+    }
+
+    // Find the point in our draw model data
+    if (this._raw) {
+      for (let groupIdx = 0; groupIdx < this._raw.pointGroups.length; groupIdx++) {
+        const group = this._raw.pointGroups[groupIdx];
+
+        if (group.scanId == hoverScanId) {
+          const hoverValIndex = group.scanEntryPMCToValueIdx.get(hoverScanEntryPMC);
+          if (hoverValIndex !== undefined) {
+            // Find data to show
+            const coords = this.drawModel.pointGroupCoords[groupIdx];
+
+            this.hoverPoint = coords[hoverValIndex];
+            this.hoverScanId = hoverScanId;
+            this.hoverPointData = group.valuesPerScanEntry[hoverValIndex];
+            this.hoverShape = group.shape;
+            this.needsDraw$.next();
+          }
+          return;
+        }
+      }
+    }
   }
 
   recalcDisplayDataIfNeeded(canvasParams: CanvasParams): void {
@@ -221,6 +278,9 @@ export abstract class NaryChartModel<RawModel, DrawModel extends BaseChartDrawMo
             // Save it in A, B or C - A also is creating the value...
             if (c == 0) {
               pointGroup.valuesPerScanEntry.push(new NaryChartDataItem(value.pmc, [value.value]));
+
+              // Also add it to the PMC lookup map
+              pointGroup.scanEntryPMCToValueIdx.set(value.pmc, i);
             } else {
               // Ensure we're writing to the right PMC
               // Should always be the right order because we run 3 queries with the same ROI

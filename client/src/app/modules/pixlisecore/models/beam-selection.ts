@@ -53,14 +53,15 @@ export class BeamSelection {
     return new BeamSelection(new Map<string, Set<number>>([[scanId, idxs]]));
   }
 
-  constructor(private _scanEntries: Map<string, Set<number>>) {}
+  private _scanEntryPMCs = new Map<string, Set<number>>();
+  constructor(private _scanEntryIndexes: Map<string, Set<number>>) {}
 
   isEqualTo(other: BeamSelection): boolean {
-    if (!arraysEqual<string>(Array.from(this._scanEntries.keys()), Array.from(other._scanEntries.keys()))) {
+    if (!arraysEqual<string>(Array.from(this._scanEntryIndexes.keys()), Array.from(other._scanEntryIndexes.keys()))) {
       return false;
     }
-    for (const [id, items] of this._scanEntries) {
-      const otherItems = other._scanEntries.get(id);
+    for (const [id, items] of this._scanEntryIndexes) {
+      const otherItems = other._scanEntryIndexes.get(id);
       if (otherItems === undefined) {
         return false;
       }
@@ -72,7 +73,7 @@ export class BeamSelection {
   }
 
   getSelectedScanEntryIndexes(scanId: string): Set<number> {
-    const idxs = this._scanEntries.get(scanId);
+    const idxs = this._scanEntryIndexes.get(scanId);
     if (idxs === undefined) {
       // None selected...
       return new Set<number>();
@@ -81,14 +82,27 @@ export class BeamSelection {
   }
 
   getScanIds(): string[] {
-    return Array.from(this._scanEntries.keys());
+    return Array.from(this._scanEntryIndexes.keys());
   }
 
   getSelectedEntryCount(): number {
     let count = 0;
-    for (const items of this._scanEntries.values()) {
+    for (const items of this._scanEntryIndexes.values()) {
       count += items.size;
     }
     return count;
+  }
+
+  setScanSelectedPMCs(scanId: string, pmcs: number[]) {
+    this._scanEntryPMCs.set(scanId, new Set<number>(pmcs));
+  }
+
+  getSelectedScanEntryPMCs(scanId: string): Set<number> {
+    const idxs = this._scanEntryPMCs.get(scanId);
+    if (idxs === undefined) {
+      // None selected...
+      return new Set<number>();
+    }
+    return idxs;
   }
 }

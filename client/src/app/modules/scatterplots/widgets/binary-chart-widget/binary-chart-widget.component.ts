@@ -25,6 +25,7 @@ import {
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { VisibleROI, BinaryState } from "src/app/generated-protos/widget-data";
+import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -177,6 +178,18 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   ngOnInit() {
+    this._subs.add(
+      this._selectionService.hoverChangedReplaySubject$.subscribe(() => {
+        this.mdl.handleHoverPointChanged(this._selectionService.hoverScanId, this._selectionService.hoverEntryPMC);
+      })
+    );
+
+    this._subs.add(
+      this._selectionService.selection$.subscribe((sel: SelectionHistoryItem) => {
+        this.mdl.handleSelectionChange(sel.beamSelection);
+      })
+    );
+
     this._subs.add(
       this.widgetData$.subscribe((data: any) => {
         const binaryData: BinaryState = data as BinaryState;

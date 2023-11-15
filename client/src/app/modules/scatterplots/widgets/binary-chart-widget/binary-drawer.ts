@@ -62,7 +62,7 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
     }
 
     // Draw x/y of point being hovered (if there is one)
-    this.drawHoverPoint(screenContext, drawData);
+    this.drawHoverPoint(screenContext, drawData, drawParams);
 
     // And hover point if any
     if (this._mdl.hoverPoint !== null) {
@@ -77,26 +77,38 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
     }
   }
 
-  private drawHoverPoint(screenContext: CanvasRenderingContext2D, drawData: BinaryDrawModel) {
+  private drawHoverPoint(screenContext: CanvasRenderingContext2D, drawData: BinaryDrawModel, drawParams: CanvasDrawParameters) {
     // Draw hover values in the middle of the ticks, on top of them
     if (this._mdl.hoverPointData && drawData.xAxis && drawData.yAxis) {
+      const xAxisTextY = drawParams.drawViewport.height - (BinaryChartModel.FONT_SIZE_SMALL + BinaryChartModel.LABEL_PADDING) * 2;
       screenContext.font = BinaryChartModel.FONT_SIZE_SMALL + "px Roboto";
-      screenContext.textAlign = "center";
-      screenContext.textBaseline = "middle";
+      screenContext.textAlign = "left";
+      screenContext.textBaseline = "top";
       screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
       // x is easy
       screenContext.fillText(
         this._mdl.hoverPointData.values[0].toLocaleString(),
-        drawData.xAxis.pctToCanvas(0.5),
-        drawData.yAxis.pctToCanvas(1) + BinaryChartModel.FONT_SIZE_SMALL * 2
+        drawData.xAxis.pctToCanvas(0.0),
+        xAxisTextY//.yAxis.pctToCanvas(1)// + BinaryChartModel.LABEL_PADDING + BinaryChartModel.FONT_SIZE_SMALL
       );
 
       // y needs rotation
+      screenContext.textAlign = "left";
+      screenContext.textBaseline = "middle";
       screenContext.save();
-      screenContext.translate(BinaryChartModel.LABEL_PADDING, drawData.yAxis.pctToCanvas(0.5));
+      screenContext.translate(BinaryChartModel.LABEL_PADDING + 5, drawData.yAxis.pctToCanvas(1));
       screenContext.rotate(-Math.PI / 2);
       screenContext.fillText(this._mdl.hoverPointData.values[1].toLocaleString(), 0, 0);
       screenContext.restore();
+
+      // What scan and PMC are we on?
+      screenContext.textAlign = "left";
+      screenContext.textBaseline = "top";
+      screenContext.fillText(
+        `Scan ID: ${this._mdl.hoverScanId}, PMC: ${this._mdl.hoverPointData.scanEntryId}`,
+        BinaryChartModel.LABEL_PADDING,
+        xAxisTextY + (BinaryChartModel.FONT_SIZE_SMALL + BinaryChartModel.LABEL_PADDING)
+      );
     }
   }
 }
