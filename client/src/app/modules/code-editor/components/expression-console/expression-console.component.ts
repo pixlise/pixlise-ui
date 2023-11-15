@@ -108,7 +108,7 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
       this._selectionService.selection$.subscribe(selection => {
         this.currentSelection = selection;
         if (this.scanId) {
-          this.selectedPMCs = new Set(selection.beamSelection.getSelectedScanEntryIndexes(this.scanId));
+          this.selectedPMCs = new Set(selection.beamSelection.getSelectedScanEntryPMCs(this.scanId));
         }
       })
     );

@@ -91,7 +91,7 @@ export class ROIService {
     // Everytime selection changes, update all selected points ROIs
     selection.beamSelection.getScanIds().forEach(scanId => {
       const selectedPointsROI = createDefaultSelectedPointsItem(scanId);
-      selectedPointsROI.scanEntryIndexesEncoded = Array.from(selection.beamSelection.getSelectedScanEntryIndexes(scanId));
+      selectedPointsROI.scanEntryIndexesEncoded = Array.from(selection.beamSelection.getSelectedScanEntryPMCs(scanId));
       selectedPointsROI.pixelIndexesEncoded = Array.from(selection.pixelSelection.selectedPixels);
       selectedPointsROI.imageName = selection.pixelSelection.imageName;
 
@@ -140,7 +140,7 @@ export class ROIService {
     }
 
     const selectedPointsROI = createDefaultSelectedPointsItem(scanId);
-    selectedPointsROI.scanEntryIndexesEncoded = Array.from(currentSelection.beamSelection.getSelectedScanEntryIndexes(scanId));
+    selectedPointsROI.scanEntryIndexesEncoded = Array.from(currentSelection.beamSelection.getSelectedScanEntryPMCs(scanId));
     selectedPointsROI.pixelIndexesEncoded = Array.from(currentSelection.pixelSelection.selectedPixels);
     selectedPointsROI.imageName = currentSelection.pixelSelection.imageName;
 

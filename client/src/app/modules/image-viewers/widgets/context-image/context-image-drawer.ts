@@ -75,7 +75,8 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
         drawScanPoints(
           screenContext,
           scanDrawMdl.scanPoints,
-          scanDrawMdl.selectedPointIdxs,
+          scanDrawMdl.selectedPointPMCs,
+          scanDrawMdl.selectedPointIndexes,
           scanDrawMdl.hoverEntryIdx,
           true,
           true,

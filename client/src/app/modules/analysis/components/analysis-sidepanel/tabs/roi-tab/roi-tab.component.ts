@@ -141,7 +141,7 @@ export class ROITabComponent implements OnInit {
         scanId: this.visibleScanId,
         pixelIndexesEncoded: Array.from(selection.pixelSelection.selectedPixels),
         imageName: selection.pixelSelection.imageName,
-        scanEntryIndexesEncoded: Array.from(selection.beamSelection.getSelectedScanEntryIndexes(this.visibleScanId)),
+        scanEntryIndexesEncoded: Array.from(selection.beamSelection.getSelectedScanEntryPMCs(this.visibleScanId)),
       })
     );
     this.closeCreateROIMenu();

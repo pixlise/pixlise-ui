@@ -113,8 +113,20 @@ export class PointSelection extends BaseContextImageTool {
       // Mouse released, process it (may have just been a click with no mouse drag msg in between)
       this.processPoint(event.point);
 
-      // Apply directly to the selection
-      this.applyToSelection(this.selectedIdxs, null, this.pointInvestigationMode);
+      // Apply directly to the selection (NOTE we have to convert from idxs to PMCs)
+      const selectedPMCs = new Map<string, Set<number>>();
+      for (const [scanId, idxs] of this.selectedIdxs) {
+        const mdl = this._ctx.drawModel.scanDrawModels.get(scanId);
+        if (mdl) {
+          const pmcs = new Set<number>();
+          for (const idx of idxs) {
+            pmcs.add(mdl.scanPoints[idx].PMC);
+          }
+
+          selectedPMCs.set(scanId, pmcs);
+        }
+      }
+      this.applyToSelection(selectedPMCs, null, this.pointInvestigationMode);
 
       // Clear what we're operating on (don't draw anything)
       this.selectedIdxs.clear();

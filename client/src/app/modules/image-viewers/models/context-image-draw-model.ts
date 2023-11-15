@@ -10,7 +10,8 @@ export class ContextImageScanDrawModel {
     public scanPoints: ScanPoint[],
     public scanPointPolygons: Point[][],
     public footprint: Footprint,
-    public selectedPointIdxs: Set<number>,
+    public selectedPointPMCs: Set<number>,
+    public selectedPointIndexes: Set<number>,
     public hoverEntryIdx: number = -1,
     public drawPointColourOverrides: Map<number, RGBA>, // Only used by quant combine view, overrides the colour drawn per scan point
     public scanPointDisplayRadius: number, // Size of shape drawn for each scan point in image pixels

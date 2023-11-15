@@ -7,7 +7,8 @@ import { ScanPoint } from "../../../models/scan-point";
 export function drawScanPoints(
   screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   points: ScanPoint[],
-  selectedPointIdxs: Set<number>,
+  selectedPointPMCs: Set<number>,
+  selectedPointIndexes: Set<number>,
   excludeIdx: number,
   drawUnselectedPts: boolean,
   drawSelectedPts: boolean,
@@ -40,7 +41,7 @@ export function drawScanPoints(
         if (loc.hasMissingData) {
           // Just draw it here as an empty point
           drawEmptyCircle(screenContext, loc.coord, pointRadius);
-        } else if (!selectedPointIdxs.has(idx)) {
+        } else if (!selectedPointPMCs.has(loc.PMC)) {
           unselectedLocationIndexes.push(idx);
         }
       }
@@ -82,7 +83,7 @@ export function drawScanPoints(
   if (drawSelectedPts) {
     lastSetColour = null;
 
-    for (const selIdx of selectedPointIdxs) {
+    for (const selIdx of selectedPointIndexes) {
       const loc = points[selIdx];
       if (selIdx != excludeIdx && loc && loc.coord) {
         lastSetColour = setPointColour(screenContext, loc.PMC, pmcColourLookup, clrDataPoint, false, lastSetColour);

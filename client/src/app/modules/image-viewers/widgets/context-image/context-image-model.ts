@@ -132,7 +132,8 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     // Loop through all the models we have, and if there is nothing in the selection for it, set it to an empty set
     // NOTE: we also clear all hovers...
     for (const [scanId, scanDrawMdl] of this._drawModel.scanDrawModels) {
-      scanDrawMdl.selectedPointIdxs = beamSel.getSelectedScanEntryIndexes(scanId);
+      scanDrawMdl.selectedPointPMCs = beamSel.getSelectedScanEntryPMCs(scanId);
+      scanDrawMdl.selectedPointIndexes = beamSel.getSelectedScanEntryIndexes(scanId);
       scanDrawMdl.hoverEntryIdx = -1;
     }
 
@@ -583,6 +584,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
           scanMdl.scanPoints,
           scanMdl.scanPointPolygons,
           footprint,
+          new Set<number>(), // We don't have selection info at this point
           new Set<number>(), // We don't have selection info at this point
           -1, // We don't have selection info at this point
           scanId == from.scanIdForColourOverrides ? from.scanPointColourOverrides : new Map<number, RGBA>(),

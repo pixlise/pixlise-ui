@@ -113,18 +113,18 @@ export class LassoSelection extends BaseContextImageTool {
     bbox.expandToFitPoints(this.lassoPoints);
 
     // Here we loop through all locations in the dataset, find  all points that are within the polygon
-    const selectedIdxsPerScan = new Map<string, Set<number>>();
+    const selectedPMCsPerScan = new Map<string, Set<number>>();
     for (const scanId of this._ctx.scanIds) {
-      const selectedIdxs = new Set<number>();
+      const selectedPMCs = new Set<number>();
       const mdl = this._ctx.getScanModelFor(scanId);
       if (mdl) {
         for (const loc of mdl.scanPoints) {
           if (loc.coord && ptWithinPolygon(loc.coord, this.lassoPoints, bbox)) {
-            selectedIdxs.add(loc.locationIdx);
+            selectedPMCs.add(loc.PMC);
           }
         }
       }
-      selectedIdxsPerScan.set(scanId, selectedIdxs);
+      selectedPMCsPerScan.set(scanId, selectedPMCs);
     }
 
     const pixels: Set<number> = new Set<number>();
@@ -168,6 +168,6 @@ export class LassoSelection extends BaseContextImageTool {
     }
 
     // If we're adding to the selection, add, otherwise remove each
-    this.applyToSelection(selectedIdxsPerScan, null, false, pixels);
+    this.applyToSelection(selectedPMCsPerScan, null, false, pixels);
   }
 }

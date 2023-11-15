@@ -183,7 +183,7 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
       for (let c = 0; c < resp.entries.length; c++) {
         if (this.isSelectable(resp.entries[c])) {
           //items.add(resp.entries[c].id)
-          items.add(c);
+          items.add(resp.entries[c].id);
         }
       }
 
@@ -215,7 +215,7 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
       for (let c = 0; c < resp.entries.length; c++) {
         if (resp.entries[c].dwellSpectra > 0) {
           //items.add(resp.entries[c].id)
-          items.add(c);
+          items.add(resp.entries[c].id);
         }
       }
 
@@ -271,15 +271,14 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
       // We have ALL the entries for ALL the scans, so flip the selection here
       const newSel = new Map<string, Set<number>>();
       for (let c = 0; c < results.length; c++) {
-        const curSel = sel.getSelectedScanEntryIndexes(selScanIds[c]);
+        const curSel = sel.getSelectedScanEntryPMCs(selScanIds[c]);
         const thisScanNewSel = new Set<number>();
 
         // Run through the scan entries, and add ones to the selection which aren't currently selected
         const entryResp = results[c] as ScanEntryResp;
-        for (let idx = 0; idx < entryResp.entries.length; idx++) {
-          const entry = entryResp.entries[idx];
-          if (!curSel.has(idx) && this.isSelectable(entry)) {
-            thisScanNewSel.add(idx);
+        for (const entry of entryResp.entries) {
+          if (!curSel.has(entry.id) && this.isSelectable(entry)) {
+            thisScanNewSel.add(entry.id);
           }
         }
 

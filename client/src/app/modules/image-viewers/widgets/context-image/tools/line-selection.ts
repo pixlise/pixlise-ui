@@ -148,7 +148,7 @@ export class LineSelection extends BaseContextImageTool {
     const lineLength = getVectorLength(lineVec);
     const lineVecNormal = scaleVector(lineVec, 1 / lineLength);
 
-    const selectedIdxs = new Map<string, Set<number>>();
+    const selectedPMCs = new Map<string, Set<number>>();
 
     for (const scanId of this._ctx.scanIds) {
       const scanMdl = this._ctx.getScanModelFor(scanId);
@@ -162,18 +162,18 @@ export class LineSelection extends BaseContextImageTool {
         if (loc.coord) {
           const dist = closestDistanceBetweenPointAndLine(loc.coord, startPt, lineVecNormal, lineLength);
           if (dist && Math.abs(dist) < threshold) {
-            let idxs = selectedIdxs.get(scanId);
-            if (!idxs) {
-              idxs = new Set<number>();
-              selectedIdxs.set(scanId, idxs);
+            let pmcs = selectedPMCs.get(scanId);
+            if (!pmcs) {
+              pmcs = new Set<number>();
+              selectedPMCs.set(scanId, pmcs);
             }
-            idxs.add(loc.locationIdx);
+            pmcs.add(loc.PMC);
           }
         }
       }
 
       // If we're adding to the selection, add, otherwise remove each
-      this.applyToSelection(selectedIdxs);
+      this.applyToSelection(selectedPMCs);
     }
   }
 }

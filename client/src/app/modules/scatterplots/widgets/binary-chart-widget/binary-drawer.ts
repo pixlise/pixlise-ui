@@ -6,6 +6,7 @@ import { BinaryChartModel, BinaryDrawModel } from "./binary-model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { CachedCanvasChartDrawer } from "../../base/cached-drawer";
 import { BaseChartModel } from "../../base/model-interfaces";
+import { drawScatterPoints } from "../../base/cached-nary-drawer";
 
 export class BinaryChartDrawer extends CachedCanvasChartDrawer {
   public showSwapButton: boolean = true;
@@ -31,16 +32,7 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
       return;
     }
 
-    const drawData = this._mdl.drawModel;
-
-    const alpha = PointDrawer.getOpacity(drawData.totalPointCount);
-    for (let c = 0; c < drawData.pointGroupCoords.length; c++) {
-      const isAllPoints = PredefinedROIID.isAllPointsROI(this._mdl.raw.pointGroups[c].roiId);
-      const colourGroup = isAllPoints && this.lightMode ? Colours.GRAY_80 : this._mdl.raw.pointGroups[c].colour;
-      const visibility = isAllPoints && this.lightMode ? 0.4 : alpha;
-      const drawer = new PointDrawer(screenContext, PLOT_POINTS_SIZE, colourGroup, null, this._mdl.raw.pointGroups[c].shape);
-      drawer.drawPoints(drawData.pointGroupCoords[c], visibility);
-    }
+    drawScatterPoints(screenContext, this._mdl.drawModel, this.lightMode, this._mdl.raw.pointGroups);
   }
 
   drawPostData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
@@ -53,7 +45,7 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
       const axisDrawer = drawData.makeChartAxisDrawer();
       axisDrawer.drawAxes(
         screenContext,
-        drawParams.drawViewport,
+        drawParams.drawViewport, 
         drawData.xAxis,
         "", // we handle our own drawing
         drawData.yAxis,
@@ -86,11 +78,7 @@ export class BinaryChartDrawer extends CachedCanvasChartDrawer {
       screenContext.textBaseline = "top";
       screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
       // x is easy
-      screenContext.fillText(
-        this._mdl.hoverPointData.values[0].toLocaleString(),
-        drawData.xAxis.pctToCanvas(0.0),
-        xAxisTextY//.yAxis.pctToCanvas(1)// + BinaryChartModel.LABEL_PADDING + BinaryChartModel.FONT_SIZE_SMALL
-      );
+      screenContext.fillText(this._mdl.hoverPointData.values[0].toLocaleString(), drawData.xAxis.pctToCanvas(0.0), xAxisTextY);
 
       // y needs rotation
       screenContext.textAlign = "left";

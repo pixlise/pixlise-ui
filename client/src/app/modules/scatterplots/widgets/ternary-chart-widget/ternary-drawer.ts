@@ -5,6 +5,7 @@ import { TernaryDrawModel, TernaryChartModel } from "./ternary-model";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { CachedCanvasChartDrawer } from "../../base/cached-drawer";
 import { BaseChartModel } from "../../base/model-interfaces";
+import { drawScatterPoints } from "../../base/cached-nary-drawer";
 
 export class TernaryChartDrawer extends CachedCanvasChartDrawer {
   public showSwapButton: boolean = true;
@@ -75,17 +76,7 @@ export class TernaryChartDrawer extends CachedCanvasChartDrawer {
       return;
     }
 
-    const drawData = this._mdl.drawModel;
-
-    // Render points to an image for drawing
-    const alpha = PointDrawer.getOpacity(drawData.totalPointCount);
-    for (let c = 0; c < drawData.pointGroupCoords.length; c++) {
-      const isAllPoints = PredefinedROIID.isAllPointsROI(this._mdl.raw.pointGroups[c].roiId);
-      const colourGroup = isAllPoints && this.lightMode ? Colours.GRAY_80 : this._mdl.raw.pointGroups[c].colour;
-      const visibility = isAllPoints && this.lightMode ? 0.4 : alpha;
-      const drawer = new PointDrawer(screenContext, PLOT_POINTS_SIZE, colourGroup, null, this._mdl.raw.pointGroups[c].shape);
-      drawer.drawPoints(drawData.pointGroupCoords[c], visibility);
-    }
+    drawScatterPoints(screenContext, this._mdl.drawModel, this.lightMode, this._mdl.raw.pointGroups);
   }
 
   drawPostData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {

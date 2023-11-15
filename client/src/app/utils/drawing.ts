@@ -185,14 +185,14 @@ export class PointDrawer {
     return 0.2 + 0.5 * pointPct;
   }
 
-  drawPointsWithRayLabel(points: PointWithRayLabel[], colourAlpha: number, showLabels: boolean = false, maxLabelLength: number = 15): void {
-    this.drawPointsInternal(true, points, colourAlpha, showLabels, maxLabelLength);
+  drawPointsWithRayLabel(points: PointWithRayLabel[], colourAlpha: number, showLabels: boolean = false, maxLabelLength: number = 15, drawMask: boolean[] = []): void {
+    this.drawPointsInternal(true, points, drawMask, colourAlpha, showLabels, maxLabelLength);
   }
-  drawPoints(points: Point[], colourAlpha: number, showLabels: boolean = false, maxLabelLength: number = 15): void {
-    this.drawPointsInternal(false, points, colourAlpha, showLabels, maxLabelLength);
+  drawPoints(points: Point[], colourAlpha: number, showLabels: boolean = false, maxLabelLength: number = 15, drawMask: boolean[] = []): void {
+    this.drawPointsInternal(false, points, drawMask, colourAlpha, showLabels, maxLabelLength);
   }
 
-  protected drawPointsInternal(withRay: boolean, points: Point[], colourAlpha: number, showLabels: boolean, maxLabelLength: number): void {
+  protected drawPointsInternal(withRay: boolean, points: Point[], drawMask: boolean[], colourAlpha: number, showLabels: boolean, maxLabelLength: number): void {
     // Setup the context for drawing this
     if (this._fillColour) {
       this._screenContext.fillStyle = this._fillColour.asStringWithA(colourAlpha);
@@ -202,7 +202,13 @@ export class PointDrawer {
       this._screenContext.strokeStyle = this._outlineColour.asStringWithA(colourAlpha);
     }
 
-    for (const pt of points) {
+    for (let c = 0; c < points.length; c++) {
+      if (drawMask.length > 0 && !drawMask[c]) {
+        continue;
+      }
+
+      const pt = points[c];
+
       // If a point has an endX and endY that is not equal to x,y, draw a line from the point to the end point
       // This is used to draw an inequality for points that are missing an x or y value
       if (withRay) {

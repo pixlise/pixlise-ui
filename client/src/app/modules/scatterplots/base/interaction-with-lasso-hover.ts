@@ -159,6 +159,8 @@ export abstract class InteractionWithLassoHover implements CanvasInteractionHand
 
           i++;
         }
+
+        selection.set(this._mdl.raw.pointGroups[c].scanId, selected);
       }
     }
 
@@ -166,7 +168,7 @@ export abstract class InteractionWithLassoHover implements CanvasInteractionHand
     this.setSelection(selection);
   }
 
-  private setSelection(scanEntryIndexes: Map<string, Set<number>>) {
+  private setSelection(scanEntryPMCs: Map<string, Set<number>>) {
     // 1 or more PMCs were selected, get location indexes & update the selection
     if (!this._mdl.raw) {
       return;
@@ -192,7 +194,7 @@ export abstract class InteractionWithLassoHover implements CanvasInteractionHand
       }
     }
 */
-    this._selectionService.setSelection(BeamSelection.makeSelectionFromScanEntryIndexSets(scanEntryIndexes), PixelSelection.makeEmptySelection());
+    this._selectionService.setSelection(BeamSelection.makeSelectionFromScanEntryPMCSets(scanEntryPMCs), PixelSelection.makeEmptySelection());
   }
 
   private getIndexforPoint(pt: Point): MouseHoverPoint | null {

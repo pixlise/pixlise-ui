@@ -119,7 +119,7 @@ export class SelectionService {
     this._selectionStack.push(sel);
 
     // If it's too long, drop something off the start of the array
-    let pastLimit = this._selectionStack.length - maxSelectionStackLength;
+    const pastLimit = this._selectionStack.length - maxSelectionStackLength;
     if (pastLimit > 0) {
       this._selectionStack.splice(0, pastLimit);
     }
@@ -133,14 +133,14 @@ export class SelectionService {
     const conversions = [];
 
     for (const scanId of scanIds) {
-      conversions.push(this._scanIdConverterService.convertScanEntryIndexToPMC(scanId, beams.getSelectedScanEntryIndexes(scanId)));
+      conversions.push(this._scanIdConverterService.convertScanEntryPMCToIndex(scanId, Array.from(beams.getSelectedScanEntryPMCs(scanId))));
     }
 
-    combineLatest(conversions).subscribe((allScanPMCs: number[][]) => {
+    combineLatest(conversions).subscribe((allScanIndexes: number[][]) => {
       const currentSelection = this.getCurrentSelection();
 
       for (let c = 0; c < scanIds.length; c++) {
-        beams.setScanSelectedPMCs(scanIds[c], allScanPMCs[c]);
+        beams.setSelectedScanEntryIndexes(scanIds[c], allScanIndexes[c]);
       }
 
       console.log("Set selection to " + beams.getSelectedEntryCount() + " PMCs, " + pixels.selectedPixels.size + " pixels...");
@@ -161,7 +161,7 @@ export class SelectionService {
     let hasBeams = false;
 
     for (const id of beams.getScanIds()) {
-      const idxs = encodeIndexList(Array.from(beams.getSelectedScanEntryIndexes(id)));
+      const idxs = encodeIndexList(Array.from(beams.getSelectedScanEntryPMCs(id)));
       entries[id] = ScanEntryRange.create({ indexes: idxs });
       hasBeams = true;
     }
@@ -177,7 +177,6 @@ export class SelectionService {
     }
 
     if (pixels.selectedPixels.size > 0 && pixels.imageName.length > 0) {
-      let imageName = pixels.imageName;
       if (isPixelCrop) {
         // TODO: What do we do with this?? Maybe need a crop field in API storage??
       }

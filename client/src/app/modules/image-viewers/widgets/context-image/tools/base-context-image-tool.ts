@@ -108,13 +108,13 @@ export class BaseContextImageTool implements CanvasInteractionHandler, CanvasDra
     return Colours.ORANGE.asString();
   }
 
-  // Applies the selectedIdxs to the applyToSelectedIdxs depending on the mode (add or subtract)
-  // Normally if applyToSelectedIdxs is left as NULL it will use the existing points in the selection
+  // Applies the selectedScanLocationPMCs to the applyToSelectedLocationPMCs depending on the mode (add or subtract)
+  // Normally if applyToSelectedLocationPMCs is left as NULL it will use the existing points in the selection
   // but this provides the ability to override that and apply selection to a previous snapshot of
   // selected idxs.
   protected applyToSelection(
-    selectedScanLocationIdxs: Map<string, Set<number>>,
-    applyToSelectedLocationIdxs: Map<string, Set<number>> | null = null,
+    selectedScanLocationPMCs: Map<string, Set<number>>,
+    applyToSelectedLocationPMCs: Map<string, Set<number>> | null = null,
     forceAdd: boolean = false,
     pixels: Set<number> = new Set<number>()
   ): void {
@@ -123,20 +123,20 @@ export class BaseContextImageTool implements CanvasInteractionHandler, CanvasDra
     // Handle PMC selection
     const toSet = new Map<string, Set<number>>();
 
-    if (applyToSelectedLocationIdxs == null) {
-      applyToSelectedLocationIdxs = new Map<string, Set<number>>();
-      for (const scanId of selectedScanLocationIdxs.keys()) {
-        applyToSelectedLocationIdxs.set(scanId, selSvc.getCurrentSelection().beamSelection.getSelectedScanEntryIndexes(scanId));
+    if (applyToSelectedLocationPMCs == null) {
+      applyToSelectedLocationPMCs = new Map<string, Set<number>>();
+      for (const scanId of selectedScanLocationPMCs.keys()) {
+        applyToSelectedLocationPMCs.set(scanId, selSvc.getCurrentSelection().beamSelection.getSelectedScanEntryPMCs(scanId));
       }
     }
 
     // If in add mode, we need to see what's already selected and combine it with what we're selecting
     if (forceAdd || this._ctx.selectionModeAdd) {
-      for (const [scanId, sel] of selectedScanLocationIdxs) {
-        const idxs = applyToSelectedLocationIdxs.get(scanId);
-        if (idxs) {
+      for (const [scanId, sel] of selectedScanLocationPMCs) {
+        const pmcs = applyToSelectedLocationPMCs.get(scanId);
+        if (pmcs) {
           // Combine existing with what we're adding
-          toSet.set(scanId, new Set<number>([...idxs, ...sel]));
+          toSet.set(scanId, new Set<number>([...pmcs, ...sel]));
         } else {
           // Nothing selected yet, so just use ours directly
           toSet.set(scanId, sel);
@@ -144,15 +144,15 @@ export class BaseContextImageTool implements CanvasInteractionHandler, CanvasDra
       }
     }
     // If in subtract mode, we need to remove our selection from the existing points (if any)
-    else if (applyToSelectedLocationIdxs) {
-      for (const [scanId, sel] of selectedScanLocationIdxs) {
+    else if (applyToSelectedLocationPMCs) {
+      for (const [scanId, sel] of selectedScanLocationPMCs) {
         const toSetSel = new Set<number>();
-        const existingIdxs = applyToSelectedLocationIdxs.get(scanId);
-        if (existingIdxs) {
-          for (const idx of existingIdxs) {
+        const existingPMCs = applyToSelectedLocationPMCs.get(scanId);
+        if (existingPMCs) {
+          for (const pmc of existingPMCs) {
             // If this selected idx is in our list, don't add it to the new one
-            if (!sel.has(idx)) {
-              toSetSel.add(idx);
+            if (!sel.has(pmc)) {
+              toSetSel.add(pmc);
             }
           }
 

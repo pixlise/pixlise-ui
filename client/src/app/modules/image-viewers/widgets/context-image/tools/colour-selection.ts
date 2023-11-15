@@ -46,12 +46,12 @@ export class ColourSelection extends BaseContextImageTool {
   // our threshold is changed via slider, we can still change the selection and apply it on
   // top of the original selection.
   // If somehow the selection changes unexpectedly, we reset our self (and hide the slider)
-  private backupSelectedIdxs: Map<string, Set<number>> | null = null;
+  private backupSelectedPMCs: Map<string, Set<number>> | null = null;
 
   // The points the user is selecting by specifying a mouse location & threshold
   // NOTE: applying this to the selection is a bit slow, so it's only done on mouse UP and
   // slider "apply" notifications (change) not (input) in mat-slider!
-  private selectedIdxs = new Map<string, Set<number>>();
+  private selectedPMCs = new Map<string, Set<number>>();
 
   // As above but for pixel selection
   private selectedPixelIdxs = new Set<number>();
@@ -114,11 +114,11 @@ export class ColourSelection extends BaseContextImageTool {
       this.setThreshold(distance);
 
       if (event.eventId == CanvasMouseEventId.MOUSE_UP) {
-        this.applyToSelection(this.selectedIdxs, this.backupSelectedIdxs, false, this.selectedPixelIdxs);
+        this.applyToSelection(this.selectedPMCs, this.backupSelectedPMCs, false, this.selectedPixelIdxs);
 
         // Now clear the selected points because we've applied to selection, so we don't want to draw on top of it
         // and prevent people seeing what we just applied
-        this.selectedIdxs.clear();
+        this.selectedPMCs.clear();
 
         this.selectedPixelsMask = null;
 
@@ -134,9 +134,6 @@ export class ColourSelection extends BaseContextImageTool {
   }
 
   override draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
-    // NOTE: we only want to draw the points if the user is not in the process of mouse-drag already
-    const drawPts = this.mouseLastPos == null;
-
     // If we have selected pixels, we need to generate an image to overlay on top of the context image at this point
     if (this.selectedPixelsMask) {
       screenContext.drawImage(this.selectedPixelsMask, 0, 0, this.selectedPixelsMask.width, this.selectedPixelsMask.height);
@@ -148,7 +145,7 @@ export class ColourSelection extends BaseContextImageTool {
     screenContext.strokeStyle = clr;
     screenContext.lineWidth = this.getDrawLineWidth();
 
-    for (const [scanId, idxs] of this.selectedIdxs) {
+    for (const [scanId, idxs] of this.selectedPMCs) {
       const scanMdl = this._ctx.getScanModelFor(scanId);
       if (scanMdl) {
         const halfSize = scanMdl.beamRadius_pixels;
@@ -194,8 +191,8 @@ export class ColourSelection extends BaseContextImageTool {
   }
 
   private reset(): void {
-    this.backupSelectedIdxs = null;
-    this.selectedIdxs.clear();
+    this.backupSelectedPMCs = null;
+    this.selectedPMCs.clear();
 
     this.selectedPixelIdxs.clear();
 
@@ -210,10 +207,10 @@ export class ColourSelection extends BaseContextImageTool {
   private startSelection(canvasPt: Point): void {
     const sel = this._host.getSelectionService().getCurrentSelection().beamSelection;
     // Mouse down & we don't have a snapshot of the selection, so take one now
-    this.backupSelectedIdxs = new Map<string, Set<number>>();
+    this.backupSelectedPMCs = new Map<string, Set<number>>();
     for (const scanId of sel.getScanIds()) {
-      const idxs = sel.getSelectedScanEntryIndexes(scanId);
-      this.backupSelectedIdxs.set(scanId, idxs);
+      const idxs = sel.getSelectedScanEntryPMCs(scanId);
+      this.backupSelectedPMCs.set(scanId, idxs);
     }
     /*
         // Listen to slider and selection changes
@@ -227,7 +224,7 @@ export class ColourSelection extends BaseContextImageTool {
             this._ctx.redraw();
         });
 */
-    this.selectedIdxs.clear();
+    this.selectedPMCs.clear();
     this.selectedPixelIdxs.clear();
 
     this.selectedPixelsMask = null;
@@ -326,7 +323,7 @@ export class ColourSelection extends BaseContextImageTool {
   // Static so we explicitly don't use "this"
   private static getLocationsForSelectedContextImageLocations(selectedImgIdxs: Set<number>, contextWidth: number, mdl: IContextImageModel): Map<string, Set<number>> {
     // Set the pixel at each location to be shown on the mask
-    const selectedIdxs = new Map<string, Set<number>>();
+    const selectedPMCs = new Map<string, Set<number>>();
 
     for (const scanId of mdl.scanIds) {
       const scanMdl = mdl.getScanModelFor(scanId);
@@ -342,18 +339,18 @@ export class ColourSelection extends BaseContextImageTool {
           const imgIdxPos = rounded.y * contextWidth + rounded.x;
 
           if (selectedImgIdxs.has(imgIdxPos)) {
-            let idxs = selectedIdxs.get(scanId);
-            if (!idxs) {
-              idxs = new Set<number>();
-              selectedIdxs.set(scanId, idxs);
+            let pmcs = selectedPMCs.get(scanId);
+            if (!pmcs) {
+              pmcs = new Set<number>();
+              selectedPMCs.set(scanId, pmcs);
             }
-            idxs.add(loc.locationIdx);
+            pmcs.add(loc.PMC);
           }
         }
       }
     }
 
-    return selectedIdxs;
+    return selectedPMCs;
   }
 
   private getShade(r: number, g: number, b: number): number {
@@ -430,7 +427,7 @@ export class ColourSelection extends BaseContextImageTool {
       const selectedImgIdxs = this.findSelectionPoints(this.mouseDown, this.threshold, img, scanLocBBoxes);
 
       // Now find what location indexes are within the flood-filled area defined above
-      this.selectedIdxs = ColourSelection.getLocationsForSelectedContextImageLocations(selectedImgIdxs, img.width, this._ctx);
+      this.selectedPMCs = ColourSelection.getLocationsForSelectedContextImageLocations(selectedImgIdxs, img.width, this._ctx);
 
       // If we're working with RGBU data, select pixels on the image
       if (this._ctx.rgbuSourceImage) {

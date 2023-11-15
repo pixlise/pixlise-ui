@@ -8,9 +8,10 @@ import { ChartAxis, ChartAxisDrawer, LinearChartAxis } from "src/app/modules/wid
 import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS, CANVAS_FONT_SIZE_TITLE, PointDrawer } from "src/app/utils/drawing";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { BaseChartDrawModel } from "../../base/model-interfaces";
-import { NaryChartDataGroup, NaryChartModel } from "../../base/model";
+import { DrawModelWithPointGroup, NaryChartDataGroup, NaryChartDataItem, NaryChartModel, makeDrawablePointGroups } from "../../base/model";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
+import { MapPointShape } from "src/app/modules/image-viewers/models/map-layer";
 
 export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel> {
   public static readonly FONT_SIZE_SMALL = CANVAS_FONT_SIZE_TITLE - 4;
@@ -41,7 +42,7 @@ export class BinaryChartModel extends NaryChartModel<BinaryData, BinaryDrawModel
   }
 }
 
-export class BinaryDrawModel implements BaseChartDrawModel {
+export class BinaryDrawModel implements DrawModelWithPointGroup {
   // Our rendered to an image, cached and only regenerated on resolution
   // change or data change
   drawnData: OffscreenCanvas | null = null;
@@ -52,6 +53,9 @@ export class BinaryDrawModel implements BaseChartDrawModel {
   // Coordinates we draw the points at
   pointGroupCoords: PointWithRayLabel[][] = [];
   totalPointCount: number = 0;
+
+  isNonSelectedPoint: boolean[][] = [];
+  selectedPointGroupCoords: PointWithRayLabel[][] = [];
 
   // Axis & data labels:
   //
@@ -127,41 +131,27 @@ export class BinaryDrawModel implements BaseChartDrawModel {
 
     // Calculate data coordinates
     // Loop through and calculate x/y coordinates for each point
-    this.pointGroupCoords = [];
+    makeDrawablePointGroups(raw?.pointGroups, this, beamSelection, (value: NaryChartDataItem) => {
+      return this.makeBinaryPoint(value);
+    });
+  }
 
-    if (raw) {
-      for (const group of raw.pointGroups) {
-        const coords: PointWithRayLabel[] = [];
+  private makeBinaryPoint(value: NaryChartDataItem): PointWithRayLabel {
+    const pointXValue = value.nullMask[0] ? "null" : value.values[0];
+    const canvasX = this.xAxis!.valueToCanvas(value.nullMask[0] ? 0 : value.values[0]);
 
-        for (let c = 0; c < group.valuesPerScanEntry.length; c++) {
-          const value = group.valuesPerScanEntry[c];
+    const pointYValue = value.nullMask[1] ? "null" : value.values[1];
+    const canvasY = this.yAxis!.valueToCanvas(value.nullMask[0] ? 0 : value.values[1]);
 
-          const pointXValue = value.nullMask[0] ? "null" : value.values[0];
-          const canvasX = this.xAxis.valueToCanvas(value.nullMask[0] ? 0 : value.values[0]);
+    const coord = new PointWithRayLabel(
+      value.nullMask[0] ? this.xAxis!.pctToCanvas(1) : canvasX,
+      value.nullMask[1] ? this.yAxis!.pctToCanvas(1) : canvasY,
+      value.label ? `${value.label} (${pointXValue}, ${pointYValue})` : "",
+      value.nullMask[0] ? this.xAxis!.pctToCanvas(0) : canvasX,
+      value.nullMask[1] ? this.yAxis!.pctToCanvas(0) : canvasY
+    );
 
-          const pointYValue = value.nullMask[1] ? "null" : value.values[1];
-          const canvasY = this.yAxis.valueToCanvas(value.nullMask[0] ? 0 : value.values[1]);
-
-          if (beamSelection.getSelectedScanEntryPMCs(group.scanId).has(value.scanEntryId)) {
-            // It's selected, don't add it
-            continue;
-          }
-
-          coords.push(
-            new PointWithRayLabel(
-              value.nullMask[0] ? this.xAxis.pctToCanvas(1) : canvasX,
-              value.nullMask[1] ? this.yAxis.pctToCanvas(1) : canvasY,
-              value.label ? `${value.label} (${pointXValue}, ${pointYValue})` : "",
-              value.nullMask[0] ? this.xAxis.pctToCanvas(0) : canvasX,
-              value.nullMask[1] ? this.yAxis.pctToCanvas(0) : canvasY
-            )
-          );
-        }
-
-        this.pointGroupCoords.push(coords);
-        this.totalPointCount += coords.length;
-      }
-    }
+    return coord;
   }
 
   private initAxes(canvasParams: CanvasParams, transform: PanZoom, outerBorder: Rect, leftAxisSpace: number, bottomAxisSpace: number): void {

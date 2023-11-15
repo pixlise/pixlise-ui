@@ -6,7 +6,7 @@ import { PLOT_POINTS_SIZE, HOVER_POINT_RADIUS } from "src/app/utils/drawing";
 import { RegionDataResults } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { BaseChartDrawModel } from "../../base/model-interfaces";
-import { NaryChartDataGroup, NaryChartDataItem, NaryChartModel } from "../../base/model";
+import { DrawModelWithPointGroup, NaryChartDataGroup, NaryChartDataItem, NaryChartModel, makeDrawablePointGroups } from "../../base/model";
 import { WidgetError } from "src/app/modules/pixlisecore/services/widget-data.service";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 
@@ -38,7 +38,7 @@ export class TernaryChartModel extends NaryChartModel<TernaryData, TernaryDrawMo
   }
 }
 
-export class TernaryDrawModel implements BaseChartDrawModel {
+export class TernaryDrawModel implements DrawModelWithPointGroup {
   // Our rendered to an image, cached and only regenerated on resolution
   // change or data change
   drawnData: OffscreenCanvas | null = null;
@@ -47,8 +47,11 @@ export class TernaryDrawModel implements BaseChartDrawModel {
   triangleHeight: number = 0;
 
   // Coordinates we draw the points at
-  pointGroupCoords: Point[][] = [];
+  pointGroupCoords: PointWithRayLabel[][] = [];
   totalPointCount: number = 0;
+
+  isNonSelectedPoint: boolean[][] = [];
+  selectedPointGroupCoords: PointWithRayLabel[][] = [];
 
   // Triangle points
   //    C
@@ -121,25 +124,9 @@ export class TernaryDrawModel implements BaseChartDrawModel {
     this.dataAreaWidth = this.triangleB.x - this.triangleA.x - dataPaddingX * 2;
 
     // Loop through and calculate x/y coordinates for each point if we have any
-    if (raw) {
-      this.pointGroupCoords = [];
-      for (const item of raw.pointGroups) {
-        const coords = [];
-
-        for (let c = 0; c < item.valuesPerScanEntry.length; c++) {
-          const ternaryItem = item.valuesPerScanEntry[c];
-          if (beamSelection.getSelectedScanEntryIndexes(item.scanId).has(c)) {
-            // It's selected, don't add it
-            continue;
-          }
-
-          coords.push(this.calcPointForTernary(ternaryItem));
-        }
-
-        this.pointGroupCoords.push(coords);
-        this.totalPointCount += coords.length;
-      }
-    }
+    makeDrawablePointGroups(raw?.pointGroups, this, beamSelection, (value: NaryChartDataItem) => {
+      return this.calcPointForTernary(value);
+    });
   }
 
   private _sin60 = Math.sin((60 * Math.PI) / 180);

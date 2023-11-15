@@ -16,6 +16,7 @@ import { BaseChartDataItem, BaseChartDataValueItem, BaseChartDrawModel, BaseChar
 import { WidgetError } from "../../pixlisecore/services/widget-data.service";
 import { BeamSelection } from "../../pixlisecore/models/beam-selection";
 import { invalidPMC } from "src/app/utils/utils";
+import { MapPointShape } from "../../image-viewers/models/map-layer";
 
 export class NaryChartDataItem implements BaseChartDataValueItem {
   constructor(
@@ -51,7 +52,67 @@ export interface NaryData {
 }
 
 export interface DrawModelWithPointGroup extends BaseChartDrawModel {
-  pointGroupCoords: (Point | PointWithRayLabel)[][];
+  pointGroupCoords: PointWithRayLabel[][];
+  totalPointCount: number;
+
+  // Selection is handled separately, so here we have an array (per group) of booleans saying
+  // whether that item is selected or not. When drawing we draw first with the non-selected points
+  // (which are in the same pointGroupCoords array because if we remove them, indexes screw up and
+  // selection won't be able to find the right points). We then draw the selectedPointGroupCoords
+  // in selection colour at the end (so we draw over all the other points)
+  isNonSelectedPoint: boolean[][];
+  selectedPointGroupCoords: PointWithRayLabel[][];
+}
+
+class SelPoint {
+  constructor(
+    public item: NaryChartDataItem,
+    public coord: PointWithRayLabel
+  ) {}
+}
+
+export function makeDrawablePointGroups(
+  fromPointGroups: NaryChartDataGroup[] | undefined,
+  forDrawModel: DrawModelWithPointGroup,
+  beamSelection: BeamSelection,
+  makePointFunc: (item: NaryChartDataItem) => PointWithRayLabel
+) {
+  forDrawModel.pointGroupCoords = [];
+  forDrawModel.isNonSelectedPoint = [];
+  forDrawModel.selectedPointGroupCoords = [];
+
+  const shapesPerScan = new Map<string, string>();
+  if (fromPointGroups) {
+    for (const group of fromPointGroups) {
+      shapesPerScan.set(group.scanId, group.shape);
+
+      const selectedPMCs = beamSelection.getSelectedScanEntryPMCs(group.scanId);
+
+      const coords: PointWithRayLabel[] = [];
+      const selectedCoords: PointWithRayLabel[] = [];
+      const notSelected: boolean[] = [];
+
+      for (let c = 0; c < group.valuesPerScanEntry.length; c++) {
+        const value = group.valuesPerScanEntry[c];
+        const coord = makePointFunc(value);
+        const isSelected = selectedPMCs.has(value.scanEntryId);
+        notSelected.push(!isSelected);
+
+        if (isSelected) {
+          // It's selected, store its coordinates in the selected points array
+          selectedCoords.push(coord);
+        }
+
+        coords.push(coord);
+      }
+
+      forDrawModel.pointGroupCoords.push(coords);
+      forDrawModel.isNonSelectedPoint.push(notSelected);
+      forDrawModel.totalPointCount += coords.length;
+
+      forDrawModel.selectedPointGroupCoords.push(selectedCoords);
+    }
+  }
 }
 
 export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extends DrawModelWithPointGroup> implements CanvasDrawNotifier, BaseChartModel {
