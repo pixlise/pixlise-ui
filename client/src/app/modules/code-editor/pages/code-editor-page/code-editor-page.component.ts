@@ -122,7 +122,11 @@ export class CodeEditorPageComponent implements OnInit {
         this.quantId = params["quantId"] || "";
 
         if (params["topExpressionId"]) {
+          this.isTopModule = false;
           this._expressionsService.fetchExpression(params["topExpressionId"]);
+          if (!params["bottomExpressionId"]) {
+            this.isSplitScreen = false;
+          }
         } else if (params["topModuleId"]) {
           let version = params["topModuleVersion"] ? this.getSemanticVersionFromString(params["topModuleVersion"]) : null;
           this._expressionsService.fetchModuleVersion(params["topModuleId"], version);
@@ -153,13 +157,6 @@ export class CodeEditorPageComponent implements OnInit {
             this.topExpression = DataExpression.create(this.topExpression);
           }
         }
-
-        // if (this._route.snapshot.queryParams["bottomExpressionId"]) {
-        //   this.bottomExpression = expressions[this._route.snapshot.queryParams["bottomExpressionId"]] || null;
-        //   if (this.bottomExpression) {
-        //     this.bottomExpression = DataExpression.create(this.bottomExpression);
-        //   }
-        // }
 
         this.fetchLocalStorageMetadata();
 
@@ -407,7 +404,7 @@ export class CodeEditorPageComponent implements OnInit {
   }
 
   runExpression() {
-    if (this.topExpression) {
+    if (this.isTopEditorActive && this.topExpression) {
       this.lastRunResult = null;
       this._widgetDataService
         .runExpression(this.topExpression, this.scanId, this.quantId, PredefinedROIID.getAllPointsForScan(this.scanId), true, true)
@@ -417,6 +414,20 @@ export class CodeEditorPageComponent implements OnInit {
           this.stderr = response.stderr;
           this.liveExpressionConfig = {
             expressionId: this.topExpression?.id || "",
+            scanId: this.scanId,
+            quantId: this.quantId,
+          };
+        });
+    } else if (!this.isTopEditorActive && this.bottomExpression) {
+      this.lastRunResult = null;
+      this._widgetDataService
+        .runExpression(this.bottomExpression, this.scanId, this.quantId, PredefinedROIID.getAllPointsForScan(this.scanId), true, true)
+        .subscribe(response => {
+          this.lastRunResult = response;
+          this.stdout = response.stdout;
+          this.stderr = response.stderr;
+          this.liveExpressionConfig = {
+            expressionId: this.bottomExpression?.id || "",
             scanId: this.scanId,
             quantId: this.quantId,
           };
@@ -549,7 +560,21 @@ export class CodeEditorPageComponent implements OnInit {
   }
 
   onToggleSplitScreen() {
+    if (this.isSplitScreenDisabled) {
+      return;
+    }
+
     this.isSplitScreen = !this.isSplitScreen;
+    if (!this.bottomExpression && this.topModules.length > 0) {
+      // Open first module referenced by top expression
+      let firstModule = this.topModules[0];
+      let queryParams = {
+        ...this._route.snapshot.queryParams,
+        bottomExpressionId: firstModule.module.id,
+        bottomModuleVersion: this.getVersionString(firstModule.reference.version),
+      };
+      this._router.navigate([], { queryParams });
+    }
     this.setTopEditorActive();
     this.storeMetadata();
   }
@@ -581,7 +606,7 @@ export class CodeEditorPageComponent implements OnInit {
 
   get isTopExpressionIdNew(): boolean {
     let topExpressionId = this._route.snapshot.queryParams["topExpressionId"];
-    return !topExpressionId || topExpressionId === ExpressionsService.NewExpressionId;
+    return topExpressionId && topExpressionId === ExpressionsService.NewExpressionId;
   }
 
   get isTopModuleIdNew(): boolean {
@@ -591,7 +616,7 @@ export class CodeEditorPageComponent implements OnInit {
 
   get isBottomExpressionIdNew(): boolean {
     let bottomExpressionId = this._route.snapshot.queryParams["bottomExpressionId"];
-    return !bottomExpressionId || bottomExpressionId === ExpressionsService.NewExpressionId;
+    return bottomExpressionId && bottomExpressionId === ExpressionsService.NewExpressionId;
   }
 
   addExpressions() {
@@ -601,7 +626,7 @@ export class CodeEditorPageComponent implements OnInit {
     };
     dialogConfig.data.selectedIds = [];
     let topExpressionId = this._route.snapshot.queryParams["topExpressionId"];
-    if (!this.isTopExpressionIdNew) {
+    if (topExpressionId && !this.isTopExpressionIdNew) {
       dialogConfig.data.selectedIds.push(topExpressionId);
     }
 
@@ -761,12 +786,16 @@ export class CodeEditorPageComponent implements OnInit {
     );
   }
 
+  get isSplitScreenDisabled(): boolean {
+    return this.isTopModule || (this.topExpression?.moduleReferences?.length === 0 && !this.bottomExpression);
+  }
+
   get isTopEditable(): boolean {
-    return this.topExpression?.owner?.canEdit ?? true;
+    return (this.topExpression?.owner?.canEdit ?? true) && (!this.isTopModule || this.isLoadedModuleVersionLatest);
   }
 
   get isBottomEditable(): boolean {
-    return this.bottomExpression?.owner?.canEdit ?? true;
+    return (this.bottomExpression?.owner?.canEdit ?? true) && this.isLoadedModuleVersionLatest;
   }
 
   get hasVisibleModule(): boolean {

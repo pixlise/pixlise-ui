@@ -56,7 +56,7 @@ POSSIBILITY OF SUCH DAMAGE.
               placeholder="Version"
               [disabled]="module.module.id === linkedModuleID">
               <mat-option class="module-version-type" *ngFor="let version of module.allVersions" [value]="getVersionID(version)"
-                >{{ module.module.name }}@{{ version.major }}.{{ version.minor }}.{{ version.patch }}
+                >{{ module.module.name }}&#64;{{ version.major }}.{{ version.minor }}.{{ version.patch }}
               </mat-option>
             </mat-select>
           </div>

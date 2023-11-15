@@ -111,8 +111,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
 
   private _isLua: boolean = false;
 
-  public textEditorVisible = true;
-
   @Input() expression: DataExpression = DataExpression.create();
   @Input() allowEdit: boolean = true;
   @Input() applyNow: boolean = false;
@@ -166,6 +164,10 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
       this._runtimeError = null;
       this.createMonacoModel();
     }
+
+    if (changes["allowEdit"]) {
+      this._editor.updateOptions({ readOnly: !this.allowEdit });
+    }
   }
 
   @Input() set isLua(isLuaLang: boolean) {
@@ -184,20 +186,6 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
 
   copyExpression(expression: DataExpression): DataExpression {
     return DataExpression.create(expression);
-    // return new DataExpression(
-    //     expression.id,
-    //     expression.name,
-    //     expression.sourceCode,
-    //     expression.sourceLanguage,
-    //     expression.comments,
-    //     expression.shared,
-    //     expression.creator,
-    //     expression.createUnixTimeSec,
-    //     expression.modUnixTimeSec,
-    //     expression.tags,
-    //     expression.moduleReferences,
-    //     expression.recentExecStats
-    // );
   }
 
   ngAfterViewInit(): void {
@@ -223,7 +211,9 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
     };
 
     // Create a blank monaco editor
-    return this.monaco.editor.create(this._editorContainer.nativeElement, options);
+    if (this._editorContainer?.nativeElement) {
+      return this.monaco.editor.create(this._editorContainer.nativeElement, options);
+    }
   }
 
   private createDiffEditor() {
@@ -247,6 +237,10 @@ export class ExpressionTextEditorComponent implements OnInit, OnDestroy {
     // If we don't yet have an editor, create one
     if (!this._editor) {
       this._editor = this.createMonaco();
+    }
+
+    if (!this._editor) {
+      return;
     }
 
     // Create the model the editor will use

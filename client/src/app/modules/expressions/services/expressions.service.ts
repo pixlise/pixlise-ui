@@ -77,7 +77,7 @@ export class ExpressionsService {
     if (id === ExpressionsService.NewExpressionId) {
       return;
     }
-    this._cacheService.getExpression(ExpressionGetReq.create({ id })).subscribe(res => {
+    this._dataService.sendExpressionGetRequest(ExpressionGetReq.create({ id })).subscribe(res => {
       if (res.expression) {
         this.expressions$.next({ ...this.expressions$.value, [id]: res.expression });
       }

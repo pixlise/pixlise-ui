@@ -59,8 +59,16 @@
             </two-state-icon-button>
           </div>
           <div class="group-layers" *ngIf="isCurrentlyOpenSectionOpen">
-            <expression-layer *ngIf="topExpression" [isSelectable]="false" [expression]="topExpression"></expression-layer>
-            <expression-layer *ngIf="bottomExpression" [isSelectable]="false" [expression]="bottomExpression"></expression-layer>
+            <expression-layer
+              *ngIf="topExpression"
+              [isSelectable]="false"
+              [expression]="topExpression"
+              [module]="isTopModule ? loadedModule : null"></expression-layer>
+            <expression-layer
+              *ngIf="bottomExpression"
+              [isSelectable]="false"
+              [expression]="bottomExpression"
+              [module]="!isTopModule ? loadedModule : null"></expression-layer>
           </div>
         </div>
         <div class="group currently-open">
@@ -119,7 +127,7 @@
       </status-indicator>
       <multi-switch-button
         class="split-screen-btn"
-        [disabled]="!bottomExpression"
+        [disabled]="isSplitScreenDisabled"
         [options]="['Single', 'Split']"
         [value]="isSplitScreen ? 'Split' : 'Single'"
         (onChange)="onToggleSplitScreen()">
