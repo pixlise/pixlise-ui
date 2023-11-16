@@ -99,7 +99,7 @@ export class QuantificationSelectorComponent implements OnInit {
   private updateVars(): void {
     // For ROIs we don't show as many options
     let isForROI = this.roiID && this.roiID.length > 0;
-    this.dataForPanel = new QuantSelectorPanelSettings(false, !isForROI, this.scanId, this.selectedQuantID, this.roiID, this.hideMulti, this.showNoneOption);
+    this.dataForPanel = new QuantSelectorPanelSettings(false, false, this.scanId, this.selectedQuantID, this.roiID, this.hideMulti, this.showNoneOption);
 
     if (!this.selectedQuantID) {
       this.selectedQuant = this.NoSelectedQuantText;
