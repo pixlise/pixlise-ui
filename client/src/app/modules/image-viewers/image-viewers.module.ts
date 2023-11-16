@@ -11,11 +11,13 @@ import { ContextImagePickerComponent } from "./widgets/context-image/image-optio
 import { ImageOptionsComponent } from "./widgets/context-image/image-options/image-options.component";
 
 import { WidgetModule } from "../widget/widget.module";
+import { MultiChannelViewerComponent } from "./widgets/multi-channel-viewer/multi-channel-viewer.component";
 
 export { ContextImageComponent } from "./widgets/context-image/context-image.component";
+export { MultiChannelViewerComponent } from "./widgets/multi-channel-viewer/multi-channel-viewer.component";
 
 @NgModule({
-  declarations: [ContextImageComponent, ImageOptionsComponent, ContextImagePickerComponent],
+  declarations: [ContextImageComponent, ImageOptionsComponent, ContextImagePickerComponent, MultiChannelViewerComponent],
   imports: [CommonModule, PIXLISECoreModule, AnalysisModule, FormsModule, DragDropModule, MaterialModule, WidgetModule],
   exports: [ContextImageComponent],
 })

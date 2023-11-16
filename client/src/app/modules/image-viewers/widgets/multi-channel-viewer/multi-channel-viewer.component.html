@@ -1,0 +1,24 @@
+<ng-template #settingsMenu>
+    <div class="settings">
+      <div class="row">
+        <mat-select [(ngModel)]="imageName" (selectionChange)="onImageChanged($event)">
+            <mat-option *ngFor="let img of imageChoices" [value]="img.path">{{img.name}}</mat-option>
+        </mat-select>
+      </div>
+      <div class="row">
+        <div>Gain: {{brightness|number:'1.3-3'}}</div>
+        <slider
+            title="Brightness"
+            [value]="brightness"
+            [minValue]="0"
+            [maxValue]="10"
+            [pxLength]="100"
+            (onChange)="onChangeBrightness($event)">
+        </slider>
+        <push-button title="Reset brightness to 1.0" (onClick)="onResetBrightness()">Reset</push-button>
+      </div>
+    </div>
+  </ng-template>
+  
+  <interactive-canvas [ngClass]="cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interactionHandler" [transform]="transform">
+  </interactive-canvas>

@@ -1,5 +1,5 @@
 import { WidgetData } from "src/app/generated-protos/widget-data";
-import { ContextImageComponent } from "src/app/modules/image-viewers/image-viewers.module";
+import { ContextImageComponent, MultiChannelViewerComponent } from "src/app/modules/image-viewers/image-viewers.module";
 import {
   BinaryChartWidgetComponent,
   TernaryChartWidgetComponent,
@@ -100,6 +100,13 @@ export const WIDGETS = {
     description: "Context Image",
     component: ContextImageComponent,
     dataKey: "contextImage",
+    controlConfiguration: {},
+  },
+  "multi-channel-image": {
+    name: "RGBU Viewer",
+    description: "RGBU Viewer",
+    component: MultiChannelViewerComponent,
+    dataKey: "rgbuImage",
     controlConfiguration: {},
   },
 } satisfies Record<string, WidgetConfiguration>;
