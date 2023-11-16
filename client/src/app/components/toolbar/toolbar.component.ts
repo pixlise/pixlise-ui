@@ -394,6 +394,10 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     // return this._authService.loggedIn;
   }
 
+  get showScanConfigurator(): boolean {
+    return this.router.url.includes("/datasets/code-editor") || this.router.url.includes("/datasets/analysis");
+  }
+
   onScanConfiguration(): void {
     // writeQueryParams;
     const dialogConfig = new MatDialogConfig<ScanConfigurationDialogData>();

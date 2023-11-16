@@ -32,6 +32,7 @@ import {
 } from "src/app/modules/pixlisecore/components/atoms/sectioned-select-dialog/sectioned-select-dialog.component";
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 import { ImageOptionsComponent, ImageDisplayOptions, ImagePickerParams, ImagePickerResult } from "./image-options/image-options.component";
+import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 
 @Component({
   selector: "app-context-image",
@@ -345,7 +346,7 @@ bool removeBottomSpecularArtifacts = 21;
     this.mdl.needsDraw$.next();
   }
 
-  get transform() {
+  get transform(): PanZoom {
     return this.mdl.transform;
   }
 

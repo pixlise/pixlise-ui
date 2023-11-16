@@ -78,5 +78,7 @@ export class APIEndpointsService {
         return RGBUImage.readImage(bytes, imagePath);
       })
     );
+
+    // TODO: shareReplay(1)?
   }
 }

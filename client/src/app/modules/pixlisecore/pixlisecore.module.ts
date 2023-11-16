@@ -47,6 +47,7 @@ import { PeriodicTableComponent } from "./components/atoms/periodic-table/period
 import { ElementTileComponent } from "./components/atoms/periodic-table/element-tile/element-tile.component";
 import { StatusIndicatorComponent } from "./components/atoms/status-indicator/status-indicator.component";
 import { SectionedSelectDialogComponent } from "./components/atoms/sectioned-select-dialog/sectioned-select-dialog.component";
+import { RGBUPickerDropdownComponent } from "./components/atoms/rgbupicker-dropdown/rgbupicker-dropdown.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -95,6 +96,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     StatusIndicatorComponent,
     SectionedSelectDialogComponent,
     PanelFoldoutButtonComponent,
+    RGBUPickerDropdownComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule],
   exports: [
@@ -129,6 +131,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     SelectionOptionsComponent,
     StatusIndicatorComponent,
     PanelFoldoutButtonComponent,
+    RGBUPickerDropdownComponent,
   ],
   providers: [
     /*APICommService, APIDataService, HttpInterceptorService*/
