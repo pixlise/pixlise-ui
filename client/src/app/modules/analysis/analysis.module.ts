@@ -15,6 +15,19 @@ import { TagsModule } from "../tags/tags.module";
 import { ScrollingModule } from "@angular/cdk/scrolling";
 import { ExpressionModule } from "../expressions/expressions.module";
 import { WidgetModule } from "../widget/widget.module";
+import { ScanConfigurationDialog } from "./components/scan-configuration-dialog/scan-configuration-dialog.component";
+import { MatInputModule } from "@angular/material/input";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { ReactiveFormsModule } from "@angular/forms";
+import { MatTableModule } from "@angular/material/table";
+import { MatSortModule } from "@angular/material/sort";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatButtonModule } from "@angular/material/button";
+import { MatMenuModule } from "@angular/material/menu";
+import { QuantificationSelectorComponent } from "./components/quantification-selector/quantification-selector.component";
+import { QuantSelectorPanelComponent } from "./components/quant-selector-panel/quant-selector-panel.component";
+import { QuantificationListComponent } from "./components/quant-selector-panel/quantification-list/quantification-list.component";
+import { QuantificationItemComponent } from "./components/quant-selector-panel/quantification-list/quantification-item/quantification-item.component";
 
 const APP_ROUTES: Routes = [
   {
@@ -24,7 +37,19 @@ const APP_ROUTES: Routes = [
 ];
 
 @NgModule({
-  declarations: [AnalysisPageComponent, AnalysisSidepanelComponent, ROITabComponent, MistROIComponent, MistRoiConvertComponent, MistRoiUploadComponent],
+  declarations: [
+    AnalysisPageComponent,
+    AnalysisSidepanelComponent,
+    ROITabComponent,
+    MistROIComponent,
+    MistRoiConvertComponent,
+    MistRoiUploadComponent,
+    ScanConfigurationDialog,
+    QuantificationSelectorComponent,
+    QuantSelectorPanelComponent,
+    QuantificationListComponent,
+    QuantificationItemComponent,
+  ],
   imports: [
     CommonModule,
     PIXLISECoreModule,
@@ -35,8 +60,16 @@ const APP_ROUTES: Routes = [
     TagsModule,
     ScrollingModule,
     WidgetModule,
+    MatInputModule,
+    MatFormFieldModule,
+    ReactiveFormsModule,
+    MatTableModule,
+    MatSortModule,
+    MatCheckboxModule,
+    MatButtonModule,
+    MatMenuModule,
   ],
-  exports: [AnalysisPageComponent],
+  exports: [AnalysisPageComponent, ScanConfigurationDialog],
   //providers: [AnalysisLayoutService], <-- If registered here, we get duplicate copies of the service!
 })
 export class AnalysisModule {}

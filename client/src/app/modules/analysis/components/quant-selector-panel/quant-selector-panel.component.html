@@ -29,48 +29,20 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="calibration-container">
-  <header>
-    <div class="controls">
-      <h1
-        mat-dialog-title
-        cdkDrag
-        cdkDragRootElement=".cdk-overlay-pane"
-        cdkDragHandle
-        [cdkDragDisabled]="!data.draggable"
-        class="title {{ data.draggable ? 'drag' : '' }}">
-        Calibration
-      </h1>
-      <img class="title-icon" [alt]="calibrationIcon" [src]="calibrationIcon" />
-    </div>
-  </header>
-  <section class="calibration">
-    <div *ngIf="allScans.length <= 0" class="no-scan-msg">
-      <h3>No scans available for calibration</h3>
-      <div>Add some data to widgets for scans to appear here</div>
-    </div>
-    <single-scan-energy-calibration *ngFor="let scan of allScans" [calibration]="scan" class="scan-calibration"></single-scan-energy-calibration>
-  </section>
-  <div class="button-container">
-    <span *ngIf="!data.hideXAxisEnergyScaleToggle">Show energy on X axis</span>
-    <two-state-icon-button
-      *ngIf="!data.hideXAxisEnergyScaleToggle"
-      activeIcon="assets/button-icons/check-on.svg"
-      inactiveIcon="assets/button-icons/check-off.svg"
-      class="checkbox-button"
-      [active]="xAxisEnergyScale"
-      (onToggle)="xAxisEnergyScale = !xAxisEnergyScale">
-    </two-state-icon-button>
-
-    <push-button
-      class="apply-btn"
-      buttonStyle="yellow"
-      (onClick)="onApply()"
-      [disabled]="!isValidCalibrations"
-      #tooltip="matTooltip"
-      matTooltip="Specified calibrations are invalid"
-      [matTooltipDisabled]="isValidCalibrations"
-      >Apply</push-button
-    >
+<div class="panel fold-out-panel selector-panel">
+  <quantification-list
+    [selectedQuantId]="selectedQuantId"
+    [scanId]="data.scanId"
+    [roiID]="roiId"
+    [showControlButtons]="showControlButtons"
+    [hideMulti]="hideMulti"
+    [showNoneOption]="showNoneOption"
+    (onQuantSelected)="onQuantSelected($event)"
+    (onQuantDeleted)="onQuantDeleted($event)">
+  </quantification-list>
+  <div *ngIf="showBottomButtons" class="unit-padding gap-separated-horizontal-elements bottom-btns">
+    <push-button *ngIf="canQuant" (onClick)="onMultiQuantification()" buttonStyle="yellow">Multi Quant</push-button>
+    <push-button *ngIf="canQuant" (onClick)="onCreateQuantification()" buttonStyle="yellow">Quantify</push-button>
+    <push-button *ngIf="canUploadQuant" (onClick)="onUploadQuantification()" buttonStyle="yellow">Upload CSV</push-button>
   </div>
 </div>

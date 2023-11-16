@@ -27,97 +27,46 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
+import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
+import { QuantModes, getQuantifiedElements } from "src/app/models/Quantification";
 
-.toolbar {
-  height: 32px;
-  padding: $sz-half $sz-double;
-  margin-bottom: $ui-border-size;
-  user-select: none;
+export class QuantificationItemInfo {
+  quantifiedAtomicNumbers: number[] = [];
+  notElements: string[] = [];
+  stateLabel: string = "oxides";
+  detectorType: string = "";
 
-  display: flex;
-  flex-direction: row;
-  // justify-content: space-between;
-  align-items: center;
-}
+  constructor(
+    public quant: QuantificationSummary,
+    public selected: boolean
+  ) {
+    let elemInfo = getQuantifiedElements(quant);
 
-.dark-background {
-  background-color: $clr-gray-100;
-  margin-bottom: 0px;
-}
+    this.stateLabel = elemInfo.carbonates ? "carbonates" : "oxides";
+    this.notElements = elemInfo.nonElementSymbols;
+    this.quantifiedAtomicNumbers = elemInfo.elementAtomicNumbers;
 
-.title-text {
-  font-weight: 900;
-  font-size: 24px;
-  line-height: 28px;
-  color: $clr-gray-40;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 20vw;
-}
-
-.pixlise {
-  color: $clr-gray-50;
-}
-
-.nav-link-normal {
-  font-family: Inter, Roboto;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 17px;
-  color: $clr-gray-30;
-  text-transform: uppercase;
-  cursor: pointer;
-  text-decoration: none;
-  white-space: nowrap;
-
-  &:hover {
-    color: $clr-gray-50;
+    this.detectorType = QuantModes.getShortDescription(quant.params?.quantMode || "");
   }
 }
 
-.nav-link-active {
-  @extend .nav-link-normal;
-  color: $clr-yellow;
-}
+@Component({
+  selector: "quantification-item",
+  templateUrl: "./quantification-item.component.html",
+  styleUrls: ["./quantification-item.component.scss"],
+})
+export class QuantificationItemComponent implements OnInit {
+  @Input() quantItem: QuantificationItemInfo | null = null;
+  @Input() roiMatched: boolean = false;
 
-.nav-link-disabled {
-  @extend .nav-link-normal;
-  color: $clr-gray-60;
-  cursor: default;
-}
+  @Output() onQuantSelected = new EventEmitter();
 
-.gap-separated-horizontal-elements-wide > * + * {
-  margin-left: $sz-double;
-}
+  constructor() {}
 
-.buttons {
-  display: flex;
-  align-items: center;
-  icon-button {
-    margin-right: 4px;
-  }
-}
+  ngOnInit(): void {}
 
-user-icon {
-  border-radius: 4px;
-  cursor: pointer;
-
-  &:hover,
-  &.open {
-    outline: 2px solid rgb(var(--clr-yellow));
-  }
-}
-
-.center-bar {
-  display: flex;
-  margin-left: 8px;
-  margin-right: auto;
-
-  .title-text {
-    margin-right: 8px;
+  onClickQuant(): void {
+    this.onQuantSelected.emit();
   }
 }

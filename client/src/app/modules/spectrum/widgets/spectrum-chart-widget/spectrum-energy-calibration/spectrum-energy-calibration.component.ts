@@ -40,6 +40,7 @@ export type EnergyCalibrationData = {
   draggable?: boolean;
   scanIds?: string[];
   xAxisEnergyScale?: boolean;
+  hideXAxisEnergyScaleToggle?: boolean;
 };
 
 export class SpectrumEnergyCalibrationResult {
@@ -102,6 +103,22 @@ export class SpectrumEnergyCalibrationComponent implements OnInit, OnDestroy {
     }
 
     return "assets/button-icons/yellow-tick.svg";
+  }
+
+  get isValidCalibrations(): boolean {
+    // if (isNaN(eVStartNumA) || isNaN(eVPerChannelNumA) || isNaN(eVStartNumB) || isNaN(eVPerChannelNumB)) {
+    //   alert("Please enter a number for eV Start and eV per channel for each detector.");
+    //   return;
+    // }
+    // if (eVPerChannelNumA <= 0 || eVPerChannelNumB <= 0) {
+    //   alert("eV per channel values must be greater than 0");
+    //   return;
+    // }
+    return this.allScans.every(scan => {
+      return scan.calibration.every(cal => {
+        return !isNaN(cal.eVstart) && !isNaN(cal.eVperChannel) && cal.eVperChannel > 0;
+      });
+    });
   }
 
   onApply(): void {

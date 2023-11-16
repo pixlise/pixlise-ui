@@ -7,7 +7,7 @@ import { MatSnackBarModule } from "@angular/material/snack-bar";
 
 import { WaitSpinnerComponent } from "./components/atoms/wait-spinner/wait-spinner.component";
 import { MultiStateButtonComponent } from "./components/atoms/buttons/multi-state-button/multi-state-button.component";
-// import { PanelFoldoutButtonComponent } from "./components/atoms/buttons/panel-foldout-button/panel-foldout-button.component";
+import { PanelFoldoutButtonComponent } from "./components/atoms/buttons/panel-foldout-button/panel-foldout-button.component";
 import { PushButtonComponent } from "./components/atoms/buttons/push-button/push-button.component";
 // import { TwoStateEditButtonComponent } from "./components/atoms/buttons/two-state-edit-button/two-state-edit-button.component";
 import { IconButtonComponent } from "./components/atoms/buttons/icon-button/icon-button.component";
@@ -46,7 +46,7 @@ import { RangeSliderComponent } from "./components/atoms/range-slider/range-slid
 import { PeriodicTableComponent } from "./components/atoms/periodic-table/periodic-table.component";
 import { ElementTileComponent } from "./components/atoms/periodic-table/element-tile/element-tile.component";
 import { StatusIndicatorComponent } from "./components/atoms/status-indicator/status-indicator.component";
-import { SectionedSelectDialogComponent } from './components/atoms/sectioned-select-dialog/sectioned-select-dialog.component';
+import { SectionedSelectDialogComponent } from "./components/atoms/sectioned-select-dialog/sectioned-select-dialog.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -94,6 +94,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     SelectionOptionsComponent,
     StatusIndicatorComponent,
     SectionedSelectDialogComponent,
+    PanelFoldoutButtonComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule],
   exports: [
@@ -127,6 +128,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     SelectionChangerComponent,
     SelectionOptionsComponent,
     StatusIndicatorComponent,
+    PanelFoldoutButtonComponent,
   ],
   providers: [
     /*APICommService, APIDataService, HttpInterceptorService*/

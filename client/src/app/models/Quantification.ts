@@ -1,3 +1,6 @@
+import { QuantificationSummary } from "../generated-protos/quantification-meta";
+import { periodicTableDB } from "../periodic-table/periodic-table-db";
+
 export class QuantModes {
   // Enums that we may get back from API (quant summary.params.quantMode)
   public static readonly quantModeCombined = "Combined";
@@ -44,3 +47,55 @@ export class QuantModes {
     return desc;
   }
 }
+
+export class QuantifiedElements {
+  constructor(
+    public carbonates: boolean,
+    public nonElementSymbols: string[],
+    public elementAtomicNumbers: number[],
+    public ignoreAr: boolean
+  ) {}
+}
+
+export const getQuantifiedElements = (summary: QuantificationSummary): QuantifiedElements => {
+  if (!summary.params) {
+    return new QuantifiedElements(false, [], [], false);
+  }
+
+  let result = new QuantifiedElements(
+    // If CO3 was in the param element list, it was quantified as carbonates
+    summary.params.elements.indexOf("CO3") > -1,
+    [],
+    [],
+    // If Ar_I was in the param element list, it was set to ignore Argon
+    summary.params.elements.indexOf("Ar_I") > -1
+  );
+
+  // Run through all elements and get their symbol or atomic number
+  // NOTE: Due to originally only having the parameter elements stored, if we don't have
+  //       any elements in the quant summary, we fall back to reading the parameters.
+  //       This should be fairly future proof because it's unlikely that a quant can have
+  //       nothing quantified, that should result in an error...
+  let elemList = summary.elements;
+  if (elemList.length <= 0) {
+    elemList = summary.params.elements; // May contain Ar_I
+  }
+
+  for (let symbol of elemList) {
+    // CO3 won't be in summary.elements, but due to the above fallback, we still need to filter it out
+    // Ar_I, as above, won't be in summary.elements...
+    // As of July 2022 we allow users to ignore Argon using the Ar_I "special" element passed to PIQUANT.
+    // This would error in for anything trying to parse it so exclude it here
+    if (symbol != "CO3" && symbol != "Ar_I") {
+      let elem = periodicTableDB.getElementOxidationState(symbol);
+      if (elem && elem.isElement) {
+        // It's an element
+        result.elementAtomicNumbers.push(elem.Z);
+      } else {
+        result.nonElementSymbols.push(symbol);
+      }
+    }
+  }
+
+  return result;
+};

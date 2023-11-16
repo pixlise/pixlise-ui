@@ -29,95 +29,54 @@
 
 @import "variables.scss";
 
-.toolbar {
-  height: 32px;
-  padding: $sz-half $sz-double;
-  margin-bottom: $ui-border-size;
-  user-select: none;
-
-  display: flex;
-  flex-direction: row;
-  // justify-content: space-between;
-  align-items: center;
+.label {
+  font-size: 14px;
+  font-weight: 400;
+  color: $clr-gray-30;
 }
 
-.dark-background {
+.quant-dropdown {
+  border-radius: $sz-half;
   background-color: $clr-gray-100;
-  margin-bottom: 0px;
+  display: flex;
+
+  //text-align: center;
+  //text-transform: uppercase;
+
+  font-weight: 400;
+  font-family: Roboto;
+  font-style: italic;
+
+  font-size: 14px;
+  line-height: 16px;
+
+  white-space: nowrap;
+
+  border: 1px solid $clr-gray-30;
+  box-sizing: border-box;
 }
 
-.title-text {
-  font-weight: 900;
-  font-size: 24px;
-  line-height: 28px;
-  color: $clr-gray-40;
-  text-transform: uppercase;
+.quant-name {
+  color: $clr-gray-50;
+  padding: $sz-half $sz-half;
+  min-width: 200px;
+  max-width: 200px;
+
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 20vw;
 }
 
-.pixlise {
-  color: $clr-gray-50;
+.quant-arrow {
+  padding-right: $sz-half;
 }
 
-.nav-link-normal {
-  font-family: Inter, Roboto;
+.quant-detectors {
+  background-color: $clr-gray-30;
+  color: $clr-gray-100;
+  font-family: Inter;
+  font-weight: 800;
+  font-size: 12px;
   font-style: normal;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 17px;
-  color: $clr-gray-30;
-  text-transform: uppercase;
-  cursor: pointer;
-  text-decoration: none;
-  white-space: nowrap;
-
-  &:hover {
-    color: $clr-gray-50;
-  }
-}
-
-.nav-link-active {
-  @extend .nav-link-normal;
-  color: $clr-yellow;
-}
-
-.nav-link-disabled {
-  @extend .nav-link-normal;
-  color: $clr-gray-60;
-  cursor: default;
-}
-
-.gap-separated-horizontal-elements-wide > * + * {
-  margin-left: $sz-double;
-}
-
-.buttons {
-  display: flex;
-  align-items: center;
-  icon-button {
-    margin-right: 4px;
-  }
-}
-
-user-icon {
-  border-radius: 4px;
-  cursor: pointer;
-
-  &:hover,
-  &.open {
-    outline: 2px solid rgb(var(--clr-yellow));
-  }
-}
-
-.center-bar {
-  display: flex;
-  margin-left: 8px;
-  margin-right: auto;
-
-  .title-text {
-    margin-right: 8px;
-  }
+  padding: $sz-half $sz-half;
 }

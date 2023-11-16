@@ -91,11 +91,6 @@ export class MonacoEditorService {
     } else {
       onGotAmdLoader();
     }
-
-    setTimeout(() => {
-      let monaco = (<any>window).monaco;
-      console.log("LOADED?", monaco);
-    }, 1000);
   }
 
   buildHelpForSource(originID: string, sourceCode: string): void {
