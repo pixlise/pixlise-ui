@@ -5,6 +5,7 @@ import {
   TernaryChartWidgetComponent,
   HistogramWidgetComponent,
   ChordDiagramWidgetComponent,
+  RGBUPlotWidgetComponent,
 } from "src/app/modules/scatterplots/scatterplots.module";
 import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/spectrum.module";
 
@@ -107,6 +108,13 @@ export const WIDGETS = {
     description: "RGBU Viewer",
     component: MultiChannelViewerComponent,
     dataKey: "rgbuImage",
+    controlConfiguration: {},
+  },
+  "rgbu-plot": {
+    name: "RGBU Plot",
+    description: "RGBU Plot",
+    component: RGBUPlotWidgetComponent,
+    dataKey: "rgbuPlot",
     controlConfiguration: {},
   },
 } satisfies Record<string, WidgetConfiguration>;

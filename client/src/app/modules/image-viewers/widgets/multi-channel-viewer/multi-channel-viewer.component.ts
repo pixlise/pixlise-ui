@@ -9,20 +9,13 @@ import { CursorId } from "src/app/modules/widget/components/interactive-canvas/c
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
-import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { MatSelectChange } from "@angular/material/select";
+import { ScanImagePurpose } from "src/app/generated-protos/image";
+import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { RGBUImagesWidgetState } from "src/app/generated-protos/widget-data";
-
-class ImageChoice {
-  constructor(
-    public name: string,
-    public path: string
-  ) {}
-}
 
 @Component({
   selector: "app-multi-channel-viewer",
@@ -35,8 +28,6 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
   toolhost: MultiChannelViewerInteraction;
 
   private _subs = new Subscription();
-
-  private _imageChoices: ImageChoice[] = [];
 
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
@@ -64,19 +55,6 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
   }
 
   ngOnInit() {
-    // NOTE: we should list all TIFs for all scans in the workspace
-    if (this._analysisLayoutService.defaultScanId.length) {
-      this._cachedDataService.getImageList(ImageListReq.create({ scanIds: [this._analysisLayoutService.defaultScanId] })).subscribe((resp: ImageListResp) => {
-        this._imageChoices = [];
-
-        for (const img of resp.images) {
-          if (img.purpose == ScanImagePurpose.SIP_MULTICHANNEL) {
-            this._imageChoices.push(new ImageChoice(img.name, img.path));
-          }
-        }
-      });
-    }
-
     this._subs.add(
       this.widgetData$.subscribe((data: any) => {
         const state = data as RGBUImagesWidgetState;
@@ -98,9 +76,17 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
 
   private setInitialConfig() {
     // If we don't have anything showing yet, just show the first one...
-    if (this.mdl.imageName.length <= 0 && this._imageChoices.length > 0) {
-      this.loadImage(this._imageChoices[0].path);
+    if (!this._analysisLayoutService.defaultScanId) {
+      return;
     }
+
+    this._cachedDataService.getImageList(ImageListReq.create({ scanIds: [this._analysisLayoutService.defaultScanId] })).subscribe((resp: ImageListResp) => {
+      for (const img of resp.images) {
+        if (img.purpose == ScanImagePurpose.SIP_MULTICHANNEL) {
+          this.loadImage(img.path);
+        }
+      }
+    });
   }
 
   private saveState(): void {
@@ -128,6 +114,14 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
     return this.mdl.transform;
   }
 
+  get scanIdsForRGBUPicker(): string[] {
+    if (!this._analysisLayoutService.defaultScanId) {
+      return [];
+    }
+
+    return [this._analysisLayoutService.defaultScanId];
+  }
+
   get brightness(): number {
     return this.mdl.brightness;
   }
@@ -135,22 +129,15 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
   onChangeBrightness(value: SliderValue) {
     this.mdl.brightness = value.value;
     if (value.finish) {
-      this.mdl.regenerate();
+      this.mdl.setRecalcNeeded();
       this.saveState();
     }
   }
 
   onResetBrightness() {
     this.mdl.brightness = 1;
-    this.mdl.regenerate();
+    this.mdl.setRecalcNeeded();
     this.saveState();
-  }
-
-  get imageName(): string {
-    return this.mdl.imageName;
-  }
-  set imageName(name: string) {
-    //this.mdl.imageName = name;
   }
 
   onImageChanged(change: MatSelectChange) {
@@ -162,13 +149,9 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
     this.loadImage(change.value);
   }
 
-  get imageChoices(): ImageChoice[] {
-    return this._imageChoices;
-  }
-
   onSoloView() {}
 
-  loadImage(imagePath: string) {
+  private loadImage(imagePath: string) {
     this._endpointsService.loadRGBUImageTIF(imagePath).subscribe((img: RGBUImage) => {
       this.mdl.imageName = imagePath;
       this.mdl.setData(img, null, null);

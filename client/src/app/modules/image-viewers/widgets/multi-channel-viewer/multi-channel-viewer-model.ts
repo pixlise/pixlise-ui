@@ -1,8 +1,8 @@
 import { Subject } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { RGBUImage } from "src/app/models/RGBUImage";
-import { CanvasDrawNotifier } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
-import { PanZoom, PanRestrictorToCanvas } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
+import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 
 export class MultiChannelViewerModel implements CanvasDrawNotifier {
   needsDraw$: Subject<void> = new Subject<void>();
@@ -20,12 +20,15 @@ export class MultiChannelViewerModel implements CanvasDrawNotifier {
   // The drawable data (derived from the above)
   drawModel: MultiChannelViewerDrawModel = new MultiChannelViewerDrawModel();
 
+  private _lastCalcCanvasParams: CanvasParams | null = null;
+  private _recalcNeeded = true;
+
   setData(image: RGBUImage, maskImage: HTMLImageElement | null, cropMaskImage: HTMLImageElement | null) {
     this.raw = image;
     this.maskImage = maskImage;
     this.cropMaskImage = cropMaskImage;
 
-    this.drawModel.regenerate(this);
+    this._recalcNeeded = true;
     this.needsDraw$.next();
   }
 
@@ -37,13 +40,33 @@ export class MultiChannelViewerModel implements CanvasDrawNotifier {
     this._brightness = v;
   }
 
-  regenerate() {
+  hasRawData(): boolean {
+    return this.raw != null;
+  }
+
+  recalcDisplayDataIfNeeded(canvasParams: CanvasParams): void {
+    if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
+      this.regenerate();
+
+      this._lastCalcCanvasParams = canvasParams;
+      this._recalcNeeded = false;
+    }
+  }
+
+  setRecalcNeeded() {
+    this._recalcNeeded = true;
+    this.needsDraw$.next();
+  }
+
+  private regenerate() {
     this.drawModel.regenerate(this);
     this.needsDraw$.next();
   }
 }
 
 export class MultiChannelViewerDrawModel {
+  drawnData: OffscreenCanvas | null = null;
+
   public channelDisplayImages: HTMLImageElement[] = [];
   public maskImage: HTMLImageElement | null = null;
   public cropMaskImage: HTMLImageElement | null = null;

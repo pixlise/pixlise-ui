@@ -1,16 +1,28 @@
 import { Point, Rect } from "src/app/models/Geometry";
-import { CanvasDrawer, CanvasDrawParameters } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawParameters } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { Colours } from "src/app/utils/colours";
 import { MultiChannelViewerModel } from "./multi-channel-viewer-model";
+import { CachedCanvasChartDrawer } from "src/app/modules/scatterplots/base/cached-drawer";
+import { BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
 
-export class MultiChannelViewerDrawer implements CanvasDrawer {
+export class MultiChannelViewerDrawer extends CachedCanvasChartDrawer {
   protected _mdl: MultiChannelViewerModel;
 
   constructor(mdl: MultiChannelViewerModel) {
+    super();
+
     this._mdl = mdl;
   }
 
-  draw(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+  protected get mdl(): BaseChartModel {
+    return this._mdl;
+  }
+
+  drawPreData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {}
+
+  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {}
+
+  drawPostData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     if (!this._mdl || !this._mdl.raw) {
       return;
     }
