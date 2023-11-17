@@ -37,9 +37,21 @@
     gap: $sz-unit;
 }
 
+:host {
+    display: flex;
+    height: 100%;
+}
 
+interactive-canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    flex: 1;
+}
 
 .axis-container {
+    display: flex;
+    flex-direction: row;
     width: 100%;
     height: 100%;
 
@@ -60,6 +72,8 @@
     }
 
     .canvas-container {
+        display: flex;
+        flex-direction: column;
         flex: 1;
 
         .x-axis {

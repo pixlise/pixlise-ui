@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, OnInit, OnDestroy } from "@angular/core";
-import { MatDialog } from "@angular/material/dialog";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -46,6 +46,9 @@ import { APICachedDataService } from "src/app/modules/pixlisecore/services/apica
 import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { MatSelectChange } from "@angular/material/select";
+import { MinMax } from "src/app/models/BasicTypes";
+import { RGBUAxisUnit } from "./rgbu-plot-data";
+import { RGBUAxisRatioPickerComponent, RatioPickerData } from "./rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
 
 @Component({
   selector: "rgbu-plot",
@@ -67,6 +70,8 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
 
   yAxisSliderLength: number = 150;
   xAxisSliderLength: number = 250;
+
+  errorMsg: string = "";
 
   constructor(
     public dialog: MatDialog,
@@ -216,6 +221,117 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     }
 
     this.loadImage(change.value);
+  }
+
+  // Range slider details
+  get xRangeMin(): number {
+    return this.mdl.xAxisMinMax.min || 0;
+  }
+  get xRangeMax(): number {
+    return this.mdl.xAxisMinMax.max || 0;
+  }
+  get xRangeSelectedMin(): number {
+    if (this.mdl.selectedMinXValue !== null) {
+      return this.mdl.selectedMinXValue;
+    }
+    return this.mdl.xAxis?.minValue || this.xRangeMin;
+  }
+  get xRangeSelectedMax(): number {
+    if (this.mdl.selectedMaxXValue !== null) {
+      return this.mdl.selectedMaxXValue;
+    }
+
+    return this.mdl.xAxis?.maxValue || this.xRangeMax;
+  }
+
+  get yRangeMin(): number {
+    return this.mdl.yAxisMinMax.min || 0;
+  }
+  get yRangeMax(): number {
+    return this.mdl.yAxisMinMax.max || 0;
+  }
+  get yRangeSelectedMin(): number {
+    if (this.mdl.selectedMinYValue !== null) {
+      return this.mdl.selectedMinYValue;
+    }
+
+    return this.mdl.yAxis?.minValue || this.yRangeMin;
+  }
+  get yRangeSelectedMax(): number {
+    if (this.mdl.selectedMaxYValue !== null) {
+      return this.mdl.selectedMaxYValue;
+    }
+
+    return this.mdl.yAxis?.maxValue || this.yRangeMax;
+  }
+
+  onChangeXAxis(event): void {
+    this.mdl.selectedMinXValue = event.minValue;
+    this.mdl.selectedMaxXValue = event.maxValue;
+    if (event.finish) {
+      this.mdl.rebuild();
+      this.saveState();
+    }
+  }
+
+  onChangeYAxis(event): void {
+    this.mdl.selectedMinYValue = event.minValue;
+    this.mdl.selectedMaxYValue = event.maxValue;
+    if (event.finish) {
+      this.mdl.rebuild();
+      this.saveState();
+    }
+  }
+
+  onAxisClick(axis: string): void {
+    const dialogConfig = new MatDialogConfig();
+
+    if (axis == "X") {
+      dialogConfig.data = {
+        axis: new RGBUAxisUnit(this.mdl.xAxisUnit.numeratorChannelIdx, this.mdl.xAxisUnit.denominatorChannelIdx),
+        range: new MinMax(this.mdl.selectedMinXValue, this.mdl.selectedMaxXValue),
+      };
+    } else if (axis == "Y") {
+      dialogConfig.data = {
+        axis: new RGBUAxisUnit(this.mdl.yAxisUnit.numeratorChannelIdx, this.mdl.yAxisUnit.denominatorChannelIdx),
+        range: new MinMax(this.mdl.selectedMinYValue, this.mdl.selectedMaxYValue),
+      };
+    } else {
+      console.error("Unknown axis for rgbu plot axis setting: " + axis);
+      return;
+    }
+
+    const dialogRef = this.dialog.open(RGBUAxisRatioPickerComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe((result: RatioPickerData) => {
+      if (result) {
+        if (result.axis) {
+          const resultCopy = new RGBUAxisUnit(result.axis.numeratorChannelIdx, result.axis.denominatorChannelIdx);
+          if (axis == "X") {
+            this.mdl.xAxisUnit = resultCopy;
+          } else if (axis == "Y") {
+            this.mdl.yAxisUnit = resultCopy;
+          } else {
+            console.error("Unknown axis for rgbu plot axis setting: " + axis);
+            return;
+          }
+        }
+        if (result.range) {
+          if (axis == "X") {
+            this.mdl.selectedMinXValue = result.range.min;
+            this.mdl.selectedMaxXValue = result.range.max;
+          } else if (axis == "Y") {
+            this.mdl.selectedMinYValue = result.range.min;
+            this.mdl.selectedMaxYValue = result.range.max;
+          } else {
+            console.error("Unknown axis for rgbu plot axis setting: " + axis);
+            return;
+          }
+        }
+
+        this.mdl.rebuild();
+      }
+    });
   }
 
   private loadImage(imagePath: string) {

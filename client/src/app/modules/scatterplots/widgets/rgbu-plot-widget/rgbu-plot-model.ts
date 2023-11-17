@@ -152,27 +152,45 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     this.needsDraw$.next();
   }
 
-  private setInitRange(xMinMax: MinMax, yMinMax: MinMax): void {
-    this.selectedMinXValue = this.selectedMinXValue || 0;
-    this.selectedMinYValue = this.selectedMinYValue || 0;
-    this.selectedMaxXValue = this.selectedMaxXValue || xMinMax.max;
-    this.selectedMaxYValue = this.selectedMaxYValue || yMinMax.max;
+  rebuild() {
+    this._recalcNeeded = true;
+    this.needsDraw$.next();
+  }
 
+  private setInitRange(xMinMax: MinMax, yMinMax: MinMax): void {
     // 5 seems to work well for both axes, as used by DTU
     const minAxisMax = 5;
 
+    // If we haven't got a selection defined yet, work off the DTU default vs raw range
+    const maxX = Math.min(xMinMax.max || minAxisMax, minAxisMax);
+    const maxY = Math.min(yMinMax.max || minAxisMax, minAxisMax);
+    this.selectedMinXValue = this.selectedMinXValue || 0;
+    this.selectedMinYValue = this.selectedMinYValue || 0;
+    this.selectedMaxXValue = this.selectedMaxXValue || maxX;
+    this.selectedMaxYValue = this.selectedMaxYValue || maxY;
+
+    this.xAxisMinMax = new MinMax(xMinMax.min, xMinMax.max);
+    this.yAxisMinMax = new MinMax(xMinMax.min, xMinMax.max);
+
     this.xAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this.xAxisUnit.numeratorChannelIdx, this.xAxisUnit.denominatorChannelIdx);
     this.xAxisMinMax.expand(0);
-    this.xAxisMinMax.expand(Math.max((xMinMax.max || 0) * 1.2, minAxisMax));
+    // Here we were trying to limit the max to the minerals + 20%, but our selection was off. Now we limit initial selection
+    // and limit the axis to the raw max (if it's larger than mineral value...)
+    //this.xAxisMinMax.expand(Math.max((xMinMax.max || 0) * 1.2, minAxisMax));
+    if (xMinMax.max !== null) {
+      this.xAxisMinMax.expandMax(xMinMax.max);
+    }
 
     this.yAxisMinMax = RGBUPlotModel.getAxisMinMaxForMinerals(this.yAxisUnit.numeratorChannelIdx, this.yAxisUnit.denominatorChannelIdx);
     this.yAxisMinMax.expand(0);
-    this.yAxisMinMax.expand(Math.max((yMinMax.max || 0) * 1.2, minAxisMax));
+    //this.yAxisMinMax.expand(Math.max((yMinMax.max || 0) * 1.2, minAxisMax));
+    // See comment for X
+    if (yMinMax.max !== null) {
+      this.yAxisMinMax.expandMax(yMinMax.max);
+    }
   }
 
-  private calcPoints(rgbu: RGBUImage, currentSelection: SelectionHistoryItem): RGBUPlotData {
-    const currSelPixels = currentSelection.pixelSelection.selectedPixels;
-    let cropSelection = currentSelection.cropSelection;
+  private calcPoints(rgbu: RGBUImage, currSelPixels: PixelSelection, cropSelection: PixelSelection): RGBUPlotData {
     if (!cropSelection) {
       cropSelection = PixelSelection.makeEmptySelection();
     }
@@ -181,9 +199,18 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     if (this.selectedMinXValue !== null && this.selectedMaxXValue !== null) {
       selectedXRange = new MinMax(this.selectedMinXValue, this.selectedMaxXValue);
     }
+    if (selectedXRange === undefined) {
+      // If we still don't have one, just use the defaults set
+      selectedXRange = new MinMax(this.xAxisMinMax.min, this.xAxisMinMax.max);
+    }
+
     let selectedYRange: MinMax | undefined = undefined;
     if (this.selectedMinYValue !== null && this.selectedMaxYValue !== null) {
       selectedYRange = new MinMax(this.selectedMinYValue, this.selectedMaxYValue);
+    }
+    if (selectedYRange === undefined) {
+      // If we still don't have one, just use the defaults set
+      selectedYRange = new MinMax(this.yAxisMinMax.min, this.yAxisMinMax.max);
     }
 
     const [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax, xAxisRawMinMax, yAxisRawMinMax] = this.generatePoints(
@@ -204,20 +231,20 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     const yBinSize = 1 / (yBinCount - 1);
 
     // Minimize RGBU data into specified amounts of x and y bins
-    const [countMinMax, binCounts, binMemberInfo, visibleROIs, binSrcPixels] = this.minimizeRGBUData(
+    const [countMinMax, binCounts, binMemberInfo, visibleROIs, binSrcPixels] = RGBUPlotModel.minimizeRGBUData(
       xBinCount,
       yBinCount,
       //this.visibleROIs,
       pts,
       xMinMax,
       yMinMax,
-      currSelPixels,
+      currSelPixels.selectedPixels,
       srcPixelIdxs
       //this._widgetDataService
     );
 
     // Generate ratio points for newly binned data
-    const [ratioPoints, colourKey] = this.generateRGBURatioPoints(
+    const [ratioPoints, colourKey] = RGBUPlotModel.generateRGBURatioPoints(
       xBinCount,
       yBinCount,
       binCounts,
@@ -227,7 +254,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
       this.drawMonochrome,
       binMemberInfo,
       visibleROIs,
-      currSelPixels,
+      currSelPixels.selectedPixels,
       binSrcPixels
     );
 
@@ -258,8 +285,12 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     // Regenerate draw points if required (if canvas viewport changes, or if we haven't generated them yet)
     if (this._recalcNeeded || !this._lastCalcCanvasParams || !this._lastCalcCanvasParams.equals(canvasParams)) {
       // Calculate the points
-      if (this._raw && this._currentSelection) {
-        this._plotData = this.calcPoints(this._raw, this._currentSelection);
+      if (this._raw) {
+        this._plotData = this.calcPoints(
+          this._raw,
+          this._currentSelection ? this._currentSelection.pixelSelection : PixelSelection.makeEmptySelection(),
+          this._currentSelection && this._currentSelection.cropSelection ? this._currentSelection.cropSelection : PixelSelection.makeEmptySelection()
+        );
 
         // We don't pan/zoom
         const panZoom = new PanZoom();
@@ -405,7 +436,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     return [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax, xAxisRawMinMax, yAxisRawMinMax];
   }
 
-  minimizeRGBUData(
+  private static minimizeRGBUData(
     xBinCount: number,
     yBinCount: number,
     //visibleROINames: string[],
@@ -462,7 +493,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     return [countMinMax, binCounts, binMemberInfo, visibleROIs, binSrcPixels];
   }
 
-  generateRGBURatioPoints(
+  private static generateRGBURatioPoints(
     xBinCount: number,
     yBinCount: number,
     binCounts: number[],
@@ -585,7 +616,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     return [ratioPoints, colourKey];
   }
 
-  static getRatioValue(channel: FloatImage[], numeratorChannel: number, denominatorChannel: number, pixelIdx: number): number {
+  private static getRatioValue(channel: FloatImage[], numeratorChannel: number, denominatorChannel: number, pixelIdx: number): number {
     // Verify channels are valid, if not return -1 so these values can be filtered out
     if (!channel || !channel[numeratorChannel] || !channel[denominatorChannel]) {
       return -1;
@@ -618,7 +649,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     dialogRef.componentInstance.onSelectedIdsChanged.subscribe(callback);
   }
   */
-  static getMineralPointsForAxes(xAxisUnit: RGBUAxisUnit, yAxisUnit: RGBUAxisUnit): RGBUMineralPoint[] {
+  private static getMineralPointsForAxes(xAxisUnit: RGBUAxisUnit, yAxisUnit: RGBUAxisUnit): RGBUMineralPoint[] {
     // Build the list of minerals with appropriate coordinates (based on what our axes are configured for)
     const minerals: RGBUMineralPoint[] = [];
     for (let c = 0; c < RGBUMineralRatios.names.length; c++) {
@@ -637,7 +668,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     return minerals;
   }
 
-  static getAxisMinMaxForMinerals(numeratorChannelIdx: number, denominatorChannelIdx: number): MinMax {
+  private static getAxisMinMaxForMinerals(numeratorChannelIdx: number, denominatorChannelIdx: number): MinMax {
     const result = new MinMax();
 
     // Look up the value for each
@@ -653,7 +684,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     return result;
   }
 
-  static channelToIdx(ch: string): number {
+  private static channelToIdx(ch: string): number {
     let idx = RGBUImage.channels.indexOf(ch);
     if (idx < 0) {
       console.log("channelToIdx: invalid channel: " + ch);
@@ -662,7 +693,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     return idx;
   }
 
-  static idxToChannel(idx: number): string {
+  private static idxToChannel(idx: number): string {
     if (idx < 0 || idx >= RGBUImage.channels.length) {
       console.log("idxToChannel: invalid index: " + idx);
       return RGBUImage.channels[0];

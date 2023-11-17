@@ -86,7 +86,7 @@ export class RangeSliderComponent implements OnInit, OnDestroy {
 
   private _lastPublishedMin: number | null = null;
   private _lastPublishedMax: number | null = null;
-  private _minMaxValue: MinMax = new MinMax();
+  //private _minMaxValue: MinMax = new MinMax();
 
   constructor() {
     for (let c = 0; c < 100; c += 5) {
@@ -95,7 +95,7 @@ export class RangeSliderComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this._minMaxValue = new MinMax(this.minValue, this.maxValue);
+    //this._minMaxValue = new MinMax(this.minValue, this.maxValue);
 
     if (this.selectedMinValue === 0 && this.selectedMaxValue === 0) {
       this.selectedMinValue = this.minValue + (this.maxValue - this.minValue) * 0.2;
@@ -105,6 +105,10 @@ export class RangeSliderComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  private get _minMaxValue(): MinMax {
+    return new MinMax(this.minValue, this.maxValue);
   }
 
   get pxDisplayLength(): number {

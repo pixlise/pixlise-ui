@@ -33,14 +33,15 @@
 .rgbu-ratio-container {
     display: flex;
     flex-direction: column;
+    padding: $sz-unit $sz-double $sz-double $sz-double;
+    gap: $sz-unit;
 
     .channel-selection {
         display: flex;
+        flex-direction: row;
         justify-content: center;
-
-        .channel-divider {
-            margin: 5px;
-        }
+        align-items: center;
+        gap: 5px;
 
         .mat-select:last-of-type {
             margin-left: 0;

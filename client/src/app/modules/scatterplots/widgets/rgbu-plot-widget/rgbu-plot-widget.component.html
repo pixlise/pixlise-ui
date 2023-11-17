@@ -54,8 +54,48 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
 </ng-template>
 
-<interactive-canvas [ngClass]="mdl.cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="toolhost" [transform]="transform">
-</interactive-canvas>
+<div class="axis-container">
+    <div *ngIf="mdl.hasRawData()" class="axis y-axis">
+        <h5 class="axis-label" (click)="onAxisClick('Y')">
+            <span class="clickable-axis-btn"><img alt="Y Axis Options" src="assets/icons/clickable.svg"/></span>
+            {{mdl.drawModel.yAxisUnitLabel}}
+        </h5>
+        <span>
+            <range-slider
+                [minValue]="yRangeMin"
+                [selectedMinValue]="yRangeSelectedMin"
+                [maxValue]="yRangeMax"
+                [selectedMaxValue]="yRangeSelectedMax"
+                [pxLength]="yAxisSliderLength"
+                [orientVertical]="true"
+                (onChange)="onChangeYAxis($event)"
+                >
+            </range-slider>
+        </span>
+    </div>
+    <div class="canvas-container">
+        <interactive-canvas *ngIf="!errorMsg" [ngClass]="mdl.cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="toolhost" [transform]="transform">
+        </interactive-canvas>
+
+        <div *ngIf="mdl.hasRawData()" class="axis x-axis">
+            <h5 class="axis-label" (click)="onAxisClick('X')">
+                <span class="clickable-axis-btn"><img alt="X Axis Options" src="assets/icons/clickable.svg"/></span>
+                {{mdl.drawModel.xAxisUnitLabel}}
+            </h5>
+            <span>
+                <range-slider
+                    [minValue]="xRangeMin"
+                    [selectedMinValue]="xRangeSelectedMin"
+                    [maxValue]="xRangeMax"
+                    [selectedMaxValue]="xRangeSelectedMax"
+                    [pxLength]="xAxisSliderLength"
+                    (onChange)="onChangeXAxis($event)"
+                >
+                </range-slider>
+            </span>
+        </div>
+    </div>
+</div>
 
 <!--
     <app-widget-display-message *ngIf="errorMsg" [message]="errorMsg" fxFlex="100%"></app-widget-display-message>
