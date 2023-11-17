@@ -136,23 +136,32 @@ export class SelectionService {
       conversions.push(this._scanIdConverterService.convertScanEntryPMCToIndex(scanId, Array.from(beams.getSelectedScanEntryPMCs(scanId))));
     }
 
-    combineLatest(conversions).subscribe((allScanIndexes: number[][]) => {
-      const currentSelection = this.getCurrentSelection();
+    // If we don't have anything to subscribe for (because we have no beams), stop here
+    if (conversions.length <= 0) {
+      this.setSelectionInternal(scanIds, [], beams, pixels, persist);
+    } else {
+      combineLatest(conversions).subscribe((allScanIndexes: number[][]) => {
+        this.setSelectionInternal(scanIds, allScanIndexes, beams, pixels, persist);
+      });
+    }
+  }
 
-      for (let c = 0; c < scanIds.length; c++) {
-        beams.setSelectedScanEntryIndexes(scanIds[c], allScanIndexes[c]);
-      }
+  private setSelectionInternal(scanIds: string[], allScanIndexes: number[][], beams: BeamSelection, pixels: PixelSelection, persist: boolean) {
+    const currentSelection = this.getCurrentSelection();
 
-      console.log("Set selection to " + beams.getSelectedEntryCount() + " PMCs, " + pixels.selectedPixels.size + " pixels...");
-      this.addSelection(new SelectionHistoryItem(beams, pixels, currentSelection.cropSelection));
+    for (let c = 0; c < scanIds.length; c++) {
+      beams.setSelectedScanEntryIndexes(scanIds[c], allScanIndexes[c]);
+    }
 
-      this.updateListeners();
+    console.log("Set selection to " + beams.getSelectedEntryCount() + " PMCs, " + pixels.selectedPixels.size + " pixels...");
+    this.addSelection(new SelectionHistoryItem(beams, pixels, currentSelection.cropSelection));
 
-      if (persist) {
-        // We write out each item to API separately
-        this.persistSelection(beams, pixels, false);
-      }
-    });
+    this.updateListeners();
+
+    if (persist) {
+      // We write out each item to API separately
+      this.persistSelection(beams, pixels, false);
+    }
   }
 
   private persistSelection(beams: BeamSelection, pixels: PixelSelection, isPixelCrop: boolean) {

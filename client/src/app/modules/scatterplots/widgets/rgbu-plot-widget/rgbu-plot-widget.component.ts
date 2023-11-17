@@ -182,10 +182,8 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
 
   onToggleDrawMonochrome(): void {
     this.mdl.drawMonochrome = !this.mdl.drawMonochrome;
-
-    // let reason = "draw-colour-toggle";
-    // this.prepareData(reason);
-    // this.saveState(reason);
+    this.mdl.rebuild();
+    this.saveState();
   }
 
   get selectionModes(): string[] {

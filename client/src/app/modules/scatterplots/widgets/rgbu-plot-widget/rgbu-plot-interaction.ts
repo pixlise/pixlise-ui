@@ -57,13 +57,13 @@ export class RGBUPlotInteraction implements CanvasInteractionHandler {
     /*if (event.eventId == CanvasMouseEventId.MOUSE_DOWN) {
     } else*/ if (event.eventId == CanvasMouseEventId.MOUSE_DRAG) {
       // User is mouse-dragging, if we haven't started a drag operation yet, do it
-      if (!this._mdl.mouseLassoPoints && distanceBetweenPoints(event.canvasPoint, event.canvasMouseDown) > DRAG_THRESHOLD) {
+      if (this._mdl.mouseLassoPoints.length <= 0 && distanceBetweenPoints(event.canvasPoint, event.canvasMouseDown) > DRAG_THRESHOLD) {
         // Save the start point
         this._mdl.mouseLassoPoints = [event.canvasMouseDown, event.canvasPoint];
       }
       // If they have moved some distance from the start, save subsequent points in lasso shape
       else if (
-        this._mdl.mouseLassoPoints &&
+        this._mdl.mouseLassoPoints.length > 0 &&
         distanceBetweenPoints(event.canvasPoint, this._mdl.mouseLassoPoints[this._mdl.mouseLassoPoints.length - 1]) > DRAG_THRESHOLD
       ) {
         this._mdl.mouseLassoPoints.push(event.canvasPoint);
@@ -73,7 +73,7 @@ export class RGBUPlotInteraction implements CanvasInteractionHandler {
       // General mouse move, check if hovering over anything
       return this.handleMouseHover(event.canvasPoint);
     } else if (event.eventId == CanvasMouseEventId.MOUSE_UP) {
-      if (this._mdl.mouseLassoPoints) {
+      if (this._mdl.mouseLassoPoints.length >= 0) {
         // Just finished drawing a lasso... find & select the points
         this.handleLassoFinish(this._mdl.mouseLassoPoints);
       } else {
