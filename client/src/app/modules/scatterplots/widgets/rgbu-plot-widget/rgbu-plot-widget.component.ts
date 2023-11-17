@@ -49,6 +49,9 @@ import { MatSelectChange } from "@angular/material/select";
 import { MinMax } from "src/app/models/BasicTypes";
 import { RGBUAxisUnit } from "./rgbu-plot-data";
 import { RGBUAxisRatioPickerComponent, RatioPickerData } from "./rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
+import { string } from "mathjs";
+import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
+import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 
 @Component({
   selector: "rgbu-plot",
@@ -166,7 +169,40 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     // });
   }
 
-  onRegions() {}
+  onRegions() {
+    const dialogConfig = new MatDialogConfig();
+    // Pass data to dialog
+    dialogConfig.data = {
+      requestFullROIs: true,
+    };
+
+    const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((result: ROIPickerResponse) => {
+      if (result) {
+        this.mdl.visibleROIs = [];
+
+        // Create entries for each scan
+        const roisPerScan = new Map<string, string[]>();
+        for (const roi of result.selectedROISummaries) {
+          let existing = roisPerScan.get(roi.scanId);
+          if (existing === undefined) {
+            existing = [];
+          }
+
+          existing.push(roi.id);
+          roisPerScan.set(roi.scanId, existing);
+        }
+
+        // Now fill in the data source ids using the above
+        for (const roiIds of roisPerScan.values()) {
+          this.mdl.visibleROIs.push(...roiIds);
+        }
+
+        this.mdl.rebuild();
+        this.saveState();
+      }
+    });
+  }
 
   get scanIdsForRGBUPicker(): string[] {
     if (!this._analysisLayoutService.defaultScanId) {
