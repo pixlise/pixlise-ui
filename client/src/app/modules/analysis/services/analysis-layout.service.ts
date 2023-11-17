@@ -50,8 +50,6 @@ export class AnalysisLayoutService {
     private _cachedDataService: APICachedDataService,
     private _snackService: SnackbarService
   ) {
-    //console.log(`AnalysisLayoutService [${this._id}] created`);
-
     this.fetchAvailableScans();
     if (this.defaultScanId) {
       this.fetchQuantsForScan(this.defaultScanId);

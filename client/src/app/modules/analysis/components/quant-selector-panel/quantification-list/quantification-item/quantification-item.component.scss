@@ -28,96 +28,67 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 @import "variables.scss";
+@import "atoms.scss";
 
-.toolbar {
-  height: 32px;
-  padding: $sz-half $sz-double;
-  margin-bottom: $ui-border-size;
-  user-select: none;
-
+.quant-row {
   display: flex;
-  flex-direction: row;
-  // justify-content: space-between;
-  align-items: center;
-}
-
-.dark-background {
-  background-color: $clr-gray-100;
-  margin-bottom: 0px;
-}
-
-.title-text {
-  font-weight: 900;
-  font-size: 24px;
-  line-height: 28px;
-  color: $clr-gray-40;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 20vw;
-}
-
-.pixlise {
-  color: $clr-gray-50;
-}
-
-.nav-link-normal {
-  font-family: Inter, Roboto;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 17px;
-  color: $clr-gray-30;
-  text-transform: uppercase;
-  cursor: pointer;
-  text-decoration: none;
-  white-space: nowrap;
+  flex-direction: column;
 
   &:hover {
-    color: $clr-gray-50;
+    background-color: rgb(var(--clr-gray-60));
+  }
+
+  .quant-info {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+
+    .quant-info-header {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  .quant-element-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+
+    .quant-elem-list {
+      display: flex;
+      flex-direction: column;
+
+      .element-row {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+    }
   }
 }
 
-.nav-link-active {
-  @extend .nav-link-normal;
+.detectors {
+  margin-top: $sz-qtr;
+  color: $clr-gray-30;
+}
+
+.elem-states {
+  color: $clr-gray-40;
+  font-size: 12px;
+  margin-top: $sz-qtr;
+}
+
+.obj-creator {
+  margin-top: $sz-half;
+}
+
+.quant-elem-list {
+  max-width: 448px; // 14 element tiles across
+}
+
+.blessed {
+  margin-top: $sz-qtr;
   color: $clr-yellow;
-}
-
-.nav-link-disabled {
-  @extend .nav-link-normal;
-  color: $clr-gray-60;
-  cursor: default;
-}
-
-.gap-separated-horizontal-elements-wide > * + * {
-  margin-left: $sz-double;
-}
-
-.buttons {
-  display: flex;
-  align-items: center;
-  icon-button {
-    margin-right: 4px;
-  }
-}
-
-user-icon {
-  border-radius: 4px;
-  cursor: pointer;
-
-  &:hover,
-  &.open {
-    outline: 2px solid rgb(var(--clr-yellow));
-  }
-}
-
-.center-bar {
-  display: flex;
-  margin-left: 8px;
-  margin-right: auto;
-
-  .title-text {
-    margin-right: 8px;
-  }
 }

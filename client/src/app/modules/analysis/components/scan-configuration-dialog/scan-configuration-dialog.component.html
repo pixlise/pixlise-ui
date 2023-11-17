@@ -1,0 +1,92 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+<div fxLayout="column" class="dlg-border-with-backdrop">
+  <h1>Scan Configuration</h1>
+
+  <section class="scan-configurations">
+    <table mat-table [dataSource]="scanConfigurationsSource">
+      <ng-container matColumnDef="delete">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let row">
+          <icon-button icon="assets/button-icons/close-cross-gray.svg" (onClick)="onRemoveConfiguration(row.id)"></icon-button>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="id">
+        <th mat-header-cell *matHeaderCellDef>RTT</th>
+        <td mat-cell *matCellDef="let row">{{ row.id }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Scan Name</th>
+        <td mat-cell *matCellDef="let row">{{ idToScan[row.id]?.title || "" }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="quantId">
+        <th mat-header-cell *matHeaderCellDef>Quant ID</th>
+        <td mat-cell *matCellDef="let row">
+          <quantification-selector [scanId]="row.id" [selectedQuantID]="row.quantId" (selectQuant)="onSelectQuantForScan($event, row.id)"></quantification-selector>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="calibrations">
+        <th mat-header-cell *matHeaderCellDef>Calibrations</th>
+        <td mat-cell *matCellDef="let row">
+          <div class="calibration-cell">
+            {{ getCalibrationDisplayText(row.calibrations) }}
+            <push-button buttonStyle="outline" (onClick)="onCalibration(row.id)">Configure</push-button>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnIDs; sticky: true"></tr>
+      <tr mat-row *matRowDef="let row; columns: columnIDs"></tr>
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell no-data-cell" colspan="7">No scans configured</td>
+      </tr>
+    </table>
+  </section>
+
+  <div class="add-scan">
+    <div *ngIf="writeQueryParams && scanConfigurations.length >= 1" class="disabled-overlay" #tooltip="matTooltip" matTooltip="Only one scan can be configured"></div>
+    <icon-button mat-button [matMenuTriggerFor]="menu" icon="assets/button-icons/plus-white.svg"></icon-button>
+    <mat-menu #menu="matMenu">
+      <button mat-menu-item *ngFor="let scan of allScans" (click)="onAddScan(scan.id)" [disabled]="selectedScanIds.has(scan.id)">
+        Sol {{ scan.meta["Sol"] }}: {{ scan.title }}
+      </button>
+    </mat-menu>
+  </div>
+
+  <div class="footer-btns gap-separated-horizontal-elements gap-above">
+    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button class="save-btn" buttonStyle="yellow" (onClick)="onSave()" [disabled]="!firstSelectedScanId">Save</push-button>
+  </div>
+</div>

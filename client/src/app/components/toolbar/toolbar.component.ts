@@ -44,7 +44,12 @@ import { SettingsModule } from "src/app/modules/settings/settings.module";
 import { NotificationsMenuPanelComponent } from "./notifications-menu-panel/notifications-menu-panel.component";
 import { HotkeysMenuPanelComponent } from "./hotkeys-menu-panel/hotkeys-menu-panel.component";
 import { NotificationsService } from "src/app/modules/settings/services/notifications.service";
-// import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
+import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
+import {
+  ScanConfigurationDialog,
+  ScanConfigurationDialogData,
+} from "src/app/modules/analysis/components/scan-configuration-dialog/scan-configuration-dialog.component";
 // import { AnnotationEditorComponent, AnnotationEditorData, AnnotationTool } from "../annotation-editor/annotation-editor.component";
 // import { FullScreenAnnotationItem } from "../annotation-editor/annotation-display/annotation-display.component";
 // import { ViewStateService } from "src/app/services/view-state.service";
@@ -124,7 +129,9 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     private viewContainerRef: ViewContainerRef,
     private injector: Injector,
     private titleService: Title, // public dialog: MatDialog,
-    private _notificationsSerivce: NotificationsService
+    private _notificationsSerivce: NotificationsService,
+    private _analysisLayoutService: AnalysisLayoutService,
+    private _matDialog: MatDialog
   ) {}
 
   ngOnInit() {
@@ -191,6 +198,14 @@ export class ToolbarComponent implements OnInit, OnDestroy {
         if (event instanceof NavigationEnd || event instanceof ResolveEnd) {
           this._userMenuOverlayHost.hidePanel();
           this.updateToolbar();
+        }
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfig => {
+        if (screenConfig) {
+          this.title = screenConfig.name;
         }
       })
     );
@@ -377,6 +392,24 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   get isLoggedIn(): boolean {
     return true;
     // return this._authService.loggedIn;
+  }
+
+  get showScanConfigurator(): boolean {
+    return this.router.url.includes("/datasets/code-editor") || this.router.url.includes("/datasets/analysis");
+  }
+
+  onScanConfiguration(): void {
+    // writeQueryParams;
+    const dialogConfig = new MatDialogConfig<ScanConfigurationDialogData>();
+    dialogConfig.disableClose = true;
+    dialogConfig.autoFocus = true;
+    dialogConfig.width = "1200px";
+
+    dialogConfig.data = {
+      writeToQueryParams: this.router.url.includes("/datasets/code-editor"),
+    };
+
+    this._matDialog.open(ScanConfigurationDialog, dialogConfig);
   }
 
   onNavigate(tab: TabNav, event: any): void {

@@ -172,7 +172,11 @@
       </section>
       <section class="editor bottom-editor {{ isSplitScreen ? 'open' : 'hidden' }}">
         <div *ngIf="isSplitScreen && bottomExpression" class="top-header {{ isSidebarOpen ? 'sidebar-open' : 'sidebar-closed' }}">
-          <input class="expression-name" [value]="bottomExpression?.name || ''" (change)="onBottomNameChangeEvent($event)" />
+          <input
+            class="expression-name {{ !isBottomExpressionIdNew ? 'disabled' : '' }}"
+            [value]="bottomExpression?.name || ''"
+            (change)="onBottomNameChangeEvent($event)"
+            [disabled]="!isBottomExpressionIdNew" />
           <status-indicator
             [valid]="!bottomExpressionChanged && !isBottomExpressionIdNew"
             [status]="!bottomExpressionChanged ? 'Latest version is saved' : 'Latest version is not saved'"></status-indicator>
@@ -192,6 +196,9 @@
           </status-indicator>
           <expression-metadata-editor
             *ngIf="bottomExpression"
+            [isModule]="true"
+            [currentVersion]="loadedModuleVersion"
+            [versions]="loadedModule?.versions || []"
             (changeName)="onBottomNameChange($event)"
             (changeDescription)="onBottomDescriptionChange($event)"
             (changeTags)="onBottomTagSelectionChanged($event)"

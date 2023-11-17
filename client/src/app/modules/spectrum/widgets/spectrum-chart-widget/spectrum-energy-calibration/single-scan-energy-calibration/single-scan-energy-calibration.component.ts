@@ -126,15 +126,15 @@ export class SingleScanEnergyCalibrationComponent implements OnInit {
     const eVStartNumB = Number.parseFloat(this.eVStartB);
     const eVPerChannelNumB = Number.parseFloat(this.eVPerChannelB);
 
-    if (isNaN(eVStartNumA) || isNaN(eVPerChannelNumA) || isNaN(eVStartNumB) || isNaN(eVPerChannelNumB)) {
-      alert("Please enter a number for eV Start and eV per channel for each detector.");
-      return;
-    }
+    // if (isNaN(eVStartNumA) || isNaN(eVPerChannelNumA) || isNaN(eVStartNumB) || isNaN(eVPerChannelNumB)) {
+    //   alert("Please enter a number for eV Start and eV per channel for each detector.");
+    //   return;
+    // }
 
-    if (eVPerChannelNumA <= 0 || eVPerChannelNumB <= 0) {
-      alert("eV per channel values must be greater than 0");
-      return;
-    }
+    // if (eVPerChannelNumA <= 0 || eVPerChannelNumB <= 0) {
+    //   alert("eV per channel values must be greater than 0");
+    //   return;
+    // }
 
     // Read them into whatever scan ID is asked
     this.setCalibration([new SpectrumEnergyCalibration(eVStartNumA, eVPerChannelNumA, "A"), new SpectrumEnergyCalibration(eVStartNumB, eVPerChannelNumB, "B")]);

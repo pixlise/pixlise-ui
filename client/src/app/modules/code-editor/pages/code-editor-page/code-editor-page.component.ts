@@ -128,6 +128,7 @@ export class CodeEditorPageComponent implements OnInit {
             this.isSplitScreen = false;
           }
         } else if (params["topModuleId"]) {
+          this.isSplitScreen = false;
           let version = params["topModuleVersion"] ? this.getSemanticVersionFromString(params["topModuleVersion"]) : null;
           this._expressionsService.fetchModuleVersion(params["topModuleId"], version);
         } else {
@@ -891,13 +892,15 @@ export class CodeEditorPageComponent implements OnInit {
   }
 
   onUpdateTopMetadata() {
-    if (!this.isTopModule) {
-      this.onSave(true);
-    }
+    // if (!this.isTopModule && this.topExpressionChanged) {
+    //   this.onSave(true);
+    // }
   }
 
   onUpdateBottomMetadata() {
-    this.onSave(false);
+    // if (this.bottomExpressionChanged) {
+    //   this.onSave(false);
+    // }
   }
 
   get activeExpressionChanged(): boolean {
