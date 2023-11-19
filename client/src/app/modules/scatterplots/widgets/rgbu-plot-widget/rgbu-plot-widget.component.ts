@@ -29,7 +29,7 @@
 
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Subscription } from "rxjs";
+import { Observable, Subscription, combineLatest } from "rxjs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { CanvasInteractionHandler, CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
@@ -49,9 +49,9 @@ import { MatSelectChange } from "@angular/material/select";
 import { MinMax } from "src/app/models/BasicTypes";
 import { RGBUAxisUnit } from "./rgbu-plot-data";
 import { RGBUAxisRatioPickerComponent, RatioPickerData } from "./rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
-import { string } from "mathjs";
-import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
+import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { RegionSettings } from "src/app/modules/roi/models/roi-region";
 
 @Component({
   selector: "rgbu-plot",
@@ -81,6 +81,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     private _selectionService: SelectionService,
     private _endpointsService: APIEndpointsService,
     private _cachedDataService: APICachedDataService,
+    private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _snackService: SnackbarService
   ) {
@@ -118,7 +119,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     this._cachedDataService.getImageList(ImageListReq.create({ scanIds: [this._analysisLayoutService.defaultScanId] })).subscribe((resp: ImageListResp) => {
       for (const img of resp.images) {
         if (img.purpose == ScanImagePurpose.SIP_MULTICHANNEL) {
-          this.loadImage(img.path);
+          this.loadData(img.path, []);
         }
       }
     });
@@ -140,7 +141,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
         if (state) {
           this.mdl.drawMonochrome = state.drawMonochrome;
           // TODO: fill in other vars here...
-          this.loadImage(state.imageName);
+          this.loadData(state.imageName, [] /*state.visibleRegionIds*/);
         } else {
           this.setInitialConfig();
         }
@@ -173,13 +174,13 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     const dialogConfig = new MatDialogConfig();
     // Pass data to dialog
     dialogConfig.data = {
-      requestFullROIs: true,
+      //requestFullROIs: true,
     };
 
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((result: ROIPickerResponse) => {
       if (result) {
-        this.mdl.visibleROIs = [];
+        this.mdl.visibleRegionIds = [];
 
         // Create entries for each scan
         const roisPerScan = new Map<string, string[]>();
@@ -195,11 +196,10 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
 
         // Now fill in the data source ids using the above
         for (const roiIds of roisPerScan.values()) {
-          this.mdl.visibleROIs.push(...roiIds);
+          this.mdl.visibleRegionIds.push(...roiIds);
         }
 
-        this.mdl.rebuild();
-        this.saveState();
+        this.loadData(this.mdl.imageName, this.mdl.visibleRegionIds);
       }
     });
   }
@@ -254,7 +254,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
       return;
     }
 
-    this.loadImage(change.value);
+    this.loadData(change.value, this.mdl.visibleRegionIds);
   }
 
   // Range slider details
@@ -368,10 +368,22 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     });
   }
 
-  private loadImage(imagePath: string) {
-    this._endpointsService.loadRGBUImageTIF(imagePath).subscribe((img: RGBUImage) => {
+  private loadData(imagePath: string, roiIDs: string[]) {
+    const request: Observable<RGBUImage | RegionSettings>[] = [this._endpointsService.loadRGBUImageTIF(imagePath)];
+    for (const roiId of roiIDs) {
+      request.push(this._roiService.getRegionSettings(roiId));
+    }
+
+    combineLatest(request).subscribe(results => {
+      const image = results[0] as RGBUImage;
+      const rois: RegionSettings[] = [];
+      for (let c = 1; c < results.length; c++) {
+        rois.push(results[c] as RegionSettings);
+      }
+
+      // Now we can set this
       this.mdl.imageName = imagePath;
-      this.mdl.setData(img);
+      this.mdl.setData(image, rois);
 
       this.saveState();
     });

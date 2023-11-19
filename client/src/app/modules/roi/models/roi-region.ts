@@ -1,4 +1,4 @@
-import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
+import { ROIItem } from "src/app/generated-protos/roi";
 import { Colours, RGBA } from "src/app/utils/colours";
 import { DEFAULT_ROI_SHAPE, ROIShape } from "../components/roi-shape/roi-shape.component";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
@@ -22,7 +22,8 @@ export const createDefaultROIDisplaySettings = (): ROIDisplaySettings => ({
 export class RegionSettings {
   constructor(
     public region: ROIItem,
-    public displaySettings: ROIDisplaySettings = createDefaultROIDisplaySettings()
+    public displaySettings: ROIDisplaySettings = createDefaultROIDisplaySettings(),
+    public pixelIndexSet: Set<number> = new Set<number>() // A fast lookup for what's within the pixel index set. Mainly used by RGBU plot calculation
   ) {}
 }
 

@@ -233,7 +233,7 @@ export class ROIService {
           const scanId = roiResp.regionOfInterest.scanId;
           this.createDefaultScanRegionsIfNeeded(scanId);
 
-          const roi = new RegionSettings(roiResp.regionOfInterest);
+          const roi = new RegionSettings(roiResp.regionOfInterest, undefined, new Set<number>(roiResp.regionOfInterest.pixelIndexesEncoded));
 
           let displaySettingsUpdated = false;
           if (roiResp.regionOfInterest?.displaySettings) {

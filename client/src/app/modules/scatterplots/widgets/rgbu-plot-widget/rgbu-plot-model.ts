@@ -43,23 +43,24 @@ import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection
 import { Subject } from "rxjs";
 import { BaseChartModel } from "../../base/model-interfaces";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
-import { ROIItem } from "src/app/generated-protos/roi";
+import { RegionSettings } from "src/app/modules/roi/models/roi-region";
 
 const xMargin = 40;
 const yMargin = 40;
 const outerPadding = 2;
 
-interface RegionData {
-  roiItem: ROIItem;
-  colour: RGBA;
-  name: string;
+class RGBUPlotRawData {
+  constructor(
+    public image: RGBUImage,
+    public rois: RegionSettings[]
+  ) {}
 }
 
 export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
   needsDraw$: Subject<void> = new Subject<void>();
 
   // The raw data we start with
-  private _raw: RGBUImage | null = null;
+  private _raw: RGBUPlotRawData | null = null;
   private _plotData: RGBUPlotData | null = null;
 
   // Selection
@@ -70,7 +71,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
 
   // Settings
   imageName: string = "";
-  visibleROIs: string[] = [];
+  visibleRegionIds: string[] = [];
 
   // Start with some reasonable axis defaults. These get replaced when view state is loaded
   xAxisUnit = new RGBUAxisUnit(0, 1);
@@ -104,11 +105,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
   private _lastCalcCanvasParams: CanvasParams | null = null;
   private _recalcNeeded = true;
 
-  set raw(r: RGBUImage) {
-    this._raw = r;
-  }
-
-  get raw(): RGBUImage | null {
+  get raw(): RGBUPlotRawData | null {
     return this._raw;
   }
 
@@ -140,8 +137,8 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     this._mineralsShown = x;
   }
 
-  setData(rgbuImage: RGBUImage) {
-    this._raw = rgbuImage;
+  setData(rgbuImage: RGBUImage, rois: RegionSettings[]) {
+    this._raw = new RGBUPlotRawData(rgbuImage, rois);
     this._recalcNeeded = true;
     this.needsDraw$.next();
   }
@@ -190,7 +187,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     }
   }
 
-  private calcPoints(rgbu: RGBUImage, currSelPixels: PixelSelection, cropSelection: PixelSelection): RGBUPlotData {
+  private calcPoints(plotData: RGBUPlotRawData, currSelPixels: PixelSelection, cropSelection: PixelSelection): RGBUPlotData {
     if (!cropSelection) {
       cropSelection = PixelSelection.makeEmptySelection();
     }
@@ -214,7 +211,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     }
 
     const [pts, srcPixelIdxs, xMinMax, yMinMax, xAxisMinMax, yAxisMinMax, xAxisRawMinMax, yAxisRawMinMax] = this.generatePoints(
-      rgbu,
+      plotData.image,
       cropSelection,
       this.xAxisUnit,
       this.yAxisUnit,
@@ -231,16 +228,15 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     const yBinSize = 1 / (yBinCount - 1);
 
     // Minimize RGBU data into specified amounts of x and y bins
-    const [countMinMax, binCounts, binMemberInfo, visibleROIs, binSrcPixels] = RGBUPlotModel.minimizeRGBUData(
+    const [countMinMax, binCounts, binMemberInfo, binSrcPixels] = RGBUPlotModel.minimizeRGBUData(
       xBinCount,
       yBinCount,
-      //this.visibleROIs,
+      plotData.rois,
       pts,
       xMinMax,
       yMinMax,
       currSelPixels.selectedPixels,
       srcPixelIdxs
-      //this._widgetDataService
     );
 
     // Generate ratio points for newly binned data
@@ -253,7 +249,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
       Math.log(countMinMax.max || 0),
       this.drawMonochrome,
       binMemberInfo,
-      visibleROIs,
+      plotData.rois,
       currSelPixels.selectedPixels,
       binSrcPixels
     );
@@ -271,9 +267,9 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
       yAxisMinMax,
       shownMinerals,
       "",
-      rgbu.r.width,
-      rgbu.r.height,
-      rgbu.path
+      plotData.image.r.width,
+      plotData.image.r.height,
+      plotData.image.path
     );
 
     //this.keyItems = Object.entries(colourKey).map(([key, keyColour]) => new KeyItem(key, key, keyColour));
@@ -439,14 +435,14 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
   private static minimizeRGBUData(
     xBinCount: number,
     yBinCount: number,
-    //visibleROINames: string[],
+    visibleROIs: RegionSettings[],
     pts: Point[],
     xMinMax: MinMax,
     yMinMax: MinMax,
     currSelPixels: Set<number>,
     srcPixelIdxs: number[]
     //widgetDataService: WidgetRegionDataService
-  ): [MinMax, Array<number>, Record<number, { selected: boolean; rois: number[] }>, RegionData[], number[][]] {
+  ): [MinMax, Array<number>, Record<number, { selected: boolean; rois: number[] }>, number[][]] {
     const xBinSize = 1 / (xBinCount - 1);
     const yBinSize = 1 / (yBinCount - 1);
 
@@ -456,8 +452,6 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     const countMinMax = new MinMax(0, null);
 
     const binSrcPixels: number[][] = Array.from({ length: xBinCount * yBinCount }, () => []);
-
-    const visibleROIs: RegionData[] = []; //visibleROINames.filter(roi => widgetDataService.regions.get(roi)).map(roi => widgetDataService.regions.get(roi));
 
     for (let c = 0; c < pts.length; c++) {
       const pt = pts[c];
@@ -475,7 +469,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
 
       const currentPixelGroups = {
         selected: currSelPixels.has(srcPixelIdxs[c]),
-        rois: [], //visibleROIs.map((roi, i) => (roi.pixelIndexes.has(srcPixelIdxs[c]) ? i : -1)).filter(roiIdx => roiIdx >= 0),
+        rois: visibleROIs.map((roi, i) => (roi.pixelIndexSet.has(srcPixelIdxs[c]) ? i : -1)).filter(roiIdx => roiIdx >= 0),
       };
 
       // Remember if it's selected...
@@ -490,7 +484,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
       binSrcPixels[idx].push(srcPixelIdxs[c]);
     }
 
-    return [countMinMax, binCounts, binMemberInfo, visibleROIs, binSrcPixels];
+    return [countMinMax, binCounts, binMemberInfo, binSrcPixels];
   }
 
   private static generateRGBURatioPoints(
@@ -502,7 +496,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
     logCountMax: number,
     drawMonochrome: boolean,
     binMemberInfo: Record<number, { selected: boolean; rois: number[] }>,
-    visibleROIs: RegionData[],
+    visibleROIs: RegionSettings[],
     currSelPixels: Set<number>,
     binSrcPixels: number[][],
     useFirstROIColour: boolean = false,
@@ -549,18 +543,18 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
             }
 
             if (stackedROIs && binMemberInfo[binIdx].rois.length > 0) {
-              roiCount = activePixelROIs.map(roi => ({ roi: visibleROIs[roi].name, count, colour: colour.asString() }));
+              roiCount = activePixelROIs.map(roi => ({ roi: visibleROIs[roi].region.name, count, colour: colour.asString() }));
               combinedCount = count * activePixelROIs.length;
             }
           } else {
             // If were generating data for a stacked bar chart, get counts per ROI
             if (stackedROIs && binMemberInfo[binIdx].rois.length > 0) {
-              colour = visibleROIs[activePixelROIs[0]].colour;
+              colour = visibleROIs[activePixelROIs[0]].displaySettings.colour;
               roiCount = activePixelROIs.map(roi => {
-                let currentColour = visibleROIs[roi].colour;
+                let currentColour = visibleROIs[roi].displaySettings.colour;
                 currentColour = new RGBA(currentColour.r, currentColour.g, currentColour.b, 255);
                 return {
-                  roi: visibleROIs[roi].name,
+                  roi: visibleROIs[roi].region.name,
                   count,
                   colour: currentColour.asString(),
                 };
@@ -569,12 +563,12 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
             }
             // If we don't care about overlapping ROIs, use first colour
             else if (useFirstROIColour && binMemberInfo[binIdx].rois.length > 0) {
-              colour = visibleROIs[activePixelROIs[0]].colour;
+              colour = visibleROIs[activePixelROIs[0]].displaySettings.colour;
             }
             // Unselected, is it a member of an ROI?
             else if (binMemberInfo[binIdx] && binMemberInfo[binIdx].rois.length > 0) {
               const activeColourKey = activePixelROIs
-                .map(roi => visibleROIs[roi].name)
+                .map(roi => visibleROIs[roi].region.name)
                 .sort()
                 .join(", ");
 
@@ -583,7 +577,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
               } else {
                 const averageColour = activePixelROIs.reduce(
                   (prev, curr, i) => {
-                    const currentColour = visibleROIs[activePixelROIs[i]].colour;
+                    const currentColour = visibleROIs[activePixelROIs[i]].displaySettings.colour;
                     if (prev.r === -1) {
                       return { r: currentColour.r, g: currentColour.g, b: currentColour.b };
                     } else {
