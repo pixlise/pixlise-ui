@@ -27,8 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit, Inject } from "@angular/core";
-import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { Component } from "@angular/core";
+import { MatDialogRef } from "@angular/material/dialog";
 
 import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanUploadReq, ScanUploadResp } from "src/app/generated-protos/scan-msgs";
@@ -40,7 +40,7 @@ import { httpErrorToString } from "src/app/utils/utils";
   templateUrl: "./add-dataset-dialog.component.html",
   styleUrls: ["./add-dataset-dialog.component.scss"],
 })
-export class AddDatasetDialogComponent implements OnInit {
+export class AddDatasetDialogComponent {
   // switch modes for html
   modeEntry = "entry";
   modeCreate = "create";
@@ -52,17 +52,25 @@ export class AddDatasetDialogComponent implements OnInit {
   mode: string = this.modeEntry;
   modeTitle: string = "";
 
+  detector: string = "";
+  detectors = ["jpl-breadboard", "sbu-breadboard", "pixl-em"];
+
   constructor(
     //@Inject(MAT_DIALOG_DATA) public params: AddDatasetParameters,
     public dialogRef: MatDialogRef<boolean>,
     private _dataService: APIDataService
   ) {}
 
-  ngOnInit(): void {}
+  //ngOnInit(): void {}
 
   onOK() {
     if (this.droppedFiles.length != 1) {
-      alert("Please drop one image to upload");
+      alert("Please drop one zip file to upload");
+      return;
+    }
+
+    if (this.detector.length <= 0) {
+      alert("Please choose an instrument");
       return;
     }
 
@@ -81,7 +89,7 @@ export class AddDatasetDialogComponent implements OnInit {
           .sendScanUploadRequest(
             ScanUploadReq.create({
               id: this.nameHint,
-              format: "jpl-breadboard",
+              format: this.detector,
               zippedData: new Uint8Array(fileBytes),
             })
           )
@@ -109,43 +117,48 @@ export class AddDatasetDialogComponent implements OnInit {
     return "application/zip,application/x-zip-compressed";
   }
 
+  get formatHelp(): string {
+    if (this.detector == "pixl-em") {
+      return "Zip file must contain files organised in sub-directories named by the 3-character product type, the same way as how FM datasets are generated. Also note that DATASET NAME must match the RTT encoded into the file names of the EM dataset being uploaded, otherwise the import will fail.";
+    } else if (this.detector.endsWith("breadboard")) {
+      return "Zip files added must contain only .msa files, with no other files, and no directories in the zip file.";
+    }
+
+    return "";
+  }
+
+  onChangeDetector(detector: string) {
+    this.detector = detector;
+  }
+
   onCancel() {
     this.dialogRef.close(null);
   }
-  /* TODO (ngx-dropzone was deprecated)
-    onDropFile(event)
-    {
-        if(this.droppedFiles.length >= 1)
-        {
-            return;
-        }
 
-        // Complain if any were rejected!
-        let rejectedFiles = [];
-        for(let reject of event.rejectedFiles)
-        {
-            //console.log(reject);
-            rejectedFiles.push(reject.name);
-        }
-
-        if(rejectedFiles.length > 0)
-        {
-            alert("Rejected files for upload: "+rejectedFiles.join(",")+". Were they of an acceptible format?");
-        }
-        else if(event.addedFiles.length <= 0)
-        {
-            alert("No files added for uploading");
-        }
-        else
-        {
-            //console.log(event);
-            this.droppedFiles.push(event.addedFiles[0]);
-        }
+  onDropFile(event) {
+    if (this.droppedFiles.length >= 1) {
+      return;
     }
 
-    onRemoveDroppedFile(event)
-    {
-        //console.log(event);
-        this.droppedFiles.splice(this.droppedFiles.indexOf(event), 1);
-    }*/
+    // Complain if any were rejected!
+    const rejectedFiles = [];
+    for (const reject of event.rejectedFiles) {
+      //console.log(reject);
+      rejectedFiles.push(reject.name);
+    }
+
+    if (rejectedFiles.length > 0) {
+      alert("Rejected files for upload: " + rejectedFiles.join(",") + ". Were they of an acceptible format?");
+    } else if (event.addedFiles.length <= 0) {
+      alert("No files added for uploading");
+    } else {
+      //console.log(event);
+      this.droppedFiles.push(event.addedFiles[0]);
+    }
+  }
+
+  onRemoveDroppedFile(event) {
+    //console.log(event);
+    this.droppedFiles.splice(this.droppedFiles.indexOf(event), 1);
+  }
 }

@@ -29,17 +29,63 @@
 
 @import 'variables.scss';
 
+.add-dataset-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 8px;
+
+    min-width: 800px;
+    min-height: 400px;
+
+    .title-area {
+        display: flex;
+        flex-direction: row;
+    }
+
+    .entry {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .row {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .spinner {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+
+        padding-top: 40px;
+    }
+
+    .buttons {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        
+        padding-top: $sz-unit;
+    }
+}
+
 .left-right-padding {
     padding: 0px $sz-unit;
 }
 
 input {
     min-width: 250px;
-}
-
-.dlg {
-    min-width: 800px;
-    min-height: 400px;
 }
 
 ngx-dropzone-preview,
@@ -97,9 +143,6 @@ ngx-dropzone,
     padding: $sz-unit;
 }
 
-.spinner {
-    padding-top: 40px;
-}
 
 span {
     color: $clr-gray-10;

@@ -10,6 +10,7 @@ import { AddDatasetDialogComponent } from "./components/atoms/add-dataset-dialog
 import { FilterDialogComponent } from "./components/atoms/filter-dialog/filter-dialog.component";
 import { LogViewerComponent } from "./components/atoms/log-viewer/log-viewer.component";
 import { PIXLISECoreModule } from "../pixlisecore/pixlisecore.module";
+import { NgxDropzoneModule } from "ngx-dropzone";
 
 const APP_ROUTES: Routes = [
   {
@@ -41,6 +42,6 @@ const APP_ROUTES: Routes = [
 
 @NgModule({
   declarations: [DatasetTilesPageComponent, DataSetSummaryComponent, AddDatasetDialogComponent, FilterDialogComponent, LogViewerComponent],
-  imports: [CommonModule, FormsModule, MaterialModule, PIXLISECoreModule, RouterModule.forChild(APP_ROUTES)],
+  imports: [CommonModule, FormsModule, MaterialModule, PIXLISECoreModule, NgxDropzoneModule, RouterModule.forChild(APP_ROUTES)],
 })
 export class DatasetsModule {}
