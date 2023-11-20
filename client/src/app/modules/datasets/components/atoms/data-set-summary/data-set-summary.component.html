@@ -30,14 +30,14 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="dataset-container clickable fx-start-center" [ngClass]="{ 'dataset-selected': isSelected }" (click)="onClickTileArea($event)">
-  <ng-container [ngSwitch]="tileImageURL.length">
+  <ng-container [ngSwitch]="tileImage">
     <ng-container *ngSwitchCase="0">
       <div class="fx-space-around-center fx-flex">
-        <div>No Context Image</div>
+        <div class="no-image">No Context Image</div>
       </div>
     </ng-container>
     <ng-container *ngSwitchDefault>
-      <!-- TODO <img [src]='tileImageURL | addbearerheader | async' class="tile-img"> -->
+      <img [src]='tileImage' class="tile-img">
     </ng-container>
   </ng-container>
   <div class="title-container">

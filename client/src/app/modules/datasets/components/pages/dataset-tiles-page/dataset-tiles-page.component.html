@@ -70,7 +70,7 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="summary-container">
     <div *ngIf="!errorString && !loading" class="scrollable">
       <div class="tiles" (onClick)="onClickTileArea()">
-        <data-set-summary *ngFor="let item of scans" [summary]="item" [selected]="selectedScan" (onSelect)="onSelect($event)">
+        <data-set-summary *ngFor="let item of scans" [summary]="item" [defaultImage]="scanDefaultImages.get(item.id)" [selected]="selectedScan" (onSelect)="onSelect($event)">
         </data-set-summary>
       </div>
     </div>
@@ -85,14 +85,19 @@ POSSIBILITY OF SUCH DAMAGE.
 
       <div class="info-panel" *ngIf="selectedScan !== null">
         <div class="meta-image-container">
-          <ng-container [ngSwitch]="contextImageURL.length">
+          <ng-container [ngSwitch]="selectedScanContextImage.length">
             <ng-container *ngSwitchCase="0">
               <div class="no-context">
                 <div>No Context Image</div>
               </div>
             </ng-container>
+            <ng-container *ngSwitchCase="1">
+              <div class="no-context">
+                <wait-spinner></wait-spinner>
+              </div>
+            </ng-container>
             <ng-container *ngSwitchDefault>
-              <!-- TODO <img [src]='contextImageURL | addbearerheader | async' class="meta-image"> -->
+              <img [src]="selectedScanContextImage" class="meta-image">
             </ng-container>
           </ng-container>
         </div>
@@ -111,14 +116,14 @@ POSSIBILITY OF SUCH DAMAGE.
         <div *ngIf="selectedIsIncomplete" class="incomplete">{{ selectedMissingData }}</div>
         <div class="meta-area">
           <div *ngFor="let item of selectedScanSummaryItems" class="summary-item">
-            <label>{{ item.label }}</label>
+            <span class="meta-name">{{ item.label }}</span>
             <span class="meta-value">{{ item.value }}</span>
           </div>
         </div>
         <div class="meta-heading">Tracking</div>
         <div class="meta-area align-start fx-column">
           <div *ngFor="let item of selectedScanTrackingItems" class="summary-item">
-            <label>{{ item.label }}</label>
+            <span class="meta-name">{{ item.label }}</span>
             <span class="meta-value">{{ item.value }}</span>
           </div>
         </div>

@@ -27,9 +27,12 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from "@angular/core";
 import { Subscription } from "rxjs";
+import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ScanDataType, ScanItem } from "src/app/generated-protos/scan";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 
 @Component({
   selector: "data-set-summary",
@@ -40,13 +43,18 @@ export class DataSetSummaryComponent implements OnInit {
   private _subs = new Subscription();
 
   @Input() summary: ScanItem | null = null;
+  @Input() defaultImage: string | undefined = undefined;
   @Input() selected: ScanItem | null = null;
   @Output() onSelect = new EventEmitter();
 
   private _title: string = "";
   private _missingData: string = "";
+  private _thumbnail: string = "";
 
-  constructor() {}
+  constructor(
+    private _cachedDataService: APICachedDataService,
+    private _endpointsService: APIEndpointsService
+  ) {}
 
   ngOnInit() {
     if (!this.summary) {
@@ -55,13 +63,13 @@ export class DataSetSummaryComponent implements OnInit {
 
     // Prepend SOL if it's there
     this._title = "";
-    let sol = this.summary.meta["Sol"] || "";
+    const sol = this.summary.meta["Sol"] || "";
     if (sol) {
       this._title += "SOL-" + sol + ": ";
     }
     this._title += this.summary.title;
 
-    let missing = ""; // TODO: DataSetSummary.listMissingData(this.summary);
+    const missing = ""; // TODO: DataSetSummary.listMissingData(this.summary);
     if (missing.length > 0) {
       this._missingData = "Missing: " + Array.from(missing).join(",");
     } else {
@@ -69,11 +77,24 @@ export class DataSetSummaryComponent implements OnInit {
     }
   }
 
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes["defaultImage"] && this.defaultImage && !this._thumbnail) {
+      // Load the thumbnail sized one
+      let loadImg = this.defaultImage;
+      /*const dotpos = loadImg.lastIndexOf(".");
+      loadImg = loadImg.substring(0, dotpos - 1) + "-width240" + loadImg.substring(dotpos);*/
+      loadImg += "?minwidth=240";
+      this._endpointsService.loadImageForPath(loadImg).subscribe((img: HTMLImageElement) => {
+        this._thumbnail = img.src;
+      });
+    }
+  }
+
   ngOnDestroy() {
     this._subs.unsubscribe();
   }
 
-  get tileImageURL(): string {
+  get tileImage(): string {
     /* TODO:
         // Snip off the end and replace with context-thumb, which allows the API to work out the image to return
         let pos = this.summary.context_image_link.lastIndexOf("/");
@@ -85,7 +106,7 @@ export class DataSetSummaryComponent implements OnInit {
         let url = this.summary.context_image_link.substring(0, pos+1)+"context-thumb";
         return url;
 */
-    return "";
+    return this._thumbnail;
   }
 
   get title(): string {
@@ -112,7 +133,7 @@ export class DataSetSummaryComponent implements OnInit {
       return false;
     }
 
-    for (let sdt of this.summary.dataTypes) {
+    for (const sdt of this.summary.dataTypes) {
       if (sdt.dataType == ScanDataType.SD_RGBU) {
         return sdt.count > 0;
       }
@@ -144,7 +165,7 @@ export class DataSetSummaryComponent implements OnInit {
   }
 
   get displaySol(): string {
-    let sol = this.summary?.meta["Sol"] || "";
+    const sol = this.summary?.meta["Sol"] || "";
     if (sol.length <= 0) {
       return "pre-mission";
     }
@@ -152,7 +173,7 @@ export class DataSetSummaryComponent implements OnInit {
   }
 
   get displayTarget(): string {
-    let target = this.summary?.meta["Target"] || "";
+    const target = this.summary?.meta["Target"] || "";
     if (target == "?" || target.length <= 0) {
       return "--";
     }
@@ -161,7 +182,7 @@ export class DataSetSummaryComponent implements OnInit {
   }
 
   get displayTargetId(): string {
-    let targetId = this.summary?.meta["TargetId"] || "";
+    const targetId = this.summary?.meta["TargetId"] || "";
     if (targetId == "?" || targetId.length <= 0) {
       return "--";
     }
@@ -170,7 +191,7 @@ export class DataSetSummaryComponent implements OnInit {
   }
 
   get displayDriveID(): string {
-    let driveId = this.summary?.meta["DriveId"] || "";
+    const driveId = this.summary?.meta["DriveId"] || "";
     if (driveId.length <= 0) {
       return "--";
     }

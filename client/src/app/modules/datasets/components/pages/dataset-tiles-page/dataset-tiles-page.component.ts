@@ -34,7 +34,7 @@ import { Subscription } from "rxjs";
 
 import { AuthService } from "@auth0/auth0-angular";
 
-import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { ScanDataType, ScanItem } from "src/app/generated-protos/scan";
 
@@ -49,6 +49,11 @@ import { WidgetSettingsMenuComponent } from "src/app/modules/pixlisecore/pixlise
 import { HelpMessage } from "src/app/utils/help-message";
 import { getMB, httpErrorToString } from "src/app/utils/utils";
 import { Permissions } from "src/app/utils/permissions";
+import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+import { number } from "mathjs";
+import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
+import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 
 class SummaryItem {
   constructor(
@@ -69,7 +74,10 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   @ViewChild("openOptionsButton") openOptionsButton: ElementRef | undefined;
 
   toSearch: string = "";
+
   scans: ScanItem[] = [];
+  scanDefaultImages: Map<string, string> = new Map<string, string>();
+
   datasetListingAllowed: boolean = true;
 
   selectedScan: ScanItem | null = null;
@@ -77,6 +85,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   selectedScanSummaryItems: SummaryItem[] = [];
   selectedScanTrackingItems: SummaryItem[] = [];
   selectedMissingData: string = "";
+  selectedScanContextImage: string = "";
 
   errorString: string = "";
   loading = false;
@@ -94,6 +103,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     private _router: Router,
     private _route: ActivatedRoute,
     private _dataService: APIDataService,
+    private _cachedDataService: APICachedDataService,
+    private _endpointsService: APIEndpointsService,
     //private _viewStateService: ViewStateService,
     private _authService: AuthService,
     public dialog: MatDialog,
@@ -112,8 +123,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
             } else {
               // If the user is set to have no permissions, we show that error and don't bother requesting
               //if (Permissions.hasPermissionSet(claims, Permissions.permissionNone)) {
-                // Show a special error in this case - user has been set to have no permissions
-                // this.setDatasetListingNotAllowedError(HelpMessage.NO_PERMISSIONS);
+              // Show a special error in this case - user has been set to have no permissions
+              // this.setDatasetListingNotAllowedError(HelpMessage.NO_PERMISSIONS);
               /*} else*/ {
                 // Don't have no-permission set, so see if the user is allowed to access any groups
                 // this._allGroups = Permissions.getGroupsPermissionAllows(claims);
@@ -245,7 +256,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     // Combine groups if we need to
     if (this._allGroups.length != this._selectedGroups.length) {
-      let groupStr = this._selectedGroups.join("|");
+      const groupStr = this._selectedGroups.join("|");
       searchString = DatasetFilter.appendTerm(searchString, "group_id=" + groupStr);
     }
 
@@ -267,6 +278,9 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         if (this.scans.length <= 0) {
           this.errorString = HelpMessage.NO_DATASETS_FOUND;
         }
+
+        const scanIds = this.scans.map(item => item.id);
+        this.getDefaultImages(scanIds);
       },
       error: err => {
         this.loading = false;
@@ -278,6 +292,15 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
         this.scans = [];
       },
+    });
+  }
+
+  private getDefaultImages(scanIds: string[]) {
+    this._cachedDataService.getDefaultImage(ImageGetDefaultReq.create({ scanIds: scanIds })).subscribe((resp: ImageGetDefaultResp) => {
+      this.scanDefaultImages.clear();
+      for (const id of Object.keys(resp.defaultImagesPerScanId)) {
+        this.scanDefaultImages.set(id, id + "/" + resp.defaultImagesPerScanId[id]);
+      }
     });
   }
 
@@ -295,7 +318,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     // that they are test datasets. Then we sort numerically within the lettered sections
     scans.sort((a: ScanItem, b: ScanItem) => {
       // If there is a sol on both...
-      let aSol = a.meta["sol"] || "",
+      const aSol = a.meta["sol"] || "",
         bSol = b.meta["sol"] || "";
 
       if (aSol === bSol && aSol.length > 0) {
@@ -317,11 +340,11 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
       // SOLs are strings, and can start with letters. We want the letter part alphabetically sorted, and any numbers
       // after it sorted numerically
-      let aLetter = aSol.length > 0 && Number.isNaN(Number.parseInt(aSol[0])) ? aSol[0] : "";
-      let bLetter = bSol.length > 0 && Number.isNaN(Number.parseInt(bSol[0])) ? bSol[0] : "";
+      const aLetter = aSol.length > 0 && Number.isNaN(Number.parseInt(aSol[0])) ? aSol[0] : "";
+      const bLetter = bSol.length > 0 && Number.isNaN(Number.parseInt(bSol[0])) ? bSol[0] : "";
 
-      let aSolNum = Number.parseInt(aSol.substring(aLetter.length));
-      let bSolNum = Number.parseInt(bSol.substring(bLetter.length));
+      const aSolNum = Number.parseInt(aSol.substring(aLetter.length));
+      const bSolNum = Number.parseInt(bSol.substring(bLetter.length));
 
       // If neither or both have the same letter, sort by number
       if (aLetter == bLetter) {
@@ -345,7 +368,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     const dialogConfig = new MatDialogConfig();
     //dialogConfig.backdropClass = 'empty-overlay-backdrop';
 
-    let filter = this._filter.copy();
+    const filter = this._filter.copy();
     dialogConfig.data = new FilterDialogData(filter, new ElementRef(event.currentTarget));
 
     const dialogRef = this.dialog.open(FilterDialogComponent, dialogConfig);
@@ -360,35 +383,29 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
   onGroups(event: MouseEvent): void {
     const dialogConfig = new MatDialogConfig();
-    //dialogConfig.backdropClass = 'empty-overlay-backdrop';
+    dialogConfig.backdropClass = "empty-overlay-backdrop";
 
-    // TODO:
-    /*
-        let items: PickerDialogItem[] = [];
-        items.push(new PickerDialogItem(null, "Groups", null, true));
+    const items: PickerDialogItem[] = [];
+    items.push(new PickerDialogItem("", "Groups", "", true));
 
-        for(let perm of this._allGroups)
-        {
-            items.push(new PickerDialogItem(perm, perm, null, true));
-        }
+    for (const perm of this._allGroups) {
+      items.push(new PickerDialogItem(perm, perm, "", true));
+    }
 
-        dialogConfig.data = new PickerDialogData(true, false, false, false, items, this._selectedGroups, "", new ElementRef(event.currentTarget));
+    dialogConfig.data = new PickerDialogData(true, false, false, false, items, this._selectedGroups, "", new ElementRef(event.currentTarget));
 
-        const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
-        dialogRef.componentInstance.onSelectedIdsChanged.subscribe(
-            (ids: string[])=>
-            {
-                if(ids)
-                {
-                    this._selectedGroups = ids;
-                    this.onSearch();
-                }
-            }
-        );*/
+    const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
+    dialogRef.componentInstance.onSelectedIdsChanged.subscribe((ids: string[]) => {
+      if (ids) {
+        this._selectedGroups = ids;
+        this.onSearch();
+      }
+    });
   }
 
   onSelect(event: ScanItem): void {
     this.selectedScan = event;
+    this.selectedScanContextImage = "";
 
     // Fill these so they display
     this.selectedScanSummaryItems = [
@@ -400,7 +417,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       new SummaryItem("Pseudo intensities:", this.spectraCount(this.selectedScan.contentCounts["PseudoIntensities"])),
     ];
 
-    for (let sdt of this.selectedScan.dataTypes) {
+    for (const sdt of this.selectedScan.dataTypes) {
       if (sdt.dataType == ScanDataType.SD_IMAGE) {
         new SummaryItem("MCC Images:", sdt.count.toString());
       } else if (sdt.dataType == ScanDataType.SD_XRF) {
@@ -440,8 +457,21 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     ];
 
     // TODO:
-    let missing = ""; //DataSetSummary.listMissingData(this.selectedScan);
+    const missing = ""; //DataSetSummary.listMissingData(this.selectedScan);
     this.selectedMissingData = missing.length > 0 ? "Dataset likely missing: " + Array.from(missing).join(",") : "";
+
+    // Load full-sized context image
+    if (this.selectedScan) {
+      const img = this.scanDefaultImages.get(this.selectedScan.id);
+      if (img) {
+        // Load the image
+        this.selectedScanContextImage = "?"; // Set to 1 so we show spinner
+
+        this._endpointsService.loadImageForPath(img).subscribe((img: HTMLImageElement) => {
+          this.selectedScanContextImage = img.src;
+        });
+      }
+    }
   }
 
   onAddScan(): void {
@@ -460,21 +490,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         this.onSearch();
       }, 2000);
     });
-  }
-
-  get contextImageURL(): string {
-    /* TODO:
-                // Snip off the end and replace with context-thumb, which allows the API to work out the image to return
-                let pos = this.selectedScan.context_image_link.lastIndexOf("/");
-                if(pos < 0)
-                {
-                    return this.selectedScan.context_image_link;
-                }
-        
-                let url = this.selectedScan.context_image_link.substring(0, pos+1)+"context-image";
-                return url;
-        */
-    return "";
   }
 
   private spectraCount(count: number): string {
