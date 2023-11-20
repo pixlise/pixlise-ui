@@ -48,6 +48,7 @@ import { ElementTileComponent } from "./components/atoms/periodic-table/element-
 import { StatusIndicatorComponent } from "./components/atoms/status-indicator/status-indicator.component";
 import { SectionedSelectDialogComponent } from "./components/atoms/sectioned-select-dialog/sectioned-select-dialog.component";
 import { RGBUPickerDropdownComponent } from "./components/atoms/rgbupicker-dropdown/rgbupicker-dropdown.component";
+import { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-dialog.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -60,6 +61,7 @@ export { WidgetKeyItem } from "./models/widget-key-item";
 export { SelectionService } from "./services/selection.service";
 export { ExpressionValue, ExpressionReference, ExpressionReferences } from "./models/expression-references";
 export { SliderComponent } from "./components/atoms/slider/slider.component";
+export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-dialog.component";
 
 @NgModule({
   declarations: [
@@ -97,6 +99,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     SectionedSelectDialogComponent,
     PanelFoldoutButtonComponent,
     RGBUPickerDropdownComponent,
+    PickerDialogComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule],
   exports: [
@@ -132,6 +135,7 @@ export { SliderComponent } from "./components/atoms/slider/slider.component";
     StatusIndicatorComponent,
     PanelFoldoutButtonComponent,
     RGBUPickerDropdownComponent,
+    PickerDialogComponent,
   ],
   providers: [
     /*APICommService, APIDataService, HttpInterceptorService*/

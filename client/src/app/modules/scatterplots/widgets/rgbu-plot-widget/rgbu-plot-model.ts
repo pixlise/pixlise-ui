@@ -626,23 +626,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
       return -1;
     }
   }
-  /*
-  static selectMinerals(dialog: MatDialog, mineralsShown: string[], callback: (minerals: string[]) => void): void {
-    const dialogConfig = new MatDialogConfig();
 
-    const items: PickerDialogItem[] = [];
-    items.push(new PickerDialogItem(null, "Minerals", null, true));
-
-    for (const m of RGBUMineralRatios.names) {
-      items.push(new PickerDialogItem(m, m, null, true));
-    }
-
-    dialogConfig.data = new PickerDialogData(true, true, true, false, items, mineralsShown, "", new ElementRef(event.currentTarget));
-
-    const dialogRef = dialog.open(PickerDialogComponent, dialogConfig);
-    dialogRef.componentInstance.onSelectedIdsChanged.subscribe(callback);
-  }
-  */
   private static getMineralPointsForAxes(xAxisUnit: RGBUAxisUnit, yAxisUnit: RGBUAxisUnit): RGBUMineralPoint[] {
     // Build the list of minerals with appropriate coordinates (based on what our axes are configured for)
     const minerals: RGBUMineralPoint[] = [];

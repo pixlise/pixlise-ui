@@ -52,6 +52,7 @@ import { RGBUAxisRatioPickerComponent, RatioPickerData } from "./rgbuaxis-ratio-
 import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { RegionSettings } from "src/app/modules/roi/models/roi-region";
+import { selectMinerals } from "../../base/mineral-selection";
 
 @Component({
   selector: "rgbu-plot",
@@ -97,7 +98,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
           type: "button",
           title: "Minerals",
           tooltip: "Choose mineral areas to display",
-          onClick: () => this.onMinerals(),
+          onClick: trigger => this.onMinerals(trigger),
         },
         {
           id: "regions",
@@ -159,15 +160,13 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     this._subs.unsubscribe();
   }
 
-  onMinerals() {
-    // RGBUPlotModel.selectMinerals(this.dialog, this._mineralsShown, mineralsShown => {
-    //   if (mineralsShown) {
-    //     this._mineralsShown = mineralsShown;
-    //     const reason = "mineral-choice";
-    //     this.saveState(reason);
-    //     this.prepareData(reason);
-    //   }
-    // });
+  onMinerals(trigger: Element | undefined) {
+    selectMinerals(this.dialog, trigger, this.mdl.mineralsShown, mineralsShown => {
+      if (mineralsShown) {
+        this.mdl.mineralsShown = mineralsShown;
+        this.loadData(this.mdl.imageName, this.mdl.visibleRegionIds);
+      }
+    });
   }
 
   onRegions() {
