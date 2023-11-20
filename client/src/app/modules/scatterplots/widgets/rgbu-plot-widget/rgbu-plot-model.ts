@@ -735,6 +735,8 @@ export class RGBUPlotDrawModel {
   hoverLabel: string = "";
 
   regenerate(raw: RGBUPlotData, canvasParams: CanvasParams, xAxis: LinearChartAxis, yAxis: LinearChartAxis): void {
+    this.drawnData = null;
+
     // The absolute outer border (outside of this is just padding)
     const outerBorder = new Rect(outerPadding, outerPadding, canvasParams.width - outerPadding * 2, canvasParams.height - outerPadding * 2);
 

@@ -49,9 +49,25 @@ export class RGBUPlotDrawer extends CachedCanvasChartDrawer {
     return this._mdl;
   }
 
-  drawPreData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {}
+  drawPreData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    if (!this._mdl.xAxis || !this._mdl.yAxis) {
+      return;
+    }
 
-  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {}
+    screenContext.fillStyle = Colours.GRAY_90.asString();
+
+    // Draw axes
+    const axisDrawer = this._mdl.makeChartAxisDrawer();
+    axisDrawer.drawAxes(screenContext, drawParams.drawViewport, this._mdl.xAxis, "", this._mdl.yAxis, "");
+  }
+
+  drawData(screenContext: OffscreenCanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
+    // Draw data
+    this.drawPlot(screenContext, this._mdl.drawModel);
+
+    // On top of everything, draw the mineral points
+    this.drawMinerals(screenContext, this._mdl.drawModel);
+  }
 
   drawPostData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     if (!this._mdl.xAxis || !this._mdl.yAxis) {
@@ -60,30 +76,14 @@ export class RGBUPlotDrawer extends CachedCanvasChartDrawer {
 
     const clrLasso = Colours.WHITE;
 
-    screenContext.save();
-
-    screenContext.fillStyle = Colours.GRAY_90.asString();
-
-    // Draw axes
-    const axisDrawer = this._mdl.makeChartAxisDrawer();
-    axisDrawer.drawAxes(screenContext, drawParams.drawViewport, this._mdl.xAxis, "", this._mdl.yAxis, "");
-
-    // Draw data
-    this.drawPlot(screenContext, this._mdl.drawModel);
-
-    // On top of everything, draw the mineral points
-    this.drawMinerals(screenContext, this._mdl.drawModel);
-
     // And lasso if any
     if (this._mdl.mouseLassoPoints) {
       const drawer = new OutlineDrawer(screenContext, clrLasso);
       drawer.drawOutline(this._mdl.mouseLassoPoints);
     }
-
-    screenContext.restore();
   }
 
-  private drawPlot(screenContext: CanvasRenderingContext2D, drawData: RGBUPlotDrawModel): void {
+  private drawPlot(screenContext: OffscreenCanvasRenderingContext2D, drawData: RGBUPlotDrawModel): void {
     // We draw the points as little rectangles at the specified coordinates
     for (let c = 0; c < drawData.points.length; c++) {
       screenContext.fillStyle = /*Colours.GRAY_30.asString();*/ drawData.colours[c];
@@ -91,7 +91,7 @@ export class RGBUPlotDrawer extends CachedCanvasChartDrawer {
     }
   }
 
-  private drawMinerals(screenContext: CanvasRenderingContext2D, drawData: RGBUPlotDrawModel): void {
+  private drawMinerals(screenContext: OffscreenCanvasRenderingContext2D, drawData: RGBUPlotDrawModel): void {
     screenContext.textBaseline = "top";
     screenContext.textAlign = "left";
 
@@ -112,7 +112,7 @@ export class RGBUPlotDrawer extends CachedCanvasChartDrawer {
     }
   }
 
-  private drawMineral(screenContext: CanvasRenderingContext2D, m: RGBUMineralPoint, isHovered: boolean, drawLabel: boolean, drawArea: Rect) {
+  private drawMineral(screenContext: OffscreenCanvasRenderingContext2D, m: RGBUMineralPoint, isHovered: boolean, drawLabel: boolean, drawArea: Rect) {
     screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
     drawFilledCircle(screenContext, m.ratioPt, isHovered ? 4 : 2);
 

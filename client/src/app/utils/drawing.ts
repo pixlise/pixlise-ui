@@ -477,7 +477,7 @@ export function alphaBytesToImage(alphaBytes: Uint8Array, width: number, height:
 }
 
 export function drawTextWithBackground(
-  ctx: CanvasRenderingContext2D,
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   text: string,
   textX: number,
   textY: number,
