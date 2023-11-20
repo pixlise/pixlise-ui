@@ -29,9 +29,42 @@
 
 @import 'variables.scss';
 
-.dlg {
+.filter-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
     background-color: $clr-gray-90;
+
+    padding: $sz-double;
+    
+    .choice-row {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+
+        padding: $sz-half 0px;
+        border-bottom: 1px solid $clr-gray-100;
+        
+        .choice-row-items {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+        }
+    }
+
+    .buttons {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        
+        padding-top: $sz-unit;
+    }
 }
+
 
 input {
     max-width: 56px;
@@ -53,24 +86,11 @@ span {
     @extend .label-text;
 }
 
-label {
+.label {
     @extend .label-text;
     margin-right: $sz-unit;
 }
 
-.choice-row {
-    padding: $sz-half $sz-double;
-    border-bottom: 1px solid $clr-gray-100;
-}
-
-.choice-row-top {
-    padding-top: $sz-double;
-}
-
 .choice-row-active {
     background-color: $clr-gray-80;
-}
-
-.buttons {
-    padding: $sz-unit $sz-double $sz-double $sz-double;
 }

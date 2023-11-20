@@ -29,40 +29,40 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div fxLayout="column" class="dlg gap-separated-vertical-elements">
-  <div fxLayout="row" fxLayoutAlign="space-between center" class="choice-row choice-row-top" [ngClass]="{ 'choice-row-active': targetSet }">
-    <label>Target:</label>
+<div class="filter-container">
+  <div class="choice-row" [ngClass]="{ 'choice-row-active': targetSet }">
+    <div class="label">Target:</div>
     <input [(ngModel)]="data.filter.target" type="text" placeholder="..." class="large-input" />
   </div>
 
-  <div fxLayout="row" fxLayoutAlign="space-between center" class="choice-row" [ngClass]="{ 'choice-row-active': siteSet }">
-    <label>Site:</label>
+  <div class="choice-row" [ngClass]="{ 'choice-row-active': siteSet }">
+    <div class="label">Site:</div>
     <input [(ngModel)]="data.filter.site" type="text" placeholder="..." class="large-input" />
   </div>
 
-  <div fxLayout="row" fxLayoutAlign="space-between center" class="choice-row" [ngClass]="{ 'choice-row-active': solSet }">
-    <label>Sol:</label>
-    <div fxLayout="row" class="gap-separated-horizontal-elements">
+  <div class="choice-row" [ngClass]="{ 'choice-row-active': solSet }">
+    <div class="label">Sol:</div>
+    <div class="choice-row-items">
       <input [(ngModel)]="data.filter.solMin" type="text" placeholder="..." />
       <span>to</span>
       <input [(ngModel)]="data.filter.solMax" type="text" placeholder="..." />
     </div>
   </div>
 
-  <div fxLayout="row" fxLayoutAlign="space-between center" class="choice-row" [ngClass]="{ 'choice-row-active': driveSet }">
-    <label>Drive:</label>
+  <div class="choice-row" [ngClass]="{ 'choice-row-active': driveSet }">
+    <div class="label">Drive:</div>
     <input [(ngModel)]="data.filter.drive" type="text" placeholder="..." class="large-input" />
   </div>
 
-  <div fxLayout="row" fxLayoutAlign="space-between center" class="choice-row" [ngClass]="{ 'choice-row-active': detectorSet }">
-    <label>Detector:</label>
+  <div class="choice-row" [ngClass]="{ 'choice-row-active': detectorSet }">
+    <div class="label">Detector:</div>
     <mat-select [(ngModel)]="data.filter.detectorChosen">
       <mat-option *ngFor="let detector of allDetectorConfigs" [value]="detector">{{ detector }}</mat-option>
     </mat-select>
   </div>
 
-  <div fxLayout="row" fxLayoutAlign="space-between center" class="choice-row" [ngClass]="{ 'choice-row-active': dwellSet }">
-    <label>Has Dwell:</label>
+  <div class="choice-row" [ngClass]="{ 'choice-row-active': dwellSet }">
+    <div class="label">Has Dwell:</div>
     <two-state-icon-button
       activeIcon="assets/button-icons/check-on.svg"
       inactiveIcon="assets/button-icons/check-off.svg"
@@ -71,8 +71,8 @@ POSSIBILITY OF SUCH DAMAGE.
     </two-state-icon-button>
   </div>
   <!--
-    <div fxLayout="row" fxLayoutAlign="space-between center" class="choice-row" [ngClass]="{'choice-row-active': quantSet}">
-        <label>Has Quant:</label>
+    <div class="choice-row" [ngClass]="{'choice-row-active': quantSet}">
+        <div class="label">Has Quant:</div>
         <two-state-icon-button
             activeIcon="assets/button-icons/check-on.svg"
             inactiveIcon="assets/button-icons/check-off.svg"
@@ -81,8 +81,8 @@ POSSIBILITY OF SUCH DAMAGE.
         </two-state-icon-button>
     </div>
 -->
-  <div fxLayout="row" fxLayoutAlign="space-between center" class="choice-row" [ngClass]="{ 'choice-row-active': normalSet }">
-    <label>Has Normal:</label>
+  <div class="choice-row" [ngClass]="{ 'choice-row-active': normalSet }">
+    <div class="label">Has Normal:</div>
     <two-state-icon-button
       activeIcon="assets/button-icons/check-on.svg"
       inactiveIcon="assets/button-icons/check-off.svg"
@@ -91,16 +91,16 @@ POSSIBILITY OF SUCH DAMAGE.
     </two-state-icon-button>
   </div>
 
-  <div fxLayout="row" fxLayoutAlign="space-between center" class="choice-row" [ngClass]="{ 'choice-row-active': pmcsSet }">
-    <label>PMCs:</label>
-    <div fxLayout="row" class="gap-separated-horizontal-elements">
+  <div class="choice-row" [ngClass]="{ 'choice-row-active': pmcsSet }">
+    <div class="label">PMCs:</div>
+    <div class="choice-row-items">
       <input [(ngModel)]="data.filter.pmcsMin" type="text" placeholder="..." />
       <span>to</span>
       <input [(ngModel)]="data.filter.pmcsMax" type="text" placeholder="..." />
     </div>
   </div>
 
-  <div fxLayout="row" fxLayoutAlign="end center" class="gap-separated-horizontal-elements buttons">
+  <div class="buttons">
     <push-button buttonStyle="outline" (onClick)="onClear()">Clear</push-button>
     <push-button buttonStyle="yellow" (onClick)="onApply()">Apply</push-button>
   </div>
