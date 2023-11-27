@@ -1,7 +1,6 @@
 import { CachedCanvasChartDrawer } from "src/app/modules/scatterplots/base/cached-drawer";
 import { ContextImageModel } from "./context-image-model";
-import { ContextImageToolHost } from "./tools/tool-host";
-import { CanvasDrawParameters } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { CanvasDrawParameters, CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
 import { drawImageOrMaskWithOptionalTransform } from "./drawlib/draw-image";
 import { drawRegion } from "./drawlib/draw-region";
@@ -10,16 +9,21 @@ import { drawScanPoints } from "./drawlib/draw-scan-points";
 import { drawFootprint } from "./drawlib/draw-footprint";
 import { drawMapData } from "./drawlib/draw-map";
 
+export interface ExtraDrawerSource {
+  getToolDrawers(): CanvasDrawer[];
+  getUIDrawers(): CanvasDrawer[];
+}
+
 export class ContextImageDrawer extends CachedCanvasChartDrawer {
   protected _dbg: string = "";
   protected _mdl: ContextImageModel;
-  protected _toolHost: ContextImageToolHost;
+  protected _extraDrawers: ExtraDrawerSource;
 
-  constructor(ctx: ContextImageModel, toolHost: ContextImageToolHost) {
+  constructor(ctx: ContextImageModel, extraDrawers: ExtraDrawerSource) {
     super();
 
     this._mdl = ctx;
-    this._toolHost = toolHost;
+    this._extraDrawers = extraDrawers;
   }
 
   protected get mdl(): BaseChartModel {
@@ -93,22 +97,18 @@ export class ContextImageDrawer extends CachedCanvasChartDrawer {
     }
 
     // If we have any tools to draw on top, do that
-    if (this._toolHost) {
-      for (const drawer of this._toolHost.getToolDrawers()) {
-        screenContext.save();
-        drawer.draw(screenContext, drawParams);
-        screenContext.restore();
-      }
+    for (const drawer of this._extraDrawers.getToolDrawers()) {
+      screenContext.save();
+      drawer.draw(screenContext, drawParams);
+      screenContext.restore();
     }
   }
 
   protected drawScreenSpace(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters) {
-    if (this._toolHost) {
-      for (const drawer of this._toolHost.getUIDrawers()) {
-        screenContext.save();
-        drawer.draw(screenContext, drawParams);
-        screenContext.restore();
-      }
+    for (const drawer of this._extraDrawers.getUIDrawers()) {
+      screenContext.save();
+      drawer.draw(screenContext, drawParams);
+      screenContext.restore();
     }
   }
 }

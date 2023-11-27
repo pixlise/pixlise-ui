@@ -45,7 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <!-- <div class="subheading-line">Image Selection</div> -->
         <div class="ctrl-column">
             <div class="setting-label">Selected Image: </div>
-            <app-context-image-picker [scanIds]="data.scanIds" [currentImage]="options.currentImage" (selectedImage)="onSelectedImageChanged($event)"></app-context-image-picker>
+            <image-picker [scanIds]="data.scanIds" [currentImage]="options.currentImage" (selectedImage)="onSelectedImageChanged($event)"></image-picker>
         </div>
 
         <div class="ctrl-row centered-row" [ngClass]="{'disabled-area': !isRGBU}" [title]="rgbuOnlyHelpText">

@@ -33,9 +33,8 @@ const APP_ROUTES: Routes = [
     path: "quant-logs",
     loadChildren: () => import("../quantifications/quantifications.module").then(m => m.QuantificationsModule),
   },
-  // { path: "dataset-edit/:dataset_id_for_edit", component: DatasetCustomisationComponent },
   {
-    path: "edit",
+    path: "edit-scan",
     loadChildren: () => import("../dataset-customisation/dataset-customisation.module").then(m => m.DatasetCustomisationModule),
   },
 ];

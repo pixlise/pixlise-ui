@@ -1,10 +1,10 @@
 import { Component, OnInit, ComponentRef, ElementRef, HostListener, ViewChild, ViewContainerRef, AfterViewChecked, Input } from "@angular/core";
 import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetToolbarButtonConfiguration, WidgetType } from "../../models/widgets.model";
-import { AnalysisLayoutService } from "../../../analysis/services/analysis-layout.service";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { WidgetData } from "src/app/generated-protos/widget-data";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 
 @Component({
   selector: "widget",

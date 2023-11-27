@@ -95,7 +95,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   private _allGroups: string[] = [];
   private _selectedGroups: string[] = [];
   private _userCanEdit: boolean = false;
-  private _isPublicUser: boolean = true;
 
   private _filter: DatasetFilter = new DatasetFilter(null, null, null, null, null, null, null, null, null, null, null);
 
@@ -144,27 +143,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         },
       })
     );
-    /* TODO:
-                this._subs.add(this._authService.isPublicUser$.subscribe(
-                    (isPublicUser)=>
-                    {
-                        this._isPublicUser = isPublicUser;
-                        
-                        this._authService.userProfile$.subscribe(
-                            (user)=>
-                            {
-                                if(user.name == user.email && !this._isPublicUser) // If public user, we don't harass them about their name not being set
-                                {
-                                    // This is a user who hasn't got a name set properly yet
-                                    // so here we ask them to type one in that we can overwrite
-                                    // in both Auth0 and our own user database
-                                    alert("We don't have your name stored, only your email address. This means PIXLISE will not show your name correctly when you share data/obvservations. Please set your user name using the edit button on the user panel (click on user icon in top-right).")
-                                }
-                            }
-                        );
-                    }
-                ));
-        */
+
     this.clearSelection();
     this.onSearch();
   }
@@ -175,8 +154,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   get showOpenOptions(): boolean {
-    // Only show these extra options if NOT a public user
-    return !this._isPublicUser;
+    return this._userCanEdit; // NOTE: this used to look at wether the user is a "public" user
   }
 
   get userCanEdit(): boolean {
@@ -240,7 +218,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     // Switch to the editing tab
     if (this.selectedScan) {
-      this._router.navigateByUrl("dataset-edit/" + this.selectedScan.id);
+      this._router.navigate(["edit-scan"], { relativeTo: this._route, queryParams: { scan_id: this.selectedScan.id } });
     }
   }
 

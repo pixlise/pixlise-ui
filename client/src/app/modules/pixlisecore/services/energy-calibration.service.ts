@@ -6,8 +6,8 @@ import { SpectrumReq, SpectrumResp } from "src/app/generated-protos/spectrum-msg
 import { ScanMetaLabelsAndTypesReq, ScanMetaLabelsAndTypesResp } from "src/app/generated-protos/scan-msgs";
 import { QuantGetReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { ExpressionDataSource } from "../models/expression-data-source";
-import { AnalysisLayoutService } from "../../analysis/services/analysis-layout.service";
 import { ScanCalibrationConfiguration, ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+import { AnalysisLayoutService } from "../../analysis/analysis.module";
 
 @Injectable({
   providedIn: "root",

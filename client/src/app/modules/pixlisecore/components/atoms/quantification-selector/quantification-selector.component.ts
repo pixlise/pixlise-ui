@@ -30,9 +30,9 @@
 import { Component, ElementRef, EventEmitter, Input, OnInit, Output, SimpleChanges, ViewChild } from "@angular/core";
 import { Subscription } from "rxjs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
-import { QuantSelection, QuantSelectorPanelSettings } from "../quant-selector-panel/quant-selector-panel.component";
 import { QuantModes } from "src/app/models/Quantification";
-import { AnalysisLayoutService } from "../../services/analysis-layout.service";
+import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { QuantSelection, QuantSelectorPanelSettings } from "../quant-selector-panel/quant-selector-panel.component";
 
 @Component({
   selector: "quantification-selector",

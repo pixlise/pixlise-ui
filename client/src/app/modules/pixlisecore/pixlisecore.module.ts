@@ -50,6 +50,11 @@ import { SectionedSelectDialogComponent } from "./components/atoms/sectioned-sel
 import { RGBUPickerDropdownComponent } from "./components/atoms/rgbupicker-dropdown/rgbupicker-dropdown.component";
 import { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-dialog.component";
 
+import { QuantificationSelectorComponent } from "./components/atoms/quantification-selector/quantification-selector.component";
+import { QuantSelectorPanelComponent } from "./components/atoms/quant-selector-panel/quant-selector-panel.component";
+import { QuantificationListComponent } from "./components/atoms/quant-selector-panel/quantification-list/quantification-list.component";
+import { QuantificationItemComponent } from "./components/atoms/quant-selector-panel/quantification-list/quantification-item/quantification-item.component";
+
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
 export { APICommService } from "./services/apicomm.service";
@@ -100,6 +105,10 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
     PanelFoldoutButtonComponent,
     RGBUPickerDropdownComponent,
     PickerDialogComponent,
+    QuantificationSelectorComponent,
+    QuantSelectorPanelComponent,
+    QuantificationListComponent,
+    QuantificationItemComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule],
   exports: [
@@ -136,6 +145,7 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
     PanelFoldoutButtonComponent,
     RGBUPickerDropdownComponent,
     PickerDialogComponent,
+    QuantificationSelectorComponent,
   ],
   providers: [
     /*APICommService, APIDataService, HttpInterceptorService*/

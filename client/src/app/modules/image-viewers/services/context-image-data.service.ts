@@ -27,9 +27,9 @@ export class ContextImageDataService {
   private _contextModelDataMap = new Map<string, Observable<ContextImageModelLoadedData>>();
 
   constructor(
-    private _cachedDataService: APICachedDataService,
-    private _widgetDataService: WidgetDataService,
-    private _endpointsService: APIEndpointsService
+    protected _cachedDataService: APICachedDataService,
+    protected _widgetDataService: WidgetDataService,
+    protected _endpointsService: APIEndpointsService
   ) {}
 
   getModelData(imageName: string): Observable<ContextImageModelLoadedData> {
@@ -46,8 +46,6 @@ export class ContextImageDataService {
 
     return result;
   }
-
-  getRegionModel(roiId: string) {}
 
   getLayerModel(
     scanId: string,

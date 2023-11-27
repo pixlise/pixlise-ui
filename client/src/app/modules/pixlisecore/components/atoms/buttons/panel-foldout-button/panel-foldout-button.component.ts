@@ -30,8 +30,8 @@
 import { CdkOverlayOrigin, ConnectionPositionPair, HorizontalConnectionPos, Overlay, OverlayConfig, OverlayRef, VerticalConnectionPos } from "@angular/cdk/overlay";
 import { ComponentPortal } from "@angular/cdk/portal";
 import { Component, EventEmitter, InjectionToken, Injector, Input, OnInit, Output, ViewChild, ViewContainerRef } from "@angular/core";
+import { QuantSelectorPanelComponent } from "../../quant-selector-panel/quant-selector-panel.component";
 // Possible classes of panels that can be opened
-import { QuantSelectorPanelComponent } from "src/app/modules/analysis/components/quant-selector-panel/quant-selector-panel.component";
 
 // The token we use to pass data to anything that is shown as a fold-out panel child
 export const PANEL_CHILD_DATA = new InjectionToken<{}>("PANEL_CHILD_DATA");

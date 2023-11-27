@@ -32,8 +32,8 @@ import { Subject, Subscription, fromEvent } from "rxjs";
 import { tap, throttleTime, debounceTime } from "rxjs/operators";
 
 import { addVectors, getMatrixAs2x3Array, Point, Rect, subtractVectors } from "src/app/models/Geometry";
+import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 // import { LayoutService } from "src/app/services/layout.service";
-import { AnalysisLayoutService } from "../../../analysis/services/analysis-layout.service";
 
 export class CanvasParams {
   constructor(

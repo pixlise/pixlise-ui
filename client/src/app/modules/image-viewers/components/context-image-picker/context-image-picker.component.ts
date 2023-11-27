@@ -27,13 +27,14 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChange, SimpleChanges } from "@angular/core";
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from "@angular/core";
 import { Subscription } from "rxjs";
-import { SDSFields, getMB, invalidPMC } from "src/app/utils/utils";
-import { ContextImageItemTransform } from "../../../../models/image-transform";
+import { SDSFields, invalidPMC } from "src/app/utils/utils";
+import { ContextImageItemTransform } from "../../models/image-transform";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
-import { ScanImage, scanImagePurposeToJSON, scanImageSourceToJSON } from "src/app/generated-protos/image";
+import { makeImageTooltip } from "src/app/utils/image-details";
+import { ScanImageSource } from "src/app/generated-protos/image";
 
 export class ContextImageItem {
   constructor(
@@ -144,7 +145,7 @@ be a bit misleading.
 }
 
 @Component({
-  selector: "app-context-image-picker",
+  selector: "image-picker",
   templateUrl: "./context-image-picker.component.html",
   styleUrls: ["./context-image-picker.component.scss"],
 })
@@ -153,6 +154,8 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
 
   @Input() scanIds: string[] = [];
   @Input() currentImage: string = "";
+  @Input() includeHideOption: boolean = true;
+  @Input() onlyInstrumentImages: boolean = false;
 
   @Output() selectedImage = new EventEmitter();
 
@@ -185,6 +188,11 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
       for (let c = 0; c < resp.images.length; c++) {
         const img = resp.images[c];
 
+        if (this.onlyInstrumentImages && img.source != ScanImageSource.SI_INSTRUMENT) {
+          // We're only showing images that came from the instrument
+          continue;
+        }
+
         let matchInfo: ContextImageItemTransform | null = null;
         if (img.matchInfo) {
           matchInfo = new ContextImageItemTransform(img.matchInfo.xOffset, img.matchInfo.yOffset, img.matchInfo.xScale, img.matchInfo.yScale);
@@ -198,7 +206,7 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
           matchInfo
         );
 
-        const tooltip = this.makeTooltip(img);
+        const tooltip = makeImageTooltip(img);
 
         let selected = false;
         if (img.name == this.currentImage) {
@@ -285,82 +293,6 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
 
   ngOnDestroy() {
     this._subs.unsubscribe();
-  }
-
-  private makeTooltip(forImage: ScanImage): string {
-    // Put together some stuff already
-    let result = `Name: ${forImage.name}\n`;
-    result += `Path: ${forImage.path}\n`;
-    result += `Origin Scan: ${forImage.originScanId}\n`;
-    if (forImage.originImageURL) {
-      result += `Origin URL: ${forImage.originImageURL}\n`;
-    }
-    result += `Associated Scans: ${forImage.associatedScanIds.join(",")}\n`;
-    result += `Resolution: ${forImage.width} x ${forImage.height}\n`;
-    result += `File Size: ${getMB(forImage.fileSize)}\n`;
-
-    let lbl = scanImagePurposeToJSON(forImage.purpose);
-    // Snip off the stuff at the start
-    if (lbl.startsWith("SIP_")) {
-      lbl = lbl.substring(4);
-    }
-    result += `Image Purpose: ${lbl}\n`;
-
-    lbl = scanImageSourceToJSON(forImage.source);
-    // Snip off the stuff at the start
-    if (lbl.startsWith("SI_")) {
-      lbl = lbl.substring(3);
-    }
-    result += `Image Source: ${lbl}`;
-
-    const fields = SDSFields.makeFromFileName(forImage.name);
-    if (!fields) {
-      return result; //'Cannot decode file name';
-    }
-
-    result += `\n\nSOL=${fields.SOL}\n`;
-    if (fields.PMC >= 0) {
-      result += `PMC=${fields.PMC}\n`;
-    }
-
-    result += `SCLK=${fields.SCLK}\n`;
-    result += `Site=${fields.siteID}\n`;
-    result += `Drive=${fields.driveID}\n`;
-    result += `RTT=${fields.RTT}\n`;
-    result += `Instrument=${fields.instrumentLong}\n`;
-    result += `Version=${fields.version}\n\n`;
-    result += `ProdType=${fields.prodType}\n`;
-    result += `Producer=${fields.producerLong}\n`;
-    result += `Colour Filter=${fields.colourFilterLong}\n`;
-    if (fields.PMC < 0) {
-      result += `CamSpecific=${fields.camSpecific}\n`;
-    }
-
-    if (fields.special != "_") {
-      result += `Special=${fields.special}\n`;
-    }
-
-    result += `Venue=${fields.venueLong}\n`;
-
-    if (fields.ternaryTimestamp && fields.ternaryTimestamp != "000") {
-      result += `TernaryTimestamp=${fields.ternaryTimestamp}\n`;
-    }
-
-    if (fields.geometry != "_") {
-      result += `Geometry=${fields.geometry}\n`;
-    }
-
-    if (fields.thumbnail != "_") {
-      result += `Thumbnail=${fields.thumbnailLong}\n`;
-    }
-
-    if (fields.downsample != "_") {
-      result += `Downsample=${fields.downsample}\n`;
-    }
-
-    result += `Compression=${fields.compressionLong}\n`;
-
-    return result;
   }
 
   onSetImage(img: DisplayContextImageItem | null) {

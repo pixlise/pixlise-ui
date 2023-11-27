@@ -52,6 +52,7 @@ import { HoverPointCursor } from "../ui-elements/hover-point-cursor";
 import { BaseUIElement } from "../ui-elements/base-ui-element";
 import { PhysicalScale } from "../ui-elements/physical-scale";
 import { MapColourScale } from "../ui-elements/map-colour-scale/map-colour-scale";
+import { ExtraDrawerSource } from "../context-image-drawer";
 
 export enum ToolState {
   OFF, // A tool that is not active, but can be clicked on/spring key used to activate
@@ -90,7 +91,7 @@ export class ToolHostCreateSettings {
   ) {}
 }
 
-export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost {
+export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost, ExtraDrawerSource {
   // Tools
   private _tools: BaseContextImageTool[] = [];
   private _activeTool: BaseContextImageTool | null = null;
@@ -100,7 +101,7 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
 
   // These are contained in _uiElems, we just keep a separate reference here because we specifically
   // need these for drawing exports
-  private _uiMapColourScale: MapColourScale = null;
+  private _uiMapColourScale: MapColourScale | null = null;
   private _uiPhysicalScale: PhysicalScale | null = null;
 
   private _toolsAfterLineSeparator: ContextImageToolId[] = [];

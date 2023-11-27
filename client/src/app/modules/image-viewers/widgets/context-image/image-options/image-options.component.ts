@@ -32,7 +32,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { Observable, Subscription, map, of } from "rxjs";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
-import { ContextImagePickerComponent, ContextImageItem } from "./context-image-picker/context-image-picker.component";
+import { ContextImagePickerComponent, ContextImageItem } from "../../../components/context-image-picker/context-image-picker.component";
 import { RangeSliderValue } from "src/app/modules/pixlisecore/components/atoms/range-slider/range-slider.component";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";

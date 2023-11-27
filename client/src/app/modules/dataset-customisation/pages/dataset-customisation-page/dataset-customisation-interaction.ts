@@ -27,19 +27,31 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+import { ContextImagePan } from "src/app/modules/image-viewers/image-viewers.module";
+import {
+  CanvasInteractionHandler,
+  CanvasMouseEvent,
+  CanvasInteractionResult,
+  CanvasKeyEvent,
+  CanvasMouseEventId,
+} from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
+import { DatasetCustomisationModel } from "./dataset-customisation-model";
+import { Point } from "src/app/models/Geometry";
 
+export class AlignmentInteraction implements CanvasInteractionHandler {
+  constructor(private _ctx: DatasetCustomisationModel) {}
 
-.quant-error-icon {
-    height: 16px;
-    width: auto;
-}
+  mouseEvent(event: CanvasMouseEvent): CanvasInteractionResult {
+    if (event.eventId == CanvasMouseEventId.MOUSE_WHEEL) {
+      const newScale = this._ctx.transform.scale.x * (1 - event.deltaY / 100);
+      this._ctx.transform.setScaleRelativeTo(new Point(newScale, newScale), event.point, false);
+      return CanvasInteractionResult.redrawAndCatch;
+    }
 
-.quant-error-label {
-    font-weight: bold;
-    color: $clr-orange;
-}
+    return ContextImagePan.panZoomMouseMove(event.eventId, event.point, event.mouseDown != null, event.mouseLast, this._ctx.transform);
+  }
 
-.label {
-    padding-left: $sz-unit;
+  keyEvent(event: CanvasKeyEvent): CanvasInteractionResult {
+    return CanvasInteractionResult.neither;
+  }
 }

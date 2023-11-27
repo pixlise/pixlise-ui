@@ -24,10 +24,8 @@ import { MatSortModule } from "@angular/material/sort";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
 import { MatMenuModule } from "@angular/material/menu";
-import { QuantificationSelectorComponent } from "./components/quantification-selector/quantification-selector.component";
-import { QuantSelectorPanelComponent } from "./components/quant-selector-panel/quant-selector-panel.component";
-import { QuantificationListComponent } from "./components/quant-selector-panel/quantification-list/quantification-list.component";
-import { QuantificationItemComponent } from "./components/quant-selector-panel/quantification-list/quantification-item/quantification-item.component";
+
+export { AnalysisLayoutService } from "./services/analysis-layout.service";
 
 const APP_ROUTES: Routes = [
   {
@@ -45,10 +43,6 @@ const APP_ROUTES: Routes = [
     MistRoiConvertComponent,
     MistRoiUploadComponent,
     ScanConfigurationDialog,
-    QuantificationSelectorComponent,
-    QuantSelectorPanelComponent,
-    QuantificationListComponent,
-    QuantificationItemComponent,
   ],
   imports: [
     CommonModule,

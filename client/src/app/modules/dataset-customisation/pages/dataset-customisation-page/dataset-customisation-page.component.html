@@ -1,1 +1,169 @@
-<p>dataset-customisation-page works!</p>
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div class="customisation-container">
+    <!-- TODO: <notification-banner></notification-banner>
+    <app-toolbar titleToShow="Edit: {{datasetID}}"></app-toolbar> -->
+
+    <!-- left pane browsable stuff -->
+    <div class="left-menu panel">
+        <div class="menu-title">
+            <div class="txt-widget-title">Customisations</div>
+        </div>
+        <div class="menu-section">
+            <div class="meta-entry column">
+                <span>Scan Title & Description</span>
+                <input *ngIf="title !== null" [(ngModel)]="title" type="text" placeholder="Title...">
+                <mat-spinner *ngIf="title === null" [diameter]="24" color="accent"></mat-spinner>
+                <input *ngIf="title !== null" [(ngModel)]="description" type="text" placeholder="Description...">
+                <push-button (onClick)="onSaveTitleDescription()" buttonStyle="yellow">Save</push-button>
+            </div>
+            <div *ngIf="scanId" class="meta-entry column">
+                <span>Default Image</span>
+                <image-picker [scanIds]="[scanId]" [currentImage]="defaultContextImage" [includeHideOption]="false" (selectedImage)="onChangeDefaultImage($event)"></image-picker>
+            </div>
+        </div>
+        <div class="menu-title">
+            <div class="txt-widget-title">Alignment Settings</div>
+        </div>
+        <div *ngIf="scanId" class="menu-section">
+            <div class="meta-entry column">
+                <h3>Selected Image</h3>
+                <span>{{selectedImageLabel}}</span>
+            </div>
+            <div class="meta-entry column">
+                <h3>Align-To Image</h3>
+                <span>{{alignToImageLabel}}</span>
+                <!-- <image-picker [scanIds]="[scanId]" [currentImage]="alignToImage" [includeHideOption]="false" [onlyInstrumentImages]="true" (selectedImage)="onChangeAlignToImage($event)"></image-picker> -->
+            </div>
+            <ng-container *ngIf="mdl.imageName">
+                <div class="meta-entry column">
+                    <h3>Quantification</h3>
+                    <div class="row">
+                        <quantification-selector [scanId]="scanId" [selectedQuantID]="selectedQuantId" (selectQuant)="onSelectQuantForScan($event)"></quantification-selector>
+                    </div>
+                </div>
+                <div *ngIf="selectedQuantId" class="meta-entry column">
+                    <h3>Element Map</h3>
+                    <div class="row">
+                        <mat-select [(ngModel)]="selectedElementMap" (selectionChange)="onQuantElementChanged($event)">
+                            <mat-option *ngFor="let elem of quantifiedElements" [value]="elem">{{ elem }}</mat-option>
+                        </mat-select>
+                    </div>
+                </div>
+            </ng-container>
+        </div>
+        <div class="menu-title">
+            <div class="txt-widget-title">Uploaded Images</div>
+        </div>
+        <!-- scrollable list of files -->
+        <div class="scrollable-container">
+            <div class="list-subheading">
+                <span>Beam Matched Images</span>
+                <icon-button icon='assets/button-icons/plus-white.svg' (click)="onAddImage('matched')"></icon-button>
+            </div>
+            <div *ngFor="let item of matchedImages"
+                class="image-item clickable"
+                (click)="onSelectImage('matched', item)">
+                <span [title]="item.name">{{item.name}}</span>
+                <icon-button icon="assets/button-icons/delete.svg" (click)="onDeleteImage('matched', item, $event)"></icon-button>
+            </div>
+            <mat-spinner *ngIf="matchedImages === null" [diameter]="24" color="accent"></mat-spinner>
+            <div *ngIf="matchedImages !== null && matchedImages.length <= 0" class="setting-row none-text">(None)</div>
+
+            <div class="list-subheading">
+                <span>Other Context Images</span>
+                <icon-button icon='assets/button-icons/plus-white.svg' (click)="onAddImage('unaligned')"></icon-button>
+            </div>
+
+            <div *ngFor="let item of unalignedImages"
+                class="image-item clickable"
+                (click)="onSelectImage('unaligned', item)">
+                <span [title]="item.name">{{item.name}}</span>
+                <icon-button icon="assets/button-icons/delete.svg" (click)="onDeleteImage('unaligned', item, $event)"></icon-button>
+            </div>
+            <mat-spinner *ngIf="unalignedImages === null" [diameter]="24" color="accent"></mat-spinner>
+            <div *ngIf="unalignedImages !== null && unalignedImages.length <= 0" class="setting-row none-text">(None)</div>
+        </div>
+    </div>
+    <!-- right pane, showing details -->
+    <div class="right-area">
+        <div class="image-edit panel">
+            <div class="image-edit-toolbar">
+                <div class="txt-widget-title">Alignment</div>
+                <ng-container>
+                    <div class="meta-edit">
+                        <div class="txt-meta">Offset: </div>
+                        <input [(ngModel)]="xOffset" type="number" placeholder="X">
+                        <div class="txt-meta">,</div>
+                        <input [(ngModel)]="yOffset" type="number" placeholder="Y">
+                        <div class="txt-meta">Scale: </div>
+                        <input [(ngModel)]="xScale" type="text" placeholder="X">
+                        <div class="txt-meta">,</div>
+                        <input [(ngModel)]="yScale" type="text" placeholder="Y">
+                        <div class="txt-meta">Opacity</div>
+                        <slider
+                            [value]="overlayOpacity"
+                            [minValue]="0"
+                            [maxValue]="1"
+                            (onChange)="onChangeOverlayOpacity($event)"></slider>
+                        <div class="txt-meta">Brightness</div>
+                        <slider
+                            [value]="overlayBrightness"
+                            [minValue]="0.5"
+                            [maxValue]="10"
+                            (onChange)="onChangeOverlayBrightness($event)"></slider>
+                    </div>
+                    <div class="save-buttons">
+                        <push-button (onClick)="onPreviewMeta()" buttonStyle="outline">Preview</push-button>
+                        <push-button (onClick)="onApplyMeta()" buttonStyle="outline">Apply</push-button>
+                        <push-button (onClick)="onResetMeta()" buttonStyle="outline">Reset</push-button>
+                    </div>
+                </ng-container>
+            </div>
+
+            <interactive-canvas
+                class="img-view"
+                [ngClass]="cursorShown"
+                [drawer]="drawer"
+                [drawNotifier]="mdl"
+                [interactionHandler]="interactionHandler"
+                [transform]="transform">
+            </interactive-canvas>
+        </div>
+
+        <div *ngIf="showLog" class="panel log-area">
+<!--
+                <log-viewer title="Dataset Regeneration Log" [logID]="logId"></log-viewer>
+-->
+        </div>
+    </div>
+</div>

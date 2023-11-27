@@ -27,32 +27,86 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { async, ComponentFixture, TestBed } from "@angular/core/testing";
-import { ContextImagePickerComponent } from "./context-image-picker.component";
+@import 'variables.scss';
+
+.dlg {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-items: stretch;
+    
+    min-width: 500px;
+
+    .meta-fields {
+        display: flex;
+        flex-direction: column;
+        gap: $sz-unit;
+
+        color: $clr-gray-30;
+        padding: 0px $sz-unit;
+        
+        .row {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            
+            input {
+                min-width: 250px;
+            }
+        }
+    }
+
+    .button-container {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+        gap: $sz-unit;
+    }
+}
 
 
-describe("ContextImagePickerComponent", () => 
-{
-    let component: ContextImagePickerComponent;
-    let fixture: ComponentFixture<ContextImagePickerComponent>;
+ngx-dropzone-preview,
+.dropzone  {
+    color: $clr-gray-30;
+    background-color: $clr-gray-80;
+    background-image: unset;
 
-    beforeEach(async(() => 
-    {
-        TestBed.configureTestingModule({
-            declarations: [ ContextImagePickerComponent ]
-        })
-            .compileComponents();
-    }));
+    &:hover {
+        background-color: $clr-gray-80;
+        background-image: unset;
+    }
+}
 
-    beforeEach(() => 
-    {
-        fixture = TestBed.createComponent(ContextImagePickerComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
+:host ::ng-deep ngx-dropzone-preview {
+    max-width: 100% !important;
+}
 
-    it("should create", () => 
-    {
-        expect(component).toBeTruthy();
-    });
-});
+.filename {
+    font-size: 12px;
+}
+
+.filetype {
+    font-size: 14px;
+}
+
+ngx-dropzone,
+.dropzone {
+  margin: $sz-double;
+}
+
+.dropzone {
+    background: $clr-gray-90;
+    color: #fff;
+    border: $sz-half dashed $clr-gray-30;
+    border-radius: $sz-half;
+    font-size: 20px;
+
+    &:hover {
+        background: $clr-gray-90;
+    }
+}
+
+.dropzone.ngx-dz-hovered {
+    border: $sz-half solid $clr-gray-30;
+}
