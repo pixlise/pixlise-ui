@@ -35,12 +35,12 @@ export class DatasetCustomisationDrawer extends ContextImageDrawer {
   override drawPostData(screenContext: CanvasRenderingContext2D, drawParams: CanvasDrawParameters): void {
     // Set it so we're centered to start with
     screenContext.save();
-    if (this._mdl.drawModel.image) {
+    /*if (this._mdl.drawModel.image) {
       screenContext.translate(
         (drawParams.drawViewport.width - this._mdl.drawModel.image.width) / 2,
         (drawParams.drawViewport.height - this._mdl.drawModel.image.height) / 2
       );
-    }
+    }*/
 
     //drawParams.worldTransform.applyTransform(screenContext);
     super.drawPostData(screenContext, drawParams);

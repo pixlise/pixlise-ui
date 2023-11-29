@@ -64,6 +64,7 @@
             flex-direction: column;
 
             padding: $sz-unit 0px;
+            gap: $sz-unit;
 
             .row {
                 display: flex;
@@ -79,16 +80,12 @@
                 padding: $sz-half;
                 gap: $sz-unit;
 
-                h3 {
-                    text-wrap: nowrap;
-                    text-transform: none;
-                    color: $clr-gray-20;
-                    font-weight: bold;
-                }
-
                 span {
                     text-wrap: nowrap;
                     color: $clr-gray-30;
+                    background-color: $clr-gray-70;
+                    padding: $sz-half;
+                    font-weight: bold;
                 }
 
                 input {
@@ -109,6 +106,8 @@
             max-height: calc(100vh - 144px) !important;
             overflow-y: auto;
 
+            color: $clr-gray-20;
+
             .list-subheading {
                 display: flex;
                 flex-direction: row;
@@ -122,6 +121,11 @@
                 flex-direction: row;
                 justify-content: space-between;
                 align-items: center;
+            }
+
+            .none-text {
+                color: $clr-gray-40;
+                text-align: center;
             }
         }
     }

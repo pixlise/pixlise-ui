@@ -106,7 +106,7 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
       this._cachedDataService
         .getScanList(
           ScanListReq.create({
-            searchFilters: { RTT: this._analysisLayoutService.defaultScanId },
+            searchFilters: { scanId: this._analysisLayoutService.defaultScanId },
           })
         )
         .subscribe((resp: ScanListResp) => {
@@ -114,6 +114,8 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
             for (const scan of resp.scans) {
               this._hasDwells.set(scan.id, (scan.contentCounts["DwellSpectra"] || 0) > 0);
             }
+          } else {
+            throw new Error(`Selection changer: Failed to retrieve scan: ${this._analysisLayoutService.defaultScanId}`);
           }
         });
     }

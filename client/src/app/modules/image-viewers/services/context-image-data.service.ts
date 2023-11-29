@@ -280,11 +280,14 @@ export class ContextImageDataService {
     return this._cachedDataService
       .getScanList(
         ScanListReq.create({
-          searchFilters: { RTT: scanId },
+          searchFilters: { scanId: scanId },
         })
       )
       .pipe(
         switchMap((scanListResp: ScanListResp) => {
+          if (!scanListResp.scans || scanListResp.scans.length <= 0) {
+            throw new Error(`Failed to retrieve scan: ${scanId}`);
+          }
           // Now that we know the scan's detector, we can request the rest of the stuff we want
           const requests = [
             this._cachedDataService.getScanBeamLocations(ScanBeamLocationsReq.create({ scanId: scanId })),

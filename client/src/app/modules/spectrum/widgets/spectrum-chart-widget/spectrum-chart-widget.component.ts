@@ -587,7 +587,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           ),
           this._cachedDataService.getScanList(
             ScanListReq.create({
-              searchFilters: { RTT: roi.region.scanId },
+              searchFilters: { scanId: roi.region.scanId },
             })
           ),
         ]).subscribe(loadedItems => {

@@ -29,6 +29,7 @@
 
 import { Component, Inject } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { ContextImageItem } from "src/app/modules/image-viewers/image-viewers.module";
 
 export class DatasetCustomImageInfo {
   constructor(
@@ -45,15 +46,16 @@ export class DatasetCustomImageInfo {
 export class AddCustomImageParameters {
   constructor(
     public acceptTypes: string = "*",
-    public allowMatchedParams: boolean = false,
-    public title: string = "Add Images"
+    public allowMatched: boolean = false,
+    public title: string = "Add Images",
+    public scanIdForMatching: string = ""
   ) {}
 }
 
 export class AddCustomImageResult {
   constructor(
-    public meta: DatasetCustomImageInfo,
-    public imageToUpload: File
+    public imageToUpload: File,
+    public imageToMatch: string
   ) {}
 }
 
@@ -63,9 +65,8 @@ export class AddCustomImageResult {
   styleUrls: ["./add-custom-image.component.scss"],
 })
 export class AddCustomImageComponent {
-  data: DatasetCustomImageInfo = new DatasetCustomImageInfo("", "", 0, 0, 1, 1, "");
-
   droppedFiles: File[] = [];
+  private _alignToImage: string = "";
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public params: AddCustomImageParameters,
@@ -77,16 +78,16 @@ export class AddCustomImageComponent {
       alert("Please drop one image to upload");
       return;
     }
-
-    if (this.params.allowMatchedParams) {
+/*
+    if (this.params.allowMatched) {
       // Validate that fields were entered
-      if (this.data.xOffset == null || this.data.yScale == null || this.data.xScale == null || this.data.yScale == null /*|| this.data.alignedBeamPMC == null*/) {
+      if (this.data.xOffset == null || this.data.yScale == null || this.data.xScale == null || this.data.yScale == null /*|| this.data.alignedBeamPMC == null* /) {
         alert("Please enter all fields");
         return;
       }
     }
-
-    this.dialogRef.close(new AddCustomImageResult(this.data, this.droppedFiles[0]));
+*/
+    this.dialogRef.close(new AddCustomImageResult(this.droppedFiles[0], this._alignToImage));
   }
 
   get title(): string {
@@ -126,5 +127,9 @@ export class AddCustomImageComponent {
   onRemoveDroppedFile(event) {
     //console.log(event);
     this.droppedFiles.splice(this.droppedFiles.indexOf(event), 1);
+  }
+
+  onChangeAlignToImage(img: ContextImageItem) {
+    this._alignToImage = img.path;
   }
 }

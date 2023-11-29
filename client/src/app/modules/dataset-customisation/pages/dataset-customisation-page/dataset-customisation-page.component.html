@@ -40,14 +40,14 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div class="menu-section">
             <div class="meta-entry column">
-                <span>Scan Title & Description</span>
+                <div class="txt-dlg-heading">Scan Title & Description</div>
                 <input *ngIf="title !== null" [(ngModel)]="title" type="text" placeholder="Title...">
                 <mat-spinner *ngIf="title === null" [diameter]="24" color="accent"></mat-spinner>
                 <input *ngIf="title !== null" [(ngModel)]="description" type="text" placeholder="Description...">
                 <push-button (onClick)="onSaveTitleDescription()" buttonStyle="yellow">Save</push-button>
             </div>
             <div *ngIf="scanId" class="meta-entry column">
-                <span>Default Image</span>
+                <div class="txt-dlg-heading">Default Image</div>
                 <image-picker [scanIds]="[scanId]" [currentImage]="defaultContextImage" [includeHideOption]="false" (selectedImage)="onChangeDefaultImage($event)"></image-picker>
             </div>
         </div>
@@ -56,23 +56,23 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div *ngIf="scanId" class="menu-section">
             <div class="meta-entry column">
-                <h3>Selected Image</h3>
+                <div class="txt-dlg-heading">Selected Image</div>
                 <span>{{selectedImageLabel}}</span>
             </div>
-            <div class="meta-entry column">
-                <h3>Align-To Image</h3>
+            <div *ngIf="mdl.overlayImagePath" class="meta-entry column">
+                <div class="txt-dlg-heading">Align-To Image</div>
                 <span>{{alignToImageLabel}}</span>
                 <!-- <image-picker [scanIds]="[scanId]" [currentImage]="alignToImage" [includeHideOption]="false" [onlyInstrumentImages]="true" (selectedImage)="onChangeAlignToImage($event)"></image-picker> -->
             </div>
             <ng-container *ngIf="mdl.imageName">
                 <div class="meta-entry column">
-                    <h3>Quantification</h3>
+                    <div class="txt-dlg-heading">Quantification</div>
                     <div class="row">
                         <quantification-selector [scanId]="scanId" [selectedQuantID]="selectedQuantId" (selectQuant)="onSelectQuantForScan($event)"></quantification-selector>
                     </div>
                 </div>
                 <div *ngIf="selectedQuantId" class="meta-entry column">
-                    <h3>Element Map</h3>
+                    <div class="txt-dlg-heading">Element Map</div>
                     <div class="row">
                         <mat-select [(ngModel)]="selectedElementMap" (selectionChange)="onQuantElementChanged($event)">
                             <mat-option *ngFor="let elem of quantifiedElements" [value]="elem">{{ elem }}</mat-option>
@@ -141,6 +141,8 @@ POSSIBILITY OF SUCH DAMAGE.
                             [minValue]="0.5"
                             [maxValue]="10"
                             (onChange)="onChangeOverlayBrightness($event)"></slider>
+                        <push-button (onClick)="onPickDisplayItems()" buttonStyle="outline">Display</push-button>
+                        
                     </div>
                     <div class="save-buttons">
                         <push-button (onClick)="onPreviewMeta()" buttonStyle="outline">Preview</push-button>

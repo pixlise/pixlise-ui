@@ -22,7 +22,7 @@ export class XRFDatabaseService {
       result = this._cachedDataService
         .getScanList(
           ScanListReq.create({
-            searchFilters: { RTT: scanId },
+            searchFilters: { scanId: scanId },
           })
         )
         .pipe(

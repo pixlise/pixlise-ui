@@ -34,29 +34,14 @@ POSSIBILITY OF SUCH DAMAGE.
         <div class="txt-widget-title">{{title}}</div>
     </div>
 
-    <div *ngIf="params.allowMatchedParams" class="meta-fields">
-        <!-- <div
-            fxLayout="row"
-            fxLayoutAlign="space-between center"
-            class="gap-separated-horizontal-elements">
-            <span>Aligned Beam PMC</span>
-            <input [(ngModel)]="data.alignedBeamPMC" type="text" placeholder="PMC of beam location column">
-        </div> -->
+    <div *ngIf="params.allowMatched" class="meta-fields">
         <div class="row">
-            <span>x-offset</span>
-            <input [(ngModel)]="data.xOffset" type="text" placeholder="Top-left X of matched area">
-        </div>
-        <div class="row">
-            <span>y-offset</span>
-            <input [(ngModel)]="data.yOffset" type="text" placeholder="Top-left Y of matched area">
-        </div>
-        <div class="row">
-            <span>x-scale</span>
-            <input [(ngModel)]="data.xScale" type="text" placeholder="Ratio of width of MCC vs matched area width">
-            </div>
-            <div class="row">
-            <span>y-scale</span>
-            <input [(ngModel)]="data.yScale" type="text" placeholder="Ratio of height of MCC vs matched area height">
+            <span>Matched image</span>
+            <image-picker
+                [scanIds]="[params.scanIdForMatching]"
+                [includeHideOption]="false"
+                [onlyInstrumentImages]="true"
+                (selectedImage)="onChangeAlignToImage($event)"></image-picker>
         </div>
     </div>
 

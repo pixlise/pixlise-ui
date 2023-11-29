@@ -1,8 +1,8 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
-import { ContextImageItem, ContextImageModelLoadedData, ContextImageScanModel } from "src/app/modules/image-viewers/image-viewers.module";
+import { Component, ElementRef, OnDestroy, OnInit } from "@angular/core";
+import { ContextImageItem, ContextImageItemTransform, ContextImageModelLoadedData, ContextImageScanModel } from "src/app/modules/image-viewers/image-viewers.module";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
-import { MatDialog } from "@angular/material/dialog";
-import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
 import { ImageMatchTransform, ScanImage, ScanImageSource } from "src/app/generated-protos/image";
 import { Subscription } from "rxjs";
@@ -24,7 +24,15 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { ContextImageMapLayer } from "src/app/modules/image-viewers/models/map-layer";
 import { ColourRamp } from "src/app/utils/colours";
-import { DefaultDetectorId } from "src/app/expression-language/predefined-expressions";
+import { SDSFields, httpErrorToString } from "src/app/utils/utils";
+import { AddCustomImageParameters, AddCustomImageComponent, AddCustomImageResult } from "../../components/add-custom-image/add-custom-image.component";
+import { ImageUploadReq } from "src/app/generated-protos/image-msgs";
+import { ImageUploadResp } from "src/app/generated-protos/image-msgs";
+import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
+import { RGBUMineralRatios } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-data";
+
+const imgTypeMatched = "matched";
+const imgTypeUnaligned = "unaligned";
 
 @Component({
   selector: "app-dataset-customisation-page",
@@ -101,35 +109,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     );
 
     this._subs.add(
-      this._dataService.sendImageListRequest(ImageListReq.create({ scanIds: [scanId] })).subscribe({
-        next: (resp: ImageListResp) => {
-          this._images = resp.images;
-
-          // Sort them into their individual lists
-          this.unalignedImages = [];
-          this.matchedImages = [];
-          this.downlinkedImages = [];
-
-          for (const img of resp.images) {
-            if (img.source == ScanImageSource.SI_INSTRUMENT) {
-              this.downlinkedImages.push(img);
-            } else {
-              if (img.matchInfo != null) {
-                this.matchedImages.push(img);
-              } else {
-                this.unalignedImages.push(img);
-              }
-            }
-          }
-        },
-      })
-    );
-
-    this._subs.add(
       this._dataService
         .sendScanListRequest(
           ScanListReq.create({
-            searchFilters: { RTT: scanId },
+            searchFilters: { scanId: scanId },
           })
         )
         .subscribe({
@@ -149,10 +132,43 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
           },
         })
     );
+
+    this.refreshImages();
   }
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  private refreshImages() {
+    const scanId = this.getScanId();
+    if (!scanId) {
+      this._snackService.openError("No scan id supplied");
+      return;
+    }
+
+    this._dataService.sendImageListRequest(ImageListReq.create({ scanIds: [scanId] })).subscribe({
+      next: (resp: ImageListResp) => {
+        this._images = resp.images;
+
+        // Sort them into their individual lists
+        this.unalignedImages = [];
+        this.matchedImages = [];
+        this.downlinkedImages = [];
+
+        for (const img of resp.images) {
+          if (img.source == ScanImageSource.SI_INSTRUMENT) {
+            this.downlinkedImages.push(img);
+          } else {
+            if (img.matchInfo != null) {
+              this.matchedImages.push(img);
+            } else {
+              this.unalignedImages.push(img);
+            }
+          }
+        }
+      },
+    });
   }
 
   private getScanId(): string {
@@ -178,7 +194,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   }
 
   get alignToImageLabel(): string {
-    return this.mdl.imageName ? this.mdl.imageName : "(none)";
+    return this.mdl.imageName ? this.mdl.imageName : "(None)";
   }
 
   get interactionHandler() {
@@ -213,7 +229,9 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         })
       )
       .subscribe({
-        next: (resp: ScanMetaWriteResp) => {},
+        next: (resp: ScanMetaWriteResp) => {
+          this._snackService.openSuccess("Title/description changed");
+        },
         error: err => {
           this._snackService.openError(err);
           this.title = ""; // To clear the spinner
@@ -242,7 +260,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (resp: ScanMetaWriteResp) => {
-          this._snackService.openSuccess("Title/description changed");
+          this._snackService.openSuccess("Default image changed");
         },
         error: err => {
           this._snackService.openError(err);
@@ -267,23 +285,154 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
       },
     });
   }
-  /*
-  onChangeAlignToImage(imgName: ContextImageItem): void {
+
+  onAddImage(imgType: string): void {
     const scanId = this.getScanId();
     if (!scanId) {
+      this._snackService.openError("No scan id supplied");
       return;
     }
 
-    this.mdl.imageName = imgName.path;
-    this.reloadModel();
+    const dialogConfig = new MatDialogConfig();
+
+    //dialogConfig.disableClose = true;
+    //dialogConfig.autoFocus = true;
+    //dialogConfig.width = '1200px';
+
+    let title = "Add Matched Image";
+    let acceptTypes = "image/jpeg,image/png,image/tiff";
+    /*        if(imgType == imgTypeRGBU)
+        {
+            // ONLY allow tiff
+            acceptTypes = "image/tiff";
+            title = 'Add Processed RGBU TIFF image';
+        }
+        else*/ if (imgType == imgTypeUnaligned) {
+      title = "Add Unaligned Image";
+      acceptTypes = "image/jpeg,image/png";
+    }
+
+    dialogConfig.data = new AddCustomImageParameters(acceptTypes, imgType == imgTypeMatched, title, scanId);
+    const dialogRef = this.dialog.open(AddCustomImageComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe((result: AddCustomImageResult) => {
+      if (!result) {
+        // Cancelled
+        return;
+      }
+
+      const nameToSave = result.imageToUpload.name;
+
+      if (nameToSave.toUpperCase().endsWith(".TIF") || nameToSave.toUpperCase().endsWith(".TIFF")) {
+        const errs = [];
+
+        // Check that the file name is not too long because of file extension. We expect it to just be TIF not TIFF
+        if (!nameToSave.toUpperCase().endsWith(".TIF")) {
+          errs.push("Must end in .tif");
+        } else {
+          // Check that the file name conforms to the iSDS name standard, otherwise import will fail
+          const fields = SDSFields.makeFromFileName(result.imageToUpload.name);
+
+          // Expecting it to parse, and expecting:
+          // - prodType to be VIS (visualisation image) or MSA (multi-spectral analysis... NOT to be confused with MSA spectrum files)
+          // - instrument to be PC (PIXL MCC)
+          // - colour filter to be C (special field for 4-channel RGBU TIF images)
+          // - sol is non-zero length
+          // - rtt is non-zero length
+          // - sclk is non-zero length
+          // - version is >= 1
+          if (!fields) {
+            errs.push("invalid length, should be 58 chars (including .tif)");
+          } else {
+            if (["VIS", "MSA"].indexOf(fields.prodType) < 0) {
+              errs.push("Bad prod type: " + fields.prodType);
+            }
+
+            if (fields.instrument != "PC") {
+              errs.push("Bad instrument: " + fields.instrument);
+            }
+
+            if (fields.colourFilter != "C") {
+              errs.push("Bad colour filter: " + fields.colourFilter);
+            }
+
+            if (fields.getSolNumber() <= 0) {
+              errs.push("Bad sol: " + fields.primaryTimestamp);
+            }
+
+            if (fields.RTT <= 0) {
+              errs.push("Bad RTT: " + fields.seqRTT);
+            }
+
+            if (fields.SCLK <= 0) {
+              errs.push("Bad SCLK: " + fields.secondaryTimestamp);
+            }
+
+            if (fields.version < 1) {
+              errs.push("Bad version: " + fields.version);
+            }
+          }
+        }
+
+        if (errs.length > 0) {
+          alert(`Invalid file name: "${result.imageToUpload.name}'\nErrors encountered:\n${errs.join("\n")}`);
+          return;
+        }
+      }
+
+      this._snackService.open(`Uploading ${result.imageToUpload.name}...`);
+
+      // Do the actual upload
+      result.imageToUpload.arrayBuffer().then((imgBytes: ArrayBuffer) => {
+        let beamImageRef: ImageMatchTransform | undefined = undefined;
+        if (result.imageToMatch) {
+          // Create beam match transform, this can be fine-tuned by user later but at its existance will signify that this
+          // is a matched image that _can_ be edited in this way
+          beamImageRef = ImageMatchTransform.create({
+            beamImageFileName: result.imageToMatch,
+            xOffset: 0,
+            yOffset: 0,
+            xScale: 1,
+            yScale: 1,
+          });
+        }
+
+        this._dataService
+          .sendImageUploadRequest(
+            ImageUploadReq.create({
+              name: result.imageToUpload.name,
+              imageData: new Uint8Array(imgBytes),
+              associatedScanIds: [scanId],
+              originScanId: scanId,
+              // oneof
+              //locationPerScan
+              beamImageRef: beamImageRef,
+            })
+          )
+          .subscribe({
+            next: (resp: ImageUploadResp) => {
+              this._snackService.openSuccess(`Successfully uploaded ${result.imageToUpload.name}`);
+              this.refreshImages();
+            },
+            error: err => {
+              this._snackService.openError(err);
+            },
+          });
+      });
+    });
   }
-*/
-  onAddImage(imgType: string): void {}
 
   onDeleteImage(imgType: string, img: ScanImage, event): void {
+    event.stopPropagation();
+
+    if (!confirm(`Are you sure you want to delete ${img.name}?`)) {
+      return;
+    }
+
     this._dataService.sendImageDeleteRequest(ImageDeleteReq.create({ name: img.name })).subscribe({
       next: (resp: ImageDeleteResp) => {
         this._snackService.openSuccess("Image deleted", "Deleted image: " + img.name);
+        this.refreshImages();
       },
       error: err => {
         this._snackService.openError(err);
@@ -297,20 +446,43 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
 
     // If this image has alignent info, get it
     if (img.matchInfo) {
-      this.xOffset = img.matchInfo.xOffset.toLocaleString();
-      this.yOffset = img.matchInfo.yOffset.toLocaleString();
-      this.xScale = img.matchInfo.xScale.toLocaleString();
-      this.yScale = img.matchInfo.yScale.toLocaleString();
+      this.setTransformInputs(img.matchInfo.xOffset, img.matchInfo.yOffset, img.matchInfo.xScale, img.matchInfo.yScale);
 
       this._loadedImageTransform = img.matchInfo;
+
+      // Also store this in the model
+      this.mdl.overlayImageTransform = new ContextImageItemTransform(img.matchInfo.xOffset, img.matchInfo.yOffset, img.matchInfo.xScale, img.matchInfo.yScale);
 
       this.mdl.imageName = img.matchInfo.beamImageFileName;
       this.reloadModel();
     } else if (this.mdl.imageName) {
       this.clearModel();
+    } else if (
+      img.associatedScanIds.length > 0 &&
+      (this.mdl.drawModel.scanDrawModels.size <= 0 ||
+        (this.mdl.drawModel.scanDrawModels.size == 1 && !this.mdl.drawModel.scanDrawModels.get(img.associatedScanIds[0])))
+    ) {
+      // No model data is present, but image has an associated scan, reload...
+      this.mdl.imageName = img.name;
+      this.reloadModel();
     }
 
     this.reloadOverlayImage();
+  }
+
+  // The transform is defined counter-intuitively, it defines how to transform the coordinates to align the points with the image
+  // while the user is probably thinking how do I scale/offset this image to sit it over the coordinate area. Here we define a get
+  // and set function for the UI inputs, any code that touches the UI inputs should go through here. This way we can recalculate
+  // the transform however it makes more sense to the user
+  private setTransformInputs(xOffset: number, yOffset: number, xScale: number, yScale: number) {
+    this.xOffset = xOffset.toLocaleString();
+    this.yOffset = yOffset.toLocaleString();
+    this.xScale = xScale.toLocaleString();
+    this.yScale = yScale.toLocaleString();
+  }
+
+  private getTransformInputs(): ContextImageItemTransform {
+    return new ContextImageItemTransform(parseFloat(this.xOffset), parseFloat(this.yOffset), parseFloat(this.xScale), parseFloat(this.yScale));
   }
 
   onPreviewMeta() {
@@ -319,11 +491,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     }
 
     // We take the values from the input boxes and apply them to the view
-    this.mdl.overlayImageTransform.xOffset = parseFloat(this.xOffset);
-    this.mdl.overlayImageTransform.yOffset = parseFloat(this.yOffset);
-    this.mdl.overlayImageTransform.xScale = parseFloat(this.xScale);
-    this.mdl.overlayImageTransform.yScale = parseFloat(this.yScale);
-
+    this.mdl.overlayImageTransform = this.getTransformInputs();
     this.reDraw();
   }
 
@@ -350,10 +518,13 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     }
 
     // Apply this to our view
-    this.xOffset = this._loadedImageTransform.xOffset.toLocaleString();
-    this.yOffset = this._loadedImageTransform.yOffset.toLocaleString();
-    this.xScale = this._loadedImageTransform.xScale.toLocaleString();
-    this.yScale = this._loadedImageTransform.yScale.toLocaleString();
+    this.setTransformInputs(
+      this._loadedImageTransform.xOffset,
+      this._loadedImageTransform.yOffset,
+      this._loadedImageTransform.xScale,
+      this._loadedImageTransform.yScale
+    );
+    this.mdl.overlayImageTransform = this.getTransformInputs();
 
     this.reloadModel();
   }
@@ -409,6 +580,49 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     this.mdl.expressionIds = [exprId];
 
     this.reloadModel();
+  }
+
+  onPickDisplayItems() {
+    const scanId = this.getScanId();
+    if (!scanId) {
+      return;
+    }
+
+    const dialogConfig = new MatDialogConfig();
+
+    const items: PickerDialogItem[] = [];
+    items.push(new PickerDialogItem("", "Visible Items", "", true));
+    items.push(new PickerDialogItem("Scan Points", "Scan Points", "", true));
+    items.push(new PickerDialogItem("Footprint", "Footprint", "", true));
+
+    const shown = [];
+    if (this.mdl.hidePointsForScans.length <= 0) {
+      shown.push("Scan Points");
+    }
+    if (this.mdl.hideFootprintsForScans.length <= 0) {
+      shown.push("Footprint");
+    }
+
+    dialogConfig.data = new PickerDialogData(true, false, false, false, items, shown, "", undefined);
+
+    const dialogRef = this.dialog.open(PickerDialogComponent, dialogConfig);
+    dialogRef.componentInstance.onSelectedIdsChanged.subscribe((ids: string[]) => {
+      if (ids) {
+        // If they are NOT selected, put them in...
+        if (ids.indexOf("Footprint") == -1) {
+          this.mdl.hideFootprintsForScans = [scanId];
+        } else {
+          this.mdl.hideFootprintsForScans = [];
+        }
+        if (ids.indexOf("Scan Points") == -1) {
+          this.mdl.hidePointsForScans = [scanId];
+        } else {
+          this.mdl.hidePointsForScans = [];
+        }
+
+        this.reDraw();
+      }
+    });
   }
 
   private reloadModel() {

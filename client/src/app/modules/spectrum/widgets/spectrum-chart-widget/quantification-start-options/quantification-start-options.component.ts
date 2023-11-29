@@ -195,7 +195,7 @@ export class QuantificationStartOptionsComponent implements OnInit, OnDestroy {
             this._cachedDataService
               .getScanList(
                 ScanListReq.create({
-                  searchFilters: { RTT: roi.scanId },
+                  searchFilters: { scanId: roi.scanId },
                 })
               )
               .subscribe((resp: ScanListResp) => {
@@ -206,6 +206,8 @@ export class QuantificationStartOptionsComponent implements OnInit, OnDestroy {
 
                   this._detectorConfigs.add(scan.instrumentConfig);
                   this.buildDetectorConfigChoices();
+                } else {
+                  throw new Error(`Failed to retrieve scan: ${roi.scanId} when starting a quantification`);
                 }
               });
           }
