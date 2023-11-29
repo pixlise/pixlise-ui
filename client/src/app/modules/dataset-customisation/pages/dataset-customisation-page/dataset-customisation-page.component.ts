@@ -6,7 +6,16 @@ import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
 import { ImageMatchTransform, ScanImage, ScanImageSource } from "src/app/generated-protos/image";
 import { Subscription } from "rxjs";
-import { ImageListReq, ImageListResp, ImageSetDefaultReq, ImageSetDefaultResp, ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
+import {
+  ImageListReq,
+  ImageListResp,
+  ImageSetDefaultReq,
+  ImageSetDefaultResp,
+  ImageGetDefaultReq,
+  ImageGetDefaultResp,
+  ImageSetMatchTransformReq,
+  ImageSetMatchTransformResp,
+} from "src/app/generated-protos/image-msgs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { ScanMetaWriteReq, ScanMetaWriteResp } from "src/app/generated-protos/scan-msgs";
@@ -190,7 +199,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   }
 
   get selectedImageLabel(): string {
-    return this.mdl.overlayImagePath ? this.mdl.overlayImagePath : "Select one from below!";
+    return this.mdl.overlayImageName ? this.mdl.overlayImageName : "Select one from below!";
   }
 
   get alignToImageLabel(): string {
@@ -442,6 +451,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
 
   onSelectImage(imgType: string, img: ScanImage): void {
     // Show this image
+    this.mdl.overlayImageName = img.name;
     this.mdl.overlayImagePath = img.path;
 
     // If this image has alignent info, get it
@@ -475,14 +485,20 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   // and set function for the UI inputs, any code that touches the UI inputs should go through here. This way we can recalculate
   // the transform however it makes more sense to the user
   private setTransformInputs(xOffset: number, yOffset: number, xScale: number, yScale: number) {
-    this.xOffset = xOffset.toLocaleString();
-    this.yOffset = yOffset.toLocaleString();
-    this.xScale = xScale.toLocaleString();
-    this.yScale = yScale.toLocaleString();
+    this.xOffset = (xOffset / xScale).toLocaleString();
+    this.yOffset = (yOffset / yScale).toLocaleString();
+    this.xScale = (1 / xScale).toLocaleString();
+    this.yScale = (1 / yScale).toLocaleString();
   }
 
   private getTransformInputs(): ContextImageItemTransform {
-    return new ContextImageItemTransform(parseFloat(this.xOffset), parseFloat(this.yOffset), parseFloat(this.xScale), parseFloat(this.yScale));
+    const result = new ContextImageItemTransform(parseFloat(this.xOffset), parseFloat(this.yOffset), 1 / parseFloat(this.xScale), 1 / parseFloat(this.yScale));
+
+    // Undo the divide of scale
+    result.xOffset *= result.xScale;
+    result.yOffset *= result.yScale;
+
+    return result;
   }
 
   onPreviewMeta() {
@@ -500,15 +516,29 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     this.onPreviewMeta();
 
     if (confirm("Are you sure you want to overwrite scale/offset factors with the values currently visible?")) {
-      // Save to API
-      /*this._datasetService.editCustomImageMeta(this.datasetID, imgTypeMatched, this._drawModel.displayImageName, this._drawModel.meta).subscribe(
-        () => {
-          alert("Image scale and offset saved. Don't forget to click SAVE to regenerate the dataset.");
-        },
-        err => {
-          alert(httpErrorToString(err, "Failed to save image scale and offset"));
-        }
-      );*/
+      const xform = this.getTransformInputs();
+
+      this._dataService
+        .sendImageSetMatchTransformRequest(
+          ImageSetMatchTransformReq.create({
+            imageName: this.mdl.overlayImageName,
+            transform: {
+              beamImageFileName: this.mdl.imageName,
+              xOffset: xform.xOffset,
+              yOffset: xform.yOffset,
+              xScale: xform.xScale,
+              yScale: xform.yScale,
+            },
+          })
+        )
+        .subscribe({
+          next: (resp: ImageSetMatchTransformResp) => {
+            this._snackService.openSuccess("Transform saved successfully");
+          },
+          error: err => {
+            this._snackService.openError(err);
+          },
+        });
     }
   }
 

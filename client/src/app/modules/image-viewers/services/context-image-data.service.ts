@@ -19,6 +19,7 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { ExpressionGroupGetReq, ExpressionGroupGetResp } from "src/app/generated-protos/expression-group-msgs";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { RGBUImage } from "src/app/models/RGBUImage";
+import { ContextImageItemTransform } from "../image-viewers.module";
 
 @Injectable({
   providedIn: "root",
@@ -266,7 +267,17 @@ export class ContextImageDataService {
                   scanModels.set(scanMdl.scanId, scanMdl);
                 }
 
-                return new ContextImageModelLoadedData(displayImage, null, scanModels, rgbuImage);
+                let imageTransform: ContextImageItemTransform | null = null;
+                if (imgResp.image?.matchInfo) {
+                  imageTransform = new ContextImageItemTransform(
+                    imgResp.image.matchInfo.xOffset,
+                    imgResp.image.matchInfo.yOffset,
+                    imgResp.image.matchInfo.xScale,
+                    imgResp.image.matchInfo.yScale
+                  );
+                }
+
+                return new ContextImageModelLoadedData(displayImage, imageTransform, scanModels, rgbuImage);
               })
             );
           })
