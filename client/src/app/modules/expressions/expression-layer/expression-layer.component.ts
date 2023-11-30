@@ -20,6 +20,9 @@ export class ExpressionLayerComponent {
   @Input() selected: boolean = false;
   @Input() isSelectable: boolean = true;
 
+  @Input() selectionDisabledMessage: string = "";
+  @Input() isSingleSelect: boolean = false;
+
   @Input() showCreatorIcon: boolean = true;
   @Input() selectAuthorToFilter: boolean = true;
 

@@ -57,6 +57,8 @@ POSSIBILITY OF SUCH DAMAGE.
         [expression]="item"
         (onFilterAuthor)="onFilterAuthor($event)"
         [selected]="checkSelected(item.id)"
+        [selectionDisabledMessage]="data.maxSelection === 1 || canSelectMore ? '' : 'Maximum number of expressions selected'"
+        [isSingleSelect]="data.maxSelection === 1"
         (onSelect)="onSelect(item)"></expression-layer>
     </cdk-virtual-scroll-viewport>
   </section>

@@ -679,6 +679,7 @@ export class CodeEditorPageComponent implements OnInit {
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.data = {
       noActiveScreenConfig: true,
+      maxSelection: 1,
     };
     dialogConfig.data.selectedIds = [];
     let topExpressionId = this._route.snapshot.queryParams["topExpressionId"];

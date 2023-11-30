@@ -89,9 +89,10 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <two-state-icon-button
       *ngIf="isSelectable"
-      toolTip="Toggle Expression"
-      activeIcon="assets/button-icons/check-on.svg"
-      inactiveIcon="assets/button-icons/check-off.svg"
+      #tooltip="matTooltip"
+      [matTooltip]="selectionDisabledMessage || 'Toggle Expression'"
+      [activeIcon]="isSingleSelect ? 'assets/button-icons/radio-on.svg' : 'assets/button-icons/check-on.svg'"
+      [inactiveIcon]="isSingleSelect ? 'assets/button-icons/radio-off.svg' : 'assets/button-icons/check-off.svg'"
       class="checkbox-button"
       [active]="selected"
       (onToggle)="onCheckboxClick($event)">
