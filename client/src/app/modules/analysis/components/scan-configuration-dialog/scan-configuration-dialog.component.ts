@@ -109,6 +109,20 @@ export class ScanConfigurationDialog implements OnInit {
         this.scanQuants = quants;
       })
     );
+
+    // Listen to query params and populate with these if we dont have an active screen config
+    this._subs.add(
+      this._route.queryParams.subscribe(params => {
+        if (this.writeQueryParams) {
+          if (params["scanId"]) {
+            this.onAddScan(params["scanId"]);
+            if (params["quantId"]) {
+              this.onSelectQuantForScan(params["quantId"], params["scanId"]);
+            }
+          }
+        }
+      })
+    );
   }
 
   ngOnDestroy(): void {

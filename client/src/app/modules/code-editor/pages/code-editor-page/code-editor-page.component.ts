@@ -1006,6 +1006,11 @@ export class CodeEditorPageComponent implements OnInit {
       } else {
         this.topExpression.moduleReferences = this.topModules.map(module => module.reference);
         this._expressionsService.writeExpression(this.topExpression);
+        let queryParams = { ...this._route.snapshot.queryParams };
+        if (!queryParams["topExpressionId"]) {
+          queryParams["topExpressionId"] = this.topExpression.id || ExpressionsService.NewExpressionId;
+          this._router.navigate([], { queryParams });
+        }
       }
       this.clearTopExpressionCache();
       this.topExpressionChanged = false;
