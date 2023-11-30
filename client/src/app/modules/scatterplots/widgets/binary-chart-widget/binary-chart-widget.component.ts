@@ -307,7 +307,9 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     }
 
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
-    dialogConfig.data = {};
+    dialogConfig.data = {
+      maxSelection: 1,
+    };
 
     if (this.mdl.expressionIds.length > axisExpressionIndex) {
       dialogConfig.data.selectedIds = [this.mdl.expressionIds[axisExpressionIndex]];
