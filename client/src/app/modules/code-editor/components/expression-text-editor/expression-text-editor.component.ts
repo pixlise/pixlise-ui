@@ -58,6 +58,11 @@ export class DataExpressionModule {
     let versions: SemanticVersion[] = [];
     module.versions.forEach(version => {
       if (version.version) {
+        // Only show major/minor versions to users who don't own the module
+        if (version.version?.patch !== 0 && !module.creator?.canEdit) {
+          return;
+        }
+
         versions.push(version.version);
       }
     });
