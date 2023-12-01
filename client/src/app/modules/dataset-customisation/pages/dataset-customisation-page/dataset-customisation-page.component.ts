@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { ContextImageItem, ContextImageItemTransform, ContextImageModelLoadedData, ContextImageScanModel } from "src/app/modules/image-viewers/image-viewers.module";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
@@ -33,15 +33,11 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { ContextImageMapLayer } from "src/app/modules/image-viewers/models/map-layer";
 import { ColourRamp } from "src/app/utils/colours";
-import { SDSFields, httpErrorToString } from "src/app/utils/utils";
+import { SDSFields } from "src/app/utils/utils";
 import { AddCustomImageParameters, AddCustomImageComponent, AddCustomImageResult } from "../../components/add-custom-image/add-custom-image.component";
 import { ImageUploadReq } from "src/app/generated-protos/image-msgs";
 import { ImageUploadResp } from "src/app/generated-protos/image-msgs";
 import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
-import { RGBUMineralRatios } from "src/app/modules/scatterplots/widgets/rgbu-plot-widget/rgbu-plot-data";
-
-const imgTypeMatched = "matched";
-const imgTypeUnaligned = "unaligned";
 
 @Component({
   selector: "app-dataset-customisation-page",
@@ -176,6 +172,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
             }
           }
         }
+
+        if (resp.images.length <= 0) {
+          this._snackService.openWarning("Scan has no images", "You can upload images and align them to scan locations on this page");
+        }
       },
     });
   }
@@ -295,7 +295,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  onAddImage(imgType: string): void {
+  onAddImage(): void {
     const scanId = this.getScanId();
     if (!scanId) {
       this._snackService.openError("No scan id supplied");
@@ -308,20 +308,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     //dialogConfig.autoFocus = true;
     //dialogConfig.width = '1200px';
 
-    let title = "Add Matched Image";
+    let title = "Add Image";
     let acceptTypes = "image/jpeg,image/png,image/tiff";
-    /*        if(imgType == imgTypeRGBU)
-        {
-            // ONLY allow tiff
-            acceptTypes = "image/tiff";
-            title = 'Add Processed RGBU TIFF image';
-        }
-        else*/ if (imgType == imgTypeUnaligned) {
-      title = "Add Unaligned Image";
-      acceptTypes = "image/jpeg,image/png";
-    }
 
-    dialogConfig.data = new AddCustomImageParameters(acceptTypes, imgType == imgTypeMatched, title, scanId);
+    dialogConfig.data = new AddCustomImageParameters(acceptTypes, true, title, scanId);
     const dialogRef = this.dialog.open(AddCustomImageComponent, dialogConfig);
 
     dialogRef.afterClosed().subscribe((result: AddCustomImageResult) => {

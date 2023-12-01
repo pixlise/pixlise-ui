@@ -83,12 +83,12 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div class="menu-title">
             <div class="txt-widget-title">Uploaded Images</div>
+            <icon-button icon='assets/button-icons/plus-white.svg' (click)="onAddImage()"></icon-button>
         </div>
         <!-- scrollable list of files -->
         <div class="scrollable-container">
             <div class="list-subheading">
                 <span>Beam Matched Images</span>
-                <icon-button icon='assets/button-icons/plus-white.svg' (click)="onAddImage('matched')"></icon-button>
             </div>
             <div *ngFor="let item of matchedImages"
                 class="image-item clickable"
@@ -101,7 +101,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
             <div class="list-subheading">
                 <span>Other Context Images</span>
-                <icon-button icon='assets/button-icons/plus-white.svg' (click)="onAddImage('unaligned')"></icon-button>
             </div>
 
             <div *ngFor="let item of unalignedImages"
