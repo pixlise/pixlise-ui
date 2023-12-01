@@ -49,6 +49,7 @@ export type ExpressionPickerData = {
   scanId?: string;
   quantId?: string;
   noActiveScreenConfig?: boolean;
+  maxSelection?: number;
 };
 
 @Component({
@@ -131,9 +132,36 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     return this.selectedExpressions.has(id);
   }
 
+  get applyTooltip(): string {
+    let tooltip = "";
+    if (this.waitingForExpressions.length > 0) {
+      tooltip = `Waiting for (${this.waitingForExpressions.length}) expressions to finish downloading...`;
+    } else {
+      tooltip = `Apply Selected Expressions:`;
+      this.selectedExpressions.forEach(id => {
+        let expression = this._expressionService.expressions$.value[id];
+        tooltip += `\n${expression?.name || id}`;
+      });
+    }
+
+    return tooltip;
+  }
+
+  get canSelectMore(): boolean {
+    return !this.data.maxSelection || this.selectedExpressions.size < this.data.maxSelection;
+  }
+
   onSelect(expression: DataExpression): void {
+    if (this.data.maxSelection === 1) {
+      this.selectedExpressions.clear();
+      this.selectedExpressions.add(expression.id);
+      return;
+    }
+
     if (this.selectedExpressions.has(expression.id)) {
       this.selectedExpressions.delete(expression.id);
+    } else if (!this.canSelectMore) {
+      return;
     } else {
       this.selectedExpressions.add(expression.id);
     }

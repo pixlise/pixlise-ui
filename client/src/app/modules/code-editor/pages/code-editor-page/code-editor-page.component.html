@@ -79,11 +79,11 @@
               activeIcon="assets/button-icons/caret-down.svg"
               inactiveIcon="assets/button-icons/caret-right.svg"
               class="carat-button"
-              [active]="isCurrentlyOpenSectionOpen"
-              (onToggle)="onToggleCurrentlyOpenSection()">
+              [active]="isModulesSectionOpen"
+              (onToggle)="onToggleModulesSection()">
             </two-state-icon-button>
           </div>
-          <div class="group-layers" *ngIf="isCurrentlyOpenSectionOpen">
+          <div class="group-layers" *ngIf="isModulesSectionOpen">
             <expression-layer
               *ngFor="let module of modules"
               [isSelectable]="true"
@@ -93,7 +93,7 @@
           </div>
         </div>
       </div>
-      <push-button buttonStyle="yellow" (onClick)="addExpressions()" class="add-expressions-btn">Add Expressions</push-button>
+      <push-button buttonStyle="yellow" (onClick)="addExpressions()" class="add-expressions-btn">Open Expression</push-button>
       <section class="create-btns">
         <push-button buttonStyle="yellow" (onClick)="onCreateNewExpression()" class="create-btn">Create Expression</push-button>
         <push-button buttonStyle="yellow" [customDialog]="newModuleDialog" #newModuleDialogBtn class="create-btn">Create Module</push-button>
@@ -127,7 +127,7 @@
       </status-indicator>
       <multi-switch-button
         class="split-screen-btn"
-        [disabled]="isSplitScreenDisabled"
+        [disabled]="!isSplitScreen && isSplitScreenDisabled"
         [options]="['Single', 'Split']"
         [value]="isSplitScreen ? 'Split' : 'Single'"
         (onChange)="onToggleSplitScreen()">
@@ -161,6 +161,8 @@
           (onClick)="setTopEditorActive()"
           (runHighlightedExpression)="runHighlightedExpression()"
           (saveExpression)="onSave(true)"
+          [linkedModuleID]="linkedModuleID"
+          (linkModule)="onLinkModule($event)"
           [isHeaderOpen]="topHeaderOpen"
           [isSplitScreen]="isSplitScreen"
           (toggleHeader)="onToggleTopHeader()"

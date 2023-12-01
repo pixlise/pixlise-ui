@@ -85,6 +85,8 @@ export class CodeEditorPageComponent implements OnInit {
 
   isTopModule: boolean = false;
 
+  linkedModuleID: string = "";
+
   bottomExpression: DataExpression | null = null;
   bottomExpressionChanged: boolean = false;
 
@@ -93,6 +95,7 @@ export class CodeEditorPageComponent implements OnInit {
   public isTopEditorActive = true;
 
   public isCurrentlyOpenSectionOpen = true;
+  public isModulesSectionOpen = true;
 
   liveExpressionConfig: { expressionId: string; scanId: string; quantId: string } = {
     expressionId: "",
@@ -141,6 +144,8 @@ export class CodeEditorPageComponent implements OnInit {
         } else {
           this.bottomExpression = null;
         }
+
+        this.updateLinkedModule();
       })
     );
 
@@ -171,6 +176,8 @@ export class CodeEditorPageComponent implements OnInit {
             }
           });
         }
+
+        this.updateLinkedModule();
       })
     );
 
@@ -209,7 +216,18 @@ export class CodeEditorPageComponent implements OnInit {
             if (moduleVersion) {
               this.loadedModule = module;
               this.loadedModuleVersion = moduleVersion;
-              this.loadedModuleVersions = module.versions.map(version => this.getVersionString(version.version));
+              this.loadedModuleVersions = [];
+
+              module.versions.forEach(version => {
+                // Only show major/minor versions to users who don't own the module
+                if (version.version?.patch !== 0 && !module.creator?.canEdit) {
+                  return;
+                }
+
+                let versionString = this.getVersionString(version.version);
+                this.loadedModuleVersions.push(versionString);
+              });
+
               this.loadedModuleVersions.sort((a, b) => {
                 let aVersion = this.getSemanticVersionFromString(a);
                 let bVersion = this.getSemanticVersionFromString(b);
@@ -256,7 +274,18 @@ export class CodeEditorPageComponent implements OnInit {
           if (moduleVersion) {
             this.loadedModule = module;
             this.loadedModuleVersion = moduleVersion;
-            this.loadedModuleVersions = module.versions.map(version => this.getVersionString(version.version));
+            this.loadedModuleVersions = [];
+
+            module.versions.forEach(version => {
+              // Only show major/minor versions to users who don't own the module
+              if (version.version?.patch !== 0 && !module.creator?.canEdit) {
+                return;
+              }
+
+              let versionString = this.getVersionString(version.version);
+              this.loadedModuleVersions.push(versionString);
+            });
+
             this.loadedModuleVersions.sort((a, b) => {
               let aVersion = this.getSemanticVersionFromString(a);
               let bVersion = this.getSemanticVersionFromString(b);
@@ -291,6 +320,8 @@ export class CodeEditorPageComponent implements OnInit {
             }
           });
         }
+
+        this.updateLinkedModule();
       })
     );
   }
@@ -436,6 +467,17 @@ export class CodeEditorPageComponent implements OnInit {
     }
   }
 
+  onLinkModule(moduleID: string) {
+    this.linkedModuleID = moduleID;
+    if (!this.isSplitScreen) {
+      this.onToggleSplitScreen();
+    } else if (!this.linkedModuleID && !this.bottomExpressionChanged) {
+      this.onToggleSplitScreen();
+    }
+
+    this.updateLinkedModule();
+  }
+
   get topModuleIds(): string[] {
     return this.topModules.map(module => module.module.id);
   }
@@ -560,21 +602,34 @@ export class CodeEditorPageComponent implements OnInit {
     this._analysisLayoutService.delayNotifyCanvasResize(500);
   }
 
+  openBottomModule(moduleId: string = "", version: string = "") {
+    // Defaults to first module in list of top expression installed modules if not specified
+    let moduleToOpen = !moduleId ? this.topModules[0]?.module : this.modules.find(module => module.id === moduleId);
+    if (moduleToOpen) {
+      if (!version) {
+        version = this.getVersionString(moduleToOpen.versions[moduleToOpen.versions.length - 1].version);
+      }
+
+      let queryParams = {
+        ...this._route.snapshot.queryParams,
+        bottomExpressionId: moduleToOpen.id,
+        bottomModuleVersion: version,
+      };
+      this._router.navigate([], { queryParams });
+    }
+  }
+
   onToggleSplitScreen() {
     if (this.isSplitScreenDisabled) {
       return;
     }
 
     this.isSplitScreen = !this.isSplitScreen;
-    if (!this.bottomExpression && this.topModules.length > 0) {
+    if (this.linkedModuleID) {
+      this.openBottomModule(this.linkedModuleID);
+    } else if (!this.bottomExpression && this.topModules.length > 0) {
       // Open first module referenced by top expression
-      let firstModule = this.topModules[0];
-      let queryParams = {
-        ...this._route.snapshot.queryParams,
-        bottomExpressionId: firstModule.module.id,
-        bottomModuleVersion: this.getVersionString(firstModule.reference.version),
-      };
-      this._router.navigate([], { queryParams });
+      this.openBottomModule();
     }
     this.setTopEditorActive();
     this.storeMetadata();
@@ -624,6 +679,7 @@ export class CodeEditorPageComponent implements OnInit {
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.data = {
       noActiveScreenConfig: true,
+      maxSelection: 1,
     };
     dialogConfig.data.selectedIds = [];
     let topExpressionId = this._route.snapshot.queryParams["topExpressionId"];
@@ -923,6 +979,21 @@ export class CodeEditorPageComponent implements OnInit {
     }
   }
 
+  updateLinkedModule() {
+    if (this.linkedModuleID) {
+      let linkedModule = this.modules.find(module => module.id === this.linkedModuleID);
+      let latestVersion = linkedModule?.versions[linkedModule.versions.length - 1];
+      if (linkedModule && latestVersion) {
+        let topLinkedModule = this.topModules.find(module => module.module.id === linkedModule?.id);
+        if (topLinkedModule && this.getVersionString(topLinkedModule.reference.version) !== this.getVersionString(latestVersion.version)) {
+          topLinkedModule.module = linkedModule;
+          topLinkedModule.reference = ModuleReference.create({ moduleId: linkedModule.id, version: latestVersion.version });
+          this.onSave(true);
+        }
+      }
+    }
+  }
+
   onSave(saveTop: boolean = this.isTopEditorActive) {
     if (saveTop && this.topExpression) {
       if (this.isTopModule) {
@@ -933,7 +1004,13 @@ export class CodeEditorPageComponent implements OnInit {
         delete queryParams["topModuleVersion"];
         this._router.navigate([], { queryParams });
       } else {
+        this.topExpression.moduleReferences = this.topModules.map(module => module.reference);
         this._expressionsService.writeExpression(this.topExpression);
+        let queryParams = { ...this._route.snapshot.queryParams };
+        if (!queryParams["topExpressionId"]) {
+          queryParams["topExpressionId"] = this.topExpression.id || ExpressionsService.NewExpressionId;
+          this._router.navigate([], { queryParams });
+        }
       }
       this.clearTopExpressionCache();
       this.topExpressionChanged = false;
@@ -942,6 +1019,10 @@ export class CodeEditorPageComponent implements OnInit {
       this.updateModuleWithActiveExpression();
       this.clearBottomExpressionCache();
       this.bottomExpressionChanged = false;
+
+      let queryParams = { ...this._route.snapshot.queryParams };
+      delete queryParams["bottomModuleVersion"];
+      this._router.navigate([], { queryParams });
     }
   }
 
@@ -990,6 +1071,10 @@ export class CodeEditorPageComponent implements OnInit {
 
   onToggleCurrentlyOpenSection() {
     this.isCurrentlyOpenSectionOpen = !this.isCurrentlyOpenSectionOpen;
+  }
+
+  onToggleModulesSection() {
+    this.isModulesSectionOpen = !this.isModulesSectionOpen;
   }
 
   onClose() {}

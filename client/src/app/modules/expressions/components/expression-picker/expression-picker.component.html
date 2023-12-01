@@ -57,6 +57,8 @@ POSSIBILITY OF SUCH DAMAGE.
         [expression]="item"
         (onFilterAuthor)="onFilterAuthor($event)"
         [selected]="checkSelected(item.id)"
+        [selectionDisabledMessage]="data.maxSelection === 1 || canSelectMore ? '' : 'Maximum number of expressions selected'"
+        [isSingleSelect]="data.maxSelection === 1"
         (onSelect)="onSelect(item)"></expression-layer>
     </cdk-virtual-scroll-viewport>
   </section>
@@ -66,8 +68,8 @@ POSSIBILITY OF SUCH DAMAGE.
     <push-button
       buttonStyle="yellow"
       #tooltip="matTooltip"
-      matTooltip="Waiting for ({{ waitingForExpressions.length }}) expressions to finish downloading..."
-      [matTooltipDisabled]="waitingForExpressions.length === 0"
+      [matTooltip]="applyTooltip"
+      [matTooltipDisabled]="waitingForExpressions.length === 0 && selectedExpressions.size === 0"
       [disabled]="waitingForExpressions.length > 0"
       (onClick)="onConfirm()"
       >Apply</push-button

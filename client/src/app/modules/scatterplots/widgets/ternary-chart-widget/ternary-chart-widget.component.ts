@@ -355,7 +355,9 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     }
 
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
-    dialogConfig.data = {};
+    dialogConfig.data = {
+      maxSelection: 1,
+    };
 
     if (this.mdl.expressionIds.length > axisExpressionIndex) {
       dialogConfig.data.selectedIds = [this.mdl.expressionIds[axisExpressionIndex]];
