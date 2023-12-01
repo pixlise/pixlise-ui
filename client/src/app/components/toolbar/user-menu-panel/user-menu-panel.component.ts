@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Inject, Output } from "@angular/core";
+import { Component, EventEmitter, Output } from "@angular/core";
 import { AuthService } from "@auth0/auth0-angular";
 import { UserDetails } from "src/app/generated-protos/user";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
@@ -69,7 +69,8 @@ export class UserMenuPanelComponent {
   }
 
   onLogout(): void {
-    this._authService.logout();
+    const returnTo = location.protocol + "//" + location.host;
+    this._authService.logout({ logoutParams: { returnTo: returnTo } });
   }
 
   onResetHints(): void {}
