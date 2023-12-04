@@ -27,20 +27,24 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component } from "@angular/core";
+import { Component, OnInit, OnDestroy } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
+import { Subscription } from "rxjs";
 
 import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ScanUploadReq, ScanUploadResp } from "src/app/generated-protos/scan-msgs";
+import { ScanUploadReq, ScanUploadResp, ScanUploadUpd } from "src/app/generated-protos/scan-msgs";
 
 import { httpErrorToString } from "src/app/utils/utils";
+import { JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-protos/job";
 
 @Component({
   selector: "app-add-dataset-dialog",
   templateUrl: "./add-dataset-dialog.component.html",
   styleUrls: ["./add-dataset-dialog.component.scss"],
 })
-export class AddDatasetDialogComponent {
+export class AddDatasetDialogComponent implements OnInit, OnDestroy {
+  private _subs = new Subscription();
+
   // switch modes for html
   modeEntry = "entry";
   modeCreate = "create";
@@ -48,7 +52,13 @@ export class AddDatasetDialogComponent {
 
   nameHint: string = "";
   droppedFiles: File[] = [];
+  private _jobId: string = "";
+
   logId: string = "";
+  status: string = "";
+  statusMessage: string = "";
+  complete = false;
+
   mode: string = this.modeEntry;
   modeTitle: string = "";
 
@@ -61,7 +71,29 @@ export class AddDatasetDialogComponent {
     private _dataService: APIDataService
   ) {}
 
-  //ngOnInit(): void {}
+  ngOnInit(): void {
+    this._subs.add(
+      this._dataService.scanUploadUpd$.subscribe((upd: ScanUploadUpd) => {
+        // If we get an update, try open logs, etc
+        if (upd.status && upd.status.jobId == this._jobId) {
+          this.logId = upd.status.logId;
+
+          this.status = jobStatus_StatusToJSON(upd.status.status);
+          this.statusMessage = upd.status.message;
+
+          this.complete = upd.status.status == JobStatus_Status.COMPLETE || upd.status.status == JobStatus_Status.ERROR;
+
+          if (this.complete) {
+            this.modeTitle = "Import " + jobStatus_StatusToJSON(upd.status.status);
+          }
+        }
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
+  }
 
   onOK() {
     if (this.droppedFiles.length != 1) {
@@ -83,7 +115,11 @@ export class AddDatasetDialogComponent {
     this.droppedFiles[0].arrayBuffer().then(
       (fileBytes: ArrayBuffer) => {
         this.mode = this.modeCreate;
-        this.modeTitle = "Creating dataset: " + this.nameHint + "...";
+        this.modeTitle = "Uploading dataset: " + this.nameHint + "...";
+
+        this.complete = false;
+        this.status = "";
+        this.statusMessage = "";
 
         this._dataService
           .sendScanUploadRequest(
@@ -95,14 +131,14 @@ export class AddDatasetDialogComponent {
           )
           .subscribe({
             next: (resp: ScanUploadResp) => {
-              this.modeTitle = "Dataset: " + this.nameHint + " created";
+              this.modeTitle = "Importing uploaded dataset: " + this.nameHint + "...";
 
               // This should trigger log viewing...
-              //this.logId = resp.logId;
+              this._jobId = resp.jobId;
               this.mode = this.modeComplete;
             },
             error: err => {
-              this.modeTitle = httpErrorToString(err, "Failed to create dataset");
+              this.modeTitle = httpErrorToString(err, "Failed to upload dataset");
               this.mode = this.modeComplete;
             },
           });

@@ -72,17 +72,15 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </ng-container>
 
-    <!-- Waiting for creation -->
-    <ng-container *ngSwitchCase="modeCreate">
-      <div class="spinner">
-        <wait-spinner></wait-spinner>
-        <!-- TODO: was <mat-spinner [diameter]="64" color="accent"></mat-spinner> -->
-      </div>
-    </ng-container>
-
-    <!-- Complete -->
     <ng-container *ngSwitchDefault>
-      <div class="log-area">
+      <div class="job-status">
+        <div class="row">
+          <div *ngIf="status">{{status}}</div>
+          <div *ngIf="statusMessage">{{statusMessage}}</div>
+        </div>
+        <wait-spinner *ngIf="!complete"></wait-spinner>
+      </div>
+      <div *ngIf="logId" class="log-area">
         <log-viewer title="Dataset Creation Log" [logID]="logId"></log-viewer>
       </div>
     </ng-container>
