@@ -51,11 +51,11 @@ export class HttpInterceptorService {
         return next.handle(tokenReq);
       }),
       catchError(err => {
-        if (err.message === "Login required") {
-          const returnTo = location.protocol + "//" + location.host;
-          this._authService.logout({ logoutParams: { returnTo: returnTo } });
-          //this._snackService.openError(err);
-        }
+        //if (err.message === "Login required") {
+          //const returnTo = location.protocol + "//" + location.host;
+          //this._authService.logout({ logoutParams: { returnTo: returnTo } });
+          this._snackService.openError(err);
+        //}
         return throwError(() => new Error(err));
       })
     );
