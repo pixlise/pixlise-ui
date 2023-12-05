@@ -15,7 +15,7 @@ export const DEFAULT_SCREEN_CONFIGURATION: ScreenConfiguration = {
       widgets: [
         {
           id: "",
-          type: "binary-plot",
+          type: "context-image",
           startRow: 1,
           startColumn: 1,
           endRow: 2,
