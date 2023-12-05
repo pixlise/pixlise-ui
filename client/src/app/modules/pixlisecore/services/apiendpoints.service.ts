@@ -13,13 +13,13 @@ export class APIEndpointsService {
 
   // Assumes the path is going to get us the image, might have to include the scan id in it
   loadImageForPath(imagePath: string): Observable<HTMLImageElement> {
-    const apiUrl = APIPaths.getWithHost(`/images/download/${imagePath}`);
+    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
     return this.loadImageFromURL(apiUrl);
   }
   /*
   // Constructs the path from scan id and image
   loadImageForScan(scanId: string, imageName: string): Observable<HTMLImageElement> {
-    const apiUrl = APIPaths.getWithHost(`/images/download/${scanId}/${imageName}`);
+    const apiUrl = APIPaths.getWithHost(`images/download/${scanId}/${imageName}`);
     return this.loadImageFromURL(apiUrl);
   }
 */
@@ -72,7 +72,7 @@ export class APIEndpointsService {
   // Used by dataset customisation RGBU loading and from loadRGBUImage()
   // Gets and decodes image
   loadRGBUImageTIF(imagePath: string): Observable<RGBUImage> {
-    const apiUrl = APIPaths.getWithHost(`/images/download/${imagePath}`);
+    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
     return this.http.get(apiUrl, { responseType: "arraybuffer" }).pipe(
       mergeMap((bytes: ArrayBuffer) => {
         return RGBUImage.readImage(bytes, imagePath);

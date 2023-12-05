@@ -7,12 +7,16 @@ import { catchError, mergeMap, tap } from "rxjs/operators";
 import { AuthService } from "@auth0/auth0-angular";
 import { environment } from "src/environments/environment";
 import { APIPaths } from "src/app/utils/api-helpers";
+import { SnackbarService } from "./snackbar.service";
 
 @Injectable({
   providedIn: "root",
 })
 export class HttpInterceptorService {
-  constructor(private _authService: AuthService) {}
+  constructor(
+    private _authService: AuthService,
+    private _snackService: SnackbarService
+  ) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     // If the browser online is false, show the warning dialog straight away
@@ -46,6 +50,12 @@ export class HttpInterceptorService {
         });
 
         return next.handle(tokenReq);
+      }),
+      catchError(err => {
+        if (err.message === "Login required") {
+          this._snackService.openError(err);
+        }
+        return throwError(() => new Error(err));
       })
     );
   }

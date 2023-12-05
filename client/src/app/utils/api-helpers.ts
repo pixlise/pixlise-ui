@@ -70,6 +70,12 @@ export class APIPaths {
 
   // path should be one of the above, or the above with more stuff added to it, making sure / are included!
   public static getWithHost(path: string): string {
-    return APIPaths.apiURL + path;
+    // Try to generate valid URLs! Include a / but only if needed
+    let url = APIPaths.apiURL;
+    if (!url.endsWith("/") && !path.startsWith("/")) {
+      url += "/";
+    }
+    url += path;
+    return url;
   }
 }
