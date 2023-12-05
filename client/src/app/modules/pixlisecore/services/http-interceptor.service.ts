@@ -51,11 +51,15 @@ export class HttpInterceptorService {
         return next.handle(tokenReq);
       }),
       catchError(err => {
-        //if (err.message === "Login required") {
-          //const returnTo = location.protocol + "//" + location.host;
-          //this._authService.logout({ logoutParams: { returnTo: returnTo } });
+        const errorStr = `${err}`;
+        if (errorStr === "Login required") {
+          this._snackService.openError(
+            "Auto-login failed, please use Chrome without ad blocking",
+            "Maybe your browser/ad-blocker is preventing PIXLISE to auto-login"
+          );
+        } else {
           this._snackService.openError(err);
-        //}
+        }
         return throwError(() => new Error(err));
       })
     );
