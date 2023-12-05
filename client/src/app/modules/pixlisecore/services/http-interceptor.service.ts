@@ -52,7 +52,7 @@ export class HttpInterceptorService {
       }),
       catchError(err => {
         const errorStr = `${err}`;
-        if (errorStr === "Login required") {
+        if (errorStr.indexOf("Login required") >= 0) {
           this._snackService.openError(
             "Auto-login failed, please use Chrome without ad blocking",
             "Maybe your browser/ad-blocker is preventing PIXLISE to auto-login"
