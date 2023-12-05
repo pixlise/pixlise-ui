@@ -94,7 +94,7 @@ export class NumberButtonComponent implements OnInit {
   }
 
   get styles(): string[] {
-    let styles = [this.params.colourStyle];
+    const styles = [this.params.colourStyle];
     if (this.params.link) {
       styles.push("clickable");
     }
@@ -105,11 +105,23 @@ export class NumberButtonComponent implements OnInit {
     if (this.params.link) {
       // If caller wants a callback, provide here
       if (this.params.link.startsWith(LoginPrefix)) {
-        let redir = this.params.link.substring(LoginPrefix.length);
-        this._authService.loginWithRedirect({ appState: { target: environment.authTarget } });
+        const redir = this.params.link.substring(LoginPrefix.length);
+        this._authService.loginWithRedirect({
+          appState: {
+            target: environment.authTarget,
+            redirectUri: redir,
+          }
+        });
       } else if (this.params.link.startsWith(SignupPrefix)) {
-        let redir = this.params.link.substring(SignupPrefix.length);
-        this._authService.loginWithRedirect({ authorizationParams: { screen_hint: "signup" } });
+        const redir = this.params.link.substring(SignupPrefix.length);
+        this._authService.loginWithRedirect({
+          authorizationParams: {
+            screen_hint: "signup",
+          },
+          appState: {
+            redirectUri: redir,
+          }
+        });
       } else {
         // Simple link opening, we can handle it. If it's a whole URL we open it
         // with window.open in a new tab, otherwise let angular router deal with it
@@ -117,10 +129,10 @@ export class NumberButtonComponent implements OnInit {
           window.open(this.params.link, "_blank");
         } else {
           // Handle fragments...
-          let extras: NavigationExtras = {};
+          const extras: NavigationExtras = {};
 
           let url = this.params.link;
-          let parts = url.split("#");
+          const parts = url.split("#");
           if (parts.length == 2) {
             url = parts[0];
             extras.fragment = parts[1];

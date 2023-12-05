@@ -41,7 +41,7 @@ export class APICommService implements OnDestroy {
       catchError(err => {
         // Not sure where this actually comes from, so just detecting it as text here but
         // if we're not logged in/bad token, etc we should redirect to the main page or something!
-        if (err === "Login required") {
+        if (err?.message === "Login required") {
           console.error("APICommService - Login Required sighted");
         } else {
           console.error(`APICommService [${this._id}] beginConnect error: ${err}`);

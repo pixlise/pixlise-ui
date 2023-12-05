@@ -1,11 +1,10 @@
 import { Injectable } from "@angular/core";
-import { HttpErrorResponse, HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, HttpResponse } from "@angular/common/http";
+import { HttpEvent, HttpHandler, HttpRequest } from "@angular/common/http";
 
 import { Observable, throwError } from "rxjs";
-import { catchError, mergeMap, tap } from "rxjs/operators";
+import { catchError, mergeMap } from "rxjs/operators";
 
 import { AuthService } from "@auth0/auth0-angular";
-import { environment } from "src/environments/environment";
 import { APIPaths } from "src/app/utils/api-helpers";
 import { SnackbarService } from "./snackbar.service";
 
@@ -53,7 +52,9 @@ export class HttpInterceptorService {
       }),
       catchError(err => {
         if (err.message === "Login required") {
-          this._snackService.openError(err);
+          const returnTo = location.protocol + "//" + location.host;
+          this._authService.logout({ logoutParams: { returnTo: returnTo } });
+          //this._snackService.openError(err);
         }
         return throwError(() => new Error(err));
       })
