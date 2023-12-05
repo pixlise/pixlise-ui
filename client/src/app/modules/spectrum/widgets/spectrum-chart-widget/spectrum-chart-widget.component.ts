@@ -12,7 +12,7 @@ import { SpectrumChartToolHost } from "./tools/tool-host";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { SpectrumExpressionDataSource, SpectrumExpressionParser, SpectrumValues } from "../../models/Spectrum";
 import { SpectrumReq, SpectrumResp } from "src/app/generated-protos/spectrum-msgs";
-import { Spectrum, SpectrumType } from "src/app/generated-protos/spectrum";
+import { Spectrum, SpectrumType, spectrumTypeToJSON } from "src/app/generated-protos/spectrum";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { RegionSettings } from "src/app/modules/roi/models/roi-region";
@@ -27,6 +27,7 @@ import { SpectrumToolId } from "./tools/base-tool";
 import { PeakIdentificationData, SpectrumPeakIdentificationComponent } from "./spectrum-peak-identification/spectrum-peak-identification.component";
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/widget-data";
+import { ScanEntryRange } from "src/app/generated-protos/scan";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -576,15 +577,21 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         }
 
         // Now we know the scan Id for this one, request spectra and find the scan name
+        // KNOWN ISSUE: this downloads all spectra along with bulk+max, so for only displaying say bulk A+B this is a huuuuge extra download. To
+        // mitigate this, if the ROI has no members, we set an empty entries array, but if there is anything in the ROI, we have to download them all
+        // anyway (so location indexes can access the returned spectra!). Caching is also going to be better if we download all or nothing...
+        // THIS MAY have issues with scans that don't have a stored bulk+max though. Maybe we should always just download all :(
+        const spectrumReq = SpectrumReq.create({
+          scanId: roi.region.scanId,
+          bulkSum: true,
+          maxValue: true,
+        });
+        if (roi.region.scanEntryIndexesEncoded.length <= 0) {
+          spectrumReq.entries = ScanEntryRange.create({ indexes: [] });
+        }
+
         combineLatest([
-          this._cachedDataService.getSpectrum(
-            SpectrumReq.create({
-              scanId: roi.region.scanId,
-              bulkSum: true,
-              maxValue: true,
-              //entries: ScanEntryRange.create({ indexes: encodedIndexes })
-            })
-          ),
+          this._cachedDataService.getSpectrum(spectrumReq),
           this._cachedDataService.getScanList(
             ScanListReq.create({
               searchFilters: { scanId: roi.region.scanId },
@@ -653,14 +660,18 @@ class SpectrumExpressionDataSourceImpl implements SpectrumExpressionDataSource {
         throw new Error("getSpectrum readType must be Normal or Dwell if locationIndex is specified");
       }
 
-      for (const spectrum of this._spectraResp.spectraPerLocation[locationIndex].spectra) {
-        if (spectrum.detector == detectorId && spectrum.type == readType) {
-          return this.convertSpectrum(spectrum);
+      if (this._spectraResp.spectraPerLocation[locationIndex]) {
+        for (const spectrum of this._spectraResp.spectraPerLocation[locationIndex].spectra) {
+          if (spectrum.detector == detectorId && spectrum.type == readType) {
+            return this.convertSpectrum(spectrum);
+          }
         }
+      } else {
+        console.warn("No spectra found for location idx: " + locationIndex + ", so no spectrum line will be contributed to display for this location.");
       }
     }
 
-    throw new Error(`No ${readType} spectrum found for detector: ${detectorId} and location ${locationIndex}`);
+    throw new Error(`No ${spectrumTypeToJSON(readType)} spectrum found for detector: ${detectorId} and location ${locationIndex}`);
   }
 
   private convertSpectrum(s: Spectrum): SpectrumValues {

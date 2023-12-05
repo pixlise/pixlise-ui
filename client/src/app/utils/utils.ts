@@ -1078,3 +1078,17 @@ export function decompressZeroRunLengthEncoding(input: number[], expectedCount: 
 
   return result;
 }
+
+export function rawProtoMessageToDebugString(buffer: ArrayBuffer, charLimit: number): string {
+  const buff = new Uint8Array(buffer);
+  const subBuff = buff.subarray(0, buff.length >= charLimit ? charLimit : buff.length);
+
+  // msg id might be 2nd byte
+  let msgId = "?";
+  if (buff.length > 1) {
+    msgId = buff[1].toString();
+  }
+
+  const byteList = [...subBuff].map(x => x.toString(16).padStart(2, "0")).join(",");
+  return `MsgId: ${msgId}, Length: ${buffer.byteLength} bytes, Starts With: [${byteList}]`;
+}

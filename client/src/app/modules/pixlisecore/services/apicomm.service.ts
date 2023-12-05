@@ -1,15 +1,16 @@
 import { Injectable, OnDestroy } from "@angular/core";
-import { HttpClient, HttpErrorResponse, HttpEventType } from "@angular/common/http";
+import { HttpClient } from "@angular/common/http";
 import { webSocket, WebSocketSubject } from "rxjs/webSocket";
 
-import { Observable, of, switchMap, map, delay, retry, catchError } from "rxjs";
+import { Observable, switchMap, map, retry, catchError } from "rxjs";
 
 import { environment } from "src/environments/environment";
 
 import { WSMessage } from "../../../generated-protos/websocket";
 import { BeginWSConnectionResponse } from "../../../generated-protos/restmsgs";
 import { APIPaths } from "src/app/utils/api-helpers";
-import { randomString } from "src/app/utils/utils";
+import { randomString, rawProtoMessageToDebugString } from "src/app/utils/utils";
+import { getMessageName } from "./wsMessageHandler";
 
 @Injectable({
   providedIn: "root",
@@ -63,19 +64,52 @@ export class APICommService implements OnDestroy {
           // Decode all messages as protobuf WSMessage
           deserializer: msg => {
             const arr = new Uint8Array(msg.data);
-            const res = WSMessage.decode(arr);
-            return res;
+
+            try {
+              const res = WSMessage.decode(arr);
+
+              // Log large messages
+              if (arr.length > environment.largeMessageLogThresholdBytes) {
+                //const msgInfo = rawProtoMessageToDebugString(arr, 20);
+                console.warn(`Large message received: ${arr.length} bytes, type: ${getMessageName(res)}, msgId: ${res.msgId}`);
+              }
+
+              return res;
+            } catch (e) {
+              // Log the deserialisation error, otherwise it gets swallowed up and next thing we know is the connection is closed
+              const msgInfo = rawProtoMessageToDebugString(arr, 20);
+              console.error(`Deserialisation error for incoming ${msgInfo}`);
+              console.error(e);
+              throw e;
+            }
           },
           serializer: (msg: WSMessage) => {
-            const writer = WSMessage.encode(msg);
-            const bytes = writer.finish();
-            const sendbuf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-            return sendbuf;
+            try {
+              const writer = WSMessage.encode(msg);
+              const bytes = writer.finish();
+              const sendbuf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+
+              // Log large messages
+              if (sendbuf.byteLength > environment.largeMessageLogThresholdBytes) {
+                console.warn(`Large message being sent: ${sendbuf.byteLength} bytes, type: ${getMessageName(msg)}, msgId: ${msg.msgId}`);
+              }
+
+              return sendbuf;
+            } catch (e) {
+              // Log the serialisation error, otherwise it gets swallowed up and next thing we know is the connection is closed
+              console.error(`Serialisation error for outgoing ${getMessageName(msg)} message with id: ${msg.msgId}`);
+              console.error(e);
+              throw e;
+            }
           },
           openObserver: {
             next: () => {
               console.log(`APICommService [${this._id}] beginConnect: CONNECTED`);
               connectEvent();
+            },
+            error: err => {
+              console.error("APICommService: Open error");
+              console.error(err);
             },
           },
           closeObserver: {
@@ -85,10 +119,18 @@ export class APICommService implements OnDestroy {
               this.connection$ = null;
               //this.connect({ reconnect: true });
             },
+            error: err => {
+              console.error("APICommService: Close error");
+              console.error(err);
+            },
           },
           closingObserver: {
             next: () => {
               console.log(`APICommService [${this._id}] beginConnect: Websocket closing...`);
+            },
+            error: err => {
+              console.error("APICommService: Closing error");
+              console.error(err);
             },
           },
         });

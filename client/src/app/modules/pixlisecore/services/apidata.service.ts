@@ -34,6 +34,7 @@ export class APIDataService extends WSMessageHandler {
           this.dispatchMessage(wsmsg);
         },
         error: err => {
+          console.error("APIDataService connect error:");
           console.error(err); // Called if at any point WebSocket API signals some kind of error.
           // Not sure what we should do at this point...
         },

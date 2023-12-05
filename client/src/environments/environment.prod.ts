@@ -45,6 +45,7 @@ export const environment = {
     audience: "pixlise-backend",
     redirect_uri: `${window.location.origin}/authenticate`,
   },
+  largeMessageLogThresholdBytes: 1024 * 1024,
 };
 
 /*
