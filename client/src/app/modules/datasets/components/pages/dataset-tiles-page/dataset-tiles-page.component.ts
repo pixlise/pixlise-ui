@@ -35,7 +35,7 @@ import { Subscription } from "rxjs";
 import { AuthService } from "@auth0/auth0-angular";
 
 import { APIDataService, PickerDialogComponent, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
+import { ScanListReq, ScanListResp, ScanListUpd } from "src/app/generated-protos/scan-msgs";
 import { ScanDataType, ScanItem } from "src/app/generated-protos/scan";
 
 import { DatasetFilter } from "../../../dataset-filter";
@@ -141,6 +141,12 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         error: err => {
           this.setDatasetListingNotAllowedError(HelpMessage.GET_CLAIMS_FAILED);
         },
+      })
+    );
+
+    this._subs.add(
+      this._dataService.scanListUpd$.subscribe((upd: ScanListUpd) => {
+        this.onSearch();
       })
     );
 
@@ -455,19 +461,20 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   onAddScan(): void {
     const dialogConfig = new MatDialogConfig();
 
-    //dialogConfig.disableClose = true;
+    dialogConfig.disableClose = true;
     //dialogConfig.autoFocus = true;
     //dialogConfig.width = '1200px';
 
     //dialogConfig.data = ;
     const dialogRef = this.dialog.open(AddDatasetDialogComponent, dialogConfig);
-
+/* We used to re-run search, now we rely on ScanListUpd coming through
     dialogRef.afterClosed().subscribe(() => {
       // Refresh scans in the near future, it should have appeared
       setTimeout(() => {
         this.onSearch();
       }, 2000);
     });
+    */
   }
 
   private spectraCount(count: number): string {

@@ -29,16 +29,15 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div fxLayout="column" fxFlex="100%">
-  <div fxLayout="row" fxLayoutAlign="space-between" class="top-row">
-    <div fxLayout="row" class="gap-separated-horizontal-elements">
+<div class="log-viewer">
+  <div class="top-row">
+    <div class="row">
       <div class="txt-widget-title">{{ title }}</div>
-      <wait-spinner *ngIf="loading"></wait-spinner>
-      <!-- TODO: was <mat-spinner *ngIf="loading" [diameter]="16" color="accent"> -->
+      <div *ngIf="loading" class="refreshing">(refreshing...)</div> <!-- was wait-spinner, should be small sized if this is used -->
     </div>
     <push-button (onClick)="onRefreshLog()" buttonStyle="outline">Refresh</push-button>
   </div>
-  <div class="log-scroll log-data" fxLayout="column" fxFlex="100%">
+  <div #logdata class="log-data">
     <div *ngFor="let line of logData" class="log-data-line">{{ line.timeStampUnixMs | date: "dd MMM yyy HH:mm:ss" }} - {{ line.message }}</div>
   </div>
 </div>

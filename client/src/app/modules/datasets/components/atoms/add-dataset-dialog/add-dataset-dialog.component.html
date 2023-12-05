@@ -34,12 +34,15 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="txt-widget-title">Upload New Dataset</div>
   </div>
 
-  <div *ngIf="modeTitle" class="mode-title">{{ modeTitle }}</div>
+  <div *ngIf="mode !== modeEntry" class="job-status">
+    <div *ngIf="modeTitle" class="mode-title">{{ modeTitle }}</div>
+    <wait-spinner *ngIf="mode === modeUpload && !complete"></wait-spinner>
+  </div>
 
   <ng-container [ngSwitch]="mode">
     <!-- Data entry mode -->
     <ng-container *ngSwitchCase="modeEntry">
-      <div class="entry left-right-padding meta-fields">
+      <div class="entry meta-fields">
         <div class="row">
             <span>Source Instrument</span>
             <mat-select
@@ -73,21 +76,12 @@ POSSIBILITY OF SUCH DAMAGE.
     </ng-container>
 
     <ng-container *ngSwitchDefault>
-      <div class="job-status">
-        <div class="row">
-          <div *ngIf="status">{{status}}</div>
-          <div *ngIf="statusMessage">{{statusMessage}}</div>
-        </div>
-        <wait-spinner *ngIf="!complete"></wait-spinner>
-      </div>
-      <div *ngIf="logId" class="log-area">
-        <log-viewer title="Dataset Creation Log" [logID]="logId"></log-viewer>
-      </div>
+      <log-viewer *ngIf="logId" title="Dataset Creation Log" [logID]="logId"></log-viewer>
     </ng-container>
   </ng-container>
 
   <div class="buttons card-toolbar">
-    <push-button *ngIf="mode === modeComplete" buttonStyle="yellow" (onClick)="onCancel()">Close</push-button>
+    <push-button *ngIf="mode !== modeEntry" buttonStyle="yellow" (onClick)="onCancel()">Close</push-button>
     <ng-container *ngIf="mode === modeEntry">
       <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
       <push-button buttonStyle="yellow" (onClick)="onOK()">Upload</push-button>

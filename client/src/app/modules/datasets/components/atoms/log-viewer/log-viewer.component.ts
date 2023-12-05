@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Input, OnInit } from "@angular/core";
+import { AfterViewChecked, Component, ElementRef, Input, OnInit, ViewChild } from "@angular/core";
 
 import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { LogReadReq, LogReadResp } from "src/app/generated-protos/log-msgs";
@@ -43,20 +43,20 @@ const logAutoRetrieveLimit = 10; // 10 requests
   templateUrl: "./log-viewer.component.html",
   styleUrls: ["./log-viewer.component.scss"],
 })
-export class LogViewerComponent implements OnInit {
+export class LogViewerComponent implements AfterViewChecked {
   @Input() title: string = "";
   @Input() logID: string = "";
+
+  @ViewChild("logdata", { read: ElementRef }) private _logDataElem!: ElementRef<any>;
 
   logData: LogLine[] = [];
 
   private _logAutoRetrieveCount: number = 0;
   private _loading: boolean = false;
 
-  constructor(
-    private _dataService: APIDataService // TODO private _layoutService: LayoutService,
-  ) {}
+  constructor(private _dataService: APIDataService) {}
 
-  ngOnInit(): void {
+  ngAfterViewChecked(): void {
     this.onRefreshLog();
   }
 
@@ -71,33 +71,36 @@ export class LogViewerComponent implements OnInit {
         this._loading = false;
         if (resp.entries.length > this.logData.length) {
           this.logData = resp.entries;
-
-          // Resize any canvases, as we have likely grown in size
-          // TODO this._layoutService.notifyWindowResize();
         }
 
-        this._logAutoRetrieveCount++;
-
-        if (this._logAutoRetrieveCount < logAutoRetrieveLimit) {
-          setTimeout(() => {
-            this.onRefreshLog();
-          }, 2000);
-        }
+        this.scrollLogToBottom();
+        this.scheduleRefresh();
       },
       error: err => {
         this._loading = false;
-        this.logData = [LogLine.create({ timeStampUnixMs: Date.now(), message: httpErrorToString(err, "Failed to retrieve log") })];
+        this.logData = [LogLine.create({ timeStampUnixMs: Date.now(), message: httpErrorToString(err, "Failed to retrieve log, maybe it isn't created yet?") })];
 
         // Auto-retry anyway, we may have only got a 404 because log isn't yet created/available!
-        this._logAutoRetrieveCount++;
-
-        if (this._logAutoRetrieveCount < logAutoRetrieveLimit) {
-          setTimeout(() => {
-            this.onRefreshLog();
-          }, 2000);
-        }
+        this.scheduleRefresh();
       },
     });
+  }
+
+  private scrollLogToBottom() {
+    const elem = this._logDataElem.nativeElement;
+    if (elem) {
+      elem.scrollTop = elem.scrollHeight;
+    }
+  }
+
+  private scheduleRefresh() {
+    this._logAutoRetrieveCount++;
+
+    if (this._logAutoRetrieveCount < logAutoRetrieveLimit) {
+      setTimeout(() => {
+        this.onRefreshLog();
+      }, 2000);
+    }
   }
 
   get loading(): boolean {

@@ -49,7 +49,15 @@
         flex-direction: column;
         justify-content: space-around;
         align-items: center;
+
         gap: 8px;
+        padding: 0px $sz-unit;
+
+        .important {
+            color: $clr-orange;
+            font-weight: bold;
+            max-width: 450px;
+        }
     }
 
     .row {
@@ -65,11 +73,18 @@
         flex-direction: column;
         justify-content: space-around;
         align-items: center;
-        flex-grow: 1;
-        flex-shrink: 1;
+        flex: 1 1 100%;
 
         gap: 8px;
-        padding-top: 40px;
+        padding-top: 20px;
+
+        .mode-title {
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: $clr-gray-10;
+            padding: $sz-unit;
+        }
     }
 
     .buttons {
@@ -81,14 +96,14 @@
         
         padding-top: $sz-unit;
     }
-}
 
-.left-right-padding {
-    padding: 0px $sz-unit;
-}
-
-input {
-    min-width: 250px;
+    input {
+        min-width: 250px;
+    }
+    
+    span {
+        color: $clr-gray-10;
+    }
 }
 
 ngx-dropzone-preview,
@@ -126,27 +141,4 @@ ngx-dropzone,
 
 .dropzone.ngx-dz-hovered {
     border: $sz-half solid $clr-gray-30;
-}
-
-.important {
-    color: $clr-orange;
-    font-weight: bold;
-    max-width: 450px;
-}
-
-.log-area {
-    height: 300px;
-}
-
-.mode-title {
-    text-align: center;
-    font-size: 14px;
-    font-weight: bold;
-    color: $clr-gray-10;
-    padding: $sz-unit;
-}
-
-
-span {
-    color: $clr-gray-10;
 }

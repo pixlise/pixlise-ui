@@ -29,26 +29,51 @@
 
 @import 'variables.scss';
 
-.top-row {
-    padding: 0px $sz-unit;
-}
+.log-viewer {
+    display: flex;
+    flex-direction: column;
+    
+    .top-row {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
 
-.log-scroll {
-    overflow: auto;
-}
+        gap: 8px;
+        padding: $sz-half $sz-unit;
 
-.log-data {
-    background-color: $clr-gray-90;
-    color: $clr-gray-30;
-    font-size: 12px;
-    line-height: 14px;
-    font-family: monospace;
-    padding-left: $sz-unit;
-    margin-top: $sz-half;
-}
+        .row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
 
-.log-data-line {
-    &:hover {
-        background-color: $clr-gray-100;
+            gap: 8px;
+
+            .refreshing {
+                color: $clr-gray-50;
+            }
+        }
+    }
+
+    .log-data {
+        display: flex;
+        flex-direction: column;
+        height: 450px;
+
+        overflow: auto;
+
+        background-color: $clr-gray-90;
+        color: $clr-gray-30;
+        font-size: 12px;
+        line-height: 14px;
+        font-family: monospace;
+        padding-left: $sz-unit;
+        margin-top: $sz-half;
+    }
+
+    .log-data-line {
+        &:hover {
+            background-color: $clr-gray-100;
+        }
     }
 }
