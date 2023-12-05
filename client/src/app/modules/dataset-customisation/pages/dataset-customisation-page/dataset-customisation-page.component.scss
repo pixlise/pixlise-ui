@@ -162,15 +162,31 @@
                     width: 50px;
                 }
 
-                .save-buttons {
+                .display-settings {
                     display: flex;
                     flex-direction: row;
+                    align-items: center;
+
                     gap: $sz-unit;
                 }
             }
 
             .img-view {
                 height: 100%;
+            }
+
+            .help {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-around;
+                align-items: center;
+
+                text-align: center;
+                font-weight: bold;
+                height: 100%;
+                user-select: none;
+                color: $clr-gray-40;
+                font-size: 18px;
             }
         }
     }

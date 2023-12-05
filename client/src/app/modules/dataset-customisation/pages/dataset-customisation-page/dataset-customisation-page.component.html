@@ -44,7 +44,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 <input *ngIf="title !== null" [(ngModel)]="title" type="text" placeholder="Title...">
                 <mat-spinner *ngIf="title === null" [diameter]="24" color="accent"></mat-spinner>
                 <input *ngIf="title !== null" [(ngModel)]="description" type="text" placeholder="Description...">
-                <push-button (onClick)="onSaveTitleDescription()" buttonStyle="yellow">Save</push-button>
+                <push-button (onClick)="onSaveTitleDescription()" buttonStyle="yellow">Save Title/Description</push-button>
             </div>
             <div *ngIf="scanId" class="meta-entry column">
                 <div class="txt-dlg-heading">Default Image</div>
@@ -128,6 +128,11 @@ POSSIBILITY OF SUCH DAMAGE.
                         <input [(ngModel)]="xScale" type="text" placeholder="X">
                         <div class="txt-meta">,</div>
                         <input [(ngModel)]="yScale" type="text" placeholder="Y">
+                        <push-button (onClick)="onPreviewMeta()" buttonStyle="outline">Preview</push-button>
+                        <push-button (onClick)="onResetMeta()" buttonStyle="outline">Reset</push-button>
+                        <push-button (onClick)="onApplyMeta()" buttonStyle="yellow">Save Alignment</push-button>
+                    </div>
+                    <div class="display-settings">
                         <div class="txt-meta">Opacity</div>
                         <slider
                             [value]="overlayOpacity"
@@ -140,18 +145,13 @@ POSSIBILITY OF SUCH DAMAGE.
                             [minValue]="0.5"
                             [maxValue]="10"
                             (onChange)="onChangeOverlayBrightness($event)"></slider>
-                        <push-button (onClick)="onPickDisplayItems()" buttonStyle="outline">Display</push-button>
-                        
-                    </div>
-                    <div class="save-buttons">
-                        <push-button (onClick)="onPreviewMeta()" buttonStyle="outline">Preview</push-button>
-                        <push-button (onClick)="onApplyMeta()" buttonStyle="outline">Apply</push-button>
-                        <push-button (onClick)="onResetMeta()" buttonStyle="outline">Reset</push-button>
+                        <push-button (onClick)="onPickDisplayItems()" buttonStyle="outline">Display Options</push-button>
                     </div>
                 </ng-container>
             </div>
 
             <interactive-canvas
+                *ngIf="hasImageSelected"
                 class="img-view"
                 [ngClass]="cursorShown"
                 [drawer]="drawer"
@@ -159,6 +159,10 @@ POSSIBILITY OF SUCH DAMAGE.
                 [interactionHandler]="interactionHandler"
                 [transform]="transform">
             </interactive-canvas>
+            
+            <div *ngIf="!hasImageSelected" class="help">
+                <span>Select an image to align or upload images/customise dataset on the left!</span>
+            </div>
         </div>
 
         <div *ngIf="showLog" class="panel log-area">

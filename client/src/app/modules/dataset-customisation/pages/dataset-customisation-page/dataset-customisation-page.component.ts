@@ -202,6 +202,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     return this.mdl.overlayImageName ? this.mdl.overlayImageName : "Select one from below!";
   }
 
+  get hasImageSelected(): boolean {
+    return this.mdl.overlayImageName.length > 0;
+  }
+
   get alignToImageLabel(): string {
     return this.mdl.imageName ? this.mdl.imageName : "(None)";
   }
