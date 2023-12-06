@@ -8,6 +8,7 @@ import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../roi-shape/roi-shape.
 import { COLOURS, ColourOption, findColourOption, generateDefaultColour } from "../../models/roi-colors";
 import { ROIDisplaySettings, createDefaultROIDisplaySettings } from "../../models/roi-region";
 import { invalidPMC } from "src/app/utils/utils";
+import { ObjectType } from "src/app/generated-protos/ownership-access";
 
 export type SubItemOptionSection = {
   title: string;
@@ -40,6 +41,7 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   @Input() showCreatorIcon: boolean = true;
   @Input() nextDisplayOnFirstToggle: boolean = true;
 
+  objectType: ObjectType = ObjectType.OT_ROI;
   @Input() summary!: ROIItemSummary;
 
   @Output() onROISelect = new EventEmitter();
@@ -75,7 +77,6 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
 
   openScanIdxs: Set<string> = new Set<string>();
   scanEntryIndicesByDataset: Record<string, number[]> = {};
-  isEditable: boolean = false;
 
   constructor(
     private _snackBarService: SnackbarService,
@@ -130,6 +131,10 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
         }
       }
     }
+  }
+
+  get canEdit(): boolean {
+    return this.summary.owner?.canEdit || false;
   }
 
   get isSubItemSelectionEnabled(): boolean {

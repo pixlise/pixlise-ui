@@ -67,7 +67,8 @@ POSSIBILITY OF SUCH DAMAGE.
         *ngIf="canEdit"
         [id]="expression?.id || ''"
         [type]="objectType"
-        [ownershipSummary]="expression?.owner || null"></share-ownership-item-button>
+        [ownershipSummary]="expression?.owner || null">
+      </share-ownership-item-button>
       <icon-button
         *ngIf="showSplitScreenButton"
         #tooltip="matTooltip"

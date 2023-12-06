@@ -44,13 +44,17 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
   @Input() type: ObjectType = ObjectType.OT_EXPRESSION;
   @Input() ownershipSummary: OwnershipSummary | null = null;
 
+  isSharedWithOthers: boolean = false;
+
   constructor(
     private _apiDataService: APIDataService,
     private _snackbarService: SnackbarService,
     public dialog: MatDialog
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.isSharedWithOthers = this.ownershipSummary?.sharedWithOthers || false;
+  }
 
   get sharingTooltip(): string {
     let tooltip = "";
@@ -69,10 +73,6 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
     }
 
     return tooltip;
-  }
-
-  get isSharedWithOthers(): boolean {
-    return this.ownershipSummary?.sharedWithOthers || false;
   }
 
   onOpenShareDialog(): void {
@@ -106,6 +106,17 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
           )
           .subscribe({
             next: res => {
+              let shareCount = 0;
+              if (res.ownership?.editors) {
+                shareCount += res.ownership.editors.groupIds.length + res.ownership.editors.userIds.length;
+              }
+
+              if (res.ownership?.viewers) {
+                shareCount += res.ownership.viewers.groupIds.length + res.ownership.viewers.userIds.length;
+              }
+
+              this.isSharedWithOthers = shareCount > 1;
+
               this._snackbarService.openSuccess(`Item shared successfully!`);
             },
             error: err => {
