@@ -54,6 +54,8 @@ import { QuantificationSelectorComponent } from "./components/atoms/quantificati
 import { QuantSelectorPanelComponent } from "./components/atoms/quant-selector-panel/quant-selector-panel.component";
 import { QuantificationListComponent } from "./components/atoms/quant-selector-panel/quantification-list/quantification-list.component";
 import { QuantificationItemComponent } from "./components/atoms/quant-selector-panel/quantification-list/quantification-item/quantification-item.component";
+import { ShareDialogComponent } from "./components/atoms/share-ownership-item/share-dialog/share-dialog.component";
+import { ShareOwnershipItemButtonComponent } from "./components/atoms/share-ownership-item/share-ownership-item-button.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -109,6 +111,8 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
     QuantSelectorPanelComponent,
     QuantificationListComponent,
     QuantificationItemComponent,
+    ShareDialogComponent,
+    ShareOwnershipItemButtonComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule],
   exports: [
@@ -146,6 +150,8 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
     RGBUPickerDropdownComponent,
     PickerDialogComponent,
     QuantificationSelectorComponent,
+    ShareDialogComponent,
+    ShareOwnershipItemButtonComponent,
   ],
   providers: [
     /*APICommService, APIDataService, HttpInterceptorService*/

@@ -30,67 +30,35 @@
 @import "variables.scss";
 @import "atoms.scss";
 
-.permissions-dlg {
-  font-family: Inter;
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 16px;
-  color: $clr-gray-30;
-
-  max-width: 400px;
-}
-
-.group-membership-container {
-  background: var(--gray-90, #222829);
-  border-radius: 8px;
-
-  .header {
-    display: flex;
-    align-items: center;
-
-    h1 {
-      font-size: 20px;
-    }
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      margin-left: auto;
-
-      h2 {
-        margin-right: 4px;
-        text-transform: none;
-        font-size: 16px;
-      }
-
-      img {
-        width: 24px;
-        border-radius: 4px;
-      }
-    }
-  }
-
-  .info {
-    .description {
-      color: var(--gray-30, #bec0c2);
-      max-width: 400px;
-    }
-  }
-
-  .role-options {
-    mat-radio-group {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-    }
-  }
-}
-
 .button-container {
   margin-top: $sz-double;
 
   display: flex;
   flex-direction: row;
   justify-content: flex-end;
+}
+
+.fields {
+  margin-top: 16px;
+
+  .user-group-container {
+    &:first-of-type {
+      margin-bottom: 8px;
+    }
+
+    .user-group-list {
+      display: flex;
+      .select-container {
+        h5 {
+          margin: 0;
+          margin-left: 16px;
+          color: rgb(var(--clr-gray-50));
+        }
+
+        mat-select {
+          min-width: 200px;
+        }
+      }
+    }
+  }
 }

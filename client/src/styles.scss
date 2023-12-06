@@ -314,6 +314,18 @@ h3 {
   white-space: pre;
 }
 
+.role-option {
+  .mdc-label {
+    display: flex;
+    align-items: center;
+
+    img {
+      margin-left: 4px;
+      margin-top: 2px;
+    }
+  }
+}
+
 .mat-mdc-autocomplete-panel {
   --mat-autocomplete-background-color: #2b3135;
 }

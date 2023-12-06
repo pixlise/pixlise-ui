@@ -5,6 +5,7 @@ import { LocalStorageService } from "./local-storage.service";
 import { WSError } from "./wsMessageHandler";
 import { WidgetError } from "./widget-data.service";
 import { httpErrorToString } from "src/app/utils/utils";
+import { Subscription } from "rxjs";
 
 export type SnackbarType = "warning" | "error" | "info" | "success";
 
@@ -20,14 +21,14 @@ export type SnackbarDataItem = {
   providedIn: "root",
 })
 export class SnackbarService {
-  subscriptions: any[] = [];
+  subscriptions: Subscription = new Subscription();
   history: SnackbarDataItem[] = [];
 
   constructor(
     private _snackBar: MatSnackBar,
     private _localStorageService: LocalStorageService
   ) {
-    this.subscriptions.push(
+    this.subscriptions.add(
       this._localStorageService.eventHistory$.subscribe(history => {
         this.history = history;
       })
@@ -35,7 +36,7 @@ export class SnackbarService {
   }
 
   ngOnDestroy() {
-    this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.subscriptions.unsubscribe();
   }
 
   addMessageToHistory(message: string, details: string, action: string, type: SnackbarType): void {

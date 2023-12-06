@@ -66,6 +66,8 @@ export class AppConfig {
   expectedDataCollectionAgreementVersion: string = ""; // Eg "1.0"
 
   unassignedNewUserRoleId: string = ""; // Auth0 role ID for unassigned new user
+
+  maxUsersPerOwnershipItem: number = 5; // Max number of users that can be assigned as an editor or user for an ownership item
 }
 
 @Injectable({

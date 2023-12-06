@@ -29,6 +29,7 @@
 
 import { Component } from "@angular/core";
 import { MonacoEditorService } from "./modules/code-editor/services/monaco-editor.service";
+import { Router } from "@angular/router";
 
 @Component({
   selector: "app-root",
@@ -36,9 +37,16 @@ import { MonacoEditorService } from "./modules/code-editor/services/monaco-edito
   styleUrls: ["./app.component.scss"],
 })
 export class AppComponent {
-  constructor(private _monacoService: MonacoEditorService) {
+  constructor(
+    private _monacoService: MonacoEditorService,
+    private _router: Router
+  ) {
     // We trigger loading the service once, here, right on startup. This will end up creating a monaco object tied
     // to the window, which our child components can listen for being ready and create code editor views as needed
     this._monacoService.load();
+  }
+
+  get isPublicPage(): boolean {
+    return this._router.url.includes("/public/");
   }
 }

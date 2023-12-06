@@ -1,7 +1,7 @@
 import { Injectable, OnInit } from "@angular/core";
 import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../models/sidebar.model";
 import { BehaviorSubject, ReplaySubject, Subscription, timer } from "rxjs";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
@@ -19,7 +19,7 @@ import { ResponseStatus } from "src/app/generated-protos/websocket";
 @Injectable({
   providedIn: "root",
 })
-export class AnalysisLayoutService {
+export class AnalysisLayoutService implements OnInit {
   sidepanelOpen: boolean = false;
   //private _id = randomString(6);
 
@@ -44,17 +44,23 @@ export class AnalysisLayoutService {
 
   widgetData$ = new BehaviorSubject<Map<string, WidgetData>>(new Map());
 
+  lastLoadedScreenConfigurationId: string = "";
+
   constructor(
     private _route: ActivatedRoute,
+    private _router: Router,
     private _dataService: APIDataService,
     private _cachedDataService: APICachedDataService,
     private _snackService: SnackbarService
   ) {
     this.fetchAvailableScans();
+    this.fetchLastLoadedScreenConfigurationId();
     if (this.defaultScanId) {
       this.fetchQuantsForScan(this.defaultScanId);
     }
+  }
 
+  ngOnInit(): void {
     this._subs.add(
       this._route.queryParams.subscribe(params => {
         if (params["id"]) {
@@ -63,6 +69,13 @@ export class AnalysisLayoutService {
           this.loadScreenConfigurationFromScan(params["scan_id"]);
           this.fetchQuantsForScan(params["scan_id"]);
         } else {
+          if (this.lastLoadedScreenConfigurationId) {
+            this.fetchScreenConfiguration(this.lastLoadedScreenConfigurationId);
+            // Add id back to query params
+            let queryParams = { ...this._route.snapshot.queryParams };
+            queryParams["scan_id"] = this.lastLoadedScreenConfigurationId;
+            this._router.navigate([], { queryParams });
+          }
           this.activeScreenConfigurationId$.next("");
           this.activeScreenConfiguration$.next(createDefaultScreenConfiguration());
         }
@@ -91,6 +104,18 @@ export class AnalysisLayoutService {
     });
   }
 
+  fetchLastLoadedScreenConfigurationId() {
+    let id = localStorage?.getItem("lastLoadedScreenConfigurationId");
+    if (id) {
+      this.lastLoadedScreenConfigurationId = id;
+    }
+  }
+
+  cacheScreenConfigurationId(id: string) {
+    this.lastLoadedScreenConfigurationId = id;
+    localStorage?.setItem("lastLoadedScreenConfigurationId", id);
+  }
+
   fetchScreenConfiguration(id: string = "", scanId: string = "", setActive: boolean = true) {
     this._dataService.sendScreenConfigurationGetRequest(ScreenConfigurationGetReq.create({ id, scanId })).subscribe({
       next: res => {
@@ -98,6 +123,7 @@ export class AnalysisLayoutService {
           if (setActive) {
             this.activeScreenConfiguration$.next(res.screenConfiguration);
             this.activeScreenConfigurationId$.next(res.screenConfiguration.id);
+            this.cacheScreenConfigurationId(res.screenConfiguration.id);
           }
 
           // Store the screen configuration
@@ -137,6 +163,7 @@ export class AnalysisLayoutService {
     if (!updateId && screenConfiguration.id !== updateId) {
       // Update the active screen configuration ID
       this.activeScreenConfigurationId$.next(screenConfiguration.id);
+      this.cacheScreenConfigurationId(screenConfiguration.id);
       updateId = screenConfiguration.id;
     }
 
@@ -160,6 +187,7 @@ export class AnalysisLayoutService {
 
         if (this.activeScreenConfigurationId$.value === id) {
           this.activeScreenConfigurationId$.next("");
+          this.cacheScreenConfigurationId("");
           this.activeScreenConfiguration$.next(createDefaultScreenConfiguration());
         }
       }

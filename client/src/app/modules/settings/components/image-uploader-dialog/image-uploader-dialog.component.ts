@@ -58,9 +58,10 @@ export class ImageUploaderDialogComponent implements OnInit {
     }
 
     new Compressor(this.uploadedImage, {
-      quality: 0.6,
-      width: 256,
-      height: 256,
+      quality: 0.9,
+      width: 172,
+      height: 172,
+      convertSize: 30000,
       resize: "cover",
       success: result => {
         const reader = new FileReader();
