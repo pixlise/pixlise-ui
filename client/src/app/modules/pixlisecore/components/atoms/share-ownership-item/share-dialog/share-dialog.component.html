@@ -1,0 +1,78 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div class="dlg-border-with-backdrop permissions-dlg data-collection">
+  <h1>Share</h1>
+  <div class="fields">
+    <div class="user-group-container">
+      <h3>Editors</h3>
+      <div class="user-group-list">
+        <div class="select-container" #tooltip="matTooltip" [matTooltip]="groupEditorsTooltip">
+          <h5>Groups</h5>
+          <mat-select multiple [(ngModel)]="groupEditors" (selectionChange)="onEditorGroupChange($event)" placeholder="Editor Groups ...">
+            <mat-option *ngFor="let group of groups" [value]="group.id">{{ group.name }}</mat-option>
+          </mat-select>
+        </div>
+        <div class="select-container" #tooltip="matTooltip" [matTooltip]="userEditorsTooltip">
+          <h5>Users ({{ userEditors.length }}/{{ maxUsersPerOwnershipItem }})</h5>
+          <mat-select multiple [(ngModel)]="userEditors" (selectionChange)="onEditorUserChange($event)" placeholder="Editor Users ...">
+            <mat-option *ngFor="let user of users" [disabled]="userEditors.length >= maxUsersPerOwnershipItem && !userEditors.includes(user.id)" [value]="user.id">{{
+              user.name
+            }}</mat-option>
+          </mat-select>
+        </div>
+      </div>
+    </div>
+    <div class="user-group-container">
+      <h3>Viewers</h3>
+      <div class="user-group-list">
+        <div class="select-container" #tooltip="matTooltip" [matTooltip]="groupViewersTooltip">
+          <h5>Groups</h5>
+          <mat-select multiple [(ngModel)]="groupViewers" (selectionChange)="onViewerGroupChange($event)" placeholder="Viewer Groups ...">
+            <mat-option *ngFor="let group of groups" [value]="group.id">{{ group.name }}</mat-option>
+          </mat-select>
+        </div>
+        <div class="select-container" #tooltip="matTooltip" [matTooltip]="userViewersTooltip">
+          <h5>Users ({{ userViewers.length }}/{{ maxUsersPerOwnershipItem }})</h5>
+          <mat-select multiple [(ngModel)]="userViewers" (selectionChange)="onViewerUserChange($event)" placeholder="Viewer Users ...">
+            <mat-option *ngFor="let user of users" [disabled]="userViewers.length >= maxUsersPerOwnershipItem && !userViewers.includes(user.id)" [value]="user.id">{{
+              user.name
+            }}</mat-option>
+          </mat-select>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="gap-separated-horizontal-elements button-container">
+    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button buttonStyle="yellow" (onClick)="onConfirm()" #tooltip="matTooltip" [matTooltip]="confirmButtonTooltip">Confirm</push-button>
+  </div>
+</div>

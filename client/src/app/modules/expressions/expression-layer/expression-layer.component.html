@@ -45,7 +45,12 @@ POSSIBILITY OF SUCH DAMAGE.
       #tooltip="matTooltip"
       matTooltipClass="multiline-tooltip"
       [matTooltip]="name + (description ? '\n\n' + description : '') + (createdDate > 0 ? '\n\nCreated: ' + dateCreatedString : '')">
-      <h4>{{ name }}</h4>
+      <h4>
+        {{ name }}
+        <span *ngIf="!canEdit" class="lock-icon" #tooltip="matTooltip" matTooltip="You are not an editor of this {{ isModule ? 'module' : 'expression' }}.">
+          <img src="assets/button-icons/lock.svg" />
+        </span>
+      </h4>
       <span class="details-line">
         <span class="date">{{ dateCreatedString }}</span>
         <span class="description">{{ description }}</span>
@@ -58,6 +63,12 @@ POSSIBILITY OF SUCH DAMAGE.
         icon="assets/button-icons/code.svg"
         (click)="onPreviewCode()">
       </icon-button> -->
+      <share-ownership-item-button
+        *ngIf="canEdit"
+        [id]="expression?.id || ''"
+        [type]="objectType"
+        [ownershipSummary]="expression?.owner || null">
+      </share-ownership-item-button>
       <icon-button
         *ngIf="showSplitScreenButton"
         #tooltip="matTooltip"

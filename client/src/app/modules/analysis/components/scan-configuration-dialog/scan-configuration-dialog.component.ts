@@ -224,6 +224,7 @@ export class ScanConfigurationDialog implements OnInit {
       });
 
       this._analysisLayoutService.writeScreenConfiguration(screenConfig);
+      this.dialogRef.close();
     } else {
       if (this.firstSelectedScanId && this.firstSelectedScanQuantId) {
         let queryParams = { ...this._route.snapshot.queryParams };

@@ -51,8 +51,8 @@ export class VersionDisplayComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this._subs.add(
-      this.envConfigService.getComponentVersions().subscribe(
-        (versions: ComponentVersions) => {
+      this.envConfigService.getComponentVersions().subscribe({
+        next: (versions: ComponentVersions) => {
           // Overwrite ours
           this.versions = [this._uiVersion, ...versions.components];
 
@@ -66,15 +66,15 @@ export class VersionDisplayComponent implements OnInit, OnDestroy {
             }
           }
         },
-        err => {
+        error: err => {
           // Just show our own version and errors for the other 2 known ones
           this.versions = [
             this._uiVersion,
             new ComponentVersion(this._apiVersionDefault.component, "(error)"),
             new ComponentVersion(this._piquantVersionDefault.component, "(error)"),
           ];
-        }
-      )
+        },
+      })
     );
   }
 

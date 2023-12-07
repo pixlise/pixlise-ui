@@ -46,7 +46,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   filteredQuants: QuantificationSummary[] = [];
   private _selectedQuantId: string = "";
 
-  // private _currentUserId: string = "";
+  private _currentUserId: string = "";
 
   private _et_Expression = "Expressions";
   private _et_ExpressionGroups = "Expression Groups";
@@ -78,11 +78,11 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    /*this._subs.add(
+    this._subs.add(
       this._userOptionsService.userOptionsChanged$.subscribe(() => {
         this._currentUserId = this._userOptionsService.userDetails.info?.id || "";
       })
-    );*/
+    );
 
     // Get a list of groups
     this._cachedDataSerivce.getExpressionGroupList(ExpressionGroupListReq.create({})).subscribe((resp: ExpressionGroupListResp) => {
@@ -251,7 +251,15 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.authors = authors;
+    this.authors = authors.sort((a, b) => {
+      if (a.id === this._currentUserId) {
+        return -1;
+      } else if (b.id === this._currentUserId) {
+        return 1;
+      }
+
+      return a.name.localeCompare(b.name);
+    });
   }
 
   private filterExpressionsForDisplay(valueChanged: boolean = false): void {

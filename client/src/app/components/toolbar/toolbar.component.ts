@@ -342,7 +342,9 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     // Mark the right tab as being active
     this._currTab = "";
     for (let c = 0; c < this.tabs.length; c++) {
-      this.tabs[c].active = url.endsWith("/" + this.tabs[c].url);
+      // Remove query params
+      let strippedURL = url.split("?")[0];
+      this.tabs[c].active = strippedURL.endsWith("/" + this.tabs[c].url.split("?")[0]);
 
       if (this.tabs[c].active) {
         this._currTab = this.tabs[c].label;

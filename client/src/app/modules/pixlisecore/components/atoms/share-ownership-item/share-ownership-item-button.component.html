@@ -29,18 +29,8 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="app-container">
-  <main>
-    <app-toolbar *ngIf="!isPublicPage">
-      <h1 class="page-title">
-        <ng-content select=".page-title"></ng-content>
-      </h1>
-      <!-- <ng-contaziner [ngTemplateOutlet]="title" [ngTemplateOutletContext]="">
-      </ng-contaziner> -->
-    </app-toolbar>
-    <router-outlet></router-outlet>
-  </main>
-  <aside>
-    <app-settings-sidebar></app-settings-sidebar>
-  </aside>
-</div>
+<icon-button
+  #tooltip="matTooltip"
+  [matTooltip]="sharingTooltip"
+  [icon]="isSharedWithOthers ? 'assets/button-icons/share-yellow.svg' : 'assets/button-icons/share.svg'"
+  (click)="onOpenShareDialog()"></icon-button>

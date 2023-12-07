@@ -27,70 +27,26 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import "variables.scss";
-@import "atoms.scss";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ShareDialogComponent } from "./share-dialog.component";
 
-.permissions-dlg {
-  font-family: Inter;
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 16px;
-  color: $clr-gray-30;
+describe("ShareDialogComponent", () => {
+  let component: ShareDialogComponent;
+  let fixture: ComponentFixture<ShareDialogComponent>;
 
-  max-width: 400px;
-}
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [ShareDialogComponent],
+    }).compileComponents();
+  });
 
-.group-membership-container {
-  background: var(--gray-90, #222829);
-  border-radius: 8px;
+  beforeEach(() => {
+    fixture = TestBed.createComponent(ShareDialogComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
 
-  .header {
-    display: flex;
-    align-items: center;
-
-    h1 {
-      font-size: 20px;
-    }
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      margin-left: auto;
-
-      h2 {
-        margin-right: 4px;
-        text-transform: none;
-        font-size: 16px;
-      }
-
-      img {
-        width: 24px;
-        border-radius: 4px;
-      }
-    }
-  }
-
-  .info {
-    .description {
-      color: var(--gray-30, #bec0c2);
-      max-width: 400px;
-    }
-  }
-
-  .role-options {
-    mat-radio-group {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-    }
-  }
-}
-
-.button-container {
-  margin-top: $sz-double;
-
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-end;
-}
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
+});

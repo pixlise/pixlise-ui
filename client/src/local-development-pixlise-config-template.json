@@ -22,5 +22,7 @@
 
     "expectedDataCollectionAgreementVersion": "1.0",
 
-    "unassignedNewUserRoleId": ""
+    "unassignedNewUserRoleId": "",
+
+    "maxUsersPerOwnershipItem": 5
 }

@@ -4,6 +4,7 @@ import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-langua
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { DataModule } from "src/app/generated-protos/modules";
 import { ExpressionsService } from "../services/expressions.service";
+import { ObjectType } from "src/app/generated-protos/ownership-access";
 
 @Component({
   selector: "expression-layer",
@@ -33,6 +34,8 @@ export class ExpressionLayerComponent {
   @Output() onFilterAuthor = new EventEmitter<string>();
   @Output() onSelect = new EventEmitter();
 
+  objectType: ObjectType = ObjectType.OT_EXPRESSION;
+
   constructor(
     private _route: ActivatedRoute,
     private _router: Router,
@@ -59,6 +62,10 @@ export class ExpressionLayerComponent {
       tags: [],
       modifiedUnixSec: module.modifiedUnixSec,
     });
+  }
+
+  get canEdit(): boolean {
+    return this.expression?.owner?.canEdit || false;
   }
 
   get creatorName(): string {

@@ -141,7 +141,12 @@
       #tooltip="matTooltip"
       matTooltipClass="multiline-tooltip"
       [matTooltip]="name + (description ? '\n\n' + description : '') + (createdDate > 0 ? '\n\nCreated: ' + dateCreatedString : '')">
-      <h4>{{ name }}</h4>
+      <h4>
+        {{ name }}
+        <span *ngIf="!canEdit" class="lock-icon" #tooltip="matTooltip" matTooltip="You are not an editor of this ROI.">
+          <img src="assets/button-icons/lock.svg" />
+        </span>
+      </h4>
       <span *ngIf="summary.isMIST || createdDate > 0" class="metadata-line" title="Level">
         <div *ngIf="summary.isMIST" class="level-dots" title="Level">
           <div class="level-dot {{ hasLevel ? 'filled' : '' }}" *ngFor="let hasLevel of mistLevels"></div>
@@ -151,6 +156,8 @@
     </div>
     <roi-shape *ngIf="displayConfigured" class="current-shape" [color]="colour.colour || '#fff'" [shape]="shape || 'circle'"></roi-shape>
     <div class="buttons">
+      <share-ownership-item-button *ngIf="canEdit" [id]="summary?.id || ''" [type]="objectType" [ownershipSummary]="summary?.owner || null">
+      </share-ownership-item-button>
       <widget-settings-menu *ngIf="!colorChangeOnly" [settingsDialog]="roiSettingsMenu" #settingsButton>
         <icon-button title="Show Settings Menu" [hasBackground]="false" icon="assets/button-icons/settings-gray.svg"> </icon-button>
       </widget-settings-menu>
