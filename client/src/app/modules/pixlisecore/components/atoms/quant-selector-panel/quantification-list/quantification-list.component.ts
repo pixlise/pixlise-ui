@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, Input, OnInit, OnDestroy, Output } from "@angular/core";
 import { Subscription } from "rxjs";
 import { QuantificationItemInfo } from "./quantification-item/quantification-item.component";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
@@ -38,7 +38,7 @@ import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysi
   templateUrl: "./quantification-list.component.html",
   styleUrls: ["./quantification-list.component.scss"],
 })
-export class QuantificationListComponent implements OnInit {
+export class QuantificationListComponent implements OnInit, OnDestroy {
   private subs = new Subscription();
 
   @Input() scanId: string = "";
@@ -95,7 +95,7 @@ export class QuantificationListComponent implements OnInit {
   }
 
   isROIMatch(quant: QuantificationItemInfo): boolean {
-    return this.roiID != null && this.roiID == quant.quant.params?.roiID;
+    return quant.quant.params?.userParams?.roiIDs.length == 1 && this.roiID.length > 0 && this.roiID == quant.quant.params?.userParams?.roiIDs[0];
   }
 
   get noQuants(): boolean {
@@ -107,12 +107,12 @@ export class QuantificationListComponent implements OnInit {
   }
 
   onSelectQuant(quantItem: QuantificationItemInfo): void {
-    this.onQuantSelected.emit({ name: quantItem.quant.params?.name, id: quantItem.quant.id });
+    this.onQuantSelected.emit({ name: quantItem.quant.params?.userParams?.name, id: quantItem.quant.id });
   }
 
   onShare(quantItem: QuantificationItemInfo, event: any): void {
     event.stopPropagation();
-    if (confirm('Are you sure you want to share a copy of "' + quantItem.quant.params?.name + '" with other users?')) {
+    if (confirm('Are you sure you want to share a copy of "' + quantItem.quant.params?.userParams?.name + '" with other users?')) {
       // Add it to the list of quants!
       //   this._quantService.shareQuantification(quantItem.quant.jobId).subscribe(
       //     () => {
@@ -163,7 +163,7 @@ export class QuantificationListComponent implements OnInit {
       quantItem.quant.id &&
       confirm(
         "Are you sure you want to mark quantification: " +
-          quantItem.quant.params?.name +
+          quantItem.quant.params?.userParams?.name +
           " as the one to use (the blessed quantification) for this dataset? All users opening this dataset who have not explicitly chosen another will have this quantification auto-loaded."
       )
     ) {

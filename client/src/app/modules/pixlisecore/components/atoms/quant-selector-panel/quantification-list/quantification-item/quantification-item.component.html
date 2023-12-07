@@ -32,7 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="quant-row setting-row clickable gap-separated-vertical-elements" [ngClass]="{ 'setting-row-visible': quantItem?.selected }" (click)="onClickQuant()">
   <div class="gap-separated-horizontal-elements quant-info">
     <div class="quant-info-header">
-      <div>{{ quantItem?.quant?.params?.name }}{{ roiMatched ? " (ROI MATCH)" : "" }}</div>
+      <div>{{ quantItem?.quant?.params?.userParams?.name }}{{ roiMatched ? " (ROI MATCH)" : "" }}</div>
       <div *ngIf="quantItem?.quant?.owner?.canEdit" class="obj-creator">By {{ quantItem?.quant?.owner?.creatorUser?.name }}</div>
       <div class="detectors">{{ quantItem?.detectorType }}, {{ (quantItem?.quant?.params?.startUnixTimeSec || 0) * 1000 | date: "mediumDate" }}</div>
       <!-- <div

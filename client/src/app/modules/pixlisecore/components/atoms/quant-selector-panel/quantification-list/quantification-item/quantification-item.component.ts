@@ -47,7 +47,7 @@ export class QuantificationItemInfo {
     this.notElements = elemInfo.nonElementSymbols;
     this.quantifiedAtomicNumbers = elemInfo.elementAtomicNumbers;
 
-    this.detectorType = QuantModes.getShortDescription(quant.params?.quantMode || "");
+    this.detectorType = QuantModes.getShortDescription(quant.params?.userParams?.quantMode || "");
   }
 }
 

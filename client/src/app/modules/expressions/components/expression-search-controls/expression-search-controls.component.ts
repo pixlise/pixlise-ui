@@ -199,7 +199,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
     for (const quant of this.filteredQuants) {
       if (quant.id == this._selectedQuantId) {
         for (const elem of quant.elements) {
-          let det = quant.params?.quantMode || "";
+          let det = quant.params?.userParams?.quantMode || "";
           if (det.length > 0 && det != "Combined") {
             det = det.substring(0, 1);
           }

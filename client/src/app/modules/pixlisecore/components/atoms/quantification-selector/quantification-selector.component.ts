@@ -109,8 +109,8 @@ export class QuantificationSelectorComponent implements OnInit {
 
       for (let quant of this._lastQuantList) {
         if (quant.id == this.selectedQuantID) {
-          this.selectedQuant = quant.params?.name || "";
-          this.selectedQuantDetectors = QuantModes.getShortDescription(quant.params?.quantMode || "");
+          this.selectedQuant = quant.params?.userParams?.name || "";
+          this.selectedQuantDetectors = QuantModes.getShortDescription(quant.params?.userParams?.quantMode || "");
           break;
         }
       }

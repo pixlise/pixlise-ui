@@ -63,6 +63,8 @@ export class SnackbarService {
       newDetails = (message as WSError).errorText;
     } else if (typeof message === "object" && message?.errorText) {
       messageText = message.errorText;
+    } else if (typeof message === "object" && message?.message) {
+      messageText = message.message;
     } else {
       messageText = message;
     }

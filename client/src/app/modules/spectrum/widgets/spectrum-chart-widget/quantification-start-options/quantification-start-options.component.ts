@@ -29,18 +29,23 @@
 
 import { Component, Inject, OnInit, OnDestroy } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogConfig, MatDialog } from "@angular/material/dialog";
-import { Observable, Subscription, of } from "rxjs";
+import { Observable, Subscription, map, of, throwError } from "rxjs";
 import { DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
+import { QuantCreateParams } from "src/app/generated-protos/quantification-meta";
+import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
+import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { QuantModes } from "src/app/models/Quantification";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ROIPickerData, ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
-import { isValidElementsString } from "src/app/utils/utils";
+import { decodeIndexList, isValidElementsString } from "src/app/utils/utils";
 
 export class QuantificationStartOptionsParams {
   constructor(
+    public scanIds: string[],
     public defaultCommand: string,
     public atomicNumbers: Set<number>
   ) {}
@@ -48,22 +53,7 @@ export class QuantificationStartOptionsParams {
 
 // The resulting quantification parameters, these are the ones directly passed to the API
 // for creating a quant, so this has to match the API struct!
-export class QuantCreateParameters {
-  constructor(
-    public name: string,
-    public pmcs: number[],
-    public elements: string[],
-    public parameters: string,
-    public detectorConfig: string,
-    public runTimeSec: number,
-    public roiID: string,
-    public elementSetID: string,
-    public quantMode: string,
-    public roiIDs: string[],
-    public includeDwells: boolean,
-    public command: string //public comments: string
-  ) {}
-}
+// We used to return a class called QuantCreateParameters but now we return protos.QuantCreateParams
 
 class QuantModeItem {
   constructor(
@@ -221,7 +211,6 @@ export class QuantificationStartOptionsComponent implements OnInit, OnDestroy {
   private buildSelectedROIDisplay() {
     this._roiSelectedDisplay = "";
     this._roiSelectedDisplayTooltip = "";
-    this._xraySourceElement = "";
 
     for (const roiId of this._roisSelected) {
       let roiName = this._roiNames.get(roiId);
@@ -315,10 +304,10 @@ export class QuantificationStartOptionsComponent implements OnInit, OnDestroy {
     }
 
     // If we're in sum then quantify, user is selecting a range of ROIs so we don't care if the single field is not set
-    // if (this._selectedROIs.length <= 0 && this.selectedROI.length <= 0) {
-    //   alert("Please select a region of interest (ROI)");
-    //   return;
-    // }
+    if (this._roisSelected.length <= 0) { //&& this.selectedROI.length <= 0) {
+      alert("Please select a region of interest (ROI)");
+      return;
+    }
 
     // If the element list contains the xray source element, this will almost definitely come up with a weird quantification, so we bring
     // up a warning
@@ -354,63 +343,84 @@ export class QuantificationStartOptionsComponent implements OnInit, OnDestroy {
       quantMode += this.quantModeId;
     }
 
-    let roiID = ""; /*this.selectedROI;
-    if (roiID == PredefinedROIID.AllPoints) {
-      roiID = "";
-    }*/
-    this.makePMCList(roiID).subscribe(
-      (pmcs: number[]) => {
-        const result: QuantCreateParameters = new QuantCreateParameters(
-          this.quantName,
-          pmcs,
-          elements.split(","),
-          parameters,
-          this.selectedDetectorConfig,
-          60, // We want it done fast... so say 60 seconds, that should trigger max nodes to run PIQUANT on
-          roiID,
-          "", // no element set ID yet
-          quantMode,
-          [] /*this._selectedROIs*/, // useful for quantMode==*Bulk, where we need to sum PMCs in an ROI before quantifying them
-          this.includeDwells,
-          this.quantModeId == "Fit" ? "quant" : "map"
-        );
+    // If we have multiple scan ids involved, stop here
+    if (this.data.scanIds.length != 1) {
+      alert("There must only be one scan in the quantification");
+      return;
+    }
+
+    let roiID = "";
+    if (this._roisSelected.length == 1) {
+      roiID = this._roisSelected[0];
+    }
+    if (PredefinedROIID.isAllPointsROI(roiID)) {
+      roiID = ""; // Ensure it's empty in this case, so we behave like if none were selected
+    }
+
+    const selectedROIs: string[] = [];
+    for (const id of this._roisSelected) {
+      if (PredefinedROIID.isAllPointsROI(id)) {
+        // Only pass up "AllPoints"
+        selectedROIs.push("AllPoints");
+      } else {
+        selectedROIs.push(id);
+      }
+    }
+
+    this.makePMCList(roiID).subscribe({
+      next: (pmcs: number[]) => {
+        const result: QuantCreateParams = QuantCreateParams.create({
+          command: this.quantModeId == "Fit" ? "quant" : "map",
+          name: this.quantName,
+          scanId: this.data.scanIds[0],
+          pmcs: pmcs,
+          elements: elements.split(","),
+          detectorConfig: this.selectedDetectorConfig,
+          parameters: parameters,
+          runTimeSec: 60,
+          quantMode: quantMode,
+          roiIDs: selectedROIs, // useful for quantMode==*Bulk, where we need to sum PMCs in an ROI before quantifying them
+          includeDwells: this.includeDwells,
+        });
 
         this.dialogRef.close(result);
       },
-      err => {
+      error: err => {
         this._snackService.openError("Failed to create PMC list for quantification job", err);
-      }
-    );
+      },
+    });
   }
 
   private makePMCList(roiID: string): Observable<number[]> {
-    /*const dataset = this._datasetService.datasetLoaded;
-    if (!dataset) {
-      return [];
+    if (roiID.length > 0) {
+      return this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: roiID })).pipe(
+        map((resp: RegionOfInterestGetResp) => {
+          if (!resp.regionOfInterest) {
+            throw new Error("makePMCList: Failed to query region of interest: " + roiID);
+          }
+          return decodeIndexList(resp.regionOfInterest.scanEntryIndexesEncoded);
+        })
+      );
     }
 
-    let pmcs: number[] = [];
+    // If we have multiple scan ids involved, stop here
+    if (this.data.scanIds.length != 1) {
+      return throwError(() => new Error("There must only be one scan in the quantification"));
+    }
 
-    const roi = this._rawROIs.get(roiID);
-    if (roi) {
-      pmcs = Array.from(dataset.getPMCsForLocationIndexes(roi.locationIndexes, true).values());
-    } else {
-      // Otherwise send ALL pmcs that have spectra
-
-      // NOTE: this is kind of weird with the multi-selection of ROIs, but in that case we end up passing in
-      //       all the PMCs as something in the pipeline requires them to be there... or maybe this can be
-      //       taken out in future, don't know, not a priority for now.
-
-      for (let loc of dataset.locationPointCache) {
-        if (loc.hasNormalSpectra || loc.hasDwellSpectra) {
-          pmcs.push(loc.PMC);
+    // Empty ROI so request all PMCs that have spectra
+    return this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: this.data.scanIds[0] })).pipe(
+      map((resp: ScanEntryResp) => {
+        const pmcs = [];
+        for (const entry of resp.entries) {
+          if (entry.normalSpectra || entry.dwellSpectra) {
+            pmcs.push(entry.id);
+          }
         }
-      }
-    }
 
-    return pmcs;*/
-
-    return of([]);
+        return pmcs;
+      })
+    );
   }
 
   onCancel() {

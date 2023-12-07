@@ -38,7 +38,9 @@ import { Permissions } from "src/app/utils/permissions";
 import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ElementSetWriteReq, ElementSetWriteResp } from "src/app/generated-protos/element-set-msgs";
 import { ElementLine } from "src/app/generated-protos/element-set";
-import { QuantCreateParameters } from "../../quantification-start-options/quantification-start-options.component";
+import { QuantCreateReq, QuantCreateResp } from "src/app/generated-protos/quantification-create";
+import { QuantCreateParams } from "src/app/generated-protos/quantification-meta";
+import { jobStatus_StatusToJSON } from "src/app/generated-protos/job";
 
 @Component({
   selector: "peak-id-picked-elements",
@@ -172,9 +174,28 @@ export class PickedElementsComponent implements OnInit, OnDestroy {
       atomicNumbers.add(group.atomicNumber);
     }
 
-    this._spectrumService.showQuantificationDialog("", atomicNumbers).subscribe((params: QuantCreateParameters) => {
-      if (params) {
-        alert("Not implemented yet");
+    const scanIds = new Set<string>();
+    for (const line of this._spectrumService.mdl.spectrumLines) {
+      scanIds.add(line.scanId);
+    }
+
+    this._spectrumService.showQuantificationDialog(Array.from(scanIds), "", atomicNumbers).subscribe((createdParams: QuantCreateParams) => {
+      if (createdParams) {
+        this._dataService.sendQuantCreateRequest(QuantCreateReq.create({ params: createdParams })).subscribe({
+          next: (resp: QuantCreateResp) => {
+            if (!resp.status) {
+              this._snackBarService.openError("Quantification start did not return job status");
+            } else {
+              this._snackBarService.openSuccess(
+                `Quantification ${jobStatus_StatusToJSON(resp.status.status)}: ${resp.status.message}`,
+                `Job Id is: ${resp.status.jobId}`
+              );
+            }
+          },
+          error: err => {
+            this._snackBarService.openError("Failed to start quantification", err);
+          },
+        });
         // this._quantService.createQuantification(params).subscribe(
         //   (jobID: string) => {
         //     console.log("Job ID: " + jobID);
