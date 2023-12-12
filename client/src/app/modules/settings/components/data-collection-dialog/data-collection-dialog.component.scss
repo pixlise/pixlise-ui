@@ -77,3 +77,18 @@
   flex-direction: row;
   justify-content: flex-end;
 }
+
+.text-section {
+  margin-bottom: 12px;
+
+  ul {
+    padding-left: 16px;
+  }
+
+  .contact-info {
+    margin-top: 8px;
+    p {
+      margin: 0;
+    }
+  }
+}
