@@ -130,10 +130,10 @@ export class ExpressionLayerComponent implements OnInit {
     this.widgetOptions = [];
     this.widgetOptionIcons = [];
 
-    if (type === "ternary") {
+    if (type === "ternary-plot") {
       this.widgetOptions = Object.keys(TERNARY_WIDGET_OPTIONS);
       this.widgetOptionIcons = Object.values(TERNARY_WIDGET_OPTIONS).map(option => option.icon);
-    } else if (type === "binary") {
+    } else if (type === "binary-plot") {
       this.widgetOptions = Object.keys(BINARY_WIDGET_OPTIONS);
       this.widgetOptionIcons = Object.values(BINARY_WIDGET_OPTIONS).map(option => option.icon);
     }
@@ -154,9 +154,9 @@ export class ExpressionLayerComponent implements OnInit {
   onWidgetSelectionStateChange(state: string) {
     this.widgetSelectionState = state;
     let widgetPosition: number = -1;
-    if (this.widgetType === "ternary") {
+    if (this.widgetType === "ternary-plot") {
       widgetPosition = (TERNARY_WIDGET_OPTIONS as any)[state].position;
-    } else if (this.widgetType === "binary") {
+    } else if (this.widgetType === "binary-plot") {
       widgetPosition = (BINARY_WIDGET_OPTIONS as any)[state].position;
     }
     this.onChangeWidgetPosition.emit(widgetPosition);

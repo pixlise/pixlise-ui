@@ -50,6 +50,7 @@ export type WidgetConfiguration = {
   // Selector information
   name: string;
   description: string;
+  maxExpressions?: number;
 
   // Projected component
   component: any;
@@ -71,6 +72,7 @@ export const WIDGETS = {
   "binary-plot": {
     name: "Binary Plot",
     description: "Binary plot",
+    maxExpressions: 2,
     component: BinaryChartWidgetComponent,
     dataKey: "binary",
     controlConfiguration: {},
@@ -78,6 +80,7 @@ export const WIDGETS = {
   "ternary-plot": {
     name: "Ternary Plot",
     description: "Ternary plot",
+    maxExpressions: 3,
     component: TernaryChartWidgetComponent,
     dataKey: "ternary",
     controlConfiguration: {},

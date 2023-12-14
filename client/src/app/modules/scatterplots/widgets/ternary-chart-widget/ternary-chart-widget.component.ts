@@ -362,7 +362,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.hasBackdrop = false;
     dialogConfig.data = {
-      widgetType: "ternary",
+      widgetType: "ternary-plot",
       widgetId: this._widgetId,
       scanId: this._analysisLayoutService.defaultScanId,
       quantId: this.mdl.dataSourceIds.get(this._analysisLayoutService.defaultScanId)?.quantId || "",

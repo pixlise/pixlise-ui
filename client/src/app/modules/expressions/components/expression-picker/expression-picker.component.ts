@@ -43,7 +43,7 @@ import { APICachedDataService } from "src/app/modules/pixlisecore/services/apica
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
-import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
+import { WIDGETS, WidgetConfiguration } from "src/app/modules/widget/models/widgets.model";
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 
 export type ExpressionPickerResponse = {
@@ -103,6 +103,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   newExpressionGroupName: string = "";
   newExpressionGroupDescription: string = "";
 
+  maxSelection: number = 0;
+
   constructor(
     private _cachedDataSerivce: APICachedDataService,
     private _analysisLayoutService: AnalysisLayoutService,
@@ -119,6 +121,9 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this.activeWidgetId = this.data.widgetId || "";
     this.selectedExpressionIds = new Set(this.data.selectedIds || []);
     this.selectedExpressionIdOrder = Array.from(this.selectedExpressionIds);
+    if (this.data.widgetType) {
+      this.maxSelection = (WIDGETS[this.data.widgetType as keyof typeof WIDGETS] as WidgetConfiguration)?.maxExpressions || 0;
+    }
     this.updateSelectedExpressions();
 
     this._subs.add(
@@ -289,9 +294,15 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       tooltip = `Waiting for (${this.waitingForExpressions.length}) expressions to finish downloading...`;
     } else {
       tooltip = `Apply Selected Expressions:`;
-      this.selectedExpressionIds.forEach(id => {
-        let expression = this._expressionService.expressions$.value[id];
-        tooltip += `\n${expression?.name || id}`;
+      this.selectedExpressionIdOrder.forEach((id, i) => {
+        if (this.maxSelection && i >= this.maxSelection) {
+          return;
+        }
+
+        let expression = this.selectedExpressions.find(expression => expression.id === id);
+        if (expression && expression.id) {
+          tooltip += `\n${expression?.name || id}`;
+        }
       });
     }
 

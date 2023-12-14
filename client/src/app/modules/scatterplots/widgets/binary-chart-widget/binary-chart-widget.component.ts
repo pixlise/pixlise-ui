@@ -309,7 +309,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.hasBackdrop = false;
     dialogConfig.data = {
-      widgetType: "binary",
+      widgetType: "binary-plot",
       widgetId: this._widgetId,
       scanId: this._analysisLayoutService.defaultScanId,
       quantId: this.mdl.dataSourceIds.get(this._analysisLayoutService.defaultScanId)?.quantId || "",
