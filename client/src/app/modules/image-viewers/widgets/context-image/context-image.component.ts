@@ -489,11 +489,17 @@ bool removeBottomSpecularArtifacts = 21;
   onToggleLayersView(trigger: Element | undefined) {
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.data = {
-      selectedIds: this.mdl.expressionIds,
+      widgetType: "context-image",
+      widgetId: this._widgetId,
+      scanId: this._analysisLayoutService.defaultScanId,
+      quantId: "",
+      selectedIds: this.mdl.expressionIds || [],
     };
 
+    this.isWidgetHighlighted = true;
     const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
+      this.isWidgetHighlighted = false;
       if (result) {
         this.mdl.expressionIds = [];
 
