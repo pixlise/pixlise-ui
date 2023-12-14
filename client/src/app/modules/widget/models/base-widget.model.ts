@@ -10,11 +10,14 @@ import { BehaviorSubject } from "rxjs";
 export class BaseWidgetModel {
   _widgetControlConfiguration: WidgetControlConfiguration = {};
 
+  _isWidgetHighlighted: boolean = false;
+
   _widgetId: string = "";
   widgetData$ = new BehaviorSubject({});
 
   onWidgetDataChange(widgetData: WidgetData): void {}
 
+  @Output() public onWidgetHighlight: EventEmitter<boolean> = new EventEmitter<boolean>();
   @Output() public onUpdateWidgetControlConfiguration: EventEmitter<any> = new EventEmitter<any>();
   @Output() public onSaveWidgetData: EventEmitter<any> = new EventEmitter<any>();
   @ViewChild("settingsMenu") settingsMenu!: TemplateRef<any>;
@@ -26,6 +29,15 @@ export class BaseWidgetModel {
   set widgetControlConfiguration(widgetControlConfiguration: WidgetControlConfiguration) {
     this._widgetControlConfiguration = widgetControlConfiguration;
     this.onUpdateWidgetControlConfiguration.emit(this._widgetControlConfiguration);
+  }
+
+  get isWidgetHighlighted(): boolean {
+    return this._isWidgetHighlighted;
+  }
+
+  set isWidgetHighlighted(isWidgetHighlighted) {
+    this._isWidgetHighlighted = isWidgetHighlighted;
+    this.onWidgetHighlight.emit(isWidgetHighlighted);
   }
 
   ngAfterViewInit(): void {

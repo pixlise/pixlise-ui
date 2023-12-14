@@ -201,6 +201,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
   onBars() {
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
+    dialogConfig.hasBackdrop = false;
     dialogConfig.data = {
       widgetType: "histogram",
       widgetId: this._widgetId,
@@ -209,8 +210,10 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       selectedIds: this.mdl.expressionIds || [],
     };
 
+    this.isWidgetHighlighted = true;
     const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
+      this.isWidgetHighlighted = false;
       if (result && result.selectedExpressions?.length > 0) {
         this.mdl.expressionIds = [];
 

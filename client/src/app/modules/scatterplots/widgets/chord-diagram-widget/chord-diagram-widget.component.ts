@@ -192,6 +192,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
 
   onNodes() {
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
+    dialogConfig.hasBackdrop = false;
     dialogConfig.data = {
       widgetType: "chord",
       widgetId: this._widgetId,
@@ -200,8 +201,10 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
       selectedIds: this.mdl.expressionIds || [],
     };
 
+    this.isWidgetHighlighted = true;
     const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
+      this.isWidgetHighlighted = false;
       if (result && result.selectedExpressions) {
         this.mdl.expressionIds = [];
 

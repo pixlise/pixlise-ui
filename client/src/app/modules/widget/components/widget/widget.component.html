@@ -5,7 +5,7 @@
     [ngStyle]="{ display: button._overflowed ? 'block' : 'none' }"></widget-configuration-button>
 </ng-template>
 
-<div class="widget">
+<div class="widget {{ isWidgetHighlighted ? 'highlight' : '' }}">
   <header>
     <mat-select
       [(ngModel)]="activeWidget"

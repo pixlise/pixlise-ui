@@ -360,6 +360,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     }
 
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
+    dialogConfig.hasBackdrop = false;
     dialogConfig.data = {
       widgetType: "ternary",
       widgetId: this._widgetId,
@@ -372,8 +373,10 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       dialogConfig.data.expressionTriggerPosition = axisExpressionIndex;
     }
 
+    this.isWidgetHighlighted = true;
     const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
+      this.isWidgetHighlighted = false;
       if (result && result.selectedExpressions?.length > 0) {
         // If there are 1-3, set them all
         const last = Math.min(3, result.selectedExpressions.length);

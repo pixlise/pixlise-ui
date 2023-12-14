@@ -37,6 +37,8 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
 
   widgetConfiguration?: WidgetConfiguration;
 
+  isWidgetHighlighted: boolean = false;
+
   constructor(private _analysisLayoutService: AnalysisLayoutService) {}
 
   ngOnInit(): void {
@@ -184,6 +186,7 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
     if (this._currentWidgetRef?.instance) {
       // Set the widget id
       this._currentWidgetRef.instance._widgetId = this.widgetLayoutConfig.id;
+      this._currentWidgetRef.instance._isWidgetHighlighted = this.isWidgetHighlighted;
 
       if (this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration) {
         this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration.subscribe((config: WidgetControlConfiguration) => {
@@ -192,8 +195,14 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
         });
       }
 
-      // Set the widget data stored for this location
+      if (this._currentWidgetRef.instance.onWidgetHighlight) {
+        this._currentWidgetRef.instance.onWidgetHighlight.subscribe((isWidgetHighlighted: boolean) => {
+          this.isWidgetHighlighted = isWidgetHighlighted;
+        });
+      }
+
       if (this._currentWidgetRef.instance.widgetData$) {
+        // Set the widget data stored for this location
         this._currentWidgetRef.instance.widgetData$.next(this.widgetLayoutConfig.data?.[this.widgetConfiguration.dataKey]);
       }
 

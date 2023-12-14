@@ -6,6 +6,10 @@
   display: flex;
   flex-direction: column;
 
+  &.highlight {
+    border: 1px solid #ffb800;
+  }
+
   header {
     background-color: rgb(var(--clr-gray-80));
     height: 40px;

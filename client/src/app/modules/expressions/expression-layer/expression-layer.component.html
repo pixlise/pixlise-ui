@@ -46,6 +46,10 @@ POSSIBILITY OF SUCH DAMAGE.
       </tag-picker>
       Tags
     </h5>
+    <h5 *ngIf="canEdit">
+      <share-ownership-item-button [id]="expression?.id || ''" [type]="objectType" [ownershipSummary]="expression?.owner || null"></share-ownership-item-button>
+      Share
+    </h5>
   </div>
 </ng-template>
 
@@ -82,7 +86,11 @@ POSSIBILITY OF SUCH DAMAGE.
         icon="assets/button-icons/code.svg"
         (click)="onPreviewCode()">
       </icon-button> -->
-      <share-ownership-item-button *ngIf="canEdit" [id]="expression?.id || ''" [type]="objectType" [ownershipSummary]="expression?.owner || null">
+      <share-ownership-item-button
+        *ngIf="canEdit && !isWidgetExpression"
+        [id]="expression?.id || ''"
+        [type]="objectType"
+        [ownershipSummary]="expression?.owner || null">
       </share-ownership-item-button>
       <icon-button
         *ngIf="showSplitScreenButton"
@@ -131,11 +139,11 @@ POSSIBILITY OF SUCH DAMAGE.
     <action-button *ngIf="isWidgetExpression && isSelectable" class="close-btn" action="close" (onClick)="onCheckboxClick($event)" color="#f8f8f8"></action-button>
   </div>
   <div *ngIf="isWidgetExpression && isSelectable" class="widget-selection-row">
-    <div class="active-config" *ngIf="showActiveExpressionConfiguration">
+    <!-- <div class="active-config" *ngIf="showActiveExpressionConfiguration">
       <mat-select [(ngModel)]="configuredScan" placeholder="Choose Scan">
         <mat-option *ngFor="let scan of availableScans" [value]="scan.id">{{ idToName[scan.id] }}</mat-option>
       </mat-select>
-    </div>
+    </div> -->
     <multi-switch-button [options]="widgetOptions" [optionIcons]="widgetOptionIcons" [value]="widgetSelectionState" (onChange)="onWidgetSelectionStateChange($event)">
     </multi-switch-button>
   </div>
