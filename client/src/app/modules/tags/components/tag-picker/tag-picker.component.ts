@@ -59,6 +59,7 @@ export class TagPickerComponent implements OnInit {
   tagsByAuthor: AuthorTags[] = [];
 
   @Input() showCurrentTagsSection: boolean = false;
+  @Input() buttonStyle: "button" | "icon" = "icon";
 
   @Input() placeholderText: string = "Search Tags ...";
   @Input() type: TagType = "layer";

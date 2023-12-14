@@ -7,6 +7,8 @@ export type ExpressionSearchFilter = {
   scanId: string;
   quantId: string;
 
+  expressionType: string;
+
   searchString: string;
   tagIDs: string[];
   authors: string[];

@@ -7,10 +7,11 @@ import { ScrollingModule } from "@angular/cdk/scrolling";
 import { ExpressionLayerComponent } from "./expression-layer/expression-layer.component";
 import { ExpressionPickerComponent } from "./components/expression-picker/expression-picker.component";
 import { ExpressionSearchControlsComponent } from "./components/expression-search-controls/expression-search-controls.component";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 @NgModule({
   declarations: [ExpressionLayerComponent, ExpressionPickerComponent, ExpressionSearchControlsComponent],
-  imports: [CommonModule, PIXLISECoreModule, CdkAccordionModule, TagsModule, ScrollingModule],
+  imports: [CommonModule, PIXLISECoreModule, CdkAccordionModule, TagsModule, ScrollingModule, MatTooltipModule],
   exports: [ExpressionLayerComponent, ExpressionPickerComponent, ExpressionSearchControlsComponent],
   providers: [],
 })

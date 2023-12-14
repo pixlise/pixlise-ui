@@ -108,8 +108,8 @@ export class QuantificationSelectorComponent implements OnInit {
       this.selectedQuant = this.selectedQuantID;
 
       for (let quant of this._lastQuantList) {
-        if (quant.id == this.selectedQuantID) {
-          this.selectedQuant = quant.params?.userParams?.name || "";
+        if (quant.id === this.selectedQuantID) {
+          this.selectedQuant = quant.params?.userParams?.name || `Unnamed (${this.selectedQuantID})`;
           this.selectedQuantDetectors = QuantModes.getShortDescription(quant.params?.userParams?.quantMode || "");
           break;
         }

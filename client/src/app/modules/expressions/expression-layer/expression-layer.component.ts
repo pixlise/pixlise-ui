@@ -1,17 +1,36 @@
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { DataModule } from "src/app/generated-protos/modules";
 import { ExpressionsService } from "../services/expressions.service";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
+import { Subscription } from "rxjs";
+import { AnalysisLayoutService } from "../../analysis/analysis.module";
+import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ScanItem } from "src/app/generated-protos/scan";
+
+export const TERNARY_WIDGET_OPTIONS = {
+  Left: { position: 0, icon: "assets/button-icons/ternary-left.svg" },
+  Right: { position: 1, icon: "assets/button-icons/ternary-right.svg" },
+  Top: { position: 2, icon: "assets/button-icons/ternary-top.svg" },
+  Off: { position: -1, icon: "assets/button-icons/visible-off.svg" },
+};
+
+export const BINARY_WIDGET_OPTIONS = {
+  X: { position: 0, icon: "assets/button-icons/binary-x-axis.svg" },
+  Y: { position: 1, icon: "assets/button-icons/binary-y-axis.svg" },
+  Off: { position: -1, icon: "assets/button-icons/visible-off.svg" },
+};
 
 @Component({
   selector: "expression-layer",
   templateUrl: "./expression-layer.component.html",
   styleUrls: ["./expression-layer.component.scss"],
 })
-export class ExpressionLayerComponent {
+export class ExpressionLayerComponent implements OnInit {
+  private _subs = new Subscription();
+
   private _module: DataModule | null = null;
   @Input() expression: DataExpression | null = null;
 
@@ -29,18 +48,56 @@ export class ExpressionLayerComponent {
 
   @Input() showVisibilityButton: boolean = false;
 
+  @Input() isWidgetExpression?: boolean = false;
+
+  @Input() selectIfValidPosition: boolean = false;
+
+  @Input() showActiveExpressionConfiguration: boolean = false;
+
+  private _widgetType: string = "";
+  widgetOptions: string[] = [];
+  widgetOptionIcons: string[] = [];
+  widgetSelectionState: string = "Off";
+
   isVisible: boolean = false; // Part of response
 
   @Output() onFilterAuthor = new EventEmitter<string>();
   @Output() onSelect = new EventEmitter();
+  @Output() onChangeWidgetPosition = new EventEmitter<number>();
 
   objectType: ObjectType = ObjectType.OT_EXPRESSION;
+
+  configuredScan: string = "";
+  idToName: Record<string, string> = {};
+  availableScans: ScanConfiguration[] = [];
 
   constructor(
     private _route: ActivatedRoute,
     private _router: Router,
-    private _expressionsService: ExpressionsService
+    private _expressionsService: ExpressionsService,
+    private _analysisLayoutService: AnalysisLayoutService
   ) {}
+
+  ngOnInit(): void {
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
+        this.availableScans = Object.values(config.scanConfigurations);
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.availableScans$.subscribe(scans => {
+        this.idToName = {};
+        scans.forEach(scan => {
+          this.idToName[scan.id] = scan.title;
+        });
+      })
+    );
+  }
+
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
 
   get isModule(): boolean {
     return this._module !== null;
@@ -62,6 +119,47 @@ export class ExpressionLayerComponent {
       tags: [],
       modifiedUnixSec: module.modifiedUnixSec,
     });
+  }
+
+  get isLayerSelected(): boolean {
+    return this.selected || (this.selectIfValidPosition && !!this.widgetSelectionState && this.widgetSelectionState !== "Off");
+  }
+
+  @Input() set widgetType(type: string) {
+    this._widgetType = type;
+    this.widgetOptions = [];
+    this.widgetOptionIcons = [];
+
+    if (type === "ternary") {
+      this.widgetOptions = Object.keys(TERNARY_WIDGET_OPTIONS);
+      this.widgetOptionIcons = Object.values(TERNARY_WIDGET_OPTIONS).map(option => option.icon);
+    } else if (type === "binary") {
+      this.widgetOptions = Object.keys(BINARY_WIDGET_OPTIONS);
+      this.widgetOptionIcons = Object.values(BINARY_WIDGET_OPTIONS).map(option => option.icon);
+    }
+  }
+
+  get widgetType(): string {
+    return this._widgetType;
+  }
+
+  @Input() set widgetPosition(position: number) {
+    if (position > this.widgetOptions.length || position < 0 || !this.widgetOptions[position]) {
+      this.widgetSelectionState = "Off";
+    } else {
+      this.widgetSelectionState = this.widgetOptions[position];
+    }
+  }
+
+  onWidgetSelectionStateChange(state: string) {
+    this.widgetSelectionState = state;
+    let widgetPosition: number = -1;
+    if (this.widgetType === "ternary") {
+      widgetPosition = (TERNARY_WIDGET_OPTIONS as any)[state].position;
+    } else if (this.widgetType === "binary") {
+      widgetPosition = (BINARY_WIDGET_OPTIONS as any)[state].position;
+    }
+    this.onChangeWidgetPosition.emit(widgetPosition);
   }
 
   get canEdit(): boolean {
@@ -180,6 +278,7 @@ export class ExpressionLayerComponent {
   }
 
   onTagSelectionChanged(tagIDs: string[]): void {
+    // TODO: Update the expression tags
     console.log("Tag selection changed", tagIDs);
     if (this.expression) {
       // this._expressionsService.updateExpressionTags(this.expression.id, tagIDs);

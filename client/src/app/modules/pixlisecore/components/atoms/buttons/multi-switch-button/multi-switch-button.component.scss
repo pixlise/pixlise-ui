@@ -27,54 +27,61 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+@import "variables.scss";
 
 .multi-switch-container {
-    position: relative;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background: $clr-gray-90;
+  border-radius: $sz-half;
+  width: 100%;
+
+  .multi-switch-option {
     display: flex;
-    flex-direction: row;
     align-items: center;
-    justify-content: space-between;
-    background: $clr-gray-90;
+    justify-content: center;
+
+    flex: 1;
     border-radius: $sz-half;
-    width: 100%;
+    padding: $sz-half $sz-unit;
+    text-align: center;
+    color: $clr-gray-30;
+    cursor: pointer;
 
-    .multi-switch-option {
-        flex: 1;
-        border-radius: $sz-half;
-        padding: $sz-half $sz-unit;
-        text-align: center;
-        color: $clr-gray-30;
-        cursor: pointer;
-
-        &.active {
-            background: transparent;
-            color: white;
-            z-index: 10;
-        }
+    img {
+      margin-right: 4px;
     }
 
-    &.disabled {
-        .multi-switch-option {
-            color: $clr-gray-50;
+    &.active {
+      background: transparent;
+      color: white;
+      z-index: 10;
+    }
+  }
 
-            &.active {
-                background-color: $clr-gray-70;
-            }
-        }
+  &.disabled {
+    .multi-switch-option {
+      color: $clr-gray-50;
 
-        .active-selector {
-            box-shadow: none;
-        }
+      &.active {
+        background-color: $clr-gray-70;
+      }
     }
 
     .active-selector {
-        transition: all 0.2s ease;
-        background: $clr-gray-60;
-        box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.75);
-        border-radius: $sz-half;
-        position: absolute;
-        height: 100%;
-
+      box-shadow: none;
     }
+  }
+
+  .active-selector {
+    transition: all 0.2s ease;
+    background: $clr-gray-60;
+    box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.75);
+    border-radius: $sz-half;
+    position: absolute;
+    height: 100%;
+  }
 }

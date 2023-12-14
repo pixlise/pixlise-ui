@@ -30,6 +30,15 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="search-box-group">
+  <div class="search-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path
+        fill-rule="evenodd"
+        clip-rule="evenodd"
+        d="M12.8305 11.0534L14.6312 12.8553C15.1229 13.3475 15.1229 14.1453 14.6312 14.6375C14.1359 15.121 13.3456 15.121 12.8502 14.6375L11.0495 12.8362C8.28771 14.6838 4.57575 14.1337 2.46766 11.5645C0.359576 8.99525 0.542962 5.24488 2.89164 2.89386C5.24032 0.542843 8.98822 0.358013 11.5565 2.46655C14.1249 4.57508 14.6759 8.28923 12.8305 11.0534ZM12.0309 7.46715C12.0309 4.94385 9.98668 2.89832 7.465 2.89832C4.94447 2.90109 2.90187 4.945 2.89909 7.46715C2.89909 9.99045 4.94332 12.036 7.465 12.036C9.98668 12.036 12.0309 9.99045 12.0309 7.46715Z"
+        fill="#BCBCBC" />
+    </svg>
+  </div>
   <input [(ngModel)]="searchText" class="search-box" type="text" [placeholder]="placeholder" (input)="onInputEvent()" />
   <push-button (onClick)="onClearEvent()" buttonStyle="light-right-outline">
     <svg width="9" height="8" viewBox="0 0 9 8" fill="none" xmlns="http://www.w3.org/2000/svg">

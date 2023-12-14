@@ -345,10 +345,10 @@ export class APICachedDataService {
     return result;
   }
 
-  getExpressionGroupList(req: ExpressionGroupListReq): Observable<ExpressionGroupListResp> {
+  getExpressionGroupList(req: ExpressionGroupListReq, updateList: boolean = false): Observable<ExpressionGroupListResp> {
     const cacheId = JSON.stringify(ExpressionGroupListReq.toJSON(req));
     let result = this._exprGroupListReqMap.get(cacheId);
-    if (result === undefined) {
+    if (result === undefined || updateList) {
       // Have to request it!
       result = this._dataService.sendExpressionGroupListRequest(req).pipe(shareReplay(1));
 

@@ -7,11 +7,14 @@ import { DataExpression } from "src/app/generated-protos/expressions";
 import { DataModule, DataModuleVersion } from "src/app/generated-protos/modules";
 import { DataModuleAddVersionReq, DataModuleGetReq, DataModuleListReq, DataModuleWriteReq } from "src/app/generated-protos/module-msgs";
 import { SemanticVersion, VersionField } from "src/app/generated-protos/version";
+import { ExpressionGroupGetReq, ExpressionGroupListReq, ExpressionGroupListResp, ExpressionGroupWriteReq } from "src/app/generated-protos/expression-group-msgs";
+import { ExpressionGroup } from "src/app/generated-protos/expression-group";
 
 @Injectable({
   providedIn: "root",
 })
 export class ExpressionsService {
+  expressionGroups$: BehaviorSubject<ExpressionGroup[]> = new BehaviorSubject<ExpressionGroup[]>([]);
   expressions$ = new BehaviorSubject<Record<string, DataExpression>>({});
   modules$ = new BehaviorSubject<Record<string, DataModule>>({});
 
@@ -166,5 +169,32 @@ export class ExpressionsService {
         this._cacheService.cacheExpression(ExpressionGetReq.create({ id: expression.id }), ExpressionGetResp.create({ expression: res.expression }));
       }
     });
+  }
+
+  listExpressionGroups() {
+    // Get a list of groups
+    this._cacheService.getExpressionGroupList(ExpressionGroupListReq.create({})).subscribe((resp: ExpressionGroupListResp) => {
+      let expressionGroups = Object.values(resp.groups);
+      this.expressionGroups$.next(expressionGroups);
+    });
+  }
+
+  writeExpressionGroup(expressionGroupToWrite: ExpressionGroup) {
+    this._dataService
+      .sendExpressionGroupWriteRequest(
+        ExpressionGroupWriteReq.create({
+          group: expressionGroupToWrite,
+        })
+      )
+      .subscribe(res => {
+        if (res.group) {
+          this._snackBarService.openSuccess(`Expression group (${expressionGroupToWrite.name}) saved`);
+
+          this.expressionGroups$.value.push(res.group);
+          this.expressionGroups$.next(this.expressionGroups$.value);
+
+          this._cacheService.getExpressionGroupList(ExpressionGroupListReq.create({}), true);
+        }
+      });
   }
 }

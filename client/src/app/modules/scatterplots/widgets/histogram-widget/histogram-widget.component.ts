@@ -202,7 +202,11 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   onBars() {
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.data = {
-      selectedIds: this.mdl.expressionIds,
+      widgetType: "histogram",
+      widgetId: this._widgetId,
+      scanId: this._analysisLayoutService.defaultScanId,
+      quantId: this.mdl.dataSourceIds.get(this._analysisLayoutService.defaultScanId)?.quantId || "",
+      selectedIds: this.mdl.expressionIds || [],
     };
 
     const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);

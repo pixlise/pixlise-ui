@@ -14,6 +14,7 @@ import { getPredefinedExpression } from "src/app/expression-language/predefined-
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { ExpressionGroupListReq, ExpressionGroupListResp } from "src/app/generated-protos/expression-group-msgs";
+import { ExpressionBrowseSections } from "../../models/expression-browse-sections";
 
 @Component({
   selector: "expression-search-controls",
@@ -48,12 +49,12 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
 
   private _currentUserId: string = "";
 
-  private _et_Expression = "Expressions";
-  private _et_ExpressionGroups = "Expression Groups";
-  private _et_QuantifiedElements = "Quantified Elements";
-  private _et_PseudoIntensities = "Pseudo-Intensities";
+  private _et_Expression = ExpressionBrowseSections.EXPRESSIONS;
+  private _et_ExpressionGroups = ExpressionBrowseSections.EXPRESSION_GROUPS;
+  private _et_QuantifiedElements = ExpressionBrowseSections.QUANTIFIED_ELEMENTS;
+  private _et_PseudoIntensities = ExpressionBrowseSections.PSEUDO_INTENSITIES;
   expressionListTypes = [this._et_Expression, this._et_ExpressionGroups, this._et_QuantifiedElements, this._et_PseudoIntensities];
-  expressionListType = this.expressionListTypes[0];
+  expressionListType = ExpressionBrowseSections.EXPRESSIONS;
 
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
@@ -85,11 +86,10 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
     );
 
     // Get a list of groups
-    this._cachedDataSerivce.getExpressionGroupList(ExpressionGroupListReq.create({})).subscribe((resp: ExpressionGroupListResp) => {
-      this._expressionGroups = [];
-      for (const group of Object.values(resp.groups)) {
-        this._expressionGroups.push(group);
-      }
+    this._expressionsService.listExpressionGroups();
+    this._expressionsService.expressionGroups$.subscribe(groups => {
+      this._expressionGroups = groups;
+      this.filterExpressionsForDisplay();
     });
 
     this._subs.add(
@@ -143,16 +143,17 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
 */
   @Input() set manualFilters(filters: Partial<ExpressionSearchFilter> | null) {
     if (filters !== null) {
-      let { searchString, tagIDs, authors } = filters;
+      let { searchString, tagIDs, authors, expressionType } = filters;
       this.searchString = searchString ?? this.searchString;
       this.filteredTagIDs = tagIDs ?? this.filteredTagIDs;
       this.filteredAuthors = authors ?? this.filteredAuthors;
+      this.expressionListType = expressionType ?? this.expressionListType;
       this.filterExpressionsForDisplay();
     }
   }
 
   private refreshPseudointensities(scanId: string) {
-    this._cachedDataSerivce.getPseudoIntensity(PseudoIntensityReq.create({ scanId: scanId })).subscribe((resp: PseudoIntensityResp) => {
+    this._cachedDataSerivce.getPseudoIntensity(PseudoIntensityReq.create({ scanId })).subscribe((resp: PseudoIntensityResp) => {
       this._pseudoIntensities = [];
       for (const label of resp.intensityLabels) {
         const id = DataExpressionId.makePredefinedPseudoIntensityExpression(label);
@@ -184,6 +185,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
       this._analysisLayoutService.fetchQuantsForScan(scanId);
       this.filteredQuants = this._availableQuants[scanId] || [];
       this.selectedQuantId = this._defaultQuantsForScans[this.visibleScanId] || "";
+      this.refreshPseudointensities(scanId);
     }
   }
 
@@ -233,6 +235,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
       filteredExpressions: this.filteredExpressions,
       searchString: this.searchString,
       tagIDs: this.filteredTagIDs,
+      expressionType: this.expressionListType,
       authors: this.filteredAuthors,
     });
   }
@@ -296,6 +299,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
       searchString,
       tagIDs: this.filteredTagIDs,
       authors: this.filteredAuthors,
+      expressionType: this.expressionListType,
       valueChanged,
     });
     this.extractAuthors();

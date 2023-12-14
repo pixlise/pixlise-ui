@@ -64,11 +64,11 @@ export const getQuantifiedElements = (summary: QuantificationSummary): Quantifie
 
   const result = new QuantifiedElements(
     // If CO3 was in the param element list, it was quantified as carbonates
-    summary.params.userParams.elements.indexOf("CO3") > -1,
+    (summary.params.userParams?.elements || []).indexOf("CO3") > -1,
     [],
     [],
     // If Ar_I was in the param element list, it was set to ignore Argon
-    summary.params.userParams.elements.indexOf("Ar_I") > -1
+    (summary.params.userParams?.elements || []).indexOf("Ar_I") > -1
   );
 
   // Run through all elements and get their symbol or atomic number
@@ -78,7 +78,7 @@ export const getQuantifiedElements = (summary: QuantificationSummary): Quantifie
   //       nothing quantified, that should result in an error...
   let elemList = summary.elements;
   if (elemList.length <= 0) {
-    elemList = summary.params.userParams.elements; // May contain Ar_I
+    elemList = summary.params.userParams?.elements || []; // May contain Ar_I
   }
 
   for (const symbol of elemList) {

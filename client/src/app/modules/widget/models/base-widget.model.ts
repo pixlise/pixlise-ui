@@ -10,6 +10,7 @@ import { BehaviorSubject } from "rxjs";
 export class BaseWidgetModel {
   _widgetControlConfiguration: WidgetControlConfiguration = {};
 
+  _widgetId: string = "";
   widgetData$ = new BehaviorSubject({});
 
   onWidgetDataChange(widgetData: WidgetData): void {}

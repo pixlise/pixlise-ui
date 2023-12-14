@@ -308,11 +308,15 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.data = {
-      maxSelection: 1,
+      widgetType: "binary",
+      widgetId: this._widgetId,
+      scanId: this._analysisLayoutService.defaultScanId,
+      quantId: this.mdl.dataSourceIds.get(this._analysisLayoutService.defaultScanId)?.quantId || "",
+      selectedIds: this.mdl.expressionIds || [],
     };
 
     if (this.mdl.expressionIds.length > axisExpressionIndex) {
-      dialogConfig.data.selectedIds = [this.mdl.expressionIds[axisExpressionIndex]];
+      dialogConfig.data.expressionTriggerPosition = axisExpressionIndex;
     }
 
     const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
@@ -321,7 +325,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
         // If there are 1-3, set them all
         const last = Math.min(2, result.selectedExpressions.length);
         for (let i = 0; i < last; i++) {
-          this.mdl.expressionIds[(axisExpressionIndex + i) % 2] = result.selectedExpressions[i].id;
+          this.mdl.expressionIds[i % 2] = result.selectedExpressions[i].id;
         }
 
         let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];

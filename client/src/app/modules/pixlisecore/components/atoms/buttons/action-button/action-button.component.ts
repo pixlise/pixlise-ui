@@ -46,6 +46,7 @@ const customActionIcons = {
   deny: "assets/button-icons/grey-circle-x.svg",
   openAccordion: "assets/button-icons/arrow-right.svg",
   closeAccordion: "assets/button-icons/arrow-down.svg",
+  ellipsis: "assets/button-icons/ellipsis.svg",
 };
 
 export type ACTION_TYPE = keyof typeof customActionIcons | keyof typeof matActionIcons;

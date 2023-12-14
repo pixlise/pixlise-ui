@@ -87,12 +87,19 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
   </div>
 </ng-template>
-<widget-settings-menu [settingsDialog]="tagMenu" class="tag-button" [startRight]="true" (onClose)="onClose()">
+<widget-settings-menu [settingsDialog]="tagMenu" class="tag-button" [startRight]="buttonStyle === 'icon'" (onClose)="onClose()">
   <icon-button
+    *ngIf="buttonStyle === 'icon'"
     #tooltip="matTooltip"
     [matTooltip]="selectedTagsTooltip"
     icon="assets/button-icons/tag.svg"
     [notificationCount]="tagCount"
     (click)="delayedFocusOnInput()">
   </icon-button>
+  <div *ngIf="buttonStyle === 'button'" class="dropdown-button" #tooltip="matTooltip" [matTooltip]="selectedTagsTooltip" (click)="delayedFocusOnInput()">
+    <h5>Tags</h5>
+    <svg viewBox="0 0 24 24" width="24px" height="24px" focusable="false" aria-hidden="true" class="ng-tns-c3393473648-6">
+      <path d="M7 10l5 5 5-5z" class="ng-tns-c3393473648-6"></path>
+    </svg>
+  </div>
 </widget-settings-menu>

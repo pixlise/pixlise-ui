@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Inject, OnDestroy, OnInit } from "@angular/core";
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { Subscription } from "rxjs";
@@ -35,8 +35,16 @@ import { DataExpression } from "src/app/generated-protos/expressions";
 import { ExpressionSearchFilter } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
-import { ExpressionGroup } from "src/app/generated-protos/expression-group";
+import { ScanConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ExpressionGroup, ExpressionGroupItem } from "src/app/generated-protos/expression-group";
+import { ExpressionBrowseSections } from "../../models/expression-browse-sections";
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
+import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
+import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
+import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 
 export type ExpressionPickerResponse = {
   selectedExpressions: (DataExpression | ExpressionGroup)[];
@@ -46,10 +54,13 @@ export type ExpressionPickerResponse = {
 
 export type ExpressionPickerData = {
   selectedIds?: string[];
+  expressionTriggerPosition?: number;
+  widgetId?: string;
   scanId?: string;
   quantId?: string;
   noActiveScreenConfig?: boolean;
   maxSelection?: number;
+  widgetType?: string;
 };
 
 @Component({
@@ -58,10 +69,17 @@ export type ExpressionPickerData = {
   styleUrls: ["./expression-picker.component.scss"],
 })
 export class ExpressionPickerComponent implements OnInit, OnDestroy {
+  @ViewChild("saveExpressionGroupDialogBtn") saveExpressionGroupDialog!: ElementRef;
+
   private _subs = new Subscription();
 
   filteredExpressions: (DataExpression | ExpressionGroup)[] = [];
-  selectedExpressions: Set<string> = new Set();
+
+  selectedExpressionIdOrder: string[] = [];
+  selectedExpressionIds: Set<string> = new Set();
+  selectedExpressions: (DataExpression | ExpressionGroup)[] = [];
+
+  private _pseudoIntensities: Record<string, DataExpression> = {};
 
   manualFilters: Partial<ExpressionSearchFilter> | null = null;
 
@@ -70,12 +88,26 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   waitingForExpressions: string[] = [];
   fetchedAllSelectedExpressions: boolean = true;
 
+  private _currentUserId: string = "";
+
+  activeBrowseGroup: string = "Expressions";
+  activeBrowseSection: string = "All";
+  browseSections = ExpressionBrowseSections.SECTIONS;
+
   scanId: string = "";
   quantId: string = "";
 
+  activeWidgetId: string = "";
+  layoutWidgets: { widget: WidgetLayoutConfiguration; name: string }[] = [];
+
+  newExpressionGroupName: string = "";
+  newExpressionGroupDescription: string = "";
+
   constructor(
+    private _cachedDataSerivce: APICachedDataService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _snackBarService: SnackbarService,
+    private _userOptionsService: UserOptionsService,
     private _expressionService: ExpressionsService,
     @Inject(MAT_DIALOG_DATA) public data: ExpressionPickerData,
     public dialogRef: MatDialogRef<ExpressionPickerComponent, ExpressionPickerResponse>
@@ -84,31 +116,87 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.scanId = this.data.scanId || "";
     this.quantId = this.data.quantId || "";
-    this.selectedExpressions = new Set(this.data.selectedIds || []);
+    this.activeWidgetId = this.data.widgetId || "";
+    this.selectedExpressionIds = new Set(this.data.selectedIds || []);
+    this.selectedExpressionIdOrder = Array.from(this.selectedExpressionIds);
+    this.updateSelectedExpressions();
 
-    this._expressionService.expressions$.subscribe(expressions => {
-      let notFoundExpressions: string[] = [];
-      this.waitingForExpressions.forEach((id, i) => {
-        if (!expressions[id]) {
-          notFoundExpressions.push(id);
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
+        if (config) {
+          let widgetReferences: { widget: WidgetLayoutConfiguration; name: string }[] = [];
+          config.layouts.forEach((layout, i) => {
+            let widgetCounts: Record<string, number> = {};
+            layout.widgets.forEach((widget, widgetIndex) => {
+              if (widgetCounts[widget.type]) {
+                widgetCounts[widget.type]++;
+              } else {
+                widgetCounts[widget.type] = 1;
+              }
+
+              let widgetTypeName = WIDGETS[widget.type as keyof typeof WIDGETS].name;
+              let widgetName = `${widgetTypeName} ${widgetCounts[widget.type]}${i > 0 ? ` (page ${i + 1})` : ""}`;
+
+              widgetReferences.push({ widget, name: widgetName });
+            });
+          });
+
+          this.layoutWidgets = widgetReferences;
         }
-      });
+      })
+    );
 
-      if (!this.fetchedAllSelectedExpressions && this.data?.selectedIds) {
-        let fetchedAll = true;
-        this.data.selectedIds?.forEach(id => {
-          if (!this._expressionService.expressions$.value[id]) {
-            fetchedAll = false;
+    this._subs.add(
+      this._expressionService.expressions$.subscribe(expressions => {
+        let notFoundExpressions: string[] = [];
+        this.waitingForExpressions.forEach((id, i) => {
+          if (!expressions[id]) {
+            notFoundExpressions.push(id);
           }
         });
 
-        if (fetchedAll) {
-          this.fetchedAllSelectedExpressions = true;
-        }
-      }
+        if (!this.fetchedAllSelectedExpressions && this.data?.selectedIds) {
+          let fetchedAll = true;
+          this.data.selectedIds?.forEach(id => {
+            if (!this._expressionService.expressions$.value[id]) {
+              fetchedAll = false;
+            }
+          });
 
-      this.waitingForExpressions = notFoundExpressions;
-    });
+          if (fetchedAll) {
+            this.fetchedAllSelectedExpressions = true;
+          }
+        }
+
+        this.waitingForExpressions = notFoundExpressions;
+        this.updateSelectedExpressions();
+      })
+    );
+
+    this._subs.add(
+      this._userOptionsService.userOptionsChanged$.subscribe(() => {
+        this._currentUserId = this._userOptionsService.userDetails.info?.id || "";
+      })
+    );
+
+    if (this.scanId) {
+      this._subs.add(
+        this._cachedDataSerivce.getPseudoIntensity(PseudoIntensityReq.create({ scanId: this.scanId })).subscribe((resp: PseudoIntensityResp) => {
+          this._pseudoIntensities = {};
+          if (resp.intensityLabels) {
+            resp.intensityLabels.forEach(label => {
+              const id = DataExpressionId.makePredefinedPseudoIntensityExpression(label);
+              const expression = getPredefinedExpression(id);
+              if (expression) {
+                this._pseudoIntensities[id] = expression;
+              }
+            });
+          }
+
+          this.updateSelectedExpressions();
+        })
+      );
+    }
 
     if (this.data?.selectedIds) {
       this.data.selectedIds.forEach(id => {
@@ -124,12 +212,75 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this._subs.unsubscribe();
   }
 
+  updateSelectedExpressions() {
+    this.selectedExpressions = Array.from(this.selectedExpressionIds).map(id => {
+      let expression = this._expressionService.expressions$.value[id];
+      if (!expression) {
+        if (this._pseudoIntensities[id]) {
+          // Check if we have it in pseudo intensities
+          return this._pseudoIntensities[id];
+        } else if (this.filteredExpressions) {
+          // Check if we have it in filtered expressions
+          let filteredExpression = this.filteredExpressions.find(expression => expression.id === id);
+          if (filteredExpression) {
+            return filteredExpression;
+          }
+        }
+
+        // If we dont have it in filtered expressions, then we are waiting for it to load
+        return DataExpression.create({ id: `loading-${id}`, name: "Loading..." });
+      }
+
+      return expression;
+    });
+  }
+
+  onCloseExpressionGroupDialog() {
+    this.newExpressionGroupName = "";
+    this.newExpressionGroupDescription = "";
+
+    if (this.saveExpressionGroupDialog && this.saveExpressionGroupDialog instanceof PushButtonComponent) {
+      (this.saveExpressionGroupDialog as PushButtonComponent).closeDialog();
+    }
+  }
+  onSaveNewExpressionGroup() {
+    let expressionGroup = ExpressionGroup.create({ name: this.newExpressionGroupName, description: this.newExpressionGroupDescription });
+    expressionGroup.groupItems = this.selectedExpressionIdOrder.map(id => {
+      return ExpressionGroupItem.create({ expressionId: id });
+    });
+
+    this._expressionService.writeExpressionGroup(expressionGroup);
+    this.onCloseExpressionGroupDialog();
+  }
+
   trackById(index: number, item: DataExpression | ExpressionGroup): string {
     return item.id;
   }
 
   checkSelected(id: string): boolean {
-    return this.selectedExpressions.has(id);
+    return this.selectedExpressionIds.has(id);
+  }
+
+  onSubSectionSelect(section: string, subSection: string) {
+    if (section === "Elements") {
+      this.manualFilters = { authors: [], searchString: "", tagIDs: [], expressionType: subSection };
+    } else if (section !== this.activeBrowseGroup) {
+      this.manualFilters = { authors: [], searchString: "", tagIDs: [], expressionType: section };
+    }
+
+    if ([ExpressionBrowseSections.MY_EXPRESSIONS, ExpressionBrowseSections.MY_EXPRESSION_GROUPS].includes(subSection)) {
+      this.manualFilters = { ...this.manualFilters, authors: [this._currentUserId] };
+    } else if (subSection === ExpressionBrowseSections.ALL) {
+      this.manualFilters = {
+        authors: [],
+        searchString: "",
+        tagIDs: [],
+        expressionType: this.manualFilters?.expressionType || ExpressionBrowseSections.EXPRESSIONS,
+      };
+    }
+
+    this.activeBrowseGroup = section;
+    this.activeBrowseSection = subSection;
   }
 
   get applyTooltip(): string {
@@ -138,7 +289,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       tooltip = `Waiting for (${this.waitingForExpressions.length}) expressions to finish downloading...`;
     } else {
       tooltip = `Apply Selected Expressions:`;
-      this.selectedExpressions.forEach(id => {
+      this.selectedExpressionIds.forEach(id => {
         let expression = this._expressionService.expressions$.value[id];
         tooltip += `\n${expression?.name || id}`;
       });
@@ -148,23 +299,28 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   get canSelectMore(): boolean {
-    return !this.data.maxSelection || this.selectedExpressions.size < this.data.maxSelection;
+    return !this.data.maxSelection || this.selectedExpressionIds.size < this.data.maxSelection;
   }
 
   onSelect(expression: DataExpression): void {
     if (this.data.maxSelection === 1) {
-      this.selectedExpressions.clear();
-      this.selectedExpressions.add(expression.id);
+      this.selectedExpressionIds.clear();
+      this.selectedExpressionIds.add(expression.id);
+      this.selectedExpressionIdOrder = [expression.id];
       return;
     }
 
-    if (this.selectedExpressions.has(expression.id)) {
-      this.selectedExpressions.delete(expression.id);
+    if (this.selectedExpressionIds.has(expression.id)) {
+      this.selectedExpressionIds.delete(expression.id);
+      this.selectedExpressionIdOrder = this.selectedExpressionIdOrder.map(id => (id === expression.id ? "" : id));
     } else if (!this.canSelectMore) {
       return;
     } else {
-      this.selectedExpressions.add(expression.id);
+      this.selectedExpressionIds.add(expression.id);
+      this.selectedExpressionIdOrder.push(expression.id);
     }
+
+    this.updateSelectedExpressions();
   }
 
   onFilterAuthor(author: string): void {
@@ -177,6 +333,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
   onFilterChanged({ filteredExpressions, scanId, quantId, valueChanged }: ExpressionSearchFilter) {
     this.filteredExpressions = filteredExpressions;
+    this.updateSelectedExpressions();
     if (!this.fetchedAllSelectedExpressions) {
       return;
     }
@@ -201,6 +358,42 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     }
   }
 
+  onChangeWidgetPosition(expression: DataExpression, widgetPosition: number): void {
+    let existingOrder = Array.from(this.selectedExpressionIdOrder);
+    let idInRequestedPosition = existingOrder[widgetPosition];
+    if (idInRequestedPosition) {
+      let existingPosition = existingOrder.indexOf(expression.id);
+      if (existingPosition > -1) {
+        // Both ids exist, so swap them
+        existingOrder[existingPosition] = idInRequestedPosition;
+        existingOrder[widgetPosition] = expression.id;
+      } else {
+        // There's an id in the requested position, but not the current position, so insert the current id
+        existingOrder[widgetPosition] = expression.id;
+        existingOrder.push(idInRequestedPosition);
+      }
+    } else if (widgetPosition === existingOrder.length) {
+      // There's no id in the requested position and it's the next element, so just add it
+      existingOrder.push(expression.id);
+    } else {
+      // There's no id in the requested position, but there's a gap, so add, then fill the gap
+      existingOrder[widgetPosition] = expression.id;
+      for (let i = 0; i <= widgetPosition; i++) {
+        if (!existingOrder[i]) {
+          existingOrder[i] = "";
+        }
+      }
+    }
+    this.selectedExpressionIdOrder = [...existingOrder];
+    this.updateSelectedExpressions();
+  }
+
+  onRemoveExpressionFromActive(expression: DataExpression): void {
+    if (this.data.widgetType) {
+      this._snackBarService.openSuccess(`Removed ${expression.name} from ${this.data.widgetType}`);
+    }
+  }
+
   onToggleSearch(): void {
     this.showSearchControls = !this.showSearchControls;
   }
@@ -210,9 +403,9 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   onConfirm(): void {
-    const selectedExpressions = Array.from(this.selectedExpressions)
-      .map(id => this._expressionService.expressions$.value[id])
-      .filter(expression => expression);
+    const selectedExpressions: (DataExpression | ExpressionGroup)[] = Array.from(this.selectedExpressionIdOrder)
+      .map(id => this.selectedExpressions.find(expression => expression.id === id))
+      .filter(expression => expression) as (DataExpression | ExpressionGroup)[];
 
     this.dialogRef.close({
       selectedExpressions,
@@ -222,6 +415,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   onClear(): void {
-    this.selectedExpressions.clear();
+    this.selectedExpressionIds.clear();
+    this.selectedExpressionIdOrder = [];
   }
 }

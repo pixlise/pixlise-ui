@@ -29,11 +29,29 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
+<ng-template #saveExpressionGroupDialog>
+  <div class="new-expression-group">
+    <h1>New Expression Group</h1>
+    <div class="fields">
+      <span class="input-label">Expression Group Name</span>
+      <input type="text" [(ngModel)]="newExpressionGroupName" placeholder="New Group Name ..." />
+
+      <span class="input-label">Group Description</span>
+      <textarea type="text" rows="3" [(ngModel)]="newExpressionGroupDescription" placeholder="Group Description ..."></textarea>
+    </div>
+    <div class="gap-separated-horizontal-elements button-container">
+      <push-button buttonStyle="outline" (onClick)="onCloseExpressionGroupDialog()">Cancel</push-button>
+      <push-button buttonStyle="yellow" (onClick)="onSaveNewExpressionGroup()">Confirm</push-button>
+    </div>
+  </div>
+</ng-template>
+
 <div class="expression-picker-container">
   <header>
     <div class="controls">
-      <h1 class="title">Expressions</h1>
-      <two-state-icon-push-button
+      <h1 class="title">Select Expressions</h1>
+      <action-button action="close" color="rgb(var(--clr-gray-30))" (onClick)="onCancel()"></action-button>
+      <!-- <two-state-icon-push-button
         class="search-btn"
         activeIcon="assets/button-icons/filter-yellow.svg"
         inactiveIcon="assets/button-icons/filter-white.svg"
@@ -41,35 +59,92 @@ POSSIBILITY OF SUCH DAMAGE.
         (onToggle)="onToggleSearch()"
         #tooltip="matTooltip"
         matTooltip="{{ showSearchControls ? 'Hide' : 'Show' }} search options">
-      </two-state-icon-push-button>
+      </two-state-icon-push-button> -->
     </div>
-    <expression-search-controls
+    <!-- <expression-search-controls
       class="{{ showSearchControls ? 'visible' : '' }}"
       (onFilterChanged)="onFilterChanged($event)"
       [scanId]="scanId"
       [quantId]="quantId"
-      [manualFilters]="manualFilters"></expression-search-controls>
+      [manualFilters]="manualFilters"></expression-search-controls> -->
   </header>
-  <section class="expressions">
-    <cdk-virtual-scroll-viewport [itemSize]="48" class="expressions-viewport">
-      <expression-layer
-        *cdkVirtualFor="let item of filteredExpressions; trackBy: trackById"
-        [expression]="item"
-        (onFilterAuthor)="onFilterAuthor($event)"
-        [selected]="checkSelected(item.id)"
-        [selectionDisabledMessage]="data.maxSelection === 1 || canSelectMore ? '' : 'Maximum number of expressions selected'"
-        [isSingleSelect]="data.maxSelection === 1"
-        (onSelect)="onSelect(item)"></expression-layer>
-    </cdk-virtual-scroll-viewport>
+  <section class="columns">
+    <section class="column browse">
+      <div class="title">
+        <h4>Browse</h4>
+      </div>
+      <div class="browser">
+        <div *ngFor="let section of browseSections" class="browse-section">
+          <h5 class="{{ activeBrowseGroup === section.name ? 'active' : '' }}">{{ section.name }}</h5>
+          <div class="browse-list">
+            <h6
+              (click)="onSubSectionSelect(section.name, subSection)"
+              class="{{ activeBrowseGroup === section.name && activeBrowseSection === subSection ? 'active' : '' }}"
+              *ngFor="let subSection of section.subSections">
+              {{ subSection }}
+            </h6>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="column expressions-list">
+      <div class="title">
+        <h4>{{ this.manualFilters?.expressionType || "Expressions" }}</h4>
+      </div>
+      <expression-search-controls
+        class="{{ showSearchControls ? 'visible' : '' }}"
+        (onFilterChanged)="onFilterChanged($event)"
+        [scanId]="scanId"
+        [quantId]="quantId"
+        [manualFilters]="manualFilters"></expression-search-controls>
+      <section class="expressions">
+        <cdk-virtual-scroll-viewport [itemSize]="48" class="expressions-viewport">
+          <expression-layer
+            *cdkVirtualFor="let item of filteredExpressions; trackBy: trackById"
+            [expression]="item"
+            (onFilterAuthor)="onFilterAuthor($event)"
+            [selected]="checkSelected(item.id)"
+            [selectionDisabledMessage]="data.maxSelection === 1 || canSelectMore ? '' : 'Maximum number of expressions selected'"
+            (onSelect)="onSelect(item)"></expression-layer>
+        </cdk-virtual-scroll-viewport>
+      </section>
+    </section>
+    <section class="column active-expressions">
+      <div class="title active-widget-selection">
+        <!-- <h4>Active Expressions</h4> -->
+        <!-- layoutWidgets -->
+        Active:<mat-select [(ngModel)]="activeWidgetId" placeholder="Active Group">
+          <mat-option *ngFor="let option of layoutWidgets; let i = index" [value]="option.widget.id">{{ option.name }}</mat-option>
+        </mat-select>
+        <push-button buttonStyle="gray" #saveExpressionGroupDialogBtn [customDialog]="saveExpressionGroupDialog">Save Group</push-button>
+      </div>
+      <section class="active-expressions">
+        <cdk-virtual-scroll-viewport [itemSize]="80" class="expressions-viewport">
+          <!-- [selected]="selectedExpressionIdOrder.indexOf(item.id) === data?.expressionTriggerPosition || false" -->
+          <expression-layer
+            *cdkVirtualFor="let item of selectedExpressions; trackBy: trackById"
+            [expression]="item"
+            (onFilterAuthor)="onFilterAuthor($event)"
+            [selectionDisabledMessage]="data.maxSelection === 1 || canSelectMore ? '' : 'Maximum number of expressions selected'"
+            (onSelect)="onSelect(item)"
+            [isWidgetExpression]="true"
+            [widgetType]="data?.widgetType || ''"
+            [selectIfValidPosition]="true"
+            [widgetPosition]="selectedExpressionIdOrder.indexOf(item.id)"
+            [showActiveExpressionConfiguration]="true"
+            (onChangeWidgetPosition)="onChangeWidgetPosition(item, $event)"></expression-layer>
+        </cdk-virtual-scroll-viewport>
+      </section>
+    </section>
   </section>
   <div class="button-container">
     <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-    <push-button buttonStyle="outline" (onClick)="onClear()">Clear</push-button>
+    <!-- <push-button buttonStyle="outline" (onClick)="onClear()">Clear</push-button> -->
     <push-button
       buttonStyle="yellow"
       #tooltip="matTooltip"
       [matTooltip]="applyTooltip"
-      [matTooltipDisabled]="waitingForExpressions.length === 0 && selectedExpressions.size === 0"
+      [matTooltipDisabled]="waitingForExpressions.length === 0 && selectedExpressionIds.size === 0"
       [disabled]="waitingForExpressions.length > 0"
       (onClick)="onConfirm()"
       >Apply</push-button

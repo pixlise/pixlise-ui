@@ -54,6 +54,7 @@
 .search-box {
   width: 100%;
   border-right: none;
+  border-left: none;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }
@@ -64,4 +65,10 @@ push-button {
       fill: lighten(#bcbcbc, 20%);
     }
   }
+}
+
+.search-icon {
+  display: flex;
+  align-items: center;
+  margin: 4px;
 }

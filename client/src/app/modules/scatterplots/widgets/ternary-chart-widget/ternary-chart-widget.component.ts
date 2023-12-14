@@ -122,8 +122,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   private setInitialConfig() {
     const scanId = this._analysisLayoutService.defaultScanId;
     if (scanId.length > 0) {
-      let quantId = ""; // TODO: get this!
-
+      let quantId = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[scanId]?.quantId || "";
       if (quantId.length <= 0) {
         // default to pseudo intensities
         this.mdl.expressionIds = [
@@ -132,7 +131,13 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
           DataExpressionId.makePredefinedPseudoIntensityExpression("Al"),
         ];
       } else {
-        // default to showing some quantified data... TODO: get this from the quant!
+        // default to showing some quantified data...
+        // TODO: get this from the quant!
+        this.mdl.expressionIds = [
+          DataExpressionId.makePredefinedPseudoIntensityExpression("Mg"),
+          DataExpressionId.makePredefinedPseudoIntensityExpression("Na"),
+          DataExpressionId.makePredefinedPseudoIntensityExpression("Al"),
+        ];
       }
 
       this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(scanId)]));
@@ -153,7 +158,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   private update() {
-    if (this.mdl.expressionIds.length != 3) {
+    if (this.mdl.expressionIds.length !== 3) {
       throw new Error("Expected 3 expression ids for Ternary");
     }
 
@@ -356,11 +361,15 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.data = {
-      maxSelection: 1,
+      widgetType: "ternary",
+      widgetId: this._widgetId,
+      scanId: this._analysisLayoutService.defaultScanId,
+      quantId: this.mdl.dataSourceIds.get(this._analysisLayoutService.defaultScanId)?.quantId || "",
+      selectedIds: this.mdl.expressionIds || [],
     };
 
     if (this.mdl.expressionIds.length > axisExpressionIndex) {
-      dialogConfig.data.selectedIds = [this.mdl.expressionIds[axisExpressionIndex]];
+      dialogConfig.data.expressionTriggerPosition = axisExpressionIndex;
     }
 
     const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
@@ -369,7 +378,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         // If there are 1-3, set them all
         const last = Math.min(3, result.selectedExpressions.length);
         for (let i = 0; i < last; i++) {
-          this.mdl.expressionIds[(axisExpressionIndex + i) % 3] = result.selectedExpressions[i].id;
+          this.mdl.expressionIds[i] = result.selectedExpressions[i].id;
         }
 
         let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];

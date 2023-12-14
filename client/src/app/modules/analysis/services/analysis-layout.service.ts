@@ -1,4 +1,4 @@
-import { Injectable, OnInit } from "@angular/core";
+import { Injectable, OnDestroy } from "@angular/core";
 import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../models/sidebar.model";
 import { BehaviorSubject, ReplaySubject, Subscription, timer } from "rxjs";
 import { ActivatedRoute, Router } from "@angular/router";
@@ -19,7 +19,7 @@ import { ResponseStatus } from "src/app/generated-protos/websocket";
 @Injectable({
   providedIn: "root",
 })
-export class AnalysisLayoutService implements OnInit {
+export class AnalysisLayoutService implements OnDestroy {
   sidepanelOpen: boolean = false;
   //private _id = randomString(6);
 
@@ -58,9 +58,8 @@ export class AnalysisLayoutService implements OnInit {
     if (this.defaultScanId) {
       this.fetchQuantsForScan(this.defaultScanId);
     }
-  }
 
-  ngOnInit(): void {
+    // Subscribe to query params - has to be done from the constructor here since OnInit doesn't fire on Injectables
     this._subs.add(
       this._route.queryParams.subscribe(params => {
         if (params["id"]) {
@@ -73,8 +72,10 @@ export class AnalysisLayoutService implements OnInit {
             this.fetchScreenConfiguration(this.lastLoadedScreenConfigurationId);
             // Add id back to query params
             let queryParams = { ...this._route.snapshot.queryParams };
-            queryParams["scan_id"] = this.lastLoadedScreenConfigurationId;
-            this._router.navigate([], { queryParams });
+            queryParams["id"] = this.lastLoadedScreenConfigurationId;
+            if (queryParams["id"] && (this._route?.snapshot?.url || []).length > 0) {
+              this._router.navigate([this._route.snapshot.url], { queryParams });
+            }
           }
           this.activeScreenConfigurationId$.next("");
           this.activeScreenConfiguration$.next(createDefaultScreenConfiguration());
@@ -117,6 +118,7 @@ export class AnalysisLayoutService implements OnInit {
   }
 
   fetchScreenConfiguration(id: string = "", scanId: string = "", setActive: boolean = true) {
+    console.log("Fetching screen configuration", id, scanId);
     this._dataService.sendScreenConfigurationGetRequest(ScreenConfigurationGetReq.create({ id, scanId })).subscribe({
       next: res => {
         if (res.screenConfiguration) {

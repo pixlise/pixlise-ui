@@ -35,8 +35,9 @@ import { Component, EventEmitter, Input, Output } from "@angular/core";
   styleUrls: ["./multi-switch-button.component.scss"],
 })
 export class MultiSwitchButtonComponent {
-  @Input() options: string[];
-  @Input() value: string;
+  @Input() options: string[] = [];
+  @Input() optionIcons?: string[] = [];
+  @Input() value: string = "";
   @Input() disabled: boolean = false;
 
   @Output() onChange = new EventEmitter();

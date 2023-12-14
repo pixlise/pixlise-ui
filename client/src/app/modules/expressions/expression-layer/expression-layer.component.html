@@ -29,7 +29,27 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<div class="expression-container {{ selected ? 'selected' : '' }}">
+<ng-template #moreOptionsMenu>
+  <div class="layer-options-menu">
+    <h5 (click)="onFullScreenCodeEditor()">
+      <img src="assets/button-icons/layout-single-view.svg" />
+      Open Expression Editor
+    </h5>
+    <h5>
+      <tag-picker
+        type="expression"
+        placeholderText="Search Expression Tags ..."
+        [selectedTagIDs]="selectedTagIDs"
+        [showCurrentTagsSection]="true"
+        [editable]="expression?.owner?.canEdit || false"
+        (onTagSelectionChanged)="onTagSelectionChanged($event)">
+      </tag-picker>
+      Tags
+    </h5>
+  </div>
+</ng-template>
+
+<div class="expression-container {{ isLayerSelected ? 'selected' : '' }}">
   <div class="summary">
     <div
       *ngIf="showCreatorIcon"
@@ -40,12 +60,11 @@ POSSIBILITY OF SUCH DAMAGE.
       <img *ngIf="creatorIcon" [src]="creatorIcon" />
       <span *ngIf="!creatorIcon" class="name-abbreviation">{{ creatorAbbreviation }}</span>
     </div>
-    <div
-      class="info"
-      #tooltip="matTooltip"
-      matTooltipClass="multiline-tooltip"
-      [matTooltip]="name + (description ? '\n\n' + description : '') + (createdDate > 0 ? '\n\nCreated: ' + dateCreatedString : '')">
-      <h4>
+    <div class="info">
+      <h4
+        #tooltip="matTooltip"
+        matTooltipClass="multiline-tooltip"
+        [matTooltip]="name + (description ? '\n\n' + description : '') + (createdDate > 0 ? '\n\nCreated: ' + dateCreatedString : '')">
         {{ name }}
         <span *ngIf="!canEdit" class="lock-icon" #tooltip="matTooltip" matTooltip="You are not an editor of this {{ isModule ? 'module' : 'expression' }}.">
           <img src="assets/button-icons/lock.svg" />
@@ -63,11 +82,7 @@ POSSIBILITY OF SUCH DAMAGE.
         icon="assets/button-icons/code.svg"
         (click)="onPreviewCode()">
       </icon-button> -->
-      <share-ownership-item-button
-        *ngIf="canEdit"
-        [id]="expression?.id || ''"
-        [type]="objectType"
-        [ownershipSummary]="expression?.owner || null">
+      <share-ownership-item-button *ngIf="canEdit" [id]="expression?.id || ''" [type]="objectType" [ownershipSummary]="expression?.owner || null">
       </share-ownership-item-button>
       <icon-button
         *ngIf="showSplitScreenButton"
@@ -77,12 +92,14 @@ POSSIBILITY OF SUCH DAMAGE.
         (click)="onSplitScreenCodeEditor()">
       </icon-button>
       <icon-button
+        *ngIf="!isWidgetExpression"
         #tooltip="matTooltip"
         matTooltip="Open {{ isModule ? 'module' : 'expression' }}"
         icon="{{ 'assets/button-icons/layout-single-view.svg' }}"
         (click)="onFullScreenCodeEditor()">
       </icon-button>
       <tag-picker
+        *ngIf="!isWidgetExpression"
         type="expression"
         placeholderText="Search Expression Tags ..."
         [selectedTagIDs]="selectedTagIDs"
@@ -99,14 +116,27 @@ POSSIBILITY OF SUCH DAMAGE.
         (onToggle)="onVisibility()"></two-state-icon-button>
     </div>
     <two-state-icon-button
-      *ngIf="isSelectable"
+      *ngIf="isSelectable && !isWidgetExpression"
       #tooltip="matTooltip"
       [matTooltip]="selectionDisabledMessage || 'Toggle Expression'"
       [activeIcon]="isSingleSelect ? 'assets/button-icons/radio-on.svg' : 'assets/button-icons/check-on.svg'"
       [inactiveIcon]="isSingleSelect ? 'assets/button-icons/radio-off.svg' : 'assets/button-icons/check-off.svg'"
       class="checkbox-button"
-      [active]="selected"
+      [active]="isLayerSelected"
       (onToggle)="onCheckboxClick($event)">
     </two-state-icon-button>
+    <widget-settings-menu [settingsDialog]="moreOptionsMenu">
+      <action-button *ngIf="isWidgetExpression && isSelectable" class="more-btn" action="ellipsis" color="#f8f8f8"></action-button>
+    </widget-settings-menu>
+    <action-button *ngIf="isWidgetExpression && isSelectable" class="close-btn" action="close" (onClick)="onCheckboxClick($event)" color="#f8f8f8"></action-button>
+  </div>
+  <div *ngIf="isWidgetExpression && isSelectable" class="widget-selection-row">
+    <div class="active-config" *ngIf="showActiveExpressionConfiguration">
+      <mat-select [(ngModel)]="configuredScan" placeholder="Choose Scan">
+        <mat-option *ngFor="let scan of availableScans" [value]="scan.id">{{ idToName[scan.id] }}</mat-option>
+      </mat-select>
+    </div>
+    <multi-switch-button [options]="widgetOptions" [optionIcons]="widgetOptionIcons" [value]="widgetSelectionState" (onChange)="onWidgetSelectionStateChange($event)">
+    </multi-switch-button>
   </div>
 </div>

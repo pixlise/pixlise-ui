@@ -182,6 +182,9 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
     this._currentWidgetRef = this.currentWidget?.createComponent(this.widgetConfiguration!.component);
 
     if (this._currentWidgetRef?.instance) {
+      // Set the widget id
+      this._currentWidgetRef.instance._widgetId = this.widgetLayoutConfig.id;
+
       if (this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration) {
         this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration.subscribe((config: WidgetControlConfiguration) => {
           this.widgetConfiguration!.controlConfiguration = config;

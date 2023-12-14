@@ -1,21 +1,27 @@
 <div class="filters-row">
   <div class="broad-filters">
-    <mat-select [(ngModel)]="expressionListType" placeholder="List Type ..." (valueChange)="onChangeExpressionListType($event)">
+    <filter-box placeholder="Search" (onFilterChanged)="onFilterText($event)"> </filter-box>
+    <!-- <mat-select [(ngModel)]="expressionListType" placeholder="List Type ..." (valueChange)="onChangeExpressionListType($event)">
       <mat-option *ngFor="let option of expressionListTypes" [value]="option">{{ option }} </mat-option>
-    </mat-select>
-    <mat-select [(ngModel)]="visibleScanId" class="scan-filter" placeholder="Scan ...">
+    </mat-select> -->
+    <!-- <mat-select [(ngModel)]="visibleScanId" class="scan-filter" placeholder="Scan ...">
       <mat-option *ngFor="let scan of allScans" [value]="scan.id">{{ scan.title }} </mat-option>
     </mat-select>
     <mat-select [(ngModel)]="selectedQuantId" class="quant" placeholder="Quant ...">
       <mat-option *ngFor="let option of filteredQuants" [value]="option.id">{{ option.params?.userParams?.name || option.id }} </mat-option>
-    </mat-select>
+    </mat-select> -->
   </div>
   <div class="option-filters">
-    <filter-box placeholder="Filter Name..." (onFilterChanged)="onFilterText($event)"> </filter-box>
-    <tag-picker type="expression" [selectedTagIDs]="filteredTagIDs" [showCurrentTagsSection]="false" (onTagSelectionChanged)="onTagFilterChanged($event)">
-    </tag-picker>
-    <mat-select #tooltip="matTooltip" [matTooltip]="authorsTooltip" multiple [(ngModel)]="filteredAuthors" class="authors-filter" placeholder="Author ...">
+    <!-- <filter-box placeholder="Search ..." (onFilterChanged)="onFilterText($event)"> </filter-box> -->
+    <mat-select #tooltip="matTooltip" [matTooltip]="authorsTooltip" multiple [(ngModel)]="filteredAuthors" class="authors-filter" placeholder="Author">
       <mat-option *ngFor="let author of authors" [value]="author.id">{{ author.name }} </mat-option>
     </mat-select>
+    <tag-picker
+      type="expression"
+      buttonStyle="button"
+      [selectedTagIDs]="filteredTagIDs"
+      [showCurrentTagsSection]="false"
+      (onTagSelectionChanged)="onTagFilterChanged($event)">
+    </tag-picker>
   </div>
 </div>

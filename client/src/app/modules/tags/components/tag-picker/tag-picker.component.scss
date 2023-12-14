@@ -30,16 +30,6 @@
 @import "variables.scss";
 @import "atoms.scss";
 
-.tag-button {
-  ::ng-deep > div {
-    display: flex;
-  }
-}
-
-::ng-deep div.panel {
-  border-radius: 4px;
-}
-
 .tag-title {
   white-space: pre-wrap;
 
@@ -119,7 +109,6 @@
 }
 
 .tag {
-  // fxLayout="row" fxLayoutAlign="space-between center"
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -144,5 +133,32 @@
 
   &:hover path {
     fill: rgb(var(--clr-gray-10));
+  }
+}
+
+.dropdown-button {
+  height: 19px;
+  width: 150px;
+  padding-top: 5px;
+  padding-bottom: 0;
+  background: #454c50 !important;
+  border-radius: 4px !important;
+  border: 2px solid rgb(var(--clr-gray-60));
+  display: flex;
+  align-items: center;
+  padding-top: 3px;
+  padding-bottom: 3px;
+
+  cursor: pointer;
+
+  h5 {
+    font-weight: bold;
+    font-size: 14px;
+    margin: 0 8px;
+  }
+
+  svg {
+    margin-left: auto;
+    fill: #a9adaf;
   }
 }

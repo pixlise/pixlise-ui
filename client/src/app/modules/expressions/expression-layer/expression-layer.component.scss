@@ -1,11 +1,13 @@
 .expression-container {
   display: flex;
   flex-direction: column;
-  background-color: rgb(var(--clr-gray-70));
-  border-bottom: 1px solid rgb(var(--clr-gray-80));
+  // background-color: rgb(var(--clr-gray-70));
+  background: #293137;
+  // border-bottom: 1px solid rgb(var(--clr-gray-80));
+  border-bottom: 1px solid #545f64;
 
   &.selected {
-    background-color: rgb(var(--clr-gray-60));
+    background-color: rgb(var(--clr-gray-70));
   }
 
   .summary {
@@ -89,11 +91,64 @@
         z-index: 10;
       }
     }
+
+    .more-btn {
+      margin-left: 4px;
+    }
+
+    widget-settings-menu {
+      .more-btn {
+        display: flex;
+      }
+    }
   }
 }
 
 .lock-icon {
   img {
     width: 12px;
+  }
+}
+
+.widget-selection-row {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 8px;
+
+  .active-config {
+    width: 100%;
+
+    mat-select {
+      width: calc(100% - 30px) !important;
+      margin-bottom: 4px;
+    }
+  }
+
+  multi-switch-button {
+    width: calc(100% - 16px);
+  }
+}
+
+.layer-options-menu {
+  margin: -8px;
+
+  h5 {
+    display: flex;
+    align-items: center;
+
+    margin: 0;
+    padding: 8px;
+    cursor: pointer;
+
+    img,
+    tag-picker {
+      margin-right: 4px;
+    }
+
+    &:hover {
+      background-color: rgb(var(--clr-gray-70));
+    }
   }
 }

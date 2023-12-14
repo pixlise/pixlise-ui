@@ -192,8 +192,13 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
 
   onNodes() {
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
-    dialogConfig.data = {};
-    dialogConfig.data.selectedIds = this.mdl.expressionIds;
+    dialogConfig.data = {
+      widgetType: "chord",
+      widgetId: this._widgetId,
+      scanId: this._analysisLayoutService.defaultScanId,
+      quantId: this.mdl.dataSourceIds.get(this._analysisLayoutService.defaultScanId)?.quantId || "",
+      selectedIds: this.mdl.expressionIds || [],
+    };
 
     const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
