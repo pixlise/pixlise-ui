@@ -235,20 +235,16 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.closeOpenOptionsMenu();
 
     if (this.selectedScan) {
-      if (this.selectedScan.instrument != ScanInstrument.PIXL_FM) {
-        this._snackService.openWarning("Cannot delete FM datasets");
-      } else {
-        const scanTitle = prompt(`Enter the scan title to verify you're deleting the right one`)
-        if (scanTitle) {
-          this._dataService.sendScanDeleteRequest(ScanDeleteReq.create({ scanId: this.selectedScan.id, scanNameForVerification: scanTitle })).subscribe({
-            next: (resp: ScanDeleteResp) => {
-              this._snackService.openSuccess(`Scan "${scanTitle}" deleted successfully`);
-            },
-            error: err => {
-              this._snackService.openError(err);
-            }
-          });
-        }
+      const scanTitle = prompt(`Enter the scan title to verify you're deleting the right one`)
+      if (scanTitle) {
+        this._dataService.sendScanDeleteRequest(ScanDeleteReq.create({ scanId: this.selectedScan.id, scanNameForVerification: scanTitle })).subscribe({
+          next: (resp: ScanDeleteResp) => {
+            this._snackService.openSuccess(`Scan "${scanTitle}" deleted successfully`);
+          },
+          error: err => {
+            this._snackService.openError(err);
+          },
+        });
       }
     }
   }
