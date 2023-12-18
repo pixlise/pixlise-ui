@@ -35,6 +35,7 @@ import { APICachedDataService } from "src/app/modules/pixlisecore/services/apica
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { makeImageTooltip } from "src/app/utils/image-details";
 import { ScanImageSource } from "src/app/generated-protos/image";
+import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 export class ContextImageItem {
   constructor(
@@ -163,7 +164,7 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
   contextImageItemShowingTooltip: string = "";
   contextImages: DisplayContextImageItem[] = [];
 
-  constructor(private _cachedDataService: APICachedDataService) {}
+  constructor(private _dataService: APIDataService) {}
 
   ngOnInit() {
     this.refreshImageList();
@@ -181,7 +182,7 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
       return;
     }
 
-    this._cachedDataService.getImageList(ImageListReq.create({ scanIds: this.scanIds })).subscribe((resp: ImageListResp) => {
+    this._dataService.sendImageListRequest(ImageListReq.create({ scanIds: this.scanIds })).subscribe((resp: ImageListResp) => {
       this.contextImages = [];
       this.contextImageItemShowing = null;
 

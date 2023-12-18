@@ -74,7 +74,10 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
       this._dataService.scanUploadUpd$.subscribe((upd: ScanUploadUpd) => {
         // If we get an update, try open logs, etc
         if (upd.status && upd.status.jobId == this._jobId) {
-          this.logId = upd.status.logId;
+          // Preserve log id if we have one already and get a blank one
+          if (!this.logId || (upd.status.logId && this.logId != upd.status.logId)) {
+            this.logId = upd.status.logId;
+          }
 
           this.setStatus(upd.status.status, upd.status.message);
           this.complete = upd.status.status == JobStatus_Status.COMPLETE || upd.status.status == JobStatus_Status.ERROR;
@@ -116,18 +119,7 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
       return;
     }
 
-    /*
     this.mode = this.modeUpload;
-    this.setStatus(JobStatus_Status.RUNNING, "Running import...");
-    this.logId = "/aws/lambda/feature-v4-ReviewPixlise-DatasetManagerServiceData-wrT6VoHuDK8n/|/2023/12/04/[7]11d9dc6195444f5794b0ec8992f1ae7f";
-    return;
-    
-    this.mode = this.modeUpload;
-    this.setStatus(JobStatus_Status.COMPLETE, "Running import...");
-    this.logId = "/aws/lambda/feature-v4-ReviewPixlise-DatasetManagerServiceData-wrT6VoHuDK8n/|/2023/12/04/[7]11d9dc6195444f5794b0ec8992f1ae7f";
-    return;
-*/
-
     this.setStatus(JobStatus_Status.UNKNOWN, "Uploading dataset: " + this.nameHint + "...");
 
     // Here we trigger the dataset creation and monitor logs
