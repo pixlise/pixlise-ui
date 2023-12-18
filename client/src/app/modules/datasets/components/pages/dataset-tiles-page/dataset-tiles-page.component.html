@@ -38,6 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
       >Reset & Open</push-button
     >
     <push-button *ngIf="userCanEdit" (onClick)="onEdit()" buttonStyle="yellow">Edit</push-button>
+    <push-button *ngIf="userCanEdit" (onClick)="onDelete()" buttonStyle="yellow">Delete</push-button>
   </div>
 </ng-template>
 

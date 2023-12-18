@@ -54,6 +54,8 @@ import { APICachedDataService } from "src/app/modules/pixlisecore/services/apica
 import { number } from "mathjs";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
+import { ScanDeleteReq } from "src/app/generated-protos/scan-msgs";
+import { ScanDeleteResp } from "src/app/generated-protos/scan-msgs";
 
 class SummaryItem {
   constructor(
@@ -224,6 +226,29 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     // Switch to the editing tab
     if (this.selectedScan) {
+      this._router.navigate(["edit-scan"], { relativeTo: this._route, queryParams: { scan_id: this.selectedScan.id } });
+    }
+  }
+
+  onDelete(): void {
+    this.closeOpenOptionsMenu();
+
+    if (this.selectedScan) {
+      if (this.selectedScan.instrument != ScanInstrument.PIXL_FM) {
+        this._snackService.openWarning("Cannot delete FM datasets");
+      } else {
+        const scanTitle = prompt(`Enter the scan title to verify you're deleting the right one`)
+        if (scanTitle) {
+          this._dataService.sendScanDeleteRequest(ScanDeleteReq.create({scanId: this.selectedScan.id, scanNameForVerification: scanTitle})).subscribe({
+            next: (resp: ScanDeleteResp) => {
+              this._snackService.openSuccess(`Scan "${scanTitle}" deleted successfully`);
+            },
+            error: err => {
+              this._snackService.openError(err);
+            }
+          });
+        }
+      }
       this._router.navigate(["edit-scan"], { relativeTo: this._route, queryParams: { scan_id: this.selectedScan.id } });
     }
   }
