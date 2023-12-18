@@ -78,7 +78,13 @@ export class LogViewerComponent implements AfterViewChecked {
       },
       error: err => {
         this._loading = false;
-        this.logData = [LogLine.create({ timeStampUnixMs: Date.now(), message: httpErrorToString(err, "Failed to retrieve log, maybe it isn't created yet?") })];
+        this.logData = [
+          LogLine.create({
+            timeStampUnixSec: Date.now() / 1000,
+            timeStampMs: 0,
+            message: httpErrorToString(err, "Failed to retrieve log, maybe it isn't created yet?"),
+          }),
+        ];
 
         // Auto-retry anyway, we may have only got a 404 because log isn't yet created/available!
         this.scheduleRefresh();
@@ -105,5 +111,9 @@ export class LogViewerComponent implements AfterViewChecked {
 
   get loading(): boolean {
     return this._loading;
+  }
+
+  getTimestamp(line: LogLine): number {
+    return line.timeStampUnixSec * 1000 + line.timeStampMs;
   }
 }
