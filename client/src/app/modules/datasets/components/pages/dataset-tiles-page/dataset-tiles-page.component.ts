@@ -393,7 +393,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     // Fill these so they display
     this.selectedScanSummaryItems = [
-      new SummaryItem("Description:", this.selectedScan.description),
+      new SummaryItem("Description:", this.selectedScan.description ? this.selectedScan.description : "(empty)"),
       new SummaryItem("Detector:", this.selectedScan.instrumentConfig),
       new SummaryItem("Bulk Sum:", this.spectraCount(this.selectedScan.contentCounts["BulkSpectra"])),
       new SummaryItem("Max Value:", this.spectraCount(this.selectedScan.contentCounts["MaxSpectra"])),
