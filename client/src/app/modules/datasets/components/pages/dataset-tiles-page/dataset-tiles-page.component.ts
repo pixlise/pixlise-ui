@@ -250,7 +250,6 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
           });
         }
       }
-      this._router.navigate(["edit-scan"], { relativeTo: this._route, queryParams: { scan_id: this.selectedScan.id } });
     }
   }
 
