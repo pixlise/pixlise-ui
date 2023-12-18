@@ -56,6 +56,7 @@ import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-proto
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 import { ScanDeleteReq } from "src/app/generated-protos/scan-msgs";
 import { ScanDeleteResp } from "src/app/generated-protos/scan-msgs";
+import { ScanInstrument } from "src/app/generated-protos/scan";
 
 class SummaryItem {
   constructor(
@@ -239,7 +240,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
       } else {
         const scanTitle = prompt(`Enter the scan title to verify you're deleting the right one`)
         if (scanTitle) {
-          this._dataService.sendScanDeleteRequest(ScanDeleteReq.create({scanId: this.selectedScan.id, scanNameForVerification: scanTitle})).subscribe({
+          this._dataService.sendScanDeleteRequest(ScanDeleteReq.create({ scanId: this.selectedScan.id, scanNameForVerification: scanTitle })).subscribe({
             next: (resp: ScanDeleteResp) => {
               this._snackService.openSuccess(`Scan "${scanTitle}" deleted successfully`);
             },
