@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { AfterViewChecked, Component, ElementRef, Input, OnInit, ViewChild } from "@angular/core";
+import { AfterViewInit, Component, ElementRef, Input, ViewChild } from "@angular/core";
 
 import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { LogReadReq, LogReadResp } from "src/app/generated-protos/log-msgs";
@@ -43,7 +43,7 @@ const logAutoRetrieveLimit = 10; // 10 requests
   templateUrl: "./log-viewer.component.html",
   styleUrls: ["./log-viewer.component.scss"],
 })
-export class LogViewerComponent implements AfterViewChecked {
+export class LogViewerComponent implements AfterViewInit {
   @Input() title: string = "";
   @Input() logID: string = "";
 
@@ -56,7 +56,7 @@ export class LogViewerComponent implements AfterViewChecked {
 
   constructor(private _dataService: APIDataService) {}
 
-  ngAfterViewChecked(): void {
+  ngAfterViewInit(): void {
     this.onRefreshLog();
   }
 
@@ -71,9 +71,9 @@ export class LogViewerComponent implements AfterViewChecked {
         this._loading = false;
         if (resp.entries.length > this.logData.length) {
           this.logData = resp.entries;
+          this.scrollLogToBottom();
         }
 
-        this.scrollLogToBottom();
         this.scheduleRefresh();
       },
       error: err => {
