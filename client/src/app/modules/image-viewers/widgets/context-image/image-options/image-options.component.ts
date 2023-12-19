@@ -37,6 +37,8 @@ import { RangeSliderValue } from "src/app/modules/pixlisecore/components/atoms/r
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
+import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { ImportMarsViewerImageReq, ImportMarsViewerImageResp } from "src/app/generated-protos/image-coreg-msgs";
 
 export class ImageDisplayOptions {
   constructor(
@@ -100,6 +102,8 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
   constructor(
     private _cachedDataService: APICachedDataService,
+    private _dataService: APIDataService,
+    private _snackService: SnackbarService,
     @Inject(MAT_DIALOG_DATA) public data: ImagePickerParams,
     public dialogRef: MatDialogRef<ContextImagePickerComponent, ImagePickerResult>
   ) //private _exportDataService: ExportDataService
@@ -469,5 +473,21 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     //     console.error(`Error exporting images: ${err}`);
     //   }
     // );
+  }
+
+  onImport() {
+    const entry = prompt("Enter token provided by MarsViewer");
+    if (!entry) {
+      return;
+    }
+
+    this._dataService.sendImportMarsViewerImageRequest(ImportMarsViewerImageReq.create({ triggerUrl: entry })).subscribe({
+      next: (resp: ImportMarsViewerImageResp) => {
+        this._snackService.openSuccess(`Import from MarsViewer started...`, `Job id is ${resp.jobId}`);
+      },
+      error: err => {
+        this._snackService.openError(err);
+      },
+    });
   }
 }
