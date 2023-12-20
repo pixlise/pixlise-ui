@@ -279,4 +279,9 @@ export class AnalysisLayoutService implements OnDestroy {
   get defaultScanId(): string {
     return this._route?.snapshot?.queryParams["scan_id"] || "";
   }
+
+  getQuantIdForScan(scanId: string): string {
+    const quantId = this.activeScreenConfiguration$.value?.scanConfigurations[scanId]?.quantId || "";
+    return quantId;
+  }
 }

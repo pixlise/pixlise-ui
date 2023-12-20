@@ -16,7 +16,6 @@ import { BaseChartDataItem, BaseChartDataValueItem, BaseChartDrawModel, BaseChar
 import { WidgetError } from "../../pixlisecore/services/widget-data.service";
 import { BeamSelection } from "../../pixlisecore/models/beam-selection";
 import { invalidPMC } from "src/app/utils/utils";
-import { MapPointShape } from "../../image-viewers/models/map-layer";
 
 export class NaryChartDataItem implements BaseChartDataValueItem {
   constructor(

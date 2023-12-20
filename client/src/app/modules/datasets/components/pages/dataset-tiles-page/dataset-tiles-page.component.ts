@@ -240,10 +240,11 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
         this._dataService.sendScanDeleteRequest(ScanDeleteReq.create({ scanId: this.selectedScan.id, scanNameForVerification: scanTitle })).subscribe({
           next: (resp: ScanDeleteResp) => {
             this._snackService.openSuccess(`Scan "${scanTitle}" deleted successfully`);
+            this.clearSelection();
           },
           error: err => {
             this._snackService.openError(err);
-          },
+          }
         });
       }
     }

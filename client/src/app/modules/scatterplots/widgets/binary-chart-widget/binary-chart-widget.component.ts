@@ -119,6 +119,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   private setInitialConfig() {
     const scanId = this._analysisLayoutService.defaultScanId;
     if (scanId.length > 0) {
+      this._analysisLayoutService.activeScreenConfiguration$.getValue()
       let quantId = ""; // TODO: get this!
 
       if (quantId.length <= 0) {
@@ -209,7 +210,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
                 dataSource!.roiIds.push(roi.id);
                 this.mdl.dataSourceIds.set(roi.scanId, dataSource!);
               } else {
-                const quantId = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[roi.scanId]?.quantId || "";
+                const quantId = this._analysisLayoutService.getQuantIdForScan(roi.scanId);
                 this.mdl.dataSourceIds.set(roi.scanId, new ScanDataIds(quantId, [roi.id]));
               }
             });

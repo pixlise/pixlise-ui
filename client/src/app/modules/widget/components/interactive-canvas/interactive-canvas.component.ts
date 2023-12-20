@@ -478,7 +478,6 @@ console.log(canvasElem);
       this._mouseLast = mousePos;
     }
 
-    //let t0 = performance.now();
     if (!this.interactionHandler) {
       console.warn("sendMouseEvent: No interaction handler defined");
     } else {
@@ -504,8 +503,6 @@ console.log(canvasElem);
         )
       );
 
-      //let t1 = performance.now();
-      //console.log('mouseEvent took: '+(t1-t0)+'ms');
       if (redraw) {
         this.triggerRedraw();
       }
@@ -545,9 +542,6 @@ console.log(canvasElem);
     screenContext.save();
     drawer.draw(screenContext, drawParams);
     screenContext.restore();
-
-    //let t1 = performance.now();
-    //console.log('Canvas redraw took: '+(t1-t0)+'ms');
   }
 
   protected screenToCanvasSpace(pt: Point): Point {

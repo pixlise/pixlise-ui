@@ -173,7 +173,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
                 dataSource!.roiIds.push(roi.id);
                 this.mdl.dataSourceIds.set(roi.scanId, dataSource!);
               } else {
-                const quantId = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[roi.scanId]?.quantId || "";
+                const quantId = this._analysisLayoutService.getQuantIdForScan(roi.scanId);
                 this.mdl.dataSourceIds.set(roi.scanId, new ScanDataIds(quantId, [roi.id]));
               }
             });

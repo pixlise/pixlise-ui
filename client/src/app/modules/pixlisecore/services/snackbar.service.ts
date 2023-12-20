@@ -76,7 +76,10 @@ export class SnackbarService {
       details = httpErrorToString(details, newDetails.length > 0 ? newDetails : message);
     } else {
       if (details.length > 0) {
-        newDetails += ". " + details;
+        if (newDetails.length > 0) {
+          newDetails += ". ";
+        }
+        newDetails += details;
       }
       details = newDetails;
     }

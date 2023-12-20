@@ -218,26 +218,46 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   updateSelectedExpressions() {
-    this.selectedExpressions = Array.from(this.selectedExpressionIds).map(id => {
-      let expression = this._expressionService.expressions$.value[id];
-      if (!expression) {
+    this.selectedExpressions = [];
+    for (const id of this.selectedExpressionIds) {
+      const toSelect: DataExpression[] = [];
+
+      const expression = this._expressionService.expressions$.value[id];
+      if (expression) {
+        toSelect.push(expression);
+      } else {
         if (this._pseudoIntensities[id]) {
           // Check if we have it in pseudo intensities
-          return this._pseudoIntensities[id];
+          toSelect.push(this._pseudoIntensities[id]);
         } else if (this.filteredExpressions) {
           // Check if we have it in filtered expressions
-          let filteredExpression = this.filteredExpressions.find(expression => expression.id === id);
-          if (filteredExpression) {
-            return filteredExpression;
+          const filteredItem = this.filteredExpressions.find(expression => expression.id === id);
+          if (filteredItem) {
+            if (!DataExpressionId.isExpressionGroupId(id)) {
+              // If it's an expression, just add it
+              toSelect.push(filteredItem as DataExpression);
+            } else {
+              // If it's a group, add each sub-item
+              const filteredGroup = filteredItem as ExpressionGroup;
+              for (const groupItem of filteredGroup.groupItems) {
+                const subExpr = this._expressionService.expressions$.value[groupItem.expressionId];
+                if (subExpr) {
+                  toSelect.push(subExpr);
+                }
+              }
+            }
+          } else {
+            // If we dont have it in filtered expressions, then we are waiting for it to load
+            toSelect.push(DataExpression.create({ id: `loading-${id}`, name: "Loading..." }));
           }
         }
-
-        // If we dont have it in filtered expressions, then we are waiting for it to load
-        return DataExpression.create({ id: `loading-${id}`, name: "Loading..." });
       }
 
-      return expression;
-    });
+      // Add these to what we're building
+      if (toSelect.length > 0) {
+        this.selectedExpressions.push(...toSelect);
+      }
+    }
   }
 
   onCloseExpressionGroupDialog() {
@@ -323,7 +343,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
     if (this.selectedExpressionIds.has(expression.id)) {
       this.selectedExpressionIds.delete(expression.id);
-      this.selectedExpressionIdOrder = this.selectedExpressionIdOrder.map(id => (id === expression.id ? "" : id));
+      this.selectedExpressionIdOrder = this.selectedExpressionIdOrder.filter(id => id !== expression.id);
     } else if (!this.canSelectMore) {
       return;
     } else {

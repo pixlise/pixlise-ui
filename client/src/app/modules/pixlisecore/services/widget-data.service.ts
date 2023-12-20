@@ -287,7 +287,7 @@ export class WidgetDataService {
 
             return querier.runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, intDataSource, allowAnyResponse, false).pipe(
               map((queryResult: DataQueryResult) => {
-                console.log(`>>> ${expression.sourceLanguage} expression "${expression.name}" took: ${queryResult.runtimeMs}ms`);
+                console.log(`>>> ${expression.sourceLanguage} expression "${expression.name}" took: ${queryResult.runtimeMs.toLocaleString()}ms`);
 
                 // Save runtime stats for this expression if we haven't done this recently (don't spam)
                 const nowMs = Date.now();
@@ -295,8 +295,8 @@ export class WidgetDataService {
                 if (!lastNotify || nowMs - lastNotify > 60000) {
                   // Also, normalise it for runtime for 1000 points!
                   let runtimePer1000 = 0;
-                  if (queryResult.runtimeMs > 0 && queryResult.resultValues > 0) {
-                    runtimePer1000 = queryResult.runtimeMs / (queryResult.resultValues / 1000);
+                  if (queryResult.runtimeMs > 0 && queryResult.resultValues.values.length > 0) {
+                    runtimePer1000 = queryResult.runtimeMs / (queryResult.resultValues.values.length / 1000);
                   }
 
                   // Remember when we notified, so we don't spam

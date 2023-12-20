@@ -122,7 +122,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   private setInitialConfig() {
     const scanId = this._analysisLayoutService.defaultScanId;
     if (scanId.length > 0) {
-      let quantId = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[scanId]?.quantId || "";
+      let quantId = this._analysisLayoutService.getQuantIdForScan(scanId);
       if (quantId.length <= 0) {
         // default to pseudo intensities
         this.mdl.expressionIds = [
@@ -249,7 +249,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
                 dataSource!.roiIds.push(roi.id);
                 this.mdl.dataSourceIds.set(roi.scanId, dataSource!);
               } else {
-                const quantId = this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[roi.scanId]?.quantId || "";
+                const quantId = this._analysisLayoutService.getQuantIdForScan(roi.scanId);
                 this.mdl.dataSourceIds.set(roi.scanId, new ScanDataIds(quantId, [roi.id]));
               }
             });
