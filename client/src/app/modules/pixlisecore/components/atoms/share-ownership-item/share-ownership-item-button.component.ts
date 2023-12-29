@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Input, OnInit } from "@angular/core";
+import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ShareDialogComponent, ShareDialogData, ShareDialogResponse } from "./share-dialog/share-dialog.component";
 import { ObjectType, OwnershipSummary } from "src/app/generated-protos/ownership-access";
@@ -44,6 +44,8 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
   @Input() type: ObjectType = ObjectType.OT_EXPRESSION;
   @Input() ownershipSummary: OwnershipSummary | null = null;
 
+  @Output() onEmitOpenState: EventEmitter<boolean> = new EventEmitter<boolean>();
+
   isSharedWithOthers: boolean = false;
 
   constructor(
@@ -54,6 +56,16 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
 
   ngOnInit(): void {
     this.isSharedWithOthers = this.ownershipSummary?.sharedWithOthers || false;
+  }
+
+  @Input() set triggerOpen(open: boolean) {
+    if (open) {
+      this.onOpenShareDialog();
+
+      setTimeout(() => {
+        this.onEmitOpenState.emit(false);
+      }, 100);
+    }
   }
 
   get sharingTooltip(): string {

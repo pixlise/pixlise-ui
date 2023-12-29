@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { DataExpression } from "src/app/generated-protos/expressions";
@@ -9,6 +9,10 @@ import { Subscription } from "rxjs";
 import { AnalysisLayoutService } from "../../analysis/analysis.module";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ScanItem } from "src/app/generated-protos/scan";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { ConfirmDialogComponent } from "../../pixlisecore/components/atoms/buttons/action-button/confirm-dialog/confirm-dialog.component";
+import { WidgetSettingsMenuComponent } from "../../pixlisecore/pixlisecore.module";
+import { ExpressionGroup } from "src/app/generated-protos/expression-group";
 
 export const TERNARY_WIDGET_OPTIONS = {
   Left: { position: 0, icon: "assets/button-icons/ternary-left.svg" },
@@ -29,10 +33,13 @@ export const BINARY_WIDGET_OPTIONS = {
   styleUrls: ["./expression-layer.component.scss"],
 })
 export class ExpressionLayerComponent implements OnInit {
+  @ViewChild("moreOptionsButton") moreOptionsButton!: ElementRef;
+
   private _subs = new Subscription();
 
   private _module: DataModule | null = null;
-  @Input() expression: DataExpression | null = null;
+  @Input() expression: DataExpression | ExpressionGroup | null = null;
+  @Input() isExpressionGroup: boolean = false;
 
   private _name: string = "";
   private _description: string = "";
@@ -59,6 +66,9 @@ export class ExpressionLayerComponent implements OnInit {
   widgetOptionIcons: string[] = [];
   widgetSelectionState: string = "Off";
 
+  triggerTagPickerOpen: boolean = false;
+  isShareDialogOpen: boolean = false;
+
   isVisible: boolean = false; // Part of response
 
   @Output() onFilterAuthor = new EventEmitter<string>();
@@ -75,7 +85,8 @@ export class ExpressionLayerComponent implements OnInit {
     private _route: ActivatedRoute,
     private _router: Router,
     private _expressionsService: ExpressionsService,
-    private _analysisLayoutService: AnalysisLayoutService
+    private _analysisLayoutService: AnalysisLayoutService,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -187,19 +198,32 @@ export class ExpressionLayerComponent implements OnInit {
   }
 
   get description(): string {
-    return this._description || this.expression?.comments || "";
+    return this._description || (this.expression as DataExpression)?.comments || (this.expression as ExpressionGroup)?.description || "";
   }
 
   set description(value: string) {
     this._description = value;
   }
 
-  get createdDate(): number {
-    let modifiedTime = this.expression?.modifiedUnixSec;
-    let createdTime = this.expression?.owner?.createdUnixSec;
+  get summaryTooltip(): string {
+    let descriptionLine = this.description ? "\n\n" + this.description : "";
+    let createdLine = this.createdDate > 0 ? "\n\nCreated: " + this.dateCreatedString : "";
+    let modifiedLine = this.modifiedDate > 0 && this.createdDate !== this.modifiedDate ? "\nModified: " + this.dateModifiedString : "";
+    return `${this.name}${descriptionLine}${createdLine}${modifiedLine}`;
+  }
 
-    let latestTime = modifiedTime || createdTime || 0;
+  get createdDate(): number {
+    let latestTime = this.expression?.owner?.createdUnixSec || 0;
     return latestTime * 1000;
+  }
+
+  get modifiedDate(): number {
+    let latestTime = this.expression?.modifiedUnixSec || 0;
+    return latestTime * 1000;
+  }
+
+  get dateModifiedString(): string {
+    return this.modifiedDate > 0 ? new Date(this.modifiedDate).toLocaleDateString() : "Unknown";
   }
 
   get dateCreatedString(): string {
@@ -224,6 +248,16 @@ export class ExpressionLayerComponent implements OnInit {
       // Only split screen an expression if a bottom module is open
       return !!this._route.snapshot.queryParams["bottomExpressionId"];
     }
+  }
+
+  onTriggerTagPicker(): void {
+    // Bit of a hack, but we need to have the tag picker tell the widget settings menu to be visible on external click
+    // and we don't have full control of the state
+    this.triggerTagPickerOpen = !this.triggerTagPickerOpen;
+  }
+
+  onToggleShareDialog(open: boolean): void {
+    this.isShareDialogOpen = open;
   }
 
   onSplitScreenCodeEditor() {
@@ -277,11 +311,43 @@ export class ExpressionLayerComponent implements OnInit {
     this.isVisible = !this.isVisible;
   }
 
+  private closeMoreOptionsMenu(): void {
+    if (this.moreOptionsButton && this.moreOptionsButton instanceof WidgetSettingsMenuComponent) {
+      (this.moreOptionsButton as WidgetSettingsMenuComponent).close();
+    }
+  }
+
+  onDelete(): void {
+    const dialogConfig = new MatDialogConfig();
+    dialogConfig.data = { confirmText: `Are you sure you want to delete this expression (${this.expression?.name || this.expression?.id})?` };
+    let dialogRef = this.dialog.open(ConfirmDialogComponent, dialogConfig);
+
+    dialogRef.afterClosed().subscribe((confirmed: boolean) => {
+      if (confirmed && this.expression) {
+        if (this.isExpressionGroup) {
+          this._expressionsService.deleteExpressionGroup(this.expression.id);
+        } else {
+          this._expressionsService.deleteExpression(this.expression.id);
+        }
+        this.closeMoreOptionsMenu();
+      }
+    });
+  }
+
   onTagSelectionChanged(tagIDs: string[]): void {
-    // TODO: Update the expression tags
-    console.log("Tag selection changed", tagIDs);
     if (this.expression) {
-      // this._expressionsService.updateExpressionTags(this.expression.id, tagIDs);
+      this.expression.tags = tagIDs;
+      if (this.isExpressionGroup) {
+        this._expressionsService.writeExpressionGroup(this.expression as ExpressionGroup);
+      } else {
+        this._expressionsService.writeExpression(this.expression as DataExpression);
+      }
+    }
+  }
+
+  onAddExpressionGroup(): void {
+    if (this.onSelect) {
+      this.onSelect.emit();
     }
   }
 

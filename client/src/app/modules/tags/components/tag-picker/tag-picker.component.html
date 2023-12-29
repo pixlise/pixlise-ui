@@ -87,7 +87,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
   </div>
 </ng-template>
-<widget-settings-menu [settingsDialog]="tagMenu" class="tag-button" [startRight]="buttonStyle === 'icon'" (onClose)="onClose()">
+<widget-settings-menu [triggerOpen]="triggerOpen" [settingsDialog]="tagMenu" class="tag-button" [startRight]="buttonStyle === 'icon'" (onClose)="onClose()">
   <icon-button
     *ngIf="buttonStyle === 'icon'"
     #tooltip="matTooltip"

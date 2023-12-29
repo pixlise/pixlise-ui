@@ -134,13 +134,17 @@
 .layer-options-menu {
   margin: -8px;
 
-  h5 {
+  .option {
     display: flex;
     align-items: center;
 
     margin: 0;
     padding: 8px;
     cursor: pointer;
+
+    .option-label {
+      margin-left: 4px;
+    }
 
     img,
     tag-picker {

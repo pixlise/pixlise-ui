@@ -4,7 +4,7 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { UserInfo } from "src/app/generated-protos/user";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
-import { ExpressionSearchFilter } from "../../models/expression-search";
+import { ExpressionSearchFilter, RecentExpression } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
@@ -13,7 +13,6 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
-import { ExpressionGroupListReq, ExpressionGroupListResp } from "src/app/generated-protos/expression-group-msgs";
 import { ExpressionBrowseSections } from "../../models/expression-browse-sections";
 
 @Component({
@@ -29,6 +28,9 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   private _quantifiedExpressions: DataExpression[] = [];
   private _expressionGroups: ExpressionGroup[] = [];
   filteredExpressions: (DataExpression | ExpressionGroup)[] = [];
+
+  onlyShowRecent: boolean = false;
+  @Input() recentExpressions: RecentExpression[] = [];
 
   @Output() onFilterChanged = new EventEmitter<ExpressionSearchFilter>();
 
@@ -148,6 +150,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
       this.filteredTagIDs = tagIDs ?? this.filteredTagIDs;
       this.filteredAuthors = authors ?? this.filteredAuthors;
       this.expressionListType = expressionType ?? this.expressionListType;
+      this.onlyShowRecent = filters.onlyShowRecent ?? false;
       this.filterExpressionsForDisplay();
     }
   }
@@ -268,7 +271,13 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   private filterExpressionsForDisplay(valueChanged: boolean = false): void {
     // Find the source data depending on what list type is requested...
     let expressions: (DataExpression | ExpressionGroup)[] = [];
-    if (this.expressionListType == this._et_Expression) {
+    if (this.onlyShowRecent) {
+      expressions = this.recentExpressions
+        .filter(
+          (recent: RecentExpression) => (recent.type === "group" && this.isExpressionGroupList) || (recent.type === "expression" && !this.isExpressionGroupList)
+        )
+        .map((recentExpression: RecentExpression) => recentExpression.expression);
+    } else if (this.expressionListType == this._et_Expression) {
       expressions = this._loadedExpressions;
     } else if (this.expressionListType == this._et_QuantifiedElements) {
       expressions = this._quantifiedExpressions;
@@ -303,6 +312,10 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
       valueChanged,
     });
     this.extractAuthors();
+  }
+
+  get isExpressionGroupList(): boolean {
+    return this.expressionListType === this._et_ExpressionGroups;
   }
 
   get authors(): UserInfo[] {

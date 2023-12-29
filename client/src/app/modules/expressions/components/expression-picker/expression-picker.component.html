@@ -96,12 +96,15 @@ POSSIBILITY OF SUCH DAMAGE.
         (onFilterChanged)="onFilterChanged($event)"
         [scanId]="scanId"
         [quantId]="quantId"
+        [recentExpressions]="recentExpressions"
         [manualFilters]="manualFilters"></expression-search-controls>
       <section class="expressions">
         <cdk-virtual-scroll-viewport [itemSize]="48" class="expressions-viewport">
           <expression-layer
             *cdkVirtualFor="let item of filteredExpressions; trackBy: trackById"
             [expression]="item"
+            [isSelectable]="!isShowingExpressionGroups"
+            [isExpressionGroup]="isShowingExpressionGroups"
             (onFilterAuthor)="onFilterAuthor($event)"
             [selected]="checkSelected(item.id)"
             [selectionDisabledMessage]="data.maxSelection === 1 || canSelectMore ? '' : 'Maximum number of expressions selected'"

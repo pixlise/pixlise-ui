@@ -31,25 +31,35 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <ng-template #moreOptionsMenu>
   <div class="layer-options-menu">
-    <h5 (click)="onFullScreenCodeEditor()">
+    <div *ngIf="!isExpressionGroup" class="option" (click)="onFullScreenCodeEditor()">
       <img src="assets/button-icons/layout-single-view.svg" />
-      Open Expression Editor
-    </h5>
-    <h5>
+      <span class="option-label" [ngStyle]="{ 'margin-left': 0 }">Open Expression Editor</span>
+    </div>
+    <div class="option" (click)="onTriggerTagPicker()">
       <tag-picker
-        type="expression"
+        [type]="isExpressionGroup ? 'expression-mix' : 'expression'"
         placeholderText="Search Expression Tags ..."
+        [triggerOpen]="triggerTagPickerOpen"
         [selectedTagIDs]="selectedTagIDs"
         [showCurrentTagsSection]="true"
         [editable]="expression?.owner?.canEdit || false"
         (onTagSelectionChanged)="onTagSelectionChanged($event)">
       </tag-picker>
-      Tags
-    </h5>
-    <h5 *ngIf="canEdit">
-      <share-ownership-item-button [id]="expression?.id || ''" [type]="objectType" [ownershipSummary]="expression?.owner || null"></share-ownership-item-button>
-      Share
-    </h5>
+      <span class="option-label">Tags</span>
+    </div>
+    <div class="option" *ngIf="canEdit" (click)="onToggleShareDialog(!isShareDialogOpen)">
+      <share-ownership-item-button
+        [id]="expression?.id || ''"
+        [triggerOpen]="isShareDialogOpen"
+        (onEmitOpenState)="onToggleShareDialog($event)"
+        [type]="objectType"
+        [ownershipSummary]="expression?.owner || null"></share-ownership-item-button>
+      <span class="option-label">Share</span>
+    </div>
+    <div class="option" *ngIf="canEdit" (click)="onDelete()">
+      <icon-button icon="assets/button-icons/delete.svg"></icon-button>
+      <span class="option-label">Delete</span>
+    </div>
   </div>
 </ng-template>
 
@@ -65,10 +75,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <span *ngIf="!creatorIcon" class="name-abbreviation">{{ creatorAbbreviation }}</span>
     </div>
     <div class="info">
-      <h4
-        #tooltip="matTooltip"
-        matTooltipClass="multiline-tooltip"
-        [matTooltip]="name + (description ? '\n\n' + description : '') + (createdDate > 0 ? '\n\nCreated: ' + dateCreatedString : '')">
+      <h4 #tooltip="matTooltip" matTooltipClass="multiline-tooltip" [matTooltip]="summaryTooltip">
         {{ name }}
         <span *ngIf="!canEdit" class="lock-icon" #tooltip="matTooltip" matTooltip="You are not an editor of this {{ isModule ? 'module' : 'expression' }}.">
           <img src="assets/button-icons/lock.svg" />
@@ -86,7 +93,7 @@ POSSIBILITY OF SUCH DAMAGE.
         icon="assets/button-icons/code.svg"
         (click)="onPreviewCode()">
       </icon-button> -->
-      <share-ownership-item-button
+      <!-- <share-ownership-item-button
         *ngIf="canEdit && !isWidgetExpression"
         [id]="expression?.id || ''"
         [type]="objectType"
@@ -105,24 +112,28 @@ POSSIBILITY OF SUCH DAMAGE.
         matTooltip="Open {{ isModule ? 'module' : 'expression' }}"
         icon="{{ 'assets/button-icons/layout-single-view.svg' }}"
         (click)="onFullScreenCodeEditor()">
-      </icon-button>
+      </icon-button> -->
       <tag-picker
-        *ngIf="!isWidgetExpression"
-        type="expression"
+        *ngIf="!isWidgetExpression && selectedTagIDs.length > 0"
+        [type]="isExpressionGroup ? 'expression-mix' : 'expression'"
         placeholderText="Search Expression Tags ..."
         [selectedTagIDs]="selectedTagIDs"
         [showCurrentTagsSection]="true"
         [editable]="expression?.owner?.canEdit || false"
         (onTagSelectionChanged)="onTagSelectionChanged($event)">
       </tag-picker>
-      <two-state-icon-button
+      <!-- <two-state-icon-button
         *ngIf="showVisibilityButton"
         toolTip="Toggle visibility on Context Image"
         activeIcon="assets/button-icons/visible-on-yellow.svg"
         inactiveIcon="assets/button-icons/visible-off.svg"
         [active]="isVisible"
-        (onToggle)="onVisibility()"></two-state-icon-button>
+        (onToggle)="onVisibility()"></two-state-icon-button> -->
     </div>
+    <widget-settings-menu [settingsDialog]="moreOptionsMenu" #moreOptionsButton>
+      <action-button class="more-btn" action="ellipsis" color="#f8f8f8"></action-button>
+    </widget-settings-menu>
+    <action-button *ngIf="isExpressionGroup" tooltipTitle="Select all expressions in group" action="add" (onClick)="onAddExpressionGroup()"></action-button>
     <two-state-icon-button
       *ngIf="isSelectable && !isWidgetExpression"
       #tooltip="matTooltip"
@@ -133,9 +144,6 @@ POSSIBILITY OF SUCH DAMAGE.
       [active]="isLayerSelected"
       (onToggle)="onCheckboxClick($event)">
     </two-state-icon-button>
-    <widget-settings-menu [settingsDialog]="moreOptionsMenu">
-      <action-button *ngIf="isWidgetExpression && isSelectable" class="more-btn" action="ellipsis" color="#f8f8f8"></action-button>
-    </widget-settings-menu>
     <action-button *ngIf="isWidgetExpression && isSelectable" class="close-btn" action="close" (onClick)="onCheckboxClick($event)" color="#f8f8f8"></action-button>
   </div>
   <div *ngIf="isWidgetExpression && isSelectable" class="widget-selection-row">

@@ -14,4 +14,12 @@ export type ExpressionSearchFilter = {
   authors: string[];
 
   valueChanged?: boolean;
+
+  onlyShowRecent?: boolean;
+};
+
+export type RecentExpression = {
+  expression: DataExpression | ExpressionGroup;
+  type: "expression" | "group";
+  lastSelected: number;
 };

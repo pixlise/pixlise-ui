@@ -19,11 +19,21 @@ export class ExpressionBrowseSections {
     },
     {
       name: ExpressionBrowseSections.EXPRESSIONS,
-      subSections: [ExpressionBrowseSections.ALL, ExpressionBrowseSections.MY_EXPRESSIONS, ExpressionBrowseSections.RECENT, ExpressionBrowseSections.FAVORITE],
+      subSections: [
+        ExpressionBrowseSections.ALL,
+        ExpressionBrowseSections.MY_EXPRESSIONS,
+        ExpressionBrowseSections.RECENT,
+        // ExpressionBrowseSections.FAVORITE
+      ],
     },
     {
       name: ExpressionBrowseSections.EXPRESSION_GROUPS,
-      subSections: [ExpressionBrowseSections.ALL, ExpressionBrowseSections.MY_EXPRESSION_GROUPS, ExpressionBrowseSections.RECENT, ExpressionBrowseSections.FAVORITE],
+      subSections: [
+        ExpressionBrowseSections.ALL,
+        ExpressionBrowseSections.MY_EXPRESSION_GROUPS,
+        ExpressionBrowseSections.RECENT,
+        // ExpressionBrowseSections.FAVORITE
+      ],
     },
   ];
 }

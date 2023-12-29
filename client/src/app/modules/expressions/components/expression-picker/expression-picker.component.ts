@@ -32,7 +32,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { Subscription } from "rxjs";
 import { DataExpression } from "src/app/generated-protos/expressions";
-import { ExpressionSearchFilter } from "../../models/expression-search";
+import { ExpressionSearchFilter, RecentExpression } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { ScanConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
@@ -78,6 +78,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   selectedExpressionIdOrder: string[] = [];
   selectedExpressionIds: Set<string> = new Set();
   selectedExpressions: (DataExpression | ExpressionGroup)[] = [];
+
+  recentExpressions: RecentExpression[] = [];
 
   private _pseudoIntensities: Record<string, DataExpression> = {};
 
@@ -125,6 +127,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       this.maxSelection = (WIDGETS[this.data.widgetType as keyof typeof WIDGETS] as WidgetConfiguration)?.maxExpressions || 0;
     }
     this.updateSelectedExpressions();
+    this.loadRecentExpressionsFromCache();
 
     this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
@@ -248,7 +251,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
             }
           } else {
             // If we dont have it in filtered expressions, then we are waiting for it to load
-            toSelect.push(DataExpression.create({ id: `loading-${id}`, name: "Loading..." }));
+            toSelect.push(DataExpression.create({ id: `loading-${id}`, name: `Loading (${id})...` }));
           }
         }
       }
@@ -294,7 +297,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     }
 
     if ([ExpressionBrowseSections.MY_EXPRESSIONS, ExpressionBrowseSections.MY_EXPRESSION_GROUPS].includes(subSection)) {
-      this.manualFilters = { ...this.manualFilters, authors: [this._currentUserId] };
+      this.manualFilters = { searchString: "", tagIDs: [], expressionType: section, authors: [this._currentUserId] };
     } else if (subSection === ExpressionBrowseSections.ALL) {
       this.manualFilters = {
         authors: [],
@@ -304,8 +307,16 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       };
     }
 
+    if (subSection === ExpressionBrowseSections.RECENT) {
+      this.manualFilters = { authors: [], searchString: "", tagIDs: [], expressionType: section, onlyShowRecent: true };
+    }
+
     this.activeBrowseGroup = section;
     this.activeBrowseSection = subSection;
+  }
+
+  get isShowingExpressionGroups(): boolean {
+    return this.manualFilters?.expressionType === ExpressionBrowseSections.EXPRESSION_GROUPS;
   }
 
   get applyTooltip(): string {
@@ -333,11 +344,48 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     return !this.data.maxSelection || this.selectedExpressionIds.size < this.data.maxSelection;
   }
 
-  onSelect(expression: DataExpression): void {
+  loadRecentExpressionsFromCache(): void {
+    let recentExpressions = localStorage.getItem("recentExpressions");
+    if (recentExpressions) {
+      let parsedExpressions = JSON.parse(recentExpressions);
+      if (Array.isArray(parsedExpressions)) {
+        this.recentExpressions = parsedExpressions.map((recentExpression: RecentExpression) => {
+          return {
+            expression:
+              recentExpression.type === "expression" ? DataExpression.create(recentExpression.expression) : ExpressionGroup.create(recentExpression.expression),
+            lastSelected: recentExpression.lastSelected,
+            type: recentExpression.type,
+          };
+        });
+      }
+    }
+  }
+
+  cacheRecentExpressions(): void {
+    localStorage.setItem(
+      "recentExpressions",
+      JSON.stringify(this.recentExpressions.filter(expression => !expression.expression.id.startsWith("loading-")).slice(0, 10))
+    );
+  }
+
+  updateRecentExpression(expression: DataExpression | ExpressionGroup): void {
+    let existingRecentExpression = this.recentExpressions.find(recentExpression => recentExpression.expression.id === expression.id);
+    if (!existingRecentExpression) {
+      this.recentExpressions.push({ expression, type: this.isShowingExpressionGroups ? "group" : "expression", lastSelected: Date.now() });
+    } else {
+      existingRecentExpression.lastSelected = Date.now();
+    }
+
+    this.recentExpressions.sort((a, b) => b.lastSelected - a.lastSelected);
+    this.cacheRecentExpressions();
+  }
+
+  toggleExpression(expression: DataExpression, saveToRecent: boolean = true): void {
     if (this.data.maxSelection === 1) {
       this.selectedExpressionIds.clear();
       this.selectedExpressionIds.add(expression.id);
       this.selectedExpressionIdOrder = [expression.id];
+      this.updateRecentExpression(expression as DataExpression);
       return;
     }
 
@@ -349,6 +397,29 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     } else {
       this.selectedExpressionIds.add(expression.id);
       this.selectedExpressionIdOrder.push(expression.id);
+
+      if (saveToRecent) {
+        this.updateRecentExpression(expression as DataExpression);
+      }
+    }
+  }
+
+  onSelect(expression: DataExpression | ExpressionGroup): void {
+    if (this.isShowingExpressionGroups && (expression as ExpressionGroup)?.groupItems) {
+      let expressionGroup = expression as ExpressionGroup;
+
+      this.updateRecentExpression(expressionGroup);
+
+      let groupItemIds = (expressionGroup?.groupItems || []).map(groupItem => groupItem.expressionId);
+
+      this.selectedExpressionIds = new Set(groupItemIds);
+      this.selectedExpressionIdOrder = groupItemIds;
+
+      groupItemIds.forEach(expressionId => {
+        this._expressionService.fetchExpression(expressionId);
+      });
+    } else {
+      this.toggleExpression(expression as DataExpression);
     }
 
     this.updateSelectedExpressions();

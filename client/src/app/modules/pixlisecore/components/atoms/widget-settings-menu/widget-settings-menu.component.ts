@@ -78,6 +78,11 @@ export class WidgetSettingsMenuComponent implements OnInit {
     this.hidePanel();
   }
 
+  @Input() set triggerOpen(value: boolean) {
+    // We don't actually care about value, just that it changed
+    this.showPanel();
+  }
+
   onToggleSettings(): void {
     if (this._overlayRef) {
       this.hidePanel();

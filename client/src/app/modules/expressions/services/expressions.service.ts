@@ -1,8 +1,8 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, Observable, map, of } from "rxjs";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
-import { ExpressionGetReq, ExpressionGetResp, ExpressionListReq, ExpressionWriteReq } from "src/app/generated-protos/expression-msgs";
+import { ExpressionDeleteReq, ExpressionGetReq, ExpressionGetResp, ExpressionListReq, ExpressionWriteReq } from "src/app/generated-protos/expression-msgs";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { DataModule, DataModuleVersion } from "src/app/generated-protos/modules";
 import { DataModuleAddVersionReq, DataModuleGetReq, DataModuleListReq, DataModuleWriteReq } from "src/app/generated-protos/module-msgs";
@@ -85,6 +85,22 @@ export class ExpressionsService {
         this.expressions$.next({ ...this.expressions$.value, [id]: res.expression });
       }
     });
+  }
+
+  fetchCachedExpression(id: string): Observable<ExpressionGetResp> {
+    if (id === ExpressionsService.NewExpressionId) {
+      return of(ExpressionGetResp.create({}));
+    }
+
+    return this._cacheService.getExpression(ExpressionGetReq.create({ id })).pipe(
+      map(res => {
+        if (res.expression) {
+          this.expressions$.next({ ...this.expressions$.value, [id]: res.expression });
+        }
+
+        return res;
+      })
+    );
   }
 
   checkExpressionChanged(expression: DataExpression): boolean {
@@ -171,9 +187,24 @@ export class ExpressionsService {
     });
   }
 
-  listExpressionGroups() {
+  deleteExpression(id: string) {
+    this._dataService.sendExpressionDeleteRequest(ExpressionDeleteReq.create({ id })).subscribe(res => {
+      delete this.expressions$.value[id];
+      this.expressions$.next(this.expressions$.value);
+    });
+  }
+
+  deleteExpressionGroup(id: string) {
+    this._dataService.sendExpressionGroupDeleteRequest(ExpressionGroupGetReq.create({ id })).subscribe(res => {
+      this.expressionGroups$.value.filter(group => group.id !== id);
+      this.expressionGroups$.next(this.expressionGroups$.value);
+      this.listExpressionGroups(true);
+    });
+  }
+
+  listExpressionGroups(updateCache: boolean = false) {
     // Get a list of groups
-    this._cacheService.getExpressionGroupList(ExpressionGroupListReq.create({})).subscribe((resp: ExpressionGroupListResp) => {
+    this._cacheService.getExpressionGroupList(ExpressionGroupListReq.create({}), updateCache).subscribe((resp: ExpressionGroupListResp) => {
       let expressionGroups = Object.values(resp.groups);
       this.expressionGroups$.next(expressionGroups);
     });

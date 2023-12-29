@@ -69,6 +69,7 @@ export class TagPickerComponent implements OnInit {
   @Input() filterToTagType: boolean = true;
   @Input() allowAdminBuiltin: boolean = false;
   @Input() additionalVisibleTagType: string[] = ["layer"];
+  @Input() triggerOpen: boolean = false;
 
   @Output() onTagSelectionChanged = new EventEmitter<string[]>();
 
