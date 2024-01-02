@@ -65,6 +65,7 @@ export class ExpressionLayerComponent implements OnInit {
   widgetOptions: string[] = [];
   widgetOptionIcons: string[] = [];
   widgetSelectionState: string = "Off";
+  private _widgetPosition = 0;
 
   triggerTagPickerOpen: boolean = false;
   isShareDialogOpen: boolean = false;
@@ -148,6 +149,9 @@ export class ExpressionLayerComponent implements OnInit {
       this.widgetOptions = Object.keys(BINARY_WIDGET_OPTIONS);
       this.widgetOptionIcons = Object.values(BINARY_WIDGET_OPTIONS).map(option => option.icon);
     }
+
+    // Selection states have changed, so we need to update the widget position
+    this.widgetPosition = this._widgetPosition;
   }
 
   get widgetType(): string {
@@ -155,6 +159,7 @@ export class ExpressionLayerComponent implements OnInit {
   }
 
   @Input() set widgetPosition(position: number) {
+    this._widgetPosition = position;
     if (position > this.widgetOptions.length || position < 0 || !this.widgetOptions[position]) {
       this.widgetSelectionState = "Off";
     } else {

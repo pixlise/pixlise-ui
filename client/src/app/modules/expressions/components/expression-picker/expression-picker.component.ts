@@ -45,6 +45,7 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
 import { WIDGETS, WidgetConfiguration } from "src/app/modules/widget/models/widgets.model";
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
+import { WidgetData } from "src/app/generated-protos/widget-data";
 
 export type ExpressionPickerResponse = {
   selectedExpressions: (DataExpression | ExpressionGroup)[];
@@ -99,8 +100,9 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   scanId: string = "";
   quantId: string = "";
 
-  activeWidgetId: string = "";
-  layoutWidgets: { widget: WidgetLayoutConfiguration; name: string }[] = [];
+  widgetType: string = "";
+  private _activeWidgetId: string = "";
+  layoutWidgets: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
 
   newExpressionGroupName: string = "";
   newExpressionGroupDescription: string = "";
@@ -120,11 +122,14 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.scanId = this.data.scanId || "";
     this.quantId = this.data.quantId || "";
-    this.activeWidgetId = this.data.widgetId || "";
+    this._activeWidgetId = this.data.widgetId || "";
+    this._analysisLayoutService.highlightedWidgetId$.next(this._activeWidgetId);
+
     this.selectedExpressionIds = new Set(this.data.selectedIds || []);
     this.selectedExpressionIdOrder = Array.from(this.selectedExpressionIds);
     if (this.data.widgetType) {
-      this.maxSelection = (WIDGETS[this.data.widgetType as keyof typeof WIDGETS] as WidgetConfiguration)?.maxExpressions || 0;
+      this.widgetType = this.data.widgetType;
+      this.maxSelection = (WIDGETS[this.widgetType as keyof typeof WIDGETS] as WidgetConfiguration)?.maxExpressions || 0;
     }
     this.updateSelectedExpressions();
     this.loadRecentExpressionsFromCache();
@@ -132,7 +137,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
         if (config) {
-          let widgetReferences: { widget: WidgetLayoutConfiguration; name: string }[] = [];
+          let widgetReferences: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
           config.layouts.forEach((layout, i) => {
             let widgetCounts: Record<string, number> = {};
             layout.widgets.forEach((widget, widgetIndex) => {
@@ -145,7 +150,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
               let widgetTypeName = WIDGETS[widget.type as keyof typeof WIDGETS].name;
               let widgetName = `${widgetTypeName} ${widgetCounts[widget.type]}${i > 0 ? ` (page ${i + 1})` : ""}`;
 
-              widgetReferences.push({ widget, name: widgetName });
+              widgetReferences.push({ widget, name: widgetName, type: widget.type });
             });
           });
 
@@ -163,9 +168,9 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           }
         });
 
-        if (!this.fetchedAllSelectedExpressions && this.data?.selectedIds) {
+        if (!this.fetchedAllSelectedExpressions && this.selectedExpressionIds) {
           let fetchedAll = true;
-          this.data.selectedIds?.forEach(id => {
+          this.selectedExpressionIds?.forEach(id => {
             if (!this._expressionService.expressions$.value[id]) {
               fetchedAll = false;
             }
@@ -206,18 +211,40 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       );
     }
 
-    if (this.data?.selectedIds) {
-      this.data.selectedIds.forEach(id => {
-        if (!this._expressionService.expressions$.value[id]) {
-          this.fetchedAllSelectedExpressions = false;
-          this._expressionService.fetchExpression(id);
-        }
-      });
-    }
+    this.selectedExpressionIds.forEach(id => {
+      if (!this._expressionService.expressions$.value[id]) {
+        this.fetchedAllSelectedExpressions = false;
+        this._expressionService.fetchExpression(id);
+      }
+    });
   }
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+  }
+
+  get activeWidgetId(): string {
+    return this._activeWidgetId;
+  }
+
+  set activeWidgetId(id: string) {
+    this._activeWidgetId = id;
+    this._analysisLayoutService.highlightedWidgetId$.next(id);
+
+    let widget = this.layoutWidgets.find(widget => widget.widget.id === id);
+    if (widget) {
+      if (widget.type) {
+        this.widgetType = widget.type;
+        let widgetSpec = WIDGETS[widget.type as keyof typeof WIDGETS];
+        if (widgetSpec) {
+          this.selectedExpressionIds = new Set((widget.widget.data?.[widgetSpec.dataKey as keyof WidgetData] as any)?.expressionIDs || []);
+          this.selectedExpressionIdOrder = Array.from(this.selectedExpressionIds);
+
+          this.maxSelection = (widgetSpec as WidgetConfiguration)?.maxExpressions || 0;
+        }
+      }
+      this.updateSelectedExpressions();
+    }
   }
 
   updateSelectedExpressions() {
@@ -282,7 +309,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   trackById(index: number, item: DataExpression | ExpressionGroup): string {
-    return item.id;
+    return `${index}-${item.id}`;
   }
 
   checkSelected(id: string): boolean {
@@ -509,11 +536,19 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       .map(id => this.selectedExpressions.find(expression => expression.id === id))
       .filter(expression => expression) as (DataExpression | ExpressionGroup)[];
 
-    this.dialogRef.close({
+    this._analysisLayoutService.expressionPickerResponse$.next({
       selectedExpressions,
       scanId: this.scanId,
       quantId: this.quantId,
     });
+
+    this.dialogRef.close();
+
+    // this.dialogRef.close({
+    //   selectedExpressions,
+    //   scanId: this.scanId,
+    //   quantId: this.quantId,
+    // });
   }
 
   onClear(): void {

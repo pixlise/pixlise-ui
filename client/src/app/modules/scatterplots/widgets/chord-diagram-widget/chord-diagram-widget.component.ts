@@ -175,6 +175,25 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
         }
       })
     );
+
+    this._subs.add(
+      this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
+        if (result && result.selectedExpressions && this._analysisLayoutService.highlightedWidgetId$.value === this._widgetId) {
+          this.mdl.expressionIds = [];
+
+          for (const expr of result.selectedExpressions) {
+            this.mdl.expressionIds.push(expr.id);
+          }
+
+          this.update();
+          this.saveState();
+
+          // Expression picker has closed, so we can stop highlighting this widget
+          this._analysisLayoutService.highlightedWidgetId$.next("");
+        }
+      })
+    );
+
     this.reDraw();
   }
 
@@ -202,20 +221,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
     };
 
     this.isWidgetHighlighted = true;
-    const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
-      this.isWidgetHighlighted = false;
-      if (result && result.selectedExpressions) {
-        this.mdl.expressionIds = [];
-
-        for (const expr of result.selectedExpressions) {
-          this.mdl.expressionIds.push(expr.id);
-        }
-
-        this.update();
-        this.saveState();
-      }
-    });
+    this.dialog.open(ExpressionPickerComponent, dialogConfig);
   }
   onSoloView() {}
 

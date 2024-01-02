@@ -15,6 +15,7 @@ import { WidgetData } from "src/app/generated-protos/widget-data";
 import { WidgetDataGetReq, WidgetDataWriteReq } from "src/app/generated-protos/widget-data-msgs";
 import { WSError } from "../../pixlisecore/services/wsMessageHandler";
 import { ResponseStatus } from "src/app/generated-protos/websocket";
+import { ExpressionPickerResponse } from "../../expressions/components/expression-picker/expression-picker.component";
 
 @Injectable({
   providedIn: "root",
@@ -41,6 +42,9 @@ export class AnalysisLayoutService implements OnDestroy {
   activeScreenConfiguration$ = new BehaviorSubject<ScreenConfiguration>(createDefaultScreenConfiguration());
 
   screenConfigurations$ = new BehaviorSubject<Map<string, ScreenConfiguration>>(new Map());
+
+  highlightedWidgetId$ = new BehaviorSubject<string>("");
+  expressionPickerResponse$ = new BehaviorSubject<ExpressionPickerResponse | null>(null);
 
   widgetData$ = new BehaviorSubject<Map<string, WidgetData>>(new Map());
 
