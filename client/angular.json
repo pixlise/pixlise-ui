@@ -83,7 +83,6 @@
               "src/version.json"
             ],
             "styles": [
-              "node_modules/roboto-fontface/css/roboto/roboto-fontface.css",
               "src/scss/material-theme.scss",
               "src/styles.scss"
             ],
@@ -180,7 +179,6 @@
               }
             ],
             "styles": [
-              "node_modules/roboto-fontface/css/roboto/roboto-fontface.css",
               "src/scss/material-theme.scss",
               "src/styles.scss"
             ],
