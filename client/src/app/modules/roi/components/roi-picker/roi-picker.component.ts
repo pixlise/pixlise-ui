@@ -53,6 +53,8 @@ export type ROIPickerData = {
   selectedROIs?: ROIItem[];
   selectedROISummaries?: ROIItemSummary[];
 
+  singleSelect?: boolean;
+
   // If these are specified, they will replace the checkbox selection
   selectableSubItemOptions?: SubItemOptionSection[];
   subItemButtonName?: string;
@@ -177,6 +179,12 @@ export class ROIPickerComponent implements OnInit, OnDestroy {
   }
 
   onROISelect(roi: ROIItemSummary, customSelection: { selectedOptions: string[] }): void {
+    if (this.data.singleSelect === true) {
+      // Almost like onClear(), we ensure only one item gets selected - the one being selected now!
+      this.selectedROIs = {};
+      this.selectedItems.clear();
+    }
+
     const hasSubItemsSelected = customSelection?.selectedOptions && customSelection.selectedOptions.length > 0;
 
     if (!hasSubItemsSelected && (this.selectedROIs[roi.id] || this.selectedItems.has(roi.id))) {

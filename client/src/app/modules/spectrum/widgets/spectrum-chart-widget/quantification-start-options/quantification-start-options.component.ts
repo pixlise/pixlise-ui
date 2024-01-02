@@ -162,11 +162,8 @@ export class QuantificationStartOptionsComponent implements OnInit, OnDestroy {
       liveUpdate: false,
       selectedIds: this._roisSelected,
       title: "Region To Quantify",
+      singleSelect: this.singleSelectROI,
     };
-
-    if (this.singleSelectROI) {
-      alert("NOTE: quant dialog should only allow single selection!");
-    }
 
     const dlgRef = this.dialog.open(ROIPickerComponent, dialogConfig);
     dlgRef.afterClosed().subscribe((result: ROIPickerResponse) => {
