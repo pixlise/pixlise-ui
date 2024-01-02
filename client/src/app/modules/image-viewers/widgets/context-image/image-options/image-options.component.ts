@@ -481,7 +481,10 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this._dataService.sendImportMarsViewerImageRequest(ImportMarsViewerImageReq.create({ triggerUrl: entry })).subscribe({
+    // We base64 decode it to find the URL342
+    const triggerUrl = atob(entry);
+
+    this._dataService.sendImportMarsViewerImageRequest(ImportMarsViewerImageReq.create({ triggerUrl: triggerUrl })).subscribe({
       next: (resp: ImportMarsViewerImageResp) => {
         this._snackService.openSuccess(`Import from MarsViewer started...`, `Job id is ${resp.jobId}`);
       },

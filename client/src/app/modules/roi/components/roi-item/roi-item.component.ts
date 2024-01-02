@@ -7,7 +7,6 @@ import { Subscription } from "rxjs";
 import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../roi-shape/roi-shape.component";
 import { COLOURS, ColourOption, findColourOption, generateDefaultColour } from "../../models/roi-colors";
 import { ROIDisplaySettings, createDefaultROIDisplaySettings } from "../../models/roi-region";
-import { invalidPMC } from "src/app/utils/utils";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
 
 export type SubItemOptionSection = {
