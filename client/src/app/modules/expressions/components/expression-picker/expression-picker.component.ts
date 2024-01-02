@@ -528,6 +528,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   onCancel(): void {
+    this._analysisLayoutService.highlightedWidgetId$.next("");
     this.dialogRef.close();
   }
 
