@@ -83,8 +83,14 @@ export class VersionDisplayComponent implements OnInit, OnDestroy {
           // Just show our own version and errors for the other 2 known ones
           this.versions = [
             this._uiVersion,
-            new ComponentVersion(this._apiVersionDefault.component, "(error)"),
-            new ComponentVersion(this._piquantVersionDefault.component, "(error)"),
+            VersionResponse_Version.create({
+              component: this._apiVersionDefault.component,
+              version: "(error)",
+            }),
+            VersionResponse_Version.create({
+              component: this._piquantVersionDefault.component,
+              version: "(error)",
+            }),
           ];
         },
       })
