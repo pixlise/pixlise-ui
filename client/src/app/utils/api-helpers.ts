@@ -48,7 +48,7 @@ export class APIPaths {
 
   public static readonly api_detector_config = "detector-config";
   public static readonly api_piquant_root = "piquant";
-  public static readonly api_componentVersions = "version";
+  public static readonly api_componentVersions = "version-json";
   public static readonly api_roi = "roi";
   public static readonly api_element_set = "element-set";
   public static readonly api_annotation = "annotation";
