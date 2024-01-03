@@ -194,6 +194,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this._subs.add(
       this._expressionService.lastWrittenExpressionGroupId$.subscribe(id => {
         if (id) {
+          this.overwriteExistingExpressionGroup = true;
           this.selectedExpressionGroupId = id;
         }
       })
@@ -492,7 +493,11 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
         this._expressionService.fetchExpression(expressionId);
       });
 
+      this.overwriteExistingExpressionGroup = true;
       this.selectedExpressionGroupId = expressionGroup.id;
+
+      // Clear the last written expression because we're now working with a new group
+      this._expressionService.lastWrittenExpressionGroupId$.next("");
     } else {
       this.toggleExpression(expression as DataExpression);
     }
