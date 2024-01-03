@@ -107,7 +107,7 @@ POSSIBILITY OF SUCH DAMAGE.
             [isExpressionGroup]="isShowingExpressionGroups"
             (onFilterAuthor)="onFilterAuthor($event)"
             [selected]="checkSelected(item.id)"
-            [selectionDisabledMessage]="data.maxSelection === 1 || canSelectMore ? '' : 'Maximum number of expressions selected'"
+            [selectionDisabledMessage]="maxSelection === 1 || canSelectMore ? '' : 'Maximum number of expressions selected'"
             (onSelect)="onSelect(item)"></expression-layer>
         </cdk-virtual-scroll-viewport>
       </section>
@@ -128,10 +128,10 @@ POSSIBILITY OF SUCH DAMAGE.
             *cdkVirtualFor="let item of selectedExpressions; trackBy: trackById"
             [expression]="item"
             (onFilterAuthor)="onFilterAuthor($event)"
-            [selectionDisabledMessage]="data.maxSelection === 1 || canSelectMore ? '' : 'Maximum number of expressions selected'"
+            [selectionDisabledMessage]="maxSelection === 1 || canSelectMore ? '' : 'Maximum number of expressions selected'"
             (onSelect)="onSelect(item)"
             [isWidgetExpression]="true"
-            [widgetType]="data?.widgetType || ''"
+            [widgetType]="widgetType || ''"
             [selectIfValidPosition]="true"
             [widgetPosition]="selectedExpressionIdOrder.indexOf(item.id)"
             [showActiveExpressionConfiguration]="true"

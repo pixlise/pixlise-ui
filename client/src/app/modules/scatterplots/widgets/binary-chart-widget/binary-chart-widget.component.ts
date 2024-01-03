@@ -119,7 +119,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   private setInitialConfig() {
     const scanId = this._analysisLayoutService.defaultScanId;
     if (scanId.length > 0) {
-      this._analysisLayoutService.activeScreenConfiguration$.getValue()
+      this._analysisLayoutService.activeScreenConfiguration$.getValue();
       let quantId = ""; // TODO: get this!
 
       if (quantId.length <= 0) {
@@ -222,6 +222,38 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
         }
       })
     );
+
+    this._subs.add(
+      this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
+        if (!result || this._analysisLayoutService.highlightedWidgetId$.value !== this._widgetId) {
+          return;
+        }
+
+        if (result && result.selectedExpressions?.length > 0) {
+          // If there are 1-3, set them all
+          const last = Math.min(2, result.selectedExpressions.length);
+          for (let i = 0; i < last; i++) {
+            this.mdl.expressionIds[i % 2] = result.selectedExpressions[i].id;
+          }
+
+          let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];
+
+          // If we already have a data source for this scan, keep the ROI ids
+          const existingSource = this.mdl.dataSourceIds.get(result.scanId);
+          if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
+            roiIds = existingSource.roiIds;
+          }
+          this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
+
+          this.update();
+          this.saveState();
+        }
+
+        // Expression picker has closed, so we can stop highlighting this widget
+        this._analysisLayoutService.highlightedWidgetId$.next("");
+      })
+    );
+
     this.reDraw();
   }
 
@@ -322,29 +354,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     }
 
     this.isWidgetHighlighted = true;
-    const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
-      this.isWidgetHighlighted = false;
-      if (result && result.selectedExpressions?.length > 0) {
-        // If there are 1-3, set them all
-        const last = Math.min(2, result.selectedExpressions.length);
-        for (let i = 0; i < last; i++) {
-          this.mdl.expressionIds[i % 2] = result.selectedExpressions[i].id;
-        }
-
-        let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];
-
-        // If we already have a data source for this scan, keep the ROI ids
-        const existingSource = this.mdl.dataSourceIds.get(result.scanId);
-        if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
-          roiIds = existingSource.roiIds;
-        }
-        this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
-
-        this.update();
-        this.saveState();
-      }
-    });
+    this.dialog.open(ExpressionPickerComponent, dialogConfig);
   }
 
   get showMmol(): boolean {

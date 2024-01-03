@@ -45,6 +45,14 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
     this._analysisLayoutService.resizeCanvas$.subscribe(() => {
       this.hideOverflowedButtons();
     });
+
+    this._analysisLayoutService.highlightedWidgetId$.subscribe(highlightedWidgetId => {
+      if (highlightedWidgetId && this.widgetLayoutConfig.id === highlightedWidgetId) {
+        this.isWidgetHighlighted = true;
+      } else if (this.isWidgetHighlighted) {
+        this.isWidgetHighlighted = false;
+      }
+    });
   }
 
   ngAfterViewChecked(): void {
