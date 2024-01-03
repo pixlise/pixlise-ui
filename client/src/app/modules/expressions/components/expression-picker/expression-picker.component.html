@@ -77,12 +77,14 @@ POSSIBILITY OF SUCH DAMAGE.
         <div *ngFor="let section of browseSections" class="browse-section">
           <h5 class="{{ activeBrowseGroup === section.name ? 'active' : '' }}">{{ section.name }}</h5>
           <div class="browse-list">
-            <h6
-              (click)="onSubSectionSelect(section.name, subSection)"
-              class="{{ activeBrowseGroup === section.name && activeBrowseSection === subSection ? 'active' : '' }}"
+            <div
+              class="subsection {{ activeBrowseGroup === section.name && activeBrowseSection === subSection ? 'active' : '' }}"
               *ngFor="let subSection of section.subSections">
-              {{ subSection }}
-            </h6>
+              <h6 (click)="onSubSectionSelect(section.name, subSection)">
+                {{ subSection }}
+              </h6>
+              <img *ngIf="subSection === 'Recent'" src="assets/button-icons/delete.svg" (click)="onClearRecent(section.name)" />
+            </div>
           </div>
         </div>
       </div>

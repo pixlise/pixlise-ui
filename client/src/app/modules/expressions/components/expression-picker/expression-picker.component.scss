@@ -166,14 +166,11 @@
         .browse-list {
           margin-right: 16px;
 
-          h6 {
-            margin: 0;
-            padding: 4px 16px;
+          .subsection {
+            display: flex;
+            align-items: center;
+            width: 100%;
             border-radius: 4px;
-            margin-bottom: 2px;
-            font-size: 12px;
-
-            cursor: pointer;
 
             &.active {
               background: #444c50;
@@ -181,6 +178,27 @@
 
             &:hover:not(.active) {
               background-color: rgb(68 76 80 / 50%);
+            }
+
+            h6 {
+              flex: 1;
+              margin: 0;
+              padding: 4px 16px;
+              margin-bottom: 2px;
+              font-size: 12px;
+
+              cursor: pointer;
+            }
+
+            img {
+              cursor: pointer;
+              filter: opacity(0.5);
+
+              margin-right: 16px;
+
+              &:hover {
+                filter: opacity(1);
+              }
             }
           }
         }
