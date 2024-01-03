@@ -234,7 +234,16 @@
 }
 
 .new-expression-group {
+  width: 500px;
   padding: 16px;
+
+  .header {
+    display: flex;
+
+    tag-picker {
+      margin-left: auto;
+    }
+  }
 
   h1 {
     margin-bottom: 16px;
@@ -249,6 +258,12 @@
     }
 
     input {
+      margin-bottom: 16px;
+    }
+
+    mat-select {
+      margin-left: 0;
+      width: 485px !important;
       margin-bottom: 16px;
     }
   }

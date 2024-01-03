@@ -31,8 +31,22 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <ng-template #saveExpressionGroupDialog>
   <div class="new-expression-group">
-    <h1>New Expression Group</h1>
+    <div class="header">
+      <h1>New Expression Group</h1>
+      <tag-picker
+        type="expression-mix"
+        [selectedTagIDs]="newExpressionGroupTags"
+        [showCurrentTagsSection]="true"
+        (onTagSelectionChanged)="onNewExpressionGroupTagSelectionChanged($event)">
+      </tag-picker>
+    </div>
     <div class="fields">
+      <mat-checkbox [(ngModel)]="overwriteExistingExpressionGroup" label>Overwrite existing expression group?</mat-checkbox>
+
+      <mat-select *ngIf="overwriteExistingExpressionGroup" [(ngModel)]="selectedExpressionGroupId" placeholder="Editable Groups ...">
+        <mat-option *ngFor="let group of editableExpressionGroups" [value]="group.id">{{ group.name }}</mat-option>
+      </mat-select>
+
       <span class="input-label">Expression Group Name</span>
       <input type="text" [(ngModel)]="newExpressionGroupName" placeholder="New Group Name ..." />
 
