@@ -197,19 +197,6 @@ export class MinMax {
   }
 }
 
-export class ComponentVersion {
-  constructor(
-    public component: string,
-    public version: string,
-    public buildUnixTimeSec: number = 0
-  ) {}
-}
-
-export class ComponentVersions {
-  constructor(public components: ComponentVersion[]) {}
-}
-
-
 export class LoadProgress {
   constructor(
     public fileName: string,

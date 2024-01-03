@@ -30,7 +30,7 @@
 import { HttpHeaders } from "@angular/common/http";
 //import { throwError, of } from 'rxjs';
 
-export function makeHeaders(): object {
+export function makeHeaders(): { headers: HttpHeaders } {
   const httpOptions = {
     headers: new HttpHeaders({
       "Content-Type": "application/json",
@@ -48,7 +48,7 @@ export class APIPaths {
 
   public static readonly api_detector_config = "detector-config";
   public static readonly api_piquant_root = "piquant";
-  public static readonly api_componentVersions = "version-json";
+  public static readonly api_componentVersions = "version-binary";
   public static readonly api_roi = "roi";
   public static readonly api_element_set = "element-set";
   public static readonly api_annotation = "annotation";

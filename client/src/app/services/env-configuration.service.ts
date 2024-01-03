@@ -30,8 +30,8 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { APIPaths, makeHeaders } from "../utils/api-helpers";
-import { Observable, Subscription } from "rxjs";
-import { ComponentVersions } from "../models/BasicTypes";
+import { Observable, Subscription, map } from "rxjs";
+import { VersionResponse } from "../generated-protos/restmsgs";
 
 @Injectable({
   providedIn: "root",
@@ -44,11 +44,24 @@ export class EnvConfigurationService {
   ) {}
 
   // TODO: If we've requested these before, cache them locally
-  getComponentVersions(): Observable<ComponentVersions> {
+  getComponentVersions(): Observable<VersionResponse> {
     const apiUrl = APIPaths.getWithHost(APIPaths.api_componentVersions);
-    return this.http.get<ComponentVersions>(apiUrl, makeHeaders());
+
+    const opts = {
+      responseType: "arraybuffer" as "json",
+      headers: makeHeaders().headers,
+    };
+
+    return this.http.get<ArrayBuffer>(apiUrl, opts).pipe(
+      map((resp: ArrayBuffer) => {
+        const arr = new Uint8Array(resp);
+        const res = VersionResponse.decode(arr);
+        return res;
+      })
+    );
   }
-/*
+
+  /*
   // For testing only, calls API endpoints that return specific errors
   test500(): Observable<string> {
     let apiUrl = APIPaths.getWithHost(APIPaths.api_test + "/500");

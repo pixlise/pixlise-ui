@@ -29,8 +29,9 @@
 
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { Subscription } from "rxjs";
-import { ComponentVersion, ComponentVersions } from "src/app/models/BasicTypes";
+import { VersionResponse, VersionResponse_Version } from "src/app/generated-protos/restmsgs";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
+import { httpErrorToString } from "src/app/utils/utils";
 import { VERSION } from "src/environments/version";
 
 @Component({
@@ -41,25 +42,35 @@ import { VERSION } from "src/environments/version";
 export class VersionDisplayComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
-  private _uiVersion = new ComponentVersion("PIXLISE", (VERSION as any)?.raw || "(Local build)");
-  private _apiVersionDefault = new ComponentVersion("API", "");
-  private _piquantVersionDefault = new ComponentVersion("PIQUANT", "");
+  private _uiVersion = VersionResponse_Version.create({
+    component: "PIXLISE",
+    version: (VERSION as any)?.raw || "(Local build)",
+  });
+  private _apiVersionDefault = VersionResponse_Version.create({
+    component: "API",
+    version: "",
+  });
+  private _piquantVersionDefault = VersionResponse_Version.create({
+    component: "PIQUANT",
+    version: "",
+  });
 
-  versions: ComponentVersion[] = [this._uiVersion, this._apiVersionDefault, this._piquantVersionDefault];
+  versions: VersionResponse_Version[] = [this._uiVersion, this._apiVersionDefault, this._piquantVersionDefault];
 
   constructor(public envConfigService: EnvConfigurationService) {}
 
   ngOnInit() {
     this._subs.add(
       this.envConfigService.getComponentVersions().subscribe({
-        next: (versions: ComponentVersions) => {
+        next: (versions: VersionResponse) => {
           // Overwrite ours
-          this.versions = [this._uiVersion, ...versions.components];
+          this.versions = [this._uiVersion, ...versions.versions];
 
+          versions.versions
           // Remove the image name from piquant version
-          for (let ver of this.versions) {
+          for (const ver of this.versions) {
             if (ver.component == "PIQUANT") {
-              let parts = ver.version.split(":");
+              const parts = ver.version.split(":");
               if (parts.length == 2) {
                 ver.version = parts[1];
               }
@@ -67,6 +78,8 @@ export class VersionDisplayComponent implements OnInit, OnDestroy {
           }
         },
         error: err => {
+          console.error(httpErrorToString(err, "Failed to get API versions"));
+
           // Just show our own version and errors for the other 2 known ones
           this.versions = [
             this._uiVersion,
