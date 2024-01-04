@@ -215,7 +215,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
     this._subs.add(
       this._route.queryParams.subscribe(params => {
-        let scanId = params["scan_id"];
+        let scanId = params["scan_id"] || params["scanId"];
         if (scanId) {
           this.datasetID = scanId;
           this._dataSetLoadedName = "Scan " + scanId;
@@ -308,7 +308,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   }
 
   get showTitle(): boolean {
-    return this.title.length > 0 && ![""].includes(this._currTab);
+    return this.title.length > 0 && !["", "Datasets"].includes(this._currTab);
   }
 
   get showViewCapture(): boolean {

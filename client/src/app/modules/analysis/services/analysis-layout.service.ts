@@ -122,7 +122,6 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   fetchScreenConfiguration(id: string = "", scanId: string = "", setActive: boolean = true) {
-    console.log("Fetching screen configuration", id, scanId);
     this._dataService.sendScreenConfigurationGetRequest(ScreenConfigurationGetReq.create({ id, scanId })).subscribe({
       next: res => {
         if (res.screenConfiguration) {
