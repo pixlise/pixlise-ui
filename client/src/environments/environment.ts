@@ -50,6 +50,7 @@ export const environment = {
     redirect_uri: `${window.location.origin}/authenticate`,
   },
   largeMessageLogThresholdBytes: 102400,
+  marsViewerUrlRoot: "https://marsviewer.sops.m20.jpl.nasa.gov",
 };
 
 /*

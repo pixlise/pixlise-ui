@@ -31,11 +31,11 @@ import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, S
 import { Subscription } from "rxjs";
 import { SDSFields, invalidPMC } from "src/app/utils/utils";
 import { ContextImageItemTransform } from "../../models/image-transform";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { makeImageTooltip } from "src/app/utils/image-details";
 import { ScanImageSource } from "src/app/generated-protos/image";
 import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { environment } from "src/environments/environment";
 
 export class ContextImageItem {
   constructor(
@@ -115,7 +115,7 @@ be a bit misleading.
     // An example, when browsing around finding one manually:
     // https://marsviewer.sops.m20.jpl.nasa.gov/?B_ocs_type_name=m20-edr-rdr-m20-mosaic&EDR=s3%3A%2F%2Fm20-sops-ods%2Fods%2Fsurface%2Fsol%2F00257%2Fids%2Ffdr%2Fpixl%2FPCW_0257_0689790669_000FDR_N00800000890639430006075J01.IMG&FS_instrument_id=PC&FS_ocs_name=PCW_0257_0689790669_000FDR_N00800000890639430006075J01.IMG&FS_ocs_type_name=m20-edr-rdr-m20-mosaic&FS_time1=257%2C257&center=376.00000%2C290.00000&iti=0&overlays=PCW_0257_0689790669_000RAD_N00800000890639430006075J02.IMG&sti=1&zoom=1.13830
     // We only want to specify the minimum, which seems to be:
-    return "https://marsviewer.sops.m20.jpl.nasa.gov/?FS_ocs_name=" + mvName;
+    return environment.marsViewerUrlRoot + "/?FS_ocs_name=" + mvName;
   }
 
   private makeTitle(): string {
