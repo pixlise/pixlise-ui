@@ -147,6 +147,30 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
 
   ngOnInit() {
     this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
+        let updated = false;
+        if (screenConfiguration) {
+          if (screenConfiguration.scanConfigurations) {
+            // Update all existing data source ids with the new quant id for the scan
+            Object.entries(screenConfiguration.scanConfigurations).forEach(([scanId, scanConfig]) => {
+              if (this.mdl.dataSourceIds.has(scanId)) {
+                const dataSource = this.mdl.dataSourceIds.get(scanId);
+                if (dataSource?.quantId !== scanConfig.quantId) {
+                  this.mdl.dataSourceIds.set(scanId, new ScanDataIds(scanConfig.quantId, dataSource?.roiIds || []));
+                  updated = true;
+                }
+              }
+            });
+          }
+        }
+
+        if (updated) {
+          this.update();
+        }
+      })
+    );
+
+    this._subs.add(
       this.widgetData$.subscribe((data: any) => {
         const chordData: ChordState = data as ChordState;
 
@@ -163,7 +187,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
           if (chordData.displayROI) {
             this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: chordData.displayROI })).subscribe((resp: RegionOfInterestGetResp) => {
               if (resp.regionOfInterest) {
-                let quantId = "";
+                let quantId = this._analysisLayoutService.getQuantIdForScan(resp.regionOfInterest.scanId);
                 this.mdl.dataSourceIds.set(resp.regionOfInterest.scanId, new ScanDataIds(quantId, [chordData.displayROI]));
               }
             });

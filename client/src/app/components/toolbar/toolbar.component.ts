@@ -217,6 +217,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
         console.log("params", params);
         let scanId = params["scan_id"];
         if (scanId) {
+          this.datasetID = scanId;
           this._dataSetLoadedName = "Scan " + scanId;
           this.updateToolbar();
 
@@ -342,15 +343,15 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       this.tabs = [
         //new TabNav('Help', 'help', true),
         new TabNav("Datasets", "datasets", true),
-        new TabNav("Analysis", `${datasetPrefix}/analysis${scanQueryParam}`, true),
+        new TabNav("Analysis", `${datasetPrefix}analysis${scanQueryParam}`, true),
       ];
       // Only enabling maps tab if a quant is loaded
       // TODO: Hide maps tap if no quants or whatever... this all changed when multiple quantifications came in, for now just enabling it always
       // this.tabs.push(new TabNav("Element Maps", datasetPrefix + "/maps", true));
-      this.tabs.push(new TabNav("Element Maps", `${datasetPrefix}/maps${scanQueryParam}`, true));
-      if (!this.isPublicUser) {
-        this.tabs.push(new TabNav("Quant Tracker", `${datasetPrefix}/quant-logs${scanQueryParam}`, true));
-      }
+      // this.tabs.push(new TabNav("Element Maps", `${datasetPrefix}/maps${scanQueryParam}`, true));
+      // if (!this.isPublicUser) {
+      //   this.tabs.push(new TabNav("Quant Tracker", `${datasetPrefix}/quant-logs${scanQueryParam}`, true));
+      // }
     }
 
     if (this._userPiquantConfigAllowed) {
@@ -425,7 +426,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   }
 
   onScanConfiguration(): void {
-    // writeQueryParams;
     const dialogConfig = new MatDialogConfig<ScanConfigurationDialogData>();
     dialogConfig.disableClose = true;
     dialogConfig.autoFocus = true;

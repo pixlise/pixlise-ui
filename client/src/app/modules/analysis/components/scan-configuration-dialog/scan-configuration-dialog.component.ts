@@ -75,24 +75,26 @@ export class ScanConfigurationDialog implements OnInit {
     private _energyCalibrationService: EnergyCalibrationService,
     private _router: Router,
     private _route: ActivatedRoute
-  ) {
-    if (data && data.writeToQueryParams) {
-      this.writeQueryParams = true;
-    }
-  }
+  ) {}
 
   ngOnInit(): void {
-    this._subs.add(
-      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfig => {
-        this.scanConfigurations = Object.values(screenConfig.scanConfigurations);
-        this.scanConfigurationsSource.data = this.scanConfigurations;
-        this.selectedScanIds = new Set<string>();
-        this.scanConfigurations.forEach(config => {
-          this.selectedScanIds.add(config.id);
-          this._analysisLayoutService.fetchQuantsForScan(config.id);
-        });
-      })
-    );
+    this.writeQueryParams = (this.data && this.data.writeToQueryParams) || false;
+
+    // If we are writing query params, we will populate the dialog with the scanId and quantId from the query params
+    // rather than the active screen configuration
+    if (!this.writeQueryParams) {
+      this._subs.add(
+        this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfig => {
+          this.scanConfigurations = Object.values(screenConfig.scanConfigurations);
+          this.scanConfigurationsSource.data = this.scanConfigurations;
+          this.selectedScanIds = new Set<string>();
+          this.scanConfigurations.forEach(config => {
+            this.selectedScanIds.add(config.id);
+            this._analysisLayoutService.fetchQuantsForScan(config.id);
+          });
+        })
+      );
+    }
 
     this._subs.add(
       this._analysisLayoutService.availableScans$.subscribe(scans => {

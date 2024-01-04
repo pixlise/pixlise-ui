@@ -192,6 +192,30 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     );
 
     this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
+        let updated = false;
+        if (screenConfiguration) {
+          if (screenConfiguration.scanConfigurations) {
+            // Update all existing data source ids with the new quant id for the scan
+            Object.entries(screenConfiguration.scanConfigurations).forEach(([scanId, scanConfig]) => {
+              if (this.mdl.dataSourceIds.has(scanId)) {
+                const dataSource = this.mdl.dataSourceIds.get(scanId);
+                if (dataSource?.quantId !== scanConfig.quantId) {
+                  this.mdl.dataSourceIds.set(scanId, new ScanDataIds(scanConfig.quantId, dataSource?.roiIds || []));
+                  updated = true;
+                }
+              }
+            });
+          }
+        }
+
+        if (updated) {
+          this.update();
+        }
+      })
+    );
+
+    this._subs.add(
       this.widgetData$.subscribe((data: any) => {
         const binaryData: BinaryState = data as BinaryState;
 
@@ -205,6 +229,10 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
           if (binaryData.visibleROIs) {
             this.mdl.dataSourceIds.clear();
             binaryData.visibleROIs.forEach(roi => {
+              if (!roi.scanId) {
+                return;
+              }
+
               if (this.mdl.dataSourceIds.has(roi.scanId)) {
                 const dataSource = this.mdl.dataSourceIds.get(roi.scanId);
                 dataSource!.roiIds.push(roi.id);
@@ -236,14 +264,14 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
             this.mdl.expressionIds[i % 2] = result.selectedExpressions[i].id;
           }
 
-          let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];
+          // let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];
 
-          // If we already have a data source for this scan, keep the ROI ids
-          const existingSource = this.mdl.dataSourceIds.get(result.scanId);
-          if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
-            roiIds = existingSource.roiIds;
-          }
-          this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
+          // // If we already have a data source for this scan, keep the ROI ids
+          // const existingSource = this.mdl.dataSourceIds.get(result.scanId);
+          // if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
+          //   roiIds = existingSource.roiIds;
+          // }
+          // this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
 
           this.update();
           this.saveState();

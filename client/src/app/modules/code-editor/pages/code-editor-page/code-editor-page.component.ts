@@ -324,6 +324,45 @@ export class CodeEditorPageComponent implements OnInit {
         this.updateLinkedModule();
       })
     );
+
+    this._subs.add(
+      this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
+        let scanId = this._route.snapshot.queryParams["scanId"];
+        let quantId = this._route.snapshot.queryParams["quantId"];
+        if (result && result.selectedExpressions?.length > 0) {
+          if (result.scanId) {
+            scanId = result.scanId;
+          }
+
+          if (quantId) {
+            quantId = result.quantId;
+          }
+
+          if (scanId && !quantId) {
+            quantId = this._analysisLayoutService.getQuantIdForScan(scanId);
+          }
+
+          let queryParams: Record<string, string> = {
+            topExpressionId: result.selectedExpressions[0].id,
+            quantId,
+            scanId,
+          };
+
+          if (result.selectedExpressions.length > 1) {
+            queryParams["bottomExpressionId"] = result.selectedExpressions[1].id;
+          } else {
+            delete queryParams["bottomExpressionId"];
+          }
+
+          this.topExpressionChanged = false;
+          this.bottomExpressionChanged = false;
+
+          this._router.navigate([], { queryParams });
+        } else if (result) {
+          this._router.navigate([], { queryParams: { quantId, scanId } });
+        }
+      })
+    );
   }
 
   getVersionString(version: SemanticVersion | undefined): string {
@@ -680,6 +719,7 @@ export class CodeEditorPageComponent implements OnInit {
     dialogConfig.data = {
       noActiveScreenConfig: true,
       maxSelection: 1,
+      disableExpressionGroups: true,
     };
     dialogConfig.data.selectedIds = [];
     let topExpressionId = this._route.snapshot.queryParams["topExpressionId"];
@@ -695,28 +735,28 @@ export class CodeEditorPageComponent implements OnInit {
     dialogConfig.data.quantId = this._route.snapshot.queryParams["quantId"] || "";
 
     const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
-      if (result && result.selectedExpressions?.length > 0) {
-        let queryParams: Record<string, string> = {
-          topExpressionId: result.selectedExpressions[0].id,
-          quantId: result.quantId,
-          scanId: result.scanId,
-        };
+    // dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
+    //   if (result && result.selectedExpressions?.length > 0) {
+    //     let queryParams: Record<string, string> = {
+    //       topExpressionId: result.selectedExpressions[0].id,
+    //       quantId: result.quantId,
+    //       scanId: result.scanId,
+    //     };
 
-        if (result.selectedExpressions.length > 1) {
-          queryParams["bottomExpressionId"] = result.selectedExpressions[1].id;
-        } else {
-          delete queryParams["bottomExpressionId"];
-        }
+    //     if (result.selectedExpressions.length > 1) {
+    //       queryParams["bottomExpressionId"] = result.selectedExpressions[1].id;
+    //     } else {
+    //       delete queryParams["bottomExpressionId"];
+    //     }
 
-        this.topExpressionChanged = false;
-        this.bottomExpressionChanged = false;
+    //     this.topExpressionChanged = false;
+    //     this.bottomExpressionChanged = false;
 
-        this._router.navigate([], { queryParams });
-      } else if (result) {
-        this._router.navigate([], { queryParams: { quantId: result.quantId || "", scanId: result.scanId || "" } });
-      }
-    });
+    //     this._router.navigate([], { queryParams });
+    //   } else if (result) {
+    //     this._router.navigate([], { queryParams: { quantId: result.quantId || "", scanId: result.scanId || "" } });
+    //   }
+    // });
   }
 
   onCreateNewExpression() {

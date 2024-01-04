@@ -62,6 +62,7 @@ export type ExpressionPickerData = {
   noActiveScreenConfig?: boolean;
   maxSelection?: number;
   widgetType?: string;
+  disableExpressionGroups?: boolean;
 };
 
 @Component({
@@ -135,7 +136,14 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     if (this.data.widgetType) {
       this.widgetType = this.data.widgetType;
       this.maxSelection = (WIDGETS[this.widgetType as keyof typeof WIDGETS] as WidgetConfiguration)?.maxExpressions || 0;
+    } else if (this.data?.maxSelection) {
+      this.maxSelection = this.data.maxSelection;
     }
+
+    if (this.data.disableExpressionGroups) {
+      this.browseSections = this.browseSections.filter(section => section.name !== ExpressionBrowseSections.EXPRESSION_GROUPS);
+    }
+
     this.updateSelectedExpressions();
     this.loadRecentExpressionsFromCache();
 

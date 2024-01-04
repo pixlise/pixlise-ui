@@ -22,6 +22,7 @@ import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysi
 import { TernaryState, VisibleROI } from "src/app/generated-protos/widget-data";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
+import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -244,6 +245,10 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
           if (ternaryData.visibleROIs) {
             this.mdl.dataSourceIds.clear();
             ternaryData.visibleROIs.forEach(roi => {
+              if (!roi.scanId) {
+                return;
+              }
+
               if (this.mdl.dataSourceIds.has(roi.scanId)) {
                 const dataSource = this.mdl.dataSourceIds.get(roi.scanId);
                 dataSource!.roiIds.push(roi.id);
@@ -271,14 +276,14 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
             this.mdl.expressionIds[i] = result.selectedExpressions[i].id;
           }
 
-          let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];
+          // let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];
 
-          // If we already have a data source for this scan, keep the ROI ids
-          const existingSource = this.mdl.dataSourceIds.get(result.scanId);
-          if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
-            roiIds = existingSource.roiIds;
-          }
-          this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
+          // // If we already have a data source for this scan, keep the ROI ids
+          // const existingSource = this.mdl.dataSourceIds.get(result.scanId);
+          // if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
+          //   roiIds = existingSource.roiIds;
+          // }
+          // this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
 
           this.update();
           this.saveState();
@@ -298,6 +303,10 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
   reDraw() {
     this.mdl.needsDraw$.next();
+  }
+
+  get scanConfigurations(): Record<string, ScanConfiguration> {
+    return this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations || {};
   }
 
   get transform() {

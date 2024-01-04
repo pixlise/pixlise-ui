@@ -65,22 +65,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="controls">
       <h1 class="title">Select Expressions</h1>
       <action-button action="close" color="rgb(var(--clr-gray-30))" (onClick)="onCancel()"></action-button>
-      <!-- <two-state-icon-push-button
-        class="search-btn"
-        activeIcon="assets/button-icons/filter-yellow.svg"
-        inactiveIcon="assets/button-icons/filter-white.svg"
-        [active]="showSearchControls"
-        (onToggle)="onToggleSearch()"
-        #tooltip="matTooltip"
-        matTooltip="{{ showSearchControls ? 'Hide' : 'Show' }} search options">
-      </two-state-icon-push-button> -->
     </div>
-    <!-- <expression-search-controls
-      class="{{ showSearchControls ? 'visible' : '' }}"
-      (onFilterChanged)="onFilterChanged($event)"
-      [scanId]="scanId"
-      [quantId]="quantId"
-      [manualFilters]="manualFilters"></expression-search-controls> -->
   </header>
   <section class="columns">
     <section class="column browse">
@@ -128,10 +113,8 @@ POSSIBILITY OF SUCH DAMAGE.
         </cdk-virtual-scroll-viewport>
       </section>
     </section>
-    <section class="column active-expressions">
+    <section *ngIf="maxSelection !== 1" class="column active-expressions">
       <div class="title active-widget-selection">
-        <!-- <h4>Active Expressions</h4> -->
-        <!-- layoutWidgets -->
         Active:<mat-select [(ngModel)]="activeWidgetId" placeholder="Active Group">
           <mat-option *ngFor="let option of layoutWidgets; let i = index" [value]="option.widget.id">{{ option.name }}</mat-option>
         </mat-select>
@@ -147,7 +130,6 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
       <section class="active-expressions">
         <cdk-virtual-scroll-viewport [itemSize]="80" class="expressions-viewport">
-          <!-- [selected]="selectedExpressionIdOrder.indexOf(item.id) === data?.expressionTriggerPosition || false" -->
           <expression-layer
             *cdkVirtualFor="let item of selectedExpressions; trackBy: trackById"
             [expression]="item"
@@ -166,7 +148,6 @@ POSSIBILITY OF SUCH DAMAGE.
   </section>
   <div class="button-container">
     <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
-    <!-- <push-button buttonStyle="outline" (onClick)="onClear()">Clear</push-button> -->
     <push-button
       buttonStyle="yellow"
       #tooltip="matTooltip"
