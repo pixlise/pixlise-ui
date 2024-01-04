@@ -97,6 +97,10 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   activeBrowseSection: string = "All";
   browseSections = ExpressionBrowseSections.SECTIONS;
 
+  editableExpressionGroups: ExpressionGroup[] = [];
+  private _selectedExpressionGroupId: string = "";
+  overwriteExistingExpressionGroup: boolean = false;
+
   scanId: string = "";
   quantId: string = "";
 
@@ -106,6 +110,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
   newExpressionGroupName: string = "";
   newExpressionGroupDescription: string = "";
+  newExpressionGroupTags: string[] = [];
 
   maxSelection: number = 0;
 
@@ -183,6 +188,21 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
         this.waitingForExpressions = notFoundExpressions;
         this.updateSelectedExpressions();
+      })
+    );
+
+    this._subs.add(
+      this._expressionService.lastWrittenExpressionGroupId$.subscribe(id => {
+        if (id) {
+          this.overwriteExistingExpressionGroup = true;
+          this.selectedExpressionGroupId = id;
+        }
+      })
+    );
+
+    this._subs.add(
+      this._expressionService.expressionGroups$.subscribe(expressionGroups => {
+        this.editableExpressionGroups = expressionGroups.filter(group => group.owner?.canEdit);
       })
     );
 
@@ -293,16 +313,30 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   onCloseExpressionGroupDialog() {
     this.newExpressionGroupName = "";
     this.newExpressionGroupDescription = "";
+    this.newExpressionGroupTags = [];
 
     if (this.saveExpressionGroupDialog && this.saveExpressionGroupDialog instanceof PushButtonComponent) {
       (this.saveExpressionGroupDialog as PushButtonComponent).closeDialog();
     }
   }
+
+  onNewExpressionGroupTagSelectionChanged(tags: string[]) {
+    this.newExpressionGroupTags = tags;
+  }
+
   onSaveNewExpressionGroup() {
-    let expressionGroup = ExpressionGroup.create({ name: this.newExpressionGroupName, description: this.newExpressionGroupDescription });
+    let expressionGroup = ExpressionGroup.create({
+      name: this.newExpressionGroupName,
+      description: this.newExpressionGroupDescription,
+      tags: this.newExpressionGroupTags,
+    });
     expressionGroup.groupItems = this.selectedExpressionIdOrder.map(id => {
       return ExpressionGroupItem.create({ expressionId: id });
     });
+
+    if (this.overwriteExistingExpressionGroup && this.selectedExpressionGroupId) {
+      expressionGroup.id = this.selectedExpressionGroupId;
+    }
 
     this._expressionService.writeExpressionGroup(expressionGroup);
     this.onCloseExpressionGroupDialog();
@@ -369,6 +403,19 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
   get canSelectMore(): boolean {
     return !this.data.maxSelection || this.selectedExpressionIds.size < this.data.maxSelection;
+  }
+
+  get selectedExpressionGroupId(): string {
+    return this._selectedExpressionGroupId;
+  }
+
+  set selectedExpressionGroupId(id: string) {
+    this._selectedExpressionGroupId = id;
+
+    let expressionGroup = this.editableExpressionGroups.find(group => group.id === id);
+    this.newExpressionGroupName = expressionGroup?.name || "";
+    this.newExpressionGroupDescription = expressionGroup?.description || "";
+    this.newExpressionGroupTags = expressionGroup?.tags || [];
   }
 
   loadRecentExpressionsFromCache(): void {
@@ -445,6 +492,12 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       groupItemIds.forEach(expressionId => {
         this._expressionService.fetchExpression(expressionId);
       });
+
+      this.overwriteExistingExpressionGroup = true;
+      this.selectedExpressionGroupId = expressionGroup.id;
+
+      // Clear the last written expression because we're now working with a new group
+      this._expressionService.lastWrittenExpressionGroupId$.next("");
     } else {
       this.toggleExpression(expression as DataExpression);
     }
@@ -525,6 +578,31 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
   onToggleSearch(): void {
     this.showSearchControls = !this.showSearchControls;
+  }
+
+  onClearRecent(sectionName: string) {
+    this.recentExpressions = this.recentExpressions.filter(recentExpression => {
+      if (recentExpression.type === "expression" && sectionName === ExpressionBrowseSections.EXPRESSIONS) {
+        if (this.selectedExpressionIds.delete(recentExpression.expression.id)) {
+          this.selectedExpressionIdOrder = this.selectedExpressionIdOrder.filter(id => id !== recentExpression.expression.id);
+        }
+        return false;
+      } else if (recentExpression.type === "group" && sectionName === ExpressionBrowseSections.EXPRESSION_GROUPS) {
+        if (this.selectedExpressionIds.delete(recentExpression.expression.id)) {
+          this.selectedExpressionIdOrder = this.selectedExpressionIdOrder.filter(id => id !== recentExpression.expression.id);
+        }
+        return false;
+      } else {
+        return true;
+      }
+    });
+
+    this.cacheRecentExpressions();
+    this.updateSelectedExpressions();
+
+    if (this.activeBrowseSection === ExpressionBrowseSections.RECENT) {
+      this.manualFilters = { authors: [], searchString: "", tagIDs: [], expressionType: this.activeBrowseGroup, onlyShowRecent: true };
+    }
   }
 
   onCancel(): void {

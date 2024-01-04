@@ -18,6 +18,8 @@ export class ExpressionsService {
   expressions$ = new BehaviorSubject<Record<string, DataExpression>>({});
   modules$ = new BehaviorSubject<Record<string, DataModule>>({});
 
+  lastWrittenExpressionGroupId$ = new BehaviorSubject<string>("");
+
   public static NewExpressionId: string = "new";
 
   lastSavedExpressionId: string = "";
@@ -221,10 +223,16 @@ export class ExpressionsService {
         if (res.group) {
           this._snackBarService.openSuccess(`Expression group (${expressionGroupToWrite.name}) saved`);
 
-          this.expressionGroups$.value.push(res.group);
+          let existingGroupIndex = this.expressionGroups$.value.findIndex(group => group.id === res.group?.id);
+          if (existingGroupIndex >= 0) {
+            this.expressionGroups$.value[existingGroupIndex] = res.group;
+          } else {
+            this.expressionGroups$.value.push(res.group);
+          }
           this.expressionGroups$.next(this.expressionGroups$.value);
 
           this._cacheService.getExpressionGroupList(ExpressionGroupListReq.create({}), true);
+          this.lastWrittenExpressionGroupId$.next(res.group.id);
         }
       });
   }
