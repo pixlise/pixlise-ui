@@ -481,7 +481,7 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // We base64 decode it to find the URL342
+    // We base64 decode it to find the URL
     const triggerUrl = atob(entry);
 
     this._dataService.sendImportMarsViewerImageRequest(ImportMarsViewerImageReq.create({ triggerUrl: triggerUrl })).subscribe({

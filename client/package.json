@@ -3,7 +3,7 @@
   "scripts": {
     "ng": "ng",
     "prestart": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua",
-    "start": "ng serve",
+    "start": "clear&&ng serve",
     "prebuild": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
