@@ -207,14 +207,14 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfig => {
         if (screenConfig && screenConfig.name) {
           this.titleToShow = screenConfig.name;
-          this.updateToolbar();
         }
+
+        this.updateToolbar();
       })
     );
 
     this._subs.add(
       this._route.queryParams.subscribe(params => {
-        console.log("params", params);
         let scanId = params["scan_id"];
         if (scanId) {
           this.datasetID = scanId;
@@ -338,12 +338,20 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       ];
     } else {
       const datasetPrefix = "datasets/";
-      const scanQueryParam = `?scan_id=${this.datasetID}`;
+      const scanQueryParam = this.datasetID ? `?scan_id=${this.datasetID}` : "";
+
+      let quantId = "";
+      if (this.datasetID) {
+        quantId = this._analysisLayoutService.getQuantIdForScan(this.datasetID);
+      }
+
+      const codeEditorQueryParams = `?scanId=${this.datasetID}&quantId=${quantId}`;
 
       this.tabs = [
         //new TabNav('Help', 'help', true),
         new TabNav("Datasets", "datasets", true),
         new TabNav("Analysis", `${datasetPrefix}analysis${scanQueryParam}`, true),
+        new TabNav("Code Editor", `datasets/code-editor${codeEditorQueryParams}`, true),
       ];
       // Only enabling maps tab if a quant is loaded
       // TODO: Hide maps tap if no quants or whatever... this all changed when multiple quantifications came in, for now just enabling it always
