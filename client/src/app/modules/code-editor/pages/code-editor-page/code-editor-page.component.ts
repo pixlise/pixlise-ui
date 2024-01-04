@@ -365,6 +365,10 @@ export class CodeEditorPageComponent implements OnInit {
     );
   }
 
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
+  }
+
   getVersionString(version: SemanticVersion | undefined): string {
     if (!version) {
       return "";
