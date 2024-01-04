@@ -30,7 +30,7 @@
 import { CdkOverlayOrigin, ConnectionPositionPair, Overlay, OverlayModule } from "@angular/cdk/overlay";
 import { Component, Injector, Input, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { Title } from "@angular/platform-browser";
-import { NavigationEnd, ResolveEnd, Router } from "@angular/router";
+import { ActivatedRoute, NavigationEnd, ResolveEnd, Router } from "@angular/router";
 import { Subscription } from "rxjs";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 // import { AuthenticationService } from "src/app/services/authentication.service";
@@ -120,6 +120,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   constructor(
     private router: Router,
+    private _route: ActivatedRoute,
     // private _datasetService: DataSetService,
     // private _authService: AuthenticationService,
     // private _exportService: ExportDataService,
@@ -204,8 +205,31 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
     this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfig => {
-        if (screenConfig) {
-          this.title = screenConfig.name;
+        if (screenConfig && screenConfig.name) {
+          this.titleToShow = screenConfig.name;
+          this.updateToolbar();
+        }
+      })
+    );
+
+    this._subs.add(
+      this._route.queryParams.subscribe(params => {
+        console.log("params", params);
+        let scanId = params["scan_id"];
+        if (scanId) {
+          this._dataSetLoadedName = "Scan " + scanId;
+          this.updateToolbar();
+
+          this._subs.add(
+            this._analysisLayoutService.availableScans$.subscribe(scans => {
+              let scan = scans.find(s => s.id === scanId);
+              if (scan) {
+                let sol = scan?.meta?.["Sol"] || "N/A";
+                this._dataSetLoadedName = `SOL-${sol}: ${scan?.title || "N/A"}`;
+                this.updateToolbar();
+              }
+            })
+          );
         }
       })
     );
