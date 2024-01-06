@@ -591,14 +591,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   onClearRecent(sectionName: string) {
     this.recentExpressions = this.recentExpressions.filter(recentExpression => {
       if (recentExpression.type === "expression" && sectionName === ExpressionBrowseSections.EXPRESSIONS) {
-        if (this.selectedExpressionIds.delete(recentExpression.expression.id)) {
-          this.selectedExpressionIdOrder = this.selectedExpressionIdOrder.filter(id => id !== recentExpression.expression.id);
-        }
         return false;
       } else if (recentExpression.type === "group" && sectionName === ExpressionBrowseSections.EXPRESSION_GROUPS) {
-        if (this.selectedExpressionIds.delete(recentExpression.expression.id)) {
-          this.selectedExpressionIdOrder = this.selectedExpressionIdOrder.filter(id => id !== recentExpression.expression.id);
-        }
         return false;
       } else {
         return true;

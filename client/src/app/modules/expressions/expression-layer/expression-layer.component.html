@@ -75,9 +75,14 @@ POSSIBILITY OF SUCH DAMAGE.
       <span *ngIf="!creatorIcon" class="name-abbreviation">{{ creatorAbbreviation }}</span>
     </div>
     <div class="info">
-      <h4 #tooltip="matTooltip" matTooltipClass="multiline-tooltip" [matTooltip]="summaryTooltip">
+      <h4 #tooltip="matTooltip" matTooltipClass="multiline-tooltip" [matTooltip]="summaryTooltip" [matTooltipShowDelay]="200">
         {{ name }}
-        <span *ngIf="!canEdit" class="lock-icon" #tooltip="matTooltip" matTooltip="You are not an editor of this {{ isModule ? 'module' : 'expression' }}.">
+        <span
+          *ngIf="!canEdit"
+          class="lock-icon"
+          #tooltip="matTooltip"
+          matTooltip="You are not an editor of this {{ isModule ? 'module' : 'expression' }}."
+          [matTooltipShowDelay]="200">
           <img src="assets/button-icons/lock.svg" />
         </span>
       </h4>
@@ -138,6 +143,7 @@ POSSIBILITY OF SUCH DAMAGE.
       *ngIf="isSelectable && !isWidgetExpression"
       #tooltip="matTooltip"
       [matTooltip]="selectionDisabledMessage || 'Toggle Expression'"
+      [matTooltipShowDelay]="200"
       [activeIcon]="isSingleSelect ? 'assets/button-icons/radio-on.svg' : 'assets/button-icons/check-on.svg'"
       [inactiveIcon]="isSingleSelect ? 'assets/button-icons/radio-off.svg' : 'assets/button-icons/check-off.svg'"
       class="checkbox-button"

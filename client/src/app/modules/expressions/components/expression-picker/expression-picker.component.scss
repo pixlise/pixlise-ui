@@ -150,6 +150,11 @@
 
       .browse-section {
         margin-left: 16px;
+        margin-bottom: 8px;
+
+        &:last-of-type {
+          margin-bottom: 0;
+        }
 
         h5 {
           color: rgba(248, 248, 248, 0.5);
@@ -210,6 +215,18 @@
     flex: 5;
     border-right: 1px solid #545f64;
 
+    .title {
+      &.recent {
+        padding: 10px 8px;
+        display: flex;
+        align-items: center;
+
+        .recent-btn {
+          margin-left: auto;
+        }
+      }
+    }
+
     expression-search-controls {
       display: flex;
       overflow: hidden;
@@ -255,6 +272,11 @@
 
     .input-label {
       color: rgb(var(--clr-gray-30));
+    }
+
+    input,
+    textarea {
+      font-family: Roboto, monospace;
     }
 
     input {

@@ -82,15 +82,17 @@ POSSIBILITY OF SUCH DAMAGE.
               <h6 (click)="onSubSectionSelect(section.name, subSection)">
                 {{ subSection }}
               </h6>
-              <img *ngIf="subSection === 'Recent'" src="assets/button-icons/delete.svg" (click)="onClearRecent(section.name)" />
             </div>
           </div>
         </div>
       </div>
     </section>
     <section class="column expressions-list">
-      <div class="title">
+      <div class="title {{ activeBrowseSection === 'Recent' ? 'recent' : '' }}">
         <h4>{{ this.manualFilters?.expressionType || "Expressions" }}</h4>
+        <push-button *ngIf="activeBrowseSection === 'Recent'" class="recent-btn" buttonStyle="outline" (onClick)="onClearRecent(activeBrowseGroup)"
+          >Clear Recent</push-button
+        >
       </div>
       <expression-search-controls
         class="{{ showSearchControls ? 'visible' : '' }}"
@@ -105,6 +107,7 @@ POSSIBILITY OF SUCH DAMAGE.
             *cdkVirtualFor="let item of filteredExpressions; trackBy: trackById"
             [expression]="item"
             [isSelectable]="!isShowingExpressionGroups"
+            [isSingleSelect]="maxSelection === 1"
             [isExpressionGroup]="isShowingExpressionGroups"
             (onFilterAuthor)="onFilterAuthor($event)"
             [selected]="checkSelected(item.id)"
