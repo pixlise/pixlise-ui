@@ -296,3 +296,23 @@
     border-top: 0;
   }
 }
+
+.toggle-trigger-position-btn {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  border: 1px solid #ffb800;
+  border-radius: 8px;
+
+  margin-right: 8px;
+
+  action-button {
+    margin: -4px;
+  }
+
+  h5 {
+    color: rgb(var(--clr-gray-30));
+    margin: 0;
+    margin-right: 4px;
+  }
+}

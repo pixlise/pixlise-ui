@@ -46,6 +46,7 @@ import { getPredefinedExpression } from "src/app/expression-language/predefined-
 import { WIDGETS, WidgetConfiguration } from "src/app/modules/widget/models/widgets.model";
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { WidgetData } from "src/app/generated-protos/widget-data";
+import { BINARY_WIDGET_OPTIONS, TERNARY_WIDGET_OPTIONS } from "../../expression-layer/expression-layer.component";
 
 export type ExpressionPickerResponse = {
   selectedExpressions: (DataExpression | ExpressionGroup)[];
@@ -114,6 +115,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   newExpressionGroupTags: string[] = [];
 
   maxSelection: number = 0;
+  expressionTriggerPosition: number = -1;
 
   constructor(
     private _cachedDataSerivce: APICachedDataService,
@@ -129,6 +131,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this.scanId = this.data.scanId || "";
     this.quantId = this.data.quantId || "";
     this._activeWidgetId = this.data.widgetId || "";
+    this.expressionTriggerPosition = this.data?.expressionTriggerPosition ?? -1;
     this._analysisLayoutService.highlightedWidgetId$.next(this._activeWidgetId);
 
     this.selectedExpressionIds = new Set(this.data.selectedIds || []);
@@ -258,6 +261,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   set activeWidgetId(id: string) {
     this._activeWidgetId = id;
     this._analysisLayoutService.highlightedWidgetId$.next(id);
+    this.expressionTriggerPosition = -1;
 
     let widget = this.layoutWidgets.find(widget => widget.widget.id === id);
     if (widget) {
@@ -479,6 +483,11 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     } else {
       this.selectedExpressionIds.add(expression.id);
       this.selectedExpressionIdOrder.push(expression.id);
+      if (this.expressionTriggerPosition > -1) {
+        // Move the expression to the trigger position
+        this.selectedExpressionIdOrder[this.selectedExpressionIdOrder.length - 1] = this.selectedExpressionIdOrder[this.expressionTriggerPosition];
+        this.selectedExpressionIdOrder[this.expressionTriggerPosition] = expression.id;
+      }
 
       if (saveToRecent) {
         this.updateRecentExpression(expression as DataExpression);
@@ -612,6 +621,27 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this.dialogRef.close();
   }
 
+  get triggerName(): string {
+    switch (this.widgetType) {
+      case "ternary-plot":
+        return (
+          Object.entries(TERNARY_WIDGET_OPTIONS).find(([, option]) => option.position === this.expressionTriggerPosition)?.[0] ||
+          `${this.expressionTriggerPosition + 1}`
+        );
+      case "binary-plot":
+        return (
+          Object.entries(BINARY_WIDGET_OPTIONS).find(([, option]) => option.position === this.expressionTriggerPosition)?.[0] ||
+          `${this.expressionTriggerPosition + 1}`
+        );
+      default:
+        return `${this.expressionTriggerPosition + 1}`;
+    }
+  }
+
+  onClearTriggerPosition(): void {
+    this.expressionTriggerPosition = -1;
+  }
+
   onConfirm(): void {
     const selectedExpressions: (DataExpression | ExpressionGroup)[] = Array.from(this.selectedExpressionIdOrder)
       .map(id => this.selectedExpressions.find(expression => expression.id === id))
@@ -624,12 +654,6 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     });
 
     this.dialogRef.close();
-
-    // this.dialogRef.close({
-    //   selectedExpressions,
-    //   scanId: this.scanId,
-    //   quantId: this.quantId,
-    // });
   }
 
   onClear(): void {

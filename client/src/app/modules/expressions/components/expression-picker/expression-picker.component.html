@@ -142,6 +142,7 @@ POSSIBILITY OF SUCH DAMAGE.
             [isWidgetExpression]="true"
             [widgetType]="widgetType || ''"
             [selectIfValidPosition]="true"
+            [isTriggerPosition]="expressionTriggerPosition > -1 && expressionTriggerPosition === selectedExpressionIdOrder.indexOf(item.id)"
             [widgetPosition]="selectedExpressionIdOrder.indexOf(item.id)"
             [showActiveExpressionConfiguration]="true"
             (onChangeWidgetPosition)="onChangeWidgetPosition(item, $event)"></expression-layer>
@@ -150,6 +151,10 @@ POSSIBILITY OF SUCH DAMAGE.
     </section>
   </section>
   <div class="button-container">
+    <div class="toggle-trigger-position-btn" *ngIf="expressionTriggerPosition > -1">
+      <action-button action="close" color="rgb(var(--clr-gray-30))" (onClick)="onClearTriggerPosition()"></action-button>
+      <h5>Trigger Position: {{ triggerName }}</h5>
+    </div>
     <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
     <push-button
       buttonStyle="yellow"

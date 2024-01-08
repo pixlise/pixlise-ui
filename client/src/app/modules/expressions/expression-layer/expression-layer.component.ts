@@ -58,6 +58,7 @@ export class ExpressionLayerComponent implements OnInit {
   @Input() isWidgetExpression?: boolean = false;
 
   @Input() selectIfValidPosition: boolean = false;
+  @Input() isTriggerPosition: boolean = false;
 
   @Input() showActiveExpressionConfiguration: boolean = false;
 

@@ -63,7 +63,7 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
 </ng-template>
 
-<div class="expression-container {{ isLayerSelected ? 'selected' : '' }}">
+<div class="expression-container {{ isLayerSelected ? 'selected' : '' }} {{ isTriggerPosition ? 'triggered' : '' }}">
   <div class="summary">
     <div
       *ngIf="showCreatorIcon"
