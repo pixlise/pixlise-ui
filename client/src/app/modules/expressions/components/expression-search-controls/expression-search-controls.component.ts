@@ -126,7 +126,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
             this._defaultQuantsForScans[scanId] = scanConfig.quantId;
           });
 
-          if (this.visibleScanId && !this.selectedQuantId) {
+          if (this.visibleScanId) {
             this.selectedQuantId = this._defaultQuantsForScans[this.visibleScanId] || "";
           }
         }
