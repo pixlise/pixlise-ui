@@ -202,7 +202,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
     // Build the list of expressions for the quantified elements
     this._quantifiedExpressions = [];
     for (const quant of this.filteredQuants) {
-      if (quant.id == this._selectedQuantId) {
+      if (quant.id === this._selectedQuantId) {
         for (const elem of quant.elements) {
           let det = quant.params?.userParams?.quantMode || "";
           if (det.length > 0 && det != "Combined") {
@@ -215,6 +215,9 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
             this._quantifiedExpressions.push(expr);
           }
         }
+
+        this.filterExpressionsForDisplay();
+        break;
       }
     }
     this.emitFilters();
