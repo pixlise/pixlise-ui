@@ -132,7 +132,7 @@ POSSIBILITY OF SUCH DAMAGE.
         >
       </div>
       <section class="active-expressions">
-        <cdk-virtual-scroll-viewport [itemSize]="80" class="expressions-viewport">
+        <cdk-virtual-scroll-viewport [itemSize]="activeLayerHeight" class="expressions-viewport">
           <expression-layer
             *cdkVirtualFor="let item of selectedExpressions; trackBy: trackById"
             [expression]="item"

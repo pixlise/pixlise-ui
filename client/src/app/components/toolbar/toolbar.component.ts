@@ -205,8 +205,15 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
     this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfig => {
-        if (screenConfig && screenConfig.name) {
-          this.titleToShow = screenConfig.name;
+        if (screenConfig && screenConfig.id) {
+          if (screenConfig.name) {
+            this.titleToShow = screenConfig.name;
+          }
+
+          if (this._isAnalysisTab && screenConfig.scanConfigurations && Object.keys(screenConfig.scanConfigurations).length === 0) {
+            this.onScanConfiguration();
+            console.log("TRIGGERED CONFIG", screenConfig);
+          }
         }
 
         this.updateToolbar();
@@ -430,7 +437,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   }
 
   get showScanConfigurator(): boolean {
-    return this.router.url.includes("/datasets/code-editor") || this.router.url.includes("/datasets/analysis");
+    return this.router.url.includes("/datasets/code-editor") || this._isAnalysisTab;
   }
 
   onScanConfiguration(): void {

@@ -152,7 +152,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </two-state-icon-button>
     <action-button *ngIf="isWidgetExpression && isSelectable" class="close-btn" action="close" (onClick)="onCheckboxClick($event)" color="#f8f8f8"></action-button>
   </div>
-  <div *ngIf="isWidgetExpression && isSelectable" class="widget-selection-row">
+  <div *ngIf="isWidgetExpression && isSelectable && widgetOptions.length > 0" class="widget-selection-row">
     <!-- <div class="active-config" *ngIf="showActiveExpressionConfiguration">
       <mat-select [(ngModel)]="configuredScan" placeholder="Choose Scan">
         <mat-option *ngFor="let scan of availableScans" [value]="scan.id">{{ idToName[scan.id] }}</mat-option>

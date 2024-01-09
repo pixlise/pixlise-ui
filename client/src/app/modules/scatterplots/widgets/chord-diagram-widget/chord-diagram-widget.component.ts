@@ -20,9 +20,8 @@ import {
   ExpressionPickerComponent,
   ExpressionPickerResponse,
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
-import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { ROIService } from "src/app/modules/roi/services/roi.service";
 
 @Component({
   selector: "app-chord-diagram-widget",
@@ -37,6 +36,8 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   // Just a dummy, we don't pan/zoom
   transform: PanZoom = new PanZoom();
 
+  scanId: string = "";
+
   private _subs = new Subscription();
 
   // For settings menu items:
@@ -49,7 +50,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
     private _widgetData: WidgetDataService,
     private _selectionService: SelectionService,
     private _snackService: SnackbarService,
-    private _cachedDataService: APICachedDataService,
+    private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService
   ) {
     super();
@@ -85,9 +86,10 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   private setInitialConfig() {
-    const scanId = this._analysisLayoutService.defaultScanId;
-    if (scanId.length > 0) {
-      let quantId = ""; // TODO: get this!
+    this.scanId = this._analysisLayoutService.defaultScanId;
+
+    if (this.scanId.length > 0) {
+      let quantId = this._analysisLayoutService.getQuantIdForScan(this.scanId);
 
       if (quantId.length <= 0) {
         // default to pseudo intensities
@@ -97,10 +99,10 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
           DataExpressionId.makePredefinedPseudoIntensityExpression("Ca"),
         ];
       } else {
-        // default to showing some quantified data... TODO: get this from the quant!
+        this.mdl.expressionIds = this._analysisLayoutService.getQuantElementIdsForScan(this.scanId);
       }
 
-      this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(scanId)]));
+      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
       this.update();
     }
   }
@@ -185,11 +187,18 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
 
           // Get the ROI to work out the scan id... this will be retrieved soon anyway...
           if (chordData.displayROI) {
-            this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: chordData.displayROI })).subscribe((resp: RegionOfInterestGetResp) => {
-              if (resp.regionOfInterest) {
-                let quantId = this._analysisLayoutService.getQuantIdForScan(resp.regionOfInterest.scanId);
-                this.mdl.dataSourceIds.set(resp.regionOfInterest.scanId, new ScanDataIds(quantId, [chordData.displayROI]));
-              }
+            this._roiService.loadROI(chordData.displayROI).subscribe({
+              next: roiItem => {
+                if (roiItem) {
+                  this.scanId = roiItem.scanId;
+                  let quantId = this._analysisLayoutService.getQuantIdForScan(this.scanId);
+                  this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(quantId, [chordData.displayROI]));
+                  this.update();
+                }
+              },
+              error: err => {
+                console.error("Error getting ROI", err);
+              },
             });
           } else {
             this.update();
@@ -236,11 +245,14 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   onNodes() {
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.hasBackdrop = false;
+
+    let scanId = this._analysisLayoutService.defaultScanId;
+
     dialogConfig.data = {
-      widgetType: "chord",
+      widgetType: "chord-diagram",
       widgetId: this._widgetId,
-      scanId: this._analysisLayoutService.defaultScanId,
-      quantId: this.mdl.dataSourceIds.get(this._analysisLayoutService.defaultScanId)?.quantId || "",
+      scanId: scanId,
+      quantId: this.mdl.dataSourceIds.get(scanId)?.quantId || this._analysisLayoutService.getQuantIdForScan(scanId) || "",
       selectedIds: this.mdl.expressionIds || [],
     };
 
@@ -258,10 +270,15 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
       }
     }
 
+    let roiId = visibleROIs[0]?.id;
+    if (!roiId && this.scanId) {
+      roiId = PredefinedROIID.getAllPointsForScan(this.scanId);
+    }
+
     this.onSaveWidgetData.emit(
       ChordState.create({
         expressionIDs: this.mdl.expressionIds,
-        displayROI: visibleROIs[0].id,
+        displayROI: roiId,
         threshold: this.mdl.threshold,
         drawMode: this.mdl.drawMode,
         showForSelection: this.mdl.drawForSelection,
@@ -297,11 +314,15 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
 
           existing.push(roi.id);
           roisPerScan.set(roi.scanId, existing);
+          if (this.scanId !== roi.scanId) {
+            this.scanId = roi.scanId;
+          }
         }
 
         // Now fill in the data source ids using the above
         for (const [scanId, roiIds] of roisPerScan) {
-          this.mdl.dataSourceIds.set(scanId, new ScanDataIds("" /* No quant yet? */, roiIds));
+          let quantId = this._analysisLayoutService.getQuantIdForScan(scanId);
+          this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, roiIds));
         }
 
         this.update();

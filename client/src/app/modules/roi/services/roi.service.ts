@@ -342,6 +342,31 @@ export class ROIService {
     });
   }
 
+  loadROI(id: string): Observable<ROIItem> {
+    if (this.roiItems$.value[id]) {
+      return of(this.roiItems$.value[id]);
+    } else if (PredefinedROIID.isAllPointsROI(id)) {
+      return this.getAllPointsROI(PredefinedROIID.getScanIdIfPredefined(id));
+    } else if (PredefinedROIID.isSelectedPointsROI(id)) {
+      let selectedPointsROI = this.getSelectedPointsROI(PredefinedROIID.getScanIdIfPredefined(id));
+      if (selectedPointsROI) {
+        return of(selectedPointsROI);
+      }
+    }
+
+    return this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id })).pipe(
+      map((roiResp: RegionOfInterestGetResp) => {
+        if (roiResp.regionOfInterest === undefined) {
+          this._snackBarService.openError(`Region Of Interest data not returned from cachedDataService for ${id}`);
+          throw new Error("regionOfInterest data not returned for " + id);
+        }
+
+        roiResp.regionOfInterest.scanEntryIndexesEncoded = decodeIndexList(roiResp.regionOfInterest.scanEntryIndexesEncoded);
+        return roiResp.regionOfInterest;
+      })
+    );
+  }
+
   static formSummaryFromROI(roi: ROIItem): ROIItemSummary {
     return ROIItemSummary.create({
       id: roi.id,
