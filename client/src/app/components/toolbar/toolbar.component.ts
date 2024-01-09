@@ -212,7 +212,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
           if (this._isAnalysisTab && screenConfig.scanConfigurations && Object.keys(screenConfig.scanConfigurations).length === 0) {
             this.onScanConfiguration();
-            console.log("TRIGGERED CONFIG", screenConfig);
           }
         }
 

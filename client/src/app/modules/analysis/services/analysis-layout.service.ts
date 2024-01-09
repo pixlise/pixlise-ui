@@ -126,6 +126,7 @@ export class AnalysisLayoutService implements OnDestroy {
     this.lastLoadedScreenConfigurationId = "";
     localStorage?.removeItem("lastLoadedScreenConfigurationId");
     this.activeScreenConfiguration$.next(createDefaultScreenConfiguration());
+    this.activeScreenConfigurationId$.next("");
   }
 
   fetchScreenConfiguration(id: string = "", scanId: string = "", setActive: boolean = true) {

@@ -58,6 +58,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   toolhost: CanvasInteractionHandler;
   drawer: CanvasDrawer;
 
+  scanId: string = "";
+
   private _subs = new Subscription();
 
   constructor(
@@ -121,9 +123,9 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   private setInitialConfig() {
-    const scanId = this._analysisLayoutService.defaultScanId;
-    if (scanId.length > 0) {
-      let quantId = this._analysisLayoutService.getQuantIdForScan(scanId);
+    this.scanId = this._analysisLayoutService.defaultScanId;
+    if (this.scanId.length > 0) {
+      let quantId = this._analysisLayoutService.getQuantIdForScan(this.scanId);
       if (quantId.length <= 0) {
         // default to pseudo intensities
         this.mdl.expressionIds = [
@@ -133,15 +135,11 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         ];
       } else {
         // default to showing some quantified data...
-        // TODO: get this from the quant!
-        this.mdl.expressionIds = [
-          DataExpressionId.makePredefinedPseudoIntensityExpression("Mg"),
-          DataExpressionId.makePredefinedPseudoIntensityExpression("Na"),
-          DataExpressionId.makePredefinedPseudoIntensityExpression("Al"),
-        ];
+        let quantElements = this._analysisLayoutService.getQuantElementIdsForScan(this.scanId);
+        this.mdl.expressionIds = quantElements.slice(0, 3);
       }
 
-      this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(scanId)]));
+      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
       this.update();
     }
   }
@@ -352,14 +350,17 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
         // Now fill in the data source ids using the above
         for (const [scanId, roiIds] of roisPerScan) {
-          let quantId = "";
+          let quantId = this._analysisLayoutService.getQuantIdForScan(scanId);
 
-          // If we already have a data source for this scan, keep the quant id
-          const existingSource = this.mdl.dataSourceIds.get(scanId);
-          if (existingSource && existingSource.quantId) {
-            quantId = existingSource.quantId;
-          }
+          // // If we already have a data source for this scan, keep the quant id
+          // const existingSource = this.mdl.dataSourceIds.get(scanId);
+          // if (existingSource && existingSource.quantId) {
+          //   quantId = existingSource.quantId;
+          // }
           this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, roiIds));
+          if (scanId && this.scanId !== scanId) {
+            this.scanId = scanId;
+          }
         }
 
         this.update();
@@ -401,8 +402,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     dialogConfig.data = {
       widgetType: "ternary-plot",
       widgetId: this._widgetId,
-      scanId: this._analysisLayoutService.defaultScanId,
-      quantId: this.mdl.dataSourceIds.get(this._analysisLayoutService.defaultScanId)?.quantId || "",
+      scanId: this.scanId,
+      quantId: this._analysisLayoutService.getQuantIdForScan(this.scanId) || "",
       selectedIds: this.mdl.expressionIds || [],
     };
 

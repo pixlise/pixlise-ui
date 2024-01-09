@@ -56,7 +56,9 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   toolhost: CanvasInteractionHandler;
   drawer: CanvasDrawer;
 
+  scanId: string = "";
   private _subs = new Subscription();
+
   constructor(
     public dialog: MatDialog,
     private _selectionService: SelectionService,
@@ -117,19 +119,20 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   private setInitialConfig() {
-    const scanId = this._analysisLayoutService.defaultScanId;
-    if (scanId.length > 0) {
+    this.scanId = this._analysisLayoutService.defaultScanId;
+    if (this.scanId.length > 0) {
       this._analysisLayoutService.activeScreenConfiguration$.getValue();
-      let quantId = ""; // TODO: get this!
+      let quantId = this._analysisLayoutService.getQuantIdForScan(this.scanId);
 
       if (quantId.length <= 0) {
         // default to pseudo intensities
         this.mdl.expressionIds = [DataExpressionId.makePredefinedPseudoIntensityExpression("Mg"), DataExpressionId.makePredefinedPseudoIntensityExpression("Na")];
       } else {
-        // default to showing some quantified data... TODO: get this from the quant!
+        let quantElements = this._analysisLayoutService.getQuantElementIdsForScan(this.scanId);
+        this.mdl.expressionIds = quantElements.slice(0, 2);
       }
 
-      this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(scanId)]));
+      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
       this.update();
     }
   }
@@ -200,6 +203,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
             Object.entries(screenConfiguration.scanConfigurations).forEach(([scanId, scanConfig]) => {
               if (this.mdl.dataSourceIds.has(scanId)) {
                 const dataSource = this.mdl.dataSourceIds.get(scanId);
+                this.scanId = scanId;
                 if (dataSource?.quantId !== scanConfig.quantId) {
                   this.mdl.dataSourceIds.set(scanId, new ScanDataIds(scanConfig.quantId, dataSource?.roiIds || []));
                   updated = true;
@@ -329,7 +333,12 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
         // Now fill in the data source ids using the above
         for (const [scanId, roiIds] of roisPerScan) {
-          this.mdl.dataSourceIds.set(scanId, new ScanDataIds("" /* No quant yet? */, roiIds));
+          let quantId = this._analysisLayoutService.getQuantIdForScan(scanId);
+          this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, roiIds));
+
+          if (scanId && this.scanId !== scanId) {
+            this.scanId = scanId;
+          }
         }
 
         this.update();
@@ -372,8 +381,8 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     dialogConfig.data = {
       widgetType: "binary-plot",
       widgetId: this._widgetId,
-      scanId: this._analysisLayoutService.defaultScanId,
-      quantId: this.mdl.dataSourceIds.get(this._analysisLayoutService.defaultScanId)?.quantId || "",
+      scanId: this.scanId,
+      quantId: this._analysisLayoutService.getQuantIdForScan(this.scanId) || "",
       selectedIds: this.mdl.expressionIds || [],
     };
 

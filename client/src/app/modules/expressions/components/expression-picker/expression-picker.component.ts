@@ -132,7 +132,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.scanId = this.data.scanId || "";
+    this.scanId = this.data.scanId || this._analysisLayoutService.defaultScanId || "";
     this.quantId = this.data.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
 
     this._activeWidgetId = this.data.widgetId || "";
@@ -584,20 +584,6 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     if (!this.fetchedAllSelectedExpressions) {
       return;
     }
-
-    // if (!this.data.noActiveScreenConfig && (this.scanId !== scanId || this.quantId !== quantId)) {
-    //   let config = this._analysisLayoutService.activeScreenConfiguration$.value;
-    //   if (config) {
-    //     if (config.scanConfigurations[scanId]) {
-    //       config.scanConfigurations[scanId].quantId = quantId;
-    //     } else {
-    //       config.scanConfigurations[scanId] = ScanConfiguration.create({ quantId });
-    //     }
-
-    //     // TODO: Figure out a way for this not to blow away the view multiple times when an expression picker dialog is shown
-    //     //this._analysisLayoutService.writeScreenConfiguration(config);
-    //   }
-    // }
 
     this.scanId = scanId;
     this.loadQuantifiedExpressions(this._analysisLayoutService.availableScanQuants$.value);
