@@ -13,7 +13,7 @@ import {
 import { BinaryChartModel, BinaryDrawModel } from "./binary-model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
+import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ScatterPlotAxisInfo } from "../../components/scatter-plot-axis-switcher/scatter-plot-axis-switcher.component";
 import { Point } from "src/app/models/Geometry";
 import { InteractionWithLassoHover } from "../../base/interaction-with-lasso-hover";
@@ -245,6 +245,10 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
                 const quantId = this._analysisLayoutService.getQuantIdForScan(roi.scanId);
                 this.mdl.dataSourceIds.set(roi.scanId, new ScanDataIds(quantId, [roi.id]));
               }
+
+              if (this.scanId !== roi.scanId) {
+                this.scanId = roi.scanId;
+              }
             });
 
             this.update();
@@ -308,10 +312,17 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   onExport() {}
   onSoloView() {}
   onRegions() {
-    const dialogConfig = new MatDialogConfig();
+    const dialogConfig = new MatDialogConfig<ROIPickerData>();
+
+    let selectedIds: string[] = [];
+    this.mdl.dataSourceIds.forEach(rois => {
+      selectedIds.push(...rois.roiIds);
+    });
     // Pass data to dialog
     dialogConfig.data = {
       requestFullROIs: true,
+      selectedIds,
+      scanId: this.scanId,
     };
 
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);

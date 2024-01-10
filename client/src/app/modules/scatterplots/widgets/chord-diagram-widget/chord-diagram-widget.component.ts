@@ -6,7 +6,7 @@ import { CanvasInteractionHandler, CanvasDrawer } from "src/app/modules/widget/c
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
+import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ChordDiagramModel, ChordDrawMode } from "./chord-model";
 import { ChordDiagramDrawer } from "./chord-drawer";
 import { ChordDiagramInteraction } from "./chord-interaction";
@@ -252,7 +252,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
       widgetType: "chord-diagram",
       widgetId: this._widgetId,
       scanId: scanId,
-      quantId: this.mdl.dataSourceIds.get(scanId)?.quantId || this._analysisLayoutService.getQuantIdForScan(scanId) || "",
+      quantId: this._analysisLayoutService.getQuantIdForScan(scanId) || "",
       selectedIds: this.mdl.expressionIds || [],
     };
 
@@ -287,10 +287,18 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   onRegions() {
-    const dialogConfig = new MatDialogConfig();
+    const dialogConfig = new MatDialogConfig<ROIPickerData>();
+
+    let selectedIds: string[] = [];
+    this.mdl.dataSourceIds.forEach((ids, scanId) => {
+      selectedIds.push(...ids.roiIds);
+    });
+
     // Pass data to dialog
     dialogConfig.data = {
       requestFullROIs: true,
+      selectedIds,
+      scanId: this.scanId,
     };
 
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);

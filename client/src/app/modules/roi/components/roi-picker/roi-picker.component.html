@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
         cdkDragHandle
         [cdkDragDisabled]="!data.draggable"
         class="title {{ data.draggable ? 'drag' : '' }}">
-        {{data.title || "Regions of Interest"}}
+        {{ data.title || "Regions of Interest" }}
       </h1>
       <two-state-icon-push-button
         class="search-btn"
@@ -54,6 +54,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <roi-search-controls
       class="{{ showSearchControls ? 'visible' : '' }}"
       [summaries]="summaries"
+      [scanId]="data?.scanId || ''"
       (onFilterChanged)="onFilterChanged($event)"
       [manualFilters]="manualFilters"></roi-search-controls>
   </header>

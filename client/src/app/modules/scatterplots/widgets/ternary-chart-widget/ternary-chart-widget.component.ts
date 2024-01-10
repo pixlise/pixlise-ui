@@ -255,6 +255,10 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
                 const quantId = this._analysisLayoutService.getQuantIdForScan(roi.scanId);
                 this.mdl.dataSourceIds.set(roi.scanId, new ScanDataIds(quantId, [roi.id]));
               }
+
+              if (this.scanId !== roi.scanId) {
+                this.scanId = roi.scanId;
+              }
             });
 
             this.update();
@@ -329,6 +333,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     dialogConfig.data = {
       requestFullROIs: true,
       selectedIds,
+      scanId: this.scanId,
     };
 
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);

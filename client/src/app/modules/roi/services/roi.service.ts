@@ -324,22 +324,47 @@ export class ROIService {
   fetchROI(id: string, checkCacheFirst: boolean = false) {
     if (checkCacheFirst && this.roiItems$.value[id]) {
       return;
+    } else if (PredefinedROIID.isAllPointsROI(id)) {
+      let scanId = PredefinedROIID.getScanIdIfPredefined(id);
+      this.getAllPointsROI(scanId).subscribe({
+        next: allPointsROI => {
+          if (allPointsROI) {
+            this.roiItems$.value[allPointsROI.id] = allPointsROI;
+            this.roiSummaries$.value[allPointsROI.id] = ROIService.formSummaryFromROI(allPointsROI);
+            this.displaySettingsMap$.value[allPointsROI.id] = { colour: Colours.GRAY_10, shape: DEFAULT_ROI_SHAPE };
+            this.roiItems$.next(this.roiItems$.value);
+            this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+          }
+        },
+        error: err => {
+          console.error(err);
+        },
+      });
+    } else if (PredefinedROIID.isSelectedPointsROI(id)) {
+      let selectedPointsROI = this.getSelectedPointsROI(PredefinedROIID.getScanIdIfPredefined(id));
+      if (selectedPointsROI) {
+        this.roiItems$.value[selectedPointsROI.id] = selectedPointsROI;
+        this.roiSummaries$.value[selectedPointsROI.id] = ROIService.formSummaryFromROI(selectedPointsROI);
+        this.displaySettingsMap$.value[selectedPointsROI.id] = { colour: Colours.CONTEXT_BLUE, shape: DEFAULT_ROI_SHAPE };
+        this.roiItems$.next(this.roiItems$.value);
+        this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+      }
+    } else {
+      this._dataService.sendRegionOfInterestGetRequest(RegionOfInterestGetReq.create({ id })).subscribe({
+        next: res => {
+          if (res.regionOfInterest) {
+            res.regionOfInterest.scanEntryIndexesEncoded = decodeIndexList(res.regionOfInterest.scanEntryIndexesEncoded);
+            this.roiItems$.value[id] = res.regionOfInterest;
+            this.roiItems$.next(this.roiItems$.value);
+          } else {
+            this._snackBarService.openError(`ROI (${id}) not found`);
+          }
+        },
+        error: err => {
+          this._snackBarService.openError(err);
+        },
+      });
     }
-
-    this._dataService.sendRegionOfInterestGetRequest(RegionOfInterestGetReq.create({ id })).subscribe({
-      next: res => {
-        if (res.regionOfInterest) {
-          res.regionOfInterest.scanEntryIndexesEncoded = decodeIndexList(res.regionOfInterest.scanEntryIndexesEncoded);
-          this.roiItems$.value[id] = res.regionOfInterest;
-          this.roiItems$.next(this.roiItems$.value);
-        } else {
-          this._snackBarService.openError(`ROI (${id}) not found`);
-        }
-      },
-      error: err => {
-        this._snackBarService.openError(err);
-      },
-    });
   }
 
   loadROI(id: string): Observable<ROIItem> {
