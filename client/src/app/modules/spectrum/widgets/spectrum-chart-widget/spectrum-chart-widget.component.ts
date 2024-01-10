@@ -263,7 +263,6 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
         this.mdl.spectrumLines.forEach(chartLine => {
           if (displaySettings[chartLine.roiId]) {
             chartLine.color = displaySettings[chartLine.roiId].colour.asString();
-            console.log("SETTING", chartLine);
           }
         });
         this.updateLines();
