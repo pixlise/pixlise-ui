@@ -63,7 +63,7 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
 </ng-template>
 
-<div class="expression-container {{ isLayerSelected ? 'selected' : '' }}">
+<div class="expression-container {{ isLayerSelected ? 'selected' : '' }} {{ isTriggerPosition ? 'triggered' : '' }}">
   <div class="summary">
     <div
       *ngIf="showCreatorIcon"
@@ -75,9 +75,14 @@ POSSIBILITY OF SUCH DAMAGE.
       <span *ngIf="!creatorIcon" class="name-abbreviation">{{ creatorAbbreviation }}</span>
     </div>
     <div class="info">
-      <h4 #tooltip="matTooltip" matTooltipClass="multiline-tooltip" [matTooltip]="summaryTooltip">
+      <h4 #tooltip="matTooltip" matTooltipClass="multiline-tooltip" [matTooltip]="summaryTooltip" [matTooltipShowDelay]="200">
         {{ name }}
-        <span *ngIf="!canEdit" class="lock-icon" #tooltip="matTooltip" matTooltip="You are not an editor of this {{ isModule ? 'module' : 'expression' }}.">
+        <span
+          *ngIf="!canEdit"
+          class="lock-icon"
+          #tooltip="matTooltip"
+          matTooltip="You are not an editor of this {{ isModule ? 'module' : 'expression' }}."
+          [matTooltipShowDelay]="200">
           <img src="assets/button-icons/lock.svg" />
         </span>
       </h4>
@@ -138,6 +143,7 @@ POSSIBILITY OF SUCH DAMAGE.
       *ngIf="isSelectable && !isWidgetExpression"
       #tooltip="matTooltip"
       [matTooltip]="selectionDisabledMessage || 'Toggle Expression'"
+      [matTooltipShowDelay]="200"
       [activeIcon]="isSingleSelect ? 'assets/button-icons/radio-on.svg' : 'assets/button-icons/check-on.svg'"
       [inactiveIcon]="isSingleSelect ? 'assets/button-icons/radio-off.svg' : 'assets/button-icons/check-off.svg'"
       class="checkbox-button"
@@ -146,7 +152,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </two-state-icon-button>
     <action-button *ngIf="isWidgetExpression && isSelectable" class="close-btn" action="close" (onClick)="onCheckboxClick($event)" color="#f8f8f8"></action-button>
   </div>
-  <div *ngIf="isWidgetExpression && isSelectable" class="widget-selection-row">
+  <div *ngIf="isWidgetExpression && isSelectable && widgetOptions.length > 0" class="widget-selection-row">
     <!-- <div class="active-config" *ngIf="showActiveExpressionConfiguration">
       <mat-select [(ngModel)]="configuredScan" placeholder="Choose Scan">
         <mat-option *ngFor="let scan of availableScans" [value]="scan.id">{{ idToName[scan.id] }}</mat-option>

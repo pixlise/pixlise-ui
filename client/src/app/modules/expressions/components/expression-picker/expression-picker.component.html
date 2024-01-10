@@ -82,15 +82,17 @@ POSSIBILITY OF SUCH DAMAGE.
               <h6 (click)="onSubSectionSelect(section.name, subSection)">
                 {{ subSection }}
               </h6>
-              <img *ngIf="subSection === 'Recent'" src="assets/button-icons/delete.svg" (click)="onClearRecent(section.name)" />
             </div>
           </div>
         </div>
       </div>
     </section>
     <section class="column expressions-list">
-      <div class="title">
+      <div class="title {{ activeBrowseSection === 'Recent' ? 'recent' : '' }}">
         <h4>{{ this.manualFilters?.expressionType || "Expressions" }}</h4>
+        <push-button *ngIf="activeBrowseSection === 'Recent'" class="recent-btn" buttonStyle="outline" (onClick)="onClearRecent(activeBrowseGroup)"
+          >Clear Recent</push-button
+        >
       </div>
       <expression-search-controls
         class="{{ showSearchControls ? 'visible' : '' }}"
@@ -105,6 +107,7 @@ POSSIBILITY OF SUCH DAMAGE.
             *cdkVirtualFor="let item of filteredExpressions; trackBy: trackById"
             [expression]="item"
             [isSelectable]="!isShowingExpressionGroups"
+            [isSingleSelect]="maxSelection === 1"
             [isExpressionGroup]="isShowingExpressionGroups"
             (onFilterAuthor)="onFilterAuthor($event)"
             [selected]="checkSelected(item.id)"
@@ -129,7 +132,7 @@ POSSIBILITY OF SUCH DAMAGE.
         >
       </div>
       <section class="active-expressions">
-        <cdk-virtual-scroll-viewport [itemSize]="80" class="expressions-viewport">
+        <cdk-virtual-scroll-viewport [itemSize]="activeLayerHeight" class="expressions-viewport">
           <expression-layer
             *cdkVirtualFor="let item of selectedExpressions; trackBy: trackById"
             [expression]="item"
@@ -139,6 +142,7 @@ POSSIBILITY OF SUCH DAMAGE.
             [isWidgetExpression]="true"
             [widgetType]="widgetType || ''"
             [selectIfValidPosition]="true"
+            [isTriggerPosition]="expressionTriggerPosition > -1 && expressionTriggerPosition === selectedExpressionIdOrder.indexOf(item.id)"
             [widgetPosition]="selectedExpressionIdOrder.indexOf(item.id)"
             [showActiveExpressionConfiguration]="true"
             (onChangeWidgetPosition)="onChangeWidgetPosition(item, $event)"></expression-layer>
@@ -147,6 +151,10 @@ POSSIBILITY OF SUCH DAMAGE.
     </section>
   </section>
   <div class="button-container">
+    <div class="toggle-trigger-position-btn" *ngIf="expressionTriggerPosition > -1">
+      <action-button action="close" color="rgb(var(--clr-gray-30))" (onClick)="onClearTriggerPosition()"></action-button>
+      <h5>Trigger Position: {{ triggerName }}</h5>
+    </div>
     <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
     <push-button
       buttonStyle="yellow"

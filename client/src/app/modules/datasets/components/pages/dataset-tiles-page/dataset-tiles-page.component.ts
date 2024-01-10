@@ -57,6 +57,7 @@ import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiend
 import { ScanDeleteReq } from "src/app/generated-protos/scan-msgs";
 import { ScanDeleteResp } from "src/app/generated-protos/scan-msgs";
 import { ScanInstrument } from "src/app/generated-protos/scan";
+import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 
 class SummaryItem {
   constructor(
@@ -108,6 +109,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     private _cachedDataService: APICachedDataService,
     private _endpointsService: APIEndpointsService,
     //private _viewStateService: ViewStateService,
+    private _analysisLayoutService: AnalysisLayoutService,
     private _authService: AuthService,
     public dialog: MatDialog,
     private _snackService: SnackbarService
@@ -195,6 +197,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   }
 
   onOpen(resetView: boolean): void {
+    this._analysisLayoutService.clearScreenConfigurationCache();
     this.closeOpenOptionsMenu();
 
     if (resetView) {
@@ -235,7 +238,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.closeOpenOptionsMenu();
 
     if (this.selectedScan) {
-      const scanTitle = prompt(`Enter the scan title to verify you're deleting the right one`)
+      const scanTitle = prompt(`Enter the scan title to verify you're deleting the right one`);
       if (scanTitle) {
         this._dataService.sendScanDeleteRequest(ScanDeleteReq.create({ scanId: this.selectedScan.id, scanNameForVerification: scanTitle })).subscribe({
           next: (resp: ScanDeleteResp) => {
@@ -244,7 +247,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
           },
           error: err => {
             this._snackService.openError(err);
-          }
+          },
         });
       }
     }
@@ -490,7 +493,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
     //dialogConfig.data = ;
     const dialogRef = this.dialog.open(AddDatasetDialogComponent, dialogConfig);
-/* We used to re-run search, now we rely on ScanListUpd coming through
+    /* We used to re-run search, now we rely on ScanListUpd coming through
     dialogRef.afterClosed().subscribe(() => {
       // Refresh scans in the near future, it should have appeared
       setTimeout(() => {

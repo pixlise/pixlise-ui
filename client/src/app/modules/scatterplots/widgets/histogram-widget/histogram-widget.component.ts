@@ -6,7 +6,7 @@ import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/c
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { DataSourceParams, DataUnit, RegionDataResults, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
+import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { HistogramModel } from "./histogram-model";
 import { HistogramDrawer } from "./histogram-drawer";
 import { HistogramToolHost } from "./histogram-interaction";
@@ -32,6 +32,8 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
   // Just a dummy, we don't pan/zoom
   transform: PanZoom = new PanZoom();
+
+  scanId: string = "";
 
   private _subs = new Subscription();
 
@@ -76,7 +78,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   private setInitialConfig() {
     const scanId = this._analysisLayoutService.defaultScanId;
     if (scanId.length > 0) {
-      let quantId = ""; // TODO: get this!
+      let quantId = this._analysisLayoutService.getQuantIdForScan(scanId);
 
       if (quantId.length <= 0) {
         // default to pseudo intensities
@@ -86,7 +88,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
           DataExpressionId.makePredefinedPseudoIntensityExpression("Ca"),
         ];
       } else {
-        // default to showing some quantified data... TODO: get this from the quant!
+        this.mdl.expressionIds = this._analysisLayoutService.getQuantElementIdsForScan(scanId);
       }
 
       this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(scanId)]));
@@ -176,6 +178,10 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
                 const quantId = this._analysisLayoutService.getQuantIdForScan(roi.scanId);
                 this.mdl.dataSourceIds.set(roi.scanId, new ScanDataIds(quantId, [roi.id]));
               }
+
+              if (this.scanId !== roi.scanId) {
+                this.scanId = roi.scanId;
+              }
             });
 
             this.update();
@@ -185,8 +191,41 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
         }
       })
     );
+
+    this._subs.add(
+      this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
+        if (!result || this._analysisLayoutService.highlightedWidgetId$.value !== this._widgetId) {
+          return;
+        }
+
+        if (result && result.selectedExpressions?.length > 0) {
+          this.mdl.expressionIds = [];
+
+          for (const expr of result.selectedExpressions) {
+            this.mdl.expressionIds.push(expr.id);
+          }
+
+          let roiIds = [PredefinedROIID.getAllPointsForScan(this.scanId)];
+
+          // If we already have a data source for this scan, keep the ROI ids
+          const existingSource = this.mdl.dataSourceIds.get(result.scanId);
+          if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
+            roiIds = existingSource.roiIds;
+          }
+          this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
+        }
+
+        this.update();
+        this.saveState();
+
+        // Expression picker has closed, so we can stop highlighting this widget
+        this._analysisLayoutService.highlightedWidgetId$.next("");
+      })
+    );
+
     this.reDraw();
   }
+
   ngOnDestroy() {
     this._subs.unsubscribe();
   }
@@ -205,41 +244,50 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     dialogConfig.data = {
       widgetType: "histogram",
       widgetId: this._widgetId,
-      scanId: this._analysisLayoutService.defaultScanId,
-      quantId: this.mdl.dataSourceIds.get(this._analysisLayoutService.defaultScanId)?.quantId || "",
+      scanId: this.scanId,
+      quantId: this._analysisLayoutService.getQuantIdForScan(this.scanId) || "",
       selectedIds: this.mdl.expressionIds || [],
     };
 
     this.isWidgetHighlighted = true;
     const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
-      this.isWidgetHighlighted = false;
-      if (result && result.selectedExpressions?.length > 0) {
-        this.mdl.expressionIds = [];
+    // dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
+    //   this.isWidgetHighlighted = false;
+    //   console.log("RES", result);
+    //   if (result && result.selectedExpressions?.length > 0) {
+    //     this.mdl.expressionIds = [];
 
-        for (const expr of result.selectedExpressions) {
-          this.mdl.expressionIds.push(expr.id);
-        }
+    //     for (const expr of result.selectedExpressions) {
+    //       this.mdl.expressionIds.push(expr.id);
+    //     }
 
-        let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];
+    //     let roiIds = [PredefinedROIID.getAllPointsForScan(this.scanId)];
 
-        // If we already have a data source for this scan, keep the ROI ids
-        const existingSource = this.mdl.dataSourceIds.get(result.scanId);
-        if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
-          roiIds = existingSource.roiIds;
-        }
-        this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
-      }
+    //     // If we already have a data source for this scan, keep the ROI ids
+    //     const existingSource = this.mdl.dataSourceIds.get(result.scanId);
+    //     if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
+    //       roiIds = existingSource.roiIds;
+    //     }
+    //     this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
+    //   }
 
-      this.update();
-      this.saveState();
-    });
+    //   this.update();
+    //   this.saveState();
+    // });
   }
   onRegions() {
-    const dialogConfig = new MatDialogConfig();
+    const dialogConfig = new MatDialogConfig<ROIPickerData>();
+
+    let selectedIds: string[] = [];
+    this.mdl.dataSourceIds.forEach((ids, key) => {
+      selectedIds.push(...ids.roiIds);
+    });
+
     // Pass data to dialog
     dialogConfig.data = {
       requestFullROIs: true,
+      selectedIds,
+      scanId: this.scanId,
     };
 
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
@@ -261,7 +309,11 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
         // Now fill in the data source ids using the above
         for (const [scanId, roiIds] of roisPerScan) {
-          this.mdl.dataSourceIds.set(scanId, new ScanDataIds("" /* No quant yet? */, roiIds));
+          this.mdl.dataSourceIds.set(scanId, new ScanDataIds(this._analysisLayoutService.getQuantIdForScan(scanId), roiIds));
+
+          if (this.scanId !== scanId) {
+            this.scanId = scanId;
+          }
         }
 
         this.update();

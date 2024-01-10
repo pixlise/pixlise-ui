@@ -38,7 +38,6 @@ export class ROISearchControlsComponent {
 
   _currentUserId: string = "";
 
-  // TODO: Add in Selected Points and All Points
   constructor(
     private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService,
@@ -46,7 +45,9 @@ export class ROISearchControlsComponent {
   ) {}
 
   ngOnInit(): void {
-    this.visibleScanId = this._analysisLayoutService.defaultScanId;
+    if (!this._visibleScanId) {
+      this.visibleScanId = this._analysisLayoutService.defaultScanId;
+    }
 
     this._subs.add(
       this._analysisLayoutService.availableScans$.subscribe(scans => {
@@ -103,6 +104,10 @@ export class ROISearchControlsComponent {
     this.filterROIsForDisplay();
   }
 
+  @Input() set scanId(scanId: string) {
+    this.visibleScanId = scanId;
+  }
+
   get selectedROITypes(): ROIType[] {
     return this._selectedROITypes;
   }
@@ -140,25 +145,53 @@ export class ROISearchControlsComponent {
     return roi.owner?.creatorUser?.id === this._currentUserId;
   }
 
-  private filterROIsForDisplay(): void {
+  private filterROIsForDisplay(updateSelection: boolean = true): void {
     const filteredSummaries: ROIItemSummary[] = [];
     const searchString = this.roiSearchString.toLowerCase();
     for (const summary of this.summaries) {
       const summaryNameLower = summary.name.toLowerCase();
-      if (
-        (this.selectedROITypes.includes("builtin") && PredefinedROIID.isPredefined(summary.id) && summary.scanId === this.visibleScanId) || // Builtin
-        (!PredefinedROIID.isPredefined(summary.id) &&
-          (this.visibleScanId.length <= 0 || summary.scanId === this.visibleScanId) && // No selected scan or scan matches
-          (searchString.length <= 0 || summaryNameLower.indexOf(searchString) >= 0) && // No search string or search string matches
-          (this.filteredTagIDs.length <= 0 || this.filteredTagIDs.some(tagID => summary.tags.includes(tagID))) && // No selected tags or summary has selected tag
-          (this.filteredAuthors.length <= 0 || this.filteredAuthors.some(author => summary.owner?.creatorUser?.id === author)) && // No selected authors or summary has selected author
-          ((!summary.isMIST && // Not MIST
-            ((this.selectedROITypes.includes("user-created") && this.checkUserIsAuthor(summary)) || // Not MIST and was created by user
-              (this.selectedROITypes.includes("shared") && !this.checkUserIsAuthor(summary)))) || // Not MIST and was shared, but not created by user
-            (summary.isMIST && // MIST
-              ((this.selectedROITypes.includes("mist-species") && checkMistFullyIdentified(summary)) || // MIST and fully identified
-                (this.selectedROITypes.includes("mist-group") && !checkMistFullyIdentified(summary)))))) // MIST and not fully identified
-      ) {
+      // if (
+      //   (this.selectedROITypes.includes("builtin") && PredefinedROIID.isPredefined(summary.id) && summary.scanId === this.visibleScanId) || // Builtin
+      //   (!PredefinedROIID.isPredefined(summary.id) &&
+      //     (this.visibleScanId.length <= 0 || summary.scanId === this.visibleScanId) && // No selected scan or scan matches
+      //     (searchString.length <= 0 || summaryNameLower.indexOf(searchString) >= 0) && // No search string or search string matches
+      //     (this.filteredTagIDs.length <= 0 || this.filteredTagIDs.some(tagID => summary.tags.includes(tagID))) && // No selected tags or summary has selected tag
+      //     (this.filteredAuthors.length <= 0 || this.filteredAuthors.some(author => summary.owner?.creatorUser?.id === author)) && // No selected authors or summary has selected author
+      //     ((!summary.isMIST && // Not MIST
+      //       ((this.selectedROITypes.includes("user-created") && this.checkUserIsAuthor(summary)) || // Not MIST and was created by user
+      //         (this.selectedROITypes.includes("shared") && !this.checkUserIsAuthor(summary)))) || // Not MIST and was shared, but not created by user
+      //       (summary.isMIST && // MIST
+      //         ((this.selectedROITypes.includes("mist-species") && checkMistFullyIdentified(summary)) || // MIST and fully identified
+      //           (this.selectedROITypes.includes("mist-group") && !checkMistFullyIdentified(summary)))))) // MIST and not fully identified
+      // ) {
+      //   filteredSummaries.push(summary);
+      // }
+
+      if (this.visibleScanId.length > 0 && summary.scanId !== this.visibleScanId) {
+        continue;
+      }
+
+      if (searchString.length > 0 && summaryNameLower.indexOf(searchString) < 0) {
+        continue;
+      }
+
+      if (this.filteredTagIDs.length > 0 && !this.filteredTagIDs.some(tagID => summary.tags.includes(tagID))) {
+        continue;
+      }
+
+      if (this.filteredAuthors.length > 0 && !this.filteredAuthors.some(author => summary.owner?.creatorUser?.id === author)) {
+        continue;
+      }
+
+      if (this.selectedROITypes.includes("builtin") && PredefinedROIID.isPredefined(summary.id)) {
+        filteredSummaries.push(summary);
+      } else if (this.selectedROITypes.includes("user-created") && this.checkUserIsAuthor(summary)) {
+        filteredSummaries.push(summary);
+      } else if (this.selectedROITypes.includes("shared") && !this.checkUserIsAuthor(summary)) {
+        filteredSummaries.push(summary);
+      } else if (this.selectedROITypes.includes("mist-species") && summary.isMIST && checkMistFullyIdentified(summary)) {
+        filteredSummaries.push(summary);
+      } else if (this.selectedROITypes.includes("mist-group") && summary.isMIST && !checkMistFullyIdentified(summary)) {
         filteredSummaries.push(summary);
       }
     }
@@ -173,7 +206,14 @@ export class ROISearchControlsComponent {
         return a.name.localeCompare(b.name);
       }
     });
-    this.onFilterChanged.emit({ filteredSummaries, searchString, scanId: this.visibleScanId, tagIDs: this.filteredTagIDs, authors: this.filteredAuthors });
+    this.onFilterChanged.emit({
+      filteredSummaries,
+      searchString,
+      scanId: this.visibleScanId,
+      tagIDs: this.filteredTagIDs,
+      authors: this.filteredAuthors,
+      updateSelection,
+    });
     this.extractAuthors();
   }
 

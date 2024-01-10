@@ -150,6 +150,11 @@
 
       .browse-section {
         margin-left: 16px;
+        margin-bottom: 8px;
+
+        &:last-of-type {
+          margin-bottom: 0;
+        }
 
         h5 {
           color: rgba(248, 248, 248, 0.5);
@@ -210,6 +215,18 @@
     flex: 5;
     border-right: 1px solid #545f64;
 
+    .title {
+      &.recent {
+        padding: 10px 8px;
+        display: flex;
+        align-items: center;
+
+        .recent-btn {
+          margin-left: auto;
+        }
+      }
+    }
+
     expression-search-controls {
       display: flex;
       overflow: hidden;
@@ -257,6 +274,11 @@
       color: rgb(var(--clr-gray-30));
     }
 
+    input,
+    textarea {
+      font-family: Roboto, monospace;
+    }
+
     input {
       margin-bottom: 16px;
     }
@@ -272,5 +294,25 @@
     background-color: transparent;
     margin-top: 16px;
     border-top: 0;
+  }
+}
+
+.toggle-trigger-position-btn {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  border: 1px solid #ffb800;
+  border-radius: 8px;
+
+  margin-right: 8px;
+
+  action-button {
+    margin: -4px;
+  }
+
+  h5 {
+    color: rgb(var(--clr-gray-30));
+    margin: 0;
+    margin-right: 4px;
   }
 }

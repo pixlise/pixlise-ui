@@ -13,20 +13,8 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ConfirmDialogComponent } from "../../pixlisecore/components/atoms/buttons/action-button/confirm-dialog/confirm-dialog.component";
 import { WidgetSettingsMenuComponent } from "../../pixlisecore/pixlisecore.module";
 import { ExpressionGroup } from "src/app/generated-protos/expression-group";
-
-export const TERNARY_WIDGET_OPTIONS = {
-  Left: { position: 0, icon: "assets/button-icons/ternary-left.svg" },
-  Right: { position: 1, icon: "assets/button-icons/ternary-right.svg" },
-  Top: { position: 2, icon: "assets/button-icons/ternary-top.svg" },
-  Off: { position: -1, icon: "assets/button-icons/visible-off.svg" },
-};
-
-export const BINARY_WIDGET_OPTIONS = {
-  X: { position: 0, icon: "assets/button-icons/binary-x-axis.svg" },
-  Y: { position: 1, icon: "assets/button-icons/binary-y-axis.svg" },
-  Off: { position: -1, icon: "assets/button-icons/visible-off.svg" },
-};
-
+import { BINARY_WIDGET_OPTIONS, TERNARY_WIDGET_OPTIONS, widgetLayerPositions } from "../models/expression-widget-layer-configs";
+import { WidgetType } from "../../widget/models/widgets.model";
 @Component({
   selector: "expression-layer",
   templateUrl: "./expression-layer.component.html",
@@ -58,10 +46,11 @@ export class ExpressionLayerComponent implements OnInit {
   @Input() isWidgetExpression?: boolean = false;
 
   @Input() selectIfValidPosition: boolean = false;
+  @Input() isTriggerPosition: boolean = false;
 
   @Input() showActiveExpressionConfiguration: boolean = false;
 
-  private _widgetType: string = "";
+  private _widgetType: WidgetType | "" = "" as WidgetType;
   widgetOptions: string[] = [];
   widgetOptionIcons: string[] = [];
   widgetSelectionState: string = "Off";
@@ -138,23 +127,21 @@ export class ExpressionLayerComponent implements OnInit {
   }
 
   @Input() set widgetType(type: string) {
-    this._widgetType = type;
+    this._widgetType = type as WidgetType;
     this.widgetOptions = [];
     this.widgetOptionIcons = [];
 
-    if (type === "ternary-plot") {
-      this.widgetOptions = Object.keys(TERNARY_WIDGET_OPTIONS);
-      this.widgetOptionIcons = Object.values(TERNARY_WIDGET_OPTIONS).map(option => option.icon);
-    } else if (type === "binary-plot") {
-      this.widgetOptions = Object.keys(BINARY_WIDGET_OPTIONS);
-      this.widgetOptionIcons = Object.values(BINARY_WIDGET_OPTIONS).map(option => option.icon);
+    let widgetLayerConfig = widgetLayerPositions[this.widgetType];
+    if (widgetLayerConfig) {
+      this.widgetOptions = Object.keys(widgetLayerConfig);
+      this.widgetOptionIcons = Object.values(widgetLayerConfig).map(option => option.icon);
     }
 
     // Selection states have changed, so we need to update the widget position
     this.widgetPosition = this._widgetPosition;
   }
 
-  get widgetType(): string {
+  get widgetType(): WidgetType | "" {
     return this._widgetType;
   }
 
@@ -170,11 +157,12 @@ export class ExpressionLayerComponent implements OnInit {
   onWidgetSelectionStateChange(state: string) {
     this.widgetSelectionState = state;
     let widgetPosition: number = -1;
-    if (this.widgetType === "ternary-plot") {
-      widgetPosition = (TERNARY_WIDGET_OPTIONS as any)[state].position;
-    } else if (this.widgetType === "binary-plot") {
-      widgetPosition = (BINARY_WIDGET_OPTIONS as any)[state].position;
+
+    let widgetLayerConfig = widgetLayerPositions[this.widgetType];
+    if (widgetLayerConfig) {
+      widgetPosition = widgetLayerConfig[state].position;
     }
+
     this.onChangeWidgetPosition.emit(widgetPosition);
   }
 

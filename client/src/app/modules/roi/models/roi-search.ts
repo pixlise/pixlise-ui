@@ -3,6 +3,8 @@ import { ROIItemSummary } from "src/app/generated-protos/roi";
 export type ROISearchFilter = {
   filteredSummaries: ROIItemSummary[];
 
+  updateSelection?: boolean;
+
   scanId: string;
   searchString: string;
   tagIDs: string[];

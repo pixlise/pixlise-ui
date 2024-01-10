@@ -1,7 +1,7 @@
 import { Component, HostListener } from "@angular/core";
 import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
-import { DEFAULT_SCREEN_CONFIGURATION } from "../../models/screen-configuration.model";
+import { createDefaultScreenConfiguration } from "../../models/screen-configuration.model";
 
 export type ScreenConfigurationCSS = {
   templateColumns: string;
@@ -17,7 +17,7 @@ export class AnalysisPageComponent {
   private _keyPresses = new Set<string>();
 
   computedLayouts: ScreenConfigurationCSS[] = [];
-  loadedScreenConfiguration: ScreenConfiguration = DEFAULT_SCREEN_CONFIGURATION;
+  loadedScreenConfiguration: ScreenConfiguration = createDefaultScreenConfiguration();
 
   constructor(private _analysisLayoutService: AnalysisLayoutService) {}
 

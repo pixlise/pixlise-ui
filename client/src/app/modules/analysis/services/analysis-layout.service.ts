@@ -16,6 +16,7 @@ import { WidgetDataGetReq, WidgetDataWriteReq } from "src/app/generated-protos/w
 import { WSError } from "../../pixlisecore/services/wsMessageHandler";
 import { ResponseStatus } from "src/app/generated-protos/websocket";
 import { ExpressionPickerResponse } from "../../expressions/components/expression-picker/expression-picker.component";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
 
 @Injectable({
   providedIn: "root",
@@ -119,6 +120,13 @@ export class AnalysisLayoutService implements OnDestroy {
   cacheScreenConfigurationId(id: string) {
     this.lastLoadedScreenConfigurationId = id;
     localStorage?.setItem("lastLoadedScreenConfigurationId", id);
+  }
+
+  clearScreenConfigurationCache() {
+    this.lastLoadedScreenConfigurationId = "";
+    localStorage?.removeItem("lastLoadedScreenConfigurationId");
+    this.activeScreenConfiguration$.next(createDefaultScreenConfiguration());
+    this.activeScreenConfigurationId$.next("");
   }
 
   fetchScreenConfiguration(id: string = "", scanId: string = "", setActive: boolean = true) {
@@ -286,5 +294,31 @@ export class AnalysisLayoutService implements OnDestroy {
   getQuantIdForScan(scanId: string): string {
     const quantId = this.activeScreenConfiguration$.value?.scanConfigurations[scanId]?.quantId || "";
     return quantId;
+  }
+
+  getQuantElementIdsForScan(scanId: string): string[] {
+    let quantId = this.getQuantIdForScan(scanId);
+    if (!quantId) {
+      return [];
+    }
+
+    let availableQuants = this.availableScanQuants$.value;
+    if (availableQuants && availableQuants[scanId]) {
+      let quant = availableQuants[scanId].find(q => q.id === quantId);
+      if (quant) {
+        return quant.elements.map(quantElement => {
+          let det = quant?.params?.userParams?.quantMode || "";
+          if (det.length > 0 && det != "Combined") {
+            det = det.substring(0, 1);
+          }
+
+          return DataExpressionId.makePredefinedQuantElementExpression(quantElement, "%", det);
+        });
+      } else {
+        return [];
+      }
+    } else {
+      return [];
+    }
   }
 }

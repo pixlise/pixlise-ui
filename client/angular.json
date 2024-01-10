@@ -84,7 +84,8 @@
             ],
             "styles": [
               "src/scss/material-theme.scss",
-              "src/styles.scss"
+              "src/styles.scss",
+              "node_modules/roboto-fontface/css/roboto/roboto-fontface.css"
             ],
             "stylePreprocessorOptions": {
               "includePaths": [

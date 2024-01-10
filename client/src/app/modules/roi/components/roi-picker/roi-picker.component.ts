@@ -53,6 +53,7 @@ export type ROIPickerData = {
   selectedROIs?: ROIItem[];
   selectedROISummaries?: ROIItemSummary[];
 
+  scanId?: string;
   singleSelect?: boolean;
 
   // If these are specified, they will replace the checkbox selection
@@ -219,14 +220,14 @@ export class ROIPickerComponent implements OnInit, OnDestroy {
     this.filteredSummaries = filteredSummaries;
 
     // Remove any ROIs from the selection that are no longer visible
-    const newSelection: ROISummaries = {};
-    this.filteredSummaries.forEach(summary => {
-      if (this.selectedROIs[summary.id]) {
-        newSelection[summary.id] = summary;
-      }
-    });
+    // const newSelection: ROISummaries = {};
+    // this.filteredSummaries.forEach(summary => {
+    //   if (this.selectedROIs[summary.id]) {
+    //     newSelection[summary.id] = summary;
+    //   }
+    // });
 
-    this.selectedROIs = newSelection;
+    // this.selectedROIs = newSelection;
   }
 
   onToggleSearch(): void {
