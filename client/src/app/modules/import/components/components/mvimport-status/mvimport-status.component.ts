@@ -38,7 +38,7 @@ export class MVImportStatusComponent implements OnInit, OnDestroy {
             next: (resp: ImportMarsViewerImageResp) => {
               this._jobId = resp.jobId;
               this.setStatus(JobStatus_Status.UNKNOWN, "Import running...");
-              this._snackService.openSuccess(`Import from MarsViewer started...`, `Job id is ${resp.jobId}`);
+              this._snackService.open(`Import from MarsViewer started...`, `Job id is ${resp.jobId}`);
             },
             error: err => {
               this.waiting = false;

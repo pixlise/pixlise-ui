@@ -51,6 +51,9 @@ POSSIBILITY OF SUCH DAMAGE.
 <widget-settings-menu
     [settingsDialog]="imageMenu"
     [openDirDown]="false">
-    <two-state-push-button
-        title='{{contextImageItemShowingTooltip}}'>{{currentFileName}}</two-state-push-button>
+    <two-state-push-button title='{{contextImageItemShowingTooltip}}'>
+      <div class="dropdown-line">
+        <div class="txt">{{currentFileName}}</div><span>&#9660;</span>
+      </div>
+    </two-state-push-button>
 </widget-settings-menu>
