@@ -45,6 +45,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   private _shownDisplaySpectra: MatDialogRef<ROIPickerComponent> | null = null;
   private _shownPiquant: MatDialogRef<SpectrumPeakIdentificationComponent> | null = null;
 
+  scanId: string = "";
+
   private _subs = new Subscription();
 
   constructor(
@@ -173,6 +175,10 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   ngOnInit() {
     this.onToolSelected("pan");
 
+    if (!this.scanId) {
+      this.scanId = this._analysisLayoutService.defaultScanId;
+    }
+
     this._subs.add(
       this.widgetData$.subscribe((data: any) => {
         const spectrumData = data as SpectrumWidgetState;
@@ -252,22 +258,34 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       })
     );
 
+    this._subs.add(
+      this._roiService.displaySettingsMap$.subscribe(displaySettings => {
+        this.mdl.spectrumLines.forEach(chartLine => {
+          if (displaySettings[chartLine.roiId]) {
+            chartLine.color = displaySettings[chartLine.roiId].colour.asString();
+            console.log("SETTING", chartLine);
+          }
+        });
+        this.updateLines();
+      })
+    );
+
     this.reDraw();
   }
 
   private setInitialConfig() {
     // Show allpoints A/B and selection A/B from the default scan
-    const scanId = this._analysisLayoutService.defaultScanId;
+    this.scanId = this._analysisLayoutService.defaultScanId;
 
-    if (scanId.length > 0) {
+    if (this.scanId.length > 0) {
       const items = new Map<string, string[]>();
-      items.set(PredefinedROIID.getAllPointsForScan(scanId), [SpectrumChartModel.lineExpressionBulkA, SpectrumChartModel.lineExpressionBulkB]);
-      //items.set(PredefinedROIID.getSelectedPointsForScan(scanId), [SpectrumChartModel.lineExpressionBulkA, SpectrumChartModel.lineExpressionBulkB]);
+      items.set(PredefinedROIID.getAllPointsForScan(this.scanId), [SpectrumChartModel.lineExpressionBulkA, SpectrumChartModel.lineExpressionBulkB]);
+      // items.set(PredefinedROIID.getSelectedPointsForScan(this.scanId), [SpectrumChartModel.lineExpressionBulkA, SpectrumChartModel.lineExpressionBulkB]);
 
       // Set the calibration
-      this._energyCalibrationService.getScanCalibration(scanId).subscribe((cal: SpectrumEnergyCalibration[]) => {
-        this._energyCalibrationService.setCurrentCalibration(scanId, cal);
-        this.mdl.setEnergyCalibration(scanId, cal);
+      this._energyCalibrationService.getScanCalibration(this.scanId).subscribe((cal: SpectrumEnergyCalibration[]) => {
+        this._energyCalibrationService.setCurrentCalibration(this.scanId, cal);
+        this.mdl.setEnergyCalibration(this.scanId, cal);
         this.mdl.xAxisEnergyScale = true;
         this.updateLines();
       });
@@ -459,6 +477,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       selectableSubItemOptions: SpectrumChartModel.allLineChoiceOptions,
       subItemButtonName: "Select Spectra",
       selectedItems: this.mdl.getLineList(),
+      scanId: this.scanId,
       title: "Spectrum Lines To Display",
     };
 
@@ -468,13 +487,16 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
     this._shownDisplaySpectra = this.dialog.open(ROIPickerComponent, dialogConfig);
     this._shownDisplaySpectra.componentInstance.onChange.subscribe((result: ROIPickerResponse) => {
-      if (!result.selectedItems) {
+      if (result?.selectedItems === undefined) {
         return;
       }
 
       // Get the region/display settings and spectra, then add
       // a line for each to the chart.
       this.mdl.setLineList(result.selectedItems);
+      if (result.selectedItems.size === 0) {
+        this.mdl.clearDisplayData();
+      }
       this.updateLines();
       this.saveState();
     });
