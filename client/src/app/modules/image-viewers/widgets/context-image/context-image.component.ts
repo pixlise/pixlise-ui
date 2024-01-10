@@ -21,7 +21,7 @@ import {
   ExpressionPickerComponent,
   ExpressionPickerResponse,
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
-import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
+import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ColourRamp } from "src/app/utils/colours";
 import { ContextImageMapLayer } from "../../models/map-layer";
 import {
@@ -46,7 +46,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
   cursorShown: string = "";
 
-  TEMP_QUANT_ID = "";
+  scanId: string = "";
 
   private _subs = new Subscription();
 
@@ -63,6 +63,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     super();
 
     this.mdl = new ContextImageModel();
+
+    this.scanId = this._analysisLayoutService.defaultScanId;
 
     let showLineDrawTool = true;
     let showNavTools = true;
@@ -270,6 +272,30 @@ bool removeBottomSpecularArtifacts = 21;
       })
     );
 
+    this._subs.add(
+      this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
+        if (!result || this._analysisLayoutService.highlightedWidgetId$.value !== this._widgetId) {
+          return;
+        }
+
+        if (result) {
+          this.mdl.expressionIds = [];
+
+          if (result && result.selectedExpressions?.length > 0) {
+            for (const expr of result.selectedExpressions) {
+              this.mdl.expressionIds.push(expr.id);
+            }
+          }
+
+          this.reloadModel();
+          // this.saveState();
+        }
+
+        // Expression picker has closed, so we can stop highlighting this widget
+        this._analysisLayoutService.highlightedWidgetId$.next("");
+      })
+    );
+
     this.reDraw();
   }
 
@@ -318,7 +344,14 @@ bool removeBottomSpecularArtifacts = 21;
 
               for (const exprId of this.mdl.expressionIds) {
                 this._contextDataService
-                  .getLayerModel(scanId, exprId, this.TEMP_QUANT_ID, PredefinedROIID.getAllPointsForScan(scanId), ColourRamp.SHADE_MAGMA, pmcToIndexLookup)
+                  .getLayerModel(
+                    scanId,
+                    exprId,
+                    this._analysisLayoutService.getQuantIdForScan(scanId),
+                    PredefinedROIID.getAllPointsForScan(scanId),
+                    ColourRamp.SHADE_MAGMA,
+                    pmcToIndexLookup
+                  )
                   .subscribe({
                     next: (layer: ContextImageMapLayer) => {
                       this.mdl.setMapLayer(layer);
@@ -328,6 +361,8 @@ bool removeBottomSpecularArtifacts = 21;
                     },
                   });
               }
+
+              this.scanId = scanId;
             }
           }
         }
@@ -491,37 +526,38 @@ bool removeBottomSpecularArtifacts = 21;
     dialogConfig.data = {
       widgetType: "context-image",
       widgetId: this._widgetId,
-      scanId: this._analysisLayoutService.defaultScanId,
-      quantId: "",
+      scanId: this.scanId,
+      quantId: this._analysisLayoutService.getQuantIdForScan(this.scanId),
       selectedIds: this.mdl.expressionIds || [],
     };
 
-    this.isWidgetHighlighted = true;
-    const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
-      this.isWidgetHighlighted = false;
-      if (result) {
-        this.mdl.expressionIds = [];
+    this.dialog.open(ExpressionPickerComponent, dialogConfig);
+    // dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
+    //   this.isWidgetHighlighted = false;
+    //   if (result) {
+    //     this.mdl.expressionIds = [];
 
-        if (result && result.selectedExpressions?.length > 0) {
-          for (const expr of result.selectedExpressions) {
-            this.mdl.expressionIds.push(expr.id);
-          }
-        }
+    //     if (result && result.selectedExpressions?.length > 0) {
+    //       for (const expr of result.selectedExpressions) {
+    //         this.mdl.expressionIds.push(expr.id);
+    //       }
+    //     }
 
-        this.TEMP_QUANT_ID = result.quantId;
+    //     this.TEMP_QUANT_ID = result.quantId;
 
-        this.reloadModel();
-        //this.saveState();
-      }
-    });
+    //     this.reloadModel();
+    //     //this.saveState();
+    //   }
+    // });
   }
 
   onRegions() {
-    const dialogConfig = new MatDialogConfig();
+    const dialogConfig = new MatDialogConfig<ROIPickerData>();
     // Pass data to dialog
     dialogConfig.data = {
       requestFullROIs: true,
+      selectedIds: this.mdl.roiIds,
+      scanId: this.scanId,
     };
 
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
@@ -539,6 +575,10 @@ bool removeBottomSpecularArtifacts = 21;
 
           existing.push(roi.id);
           roisPerScan.set(roi.scanId, existing);
+
+          if (this.scanId !== roi.scanId) {
+            this.scanId = roi.scanId;
+          }
         }
 
         // Now fill in the data source ids using the above
