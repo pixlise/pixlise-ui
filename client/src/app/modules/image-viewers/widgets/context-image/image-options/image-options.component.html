@@ -55,6 +55,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 inactiveIcon="assets/button-icons/radio-off.svg"
                 disabledIcon="assets/button-icons/radio-disabled.svg"
                 [active]="rgbuAsChannels&&isRGBU"
+                [disabled]="!isRGBU"
                 (onToggle)="onRGBUAsChannels()">
             </two-state-icon-button>
             <div class="centered-row">
@@ -88,6 +89,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 inactiveIcon="assets/button-icons/radio-off.svg"
                 disabledIcon="assets/button-icons/radio-disabled.svg"
                 [active]="!rgbuAsChannels&&isRGBU"
+                [disabled]="!isRGBU"
                 (onToggle)="onRGBUAsRatio()">
             </two-state-icon-button>
 

@@ -56,3 +56,25 @@
 .selectable {
     user-select: text;
 }
+
+.dropdown-line {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    justify-content: space-between;
+
+    overflow: hidden;
+
+    .txt {
+        display: flex;
+        flex: 1 1 0%;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    span {
+        padding: 0px 4px 0px 8px;
+    }
+}
