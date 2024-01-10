@@ -63,7 +63,6 @@
     flex-grow: 1;
     justify-content: space-between;
 
-    gap: 8px;
     overflow: hidden;
 
     .txt {
@@ -73,5 +72,9 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+
+    span {
+        padding: 0px 4px 0px 8px;
     }
 }
