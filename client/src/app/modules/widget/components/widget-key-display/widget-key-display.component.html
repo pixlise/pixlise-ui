@@ -30,27 +30,20 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <push-button *ngIf="!keyShowing && items.length > 0" (onClick)="onToggleShowKey()">Key</push-button>
-<div *ngIf="keyShowing" fxLayout="column" class="dlg-border-no-backdrop key-display">
-  <div fxLayout="row" fxLayoutAlign="space-between center" class="title unit-padding">
+<div *ngIf="keyShowing" class="dlg-border-no-backdrop key-display">
+  <div class="title unit-padding">
     <div class="txt-dlg-heading">KEY</div>
     <img class="clickable" src="assets/button-icons/close-cross.svg" (click)="onToggleShowKey()" />
   </div>
-  <div fxLayout="column">
-    <div *ngFor="let item of items" class="key-item" fxLayout="row" fxLayoutAlign="start center">
-      <div *ngIf="item.dashPattern" class="dash-pattern">
+  <div class="key-items">
+    <div *ngFor="let item of items" class="key-item">
+      <div *ngIf="item.dashPattern && item.dashPattern.length > 0" class="dash-pattern">
         <svg width="58" height="12" xmlns="http://www.w3.org/2000/svg">
-          <line
-            [attr.stroke-dasharray]="item.dashPattern"
-            x1="0"
-            y1="6"
-            x2="50"
-            y2="6"
-            stroke-width="2"
-            style="stroke: {{ item.colour }}"></line>
+          <line [attr.stroke-dasharray]="item.dashPattern" x1="0" y1="6" x2="50" y2="6" stroke-width="2" style="stroke: {{ item.colour }}"></line>
         </svg>
       </div>
       <div
-        *ngIf="!item.dashPattern"
+        *ngIf="!item.dashPattern || item.dashPattern.length === 0"
         #tooltip="matTooltip"
         [matTooltip]="getLabel(item)"
         [matTooltipDisabled]="getLabel(item).length <= 15"
@@ -58,15 +51,8 @@ POSSIBILITY OF SUCH DAMAGE.
         [ngClass]="{ 'main-label-clickable': item.id.length > 0 }"
         [style]="{ color: item.colour }"
         (click)="onClickLabel(item.id)"
-        [title]="item.id.length > 0 ? 'Bring to front' : ''"
-        fxFlex="100%">
-        <svg
-          *ngIf="!item.shape || item.shape === 'circle'"
-          width="8"
-          height="8"
-          viewBox="0 0 8 8"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg">
+        [title]="item.id.length > 0 ? 'Bring to front' : ''">
+        <svg *ngIf="!item.shape || item.shape === 'circle'" width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="4" cy="4" r="4" attr.fill="{{ item.colour }}" />
         </svg>
         <svg *ngIf="item.shape === 'triangle'" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -86,7 +72,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </svg>
         {{ getTruncatedLabel(item) }}
       </div>
-      <div *ngIf="item.dashPattern" class="dash-label">{{ getTruncatedLabel(item) }}</div>
+      <div *ngIf="item.dashPattern && item.dashPattern.length > 0" class="dash-label">{{ getTruncatedLabel(item) }}</div>
     </div>
   </div>
   <ng-content></ng-content>

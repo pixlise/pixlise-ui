@@ -116,9 +116,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
       },
       topRightInsetButton: {
         id: "key",
-        type: "button",
-        title: "Key",
-        tooltip: "Toggle key for plot",
+        type: "widget-key",
         onClick: () => this.onToggleKey(),
       },
     };
@@ -178,6 +176,10 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     this._widgetData.getData(query).subscribe({
       next: data => {
         this.setData(data);
+
+        if (this.widgetControlConfiguration.topRightInsetButton) {
+          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+        }
       },
       error: err => {
         this.setData(new RegionDataResults([], err));

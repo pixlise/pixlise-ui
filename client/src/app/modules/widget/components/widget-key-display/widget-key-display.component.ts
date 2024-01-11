@@ -27,42 +27,11 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Inject, Input, OnInit, Output } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { RGBA } from "src/app/utils/colours";
-
-export class KeyItem {
-  colour: string;
-
-  constructor(
-    public id: string,
-    public label: string,
-    colourRGB: RGBA | string,
-    public dashPattern: number[] = [],
-    public shape: string = ""
-  ) {
-    let colourRGBA: RGBA | null = null;
-
-    if (typeof colourRGB == "string") {
-      colourRGBA = RGBA.fromString(colourRGB);
-    } else {
-      colourRGBA = colourRGB;
-    }
-
-    if (colourRGBA === null) {
-      this.colour = "";
-    } else {
-      this.colour = new RGBA(colourRGBA.r, colourRGBA.g, colourRGBA.b, 255).asString();
-    }
-
-    if (!this.id) {
-      this.id = "";
-    }
-  }
-}
+import { Component, Input, OnInit } from "@angular/core";
+import { WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 export interface WidgetKeyDisplayData {
-  items: KeyItem[];
+  items: WidgetKeyItem[];
   showKey: boolean;
 }
 
@@ -72,26 +41,25 @@ export interface WidgetKeyDisplayData {
   styleUrls: ["./widget-key-display.component.scss"],
 })
 export class WidgetKeyDisplayComponent implements OnInit {
-  items: KeyItem[] = [];
+  // items: KeyItem[] = [];
+  @Input() items: WidgetKeyItem[] = [];
   // @Output() keyClick = new EventEmitter();
   // @Output() onToggleKey = new EventEmitter();
 
   public keyShowing: boolean = false;
 
-  constructor(
-    @Inject(MAT_DIALOG_DATA) public data: WidgetKeyDisplayData,
-    public dialogRef: MatDialogRef<WidgetKeyDisplayComponent>
-  ) {}
+  constructor() {} // public dialogRef: MatDialogRef<WidgetKeyDisplayComponent> // @Inject(MAT_DIALOG_DATA) public data: WidgetKeyDisplayData,
 
   ngOnInit(): void {
-    if (this.data) {
-      this.items = this.data?.items || [];
-      this.keyShowing = this.data.showKey;
-    }
+    // if (this.data) {
+    //   this.items = this.data?.items || [];
+    //   this.keyShowing = this.data.showKey;
+    // }
   }
 
   onToggleShowKey(): void {
     this.keyShowing = !this.keyShowing;
+    console.log("KEY", this.items);
     // this.onToggleKey.emit(this.keyShowing);
   }
 
@@ -101,11 +69,11 @@ export class WidgetKeyDisplayComponent implements OnInit {
     }
   }
 
-  getLabel(item: KeyItem): string {
+  getLabel(item: WidgetKeyItem): string {
     return item.label.replace("mist__roi.", "");
   }
 
-  getTruncatedLabel(item: KeyItem): string {
+  getTruncatedLabel(item: WidgetKeyItem): string {
     let maxLength = 15;
     let label = this.getLabel(item);
     if (label.length > maxLength) {

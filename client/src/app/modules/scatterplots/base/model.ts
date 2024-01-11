@@ -323,7 +323,9 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
             roiIdForKey = "";
           }
 
-          this.keyItems.push(new WidgetKeyItem(roiIdForKey, region.region.name, region.displaySettings.colour, [], region.displaySettings.shape));
+          if (!this.keyItems.find(key => key.id == roiIdForKey)) {
+            this.keyItems.push(new WidgetKeyItem(roiIdForKey, region.region.name, region.displaySettings.colour, [], region.displaySettings.shape));
+          }
         }
 
         const roiValues: PMCDataValues | null = filteredValues[c];

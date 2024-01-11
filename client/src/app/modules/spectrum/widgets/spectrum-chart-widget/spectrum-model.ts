@@ -34,7 +34,6 @@ import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { ChartAxis, LinearChartAxis, LogarithmicChartAxis } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom, PanRestrictorToCanvas } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
-import { KeyItem } from "src/app/modules/widget/components/widget-key-display/widget-key-display.component";
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
 import { XRFLine } from "src/app/periodic-table/XRFLine";
 import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
@@ -47,6 +46,7 @@ import { SubItemOptionSection } from "src/app/modules/roi/components/roi-item/ro
 import { BaseChartDrawModel, BaseChartModel } from "src/app/modules/scatterplots/base/model-interfaces";
 import { XRFDatabaseService } from "src/app/services/xrf-database.service";
 import { XRFLineDatabase } from "src/app/periodic-table/xrf-line-database";
+import { WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 export class SpectrumLineChoice {
   constructor(
@@ -153,7 +153,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   // drawing the lines
   private _spectrumLineDarkenIdxs: number[] = [];
 
-  private _keyItems: KeyItem[] = [];
+  private _keyItems: WidgetKeyItem[] = [];
 
   private _chartYMaxValue: number | null = null;
   private _chartYResize: boolean = true;
@@ -164,8 +164,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   constructor(
     public xrfDBService: XRFDatabaseService //,
-    // public clipboard: Clipboard
-  ) // public dialog: MatDialog,
+    // public dialog: MatDialog,
+  ) // public clipboard: Clipboard
   {
     this.transform.transformChangeComplete$.subscribe((complete: boolean) => {
       // Remember we need to recalc
@@ -185,7 +185,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     return this._activeXRFDB;
   }
 
-  get keyItems(): KeyItem[] {
+  get keyItems(): WidgetKeyItem[] {
     return this._keyItems;
   }
 
@@ -727,10 +727,10 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     let lastROI = "";
     for (const line of this._spectrumLines) {
       if (lastROI != line.roiId) {
-        this._keyItems.push(new KeyItem("", line.roiName, line.color));
+        this._keyItems.push(new WidgetKeyItem("", line.roiName, line.color));
         lastROI = line.roiId;
       }
-      this._keyItems.push(new KeyItem("", line.expressionLabel, line.color, line.dashPattern));
+      this._keyItems.push(new WidgetKeyItem("", line.expressionLabel, line.color, line.dashPattern));
     }
 
     this._recalcNeeded = true;

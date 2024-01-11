@@ -12,7 +12,9 @@
       *ngIf="['button', 'selectable-button'].includes(buttonConfiguration.type) && buttonConfiguration.icon"
       [state]="buttonConfiguration.type === 'selectable-button' && buttonConfiguration.value ? 1 : buttonConfiguration.disabled ? 3 : 0"
       class="{{ buttonConfiguration.type }}"
-      [icon]="buttonConfiguration.icon"></icon-button>
+      [icon]="buttonConfiguration.icon">
+    </icon-button>
   </span>
   <selection-changer *ngIf="buttonConfiguration?.type === 'selection-changer'"></selection-changer>
+  <widget-key-display *ngIf="buttonConfiguration?.type === 'widget-key'" [items]="buttonConfiguration?.value || []"></widget-key-display>
 </div>

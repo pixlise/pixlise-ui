@@ -27,7 +27,7 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { VisibleROI, BinaryState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { WidgetKeyDisplayComponent } from "src/app/modules/widget/components/widget-key-display/widget-key-display.component";
+import { WidgetKeyDisplayComponent, WidgetKeyDisplayData } from "src/app/modules/widget/components/widget-key-display/widget-key-display.component";
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -113,9 +113,10 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
       },
       topRightInsetButton: {
         id: "key",
-        type: "button",
-        title: "Key",
-        tooltip: "Toggle key for plot",
+        value: this.mdl.keyItems,
+        type: "widget-key",
+        // title: "Key",
+        // tooltip: "Toggle key for plot",
         onClick: () => this.onToggleKey(),
       },
     };
@@ -168,6 +169,10 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     this._widgetData.getData(query).subscribe({
       next: data => {
         this.setData(data);
+
+        if (this.widgetControlConfiguration.topRightInsetButton) {
+          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+        }
       },
       error: err => {
         this.setData(new RegionDataResults([], err));
@@ -369,12 +374,17 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
   onReferences() {}
   onToggleKey() {
-    const dialogConfig = new MatDialogConfig();
-    dialogConfig.hasBackdrop = false;
-    dialogConfig.data = {
-      keyItems: this.mdl.keyItems,
-    };
-    this.dialog.open(WidgetKeyDisplayComponent, dialogConfig);
+    if (this.widgetControlConfiguration.topRightInsetButton) {
+      this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+    }
+    // const dialogConfig = new MatDialogConfig<WidgetKeyDisplayData>();
+    // dialogConfig.hasBackdrop = false;
+    // dialogConfig.data = {
+    //   items: this.mdl.keyItems,
+    //   showKey: false,
+    // };
+    // console.log("keyItems", this.mdl.keyItems);
+    // this.dialog.open(WidgetKeyDisplayComponent, dialogConfig);
   }
 
   private saveState(): void {
