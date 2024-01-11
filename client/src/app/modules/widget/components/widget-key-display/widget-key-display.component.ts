@@ -27,7 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, Inject, Input, OnInit, Output } from "@angular/core";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { RGBA } from "src/app/utils/colours";
 
 export class KeyItem {
@@ -60,30 +61,43 @@ export class KeyItem {
   }
 }
 
+export interface WidgetKeyDisplayData {
+  items: KeyItem[];
+  showKey: boolean;
+}
+
 @Component({
   selector: "widget-key-display",
   templateUrl: "./widget-key-display.component.html",
   styleUrls: ["./widget-key-display.component.scss"],
 })
 export class WidgetKeyDisplayComponent implements OnInit {
-  @Input() items: KeyItem[] = [];
-  @Output() keyClick = new EventEmitter();
-  @Output() onToggleKey = new EventEmitter();
+  items: KeyItem[] = [];
+  // @Output() keyClick = new EventEmitter();
+  // @Output() onToggleKey = new EventEmitter();
 
-  @Input() public keyShowing: boolean = false;
+  public keyShowing: boolean = false;
 
-  constructor() {}
+  constructor(
+    @Inject(MAT_DIALOG_DATA) public data: WidgetKeyDisplayData,
+    public dialogRef: MatDialogRef<WidgetKeyDisplayComponent>
+  ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    if (this.data) {
+      this.items = this.data?.items || [];
+      this.keyShowing = this.data.showKey;
+    }
+  }
 
   onToggleShowKey(): void {
     this.keyShowing = !this.keyShowing;
-    this.onToggleKey.emit(this.keyShowing);
+    // this.onToggleKey.emit(this.keyShowing);
   }
 
   onClickLabel(id: string): void {
     if (id.length > 0) {
-      this.keyClick.emit(id);
+      // this.keyClick.emit(id);
     }
   }
 

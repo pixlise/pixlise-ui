@@ -27,7 +27,7 @@
           [buttonConfiguration]="button"
           [ngStyle]="{ display: button._overflowed ? 'none' : 'block' }"></widget-configuration-button>
       </div>
-      <widget-settings-menu [settingsDialog]="settingsMenu" [overflowSection]="overflowSection" #settingsButton>
+      <widget-settings-menu *ngIf="settingsMenu" [settingsDialog]="settingsMenu" [overflowSection]="overflowSection" #settingsButton>
         <icon-button #tooltip="matTooltip" matTooltip="Show Settings Menu" icon="assets/button-icons/settings.svg"> </icon-button>
       </widget-settings-menu>
     </div>

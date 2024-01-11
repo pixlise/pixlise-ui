@@ -7,7 +7,7 @@
     [matTooltipDisabled]="!buttonConfiguration.tooltip"
     class="btn-container"
     (click)="buttonClick(buttonTrigger)">
-    <two-state-push-button [disabled]="buttonConfiguration.disabled" *ngIf="buttonConfiguration.title">{{ buttonConfiguration.title }}</two-state-push-button>
+    <two-state-push-button [disabled]="!!buttonConfiguration.disabled" *ngIf="buttonConfiguration.title">{{ buttonConfiguration.title }}</two-state-push-button>
     <icon-button
       *ngIf="['button', 'selectable-button'].includes(buttonConfiguration.type) && buttonConfiguration.icon"
       [state]="buttonConfiguration.type === 'selectable-button' && buttonConfiguration.value ? 1 : buttonConfiguration.disabled ? 3 : 0"

@@ -27,6 +27,7 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { VisibleROI, BinaryState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { WidgetKeyDisplayComponent } from "src/app/modules/widget/components/widget-key-display/widget-key-display.component";
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -367,7 +368,14 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   onReferences() {}
-  onToggleKey() {}
+  onToggleKey() {
+    const dialogConfig = new MatDialogConfig();
+    dialogConfig.hasBackdrop = false;
+    dialogConfig.data = {
+      keyItems: this.mdl.keyItems,
+    };
+    this.dialog.open(WidgetKeyDisplayComponent, dialogConfig);
+  }
 
   private saveState(): void {
     const visibleROIs: VisibleROI[] = [];
