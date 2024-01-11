@@ -1,20 +1,19 @@
-
 <div class="custom-select-picker">
-    <div *ngFor="let section of selectionOptions" class="option-section">
-        <h2>{{ section.title }}</h2>
-        <span class="checkbox-group" *ngFor="let option of section.options">
-        <two-state-icon-button
-            activeIcon="assets/button-icons/check-on.svg"
-            inactiveIcon="assets/button-icons/check-off.svg"
-            class="checkbox-button"
-            [active]="selectedOptions.includes(option.value)"
-            (onToggle)="onToggleSelection(option.value)">
-        </two-state-icon-button>
-        <span>{{ option.title }}</span>
-        </span>
-    </div>
-    <div class="bottom-buttons">
-        <push-button buttonStyle="outline" title="Clear Selection" (onClick)="onClearSelection()">Clear</push-button>
-        <push-button buttonStyle="outline" title="Close window" (onClick)="onClose()">Close</push-button>
-    </div>
+  <div *ngFor="let section of selectionOptions" class="option-section">
+    <h2>{{ section.title }}</h2>
+    <span class="checkbox-group" *ngFor="let option of section.options">
+      <two-state-icon-button
+        activeIcon="assets/button-icons/check-on.svg"
+        inactiveIcon="assets/button-icons/check-off.svg"
+        class="checkbox-button"
+        [active]="selectedOptions.includes(option.value)"
+        (onToggle)="onToggleSelection(option.value)">
+      </two-state-icon-button>
+      <span>{{ option.title }}</span>
+    </span>
+  </div>
+  <div class="bottom-buttons">
+    <push-button buttonStyle="outline" title="Clear Selection" (onClick)="onClearSelection()">Clear</push-button>
+    <push-button buttonStyle="outline" title="Close window" (onClick)="onClose()">Close</push-button>
+  </div>
 </div>

@@ -23,6 +23,7 @@ import { TernaryState, VisibleROI } from "src/app/generated-protos/widget-data";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ROIService } from "src/app/modules/roi/services/roi.service";
 
 class TernaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -66,6 +67,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     public dialog: MatDialog,
     private _selectionService: SelectionService,
     //private _route: ActivatedRoute,
+    private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _widgetData: WidgetDataService,
     private _snackService: SnackbarService
@@ -278,21 +280,18 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
             this.mdl.expressionIds[i] = result.selectedExpressions[i].id;
           }
 
-          // let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];
-
-          // // If we already have a data source for this scan, keep the ROI ids
-          // const existingSource = this.mdl.dataSourceIds.get(result.scanId);
-          // if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
-          //   roiIds = existingSource.roiIds;
-          // }
-          // this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
-
           this.update();
           this.saveState();
 
           // Expression picker has closed, so we can stop highlighting this widget
           this._analysisLayoutService.highlightedWidgetId$.next("");
         }
+      })
+    );
+
+    this._subs.add(
+      this._roiService.displaySettingsMap$.subscribe(displaySettings => {
+        this.update();
       })
     );
 

@@ -33,6 +33,7 @@ import {
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 import { ImageOptionsComponent, ImageDisplayOptions, ImagePickerParams, ImagePickerResult } from "./image-options/image-options.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
+import { ROIService } from "src/app/modules/roi/services/roi.service";
 
 @Component({
   selector: "app-context-image",
@@ -54,6 +55,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
+    private _roiService: ROIService,
     private _cachedDataService: APICachedDataService,
     private _contextDataService: ContextImageDataService,
     private _selectionService: SelectionService,
@@ -296,6 +298,12 @@ bool removeBottomSpecularArtifacts = 21;
       })
     );
 
+    this._subs.add(
+      this._roiService.displaySettingsMap$.subscribe(displaySettings => {
+        this.reDraw();
+      })
+    );
+
     this.reDraw();
   }
 
@@ -414,6 +422,7 @@ bool removeBottomSpecularArtifacts = 21;
   }
 
   onExport(trigger: Element | undefined) {}
+
   onCrop(trigger: Element | undefined) {}
 
   onSoloView() {}
@@ -501,14 +510,17 @@ bool removeBottomSpecularArtifacts = 21;
       }
     });
   }
+
   onZoomIn() {
     const newScale = this.mdl.transform.scale.x * (1 + 4 / 100);
     this.mdl.transform.setScaleRelativeTo(new Point(newScale, newScale), this.mdl.transform.calcViewportCentreInWorldspace(), true);
   }
+
   onZoomOut() {
     const newScale = this.mdl.transform.scale.x * (1 - 4 / 100);
     this.mdl.transform.setScaleRelativeTo(new Point(newScale, newScale), this.mdl.transform.calcViewportCentreInWorldspace(), true);
   }
+
   onResetViewToWholeImage() {
     const dims: Point = this.mdl.drawModel.image
       ? new Point(this.mdl.drawModel.image.width, this.mdl.drawModel.image.height)
@@ -516,11 +528,13 @@ bool removeBottomSpecularArtifacts = 21;
 
     this.mdl.transform.resetViewToRect(new Rect(0, 0, dims.x, dims.y), true);
   }
+
   onResetViewToExperiment() {
     if (this.mdl.drawModel.allLocationPointsBBox.w > 0 && this.mdl.drawModel.allLocationPointsBBox.h > 0) {
       this.mdl.transform.resetViewToRect(this.mdl.drawModel.allLocationPointsBBox, true);
     }
   }
+
   onToggleLayersView(trigger: Element | undefined) {
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.data = {
@@ -532,23 +546,6 @@ bool removeBottomSpecularArtifacts = 21;
     };
 
     this.dialog.open(ExpressionPickerComponent, dialogConfig);
-    // dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
-    //   this.isWidgetHighlighted = false;
-    //   if (result) {
-    //     this.mdl.expressionIds = [];
-
-    //     if (result && result.selectedExpressions?.length > 0) {
-    //       for (const expr of result.selectedExpressions) {
-    //         this.mdl.expressionIds.push(expr.id);
-    //       }
-    //     }
-
-    //     this.TEMP_QUANT_ID = result.quantId;
-
-    //     this.reloadModel();
-    //     //this.saveState();
-    //   }
-    // });
   }
 
   onRegions() {

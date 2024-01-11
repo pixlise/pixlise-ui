@@ -26,6 +26,7 @@ import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysi
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { VisibleROI, BinaryState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
+import { ROIService } from "src/app/modules/roi/services/roi.service";
 
 class BinaryChartToolHost extends InteractionWithLassoHover {
   constructor(
@@ -63,6 +64,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     public dialog: MatDialog,
     private _selectionService: SelectionService,
     private _widgetData: WidgetDataService,
+    private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _snackService: SnackbarService
   ) {
@@ -287,6 +289,12 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
         // Expression picker has closed, so we can stop highlighting this widget
         this._analysisLayoutService.highlightedWidgetId$.next("");
+      })
+    );
+
+    this._subs.add(
+      this._roiService.displaySettingsMap$.subscribe(displaySettings => {
+        this.update();
       })
     );
 
