@@ -29,7 +29,7 @@
 
 import { Injectable } from "@angular/core";
 import { Observable, combineLatest, of, concatMap, mergeMap, throwError } from "rxjs";
-import { map, catchError } from "rxjs/operators";
+import { map, catchError, shareReplay } from "rxjs/operators";
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
@@ -137,11 +137,16 @@ class LoadedSources {
   providedIn: "root",
 })
 export class WidgetDataService {
-  // Query result cache - for slow queries we cache their result
-  //private _resultCache: QueryResultCache = new QueryResultCache(environment.expressionResultCacheThresholdMs, 60000, 10000);
   private _exprRunStatLastNotificationTime = new Map<string, number>();
 
   public unsavedExpressions: Map<string, DataExpression> = new Map<string, DataExpression>();
+
+  // A cache that hands out existing observables while they are still waiting. This is due to us often getting
+  // tons of requests for the same expression because the UI element wanting it got reset while other things loaded.
+  // The existing observable is still being worked on, so a new subscriber can be attached to it.
+  // NOTE: These items only exist until the observable is completed, it is then removed from the cache so subsequent
+  //       requests would re-create the observable again.
+  private _inFluxSingleQueryResultCache: Map<string, Observable<DataQueryResult>> = new Map<string, Observable<DataQueryResult>>();
 
   constructor(
     private _dataService: APIDataService,
@@ -177,16 +182,34 @@ export class WidgetDataService {
     );
   }
 
+  private makeCacheKey(query: DataSourceParams, allowAnyResponse: boolean): string {
+    return JSON.stringify(query) + "," + allowAnyResponse;
+  }
+
   private getDataSingle(query: DataSourceParams, allowAnyResponse: boolean): Observable<DataQueryResult> {
+    // Here we have our first level of caching. This is because a widget can be re-inited/updated due to many things
+    // such as UI refresh/colours or settings loading, etc. We don't want each to trigger a whole new run of an
+    // expression, so check if we already have an observable we can return for this
+    const cacheKey = this.makeCacheKey(query, allowAnyResponse);
+    const cached = this._inFluxSingleQueryResultCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     // Firstly, we need the expression being run - note it could be a "predefined" one, so we have some
     // special handling here that ends up just returning an expression!
-    return this.getExpression(query.exprId).pipe(
+    const obs = this.getExpression(query.exprId).pipe(
       concatMap((expr: DataExpression) => {
         return this.runExpression(expr, query.scanId, query.quantId, query.roiId, allowAnyResponse).pipe(
           mergeMap((result: DataQueryResult) => {
             return this._roiService.getRegionSettings(query.roiId).pipe(
               map((roiSettings: RegionSettings) => {
                 result.region = roiSettings;
+
+                // Remove from cache, we only want to cache while it's running, subsequent ones should
+                // re-run it
+                this._inFluxSingleQueryResultCache.delete(cacheKey);
+
                 return result;
               })
             );
@@ -206,12 +229,17 @@ export class WidgetDataService {
           })
         );
       }),
+      shareReplay(1),
       catchError(err => {
         const errorMsg = httpErrorToString(err, "Error getting expression: " + query.exprId);
         console.error(errorMsg);
         return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg));
       })
     );
+
+    // Add to our cache
+    this._inFluxSingleQueryResultCache.set(cacheKey, obs);
+    return obs;
   }
 
   private getExpression(id: string): Observable<DataExpression> {
