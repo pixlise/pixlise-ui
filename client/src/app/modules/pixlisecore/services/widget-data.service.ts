@@ -48,6 +48,12 @@ import { RegionSettings } from "../../roi/models/roi-region";
 import { ROIService } from "../../roi/services/roi.service";
 import { getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
 import { EnergyCalibrationService } from "./energy-calibration.service";
+import { MemoisationService } from "./memoisation.service";
+import { MemoisedItem } from "src/app/generated-protos/memoisation";
+import { MemDataQueryResult, MemPMCDataValue, MemPMCDataValues, MemRegionSettings } from "src/app/generated-protos/memoisation";
+import { ROIItemDisplaySettings } from "src/app/generated-protos/roi";
+import { RGBA } from "src/app/utils/colours";
+import { ROIShape } from "../../roi/components/roi-shape/roi-shape.component";
 
 export type DataModuleVersionWithRef = {
   id: string;
@@ -145,15 +151,18 @@ export class WidgetDataService {
   // A cache that hands out existing observables while they are still waiting. This is due to us often getting
   // tons of requests for the same expression because the UI element wanting it got reset while other things loaded.
   // The existing observable is still being worked on, so a new subscriber can be attached to it.
-  // NOTE: These items only exist until the observable is completed, it is then removed from the cache so subsequent
-  //       requests would re-create the observable again.
+  // NOTE:  These items only exist until the observable is completed, it is then removed from the cache so subsequent
+  //        requests would re-create the observable again.
+  // NOTE2: Make sure any obs going in here has shareReplay in its pipe, otherwise the observable is re-run and caching
+  //        doesn't do anything really!
   private _inFluxSingleQueryResultCache: Map<string, Observable<DataQueryResult>> = new Map<string, Observable<DataQueryResult>>();
 
   constructor(
     private _dataService: APIDataService,
     private _cachedDataService: APICachedDataService,
     private _roiService: ROIService,
-    private _energyCalibrationService: EnergyCalibrationService
+    private _energyCalibrationService: EnergyCalibrationService,
+    private _memoisationService: MemoisationService
   ) {}
 
   // This queries data based on parameters. The assumption is it either returns null, or returns an array with the same
@@ -198,9 +207,42 @@ export class WidgetDataService {
       return cached;
     }
 
+    const obs = this.getDataWithMemoisation(query, allowAnyResponse, cacheKey);
+
+    // Add to our in-flux cache
+    this._inFluxSingleQueryResultCache.set(cacheKey, obs); // Make sure any obs going in here has shareReplay in its pipe
+    return obs;
+  }
+
+  private getDataWithMemoisation(query: DataSourceParams, allowAnyResponse: boolean, cacheKey: string): Observable<DataQueryResult> {
+    // If it's not memomisable, just return the calculated value straight away
+    if (DataExpressionId.isPredefinedExpression(query.exprId)) {
+      return this.getDataSingleCalculate(query, allowAnyResponse, cacheKey);
+    }
+
+    // Try the local cache first
+    // TODO: what if expression or ROI is edited??? We need to either clear the cache or store timestamps!
+    return this._memoisationService.get(cacheKey).pipe(
+      map((item: MemoisedItem) => {
+        // We got something! return this straight away...
+        console.info("Query restored from memoised result: " + cacheKey);
+        return this.fromMemoised(item.data);
+      }),
+      catchError(err => {
+        // This is now already logged in memoisation service
+        //console.error("Memoisation cache miss for " + cacheKey + ", calculating...");
+
+        // No matter what the error was, we need to now calculate this locally
+        return this.getDataSingleCalculate(query, allowAnyResponse, cacheKey);
+      }),
+      shareReplay(1) // VERY important, without this we run them individually and it defeats the use of _inFluxSingleQueryResultCache
+    );
+  }
+
+  private getDataSingleCalculate(query: DataSourceParams, allowAnyResponse: boolean, cacheKey: string): Observable<DataQueryResult> {
     // Firstly, we need the expression being run - note it could be a "predefined" one, so we have some
     // special handling here that ends up just returning an expression!
-    const obs = this.getExpression(query.exprId).pipe(
+    return this.getExpression(query.exprId).pipe(
       concatMap((expr: DataExpression) => {
         return this.runExpression(expr, query.scanId, query.quantId, query.roiId, allowAnyResponse).pipe(
           mergeMap((result: DataQueryResult) => {
@@ -211,6 +253,12 @@ export class WidgetDataService {
                 // Remove from cache, we only want to cache while it's running, subsequent ones should
                 // re-run it
                 this._inFluxSingleQueryResultCache.delete(cacheKey);
+
+                // Also, add to memoisation cache
+                if (!DataExpressionId.isPredefinedExpression(query.exprId)) {
+                  const encodedResult = this.toMemoised(result);
+                  this._memoisationService.memoise(cacheKey, encodedResult);
+                }
 
                 return result;
               })
@@ -231,17 +279,105 @@ export class WidgetDataService {
           })
         );
       }),
-      shareReplay(1),
       catchError(err => {
         const errorMsg = httpErrorToString(err, "Error getting expression: " + query.exprId);
         console.error(errorMsg);
         return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg));
       })
     );
+  }
 
-    // Add to our cache
-    this._inFluxSingleQueryResultCache.set(cacheKey, obs);
-    return obs;
+  private toMemoised(result: DataQueryResult): Uint8Array {
+    // We copy to protobuf structs which then serialise to binary
+    // NOTE: This is an experiment, if it works, maybe we'll switch all code to use these structs!
+    const memValues = [];
+    for (const val of result.resultValues.values) {
+      memValues.push(
+        MemPMCDataValue.create({
+          pmc: val.pmc,
+          value: val.value,
+          isUndefined: val.isUndefined,
+          label: val.label,
+        })
+      );
+    }
+
+    const memPixelIndexSet = result.region ? Array.from(result.region.pixelIndexSet) : [];
+
+    const memResult = MemDataQueryResult.create({
+      resultValues: MemPMCDataValues.create({
+        minValue: result.resultValues.valueRange.min,
+        maxValue: result.resultValues.valueRange.max,
+        values: memValues,
+        isBinary: result.resultValues.isBinary,
+        warning: result.resultValues.warning,
+      }),
+      isPMCTable: result.isPMCTable,
+    });
+
+    if (result.expression) {
+      memResult.expression = result.expression;
+    }
+
+    if (result.region) {
+      memResult.region = MemRegionSettings.create({
+        region: result.region.region,
+        displaySettings: ROIItemDisplaySettings.create({
+          colour: result.region.displaySettings.colour.asString(),
+          shape: result.region.displaySettings.shape,
+        }),
+        pixelIndexSet: memPixelIndexSet,
+      });
+    }
+
+    const writer = MemDataQueryResult.encode(memResult);
+    const bytes = writer.finish();
+    return bytes;
+    //const sendbuf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  }
+
+  private fromMemoised(data: Uint8Array): DataQueryResult {
+    // We copy deserialise into protobuf structs which we then copy to our used ones
+    // NOTE: This is an experiment, if it works, maybe we'll switch all code to use these structs!
+    const memResult = MemDataQueryResult.decode(data);
+
+    const values: PMCDataValue[] = [];
+    if (memResult.resultValues) {
+      for (const v of memResult.resultValues.values) {
+        values.push(new PMCDataValue(v.pmc, v.value, v.isUndefined, v.label));
+      }
+    }
+
+    const result = new DataQueryResult(
+      PMCDataValues.makeWithValues(values),
+      memResult.isPMCTable,
+      [], // dataRequired
+      0, // runtimeMs
+      "", // stdout
+      "", // stderr
+      new Map<string, PMCDataValues>(), // recordedExpressionInputs
+      "", // errorMsg
+      memResult.expression
+    );
+
+    if (memResult.region) {
+      result.region = new RegionSettings(memResult.region.region, undefined, new Set<number>(memResult.region.pixelIndexSet));
+
+      if (memResult.region.displaySettings) {
+        let shape: ROIShape = "circle";
+        if (memResult.region.displaySettings.shape == "triangle") {
+          shape = "triangle";
+        } else if (memResult.region.displaySettings.shape == "cross") {
+          shape = "cross";
+        } else if (memResult.region.displaySettings.shape == "square") {
+          shape = "square";
+        }
+
+        result.region.displaySettings = { colour: RGBA.fromString(memResult.region.displaySettings.colour), shape: shape };
+      }
+    }
+
+    return result;
   }
 
   private getExpression(id: string): Observable<DataExpression> {
