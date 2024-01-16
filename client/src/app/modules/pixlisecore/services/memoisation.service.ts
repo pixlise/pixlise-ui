@@ -21,7 +21,7 @@ export class MemoisationService {
     const existing = this._local.get(key);
     if (existing && this.equals(existing.data, data)) {
       // Stop here, we've already got this memoised
-      console.warn("Already memoized: " + key);
+      console.warn("Already memoised: " + key);
       return of();
     }
 
