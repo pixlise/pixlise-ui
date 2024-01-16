@@ -53,6 +53,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <roi-search-controls
       class="{{ showSearchControls ? 'visible' : '' }}"
+      [limitToConfiguredScans]="true"
       [summaries]="summaries"
       [scanId]="data?.scanId || ''"
       (onFilterChanged)="onFilterChanged($event)"

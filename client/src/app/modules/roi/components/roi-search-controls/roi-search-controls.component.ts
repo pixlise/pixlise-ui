@@ -30,6 +30,9 @@ export class ROISearchControlsComponent {
 
   filteredTagIDs: string[] = [];
 
+  @Input() limitToConfiguredScans: boolean = true;
+
+  configuredScans: ScanItem[] = [];
   allScans: ScanItem[] = [];
   _visibleScanId: string = "";
 
@@ -52,6 +55,19 @@ export class ROISearchControlsComponent {
     this._subs.add(
       this._analysisLayoutService.availableScans$.subscribe(scans => {
         this.allScans = scans;
+        if (this.limitToConfiguredScans && this._analysisLayoutService.activeScreenConfiguration$.value) {
+          this.configuredScans = scans.filter(scan => this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[scan.id]);
+        } else if (!this.limitToConfiguredScans) {
+          this.configuredScans = scans;
+        }
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
+        if (this.limitToConfiguredScans && screenConfiguration) {
+          this.configuredScans = this.allScans.filter(scan => screenConfiguration.scanConfigurations[scan.id]);
+        }
       })
     );
 
