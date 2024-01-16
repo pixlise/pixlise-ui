@@ -27,11 +27,11 @@ export class RegionSettings {
   ) {}
 }
 
-export const createDefaultAllPointsItem = (scanId: string): ROIItem => {
+export const createDefaultAllPointsItem = (scanId: string, scanName: string = ""): ROIItem => {
   return ROIItem.create({
     id: PredefinedROIID.getAllPointsForScan(scanId),
     scanId: scanId,
-    name: "All Points",
+    name: "All Points" + (scanName ? ` (${scanName})` : ""),
     description: "All Points",
     scanEntryIndexesEncoded: [],
     imageName: "",
@@ -44,8 +44,8 @@ export const createDefaultAllPointsItem = (scanId: string): ROIItem => {
   });
 };
 
-export const createDefaultAllPointsRegionSettings = (scanId: string, scanShape: ROIShape): RegionSettings => {
-  return new RegionSettings(createDefaultAllPointsItem(scanId), { colour: Colours.GRAY_10, shape: scanShape });
+export const createDefaultAllPointsRegionSettings = (scanId: string, scanShape: ROIShape, scanName: string = ""): RegionSettings => {
+  return new RegionSettings(createDefaultAllPointsItem(scanId, scanName), { colour: Colours.GRAY_10, shape: scanShape });
 };
 
 export const createDefaultSelectedPointsItem = (scanId: string): ROIItem => {

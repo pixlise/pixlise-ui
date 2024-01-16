@@ -377,14 +377,6 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
     if (this.widgetControlConfiguration.topRightInsetButton) {
       this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
     }
-    // const dialogConfig = new MatDialogConfig<WidgetKeyDisplayData>();
-    // dialogConfig.hasBackdrop = false;
-    // dialogConfig.data = {
-    //   items: this.mdl.keyItems,
-    //   showKey: false,
-    // };
-    // console.log("keyItems", this.mdl.keyItems);
-    // this.dialog.open(WidgetKeyDisplayComponent, dialogConfig);
   }
 
   private saveState(): void {

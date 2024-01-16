@@ -33,6 +33,8 @@ import { Colours, RGBA } from "src/app/utils/colours";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { SelectionHistoryItem } from "../../pixlisecore/services/selection.service";
 import { ScanEntryReq } from "src/app/generated-protos/scan-entry-msgs";
+import { ScanItem } from "src/app/generated-protos/scan";
+import { AnalysisLayoutService } from "../../analysis/analysis.module";
 
 export type ROISummaries = Record<string, ROIItemSummary>;
 
@@ -57,16 +59,32 @@ export class ROIService {
   private _shapes: ROIShape[] = ROI_SHAPES;
   private _colours: ColourOption[] = COLOURS;
 
+  private _allScans: ScanItem[] = [];
+
   constructor(
     private _dataService: APIDataService,
     private _snackBarService: SnackbarService,
     private _cachedDataService: APICachedDataService,
-    private _selectionService: SelectionService
+    private _selectionService: SelectionService,
+    private _analysisLayoutService: AnalysisLayoutService
   ) {
     this.listROIs();
 
     this._selectionService.selection$.subscribe(selection => {
       this.generateSelectionROI(selection);
+    });
+
+    this._analysisLayoutService.availableScans$.subscribe(scans => {
+      this._allScans = scans;
+
+      this._allScans.forEach(scan => {
+        let allPointsROI = PredefinedROIID.getAllPointsForScan(scan.id);
+        if (this._regionMap.get(allPointsROI) !== undefined) {
+          this._regionMap.get(allPointsROI)?.subscribe(regionSettings => {
+            this._regionMap.set(allPointsROI, of(createDefaultAllPointsRegionSettings(scan.id, regionSettings.displaySettings.shape, scan.title)));
+          });
+        }
+      });
     });
   }
 
@@ -125,7 +143,8 @@ export class ROIService {
     return this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId })).pipe(
       map(res => {
         const entryIds = res.entries.map(entry => entry.id);
-        const allPointsROI = createDefaultAllPointsItem(scanId);
+        let scanName = this._allScans.find(scan => scan.id === scanId)?.title;
+        const allPointsROI = createDefaultAllPointsItem(scanId, scanName);
         allPointsROI.scanEntryIndexesEncoded = entryIds;
 
         return allPointsROI;
@@ -291,7 +310,8 @@ export class ROIService {
     if (this._regionMap.get(allPointsROI) === undefined) {
       // Must be new, add them
       const scanDisp = this.nextDisplaySettings(scanId);
-      this._regionMap.set(PredefinedROIID.getAllPointsForScan(scanId), of(createDefaultAllPointsRegionSettings(scanId, scanDisp.shape)));
+      let scanName = this._allScans.find(scan => scan.id === scanId)?.title;
+      this._regionMap.set(PredefinedROIID.getAllPointsForScan(scanId), of(createDefaultAllPointsRegionSettings(scanId, scanDisp.shape, scanName)));
       this._regionMap.set(PredefinedROIID.getSelectedPointsForScan(scanId), of(createDefaultSelectedPointsRegionSettings(scanId, scanDisp.shape)));
     }
 

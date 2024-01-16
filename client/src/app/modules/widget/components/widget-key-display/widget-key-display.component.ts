@@ -59,7 +59,6 @@ export class WidgetKeyDisplayComponent implements OnInit {
 
   onToggleShowKey(): void {
     this.keyShowing = !this.keyShowing;
-    console.log("KEY", this.items);
     // this.onToggleKey.emit(this.keyShowing);
   }
 
