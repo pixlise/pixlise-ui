@@ -37,7 +37,7 @@ import { httpErrorToString, SentryHelper } from "src/app/utils/utils";
 import { APIDataService } from "./apidata.service";
 import { ExpressionGetReq, ExpressionGetResp, ExpressionWriteExecStatReq } from "src/app/generated-protos/expression-msgs";
 import { DataExpression } from "src/app/generated-protos/expressions";
-import { DataModule, DataModuleVersion } from "src/app/generated-protos/modules";
+import { DataModuleVersion } from "src/app/generated-protos/modules";
 import { DataModuleGetReq, DataModuleGetResp } from "src/app/generated-protos/module-msgs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { DataQuerier, EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
@@ -47,6 +47,7 @@ import { APICachedDataService } from "./apicacheddata.service";
 import { RegionSettings } from "../../roi/models/roi-region";
 import { ROIService } from "../../roi/services/roi.service";
 import { getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
+import { EnergyCalibrationService } from "./energy-calibration.service";
 
 export type DataModuleVersionWithRef = {
   id: string;
@@ -151,7 +152,8 @@ export class WidgetDataService {
   constructor(
     private _dataService: APIDataService,
     private _cachedDataService: APICachedDataService,
-    private _roiService: ROIService
+    private _roiService: ROIService,
+    private _energyCalibrationService: EnergyCalibrationService
   ) {}
 
   // This queries data based on parameters. The assumption is it either returns null, or returns an array with the same
@@ -292,8 +294,14 @@ export class WidgetDataService {
       this.unsavedExpressions.set(expression.id, expression);
     }
 
-    return this.loadCodeForExpression(expression).pipe(
-      concatMap((sources: LoadedSources) => {
+    const calibration$ = this._energyCalibrationService.getCurrentCalibration(scanId);
+    const expr$ = this.loadCodeForExpression(expression);
+
+    // Load both of these
+    return combineLatest([calibration$, expr$]).pipe(
+      concatMap((loadResult: [SpectrumEnergyCalibration[], LoadedSources]) => {
+        const calibration = loadResult[0];
+        const sources = loadResult[1];
         // We now have the ready-to-go source code, run the query
         // At this point we should have the expression source and 0 or more modules
         if (!sources.expressionSrc) {
@@ -305,9 +313,6 @@ export class WidgetDataService {
         // Pass in the source and module sources separately
         const querier = new DataQuerier();
         const dataSource = new ExpressionDataSource();
-
-        // TODO: look up the calibration value here!!
-        const calibration: SpectrumEnergyCalibration[] = [];
 
         return dataSource.prepare(this._cachedDataService, scanId, quantId, roiId, calibration).pipe(
           concatMap(() => {
