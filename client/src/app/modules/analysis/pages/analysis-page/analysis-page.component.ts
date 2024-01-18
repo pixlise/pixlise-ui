@@ -17,7 +17,7 @@ export class AnalysisPageComponent {
   private _keyPresses = new Set<string>();
 
   computedLayouts: ScreenConfigurationCSS[] = [];
-  loadedScreenConfiguration: ScreenConfiguration = createDefaultScreenConfiguration();
+  loadedScreenConfiguration: ScreenConfiguration | null = null;
 
   constructor(private _analysisLayoutService: AnalysisLayoutService) {}
 
@@ -29,6 +29,10 @@ export class AnalysisPageComponent {
   }
 
   computeLayouts() {
+    if (!this.loadedScreenConfiguration) {
+      this.loadedScreenConfiguration = createDefaultScreenConfiguration();
+    }
+
     let newLayout = this.loadedScreenConfiguration.layouts.map(layout => {
       let templateRows = layout.rows.map(row => `${row.height}fr`).join(" ");
       let templateColumns = layout.columns.map(column => `${column.width}fr`).join(" ");

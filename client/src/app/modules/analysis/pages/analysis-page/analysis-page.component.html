@@ -1,6 +1,6 @@
 <section class="page analysis-container">
   <analysis-sidepanel></analysis-sidepanel>
-  <section class="screen-container">
+  <section class="screen-container" *ngIf="loadedScreenConfiguration">
     <section
       *ngFor="let layout of loadedScreenConfiguration.layouts; let i = index"
       class="widgets-container"
