@@ -32,6 +32,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <div
   class="button"
   [ngClass]="{
+    'control-btn': buttonStyle === 'control-button',
     'push-btn-rounded-disabled': disabled,
     'push-btn-rounded': !disabled && !active,
     'push-btn-rounded-active': !disabled && active,

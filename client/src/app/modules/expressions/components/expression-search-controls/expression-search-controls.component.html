@@ -12,6 +12,15 @@
     </mat-select> -->
   </div>
   <div class="option-filters">
+    <!-- <mat-checkbox [(ngModel)]="onlyShowEditable" label>Can Edit?</mat-checkbox> -->
+    <two-state-push-button
+      class="editable"
+      [buttonStyle]="'control-button'"
+      [active]="onlyShowEditable"
+      (onToggle)="onToggleOnlyShowEditable()"
+      title="Only show expressions that can be edited"
+      >Can Edit?</two-state-push-button
+    >
     <!-- <filter-box placeholder="Search ..." (onFilterChanged)="onFilterText($event)"> </filter-box> -->
     <mat-select #tooltip="matTooltip" [matTooltip]="authorsTooltip" multiple [(ngModel)]="filteredAuthors" class="authors-filter" placeholder="Author">
       <mat-option *ngFor="let author of authors" [value]="author.id">{{ author.name }} </mat-option>

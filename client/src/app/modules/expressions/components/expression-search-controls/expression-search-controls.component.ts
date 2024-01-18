@@ -30,6 +30,8 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   filteredExpressions: (DataExpression | ExpressionGroup)[] = [];
 
   onlyShowRecent: boolean = false;
+  onlyShowEditable: boolean = false;
+
   @Input() recentExpressions: RecentExpression[] = [];
 
   @Output() onFilterChanged = new EventEmitter<ExpressionSearchFilter>();
@@ -234,6 +236,15 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
     return this._userOptionsService.hasFeatureAccess("editExpression");
   }
 
+  checkIsEditable(expression: DataExpression | ExpressionGroup): boolean {
+    return expression.owner?.canEdit || false;
+  }
+
+  onToggleOnlyShowEditable(): void {
+    this.onlyShowEditable = !this.onlyShowEditable;
+    this.filterExpressionsForDisplay();
+  }
+
   emitFilters(): void {
     this.onFilterChanged.emit({
       scanId: this.visibleScanId,
@@ -295,6 +306,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
     for (let expression of expressions) {
       let expressionNameLower = expression.name.toLowerCase();
       if (
+        (!this.onlyShowEditable || this.checkIsEditable(expression)) && // Only show editable expressions (if requested
         (searchString.length <= 0 || expressionNameLower.indexOf(searchString) >= 0) && // No search string or search string matches
         (this.filteredTagIDs.length <= 0 || this.filteredTagIDs.some(tagID => expression.tags.includes(tagID))) && // No selected tags or expression has selected tag
         (this.filteredAuthors.length <= 0 || this.filteredAuthors.some(author => expression.owner?.creatorUser?.id === author)) // No selected authors or expression has selected author

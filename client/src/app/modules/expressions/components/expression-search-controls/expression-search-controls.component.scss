@@ -33,6 +33,11 @@
     display: flex;
     justify-content: center;
 
+    .editable {
+      margin-right: 6px;
+      display: flex;
+    }
+
     tag-picker {
       margin-left: 6px;
     }

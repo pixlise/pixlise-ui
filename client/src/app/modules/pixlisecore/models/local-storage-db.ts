@@ -8,7 +8,7 @@ export class LocalStorageDB extends Dexie {
 
   constructor() {
     super("pixlise");
-    this.version(3).stores({
+    this.version(4).stores({
       eventHistory: "++id",
       memoData: "key",
     });

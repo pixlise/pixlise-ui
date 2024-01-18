@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 // Specialised case of two-state-button which is used often
-import { Component } from "@angular/core";
+import { Component, Input } from "@angular/core";
 import { TwoStateButtonComponent } from "./two-state-button.component";
 
 @Component({
@@ -37,6 +37,8 @@ import { TwoStateButtonComponent } from "./two-state-button.component";
   styleUrls: ["./two-state-push-button.component.scss"],
 })
 export class TwoStatePushButton extends TwoStateButtonComponent {
+  @Input() buttonStyle: "push-button" | "control-button" = "push-button";
+
   constructor() {
     super();
     this.leftLabel = "";

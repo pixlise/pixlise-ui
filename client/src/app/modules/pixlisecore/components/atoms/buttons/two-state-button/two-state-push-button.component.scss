@@ -33,6 +33,7 @@
 .button {
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 .icon-btn {
@@ -57,4 +58,18 @@
   background-color: $clr-gray-100;
   cursor: not-allowed;
   user-select: none;
+}
+
+.control-btn {
+  background: #454c50;
+  &:not(.push-btn-rounded-active) {
+    color: white;
+  }
+  font-weight: bold;
+  font-family: "Roboto";
+  border: 2px solid rgb(var(--clr-gray-60));
+
+  &:hover {
+    background-color: rgb(var(--clr-gray-80));
+  }
 }
