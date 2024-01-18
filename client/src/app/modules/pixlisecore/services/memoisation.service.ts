@@ -31,7 +31,10 @@ export class MemoisationService {
 
     // Save it in memory (we'll update the time stamp soon)
     const ts = Date.now() / 1000;
-    this._local.set(key, MemoisedItem.create({ key, data, memoTimeUnixSec: ts }));
+
+    let localMemoData = MemoisedItem.create({ key, data, memoTimeUnixSec: ts });
+    this._local.set(key, localMemoData);
+    this._localStorageService.storeMemoData(localMemoData);
 
     // Write it to API
     return this._dataService.sendMemoiseWriteRequest(MemoiseWriteReq.create({ key, data })).pipe(
