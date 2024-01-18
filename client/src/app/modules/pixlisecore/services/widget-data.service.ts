@@ -360,7 +360,7 @@ export class WidgetDataService {
       memResult.expression
     );
 
-    if (memResult.region) {
+    if (memResult.region && memResult.region.region) {
       result.region = new RegionSettings(memResult.region.region, undefined, new Set<number>(memResult.region.pixelIndexSet));
 
       if (memResult.region.displaySettings) {

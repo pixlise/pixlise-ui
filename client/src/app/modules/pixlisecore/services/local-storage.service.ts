@@ -2,13 +2,16 @@ import { Injectable } from "@angular/core";
 import { db } from "../models/local-storage-db";
 import { liveQuery } from "dexie";
 import { SnackbarDataItem } from "./snackbar.service";
+import { MemoisedItem } from "src/app/generated-protos/memoisation";
 
 @Injectable({
   providedIn: "root",
 })
 export class LocalStorageService {
-  eventHistory$ = liveQuery(() => db.eventHistory.toArray().then(items => items.reverse()));
   static EVENT_HISTORY_LIMIT = 100;
+
+  eventHistory$ = liveQuery(() => db.eventHistory.toArray().then(items => items.reverse()));
+  memoData$ = liveQuery(() => db.memoData);
 
   constructor() {}
 
@@ -23,5 +26,17 @@ export class LocalStorageService {
 
   async clearEventHistory() {
     await db.eventHistory.clear();
+  }
+
+  async storeMemoData(memoData: MemoisedItem) {
+    await db.memoData.put(memoData, memoData.key);
+  }
+
+  async getMemoData(key: string): Promise<MemoisedItem | undefined> {
+    return await db.memoData.get(key);
+  }
+
+  async clearMemoData() {
+    await db.memoData.clear();
   }
 }

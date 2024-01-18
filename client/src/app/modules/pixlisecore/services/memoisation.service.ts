@@ -1,20 +1,24 @@
 import { Injectable } from "@angular/core";
 
 import { APIDataService } from "./apidata.service";
-import { Observable, catchError, map, of } from "rxjs";
+import { Observable, catchError, firstValueFrom, from, map, of } from "rxjs";
 import { MemoiseWriteReq, MemoiseWriteResp } from "src/app/generated-protos/memoisation-msgs";
 import { MemoiseGetReq } from "src/app/generated-protos/memoisation-msgs";
 import { MemoiseGetResp } from "src/app/generated-protos/memoisation-msgs";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
+import { LocalStorageService } from "./local-storage.service";
 
 @Injectable({
   providedIn: "root",
 })
 export class MemoisationService {
   // Local cache, if it's not in here, we reach out to API and cache what it says
-  private _local = new Map<string, MemoisedItem>(); // TODO: Should this be in local storage? How do we sync with API?
+  private _local = new Map<string, MemoisedItem>();
 
-  constructor(private _dataService: APIDataService) {}
+  constructor(
+    private _dataService: APIDataService,
+    private _localStorageService: LocalStorageService
+  ) {}
 
   memoise(key: string, data: Uint8Array): Observable<void> {
     // Only memoise if it's changed
@@ -25,21 +29,25 @@ export class MemoisationService {
       return of();
     }
 
-    // Save it locally (we'll update the time stamp soon)
+    // Save it in memory (we'll update the time stamp soon)
     const ts = Date.now() / 1000;
-    this._local.set(key, MemoisedItem.create({ key: key, data: data, memoTimeUnixSec: ts }));
+    this._local.set(key, MemoisedItem.create({ key, data, memoTimeUnixSec: ts }));
 
     // Write it to API
-    return this._dataService.sendMemoiseWriteRequest(MemoiseWriteReq.create({ key: key, data: data })).pipe(
+    return this._dataService.sendMemoiseWriteRequest(MemoiseWriteReq.create({ key, data })).pipe(
       map((resp: MemoiseWriteResp) => {
         // Fix up the time stamp
-        let e = this._local.get(key);
-        if (e) {
-          e.memoTimeUnixSec = resp.memoTimeUnixSec;
+        let memoData = this._local.get(key);
+        if (memoData) {
+          memoData.memoTimeUnixSec = resp.memoTimeUnixSec;
         } else {
-          e = MemoisedItem.create({ key: key, data: data, memoTimeUnixSec: resp.memoTimeUnixSec });
+          memoData = MemoisedItem.create({ key: key, data: data, memoTimeUnixSec: resp.memoTimeUnixSec });
         }
-        this._local.set(key, e);
+        this._local.set(key, memoData);
+
+        // Cache it to local storage
+        this._localStorageService.storeMemoData(memoData);
+
         return;
       })
     );
@@ -52,24 +60,52 @@ export class MemoisationService {
       return of(local);
     }
 
-    // Get from API
-    return this._dataService.sendMemoiseGetRequest(MemoiseGetReq.create({ key: key })).pipe(
-      map((resp: MemoiseGetResp) => {
-        if (!resp.item) {
-          const err = new Error("MemoiseGetResp returned empty message for key: " + key);
+    return from(
+      this._localStorageService
+        .getMemoData(key)
+        .then(async memoData => {
+          if (memoData) {
+            this._local.set(key, memoData);
+            return memoData;
+          } else {
+            // Get from API
+            return await this.getFromAPI(key);
+          }
+        })
+        .catch(async err => {
           console.error(err);
-          throw err;
-        }
 
-        // Store it locally
-        this._local.set(key, resp.item);
-        return resp.item;
-      }),
-      catchError(err => {
-        console.log("Not memoised: " + key);
-        throw new Error(err);
-      })
+          // Get from API
+          return await this.getFromAPI(key);
+        })
     );
+  }
+
+  private async getFromAPI(key: string): Promise<MemoisedItem> {
+    // Get from API
+    let apiResponse = await firstValueFrom(
+      this._dataService.sendMemoiseGetRequest(MemoiseGetReq.create({ key })).pipe(
+        map((resp: MemoiseGetResp) => {
+          if (!resp.item) {
+            const err = new Error("MemoiseGetResp returned empty message for key: " + key);
+            console.error(err);
+            throw err;
+          }
+
+          // Store it locally
+          this._local.set(key, resp.item);
+          this._localStorageService.storeMemoData(resp.item);
+
+          return resp.item;
+        }),
+        catchError(err => {
+          console.log("Not memoised: " + key);
+          throw new Error(err);
+        })
+      )
+    );
+
+    return apiResponse;
   }
 
   // We should use hashes stored in the API or something...
