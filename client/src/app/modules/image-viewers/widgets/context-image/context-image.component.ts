@@ -537,6 +537,7 @@ bool removeBottomSpecularArtifacts = 21;
 
   onToggleLayersView(trigger: Element | undefined) {
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
+    dialogConfig.hasBackdrop = false;
     dialogConfig.data = {
       widgetType: "context-image",
       widgetId: this._widgetId,

@@ -15,7 +15,7 @@
 
     width: calc(100vw - 42px - 16px);
     min-width: calc(100vw - 42px - 16px);
-    height: calc(100vh - 42px - 16px);
+    height: calc(100vh - 32px - 16px);
 
     margin-left: 16px;
     padding-left: 16px;
@@ -34,7 +34,6 @@
   margin-left: 48px;
 
   overflow: scroll;
-  overflow-y: hidden;
 
   display: flex;
 
