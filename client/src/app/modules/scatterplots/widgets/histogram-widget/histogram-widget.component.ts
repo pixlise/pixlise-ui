@@ -67,9 +67,8 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       ],
       topRightInsetButton: {
         id: "key",
-        type: "button",
-        title: "Key",
-        tooltip: "Toggle key for plot",
+        value: this.mdl.keyItems,
+        type: "widget-key",
         onClick: () => this.onToggleKey(),
       },
     };
@@ -137,6 +136,10 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     this._widgetData.getData(query).subscribe({
       next: data => {
         this.setData(data);
+
+        if (this.widgetControlConfiguration.topRightInsetButton) {
+          this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+        }
       },
       error: err => {
         this.setData(new RegionDataResults([], err));
@@ -321,7 +324,11 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       }
     });
   }
-  onToggleKey() {}
+  onToggleKey() {
+    if (this.widgetControlConfiguration.topRightInsetButton) {
+      this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+    }
+  }
 
   private saveState(): void {
     const visibleROIs: VisibleROI[] = [];
