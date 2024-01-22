@@ -169,6 +169,12 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           onClick: () => this.onCalibration(),
         },
       ],
+      topRightInsetButton: {
+        id: "key",
+        type: "widget-key",
+        style: { "margin-top": "152px" },
+        onClick: () => this.onToggleKey(),
+      },
     };
   }
 
@@ -208,6 +214,10 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           this.mdl.setLineList(lines);
 
           this.updateLines();
+
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
         } else {
           this.setInitialConfig();
         }
@@ -349,6 +359,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     this.updateLines();
     this.saveState();
   }
+
+  onToggleKey() {}
 
   onShowXRayTubeLines() {
     // Can't do anything if X axis isn't calibrated, so complain if this is the case
@@ -652,6 +664,10 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           }
 
           this.mdl.updateRangesAndKey();
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
+
           this.mdl.clearDisplayData(); // This should trigger a redraw
         });
       });

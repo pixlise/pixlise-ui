@@ -164,8 +164,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   constructor(
     public xrfDBService: XRFDatabaseService //,
-    // public dialog: MatDialog,
-  ) // public clipboard: Clipboard
+    // public clipboard: Clipboard
+  ) // public dialog: MatDialog,
   {
     this.transform.transformChangeComplete$.subscribe((complete: boolean) => {
       // Remember we need to recalc
@@ -726,11 +726,13 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
     // Run through and regenerate key items from all lines
     let lastROI = "";
     for (const line of this._spectrumLines) {
-      if (lastROI != line.roiId) {
-        this._keyItems.push(new WidgetKeyItem("", line.roiName, line.color));
+      if (lastROI !== line.roiId) {
+        // Fake entry for ROI header label
+        this._keyItems.push(new WidgetKeyItem(line.roiId, line.roiName, line.color));
         lastROI = line.roiId;
       }
-      this._keyItems.push(new WidgetKeyItem("", line.expressionLabel, line.color, line.dashPattern));
+      let key = new WidgetKeyItem(`${line.roiId}-${line.expressionLabel}`, line.expressionLabel, line.color, line.dashPattern);
+      this._keyItems.push(key);
     }
 
     this._recalcNeeded = true;
