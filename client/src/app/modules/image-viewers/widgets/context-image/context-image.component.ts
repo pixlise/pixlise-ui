@@ -177,9 +177,17 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     };
 
     for (const tool of this.toolhost.getToolButtons()) {
+      let customStyle = {};
+      if (tool.toolId == ContextImageToolId.ZOOM) {
+        customStyle = { "border-left": "1px solid rgb(var(--clr-gray-70))", "margin-left": "4px" };
+      } else if (tool.toolId == ContextImageToolId.PAN) {
+        customStyle = { "border-right": "1px solid rgb(var(--clr-gray-70))", "padding-right": "4px" };
+      }
+
       this._widgetControlConfiguration.bottomToolbar?.push({
         id: "tool-" + tool.toolId.toString(),
         type: "selectable-button",
+        style: customStyle,
         icon: tool.icon,
         value: tool.state != ToolState.OFF,
         onClick: () => this.onToolSelected(tool.toolId),
