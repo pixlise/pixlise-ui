@@ -115,8 +115,6 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
         id: "key",
         value: this.mdl.keyItems,
         type: "widget-key",
-        // title: "Key",
-        // tooltip: "Toggle key for plot",
         onClick: () => this.onToggleKey(),
       },
     };

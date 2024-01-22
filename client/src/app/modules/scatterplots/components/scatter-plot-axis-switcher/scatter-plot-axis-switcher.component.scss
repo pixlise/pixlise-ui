@@ -2,6 +2,8 @@
 @import "atoms.scss";
 
 .axis-switcher {
+  max-width: 95px;
+
   padding: $sz-qtr $sz-double;
   border-radius: $sz-half;
   background-color: $clr-gray-100;
@@ -20,7 +22,14 @@
     height: 12px;
     margin: $sz-qtr $sz-half;
   }
+
+  .label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    white-space: pre;
+  }
 }
 .axis-switcher-vertical {
-    transform: translateX(-40%) rotate(-90deg);
+  transform: translateX(-40%) rotate(-90deg);
 }

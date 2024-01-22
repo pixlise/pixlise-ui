@@ -1,4 +1,4 @@
-<div class="button">
+<div class="button" [ngStyle]="buttonConfiguration?.style || {}">
   <span
     #buttonTrigger
     *ngIf="buttonConfiguration"
