@@ -190,8 +190,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       id: "selection-mode",
       type: "button",
       title: "Additive",
-      tooltip: "Toggles selection mode between additive and subtractive",
-      value: false,
+      tooltip: "Toggles selection mode between\n additive and subtractive",
+      value: this.mdl?.selectionModeAdd ?? false,
       onClick: () => this.onToggleSelectionMode(),
     });
   }
@@ -649,6 +649,11 @@ bool removeBottomSpecularArtifacts = 21;
 
   onToggleSelectionMode() {
     this.mdl.selectionModeAdd = !this.mdl.selectionModeAdd;
+    let selectionModeBtn = this._widgetControlConfiguration.bottomToolbar?.find(b => b.id === "selection-mode");
+    console.log(selectionModeBtn, this.mdl.selectionModeAdd);
+    if (selectionModeBtn) {
+      selectionModeBtn.value = this.mdl.selectionModeAdd;
+    }
 
     // Reactivate whatever tool we have showing, so it is now in the right mode
     this.toolhost.reactivateTool();
