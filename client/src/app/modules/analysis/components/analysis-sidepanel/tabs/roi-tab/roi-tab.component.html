@@ -47,7 +47,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <input type="text" class="name" [(ngModel)]="newROIName" placeholder="ROI Name" />
     <textarea class="description" [(ngModel)]="newROIDescription" placeholder="ROI Description" rows="4"></textarea>
 
-    <div class="multiple-scan-warning" *ngIf="selectedScanIds.length > 0">
+    <div class="multiple-scan-warning" *ngIf="selectedScanIds.length > 1">
       <span>*ROI spans multiple scans, so multiple ROIs for the following scans will be created: {{ selectedScanIds.join(", ") }}</span>
     </div>
 
