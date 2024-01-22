@@ -132,18 +132,22 @@ export class ROITabComponent implements OnInit {
 
   onSaveNewROI() {
     let selection = this._selectionService.getCurrentSelection();
+    let scanIds = selection.beamSelection.getScanIds();
 
-    this._roiService.createROI(
-      ROIItem.create({
-        name: this.newROIName,
-        description: this.newROIDescription,
-        tags: this.newROITags,
-        scanId: this.visibleScanId,
-        pixelIndexesEncoded: Array.from(selection.pixelSelection.selectedPixels),
-        imageName: selection.pixelSelection.imageName,
-        scanEntryIndexesEncoded: Array.from(selection.beamSelection.getSelectedScanEntryPMCs(this.visibleScanId)),
-      })
-    );
+    scanIds.forEach(scanId => {
+      this._roiService.createROI(
+        ROIItem.create({
+          name: this.newROIName,
+          description: this.newROIDescription,
+          tags: this.newROITags,
+          scanId,
+          pixelIndexesEncoded: Array.from(selection.pixelSelection.selectedPixels),
+          imageName: selection.pixelSelection.imageName,
+          scanEntryIndexesEncoded: Array.from(selection.beamSelection.getSelectedScanEntryPMCs(scanId)),
+        })
+      );
+    });
+
     this.closeCreateROIMenu();
   }
 
