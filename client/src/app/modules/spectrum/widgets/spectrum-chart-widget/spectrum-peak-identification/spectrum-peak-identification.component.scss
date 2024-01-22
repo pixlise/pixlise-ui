@@ -27,144 +27,144 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
+@import "variables.scss";
 //@import 'atoms.scss';
 
 .peakid-container {
-    display: flex;
-    flex-direction: row;
-    min-width: 1000px;
-    height: 35vh;
+  display: flex;
+  flex-direction: row;
+  min-width: 1000px;
+  height: 35vh;
+  min-height: 330px;
 
-    .peakid-tabs-container {
+  .peakid-tabs-container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 1;
+
+    .peak-tabs {
+      @extend .top-toolbar-shadow;
+
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+
+      .title {
+        color: rgb(var(--clr-gray-30));
+        font-family: Roboto;
+        font-style: normal;
+        font-weight: 900;
+        font-size: 16px;
+        line-height: 19px;
+        text-transform: uppercase;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
+        white-space: nowrap;
+
+        padding: 0;
+
+        &.drag {
+          cursor: move;
+          flex: 1;
+        }
+
+        &::before {
+          height: 0;
+        }
+      }
+
+      .tab-row {
+        display: flex;
+        flex-direction: row;
+
+        align-content: center;
+        flex-wrap: wrap;
+
+        gap: $sz-double;
+
+        font-size: 12px;
+        font-weight: 400;
+        text-transform: uppercase;
+
+        user-select: none;
+      }
+    }
+
+    .tab-content-container {
+      display: flex;
+      flex-direction: row;
+      flex-grow: 1;
+      flex-shrink: 1;
+      background-color: $clr-gray-90;
+
+      .key-container {
         display: flex;
         flex-direction: column;
+        justify-content: space-between;
         flex-grow: 1;
         flex-shrink: 1;
 
-        .peak-tabs {
-            @extend .top-toolbar-shadow;
-
-            display: flex;
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: center;
-
-            .title {
-                color: rgb(var(--clr-gray-30));
-                font-family: Roboto;
-                font-style: normal;
-                font-weight: 900;
-                font-size: 16px;
-                line-height: 19px;
-                text-transform: uppercase;
-                -webkit-user-select: none;
-                -moz-user-select: none;
-                user-select: none;
-                white-space: nowrap;
-          
-                padding: 0;
-          
-                &.drag {
-                  cursor: move;
-                  flex: 1;
-                }
-          
-                &::before {
-                  height: 0;
-                }
-              }
-
-            .tab-row {
-                display: flex;
-                flex-direction: row;
-
-                align-content: center;
-                flex-wrap: wrap;
-
-                gap: $sz-double;
-
-                font-size: 12px;
-                font-weight: 400;
-                text-transform: uppercase;
-            
-                user-select: none;
-            }
+        .peak-id-key {
+          width: 180px;
+          margin: $sz-unit;
         }
-
-        .tab-content-container {
-            display: flex;
-            flex-direction: row;
-            flex-grow: 1;
-            flex-shrink: 1;
-            background-color: $clr-gray-90;
-
-            .key-container {
-                display: flex;
-                flex-direction: column;
-                justify-content: space-between;
-                flex-grow: 1;
-                flex-shrink: 1;
-
-                .peak-id-key {
-                    width: 180px;
-                    margin: $sz-unit;
-                }
-                .footer {
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    height: 42px;
-                    background-color: $clr-gray-80;
-                    padding: 0px $sz-unit;
-                }
-            }
-            .tab-content {
-                display: block;
-                flex-grow: 1;
-                flex-shrink: 1;
-                flex-basis: 100%;
-            }
+        .footer {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          height: 42px;
+          background-color: $clr-gray-80;
+          padding: 0px $sz-unit;
         }
+      }
+      .tab-content {
+        display: block;
+        flex-grow: 1;
+        flex-shrink: 1;
+        flex-basis: 100%;
+      }
     }
+  }
 }
 
 // Similar to card-toolbar-shadow
 .top-toolbar-shadow {
-    z-index: 10;
-    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  z-index: 10;
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
 
-    height: 40px;
-    padding: 0px $sz-unit;
+  height: 40px;
+  padding: 0px $sz-unit;
 }
 
-
 .tab-selected {
-    font-weight: 700;
-    font-size: 12px;
-    color: $clr-yellow;
+  font-weight: 700;
+  font-size: 12px;
+  color: $clr-yellow;
 }
 
 .chosen-list-end {
-    border-left: 1px solid $clr-gray-70;
-    background-color: $clr-gray-80;
+  border-left: 1px solid $clr-gray-70;
+  background-color: $clr-gray-80;
 
-    user-select: none;
+  user-select: none;
 }
 
 .chosen-list-header {
-    @extend .chosen-list-end;
+  @extend .chosen-list-end;
 }
 
 .chosen-list-footer {
-    @extend .chosen-list-end;
+  @extend .chosen-list-end;
 }
 
 .scrollable {
-    overflow-y: auto;
-    background-color: $clr-gray-90;
+  overflow-y: auto;
+  background-color: $clr-gray-90;
 }
 
 .content-container {
-    background-color: $clr-gray-90;
+  background-color: $clr-gray-90;
 }

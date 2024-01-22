@@ -27,53 +27,52 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import 'variables.scss';
-
+@import "variables.scss";
 
 .tile {
-    padding: 1px 3px;
-    width: 22px;
-    height: 22px;
-    border: 1px solid transparent;
-    cursor: default;
-    text-align: left;
-    user-select: none;
+  padding: 1px 3px;
+  width: 22px;
+  height: 22px;
+  border: 1px solid transparent;
+  cursor: default;
+  text-align: left;
+  user-select: none;
 }
 
 .element-tile {
-    color: $clr-gray-10;
-    background-color: $clr-gray-80;
-    border-color: $clr-gray-100;
-    font-size: 14px;
+  color: $clr-gray-10;
+  background-color: $clr-gray-80;
+  border-color: $clr-gray-100;
+  font-size: 12px;
 }
 
 .selectable:hover {
-    border-color: $clr-gray-30;
-    cursor: pointer;
+  border-color: $clr-gray-30;
+  cursor: pointer;
 }
 
 .state-SELECTED {
-    background-color: $clr-purple;
+  background-color: $clr-purple;
 }
 
 .state-SELECTED2 {
-    background-color: $clr-yellow;
-    color: $clr-gray-80;
+  background-color: $clr-yellow;
+  color: $clr-gray-80;
 }
 
 .state-NORMAL {
 }
 
 .state-NORMAL2 {
-    color: $clr-gray-30;
-    background-color: $clr-gray-100;
+  color: $clr-gray-30;
+  background-color: $clr-gray-100;
 }
 
 .state-GRAYED {
-    color: $clr-gray-70;
+  color: $clr-gray-70;
 }
 
 .elem-number {
-    font-size: 8px;
-    line-height: 10px;
+  font-size: 8px;
+  line-height: 10px;
 }

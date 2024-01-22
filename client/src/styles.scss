@@ -55,6 +55,19 @@
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 */
 
+// Custom scrollbar styling
+::-webkit-scrollbar {
+  background-color: #454c50;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #bec0c2;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #f8f8f8;
+}
+
 html,
 body {
   margin: 0;
@@ -69,6 +82,12 @@ body {
 body {
   //   background-color: $ui-color-background !important;
   font-family: Roboto, "Helvetica Neue", sans-serif;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 button {

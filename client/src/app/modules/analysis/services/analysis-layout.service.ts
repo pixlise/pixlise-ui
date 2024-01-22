@@ -34,7 +34,7 @@ export class AnalysisLayoutService implements OnDestroy {
   sidebarAdminShortcuts: SidebarViewShortcut[] = SIDEBAR_ADMIN_SHORTCUTS;
 
   private _activeTab: SidebarTabItem | null = null;
-  showSearch = false;
+  showSearch = true;
 
   availableScanQuants$ = new BehaviorSubject<Record<string, QuantificationSummary[]>>({});
   availableScans$ = new BehaviorSubject<ScanItem[]>([]);
@@ -243,7 +243,7 @@ export class AnalysisLayoutService implements OnDestroy {
 
   set activeTab(tab: SidebarTabItem | null) {
     this._activeTab = tab;
-    this.showSearch = false;
+    this.showSearch = true;
   }
 
   get resizeCanvas$(): ReplaySubject<void> {

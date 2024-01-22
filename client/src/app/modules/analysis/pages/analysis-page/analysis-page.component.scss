@@ -2,6 +2,13 @@
   display: flex;
   padding-right: 8px;
 
+  position: relative;
+
+  analysis-sidepanel {
+    position: absolute;
+    z-index: 100;
+  }
+
   .widgets-container {
     display: grid;
     grid-gap: 8px;
@@ -24,6 +31,8 @@
 
 .screen-container {
   max-width: calc(100vw - 42px - 16px);
+  margin-left: 48px;
+
   overflow: scroll;
   display: flex;
 

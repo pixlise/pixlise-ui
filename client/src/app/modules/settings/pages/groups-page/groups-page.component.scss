@@ -153,6 +153,7 @@
     .selected-group-card-container {
       height: calc(100vh - 177px);
       overflow: scroll;
+      overflow-x: hidden;
 
       .empty-requests {
         padding: 8px;
@@ -350,6 +351,7 @@
     cursor: pointer;
 
     .info {
+      max-width: 200px;
       .label {
         font-weight: bold;
         font-size: 12px;
@@ -357,6 +359,8 @@
       }
 
       h3 {
+        overflow: hidden;
+        text-overflow: ellipsis;
         font-weight: normal;
         font-size: 12px;
         margin: 0;

@@ -10,9 +10,10 @@
   border-radius: 8px;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
-  margin-right: 8px;
 
   align-items: center;
+
+  box-shadow: 0 8px 8px rgba(0, 0, 0, 0.7);
 
   header {
     width: 100%;
@@ -138,6 +139,10 @@
   border-bottom-right-radius: 8px;
   background-color: #1a1b1c;
   overflow: scroll;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   &.closed {
     display: none;

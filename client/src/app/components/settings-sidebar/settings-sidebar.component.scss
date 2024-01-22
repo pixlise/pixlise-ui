@@ -82,6 +82,7 @@
     border-bottom-right-radius: 8px;
     // position: fixed;
     overflow: scroll;
+    overflow-x: hidden;
     background: var(--gray-90, #222829);
 
     section {
