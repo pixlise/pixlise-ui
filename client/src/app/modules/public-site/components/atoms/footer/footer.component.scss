@@ -27,62 +27,109 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import '../../../scss/public-site.scss';
+@import "../../../scss/public-site.scss";
 
 .footer {
-    display: flex;
-    flex-direction: column;
-    background-color: $clr-gray-100;
+  display: flex;
+  flex-direction: column;
+  background-color: $clr-gray-100;
 
+  color: $clr-gray-20;
+
+  a {
+    display: inline-block;
     color: $clr-gray-20;
+    padding-bottom: $sz-paragraph-gap;
+    text-transform: uppercase;
+  }
 
-    a {
-        display: inline-block;
-        color: $clr-gray-20;
-        padding-bottom: $sz-paragraph-gap;
-        text-transform: uppercase;
+  .links {
+    // padding: $sz-border-y $sz-border-x;
+    height: 544px;
+    display: flex;
+    align-items: center;
+
+    .logo-group {
+      color: $clr-gray-30;
+
+      .tagline {
+        width: 280px;
+      }
+
+      .credits {
+        padding-top: $sz-double;
+      }
     }
 
+    .logo-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+    }
+
+    .link-groups {
+      flex: 2;
+      justify-content: center;
+      gap: $sz-button-gap;
+
+      a {
+        padding-bottom: $sz-half;
+      }
+
+      .caption {
+        margin-bottom: 24px;
+        color: $clr-gray-30;
+        text-transform: uppercase;
+        white-space: pre;
+      }
+
+      a {
+        text-decoration: none;
+        font-weight: normal;
+        color: $clr-gray-50;
+
+        &:hover {
+          color: $clr-gray-40;
+        }
+      }
+    }
+  }
+}
+
+@media screen and (max-width: 1010px) {
+  .footer {
     .links {
-        padding: $sz-border-y $sz-border-x;
+      flex-direction: column;
+
+      .logo-container {
+        align-items: center;
+
+        .logo {
+          a {
+            padding-bottom: 0;
+          }
+        }
 
         .logo-group {
-            flex-grow: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
 
-            color: $clr-gray-30;
-
-            .tagline {
-                width: 280px;
-            }
-
-            .credits {
-                padding-top: $sz-double;
-            }
+          .tagline {
+            width: fit-content;
+            margin: 3vw;
+            text-align: center;
+          }
         }
+      }
 
-        .link-groups {
-            justify-content: flex-end;
-            gap: $sz-button-gap;
-
-            a {
-                padding-bottom: $sz-half;
-            }
-
-            .caption {
-                margin-bottom: 24px;
-                color: $clr-gray-30;
-                text-transform: uppercase;
-            }
-
-            a {
-                text-decoration: none;
-                font-weight: normal;
-                color: $clr-gray-50;
-
-                &:hover {
-                    color: $clr-gray-40;
-                }
-            }
-        }
+      .link-groups {
+        flex: 1;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 3vw;
+      }
     }
+  }
 }

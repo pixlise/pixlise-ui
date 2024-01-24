@@ -37,7 +37,8 @@ import { NavigationItem } from "../../../navigation";
   styleUrls: ["./nav-menu.component.scss"],
 })
 export class NavMenuComponent implements OnInit {
-  @Input() items: NavigationItem[];
+  @Input() items: NavigationItem[] = [];
+  @Input() isChild: boolean = false;
 
   constructor() {}
 

@@ -60,12 +60,24 @@
     padding: 0 16px;
     font-size: 1.5em;
     display: inline-block;
+    margin-top: -2px;
+  }
+
+  &:hover {
+    .chevron {
+      // animate the arrow moving to the right
+      transform: translateX(8px);
+      transition: all 0.2s ease-in-out;
+    }
   }
 
   &.yellow {
     border: $clr-yellow 1px solid;
     color: $clr-yellow;
 
+    .right-sep {
+      border-right: $clr-yellow 1px solid;
+    }
     .sep {
       border-left: $clr-yellow 1px solid;
     }
@@ -75,6 +87,9 @@
     border: $clr-gray-10 1px solid;
     color: $clr-gray-10;
 
+    .right-sep {
+      border-right: $clr-gray-10 1px solid;
+    }
     .sep {
       border-left: $clr-gray-10 1px solid;
     }
@@ -84,6 +99,9 @@
     background-color: $clr-gray-10;
     color: $clr-gray-100;
 
+    .right-sep {
+      border-right: $clr-gray-100 1px solid;
+    }
     .sep {
       border-left: $clr-gray-100 1px solid;
     }
@@ -93,6 +111,9 @@
     background-color: $clr-red;
     color: $clr-gray-10;
 
+    .right-sep {
+      border-right: $clr-gray-10 1px solid;
+    }
     .sep {
       border-left: $clr-gray-10 1px solid;
     }
@@ -102,6 +123,9 @@
     border: $clr-gray-100 1px solid;
     color: $clr-gray-100;
 
+    .right-sep {
+      border-right: $clr-gray-100 1px solid;
+    }
     .sep {
       border-left: $clr-gray-100 1px solid;
     }
@@ -111,6 +135,9 @@
     border: $clr-red 1px solid;
     color: $clr-red;
 
+    .right-sep {
+      border-right: $clr-red 1px solid;
+    }
     .sep {
       border-left: $clr-red 1px solid;
     }
@@ -124,6 +151,9 @@
   &.gray-no-border {
     color: $clr-gray-30;
 
+    .right-sep {
+      border-right: $clr-gray-30 1px solid;
+    }
     .sep {
       border-left: $clr-gray-30 1px solid;
     }

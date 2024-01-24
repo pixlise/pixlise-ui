@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div class="section">
   <number-button [params]="params.navButtonParams"></number-button>
-  <div class="flex-row container">
+  <div class="flex-row container image-list-container">
     <div class="flex-column text-container" [ngClass]="{ narrowbox: params.headingLarge, 'text-container-list-limit': hasList }">
       <h2 *ngIf="params.headingLarge">
         <text-with-highlights [parts]="params.headingParts" styleMain="" styleAlternate="red"></text-with-highlights>
@@ -42,10 +42,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <ng-container *ngIf="hasList">
         <div class="list-heading">{{ params.listTitle }}</div>
         <ul>
-          <li
-            *ngFor="let item of params.listItems"
-            [ngClass]="{ active: item.listLabel == activeItem?.listLabel }"
-            (click)="onClickListItem(item)">
+          <li *ngFor="let item of params.listItems" [ngClass]="{ active: item.listLabel == activeItem?.listLabel }" (click)="onClickListItem(item)">
             {{ item.listLabel }}
           </li>
         </ul>
@@ -55,7 +52,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <p><text-with-highlights [parts]="activeItem.descriptionParts" styleMain="" styleAlternate="bold"></text-with-highlights></p>
       </ng-container>
     </div>
-    <div *ngIf="activeItem" class="flex-column img-vcenter">
+    <div *ngIf="activeItem" class="flex-column img-vcenter {{ activeItem.imageLinkForeground && activeItem.imageLinkBackground ? 'two-images' : '' }}">
       <img *ngIf="activeItem.imageLinkForeground" class="img-foreground" [src]="activeItem.imageLinkForeground" />
       <img *ngIf="activeItem.imageLinkBackground" class="img-background" [src]="activeItem.imageLinkBackground" />
     </div>

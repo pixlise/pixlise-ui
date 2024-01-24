@@ -30,29 +30,24 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="flex-row nav">
-  <div>
+  <div class="logo-container">
     <a href="/"><img src="assets/images/pixlise-white-logo.svg" /></a>
   </div>
   <div class="flex-row links">
     <div
       *ngFor="let navGroup of navigation.categories"
+      class="category"
       (mouseenter)="onMouseEnter(navGroup)"
       (mouseleave)="onMouseLeave(navGroup)"
       (click)="onClickNav(navGroup)">
       <div class="clickable nav-item" [ngClass]="{ active: isActiveNav(navGroup) }">
-        {{ navGroup }}
-        <img [src]="isActiveNav(navGroup) ? 'assets/images/arrow-down.svg' : 'assets/images/arrow-down-nav.svg'" />
+        {{ navGroup }}<img [ngClass]="{ active: isActiveNav(navGroup) }" src="assets/images/arrow-down-nav.svg" />
       </div>
-      <nav-menu *ngIf="isMenuOpen(navGroup)" [items]="navigation.getItems(navGroup)" #childMenu></nav-menu>
+      <nav-menu *ngIf="isMenuOpen(navGroup)" [items]="navigation.getItems(navGroup)" [isChild]="true" #childMenu></nav-menu>
     </div>
   </div>
   <div class="flex-row buttons">
     <number-button [link]="loginLink" colourStyle="red-solid" theLabel="Log In" [showArrow]="false"></number-button>
-    <number-button
-      [link]="signupLink"
-      colourStyle="white-solid"
-      theLabel="Try Pixlise"
-      [showArrow]="true"
-      [showArrowSeparator]="true"></number-button>
+    <number-button [link]="signupLink" colourStyle="white-solid" theLabel="Try Pixlise" [showArrow]="true" [showArrowSeparator]="true"></number-button>
   </div>
 </div>

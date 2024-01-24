@@ -30,7 +30,7 @@
 @import "../../../scss/public-site.scss";
 
 .logos {
-  padding: $sz-paragraph-gap;
+  padding: $sz-paragraph-gap 0;
   background-color: $clr-gray-20;
   color: $clr-gray-50;
 
@@ -44,6 +44,8 @@
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
+
+    max-width: calc(100vw - $sz-paragraph-gap - $sz-paragraph-gap);
 
     gap: $sz-button-gap;
   }

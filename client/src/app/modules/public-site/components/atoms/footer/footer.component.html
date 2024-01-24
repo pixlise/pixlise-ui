@@ -34,13 +34,15 @@ POSSIBILITY OF SUCH DAMAGE.
   <branding-logos *ngIf="showLogos"></branding-logos>
   <team-list *ngIf="showTeam"></team-list>
   <div class="flex-row links">
-    <div class="logo-group">
-      <div>
-        <a href="/"><img src="assets/images/pixlise-white-logo.svg" /></a>
+    <div class="logo-container">
+      <div class="logo-group">
+        <div class="logo">
+          <a href="/"><img src="assets/images/pixlise-white-logo.svg" /></a>
+        </div>
+        <div class="tagline">Experience the future of spectroscopy visualization and analysis.</div>
+        <div class="credits">Image Credits:</div>
+        <div class="tagline">NASA/JPL-Caltech/University of Arizona</div>
       </div>
-      <div class="tagline">Experience the future of spectroscopy visualization and analysis.</div>
-      <div class="credits">Image Credits:</div>
-      <div class="tagline">NASA/JPL-Caltech/University of Arizona</div>
     </div>
     <div class="flex-row link-groups">
       <div class="caption clickable" (click)="onLogin()">Log In</div>

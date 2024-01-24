@@ -27,50 +27,67 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import '../../../scss/public-site.scss';
+@import "../../../scss/public-site.scss";
 
 .community {
-    background-color: $clr-gray-10;
+  background-color: $clr-gray-10;
+  color: $clr-gray-50;
+  // padding: 0px $sz-border-x;
+
+  h3 {
     color: $clr-gray-50;
-    padding: 0px $sz-border-x;
+  }
 
-    h3 {
-        color: $clr-gray-50;
-    }
+  p {
+    max-width: 680px;
+  }
 
-    p {
-        width: 680px;
-    }
+  .red {
+    color: $clr-red;
+  }
 
-    .red {
-        color: $clr-red;
-    }
+  .right-pad {
+    padding-right: 8px;
+  }
 
-    .right-pad {
-        padding-right: 8px;
-    }
+  .counter {
+    font-weight: bold;
+    font-size: 20px;
+  }
 
-    .counter {
-        font-weight: bold;
-        font-size: 20px;
-    }
+  .section {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
 
-    .section {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-    }
+  .left {
+    padding: $sz-border-y 0px;
+    flex: 2;
+  }
+
+  .right {
+    flex: 1;
+    border-left: #da4e22 1px solid;
+  }
+}
+
+@media screen and (max-width: 1150px) {
+  #discussion {
+    flex-direction: column;
 
     .left {
-        padding: $sz-border-y 0px;
+      padding: 64px 0;
 
-        flex-grow: 1;
-        flex-shrink: 1;
-        flex-basis: 70%;
+      .flex-column {
+        padding: 3vw;
+      }
     }
 
     .right {
-        padding-left: 35px;
-        border-left: #da4e22 1px solid;
+      border-top: #da4e22 1px solid;
+      border-left: none;
+      padding: 64px 0;
     }
+  }
 }

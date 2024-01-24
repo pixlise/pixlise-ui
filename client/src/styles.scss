@@ -78,6 +78,18 @@ body {
   background-color: #1b1d1e;
 }
 
+:root {
+  font-family: Inter, sans-serif;
+  font-feature-settings:
+    "liga" 1,
+    "calt" 1; /* fix for Chrome */
+}
+@supports (font-variation-settings: normal) {
+  :root {
+    font-family: InterVariable, sans-serif;
+  }
+}
+
 /* TODO: There has to be a better way than !important with overriding angular things! */
 body {
   //   background-color: $ui-color-background !important;
