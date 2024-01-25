@@ -327,8 +327,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     // that they are test datasets. Then we sort numerically within the lettered sections
     scans.sort((a: ScanItem, b: ScanItem) => {
       // If there is a sol on both...
-      const aSol = a.meta["sol"] || "",
-        bSol = b.meta["sol"] || "";
+      const aSol = a.meta["Sol"] || "",
+        bSol = b.meta["Sol"] || "";
 
       if (aSol === bSol && aSol.length > 0) {
         // Don't let empty strings all fall into here!
