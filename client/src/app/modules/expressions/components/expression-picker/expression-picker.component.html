@@ -112,7 +112,8 @@ POSSIBILITY OF SUCH DAMAGE.
             (onFilterAuthor)="onFilterAuthor($event)"
             [selected]="checkSelected(item.id)"
             [selectionDisabledMessage]="maxSelection === 1 || canSelectMore ? '' : 'Maximum number of expressions selected'"
-            (onSelect)="onSelect(item)"></expression-layer>
+            (onSelect)="onSelect(item)"
+            (onCloseModal)="onCancel()"></expression-layer>
         </cdk-virtual-scroll-viewport>
       </section>
     </section>
@@ -145,7 +146,8 @@ POSSIBILITY OF SUCH DAMAGE.
             [isTriggerPosition]="expressionTriggerPosition > -1 && expressionTriggerPosition === selectedExpressionIdOrder.indexOf(item.id)"
             [widgetPosition]="selectedExpressionIdOrder.indexOf(item.id)"
             [showActiveExpressionConfiguration]="true"
-            (onChangeWidgetPosition)="onChangeWidgetPosition(item, $event)"></expression-layer>
+            (onChangeWidgetPosition)="onChangeWidgetPosition(item, $event)"
+            (onCloseModal)="onCancel()"></expression-layer>
         </cdk-virtual-scroll-viewport>
       </section>
     </section>

@@ -55,6 +55,19 @@
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 */
 
+// Custom scrollbar styling
+::-webkit-scrollbar {
+  background-color: #454c50;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #bec0c2;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #f8f8f8;
+}
+
 html,
 body {
   margin: 0;
@@ -65,10 +78,28 @@ body {
   background-color: #1b1d1e;
 }
 
+:root {
+  font-family: Inter, sans-serif;
+  font-feature-settings:
+    "liga" 1,
+    "calt" 1; /* fix for Chrome */
+}
+@supports (font-variation-settings: normal) {
+  :root {
+    font-family: InterVariable, sans-serif;
+  }
+}
+
 /* TODO: There has to be a better way than !important with overriding angular things! */
 body {
   //   background-color: $ui-color-background !important;
   font-family: Roboto, "Helvetica Neue", sans-serif;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 button {

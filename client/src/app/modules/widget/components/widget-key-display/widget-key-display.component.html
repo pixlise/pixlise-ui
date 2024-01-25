@@ -37,13 +37,13 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
   <div class="key-items">
     <div *ngFor="let item of items" class="key-item">
-      <div *ngIf="item.dashPattern && item.dashPattern.length > 0" class="dash-pattern">
+      <div *ngIf="item.dashPattern !== null" class="dash-pattern">
         <svg width="58" height="12" xmlns="http://www.w3.org/2000/svg">
           <line [attr.stroke-dasharray]="item.dashPattern" x1="0" y1="6" x2="50" y2="6" stroke-width="2" style="stroke: {{ item.colour }}"></line>
         </svg>
       </div>
       <div
-        *ngIf="!item.dashPattern || item.dashPattern.length === 0"
+        *ngIf="item.dashPattern === null"
         #tooltip="matTooltip"
         [matTooltip]="getLabel(item)"
         [matTooltipDisabled]="getLabel(item).length <= 15"
@@ -72,7 +72,7 @@ POSSIBILITY OF SUCH DAMAGE.
         </svg>
         {{ getTruncatedLabel(item) }}
       </div>
-      <div *ngIf="item.dashPattern && item.dashPattern.length > 0" class="dash-label">{{ getTruncatedLabel(item) }}</div>
+      <div *ngIf="item.dashPattern !== null" class="dash-label">{{ getTruncatedLabel(item) }}</div>
     </div>
   </div>
   <ng-content></ng-content>

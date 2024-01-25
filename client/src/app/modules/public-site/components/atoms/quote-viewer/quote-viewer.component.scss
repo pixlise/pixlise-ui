@@ -27,43 +27,76 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import '../../../scss/public-site.scss';
+@import "../../../scss/public-site.scss";
 
 .quote-section {
-    padding: 0px $sz-border-x;
+  // padding: 0px $sz-border-x;
+
+  display: flex;
+  flex-direction: row;
+  //justify-content: center;
+  align-items: stretch;
+
+  background-color: $clr-gray-100;
+
+  border-top: $clr-yellow 1px solid;
+
+  .quote-container {
+    padding: $sz-border-y 0px;
+    flex: 2;
 
     display: flex;
-    flex-direction: row;
-    //justify-content: center;
-    align-items: stretch;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
 
-    background-color: $clr-gray-100;
+    .quote-block {
+      margin-right: 3vw;
+      margin-left: 3vw;
+    }
 
-    border-top: $clr-yellow 1px solid;
+    .text-quote {
+      max-width: 800px;
+      padding-bottom: $sz-spacer-gap;
+    }
+  }
+
+  .link {
+    flex: 1;
+    justify-content: center;
+
+    border-left: $clr-gray-70 1px solid;
+    padding-left: $sz-paragraph-gap;
+    width: 400px;
+  }
+
+  a {
+    color: $clr-gray-30;
+  }
+}
+
+@media screen and (max-width: 800px) {
+  .quote-section {
+    flex-direction: column;
 
     .quote-container {
-        padding: $sz-border-y 0px;
-
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-
-        .text-quote {
-            max-width: 800px;
-            padding-bottom: $sz-spacer-gap;
-        }
+      align-items: center;
+      padding: 64px 0;
     }
 
     .link {
-        justify-content: center;
+      border-left: none;
+      border-top: rgb(var(--clr-gray-70)) 1px solid;
+      padding: 64px 0;
+      width: 100%;
 
-        border-left: $clr-gray-70 1px solid;
-        padding-left: $sz-paragraph-gap;
-        width: 400px;
-    }
+      display: flex;
+      justify-content: center;
+      flex-direction: row;
 
-    a {
-        color: $clr-gray-30;
+      number-button {
+        width: fit-content;
+      }
     }
+  }
 }

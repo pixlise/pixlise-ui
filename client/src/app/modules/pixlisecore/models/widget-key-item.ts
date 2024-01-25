@@ -7,7 +7,7 @@ export class WidgetKeyItem {
     public id: string,
     public label: string,
     colourRGB: RGBA | string,
-    public dashPattern: number[] = [],
+    public dashPattern: number[] | null = null,
     public shape: string = ""
   ) {
     let colourRGBA: RGBA = Colours.WHITE;

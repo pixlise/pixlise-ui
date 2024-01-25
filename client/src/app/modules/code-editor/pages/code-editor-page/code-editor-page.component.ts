@@ -386,7 +386,7 @@ export class CodeEditorPageComponent implements OnInit {
   }
 
   storeMetadata(): void {
-    localStorage.setItem("isSidebarOpen", this.isSidebarOpen.toString());
+    localStorage.setItem("isSidebarOpen", this.isSidebarOpen ? "true" : "false");
     if (this.topExpression) {
       localStorage.setItem("topExpressionId", this.topExpression.id);
       localStorage.setItem("topExpressionSourceCode", this.topExpression.sourceCode);
@@ -401,7 +401,7 @@ export class CodeEditorPageComponent implements OnInit {
   }
 
   fetchLocalStorageMetadata(): void {
-    let isSidebarOpen = localStorage?.getItem("isSidebarOpen") || false;
+    let isSidebarOpen = localStorage?.getItem("isSidebarOpen") ?? true;
     this.isSidebarOpen = isSidebarOpen === "true";
     if (!this.topExpression || this.topExpression.id === localStorage?.getItem("topExpressionId")) {
       if (!this.topExpression) {
@@ -643,6 +643,7 @@ export class CodeEditorPageComponent implements OnInit {
   onToggleSidebar() {
     this.isSidebarOpen = !this.isSidebarOpen;
     this._analysisLayoutService.delayNotifyCanvasResize(500);
+    this.storeMetadata();
   }
 
   openBottomModule(moduleId: string = "", version: string = "") {

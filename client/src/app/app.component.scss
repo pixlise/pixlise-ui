@@ -1,9 +1,3 @@
-@import "@fontsource/inter";
-@import "@fontsource/pt-mono";
-@import "@fontsource/roboto";
-@import "@fontsource/source-sans-pro";
-@import "@fontsource/titillium-web";
-
 // After seeing lots of 404's for roboto-latin-400.woff or whatever, these seem
 // to have fixed it?? No, they haven't, maybe it's just an issue with angular
 // live reloading local debug server
@@ -16,6 +10,7 @@
 
   main {
     flex: 1;
+    overflow: hidden;
   }
 
   aside {

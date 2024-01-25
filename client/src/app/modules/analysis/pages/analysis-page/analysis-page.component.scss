@@ -2,13 +2,20 @@
   display: flex;
   padding-right: 8px;
 
+  position: relative;
+
+  analysis-sidepanel {
+    position: absolute;
+    z-index: 100;
+  }
+
   .widgets-container {
     display: grid;
     grid-gap: 8px;
 
     width: calc(100vw - 42px - 16px);
     min-width: calc(100vw - 42px - 16px);
-    height: calc(100vh - 42px - 16px);
+    height: calc(100vh - 32px - 16px);
 
     margin-left: 16px;
     padding-left: 16px;
@@ -24,7 +31,10 @@
 
 .screen-container {
   max-width: calc(100vw - 42px - 16px);
+  margin-left: 48px;
+
   overflow: scroll;
+
   display: flex;
 
   &::-webkit-scrollbar {

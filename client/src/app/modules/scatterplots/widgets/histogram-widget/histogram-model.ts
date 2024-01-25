@@ -208,9 +208,11 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
         );
         barGroupValueRange.expandByMinMax(minMax);
 
-        this.keyItems.push(
-          new WidgetKeyItem(colData.region.region.id, colData.region.region.name, colData.region.displaySettings.colour, [], colData.region.displaySettings.shape)
-        );
+        if (!this.keyItems.find(item => item.id === colData?.region?.region.id)) {
+          this.keyItems.push(
+            new WidgetKeyItem(colData.region.region.id, colData.region.region.name, colData.region.displaySettings.colour, null, colData.region.displaySettings.shape)
+          );
+        }
       }
 
       // Find the next one (that we actually got data for!)

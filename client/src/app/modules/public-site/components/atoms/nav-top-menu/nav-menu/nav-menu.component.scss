@@ -27,32 +27,38 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import '../../../../scss/public-site.scss';
+@import "../../../../scss/public-site.scss";
 
 .nav-menu {
-    border-radius: $sz-unit;
-    background-color: rgba(var(--clr-gray-100), 0.7);
-    padding: $sz-double;
-    position: absolute;
+  border-radius: $sz-unit;
+  background-color: rgba(var(--clr-gray-100), 0.9);
+  padding: $sz-double;
+  position: absolute;
 }
 
 .nav-item {
-    font-family: "Source Sans Pro";
-    font-size: 24px;
-    font-weight: 510;
-    line-height: 29px;
-    letter-spacing: 0.04em;
-    text-align: left;
+  font-family: "Source Sans 3";
+  font-size: 24px;
+  font-weight: 510;
+  line-height: 29px;
+  letter-spacing: 0.04em;
+  text-align: left;
 
-    text-decoration: none;
-    color: $clr-gray-10;
-    text-transform: uppercase;
+  text-decoration: none;
+  color: $clr-gray-10;
+  text-transform: uppercase;
 
-    &:hover {
-        color: $clr-yellow;
-    }
+  &:hover {
+    color: $clr-yellow;
+  }
+}
+
+.child-menu {
+  .nav-item {
+    font-size: 16px;
+  }
 }
 
 .active {
-    color: $clr-yellow;
+  color: $clr-yellow;
 }

@@ -43,11 +43,6 @@ export class AnalysisSidepanelComponent {
   set activeTab(tab: SidebarTabItem | null) {
     this.clearTab();
 
-    // We need to wait 100 ms before notifying resize because this is how long the transition is set for
-    if (this._analysisLayoutService.activeTab?.width !== tab?.width) {
-      this._analysisLayoutService.delayNotifyCanvasResize(100);
-    }
-
     this._analysisLayoutService.activeTab = tab;
     if (tab) {
       this.onOpenTab(tab);

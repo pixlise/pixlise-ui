@@ -112,11 +112,13 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
         id: "selection",
         type: "selection-changer",
         tooltip: "Selection changer",
+        style: { "margin-top": "24px" },
         onClick: () => {},
       },
       topRightInsetButton: {
         id: "key",
         type: "widget-key",
+        style: { "margin-top": "24px" },
         onClick: () => this.onToggleKey(),
       },
     };

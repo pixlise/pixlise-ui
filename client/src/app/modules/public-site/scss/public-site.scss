@@ -39,6 +39,18 @@ $sz-subheading-gap: 72px;
 $sz-spacer-gap: 64px;
 $sz-paragraph-gap: 48px;
 
+:root {
+  font-family: Inter, sans-serif;
+  font-feature-settings:
+    "liga" 1,
+    "calt" 1; /* fix for Chrome */
+}
+@supports (font-variation-settings: normal) {
+  :root {
+    font-family: InterVariable, sans-serif;
+  }
+}
+
 // Text
 h1 {
   font-family: Inter;
@@ -96,16 +108,15 @@ h4 {
 }
 
 .text-quote {
-  font-family: "Source Sans Pro";
+  font-family: "Source Sans 3";
   font-size: 48px;
-  font-weight: 274;
   line-height: 57px;
   letter-spacing: 0em;
   text-align: left;
 }
 
 .text-quote-bold {
-  font-family: "Source Sans Pro";
+  font-family: "Source Sans 3";
   font-size: 48px;
   font-weight: 510;
   line-height: 57px;
@@ -132,9 +143,8 @@ h4 {
 }
 
 p {
-  font-family: "Source Sans Pro";
+  font-family: "Source Sans 3";
   font-size: 16px;
-  font-weight: 274;
   line-height: 23px;
   letter-spacing: 0em;
   text-align: left;
@@ -293,7 +303,7 @@ a {
   }
 
   .header-content {
-    position: absolute;
+    // position: absolute;
   }
 }
 

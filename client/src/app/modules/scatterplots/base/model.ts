@@ -324,7 +324,7 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
           }
 
           if (!this.keyItems.find(key => key.id == roiIdForKey)) {
-            this.keyItems.push(new WidgetKeyItem(roiIdForKey, region.region.name, region.displaySettings.colour, [], region.displaySettings.shape));
+            this.keyItems.push(new WidgetKeyItem(roiIdForKey, region.region.name, region.displaySettings.colour, null, region.displaySettings.shape));
           }
         }
 
@@ -376,7 +376,7 @@ export abstract class NaryChartModel<RawModel extends NaryData, DrawModel extend
       const refGroup = this.makeReferenceGroup(chartName);
       if (refGroup) {
         pointGroups.push(refGroup);
-        this.keyItems.push(new WidgetKeyItem("references", "Ref Points", Colours.CONTEXT_PURPLE, [], PointDrawer.ShapeCircle));
+        this.keyItems.push(new WidgetKeyItem("references", "Ref Points", Colours.CONTEXT_PURPLE, null, PointDrawer.ShapeCircle));
       }
     }
 

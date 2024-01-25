@@ -95,12 +95,12 @@
       </div>
       <push-button buttonStyle="yellow" (onClick)="addExpressions()" class="add-expressions-btn">Open Expression</push-button>
       <section class="create-btns">
-        <push-button buttonStyle="yellow" (onClick)="onCreateNewExpression()" class="create-btn">Create Expression</push-button>
-        <push-button buttonStyle="yellow" [customDialog]="newModuleDialog" #newModuleDialogBtn class="create-btn">Create Module</push-button>
+        <push-button buttonStyle="yellow" (onClick)="onCreateNewExpression()" class="create-btn">+ Expression</push-button>
+        <push-button buttonStyle="yellow" [customDialog]="newModuleDialog" #newModuleDialogBtn class="create-btn">+ Module</push-button>
       </section>
     </section>
   </section>
-  <section class="editors-container">
+  <section class="editors-container {{ isSidebarOpen ? 'with-sidebar' : '' }}">
     <div class="top-header {{ isSidebarOpen ? 'sidebar-open' : 'sidebar-closed' }}">
       <input
         class="expression-name {{ (isTopModule && !isTopModuleIdNew) || !isTopEditable ? 'disabled' : '' }}"

@@ -18,6 +18,7 @@ export type WidgetToolbarButtonConfiguration = {
   icon?: string;
   tooltip?: string;
   value?: any;
+  style?: any;
   disabled?: boolean;
   onClick: (value: any, trigger?: Element) => void;
 

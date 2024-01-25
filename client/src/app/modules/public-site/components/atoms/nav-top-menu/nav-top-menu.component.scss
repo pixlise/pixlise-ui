@@ -27,17 +27,74 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import '../../../scss/public-site.scss';
+@import "../../../scss/public-site.scss";
 
 .nav {
-    justify-content: space-between;
-    padding: 100px $sz-border-x;
+  justify-content: space-between;
+  height: 230px;
+  align-items: center;
 
-    .links {
-        gap: $sz-button-gap;
+  .nav-item {
+    white-space: pre;
+    display: flex;
+    align-items: center;
+
+    img {
+      transition: all 0.25s ease;
+      margin-left: 4px;
+    }
+
+    img.active {
+      transform: rotate(180deg);
+    }
+  }
+
+  .logo-container {
+    margin-left: 125px;
+  }
+
+  .links {
+    gap: $sz-button-gap;
+
+    .category:hover {
+      .nav-item {
+        img {
+          transform: rotate(180deg);
+        }
+      }
+    }
+  }
+
+  .buttons {
+    gap: $sz-unit;
+
+    margin-right: 125px;
+  }
+}
+
+@media screen and (max-width: 1125px) {
+  .nav {
+    display: flex;
+    flex-direction: column !important;
+    align-items: center;
+    justify-content: space-around;
+
+    .logo-container {
+      margin-left: 0;
     }
 
     .buttons {
-        gap: $sz-unit;
+      margin-right: 0;
     }
+  }
+}
+
+@media screen and (max-width: 650px) {
+  .nav {
+    .links {
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+  }
 }

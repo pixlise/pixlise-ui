@@ -50,6 +50,8 @@ export class ExpressionLayerComponent implements OnInit {
 
   @Input() showActiveExpressionConfiguration: boolean = false;
 
+  @Output() onCloseModal = new EventEmitter();
+
   private _widgetType: WidgetType | "" = "" as WidgetType;
   widgetOptions: string[] = [];
   widgetOptionIcons: string[] = [];
@@ -263,6 +265,7 @@ export class ExpressionLayerComponent implements OnInit {
       delete queryParams["topModuleId"];
       queryParams["topExpressionId"] = this.expression?.id;
     }
+    this.onCloseModal.emit();
     this._router.navigate(["/datasets/code-editor"], { queryParams });
   }
 
@@ -276,6 +279,7 @@ export class ExpressionLayerComponent implements OnInit {
       delete queryParams["topModuleId"];
       queryParams["topExpressionId"] = this.expression?.id;
     }
+    this.onCloseModal.emit();
     this._router.navigate(["/datasets/code-editor"], { queryParams });
   }
 

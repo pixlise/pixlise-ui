@@ -68,6 +68,10 @@ export class ROITabComponent implements OnInit {
   allScans: ScanItem[] = [];
   _visibleScanId: string = "";
 
+  pixelCount: number = 0;
+  entryCount: number = 0;
+  selectedScanIds: string[] = [];
+
   constructor(
     private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService,
@@ -85,6 +89,14 @@ export class ROITabComponent implements OnInit {
     this._subs.add(
       this._roiService.displaySettingsMap$.subscribe(displaySettingsMap => {
         this.displaySettingsMap = displaySettingsMap;
+      })
+    );
+
+    this._subs.add(
+      this._selectionService.selection$.subscribe(selection => {
+        this.selectedScanIds = selection.beamSelection.getScanIds();
+        this.pixelCount = selection.pixelSelection.selectedPixels.size;
+        this.entryCount = selection.beamSelection.getSelectedEntryCount();
       })
     );
   }
@@ -132,18 +144,22 @@ export class ROITabComponent implements OnInit {
 
   onSaveNewROI() {
     let selection = this._selectionService.getCurrentSelection();
+    let scanIds = selection.beamSelection.getScanIds();
 
-    this._roiService.createROI(
-      ROIItem.create({
-        name: this.newROIName,
-        description: this.newROIDescription,
-        tags: this.newROITags,
-        scanId: this.visibleScanId,
-        pixelIndexesEncoded: Array.from(selection.pixelSelection.selectedPixels),
-        imageName: selection.pixelSelection.imageName,
-        scanEntryIndexesEncoded: Array.from(selection.beamSelection.getSelectedScanEntryPMCs(this.visibleScanId)),
-      })
-    );
+    scanIds.forEach(scanId => {
+      this._roiService.createROI(
+        ROIItem.create({
+          name: this.newROIName,
+          description: this.newROIDescription,
+          tags: this.newROITags,
+          scanId,
+          pixelIndexesEncoded: Array.from(selection.pixelSelection.selectedPixels),
+          imageName: selection.pixelSelection.imageName,
+          scanEntryIndexesEncoded: Array.from(selection.beamSelection.getSelectedScanEntryPMCs(scanId)),
+        })
+      );
+    });
+
     this.closeCreateROIMenu();
   }
 

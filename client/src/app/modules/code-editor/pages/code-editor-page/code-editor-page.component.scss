@@ -106,15 +106,17 @@ $display-height: calc(100vh - 40px - 40px);
 
       .create-btns {
         display: flex;
+        justify-content: center;
         margin-top: auto;
 
         .create-btn {
           margin: 4px;
+          flex: 1;
         }
       }
     }
 
-    transition: all 0.5s ease;
+    // transition: all 0.5s ease;
     &.closed {
       width: 0;
 
@@ -155,6 +157,10 @@ $display-height: calc(100vh - 40px - 40px);
     flex-direction: column;
     flex: 1;
     max-height: 100%;
+
+    &.with-sidebar {
+      width: calc(50vw - 100px);
+    }
 
     .top-header {
       padding-right: 8px;
