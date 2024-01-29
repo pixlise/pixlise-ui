@@ -6,7 +6,7 @@ import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.s
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { APIDataService, SnackbarService } from "../../pixlisecore/pixlisecore.module";
-import { QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
+import { QuantGetReq, QuantGetResp, QuantListReq } from "src/app/generated-protos/quantification-retrieval-msgs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ScreenConfigurationGetReq, ScreenConfigurationWriteReq } from "src/app/generated-protos/screen-configuration-msgs";
 import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
@@ -317,41 +317,34 @@ export class AnalysisLayoutService implements OnDestroy {
         );
       } else {
         // default to showing some quantified data...
-        const quantElements = this.getQuantElementIdsForScan(scanId);
-        return of(new DefaultExpressions(quantElements.slice(0, 3), quantId));
+        const result = new DefaultExpressions([], quantId);
+        return this._cachedDataService.getQuant(QuantGetReq.create({ quantId: quantId, summaryOnly: true })).pipe(
+          map((resp: QuantGetResp) => {
+            if (resp.summary) {
+              for (const e of resp.summary.elements) {
+                let det = resp.summary.params?.userParams?.quantMode || "";
+                if (det.length > 0 && det != "Combined") {
+                  det = det.substring(0, 1);
+                }
+
+                result.exprIds.push(DataExpressionId.makePredefinedQuantElementExpression(e, "%", det));
+
+                if (result.exprIds.length >= count) {
+                  break;
+                }
+              }
+            }
+
+            return result;
+          })
+        );
       }
     }
-    return of(new DefaultExpressions([], ""));
+    return of();
   }
 
   getQuantIdForScan(scanId: string): string {
     const quantId = this.activeScreenConfiguration$.value?.scanConfigurations[scanId]?.quantId || "";
     return quantId;
-  }
-
-  getQuantElementIdsForScan(scanId: string): string[] {
-    const quantId = this.getQuantIdForScan(scanId);
-    if (!quantId) {
-      return [];
-    }
-
-    const availableQuants = this.availableScanQuants$.value;
-    if (availableQuants && availableQuants[scanId]) {
-      const quant = availableQuants[scanId].find(q => q.id === quantId);
-      if (quant) {
-        return quant.elements.map(quantElement => {
-          let det = quant?.params?.userParams?.quantMode || "";
-          if (det.length > 0 && det != "Combined") {
-            det = det.substring(0, 1);
-          }
-
-          return DataExpressionId.makePredefinedQuantElementExpression(quantElement, "%", det);
-        });
-      } else {
-        return [];
-      }
-    } else {
-      return [];
-    }
   }
 }

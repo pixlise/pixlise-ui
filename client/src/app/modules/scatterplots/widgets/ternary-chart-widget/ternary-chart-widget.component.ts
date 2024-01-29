@@ -283,7 +283,10 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
     this._subs.add(
       this._roiService.displaySettingsMap$.subscribe(displaySettings => {
-        this.update();
+        // Only update if we have the right expression count otherwise this will just trigger an error
+        if (this.mdl.expressionIds.length == 3) {
+          this.update();
+        }
       })
     );
 
