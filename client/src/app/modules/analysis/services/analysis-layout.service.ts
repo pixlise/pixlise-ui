@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy } from "@angular/core";
 import { SIDEBAR_ADMIN_SHORTCUTS, SIDEBAR_TABS, SIDEBAR_VIEWS, SidebarTabItem, SidebarViewShortcut } from "../models/sidebar.model";
-import { BehaviorSubject, ReplaySubject, Subscription, timer } from "rxjs";
+import { BehaviorSubject, Observable, ReplaySubject, Subscription, map, of, timer } from "rxjs";
 import { ActivatedRoute, Router } from "@angular/router";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanListReq } from "src/app/generated-protos/scan-msgs";
@@ -17,6 +17,14 @@ import { WSError } from "../../pixlisecore/services/wsMessageHandler";
 import { ResponseStatus } from "src/app/generated-protos/websocket";
 import { ExpressionPickerResponse } from "../../expressions/components/expression-picker/expression-picker.component";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
+
+export class DefaultExpressions {
+  constructor(
+    public exprIds: string[],
+    public quantId: string
+  ) {}
+}
 
 @Injectable({
   providedIn: "root",
@@ -76,7 +84,7 @@ export class AnalysisLayoutService implements OnDestroy {
           if (this.lastLoadedScreenConfigurationId) {
             this.fetchScreenConfiguration(this.lastLoadedScreenConfigurationId);
             // Add id back to query params
-            let queryParams = { ...this._route.snapshot.queryParams };
+            const queryParams = { ...this._route.snapshot.queryParams };
             queryParams["id"] = this.lastLoadedScreenConfigurationId;
             if (queryParams["id"] && (this._route?.snapshot?.url || []).length > 0) {
               this._router.navigate([this._route.snapshot.url], { queryParams });
@@ -111,7 +119,7 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   fetchLastLoadedScreenConfigurationId() {
-    let id = localStorage?.getItem("lastLoadedScreenConfigurationId");
+    const id = localStorage?.getItem("lastLoadedScreenConfigurationId");
     if (id) {
       this.lastLoadedScreenConfigurationId = id;
     }
@@ -207,9 +215,9 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   updateActiveLayoutWidgetType(widgetId: string, layoutIndex: number, widgetType: string) {
-    let screenConfiguration = this.activeScreenConfiguration$.value;
+    const screenConfiguration = this.activeScreenConfiguration$.value;
     if (screenConfiguration.id && screenConfiguration.layouts.length > layoutIndex) {
-      let widget = screenConfiguration.layouts[layoutIndex].widgets.find(widget => widget.id === widgetId);
+      const widget = screenConfiguration.layouts[layoutIndex].widgets.find(widget => widget.id === widgetId);
       if (widget) {
         widget.type = widgetType;
         this.writeScreenConfiguration(screenConfiguration);
@@ -290,20 +298,46 @@ export class AnalysisLayoutService implements OnDestroy {
     return this._route?.snapshot?.queryParams["scan_id"] || "";
   }
 
+  makeExpressionList(scanId: string, count: number): Observable<DefaultExpressions> {
+    if (scanId.length > 0) {
+      // If there's a quant, use elements from that, otherwise use pseudo-intensities (if they exist)
+      const quantId = this.getQuantIdForScan(scanId);
+      if (quantId.length <= 0) {
+        // default to pseudo intensities
+        return this._cachedDataService.getPseudoIntensity(PseudoIntensityReq.create({ scanId: scanId })).pipe(
+          map((resp: PseudoIntensityResp) => {
+            const pseudoElems = resp.intensityLabels.slice(0, count);
+            const exprs: string[] = [];
+            for (const p of pseudoElems) {
+              exprs.push(DataExpressionId.makePredefinedPseudoIntensityExpression(p));
+            }
+
+            return new DefaultExpressions(exprs, "");
+          })
+        );
+      } else {
+        // default to showing some quantified data...
+        const quantElements = this.getQuantElementIdsForScan(scanId);
+        return of(new DefaultExpressions(quantElements.slice(0, 3), quantId));
+      }
+    }
+    return of(new DefaultExpressions([], ""));
+  }
+
   getQuantIdForScan(scanId: string): string {
     const quantId = this.activeScreenConfiguration$.value?.scanConfigurations[scanId]?.quantId || "";
     return quantId;
   }
 
   getQuantElementIdsForScan(scanId: string): string[] {
-    let quantId = this.getQuantIdForScan(scanId);
+    const quantId = this.getQuantIdForScan(scanId);
     if (!quantId) {
       return [];
     }
 
-    let availableQuants = this.availableScanQuants$.value;
+    const availableQuants = this.availableScanQuants$.value;
     if (availableQuants && availableQuants[scanId]) {
-      let quant = availableQuants[scanId].find(q => q.id === quantId);
+      const quant = availableQuants[scanId].find(q => q.id === quantId);
       if (quant) {
         return quant.elements.map(quantElement => {
           let det = quant?.params?.userParams?.quantMode || "";

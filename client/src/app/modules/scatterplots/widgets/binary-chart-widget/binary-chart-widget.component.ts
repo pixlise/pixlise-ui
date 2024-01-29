@@ -22,7 +22,7 @@ import {
   ExpressionPickerComponent,
   ExpressionPickerResponse,
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analysis/services/analysis-layout.service";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { VisibleROI, BinaryState } from "src/app/generated-protos/widget-data";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
@@ -122,21 +122,12 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
   private setInitialConfig() {
     this.scanId = this._analysisLayoutService.defaultScanId;
-    if (this.scanId.length > 0) {
-      this._analysisLayoutService.activeScreenConfiguration$.getValue();
-      let quantId = this._analysisLayoutService.getQuantIdForScan(this.scanId);
+    this._analysisLayoutService.makeExpressionList(this.scanId, 2).subscribe((exprs: DefaultExpressions) => {
+      this.mdl.expressionIds = exprs.exprIds;
 
-      if (quantId.length <= 0) {
-        // default to pseudo intensities
-        this.mdl.expressionIds = [DataExpressionId.makePredefinedPseudoIntensityExpression("Mg"), DataExpressionId.makePredefinedPseudoIntensityExpression("Na")];
-      } else {
-        let quantElements = this._analysisLayoutService.getQuantElementIdsForScan(this.scanId);
-        this.mdl.expressionIds = quantElements.slice(0, 2);
-      }
-
-      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
+      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
       this.update();
-    }
+    });
   }
 
   get xAxisSwitcher(): ScatterPlotAxisInfo | null {

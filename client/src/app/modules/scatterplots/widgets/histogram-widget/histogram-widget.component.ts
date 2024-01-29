@@ -17,7 +17,7 @@ import {
   ExpressionPickerComponent,
   ExpressionPickerResponse,
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analysis/services/analysis-layout.service";
 import { HistogramState, VisibleROI } from "src/app/generated-protos/widget-data";
 
 @Component({
@@ -75,24 +75,13 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   private setInitialConfig() {
-    const scanId = this._analysisLayoutService.defaultScanId;
-    if (scanId.length > 0) {
-      let quantId = this._analysisLayoutService.getQuantIdForScan(scanId);
+    this.scanId = this._analysisLayoutService.defaultScanId;
+    this._analysisLayoutService.makeExpressionList(this.scanId, 10).subscribe((exprs: DefaultExpressions) => {
+      this.mdl.expressionIds = exprs.exprIds;
 
-      if (quantId.length <= 0) {
-        // default to pseudo intensities
-        this.mdl.expressionIds = [
-          DataExpressionId.makePredefinedPseudoIntensityExpression("Mg"),
-          DataExpressionId.makePredefinedPseudoIntensityExpression("Na"),
-          DataExpressionId.makePredefinedPseudoIntensityExpression("Ca"),
-        ];
-      } else {
-        this.mdl.expressionIds = this._analysisLayoutService.getQuantElementIdsForScan(scanId);
-      }
-
-      this.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(scanId)]));
+      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
       this.update();
-    }
+    });
   }
 
   private update() {
