@@ -439,6 +439,7 @@ export function convertLocationComponentToPixelPosition(x: number, y: number): P
 export class ContextImageScanModel {
   constructor(
     public scanId: string, // The scan ID we were generated for
+    public scanTitle: string, // Title as displayed on dataset tile
     public imageName: string, // The image we were generated for (our points are relative to this image!)
     public scanPoints: ScanPoint[], // The actual scan points
     public scanPointPolygons: Point[][], // Scan points can be rendered as polygons which touch neighbours

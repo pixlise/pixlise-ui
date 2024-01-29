@@ -450,13 +450,21 @@ bool removeBottomSpecularArtifacts = 21;
         options: [],
       },
     ];
+
+    // Find scan titles
+    const scanTitles = new Map<string, string>();
+    for (const scanId of this.mdl.scanIds) {
+      const mdl = this.mdl.getScanModelFor(scanId);
+      scanTitles.set(scanId, mdl?.scanTitle || scanId)
+    }
+
     // Add options for showing/hiding all scan footprints, maps and points
     const allOptions = new Set<string>();
     const appendage = ["-points", "-footprints", "-maps"];
     for (const scanId of this.mdl.scanIds) {
       for (let c = 0; c < appendage.length; c++) {
         const opt = `${scanId}${appendage[c]}`;
-        options[c].options.push({ title: `${scanId}`, value: opt });
+        options[c].options.push({ title: `${scanTitles.get(scanId)}`, value: opt });
         allOptions.add(opt);
       }
     }
