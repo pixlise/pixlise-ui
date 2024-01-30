@@ -180,7 +180,7 @@ export class ROIPickerComponent implements OnInit, OnDestroy {
   }
 
   onROISelect(roi: ROIItemSummary, customSelection: { selectedOptions: string[] }): void {
-    if (this.data.singleSelect === true) {
+    if (this.data?.singleSelect) {
       // Almost like onClear(), we ensure only one item gets selected - the one being selected now!
       this.selectedROIs = {};
       this.selectedItems.clear();
