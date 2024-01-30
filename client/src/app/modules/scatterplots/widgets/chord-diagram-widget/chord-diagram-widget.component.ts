@@ -20,7 +20,7 @@ import {
   ExpressionPickerComponent,
   ExpressionPickerResponse,
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { AnalysisLayoutService, DefaultExpressions } from "src/app/modules/analysis/services/analysis-layout.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 
 @Component({
@@ -87,24 +87,12 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
 
   private setInitialConfig() {
     this.scanId = this._analysisLayoutService.defaultScanId;
+    this._analysisLayoutService.makeExpressionList(this.scanId, 8).subscribe((exprs: DefaultExpressions) => {
+      this.mdl.expressionIds = exprs.exprIds;
 
-    if (this.scanId.length > 0) {
-      let quantId = this._analysisLayoutService.getQuantIdForScan(this.scanId);
-
-      if (quantId.length <= 0) {
-        // default to pseudo intensities
-        this.mdl.expressionIds = [
-          DataExpressionId.makePredefinedPseudoIntensityExpression("Mg"),
-          DataExpressionId.makePredefinedPseudoIntensityExpression("Na"),
-          DataExpressionId.makePredefinedPseudoIntensityExpression("Ca"),
-        ];
-      } else {
-        this.mdl.expressionIds = this._analysisLayoutService.getQuantElementIdsForScan(this.scanId);
-      }
-
-      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
+      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
       this.update();
-    }
+    });
   }
 
   private update() {

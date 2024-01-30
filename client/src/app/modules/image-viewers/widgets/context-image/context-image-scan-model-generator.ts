@@ -86,6 +86,7 @@ export class ContextImageScanModelGenerator {
 
     const result = new ContextImageScanModel(
       scanItem.id,
+      scanItem.title,
       imageName,
       scanPoints,
       scanPointPolygons,

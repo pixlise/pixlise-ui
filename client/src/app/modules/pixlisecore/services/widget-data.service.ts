@@ -54,6 +54,9 @@ import { MemDataQueryResult, MemPMCDataValue, MemPMCDataValues, MemRegionSetting
 import { ROIItemDisplaySettings } from "src/app/generated-protos/roi";
 import { RGBA } from "src/app/utils/colours";
 import { ROIShape } from "../../roi/components/roi-shape/roi-shape.component";
+import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
+import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
+import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 
 export type DataModuleVersionWithRef = {
   id: string;
@@ -193,25 +196,87 @@ export class WidgetDataService {
     );
   }
 
-  private makeCacheKey(query: DataSourceParams, allowAnyResponse: boolean): string {
-    return JSON.stringify(query) + "," + allowAnyResponse;
+  private makeCacheKey(query: DataSourceParams, allowAnyResponse: boolean): Observable<string> {
+    // We need to get time stamps for each item to make this cache key unique to only this specific version of
+    // the quant, scan, ROI, etc
+
+    // Get the cache key so far
+    const cacheKeyStart = JSON.stringify(query) + ",Resp:" + allowAnyResponse;
+
+    const queryList = [];
+    let exprIdIdx = -1;
+    let roiIdIdx = -1;
+    let scanIdIdx = -1;
+
+    // Only query timestamp for actual expressions, not our predefined internal ones
+    if (query.exprId && !DataExpressionId.isPredefinedExpression(query.exprId)) {
+      exprIdIdx = queryList.length;
+      queryList.push(this._cachedDataService.getExpression(ExpressionGetReq.create({ id: query.exprId })));
+    }
+
+    // Only query timestamp for actual ROIs not predefined internal ones
+    if (query.roiId && !PredefinedROIID.isPredefined(query.roiId)) {
+      roiIdIdx = queryList.length;
+      queryList.push(this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: query.roiId })));
+    }
+
+    if (query.scanId) {
+      scanIdIdx = queryList.length;
+      queryList.push(this._cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId: query.scanId } })));
+    }
+
+    if (queryList.length <= 0) {
+      return of(cacheKeyStart);
+    }
+
+    return combineLatest(queryList).pipe(
+      map((result: (ExpressionGetResp | RegionOfInterestGetResp | ScanListResp)[]) => {
+        let appendKey = "";
+
+        if (exprIdIdx >= 0) {
+          const e = result[exprIdIdx] as ExpressionGetResp;
+          if (e && e.expression) {
+            appendKey += ",exprMod:" + e.expression.modifiedUnixSec;
+          }
+        }
+
+        if (roiIdIdx >= 0) {
+          const r = result[exprIdIdx] as RegionOfInterestGetResp;
+          if (r && r.regionOfInterest) {
+            appendKey += ",roiMod:" + r.regionOfInterest.modifiedUnixSec;
+          }
+        }
+
+        if (scanIdIdx >= 0) {
+          const s = result[scanIdIdx] as ScanListResp;
+          if (s && s.scans && s.scans.length == 1) {
+            appendKey += ",scanMod:" + s.scans[0].timestampUnixSec;
+          }
+        }
+
+        return cacheKeyStart + appendKey;
+      })
+    );
   }
 
   private getDataSingle(query: DataSourceParams, allowAnyResponse: boolean): Observable<DataQueryResult> {
     // Here we have our first level of caching. This is because a widget can be re-inited/updated due to many things
     // such as UI refresh/colours or settings loading, etc. We don't want each to trigger a whole new run of an
     // expression, so check if we already have an observable we can return for this
-    const cacheKey = this.makeCacheKey(query, allowAnyResponse);
-    const cached = this._inFluxSingleQueryResultCache.get(cacheKey);
-    if (cached) {
-      return cached;
-    }
+    return this.makeCacheKey(query, allowAnyResponse).pipe(
+      concatMap((cacheKey: string) => {
+        const cached = this._inFluxSingleQueryResultCache.get(cacheKey);
+        if (cached) {
+          return cached;
+        }
 
-    const obs = this.getDataWithMemoisation(query, allowAnyResponse, cacheKey);
+        const obs = this.getDataWithMemoisation(query, allowAnyResponse, cacheKey);
 
-    // Add to our in-flux cache
-    this._inFluxSingleQueryResultCache.set(cacheKey, obs); // Make sure any obs going in here has shareReplay in its pipe
-    return obs;
+        // Add to our in-flux cache
+        this._inFluxSingleQueryResultCache.set(cacheKey, obs); // Make sure any obs going in here has shareReplay in its pipe
+        return obs;
+      })
+    );
   }
 
   private getDataWithMemoisation(query: DataSourceParams, allowAnyResponse: boolean, cacheKey: string): Observable<DataQueryResult> {
