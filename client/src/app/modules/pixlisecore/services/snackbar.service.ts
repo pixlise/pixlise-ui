@@ -53,7 +53,7 @@ export class SnackbarService {
     });
   }
 
-  openError(message: any, details: string | Error = "", action: string = ""): void {
+  openError(message: any, details: string | Error = "", action: string = "", rateLimitMS = 1000): void {
     let messageText = "";
     let newDetails = "";
     if (message instanceof WidgetError) {
@@ -85,7 +85,12 @@ export class SnackbarService {
       details = newDetails;
     }
 
-    this.addMessageToHistory(messageText, details, action, "error");
+    // If the message is the same as the last one, and it's been less than the rate limit period, don't show it
+    if (this.history.length > 0 && this.history[0].message === message && Date.now() - this.history[0].timestamp < rateLimitMS) {
+      return;
+    }
+
+    this.addMessageToHistory(messageText, details as string, action, "error");
     this._snackBar.openFromComponent(SnackBarPopupComponent, {
       data: { message: messageText, details, action, type: "error" },
       horizontalPosition: "left",

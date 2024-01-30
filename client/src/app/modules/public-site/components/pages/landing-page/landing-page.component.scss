@@ -35,6 +35,7 @@
 
   .header {
     height: 100vh;
+    min-height: 750px;
     width: 100%;
     background-size: cover !important;
     position: relative;
@@ -62,7 +63,8 @@
       }
 
       img {
-        max-width: 335px;
+        width: 335px;
+        max-width: 100%;
         padding-top: $sz-spacer-gap;
       }
     }
@@ -354,6 +356,22 @@
 }
 
 @media screen and (max-width: 700px) {
+  .page {
+    .header {
+      min-height: 850px;
+
+      .header-content {
+        h1 {
+          font-size: 48px;
+        }
+
+        p {
+          padding-top: 32px;
+        }
+      }
+    }
+  }
+
   h2 {
     font-size: 50px !important;
   }
