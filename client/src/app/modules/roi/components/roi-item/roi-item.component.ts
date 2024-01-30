@@ -22,6 +22,7 @@ export type SubItemOptionSection = {
 export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   @Input() rightSelection: boolean = false;
   @Input() isSelectable = false;
+  @Input() isSingleSelect: boolean = false;
 
   // If these are specified and isSelectable, they will replace the checkbox selection
   @Input() selectionOptions: SubItemOptionSection[] = [];

@@ -77,7 +77,8 @@ POSSIBILITY OF SUCH DAMAGE.
         [selectedOptions]="selectedItems.get(item.id) || []"
         [displaySettings]="displaySettingsMap[item.id]"
         [selectionOptions]="data.selectableSubItemOptions || []"
-        [selectionLabel]="data.subItemButtonName || ''">
+        [selectionLabel]="data.subItemButtonName || ''"
+        [isSingleSelect]="data.singleSelect || false">
       </roi-item>
     </cdk-virtual-scroll-viewport>
   </section>

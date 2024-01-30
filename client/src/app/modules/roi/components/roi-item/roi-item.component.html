@@ -121,8 +121,8 @@
     <two-state-icon-button
       *ngIf="isSelectable && !rightSelection && !isSubItemSelectionEnabled"
       toolTip="Toggle ROI"
-      activeIcon="assets/button-icons/check-on.svg"
-      inactiveIcon="assets/button-icons/check-off.svg"
+      [activeIcon]="isSingleSelect ? 'assets/button-icons/radio-on.svg' : 'assets/button-icons/check-on.svg'"
+      [inactiveIcon]="isSingleSelect ? 'assets/button-icons/radio-off.svg' : 'assets/button-icons/check-off.svg'"
       class="checkbox-button"
       [active]="selected"
       (onToggle)="onCheckboxClick($event)">
