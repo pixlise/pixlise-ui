@@ -32,11 +32,20 @@
 .page {
   .product-header {
     background-image: url("/assets/images/bg-getpixlise.jpg");
-    height: 100vh;
+    min-height: 100vh;
+    height: fit-content;
   }
 
   .header-content {
+    position: relative;
+    width: 100vw;
+
     .tile-container {
+      flex-wrap: wrap;
+      width: 100%;
+      justify-content: center;
+      align-items: flex-start;
+
       gap: $sz-button-gap;
 
       .tile {
@@ -146,5 +155,16 @@
 
   .separated {
     justify-content: space-between;
+  }
+}
+
+@media screen and (max-width: 1055px) {
+  .page {
+    .header-content {
+      .tile-container {
+        margin-top: 275px;
+        margin-bottom: 32px;
+      }
+    }
   }
 }
