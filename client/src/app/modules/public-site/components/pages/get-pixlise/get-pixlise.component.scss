@@ -27,120 +27,124 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import '../../../scss/public-site.scss';
+@import "../../../scss/public-site.scss";
 
 .page {
-    .header-content {
-        .tile-container {
-            gap: $sz-button-gap;
+  .product-header {
+    background-image: url("/assets/images/bg-getpixlise.jpg");
+    height: 100vh;
+  }
 
-            .tile {
-                justify-content: space-between;
-                align-items: stretch;
-                align-content: stretch;
-                padding: $sz-button-gap;
-                width: 260px;
-                height: 260px;
+  .header-content {
+    .tile-container {
+      gap: $sz-button-gap;
 
-                background-color: $clr-gray-90;
-                border-radius: $sz-half;
-
-                h4 {
-                    color: $clr-yellow;
-                    padding: 0px;
-                    margin: 0px;
-
-                }
-
-                .last {
-                    @extend .red;
-                }
-                
-                p {
-                    padding: 0px;
-                    color: $clr-gray-30;
-                    text-align: left;
-                }
-            }
-        }
-    }
-    .get {
-        border-top: $clr-yellow 1px solid;
-        border-bottom: $clr-yellow 1px solid;
-
-        .headings {
-            padding-top: $sz-heading-gap;
-        }
-
-        .options {
-            width: 450px;
-            height: 450px;
-
-            li {
-                padding: $sz-half $sz-unit;
-                cursor: pointer;
-            }
-
-            .active {
-                border-radius: $sz-double;
-                background-color: $clr-gray-80;
-            }
-
-            p {
-                padding-top: $sz-double;
-                color: $clr-gray-30;
-            }
-        }
-    }
-    .links {
-        background-color: $clr-gray-80;
-
-        .linkbody {
-            padding-top: $sz-heading-gap;
-        }
-
-        .coming-soon {
-            color: $clr-gray-60;
-        }
-
-        a {
-            color: $clr-blue;
-        }
-
-        .list-heading {
-            padding-bottom: $sz-unit;
-        }
-
-        .list-item {
-            font-family: Titillium Web;
-            font-size: 24px;
-            font-weight: 400;
-            line-height: 26px;
-            letter-spacing: 0.01em;
-            text-align: left;
-
-            list-style: none;
-        }
-
-        .top-gap {
-            padding-top: $sz-paragraph-gap;
-        }
-    }
-
-    h3 {
-        color: $clr-gray-30;
-        padding: 0px;
-    }
-
-    .darker {
-        color: $clr-gray-50;
-    }
-
-    .lighter {
-        color: white;
-    }
-
-    .separated {
+      .tile {
         justify-content: space-between;
+        align-items: stretch;
+        align-content: stretch;
+        padding: $sz-button-gap;
+        width: 260px;
+        height: 260px;
+
+        background-color: $clr-gray-90;
+        border-radius: $sz-half;
+
+        h4 {
+          color: $clr-yellow;
+          padding: 0px;
+          margin: 0px;
+        }
+
+        .last {
+          @extend .red;
+        }
+
+        p {
+          padding: 0px;
+          color: $clr-gray-30;
+          text-align: left;
+        }
+      }
     }
+  }
+  .get {
+    border-top: $clr-yellow 1px solid;
+    border-bottom: $clr-yellow 1px solid;
+
+    .headings {
+      padding-top: $sz-heading-gap;
+    }
+
+    .options {
+      width: 450px;
+      height: 450px;
+
+      li {
+        padding: $sz-half $sz-unit;
+        cursor: pointer;
+      }
+
+      .active {
+        border-radius: $sz-double;
+        background-color: $clr-gray-80;
+      }
+
+      p {
+        padding-top: $sz-double;
+        color: $clr-gray-30;
+      }
+    }
+  }
+  .links {
+    background-color: $clr-gray-80;
+
+    .linkbody {
+      padding-top: $sz-heading-gap;
+    }
+
+    .coming-soon {
+      color: $clr-gray-60;
+    }
+
+    a {
+      color: $clr-blue;
+    }
+
+    .list-heading {
+      padding-bottom: $sz-unit;
+    }
+
+    .list-item {
+      font-family: Titillium Web;
+      font-size: 24px;
+      font-weight: 400;
+      line-height: 26px;
+      letter-spacing: 0.01em;
+      text-align: left;
+
+      list-style: none;
+    }
+
+    .top-gap {
+      padding-top: $sz-paragraph-gap;
+    }
+  }
+
+  h3 {
+    color: $clr-gray-30;
+    padding: 0px;
+  }
+
+  .darker {
+    color: $clr-gray-50;
+  }
+
+  .lighter {
+    color: white;
+  }
+
+  .separated {
+    justify-content: space-between;
+  }
 }

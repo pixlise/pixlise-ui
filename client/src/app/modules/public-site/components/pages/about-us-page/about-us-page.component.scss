@@ -30,6 +30,11 @@
 @import "../../../scss/public-site.scss";
 
 .page {
+  .product-header {
+    background-image: url("/assets/images/bg-mission.jpg");
+    height: 100vh;
+  }
+
   .header-content {
     width: 650px;
   }
