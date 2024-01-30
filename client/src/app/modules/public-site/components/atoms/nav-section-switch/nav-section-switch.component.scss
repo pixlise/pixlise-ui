@@ -27,47 +27,129 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import '../../../scss/public-site.scss';
+@import "../../../scss/public-site.scss";
 
 .nav-switch {
-    justify-content: space-between;
+  justify-content: space-between;
 
-    .chevron {
-        padding-top: 24px;
-        width: $sz-border-x;
-        color: $clr-red;
-        font-weight: bold;
-        text-align: center;
-    }
-
-    &.light {
-        background-color: $clr-gray-10;
-        color: $clr-gray-70;
-        
-        .left-nav {
-            border-right: $clr-gray-50 1px solid;
-        }
-
-        .right-nav {
-            border-left: $clr-gray-50 1px solid;
-        }
-    }
-
-    &.dark {
-        background-color: $clr-gray-90;
-        color: $clr-gray-50;
-        
-        .left-nav {
-            border-right: $clr-gray-70 1px solid;
-        }
-
-        .right-nav {
-            border-left: $clr-gray-70 1px solid;
-        }
-    }
-
+  .clickable {
     .nav-btn {
-        @extend .figure-time;
-        padding: 24px $sz-button-gap;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      height: 75px;
+      padding: 0 24px;
+
+      .chevron {
+        display: flex;
+        width: auto;
+        align-items: center;
+        height: fit-content;
+        padding: 0;
+      }
     }
+
+    &:hover {
+      .right-nav {
+        .chevron {
+          transform: translateX(8px);
+        }
+      }
+
+      .left-nav {
+        .chevron {
+          transform: translateX(-8px);
+        }
+      }
+    }
+  }
+
+  .chevron {
+    padding-top: 24px;
+    width: $sz-border-x;
+    color: $clr-red;
+    font-weight: bold;
+    text-align: center;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .left-nav {
+    .chevron {
+      margin-right: 8px;
+    }
+  }
+
+  .right-nav {
+    .chevron {
+      margin-left: 8px;
+    }
+  }
+
+  &.light {
+    background-color: $clr-gray-10;
+    color: $clr-gray-70;
+
+    .left-nav {
+      border-right: $clr-gray-50 1px solid;
+    }
+
+    .right-nav {
+      border-left: $clr-gray-50 1px solid;
+    }
+  }
+
+  &.dark {
+    background-color: $clr-gray-90;
+    color: $clr-gray-50;
+
+    .left-nav {
+      border-right: $clr-gray-70 1px solid;
+    }
+
+    .right-nav {
+      border-left: $clr-gray-70 1px solid;
+    }
+  }
+
+  .nav-btn {
+    @extend .figure-time;
+    padding: 24px $sz-button-gap;
+    white-space: pre;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .nav-switch {
+    .nav-btn {
+      font-size: 16px;
+    }
+  }
+}
+
+@media screen and (max-width: 500px) {
+  .nav-switch {
+    display: flex;
+
+    .clickable {
+      flex: 1;
+
+      .nav-btn {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        height: 75px;
+        padding: 0;
+
+        .chevron {
+          display: flex;
+          width: auto;
+          align-items: center;
+          height: fit-content;
+          padding: 0;
+        }
+      }
+    }
+  }
 }

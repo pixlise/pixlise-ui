@@ -303,13 +303,16 @@ a {
   }
 
   .header-content {
-    // position: absolute;
+    max-width: 100%;
+    position: absolute;
   }
 }
 
 .product-header {
   align-items: center;
   justify-content: center;
+  background-size: cover;
+  height: calc(100vh - 75px);
 
   .header-content {
     align-items: center;
@@ -324,5 +327,12 @@ a {
     p {
       text-align: center;
     }
+  }
+}
+
+@media screen and (max-width: 700px) {
+  h2 {
+    font-size: 48px !important;
+    line-height: 48px !important;
   }
 }

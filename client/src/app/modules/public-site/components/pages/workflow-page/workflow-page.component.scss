@@ -27,75 +27,81 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import '../../../scss/public-site.scss';
+@import "../../../scss/public-site.scss";
 
 .page {
-    .exploration {
-        background-color: $clr-gray-90;
+  .product-header {
+    background-image: url("/assets/images/bg-workflow.jpg");
+    background-size: cover;
+    height: calc(100vh - 75px);
+  }
 
-        .img-spacer {
-            justify-content: space-between;
+  .exploration {
+    background-color: $clr-gray-90;
 
-            .heading {
-                padding-bottom: 0px;
-                width: 600px;
-                color: $clr-gray-30;
-            }
-    
-            .brighter {
-                color: $clr-gray-10;
-            }
-    
-            .mid {
-                color: $clr-gray-50;
-                padding-top: 0px;
-                padding-bottom: 0px;
-            }
-    
-            .darker {
-                color: $clr-gray-70;
-                padding-top: 0px;
-                padding-bottom: 0px;
-            }
-    
-            .left-pad {
-                padding-left: 298px;
-            }
-        }
+    .img-spacer {
+      justify-content: space-between;
+
+      .heading {
+        padding-bottom: 0px;
+        width: 600px;
+        color: $clr-gray-30;
+      }
+
+      .brighter {
+        color: $clr-gray-10;
+      }
+
+      .mid {
+        color: $clr-gray-50;
+        padding-top: 0px;
+        padding-bottom: 0px;
+      }
+
+      .darker {
+        color: $clr-gray-70;
+        padding-top: 0px;
+        padding-bottom: 0px;
+      }
+
+      .left-pad {
+        padding-left: 298px;
+      }
     }
+  }
 
-    .solution {
-        background-color: $clr-gray-100;
-        border-top: $clr-red 1px solid;
-    }
+  .solution {
+    background-color: $clr-gray-100;
+    border-top: $clr-red 1px solid;
+  }
 
-    .sharing {
-        background-color: $clr-gray-70;
+  .sharing {
+    background-color: $clr-gray-70;
 
-        .sharing-container {
-            gap: $sz-border-y;
-        }
-
-        h3 {
-            width: 1060px;
-        }
-
-        p {
-            width: 370px;
-            padding-top: $sz-button-gap;
-        }
-
-        h4 {
-            padding-top: $sz-border-y;
-        }
-    }
-
-    .analysis {
-        background-color: $clr-gray-100;
+    .sharing-container {
+      gap: $sz-border-y;
     }
 
     h3 {
-        padding-top: $sz-heading-gap;
-        padding-bottom: $sz-subheading-gap;
+      width: 1060px;
     }
+
+    p {
+      width: 370px;
+      padding-top: $sz-button-gap;
+    }
+
+    h4 {
+      padding-top: $sz-border-y;
+    }
+  }
+
+  .analysis {
+    background-color: $clr-gray-100;
+  }
+
+  h3 {
+    padding-top: $sz-heading-gap;
+    padding-bottom: $sz-subheading-gap;
+  }
 }

@@ -27,55 +27,61 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-@import '../../../scss/public-site.scss';
+@import "../../../scss/public-site.scss";
 
 .section {
-    h3 {
-        width: 1200px;
-        padding-top: $sz-spacer-gap;
-        padding-bottom: $sz-spacer-gap;
+  h3 {
+    max-width: 1200px;
+    padding-top: $sz-spacer-gap;
+    padding-bottom: $sz-spacer-gap;
+  }
+
+  .display-image {
+    width: 100%;
+    max-width: 50vw;
+    margin: auto;
+    min-width: 200px;
+
+    border-radius: 8px;
+    border: 1px solid #1b1d1e;
+  }
+
+  .tile-container {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: $sz-spacer-gap;
+
+    .tile {
+      padding: $sz-button-gap;
+      flex: 1;
+
+      border-radius: $sz-unit;
+      border: 1px solid transparent;
+
+      max-width: 20vw;
+
+      h4 {
+        padding: $sz-double 0px;
+      }
+
+      p {
+        padding: 0px;
+      }
+
+      img {
+        height: unset;
+        width: unset;
+      }
+
+      &:hover {
+        border: $clr-gray-50 1px solid;
+      }
     }
 
-    img {
-        height: 800px;
-        width: auto;
+    .active {
+      box-shadow: 0px 0px $sz-unit black;
     }
-
-    .tile-container {
-        justify-content: space-between;
-        gap: $sz-button-gap;
-        padding-top: $sz-spacer-gap;
-
-        .tile {
-            padding: $sz-button-gap;
-            flex-grow: 1;
-            flex-shrink: 1;
-
-            border-radius: $sz-unit;
-            border: 1px solid transparent;
-
-            max-width: 20vw;
-
-            h4 {
-                padding: $sz-double 0px;
-            }
-
-            p {
-                padding: 0px;
-            }
-
-            img {
-                height: unset;
-                width: unset;
-            }
-
-            &:hover {
-                border: $clr-gray-50 1px solid;
-            }
-        }
-
-        .active {
-            box-shadow: 0px 0px $sz-unit black;
-        }
-    }
+  }
 }
