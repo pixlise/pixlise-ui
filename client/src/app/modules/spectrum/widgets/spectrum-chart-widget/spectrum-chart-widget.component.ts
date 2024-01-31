@@ -165,7 +165,9 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           type: "button",
           title: "Calibration",
           tooltip: "Allows calibration of x-axis",
-          value: false,
+          value: this.mdl.xAxisEnergyScale,
+          inactiveIcon: "assets/button-icons/disabled-gray.svg",
+          activeIcon: "assets/button-icons/yellow-tick.svg",
           onClick: () => this.onCalibration(),
         },
       ],
@@ -231,6 +233,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           for (const cfg of this._widgetControlConfiguration.bottomToolbar) {
             if (cfg.id == "piquant") {
               cfg.disabled = !xAxisEnergyScale;
+            } else if (cfg.id == "calibration") {
+              cfg.value = xAxisEnergyScale;
             }
           }
         }
@@ -460,6 +464,11 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       if (result) {
         // Set the overall flag
         this.mdl.xAxisEnergyScale = result.useCalibration;
+
+        let button = this._widgetControlConfiguration.bottomToolbar?.find(btn => btn.id === "calibration");
+        if (button) {
+          button.value = result.useCalibration;
+        }
 
         // Set the calibration in service and in our model
         for (const [scanId, cal] of result.calibrationForScans.entries()) {

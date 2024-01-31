@@ -9,16 +9,26 @@ import {
 } from "src/app/modules/scatterplots/scatterplots.module";
 import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/spectrum.module";
 
-export type WidgetToolbarButtonTypes = "selectable-button" | "button" | "toggle-button" | "multi-state-button" | "selection-changer" | "widget-key";
+export type WidgetToolbarButtonTypes =
+  | "selectable-button"
+  | "button"
+  | "toggle-button"
+  | "multi-state-button"
+  | "selection-changer"
+  | "widget-key"
+  | "plus-minus-switch";
 
 export type WidgetToolbarButtonConfiguration = {
   id: string;
   type: WidgetToolbarButtonTypes;
   title?: string;
   icon?: string;
+  inactiveIcon?: string;
+  activeIcon?: string;
   tooltip?: string;
   value?: any;
   style?: any;
+  margin?: string;
   disabled?: boolean;
   onClick: (value: any, trigger?: Element) => void;
 

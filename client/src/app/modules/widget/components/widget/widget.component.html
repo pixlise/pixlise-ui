@@ -2,7 +2,7 @@
   <widget-configuration-button
     *ngFor="let button of topToolbarButtons"
     [buttonConfiguration]="button"
-    [ngStyle]="{ display: button._overflowed ? 'block' : 'none' }"></widget-configuration-button>
+    [ngStyle]="{ display: button._overflowed ? 'block' : 'none', margin: button.margin }"></widget-configuration-button>
 </ng-template>
 
 <div class="widget {{ isWidgetHighlighted ? 'highlight' : '' }}">
@@ -25,7 +25,7 @@
         <widget-configuration-button
           *ngFor="let button of topToolbarButtons"
           [buttonConfiguration]="button"
-          [ngStyle]="{ display: button._overflowed ? 'none' : 'block' }"></widget-configuration-button>
+          [ngStyle]="{ display: button._overflowed ? 'none' : 'block', margin: button.margin }"></widget-configuration-button>
       </div>
       <widget-settings-menu *ngIf="settingsMenu" [settingsDialog]="settingsMenu" [overflowSection]="overflowSection" #settingsButton>
         <icon-button #tooltip="matTooltip" matTooltip="Show Settings Menu" icon="assets/button-icons/settings.svg"> </icon-button>
@@ -33,15 +33,33 @@
     </div>
   </header>
   <div class="visualization {{ bottomToolbarButtons.length > 0 ? '' : 'hide-overflow' }}">
-    <widget-configuration-button class="inset-button top-left" [buttonConfiguration]="topLeftInsetButton"></widget-configuration-button>
-    <widget-configuration-button class="inset-button top-center" [buttonConfiguration]="topCenterInsetButton"></widget-configuration-button>
-    <widget-configuration-button class="inset-button top-right" [buttonConfiguration]="topRightInsetButton"></widget-configuration-button>
+    <widget-configuration-button
+      class="inset-button top-left"
+      [ngStyle]="topLeftInsetButton?.margin ? { margin: topLeftInsetButton?.margin } : {}"
+      [buttonConfiguration]="topLeftInsetButton"></widget-configuration-button>
+    <widget-configuration-button
+      class="inset-button top-center"
+      [ngStyle]="topCenterInsetButton?.margin ? { margin: topCenterInsetButton?.margin } : {}"
+      [buttonConfiguration]="topCenterInsetButton"></widget-configuration-button>
+    <widget-configuration-button
+      class="inset-button top-right"
+      [ngStyle]="topRightInsetButton?.margin ? { margin: topRightInsetButton?.margin } : {}"
+      [buttonConfiguration]="topRightInsetButton"></widget-configuration-button>
     <ng-template #currentWidget></ng-template>
 
-    <widget-configuration-button class="inset-button bottom-left" [buttonConfiguration]="bottomLeftInsetButton"></widget-configuration-button>
-    <widget-configuration-button class="inset-button bottom-right" [buttonConfiguration]="bottomRightInsetButton"></widget-configuration-button>
+    <widget-configuration-button
+      class="inset-button bottom-left"
+      [ngStyle]="bottomLeftInsetButton?.margin ? { margin: bottomLeftInsetButton?.margin } : {}"
+      [buttonConfiguration]="bottomLeftInsetButton"></widget-configuration-button>
+    <widget-configuration-button
+      class="inset-button bottom-right"
+      [ngStyle]="bottomRightInsetButton?.margin ? { margin: bottomRightInsetButton?.margin } : {}"
+      [buttonConfiguration]="bottomRightInsetButton"></widget-configuration-button>
   </div>
   <div class="bottom-toolbar {{ bottomToolbarButtons.length > 0 ? 'visible' : 'hidden' }}" #bottomToolbar>
-    <widget-configuration-button *ngFor="let button of bottomToolbarButtons" [buttonConfiguration]="button"></widget-configuration-button>
+    <widget-configuration-button
+      *ngFor="let button of bottomToolbarButtons"
+      [buttonConfiguration]="button"
+      [ngStyle]="{ margin: button.margin }"></widget-configuration-button>
   </div>
 </div>

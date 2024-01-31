@@ -169,6 +169,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           id: "image",
           type: "button",
           title: "Image",
+          margin: "0 auto 0 0",
           tooltip: "Manage images drawn",
           value: false,
           onClick: (value, trigger) => this.onToggleImageOptionsView(trigger),
@@ -196,8 +197,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
     this._widgetControlConfiguration.bottomToolbar?.push({
       id: "selection-mode",
-      type: "button",
-      title: "Additive",
+      type: "plus-minus-switch",
+      activeIcon: "assets/button-icons/selection-mode-add.svg",
+      inactiveIcon: "assets/button-icons/selection-mode-subtract.svg",
       tooltip: "Toggles selection mode between\n additive and subtractive",
       value: this.mdl?.selectionModeAdd ?? false,
       onClick: () => this.onToggleSelectionMode(),
@@ -455,7 +457,7 @@ bool removeBottomSpecularArtifacts = 21;
     const scanTitles = new Map<string, string>();
     for (const scanId of this.mdl.scanIds) {
       const mdl = this.mdl.getScanModelFor(scanId);
-      scanTitles.set(scanId, mdl?.scanTitle || scanId)
+      scanTitles.set(scanId, mdl?.scanTitle || scanId);
     }
 
     // Add options for showing/hiding all scan footprints, maps and points
