@@ -13,7 +13,7 @@ import { PushButtonComponent } from "./components/atoms/buttons/push-button/push
 import { IconButtonComponent } from "./components/atoms/buttons/icon-button/icon-button.component";
 import { TwoStateButtonComponent } from "./components/atoms/buttons/two-state-button/two-state-button.component";
 // import { BulkSelectionSwitchComponent } from "./components/atoms/buttons/two-state-button/bulk-selection-switch.component";
-// import { PlusMinusSwitchComponent } from "./components/atoms/buttons/two-state-button/plus-minus-switch.component";
+import { PlusMinusSwitchComponent } from "./components/atoms/buttons/two-state-button/plus-minus-switch.component";
 import { SwitchButtonComponent } from "./components/atoms/buttons/switch-button/switch-button.component";
 import { MultiSwitchButtonComponent } from "./components/atoms/buttons/multi-switch-button/multi-switch-button.component";
 import { TwoStateIconButton } from "./components/atoms/buttons/two-state-button/two-state-icon-button.component";
@@ -77,6 +77,7 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
     ActionButtonComponent,
     PushButtonComponent,
     TwoStateButtonComponent,
+    PlusMinusSwitchComponent,
     SwitchButtonComponent,
     MultiSwitchButtonComponent,
     TwoStateIconButton,
@@ -121,6 +122,7 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
     ActionButtonComponent,
     PushButtonComponent,
     TwoStateButtonComponent,
+    PlusMinusSwitchComponent,
     SwitchButtonComponent,
     MultiSwitchButtonComponent,
     TwoStateIconButton,
