@@ -67,4 +67,9 @@ export class LocalStorageService {
   async clearRGBUImages() {
     await db.rgbuImages.clear();
   }
+
+  async clearImagesBySubstring(substring: string) {
+    await db.images.filter(item => item.url.includes(substring)).delete();
+    await db.rgbuImages.filter(item => item.url.includes(substring)).delete();
+  }
 }
