@@ -17,13 +17,13 @@ export class APIEndpointsService {
 
   // Assumes the path is going to get us the image, might have to include the scan id in it
   // Loads image from local storage if available and under the max age, otherwise downloads it from the server
-  loadImageForPath(imagePath: string, maxAge: number = 1000 * 60 * 60 * 24 * 7): Observable<HTMLImageElement> {
+  loadImageForPath(imagePath: string, maxAge: number = 1000 * 60 * 60 * 24 * 2): Observable<HTMLImageElement> {
     const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
     return new Observable<HTMLImageElement>(observer => {
       this.localStorageService
         .getImage(apiUrl)
         .then(async imageData => {
-          // If we have it and it's not older than maxAge (1 week), use it
+          // If we have it and it's not older than maxAge (2 days), use it
           if (imageData && imageData.timestamp > Date.now() - maxAge) {
             const img = new Image();
             img.src = imageData.data;
@@ -67,7 +67,7 @@ export class APIEndpointsService {
     return this.loadImageFromURL(apiUrl);
   }
 */
-  private loadImageFromURL(url: string): Observable<HTMLImageElement> {
+  private loadImageFromURL(url: string, maxCacheSize: number = 15000000): Observable<HTMLImageElement> {
     // Seems file interface with onload/onerror functions is still best implemented wrapped in a new Observable
     return new Observable<HTMLImageElement>(observer => {
       this.http.get(url, { responseType: "arraybuffer" }).subscribe({
@@ -97,7 +97,10 @@ export class APIEndpointsService {
           // NOTE: the above isn't going to work straight in an img.src - you need to use the base64Image pipe
           img.src = dataURL;
 
-          this.localStorageService.storeImage(dataURL, url, url, img.height, img.width, dataURL.length);
+          // Only store if it's not too big (15 mb)
+          if (dataURL.length < maxCacheSize) {
+            this.localStorageService.storeImage(dataURL, url, url, img.height, img.width, dataURL.length);
+          }
         },
         error: err => {
           if (err instanceof HttpErrorResponse && err.status == 404) {
@@ -112,11 +115,14 @@ export class APIEndpointsService {
     });
   }
 
-  loadRGBUImageTIFFromAPI(imagePath: string): Observable<RGBUImage> {
+  loadRGBUImageTIFFromAPI(imagePath: string, maxCacheSize: number = 15000000): Observable<RGBUImage> {
     const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
     return this.http.get(apiUrl, { responseType: "arraybuffer" }).pipe(
       mergeMap((bytes: ArrayBuffer) => {
-        this.localStorageService.storeRGBUImage(bytes, apiUrl, apiUrl);
+        // Only store if it's not too big (15 mb)
+        if (bytes.byteLength < maxCacheSize) {
+          this.localStorageService.storeRGBUImage(bytes, apiUrl, apiUrl);
+        }
         return RGBUImage.readImage(bytes, imagePath);
       })
     );
@@ -126,6 +132,7 @@ export class APIEndpointsService {
   // Gets and decodes image
   loadRGBUImageTIF(imagePath: string, maxAge: number = 3600): Observable<RGBUImage> {
     const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
+
     return new Observable<RGBUImage>(observer => {
       this.localStorageService
         .getRGBUImage(apiUrl)
