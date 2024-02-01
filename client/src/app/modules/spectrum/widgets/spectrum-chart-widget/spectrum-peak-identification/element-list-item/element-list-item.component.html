@@ -30,18 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="item gap-separated-horizontal-elements">
-    <span>{{symbol}}</span>
+  <span>{{ symbol }}</span>
 
-    <two-state-icon-button
-        toolTip="Toggle Visibility"
-        activeIcon="assets/button-icons/visible-on.svg"
-        inactiveIcon="assets/button-icons/visible-off.svg"
-        [active]="item.visible"
-        (onToggle)="onToggleVisibility()"></two-state-icon-button>
-
-    <img
-        title="Delete Element"
-        src="assets/button-icons/close-cross-gray.svg"
-        class="clickable"
-        (click)="onDeleteElement()">
+  <img title="Delete Element" src="assets/button-icons/close-cross-gray.svg" class="clickable" (click)="onDeleteElement()" />
 </div>
