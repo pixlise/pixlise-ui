@@ -54,7 +54,7 @@ import { XRFLineGroup } from "src/app/periodic-table/XRFLineGroup";
   styleUrls: ["./element-list-item.component.scss"],
 })
 export class ElementListItemComponent implements OnInit {
-  @Input() item: XRFLineGroup;
+  @Input() item!: XRFLineGroup;
 
   @Output() onToggleVisible = new EventEmitter();
   @Output() onDelete = new EventEmitter();
@@ -65,10 +65,6 @@ export class ElementListItemComponent implements OnInit {
 
   ngOnInit(): void {
     this.symbol = this.getElementSymbol(this.item.atomicNumber);
-  }
-
-  onToggleVisibility(): void {
-    this.onToggleVisible.emit(this.item.atomicNumber);
   }
 
   onDeleteElement(): void {
