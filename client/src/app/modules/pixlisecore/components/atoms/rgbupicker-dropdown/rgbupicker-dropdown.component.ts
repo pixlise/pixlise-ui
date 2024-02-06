@@ -15,11 +15,12 @@ class ImageChoice {
 @Component({
   selector: "rgbupicker-dropdown",
   templateUrl: "./rgbupicker-dropdown.component.html",
-  styleUrls: ["./rgbupicker-dropdown.component.scss"]
+  styleUrls: ["./rgbupicker-dropdown.component.scss"],
 })
 export class RGBUPickerDropdownComponent implements OnInit {
   @Input() scanIds: string[] = [];
   @Input() imageName: string = "";
+  @Input() purpose: ScanImagePurpose = ScanImagePurpose.SIP_UNKNOWN;
   @Output() imageChosen = new EventEmitter();
 
   private _imageChoices: ImageChoice[] = [];
@@ -35,7 +36,7 @@ export class RGBUPickerDropdownComponent implements OnInit {
       this._imageChoices = [];
 
       for (const img of resp.images) {
-        if (img.purpose == ScanImagePurpose.SIP_MULTICHANNEL) {
+        if (this.purpose === ScanImagePurpose.SIP_UNKNOWN || img.purpose === this.purpose) {
           this._imageChoices.push(new ImageChoice(img.name, img.path));
         }
       }

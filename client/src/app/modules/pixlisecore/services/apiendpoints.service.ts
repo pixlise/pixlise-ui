@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable, mergeMap } from "rxjs";
+import { Observable, mergeMap, of } from "rxjs";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { APIPaths } from "src/app/utils/api-helpers";
@@ -18,6 +18,10 @@ export class APIEndpointsService {
   // Assumes the path is going to get us the image, might have to include the scan id in it
   // Loads image from local storage if available and under the max age, otherwise downloads it from the server
   loadImageForPath(imagePath: string, maxAge: number = 1000 * 60 * 60 * 24 * 2): Observable<HTMLImageElement> {
+    if (!imagePath) {
+      throw new Error("No image path provided");
+    }
+
     const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
     return new Observable<HTMLImageElement>(observer => {
       this.localStorageService
@@ -67,7 +71,7 @@ export class APIEndpointsService {
     return this.loadImageFromURL(apiUrl);
   }
 */
-  private loadImageFromURL(url: string, maxCacheSize: number = 15000000): Observable<HTMLImageElement> {
+  private loadImageFromURL(url: string, maxCacheSize: number = 10000000): Observable<HTMLImageElement> {
     // Seems file interface with onload/onerror functions is still best implemented wrapped in a new Observable
     return new Observable<HTMLImageElement>(observer => {
       this.http.get(url, { responseType: "arraybuffer" }).subscribe({
@@ -131,6 +135,10 @@ export class APIEndpointsService {
   // Used by dataset customisation RGBU loading and from loadRGBUImage()
   // Gets and decodes image
   loadRGBUImageTIF(imagePath: string, maxAge: number = 3600): Observable<RGBUImage> {
+    if (!imagePath) {
+      throw new Error("No image path provided");
+    }
+
     const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
 
     return new Observable<RGBUImage>(observer => {

@@ -49,10 +49,11 @@ import { MatSelectChange } from "@angular/material/select";
 import { MinMax } from "src/app/models/BasicTypes";
 import { RGBUAxisUnit } from "./rgbu-plot-data";
 import { RGBUAxisRatioPickerComponent, RatioPickerData } from "./rgbuaxis-ratio-picker/rgbuaxis-ratio-picker.component";
-import { ROIPickerComponent, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
+import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { RegionSettings } from "src/app/modules/roi/models/roi-region";
 import { selectMinerals } from "../../base/mineral-selection";
+import { ImagePickerDialogComponent, ImagePickerDialogData } from "src/app/modules/pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
 
 @Component({
   selector: "rgbu-plot",
@@ -76,6 +77,10 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
   xAxisSliderLength: number = 250;
 
   errorMsg: string = "";
+
+  purpose: ScanImagePurpose = ScanImagePurpose.SIP_MULTICHANNEL;
+
+  public scanIds: string[] = [];
 
   constructor(
     public dialog: MatDialog,
@@ -107,19 +112,28 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
         },
+        {
+          id: "image-picker",
+          type: "button",
+          // icon: "image",
+          title: "Image",
+          tooltip: "Choose image",
+          onClick: () => this.onImagePicker(),
+        },
       ],
     };
   }
 
   private setInitialConfig() {
     // If we don't have anything showing yet, just show the first one...
-    if (!this._analysisLayoutService.defaultScanId) {
+    if (!this._analysisLayoutService.defaultScanId && !this.scanIds) {
       return;
     }
 
-    this._cachedDataService.getImageList(ImageListReq.create({ scanIds: [this._analysisLayoutService.defaultScanId] })).subscribe((resp: ImageListResp) => {
+    let scanIds = this.scanIds ? this.scanIds : [this._analysisLayoutService.defaultScanId];
+    this._cachedDataService.getImageList(ImageListReq.create({ scanIds })).subscribe((resp: ImageListResp) => {
       for (const img of resp.images) {
-        if (img.purpose == ScanImagePurpose.SIP_MULTICHANNEL) {
+        if (img.purpose == ScanImagePurpose.SIP_MULTICHANNEL && img.path) {
           this.loadData(img.path, []);
         }
       }
@@ -139,7 +153,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     this._subs.add(
       this.widgetData$.subscribe((data: any) => {
         const state = data as RGBUPlotWidgetState;
-        if (state) {
+        if (state && state.imageName) {
           this.mdl.drawMonochrome = state.drawMonochrome;
           // TODO: fill in other vars here...
           this.loadData(state.imageName, [] /*state.visibleRegionIds*/);
@@ -152,6 +166,14 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     this._subs.add(
       this._selectionService.selection$.subscribe((sel: SelectionHistoryItem) => {
         this.mdl.handleSelectionChange(sel);
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
+        if (screenConfiguration && screenConfiguration.scanConfigurations) {
+          this.scanIds = Object.entries(screenConfiguration.scanConfigurations).map(([scanId]) => scanId);
+        }
       })
     );
   }
@@ -170,10 +192,11 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
   }
 
   onRegions() {
-    const dialogConfig = new MatDialogConfig();
+    const dialogConfig = new MatDialogConfig<ROIPickerData>();
     // Pass data to dialog
     dialogConfig.data = {
-      //requestFullROIs: true,
+      requestFullROIs: false,
+      scanId: this.scanIds ? this.scanIds[0] : this._analysisLayoutService.defaultScanId,
     };
 
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
@@ -203,16 +226,26 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     });
   }
 
-  get scanIdsForRGBUPicker(): string[] {
-    if (!this._analysisLayoutService.defaultScanId) {
-      return [];
-    }
-
-    return [this._analysisLayoutService.defaultScanId];
-  }
-
   get drawMonochrome(): boolean {
     return this.mdl.drawMonochrome;
+  }
+
+  onImagePicker() {
+    const dialogConfig = new MatDialogConfig<ImagePickerDialogData>();
+    // Pass data to dialog
+    dialogConfig.data = {
+      scanIds: this.scanIds,
+      purpose: this.purpose,
+      selectedImagePath: this.mdl?.imageName || "",
+      liveUpdate: false,
+    };
+
+    const dialogRef = this.dialog.open(ImagePickerDialogComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe(selectedImage => {
+      if (selectedImage) {
+        this.onImageChanged(selectedImage);
+      }
+    });
   }
 
   onToggleDrawMonochrome(): void {
@@ -298,7 +331,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     return this.mdl.yAxis?.maxValue || this.yRangeMax;
   }
 
-  onChangeXAxis(event): void {
+  onChangeXAxis(event: any): void {
     this.mdl.selectedMinXValue = event.minValue;
     this.mdl.selectedMaxXValue = event.maxValue;
     if (event.finish) {
@@ -307,7 +340,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     }
   }
 
-  onChangeYAxis(event): void {
+  onChangeYAxis(event: any): void {
     this.mdl.selectedMinYValue = event.minValue;
     this.mdl.selectedMaxYValue = event.maxValue;
     if (event.finish) {

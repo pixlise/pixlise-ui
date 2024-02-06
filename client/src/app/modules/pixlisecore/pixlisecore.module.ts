@@ -56,6 +56,7 @@ import { QuantificationListComponent } from "./components/atoms/quant-selector-p
 import { QuantificationItemComponent } from "./components/atoms/quant-selector-panel/quantification-list/quantification-item/quantification-item.component";
 import { ShareDialogComponent } from "./components/atoms/share-ownership-item/share-dialog/share-dialog.component";
 import { ShareOwnershipItemButtonComponent } from "./components/atoms/share-ownership-item/share-ownership-item-button.component";
+import { ImagePickerDialogComponent } from "src/app/modules/pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -114,6 +115,7 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
     QuantificationItemComponent,
     ShareDialogComponent,
     ShareOwnershipItemButtonComponent,
+    ImagePickerDialogComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule],
   exports: [
@@ -154,6 +156,7 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
     QuantificationSelectorComponent,
     ShareDialogComponent,
     ShareOwnershipItemButtonComponent,
+    ImagePickerDialogComponent,
   ],
   providers: [
     /*APICommService, APIDataService, HttpInterceptorService*/

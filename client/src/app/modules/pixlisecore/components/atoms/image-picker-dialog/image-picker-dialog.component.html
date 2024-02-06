@@ -29,32 +29,25 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<!-- <ng-template #imageMenu>
-    <div fxLayout="column" class="img-list">
-        <div
-            *ngFor="let img of contextImages"
-            class="img-item clickable gap-separated-horizontal-elements"
-            [ngClass]="{'img-item-selected': img.selected}"
-            title="{{img.tooltip}}"
-            (click)="onSetImage(img)">
-            <div class="selectable">{{img.title}}</div>
-            <img
-                *ngIf="img.marsViewerURL"
-                src="assets/button-icons/open-external.svg"
-                (click)="onOpenExternal(img, $event)"
-                title="Open in Mars Viewer">
-        </div>
-        <div *ngIf="includeHideOption" class="img-item clickable" [ngClass]="{'img-item-selected': currentImage===''}" (click)="onSetImage(null)">Hide Context Image</div>
+<div class="dlg-border-with-backdrop image-picker-container">
+  <h1>Image Picker</h1>
+  <div class="image-options">
+    <div class="image-option" *ngFor="let image of imageChoices" (click)="onSelectImage(image)">
+      <img class="preview-image {{ image.path === selectedImagePath ? 'selected' : '' }}" [src]="image.url" />
+      <div class="image-option-content">
+        <h5 class="name" #tooltip="matTooltip" [matTooltip]="image.name" [matTooltipShowDelay]="200"><b>Image: </b>{{ image.name }}</h5>
+        <h5 class="scan" *ngFor="let scan of image.scanIds"><b>Associated Scan: </b>{{ scan }}</h5>
+      </div>
+      <div class="selection">
+        <mat-checkbox class="image-option-checkbox" [checked]="image.path === selectedImagePath"></mat-checkbox>
+      </div>
     </div>
-</ng-template> -->
-
-<!-- <widget-settings-menu
-    [settingsDialog]="imageMenu"
-    [openDirDown]="false"> -->
-<two-state-push-button title="{{ contextImageItemShowingTooltip }}" (click)="onImagePicker()">
-  <div class="dropdown-line">
-    <div class="txt">{{ currentFileName }}</div>
-    <span>&#9660;</span>
   </div>
-</two-state-push-button>
-<!-- </widget-settings-menu> -->
+  <div class="button-container">
+    <div class="loading">
+      <wait-spinner *ngIf="waitingForImageCount > 0"></wait-spinner>
+    </div>
+    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button buttonStyle="yellow" (onClick)="onApply()">Confirm</push-button>
+  </div>
+</div>
