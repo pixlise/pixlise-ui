@@ -113,7 +113,8 @@ export class ImagePickerDialogComponent implements OnInit {
               next: (img: RGBUImage) => {
                 let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.path);
                 if (imgChoice) {
-                  imgChoice.url = img.path;
+                  // imgChoice.url = img.path;
+                  imgChoice.url = "error";
                   if (this.selectedImagePath === responseImage.path) {
                     this.selectedChoice = imgChoice;
                   }

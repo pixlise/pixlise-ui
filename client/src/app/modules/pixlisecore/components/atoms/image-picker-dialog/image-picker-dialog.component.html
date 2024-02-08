@@ -38,7 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
           <wait-spinner *ngIf="image.url === 'loading'" #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
           <img
             *ngIf="image.url !== 'loading'"
-            class="{{ image.path === selectedImagePath ? 'selected' : '' }}"
+            class="{{ image.url === 'error' ? 'error' : '' }}"
             [src]="image.url === 'error' ? 'assets/icons/error-triangle.svg' : image.url" />
         </div>
         <div class="image-option-content">
@@ -58,7 +58,10 @@ POSSIBILITY OF SUCH DAMAGE.
     <div class="expanded-preview" *ngIf="selectedChoice">
       <div class="preview-image">
         <wait-spinner *ngIf="selectedChoice?.url === 'loading'" #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
-        <img *ngIf="selectedChoice?.url !== 'loading'" [src]="selectedChoice?.url === 'error' ? 'assets/icons/error-triangle.svg' : selectedChoice?.url" />
+        <img
+          *ngIf="selectedChoice?.url !== 'loading'"
+          class="{{ selectedChoice?.url === 'error' ? 'error' : '' }}"
+          [src]="selectedChoice?.url === 'error' ? 'assets/icons/error-triangle.svg' : selectedChoice?.url" />
       </div>
       <div class="image-option-content" *ngIf="selectedChoice">
         <h5 class="name"><b>Image: </b>{{ selectedChoice?.name }}</h5>
