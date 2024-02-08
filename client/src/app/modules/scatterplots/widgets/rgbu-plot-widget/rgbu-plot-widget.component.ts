@@ -238,6 +238,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
       purpose: this.purpose,
       selectedImagePath: this.mdl?.imageName || "",
       liveUpdate: false,
+      selectedImageDetails: "",
     };
 
     const dialogRef = this.dialog.open(ImagePickerDialogComponent, dialogConfig);

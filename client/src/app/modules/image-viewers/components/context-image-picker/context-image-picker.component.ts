@@ -304,6 +304,7 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
       purpose: ScanImagePurpose.SIP_UNKNOWN,
       selectedImagePath: this.currentImage,
       liveUpdate: false,
+      selectedImageDetails: this.contextImageItemShowingTooltip,
     };
 
     const dialogRef = this.dialog.open(ImagePickerDialogComponent, dialogConfig);

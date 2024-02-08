@@ -34,64 +34,131 @@
   h1 {
   }
 
-  .image-options {
-    height: 500px;
-    width: 600px;
-    overflow-y: scroll;
+  .options-container {
+    display: flex;
 
-    background-color: #242829;
-    border: 1px solid #545f64;
+    .image-options {
+      height: 500px;
+      width: 600px;
+      overflow-y: scroll;
 
-    .image-option {
-      display: flex;
-      height: 100px;
-      background-color: #2b3136;
-      border-bottom: 1px solid #545f64;
+      background-color: #242829;
+      border: 1px solid #545f64;
 
-      img {
-        width: 100px;
-        cursor: pointer;
+      .image-option {
+        display: flex;
+        height: 100px;
+        background-color: #2b3136;
+        border: 1px solid transparent;
+        border-bottom: 1px solid #545f64;
 
         &.selected {
-          border: 1px solid yellow;
+          border: 1px solid #ffff8d;
+        }
+
+        .preview-image {
+          width: 115px;
+
+          display: flex;
+          justify-content: center;
+          align-items: center;
+
+          img {
+            width: 100%;
+            height: 100%;
+            border-radius: 4px;
+            cursor: pointer;
+          }
+          border-radius: 4px;
+          border: 1px solid #545f64;
+          margin: 4px;
+        }
+
+        .selection {
+          display: flex;
+          align-items: center;
+
+          margin-left: auto;
+
+          mat-checkbox {
+            width: 45px;
+          }
+        }
+      }
+    }
+
+    .expanded-preview {
+      display: flex;
+      flex-direction: column;
+      width: 300px;
+      max-height: 502px;
+
+      margin-left: 4px;
+
+      .preview-image {
+        width: 100%;
+
+        img {
+          min-height: 200px;
+          width: 100%;
+          border-radius: 4px;
+          cursor: pointer;
         }
 
         border-radius: 4px;
         border: 1px solid #545f64;
-        margin: 4px;
       }
 
       .image-option-content {
-        display: flex;
-        flex-direction: column;
-        padding: 8px;
-        gap: 4px;
-
-        h5 {
-          margin: 0;
-        }
-
-        .name {
-          max-width: 50ch;
-          white-space: pre;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .scan {
-        }
+        padding: 0;
       }
+    }
+  }
 
-      .selection {
-        display: flex;
-        align-items: center;
+  .image-option-content {
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    gap: 4px;
 
-        margin-left: auto;
+    h5 {
+      margin: 0;
+    }
 
-        mat-checkbox {
-          width: 45px;
-        }
+    .name {
+      max-width: 50ch;
+      white-space: pre;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .scan {
+    }
+
+    .mars-viewer {
+      display: flex;
+      align-items: center;
+
+      a {
+        margin-left: 4px;
       }
+    }
+  }
+
+  .details-container {
+    display: flex;
+    flex: 1;
+    height: 0;
+    width: 100%;
+
+    .image-details-area {
+      width: 100%;
+      font-size: 10px;
+      white-space: pre;
+      background-color: #242829;
+      overflow: scroll;
+      border: 1px solid #545f64;
+      padding: 2px;
     }
   }
 

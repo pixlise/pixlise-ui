@@ -30,11 +30,13 @@
 import { Component, EventEmitter, Inject, OnInit, Output } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
-import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
+import { ImageGetReq, ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
+import { makeImageTooltip } from "src/app/utils/image-details";
 import { SDSFields } from "src/app/utils/utils";
 import { environment } from "src/environments/environment";
 
@@ -53,7 +55,8 @@ export class ImagePickerDialogData {
     public purpose: ScanImagePurpose,
     public liveUpdate: boolean,
     public scanIds: string[],
-    public selectedImagePath: string
+    public selectedImagePath: string,
+    public selectedImageDetails: string = ""
   ) {}
 }
 
@@ -65,17 +68,20 @@ export class ImagePickerDialogData {
 export class ImagePickerDialogComponent implements OnInit {
   public imageChoices: ImageChoice[] = [];
   public selectedImagePath: string = "";
+  public selectedChoice: ImageChoice | null = null;
+  public selectedImageDetails: string = "";
 
   @Output() onSelectedImageChange = new EventEmitter();
 
-  waitingForImageCount: number = 0;
+  waitingForImages: ImageChoice[] = [];
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ImagePickerDialogData,
     public dialogRef: MatDialogRef<ImagePickerDialogComponent>,
     private _cachedDataService: APICachedDataService,
     private _analysisLayoutService: AnalysisLayoutService,
-    private _endpointsService: APIEndpointsService
+    private _endpointsService: APIEndpointsService,
+    private _dataService: APIDataService
   ) {}
 
   ngOnInit() {
@@ -83,42 +89,82 @@ export class ImagePickerDialogComponent implements OnInit {
       this.selectedImagePath = this.data.selectedImagePath;
     }
 
+    if (this.data.selectedImageDetails) {
+      this.selectedImageDetails = this.data.selectedImageDetails;
+    }
+
     this._cachedDataService.getImageList(ImageListReq.create({ scanIds: this.data.scanIds })).subscribe((resp: ImageListResp) => {
       this.imageChoices = [];
 
-      for (const responseImage of resp.images) {
+      for (const responseImage of resp.images.sort((a, b) => b.name.localeCompare(a.name))) {
         if (this.data.purpose === ScanImagePurpose.SIP_UNKNOWN || responseImage.purpose === this.data.purpose) {
-          this.waitingForImageCount++;
+          let marsViewerURL = this.makeMarsViewerURL(responseImage.name);
+          this.waitingForImages.push(new ImageChoice(responseImage.name, responseImage.path, responseImage.associatedScanIds, "", marsViewerURL));
+
+          let imageChoice = new ImageChoice(responseImage.name, responseImage.path, responseImage.associatedScanIds, "loading", marsViewerURL);
+          this.imageChoices.push(imageChoice);
+          if (this.selectedImagePath === responseImage.path) {
+            this.selectedChoice = imageChoice;
+          }
 
           if (responseImage.purpose === ScanImagePurpose.SIP_MULTICHANNEL) {
             // TODO: We need to find a lightweight way to display a preview of this TIFF image
             this._endpointsService.loadRGBUImageTIF(responseImage.path).subscribe({
               next: (img: RGBUImage) => {
-                let marsViewerURL = this.makeMarsViewerURL(responseImage.path);
-                this.imageChoices.push(new ImageChoice(responseImage.name, responseImage.path, responseImage.associatedScanIds, img.path, marsViewerURL));
-                this.waitingForImageCount--;
+                let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.path);
+                if (imgChoice) {
+                  imgChoice.url = img.path;
+                  if (this.selectedImagePath === responseImage.path) {
+                    this.selectedChoice = imgChoice;
+                  }
+                }
+
+                this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.path);
               },
               error: (err: any) => {
                 console.error(err);
-                this.waitingForImageCount--;
+                let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.path);
+                if (imgChoice) {
+                  imgChoice.url = "error";
+                  if (this.selectedImagePath === responseImage.path) {
+                    this.selectedChoice = imgChoice;
+                  }
+                }
+                this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.path);
               },
             });
           } else {
             this._endpointsService.loadImageForPath(responseImage.path).subscribe({
               next: (img: HTMLImageElement) => {
-                let marsViewerURL = this.makeMarsViewerURL(responseImage.path);
-                this.imageChoices.push(new ImageChoice(responseImage.name, responseImage.path, responseImage.associatedScanIds, img.src, marsViewerURL));
-                this.waitingForImageCount--;
+                let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.path);
+                if (imgChoice) {
+                  imgChoice.url = img.src;
+                  if (this.selectedImagePath === responseImage.path) {
+                    this.selectedChoice = imgChoice;
+                  }
+                }
+                this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.path);
               },
               error: (err: any) => {
                 console.error(err);
-                this.waitingForImageCount--;
+                let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.path);
+                if (imgChoice) {
+                  imgChoice.url = "error";
+                  if (this.selectedImagePath === responseImage.path) {
+                    this.selectedChoice = imgChoice;
+                  }
+                }
+                this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.path);
               },
             });
           }
         }
       }
     });
+  }
+
+  get waitingForImagesTooltip(): string {
+    return "Waiting For:\n" + this.waitingForImages.map(img => img.name).join("\n");
   }
 
   get scanIds(): string[] {
@@ -184,6 +230,13 @@ export class ImagePickerDialogComponent implements OnInit {
 
   onSelectImage(image: ImageChoice): void {
     this.selectedImagePath = image.path;
+    this.selectedChoice = image;
+
+    this.selectedImageDetails = "Loading...";
+    this._dataService.sendImageGetRequest(ImageGetReq.create({ imageName: image.name })).subscribe((resp: any) => {
+      this.selectedImageDetails = makeImageTooltip(resp.image);
+    });
+
     if (this.data.liveUpdate) {
       this.onSelectedImageChange.emit(image.path);
     }
