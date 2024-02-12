@@ -282,10 +282,10 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
   }
 
   onImageChanged(change: MatSelectChange) {
-    if (this.mdl.imageName == change.value) {
-      // No change, stop here
-      return;
-    }
+    // if (this.mdl.imageName === change.value) {
+    //   // No change, stop here
+    //   return;
+    // }
 
     this.loadData(change.value, this.mdl.visibleRegionIds);
   }
