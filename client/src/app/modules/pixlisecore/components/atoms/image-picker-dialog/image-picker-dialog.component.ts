@@ -113,9 +113,9 @@ export class ImagePickerDialogComponent implements OnInit {
                 let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.path);
                 if (imgChoice) {
                   // TODO: We need to find a lightweight way to display a preview of this TIFF image
-                  // imgChoice.url = img.path;
+                  imgChoice.url = img.path;
 
-                  imgChoice.url = "error";
+                  // imgChoice.url = "error";
                   if (this.selectedImagePath === responseImage.path) {
                     this.selectedChoice = imgChoice;
                   }
