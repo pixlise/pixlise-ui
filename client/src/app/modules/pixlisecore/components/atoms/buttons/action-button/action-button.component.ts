@@ -37,6 +37,7 @@ export const matActionIcons = {
   check: "check",
   add: "add",
   edit: "edit",
+  image: "image",
 };
 
 const customActionIcons = {

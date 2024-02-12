@@ -30,69 +30,70 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <ng-template #settingsMenu>
-    <div class="settings">
-        <rgbupicker-dropdown [scanIds]="scanIdsForRGBUPicker" [imageName]="mdl.imageName" (imageChosen)="onImageChanged($event)"></rgbupicker-dropdown>
-        <multi-state-button
-            [stateNames]='selectionModes'
-            [items]="['assets/button-icons/minus-yellow.svg', 'assets/button-icons/reset.svg', 'assets/button-icons/plus-white.svg']"
-            [activeState]='currentSelectionMode'
-            (onChange)="onChangeSelectionMode($event)"
-        ></multi-state-button>
-        <push-button (onClick)="onSelectionExclude()" title="Excludes selected pixels (inverts selection)">Exclude</push-button>
-        <push-button (onClick)="onSelectionClear()" title="Clears selected pixels">Clear</push-button>
+  <div class="settings">
+    <!-- <rgbupicker-dropdown
+      [purpose]="purpose"
+      [scanIds]="scanIdsForRGBUPicker"
+      [imageName]="mdl.imageName"
+      (imageChosen)="onImageChanged($event)"></rgbupicker-dropdown> -->
+    <multi-state-button
+      [stateNames]="selectionModes"
+      [items]="['assets/button-icons/minus-yellow.svg', 'assets/button-icons/reset.svg', 'assets/button-icons/plus-white.svg']"
+      [activeState]="currentSelectionMode"
+      (onChange)="onChangeSelectionMode($event)"></multi-state-button>
+    <push-button (onClick)="onSelectionExclude()" title="Excludes selected pixels (inverts selection)">Exclude</push-button>
+    <push-button (onClick)="onSelectionClear()" title="Clears selected pixels">Clear</push-button>
 
-        <div fxLayout="column" fxLayoutAlign="start center" >
-            <div>Plot colour:</div>
-            <two-state-icon-switch
-                leftIcon="assets/button-icons/monochrome.svg"
-                rightIcon="assets/button-icons/viridis.svg"
-                toolTip="Toggles point drawing colour"
-                [active]="!drawMonochrome"
-                (onToggle)="onToggleDrawMonochrome()">
-            </two-state-icon-switch>
-        </div>
+    <div fxLayout="column" fxLayoutAlign="start center">
+      <div>Plot colour:</div>
+      <two-state-icon-switch
+        leftIcon="assets/button-icons/monochrome.svg"
+        rightIcon="assets/button-icons/viridis.svg"
+        toolTip="Toggles point drawing colour"
+        [active]="!drawMonochrome"
+        (onToggle)="onToggleDrawMonochrome()">
+      </two-state-icon-switch>
     </div>
+  </div>
 </ng-template>
 
 <div class="axis-container">
-    <div *ngIf="mdl.hasRawData()" class="axis y-axis">
-        <h5 class="axis-label" (click)="onAxisClick('Y')">
-            <span class="clickable-axis-btn"><img alt="Y Axis Options" src="assets/icons/clickable.svg"/></span>
-            {{mdl.drawModel.yAxisUnitLabel}}
-        </h5>
-        <span>
-            <range-slider
-                [minValue]="yRangeMin"
-                [selectedMinValue]="yRangeSelectedMin"
-                [maxValue]="yRangeMax"
-                [selectedMaxValue]="yRangeSelectedMax"
-                [pxLength]="yAxisSliderLength"
-                [orientVertical]="true"
-                (onChange)="onChangeYAxis($event)"
-                >
-            </range-slider>
-        </span>
-    </div>
-    <div class="canvas-container">
-        <interactive-canvas *ngIf="!errorMsg" [ngClass]="mdl.cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="toolhost" [transform]="transform">
-        </interactive-canvas>
+  <div *ngIf="mdl.hasRawData()" class="axis y-axis">
+    <h5 class="axis-label" (click)="onAxisClick('Y')">
+      <span class="clickable-axis-btn"><img alt="Y Axis Options" src="assets/icons/clickable.svg" /></span>
+      {{ mdl.drawModel.yAxisUnitLabel }}
+    </h5>
+    <span>
+      <range-slider
+        [minValue]="yRangeMin"
+        [selectedMinValue]="yRangeSelectedMin"
+        [maxValue]="yRangeMax"
+        [selectedMaxValue]="yRangeSelectedMax"
+        [pxLength]="yAxisSliderLength"
+        [orientVertical]="true"
+        (onChange)="onChangeYAxis($event)">
+      </range-slider>
+    </span>
+  </div>
+  <div class="canvas-container">
+    <interactive-canvas *ngIf="!errorMsg" [ngClass]="mdl.cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="toolhost" [transform]="transform">
+    </interactive-canvas>
 
-        <div *ngIf="mdl.hasRawData()" class="axis x-axis">
-            <h5 class="axis-label" (click)="onAxisClick('X')">
-                <span class="clickable-axis-btn"><img alt="X Axis Options" src="assets/icons/clickable.svg"/></span>
-                {{mdl.drawModel.xAxisUnitLabel}}
-            </h5>
-            <span>
-                <range-slider
-                    [minValue]="xRangeMin"
-                    [selectedMinValue]="xRangeSelectedMin"
-                    [maxValue]="xRangeMax"
-                    [selectedMaxValue]="xRangeSelectedMax"
-                    [pxLength]="xAxisSliderLength"
-                    (onChange)="onChangeXAxis($event)"
-                >
-                </range-slider>
-            </span>
-        </div>
+    <div *ngIf="mdl.hasRawData()" class="axis x-axis">
+      <h5 class="axis-label" (click)="onAxisClick('X')">
+        <span class="clickable-axis-btn"><img alt="X Axis Options" src="assets/icons/clickable.svg" /></span>
+        {{ mdl.drawModel.xAxisUnitLabel }}
+      </h5>
+      <span>
+        <range-slider
+          [minValue]="xRangeMin"
+          [selectedMinValue]="xRangeSelectedMin"
+          [maxValue]="xRangeMax"
+          [selectedMaxValue]="xRangeSelectedMax"
+          [pxLength]="xAxisSliderLength"
+          (onChange)="onChangeXAxis($event)">
+        </range-slider>
+      </span>
     </div>
+  </div>
 </div>

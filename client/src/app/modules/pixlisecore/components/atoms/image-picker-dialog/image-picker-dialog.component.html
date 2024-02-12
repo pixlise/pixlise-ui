@@ -1,0 +1,88 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div class="dlg-border-with-backdrop image-picker-container">
+  <h1>Image Picker</h1>
+  <div class="options-container">
+    <div class="image-options">
+      <div class="image-option" class="{{ image.path === selectedImagePath ? 'selected' : '' }}" *ngFor="let image of imageChoices" (click)="onSelectImage(image)">
+        <div class="preview-image">
+          <wait-spinner *ngIf="image.url === 'loading'" #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
+          <img
+            *ngIf="image.url !== 'loading'"
+            class="{{ image.url === 'error' ? 'error' : '' }}"
+            [src]="image.url === 'error' ? 'assets/icons/error-triangle.svg' : image.url" />
+        </div>
+        <div class="image-option-content">
+          <h5 class="name" #tooltip="matTooltip" [matTooltip]="image.name" [matTooltipShowDelay]="200"><b>Image: </b>{{ image.name }}</h5>
+          <h5 class="scan">
+            <b>Associated Scan{{ image.scanIds.length > 1 ? "s" : "" }}: </b>{{ image.scanIds.join(", ") }}
+          </h5>
+          <h5 class="mars-viewer" *ngIf="image.marsViewerURL">
+            <b>Mars Viewer: </b><a [href]="image.marsViewerURL" target="_blank" rel="noopener noreferrer"><img src="assets/button-icons/open-external.svg" /></a>
+          </h5>
+        </div>
+        <div class="selection">
+          <mat-checkbox class="image-option-checkbox" [checked]="image.path === selectedImagePath"></mat-checkbox>
+        </div>
+      </div>
+    </div>
+    <div class="expanded-preview" *ngIf="selectedChoice">
+      <div class="preview-image">
+        <wait-spinner *ngIf="selectedChoice?.url === 'loading'" #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
+        <img
+          *ngIf="selectedChoice?.url !== 'loading'"
+          class="{{ selectedChoice?.url === 'error' ? 'error' : '' }}"
+          [src]="selectedChoice?.url === 'error' ? 'assets/icons/error-triangle.svg' : selectedChoice?.url" />
+      </div>
+      <div class="image-option-content" *ngIf="selectedChoice">
+        <h5 class="name"><b>Image: </b>{{ selectedChoice?.name }}</h5>
+        <h5 class="scan {{ selectedChoice.marsViewerURL ? '' : 'longer-scan' }}">
+          <b>Associated Scan{{ selectedChoice.scanIds.length > 1 ? "s" : "" }}: </b>{{ selectedChoice.scanIds.join(", ") }}
+        </h5>
+        <h5 class="mars-viewer" *ngIf="selectedChoice.marsViewerURL">
+          <b>Mars Viewer: </b
+          ><a [href]="selectedChoice.marsViewerURL" target="_blank" rel="noopener noreferrer"><img src="assets/button-icons/open-external.svg" /></a>
+        </h5>
+      </div>
+      <div class="details-container">
+        <div class="image-details-area">{{ selectedImageDetails }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="button-container">
+    <div class="loading">
+      <wait-spinner *ngIf="waitingForImages.length > 0" #tooltip="matTooltip" [matTooltip]="waitingForImagesTooltip"></wait-spinner>
+    </div>
+    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button buttonStyle="yellow" (onClick)="onApply()">Confirm</push-button>
+  </div>
+</div>

@@ -29,7 +29,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<ng-template #imageMenu>
+<!-- <ng-template #imageMenu>
     <div fxLayout="column" class="img-list">
         <div
             *ngFor="let img of contextImages"
@@ -46,14 +46,15 @@ POSSIBILITY OF SUCH DAMAGE.
         </div>
         <div *ngIf="includeHideOption" class="img-item clickable" [ngClass]="{'img-item-selected': currentImage===''}" (click)="onSetImage(null)">Hide Context Image</div>
     </div>
-</ng-template>
+</ng-template> -->
 
-<widget-settings-menu
+<!-- <widget-settings-menu
     [settingsDialog]="imageMenu"
-    [openDirDown]="false">
-    <two-state-push-button title='{{contextImageItemShowingTooltip}}'>
-      <div class="dropdown-line">
-        <div class="txt">{{currentFileName}}</div><span>&#9660;</span>
-      </div>
-    </two-state-push-button>
-</widget-settings-menu>
+    [openDirDown]="false"> -->
+<two-state-push-button title="{{ contextImageItemShowingTooltip }}" (click)="onImagePicker()">
+  <div class="dropdown-line">
+    <div class="txt">{{ currentFileName }}</div>
+    <span>&#9660;</span>
+  </div>
+</two-state-push-button>
+<!-- </widget-settings-menu> -->

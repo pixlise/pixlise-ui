@@ -33,9 +33,11 @@ import { SDSFields, invalidPMC } from "src/app/utils/utils";
 import { ContextImageItemTransform } from "../../models/image-transform";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { makeImageTooltip } from "src/app/utils/image-details";
-import { ScanImageSource } from "src/app/generated-protos/image";
+import { ScanImagePurpose, ScanImageSource } from "src/app/generated-protos/image";
 import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { environment } from "src/environments/environment";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import { ImagePickerDialogComponent, ImagePickerDialogData } from "src/app/modules/pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
 
 export class ContextImageItem {
   constructor(
@@ -43,9 +45,8 @@ export class ContextImageItem {
     public imagePMC: number,
     public hasBeamData: boolean,
     public beamIJIndex: number, // -1=default context image beam ij's, 0+ indexes into beam.context_locations[]
-    public imageDrawTransform: ContextImageItemTransform | null)
-  // public rgbuSourceImage: RGBUImage, // eg if image was a floating point TIF
-  // public rgbSourceImage: HTMLImageElement, // eg if image was a PNG or JPG
+    public imageDrawTransform: ContextImageItemTransform | null // public rgbuSourceImage: RGBUImage, // eg if image was a floating point TIF
+  ) // public rgbSourceImage: HTMLImageElement, // eg if image was a PNG or JPG
   {}
 }
 
@@ -164,7 +165,10 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
   contextImageItemShowingTooltip: string = "";
   contextImages: DisplayContextImageItem[] = [];
 
-  constructor(private _dataService: APIDataService) {}
+  constructor(
+    private _dataService: APIDataService,
+    public dialog: MatDialog
+  ) {}
 
   ngOnInit() {
     this.refreshImageList();
@@ -292,6 +296,29 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
     );
   }*/
 
+  onImagePicker() {
+    const dialogConfig = new MatDialogConfig<ImagePickerDialogData>();
+    // Pass data to dialog
+    dialogConfig.data = {
+      scanIds: this.scanIds,
+      purpose: ScanImagePurpose.SIP_UNKNOWN,
+      selectedImagePath: this.currentImage,
+      liveUpdate: false,
+      selectedImageDetails: this.contextImageItemShowingTooltip,
+    };
+
+    const dialogRef = this.dialog.open(ImagePickerDialogComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((selectedImage: string) => {
+      if (selectedImage) {
+        // this.onImageChanged(selectedImage);
+        let selected = this.contextImages.find(img => img.item.path == selectedImage);
+        if (selected) {
+          this.onSetImage(selected);
+        }
+      }
+    });
+  }
+
   ngOnDestroy() {
     this._subs.unsubscribe();
   }
@@ -303,7 +330,7 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
     this.refreshImageList();
   }
 
-  onOpenExternal(img: DisplayContextImageItem, event) {
+  onOpenExternal(img: DisplayContextImageItem, event: any) {
     // Stop this triggering an image selection event
     event.stopPropagation();
 

@@ -345,6 +345,10 @@ h3 {
   white-space: pre;
 }
 
+.mdc-tooltip__surface {
+  max-width: fit-content !important;
+}
+
 .role-option {
   .mdc-label {
     display: flex;
