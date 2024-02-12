@@ -108,12 +108,13 @@ export class ImagePickerDialogComponent implements OnInit {
           }
 
           if (responseImage.purpose === ScanImagePurpose.SIP_MULTICHANNEL) {
-            // TODO: We need to find a lightweight way to display a preview of this TIFF image
             this._endpointsService.loadRGBUImageTIF(responseImage.path).subscribe({
               next: (img: RGBUImage) => {
                 let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.path);
                 if (imgChoice) {
+                  // TODO: We need to find a lightweight way to display a preview of this TIFF image
                   // imgChoice.url = img.path;
+
                   imgChoice.url = "error";
                   if (this.selectedImagePath === responseImage.path) {
                     this.selectedChoice = imgChoice;
