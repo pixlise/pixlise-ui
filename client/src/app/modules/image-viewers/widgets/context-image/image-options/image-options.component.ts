@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, Inject, OnDestroy, OnInit, Output } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { Observable, Subscription, map, of } from "rxjs";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
@@ -105,9 +105,9 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     private _dataService: APIDataService,
     private _snackService: SnackbarService,
     @Inject(MAT_DIALOG_DATA) public data: ImagePickerParams,
-    public dialogRef: MatDialogRef<ContextImagePickerComponent, ImagePickerResult>
-  ) //private _exportDataService: ExportDataService
-  {
+    public dialogRef: MatDialogRef<ContextImagePickerComponent, ImagePickerResult>,
+    public dialog: MatDialog //private _exportDataService: ExportDataService
+  ) {
     // Copy the options so we can have "reset" buttons for eg
     this._options = data.options.copy();
 
@@ -178,8 +178,13 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     }
   }
 
-  onSelectedImageChanged(image: ContextImageItem | null) {
-    this._options.currentImage = image?.path || "";
+  // onSelectedImageChanged(image: ContextImageItem | null) {
+  //   this._options.currentImage = image?.path || "";
+  //   this.publishOptionChange();
+  // }
+
+  onSelectedImageChanged(path: string) {
+    this._options.currentImage = path || "";
     this.publishOptionChange();
   }
 
