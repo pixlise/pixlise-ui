@@ -29,6 +29,7 @@
 
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { ElementSetSummary } from "src/app/generated-protos/element-set";
+import { ObjectType } from "src/app/generated-protos/ownership-access";
 
 export const SPECIAL_QUANT_ID = "loaded_quantification";
 
@@ -41,6 +42,8 @@ export class ElementSetRowComponent implements OnInit {
   @Input() showShareButton: boolean = false;
   @Input() showDeleteButton: boolean = false;
   @Input() item: ElementSetSummary | null = null;
+
+  objectType: ObjectType = ObjectType.OT_ELEMENT_SET;
 
   @Output() onUse = new EventEmitter();
   @Output() onDelete = new EventEmitter();
@@ -72,5 +75,9 @@ export class ElementSetRowComponent implements OnInit {
 
   get shared(): boolean {
     return this.item?.owner?.sharedWithOthers || false;
+  }
+
+  get canEdit(): boolean {
+    return this.item?.owner?.canEdit || false;
   }
 }
