@@ -39,6 +39,10 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
 
   isWidgetHighlighted: boolean = false;
 
+  isWidgetDataLoading: boolean = false;
+  isWidgetDataError: boolean = false;
+  widgetDataErrorMessage: string = "";
+
   constructor(private _analysisLayoutService: AnalysisLayoutService) {}
 
   ngOnInit(): void {
@@ -206,6 +210,22 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
       if (this._currentWidgetRef.instance.onWidgetHighlight) {
         this._currentWidgetRef.instance.onWidgetHighlight.subscribe((isWidgetHighlighted: boolean) => {
           this.isWidgetHighlighted = isWidgetHighlighted;
+        });
+      }
+
+      if (this._currentWidgetRef.instance.onWidgetLoading) {
+        this._currentWidgetRef.instance.onWidgetLoading.subscribe((isWidgetDataLoading: boolean) => {
+          this.isWidgetDataError = false;
+          this.widgetDataErrorMessage = "";
+          this.isWidgetDataLoading = isWidgetDataLoading;
+        });
+      }
+
+      if (this._currentWidgetRef.instance.onWidgetDataErrorMessage) {
+        this._currentWidgetRef.instance.onWidgetDataErrorMessage.subscribe((widgetDataErrorMessage: string) => {
+          this.isWidgetDataLoading = false;
+          this.isWidgetDataError = !!widgetDataErrorMessage;
+          this.widgetDataErrorMessage = widgetDataErrorMessage;
         });
       }
 

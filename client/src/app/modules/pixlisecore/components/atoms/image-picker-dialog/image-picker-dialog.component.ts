@@ -60,6 +60,11 @@ export class ImagePickerDialogData {
   ) {}
 }
 
+export interface ImagePickerDialogResponse {
+  selectedImagePath: string;
+  selectedImageName: string | null;
+}
+
 @Component({
   selector: "image-picker-dialog",
   templateUrl: "./image-picker-dialog.component.html",
@@ -245,7 +250,7 @@ export class ImagePickerDialogComponent implements OnInit {
   }
 
   onApply(): void {
-    this.dialogRef.close(this.selectedImagePath);
+    this.dialogRef.close({ selectedImagePath: this.selectedImagePath, selectedImageName: this.selectedChoice?.name });
   }
 
   onCancel(): void {

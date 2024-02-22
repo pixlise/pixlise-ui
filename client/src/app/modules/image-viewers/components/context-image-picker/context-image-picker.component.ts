@@ -37,7 +37,11 @@ import { ScanImagePurpose, ScanImageSource } from "src/app/generated-protos/imag
 import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { environment } from "src/environments/environment";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { ImagePickerDialogComponent, ImagePickerDialogData } from "src/app/modules/pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
+import {
+  ImagePickerDialogComponent,
+  ImagePickerDialogData,
+  ImagePickerDialogResponse,
+} from "src/app/modules/pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
 
 export class ContextImageItem {
   constructor(
@@ -162,6 +166,7 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
   @Output() selectedImage = new EventEmitter();
 
   contextImageItemShowing: ContextImageItem | null = null;
+  contextImagePath: string = "";
   contextImageItemShowingTooltip: string = "";
   contextImages: DisplayContextImageItem[] = [];
 
@@ -214,9 +219,10 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
         const tooltip = makeImageTooltip(img);
 
         let selected = false;
-        if (img.name == this.currentImage) {
+        if (img.name === this.currentImage) {
           this.contextImageItemShowing = item;
           this.contextImageItemShowingTooltip = tooltip;
+          this.contextImagePath = img.path;
           selected = true;
         }
 
@@ -302,16 +308,16 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
     dialogConfig.data = {
       scanIds: this.scanIds,
       purpose: ScanImagePurpose.SIP_UNKNOWN,
-      selectedImagePath: this.currentImage,
+      selectedImagePath: this.contextImagePath,
       liveUpdate: false,
       selectedImageDetails: this.contextImageItemShowingTooltip,
     };
 
     const dialogRef = this.dialog.open(ImagePickerDialogComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe((selectedImage: string) => {
-      if (selectedImage) {
-        // this.onImageChanged(selectedImage);
-        let selected = this.contextImages.find(img => img.item.path == selectedImage);
+    dialogRef.afterClosed().subscribe(({ selectedImageName }: ImagePickerDialogResponse) => {
+      if (selectedImageName) {
+        // img.item.path is the name of the image, not the path, so we need to match by name
+        let selected = this.contextImages.find(img => img?.item?.path && selectedImageName === img.item.path);
         if (selected) {
           this.onSetImage(selected);
         }
@@ -324,7 +330,7 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
   }
 
   onSetImage(img: DisplayContextImageItem | null) {
-    this.selectedImage.emit(img ? img.item : null);
+    this.selectedImage.emit(img ? img.item.path : null);
 
     this.currentImage = img?.item.path || "";
     this.refreshImageList();

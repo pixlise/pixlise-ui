@@ -56,7 +56,7 @@ POSSIBILITY OF SUCH DAMAGE.
       </div>
     </div>
     <div class="expanded-preview" *ngIf="selectedChoice">
-      <div class="preview-image">
+      <div class="preview-image  {{ selectedChoice?.url === 'loading' ? 'loading' : '' }}">
         <wait-spinner *ngIf="selectedChoice?.url === 'loading'" #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
         <img
           *ngIf="selectedChoice?.url !== 'loading'"

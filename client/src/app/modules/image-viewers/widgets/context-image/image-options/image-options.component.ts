@@ -297,8 +297,7 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
   // TODO: Maybe need a more serious way of determining this... for now we're just checking if the current image is a TIF!
   get isRGBU(): boolean {
-    return this._options.currentImage.toUpperCase().endsWith(".TIF");
-    return false;
+    return this._options?.currentImage.toUpperCase().endsWith(".TIF");
   }
 
   get rgbuOnlyHelpText(): string {

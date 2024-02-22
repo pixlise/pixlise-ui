@@ -53,7 +53,11 @@ import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/mo
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { RegionSettings } from "src/app/modules/roi/models/roi-region";
 import { selectMinerals } from "../../base/mineral-selection";
-import { ImagePickerDialogComponent, ImagePickerDialogData } from "src/app/modules/pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
+import {
+  ImagePickerDialogComponent,
+  ImagePickerDialogData,
+  ImagePickerDialogResponse,
+} from "src/app/modules/pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
 
 @Component({
   selector: "rgbu-plot",
@@ -242,9 +246,9 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     };
 
     const dialogRef = this.dialog.open(ImagePickerDialogComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe(selectedImage => {
-      if (selectedImage) {
-        this.onImageChanged(selectedImage);
+    dialogRef.afterClosed().subscribe(({ selectedImagePath }: ImagePickerDialogResponse) => {
+      if (selectedImagePath) {
+        this.onImageChanged(selectedImagePath);
       }
     });
   }
@@ -281,13 +285,13 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     this._selectionService.clearSelection();
   }
 
-  onImageChanged(change: MatSelectChange) {
-    // if (this.mdl.imageName === change.value) {
-    //   // No change, stop here
-    //   return;
-    // }
+  onImageChanged(imagePath: string) {
+    if (this.mdl.imageName === imagePath) {
+      //   // No change, stop here
+      return;
+    }
 
-    this.loadData(change.value, this.mdl.visibleRegionIds);
+    this.loadData(imagePath, this.mdl.visibleRegionIds);
   }
 
   // Range slider details
@@ -402,6 +406,8 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
   }
 
   private loadData(imagePath: string, roiIDs: string[]) {
+    this.isWidgetDataLoading = true;
+
     const request: Observable<RGBUImage | RegionSettings>[] = [this._endpointsService.loadRGBUImageTIF(imagePath)];
     for (const roiId of roiIDs) {
       request.push(this._roiService.getRegionSettings(roiId));
@@ -417,6 +423,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
       // Now we can set this
       this.mdl.imageName = imagePath;
       this.mdl.setData(image, rois);
+      this.isWidgetDataLoading = false;
 
       this.saveState();
     });
