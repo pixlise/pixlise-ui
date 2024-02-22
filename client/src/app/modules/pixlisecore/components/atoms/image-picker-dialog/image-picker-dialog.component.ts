@@ -29,8 +29,10 @@
 
 import { Component, EventEmitter, Inject, OnInit, Output } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { Subscription } from "rxjs";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { ImageGetReq, ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
+import { ScanItem } from "src/app/generated-protos/scan";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -72,11 +74,20 @@ export interface ImagePickerDialogResponse {
 })
 export class ImagePickerDialogComponent implements OnInit {
   public imageChoices: ImageChoice[] = [];
+  public filteredImageChoices: ImageChoice[] = [];
+
   public selectedImagePath: string = "";
   public selectedChoice: ImageChoice | null = null;
   public selectedImageDetails: string = "";
 
   @Output() onSelectedImageChange = new EventEmitter();
+
+  _subs = new Subscription();
+
+  allScans: ScanItem[] = [];
+  configuredScans: ScanItem[] = [];
+
+  private _filterScanId: string = "";
 
   waitingForImages: ImageChoice[] = [];
 
@@ -98,8 +109,24 @@ export class ImagePickerDialogComponent implements OnInit {
       this.selectedImageDetails = this.data.selectedImageDetails;
     }
 
+    if (this.data.scanIds && this.data.scanIds.length > 0) {
+      this.filterScanId = this.data.scanIds[0];
+    }
+
+    this._subs.add(
+      this._analysisLayoutService.availableScans$.subscribe(scans => {
+        this.allScans = scans;
+        if (this._analysisLayoutService.activeScreenConfiguration$.value) {
+          this.configuredScans = scans.filter(scan => this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[scan.id]);
+        } else {
+          this.configuredScans = scans;
+        }
+      })
+    );
+
     this._cachedDataService.getImageList(ImageListReq.create({ scanIds: this.data.scanIds })).subscribe((resp: ImageListResp) => {
       this.imageChoices = [];
+      this.filteredImageChoices = [];
 
       for (const responseImage of resp.images.sort((a, b) => b.name.localeCompare(a.name))) {
         if (this.data.purpose === ScanImagePurpose.SIP_UNKNOWN || responseImage.purpose === this.data.purpose) {
@@ -108,6 +135,10 @@ export class ImagePickerDialogComponent implements OnInit {
 
           let imageChoice = new ImageChoice(responseImage.name, responseImage.path, responseImage.associatedScanIds, "loading", marsViewerURL);
           this.imageChoices.push(imageChoice);
+          if (responseImage.associatedScanIds.includes(this.filterScanId)) {
+            this.filteredImageChoices.push(imageChoice);
+          }
+
           if (this.selectedImagePath === responseImage.path) {
             this.selectedChoice = imageChoice;
           }
@@ -170,8 +201,21 @@ export class ImagePickerDialogComponent implements OnInit {
     });
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   get waitingForImagesTooltip(): string {
     return "Waiting For:\n" + this.waitingForImages.map(img => img.name).join("\n");
+  }
+
+  get filterScanId(): string {
+    return this._filterScanId;
+  }
+
+  set filterScanId(scanId: string) {
+    this._filterScanId = scanId;
+    this.filteredImageChoices = this.imageChoices.filter(img => img.scanIds.includes(scanId));
   }
 
   get scanIds(): string[] {

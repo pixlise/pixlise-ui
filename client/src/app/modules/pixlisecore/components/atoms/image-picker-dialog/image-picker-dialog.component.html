@@ -30,10 +30,20 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="dlg-border-with-backdrop image-picker-container">
-  <h1>Image Picker</h1>
+  <h1 class="header">
+    Image Picker
+
+    <mat-select [(ngModel)]="filterScanId" class="scan-filter" placeholder="Scan ...">
+      <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
+    </mat-select>
+  </h1>
   <div class="options-container">
     <div class="image-options">
-      <div class="image-option" class="{{ image.path === selectedImagePath ? 'selected' : '' }}" *ngFor="let image of imageChoices" (click)="onSelectImage(image)">
+      <div
+        class="image-option"
+        class="{{ image.path === selectedImagePath ? 'selected' : '' }}"
+        *ngFor="let image of filteredImageChoices"
+        (click)="onSelectImage(image)">
         <div class="preview-image">
           <wait-spinner *ngIf="image.url === 'loading'" #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
           <img
