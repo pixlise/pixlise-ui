@@ -31,6 +31,16 @@
 @import "atoms.scss";
 
 .image-picker-container {
+  .header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+
+    .scan-filter {
+      margin-left: auto;
+    }
+  }
+
   .options-container {
     display: flex;
 
@@ -98,6 +108,10 @@
 
       .preview-image {
         width: 100%;
+
+        &.loading {
+          height: 200px;
+        }
 
         display: flex;
         align-items: center;

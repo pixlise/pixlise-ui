@@ -33,6 +33,10 @@
     </div>
   </header>
   <div class="visualization {{ bottomToolbarButtons.length > 0 ? '' : 'hide-overflow' }}">
+    <div *ngIf="isWidgetDataLoading" class="loading-overlay">
+      <wait-spinner #tooltip="matTooltip" [matTooltip]="'Loading...'"></wait-spinner>
+    </div>
+
     <widget-configuration-button
       class="inset-button top-left"
       [ngStyle]="topLeftInsetButton?.margin ? { margin: topLeftInsetButton?.margin } : {}"
@@ -45,6 +49,7 @@
       class="inset-button top-right"
       [ngStyle]="topRightInsetButton?.margin ? { margin: topRightInsetButton?.margin } : {}"
       [buttonConfiguration]="topRightInsetButton"></widget-configuration-button>
+
     <ng-template #currentWidget></ng-template>
 
     <widget-configuration-button

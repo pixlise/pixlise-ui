@@ -6,7 +6,7 @@ import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model
 import { ContextImageModel, ContextImageModelLoadedData } from "./context-image-model";
 import { ContextImageToolHost, ToolHostCreateSettings, ToolState } from "./tools/tool-host";
 import { ContextImageDrawer } from "./context-image-drawer";
-import { ContextImageState } from "src/app/generated-protos/widget-data";
+import { ContextImageState, ROILayerVisibility } from "src/app/generated-protos/widget-data";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
@@ -278,7 +278,7 @@ bool removeBottomSpecularArtifacts = 21;
     this._subs.add(
       this.mdl.transform.transformChangeComplete$.subscribe((complete: boolean) => {
         if (complete) {
-          //this.saveState();
+          this.saveState();
         }
         this.reDraw();
       })
@@ -300,7 +300,7 @@ bool removeBottomSpecularArtifacts = 21;
           }
 
           this.reloadModel();
-          // this.saveState();
+          this.saveState();
         }
 
         // Expression picker has closed, so we can stop highlighting this widget
@@ -345,9 +345,12 @@ bool removeBottomSpecularArtifacts = 21;
   }
 
   private reloadModel() {
+    this.isWidgetDataLoading = true;
+
     this._contextDataService.getModelData(this.mdl.imageName).subscribe({
       next: (data: ContextImageModelLoadedData) => {
         this.mdl.setData(data);
+        this.isWidgetDataLoading = false;
 
         // Get the expression layers
         if (this.mdl.expressionIds.length > 0) {
@@ -373,9 +376,11 @@ bool removeBottomSpecularArtifacts = 21;
                   .subscribe({
                     next: (layer: ContextImageMapLayer) => {
                       this.mdl.setMapLayer(layer);
+                      this.widgetErrorMessage = "";
                     },
                     error: err => {
                       this._snackService.openError("Failed to add layer: " + exprId + " scan: " + scanId, err);
+                      this.widgetErrorMessage = "Failed to load data for displaying context image: " + this.mdl.imageName;
                     },
                   });
               }
@@ -387,6 +392,7 @@ bool removeBottomSpecularArtifacts = 21;
       },
       error: err => {
         this._snackService.openError("Failed to load data for displaying context image: " + this.mdl.imageName, err);
+        this.widgetErrorMessage = "Failed to load data for displaying context image: " + this.mdl.imageName;
       },
     });
   }
@@ -603,9 +609,34 @@ bool removeBottomSpecularArtifacts = 21;
         }
 
         this.reloadModel();
-        //this.saveState();
+        this.saveState();
       }
     });
+  }
+
+  saveState() {
+    this.onSaveWidgetData.emit(
+      ContextImageState.create({
+        panX: this.mdl.transform.pan.x,
+        panY: this.mdl.transform.pan.y,
+        zoomX: this.mdl.transform.scale.x,
+        zoomY: this.mdl.transform.scale.y,
+        pointColourScheme: this.mdl.pointColourScheme,
+        pointBBoxColourScheme: this.mdl.pointBBoxColourScheme,
+        contextImage: this.mdl.imageName,
+        contextImageSmoothing: this.mdl.imageSmoothing ? "true" : "",
+        roiLayers: this.mdl.roiIds.map(roiID => ROILayerVisibility.create({ roiID, opacity: 1, visible: true })),
+        elementRelativeShading: this.mdl.elementRelativeShading,
+        brightness: this.mdl.imageBrightness,
+        rgbuChannels: this.mdl.rgbuChannels,
+        unselectedOpacity: this.mdl.unselectedOpacity,
+        unselectedGrayscale: this.mdl.unselectedGrayscale,
+        colourRatioMin: this.mdl.colourRatioMin ?? undefined,
+        colourRatioMax: this.mdl.colourRatioMax ?? undefined,
+        removeTopSpecularArtifacts: this.mdl.removeTopSpecularArtifacts,
+        removeBottomSpecularArtifacts: this.mdl.removeBottomSpecularArtifacts,
+      })
+    );
   }
 
   onToggleImageOptionsView(trigger: Element | undefined) {
@@ -658,6 +689,7 @@ bool removeBottomSpecularArtifacts = 21;
       this.mdl.unselectedGrayscale = result.options.unselectedGrayscale;
 
       this.reloadModel();
+      this.saveState();
     });
 
     this._shownImageOptions.afterClosed().subscribe(() => {
@@ -668,7 +700,6 @@ bool removeBottomSpecularArtifacts = 21;
   onToggleSelectionMode() {
     this.mdl.selectionModeAdd = !this.mdl.selectionModeAdd;
     let selectionModeBtn = this._widgetControlConfiguration.bottomToolbar?.find(b => b.id === "selection-mode");
-    console.log(selectionModeBtn, this.mdl.selectionModeAdd);
     if (selectionModeBtn) {
       selectionModeBtn.value = this.mdl.selectionModeAdd;
     }

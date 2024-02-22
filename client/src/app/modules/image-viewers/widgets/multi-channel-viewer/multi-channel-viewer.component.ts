@@ -16,6 +16,12 @@ import { MatSelectChange } from "@angular/material/select";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { RGBUImagesWidgetState } from "src/app/generated-protos/widget-data";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
+import {
+  ImagePickerDialogComponent,
+  ImagePickerDialogData,
+  ImagePickerDialogResponse,
+} from "src/app/modules/pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
 
 @Component({
   selector: "app-multi-channel-viewer",
@@ -29,10 +35,14 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
 
   private _subs = new Subscription();
 
+  public purpose: ScanImagePurpose = ScanImagePurpose.SIP_MULTICHANNEL;
+  public scanIds: string[] = [];
+
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _cachedDataService: APICachedDataService,
-    private _endpointsService: APIEndpointsService
+    private _endpointsService: APIEndpointsService,
+    public dialog: MatDialog
   ) {
     super();
 
@@ -49,6 +59,13 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
           icon: "assets/button-icons/widget-solo.svg",
           tooltip: "Toggle Solo View",
           onClick: () => this.onSoloView(),
+        },
+        {
+          id: "image-picker",
+          type: "button",
+          title: "Image",
+          tooltip: "Choose image",
+          onClick: () => this.onImagePicker(),
         },
       ],
     };
@@ -67,6 +84,14 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
       })
     );
 
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
+        if (screenConfiguration && screenConfiguration.scanConfigurations) {
+          this.scanIds = Object.entries(screenConfiguration.scanConfigurations).map(([scanId]) => scanId);
+        }
+      })
+    );
+
     this.reDraw();
   }
 
@@ -76,13 +101,14 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
 
   private setInitialConfig() {
     // If we don't have anything showing yet, just show the first one...
-    if (!this._analysisLayoutService.defaultScanId) {
+    if (!this._analysisLayoutService.defaultScanId && !this.scanIds) {
       return;
     }
 
-    this._cachedDataService.getImageList(ImageListReq.create({ scanIds: [this._analysisLayoutService.defaultScanId] })).subscribe((resp: ImageListResp) => {
+    let scanIds = this.scanIds ? this.scanIds : [this._analysisLayoutService.defaultScanId];
+    this._cachedDataService.getImageList(ImageListReq.create({ scanIds })).subscribe((resp: ImageListResp) => {
       for (const img of resp.images) {
-        if (img.purpose == ScanImagePurpose.SIP_MULTICHANNEL) {
+        if (img.purpose == ScanImagePurpose.SIP_MULTICHANNEL && img.path) {
           this.loadImage(img.path);
         }
       }
@@ -140,21 +166,42 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
     this.saveState();
   }
 
-  onImageChanged(change: MatSelectChange) {
-    if (this.mdl.imageName == change.value) {
+  onImagePicker() {
+    const dialogConfig = new MatDialogConfig<ImagePickerDialogData>();
+    // Pass data to dialog
+    dialogConfig.data = {
+      scanIds: this.scanIds,
+      purpose: this.purpose,
+      selectedImagePath: this.mdl?.imageName || "",
+      liveUpdate: false,
+      selectedImageDetails: "",
+    };
+
+    const dialogRef = this.dialog.open(ImagePickerDialogComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe(({ selectedImagePath }: ImagePickerDialogResponse) => {
+      if (selectedImagePath) {
+        this.onImageChanged(selectedImagePath);
+      }
+    });
+  }
+
+  onImageChanged(selectedImagePath: string) {
+    if (this.mdl.imageName == selectedImagePath) {
       // No change, stop here
       return;
     }
 
-    this.loadImage(change.value);
+    this.loadImage(selectedImagePath);
   }
 
   onSoloView() {}
 
   private loadImage(imagePath: string) {
+    this.isWidgetDataLoading = true;
     this._endpointsService.loadRGBUImageTIF(imagePath).subscribe((img: RGBUImage) => {
       this.mdl.imageName = imagePath;
       this.mdl.setData(img, null, null);
+      this.isWidgetDataLoading = false;
 
       this.saveState();
     });
