@@ -501,6 +501,10 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   updateRecentExpression(expression: DataExpression | ExpressionGroup): void {
+    if (expression.owner?.creatorUser?.id === DataExpressionId.BuiltInUserId) {
+      return;
+    }
+
     let existingRecentExpression = this.recentExpressions.find(recentExpression => recentExpression.expression.id === expression.id);
     if (!existingRecentExpression) {
       this.recentExpressions.push({ expression, type: this.isShowingExpressionGroups ? "group" : "expression", lastSelected: Date.now() });
@@ -571,7 +575,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   onFilterAuthor(author: string): void {
-    if (author === "builtin") {
+    if (author === DataExpressionId.BuiltInUserId) {
       this.manualFilters = {};
     } else {
       this.manualFilters = { authors: [author] };
