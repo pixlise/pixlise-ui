@@ -1,36 +1,19 @@
 <ng-template #settingsMenu>
   <div class="settings">
-    <two-state-button
-        leftLabel="Weight%"
-        rightLabel="mmol"
-        toolTip="Show results in mmol vs weight %"
-        [active]="showMmol"
-        (onToggle)="setShowMmol()">
+    <two-state-button leftLabel="Weight%" rightLabel="mmol" toolTip="Show results in mmol vs weight %" [active]="showMmol" (onToggle)="setShowMmol()">
     </two-state-button>
-    <two-state-push-button
+    <!-- <two-state-push-button
         [active]="selectModeExcludeROI"
         (onToggle)="onToggleSelectModeExcludeROI()"
         title="Exclude Lasso: will not select points that are in an ROI"
     >Exclude
-    </two-state-push-button>
+    </two-state-push-button> -->
   </div>
 </ng-template>
 
 <interactive-canvas [ngClass]="mdl.cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interactionHandler" [transform]="transform">
 </interactive-canvas>
 
-<scatter-plot-axis-switcher
-  class="top-switcher"
-  [info]="topAxisSwitcher"
-  (click)="onCornerClick('C')">
-</scatter-plot-axis-switcher>
-<scatter-plot-axis-switcher
-  class="bottom-left-switcher"
-  [info]="bottomLeftAxisSwitcher"
-  (click)="onCornerClick('A')">
-</scatter-plot-axis-switcher>
-<scatter-plot-axis-switcher
-  class="bottom-right-switcher"
-  [info]="bottomRightAxisSwitcher"
-  (click)="onCornerClick('B')">
-</scatter-plot-axis-switcher>
+<scatter-plot-axis-switcher class="top-switcher" [info]="topAxisSwitcher" (click)="onCornerClick('C')"> </scatter-plot-axis-switcher>
+<scatter-plot-axis-switcher class="bottom-left-switcher" [info]="bottomLeftAxisSwitcher" (click)="onCornerClick('A')"> </scatter-plot-axis-switcher>
+<scatter-plot-axis-switcher class="bottom-right-switcher" [info]="bottomRightAxisSwitcher" (click)="onCornerClick('B')"> </scatter-plot-axis-switcher>
