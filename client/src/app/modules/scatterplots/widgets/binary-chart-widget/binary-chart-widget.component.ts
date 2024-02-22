@@ -76,13 +76,13 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
     this._widgetControlConfiguration = {
       topToolbar: [
-        {
-          id: "refs",
-          type: "button",
-          title: "Refs",
-          tooltip: "Choose reference areas to display",
-          onClick: () => this.onReferences(),
-        },
+        // {
+        //   id: "refs",
+        //   type: "button",
+        //   title: "Refs",
+        //   tooltip: "Choose reference areas to display",
+        //   onClick: () => this.onReferences(),
+        // },
         {
           id: "regions",
           type: "button",

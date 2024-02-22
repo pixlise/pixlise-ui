@@ -32,12 +32,14 @@ export class DataExpressionId {
   public static NewModule = "new-module";
   public static UnsavedExpressionPrefix = "unsaved-";
 
+  public static BuiltInUserId = "builtin";
+
   private static PredefinedPseudoIntensityLayerPrefix = "pseudo-";
   private static PredefinedQuantDataLayerPrefix = "data-";
   private static PredefinedQuantElementLayerPrefix = "elem-";
   private static PredefinedLayerPrefix = "expr-";
   private static PredefinedLayerRoughness = "roughness";
-//  private static PredefinedLayerDiffractionCounts = "diffraction";
+  //  private static PredefinedLayerDiffractionCounts = "diffraction";
   private static SuffixUnquantified = "unquantified";
   private static SuffixZHeight = "zheight";
 
@@ -211,7 +213,7 @@ export class DataExpressionId {
   public static isExpressionGroupId(exprId: string): boolean {
     // NOTE: Previously we had a thing called an RGB mix, which was a group of 3 expressions. We have now transitioned to having
     //       the more generic mechanism of an expression group. RGB mixes were all saved prefixed with "rgbmix-", which we didn't
-    //       change in the migration tool because there are many places they could be stored, but now we call prefix them with 
+    //       change in the migration tool because there are many places they could be stored, but now we call prefix them with
     //       "grp-". This should be fine, except anywhere where we're checking if the ID is for a group or an expression we need
     //       to check for both!
     return exprId.startsWith("rgbmix-") || exprId.startsWith("grp-");

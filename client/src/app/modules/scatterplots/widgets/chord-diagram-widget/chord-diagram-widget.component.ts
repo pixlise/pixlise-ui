@@ -336,6 +336,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
 
     if (value.finish) {
       this.reDraw();
+      this.update();
       this.saveState();
     }
   }
@@ -347,6 +348,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
   onToggleCorrelationDisplayMode(mode: ChordDrawMode) {
     this.mdl.drawMode = mode;
     this.reDraw();
+    this.update();
     this.saveState();
   }
 
@@ -356,6 +358,7 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
 
   onToggleShowSelectionOnly() {
     this.mdl.drawForSelection = !this.mdl.drawForSelection;
+    this.update();
     this.saveState();
   }
 }

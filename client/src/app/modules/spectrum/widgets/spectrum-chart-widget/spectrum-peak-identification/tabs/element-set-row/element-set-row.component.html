@@ -30,37 +30,23 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="elem-set-row">
-    <div *ngIf="item" class="left-container">
-        <div class="left-naming">
-            <span title="Id: {{item.id}}">{{item.name}}</span>
-            <span *ngIf="createdTime > 0" class="obj-create-time">Created: {{createdTime|date:'medium'}}</span>
-            <span *ngIf="shared && item.owner && item.owner?.creatorUser" class="obj-creator">By: {{item.owner?.creatorUser?.name || ""}}</span>
-        </div>
-        <div class="elements">
-            <element-tile
-                *ngFor="let Z of item.atomicNumbers"
-                [atomicNumber]="Z">
-            </element-tile>
-        </div>
+  <div *ngIf="item" class="left-container">
+    <div class="left-naming">
+      <span title="Id: {{ item.id }}">{{ item.name }}</span>
+      <span *ngIf="createdTime > 0" class="obj-create-time">Created: {{ createdTime | date: "medium" }}</span>
+      <span *ngIf="shared && item.owner && item.owner?.creatorUser" class="obj-creator">By: {{ item.owner?.creatorUser?.name || "" }}</span>
     </div>
-    <div class="right-container">
-        <!-- *ngIf="item.creator && !item.shared" -->
-        <icon-button
-            *ngIf="showShareButton"
-            (click)="onShareElementSet()"
-            title="Share a copy with other users"
-            icon="assets/button-icons/share.svg"></icon-button>
-
-        <!-- *ngIf="canDelete(item.id, item.creator, item.shared)" -->
-        <icon-button
-            *ngIf="showDeleteButton"
-            (click)="onDeleteElementSet()"
-            title="Delete Element Set"
-            icon="assets/button-icons/delete.svg"></icon-button>
-
-        <icon-button
-            (click)="onUseElementSet()"
-            title="Apply Element Set to Spectrum Chart"
-            icon="assets/button-icons/open-item.svg"></icon-button>
+    <div class="elements">
+      <element-tile *ngFor="let Z of item.atomicNumbers" [atomicNumber]="Z"> </element-tile>
     </div>
+  </div>
+  <div class="right-container">
+    <!-- *ngIf="item.creator && !item.shared" -->
+    <share-ownership-item-button *ngIf="canEdit" [id]="item?.id || ''" [type]="objectType" [ownershipSummary]="item?.owner || null"> </share-ownership-item-button>
+
+    <!-- *ngIf="canDelete(item.id, item.creator, item.shared)" -->
+    <icon-button *ngIf="showDeleteButton" (click)="onDeleteElementSet()" title="Delete Element Set" icon="assets/button-icons/delete.svg"></icon-button>
+
+    <icon-button (click)="onUseElementSet()" title="Apply Element Set to Spectrum Chart" icon="assets/button-icons/open-item.svg"></icon-button>
+  </div>
 </div>

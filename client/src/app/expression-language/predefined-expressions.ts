@@ -1,6 +1,8 @@
+import { OwnershipItem, OwnershipSummary } from "src/app/generated-protos/ownership-access";
 import { DataExpression } from "../generated-protos/expressions";
 import { DataExpressionId } from "./expression-id";
 import { EXPR_LANGUAGE_PIXLANG } from "./expression-language";
+import { UserInfo } from "src/app/generated-protos/user";
 
 export const DefaultDetectorId = "Default";
 
@@ -45,7 +47,7 @@ export function getPredefinedExpression(id: string): DataExpression | undefined 
       expr = "roughness()";
       name = "Roughness";
       // TODO: Bring this back in future, user bar selection on diffraction sidebar histogram used to change this expression...
-    /*} else if (id == DataExpressionId.predefinedDiffractionCountDataExpression) {
+      /*} else if (id == DataExpressionId.predefinedDiffractionCountDataExpression) {
       expr = "diffractionPeaks(0,4096)";
       if (this._diffractionCountExpression.length > 0) {
         expr = this._diffractionCountExpression;
@@ -87,6 +89,13 @@ export function getPredefinedExpression(id: string): DataExpression | undefined 
     sourceCode: expr,
     sourceLanguage: EXPR_LANGUAGE_PIXLANG,
     comments: "Built-in expression",
+    owner: OwnershipSummary.create({
+      creatorUser: UserInfo.create({
+        id: DataExpressionId.BuiltInUserId,
+        name: "Pixlise", // Builtin User Name
+        iconURL: "assets/PIXLISE.svg", // Builtin User Icon
+      }),
+    }),
   });
 
   // Previously we used to do this, do we still need to? Does it even make sense?

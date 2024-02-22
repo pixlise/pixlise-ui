@@ -63,7 +63,8 @@
         confirmText="Are you sure you want to delete ROI: {{ name }}?"
         (onClick)="onDelete()">
       </action-button>
-      <icon-button title="Share this ROI" icon="assets/button-icons/share.svg" (click)="onShare()"> </icon-button>
+      <share-ownership-item-button *ngIf="canEdit" [id]="summary?.id || ''" [type]="objectType" [ownershipSummary]="summary?.owner || null">
+      </share-ownership-item-button>
       <widget-settings-menu [settingsDialog]="roiShapePicker" #roiShapePickerButton>
         <icon-button title="Configure Shapes" icon="assets/button-icons/shapes.svg"> </icon-button>
       </widget-settings-menu>

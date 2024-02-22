@@ -76,6 +76,7 @@
 .notifications-container {
   max-height: 400px;
   overflow: scroll;
+  overflow-x: hidden;
 
   .hotkey-section {
     h2 {
@@ -92,6 +93,7 @@
 
       .name {
         color: var(--Gray-30, #bec0c2);
+        margin-right: 4px;
       }
 
       .shortcut {
