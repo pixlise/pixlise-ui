@@ -3,7 +3,20 @@ export type Hotkey = {
   shortcut: string;
 };
 
+function _isWindows(): boolean {
+  return navigator.userAgent.search("Windows") !== -1;
+}
+
+const cmdOrCtrl = _isWindows() ? "Ctrl" : "Cmd";
+const altOrOption = _isWindows() ? "Alt" : "Option";
+
 export const HOTKEYS: Record<string, Hotkey[]> = {
+  Layout: [
+    {
+      name: "Toggle Sidebar",
+      shortcut: "Cmd + B",
+    },
+  ],
   "Context Image": [
     {
       name: "Band Box Zoom",
@@ -40,18 +53,18 @@ export const HOTKEYS: Record<string, Hotkey[]> = {
       shortcut: "Hold Shift",
     },
   ],
-  "Binary Chart": [
+  "Code Editor": [
     {
-      name: "Band Box Zoom",
-      shortcut: "Hold Z",
+      name: "Run Expression",
+      shortcut: `${cmdOrCtrl} + Enter`,
     },
     {
-      name: "Zoom",
-      shortcut: "Z",
+      name: "Run Until Line",
+      shortcut: `${cmdOrCtrl} + ${altOrOption} + Enter`,
     },
     {
-      name: "Pan Mode",
-      shortcut: "Hold Shift",
+      name: "Run Highlighted Selection",
+      shortcut: `Select Code, ${cmdOrCtrl} + ${altOrOption} + Enter`,
     },
   ],
 };
