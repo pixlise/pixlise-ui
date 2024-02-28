@@ -92,6 +92,8 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
   selectedMinYValue: number | null = null;
   selectedMaxYValue: number | null = null;
 
+  public showAllMineralLabels: boolean = false;
+
   public static readonly TITLE_FONT_SIZE = 14;
   public static readonly FONT_SIZE = 12;
 

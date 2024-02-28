@@ -149,6 +149,11 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
       RGBUPlotWidgetState.create({
         drawMonochrome: this.mdl.drawMonochrome,
         imageName: this.mdl.imageName,
+        minerals: this.mdl.mineralsShown,
+        selectedMinXValue: this.mdl.selectedMinXValue || undefined,
+        selectedMaxXValue: this.mdl.selectedMaxXValue || undefined,
+        selectedMinYValue: this.mdl.selectedMinYValue || undefined,
+        selectedMaxYValue: this.mdl.selectedMaxYValue || undefined,
       })
     );
   }
@@ -159,6 +164,11 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
         const state = data as RGBUPlotWidgetState;
         if (state && state.imageName) {
           this.mdl.drawMonochrome = state.drawMonochrome;
+          this.mdl.mineralsShown = state.minerals || [];
+          this.mdl.selectedMinXValue = state.selectedMinXValue || null;
+          this.mdl.selectedMaxXValue = state.selectedMaxXValue || null;
+          this.mdl.selectedMinYValue = state.selectedMinYValue || null;
+          this.mdl.selectedMaxYValue = state.selectedMaxYValue || null;
           // TODO: fill in other vars here...
           this.loadData(state.imageName, [] /*state.visibleRegionIds*/);
         } else {
@@ -193,6 +203,12 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
         this.loadData(this.mdl.imageName, this.mdl.visibleRegionIds);
       }
     });
+  }
+
+  onToggleMineralLabels() {
+    this.mdl.showAllMineralLabels = !this.mdl.showAllMineralLabels;
+    this.mdl.rebuild();
+    this.saveState();
   }
 
   onRegions() {

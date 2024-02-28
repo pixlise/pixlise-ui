@@ -81,6 +81,12 @@ export class RGBUPlotDrawer extends CachedCanvasChartDrawer {
       const drawer = new OutlineDrawer(screenContext, clrLasso);
       drawer.drawOutline(this._mdl.mouseLassoPoints);
     }
+
+    if (this._mdl.showAllMineralLabels) {
+      this.drawMinerals(screenContext, this._mdl.drawModel);
+    }
+
+    this.drawHoveredMineral(screenContext, this._mdl.drawModel);
   }
 
   private drawPlot(screenContext: OffscreenCanvasRenderingContext2D, drawData: RGBUPlotDrawModel): void {
@@ -91,30 +97,34 @@ export class RGBUPlotDrawer extends CachedCanvasChartDrawer {
     }
   }
 
-  private drawMinerals(screenContext: OffscreenCanvasRenderingContext2D, drawData: RGBUPlotDrawModel): void {
-    screenContext.textBaseline = "top";
-    screenContext.textAlign = "left";
-
-    // If we are hovered over a mineral, show ALL mineral labels, with the one hovered being last
-    const isAnyHovered = drawData.mineralHoverIdx >= 0;
-
-    for (let c = 0; c < drawData.minerals.length; c++) {
-      if (drawData.mineralHoverIdx == c) {
-        // Draw the hovered one last
-        continue;
-      }
-
-      this.drawMineral(screenContext, drawData.minerals[c], false, isAnyHovered, drawData.dataArea);
-    }
-
-    if (isAnyHovered) {
-      this.drawMineral(screenContext, drawData.minerals[drawData.mineralHoverIdx], true, isAnyHovered, drawData.dataArea);
+  private drawHoveredMineral(screenContext: CanvasRenderingContext2D, drawData: RGBUPlotDrawModel): void {
+    if (drawData.mineralHoverIdx >= 0) {
+      this.drawMineral(screenContext, drawData.minerals[drawData.mineralHoverIdx], true, true, drawData.dataArea);
     }
   }
 
-  private drawMineral(screenContext: OffscreenCanvasRenderingContext2D, m: RGBUMineralPoint, isHovered: boolean, drawLabel: boolean, drawArea: Rect) {
+  private drawMinerals(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, drawData: RGBUPlotDrawModel): void {
+    screenContext.textBaseline = "top";
+    screenContext.textAlign = "left";
+
+    // Draw all minerals, show labels if toggled on
+    drawData.minerals.forEach(mineral => this.drawMineral(screenContext, mineral, false, this._mdl.showAllMineralLabels, drawData.dataArea));
+  }
+
+  private drawMineral(
+    screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    m: RGBUMineralPoint,
+    isHovered: boolean,
+    drawLabel: boolean,
+    drawArea: Rect
+  ) {
     screenContext.fillStyle = Colours.CONTEXT_PURPLE.asString();
     drawFilledCircle(screenContext, m.ratioPt, isHovered ? 4 : 2);
+
+    // Check if mineral is within draw area
+    if (!drawArea.containsPoint(m.ratioPt)) {
+      return;
+    }
 
     if (drawLabel) {
       const textOffset = 4;
