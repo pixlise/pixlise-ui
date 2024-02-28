@@ -566,6 +566,15 @@ export function makeValidFileName(name: string): string {
   return name.replace(/\\|!|@|#|\*|&|\?|\^|%|\$|\:|\//g, "_");
 }
 
+// Using Go terminology, just gets last part of path or "" if path ends in /
+export function getPathBase(path: string): string {
+  const idx = path.lastIndexOf("/");
+  if (idx > -1) {
+    return path.substring(idx + 1);
+  }
+  return "";
+}
+
 export const invalidPMC = -1;
 
 // Copied from implementation in pixlise-dataset-converter/importer/pixlfm/fmFileNameMeta.go

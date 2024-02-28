@@ -322,8 +322,8 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
       map((resp: ImageListResp) => {
         for (const img of resp.images) {
           // We auto pick the first "MSA" type multichannel image we find
-          if (img.purpose === ScanImagePurpose.SIP_MULTICHANNEL && img.name.toUpperCase().includes("MSA_")) {
-            return img.name;
+          if (img.purpose === ScanImagePurpose.SIP_MULTICHANNEL && img.imagePath.toUpperCase().includes("MSA_")) {
+            return img.imagePath;
           }
         }
 

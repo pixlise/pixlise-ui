@@ -1,10 +1,11 @@
 import { ScanImage, scanImagePurposeToJSON, scanImageSourceToJSON } from "../generated-protos/image";
-import { getMB, SDSFields } from "./utils";
+import { getMB, getPathBase, SDSFields } from "./utils";
 
 export function makeImageTooltip(forImage: ScanImage): string {
   // Put together some stuff already
-  let result = `Name: ${forImage.name}\n`;
-  result += `Path: ${forImage.path}\n`;
+  const name = getPathBase(forImage.imagePath);
+  let result = `Name: ${name}\n`;
+  //result += `Path: ${forImage.imagePath}\n`;
   result += `Origin Scan: ${forImage.originScanId}\n`;
   if (forImage.originImageURL) {
     result += `Origin URL: ${forImage.originImageURL}\n`;
@@ -27,7 +28,7 @@ export function makeImageTooltip(forImage: ScanImage): string {
   }
   result += `Image Source: ${lbl}`;
 
-  const fields = SDSFields.makeFromFileName(forImage.name);
+  const fields = SDSFields.makeFromFileName(name);
   if (!fields) {
     return result; //'Cannot decode file name';
   }

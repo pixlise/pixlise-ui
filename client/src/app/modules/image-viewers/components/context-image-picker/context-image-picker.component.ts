@@ -29,7 +29,7 @@
 
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from "@angular/core";
 import { Subscription } from "rxjs";
-import { SDSFields, invalidPMC } from "src/app/utils/utils";
+import { SDSFields, getPathBase, invalidPMC } from "src/app/utils/utils";
 import { ContextImageItemTransform } from "../../models/image-transform";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { makeImageTooltip } from "src/app/utils/image-details";
@@ -204,7 +204,7 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
         }
 
         const item = new ContextImageItem(
-          img.name,
+          img.imagePath,
           invalidPMC, // pmc
           false, // has beam
           -1, // beam idx
@@ -214,7 +214,7 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
         const tooltip = makeImageTooltip(img);
 
         let selected = false;
-        if (img.name == this.currentImage) {
+        if (img.imagePath == this.currentImage) {
           this.contextImageItemShowing = item;
           this.contextImageItemShowingTooltip = tooltip;
           selected = true;
@@ -344,6 +344,6 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
   }
 
   get currentFileName(): string {
-    return this.contextImageItemShowing ? this.contextImageItemShowing.path : "(No Image)";
+    return this.contextImageItemShowing ? getPathBase(this.contextImageItemShowing.path) : "(No Image)";
   }
 }

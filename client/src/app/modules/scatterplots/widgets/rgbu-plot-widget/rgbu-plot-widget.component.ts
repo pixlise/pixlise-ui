@@ -130,11 +130,11 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
       return;
     }
 
-    let scanIds = this.scanIds ? this.scanIds : [this._analysisLayoutService.defaultScanId];
+    const scanIds = this.scanIds ? this.scanIds : [this._analysisLayoutService.defaultScanId];
     this._cachedDataService.getImageList(ImageListReq.create({ scanIds })).subscribe((resp: ImageListResp) => {
       for (const img of resp.images) {
-        if (img.purpose == ScanImagePurpose.SIP_MULTICHANNEL && img.path) {
-          this.loadData(img.path, []);
+        if (img.purpose == ScanImagePurpose.SIP_MULTICHANNEL && img.imagePath) {
+          this.loadData(img.imagePath, []);
         }
       }
     });
