@@ -371,19 +371,19 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
   onChangeXAxis(event: any): void {
     this.mdl.selectedMinXValue = event.minValue;
     this.mdl.selectedMaxXValue = event.maxValue;
-    if (event.finish) {
-      this.mdl.rebuild();
-      this.saveState();
-    }
+    // if (event.finish) {
+    this.mdl.rebuild();
+    this.saveState();
+    // }
   }
 
   onChangeYAxis(event: any): void {
     this.mdl.selectedMinYValue = event.minValue;
     this.mdl.selectedMaxYValue = event.maxValue;
-    if (event.finish) {
-      this.mdl.rebuild();
-      this.saveState();
-    }
+    // if (event.finish) {
+    this.mdl.rebuild();
+    this.saveState();
+    // }
   }
 
   onAxisClick(axis: string): void {
