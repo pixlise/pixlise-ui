@@ -19,6 +19,8 @@ import { DetectorConfigListReq, DetectorConfigListResp, DetectorConfigReq, Detec
 import { ImageGetDefaultReq, ImageGetDefaultResp, ImageGetReq, ImageGetResp, ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { ImageBeamLocationsReq, ImageBeamLocationsResp } from "src/app/generated-protos/image-beam-location-msgs";
 import { ExpressionGroupGetReq, ExpressionGroupGetResp, ExpressionGroupListReq, ExpressionGroupListResp } from "src/app/generated-protos/expression-group-msgs";
+import { NotificationReq, NotificationResp, NotificationUpd } from "src/app/generated-protos/notification-msgs";
+import { NotificationType } from "src/app/generated-protos/notification";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
@@ -29,6 +31,11 @@ import { ExpressionGroupGetReq, ExpressionGroupGetResp, ExpressionGroupListReq, 
   providedIn: "root",
 })
 export class APICachedDataService {
+  // Overall maps that allow us to clear data with certain scan ids, images, quant ids
+  private _scanIdCacheKeys = new Map<string, string[]>();
+  private _quantIdCacheKeys = new Map<string, string[]>();
+  private _imageCacheKeys = new Map<string, string[]>();
+
   // With these, we request the whole thing, so they're easy to cache for future...
   private _quantReqMap = new Map<string, Observable<QuantGetResp>>();
   private _spectrumReqMap = new Map<string, Observable<SpectrumResp>>();
@@ -56,7 +63,102 @@ export class APICachedDataService {
   private _expressionReqMap = new Map<string, Observable<ExpressionGetResp>>();
   private _dataModuleReqMap = new Map<string, Observable<DataModuleGetResp>>();
 
-  constructor(private _dataService: APIDataService) {}
+  constructor(private _dataService: APIDataService) {
+    this._dataService.sendNotificationRequest(NotificationReq.create()).subscribe({
+      next: (notificationResp: NotificationResp) => {
+        // Do nothing at this point, we just do this for completeness, but we actually only care about the updates
+      },
+    });
+
+    this._dataService.notificationUpd$.subscribe((upd: NotificationUpd) => {
+      // When we get a data change notification we clear caches relevant to that
+      if (upd.notification?.notificationType == NotificationType.NT_SYS_DATA_CHANGED) {
+        // Clear all our caches for this notification
+        if (upd.notification.scanIds) {
+          for (const scanId of upd.notification.scanIds) {
+            this.clearCacheForScanId(scanId);
+          }
+        }
+
+        if (upd.notification.quantId) {
+          this.clearCacheForQuantId(upd.notification.quantId);
+        }
+
+        if (upd.notification.imageName) {
+          this.clearCacheForImage(upd.notification.imageName);
+        }
+      }
+    });
+  }
+
+  // Expects to be passed an id, and one of: _scanIdCacheKeys, _quantIdCacheKeys, _imageCacheKeys
+  private addIdCacheItem(id: string, item: string, toMap: Map<string, string[]>) {
+    const vals = toMap.get(id);
+    if (vals === undefined) {
+      toMap.set(id, [item]);
+    } else {
+      vals.push(item);
+    }
+  }
+
+  private clearCacheForScanId(scanId: string) {
+    // Clear all item caches relevant to this scan id
+    const ids = this._scanIdCacheKeys.get(scanId);
+    if (ids != undefined) {
+      for (const id of ids) {
+        this._scanEntryMap.delete(id);
+        this._scanEntryMetaReqMap.delete(id);
+        this._spectrumReqMap.delete(id);
+        this._scanMetaLabelsReqMap.delete(id);
+        //this._defaultImageReqMap.delete(id);
+        this._pseudoIntensityReqMap.delete(id);
+        this._detectedDiffractionReqMap.delete(id);
+        this._scanBeamLocationReqMap.delete(id);
+      }
+    }
+
+    // Also clear any lists that may contain the item that we're being notified for
+    this._scanListReqMap.clear();
+    this._defaultImageReqMap.clear(); // Clear all default scans because we tend to request one for each scan id
+
+    // We've cleared it!
+    this._scanIdCacheKeys.delete(scanId);
+  }
+
+  private clearCacheForQuantId(quantId: string) {
+    // Clear all item caches relevant to this scan id
+    const ids = this._quantIdCacheKeys.get(quantId);
+    if (ids != undefined) {
+      for (const id of ids) {
+        this._quantReqMap.delete(id);
+      }
+    }
+
+    // Also clear any lists that may contain the item that we're being notified for
+    // NOTE: We don't cache quant lists!
+    // TODO: fix this?? would be nice if there weren't lists of things cached elsewhere around our code base!
+
+    // We've cleared it!
+    this._quantIdCacheKeys.delete(quantId);
+  }
+
+  private clearCacheForImage(imageName: string) {
+    // Clear all item caches relevant to this scan id
+    const ids = this._imageCacheKeys.get(imageName);
+    if (ids != undefined) {
+      for (const id of ids) {
+        this._imageReqMap.delete(id);
+      }
+    }
+
+    // TODO: clear from LocalStorageService too??
+
+    // Also clear any lists that may contain the item that we're being notified for
+    this._imageListReqMap.clear();
+
+    // We've cleared it!
+    this._imageCacheKeys.delete(imageName);
+  }
 
   getQuant(req: QuantGetReq): Observable<QuantGetResp> {
     const cacheId = JSON.stringify(QuantGetReq.toJSON(req));
@@ -67,6 +169,7 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._quantReqMap.set(cacheId, result);
+      this.addIdCacheItem(req.quantId, cacheId, this._quantIdCacheKeys);
     }
 
     return result;
@@ -87,6 +190,7 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._spectrumReqMap.set(cacheId, result);
+      this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
     return result;
@@ -123,6 +227,7 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._scanMetaLabelsReqMap.set(cacheId, result);
+      this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
     return result;
@@ -151,6 +256,7 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._scanEntryMap.set(cacheId, result);
+      this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
     return result;
@@ -165,6 +271,7 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._scanBeamLocationReqMap.set(cacheId, result);
+      this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
     return result;
@@ -179,6 +286,7 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._scanEntryMetaReqMap.set(cacheId, result);
+      this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
     return result;
@@ -193,6 +301,7 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._pseudoIntensityReqMap.set(cacheId, result);
+      this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
     return result;
@@ -207,6 +316,7 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._detectedDiffractionReqMap.set(cacheId, result);
+      this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
     return result;
@@ -312,6 +422,15 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._defaultImageReqMap.set(cacheId, result);
+      /* NOTE: we often request all default images, so scan list is every scan id
+               and this doesn't look too great in our cache key lookup, see:
+      for (const scanId of req.scanIds) {
+        this.addIdCacheItem(scanId, cacheId, this._scanIdCacheKeys);
+      }
+
+      Instead, we will just clear the defaults map if a scan id is reported as changed
+      as it's likely to be of lesser impact
+      */
     }
 
     return result;
@@ -326,6 +445,7 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._imageBeamLocationsReqMap.set(cacheId, result);
+      this.addIdCacheItem(req.imageName, cacheId, this._imageCacheKeys);
     }
 
     return result;
@@ -340,6 +460,7 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._imageReqMap.set(cacheId, result);
+      this.addIdCacheItem(req.imageName, cacheId, this._imageCacheKeys);
     }
 
     return result;

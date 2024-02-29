@@ -544,9 +544,14 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
               colour = Colours.CONTEXT_BLUE;
             }
 
-            if (stackedROIs && binMemberInfo[binIdx].rois.length > 0) {
-              roiCount = activePixelROIs.map(roi => ({ roi: visibleROIs[roi].region.name, count, colour: colour.asString() }));
-              combinedCount = count * activePixelROIs.length;
+            if (binMemberInfo[binIdx].rois.length > 0) {
+              if (stackedROIs) {
+                roiCount = activePixelROIs.map(roi => ({ roi: visibleROIs[roi].region.name, count, colour: colour.asString() }));
+                combinedCount = count * activePixelROIs.length;
+              } else {
+                // If selected pixels are part of an ROI, use that colour
+                colour = visibleROIs[activePixelROIs[0]].displaySettings.colour;
+              }
             }
           } else {
             // If were generating data for a stacked bar chart, get counts per ROI
@@ -593,7 +598,8 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
                   { r: -1, g: -1, b: -1 }
                 );
 
-                colour = new RGBA(averageColour.r, averageColour.g, averageColour.b, 255);
+                let transparency = !drawMonochrome && currSelPixels.size > 0 ? 0.2 : 1;
+                colour = new RGBA(averageColour.r, averageColour.g, averageColour.b, 255 * transparency);
                 colourKey[activeColourKey] = colour;
               }
             } else {

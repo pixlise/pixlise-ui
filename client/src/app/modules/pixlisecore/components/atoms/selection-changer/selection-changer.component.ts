@@ -48,6 +48,12 @@ import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { PixelSelection } from "../../../models/pixel-selection";
 import { ScanEntry } from "src/app/generated-protos/scan-entry";
+import { UsersService } from "src/app/modules/settings/services/users.service";
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
+import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { ROIItem } from "src/app/generated-protos/roi";
+import { NewROIDialogComponent } from "src/app/modules/roi/components/new-roi-dialog/new-roi-dialog.component";
+import { PMCSelectorDialogComponent } from "src/app/modules/pixlisecore/components/atoms/selection-changer/pmc-selector-dialog/pmc-selector-dialog.component";
 
 @Component({
   selector: "selection-changer",
@@ -60,7 +66,7 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
   private _defaultLeftText = "No Selection";
   private _leftText: string = this._defaultLeftText;
 
-  private _userCanCreateROI: boolean = false;
+  // private _userCanCreateROI: boolean = false;
 
   private _hasDwells: Map<string, boolean> = new Map<string, boolean>();
 
@@ -69,6 +75,8 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
     private _selectionService: SelectionService,
     private _snackService: SnackbarService,
     private _authService: AuthService,
+    private _userOptionsService: UserOptionsService,
+    private _roiService: ROIService,
     private _cachedDataService: APICachedDataService,
     public dialog: MatDialog
   ) {}
@@ -86,21 +94,21 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
       })
     );
 
-    this._subs.add(
-      this._authService.idTokenClaims$.subscribe({
-        next: claims => {
-          if (claims) {
-            // This all went unused during public user feature additions
-            if (Permissions.permissionCount(claims) <= 0) {
-              // User has no permissions at all, admins would've set them this way!
-              // this.setDatasetListingNotAllowedError(HelpMessage.AWAITING_ADMIN_APPROVAL);
-            } else {
-              this._userCanCreateROI = Permissions.hasPermissionSet(claims, Permissions.permissionEditROI);
-            }
-          }
-        },
-      })
-    );
+    // this._subs.add(
+    //   this._authService.idTokenClaims$.subscribe({
+    //     next: claims => {
+    //       if (claims) {
+    //         // This all went unused during public user feature additions
+    //         if (Permissions.permissionCount(claims) <= 0) {
+    //           // User has no permissions at all, admins would've set them this way!
+    //           // this.setDatasetListingNotAllowedError(HelpMessage.AWAITING_ADMIN_APPROVAL);
+    //         } else {
+    //           this._userCanCreateROI = Permissions.hasPermissionSet(claims, Permissions.permissionEditROI);
+    //         }
+    //       }
+    //     },
+    //   })
+    // );
 
     if (this._analysisLayoutService.defaultScanId) {
       this._cachedDataService
@@ -125,18 +133,22 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
     this._subs.unsubscribe();
   }
 
+  get userCanCreateROI(): boolean {
+    return this._userOptionsService.hasFeatureAccess("editROI");
+  }
+
   get leftText(): string {
     return this._leftText + " " + UNICODE_CARET_DOWN;
   }
 
-  onSelection(event): void {
+  onSelection(event: any): void {
     // User clicked on left side, show menu
     const dialogConfig = new MatDialogConfig();
     dialogConfig.backdropClass = "empty-overlay-backdrop";
 
     dialogConfig.data = new SelectionOptionsDialogData(
       this._hasDwells.get(this._analysisLayoutService.defaultScanId) || false, // Only show dwell if we have any
-      !this._userCanCreateROI,
+      this.userCanCreateROI,
       [], // TODO: show all scan ids that exist, so we can have options to select ONLY all points for that dataset...
       new ElementRef(event.currentTarget)
     );
@@ -205,6 +217,8 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
   onSelectSpecificPMC(): void {
     // TODO: Reimplement this
     //this._selectionService.promptUserForPMCSelection(this.dialog);
+    let dialogConfig = new MatDialogConfig();
+    this.dialog.open(PMCSelectorDialogComponent, dialogConfig);
   }
 
   onSelectDwellPMCs(): void {
@@ -228,24 +242,13 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
   }
 
   onNewROIFromSelection(): void {
-    // TODO: Reimplement this
-    /*this._roiService
-      .makeROI(
-        this._selectionService.getCurrentSelection().beamSelection.locationIndexes,
-        this._selectionService.getCurrentSelection().pixelSelection.selectedPixels,
-        this._selectionService.getCurrentSelection().pixelSelection.imageName,
-        this.dialog
-      )
-      .subscribe(
-        (created: boolean) => {
-          if (created) {
-            this._selectionService.clearSelection();
-          }
-        },
-        err => {
-          alert(httpErrorToString(err, ""));
-        }
-      );*/
+    const dialogConfig = new MatDialogConfig();
+    let dialogRef = this.dialog.open(NewROIDialogComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((created: boolean) => {
+      if (created) {
+        this._selectionService.clearSelection();
+      }
+    });
   }
 
   onSelectForSubDataset(id: string): void {

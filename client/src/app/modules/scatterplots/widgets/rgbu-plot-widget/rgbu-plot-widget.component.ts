@@ -134,11 +134,11 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
       return;
     }
 
-    let scanIds = this.scanIds ? this.scanIds : [this._analysisLayoutService.defaultScanId];
+    const scanIds = this.scanIds ? this.scanIds : [this._analysisLayoutService.defaultScanId];
     this._cachedDataService.getImageList(ImageListReq.create({ scanIds })).subscribe((resp: ImageListResp) => {
       for (const img of resp.images) {
-        if (img.purpose == ScanImagePurpose.SIP_MULTICHANNEL && img.path) {
-          this.loadData(img.path, []);
+        if (img.purpose == ScanImagePurpose.SIP_MULTICHANNEL && img.imagePath) {
+          this.loadData(img.imagePath, []);
         }
       }
     });
@@ -217,6 +217,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     dialogConfig.data = {
       requestFullROIs: false,
       scanId: this.scanIds ? this.scanIds[0] : this._analysisLayoutService.defaultScanId,
+      selectedIds: this.mdl.visibleRegionIds,
     };
 
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
@@ -429,19 +430,27 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
       request.push(this._roiService.getRegionSettings(roiId));
     }
 
-    combineLatest(request).subscribe(results => {
-      const image = results[0] as RGBUImage;
-      const rois: RegionSettings[] = [];
-      for (let c = 1; c < results.length; c++) {
-        rois.push(results[c] as RegionSettings);
-      }
+    combineLatest(request).subscribe({
+      next: results => {
+        const image = results[0] as RGBUImage;
+        const rois: RegionSettings[] = [];
+        for (let c = 1; c < results.length; c++) {
+          rois.push(results[c] as RegionSettings);
+        }
 
-      // Now we can set this
-      this.mdl.imageName = imagePath;
-      this.mdl.setData(image, rois);
-      this.isWidgetDataLoading = false;
+        // Now we can set this
+        this.mdl.imageName = imagePath;
+        this.mdl.setData(image, rois);
+        this.errorMsg = "";
+        this.isWidgetDataLoading = false;
 
-      this.saveState();
+        this.saveState();
+      },
+      error: err => {
+        this.isWidgetDataLoading = false;
+        this.errorMsg = "Error loading image: " + err;
+        console.error("Error loading image: ", err);
+      },
     });
   }
 }

@@ -33,7 +33,7 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { ContextImageMapLayer } from "src/app/modules/image-viewers/models/map-layer";
 import { ColourRamp } from "src/app/utils/colours";
-import { SDSFields } from "src/app/utils/utils";
+import { SDSFields, getPathBase } from "src/app/utils/utils";
 import { AddCustomImageParameters, AddCustomImageComponent, AddCustomImageResult } from "../../components/add-custom-image/add-custom-image.component";
 import { ImageUploadReq } from "src/app/generated-protos/image-msgs";
 import { ImageUploadResp } from "src/app/generated-protos/image-msgs";
@@ -199,11 +199,11 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   }
 
   get selectedImageLabel(): string {
-    return this.mdl.overlayImageName ? this.mdl.overlayImageName : "Select one from below!";
+    return this.mdl.overlayImagePath ? this.mdl.overlayImagePath : "Select one from below!";
   }
 
   get hasImageSelected(): boolean {
-    return this.mdl.overlayImageName.length > 0;
+    return this.mdl.overlayImagePath.length > 0;
   }
 
   get alignToImageLabel(): string {
@@ -244,36 +244,6 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (resp: ScanMetaWriteResp) => {
           this._snackService.openSuccess("Title/description changed");
-        },
-        error: err => {
-          this._snackService.openError(err);
-          this.title = ""; // To clear the spinner
-        },
-      });
-  }
-
-  onSaveDefault() {
-    const scanId = this.getScanId();
-    if (!scanId) {
-      return;
-    }
-
-    if (!this.title) {
-      this._snackService.openError("Cannot set an empty title");
-      return;
-    }
-
-    this._dataService
-      .sendScanMetaWriteRequest(
-        ScanMetaWriteReq.create({
-          scanId: scanId,
-          title: this.title,
-          description: this.description,
-        })
-      )
-      .subscribe({
-        next: (resp: ScanMetaWriteResp) => {
-          this._snackService.openSuccess("Default image changed");
         },
         error: err => {
           this._snackService.openError(err);
@@ -428,13 +398,13 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   onDeleteImage(imgType: string, img: ScanImage, event): void {
     event.stopPropagation();
 
-    if (!confirm(`Are you sure you want to delete ${img.name}?`)) {
+    if (!confirm(`Are you sure you want to delete ${img.imagePath}?`)) {
       return;
     }
 
-    this._dataService.sendImageDeleteRequest(ImageDeleteReq.create({ name: img.name })).subscribe({
+    this._dataService.sendImageDeleteRequest(ImageDeleteReq.create({ name: img.imagePath })).subscribe({
       next: (resp: ImageDeleteResp) => {
-        this._snackService.openSuccess("Image deleted", "Deleted image: " + img.name);
+        this._snackService.openSuccess("Image deleted", "Deleted image: " + img.imagePath);
         this.refreshImages();
       },
       error: err => {
@@ -445,8 +415,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
 
   onSelectImage(imgType: string, img: ScanImage): void {
     // Show this image
-    this.mdl.overlayImageName = img.name;
-    this.mdl.overlayImagePath = img.path;
+    this.mdl.overlayImagePath = img.imagePath;
 
     // If this image has alignent info, get it
     if (img.matchInfo) {
@@ -467,7 +436,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
         (this.mdl.drawModel.scanDrawModels.size == 1 && !this.mdl.drawModel.scanDrawModels.get(img.associatedScanIds[0])))
     ) {
       // No model data is present, but image has an associated scan, reload...
-      this.mdl.imageName = img.name;
+      this.mdl.imageName = img.imagePath;
       this.reloadModel();
     }
 
@@ -515,7 +484,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
       this._dataService
         .sendImageSetMatchTransformRequest(
           ImageSetMatchTransformReq.create({
-            imageName: this.mdl.overlayImageName,
+            imageName: this.mdl.overlayImagePath,
             transform: {
               beamImageFileName: this.mdl.imageName,
               xOffset: xform.xOffset,
@@ -734,5 +703,9 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
 
     //overlayBrightness
     return src;
+  }
+
+  justName(name: string): string {
+    return getPathBase(name);
   }
 }

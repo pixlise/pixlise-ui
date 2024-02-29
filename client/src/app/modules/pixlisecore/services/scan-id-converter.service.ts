@@ -3,6 +3,11 @@ import { Observable, map } from "rxjs";
 import { APICachedDataService } from "./apicacheddata.service";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 
+export type PMCConversionResult = {
+  result: number[];
+  failedPMCs: number[];
+};
+
 @Injectable({
   providedIn: "root",
 })
@@ -39,7 +44,7 @@ export class ScanIdConverterService {
     );
   }
 
-  convertScanEntryPMCToIndex(scanId: string, pmcs: number[]): Observable<number[]> {
+  convertScanEntryPMCToIndex(scanId: string, pmcs: number[], ignoreFail: boolean = false): Observable<PMCConversionResult> {
     if (!scanId) {
       throw new Error("convertScanEntryPMCToIndex called with empty scanId");
     }
@@ -47,16 +52,24 @@ export class ScanIdConverterService {
     return this.getScanEntryPMCToIndexLookup(scanId).pipe(
       map((lookup: Map<number, number>) => {
         const result: number[] = [];
+        const failedPMCs: number[] = [];
+
         for (const pmc of pmcs) {
           const idx = lookup.get(pmc);
           if (idx === undefined) {
-            throw new Error(`Failed to convert PMC ${pmc} to location index for scan: ${scanId}`);
+            if (ignoreFail) {
+              failedPMCs.push(pmc);
+              console.error(`Failed to convert PMC ${pmc} to location index for scan: ${scanId}`);
+              continue;
+            } else {
+              throw new Error(`Failed to convert PMC ${pmc} to location index for scan: ${scanId}`);
+            }
           }
 
           result.push(idx);
         }
 
-        return result;
+        return { result, failedPMCs } as PMCConversionResult;
       })
     );
   }

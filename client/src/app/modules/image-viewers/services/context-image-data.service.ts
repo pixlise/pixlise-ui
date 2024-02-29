@@ -201,20 +201,20 @@ export class ContextImageDataService {
     return layer;
   }
 
-  private fetchModelData(imageName: string): Observable<ContextImageModelLoadedData> {
+  private fetchModelData(imagePath: string): Observable<ContextImageModelLoadedData> {
     // First, get the image metadata so we know what image to query beam locations for (uploaded images can reference other images!)
-    return this._cachedDataService.getImageMeta(ImageGetReq.create({ imageName: imageName })).pipe(
+    return this._cachedDataService.getImageMeta(ImageGetReq.create({ imageName: imagePath })).pipe(
       concatMap((imgResp: ImageGetResp) => {
         // If this is a "matched" image, we should have a file name to request beam locations for, otherwise use the same file name
         if (!imgResp.image) {
-          throw new Error("No image returned for: " + imageName);
+          throw new Error("No image returned for: " + imagePath);
         }
 
-        const beamFileName = imgResp.image.matchInfo?.beamImageFileName || imageName;
+        const beamFileName = imgResp.image.matchInfo?.beamImageFileName || imagePath;
         return this._cachedDataService.getImageBeamLocations(ImageBeamLocationsReq.create({ imageName: beamFileName })).pipe(
           concatMap((imgBeamResp: ImageBeamLocationsResp) => {
             if (!imgBeamResp.locations) {
-              throw new Error("No image beam locations returned for: " + imageName);
+              throw new Error("No image beam locations returned for: " + imagePath);
             }
 
             if (imgBeamResp.locations.imageName != beamFileName) {
@@ -227,10 +227,10 @@ export class ContextImageDataService {
             if (imgResp.image!.purpose == ScanImagePurpose.SIP_MULTICHANNEL) {
               // We use a different function to request multi-channel TIF images, because we will have to process it further
               // to get a visible image
-              requests.push(this._endpointsService.loadRGBUImageTIF(imgResp.image!.path));
+              requests.push(this._endpointsService.loadRGBUImageTIF(imgResp.image!.imagePath));
             } else {
               // Simply load the image for displaying
-              requests.push(this._endpointsService.loadImageForPath(imgResp.image!.path));
+              requests.push(this._endpointsService.loadImageForPath(imgResp.image!.imagePath));
             }
 
             const beamsForScan = new Map<string, Coordinate2D[]>();
@@ -245,7 +245,7 @@ export class ContextImageDataService {
                 throw new Error(`Image associated scan: ${scanId} has no beam locations`);
               }
 
-              requests.push(this.buildScanModel(scanId, imageName, beamIJs));
+              requests.push(this.buildScanModel(scanId, imagePath, beamIJs));
             }
 
             // Load the image

@@ -1,0 +1,52 @@
+.pmc-selector-dialog-container {
+  width: 500px;
+  max-height: 400px;
+  padding: 16px;
+
+  display: flex;
+  flex-direction: column;
+
+  h1 {
+    font:
+      700 18px / 24px Roboto,
+      monospace;
+  }
+
+  .info-text {
+    margin-top: 8px;
+    color: rgb(var(--clr-gray-30));
+  }
+
+  .selection-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+
+    gap: 8px;
+
+    margin-bottom: 16px;
+    margin-top: 16px;
+
+    .scan-selection {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+
+      .scan-title {
+        color: rgb(var(--clr-gray-30));
+      }
+
+      .pmc-entry {
+        width: calc(100% - 6px);
+      }
+    }
+
+    overflow-y: auto;
+  }
+
+  .buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+}

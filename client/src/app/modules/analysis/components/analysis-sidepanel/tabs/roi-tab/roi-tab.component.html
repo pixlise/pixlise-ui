@@ -29,7 +29,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<ng-template #newROIMenu>
+<!-- <ng-template #newROIMenu>
   <div class="new-roi">
     <header>
       <h1 class="title">New ROI</h1>
@@ -56,7 +56,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <push-button buttonStyle="yellow" (onClick)="onSaveNewROI()" title="Save new ROI">Save</push-button>
     </div>
   </div>
-</ng-template>
+</ng-template> -->
 
 <section class="roi-container">
   <div class="panel-row">
@@ -67,7 +67,7 @@ POSSIBILITY OF SUCH DAMAGE.
       buttonStyle="yellow"
       [disabled]="selectionEmpty || !canCreateROIs"
       fxFlex="100%"
-      [customDialog]="newROIMenu"
+      (onClick)="onNewROI()"
       #newROIButton
       >New ROI from Selection</push-button
     >

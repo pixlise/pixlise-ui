@@ -28,6 +28,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 .scan-configurations {
+  max-height: 600px;
+  overflow-y: auto;
+
   table {
     background: #2a3137;
   }

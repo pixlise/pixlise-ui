@@ -29,9 +29,7 @@
 
 import { Component, EventEmitter, Input, OnInit, Output, SimpleChanges } from "@angular/core";
 import { Subscription } from "rxjs";
-import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ScanDataType, ScanItem } from "src/app/generated-protos/scan";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 
 @Component({
@@ -51,10 +49,7 @@ export class DataSetSummaryComponent implements OnInit {
   private _missingData: string = "";
   private _thumbnail: string = "";
 
-  constructor(
-    private _cachedDataService: APICachedDataService,
-    private _endpointsService: APIEndpointsService
-  ) {}
+  constructor(private _endpointsService: APIEndpointsService) {}
 
   ngOnInit() {
     if (!this.summary) {

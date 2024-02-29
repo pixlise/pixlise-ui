@@ -308,7 +308,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this._cachedDataService.getDefaultImage(ImageGetDefaultReq.create({ scanIds: scanIds })).subscribe((resp: ImageGetDefaultResp) => {
       this.scanDefaultImages.clear();
       for (const id of Object.keys(resp.defaultImagesPerScanId)) {
-        this.scanDefaultImages.set(id, id + "/" + resp.defaultImagesPerScanId[id]);
+        this.scanDefaultImages.set(id, resp.defaultImagesPerScanId[id]);
       }
     });
   }
