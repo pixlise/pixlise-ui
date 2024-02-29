@@ -28,73 +28,84 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 .handle {
-    position: absolute;
+  position: absolute;
 
-    &.left-handle {
-        padding-right: 3px;
-        padding-left: 5px;
-        margin-left: -5px;
-    }
+  &.left-handle {
+    padding-right: 3px;
+    padding-left: 5px;
+    margin-left: -5px;
+  }
 
-    &.right-handle {
-        padding-right: 5px;
-        padding-left: 3px;
-        margin-left: -3px;
-    }
+  &.right-handle {
+    padding-right: 5px;
+    padding-left: 3px;
+    margin-left: -3px;
+  }
 }
 
 .range-svg {
-    overflow: visible;
+  overflow: visible;
 
-    &.vertical {
-        .handle-tooltip {
-            transform: rotate(90deg);
-
-            top: -12.5px;
-            left: -40px;
-
-            &:before {
-                top: -23px;
-                left: 0px;
-                border: solid 12px transparent;
-                border-bottom-color: #293136;
-            }
-        }
+  &.vertical {
+    .circle-handle {
+      svg {
+        margin-left: 4px;
+      }
     }
 
-    &.horizontal {
-        .handle-tooltip {
-            top: -30px;
-            left: -12.5px;
-        }
+    .handle-tooltip {
+      transform: rotate(90deg);
+
+      top: -12.5px;
+      left: -40px;
+
+      &:before {
+        top: -23px;
+        left: 0px;
+        border: solid 12px transparent;
+        border-bottom-color: #293136;
+      }
     }
+  }
+
+  &.horizontal {
+    .handle-tooltip {
+      top: -30px;
+      left: -12.5px;
+    }
+  }
 }
 
 .foreign-handle {
-    overflow: auto;
+  overflow: visible;
 
-    &:hover {
-        overflow: visible;
-    }
-
+  &:hover {
     .circle-handle {
-        position: relative;
-
-        .handle-tooltip {
-            position: absolute;
-            padding: 5px;
-            background: #293136;
-            color: white;
-
-            &:before {
-                content: "";
-                position: absolute;
-                z-index: 1;
-            }
-
-            h5 {
-                all: unset;
-            }
-        }
+      .handle-tooltip {
+        display: block;
+      }
     }
+  }
+
+  .circle-handle {
+    position: relative;
+
+    .handle-tooltip {
+      display: none;
+      position: absolute;
+      padding: 5px;
+      background: #293136;
+      color: white;
+
+      &:before {
+        content: "";
+        position: absolute;
+        z-index: 1;
+      }
+
+      h5 {
+        all: unset;
+      }
+    }
+  }
 }
