@@ -70,9 +70,9 @@ export class ROIService {
   ) {
     this.listROIs();
 
-    this._selectionService.selection$.subscribe(selection => {
-      this.generateSelectionROI(selection);
-    });
+    // this._selectionService.selection$.subscribe(selection => {
+    //   this.generateSelectionROI(selection);
+    // });
 
     this._analysisLayoutService.availableScans$.subscribe(scans => {
       this._allScans = scans;
@@ -168,18 +168,18 @@ export class ROIService {
 
   searchROIs(searchParams: SearchParams, isMIST: boolean = false) {
     // Check if selection ROI exists for this scan and if not, create an empty one
-    if (searchParams.scanId && searchParams.scanId.length > 0) {
-      if (!this.roiItems$.value[PredefinedROIID.getSelectedPointsForScan(searchParams.scanId)]) {
-        const selectedPointsROI = this.getSelectedPointsROI(searchParams.scanId);
-        if (selectedPointsROI) {
-          this.roiItems$.value[selectedPointsROI.id] = selectedPointsROI;
-          this.roiSummaries$.value[selectedPointsROI.id] = ROIService.formSummaryFromROI(selectedPointsROI);
-          this.displaySettingsMap$.value[selectedPointsROI.id] = { colour: Colours.CONTEXT_BLUE, shape: DEFAULT_ROI_SHAPE };
-          this.roiItems$.next(this.roiItems$.value);
-          this.displaySettingsMap$.next(this.displaySettingsMap$.value);
-        }
-      }
-    }
+    // if (searchParams.scanId && searchParams.scanId.length > 0) {
+    //   if (!this.roiItems$.value[PredefinedROIID.getSelectedPointsForScan(searchParams.scanId)]) {
+    //     const selectedPointsROI = this.getSelectedPointsROI(searchParams.scanId);
+    //     if (selectedPointsROI) {
+    //       this.roiItems$.value[selectedPointsROI.id] = selectedPointsROI;
+    //       this.roiSummaries$.value[selectedPointsROI.id] = ROIService.formSummaryFromROI(selectedPointsROI);
+    //       this.displaySettingsMap$.value[selectedPointsROI.id] = { colour: Colours.CONTEXT_BLUE, shape: DEFAULT_ROI_SHAPE };
+    //       this.roiItems$.next(this.roiItems$.value);
+    //       this.displaySettingsMap$.next(this.displaySettingsMap$.value);
+    //     }
+    //   }
+    // }
 
     // Check if all points ROI exists for this scan and if not, fetch it
     const allPointsROIID = PredefinedROIID.getAllPointsForScan(searchParams.scanId);
