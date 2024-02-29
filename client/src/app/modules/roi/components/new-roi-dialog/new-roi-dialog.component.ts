@@ -27,12 +27,16 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, OnInit } from "@angular/core";
-import { MatDialogRef } from "@angular/material/dialog";
-import { Subscription } from "rxjs";
+import { Component, Inject, OnInit } from "@angular/core";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { Subscription, scan } from "rxjs";
 import { ROIItem } from "src/app/generated-protos/roi";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
+
+export type NewROIDialogData = {
+  defaultScanId?: string;
+};
 
 @Component({
   selector: "new-roi-dialog",
@@ -49,12 +53,16 @@ export class NewROIDialogComponent implements OnInit {
   pixelCount: number = 0;
   entryCount: number = 0;
   selectedScanIds: string[] = [];
+  defaultScanId: string = "";
 
   constructor(
     private _roiService: ROIService,
     private _selectionService: SelectionService,
+    @Inject(MAT_DIALOG_DATA) public data: any,
     public dialogRef: MatDialogRef<NewROIDialogComponent>
-  ) {}
+  ) {
+    this.defaultScanId = data.defaultScanId;
+  }
 
   ngOnInit(): void {
     this._subs.add(
@@ -74,6 +82,21 @@ export class NewROIDialogComponent implements OnInit {
     let selection = this._selectionService.getCurrentSelection();
     let scanIds = selection.beamSelection.getScanIds();
 
+    // We don't have a beam selection to tell us the scan Ids, so attempt to resolve it from the image name
+    // and if this fails, then resort to the default scan id
+    if (scanIds.length === 0) {
+      let imageNameWithScan = selection.pixelSelection.imageName.match(/^(?<ScanId>[0-9]{9})\/.+\.[a-zA-Z]{3,5}$/);
+      if (imageNameWithScan && imageNameWithScan?.groups?.["ScanId"]) {
+        scanIds = [imageNameWithScan.groups["ScanId"]];
+      } else if (this.defaultScanId) {
+        scanIds = [this.defaultScanId];
+      }
+    }
+
+    // TODO: There's a weird edge case here if we have PMCs from multiple scans selected AND pixels selected
+    // In this case, the pixels will be duplicated to each scan, which is probably not what we want
+    // However, this edge case can currently only be manually crafted and would require changing PixelSelection
+    // to include a scan id, which is too big of an undertaking for now.
     scanIds.forEach(scanId => {
       this._roiService.createROI(
         ROIItem.create({

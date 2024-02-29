@@ -58,13 +58,15 @@ export class ImagePickerDialogData {
     public liveUpdate: boolean,
     public scanIds: string[],
     public selectedImagePath: string,
-    public selectedImageDetails: string = ""
+    public selectedImageDetails: string = "",
+    public defaultScanId?: string
   ) {}
 }
 
 export interface ImagePickerDialogResponse {
   selectedImagePath: string;
   selectedImageName: string | null;
+  selectedImageScanId?: string | null;
 }
 
 @Component({
@@ -110,7 +112,7 @@ export class ImagePickerDialogComponent implements OnInit {
     }
 
     if (this.data.scanIds && this.data.scanIds.length > 0) {
-      this.filterScanId = this.data.scanIds[0];
+      this.filterScanId = this.data.defaultScanId ? this.data.defaultScanId : this.data.scanIds[0];
     }
 
     this._subs.add(
@@ -314,7 +316,7 @@ export class ImagePickerDialogComponent implements OnInit {
   }
 
   onApply(): void {
-    this.dialogRef.close({ selectedImagePath: this.selectedImagePath, selectedImageName: this.selectedChoice?.name });
+    this.dialogRef.close({ selectedImagePath: this.selectedImagePath, selectedImageName: this.selectedChoice?.name, selectedImageScanId: this.filterScanId });
   }
 
   onCancel(): void {

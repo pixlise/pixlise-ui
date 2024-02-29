@@ -52,7 +52,7 @@ import { UsersService } from "src/app/modules/settings/services/users.service";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { ROIItem } from "src/app/generated-protos/roi";
-import { NewROIDialogComponent } from "src/app/modules/roi/components/new-roi-dialog/new-roi-dialog.component";
+import { NewROIDialogComponent, NewROIDialogData } from "src/app/modules/roi/components/new-roi-dialog/new-roi-dialog.component";
 import { PMCSelectorDialogComponent } from "src/app/modules/pixlisecore/components/atoms/selection-changer/pmc-selector-dialog/pmc-selector-dialog.component";
 
 @Component({
@@ -66,17 +66,12 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
   private _defaultLeftText = "No Selection";
   private _leftText: string = this._defaultLeftText;
 
-  // private _userCanCreateROI: boolean = false;
-
   private _hasDwells: Map<string, boolean> = new Map<string, boolean>();
 
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _selectionService: SelectionService,
-    private _snackService: SnackbarService,
-    private _authService: AuthService,
     private _userOptionsService: UserOptionsService,
-    private _roiService: ROIService,
     private _cachedDataService: APICachedDataService,
     public dialog: MatDialog
   ) {}
@@ -93,22 +88,6 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
         }
       })
     );
-
-    // this._subs.add(
-    //   this._authService.idTokenClaims$.subscribe({
-    //     next: claims => {
-    //       if (claims) {
-    //         // This all went unused during public user feature additions
-    //         if (Permissions.permissionCount(claims) <= 0) {
-    //           // User has no permissions at all, admins would've set them this way!
-    //           // this.setDatasetListingNotAllowedError(HelpMessage.AWAITING_ADMIN_APPROVAL);
-    //         } else {
-    //           this._userCanCreateROI = Permissions.hasPermissionSet(claims, Permissions.permissionEditROI);
-    //         }
-    //       }
-    //     },
-    //   })
-    // );
 
     if (this._analysisLayoutService.defaultScanId) {
       this._cachedDataService
@@ -242,7 +221,13 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
   }
 
   onNewROIFromSelection(): void {
-    const dialogConfig = new MatDialogConfig();
+    const dialogConfig = new MatDialogConfig<NewROIDialogData>();
+    // TODO: This should be the scan id of the currently visible scan, not the default scan id
+    // However, due to the level of abstraction here, we don't have access to the currently visible scan id for the widget
+    // We probably should associate this information with each pixel selection just in case there's no beam selection
+    dialogConfig.data = {
+      defaultScanId: this._analysisLayoutService.defaultScanId,
+    };
     let dialogRef = this.dialog.open(NewROIDialogComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((created: boolean) => {
       if (created) {
@@ -260,7 +245,7 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // If selection has nothing in it, use teh default scan ID
+    // If selection has nothing in it, use the default scan ID
     const sel = this._selectionService.getCurrentSelection().beamSelection;
     let selScanIds = sel.getScanIds();
     if (selScanIds.length == 0) {

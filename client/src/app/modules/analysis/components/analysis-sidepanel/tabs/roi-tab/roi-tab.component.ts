@@ -35,7 +35,7 @@ import { ScanItem } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { NewROIDialogComponent } from "src/app/modules/roi/components/new-roi-dialog/new-roi-dialog.component";
+import { NewROIDialogComponent, NewROIDialogData } from "src/app/modules/roi/components/new-roi-dialog/new-roi-dialog.component";
 import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
 import { ROISearchFilter } from "src/app/modules/roi/models/roi-search";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
@@ -144,7 +144,11 @@ export class ROITabComponent implements OnInit {
   }
 
   onNewROI() {
-    const dialogConfig = new MatDialogConfig();
+    const dialogConfig = new MatDialogConfig<NewROIDialogData>();
+    dialogConfig.data = {
+      defaultScanId: this._visibleScanId,
+    };
+
     let dialogRef = this.dialog.open(NewROIDialogComponent, dialogConfig);
     dialogRef.afterClosed().subscribe((created: boolean) => {
       if (created) {

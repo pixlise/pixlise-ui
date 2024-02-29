@@ -31,7 +31,7 @@ import { MinMax } from "src/app/models/BasicTypes";
 import { Point, Rect } from "src/app/models/Geometry";
 import { RGBUImage, FloatImage } from "src/app/models/RGBUImage";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
-import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { SelectionService, WidgetKeyItem } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { LinearChartAxis, ChartAxis, ChartAxisDrawer } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
@@ -93,6 +93,8 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
   selectedMaxYValue: number | null = null;
 
   public showAllMineralLabels: boolean = false;
+
+  public keyItems: WidgetKeyItem[] = [];
 
   public static readonly TITLE_FONT_SIZE = 14;
   public static readonly FONT_SIZE = 12;
@@ -274,7 +276,7 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
       plotData.image.path
     );
 
-    //this.keyItems = Object.entries(colourKey).map(([key, keyColour]) => new KeyItem(key, key, keyColour));
+    this.keyItems = Object.entries(colourKey).map(([key, keyColour]) => new WidgetKeyItem(key, key, keyColour));
 
     return rgbuPlotData;
   }
@@ -577,7 +579,8 @@ export class RGBUPlotModel implements CanvasDrawNotifier, BaseChartModel {
               const activeColourKey = activePixelROIs
                 .map(roi => visibleROIs[roi].region.name)
                 .sort()
-                .join(", ");
+                .join(", ")
+                .trim();
 
               if (colourKey[activeColourKey]) {
                 colour = colourKey[activeColourKey];

@@ -85,6 +85,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
   purpose: ScanImagePurpose = ScanImagePurpose.SIP_MULTICHANNEL;
 
   public scanIds: string[] = [];
+  public scanIdAssociatedWithImage: string = "";
 
   constructor(
     public dialog: MatDialog,
@@ -125,6 +126,11 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
           onClick: () => this.onImagePicker(),
         },
       ],
+      topRightInsetButton: {
+        id: "key",
+        type: "widget-key",
+        onClick: () => {},
+      },
     };
   }
 
@@ -137,8 +143,9 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     const scanIds = this.scanIds ? this.scanIds : [this._analysisLayoutService.defaultScanId];
     this._cachedDataService.getImageList(ImageListReq.create({ scanIds })).subscribe((resp: ImageListResp) => {
       for (const img of resp.images) {
-        if (img.purpose == ScanImagePurpose.SIP_MULTICHANNEL && img.imagePath) {
+        if (img.purpose === ScanImagePurpose.SIP_MULTICHANNEL && img.imagePath) {
           this.loadData(img.imagePath, []);
+          return;
         }
       }
     });
@@ -216,7 +223,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     // Pass data to dialog
     dialogConfig.data = {
       requestFullROIs: false,
-      scanId: this.scanIds ? this.scanIds[0] : this._analysisLayoutService.defaultScanId,
+      scanId: this.scanIdAssociatedWithImage ? this.scanIdAssociatedWithImage : this.scanIds ? this.scanIds[0] : this._analysisLayoutService.defaultScanId,
       selectedIds: this.mdl.visibleRegionIds,
     };
 
@@ -235,6 +242,10 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
 
           existing.push(roi.id);
           roisPerScan.set(roi.scanId, existing);
+
+          if (!this.scanIdAssociatedWithImage) {
+            this.scanIdAssociatedWithImage = roi.scanId;
+          }
         }
 
         // Now fill in the data source ids using the above
@@ -256,6 +267,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     // Pass data to dialog
     dialogConfig.data = {
       scanIds: this.scanIds,
+      defaultScanId: this.scanIdAssociatedWithImage,
       purpose: this.purpose,
       selectedImagePath: this.mdl?.imageName || "",
       liveUpdate: false,
@@ -263,9 +275,12 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     };
 
     const dialogRef = this.dialog.open(ImagePickerDialogComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe(({ selectedImagePath }: ImagePickerDialogResponse) => {
+    dialogRef.afterClosed().subscribe(({ selectedImagePath, selectedImageScanId }: ImagePickerDialogResponse) => {
       if (selectedImagePath) {
         this.onImageChanged(selectedImagePath);
+      }
+      if (selectedImageScanId) {
+        this.scanIdAssociatedWithImage = selectedImageScanId;
       }
     });
   }
@@ -445,6 +460,12 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
         this.isWidgetDataLoading = false;
 
         this.saveState();
+
+        setTimeout(() => {
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
+        }, 0);
       },
       error: err => {
         this.isWidgetDataLoading = false;
