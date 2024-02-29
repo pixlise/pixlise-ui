@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, Output } from "@angular/core";
-import { Notification, NotificationsService } from "src/app/modules/settings/services/notifications.service";
+import { UINotification, NotificationsService } from "src/app/modules/settings/services/notifications.service";
 
 @Component({
   selector: "app-notifications-menu-panel",
@@ -41,11 +41,11 @@ export class NotificationsMenuPanelComponent {
 
   constructor(private _notificationService: NotificationsService) {}
 
-  get notifications(): Notification[] {
+  get notifications(): UINotification[] {
     return this._notificationService.notifications;
   }
 
-  onNotificationAction(notification: Notification) {
+  onNotificationAction(notification: UINotification) {
     if (notification.type === "action") {
       if (notification.id === "hotkeys-panel") {
         this.onOpenHotkeysMenuPanel();
@@ -61,7 +61,7 @@ export class NotificationsMenuPanelComponent {
     this.dismissNotification("hotkeys-panel");
   }
 
-  dismissNotification(notification: Notification | string) {
+  dismissNotification(notification: UINotification | string) {
     this._notificationService.dismissNotification(notification);
   }
 

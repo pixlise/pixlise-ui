@@ -85,6 +85,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
   purpose: ScanImagePurpose = ScanImagePurpose.SIP_MULTICHANNEL;
 
   public scanIds: string[] = [];
+  public scanIdAssociatedWithImage: string = "";
 
   constructor(
     public dialog: MatDialog,
@@ -125,6 +126,11 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
           onClick: () => this.onImagePicker(),
         },
       ],
+      topRightInsetButton: {
+        id: "key",
+        type: "widget-key",
+        onClick: () => {},
+      },
     };
   }
 
@@ -134,11 +140,12 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
       return;
     }
 
-    let scanIds = this.scanIds ? this.scanIds : [this._analysisLayoutService.defaultScanId];
+    const scanIds = this.scanIds ? this.scanIds : [this._analysisLayoutService.defaultScanId];
     this._cachedDataService.getImageList(ImageListReq.create({ scanIds })).subscribe((resp: ImageListResp) => {
       for (const img of resp.images) {
-        if (img.purpose == ScanImagePurpose.SIP_MULTICHANNEL && img.path) {
-          this.loadData(img.path, []);
+        if (img.purpose === ScanImagePurpose.SIP_MULTICHANNEL && img.imagePath) {
+          this.loadData(img.imagePath, []);
+          return;
         }
       }
     });
@@ -149,6 +156,11 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
       RGBUPlotWidgetState.create({
         drawMonochrome: this.mdl.drawMonochrome,
         imageName: this.mdl.imageName,
+        minerals: this.mdl.mineralsShown,
+        selectedMinXValue: this.mdl.selectedMinXValue || undefined,
+        selectedMaxXValue: this.mdl.selectedMaxXValue || undefined,
+        selectedMinYValue: this.mdl.selectedMinYValue || undefined,
+        selectedMaxYValue: this.mdl.selectedMaxYValue || undefined,
       })
     );
   }
@@ -159,6 +171,11 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
         const state = data as RGBUPlotWidgetState;
         if (state && state.imageName) {
           this.mdl.drawMonochrome = state.drawMonochrome;
+          this.mdl.mineralsShown = state.minerals || [];
+          this.mdl.selectedMinXValue = state.selectedMinXValue || null;
+          this.mdl.selectedMaxXValue = state.selectedMaxXValue || null;
+          this.mdl.selectedMinYValue = state.selectedMinYValue || null;
+          this.mdl.selectedMaxYValue = state.selectedMaxYValue || null;
           // TODO: fill in other vars here...
           this.loadData(state.imageName, [] /*state.visibleRegionIds*/);
         } else {
@@ -195,12 +212,19 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     });
   }
 
+  onToggleMineralLabels() {
+    this.mdl.showAllMineralLabels = !this.mdl.showAllMineralLabels;
+    this.mdl.rebuild();
+    this.saveState();
+  }
+
   onRegions() {
     const dialogConfig = new MatDialogConfig<ROIPickerData>();
     // Pass data to dialog
     dialogConfig.data = {
       requestFullROIs: false,
-      scanId: this.scanIds ? this.scanIds[0] : this._analysisLayoutService.defaultScanId,
+      scanId: this.scanIdAssociatedWithImage ? this.scanIdAssociatedWithImage : this.scanIds ? this.scanIds[0] : this._analysisLayoutService.defaultScanId,
+      selectedIds: this.mdl.visibleRegionIds,
     };
 
     const dialogRef = this.dialog.open(ROIPickerComponent, dialogConfig);
@@ -218,6 +242,10 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
 
           existing.push(roi.id);
           roisPerScan.set(roi.scanId, existing);
+
+          if (!this.scanIdAssociatedWithImage) {
+            this.scanIdAssociatedWithImage = roi.scanId;
+          }
         }
 
         // Now fill in the data source ids using the above
@@ -239,6 +267,7 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     // Pass data to dialog
     dialogConfig.data = {
       scanIds: this.scanIds,
+      defaultScanId: this.scanIdAssociatedWithImage,
       purpose: this.purpose,
       selectedImagePath: this.mdl?.imageName || "",
       liveUpdate: false,
@@ -246,9 +275,12 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
     };
 
     const dialogRef = this.dialog.open(ImagePickerDialogComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe(({ selectedImagePath }: ImagePickerDialogResponse) => {
+    dialogRef.afterClosed().subscribe(({ selectedImagePath, selectedImageScanId }: ImagePickerDialogResponse) => {
       if (selectedImagePath) {
         this.onImageChanged(selectedImagePath);
+      }
+      if (selectedImageScanId) {
+        this.scanIdAssociatedWithImage = selectedImageScanId;
       }
     });
   }
@@ -413,19 +445,33 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
       request.push(this._roiService.getRegionSettings(roiId));
     }
 
-    combineLatest(request).subscribe(results => {
-      const image = results[0] as RGBUImage;
-      const rois: RegionSettings[] = [];
-      for (let c = 1; c < results.length; c++) {
-        rois.push(results[c] as RegionSettings);
-      }
+    combineLatest(request).subscribe({
+      next: results => {
+        const image = results[0] as RGBUImage;
+        const rois: RegionSettings[] = [];
+        for (let c = 1; c < results.length; c++) {
+          rois.push(results[c] as RegionSettings);
+        }
 
-      // Now we can set this
-      this.mdl.imageName = imagePath;
-      this.mdl.setData(image, rois);
-      this.isWidgetDataLoading = false;
+        // Now we can set this
+        this.mdl.imageName = imagePath;
+        this.mdl.setData(image, rois);
+        this.errorMsg = "";
+        this.isWidgetDataLoading = false;
 
-      this.saveState();
+        this.saveState();
+
+        setTimeout(() => {
+          if (this.widgetControlConfiguration.topRightInsetButton) {
+            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+          }
+        }, 0);
+      },
+      error: err => {
+        this.isWidgetDataLoading = false;
+        this.errorMsg = "Error loading image: " + err;
+        console.error("Error loading image: ", err);
+      },
     });
   }
 }

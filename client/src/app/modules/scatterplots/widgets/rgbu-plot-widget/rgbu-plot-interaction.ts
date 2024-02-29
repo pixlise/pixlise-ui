@@ -113,20 +113,22 @@ export class RGBUPlotInteraction implements CanvasInteractionHandler {
       this._mdl.drawModel.hoverLabel = "";
 
       // See if it hovered over a mineral point
-      for (let c = 0; c < this._mdl.drawModel.minerals.length; c++) {
-        if (distanceBetweenPoints(canvasPt, this._mdl.drawModel.minerals[c].ratioPt) <= MINERAL_HOVER_RADIUS) {
-          this._mdl.drawModel.mineralHoverIdx = c;
-          break;
-        }
+      let hoverMineralIndex = this._mdl.drawModel.minerals.findIndex(mineral => distanceBetweenPoints(canvasPt, mineral.ratioPt) <= MINERAL_HOVER_RADIUS);
+      if (hoverMineralIndex >= 0) {
+        this._mdl.drawModel.mineralHoverIdx = hoverMineralIndex;
       }
 
       // If we're not hovering over a mineral point, check if we are within the draw area, if so, lasso is possible
-      if (this._mdl.drawModel.mineralHoverIdx == -1 && this._mdl.drawModel.dataArea.containsPoint(canvasPt)) {
+      if (this._mdl.drawModel.mineralHoverIdx === -1 && this._mdl.drawModel.dataArea.containsPoint(canvasPt)) {
         this._mdl.cursorShown = CursorId.lassoCursor;
       }
     }
 
-    return CanvasInteractionResult.neither;
+    if (this._mdl.drawModel.hoverLabel || this._mdl.drawModel.mineralHoverIdx >= 0) {
+      return CanvasInteractionResult.redrawOnly;
+    } else {
+      return CanvasInteractionResult.neither;
+    }
   }
 
   private handleMouseClick(canvasPt: Point): void {
@@ -156,7 +158,7 @@ export class RGBUPlotInteraction implements CanvasInteractionHandler {
   }
 
   private handleLassoFinish(lassoPoints: Point[]): void {
-    if (!this._mdl.raw || !this._mdl.plotData) {
+    if (!this._mdl.raw || !this._mdl.plotData || !lassoPoints || lassoPoints.length === 0) {
       return;
     }
 
@@ -169,7 +171,7 @@ export class RGBUPlotInteraction implements CanvasInteractionHandler {
     let selectedPixels = new Set<number>();
 
     // If we're preserving, read the current selection points in too
-    if (this._mdl.selectionMode != RGBUPlotModel.SELECT_RESET) {
+    if (this._mdl.selectionMode !== RGBUPlotModel.SELECT_RESET) {
       selectedPixels = new Set<number>(this._selectionService.getCurrentSelection().pixelSelection.selectedPixels);
     }
 

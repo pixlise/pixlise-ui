@@ -45,7 +45,8 @@ import { APIDataService } from "./apidata.service";
 import { SelectedScanEntriesWriteReq } from "src/app/generated-protos/selection-entry-msgs";
 import { SelectedImagePixelsWriteReq } from "src/app/generated-protos/selection-pixel-msgs";
 import { ScanEntryRange } from "src/app/generated-protos/scan";
-import { ScanIdConverterService } from "./scan-id-converter.service";
+import { PMCConversionResult, ScanIdConverterService } from "./scan-id-converter.service";
+import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 
 // The Selection service. It should probably be named something like CrossViewLinkingService though!
 //
@@ -97,7 +98,8 @@ export class SelectionService {
 
   constructor(
     private _dataService: APIDataService,
-    private _scanIdConverterService: ScanIdConverterService
+    private _scanIdConverterService: ScanIdConverterService,
+    private _snackbarService: SnackbarService
   ) {}
 
   private updateListeners(): void {
@@ -127,20 +129,42 @@ export class SelectionService {
   }
 
   // Sets the selection. If beam or pixels isn't required, use makeEmptySelection() on the selection class!
-  setSelection(beams: BeamSelection, pixels: PixelSelection, persist: boolean = true): void {
+  setSelection(beams: BeamSelection, pixels: PixelSelection, persist: boolean = true, ignoreInvalidPMCs: boolean = false): void {
     // At this point, beams contains indexes, we want to also have PMCs stored so start with that
     const scanIds = beams.getScanIds();
     const conversions = [];
 
     for (const scanId of scanIds) {
-      conversions.push(this._scanIdConverterService.convertScanEntryPMCToIndex(scanId, Array.from(beams.getSelectedScanEntryPMCs(scanId))));
+      conversions.push(this._scanIdConverterService.convertScanEntryPMCToIndex(scanId, Array.from(beams.getSelectedScanEntryPMCs(scanId)), ignoreInvalidPMCs));
     }
 
     // If we don't have anything to subscribe for (because we have no beams), stop here
     if (conversions.length <= 0) {
       this.setSelectionInternal(scanIds, [], beams, pixels, persist);
     } else {
-      combineLatest(conversions).subscribe((allScanIndexes: number[][]) => {
+      combineLatest(conversions).subscribe((conversionResults: PMCConversionResult[]) => {
+        let allScanIndexes: number[][] = [];
+
+        let failedCount = 0;
+        let failedPMCMessages: string[] = [];
+        conversionResults.forEach((conversion: PMCConversionResult, i) => {
+          allScanIndexes.push(conversion.result);
+          if (conversion.failedPMCs.length > 0) {
+            // Show a warning to the user that some PMCs were not found
+            failedPMCMessages.push(`Failed to select PMCs for ${scanIds[i]}: ${conversion.failedPMCs.join(", ")}`);
+            failedCount += conversion.failedPMCs.length;
+
+            // Remove the failed PMCs from the selection
+            for (const failedPMC of conversion.failedPMCs) {
+              beams.getSelectedScanEntryPMCs(scanIds[i]).delete(failedPMC);
+            }
+          }
+        });
+
+        if (failedCount > 0) {
+          this._snackbarService.openWarning(`${failedCount} PMCs could not be selected!`, failedPMCMessages.join("\n"));
+        }
+
         this.setSelectionInternal(scanIds, allScanIndexes, beams, pixels, persist);
       });
     }
@@ -320,10 +344,10 @@ export class SelectionService {
   // Mouse hovering over scan entries - we update listeners when this is called
   setHoverEntryPMC(scanId: string, entryPMC: number) {
     this._scanIdConverterService.convertScanEntryPMCToIndex(scanId, [entryPMC]).subscribe({
-      next: (idxs: number[]) => {
+      next: (conversionResults: PMCConversionResult) => {
         this._hoverScanId = scanId;
         this._hoverEntryPMC = entryPMC;
-        this._hoverEntryIndex = idxs[0];
+        this._hoverEntryIndex = conversionResults.result[0];
         this._hoverChangedReplaySubject$.next();
       },
       error: err => {

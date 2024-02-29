@@ -93,7 +93,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <div *ngFor="let item of matchedImages"
                 class="image-item clickable"
                 (click)="onSelectImage('matched', item)">
-                <span [title]="item.name">{{item.name}}</span>
+                <span [title]="item.imagePath">{{justName(item.imagePath)}}</span>
                 <icon-button icon="assets/button-icons/delete.svg" (click)="onDeleteImage('matched', item, $event)"></icon-button>
             </div>
             <mat-spinner *ngIf="matchedImages === null" [diameter]="24" color="accent"></mat-spinner>
@@ -106,7 +106,7 @@ POSSIBILITY OF SUCH DAMAGE.
             <div *ngFor="let item of unalignedImages"
                 class="image-item clickable"
                 (click)="onSelectImage('unaligned', item)">
-                <span [title]="item.name">{{item.name}}</span>
+                <span [title]="item.imagePath">{{item.imagePath}}</span>
                 <icon-button icon="assets/button-icons/delete.svg" (click)="onDeleteImage('unaligned', item, $event)"></icon-button>
             </div>
             <mat-spinner *ngIf="unalignedImages === null" [diameter]="24" color="accent"></mat-spinner>

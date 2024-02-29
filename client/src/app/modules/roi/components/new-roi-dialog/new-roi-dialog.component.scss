@@ -1,0 +1,46 @@
+.new-roi {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  width: 600px;
+
+  header {
+    display: flex;
+    align-items: center;
+
+    .title {
+      font:
+        700 18px/24px Roboto,
+        monospace;
+    }
+
+    tag-picker {
+      margin-left: auto;
+    }
+  }
+
+  .meta-line {
+    color: rgb(var(--clr-gray-30));
+    margin-bottom: 8px;
+  }
+
+  .multiple-scan-warning {
+    font-style: italic;
+    color: rgb(var(--clr-yellow));
+  }
+
+  input,
+  textarea {
+    margin-bottom: 8px;
+  }
+
+  .buttons {
+    display: flex;
+    margin-left: auto;
+    margin-top: 8px;
+
+    :first-child {
+      margin-right: 8px;
+    }
+  }
+}

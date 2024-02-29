@@ -27,72 +27,44 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, ElementRef, OnInit, ViewChild } from "@angular/core";
-import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { Subscription } from "rxjs";
-import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
-import { ScanItem } from "src/app/generated-protos/scan";
-import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
+import { Component, Inject, OnInit } from "@angular/core";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { Subscription, scan } from "rxjs";
+import { ROIItem } from "src/app/generated-protos/roi";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { NewROIDialogComponent, NewROIDialogData } from "src/app/modules/roi/components/new-roi-dialog/new-roi-dialog.component";
-import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
-import { ROISearchFilter } from "src/app/modules/roi/models/roi-search";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
-import { Colours } from "src/app/utils/colours";
+
+export type NewROIDialogData = {
+  defaultScanId?: string;
+};
 
 @Component({
-  selector: "roi-tab",
-  templateUrl: "./roi-tab.component.html",
-  styleUrls: ["./roi-tab.component.scss"],
+  selector: "new-roi-dialog",
+  templateUrl: "./new-roi-dialog.component.html",
+  styleUrls: ["./new-roi-dialog.component.scss"],
 })
-export class ROITabComponent implements OnInit {
+export class NewROIDialogComponent implements OnInit {
   private _subs = new Subscription();
-
-  @ViewChild("newROIButton") newROIButton!: ElementRef;
-
-  allPointsColour = Colours.GRAY_10.asString();
-
-  private _selectionEmpty: boolean = false;
 
   newROIName: string = "";
   newROIDescription: string = "";
   newROITags: string[] = [];
 
-  summaries: ROIItemSummary[] = [];
-  filteredSummaries: ROIItemSummary[] = [];
-
-  manualFilters: Partial<ROISearchFilter> | null = null;
-
-  displaySettingsMap: Record<string, ROIDisplaySettings> = {};
-
-  allScans: ScanItem[] = [];
-  _visibleScanId: string = "";
-
   pixelCount: number = 0;
   entryCount: number = 0;
   selectedScanIds: string[] = [];
+  defaultScanId: string = "";
 
   constructor(
     private _roiService: ROIService,
-    private _analysisLayoutService: AnalysisLayoutService,
     private _selectionService: SelectionService,
-    public dialog: MatDialog
-  ) {}
+    @Inject(MAT_DIALOG_DATA) public data: any,
+    public dialogRef: MatDialogRef<NewROIDialogComponent>
+  ) {
+    this.defaultScanId = data.defaultScanId;
+  }
 
   ngOnInit(): void {
-    this._subs.add(
-      this._roiService.roiSummaries$.subscribe(summaries => {
-        this.summaries = Object.values(summaries);
-      })
-    );
-
-    this._subs.add(
-      this._roiService.displaySettingsMap$.subscribe(displaySettingsMap => {
-        this.displaySettingsMap = displaySettingsMap;
-      })
-    );
-
     this._subs.add(
       this._selectionService.selection$.subscribe(selection => {
         this.selectedScanIds = selection.beamSelection.getScanIds();
@@ -106,61 +78,25 @@ export class ROITabComponent implements OnInit {
     this._subs.unsubscribe();
   }
 
-  trackBySummaryId(index: number, summary: ROIItemSummary) {
-    return summary.id;
-  }
-
-  onFilterAuthor(author: string) {
-    this.manualFilters = { authors: [author] };
-  }
-
-  get visibleScanId(): string {
-    return this._visibleScanId;
-  }
-
-  set visibleScanId(scanId: string) {
-    this._visibleScanId = scanId;
-  }
-
-  get canCreateROIs(): boolean {
-    return true;
-  }
-
-  get showSearch(): boolean {
-    return this._analysisLayoutService.showSearch;
-  }
-
-  onFilterChanged({ filteredSummaries, scanId }: ROISearchFilter) {
-    this.filteredSummaries = filteredSummaries;
-    this.visibleScanId = scanId;
-  }
-
-  get selectionEmpty(): boolean {
-    return this._selectionEmpty;
-  }
-
-  onCancelCreateROI() {
-    this.closeCreateROIMenu();
-  }
-
-  onNewROI() {
-    const dialogConfig = new MatDialogConfig<NewROIDialogData>();
-    dialogConfig.data = {
-      defaultScanId: this._visibleScanId,
-    };
-
-    let dialogRef = this.dialog.open(NewROIDialogComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe((created: boolean) => {
-      if (created) {
-        this._selectionService.clearSelection();
-      }
-    });
-  }
-
   onSaveNewROI() {
     let selection = this._selectionService.getCurrentSelection();
     let scanIds = selection.beamSelection.getScanIds();
 
+    // We don't have a beam selection to tell us the scan Ids, so attempt to resolve it from the image name
+    // and if this fails, then resort to the default scan id
+    if (scanIds.length === 0) {
+      let imageNameWithScan = selection.pixelSelection.imageName.match(/^(?<ScanId>[0-9]{9})\/.+\.[a-zA-Z]{3,5}$/);
+      if (imageNameWithScan && imageNameWithScan?.groups?.["ScanId"]) {
+        scanIds = [imageNameWithScan.groups["ScanId"]];
+      } else if (this.defaultScanId) {
+        scanIds = [this.defaultScanId];
+      }
+    }
+
+    // TODO: There's a weird edge case here if we have PMCs from multiple scans selected AND pixels selected
+    // In this case, the pixels will be duplicated to each scan, which is probably not what we want
+    // However, this edge case can currently only be manually crafted and would require changing PixelSelection
+    // to include a scan id, which is too big of an undertaking for now.
     scanIds.forEach(scanId => {
       this._roiService.createROI(
         ROIItem.create({
@@ -175,20 +111,14 @@ export class ROITabComponent implements OnInit {
       );
     });
 
-    this.closeCreateROIMenu();
+    this.dialogRef.close(true);
   }
 
   onNewTagSelectionChanged(tagIDs: string[]) {
     this.newROITags = tagIDs;
   }
 
-  private closeCreateROIMenu(): void {
-    if (this.newROIButton && this.newROIButton instanceof PushButtonComponent) {
-      (this.newROIButton as PushButtonComponent).closeDialog();
-
-      this.newROIName = "";
-      this.newROIDescription = "";
-      this.newROITags = [];
-    }
+  onCancelCreateROI() {
+    this.dialogRef.close(false);
   }
 }

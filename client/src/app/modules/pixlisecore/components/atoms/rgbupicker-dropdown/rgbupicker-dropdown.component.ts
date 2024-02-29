@@ -37,7 +37,7 @@ export class RGBUPickerDropdownComponent implements OnInit {
 
       for (const img of resp.images) {
         if (this.purpose === ScanImagePurpose.SIP_UNKNOWN || img.purpose === this.purpose) {
-          this._imageChoices.push(new ImageChoice(img.name, img.path));
+          this._imageChoices.push(new ImageChoice(img.imagePath, img.imagePath));
         }
       }
     });

@@ -42,8 +42,11 @@ POSSIBILITY OF SUCH DAMAGE.
       [activeState]="currentSelectionMode"
       (onChange)="onChangeSelectionMode($event)"></multi-state-button>
     <!-- <push-button (onClick)="onSelectionExclude()" title="Excludes selected pixels (inverts selection)">Exclude</push-button> -->
-    <push-button (onClick)="onSelectionClear()" title="Clears selected pixels">Clear</push-button>
+    <two-state-push-button [active]="mdl.showAllMineralLabels" (onToggle)="onToggleMineralLabels()" title="Toggle Mineral Labels"
+      >Mineral Labels</two-state-push-button
+    >
 
+    <push-button (onClick)="onSelectionClear()" title="Clears selected pixels">Clear Selection</push-button>
     <div fxLayout="column" fxLayoutAlign="start center">
       <div>Plot colour:</div>
       <two-state-icon-switch
