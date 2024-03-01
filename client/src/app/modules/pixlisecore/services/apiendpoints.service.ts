@@ -1,6 +1,6 @@
-import { HttpClient, HttpErrorResponse } from "@angular/common/http";
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable, mergeMap, of } from "rxjs";
+import { Observable, map, mergeMap, of } from "rxjs";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { APIPaths } from "src/app/utils/api-helpers";
@@ -187,5 +187,21 @@ export class APIEndpointsService {
     });
 
     // TODO: shareReplay(1)?
+  }
+
+  uploadImage(scanId: string, imageName: string, imageData: ArrayBuffer): Observable<void> {
+    const httpOptions = {
+      headers: new HttpHeaders({
+        "Content-Type": "application/octet-stream",
+      }),
+      params: new HttpParams().set("scan", scanId).set("filename", imageName),
+    };
+
+    const apiUrl = APIPaths.getWithHost("scan");
+    return this.http.put<void>(apiUrl, imageData, httpOptions).pipe(
+      map(() => {
+        console.log("Image " + imageName + " uploaded");
+      })
+    );
   }
 }
