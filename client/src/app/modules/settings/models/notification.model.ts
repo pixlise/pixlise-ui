@@ -46,6 +46,7 @@ export class NotificationSubscriptions {
   constructor(public topics: NotificationTopic[]) {}
 }
 
+
 export class NotificationSetting {
   public id: string = "";
 
