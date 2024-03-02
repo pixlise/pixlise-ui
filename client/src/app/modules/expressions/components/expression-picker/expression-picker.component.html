@@ -63,7 +63,9 @@ POSSIBILITY OF SUCH DAMAGE.
 <div class="expression-picker-container">
   <header>
     <div class="controls">
-      <h1 class="title">Select Expressions</h1>
+      <h1 mat-dialog-title cdkDrag cdkDragRootElement=".cdk-overlay-pane" cdkDragHandle [cdkDragDisabled]="!draggable" class="title {{ draggable ? 'drag' : '' }}">
+        Select Expressions
+      </h1>
       <action-button action="close" color="rgb(var(--clr-gray-30))" (onClick)="onCancel()"></action-button>
     </div>
   </header>

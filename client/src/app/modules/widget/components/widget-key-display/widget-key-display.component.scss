@@ -36,6 +36,39 @@
   user-select: none;
 }
 
+.trigger-contents {
+  display: flex;
+  align-items: center;
+}
+
+.trigger-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.key-icons {
+  display: inline-flex;
+  margin-right: 4px;
+
+  .key-item-icon {
+    margin-right: -12px;
+  }
+
+  .key-item-icon:first-child {
+    z-index: 3;
+  }
+
+  .key-item-icon:nth-child(2) {
+    z-index: 2;
+  }
+
+  .key-item-icon:last-child {
+    margin-right: 0px;
+    z-index: 1;
+  }
+}
+
 .key-item {
   display: flex;
   justify-content: flex-start;
@@ -66,10 +99,15 @@
 }
 
 .main-label {
+  display: flex;
   font-size: 14px;
   padding: $sz-half $sz-unit;
   user-select: none;
   flex: 1;
+
+  roi-shape {
+    margin-right: 4px;
+  }
 }
 
 .main-label-clickable {

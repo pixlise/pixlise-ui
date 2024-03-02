@@ -46,6 +46,8 @@ export class WidgetKeyDisplayComponent implements OnInit {
   // @Output() keyClick = new EventEmitter();
   // @Output() onToggleKey = new EventEmitter();
 
+  previewItems: WidgetKeyItem[] = [];
+
   public keyShowing: boolean = false;
 
   constructor() {} // public dialogRef: MatDialogRef<WidgetKeyDisplayComponent> // @Inject(MAT_DIALOG_DATA) public data: WidgetKeyDisplayData,
@@ -55,6 +57,12 @@ export class WidgetKeyDisplayComponent implements OnInit {
     //   this.items = this.data?.items || [];
     //   this.keyShowing = this.data.showKey;
     // }
+  }
+
+  ngOnChanges(changes: any): void {
+    if (changes.items) {
+      this.previewItems = this.items.slice(0, 3);
+    }
   }
 
   onToggleShowKey(): void {

@@ -1,7 +1,7 @@
 .widget {
   height: calc(100% - 2px);
   background-color: rgb(var(--clr-gray-80));
-  border: 1px solid rgb(var(--clr-gray-80));
+  border: 1px solid #444c50;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -108,7 +108,7 @@
 .bottom-toolbar {
   display: flex;
   align-items: center;
-  background-color: rgb(var(--clr-gray-80));
+  background-color: #1b1d1e;
   height: 40px;
   width: 100%;
 

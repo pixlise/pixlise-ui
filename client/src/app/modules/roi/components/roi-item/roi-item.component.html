@@ -36,17 +36,27 @@
 <ng-template #roiColorPicker>
   <div class="roi-color-picker">
     <h2>Colour Blind Safe</h2>
-    <mat-radio-group class="color-group" [(ngModel)]="selectedColour">
-      <mat-radio-button *ngFor="let option of colourBlindSafeOptions" [value]="option.colour" class="color-option" labelPosition="after">
-        <roi-shape [scale]="2" [color]="option.colour" [shape]="shape"></roi-shape>
-      </mat-radio-button>
-    </mat-radio-group>
+    <div class="color-container">
+      <div
+        class="color-option {{ selectedColour === option.colour ? 'selected' : '' }}"
+        *ngFor="let option of colourBlindSafeOptions"
+        [ngStyle]="{ 'background-color': selectedColour === option.colour ? semiTransparentSelectedColour : '' }"
+        (click)="onSelectColour(option)">
+        <roi-shape [scale]="4" [color]="option.colour" [borderColor]="selectedColour === option.colour ? '#fff' : ''" shape="circle"></roi-shape>
+        <div *ngIf="selectedColour === option.colour" class="active-color"></div>
+      </div>
+    </div>
     <h2 class="additional-colors">Additional Colours</h2>
-    <mat-radio-group class="color-group" [(ngModel)]="selectedColour">
-      <mat-radio-button *ngFor="let option of additionalColorOptions" [value]="option.colour" class="color-option" labelPosition="after">
-        <roi-shape [scale]="2" [color]="option.colour" [shape]="shape"></roi-shape>
-      </mat-radio-button>
-    </mat-radio-group>
+    <div class="color-container">
+      <div
+        class="color-option {{ selectedColour === option.colour ? 'selected' : '' }}"
+        *ngFor="let option of additionalColorOptions"
+        [ngStyle]="{ 'background-color': selectedColour === option.colour ? semiTransparentSelectedColour : '' }"
+        (click)="onSelectColour(option)">
+        <roi-shape [scale]="4" [color]="option.colour" [borderColor]="selectedColour === option.colour ? '#fff' : ''" shape="circle"></roi-shape>
+        <div *ngIf="selectedColour === option.colour" class="active-color"></div>
+      </div>
+    </div>
     <div class="bottom-buttons">
       <push-button buttonStyle="outline" title="Clear Color" (onClick)="clearColour()">Clear</push-button>
     </div>
@@ -56,13 +66,7 @@
 <ng-template #roiSettingsMenu>
   <div class="roi-settings">
     <div class="settings-buttons">
-      <action-button
-        title="Delete this ROI"
-        action="delete"
-        [buttonBackground]="true"
-        confirmText="Are you sure you want to delete ROI: {{ name }}?"
-        (onClick)="onDelete()">
-      </action-button>
+      <action-button title="Delete this ROI" action="delete" confirmText="Are you sure you want to delete ROI: {{ name }}?" (onClick)="onDelete()"> </action-button>
       <share-ownership-item-button *ngIf="canEdit" [id]="summary?.id || ''" [type]="objectType" [ownershipSummary]="summary?.owner || null">
       </share-ownership-item-button>
       <widget-settings-menu [settingsDialog]="roiShapePicker" #roiShapePickerButton>
@@ -156,8 +160,8 @@
       </span>
     </div>
     <roi-shape *ngIf="displayConfigured" class="current-shape" [color]="colour.colour || '#fff'" [shape]="shape || 'circle'"></roi-shape>
-    <div class="buttons">
-      <share-ownership-item-button *ngIf="canEdit" [id]="summary?.id || ''" [type]="objectType" [ownershipSummary]="summary?.owner || null">
+    <div class="buttons {{ displayConfigured ? '' : 'unconfigured-display' }}">
+      <share-ownership-item-button *ngIf="canEdit && colorChangeOnly" [id]="summary?.id || ''" [type]="objectType" [ownershipSummary]="summary?.owner || null">
       </share-ownership-item-button>
       <widget-settings-menu *ngIf="!colorChangeOnly" [settingsDialog]="roiSettingsMenu" #settingsButton>
         <icon-button title="Show Settings Menu" [hasBackground]="false" icon="assets/button-icons/settings-gray.svg"> </icon-button>

@@ -18,9 +18,10 @@
         [active]="showSearch"
         (onToggle)="onToggleSearch()"
         #tooltip="matTooltip"
-        matTooltip="{{ showSearch ? 'Hide' : 'Show' }} search options"></two-state-icon-push-button>
+        matTooltip="{{ showSearch ? 'Hide' : 'Show' }} search options"
+        [matTooltipShowDelay]="500"></two-state-icon-push-button>
     </section>
-    <span class="clickable open-btn" (click)="onToggleSidePanel()" #tooltip="matTooltip" matTooltip="Toggle Sidepanel">
+    <span class="clickable open-btn" (click)="onToggleSidePanel()" #tooltip="matTooltip" matTooltip="Toggle Sidepanel" [matTooltipShowDelay]="500">
       <svg width="14" height="12" viewBox="0 0 14 12" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
           fill-rule="evenodd"
@@ -44,22 +45,29 @@
         [src]="tab.icon"
         #tooltip="matTooltip"
         [matTooltip]="tab.tooltip || tab.title"
+        [matTooltipShowDelay]="500"
         (click)="onOpenTab(tab, true)" />
     </div>
-    <hr class="panel-break" />
+    <hr class="panel-break" *ngIf="views.length > 0" />
     <div class="tab-shortcuts">
       <div *ngFor="let viewShortcut of views" class="view-btn-container">
         <icon-button
           icon="{{ viewShortcut.icon }}"
           #tooltip="matTooltip"
           [matTooltip]="viewShortcut.tooltip || viewShortcut.title"
+          [matTooltipShowDelay]="500"
           (click)="onOpenView(viewShortcut)"></icon-button>
       </div>
     </div>
     <hr *ngIf="isAdmin" class="panel-break" />
     <div *ngIf="isAdmin" class="tab-shortcuts">
       <div *ngFor="let adminBtn of adminShortcuts" class="view-btn-container">
-        <icon-button icon="{{ adminBtn.icon }}" #tooltip="matTooltip" [matTooltip]="adminBtn.tooltip || adminBtn.title" (click)="onOpenView(adminBtn)"></icon-button>
+        <icon-button
+          icon="{{ adminBtn.icon }}"
+          #tooltip="matTooltip"
+          [matTooltip]="adminBtn.tooltip || adminBtn.title"
+          [matTooltipShowDelay]="500"
+          (click)="onOpenView(adminBtn)"></icon-button>
       </div>
     </div>
   </section>

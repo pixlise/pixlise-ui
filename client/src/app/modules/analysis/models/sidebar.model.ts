@@ -20,20 +20,20 @@ export interface SidebarViewShortcut {
 }
 
 export const SIDEBAR_TABS: SidebarTabItem[] = [
-  {
-    title: "Workspaces",
-    icon: "assets/icons/workspaces.svg",
-    component: null,
-    tooltip: "Workspaces",
-    shortcut: ["Cmd", "Shift", "1"],
-  },
-  {
-    title: "Collections",
-    icon: "assets/icons/collections.svg",
-    component: null,
-    tooltip: "Collections",
-    shortcut: ["Cmd", "Shift", "2"],
-  },
+  // {
+  //   title: "Workspaces",
+  //   icon: "assets/icons/workspaces.svg",
+  //   component: null,
+  //   tooltip: "Workspaces",
+  //   shortcut: ["Cmd", "Shift", "1"],
+  // },
+  // {
+  //   title: "Collections",
+  //   icon: "assets/icons/collections.svg",
+  //   component: null,
+  //   tooltip: "Collections",
+  //   shortcut: ["Cmd", "Shift", "2"],
+  // },
   {
     title: "Regions of Interest",
     icon: "assets/icons/roi.svg",
@@ -82,22 +82,22 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
 ];
 
 export const SIDEBAR_VIEWS: SidebarViewShortcut[] = [
-  {
-    title: "XRF View",
-    icon: "assets/icons/xrf-symbol.svg",
-    tooltip: "XRF View",
-    action: () => {
-      console.log("XRF View");
-    },
-  },
-  {
-    title: "RGBU View",
-    icon: "assets/icons/rgbu-symbol.svg",
-    tooltip: "RGBU View",
-    action: () => {
-      console.log("RGBU View");
-    },
-  },
+  // {
+  //   title: "XRF View",
+  //   icon: "assets/icons/xrf-symbol.svg",
+  //   tooltip: "XRF View",
+  //   action: () => {
+  //     console.log("XRF View");
+  //   },
+  // },
+  // {
+  //   title: "RGBU View",
+  //   icon: "assets/icons/rgbu-symbol.svg",
+  //   tooltip: "RGBU View",
+  //   action: () => {
+  //     console.log("RGBU View");
+  //   },
+  // },
 ];
 
 export const SIDEBAR_ADMIN_SHORTCUTS: SidebarViewShortcut[] = [

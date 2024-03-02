@@ -61,4 +61,6 @@
   padding: $sz-half;
   flex: 1;
   min-width: fit-content;
+  display: flex;
+  justify-content: center;
 }
