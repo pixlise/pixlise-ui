@@ -36,6 +36,7 @@ import { ScanUploadReq, ScanUploadResp, ScanUploadUpd } from "src/app/generated-
 
 import { httpErrorToString } from "src/app/utils/utils";
 import { JobStatus_Status, jobStatus_StatusToJSON } from "src/app/generated-protos/job";
+import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
 
 @Component({
   selector: "app-add-dataset-dialog",
@@ -66,7 +67,8 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
   constructor(
     //@Inject(MAT_DIALOG_DATA) public params: AddDatasetParameters,
     public dialogRef: MatDialogRef<boolean>,
-    private _dataService: APIDataService
+    private _dataService: APIDataService,
+    private _endpointService: APIEndpointsService
   ) {}
 
   ngOnInit(): void {
@@ -127,27 +129,38 @@ export class AddDatasetDialogComponent implements OnInit, OnDestroy {
       (fileBytes: ArrayBuffer) => {
         this.complete = false;
 
-        this._dataService
-          .sendScanUploadRequest(
-            ScanUploadReq.create({
-              id: this.nameHint,
-              format: this.detector,
-              zippedData: new Uint8Array(fileBytes),
-            })
-          )
-          .subscribe({
-            next: (resp: ScanUploadResp) => {
-              this.setStatus(JobStatus_Status.UNKNOWN, "Importing uploaded dataset: " + this.nameHint + "...");
+        // First, we upload the file via HTTP
+        this._endpointService.uploadImage(this.nameHint, this.droppedFiles[0].name, fileBytes).subscribe({
+          next: () => {
+            // Now that it's uploaded...
+            // Then we send the scan upload message which picks up that file and processes it
+            this._dataService
+              .sendScanUploadRequest(
+                ScanUploadReq.create({
+                  id: this.nameHint,
+                  format: this.detector,
+                  zipFileName: this.droppedFiles[0].name,
+                })
+              )
+              .subscribe({
+                next: (resp: ScanUploadResp) => {
+                  this.setStatus(JobStatus_Status.UNKNOWN, "Importing uploaded dataset: " + this.nameHint + "...");
 
-              // This should trigger log viewing...
-              this._jobId = resp.jobId;
-              this.mode = this.modeComplete;
-            },
-            error: err => {
-              this.setStatus(JobStatus_Status.ERROR, httpErrorToString(err, "Failed to upload dataset"));
-              this.mode = this.modeComplete;
-            },
-          });
+                  // This should trigger log viewing...
+                  this._jobId = resp.jobId;
+                  this.mode = this.modeComplete;
+                },
+                error: err => {
+                  this.setStatus(JobStatus_Status.ERROR, httpErrorToString(err, "Failed to import uploaded dataset"));
+                  this.mode = this.modeComplete;
+                },
+              });
+          },
+          error: err => {
+            this.setStatus(JobStatus_Status.ERROR, httpErrorToString(err, "Failed to upload dataset"));
+            this.mode = this.modeComplete;
+          },
+        });
       },
       () => {
         this.setStatus(JobStatus_Status.ERROR, "Failed to read files to upload");
