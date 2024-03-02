@@ -6,7 +6,8 @@
   height: calc(100vh - 50px);
 
   background-color: rgb(var(--clr-gray-80));
-  border: 1px solid rgb(var(--clr-gray-80));
+  border: 1px solid #444c50;
+  border-left: none;
   border-radius: 8px;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;

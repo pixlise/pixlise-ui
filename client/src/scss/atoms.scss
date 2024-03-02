@@ -133,15 +133,23 @@ TODO: get this working... no time at time of writing
   border-radius: $sz-half;
 }
 
+.button-margin {
+  margin: 2px;
+  border-radius: 4px;
+}
+
 .button-hoverable:hover {
   // Drop shadow changes
-  box-shadow: 0px 0px $sz-half $clr-shadow-highlight;
+  // box-shadow: 0px 0px $sz-half $clr-shadow-highlight;
+
+  // Turns SVG yellow
+  filter: brightness(0) saturate(100%) invert(98%) sepia(5%) saturate(3201%);
 }
 
 .push-btn-rounded {
   padding: $sz-half;
   color: $clr-gray-30;
-  background-color: $clr-gray-100;
+  // background-color: $clr-gray-100;
   border-radius: $sz-half;
   font-weight: normal;
   font-size: 14px;

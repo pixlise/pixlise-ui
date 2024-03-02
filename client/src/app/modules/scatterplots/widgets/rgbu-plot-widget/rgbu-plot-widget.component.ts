@@ -136,17 +136,20 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
 
   private setInitialConfig() {
     // If we don't have anything showing yet, just show the first one...
-    if (!this._analysisLayoutService.defaultScanId && !this.scanIds) {
+    if (!this._analysisLayoutService.defaultScanId && (!this.scanIds || this.scanIds.length === 0)) {
       return;
     }
 
-    const scanIds = this.scanIds ? this.scanIds : [this._analysisLayoutService.defaultScanId];
+    const scanIds = this.scanIds && this.scanIds.length > 0 ? this.scanIds : [this._analysisLayoutService.defaultScanId];
     this._cachedDataService.getImageList(ImageListReq.create({ scanIds })).subscribe((resp: ImageListResp) => {
-      for (const img of resp.images) {
-        if (img.purpose === ScanImagePurpose.SIP_MULTICHANNEL && img.imagePath) {
-          this.loadData(img.imagePath, []);
-          return;
-        }
+      let rgbuImages = resp.images.filter(img => img.imagePath && img.purpose === ScanImagePurpose.SIP_MULTICHANNEL);
+
+      // Use the MSA image as the default if it exists, else use the first RGBU image
+      let msaImage = rgbuImages.find(img => img.imagePath.includes("MSA_"));
+      if (msaImage) {
+        this.loadData(msaImage.imagePath, []);
+      } else if (rgbuImages.length > 0) {
+        this.loadData(rgbuImages[0].imagePath, []);
       }
     });
   }
@@ -371,19 +374,19 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
   onChangeXAxis(event: any): void {
     this.mdl.selectedMinXValue = event.minValue;
     this.mdl.selectedMaxXValue = event.maxValue;
-    if (event.finish) {
-      this.mdl.rebuild();
-      this.saveState();
-    }
+    // if (event.finish) {
+    this.mdl.rebuild();
+    this.saveState();
+    // }
   }
 
   onChangeYAxis(event: any): void {
     this.mdl.selectedMinYValue = event.minValue;
     this.mdl.selectedMaxYValue = event.maxValue;
-    if (event.finish) {
-      this.mdl.rebuild();
-      this.saveState();
-    }
+    // if (event.finish) {
+    this.mdl.rebuild();
+    this.saveState();
+    // }
   }
 
   onAxisClick(axis: string): void {

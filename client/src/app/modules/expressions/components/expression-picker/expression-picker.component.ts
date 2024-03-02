@@ -65,6 +65,7 @@ export type ExpressionPickerData = {
   maxSelection?: number;
   widgetType?: string;
   disableExpressionGroups?: boolean;
+  draggable?: boolean;
 };
 
 @Component({
@@ -121,6 +122,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   maxSelection: number = 0;
   expressionTriggerPosition: number = -1;
 
+  draggable: boolean = false;
+
   constructor(
     private _cachedDataSerivce: APICachedDataService,
     private _analysisLayoutService: AnalysisLayoutService,
@@ -134,6 +137,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.scanId = this.data.scanId || this._analysisLayoutService.defaultScanId || "";
     this.quantId = this.data.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
+    this.draggable = this.data.draggable || false;
 
     this._activeWidgetId = this.data.widgetId || "";
     this.expressionTriggerPosition = this.data?.expressionTriggerPosition ?? -1;
