@@ -31,10 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <ng-template #openOptionsMenu>
   <div class="gap-separated-vertical-elements options-menu">
-    <push-button
-      (onClick)="onOpen(true)"
-      buttonStyle="yellow"
-      title="Resets view to default and opens dataset. Used if you have issues opening it normally"
+    <push-button (onClick)="onOpen(true)" buttonStyle="yellow" title="Resets view to default and opens dataset. Used if you have issues opening it normally"
       >Reset & Open</push-button
     >
     <push-button *ngIf="userCanEdit" (onClick)="onEdit()" buttonStyle="yellow">Edit</push-button>
@@ -51,7 +48,7 @@ POSSIBILITY OF SUCH DAMAGE.
       <h2>Search</h2>
 
       <div class="search-box-group">
-        <input [(ngModel)]="toSearch" class="search-box" type="text" placeholder="Search by dataset title..." (keyup.enter)="onSearch()" />
+        <input [(ngModel)]="searchString" class="search-box" type="text" placeholder="Search by dataset title..." (keyup.enter)="onSearch()" />
         <push-button (onClick)="onSearch()">
           <img src="assets/button-icons/search.svg" />
         </push-button>
@@ -71,13 +68,17 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="summary-container">
     <div *ngIf="!errorString && !loading" class="scrollable">
       <div class="tiles" (onClick)="onClickTileArea()">
-        <data-set-summary *ngFor="let item of scans" [summary]="item" [defaultImage]="scanDefaultImages.get(item.id)" [selected]="selectedScan" (onSelect)="onSelect($event)">
+        <data-set-summary
+          *ngFor="let item of filteredScans"
+          [summary]="item"
+          [defaultImage]="scanDefaultImages.get(item.id)"
+          [selected]="selectedScan"
+          (onSelect)="onSelect($event)">
         </data-set-summary>
       </div>
     </div>
 
-    <app-widget-display-message *ngIf="errorString" [showSpinner]="loading" [message]="errorString" [large]="true" class="fx-flex">
-    </app-widget-display-message>
+    <app-widget-display-message *ngIf="errorString" [showSpinner]="loading" [message]="errorString" [large]="true" class="fx-flex"> </app-widget-display-message>
 
     <div *ngIf="datasetListingAllowed" class="meta-summary">
       <h2 class="meta-title">Metadata</h2>
@@ -98,16 +99,14 @@ POSSIBILITY OF SUCH DAMAGE.
               </div>
             </ng-container>
             <ng-container *ngSwitchDefault>
-              <img [src]="selectedScanContextImage" class="meta-image">
+              <img [src]="selectedScanContextImage" class="meta-image" />
             </ng-container>
           </ng-container>
         </div>
         <div class="meta-open-row">
           <div>{{ selectedScan.title }}</div>
           <div class="meta-buttons gap-separated-horizontal-elements">
-            <push-button (onClick)="onOpen(false)" buttonStyle="yellow" title="Open the dataset with views as you last used them"
-              >Open</push-button
-            >
+            <push-button (onClick)="onOpen(false)" buttonStyle="yellow" title="Open the dataset with views as you last used them">Open</push-button>
             <widget-settings-menu *ngIf="showOpenOptions" [settingsDialog]="openOptionsMenu" #openOptionsButton>
               <push-button buttonStyle="yellow" title="More options">&#9660;</push-button>
             </widget-settings-menu>
