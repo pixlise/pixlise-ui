@@ -61,6 +61,8 @@ export class ROIService {
 
   private _allScans: ScanItem[] = [];
 
+  private _selectedPointsColour = Colours.CONTEXT_BLUE;
+
   constructor(
     private _dataService: APIDataService,
     private _snackBarService: SnackbarService,
@@ -143,7 +145,7 @@ export class ROIService {
     return this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId })).pipe(
       map(res => {
         const entryIds = res.entries.map(entry => entry.id);
-        let scanName = this._allScans.find(scan => scan.id === scanId)?.title;
+        const scanName = this._allScans.find(scan => scan.id === scanId)?.title;
         const allPointsROI = createDefaultAllPointsItem(scanId, scanName);
         allPointsROI.scanEntryIndexesEncoded = entryIds;
 
@@ -162,6 +164,8 @@ export class ROIService {
     selectedPointsROI.scanEntryIndexesEncoded = Array.from(currentSelection.beamSelection.getSelectedScanEntryPMCs(scanId));
     selectedPointsROI.pixelIndexesEncoded = Array.from(currentSelection.pixelSelection.selectedPixels);
     selectedPointsROI.imageName = currentSelection.pixelSelection.imageName;
+
+    selectedPointsROI.displaySettings = ROIItemDisplaySettings.create({ shape: DEFAULT_ROI_SHAPE, colour: this._selectedPointsColour.asString() });
 
     return selectedPointsROI;
   }
@@ -365,7 +369,7 @@ export class ROIService {
       if (selectedPointsROI) {
         this.roiItems$.value[selectedPointsROI.id] = selectedPointsROI;
         this.roiSummaries$.value[selectedPointsROI.id] = ROIService.formSummaryFromROI(selectedPointsROI);
-        this.displaySettingsMap$.value[selectedPointsROI.id] = { colour: Colours.CONTEXT_BLUE, shape: DEFAULT_ROI_SHAPE };
+        this.displaySettingsMap$.value[selectedPointsROI.id] = { colour: this._selectedPointsColour, shape: DEFAULT_ROI_SHAPE };
         this.roiItems$.next(this.roiItems$.value);
         this.displaySettingsMap$.next(this.displaySettingsMap$.value);
       }
