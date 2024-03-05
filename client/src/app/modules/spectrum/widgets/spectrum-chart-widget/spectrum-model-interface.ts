@@ -101,8 +101,6 @@ export interface ISpectrumChartModel {
 
   xAxisEnergyScale: boolean;
 
-  shownElementPeakLabels: XRFLine[];
-
   xrfeVLowerBound: number;
   xrfeVUpperBound: number;
 

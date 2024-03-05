@@ -241,7 +241,7 @@ export class WidgetDataService {
         }
 
         if (roiIdIdx >= 0) {
-          const r = result[exprIdIdx] as RegionOfInterestGetResp;
+          const r = result[roiIdIdx] as RegionOfInterestGetResp;
           if (r && r.regionOfInterest) {
             appendKey += ",roiMod:" + r.regionOfInterest.modifiedUnixSec;
           }

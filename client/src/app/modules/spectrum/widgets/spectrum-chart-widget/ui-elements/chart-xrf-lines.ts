@@ -138,11 +138,6 @@ export class ChartXRFLines extends BaseUIElement {
 
     // Pile-up locations
     this.drawPileupLines(ctx, this.clrPileupLine);
-
-    // Draw peak labels (as turned on by user)
-    for (const elem of this._ctx.shownElementPeakLabels) {
-      this.drawPeakLabelsForElement(ctx, elem);
-    }
   }
 
   private isPickedLineHighlighted(): boolean {
@@ -407,35 +402,6 @@ export class ChartXRFLines extends BaseUIElement {
     ctx.fillText(body, boxPos.x + padding, boxPos.y + padding * 1.5 + CANVAS_FONT_SIZE);
   }
 
-  protected drawPeakLabelsForElement(ctx: CanvasRenderingContext2D, line: XRFLine) {
-    if (!this._ctx.xAxis) {
-      return;
-    }
-
-    if (line.eV >= this._ctx.xrfeVLowerBound && line.eV <= this._ctx.xrfeVUpperBound) {
-      // Look up where to position it above the spectrum
-      const topPos = this.calcLineTopPixelPos(line);
-
-      // If it's out of the view, don't draw it
-      if (topPos.x < this._ctx.xAxis.startPx) {
-        return;
-      }
-
-      const y = topPos.y - LABEL_RAISE_PX;
-
-      // Draw the symbol
-      ctx.textAlign = "center";
-      ctx.fillStyle = Colours.GRAY_30.asString();
-      const sz = ctx.measureText(line.elementSymbol);
-      ctx.fillText(line.elementSymbol, topPos.x, y);
-
-      // And which line it is
-      ctx.textAlign = "left";
-      ctx.fillStyle = Colours.GRAY_50.asString();
-      ctx.fillText(line.siegbahn, topPos.x + sz.width - CANVAS_FONT_SIZE * 0.25, y);
-    }
-  }
-
   private preventLabelOverlap(drawnRects: Rect[], boxPos: Rect, padding: number): void {
     // Find the lowest point on any box that sits in our X range
     let bottomBoxY = 0;
@@ -526,8 +492,6 @@ export class ChartXRFLines extends BaseUIElement {
     if (this._ctx.xrfLinesHighlighted) {
       allLines.push(...this._ctx.xrfLinesHighlighted.lines);
     }
-
-    allLines.push(...this._ctx.shownElementPeakLabels);
 
     for (const line of allLines) {
       if (

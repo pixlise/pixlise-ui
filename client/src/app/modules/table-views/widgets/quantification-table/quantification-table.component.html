@@ -1,0 +1,16 @@
+<ng-template #settingsMenu>
+    <div class="settings">
+        <switch-button label="Pure Element:" [active]="usePureElement" (onToggle)="togglePureElement()"></switch-button>
+        <two-state-button
+            leftLabel="Atomic Number"
+            rightLabel="Abundance"
+            toolTip="Toggles table ordering"
+            [active]="orderByAbundance"
+            (onToggle)="setOrderByAbundance($event)">
+        </two-state-button>
+    </div>
+</ng-template>
+
+<div class="table-area">
+    <table-view [tables]="regionDataTables"></table-view>
+</div>
