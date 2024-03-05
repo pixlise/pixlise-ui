@@ -21,10 +21,7 @@ export class HttpInterceptorService {
     // If the browser online is false, show the warning dialog straight away
     if (!window.navigator.onLine) {
       console.error("Browser marked as not onLine");
-      /*if(!this._commsErrorDlg)
-            {
-                this._commsErrorDlg = this.showNoInternetDialog("You are not online!");
-            }*/
+      this._snackService.openWarning("You are not online!");
     }
 
     // If it's a request to:
