@@ -8,10 +8,11 @@ import { ExpressionLayerComponent } from "./expression-layer/expression-layer.co
 import { ExpressionPickerComponent } from "./components/expression-picker/expression-picker.component";
 import { ExpressionSearchControlsComponent } from "./components/expression-search-controls/expression-search-controls.component";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { DragDropModule } from "@angular/cdk/drag-drop";
 
 @NgModule({
   declarations: [ExpressionLayerComponent, ExpressionPickerComponent, ExpressionSearchControlsComponent],
-  imports: [CommonModule, PIXLISECoreModule, CdkAccordionModule, TagsModule, ScrollingModule, MatTooltipModule],
+  imports: [CommonModule, PIXLISECoreModule, CdkAccordionModule, TagsModule, ScrollingModule, MatTooltipModule, DragDropModule],
   exports: [ExpressionLayerComponent, ExpressionPickerComponent, ExpressionSearchControlsComponent],
   providers: [],
 })

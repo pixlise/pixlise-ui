@@ -53,6 +53,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
   private _shownImageOptions: MatDialogRef<ImageOptionsComponent> | null = null;
 
+  private _expressionPickerDialog: MatDialogRef<ExpressionPickerComponent> | null = null;
+
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _roiService: ROIService,
@@ -560,17 +562,28 @@ bool removeBottomSpecularArtifacts = 21;
   }
 
   onToggleLayersView(trigger: Element | undefined) {
+    if (this._expressionPickerDialog) {
+      // Hide it
+      this._expressionPickerDialog.close();
+      return;
+    }
+
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.hasBackdrop = false;
+    dialogConfig.disableClose = true;
     dialogConfig.data = {
       widgetType: "context-image",
       widgetId: this._widgetId,
       scanId: this.scanId,
-      quantId: this._analysisLayoutService.getQuantIdForScan(this.scanId),
       selectedIds: this.mdl.expressionIds || [],
+      draggable: true,
     };
 
-    this.dialog.open(ExpressionPickerComponent, dialogConfig);
+    this._expressionPickerDialog = this.dialog.open(ExpressionPickerComponent, dialogConfig);
+    this._expressionPickerDialog.afterClosed().subscribe(() => {
+      this._analysisLayoutService.highlightedWidgetId$.next("");
+      this._expressionPickerDialog = null;
+    });
   }
 
   onRegions() {

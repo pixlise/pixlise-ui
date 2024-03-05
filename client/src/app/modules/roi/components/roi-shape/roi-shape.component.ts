@@ -10,9 +10,10 @@ export const ROI_SHAPES: ROIShape[] = ["circle", "triangle", "cross", "square"];
   styleUrls: ["./roi-shape.component.scss"],
 })
 export class ROIShapeComponent {
-  @Input() shape: ROIShape = "circle";
+  @Input() shape: string | ROIShape = "circle";
   @Input() color: string = "#000000";
   @Input() scale: number = 1;
+  @Input() borderColor: string = "";
 
   constructor() {}
 }

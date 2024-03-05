@@ -198,6 +198,20 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
     return this._selectedColour;
   }
 
+  get semiTransparentSelectedColour(): string {
+    if (this._selectedColour.startsWith("#") && this._selectedColour.length === 7) {
+      return this._selectedColour + "80";
+    } else if (this._selectedColour.startsWith("#") && this._selectedColour.length === 9) {
+      return this._selectedColour.slice(0, 7) + "80";
+    } else if (this.selectedColour.startsWith("rgba")) {
+      return this._selectedColour.replace(/,[01](?:\.[0-9]*)?\)/, ",0.5)");
+    } else if (this.selectedColour.startsWith("rgb")) {
+      return this._selectedColour.replace(")", ",0.5)").replace("rgb", "rgba");
+    } else {
+      return "";
+    }
+  }
+
   set selectedColour(value: string) {
     this._selectedColour = value;
     this.colour = findColourOption(value);
@@ -234,6 +248,10 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
 
   get additionalColorOptions(): ColourOption[] {
     return this.colorOptions.filter(option => !option.colourBlindSafe);
+  }
+
+  onSelectColour(colour: ColourOption) {
+    this.selectedColour = colour.colour;
   }
 
   get colour(): ColourOption {

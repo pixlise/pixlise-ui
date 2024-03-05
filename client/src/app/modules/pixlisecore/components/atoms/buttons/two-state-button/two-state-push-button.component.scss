@@ -48,14 +48,14 @@
   @extend .push-btn-rounded;
 
   color: $clr-yellow;
-  background-color: $clr-gray-60;
+  // background-color: $clr-gray-60;
 }
 
 .push-btn-rounded-disabled {
   @extend .push-btn-rounded;
 
   color: $clr-gray-60;
-  background-color: $clr-gray-100;
+  // background-color: $clr-gray-100;
   cursor: not-allowed;
   user-select: none;
 }

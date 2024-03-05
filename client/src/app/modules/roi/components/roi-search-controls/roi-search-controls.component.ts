@@ -166,23 +166,6 @@ export class ROISearchControlsComponent {
     const searchString = this.roiSearchString.toLowerCase();
     for (const summary of this.summaries) {
       const summaryNameLower = summary.name.toLowerCase();
-      // if (
-      //   (this.selectedROITypes.includes("builtin") && PredefinedROIID.isPredefined(summary.id) && summary.scanId === this.visibleScanId) || // Builtin
-      //   (!PredefinedROIID.isPredefined(summary.id) &&
-      //     (this.visibleScanId.length <= 0 || summary.scanId === this.visibleScanId) && // No selected scan or scan matches
-      //     (searchString.length <= 0 || summaryNameLower.indexOf(searchString) >= 0) && // No search string or search string matches
-      //     (this.filteredTagIDs.length <= 0 || this.filteredTagIDs.some(tagID => summary.tags.includes(tagID))) && // No selected tags or summary has selected tag
-      //     (this.filteredAuthors.length <= 0 || this.filteredAuthors.some(author => summary.owner?.creatorUser?.id === author)) && // No selected authors or summary has selected author
-      //     ((!summary.isMIST && // Not MIST
-      //       ((this.selectedROITypes.includes("user-created") && this.checkUserIsAuthor(summary)) || // Not MIST and was created by user
-      //         (this.selectedROITypes.includes("shared") && !this.checkUserIsAuthor(summary)))) || // Not MIST and was shared, but not created by user
-      //       (summary.isMIST && // MIST
-      //         ((this.selectedROITypes.includes("mist-species") && checkMistFullyIdentified(summary)) || // MIST and fully identified
-      //           (this.selectedROITypes.includes("mist-group") && !checkMistFullyIdentified(summary)))))) // MIST and not fully identified
-      // ) {
-      //   filteredSummaries.push(summary);
-      // }
-
       if (this.visibleScanId.length > 0 && summary.scanId !== this.visibleScanId) {
         continue;
       }

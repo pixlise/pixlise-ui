@@ -146,10 +146,10 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
     }
 
     if (this._settings.showSelectionTools) {
-      this._tools.push(new PointSelection(this._ctx, this));
-      this._tools.push(new LassoSelection(this._ctx, this));
-      this._tools.push(new ColourSelection(this._ctx, this));
       this._tools.push(new LineSelection(this._ctx, this));
+      this._tools.push(new ColourSelection(this._ctx, this));
+      this._tools.push(new LassoSelection(this._ctx, this));
+      this._tools.push(new PointSelection(this._ctx, this));
     }
     /*
     // Tools that have line separators before them, we set this up here...
