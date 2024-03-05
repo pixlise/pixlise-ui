@@ -152,15 +152,6 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           onClick: (value, trigger) => this.onPiquant(trigger),
         },
         {
-          id: "peakLabels",
-          type: "button",
-          title: "Peak Labels",
-          value: false,
-          disabled: true,
-          tooltip: "Not implemented yet",
-          onClick: () => {},
-        },
-        {
           id: "calibration",
           type: "button",
           title: "Calibration",

@@ -111,7 +111,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
   private _yAxisCountsPerMin: boolean = true;
   private _yAxisCountsPerPMC: boolean = false;
   private _linesShown: Map<string, string[]> = new Map<string, string[]>();
-  private _shownElementPeakLabels: XRFLine[] = [];
 
   private _calibration: Map<string, SpectrumEnergyCalibration> = new Map<string, SpectrumEnergyCalibration>();
 
@@ -464,14 +463,6 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
       }
     }
     return newList;
-  }
-
-  get shownElementPeakLabels(): XRFLine[] {
-    return this._shownElementPeakLabels;
-  }
-
-  set shownElementPeakLabels(lines: XRFLine[]) {
-    this._shownElementPeakLabels = lines;
   }
 
   // Setting display options
@@ -914,7 +905,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         yMargin,
         this._drawTransform.canvasParams.height - yMargin,
         lineRangeYmin,
-        lineRangeYmax * 1.6 // to leave gap at top above chart for things like peak labels to show
+        lineRangeYmax * 1.5 // to leave gap at top above chart
       );
     } else {
       this._yAxis = new LinearChartAxis(
@@ -922,7 +913,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         yMargin,
         this._drawTransform.canvasParams.height - yMargin,
         lineRangeYmin,
-        lineRangeYmax * 1.1 // to leave gap at top above chart for things like peak labels to show
+        lineRangeYmax * 1.05  // to leave gap at top above chart
       );
     }
 
