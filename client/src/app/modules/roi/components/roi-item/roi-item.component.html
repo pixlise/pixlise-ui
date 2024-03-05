@@ -213,7 +213,7 @@
         <h5>{{ scanEntryCount }} PMCs, {{ pixelCount }} pixels</h5>
 
         <div class="right-btns">
-          <push-button>Select</push-button>
+          <push-button (onClick)="onSelect()">Select</push-button>
           <action-button action="edit-clipboard" [customDialog]="editROIMenu" #editROIButton></action-button>
           <icon-button
             [icon]="showScanEntryPoints ? 'assets/button-icons/arrow-down.svg' : 'assets/button-icons/arrow-right.svg'"
@@ -231,10 +231,10 @@
             Image: {{ detailedInfo.imageName || "N/A" }}
           </h5>
           <div class="selection-btns">
-            <push-button buttonStyle="outline" title="Saves the selected Scan Entries into this ROI, overwriting previous Scan Entry list"
+            <push-button (onClick)="onSaveSelectionToROI()" buttonStyle="outline" title="Saves the selected Scan Entries into this ROI, overwriting previous Scan Entry list"
               >Save Selection to ROI</push-button
             >
-            <push-button buttonStyle="outline" title="Adds pixels within bounding polygons of Scan Entry points to ROI">Add RGBU Pixels to ROI</push-button>
+            <push-button (onClick)="onAddRGBUPixelsToROI()" buttonStyle="outline" title="Adds pixels within bounding polygons of Scan Entry points to ROI">Add RGBU Pixels to ROI</push-button>
           </div>
         </div>
         <div class="scan-entries" *ngFor="let scanId of scanIds">
