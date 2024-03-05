@@ -267,6 +267,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     //   this.saveState();
     // });
   }
+
   onRegions() {
     const dialogConfig = new MatDialogConfig<ROIPickerData>();
 
@@ -313,6 +314,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       }
     });
   }
+
   onToggleKey() {
     if (this.widgetControlConfiguration.topRightInsetButton) {
       this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;

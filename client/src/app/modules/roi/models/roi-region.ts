@@ -27,12 +27,14 @@ export class RegionSettings {
   ) {}
 }
 
+const allPointsPrefix = "All Points";
+
 export const createDefaultAllPointsItem = (scanId: string, scanName: string = ""): ROIItem => {
   return ROIItem.create({
     id: PredefinedROIID.getAllPointsForScan(scanId),
     scanId: scanId,
-    name: "All Points" + (scanName ? ` (${scanName})` : ""),
-    description: "All Points",
+    name: allPointsPrefix + (scanName ? ` (${scanName})` : ""),
+    description: allPointsPrefix,
     scanEntryIndexesEncoded: [],
     imageName: "",
     pixelIndexesEncoded: [],
