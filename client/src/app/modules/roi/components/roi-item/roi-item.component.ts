@@ -441,4 +441,84 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
     this.shape = DEFAULT_ROI_SHAPE;
     this._shapeDefined = false;
   }
+
+  onSaveSelectionToROI(): void {
+    /*
+    let dataset = this._datasetService.datasetLoaded;
+    if (!dataset) {
+      return;
+    }
+
+    let pmcSel = this._selectionService.getCurrentSelection().beamSelection;
+    let pixSel = this._selectionService.getCurrentSelection().pixelSelection;
+
+    // If selection is empty, complain!
+    if (pmcSel.locationIndexes.size <= 0 && pixSel.selectedPixels.size <= 0) {
+      alert("Cannot save an empty ROI. Please select something!");
+      return;
+    }
+
+    let toSave = new ROIItem(
+      this.regionLayer.roi.name,
+      Array.from(pmcSel.locationIndexes),
+      this.regionLayer.roi.description,
+      pixSel.imageName,
+      Array.from(pixSel.selectedPixels)
+    );
+
+    // We're overwriting an ROI
+    let loadID = this._loadingSvc.add("Saving selected PMCs to ROI: " + this.regionLayer.roi.name);
+    this._roiService.update(this.regionLayer.roi.id, toSave).subscribe(
+      () => {
+        console.log("Replaced PMCs in ROI: " + this.regionLayer.roi.id);
+        this._loadingSvc.remove(loadID);
+
+        this._roiService.refreshROIList();
+      },
+      err => {
+        this._loadingSvc.remove(loadID);
+        alert("Failed to set ROI PMCs to current selection: " + err);
+
+        this._roiService.refreshROIList();
+      }
+    );
+    */
+  }
+
+  onAddRGBUPixelsToROI(): void {
+    /*
+    let dataset = this._datasetService.datasetLoaded;
+    let contextImage = this.getRGBUContextImageItemShowing();
+
+    if (!dataset || !contextImage) {
+      return;
+    }
+
+    let currentSelection = this._selectionService.getCurrentSelection();
+
+    // This deals with a specific edge case where a user can select an ROI, deselect everything, select PMCs without pixels, and then
+    // click to add RGBU Pixels to the ROI. In this case, we want to preserve the ROI and only update it with the new selection, not overwrite
+    this.roiSavedItem.locationIndexes.forEach(existingPMC => {
+      currentSelection.beamSelection.locationIndexes.add(existingPMC);
+    });
+
+    let pixelSelection = SelectionTabModel.getJoinedNearbyPixelSelection(dataset, contextImage, currentSelection);
+
+    // Make sure all existing ROI pixels are selected before updating selection
+    this.roiSavedItem.pixelIndexes.forEach(existingPixel => {
+      pixelSelection.selectedPixels.add(existingPixel);
+    });
+
+    let beamSelection = currentSelection.beamSelection;
+    this._selectionService.setSelection(dataset, beamSelection, pixelSelection);
+    */
+  }
+
+  onSelect(): void {
+    /*
+    // Get the ROI's selected points
+    let locationIndices = new Set<number>(this.roiSavedItem.locationIndexes);
+    this.setSelection(locationIndices, this.roiSavedItem.pixelIndexes, this.roiSavedItem.imageName);
+    */
+  }
 }
