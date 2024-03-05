@@ -8,6 +8,7 @@ import {
   RGBUPlotWidgetComponent,
 } from "src/app/modules/scatterplots/scatterplots.module";
 import { SpectrumChartWidgetComponent } from "src/app/modules/spectrum/spectrum.module";
+import { QuantificationTableComponent } from "../../table-views/table-views.module";
 
 export type WidgetToolbarButtonTypes =
   | "selectable-button"
@@ -129,6 +130,13 @@ export const WIDGETS = {
     description: "RGBU Plot",
     component: RGBUPlotWidgetComponent,
     dataKey: "rgbuPlot",
+    controlConfiguration: {},
+  },
+  "quant-table": {
+    name: "Quantification Table",
+    description: "Quantification Table",
+    component: QuantificationTableComponent,
+    dataKey: "table",
     controlConfiguration: {},
   },
 } satisfies Record<string, WidgetConfiguration>;
