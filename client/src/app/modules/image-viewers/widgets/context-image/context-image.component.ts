@@ -6,7 +6,7 @@ import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model
 import { ContextImageModel, ContextImageModelLoadedData } from "./context-image-model";
 import { ContextImageToolHost, ToolHostCreateSettings, ToolState } from "./tools/tool-host";
 import { ContextImageDrawer } from "./context-image-drawer";
-import { ContextImageState, ROILayerVisibility } from "src/app/generated-protos/widget-data";
+import { ContextImageState, ROILayerVisibility, VisibleROI } from "src/app/generated-protos/widget-data";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
@@ -34,6 +34,7 @@ import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-
 import { ImageOptionsComponent, ImageDisplayOptions, ImagePickerParams, ImagePickerResult } from "./image-options/image-options.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
 
 @Component({
   selector: "app-context-image",
@@ -70,12 +71,12 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
     this.scanId = this._analysisLayoutService.defaultScanId;
 
-    let showLineDrawTool = true;
-    let showNavTools = true;
-    let showPMCTool = false;
-    let showSelectionTools = true;
-    let showPhysicalScale = true;
-    let showMapColourScale = true;
+    const showLineDrawTool = true;
+    const showNavTools = true;
+    const showPMCTool = false;
+    const showSelectionTools = true;
+    const showPhysicalScale = true;
+    const showMapColourScale = true;
 
     const toolSettings = new ToolHostCreateSettings(showLineDrawTool, showNavTools, showPMCTool, showSelectionTools, showPhysicalScale, showMapColourScale);
     this.toolhost = new ContextImageToolHost(toolSettings, this.mdl, this._selectionService);
@@ -312,6 +313,10 @@ bool removeBottomSpecularArtifacts = 21;
 
     this._subs.add(
       this._roiService.displaySettingsMap$.subscribe(displaySettings => {
+        // Regenerate any regions we have
+        if (this.mdl.roiIds.length > 0) {
+          this.reloadModel();
+        }
         this.reDraw();
       })
     );
@@ -382,7 +387,7 @@ bool removeBottomSpecularArtifacts = 21;
                     },
                     error: err => {
                       this._snackService.openError("Failed to add layer: " + exprId + " scan: " + scanId, err);
-                      this.widgetErrorMessage = "Failed to load data for displaying context image: " + this.mdl.imageName;
+                      this.widgetErrorMessage = "Failed to load layer data for displaying context image: " + this.mdl.imageName;
                     },
                   });
               }
@@ -390,6 +395,36 @@ bool removeBottomSpecularArtifacts = 21;
               this.scanId = scanId;
             }
           }
+        }
+
+        // And generate ROI polygons
+        for (const roi of this.mdl.roiIds) {
+          // NOTE: loadROI calls decodeIndexList so from this point we don't have to worry, we have a list of PMCs!
+          this._roiService.loadROI(roi.id).subscribe({
+            next: (roiLoaded: ROIItem) => {
+              // We need to be able to convert PMCs to location indexes...
+              const scanMdl = this.mdl.getScanModelFor(roi.scanId);
+              if (scanMdl) {
+                const pmcToIndexLookup = new Map<number, number>();
+                for (const pt of scanMdl.scanPoints) {
+                  pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
+                }
+
+                // Make sure it has up to date display settings
+                const disp = this._roiService.getRegionDisplaySettings(roi.id);
+                if (disp) {
+                  roiLoaded.displaySettings = ROIItemDisplaySettings.create({ colour: disp.colour.asString(), shape: disp.shape });
+                }
+
+                // We've loaded the region itself, store these so we can build a draw model when needed
+                this.mdl.setRegion(roi.id, roiLoaded, pmcToIndexLookup);
+              }
+            },
+            error: err => {
+              this._snackService.openError("Failed to generate region: " + roi.id + " scan: " + roi.scanId, err);
+              this.widgetErrorMessage = "Failed to load region data for displaying context image: " + this.mdl.imageName;
+            },
+          });
         }
       },
       error: err => {
@@ -589,9 +624,14 @@ bool removeBottomSpecularArtifacts = 21;
   onRegions() {
     const dialogConfig = new MatDialogConfig<ROIPickerData>();
     // Pass data to dialog
+    const selectedROIs: string[] = [];
+    for (const roi of this.mdl.roiIds) {
+      selectedROIs.push(roi.id);
+    }
+
     dialogConfig.data = {
       requestFullROIs: true,
-      selectedIds: this.mdl.roiIds,
+      selectedIds: selectedROIs,
       scanId: this.scanId,
     };
 
@@ -618,7 +658,9 @@ bool removeBottomSpecularArtifacts = 21;
 
         // Now fill in the data source ids using the above
         for (const [scanId, roiIds] of roisPerScan) {
-          this.mdl.roiIds.push(...roiIds);
+          for (const roiId of roiIds) {
+            this.mdl.roiIds.push(VisibleROI.create({ id: roiId, scanId: scanId }));
+          }
         }
 
         this.reloadModel();
@@ -638,7 +680,7 @@ bool removeBottomSpecularArtifacts = 21;
         pointBBoxColourScheme: this.mdl.pointBBoxColourScheme,
         contextImage: this.mdl.imageName,
         contextImageSmoothing: this.mdl.imageSmoothing ? "true" : "",
-        roiLayers: this.mdl.roiIds.map(roiID => ROILayerVisibility.create({ roiID, opacity: 1, visible: true })),
+        roiLayers: this.mdl.roiIds.map(roi => ROILayerVisibility.create({ roiID: roi.id, opacity: 1, visible: true })),
         elementRelativeShading: this.mdl.elementRelativeShading,
         brightness: this.mdl.imageBrightness,
         rgbuChannels: this.mdl.rgbuChannels,
@@ -712,7 +754,7 @@ bool removeBottomSpecularArtifacts = 21;
 
   onToggleSelectionMode() {
     this.mdl.selectionModeAdd = !this.mdl.selectionModeAdd;
-    let selectionModeBtn = this._widgetControlConfiguration.bottomToolbar?.find(b => b.id === "selection-mode");
+    const selectionModeBtn = this._widgetControlConfiguration.bottomToolbar?.find(b => b.id === "selection-mode");
     if (selectionModeBtn) {
       selectionModeBtn.value = this.mdl.selectionModeAdd;
     }
