@@ -673,7 +673,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
   }
 
   private makeRegion(scanId: string, roiId: string, from: ContextImageModel): ContextImageRegionLayer {
-    const roiLayer = new ContextImageRegionLayer(roiId);
+    const roiLayer = new ContextImageRegionLayer(roiId, "");
 
     // Get the region info
     const roi = from.getRegion(roiId);
@@ -682,6 +682,8 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
       console.error("makeRegion failed for: " + roiId + " - region not found in model");
       return roiLayer;
     }
+
+    roiLayer.name = roi.roi.name;
 
     // Find the polygons the region covers
     const scanMdl = from.getScanModelFor(scanId);
