@@ -600,7 +600,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
     // Generate draw models for each scan while also calculating the overall bounding box
     this.allLocationPointsBBox = new Rect();
     if (from.raw) {
-      this.scanDrawModels.clear();
+      const newScanDrawModels = new Map<string, ContextImageScanDrawModel>();
 
       for (const [scanId, scanMdl] of from.raw.scanModels) {
         this.allLocationPointsBBox.expandToFitRect(scanMdl.scanPointsBBox);
@@ -608,13 +608,25 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
         const footprintColours = getSchemeColours(from.pointBBoxColourScheme);
         const footprint = new Footprint(scanMdl.footprint, footprintColours[0], footprintColours[1]);
 
+        // Look up existing draw model (if there is one) and preserve selection info for PMCs
+        let selPMCs = new Set<number>(); // Assume we don't have selection info at this point
+        let selLocIdxs = new Set<number>(); // Assume we don't have selection info at this point
+        let hoverIdx = -1;
+
+        const existingDrawMdl = this.scanDrawModels.get(scanId);
+        if (existingDrawMdl) {
+          selPMCs = existingDrawMdl.selectedPointPMCs;
+          selLocIdxs = existingDrawMdl.selectedPointIndexes;
+          hoverIdx = existingDrawMdl.hoverEntryIdx;
+        }
+
         const scanDrawMdl = new ContextImageScanDrawModel(
           scanMdl.scanPoints,
           scanMdl.scanPointPolygons,
           footprint,
-          new Set<number>(), // We don't have selection info at this point
-          new Set<number>(), // We don't have selection info at this point
-          -1, // We don't have selection info at this point
+          selPMCs,
+          selLocIdxs,
+          hoverIdx,
           scanId == from.scanIdForColourOverrides ? from.scanPointColourOverrides : new Map<number, RGBA>(),
           scanMdl.scanPointDisplayRadius,
           scanMdl.beamRadius_pixels,
@@ -659,8 +671,11 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
           }
         }
 
-        this.scanDrawModels.set(scanId, scanDrawMdl);
+        newScanDrawModels.set(scanId, scanDrawMdl);
       }
+
+      // Use these new ones
+      this.scanDrawModels = newScanDrawModels;
 
       // If we have any regions turned on, we need to generate their region polygons so they get drawn
       for (const roi of from.roiIds) {
