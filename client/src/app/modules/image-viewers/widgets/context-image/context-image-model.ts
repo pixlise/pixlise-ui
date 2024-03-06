@@ -15,7 +15,7 @@ import { RGBA, Colours, ColourRamp } from "src/app/utils/colours";
 import { ContextImageScanDrawModel } from "../../models/context-image-draw-model";
 import { ContextImageRegionLayer, RegionDisplayPolygon } from "../../models/region";
 import { MapColourScaleModel, MapColourScaleSourceData } from "./ui-elements/map-colour-scale/map-colour-scale-model";
-import { decodeIndexList, randomString } from "src/app/utils/utils";
+import { randomString } from "src/app/utils/utils";
 import { MinMax } from "src/app/models/BasicTypes";
 import { adjustImageRGB } from "src/app/utils/drawing";
 import { VisibleROI } from "src/app/generated-protos/widget-data";

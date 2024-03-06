@@ -313,6 +313,10 @@ bool removeBottomSpecularArtifacts = 21;
 
     this._subs.add(
       this._roiService.displaySettingsMap$.subscribe(displaySettings => {
+        // Regenerate any regions we have
+        if (this.mdl.roiIds.length > 0) {
+          this.reloadModel();
+        }
         this.reDraw();
       })
     );
