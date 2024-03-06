@@ -4,6 +4,7 @@ import { RGBA, Colours } from "src/app/utils/colours";
 export class ContextImageRegionLayer {
   constructor(
     public roiId: string = "",
+    public name: string = "",
     public colour: RGBA = Colours.WHITE,
     public opacity: number = 1
   ) {}
