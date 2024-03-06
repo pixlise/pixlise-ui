@@ -2,9 +2,11 @@ import { Point, Rect } from "src/app/models/Geometry";
 import { RGBA, Colours } from "src/app/utils/colours";
 
 export class ContextImageRegionLayer {
-  roiId: string = "";
-  colour: RGBA = Colours.WHITE;
-  opacity: number = 1;
+  constructor(
+    public roiId: string = "",
+    public colour: RGBA = Colours.WHITE,
+    public opacity: number = 1
+  ) {}
   pixelMask: HTMLImageElement | null = null;
   polygons: RegionDisplayPolygon[] = [];
 }

@@ -101,7 +101,7 @@ export class ContextImageScanModelGenerator {
   }
 
   private initLocationCachingForBeams(detector: ScanInstrument, scanEntries: ScanEntry[], beamLocations: Coordinate3D[], beamIJs: Coordinate2D[], imageName: string) {
-    const scanPoints = [];
+    const scanPoints: ScanPoint[] = [];
     this._locationCount = 0;
     this._locationsWithNormalSpectra = 0;
 
