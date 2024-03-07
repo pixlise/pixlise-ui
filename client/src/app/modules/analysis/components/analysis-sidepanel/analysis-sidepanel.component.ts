@@ -1,8 +1,8 @@
-import { AfterViewInit, Component, ComponentRef, ViewChild, ViewContainerRef } from "@angular/core";
+import { Component, ComponentRef, ViewChild, ViewContainerRef } from "@angular/core";
 import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 import { SidebarTabItem, SidebarViewShortcut } from "../../models/sidebar.model";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
-import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { Subscription } from "rxjs";
 
 @Component({
   selector: "analysis-sidepanel",
@@ -11,7 +11,12 @@ import { ROIService } from "src/app/modules/roi/services/roi.service";
 })
 export class AnalysisSidepanelComponent {
   @ViewChild("openTab", { read: ViewContainerRef }) openTab?: ViewContainerRef;
+
+  private _subs: Subscription = new Subscription();
+
   private _openTabRef: ComponentRef<any> | null = null;
+
+  sidepanelOpen: boolean = false;
 
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
@@ -19,13 +24,16 @@ export class AnalysisSidepanelComponent {
   ) {}
 
   ngOnInit(): void {
-    if (this.sidepanelOpen && !this._openTabRef) {
-      if (!this.activeTab) {
-        this.activeTab = this.tabs[0];
-      }
-
-      this.onOpenTab(this.activeTab);
-    }
+    this._subs.add(
+      this._analysisLayoutService.sidepanelOpen$.subscribe(open => {
+        this.sidepanelOpen = open;
+        if (this.sidepanelOpen && !this.activeTab) {
+          this.onOpenTab(this.tabs[0], true);
+        } else if (this.sidepanelOpen && !this._openTabRef && this.activeTab) {
+          this.onOpenTab(this.activeTab, true);
+        }
+      })
+    );
   }
 
   ngOnDestroy() {
@@ -45,7 +53,7 @@ export class AnalysisSidepanelComponent {
 
     this._analysisLayoutService.activeTab = tab;
     if (tab) {
-      this.onOpenTab(tab);
+      this.onOpenTab(tab, true);
     }
   }
 
@@ -69,10 +77,6 @@ export class AnalysisSidepanelComponent {
     return this._analysisLayoutService.sidebarAdminShortcuts;
   }
 
-  get sidepanelOpen() {
-    return this._analysisLayoutService.sidepanelOpen;
-  }
-
   get isAdmin() {
     return this._userOptionsService.hasFeatureAccess("admin");
   }
@@ -83,16 +87,25 @@ export class AnalysisSidepanelComponent {
         this.clearTab();
       }
 
-      // We need to wait 100 ms before notifying resize because this is how long the transition is set for
-      if (this._analysisLayoutService.activeTab?.width !== tab?.width) {
-        this._analysisLayoutService.delayNotifyCanvasResize(100);
+      this._analysisLayoutService.activeTab = tab;
+      if (!this._analysisLayoutService.sidepanelOpen) {
+        this._analysisLayoutService.sidepanelOpen = true;
       }
 
-      this._analysisLayoutService.activeTab = tab;
-      this._analysisLayoutService.sidepanelOpen = true;
       if (this.openTab && tab.component) {
         this._openTabRef = this.openTab.createComponent(tab.component);
       }
+    }
+  }
+
+  onToggleTab(tab: SidebarTabItem) {
+    if (this.activeTab?.title === tab.title) {
+      this._analysisLayoutService.toggleSidePanel();
+    } else if (!this._openTabRef) {
+      this._analysisLayoutService.activeTab = tab;
+      this._analysisLayoutService.toggleSidePanel();
+    } else {
+      this.onOpenTab(tab, true);
     }
   }
 
@@ -101,7 +114,7 @@ export class AnalysisSidepanelComponent {
   onToggleSidePanel() {
     this._analysisLayoutService.toggleSidePanel();
     if (this.sidepanelOpen && this.activeTab && !this._openTabRef) {
-      this.onOpenTab(this.activeTab);
+      this.onOpenTab(this.activeTab, true);
     }
   }
 

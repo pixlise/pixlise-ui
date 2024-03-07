@@ -35,7 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="center-bar">
     <!-- <missing-data-indicator></missing-data-indicator> -->
     <div class="title-text" *ngIf="showTitle" [title]="title">{{ title }}</div>
-    <push-button *ngIf="showScanConfigurator" buttonStyle="outline" (click)="onScanConfiguration()">Scan Configuration</push-button>
+    <!-- <push-button *ngIf="showScanConfigurator" buttonStyle="outline" (click)="onScanConfiguration()">Scan Configuration</push-button> -->
     <push-button *ngIf="showExport" buttonStyle="outline" (onClick)="onExport()">Export</push-button>
     <!-- <two-state-edit-button *ngIf="showViewCapture" id="annotation-toggle-btn" buttonStyle="gray" (onToggle)="onToggleAnnotations($event)"
       [active]="annotationsVisible" [style.z-index]="111" (onEdit)="onEditAnnotations()">
