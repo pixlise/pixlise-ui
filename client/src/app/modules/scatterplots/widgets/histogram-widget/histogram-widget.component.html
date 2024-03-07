@@ -9,9 +9,9 @@
         <two-state-button
             leftLabel="Std Dev"
             rightLabel="Std Err"
-            toolTip="Allows siwtching between display of standard deviation or standard error for bars"
-            [active]="showStdError"
-            (onToggle)="toggleShowStdError()">
+            toolTip="Allows swtching between display of standard deviation or standard error for bars"
+            [active]="!showStdDeviation"
+            (onToggle)="toggleShowStdDeviation()">
         </two-state-button>
         <two-state-push-button
             [active]="logScale"
