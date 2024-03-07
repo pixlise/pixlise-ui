@@ -287,7 +287,9 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
             }
           }
 
-          weightAvg = weightTotal / valueCount;
+          if (valueCount > 0) {
+            weightAvg = weightTotal / valueCount;
+          }
 
           // Save this weight average into the cell
           row.values[x] = weightAvg;
