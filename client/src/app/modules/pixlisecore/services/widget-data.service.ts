@@ -674,7 +674,7 @@ export class WidgetDataService {
           result.stderr,
           result.recordedExpressionInputs
         ),
-        new WidgetError("Query returned unexpected data type", msg),
+        new WidgetError("Expression failed to complete", msg),
         "", // warning
         result.expression,
         result.region,
