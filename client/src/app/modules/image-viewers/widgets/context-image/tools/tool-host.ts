@@ -53,6 +53,7 @@ import { BaseUIElement } from "../ui-elements/base-ui-element";
 import { PhysicalScale } from "../ui-elements/physical-scale";
 import { MapColourScale } from "../ui-elements/map-colour-scale/map-colour-scale";
 import { ExtraDrawerSource } from "../context-image-drawer";
+import { ROIToolTip } from "../ui-elements/roi-tooltip";
 
 export enum ToolState {
   OFF, // A tool that is not active, but can be clicked on/spring key used to activate
@@ -167,6 +168,7 @@ export class ContextImageToolHost implements CanvasInteractionHandler, IToolHost
     }
 
     this._uiElems.push(new HoverPointCursor(this._ctx, this));
+    this._uiElems.push(new ROIToolTip(this._ctx, this));
 
     this.setTool(ContextImageToolId.PAN);
   }

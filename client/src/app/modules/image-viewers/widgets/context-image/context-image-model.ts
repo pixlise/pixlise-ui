@@ -13,11 +13,13 @@ import { ContextImageMapLayer, MapPointDrawParams, MapPointShape, MapPointState,
 import { Footprint, HullPoint } from "../../models/footprint";
 import { RGBA, Colours, ColourRamp } from "src/app/utils/colours";
 import { ContextImageScanDrawModel } from "../../models/context-image-draw-model";
-import { ContextImageRegionLayer } from "../../models/region";
+import { ContextImageRegionLayer, RegionDisplayPolygon } from "../../models/region";
 import { MapColourScaleModel, MapColourScaleSourceData } from "./ui-elements/map-colour-scale/map-colour-scale-model";
 import { randomString } from "src/app/utils/utils";
 import { MinMax } from "src/app/models/BasicTypes";
 import { adjustImageRGB } from "src/app/utils/drawing";
+import { VisibleROI } from "src/app/generated-protos/widget-data";
+import { ROIItem } from "src/app/generated-protos/roi";
 
 export class ContextImageModelLoadedData {
   constructor(
@@ -25,6 +27,13 @@ export class ContextImageModelLoadedData {
     public imageTransform: ContextImageItemTransform | null = null,
     public scanModels: Map<string, ContextImageScanModel>,
     public rgbuSourceImage: RGBUImage | null = null
+  ) {}
+}
+
+class ContextImageRawRegion {
+  constructor(
+    public roi: ROIItem,
+    public locIdxs: number[]
   ) {}
 }
 
@@ -38,7 +47,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   imageName: string = "";
 
   expressionIds: string[] = [];
-  roiIds: string[] = [];
+  roiIds: VisibleROI[] = [];
 
   hidePointsForScans: string[] = [];
   hideFootprintsForScans: string[] = [];
@@ -72,6 +81,8 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
 
   private _colourScales: MapColourScaleModel[];
   private _colourScaleDisplayValueRanges = new Map<string, MinMax>();
+
+  private _rois = new Map<string, ContextImageRawRegion>();
 
   private _currentPixelSelection: PixelSelection | null = null;
 
@@ -180,6 +191,22 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
         scale.hoverValue = null;
       }
     }
+  }
+
+  setRegion(roiId: string, roi: ROIItem, pmcToIndexLookup: Map<number, number>) {
+    const locIdxs: number[] = [];
+    for (const pmc of roi.scanEntryIndexesEncoded) {
+      const locIdx = pmcToIndexLookup.get(pmc);
+      if (locIdx !== undefined) {
+        locIdxs.push(locIdx);
+      }
+    }
+
+    this._rois.set(roiId, new ContextImageRawRegion(roi, locIdxs));
+  }
+
+  getRegion(roiId: string): ContextImageRawRegion | undefined {
+    return this._rois.get(roiId);
   }
 
   setMapLayer(layer: ContextImageMapLayer) {
@@ -455,7 +482,7 @@ export class ContextImageScanModel {
   maps: ContextImageMapLayer[] = [];
 
   // Regions
-  regions: ContextImageRegionLayer[] = [];
+  //regions: ContextImageRegionLayer[] = [];
 
   // Returns index and distance in array of 2 numbers
   getClosestLocationIdxToPoint(worldPt: Point, maxDistance: number): number[] {
@@ -573,7 +600,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
     // Generate draw models for each scan while also calculating the overall bounding box
     this.allLocationPointsBBox = new Rect();
     if (from.raw) {
-      this.scanDrawModels.clear();
+      const newScanDrawModels = new Map<string, ContextImageScanDrawModel>();
 
       for (const [scanId, scanMdl] of from.raw.scanModels) {
         this.allLocationPointsBBox.expandToFitRect(scanMdl.scanPointsBBox);
@@ -581,13 +608,25 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
         const footprintColours = getSchemeColours(from.pointBBoxColourScheme);
         const footprint = new Footprint(scanMdl.footprint, footprintColours[0], footprintColours[1]);
 
+        // Look up existing draw model (if there is one) and preserve selection info for PMCs
+        let selPMCs = new Set<number>(); // Assume we don't have selection info at this point
+        let selLocIdxs = new Set<number>(); // Assume we don't have selection info at this point
+        let hoverIdx = -1;
+
+        const existingDrawMdl = this.scanDrawModels.get(scanId);
+        if (existingDrawMdl) {
+          selPMCs = existingDrawMdl.selectedPointPMCs;
+          selLocIdxs = existingDrawMdl.selectedPointIndexes;
+          hoverIdx = existingDrawMdl.hoverEntryIdx;
+        }
+
         const scanDrawMdl = new ContextImageScanDrawModel(
           scanMdl.scanPoints,
           scanMdl.scanPointPolygons,
           footprint,
-          new Set<number>(), // We don't have selection info at this point
-          new Set<number>(), // We don't have selection info at this point
-          -1, // We don't have selection info at this point
+          selPMCs,
+          selLocIdxs,
+          hoverIdx,
           scanId == from.scanIdForColourOverrides ? from.scanPointColourOverrides : new Map<number, RGBA>(),
           scanMdl.scanPointDisplayRadius,
           scanMdl.beamRadius_pixels,
@@ -632,12 +671,56 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
           }
         }
 
-        if (scanMdl.regions) {
-          scanDrawMdl.regions = Array.from(scanMdl.regions);
-        }
+        newScanDrawModels.set(scanId, scanDrawMdl);
+      }
 
-        this.scanDrawModels.set(scanId, scanDrawMdl);
+      // Use these new ones
+      this.scanDrawModels = newScanDrawModels;
+
+      // If we have any regions turned on, we need to generate their region polygons so they get drawn
+      for (const roi of from.roiIds) {
+        const mdl = this.scanDrawModels.get(roi.scanId);
+        if (mdl) {
+          mdl.regions.push(this.makeRegion(roi.scanId, roi.id, from));
+        }
       }
     }
+  }
+
+  private makeRegion(scanId: string, roiId: string, from: ContextImageModel): ContextImageRegionLayer {
+    const roiLayer = new ContextImageRegionLayer(roiId, "");
+
+    // Get the region info
+    const roi = from.getRegion(roiId);
+
+    if (!roi) {
+      console.error("makeRegion failed for: " + roiId + " - region not found in model");
+      return roiLayer;
+    }
+
+    roiLayer.name = roi.roi.name;
+
+    // Find the polygons the region covers
+    const scanMdl = from.getScanModelFor(scanId);
+
+    if (!scanMdl) {
+      console.error("makeRegion failed for: " + roiId + " - scan model not found for scan: " + scanId);
+      return roiLayer;
+    }
+
+    for (const locIdx of roi.locIdxs) {
+      if (locIdx < 0 || locIdx >= scanMdl.scanPointPolygons.length) {
+        console.error("makeRegion failed for: " + roiId + " - locIdx: " + locIdx + " did not have corresponding polygon");
+        return roiLayer;
+      }
+
+      roiLayer.polygons.push(new RegionDisplayPolygon(scanMdl.scanPointPolygons[locIdx], []))
+    }
+
+    if (roi.roi.displaySettings) {
+      roiLayer.colour = RGBA.fromString(roi.roi.displaySettings.colour);
+    }
+
+    return roiLayer;
   }
 }
