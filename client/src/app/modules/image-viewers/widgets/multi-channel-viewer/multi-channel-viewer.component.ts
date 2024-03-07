@@ -105,7 +105,7 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
       return;
     }
 
-    let scanIds = this.scanIds ? this.scanIds : [this._analysisLayoutService.defaultScanId];
+    const scanIds = this.scanIds.length > 0 ? this.scanIds : [this._analysisLayoutService.defaultScanId];
     this._cachedDataService.getImageList(ImageListReq.create({ scanIds })).subscribe((resp: ImageListResp) => {
       for (const img of resp.images) {
         if (img.purpose === ScanImagePurpose.SIP_MULTICHANNEL && img.imagePath) {

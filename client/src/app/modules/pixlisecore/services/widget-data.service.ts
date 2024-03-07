@@ -315,6 +315,11 @@ export class WidgetDataService {
               map((roiSettings: RegionSettings) => {
                 result.region = roiSettings;
 
+                // Filter to just the PMCs that are contained in the region.
+                if (roiSettings.region && roiSettings.region.scanEntryIndexesEncoded.length > 0) {
+                  result.resultValues = this.filterForPMCs(result.resultValues, new Set<number>(roiSettings.region.scanEntryIndexesEncoded));
+                }
+
                 // Remove from cache, we only want to cache while it's running, subsequent ones should
                 // re-run it
                 this._inFluxSingleQueryResultCache.delete(cacheKey);
@@ -350,6 +355,27 @@ export class WidgetDataService {
         return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg));
       })
     );
+  }
+
+  private filterForPMCs(queryResult: PMCDataValues, forPMCs: Set<number>): PMCDataValues {
+    const resultValues: PMCDataValue[] = [];
+
+    // Filter for PMCs requested
+    // TODO: Modify this so we don't uneccessarily run expressions for PMCs we end up throwing away
+    if (forPMCs === null) {
+      for (const item of queryResult.values) {
+        resultValues.push(item);
+      }
+    } else {
+      // Build a new result only containing PMCs specified
+      for (const item of queryResult.values) {
+        if (forPMCs.has(item.pmc)) {
+          resultValues.push(item);
+        }
+      }
+    }
+
+    return PMCDataValues.makeWithValues(resultValues);
   }
 
   private toMemoised(result: DataQueryResult): Uint8Array {
@@ -648,7 +674,7 @@ export class WidgetDataService {
           result.stderr,
           result.recordedExpressionInputs
         ),
-        new WidgetError("Query returned unexpected data type", msg),
+        new WidgetError("Expression failed to complete", msg),
         "", // warning
         result.expression,
         result.region,
