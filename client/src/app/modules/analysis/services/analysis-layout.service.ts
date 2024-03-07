@@ -30,8 +30,8 @@ export class DefaultExpressions {
   providedIn: "root",
 })
 export class AnalysisLayoutService implements OnDestroy {
-  sidepanelOpen: boolean = false;
-  //private _id = randomString(6);
+  // sidepanelOpen: boolean = false;
+  sidepanelOpen$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   private _subs = new Subscription();
 
@@ -276,14 +276,23 @@ export class AnalysisLayoutService implements OnDestroy {
     }, delayMS);
   }
 
+  get sidepanelOpen(): boolean {
+    return this.sidepanelOpen$.value;
+  }
+
+  set sidepanelOpen(value: boolean) {
+    this.sidepanelOpen$.next(value);
+  }
+
   toggleSidePanel() {
-    this.sidepanelOpen = !this.sidepanelOpen;
-    if (this.sidepanelOpen && !this.activeTab) {
+    if (!this.sidepanelOpen && !this.activeTab) {
       this.activeTab = this.sidebarTabs[0];
     }
 
+    this.sidepanelOpen = !this.sidepanelOpen;
+
     // We need to wait 100 ms before notifying resize because this is how long the transition is set for
-    this.delayNotifyCanvasResize(100);
+    // this.delayNotifyCanvasResize(100);
   }
 
   get isWindows(): boolean {

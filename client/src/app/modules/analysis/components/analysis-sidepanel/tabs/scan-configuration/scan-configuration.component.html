@@ -29,24 +29,39 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<panel-foldout-button
-  foldOutDirection="DOWN"
-  overlayPanelClass="QuantSelectorPanelComponent"
-  originX="start"
-  originY="bottom"
-  overlayX="start"
-  overlayY="top"
-  [offsetX]="0"
-  [offsetY]="0"
-  [closeIfClickedBackground]="true"
-  [dataForPanel]="dataForPanel"
-  (onPanelClose)="onPanelClose($event)"
-  #panelFoldoutButton>
-  <div class="quant-dropdown">
-    <div *ngIf="selectedQuantDetectors" class="quant-detectors">{{ selectedQuantDetectors }}</div>
-    <div class="name-container">
-      <span class="quant-name" [title]="selectedQuant">{{ selectedQuant }}</span>
-    </div>
-    <img class="quant-arrow" src="assets/button-icons/arrow-down.svg" />
+<div class="scan-configuration-container">
+  <header>
+    <h5>Datasets in Workspace</h5>
+    <action-button class="add-scan" action="add" color="#BCBCBC" [matMenuTriggerFor]="menu" (onMenuOpen)="onScanSearchMenu()"></action-button>
+    <mat-menu #menu="matMenu" class="scan-menu">
+      <div class="search-container">
+        <input class="scan-search" placeholder="Search scans" [(ngModel)]="scanSearchText" (click)="onAddScanSearchClick($event)" autofocus />
+      </div>
+      <button mat-menu-item *ngFor="let scan of addScanList" (click)="onAddScan(scan.id)" [disabled]="selectedScanIds.has(scan.id)">
+        Sol {{ scan.meta["Sol"] }}: {{ scan.title }}
+      </button>
+    </mat-menu>
+  </header>
+
+  <section class="scan-configurations">
+    <scan-configuration-item
+      [config]="config"
+      [scan]="idToScan[config.id]"
+      (updateConfig)="updateConfig($event)"
+      (removeConfiguration)="onRemoveConfiguration(config.id)"
+      *ngFor="let config of scanConfigurations">
+    </scan-configuration-item>
+  </section>
+  <div class="button-container">
+    <push-button
+      #tootip="matTooltip"
+      [matTooltip]="hasConfigChanged ? 'Update workspace' : 'No changes to save'"
+      [matTooltipShowDelay]="500"
+      class="save-btn"
+      buttonStyle="yellow"
+      [disabled]="!hasConfigChanged"
+      (onClick)="onSave()"
+      >Save</push-button
+    >
   </div>
-</panel-foldout-button>
+</div>

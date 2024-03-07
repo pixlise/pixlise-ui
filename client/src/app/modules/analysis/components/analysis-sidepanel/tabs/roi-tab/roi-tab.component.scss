@@ -67,7 +67,8 @@ roi-search-controls {
   height: calc(100vh - 40px - 40px - 52px);
 
   &.search-controls-visible {
-    height: calc(100vh - 40px - 40px - 134px);
+    // height: calc(100vh - 40px - 40px - 134px);
+    height: calc(100vh - 40px - 40px - 94px);
   }
 
   .rois-viewport {

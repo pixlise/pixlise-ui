@@ -24,6 +24,8 @@ import { MatSortModule } from "@angular/material/sort";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
 import { MatMenuModule } from "@angular/material/menu";
+import { ScanConfigurationTabComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/scan-configuration/scan-configuration.component";
+import { ScanConfigurationItemComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/scan-configuration/scan-configuration-item/scan-configuration-item.component";
 
 export { AnalysisLayoutService } from "./services/analysis-layout.service";
 
@@ -43,6 +45,8 @@ const APP_ROUTES: Routes = [
     MistRoiConvertComponent,
     MistRoiUploadComponent,
     ScanConfigurationDialog,
+    ScanConfigurationTabComponent,
+    ScanConfigurationItemComponent,
   ],
   imports: [
     CommonModule,
