@@ -1,6 +1,8 @@
 import { ScanConfigurationTabComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/scan-configuration/scan-configuration.component";
 import { MistROIComponent } from "../components/analysis-sidepanel/tabs/mist-roi/mist-roi.component";
 import { ROITabComponent } from "../components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
+import { SelectionComponent } from "../components/analysis-sidepanel/tabs/selection/selection.component";
+import { MultiQuantComponent } from "../components/analysis-sidepanel/tabs/multi-quant/multi-quant.component";
 
 export interface SidebarTabItem {
   title: string;
@@ -64,7 +66,7 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
   {
     title: "Selection",
     icon: "assets/icons/selection.svg",
-    component: null,
+    component: SelectionComponent,
     tooltip: "Selection",
     shortcut: ["Cmd", "Shift", "4"],
   },
@@ -82,13 +84,13 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
     tooltip: "Roughness",
     shortcut: ["Cmd", "Shift", "6"],
   },
-  // {
-  //   title: "Multi-Quant",
-  //   icon: "assets/icons/multiquant.svg",
-  //   component: null,
-  //   tooltip: "Multi-Quant",
-  //   shortcut: ["Cmd", "Shift", "7"],
-  // },
+  {
+    title: "Multi-Quant",
+    icon: "assets/icons/multiquant.svg",
+    component: MultiQuantComponent,
+    tooltip: "Multi-Quant",
+    shortcut: ["Cmd", "Shift", "7"],
+  },
 ];
 
 export const SIDEBAR_VIEWS: SidebarViewShortcut[] = [
