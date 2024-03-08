@@ -55,7 +55,17 @@ POSSIBILITY OF SUCH DAMAGE.
   <div class="button-container">
     <push-button
       #tootip="matTooltip"
-      [matTooltip]="hasConfigChanged ? 'Update workspace' : 'No changes to save'"
+      [matTooltip]="hasConfigChanged ? 'Reset scans' : 'No changes to reset'"
+      [matTooltipShowDelay]="500"
+      class="save-btn"
+      buttonStyle="yellow"
+      [disabled]="!hasConfigChanged"
+      (onClick)="onReset()"
+      >Reset</push-button
+    >
+    <push-button
+      #tootip="matTooltip"
+      [matTooltip]="hasConfigChanged ? 'Update configured scans' : 'No changes to save'"
       [matTooltipShowDelay]="500"
       class="save-btn"
       buttonStyle="yellow"

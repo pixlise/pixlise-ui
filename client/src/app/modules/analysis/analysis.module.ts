@@ -26,6 +26,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatMenuModule } from "@angular/material/menu";
 import { ScanConfigurationTabComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/scan-configuration/scan-configuration.component";
 import { ScanConfigurationItemComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/scan-configuration/scan-configuration-item/scan-configuration-item.component";
+import { DiffractionComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction-tab/diffraction.component";
 
 export { AnalysisLayoutService } from "./services/analysis-layout.service";
 
@@ -47,6 +48,7 @@ const APP_ROUTES: Routes = [
     ScanConfigurationDialog,
     ScanConfigurationTabComponent,
     ScanConfigurationItemComponent,
+    DiffractionComponent,
   ],
   imports: [
     CommonModule,

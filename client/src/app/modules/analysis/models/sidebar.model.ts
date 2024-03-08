@@ -1,6 +1,7 @@
 import { ScanConfigurationTabComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/scan-configuration/scan-configuration.component";
 import { MistROIComponent } from "../components/analysis-sidepanel/tabs/mist-roi/mist-roi.component";
 import { ROITabComponent } from "../components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
+import { DiffractionComponent } from "../components/analysis-sidepanel/tabs/diffraction-tab/diffraction.component";
 
 export interface SidebarTabItem {
   title: string;
@@ -71,7 +72,8 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
   {
     title: "Diffraction",
     icon: "assets/icons/diffraction.svg",
-    component: null,
+    component: DiffractionComponent,
+    width: "400px",
     tooltip: "Diffraction",
     shortcut: ["Cmd", "Shift", "5"],
   },
