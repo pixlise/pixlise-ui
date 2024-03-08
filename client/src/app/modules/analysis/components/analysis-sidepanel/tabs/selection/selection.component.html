@@ -1,0 +1,91 @@
+<!--
+Copyright (c) 2018-2022 California Institute of Technology (“Caltech”). U.S.
+Government sponsorship acknowledged.
+All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Caltech nor its operating division, the Jet Propulsion
+  Laboratory, nor the names of its contributors may be used to endorse or
+  promote products derived from this software without specific prior written
+  permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+
+<div class="selection-tab">
+    <!-- <push-button (onClick)="onDriftCorrection()" buttonStyle="outline" fxFlex="50%">Correct Drift?</push-button> -->
+
+    <div class="summary panel-row">
+         <span>{{summary}}</span>
+
+         <div class="summary-buttons">
+              <push-button (onClick)="onUndo()" [disabled]="!canUndo" buttonStyle="outline">Undo</push-button>
+              <push-button (onClick)="onRedo()" [disabled]="!canRedo" buttonStyle="outline">Redo</push-button>
+         </div>
+    </div>
+
+    <div class="selection-buttons panel-row">
+       <div class="selection-button-row">
+           <push-button (onClick)="onSelectAll()" buttonStyle="outline" class="half">Select All</push-button>
+           <push-button (onClick)="onClearSelection()" buttonStyle="outline" class="half">Clear</push-button>
+       </div>
+       <div class="selection-button-row">
+           <push-button (onClick)="onSelectDwellPMCs()" buttonStyle="outline" class="half">Select Dwells</push-button>
+           <push-button (onClick)="onEnterSelection()" buttonStyle="outline" class="half">Enter PMCs</push-button>
+       </div>
+       <push-button *ngFor="let id of subDataSetIDs" (onClick)="onSelectForSubDataset(id)" buttonStyle="outline">All Points for Dataset: {{id}}</push-button>
+       <push-button (onClick)="onAddNearbyPixels()" buttonStyle="outline" [disabled]="beamSelection.getSelectedEntryCount() <= 0">Add Nearby Pixels From PMC Locations</push-button>
+       <push-button (onClick)="onNewROI()" buttonStyle="yellow" [disabled]="beamSelection.getSelectedEntryCount() <= 0 || isPublicUser">Save selection as ROI</push-button>
+    </div>
+
+    <cdk-accordion class="selection-accordion">
+           <cdk-accordion-item role="button" tabindex="0">
+               <div class="accordion-title" (click)="onToggleExpand(0)">
+                   <span>RGBU Averages</span>
+                   <mat-icon aria-hidden="false" aria-label="Toggle RGBU Averages">{{expandedIndices.includes(0) ? 'arrow_drop_up' : 'arrow_drop_down'}}</mat-icon>
+               </div>
+               <div [style.display]="expandedIndices.includes(0) ? '' : 'none'">
+                   <div
+                       *ngFor="let averageRGBURatio of averageRGBURatios"
+                       class="average-rgbu-ratio">
+                       <span class="ratio-title">{{averageRGBURatio.name}}</span>
+                       <span class="ratio-value">{{averageRGBURatio.ratio|number:'1.0-2'}}</span>
+                   </div>
+               </div>
+           </cdk-accordion-item>
+       <cdk-accordion-item role="button" tabindex="1" class="pmcs-container">
+           <div class="accordion-title" (click)="onToggleExpand(1)">
+               <span>PMC List</span>
+               <mat-icon aria-hidden="false" aria-label="Toggle PMC List">{{expandedIndices.includes(1) ? 'arrow_drop_up' : 'arrow_drop_down'}}</mat-icon>
+           </div>
+           <cdk-virtual-scroll-viewport itemSize="25" class="full" [style.display]="expandedIndices.includes(1) ? '' : 'none'">
+               <div
+                   *cdkVirtualFor="let item of displaySelectedPMCs"
+                   class="pmc"
+                   [ngClass]="{'pmc-highlight': item.scanId===hoverScanId && item.pmc >= 0 && item.pmc===hoverPMC, 'pmc-dataset-heading': item.pmc < 0}"
+                   (mouseenter)="onPMCEnter(item)"
+                   (mouseleave)="onPMCLeave(item)">
+                   <div>{{item.pmc < 0 ? "Dataset: " + item.scanId : item.pmc}}</div>
+                   <img *ngIf="item.pmc >= 0" (click)="onUnselectPMC(item)" class="clickable" src="assets/button-icons/close-cross-gray.svg">
+               </div>
+           </cdk-virtual-scroll-viewport>
+       </cdk-accordion-item>
+    </cdk-accordion>
+</div>

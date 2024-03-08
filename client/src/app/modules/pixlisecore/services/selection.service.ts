@@ -28,7 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Injectable } from "@angular/core";
-import { ReplaySubject, combineLatest } from "rxjs";
+import { Observable, ReplaySubject, combineLatest, map } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
 import { BeamSelection } from "../models/beam-selection";
@@ -47,6 +47,12 @@ import { SelectedImagePixelsWriteReq } from "src/app/generated-protos/selection-
 import { ScanEntryRange } from "src/app/generated-protos/scan";
 import { PMCConversionResult, ScanIdConverterService } from "./scan-id-converter.service";
 import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { APICachedDataService } from "./apicacheddata.service";
+import { Dialog } from "@angular/cdk/dialog";
+import { ScanEntry } from "src/app/generated-protos/scan-entry";
+import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
+import { NewROIDialogData, NewROIDialogComponent } from "../../roi/components/new-roi-dialog/new-roi-dialog.component";
+import { PMCSelectorDialogComponent } from "../components/atoms/selection-changer/pmc-selector-dialog/pmc-selector-dialog.component";
 
 // The Selection service. It should probably be named something like CrossViewLinkingService though!
 //
@@ -99,7 +105,9 @@ export class SelectionService {
   constructor(
     private _dataService: APIDataService,
     private _scanIdConverterService: ScanIdConverterService,
-    private _snackbarService: SnackbarService
+    private _snackbarService: SnackbarService,
+    private _cachedDataService: APICachedDataService,
+    private _dialog: MatDialog
   ) {}
 
   private updateListeners(): void {
@@ -261,27 +269,31 @@ export class SelectionService {
       this.persistSelection(currentSelection.beamSelection, currentSelection.pixelSelection, saveCrop);
     }
   }
-  /*
+
   // Beam Selection specific
-  unselectPMC(pmc: number): boolean {
+  unselectPMC(scanId: string, pmc: number): boolean {
     // Run through the current selection, remove the specified one
-    let locIdx = dataset.pmcToLocationIndex.get(pmc);
-    if (!locIdx) {
-      console.error("Failed to unselect PMC: " + pmc + ", could not find corresponding location index");
-      return false;
+    const curSel = this.getCurrentSelection();
+    const selPMCs = curSel.beamSelection.getSelectedScanEntryPMCs(scanId);
+    if (selPMCs.has(pmc)) {
+      selPMCs.delete(pmc);
+
+      const newSel = new Map<string, Set<number>>();
+      for (const selScanId of curSel.beamSelection.getScanIds()) {
+        if (selScanId == scanId) {
+          newSel.set(scanId, selPMCs);
+        } else {
+          newSel.set(selScanId, curSel.beamSelection.getSelectedScanEntryPMCs(selScanId));
+        }
+      }
+
+      this.setSelection(new BeamSelection(newSel), curSel.pixelSelection);
+      return true;
     }
 
-    let curSel = this.getCurrentSelection();
-
-    if (curSel.beamSelection) {
-      let newSel = new Set<number>(curSel.beamSelection.locationIndexes);
-      newSel.delete(locIdx);
-      this.setSelection(new BeamSelection(dataset, newSel), PixelSelection.makeEmptySelection());
-    }
-
-    return true;
+    return false;
   }
-*/
+
   // General selection operations
   clearSelection(): void {
     console.log("Selection cleared");
@@ -401,9 +413,9 @@ export class SelectionService {
   get chordClicks$(): ReplaySubject<string[]> {
     return this._chordClicks$;
   }
-
+/*
   // Central place where UI can come to ask for user entry of selected PMCs
-  public promptUserForPMCSelection(dialog: MatDialog, scanIds: string[]): void {
+  promptUserForPMCSelection(dialog: MatDialog, scanIds: string[]): void {
     let promptMsg = "You can enter PMCs in a comma-separated list, and ranges are also allowed.\n\nFor example: 10,11,13-17";
     let prompts = [];
 
@@ -443,11 +455,92 @@ export class SelectionService {
         } catch (e) {
           alert(e);
           return;
-        }*/
+        }* /
 
         alert("No PMCs were able to be read from entered text. Selection not changed.");
       }
       // else: User cancelled...
     });
+  }
+*/
+  private isSelectable(entry: ScanEntry): boolean {
+    // If it has pseudo-intensities, it's gotta have usable data. We check for normal too but when a dataset
+    // isn't fully downloaded we won't have them, but also don't want to only check pseudo-intensity in case
+    // it's a dataset that doesn't have any anyway (eg breadboard)
+    return entry.pseudoIntensities || entry.normalSpectra > 0;
+  }
+
+  selectUserSpecifiedPMCs(): void {
+    this._dialog.open(PMCSelectorDialogComponent, new MatDialogConfig());
+  }
+
+  newROIFromSelection(defaultScanId: string): void {
+    const dialogConfig = new MatDialogConfig<NewROIDialogData>();
+
+    dialogConfig.data = {
+      defaultScanId: defaultScanId,
+    };
+    const dialogRef = this._dialog.open(NewROIDialogComponent, dialogConfig);
+    dialogRef.afterClosed().subscribe((created: boolean) => {
+      if (created) {
+        this.clearSelection();
+      }
+    });
+  }
+
+  selectAllPMCs(scanIds: string[]) {
+    this.selectPMCs(scanIds, (scanId: string, entry: ScanEntry) => {
+      return this.isSelectable(entry);
+    });
+  }
+
+  selectDwellPMCs(scanIds: string[]) {
+    this.selectPMCs(scanIds, (scanId: string, entry: ScanEntry) => {
+      return entry.dwellSpectra > 0;
+    });
+  }
+
+  invertPMCSelection(scanIds: string[]) {
+    const currentSelection = this.getCurrentSelection().beamSelection;
+    let selScanIds = currentSelection.getScanIds();
+    if (selScanIds.length == 0) {
+      selScanIds = scanIds;
+    }
+
+    this.selectPMCs(selScanIds, (scanId: string, entry: ScanEntry) => {
+      return !currentSelection.has(scanId, entry.id) && this.isSelectable(entry);
+    });
+  }
+
+  private selectPMCs(scanIds: string[], includeFunc: (scanId: string, entry: ScanEntry) => boolean) {
+    const obs$ = [];
+
+    for (const scanId of scanIds) {
+      obs$.push(this.makePMCsForScanId(scanId, includeFunc));
+    }
+
+    combineLatest(obs$).subscribe((results: Set<number>[]) => {
+      const selection = new Map<string, Set<number>>();
+      for (let c = 0; c < scanIds.length; c++) {
+        selection.set(scanIds[c], results[c]);
+      }
+
+      this.setSelection(new BeamSelection(selection), PixelSelection.makeEmptySelection());
+    });
+  }
+
+  private makePMCsForScanId(scanId: string, includeFunc: (scanId: string, entry: ScanEntry) => boolean): Observable<Set<number>> {
+    return this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })).pipe(
+      map((resp: ScanEntryResp) => {
+        const items = new Set<number>();
+        for (let c = 0; c < resp.entries.length; c++) {
+          if (includeFunc(scanId, resp.entries[c])) {
+            items.add(resp.entries[c].id);
+          }
+        }
+
+        return items;
+      })
+    );
   }
 }
