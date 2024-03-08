@@ -599,11 +599,18 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
 
     // Generate draw models for each scan while also calculating the overall bounding box
     this.allLocationPointsBBox = new Rect();
+    let firstBBox = true;
+
     if (from.raw) {
       const newScanDrawModels = new Map<string, ContextImageScanDrawModel>();
 
       for (const [scanId, scanMdl] of from.raw.scanModels) {
-        this.allLocationPointsBBox.expandToFitRect(scanMdl.scanPointsBBox);
+        if (firstBBox) {
+          this.allLocationPointsBBox = scanMdl.scanPointsBBox.copy();
+          firstBBox = false;
+        } else {
+          this.allLocationPointsBBox.expandToFitRect(scanMdl.scanPointsBBox);
+        }
 
         const footprintColours = getSchemeColours(from.pointBBoxColourScheme);
         const footprint = new Footprint(scanMdl.footprint, footprintColours[0], footprintColours[1]);

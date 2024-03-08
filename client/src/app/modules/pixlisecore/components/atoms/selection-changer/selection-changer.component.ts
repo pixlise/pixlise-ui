@@ -125,10 +125,18 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
     const dialogConfig = new MatDialogConfig();
     dialogConfig.backdropClass = "empty-overlay-backdrop";
 
+    let allScanIds = [];
+    for (const scan of Object.values(this._analysisLayoutService.activeScreenConfiguration$.value.scanConfigurations)) {
+      allScanIds.push(scan.id);
+    }
+    if (allScanIds.length < 2) {
+      allScanIds = [];
+    }
+
     dialogConfig.data = new SelectionOptionsDialogData(
       this._hasDwells.get(this._analysisLayoutService.defaultScanId) || false, // Only show dwell if we have any
       this.userCanCreateROI,
-      [], // TODO: show all scan ids that exist, so we can have options to select ONLY all points for that dataset...
+      allScanIds,
       new ElementRef(event.currentTarget)
     );
 
@@ -141,17 +149,17 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
       }
 
       if (choice.result == SelectionOption.SEL_ALL) {
-        this.onSelectAll();
+        this._selectionService.selectAllPMCs(this.getSelectionScanIds());
       } else if (choice.result == SelectionOption.SEL_ENTER_PMCS) {
-        this.onSelectSpecificPMC();
+        this._selectionService.selectUserSpecifiedPMCs();
       } else if (choice.result == SelectionOption.SEL_DWELL) {
-        this.onSelectDwellPMCs();
+        this._selectionService.selectDwellPMCs(this.getSelectionScanIds());
       } else if (choice.result == SelectionOption.NEW_ROI) {
-        this.onNewROIFromSelection();
+        this._selectionService.newROIFromSelection(this._analysisLayoutService.defaultScanId);
       } else if (choice.result == SelectionOption.SEL_SUBDATASET) {
-        this.onSelectForSubDataset(choice.value);
+        this._selectionService.selectAllPMCs([choice.value]);
       } else if (choice.result == SelectionOption.SEL_INVERT) {
-        this.onInvertSelection();
+        this._selectionService.invertPMCSelection(this.getSelectionScanIds());
       } else {
         alert("Error: selection failed - not implemented!");
       }
@@ -162,121 +170,12 @@ export class SelectionChangerComponent implements OnInit, OnDestroy {
     this._selectionService.clearSelection();
   }
 
-  onSelectAll(): void {
-    if (!this._analysisLayoutService.defaultScanId) {
-      return;
-    }
-
-    this.selectAllForScanId(this._analysisLayoutService.defaultScanId);
-  }
-
-  private selectAllForScanId(scanId: string) {
-    this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })).subscribe((resp: ScanEntryResp) => {
-      const items = new Set<number>();
-      for (let c = 0; c < resp.entries.length; c++) {
-        if (this.isSelectable(resp.entries[c])) {
-          //items.add(resp.entries[c].id)
-          items.add(resp.entries[c].id);
-        }
-      }
-
-      const selection = new Map<string, Set<number>>();
-      selection.set(scanId, items);
-      this._selectionService.setSelection(new BeamSelection(selection), PixelSelection.makeEmptySelection());
-    });
-  }
-
-  private isSelectable(entry: ScanEntry): boolean {
-    // If it has pseudo-intensities, it's gotta have usable data. We check for normal too but when a dataset
-    // isn't fully downloaded we won't have them, but also don't want to only check pseudo-intensity in case
-    // it's a dataset that doesn't have any anyway (eg breadboard)
-    return entry.pseudoIntensities || entry.normalSpectra > 0;
-  }
-
-  onSelectSpecificPMC(): void {
-    // TODO: Reimplement this
-    //this._selectionService.promptUserForPMCSelection(this.dialog);
-    let dialogConfig = new MatDialogConfig();
-    this.dialog.open(PMCSelectorDialogComponent, dialogConfig);
-  }
-
-  onSelectDwellPMCs(): void {
-    if (!this._analysisLayoutService.defaultScanId) {
-      return;
-    }
-
-    this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: this._analysisLayoutService.defaultScanId })).subscribe((resp: ScanEntryResp) => {
-      const items = new Set<number>();
-      for (let c = 0; c < resp.entries.length; c++) {
-        if (resp.entries[c].dwellSpectra > 0) {
-          //items.add(resp.entries[c].id)
-          items.add(resp.entries[c].id);
-        }
-      }
-
-      const selection = new Map<string, Set<number>>();
-      selection.set(this._analysisLayoutService.defaultScanId, items);
-      this._selectionService.setSelection(new BeamSelection(selection), PixelSelection.makeEmptySelection());
-    });
-  }
-
-  onNewROIFromSelection(): void {
-    const dialogConfig = new MatDialogConfig<NewROIDialogData>();
-    // TODO: This should be the scan id of the currently visible scan, not the default scan id
-    // However, due to the level of abstraction here, we don't have access to the currently visible scan id for the widget
-    // We probably should associate this information with each pixel selection just in case there's no beam selection
-    dialogConfig.data = {
-      defaultScanId: this._analysisLayoutService.defaultScanId,
-    };
-    let dialogRef = this.dialog.open(NewROIDialogComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe((created: boolean) => {
-      if (created) {
-        this._selectionService.clearSelection();
-      }
-    });
-  }
-
-  onSelectForSubDataset(id: string): void {
-    this.selectAllForScanId(id);
-  }
-
-  onInvertSelection(): void {
-    if (!this._analysisLayoutService.defaultScanId) {
-      return;
-    }
-
-    // If selection has nothing in it, use the default scan ID
+  private getSelectionScanIds(): string[] {
     const sel = this._selectionService.getCurrentSelection().beamSelection;
     let selScanIds = sel.getScanIds();
     if (selScanIds.length == 0) {
       selScanIds = [this._analysisLayoutService.defaultScanId];
     }
-
-    const entryReqs = [];
-    for (const scanId of selScanIds) {
-      entryReqs.push(this._cachedDataService.getScanEntry(ScanEntryReq.create({ scanId: scanId })));
-    }
-
-    combineLatest(entryReqs).subscribe(results => {
-      // We have ALL the entries for ALL the scans, so flip the selection here
-      const newSel = new Map<string, Set<number>>();
-      for (let c = 0; c < results.length; c++) {
-        const curSel = sel.getSelectedScanEntryPMCs(selScanIds[c]);
-        const thisScanNewSel = new Set<number>();
-
-        // Run through the scan entries, and add ones to the selection which aren't currently selected
-        const entryResp = results[c] as ScanEntryResp;
-        for (const entry of entryResp.entries) {
-          if (!curSel.has(entry.id) && this.isSelectable(entry)) {
-            thisScanNewSel.add(entry.id);
-          }
-        }
-
-        // We now have the selection for this scan id, add it to the overall selection we're creating
-        newSel.set(selScanIds[c], thisScanNewSel);
-      }
-
-      this._selectionService.setSelection(new BeamSelection(newSel), PixelSelection.makeEmptySelection());
-    });
+    return selScanIds;
   }
 }

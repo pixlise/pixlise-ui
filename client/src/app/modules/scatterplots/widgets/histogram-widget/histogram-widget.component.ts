@@ -88,39 +88,24 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     const query: DataSourceParams[] = [];
 
     // NOTE: processQueryResult depends on the order of the following for loops...
-    for (const [scanId, ids] of this.mdl.dataSourceIds) {
-      for (const roiId of ids.roiIds) {
-        for (const exprId of this.mdl.expressionIds) {
+    for (const exprId of this.mdl.expressionIds) {
+      for (const [scanId, ids] of this.mdl.dataSourceIds) {
+        for (const roiId of ids.roiIds) {
           query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+
+          // Get the error column if this was a predefined expression
+          const elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
+          if (elem.length > 0) {
+            // Get the detector too. If not specified, it will be '' which will mean some defaulting will happen
+            const detector = DataExpressionId.getPredefinedQuantExpressionDetector(exprId);
+
+            // Try query it
+            const errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
+            query.push(new DataSourceParams(scanId, errExprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+          }
         }
       }
     }
-
-    /* ALSO INCLUDE ERROR BARS:
-  protected getErrorColForExpression(exprId: string, roiId: string): Observable<PMCDataValues | null> {
-    // If we've got a corresponding error column, use that, otherwise return null
-    const elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
-    if (elem.length <= 0) {
-      return of(null);
-    }
-
-    // Get the detector too. If not specified, it will be '' which will mean some defaulting will happen
-    const detector = DataExpressionId.getPredefinedQuantExpressionDetector(exprId);
-
-    // Try query it
-    const errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
-    const query: DataSourceParams[] = [new DataSourceParams(errExprId, roiId, "")];
-    return this._widgetDataService.getData(query, false).pipe(
-      map(queryData => {
-        if (queryData.error || queryData.hasQueryErrors() || queryData.queryResults.length != 1) {
-          return null;
-        }
-
-        return queryData.queryResults[0].values;
-      })
-    );
-  }
-*/
 
     this._widgetData.getData(query).subscribe({
       next: data => {
@@ -243,29 +228,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
     this.isWidgetHighlighted = true;
     const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
-    // dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
-    //   this.isWidgetHighlighted = false;
-    //   console.log("RES", result);
-    //   if (result && result.selectedExpressions?.length > 0) {
-    //     this.mdl.expressionIds = [];
-
-    //     for (const expr of result.selectedExpressions) {
-    //       this.mdl.expressionIds.push(expr.id);
-    //     }
-
-    //     let roiIds = [PredefinedROIID.getAllPointsForScan(this.scanId)];
-
-    //     // If we already have a data source for this scan, keep the ROI ids
-    //     const existingSource = this.mdl.dataSourceIds.get(result.scanId);
-    //     if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
-    //       roiIds = existingSource.roiIds;
-    //     }
-    //     this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
-    //   }
-
-    //   this.update();
-    //   this.saveState();
-    // });
+    // NOTE: result returned by AnalysisLayoutService.expressionPickerResponse$
   }
 
   onRegions() {
@@ -343,24 +306,30 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   get showWhiskers(): boolean {
     return this.mdl.showWhiskers;
   }
+
   onToggleShowWhiskers() {
     this.mdl.showWhiskers = !this.mdl.showWhiskers;
+    this.update();
     this.saveState();
   }
 
-  get showStdError(): boolean {
-    return !this.mdl.showStdDeviation;
+  get showStdDeviation(): boolean {
+    return this.mdl.showStdDeviation;
   }
-  toggleShowStdError() {
+
+  toggleShowStdDeviation() {
     this.mdl.showStdDeviation = !this.mdl.showStdDeviation;
+    this.update();
     this.saveState();
   }
 
   get logScale(): boolean {
     return this.mdl.logScale;
   }
+
   onToggleLogScale() {
     this.mdl.logScale = !this.mdl.logScale;
+    this.update();
     this.saveState();
   }
 }

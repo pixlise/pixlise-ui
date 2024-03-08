@@ -94,4 +94,12 @@ export class BeamSelection {
   setSelectedScanEntryIndexes(scanId: string, idxs: Iterable<number>) {
     this._scanEntryIndexes.set(scanId, new Set<number>(idxs));
   }
+
+  has(scanId: string, pmc: number): boolean {
+    const entries = this._scanEntryPMCs.get(scanId);
+    if (!entries) {
+      return false;
+    }
+    return entries.has(pmc);
+  }
 }
