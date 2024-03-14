@@ -50,11 +50,9 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
 
   <div *ngIf="isLoggedIn" class="authenticated-buttons">
-    <!-- <a *ngIf="!isPublicUser" [href]="discussLink" class="nav-link-normal" target="_blank">Discussion</a> -->
-    <!-- <a *ngFor="let tab of tabs" [href]="tab.url" (click)="onNavigate(tab, $event)" class="{{ tab.cssClass }}">{{ tab.label }}</a> -->
     <span class="buttons">
       <span class="version"> Pixlise {{ uiVersion }}</span>
-      <a class="link-to-v3" href="https://staging.pixlise.org" target="_blank">Back to v3</a>
+      <a class="link-to-v3" href="https://v3.pixlise.org" target="_blank">Back to v3</a>
       <icon-button
         (click)="onNotificationsMenu()"
         [hoverYellow]="true"
