@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewContainerRef } from "@angular/core";
 import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
-import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SpectrumService } from "../../services/spectrum.service";
 import { Subscription, combineLatest } from "rxjs";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
@@ -29,6 +29,7 @@ import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-
 import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/widget-data";
 import { ScanEntryRange } from "src/app/generated-protos/scan";
 import { HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
+import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -48,6 +49,8 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
   scanId: string = "";
 
+  selection: SelectionHistoryItem | null = null;
+
   private _subs = new Subscription();
 
   constructor(
@@ -59,6 +62,7 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     private _cachedDataService: APICachedDataService,
     private _roiService: ROIService,
     private _energyCalibrationService: EnergyCalibrationService,
+    private _selectionService: SelectionService,
     public dialog: MatDialog,
     public clipboard: Clipboard
   ) {
@@ -205,6 +209,10 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
             lines.set(line.roiID, line.lineExpressions);
           });
 
+          // Remove any selection ROI from the list
+          let selectionROI = PredefinedROIID.getSelectedPointsForScan(this.scanId);
+          lines.delete(selectionROI);
+
           // If new widgetData is coming in, we need to update the calibration
           this._subs.add(
             this._energyCalibrationService.getCurrentCalibration(this.scanId).subscribe((cal: SpectrumEnergyCalibration[]) => {
@@ -283,6 +291,27 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
             chartLine.color = displaySettings[chartLine.roiId].colour.asString();
           }
         });
+        this.updateLines();
+      })
+    );
+
+    this._subs.add(
+      this._selectionService.selection$.subscribe(selection => {
+        let hasSelection = selection.beamSelection.getSelectedEntryCount() > 0;
+
+        // If we have a selection, and the selection ROI doesn't have a line, add it, otherwise remove it
+        // updateLines will grab the actual selection data and update the display
+        let selectionROI = PredefinedROIID.getSelectedPointsForScan(this.scanId);
+        if (!this.mdl.spectrumLines.find(line => line.roiId === selectionROI) && hasSelection) {
+          let existingLines = this.mdl.getLineList();
+          this.mdl.setLineList(existingLines.set(selectionROI, [SpectrumChartModel.lineExpressionBulkA, SpectrumChartModel.lineExpressionBulkB]));
+        } else if (!hasSelection) {
+          let existingLines = this.mdl.getLineList();
+          existingLines.delete(selectionROI);
+          this.mdl.setLineList(existingLines);
+        }
+
+        this.selection = selection;
         this.updateLines();
       })
     );
@@ -550,6 +579,11 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
   private saveState(): void {
     const spectrumLines: SpectrumLines[] = [];
     this.mdl.getLineList().forEach((lineExpressions, roiID) => {
+      // If the selection ROI, we don't save it
+      if (roiID === PredefinedROIID.getSelectedPointsForScan(this.scanId)) {
+        return;
+      }
+
       spectrumLines.push(SpectrumLines.create({ roiID, lineExpressions }));
     });
 
@@ -615,6 +649,11 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     for (const [roiId, options] of this.mdl.getLineList()) {
       this._subs.add(
         this._roiService.getRegionSettings(roiId).subscribe((roi: RegionSettings) => {
+          if (roi.region.id === PredefinedROIID.getSelectedPointsForScan(this.scanId)) {
+            // Inject the selection data into the ROI
+            roi.region.scanEntryIndexesEncoded = Array.from(this.selection?.beamSelection.getSelectedScanEntryPMCs(this.scanId) || []) || [];
+          }
+
           if (!scanIds.has(roi.region.scanId)) {
             scanIds.add(roi.region.scanId);
 
@@ -661,45 +700,50 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
                 searchFilters: { scanId: roi.region.scanId },
               })
             ),
-          ]).subscribe(loadedItems => {
-            const spectrumResp = loadedItems[0] as SpectrumResp;
-            const scanListResp = loadedItems[1] as ScanListResp;
-            let scanName = roi.region.scanId;
-            if (scanListResp.scans.length > 0) {
-              scanName = scanListResp.scans[0].title;
-            }
+          ]).subscribe({
+            next: loadedItems => {
+              const spectrumResp = loadedItems[0] as SpectrumResp;
+              const scanListResp = loadedItems[1] as ScanListResp;
+              let scanName = roi.region.scanId;
+              if (scanListResp.scans.length > 0) {
+                scanName = scanListResp.scans[0].title;
+              }
 
-            // Read what each roi/option entry requires and form a spectrum source that we can use with the spectrum expression parser
-            let values = new Map<string, SpectrumValues>();
+              // Read what each roi/option entry requires and form a spectrum source that we can use with the spectrum expression parser
+              let values = new Map<string, SpectrumValues>();
 
-            const dataSrc = new SpectrumExpressionDataSourceImpl(spectrumResp);
-            const parser = new SpectrumExpressionParser();
+              const dataSrc = new SpectrumExpressionDataSourceImpl(spectrumResp);
+              const parser = new SpectrumExpressionParser();
 
-            for (const lineExpr of options) {
-              // Find the title
-              const title = SpectrumChartModel.getTitleForLineExpression(lineExpr);
+              for (const lineExpr of options) {
+                // Find the title
+                const title = SpectrumChartModel.getTitleForLineExpression(lineExpr);
 
-              // Normal line data retrieval
-              values = parser.getSpectrumValues(
-                dataSrc,
-                // TODO: Convert from PMC to location indexes???
-                roi.region.scanEntryIndexesEncoded,
-                lineExpr,
-                title,
-                readType,
-                this.mdl.yAxisCountsPerMin,
-                this.mdl.yAxisCountsPerPMC
-              );
+                // Normal line data retrieval
+                values = parser.getSpectrumValues(
+                  dataSrc,
+                  // TODO: Convert from PMC to location indexes???
+                  roi.region.scanEntryIndexesEncoded,
+                  lineExpr,
+                  title,
+                  readType,
+                  this.mdl.yAxisCountsPerMin,
+                  this.mdl.yAxisCountsPerPMC
+                );
 
-              this.mdl.addLineDataForLine(roiId, lineExpr, roi.region.scanId, scanName, roi.region.name, roi.displaySettings.colour, values);
-            }
+                this.mdl.addLineDataForLine(roiId, lineExpr, roi.region.scanId, scanName, roi.region.name, roi.displaySettings.colour, values);
+              }
 
-            this.mdl.updateRangesAndKey();
-            if (this.widgetControlConfiguration.topRightInsetButton) {
-              this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-            }
+              this.mdl.updateRangesAndKey();
+              if (this.widgetControlConfiguration.topRightInsetButton) {
+                this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+              }
 
-            this.mdl.clearDisplayData(); // This should trigger a redraw
+              this.mdl.clearDisplayData(); // This should trigger a redraw
+            },
+            error: err => {
+              console.error("Failed to load spectra for ROI: ", roiId, err);
+            },
           });
         })
       );
