@@ -137,7 +137,7 @@ export class SelectionComponent implements OnInit, OnDestroy {
         // Also do some pixel selection calculations
         if (selection.pixelSelection.selectedPixels.size > 0) {
           if (this._summary.length > 0) {
-            this._summary += ", ";
+            this._summary += ",\n";
           }
           this._summary += selection.pixelSelection.selectedPixels.size.toLocaleString() + " pixels";
         }

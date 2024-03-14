@@ -58,6 +58,7 @@ import { ShareDialogComponent } from "./components/atoms/share-ownership-item/sh
 import { ShareOwnershipItemButtonComponent } from "./components/atoms/share-ownership-item/share-ownership-item-button.component";
 import { ImagePickerDialogComponent } from "src/app/modules/pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
 import { PMCSelectorDialogComponent } from "src/app/modules/pixlisecore/components/atoms/selection-changer/pmc-selector-dialog/pmc-selector-dialog.component";
+import { ClosableListComponent } from "src/app/modules/pixlisecore/components/atoms/closable-list/closable-list.component";
 
 export { RouteNotFoundComponent } from "./components/pages/route-not-found/route-not-found.component";
 export { WidgetSettingsMenuComponent } from "./components/atoms/widget-settings-menu/widget-settings-menu.component";
@@ -118,6 +119,7 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
     ShareOwnershipItemButtonComponent,
     ImagePickerDialogComponent,
     PMCSelectorDialogComponent,
+    ClosableListComponent,
   ],
   imports: [CommonModule, OverlayModule, MaterialModule, FormsModule],
   exports: [
@@ -160,6 +162,7 @@ export { PickerDialogComponent } from "./components/atoms/picker-dialog/picker-d
     ShareOwnershipItemButtonComponent,
     ImagePickerDialogComponent,
     PMCSelectorDialogComponent,
+    ClosableListComponent,
   ],
   providers: [
     /*APICommService, APIDataService, HttpInterceptorService*/

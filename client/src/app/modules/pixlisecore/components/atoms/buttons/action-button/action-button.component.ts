@@ -49,6 +49,8 @@ const customActionIcons = {
   closeAccordion: "assets/button-icons/arrow-down.svg",
   ellipsis: "assets/button-icons/ellipsis.svg",
   verticalEllipsis: "assets/button-icons/vertical-ellipsis.svg",
+  visibleOn: "assets/button-icons/visible-on.svg",
+  visibleOff: "assets/button-icons/visible-off.svg",
 };
 
 export type ACTION_TYPE = keyof typeof customActionIcons | keyof typeof matActionIcons;

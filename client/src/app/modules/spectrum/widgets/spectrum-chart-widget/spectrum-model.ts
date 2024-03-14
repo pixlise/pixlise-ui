@@ -913,7 +913,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         yMargin,
         this._drawTransform.canvasParams.height - yMargin,
         lineRangeYmin,
-        lineRangeYmax * 1.05  // to leave gap at top above chart
+        lineRangeYmax * 1.05 // to leave gap at top above chart
       );
     }
 

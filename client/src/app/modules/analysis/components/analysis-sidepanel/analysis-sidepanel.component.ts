@@ -99,9 +99,15 @@ export class AnalysisSidepanelComponent {
   }
 
   onToggleTab(tab: SidebarTabItem) {
-    if (this.activeTab?.title === tab.title) {
+    if (this.activeTab?.title && this.activeTab?.title === tab.title) {
       this._analysisLayoutService.toggleSidePanel();
     } else if (!this._openTabRef) {
+      this._analysisLayoutService.activeTab = tab;
+      this._analysisLayoutService.toggleSidePanel();
+    } else if (!this.sidepanelOpen) {
+      // The sidepanelOpen$ subscription will open the tab,
+      // so we just need to make sure the old one is cleared and the active tab updated
+      this.clearTab();
       this._analysisLayoutService.activeTab = tab;
       this._analysisLayoutService.toggleSidePanel();
     } else {

@@ -1,8 +1,10 @@
 import { ScanConfigurationTabComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/scan-configuration/scan-configuration.component";
 import { MistROIComponent } from "../components/analysis-sidepanel/tabs/mist-roi/mist-roi.component";
 import { ROITabComponent } from "../components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
+import { DiffractionTabComponent } from "../components/analysis-sidepanel/tabs/diffraction/diffraction.component";
 import { SelectionComponent } from "../components/analysis-sidepanel/tabs/selection/selection.component";
 import { MultiQuantComponent } from "../components/analysis-sidepanel/tabs/multi-quant/multi-quant.component";
+import { RoughnessComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roughness/roughness.component";
 
 export interface SidebarTabItem {
   title: string;
@@ -65,7 +67,7 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
   },
   {
     title: "Selection",
-    icon: "assets/icons/selection.svg",
+    icon: "assets/icons/selection-lasso.svg",
     component: SelectionComponent,
     tooltip: "Selection",
     shortcut: ["Cmd", "Shift", "4"],
@@ -73,14 +75,16 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
   {
     title: "Diffraction",
     icon: "assets/icons/diffraction.svg",
-    component: null,
+    component: DiffractionTabComponent,
+    width: "350px",
     tooltip: "Diffraction",
     shortcut: ["Cmd", "Shift", "5"],
   },
   {
     title: "Roughness",
     icon: "assets/icons/roughness.svg",
-    component: null,
+    component: RoughnessComponent,
+    width: "350px",
     tooltip: "Roughness",
     shortcut: ["Cmd", "Shift", "6"],
   },

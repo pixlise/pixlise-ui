@@ -28,6 +28,7 @@ import { PeakIdentificationData, SpectrumPeakIdentificationComponent } from "./s
 import { getInitialModalPositionRelativeToTrigger } from "src/app/utils/overlay-host";
 import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/widget-data";
 import { ScanEntryRange } from "src/app/generated-protos/scan";
+import { HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -204,6 +205,18 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
             lines.set(line.roiID, line.lineExpressions);
           });
 
+          // If new widgetData is coming in, we need to update the calibration
+          this._subs.add(
+            this._energyCalibrationService.getCurrentCalibration(this.scanId).subscribe((cal: SpectrumEnergyCalibration[]) => {
+              if (cal.length >= 0) {
+                this._energyCalibrationService.setCurrentCalibration(this.scanId, cal);
+                this.mdl.setEnergyCalibration(this.scanId, cal);
+                this.mdl.xAxisEnergyScale = true;
+                this.updateLines();
+              }
+            })
+          );
+
           this.mdl.setLineList(lines);
 
           this.updateLines();
@@ -274,6 +287,21 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       })
     );
 
+    this._subs.add(
+      this._analysisLayoutService.highlightedDiffractionWidget$.subscribe(highlightedDiffraction => {
+        if (highlightedDiffraction) {
+          if (highlightedDiffraction.widgetId === this._widgetId) {
+            this.mdl.showDiffractionPeaks(highlightedDiffraction.peaks);
+            this.mdl.zoomToPeak(highlightedDiffraction.keVStart, highlightedDiffraction.keVEnd);
+            this.reDraw();
+          }
+        } else if (this.mdl.diffractionPeaksShown.length > 0) {
+          this.mdl.showDiffractionPeaks([]);
+          this.reDraw();
+        }
+      })
+    );
+
     this.reDraw();
   }
 
@@ -287,12 +315,14 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
       // items.set(PredefinedROIID.getSelectedPointsForScan(this.scanId), [SpectrumChartModel.lineExpressionBulkA, SpectrumChartModel.lineExpressionBulkB]);
 
       // Set the calibration
-      this._energyCalibrationService.getScanCalibration(this.scanId).subscribe((cal: SpectrumEnergyCalibration[]) => {
-        this._energyCalibrationService.setCurrentCalibration(this.scanId, cal);
-        this.mdl.setEnergyCalibration(this.scanId, cal);
-        this.mdl.xAxisEnergyScale = true;
-        this.updateLines();
-      });
+      this._subs.add(
+        this._energyCalibrationService.getScanCalibration(this.scanId).subscribe((cal: SpectrumEnergyCalibration[]) => {
+          this._energyCalibrationService.setCurrentCalibration(this.scanId, cal);
+          this.mdl.setEnergyCalibration(this.scanId, cal);
+          this.mdl.xAxisEnergyScale = true;
+          this.updateLines();
+        })
+      );
 
       this.mdl.setLineList(items);
       this.updateLines();
@@ -583,94 +613,96 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     const scanIds = new Set<string>();
 
     for (const [roiId, options] of this.mdl.getLineList()) {
-      this._roiService.getRegionSettings(roiId).subscribe((roi: RegionSettings) => {
-        if (!scanIds.has(roi.region.scanId)) {
-          scanIds.add(roi.region.scanId);
+      this._subs.add(
+        this._roiService.getRegionSettings(roiId).subscribe((roi: RegionSettings) => {
+          if (!scanIds.has(roi.region.scanId)) {
+            scanIds.add(roi.region.scanId);
 
-          // For any scans coming in that are not yet calibrated, set them to
-          // dataset calibration
-          if (this.mdl.xAxisEnergyScale) {
-            this._energyCalibrationService.getCurrentCalibration(roi.region.scanId).subscribe((cals: SpectrumEnergyCalibration[]) => {
-              // If any are empty...
-              let emptyCount = 0;
-              for (const cal of cals) {
-                if (cal.isEmpty()) {
-                  emptyCount++;
+            // For any scans coming in that are not yet calibrated, set them to
+            // dataset calibration
+            if (this.mdl.xAxisEnergyScale) {
+              this._energyCalibrationService.getCurrentCalibration(roi.region.scanId).subscribe((cals: SpectrumEnergyCalibration[]) => {
+                // If any are empty...
+                let emptyCount = 0;
+                for (const cal of cals) {
+                  if (cal.isEmpty()) {
+                    emptyCount++;
+                  }
                 }
-              }
 
-              if (cals.length <= 0 || emptyCount > 0) {
-                this._energyCalibrationService.getScanCalibration(roi.region.scanId).subscribe((scanCals: SpectrumEnergyCalibration[]) => {
-                  this._energyCalibrationService.setCurrentCalibration(roi.region.scanId, scanCals);
-                  this.mdl.setEnergyCalibration(roi.region.scanId, scanCals);
-                });
-              }
-            });
-          }
-        }
-
-        // Now we know the scan Id for this one, request spectra and find the scan name
-        // KNOWN ISSUE: this downloads all spectra along with bulk+max, so for only displaying say bulk A+B this is a huuuuge extra download. To
-        // mitigate this, if the ROI has no members, we set an empty entries array, but if there is anything in the ROI, we have to download them all
-        // anyway (so location indexes can access the returned spectra!). Caching is also going to be better if we download all or nothing...
-        // THIS MAY have issues with scans that don't have a stored bulk+max though. Maybe we should always just download all :(
-        const spectrumReq = SpectrumReq.create({
-          scanId: roi.region.scanId,
-          bulkSum: true,
-          maxValue: true,
-        });
-        if (roi.region.scanEntryIndexesEncoded.length <= 0) {
-          spectrumReq.entries = ScanEntryRange.create({ indexes: [] });
-        }
-
-        combineLatest([
-          this._cachedDataService.getSpectrum(spectrumReq),
-          this._cachedDataService.getScanList(
-            ScanListReq.create({
-              searchFilters: { scanId: roi.region.scanId },
-            })
-          ),
-        ]).subscribe(loadedItems => {
-          const spectrumResp = loadedItems[0] as SpectrumResp;
-          const scanListResp = loadedItems[1] as ScanListResp;
-          let scanName = roi.region.scanId;
-          if (scanListResp.scans.length > 0) {
-            scanName = scanListResp.scans[0].title;
+                if (cals.length <= 0 || emptyCount > 0) {
+                  this._energyCalibrationService.getScanCalibration(roi.region.scanId).subscribe((scanCals: SpectrumEnergyCalibration[]) => {
+                    this._energyCalibrationService.setCurrentCalibration(roi.region.scanId, scanCals);
+                    this.mdl.setEnergyCalibration(roi.region.scanId, scanCals);
+                  });
+                }
+              });
+            }
           }
 
-          // Read what each roi/option entry requires and form a spectrum source that we can use with the spectrum expression parser
-          let values = new Map<string, SpectrumValues>();
-
-          const dataSrc = new SpectrumExpressionDataSourceImpl(spectrumResp);
-          const parser = new SpectrumExpressionParser();
-
-          for (const lineExpr of options) {
-            // Find the title
-            const title = SpectrumChartModel.getTitleForLineExpression(lineExpr);
-
-            // Normal line data retrieval
-            values = parser.getSpectrumValues(
-              dataSrc,
-              // TODO: Convert from PMC to location indexes???
-              roi.region.scanEntryIndexesEncoded,
-              lineExpr,
-              title,
-              readType,
-              this.mdl.yAxisCountsPerMin,
-              this.mdl.yAxisCountsPerPMC
-            );
-
-            this.mdl.addLineDataForLine(roiId, lineExpr, roi.region.scanId, scanName, roi.region.name, roi.displaySettings.colour, values);
+          // Now we know the scan Id for this one, request spectra and find the scan name
+          // KNOWN ISSUE: this downloads all spectra along with bulk+max, so for only displaying say bulk A+B this is a huuuuge extra download. To
+          // mitigate this, if the ROI has no members, we set an empty entries array, but if there is anything in the ROI, we have to download them all
+          // anyway (so location indexes can access the returned spectra!). Caching is also going to be better if we download all or nothing...
+          // THIS MAY have issues with scans that don't have a stored bulk+max though. Maybe we should always just download all :(
+          const spectrumReq = SpectrumReq.create({
+            scanId: roi.region.scanId,
+            bulkSum: true,
+            maxValue: true,
+          });
+          if (roi.region.scanEntryIndexesEncoded.length <= 0) {
+            spectrumReq.entries = ScanEntryRange.create({ indexes: [] });
           }
 
-          this.mdl.updateRangesAndKey();
-          if (this.widgetControlConfiguration.topRightInsetButton) {
-            this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
-          }
+          combineLatest([
+            this._cachedDataService.getSpectrum(spectrumReq),
+            this._cachedDataService.getScanList(
+              ScanListReq.create({
+                searchFilters: { scanId: roi.region.scanId },
+              })
+            ),
+          ]).subscribe(loadedItems => {
+            const spectrumResp = loadedItems[0] as SpectrumResp;
+            const scanListResp = loadedItems[1] as ScanListResp;
+            let scanName = roi.region.scanId;
+            if (scanListResp.scans.length > 0) {
+              scanName = scanListResp.scans[0].title;
+            }
 
-          this.mdl.clearDisplayData(); // This should trigger a redraw
-        });
-      });
+            // Read what each roi/option entry requires and form a spectrum source that we can use with the spectrum expression parser
+            let values = new Map<string, SpectrumValues>();
+
+            const dataSrc = new SpectrumExpressionDataSourceImpl(spectrumResp);
+            const parser = new SpectrumExpressionParser();
+
+            for (const lineExpr of options) {
+              // Find the title
+              const title = SpectrumChartModel.getTitleForLineExpression(lineExpr);
+
+              // Normal line data retrieval
+              values = parser.getSpectrumValues(
+                dataSrc,
+                // TODO: Convert from PMC to location indexes???
+                roi.region.scanEntryIndexesEncoded,
+                lineExpr,
+                title,
+                readType,
+                this.mdl.yAxisCountsPerMin,
+                this.mdl.yAxisCountsPerPMC
+              );
+
+              this.mdl.addLineDataForLine(roiId, lineExpr, roi.region.scanId, scanName, roi.region.name, roi.displaySettings.colour, values);
+            }
+
+            this.mdl.updateRangesAndKey();
+            if (this.widgetControlConfiguration.topRightInsetButton) {
+              this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
+            }
+
+            this.mdl.clearDisplayData(); // This should trigger a redraw
+          });
+        })
+      );
     }
   }
 }

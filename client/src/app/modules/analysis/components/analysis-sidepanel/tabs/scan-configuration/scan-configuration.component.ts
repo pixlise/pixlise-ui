@@ -31,7 +31,7 @@ import { Component, OnInit } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { Subscription } from "rxjs";
-import { ScanConfiguration } from "src/app/generated-protos/screen-configuration";
+import { ScanConfiguration, ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ActivatedRoute } from "@angular/router";
@@ -67,16 +67,7 @@ export class ScanConfigurationTabComponent implements OnInit {
   ngOnInit(): void {
     this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfig => {
-        this.scanConfigurations = Object.values(screenConfig.scanConfigurations);
-        this.selectedScanIds = new Set<string>();
-        this.scanConfigurations.forEach(config => {
-          this.selectedScanIds.add(config.id);
-          this._analysisLayoutService.fetchQuantsForScan(config.id);
-        });
-
-        if (this.idToScan && Object.keys(this.idToScan).length > 0) {
-          this.scanConfigurations.sort((a, b) => Number(this.idToScan[a.id].meta?.["Sol"]) - Number(this.idToScan[b.id].meta?.["Sol"]));
-        }
+        this.loadScreenConfiguration(screenConfig);
       })
     );
 
@@ -100,6 +91,21 @@ export class ScanConfigurationTabComponent implements OnInit {
         this.scanQuants = quants;
       })
     );
+  }
+
+  loadScreenConfiguration(screenConfig: ScreenConfiguration) {
+    this.scanConfigurations = Object.values(JSON.parse(JSON.stringify(screenConfig.scanConfigurations)));
+    this.selectedScanIds = new Set<string>();
+    this.scanConfigurations.forEach(config => {
+      this.selectedScanIds.add(config.id);
+      this._analysisLayoutService.fetchQuantsForScan(config.id);
+    });
+
+    if (this.idToScan && Object.keys(this.idToScan).length > 0) {
+      this.scanConfigurations.sort((a, b) => Number(this.idToScan[a.id].meta?.["Sol"]) - Number(this.idToScan[b.id].meta?.["Sol"]));
+    }
+
+    this.hasConfigChanged = false;
   }
 
   ngOnDestroy(): void {
@@ -157,6 +163,10 @@ export class ScanConfigurationTabComponent implements OnInit {
       this.scanConfigurations[index] = config;
       this.hasConfigChanged = true;
     }
+  }
+
+  onReset(): void {
+    this.loadScreenConfiguration(this._analysisLayoutService.activeScreenConfiguration$.value);
   }
 
   onSave(): void {

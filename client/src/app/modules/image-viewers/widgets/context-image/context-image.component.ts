@@ -35,6 +35,7 @@ import { ImageOptionsComponent, ImageDisplayOptions, ImagePickerParams, ImagePic
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
 
 @Component({
   selector: "app-context-image",
@@ -45,6 +46,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   mdl: ContextImageModel;
   drawer: CanvasDrawer;
   toolhost: ContextImageToolHost;
+
+  // For saving and restoring
+  cachedExpressionIds: string[] = [];
 
   cursorShown: string = "";
 
@@ -284,6 +288,26 @@ bool removeBottomSpecularArtifacts = 21;
           this.saveState();
         }
         this.reDraw();
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.highlightedContextImageDiffractionWidget$.subscribe(highlightedWidget => {
+        if (!highlightedWidget || highlightedWidget.widgetId !== this._widgetId) {
+          return;
+        }
+
+        let expressionId = highlightedWidget.expressionId || highlightedWidget.result?.expression?.id;
+
+        if (expressionId) {
+          this.cachedExpressionIds = this.mdl.expressionIds.slice();
+          this.mdl.expressionIds = [expressionId];
+
+          this.reloadModel();
+        } else {
+          this.mdl.expressionIds = this.cachedExpressionIds.slice();
+          this.reloadModel();
+        }
       })
     );
 

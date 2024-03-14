@@ -721,7 +721,7 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
         return roiLayer;
       }
 
-      roiLayer.polygons.push(new RegionDisplayPolygon(scanMdl.scanPointPolygons[locIdx], []))
+      roiLayer.polygons.push(new RegionDisplayPolygon(scanMdl.scanPointPolygons[locIdx], []));
     }
 
     if (roi.roi.displaySettings) {

@@ -384,7 +384,10 @@ h3 {
 
 .mdc-menu-surface {
   --mdc-theme-surface: #2b3135;
-  max-height: 500px !important;
+
+  &.scan-menu {
+    max-height: 500px !important;
+  }
 }
 
 .mat-mdc-menu-content {
