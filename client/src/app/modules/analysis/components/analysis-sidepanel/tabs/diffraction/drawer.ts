@@ -37,6 +37,8 @@ import { ChartAxisDrawer } from "src/app/modules/widget/components/interactive-c
 export class DiffractionHistogramDrawer implements CanvasDrawer {
   protected _mdl: DiffractionHistogramModel;
 
+  firstDraw: boolean = true;
+
   constructor(mdl: DiffractionHistogramModel) {
     this._mdl = mdl;
   }

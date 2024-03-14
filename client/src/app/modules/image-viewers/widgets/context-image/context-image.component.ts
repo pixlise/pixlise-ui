@@ -47,6 +47,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   drawer: CanvasDrawer;
   toolhost: ContextImageToolHost;
 
+  // For saving and restoring
+  cachedExpressionIds: string[] = [];
+
   cursorShown: string = "";
 
   scanId: string = "";
@@ -285,6 +288,26 @@ bool removeBottomSpecularArtifacts = 21;
           this.saveState();
         }
         this.reDraw();
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.highlightedContextImageDiffractionWidget$.subscribe(highlightedWidget => {
+        if (!highlightedWidget || highlightedWidget.widgetId !== this._widgetId) {
+          return;
+        }
+
+        let expressionId = highlightedWidget.expressionId || highlightedWidget.result?.expression?.id;
+
+        if (expressionId) {
+          this.cachedExpressionIds = this.mdl.expressionIds.slice();
+          this.mdl.expressionIds = [expressionId];
+
+          this.reloadModel();
+        } else {
+          this.mdl.expressionIds = this.cachedExpressionIds.slice();
+          this.reloadModel();
+        }
       })
     );
 

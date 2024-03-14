@@ -472,6 +472,11 @@ export class WidgetDataService {
   }
 
   private getExpression(id: string): Observable<DataExpression> {
+    // If we have an unsaved one, return that
+    if (this.unsavedExpressions.has(id)) {
+      return of(this.unsavedExpressions.get(id)) as Observable<DataExpression>;
+    }
+
     // If this is for a "predefined" expression, return one from memory here
     if (DataExpressionId.isPredefinedExpression(id)) {
       const expr = getPredefinedExpression(id);
@@ -479,11 +484,6 @@ export class WidgetDataService {
         return throwError(() => new Error("Failed to create predefined expression for: " + id));
       }
       return of(expr);
-    }
-
-    // If we have an unsaved one, return that
-    if (this.unsavedExpressions.has(id)) {
-      return of(this.unsavedExpressions.get(id)) as Observable<DataExpression>;
     }
 
     // Must be a real one, retrieve it as normal

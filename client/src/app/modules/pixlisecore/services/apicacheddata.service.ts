@@ -11,8 +11,8 @@ import { ScanListReq, ScanListResp, ScanMetaLabelsAndTypesReq, ScanMetaLabelsAnd
 import { DiffractionPeakManualListReq, DiffractionPeakManualListResp } from "src/app/generated-protos/diffraction-manual-msgs";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
-import { ExpressionGetReq, ExpressionGetResp } from "src/app/generated-protos/expression-msgs";
-import { DataModuleGetReq, DataModuleGetResp } from "src/app/generated-protos/module-msgs";
+import { ExpressionGetReq, ExpressionGetResp, ExpressionListReq, ExpressionListResp } from "src/app/generated-protos/expression-msgs";
+import { DataModuleGetReq, DataModuleGetResp, DataModuleListReq, DataModuleListResp } from "src/app/generated-protos/module-msgs";
 
 import { decodeIndexList, decompressZeroRunLengthEncoding } from "src/app/utils/utils";
 import { DetectorConfigListReq, DetectorConfigListResp, DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
@@ -56,12 +56,16 @@ export class APICachedDataService {
   private _defaultImageReqMap = new Map<string, Observable<ImageGetDefaultResp>>();
   private _imageBeamLocationsReqMap = new Map<string, Observable<ImageBeamLocationsResp>>();
   private _imageReqMap = new Map<string, Observable<ImageGetResp>>();
+  private _exprListReqMap = new Map<string, Observable<ExpressionListResp>>();
+  private _modListReqMap = new Map<string, Observable<DataModuleListResp>>();
   private _exprGroupListReqMap = new Map<string, Observable<ExpressionGroupListResp>>();
   private _exprGroupReqMap = new Map<string, Observable<ExpressionGroupGetResp>>();
   private _imageListReqMap = new Map<string, Observable<ImageListResp>>();
 
   // Invalidation requests - if true, then we'll refetch on next request instead of serving cache
   public detectedDiffractionStatusReqMapCacheInvalid: boolean = false;
+  public exprListReqMapCacheInvalid: boolean = false;
+  public modListReqMapCacheInvalid: boolean = false;
 
   // Non-scan related
   private _regionOfInterestGetReqMap = new Map<string, Observable<RegionOfInterestGetResp>>();
@@ -481,6 +485,34 @@ export class APICachedDataService {
       // Add it to the map too so a subsequent request will get this
       this._imageReqMap.set(cacheId, result);
       this.addIdCacheItem(req.imageName, cacheId, this._imageCacheKeys);
+    }
+
+    return result;
+  }
+
+  getModuleList(req: DataModuleListReq, updateList: boolean = false): Observable<DataModuleListResp> {
+    const cacheId = JSON.stringify(DataModuleListReq.toJSON(req));
+    let result = this._modListReqMap.get(cacheId);
+    if (this.modListReqMapCacheInvalid || result === undefined || updateList) {
+      // Have to request it!
+      result = this._dataService.sendDataModuleListRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this._modListReqMap.set(cacheId, result);
+    }
+
+    return result;
+  }
+
+  getExpressionList(req: ExpressionListReq, updateList: boolean = false): Observable<ExpressionListResp> {
+    const cacheId = JSON.stringify(ExpressionListReq.toJSON(req));
+    let result = this._exprListReqMap.get(cacheId);
+    if (this.exprListReqMapCacheInvalid || result === undefined || updateList) {
+      // Have to request it!
+      result = this._dataService.sendExpressionListRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this._exprListReqMap.set(cacheId, result);
     }
 
     return result;

@@ -31,24 +31,33 @@ import { Component, ElementRef, OnInit, ViewChild } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { PMCDataValues } from "src/app/expression-language/data-values";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 import { DetectedDiffractionPeakStatuses, DetectedDiffractionPerLocation, ManualDiffractionPeak } from "src/app/generated-protos/diffraction-data";
+import { DataExpression } from "src/app/generated-protos/expressions";
 import { ScanEntryRange, ScanItem } from "src/app/generated-protos/scan";
 import { ScanEntryReq } from "src/app/generated-protos/scan-entry-msgs";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
-import { MinMax } from "src/app/models/BasicTypes";
+import { MinMax, SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 // import { HistogramInteraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction-tab-old/interaction";
 // import { HistogramInteraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction-tab-old/interaction";
 import { DiffractionHistogramDrawer } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/drawer";
 import { HistogramInteraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/interaction";
-import { DiffractionHistogramModel, HistogramSelectionOwner } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
+import {
+  DiffractionHistogramModel,
+  HistogramBar,
+  HistogramData,
+  HistogramSelectionOwner,
+} from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
+import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
 import { ActionButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/action-button/action-button.component";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
 import { ExpressionDataSource } from "src/app/modules/pixlisecore/models/expression-data-source";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
-import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { SelectionService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
 import { HistogramDrawer } from "src/app/modules/scatterplots/widgets/histogram-widget/histogram-drawer";
@@ -58,7 +67,15 @@ import { CursorId } from "src/app/modules/widget/components/interactive-canvas/c
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
+import { Colours } from "src/app/utils/colours";
 import { encodeIndexList } from "src/app/utils/utils";
+
+export type DiffractionExpressionResponse = {
+  title?: string;
+  expression?: string;
+  description?: string;
+  error?: string;
+};
 
 @Component({
   selector: "diffraction",
@@ -102,6 +119,9 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
   peakStatusesPerScan: Map<string, DetectedDiffractionPeakStatuses> = new Map();
   peakStatuses: DetectedDiffractionPeakStatuses = DetectedDiffractionPeakStatuses.create();
 
+  private _allPeakskeVRange: MinMax = new MinMax(0, 0);
+  private _currentCalibrations: SpectrumEnergyCalibration[] | null = null;
+
   detectedPeaksPerScan: Map<string, DiffractionPeakMapPerLocation> = new Map();
   peaks: DiffractionPeak[] = [];
   filteredPeaks: DiffractionPeak[] = [];
@@ -143,7 +163,6 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
   private _sortCriteria: string = this.sortModeEffectSize;
   private _sortAscending: boolean = false;
 
-  private _tablePage: number = 0;
   hasMultiPages: boolean = false;
 
   constructor(
@@ -153,6 +172,8 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     private _selectionService: SelectionService,
     private _diffractionService: DiffractionService,
     private _userOptionsService: UserOptionsService,
+    private _widgetDataService: WidgetDataService,
+    private _expressionsService: ExpressionsService,
     public dialog: MatDialog
   ) {
     this._histogramMdl = new DiffractionHistogramModel(this);
@@ -215,6 +236,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
         if (this.selectedScanId) {
           this.userPeaks = peaksPerScan.get(this.selectedScanId) || [];
           this.updateDisplayList();
+          this.updateRange();
         }
       })
     );
@@ -224,6 +246,11 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
         this.detectedPeaksPerScan = peaksPerScan;
         if (this.selectedScanId) {
           this.updateDisplayList();
+          this.updateRange();
+
+          setTimeout(() => {
+            this.mdl.needsCanvasResize$.next();
+          }, 200);
         }
       })
     );
@@ -250,6 +277,24 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
   onSwitchList(list: string) {
     this.activeList = list;
     this.updateDisplayList();
+  }
+
+  updateRange() {
+    this._allPeakskeVRange = new MinMax(0, 0);
+    for (let peak of this.peaks) {
+      this._allPeakskeVRange.expand(peak.keV);
+    }
+
+    for (let peak of this.userPeaks) {
+      this._allPeakskeVRange.expand(peak.energykeV);
+    }
+
+    let barCount = Math.ceil((this._allPeakskeVRange.max! / DiffractionHistogramModel.keVBinWidth) * 1.1);
+    if (this._barSelected.length !== barCount) {
+      this._barSelected = Array(barCount).fill(false);
+    }
+
+    this.onResetBarSelection();
   }
 
   get selectedContextImage(): string {
@@ -318,7 +363,8 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     this._diffractionService.fetchPeakStatusesForScan(this._selectedScanId);
 
     this._subs.add(
-      this._energyCalibrationService.getCurrentCalibration(this.selectedScanId).subscribe(calibration => {
+      this._energyCalibrationService.getCurrentCalibration(this.selectedScanId).subscribe(calibrations => {
+        this._currentCalibrations = calibrations;
         let dataSource = new ExpressionDataSource();
         dataSource
           .prepare(
@@ -326,7 +372,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
             this.selectedScanId,
             this._analysisLayoutService.getQuantIdForScan(this.selectedScanId),
             PredefinedROIID.getAllPointsForScan(this.selectedScanId),
-            calibration
+            calibrations
           )
           .subscribe(() => {
             dataSource.getDiffractionPeakEffectData(-1, -1).then((data: PMCDataValues) => {
@@ -342,15 +388,92 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     this._subs.unsubscribe();
   }
 
-  onResetBarSelection() {}
+  onResetBarSelection() {
+    this._barSelected.fill(true);
+    this._barSelectedCount = this._barSelected.length;
+
+    this.updateDisplayList();
+    this.mdl.needsDraw$.next();
+
+    // this._exprService.setDiffractionCountExpression("diffractionPeaks(0,4096)", "All Diffracton Peaks");
+  }
+
+  runExpression(formedExpression: DiffractionExpressionResponse, updateContextImage: boolean = true) {
+    let expression = DataExpression.create({
+      id: DataExpressionId.makePredefinedDiffractionCountDataExpression(this._selectedScanId),
+      name: formedExpression.title,
+      sourceCode: formedExpression.expression,
+      sourceLanguage: EXPR_LANGUAGE_PIXLANG,
+      comments: formedExpression.description,
+    });
+
+    this._widgetDataService
+      .runExpression(
+        expression,
+        this._selectedScanId,
+        this._analysisLayoutService.getQuantIdForScan(this._selectedScanId),
+        PredefinedROIID.getAllPointsForScan(this._selectedScanId),
+        false,
+        true
+      )
+      .subscribe(response => {
+        if (updateContextImage) {
+          this._analysisLayoutService.highlightedContextImageDiffractionWidget$.next({
+            widgetId: this.selectedContextImage,
+            result: response,
+          });
+        }
+      });
+  }
 
   onShowMap() {
     this.isMapShown = !this.isMapShown;
+
+    if (this.isMapShown) {
+      let exprData = this.formExpressionForSelection();
+      if (exprData.error) {
+        console.error("Error forming expression for selection: " + exprData.error);
+        this.canSaveExpression = false;
+      } else {
+        this.canSaveExpression = true;
+        this.runExpression(exprData);
+      }
+    } else {
+      this._analysisLayoutService.highlightedContextImageDiffractionWidget$.next({
+        widgetId: this.selectedContextImage,
+        result: null,
+      });
+    }
   }
 
-  onSelectPMCsWithDiffraction() {}
+  onSelectPMCsWithDiffraction() {
+    let detectedPMCs = this.filteredPeaks.map(peak => peak.pmc);
+    let userPMCs = this.filteredUserPeaks.map(peak => peak.pmc);
 
-  onSaveAsExpressionMap() {}
+    let pmcSelection = new Map<string, Set<number>>([[this._selectedScanId, new Set([...detectedPMCs, ...userPMCs])]]);
+    this._selectionService.setSelection(BeamSelection.makeSelectionFromScanEntryPMCSets(pmcSelection), PixelSelection.makeEmptySelection());
+  }
+
+  onSaveAsExpressionMap() {
+    let exprData = this.formExpressionForSelection();
+    if (exprData.error) {
+      console.error("Error forming expression for selection: " + exprData.error);
+      this.canSaveExpression = false;
+    } else {
+      this.canSaveExpression = true;
+      this.runExpression(exprData, false);
+
+      let expression = DataExpression.create({
+        name: exprData.title,
+        sourceCode: exprData.expression,
+        sourceLanguage: EXPR_LANGUAGE_PIXLANG,
+        comments: exprData.description,
+        tags: [],
+      });
+
+      this._expressionsService.writeExpression(expression);
+    }
+  }
 
   onToggleUserPeaksListOpen() {
     this.userPeaksListOpen = !this.userPeaksListOpen;
@@ -482,7 +605,13 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
   }
 
   sortDetectedPeaks() {
-    let peaksCopy = this.peaks.slice().filter(peak => this.visibleDetectedStatuses.includes(peak.status));
+    let peaksCopy = this.peaks.slice().filter(peak => {
+      if (!this.visibleDetectedStatuses.includes(peak.status)) {
+        return false;
+      }
+
+      return this.iskeVRangeSelected(peak.keV);
+    });
     setTimeout(() => {
       this.filteredPeaks = peaksCopy.sort((a: DiffractionPeak, b: DiffractionPeak) => {
         let aValue = a.channel;
@@ -505,7 +634,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
   }
 
   sortUserPeaks() {
-    let peaksCopy = this.userPeaks.slice();
+    let peaksCopy = this.userPeaks.slice().filter(peak => peak.energykeV >= 0 && this.iskeVRangeSelected(peak.energykeV));
     setTimeout(() => {
       this.filteredUserPeaks = peaksCopy.sort((a: ManualDiffractionPeak, b: ManualDiffractionPeak) => {
         let aValue = a.pmc;
@@ -521,63 +650,173 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     }, 0);
   }
 
-  private updateDisplayList() {
-    if (this.activeList === "User Entered Peaks") {
-      this.sortUserPeaks();
-    } else {
-      this.sortDetectedPeaks();
+  private updateHistogram() {
+    let err = "";
+    if (this._allPeakskeVRange.min == this._allPeakskeVRange.max && this._allPeakskeVRange.min == 0) {
+      // We didn't get keV values because there is no spectrum calibration available. Complain at this point
+      err = "Failed to get calibration from spectrum";
     }
+
+    let binnedBykeV: number[] = [];
+    let bars: HistogramBar[] = [];
+    let countRange = new MinMax();
+
+    if (!err && this._allPeakskeVRange.max) {
+      binnedBykeV = Array(Math.ceil((this._allPeakskeVRange.max / DiffractionHistogramModel.keVBinWidth) * 1.1)).fill(0);
+      for (let peak of this.peaks) {
+        if (peak.status != DiffractionPeak.statusNotAnomaly) {
+          let binIdx = Math.floor(peak.keV / DiffractionHistogramModel.keVBinWidth);
+          binnedBykeV[binIdx]++;
+        }
+      }
+
+      for (let peak of this.userPeaks) {
+        let binIdx = Math.floor(peak.energykeV / DiffractionHistogramModel.keVBinWidth);
+        binnedBykeV[binIdx]++;
+      }
+
+      for (let c = 0; c < binnedBykeV.length; c++) {
+        let keVStart = c * DiffractionHistogramModel.keVBinWidth;
+        let colour = Colours.GRAY_70;
+        /*            if(this.iskeVRangeSelected(keVStart+DiffractionHistogramModel.keVBinWidth/2))
+                {
+                    colour = Colours.YELLOW;
+                }*/
+
+        bars.push(new HistogramBar(colour, binnedBykeV[c], keVStart));
+        countRange.expand(binnedBykeV[c]);
+      }
+    }
+
+    this._histogramMdl = new DiffractionHistogramModel(this);
+
+    // Make raw data structure
+    this._histogramMdl.raw = new HistogramData(bars, countRange, err);
+
+    // Set up the rest
+    this.drawer = new DiffractionHistogramDrawer(this.mdl);
+    this.interaction = new HistogramInteraction(this.mdl);
+
+    this.mdl.needsDraw$.next();
+  }
+
+  private updateDisplayList() {
+    this.sortUserPeaks();
+    this.sortDetectedPeaks();
+
+    this.updateHistogram();
   }
 
   setkeVRangeSelected(keVRange: MinMax, selected: boolean, complete: boolean) {
-    // // If they're ALL selected, unselect them first because the user is doing something specific here
-    // if (this._barSelectedCount == this._barSelected.length) {
-    //   for (let c = 0; c < this._barSelected.length; c++) {
-    //     this._barSelected[c] = false;
-    //   }
-    //   this._barSelectedCount = 0;
-    //   selected = true; // we're forcing it to select this one!
-    // }
-    // // If we've just unselected the last bar...
-    // if (this._barSelectedCount <= 1) {
-    //   selected = true; // Force this one to select
-    // }
-    // let keVMin = keVRange.min || 0;
-    // let keVMax = keVRange.max || 0;
-    // let mid = (keVMin + keVMax) / 2;
-    // let idx = this.getBarIdx(mid);
-    // if (idx <= this._barSelected.length) {
-    //   this._barSelected[idx] = selected;
-    // }
-    // // Don't force it to rebuild everything as the user is interacting/dragging, only do this when we are told it's complete!
-    // if (complete) {
-    //   // Count how many are selected (controls if we have svae as expression map button enabled)
-    //   this._barSelectedCount = 0;
-    //   for (let sel of this._barSelected) {
-    //     if (sel) {
-    //       this._barSelectedCount++;
-    //     }
-    //   }
-    //   this.updateDisplayList();
-    //   // Also tell the expression service so diffraction count map is up to date with user selection
-    //   let exprData = this.formExpressionForSelection();
-    //   if (exprData.length == 3) {
-    //     // TODO:
-    //     // this._exprService.setDiffractionCountExpression(exprData[1], exprData[0]);
-    //   }
-    // }
-    // if (selected) {
-    //   // Something was selected, show the list
-    //   this.detectPeaksListOpen = true;
-    // }
+    // If they're ALL selected, unselect them first because the user is doing something specific here
+    if (this._barSelectedCount == this._barSelected.length) {
+      for (let c = 0; c < this._barSelected.length; c++) {
+        this._barSelected[c] = false;
+      }
+      this._barSelectedCount = 0;
+      selected = true; // we're forcing it to select this one!
+    }
+    // If we've just unselected the last bar...
+    if (this._barSelectedCount <= 1) {
+      selected = true; // Force this one to select
+    }
+    let keVMin = keVRange.min || 0;
+    let keVMax = keVRange.max || 0;
+    let mid = (keVMin + keVMax) / 2;
+    let idx = this.getBarIdx(mid);
+    if (idx <= this._barSelected.length) {
+      this._barSelected[idx] = selected;
+    }
+    // Don't force it to rebuild everything as the user is interacting/dragging, only do this when we are told it's complete!
+    if (complete) {
+      // Count how many are selected (controls if we have svae as expression map button enabled)
+      this._barSelectedCount = 0;
+      for (let sel of this._barSelected) {
+        if (sel) {
+          this._barSelectedCount++;
+        }
+      }
+      this.updateDisplayList();
+      // // Also tell the expression service so diffraction count map is up to date with user selection
+      let exprData = this.formExpressionForSelection();
+      if (exprData.error) {
+        console.error("Error forming expression for selection: " + exprData.error);
+        this.canSaveExpression = false;
+      } else {
+        this.canSaveExpression = true;
+        if (this.isMapShown) {
+          this.runExpression(exprData);
+        }
+      }
+    }
+  }
+
+  private keVToChannel(keV: number, detector: string): number | null {
+    if (!this._currentCalibrations) {
+      return null;
+    }
+
+    const cal = this._currentCalibrations.find(cal => cal.detector === detector);
+    if (!cal) {
+      return null;
+    }
+
+    return cal.keVsToChannel([keV])[0];
+  }
+
+  // If success, returns 3 strings: First item is the name, then expression, then description
+  // If fail, returns 1 string, which is the error
+  private formExpressionForSelection(): DiffractionExpressionResponse {
+    // Take the selected keV values and form an expression map
+    if (this._barSelectedCount <= 0) {
+      return { error: "No keV ranges selected on diffraction peak histogram!" };
+    }
+
+    if (!this._currentCalibrations) {
+      return { error: "Failed to get spectrum chart calibration - is it set to show channels?" };
+    }
+
+    let expr = "";
+    let rangeText = "";
+    let rangeMinMax = new MinMax();
+
+    for (let c = 0; c < this._barSelected.length; c++) {
+      if (!this._barSelected[c]) {
+        continue;
+      }
+
+      let range = new MinMax(c * DiffractionHistogramModel.keVBinWidth, (c + 1) * DiffractionHistogramModel.keVBinWidth);
+
+      if (expr.length > 0) {
+        expr += "+";
+        rangeText += ", ";
+      }
+
+      // Here we convert the keV range to channels using the spectrum charts calibration
+
+      expr += "diffractionPeaks(" + this.keVToChannel(range.min!, "A") + "," + this.keVToChannel(range.max!, "A") + ")";
+
+      rangeMinMax.expand(range.min!);
+      rangeMinMax.expand(range.max!);
+
+      rangeText += range.min + "-" + range.max;
+    }
+
+    let title = "Diffraction peaks (" + rangeMinMax.min + "-" + rangeMinMax.max + " keV in " + this._barSelectedCount + " ranges)";
+
+    return { title, expression: expr, description: "Diffraction peaks in ranges: " + rangeText };
+  }
+
+  private getBarIdx(keV: number) {
+    return Math.floor(keV / DiffractionHistogramModel.keVBinWidth);
   }
 
   iskeVRangeSelected(keVMidpoint: number): boolean {
     // // check flags
-    // let idx = this.getBarIdx(keVMidpoint);
-    // if (idx < this._barSelected.length) {
-    //   return this._barSelected[idx];
-    // }
+    let idx = this.getBarIdx(keVMidpoint);
+    if (idx < this._barSelected.length) {
+      return this._barSelected[idx];
+    }
     return false;
   }
 

@@ -37,9 +37,7 @@ export class DiffractionService {
     private _snackbarService: SnackbarService,
     private _dataService: APIDataService,
     private _apiCacheService: APICachedDataService
-  ) {
-    // this._dataService.diffr
-  }
+  ) {}
 
   fetchPeakStatusesForScan(scanId: string) {
     this._dataService.sendDiffractionPeakStatusListRequest(DiffractionPeakStatusListReq.create({ scanId })).subscribe(response => {

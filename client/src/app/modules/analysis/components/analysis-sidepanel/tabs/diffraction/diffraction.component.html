@@ -106,7 +106,11 @@ POSSIBILITY OF SUCH DAMAGE.
   </div>
   <div class="save-btns unit-padding light-background">
     <push-button (onClick)="onSelectPMCsWithDiffraction()" buttonStyle="outline">Select PMCs</push-button>
-    <push-button (onClick)="onSaveAsExpressionMap()" [disabled]="selectedRangeCount() == 0 || !canSaveExpression" buttonStyle="outline"
+    <push-button
+      confirmText="Create an expression from the currently configured diffraction selection?"
+      (onClick)="onSaveAsExpressionMap()"
+      [disabled]="selectedRangeCount() == 0 || !canSaveExpression"
+      buttonStyle="outline"
       >Save as Expression</push-button
     >
   </div>

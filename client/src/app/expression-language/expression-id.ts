@@ -173,6 +173,10 @@ export class DataExpressionId {
     return ["A", "B", "Combined"];
   }
 
+  public static makePredefinedDiffractionCountDataExpression(scanId: string): string {
+    return DataExpressionId.predefinedDiffractionCountDataExpression + "-" + scanId;
+  }
+
   public static makePredefinedQuantElementExpression(element: string, column: string, detector: string = ""): string {
     let result = DataExpressionId.PredefinedLayerPrefix + DataExpressionId.PredefinedQuantElementLayerPrefix + element + "-" + column;
     if (detector.length > 0) {

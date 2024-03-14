@@ -119,6 +119,9 @@ export class CodeEditorPageComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this._expressionsService.fetchExpressions();
+    this._expressionsService.fetchModules();
+
     this._subs.add(
       this._route.queryParams.subscribe(params => {
         this.scanId = params["scanId"] || "";

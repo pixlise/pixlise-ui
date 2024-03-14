@@ -53,7 +53,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <!-- <a *ngIf="!isPublicUser" [href]="discussLink" class="nav-link-normal" target="_blank">Discussion</a> -->
     <!-- <a *ngFor="let tab of tabs" [href]="tab.url" (click)="onNavigate(tab, $event)" class="{{ tab.cssClass }}">{{ tab.label }}</a> -->
     <span class="buttons">
-      <span class="version"> Pixlise v4.0.1 (beta)</span>
+      <span class="version"> Pixlise {{ uiVersion }}</span>
       <a class="link-to-v3" href="https://staging.pixlise.org" target="_blank">Back to v3</a>
       <icon-button
         (click)="onNotificationsMenu()"

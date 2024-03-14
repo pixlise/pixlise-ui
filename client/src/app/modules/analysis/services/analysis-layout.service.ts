@@ -19,7 +19,7 @@ import { ExpressionPickerResponse } from "../../expressions/components/expressio
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
-import { HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
+import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
 
 export class DefaultExpressions {
   constructor(
@@ -58,6 +58,7 @@ export class AnalysisLayoutService implements OnDestroy {
   expressionPickerResponse$ = new BehaviorSubject<ExpressionPickerResponse | null>(null);
 
   highlightedDiffractionWidget$ = new BehaviorSubject<HighlightedDiffraction | null>(null);
+  highlightedContextImageDiffractionWidget$ = new BehaviorSubject<HighlightedContextImageDiffraction | null>(null);
 
   widgetData$ = new BehaviorSubject<Map<string, WidgetData>>(new Map());
 

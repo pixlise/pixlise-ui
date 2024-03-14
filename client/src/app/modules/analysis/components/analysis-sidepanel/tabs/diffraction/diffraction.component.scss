@@ -115,6 +115,9 @@
 
 .histogram {
   height: 180px;
+
+  border-top-right-radius: 4px;
+  overflow: hidden;
 }
 
 .histogram-buttons {

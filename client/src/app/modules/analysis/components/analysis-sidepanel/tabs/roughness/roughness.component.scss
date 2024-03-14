@@ -30,9 +30,30 @@
 @import "variables.scss";
 @import "cursors.scss";
 
-.roughness-map-toggle {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
+.roughness {
+  .table-header {
+    .header-col {
+      width: 90px;
+      white-space: pre;
+    }
+  }
+
+  .virtual-list-container {
+    .peaks-viewport {
+      height: calc(100vh - 294px);
+    }
+  }
+
+  .user-defined,
+  .detected-peaks {
+    .col {
+      width: 90px !important;
+    }
+  }
+
+  .save-btns {
+    push-button {
+      flex: 1;
+    }
+  }
 }

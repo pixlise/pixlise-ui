@@ -28,6 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Subject } from "rxjs";
+import { DataQueryResult } from "src/app/expression-language/data-values";
 import { MinMax } from "src/app/models/BasicTypes";
 import { Point, Rect } from "src/app/models/Geometry";
 import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
@@ -39,7 +40,18 @@ import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pa
 // import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
 import { RGBA } from "src/app/utils/colours";
 
-export type HighlightedDiffraction = { widgetId: string; peaks: DiffractionPeak[]; keVStart: number; keVEnd: number };
+export type HighlightedDiffraction = {
+  widgetId: string;
+  peaks: DiffractionPeak[];
+  keVStart: number;
+  keVEnd: number;
+};
+
+export type HighlightedContextImageDiffraction = {
+  widgetId: string;
+  result: DataQueryResult | null;
+  expressionId?: string;
+};
 
 // An individual histogram bar with colour
 export class HistogramBar {
@@ -89,6 +101,7 @@ export interface HistogramSelectionOwner {
 
 export class DiffractionHistogramModel implements CanvasDrawNotifier {
   needsDraw$: Subject<void> = new Subject<void>();
+  needsCanvasResize$: Subject<void> = new Subject<void>();
 
   public static readonly keVBinWidth = 0.25;
 

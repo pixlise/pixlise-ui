@@ -346,11 +346,16 @@ export class ExpressionDataSource
           if (peak.globalDifference > this._roughnessItemThreshold) {
             // It's roughness, can repeat so ensure we only save once
             if (!roughnessPMCs.has(pmc)) {
+              let status = DiffractionPeak.roughnessPeak;
+              if (this._diffractionStatuses[`${pmc}-${peak.peakChannel}`]) {
+                status = this._diffractionStatuses[`${pmc}-${peak.peakChannel}`].status;
+              }
+
               this._roughnessItems.push(
                 new RoughnessItem(
                   pmc,
                   peak.globalDifference,
-                  false // at tihs point we don't know yet
+                  status !== DiffractionPeak.roughnessPeak // If it's not roughness, it's been deleted
                 )
               );
               roughnessPMCs.add(pmc);
