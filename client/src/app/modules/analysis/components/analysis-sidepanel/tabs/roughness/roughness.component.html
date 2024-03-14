@@ -30,6 +30,11 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div class="tab-container">
+  <div class="scan-selector">
+    <mat-select [(ngModel)]="selectedScanId" class="scan-filter" placeholder="Scan ...">
+      <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
+    </mat-select>
+  </div>
   <div class="roughness-map-toggle unit-padding light-background">
     <span class="light-label">Roughness Map</span>
     <two-state-icon-button
@@ -81,7 +86,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </closable-list>
     <closable-list label="Detected Roughness">
       <div class="detected-peaks-list" list>
-        <!-- <div *ngIf="peaks.length <= 0" class="none-text centered">None defined</div> -->
+        <div *ngIf="roughnessItems.length <= 0" class="none-text centered">None defined</div>
 
         <div class="peaktable">
           <div class="table-header">

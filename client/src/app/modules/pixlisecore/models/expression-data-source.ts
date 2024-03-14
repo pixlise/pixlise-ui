@@ -27,6 +27,8 @@ import { SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { DiffractionPeakManualListReq, DiffractionPeakManualListResp } from "src/app/generated-protos/diffraction-manual-msgs";
 import { APICachedDataService } from "../services/apicacheddata.service";
 import { DefaultDetectorId } from "src/app/expression-language/predefined-expressions";
+import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src/app/generated-protos/diffraction-status-msgs";
+import { DetectedDiffractionPeakStatuses, DetectedDiffractionPeakStatuses_PeakStatus } from "src/app/generated-protos/diffraction-data";
 
 export class ExpressionDataSource
   implements DiffractionPeakQuerierSource, HousekeepingDataQuerierSource, PseudoIntensityDataQuerierSource, QuantifiedDataQuerierSource, SpectrumDataQuerierSource
@@ -50,6 +52,9 @@ export class ExpressionDataSource
   private _allPeaks: DiffractionPeak[] = [];
   private _roughnessItems: RoughnessItem[] = [];
   private _diffractionRead = false;
+
+  private _diffractionStatuses: Record<string, DetectedDiffractionPeakStatuses_PeakStatus> = {};
+  private _diffractionStatusRead = false;
 
   // What we consider to be a "roughness" item for the purposes of diffraction:
   private _roughnessItemThreshold = 0.16;
@@ -85,7 +90,8 @@ export class ExpressionDataSource
 
     this._cachedDataService = cachedDataService;
 
-    if (PredefinedROIID.isSelectedPointsROI(roiId)) { // || PredefinedROIID.isRemainingPoints(roiId)) {
+    if (PredefinedROIID.isSelectedPointsROI(roiId)) {
+      // || PredefinedROIID.isRemainingPoints(roiId)) {
       throw new Error("Cannot ExpressionDataSource with roiId: " + roiId);
     }
 
@@ -209,6 +215,20 @@ export class ExpressionDataSource
           }
         })
       );
+  }
+
+  private getDetectedDiffractionStatus(): Observable<DiffractionPeakStatusListResp> {
+    if (!this._cachedDataService) {
+      return throwError(() => new Error("getDetectedDiffractionStatus: no data available"));
+    }
+    return this._cachedDataService.getDetectedDiffractionPeakStatuses(DiffractionPeakStatusListReq.create({ scanId: this._scanId })).pipe(
+      tap(statusData => {
+        if (!this._diffractionStatusRead) {
+          this._diffractionStatuses = statusData.peakStatuses?.statuses || {};
+          this._diffractionStatusRead = true;
+        }
+      })
+    );
   }
 
   private getScanMetaLabelsAndTypes(): Observable<ScanMetaLabelsAndTypesResp> {
@@ -350,6 +370,11 @@ export class ExpressionDataSource
             }
 
             if (keVs.length == 3) {
+              let status = DiffractionPeak.diffractionPeak;
+              if (this._diffractionStatuses[`${pmc}-${peak.peakChannel}`]) {
+                status = this._diffractionStatuses[`${pmc}-${peak.peakChannel}`].status;
+              }
+
               this._allPeaks.push(
                 new DiffractionPeak(
                   pmc,
@@ -364,10 +389,10 @@ export class ExpressionDataSource
                   keVs[0],
                   keVs[1],
                   keVs[2],
-                  DiffractionPeak.statusUnspecified
+                  status
                 )
               );
-              }
+            }
           }
           // else ignore
         }
@@ -748,18 +773,27 @@ export class ExpressionDataSource
     );
   }
 
+  get allPeaks(): DiffractionPeak[] {
+    return this._allPeaks;
+  }
+
+  get roughnessItems(): RoughnessItem[] {
+    return this._roughnessItems;
+  }
+
   // DiffractionPeakQuerierSource
   async getDiffractionPeakEffectData(channelStart: number, channelEnd: number): Promise<PMCDataValues> {
     if (this._debug) {
       this.logFunc(`getDiffractionPeakEffectData(${channelStart}, ${channelEnd})`);
     }
     return await lastValueFrom(
-      combineLatest([this.getDetectedDiffraction(), this.getDiffractionPeakManualList()]).pipe(
-        map((dataItems: [DetectedDiffractionPeaksResp, DiffractionPeakManualListResp]) => {
-          const diffractionData = dataItems[0];
-          const userDiffractionPeakData = dataItems[1];
+      combineLatest([this.getDetectedDiffractionStatus(), this.getDetectedDiffraction(), this.getDiffractionPeakManualList()]).pipe(
+        map((dataItems: [DiffractionPeakStatusListResp, DetectedDiffractionPeaksResp, DiffractionPeakManualListResp]) => {
+          const diffractionStatusData = dataItems[0];
+          const diffractionData = dataItems[1];
+          const userDiffractionPeakData = dataItems[2];
 
-          if (!diffractionData || !this._scanEntries) {
+          if (!diffractionStatusData || !diffractionData || !this._scanEntries) {
             throw new Error("getDiffractionPeakEffectData: No data available");
           }
 
@@ -776,7 +810,8 @@ export class ExpressionDataSource
           }
 
           for (const peak of this._allPeaks) {
-            if (peak.status != DiffractionPeak.statusNotAnomaly && peak.channel >= channelStart && peak.channel < channelEnd) {
+            let withinChannelRange = (channelStart === -1 || peak.channel >= channelStart) && (channelEnd === -1 || peak.channel < channelEnd);
+            if (peak.status != DiffractionPeak.statusNotAnomaly && withinChannelRange) {
               let prev = pmcDiffractionCount.get(peak.pmc);
               if (!prev) {
                 prev = 0;
@@ -788,7 +823,6 @@ export class ExpressionDataSource
           // Also loop through user-defined peaks
           // If we can convert the user peak keV to a channel, do it and compare
           if (this._spectrumEnergyCalibration.length > 0 && userDiffractionPeakData?.peaks) {
-
             for (const cal of this._spectrumEnergyCalibration) {
               if (cal.detector == this._eVCalibrationDetector) {
                 for (const id of Object.keys(userDiffractionPeakData.peaks)) {

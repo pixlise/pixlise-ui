@@ -35,6 +35,7 @@ import { ImageOptionsComponent, ImageDisplayOptions, ImagePickerParams, ImagePic
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
 
 @Component({
   selector: "app-context-image",

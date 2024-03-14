@@ -308,22 +308,7 @@
       position: relative;
 
       &.selected {
-        // border: 1px solid white;
-
-        // background: #ffff8d80;
         border-radius: 50%;
-
-        // &::before {
-        //   transform: translateX(-50%);
-        //   border-radius: 100%;
-        //   position: absolute;
-        //   background: white;
-        //   bottom: 0px;
-        //   height: 4px;
-        //   content: "";
-        //   width: 4px;
-        //   left: 50%;
-        // }
       }
 
       .active-color {

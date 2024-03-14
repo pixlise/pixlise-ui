@@ -29,12 +29,68 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
+<ng-template #newPeakDialog>
+  <div class="new-peak-dialog">
+    <div class="header">
+      <h1>Indicate A PMC That Has Diffraction</h1>
+    </div>
+    <div class="fields">
+      <span class="input-label">PMC</span>
+      <input type="text" [(ngModel)]="newPeakPMC" placeholder="PMC ..." />
+      <span class="input-label">Energy (keV)</span>
+      <input type="number" [(ngModel)]="newPeakEnergy" placeholder="Energy ..." />
+    </div>
+    <div class="button-container">
+      <push-button buttonStyle="outline" (onClick)="onCloseNewPeakDialog()">Cancel</push-button>
+      <push-button buttonStyle="yellow" [disabled]="newPeakPMC < 0 || newPeakEnergy <= 0" (onClick)="onAddPeak()">Add</push-button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #statusMenu>
+  <div *ngIf="activeList === detectedPeaksLabel" class="status-menu">
+    <div *ngFor="let status of allDetectedStatuses" class="status-menu-item" (click)="onToggleDetectedStatus(status)">
+      <two-state-icon-button
+        class="checkbox"
+        activeIcon="assets/button-icons/check-on.svg"
+        inactiveIcon="assets/button-icons/check-off.svg"
+        [active]="visibleDetectedStatuses.includes(status)">
+      </two-state-icon-button>
+      <span class="label">{{ statusToLabelMap[status] }}</span>
+    </div>
+  </div>
+  <div *ngIf="activeList === userPeaksLabel" class="status-menu">
+    <div *ngFor="let status of allUserStatuses" class="status-menu-item" (click)="onToggleUserStatus(status)">
+      <two-state-icon-button
+        class="checkbox"
+        activeIcon="assets/button-icons/check-on.svg"
+        inactiveIcon="assets/button-icons/check-off.svg"
+        [active]="visibleUserStatuses.includes(status)">
+      </two-state-icon-button>
+      <span class="label">{{ statusToLabelMap[status] }}</span>
+    </div>
+  </div>
+</ng-template>
+
 <div class="tab-container">
   <div class="outer-panel histogram">
     <interactive-canvas class="histogram" [ngClass]="cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interaction" [transform]="transform">
     </interactive-canvas>
 
     <push-button class="histogram-buttons" (onClick)="onResetBarSelection()">Reset</push-button>
+  </div>
+  <div class="scan-selector">
+    <mat-select [(ngModel)]="selectedScanId" class="scan-filter" placeholder="Scan ...">
+      <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
+    </mat-select>
+  </div>
+  <div class="widget-selectors">
+    <mat-select [(ngModel)]="selectedContextImage" class="scan-filter" placeholder="Open a Context Image ...">
+      <mat-option *ngFor="let chart of allContextImages" [value]="chart.widget.id">{{ chart.name }} </mat-option>
+    </mat-select>
+    <mat-select [(ngModel)]="selectedSpectrumChart" class="scan-filter" placeholder="Open a Spectrum Chart ...">
+      <mat-option *ngFor="let chart of allSpectrumCharts" [value]="chart.widget.id">{{ chart.name }} </mat-option>
+    </mat-select>
   </div>
   <div class="diff-count-btn unit-padding light-background">
     <span class="light-label">Diffraction Count Map</span>
@@ -48,96 +104,89 @@ POSSIBILITY OF SUCH DAMAGE.
       </two-state-icon-button>
     </div>
   </div>
-  <div class="save-btns unit-padding light-background gap-separated-vertical-elements">
-    <push-button (onClick)="onSelectPMCsWithDiffraction()" buttonStyle="outline">Select PMCs with Diffraction</push-button>
+  <div class="save-btns unit-padding light-background">
+    <push-button (onClick)="onSelectPMCsWithDiffraction()" buttonStyle="outline">Select PMCs</push-button>
     <push-button (onClick)="onSaveAsExpressionMap()" [disabled]="selectedRangeCount() == 0 || !canSaveExpression" buttonStyle="outline"
-      >Save Selection as Expression Map</push-button
+      >Save as Expression</push-button
     >
   </div>
-  <div class="scrollable" style="max-height: calc(100vh - 386px)">
-    <closable-list label="User Entered Peaks" [visibleOverride]="userPeaksListOpen" (onToggleVisible)="onToggleUserPeaksListOpen()">
-      <icon-button *ngIf="userPeakEditing" icon="assets/button-icons/plus-white.svg" title="Add Diffraction Peak" (click)="onAddPeak()" header></icon-button>
-      <div class="user-peaks-list" list>
-        <div *ngIf="userPeaks.length <= 0" class="none-text">None defined</div>
-        <div *ngIf="userPeaks.length > 0" class="peaktable">
-          <div class="table-header">
-            <div class="cell0">PMC</div>
-            <div class="cell">keV</div>
-            <div class="cell eat-width"></div>
-            <div class="cell">View</div>
-            <div *ngIf="userPeakEditing" class="cell"></div>
-          </div>
-          <div
-            *ngFor="let peak of userPeaks"
-            class="table-row clickable table-text"
-            [ngClass]="{ 'highlighted-row': peak.id == visiblePeakId }"
-            (click)="onClickPeakItem(peak)">
-            <div class="cell0">{{ peak.pmc }}</div>
-            <div class="cell">{{ peak.keV | number: "1.2-2" }}</div>
-            <div class="cell"></div>
-            <two-state-icon-button
-              class="cell"
-              title="Selects the PMC of this diffraction peak. This will be visible on Spectrum Chart if Display Spectra menu is set to show selected spectrum lines."
-              activeIcon="assets/button-icons/visible-on-yellow.svg"
-              inactiveIcon="assets/button-icons/visible-off.svg"
-              [active]="peak.id == visiblePeakId"
-              (click)="onTogglePeakVisible(peak); $event.stopPropagation()">
-            </two-state-icon-button>
-            <icon-button
-              *ngIf="userPeakEditing"
-              class="cell user-del"
-              [hasBackground]="false"
-              icon="assets/button-icons/close-cross.svg"
-              title="Delete Diffraction Peak"
-              (click)="onDeleteUserPeak(peak)">
-            </icon-button>
-          </div>
+  <div class="scrollable">
+    <div class="mode">
+      <multi-switch-button [options]="[userPeaksLabel, detectedPeaksLabel]" [value]="activeList" (onChange)="onSwitchList($event)"></multi-switch-button>
+      <action-button class="new-peak" action="add" [customDialog]="newPeakDialog" #newPeakDialogBtn></action-button>
+    </div>
+    <div class="table-header">
+      <span class="main-cols">
+        <div class="header-col table-sort-button" [ngClass]="{ 'highlighted-col': sort == sortModePMC }" (click)="sort = sortModePMC">
+          PMC
+          <img class="sort-arrow" *ngIf="sort === sortModePMC && !isAscending" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" />
+          <img class="sort-arrow" *ngIf="sort === sortModePMC && isAscending" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" />
         </div>
+        <div class="header-col table-sort-button" [ngClass]="{ 'highlighted-col': sort == sortModekeV }" (click)="sort = sortModekeV">
+          keV
+          <img class="sort-arrow" *ngIf="sort === sortModekeV && !isAscending" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" />
+          <img class="sort-arrow" *ngIf="sort === sortModekeV && isAscending" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" />
+        </div>
+        <div
+          *ngIf="activeList === detectedPeaksLabel"
+          class="header-col table-sort-button"
+          [ngClass]="{ 'highlighted-col': sort == sortModeEffectSize }"
+          (click)="sort = sortModeEffectSize">
+          Effect
+          <img class="sort-arrow" *ngIf="sort === sortModeEffectSize && !isAscending" src="assets/button-icons/arrow-down.svg" alt="Sort Descending" />
+          <img class="sort-arrow" *ngIf="sort === sortModeEffectSize && isAscending" src="assets/button-icons/arrow-up.svg" alt="Sort Ascending" />
+        </div>
+      </span>
+      <widget-settings-menu *ngIf="activeList === detectedPeaksLabel" [settingsDialog]="statusMenu" #statusMenuBtn>
+        <div class="header-col cell">
+          <div class="status-dropdown">Status <img src="assets/button-icons/caret-down.svg" alt="Filter Status" /></div>
+        </div>
+      </widget-settings-menu>
+      <div class="header-col cell" *ngIf="activeList !== detectedPeaksLabel && userPeakEditing">Delete</div>
+    </div>
+    <div class="virtual-list-container">
+      <div *ngIf="visiblePeaks.length === 0" class="empty-row">
+        <span>No peaks to display</span>
       </div>
-    </closable-list>
-    <closable-list label="Detected Peaks" [visibleOverride]="detectPeaksListOpen" (onToggleVisible)="onToggleDetectPeaksListOpen()">
-      <div class="detected-peaks-list" list>
-        <div *ngIf="selectedRangeCount() <= 0" class="none-text">Select histogram channel(s) to see peaks</div>
-        <div *ngIf="peaks.length > 0" class="peaktable">
-          <div class="table-header">
-            <div class="cell0 table-sort-button" [ngClass]="{ 'highlighted-col': sort == sortModePMC }" (click)="sort = sortModePMC">PMC</div>
-            <div class="cell table-sort-button" [ngClass]="{ 'highlighted-col': sort == sortModekeV }" (click)="sort = sortModekeV">keV</div>
-            <div class="cell table-sort-button" [ngClass]="{ 'highlighted-col': sort == sortModeEffectSize }" (click)="sort = sortModeEffectSize">Effect</div>
-            <div class="cell">View</div>
-            <div *ngIf="userPeakEditing" class="cell">!XRD</div>
+      <cdk-virtual-scroll-viewport *ngIf="activeList === detectedPeaksLabel" [itemSize]="50" class="peaks-viewport">
+        <div
+          class="peak-item"
+          *cdkVirtualFor="let item of filteredPeaks; trackBy: trackByPeakId"
+          [ngClass]="{ 'selected-peak': selectedPeakTrackId === trackByPeakId(0, item) }">
+          <div class="detected-peaks">
+            <span class="main-cols" (click)="onTogglePeakVisible(item)">
+              <div class="col pmc">{{ item.pmc }}</div>
+              <div class="col energy">{{ item.keV | number: "1.2-2" }}</div>
+              <div class="col effect-size">{{ item.effectSize | number: "1.2-2" }}</div>
+            </span>
+            <action-button
+              class="col view"
+              [action]="item.status === regularDiffractionPeakLabel ? 'visibleOn' : 'visibleOff'"
+              [confirmText]="'Are you sure you want to mark this peak as ' + (item.status === regularDiffractionPeakLabel ? 'invalid' : 'valid') + '?'"
+              (onClick)="onToggleDetectedPeakStatus(item)">
+            </action-button>
           </div>
-          <div
-            *ngFor="let peak of peaks"
-            class="table-row clickable table-text"
-            [ngClass]="{ 'highlighted-row': peak.id == visiblePeakId }"
-            (click)="onClickPeakItem(peak)">
-            <div class="cell0" [ngClass]="{ 'highlighted-col': sort == sortModePMC }">{{ peak.pmc }}</div>
-            <div class="cell" [ngClass]="{ 'highlighted-col': sort == sortModekeV }">{{ peak.keV | number: "1.2-2" }}</div>
-            <div class="cell" [ngClass]="{ 'highlighted-col': sort == sortModeEffectSize }">{{ peak.effectSize | number: "1.2-2" }}</div>
-            <two-state-icon-button
-              class="cell"
-              title="Selects the PMC of this diffraction peak. This will be visible on Spectrum Chart if Display Spectra menu is set to show selected spectrum lines."
-              activeIcon="assets/button-icons/visible-on-yellow.svg"
-              inactiveIcon="assets/button-icons/visible-off.svg"
-              [active]="peak.id == visiblePeakId"
-              (click)="onTogglePeakVisible(peak); $event.stopPropagation()">
-            </two-state-icon-button>
-            <icon-button
+        </div>
+      </cdk-virtual-scroll-viewport>
+      <cdk-virtual-scroll-viewport *ngIf="activeList === userPeaksLabel" [itemSize]="50" class="peaks-viewport">
+        <div
+          class="peak-item"
+          *cdkVirtualFor="let item of filteredUserPeaks; trackBy: trackByUserId"
+          [ngClass]="{ 'selected-peak': selectedPeakTrackId === trackByUserId(0, item) }">
+          <div class="user-defined">
+            <span class="main-cols" (click)="onToggleUserPeakVisible(item)">
+              <div class="col pmc">{{ item.pmc }}</div>
+              <div class="col energy">{{ item.energykeV | number: "1.2-2" }}</div>
+            </span>
+            <action-button
               *ngIf="userPeakEditing"
-              class="cell"
-              [hasBackground]="false"
-              icon="assets/button-icons/close-cross.svg"
-              title="Delete Diffraction Peak"
-              (click)="onDeleteDetectedPeak(peak)">
-            </icon-button>
+              class="col delete"
+              action="delete"
+              (onClick)="onDeleteUserPeak(item)"
+              confirmText="Are you sure you want to delete this peak?"></action-button>
           </div>
         </div>
-        <div *ngIf="hasMultiPages" class="table-text help-row unit-padding light-background page-btns">
-          <push-button (onClick)="onTablePage(false)">Prev</push-button>
-          <span>{{ tablePageLabel }}</span>
-          <push-button (onClick)="onTablePage(true)">Next</push-button>
-        </div>
-      </div>
-    </closable-list>
+      </cdk-virtual-scroll-viewport>
+    </div>
   </div>
 </div>

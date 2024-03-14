@@ -65,6 +65,7 @@ export class RoughnessComponent implements OnInit {
   private _selectedScanId: string = "";
   public selectedScan: ScanItem = ScanItem.create();
   allScans: ScanItem[] = [];
+  configuredScans: ScanItem[] = [];
 
   roughnessItems: RoughnessItem[] = [];
   userRoughnessItems: RoughnessItem[] = [];
@@ -94,6 +95,12 @@ export class RoughnessComponent implements OnInit {
         this.allScans = scans;
         if (!this.selectedScanId && scans.length > 0) {
           this.selectedScanId = this._analysisLayoutService.defaultScanId || scans[0].id;
+        }
+
+        if (this._analysisLayoutService.activeScreenConfiguration$.value) {
+          this.configuredScans = scans.filter(scan => this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[scan.id]);
+        } else {
+          this.configuredScans = scans;
         }
       })
     );

@@ -30,6 +30,7 @@
 import { Subject } from "rxjs";
 import { MinMax } from "src/app/models/BasicTypes";
 import { Point, Rect } from "src/app/models/Geometry";
+import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
 import { ChartAxis, LinearChartAxis } from "src/app/modules/widget/components/interactive-canvas/chart-axis";
 import { CanvasDrawNotifier, CanvasParams } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
@@ -37,6 +38,8 @@ import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pa
 // import { CanvasParams } from "src/app/UI/atoms/interactive-canvas/interactive-canvas.component";
 // import { PanZoom } from "src/app/UI/atoms/interactive-canvas/pan-zoom";
 import { RGBA } from "src/app/utils/colours";
+
+export type HighlightedDiffraction = { widgetId: string; peaks: DiffractionPeak[]; keVStart: number; keVEnd: number };
 
 // An individual histogram bar with colour
 export class HistogramBar {

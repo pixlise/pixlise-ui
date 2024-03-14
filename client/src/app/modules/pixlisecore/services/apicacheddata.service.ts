@@ -21,6 +21,7 @@ import { ImageBeamLocationsReq, ImageBeamLocationsResp } from "src/app/generated
 import { ExpressionGroupGetReq, ExpressionGroupGetResp, ExpressionGroupListReq, ExpressionGroupListResp } from "src/app/generated-protos/expression-group-msgs";
 import { NotificationReq, NotificationResp, NotificationUpd } from "src/app/generated-protos/notification-msgs";
 import { NotificationType } from "src/app/generated-protos/notification";
+import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src/app/generated-protos/diffraction-status-msgs";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
@@ -48,6 +49,7 @@ export class APICachedDataService {
   private _scanEntryMetaReqMap = new Map<string, Observable<ScanEntryMetadataResp>>();
   private _pseudoIntensityReqMap = new Map<string, Observable<PseudoIntensityResp>>();
   private _detectedDiffractionReqMap = new Map<string, Observable<DetectedDiffractionPeaksResp>>();
+  private _detectedDiffractionStatusReqMap = new Map<string, Observable<DiffractionPeakStatusListResp>>();
   private _scanListReqMap = new Map<string, Observable<ScanListResp>>();
   private _detectorConfigReqMap = new Map<string, Observable<DetectorConfigResp>>();
   private _detectorConfigListReq: Observable<DetectorConfigListResp> | null = null;
@@ -57,6 +59,9 @@ export class APICachedDataService {
   private _exprGroupListReqMap = new Map<string, Observable<ExpressionGroupListResp>>();
   private _exprGroupReqMap = new Map<string, Observable<ExpressionGroupGetResp>>();
   private _imageListReqMap = new Map<string, Observable<ImageListResp>>();
+
+  // Invalidation requests - if true, then we'll refetch on next request instead of serving cache
+  public detectedDiffractionStatusReqMapCacheInvalid: boolean = false;
 
   // Non-scan related
   private _regionOfInterestGetReqMap = new Map<string, Observable<RegionOfInterestGetResp>>();
@@ -316,6 +321,21 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._detectedDiffractionReqMap.set(cacheId, result);
+      this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
+    }
+
+    return result;
+  }
+
+  getDetectedDiffractionPeakStatuses(req: DiffractionPeakStatusListReq, updateList: boolean = false) {
+    const cacheId = JSON.stringify(DiffractionPeakStatusListReq.toJSON(req));
+    let result = this._detectedDiffractionStatusReqMap.get(cacheId);
+    if (this.detectedDiffractionStatusReqMapCacheInvalid || updateList || result === undefined) {
+      // Have to request it!
+      result = this._dataService.sendDiffractionPeakStatusListRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this._detectedDiffractionStatusReqMap.set(cacheId, result);
       this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
     }
 
