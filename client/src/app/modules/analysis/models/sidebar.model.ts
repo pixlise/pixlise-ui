@@ -67,7 +67,7 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
   },
   {
     title: "Selection",
-    icon: "assets/icons/selection.svg",
+    icon: "assets/icons/selection-lasso.svg",
     component: SelectionComponent,
     tooltip: "Selection",
     shortcut: ["Cmd", "Shift", "4"],

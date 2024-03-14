@@ -56,6 +56,15 @@
 
   // border: 1px solid $clr-gray-30;
   box-sizing: border-box;
+
+  &.no-quant {
+    background: #f0f92114;
+    border: 1px solid #f0f9211f;
+
+    .no-quant-warning {
+      margin-left: 4px;
+    }
+  }
 }
 
 .name-container {

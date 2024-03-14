@@ -39,6 +39,7 @@ export type PushButtonStyle =
   | "yellow"
   | "outline"
   | "gray"
+  | "gray-title"
   | "light-right-outline"
   | "orange"
   | "dark-outline"
@@ -76,6 +77,7 @@ export class PushButtonComponent implements OnInit {
       "yellow",
       "outline",
       "gray",
+      "gray-title",
       "light-right-outline",
       "orange",
       "dark-outline",

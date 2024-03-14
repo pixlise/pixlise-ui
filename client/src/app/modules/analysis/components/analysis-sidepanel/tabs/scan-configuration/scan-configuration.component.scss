@@ -12,12 +12,18 @@
       font-size: 14px;
       font-weight: 500;
       margin: 0;
+      margin-left: 8px;
     }
 
     action-button {
       margin-left: auto;
       margin-right: 4px;
     }
+  }
+
+  .add-scan-btn {
+    margin: 0px 8px;
+    margin-top: 4px;
   }
 
   .scan-configurations {

@@ -30,12 +30,9 @@
 import { CdkOverlayOrigin, ConnectionPositionPair, Overlay, OverlayModule } from "@angular/cdk/overlay";
 import { Component, Injector, Input, OnDestroy, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { Title } from "@angular/platform-browser";
-import { ActivatedRoute, NavigationEnd, ResolveEnd, Router } from "@angular/router";
+import { ActivatedRoute, NavigationEnd, Params, ResolveEnd, Router } from "@angular/router";
 import { Subscription } from "rxjs";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
-// import { AuthenticationService } from "src/app/services/authentication.service";
-// import { DataSetService } from "src/app/services/data-set.service";
-// import { ExportDataService } from "src/app/services/export-data.service";
 import { OverlayHost } from "src/app/utils/overlay-host";
 import { UserMenuPanelComponent } from "./user-menu-panel/user-menu-panel.component";
 import { PIXLISECoreModule } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -50,11 +47,15 @@ import {
   ScanConfigurationDialog,
   ScanConfigurationDialogData,
 } from "src/app/modules/analysis/components/scan-configuration-dialog/scan-configuration-dialog.component";
-// import { AnnotationEditorComponent, AnnotationEditorData, AnnotationTool } from "../annotation-editor/annotation-editor.component";
-// import { FullScreenAnnotationItem } from "../annotation-editor/annotation-display/annotation-display.component";
-// import { ViewStateService } from "src/app/services/view-state.service";
-// import { ExportDataDialogComponent } from "src/app/UI/atoms/export-data-dialog/export-data-dialog.component";
-// import { ExportDataChoice, ExportDataConfig } from "src/app/UI/atoms/export-data-dialog/export-models";
+
+export type NavigationTab = {
+  icon: string;
+  label?: string;
+  tooltip?: string;
+  url: string;
+  active?: boolean;
+  passQueryParams?: boolean;
+};
 
 class TabNav {
   constructor(
@@ -108,23 +109,25 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   tabs: TabNav[] = [];
   datasetID: string = "";
 
-  // savedAnnotations: FullScreenAnnotationItem[] = [];
-  // annotationTool: AnnotationTool = null;
+  queryParam: Params = {};
+  allTabs: NavigationTab[] = [
+    { icon: "assets/tab-icons/browse.svg", tooltip: "Browse", url: "/datasets" },
+    { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: "/datasets/analysis" },
+    { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: "/datasets/code-editor" },
+    { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: "/datasets/analysis/element-maps" },
+  ];
+  openTabs: NavigationTab[] = [{ icon: "assets/tab-icons/browse.svg", tooltip: "Browse", url: "/datasets" }];
+
   editingAnnotationIndex: number = -1;
 
   annotationsVisible: boolean = false;
   editAnnotationsOpen: boolean = false;
-  // annotationEditorDialogRef: MatDialogRef<AnnotationEditorComponent, MatDialogConfig> = null;
 
   isPublicUser: boolean = false;
 
   constructor(
     private router: Router,
     private _route: ActivatedRoute,
-    // private _datasetService: DataSetService,
-    // private _authService: AuthenticationService,
-    // private _exportService: ExportDataService,
-    // private _viewStateService: ViewStateService,
 
     private overlay: Overlay,
     private viewContainerRef: ViewContainerRef,
@@ -136,62 +139,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    //this.UserLoggedIn = this.authService.loggedIn;
     this.updateToolbar();
-
-    // // Set up listeners for things that can change how we display...
-
-    // // User login/logout/claims changing
-    // this._subs.add(this._authService.getIdTokenClaims$().subscribe(
-    //     (claims)=>
-    //     {
-    //         this._userPiquantConfigAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionEditPiquantConfig);
-    //         this._userUserAdminAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionViewUserRoles);
-    //         this._userPiquantJobsAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionViewPiquantJobs);
-    //         this._userExportAllowed = AuthenticationService.hasPermissionSet(claims, AuthenticationService.permissionExportMap);
-
-    //         this.updateToolbar();
-    //     },
-    //     (err)=>
-    //     {
-    //         this._userPiquantConfigAllowed = false;
-    //         this._userUserAdminAllowed = false;
-    //         this._userPiquantJobsAllowed = false;
-    //         this._userExportAllowed = false;
-
-    //         this.updateToolbar();
-    //     }
-    // ));
-
-    // // Enables more tabs/changes title, etc
-    // this._subs.add(this._datasetService.dataset$.subscribe(
-    //     (dataset)=>
-    //     {
-    //         if(dataset)
-    //         {
-    //             this.datasetID = this._datasetService.datasetIDLoaded;
-
-    //             // If we load a dataset, we want to display the name
-    //             this._dataSetLoadedName = dataset.experiment.getTitle();
-    //             let sol = dataset.experiment.getSol();
-    //             if(sol)
-    //             {
-    //                 this._dataSetLoadedName = "SOL-"+sol+": "+this._dataSetLoadedName;
-    //             }
-    //             this.updateToolbar();
-    //         }
-    //         else
-    //         {
-    //             this.datasetID = "";
-    //             this._dataSetLoadedName = "";
-    //             this.updateToolbar();
-    //         }
-    //     },
-    //     (err)=>
-    //     {
-    //         this.updateToolbar();
-    //     }
-    // ));
 
     // // If user changes tabs, etc, we want to know
     this._subs.add(
@@ -221,6 +169,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
     this._subs.add(
       this._route.queryParams.subscribe(params => {
+        this.queryParam = params;
         let scanId = params["scan_id"] || params["scanId"];
         if (scanId) {
           this.datasetID = scanId;
@@ -240,20 +189,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
         }
       })
     );
-
-    // this._subs.add(this._viewStateService.annotations$.subscribe(
-    //     (annotations: FullScreenAnnotationItem[])=>
-    //     {
-    //         this.savedAnnotations = annotations;
-    //     }
-    // ));
-
-    // this._subs.add(this._authService.isPublicUser$.subscribe(
-    //     (isPublicUser)=>
-    //     {
-    //         this.isPublicUser = isPublicUser;
-    //     }
-    // ));
   }
 
   ngOnDestroy() {
@@ -307,6 +242,12 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     );
   }
 
+  get queryParamString(): string {
+    return Object.entries(this.queryParam)
+      .map(([key, value]) => `${key}=${value}`)
+      .join("&");
+  }
+
   get showExport(): boolean {
     // titleToShow being non-empty means we're not on a dataset tab, eg Admin.
     // Title being blank means dataset not yet loaded
@@ -349,6 +290,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       let quantId = "";
       if (this.datasetID) {
         quantId = this._analysisLayoutService.getQuantIdForScan(this.datasetID);
+        this.openTabs = this.allTabs.slice();
       }
 
       const codeEditorQueryParams = `?scanId=${this.datasetID}&quantId=${quantId}`;
@@ -379,16 +321,21 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     }
 
     // Mark the right tab as being active
-    this._currTab = "";
-    for (let c = 0; c < this.tabs.length; c++) {
-      // Remove query params
-      let strippedURL = url.split("?")[0];
-      this.tabs[c].active = strippedURL.endsWith("/" + this.tabs[c].url.split("?")[0]);
+    // this._currTab = "";
+    // for (let c = 0; c < this.tabs.length; c++) {
+    //   // Remove query params
+    //   let strippedURL = url.split("?")[0];
+    //   this.tabs[c].active = strippedURL.endsWith("/" + this.tabs[c].url.split("?")[0]);
 
-      if (this.tabs[c].active) {
-        this._currTab = this.tabs[c].label;
-      }
-    }
+    //   if (this.tabs[c].active) {
+    //     this._currTab = this.tabs[c].label;
+    //   }
+    // }
+
+    let strippedURL = url.split("?")[0];
+    this.openTabs.forEach(tab => {
+      tab.active = strippedURL.endsWith(tab.url);
+    });
 
     // Set the doc title to show the tab we're on
     this.titleService.setTitle("PIXLISE" + (this._currTab.length > 0 ? " - " + this._currTab : ""));

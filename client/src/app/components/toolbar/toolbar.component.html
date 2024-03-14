@@ -30,43 +30,31 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 
 <div *ngIf="isVisible" class="toolbar" [ngClass]="{ 'dark-background': darkBackground }">
-  <img src="assets/PIXLISE-large.svg" title="Home Page" class="clickable" (click)="onAbout()" />
-
-  <div class="center-bar">
-    <!-- <missing-data-indicator></missing-data-indicator> -->
-    <div class="title-text" *ngIf="showTitle" [title]="title">{{ title }}</div>
-    <!-- <push-button *ngIf="showScanConfigurator" buttonStyle="outline" (click)="onScanConfiguration()">Scan Configuration</push-button> -->
-    <push-button *ngIf="showExport" buttonStyle="outline" (onClick)="onExport()">Export</push-button>
-    <!-- <two-state-edit-button *ngIf="showViewCapture" id="annotation-toggle-btn" buttonStyle="gray" (onToggle)="onToggleAnnotations($event)"
-      [active]="annotationsVisible" [style.z-index]="111" (onEdit)="onEditAnnotations()">
-      Annotations
-      <img *ngIf="savedAnnotations.length > 0" src="assets/button-icons/yellow-tick.svg">
-    </two-state-edit-button>
-    <annotation-display 
-      *ngIf="annotationsVisible" 
-      [style.display]="'contents'"
-      [editable]="editAnnotationsOpen"
-      [savedAnnotations]="savedAnnotations"
-      [annotationTool]="annotationTool"
-      [editingIndex]="editingAnnotationIndex"
-      (onEditIndex)="onAnnotationEditIndex($event)"
-      (onToolChange)="onAnnotationToolChange($event)"
-      (onNewAnnotation)="onNewAnnotation($event)"
-      (onEditAnnotation)="onEditAnnotation($event)"
-      (onDeleteAnnotation)="onDeleteAnnotation($event)"
-    ></annotation-display>
-    <screen-capture-button *ngIf="showViewCapture" [datasetID]="datasetID"></screen-capture-button> -->
+  <div class="logo-title">
+    <img *ngIf="title.length > 0" src="assets/PIXLISE-abbreviated.svg" />
+    <img *ngIf="title.length === 0" src="assets/PIXLISE-red-logo.svg" />
+    <div class="title-text" *ngIf="title.length > 0" [title]="title">{{ title }}</div>
+  </div>
+  <div class="tabs">
+    <div
+      class="tab {{ tab.active ? 'active' : '' }}"
+      *ngFor="let tab of openTabs"
+      #tooltip="matTooltip"
+      [matTooltip]="tab.tooltip || ''"
+      [matTooltipShowDelay]="1000">
+      <a [href]="tab.active ? 'javascript:void(0)' : tab.url + '?' + queryParamString">
+        <img class="tab-icon" [src]="tab.icon" />
+        <div *ngIf="tab.label" class="tab-label">{{ tab.label }}</div>
+      </a>
+    </div>
   </div>
 
-  <div *ngIf="isLoggedIn" class="gap-separated-horizontal-elements-wide fx-row fx-end-center">
-    <!-- <current-quantification *ngIf="showQuantPicker"></current-quantification> -->
-    <!-- <h5 class="workspace-title">{{ title }}</h5> -->
-    <!-- <push-button buttonStyle="outline">Workspace Configuration</push-button> -->
-
-    <a *ngIf="!isPublicUser" [href]="discussLink" class="nav-link-normal" target="_blank">Discussion</a>
-
-    <a *ngFor="let tab of tabs" [href]="tab.url" (click)="onNavigate(tab, $event)" class="{{ tab.cssClass }}">{{ tab.label }}</a>
+  <div *ngIf="isLoggedIn" class="authenticated-buttons">
+    <!-- <a *ngIf="!isPublicUser" [href]="discussLink" class="nav-link-normal" target="_blank">Discussion</a> -->
+    <!-- <a *ngFor="let tab of tabs" [href]="tab.url" (click)="onNavigate(tab, $event)" class="{{ tab.cssClass }}">{{ tab.label }}</a> -->
     <span class="buttons">
+      <span class="version"> Pixlise v4.0.1 (beta)</span>
+      <a class="link-to-v3" href="https://staging.pixlise.org" target="_blank">Back to v3</a>
       <icon-button
         (click)="onNotificationsMenu()"
         [hoverYellow]="true"
