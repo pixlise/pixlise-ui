@@ -5,6 +5,7 @@ import { WidgetData } from "src/app/generated-protos/widget-data";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { Subscription } from "rxjs";
 
 @Component({
   selector: "widget",
@@ -12,6 +13,8 @@ import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module"
   styleUrls: ["./widget.component.scss"],
 })
 export class WidgetComponent implements OnInit, AfterViewChecked {
+  private _subs: Subscription = new Subscription();
+
   @ViewChild("currentWidget", { read: ViewContainerRef }) currentWidget!: ViewContainerRef;
   private _currentWidgetRef: ComponentRef<any> | null = null;
 
@@ -57,6 +60,10 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
         this.isWidgetHighlighted = false;
       }
     });
+  }
+
+  ngOnDestroy() {
+    this._subs.unsubscribe();
   }
 
   ngAfterViewChecked(): void {
@@ -198,35 +205,44 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
     if (this._currentWidgetRef?.instance) {
       // Set the widget id
       this._currentWidgetRef.instance._widgetId = this.widgetLayoutConfig.id;
+      this._currentWidgetRef.instance._ref = this._currentWidgetRef;
       this._currentWidgetRef.instance._isWidgetHighlighted = this.isWidgetHighlighted;
 
       if (this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration) {
-        this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration.subscribe((config: WidgetControlConfiguration) => {
-          this.widgetConfiguration!.controlConfiguration = config;
-          this.initOverflowState();
-        });
+        this._subs.add(
+          this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration.subscribe((config: WidgetControlConfiguration) => {
+            this.widgetConfiguration!.controlConfiguration = config;
+            this.initOverflowState();
+          })
+        );
       }
 
       if (this._currentWidgetRef.instance.onWidgetHighlight) {
-        this._currentWidgetRef.instance.onWidgetHighlight.subscribe((isWidgetHighlighted: boolean) => {
-          this.isWidgetHighlighted = isWidgetHighlighted;
-        });
+        this._subs.add(
+          this._currentWidgetRef.instance.onWidgetHighlight.subscribe((isWidgetHighlighted: boolean) => {
+            this.isWidgetHighlighted = isWidgetHighlighted;
+          })
+        );
       }
 
       if (this._currentWidgetRef.instance.onWidgetLoading) {
-        this._currentWidgetRef.instance.onWidgetLoading.subscribe((isWidgetDataLoading: boolean) => {
-          this.isWidgetDataError = false;
-          this.widgetDataErrorMessage = "";
-          this.isWidgetDataLoading = isWidgetDataLoading;
-        });
+        this._subs.add(
+          this._currentWidgetRef.instance.onWidgetLoading.subscribe((isWidgetDataLoading: boolean) => {
+            this.isWidgetDataError = false;
+            this.widgetDataErrorMessage = "";
+            this.isWidgetDataLoading = isWidgetDataLoading;
+          })
+        );
       }
 
       if (this._currentWidgetRef.instance.onWidgetDataErrorMessage) {
-        this._currentWidgetRef.instance.onWidgetDataErrorMessage.subscribe((widgetDataErrorMessage: string) => {
-          this.isWidgetDataLoading = false;
-          this.isWidgetDataError = !!widgetDataErrorMessage;
-          this.widgetDataErrorMessage = widgetDataErrorMessage;
-        });
+        this._subs.add(
+          this._currentWidgetRef.instance.onWidgetDataErrorMessage.subscribe((widgetDataErrorMessage: string) => {
+            this.isWidgetDataLoading = false;
+            this.isWidgetDataError = !!widgetDataErrorMessage;
+            this.widgetDataErrorMessage = widgetDataErrorMessage;
+          })
+        );
       }
 
       if (this._currentWidgetRef.instance.widgetData$) {
@@ -235,11 +251,13 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
       }
 
       if (this._currentWidgetRef.instance.onSaveWidgetData) {
-        this._currentWidgetRef.instance.onSaveWidgetData.subscribe((widgetData: any) => {
-          let data = this.widgetLayoutConfig.data || WidgetData.create({ id: this.widgetLayoutConfig.id });
-          data[this.widgetConfiguration!.dataKey] = widgetData;
-          this._analysisLayoutService.writeWidgetData(data);
-        });
+        this._subs.add(
+          this._currentWidgetRef.instance.onSaveWidgetData.subscribe((widgetData: any) => {
+            let data = this.widgetLayoutConfig.data || WidgetData.create({ id: this.widgetLayoutConfig.id });
+            data[this.widgetConfiguration!.dataKey] = widgetData;
+            this._analysisLayoutService.writeWidgetData(data);
+          })
+        );
       }
     }
   }
