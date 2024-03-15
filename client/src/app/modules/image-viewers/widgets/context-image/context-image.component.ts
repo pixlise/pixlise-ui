@@ -2,16 +2,16 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
-import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
-import { ContextImageModel, ContextImageModelLoadedData } from "./context-image-model";
+import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
+import { ContextImageModel, ContextImageModelLoadedData, ContextImageScanModel } from "./context-image-model";
 import { ContextImageToolHost, ToolHostCreateSettings, ToolState } from "./tools/tool-host";
 import { ContextImageDrawer } from "./context-image-drawer";
-import { ContextImageState, ROILayerVisibility, VisibleROI } from "src/app/generated-protos/widget-data";
+import { ContextImageState, MapLayerVisibility, ROILayerVisibility, VisibleROI } from "src/app/generated-protos/widget-data";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageGetDefaultReq, ImageGetDefaultResp } from "src/app/generated-protos/image-msgs";
 import { ContextImageToolId } from "./tools/base-context-image-tool";
-import { ContextImageDataService } from "../../services/context-image-data.service";
+import { ContextImageDataService, SyncedTransform } from "../../services/context-image-data.service";
 import { Point, Rect } from "src/app/models/Geometry";
 import { SelectionService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
@@ -35,7 +35,6 @@ import { ImageOptionsComponent, ImageDisplayOptions, ImagePickerParams, ImagePic
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
-import { DataExpressionId } from "src/app/expression-language/expression-id";
 
 @Component({
   selector: "app-context-image",
@@ -52,7 +51,12 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
   cursorShown: string = "";
 
+  configuredScanIds: string[] = [];
   scanId: string = "";
+
+  linkToDataset: boolean = true;
+
+  private _quantOverrideForScan: Record<string, string> = {};
 
   private _subs = new Subscription();
 
@@ -231,13 +235,21 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this._subs.add(
       this.widgetData$.subscribe((data: any) => {
         const contextData = data as ContextImageState;
-        if (contextData) {
+
+        if (this._analysisLayoutService.isMapsPage && contextData.mapLayers.length > 0) {
+          this.mdl.expressionIds = contextData.mapLayers.map((layer: MapLayerVisibility) => layer.expressionID);
+          this.mdl.drawImage = false;
+          this.mdl.hideFootprintsForScans = [this.scanId];
+          this.mdl.hidePointsForScans = [this.scanId];
+          this.setInitialConfig(true);
+        } else if (contextData) {
+          this.mdl.expressionIds = contextData.mapLayers.map((layer: MapLayerVisibility) => layer.expressionID);
+
           // Set up model
           this.mdl.transform.pan.x = contextData.panX;
           this.mdl.transform.pan.y = contextData.panY;
           this.mdl.transform.scale.x = contextData.zoomX;
           this.mdl.transform.scale.y = contextData.zoomY;
-
           if (this.mdl.transform.scale.x <= 0) {
             this.mdl.transform.scale.x = 1;
           }
@@ -249,25 +261,6 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           this.mdl.imageName = contextData.contextImage;
           this.mdl.imageSmoothing = contextData.contextImageSmoothing.length > 0;
 
-          /*
-bool showPoints = 5;
-bool showPointBBox = 6;
-string pointColourScheme = 7;
-string pointBBoxColourScheme = 8;
-string contextImage = 9;
-string contextImageSmoothing = 10;
-repeated MapLayerVisibility mapLayers = 11;
-repeated ROILayerVisibility roiLayers = 12;
-bool elementRelativeShading = 13;
-float brightness = 14;
-string rgbuChannels = 15;
-float unselectedOpacity = 16;
-bool unselectedGrayscale = 17;
-float colourRatioMin = 18;
-float colourRatioMax = 19;
-bool removeTopSpecularArtifacts = 20;
-bool removeBottomSpecularArtifacts = 21;
-*/
           this.reloadModel();
         } else {
           this.setInitialConfig();
@@ -276,9 +269,51 @@ bool removeBottomSpecularArtifacts = 21;
     );
 
     this._subs.add(
+      this._contextDataService.syncedTransform$.subscribe(transforms => {
+        if (!this.linkToDataset) {
+          return;
+        }
+
+        let syncedTransform = transforms[this.syncId];
+        if (syncedTransform) {
+          this.mdl.transform.pan.x = syncedTransform.pan.x;
+          this.mdl.transform.pan.y = syncedTransform.pan.y;
+          this.mdl.transform.scale.x = syncedTransform.scale.x;
+          this.mdl.transform.scale.y = syncedTransform.scale.y;
+          if (this.mdl.transform.scale.x <= 0) {
+            this.mdl.transform.scale.x = 1;
+          }
+
+          if (this.mdl.transform.scale.y <= 0) {
+            this.mdl.transform.scale.y = 1;
+          }
+
+          this.reDraw();
+        }
+      })
+    );
+
+    this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfiguration => {
+      if (screenConfiguration) {
+        this.configuredScanIds = Object.keys(screenConfiguration.scanConfigurations).map(scanId => scanId);
+      }
+    });
+
+    this._subs.add(
       this.toolhost.activeCursor$.subscribe((cursor: string) => {
         // Something changed, refresh our tools
         this.cursorShown = cursor;
+      })
+    );
+
+    this._subs.add(
+      this.mdl.transform.transformChangeStarted$.subscribe(() => {
+        if (this.linkToDataset) {
+          this._contextDataService.syncTransformForId(this.syncId, {
+            pan: new Point(this.mdl.transform.pan.x, this.mdl.transform.pan.y),
+            scale: new Point(this.mdl.transform.scale.x, this.mdl.transform.scale.y),
+          });
+        }
       })
     );
 
@@ -348,9 +383,17 @@ bool removeBottomSpecularArtifacts = 21;
     this.reDraw();
   }
 
-  private setInitialConfig() {
+  get syncId(): string {
+    return `${this.scanId}-${this._analysisLayoutService.isMapsPage ? "maps" : "analysis"}`;
+  }
+
+  onToggleLinkToDataset() {
+    this.linkToDataset = !this.linkToDataset;
+  }
+
+  private setInitialConfig(setViewToExperiment: boolean = false) {
     // Get the "default" image for the loaded scan if there is one
-    const scanId = this._analysisLayoutService.defaultScanId;
+    const scanId = this.scanId || this._analysisLayoutService.defaultScanId;
 
     if (scanId.length > 0) {
       this._cachedDataService.getDefaultImage(ImageGetDefaultReq.create({ scanIds: [scanId] })).subscribe({
@@ -359,7 +402,7 @@ bool removeBottomSpecularArtifacts = 21;
           if (img) {
             // Set this as our default image
             this.mdl.imageName = img;
-            this.reloadModel();
+            this.reloadModel(setViewToExperiment);
           }
         },
         error: err => {
@@ -369,87 +412,107 @@ bool removeBottomSpecularArtifacts = 21;
     }
   }
 
+  override injectExpression(liveExpression: LiveExpression) {
+    this.scanId = liveExpression.scanId;
+    this.mdl.expressionIds = [liveExpression.expressionId];
+    this._quantOverrideForScan[liveExpression.scanId] = liveExpression.quantId;
+    this.mdl.drawImage = false;
+    this.mdl.hideFootprintsForScans = [this.scanId];
+    this.mdl.hidePointsForScans = [this.scanId];
+    this.setInitialConfig(true);
+  }
+
   private updateSelection() {
     const sel = this._selectionService.getCurrentSelection();
     this.mdl.setSelection(sel.beamSelection, sel.pixelSelection, this._selectionService.hoverScanId, this._selectionService.hoverEntryIdx);
     this.reDraw();
   }
 
-  private reloadModel() {
+  private loadMapLayers(setViewToExperiment: boolean = false) {
+    this.isWidgetDataLoading = false;
+
+    // Get the expression layers
+    if (this.mdl.expressionIds.length > 0) {
+      for (const scanId of this.mdl.scanIds) {
+        const scanMdl = this.mdl.getScanModelFor(scanId);
+        if (scanMdl) {
+          const pts = scanMdl.scanPoints;
+          const pmcToIndexLookup = new Map<number, number>();
+          for (const pt of pts) {
+            pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
+          }
+
+          let quantId = this._quantOverrideForScan[scanId] || this._analysisLayoutService.getQuantIdForScan(scanId);
+
+          this.mdl.expressionIds.forEach((exprId, i) => {
+            this._contextDataService
+              .getLayerModel(scanId, exprId, quantId, PredefinedROIID.getAllPointsForScan(scanId), ColourRamp.SHADE_MAGMA, pmcToIndexLookup)
+              .subscribe({
+                next: (layer: ContextImageMapLayer) => {
+                  this.mdl.setMapLayer(layer);
+                  this.widgetErrorMessage = "";
+
+                  if (setViewToExperiment && i == this.mdl.expressionIds.length - 1) {
+                    setTimeout(() => {
+                      this.onResetViewToExperiment();
+                    }, 1);
+                  }
+                },
+                error: err => {
+                  if (this._analysisLayoutService.isMapsPage) {
+                    // We have to wait for things to be injected on maps page, so this may be falsely called
+                    console.warn("Failed to add layer: " + exprId + " scan: " + scanId, err);
+                  } else {
+                    this._snackService.openError("Failed to add layer: " + exprId + " scan: " + scanId, err);
+                    this.widgetErrorMessage = "Failed to load layer data for displaying context image: " + this.mdl.imageName;
+                  }
+                },
+              });
+          });
+
+          this.scanId = scanId;
+        }
+      }
+    }
+
+    // And generate ROI polygons
+    for (const roi of this.mdl.roiIds) {
+      // NOTE: loadROI calls decodeIndexList so from this point we don't have to worry, we have a list of PMCs!
+      this._roiService.loadROI(roi.id).subscribe({
+        next: (roiLoaded: ROIItem) => {
+          // We need to be able to convert PMCs to location indexes...
+          const scanMdl = this.mdl.getScanModelFor(roi.scanId);
+          if (scanMdl) {
+            const pmcToIndexLookup = new Map<number, number>();
+            for (const pt of scanMdl.scanPoints) {
+              pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
+            }
+
+            // Make sure it has up to date display settings
+            const disp = this._roiService.getRegionDisplaySettings(roi.id);
+            if (disp) {
+              roiLoaded.displaySettings = ROIItemDisplaySettings.create({ colour: disp.colour.asString(), shape: disp.shape });
+            }
+
+            // We've loaded the region itself, store these so we can build a draw model when needed
+            this.mdl.setRegion(roi.id, roiLoaded, pmcToIndexLookup);
+          }
+        },
+        error: err => {
+          this._snackService.openError("Failed to generate region: " + roi.id + " scan: " + roi.scanId, err);
+          this.widgetErrorMessage = "Failed to load region data for displaying context image: " + this.mdl.imageName;
+        },
+      });
+    }
+  }
+
+  private reloadModel(setViewToExperiment: boolean = false) {
     this.isWidgetDataLoading = true;
 
     this._contextDataService.getModelData(this.mdl.imageName).subscribe({
       next: (data: ContextImageModelLoadedData) => {
         this.mdl.setData(data);
-        this.isWidgetDataLoading = false;
-
-        // Get the expression layers
-        if (this.mdl.expressionIds.length > 0) {
-          for (const scanId of this.mdl.scanIds) {
-            const scanMdl = this.mdl.getScanModelFor(scanId);
-            if (scanMdl) {
-              const pts = scanMdl.scanPoints;
-              const pmcToIndexLookup = new Map<number, number>();
-              for (const pt of pts) {
-                pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
-              }
-
-              for (const exprId of this.mdl.expressionIds) {
-                this._contextDataService
-                  .getLayerModel(
-                    scanId,
-                    exprId,
-                    this._analysisLayoutService.getQuantIdForScan(scanId),
-                    PredefinedROIID.getAllPointsForScan(scanId),
-                    ColourRamp.SHADE_MAGMA,
-                    pmcToIndexLookup
-                  )
-                  .subscribe({
-                    next: (layer: ContextImageMapLayer) => {
-                      this.mdl.setMapLayer(layer);
-                      this.widgetErrorMessage = "";
-                    },
-                    error: err => {
-                      this._snackService.openError("Failed to add layer: " + exprId + " scan: " + scanId, err);
-                      this.widgetErrorMessage = "Failed to load layer data for displaying context image: " + this.mdl.imageName;
-                    },
-                  });
-              }
-
-              this.scanId = scanId;
-            }
-          }
-        }
-
-        // And generate ROI polygons
-        for (const roi of this.mdl.roiIds) {
-          // NOTE: loadROI calls decodeIndexList so from this point we don't have to worry, we have a list of PMCs!
-          this._roiService.loadROI(roi.id).subscribe({
-            next: (roiLoaded: ROIItem) => {
-              // We need to be able to convert PMCs to location indexes...
-              const scanMdl = this.mdl.getScanModelFor(roi.scanId);
-              if (scanMdl) {
-                const pmcToIndexLookup = new Map<number, number>();
-                for (const pt of scanMdl.scanPoints) {
-                  pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
-                }
-
-                // Make sure it has up to date display settings
-                const disp = this._roiService.getRegionDisplaySettings(roi.id);
-                if (disp) {
-                  roiLoaded.displaySettings = ROIItemDisplaySettings.create({ colour: disp.colour.asString(), shape: disp.shape });
-                }
-
-                // We've loaded the region itself, store these so we can build a draw model when needed
-                this.mdl.setRegion(roi.id, roiLoaded, pmcToIndexLookup);
-              }
-            },
-            error: err => {
-              this._snackService.openError("Failed to generate region: " + roi.id + " scan: " + roi.scanId, err);
-              this.widgetErrorMessage = "Failed to load region data for displaying context image: " + this.mdl.imageName;
-            },
-          });
-        }
+        this.loadMapLayers(setViewToExperiment);
       },
       error: err => {
         this._snackService.openError("Failed to load data for displaying context image: " + this.mdl.imageName, err);
@@ -694,6 +757,11 @@ bool removeBottomSpecularArtifacts = 21;
   }
 
   saveState() {
+    if (this._analysisLayoutService.isMapsPage) {
+      // We don't save state for maps
+      return;
+    }
+
     this.onSaveWidgetData.emit(
       ContextImageState.create({
         panX: this.mdl.transform.pan.x,
@@ -714,6 +782,7 @@ bool removeBottomSpecularArtifacts = 21;
         colourRatioMax: this.mdl.colourRatioMax ?? undefined,
         removeTopSpecularArtifacts: this.mdl.removeTopSpecularArtifacts,
         removeBottomSpecularArtifacts: this.mdl.removeBottomSpecularArtifacts,
+        mapLayers: this.mdl.expressionIds.map(layer => MapLayerVisibility.create({ expressionID: layer })),
       })
     );
   }
@@ -728,7 +797,7 @@ bool removeBottomSpecularArtifacts = 21;
     const dialogConfig = new MatDialogConfig();
     // Pass data to dialog
     dialogConfig.data = new ImagePickerParams(
-      [this._analysisLayoutService.defaultScanId],
+      this.configuredScanIds,
       new ImageDisplayOptions(
         this.mdl.imageName,
         this.mdl.imageSmoothing,
@@ -739,7 +808,8 @@ bool removeBottomSpecularArtifacts = 21;
         this.mdl.colourRatioMax,
         this.mdl.rgbuChannels,
         this.mdl.unselectedOpacity,
-        this.mdl.unselectedGrayscale
+        this.mdl.unselectedGrayscale,
+        this.scanId
       )
     );
 
@@ -757,6 +827,11 @@ bool removeBottomSpecularArtifacts = 21;
       if (this.mdl.drawImage) {
         this.mdl.imageName = result.options.currentImage;
       }
+
+      if (result.options.selectedScanId.length > 0 && result.options.selectedScanId !== this.scanId) {
+        this.scanId = result.options.selectedScanId;
+      }
+
       this.mdl.imageSmoothing = result.options.imageSmoothing;
       this.mdl.imageBrightness = result.options.imageBrightness;
       this.mdl.removeTopSpecularArtifacts = result.options.removeTopSpecularArtifacts;

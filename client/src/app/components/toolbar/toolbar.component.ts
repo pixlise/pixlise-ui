@@ -115,7 +115,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     { icon: "assets/tab-icons/browse.svg", tooltip: "Browse", url: "/datasets" },
     { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: "/datasets/analysis" },
     { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: "/datasets/code-editor" },
-    { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: "/datasets/analysis/element-maps" },
+    { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: "/datasets/maps" },
   ];
   openTabs: NavigationTab[] = [{ icon: "assets/tab-icons/browse.svg", tooltip: "Browse", url: "/datasets" }];
 
@@ -260,6 +260,14 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       userOverlayPos,
       true
     );
+  }
+
+  onOpenTab(tab: NavigationTab): void {
+    let strippedURL = this.router.url.split("?")[0];
+    this.router.navigateByUrl(`${tab.url}?${this.queryParamString}`);
+    this.openTabs.forEach(openTab => {
+      openTab.active = strippedURL.endsWith(tab.url);
+    });
   }
 
   get queryParamString(): string {

@@ -2,6 +2,7 @@ import { Component, HostListener } from "@angular/core";
 import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration } from "../../models/screen-configuration.model";
+import { Subscription } from "rxjs";
 
 export type ScreenConfigurationCSS = {
   templateColumns: string;
@@ -14,6 +15,7 @@ export type ScreenConfigurationCSS = {
   styleUrls: ["./analysis-page.component.scss"],
 })
 export class AnalysisPageComponent {
+  private _subs: Subscription = new Subscription();
   private _keyPresses = new Set<string>();
 
   computedLayouts: ScreenConfigurationCSS[] = [];
@@ -22,10 +24,16 @@ export class AnalysisPageComponent {
   constructor(private _analysisLayoutService: AnalysisLayoutService) {}
 
   ngOnInit(): void {
-    this._analysisLayoutService.activeScreenConfiguration$.subscribe(screen => {
-      this.loadedScreenConfiguration = screen;
-      this.computeLayouts();
-    });
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screen => {
+        this.loadedScreenConfiguration = screen;
+        this.computeLayouts();
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
   }
 
   computeLayouts() {

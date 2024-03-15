@@ -2,6 +2,15 @@ import { Component, ComponentRef, EventEmitter, Output, TemplateRef, ViewChild }
 import { WidgetControlConfiguration } from "./widgets.model";
 import { WidgetData } from "src/app/generated-protos/widget-data";
 import { BehaviorSubject } from "rxjs";
+import { DataExpression } from "src/app/generated-protos/expressions";
+
+export type LiveExpression = {
+  expressionId: string;
+  scanId: string;
+  quantId: string;
+  expression?: DataExpression;
+  mapsMode?: boolean;
+};
 
 @Component({
   selector: "base-widget",
@@ -21,6 +30,8 @@ export class BaseWidgetModel {
   _widgetDataErrorMessage: string = "";
 
   onWidgetDataChange(widgetData: WidgetData): void {}
+
+  injectExpression(expression: LiveExpression): void {}
 
   @Output() public onWidgetHighlight: EventEmitter<boolean> = new EventEmitter<boolean>();
   @Output() public onWidgetLoading: EventEmitter<boolean> = new EventEmitter<boolean>();

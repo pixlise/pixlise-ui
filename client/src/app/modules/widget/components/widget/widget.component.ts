@@ -6,6 +6,7 @@ import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-sour
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { Subscription } from "rxjs";
+import { LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 
 @Component({
   selector: "widget",
@@ -32,8 +33,12 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
 
   @Input() widgetLayoutConfig: WidgetLayoutConfiguration = WidgetLayoutConfiguration.create();
   @Input() layoutIndex: number = 0;
+  @Input() disableSwitch: boolean = false;
+  @Input() title: string = "";
 
   visibleTopToolbarCount: number = 0;
+
+  isOverflowed: boolean = false;
 
   allWidgetOptions = Object.entries(WIDGETS).map(([id, value]) => ({ id, ...value }));
   _activeWidget: WidgetType = "ternary-plot";
@@ -81,6 +86,7 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
     let buttonsContainerWidth = this.buttonsContainer.nativeElement.offsetWidth;
     let topToolbarWidth = 0;
     if (this.widgetConfiguration?.controlConfiguration?.topToolbar) {
+      let overflowed = false;
       this.widgetConfiguration.controlConfiguration.topToolbar.forEach((button, index) => {
         let buttonWidth = button.maxWidth || 60;
         if (topToolbarWidth + buttonWidth < buttonsContainerWidth) {
@@ -88,9 +94,12 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
           button._overflowed = false;
         } else {
           button._overflowed = true;
+          overflowed = true;
           this.visibleTopToolbarCount = index;
         }
       });
+
+      this.isOverflowed = overflowed;
     }
   }
 
@@ -116,13 +125,17 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
         }
       }
 
+      let overflowed = false;
       this.widgetConfiguration.controlConfiguration.topToolbar.forEach((button, index) => {
         if (index < this.visibleTopToolbarCount) {
           button._overflowed = false;
         } else {
           button._overflowed = true;
+          overflowed = true;
         }
       });
+
+      this.isOverflowed = overflowed;
     }
   }
 
@@ -145,17 +158,35 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
     this.loadWidget();
   }
 
-  @Input() set liveExpression({ expressionId, scanId, quantId }: { expressionId: string; scanId: string; quantId: string }) {
-    if (this._currentWidgetRef?.instance?.mdl?.expressionIds && this._currentWidgetRef?.instance?.mdl.dataSourceIds) {
-      if (this._currentWidgetRef?.instance?.mdl.expressionIds.length > 0) {
-        this._currentWidgetRef.instance.mdl.expressionIds[0] = expressionId;
-      } else {
-        this._currentWidgetRef.instance.mdl.expressionIds = [expressionId];
-      }
-      this._currentWidgetRef?.instance?.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(scanId)]));
+  @Input() set liveExpression(liveExpression: LiveExpression) {
+    if (!liveExpression) {
+      return;
     }
-    if (this._currentWidgetRef?.instance?.update) {
-      this._currentWidgetRef?.instance?.update();
+
+    if (this._currentWidgetRef?.instance) {
+      this._injectLiveExpression(liveExpression);
+    } else {
+      setTimeout(() => {
+        this._injectLiveExpression(liveExpression);
+      }, 1000);
+    }
+  }
+
+  private _injectLiveExpression({ expressionId, scanId, quantId, expression }: LiveExpression) {
+    if (this._currentWidgetRef?.instance?.injectExpression) {
+      this._currentWidgetRef.instance.injectExpression({ expressionId, scanId, quantId, expression });
+    } else {
+      if (this._currentWidgetRef?.instance?.mdl?.expressionIds && this._currentWidgetRef?.instance?.mdl.dataSourceIds) {
+        if (this._currentWidgetRef?.instance?.mdl.expressionIds.length > 0) {
+          this._currentWidgetRef.instance.mdl.expressionIds[0] = expressionId;
+        } else {
+          this._currentWidgetRef.instance.mdl.expressionIds = [expressionId];
+        }
+        this._currentWidgetRef?.instance?.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(scanId)]));
+      }
+      if (this._currentWidgetRef?.instance?.update) {
+        this._currentWidgetRef?.instance?.update();
+      }
     }
   }
 

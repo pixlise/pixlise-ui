@@ -18,7 +18,6 @@ import { ResponseStatus } from "src/app/generated-protos/websocket";
 import { ExpressionPickerResponse } from "../../expressions/components/expression-picker/expression-picker.component";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
-import { DiffractionPeak } from "src/app/modules/pixlisecore/models/diffraction";
 import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
 
 export class DefaultExpressions {
@@ -32,12 +31,10 @@ export class DefaultExpressions {
   providedIn: "root",
 })
 export class AnalysisLayoutService implements OnDestroy {
-  // sidepanelOpen: boolean = false;
-  sidepanelOpen$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-
   private _subs = new Subscription();
-
   private _resizeCanvas$ = new ReplaySubject<void>(1);
+
+  sidepanelOpen$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   sidebarTabs: SidebarTabItem[] = SIDEBAR_TABS;
   sidebarViewShortcuts: SidebarViewShortcut[] = SIDEBAR_VIEWS;
@@ -100,6 +97,11 @@ export class AnalysisLayoutService implements OnDestroy {
         }
       })
     );
+  }
+
+  get isMapsPage(): boolean {
+    let strippedURL = this._router.url.split("?")[0];
+    return strippedURL.endsWith("/datasets/maps");
   }
 
   ngOnDestroy(): void {

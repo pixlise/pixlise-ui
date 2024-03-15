@@ -42,7 +42,7 @@ POSSIBILITY OF SUCH DAMAGE.
       #tooltip="matTooltip"
       [matTooltip]="tab.tooltip || ''"
       [matTooltipShowDelay]="1000">
-      <a [href]="tab.active ? 'javascript:void(0)' : tab.url + '?' + queryParamString">
+      <a (click)="onOpenTab(tab)">
         <img class="tab-icon" [src]="tab.icon" />
         <div *ngIf="tab.label" class="tab-label">{{ tab.label }}</div>
       </a>

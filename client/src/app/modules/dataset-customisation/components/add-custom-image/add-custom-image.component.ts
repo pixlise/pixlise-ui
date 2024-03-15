@@ -29,6 +29,7 @@
 
 import { Component, Inject } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { ImageSelection } from "src/app/modules/image-viewers/components/context-image-picker/context-image-picker.component";
 import { ContextImageItem } from "src/app/modules/image-viewers/image-viewers.module";
 
 export class DatasetCustomImageInfo {
@@ -78,7 +79,7 @@ export class AddCustomImageComponent {
       alert("Please drop one image to upload");
       return;
     }
-/*
+    /*
     if (this.params.allowMatched) {
       // Validate that fields were entered
       if (this.data.xOffset == null || this.data.yScale == null || this.data.xScale == null || this.data.yScale == null /*|| this.data.alignedBeamPMC == null* /) {
@@ -102,7 +103,7 @@ export class AddCustomImageComponent {
     this.dialogRef.close(null);
   }
 
-  onDropFile(event) {
+  onDropFile(event: any) {
     if (this.droppedFiles.length >= 1) {
       return;
     }
@@ -124,12 +125,12 @@ export class AddCustomImageComponent {
     }
   }
 
-  onRemoveDroppedFile(event) {
+  onRemoveDroppedFile(event: any) {
     //console.log(event);
     this.droppedFiles.splice(this.droppedFiles.indexOf(event), 1);
   }
 
-  onChangeAlignToImage(img: ContextImageItem) {
+  onChangeAlignToImage(img: ImageSelection) {
     this._alignToImage = img.path;
   }
 }
