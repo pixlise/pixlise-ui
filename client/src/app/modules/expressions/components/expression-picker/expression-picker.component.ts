@@ -29,7 +29,7 @@
 
 import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { Subscription } from "rxjs";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { ExpressionSearchFilter, RecentExpression } from "../../models/expression-search";
@@ -130,6 +130,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     private _snackBarService: SnackbarService,
     private _userOptionsService: UserOptionsService,
     private _expressionService: ExpressionsService,
+    private _widgetDataService: WidgetDataService,
     @Inject(MAT_DIALOG_DATA) public data: ExpressionPickerData,
     public dialogRef: MatDialogRef<ExpressionPickerComponent, ExpressionPickerResponse>
   ) {}
@@ -334,7 +335,11 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       if (expression) {
         toSelect.push(expression);
       } else {
-        if (this._pseudoIntensities[id]) {
+        let unsavedExpression = this._widgetDataService.unsavedExpressions.get(id);
+        if (unsavedExpression) {
+          // Check if we have it in unsaved expressions
+          toSelect.push(unsavedExpression);
+        } else if (this._pseudoIntensities[id]) {
           // Check if we have it in pseudo intensities
           toSelect.push(this._pseudoIntensities[id]);
         } else if (this._quantifiedExpressions[id]) {

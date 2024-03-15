@@ -395,7 +395,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     this.updateDisplayList();
     this.mdl.needsDraw$.next();
 
-    // this._exprService.setDiffractionCountExpression("diffractionPeaks(0,4096)", "All Diffracton Peaks");
+    this.runExpression({ title: "All Diffraction Peaks", expression: "diffractionPeaks(0,4096)", description: "All diffraction peaks" }, this.isMapShown);
   }
 
   runExpression(formedExpression: DiffractionExpressionResponse, updateContextImage: boolean = true) {
@@ -678,11 +678,6 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
       for (let c = 0; c < binnedBykeV.length; c++) {
         let keVStart = c * DiffractionHistogramModel.keVBinWidth;
         let colour = Colours.GRAY_70;
-        /*            if(this.iskeVRangeSelected(keVStart+DiffractionHistogramModel.keVBinWidth/2))
-                {
-                    colour = Colours.YELLOW;
-                }*/
-
         bars.push(new HistogramBar(colour, binnedBykeV[c], keVStart));
         countRange.expand(binnedBykeV[c]);
       }
