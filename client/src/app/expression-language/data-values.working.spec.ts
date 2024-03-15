@@ -31,7 +31,7 @@ import { MinMax } from "../models/BasicTypes";
 import { PMCDataValue, PMCDataValues } from "./data-values";
 
 describe("PMCDataValues makeWithValues() call", () => {
-  let expResult = new PMCDataValues();
+  const expResult = new PMCDataValues();
   expResult.values = [
     new PMCDataValue(10, 3, false),
     new PMCDataValue(11, 0, true),
@@ -43,7 +43,7 @@ describe("PMCDataValues makeWithValues() call", () => {
   expResult["_valueRange"] = new MinMax(2, 8);
 
   it("should ignore undefined", () => {
-    let n = PMCDataValues.makeWithValues([
+    const n = PMCDataValues.makeWithValues([
       new PMCDataValue(10, 3, false),
       new PMCDataValue(11, 0, true),
       new PMCDataValue(12, 8, false),
@@ -54,7 +54,7 @@ describe("PMCDataValues makeWithValues() call", () => {
     expect(n).toEqual(expResult);
   });
 
-  let expBinResult = new PMCDataValues();
+  const expBinResult = new PMCDataValues();
   expBinResult.values = [
     new PMCDataValue(10, 1, false),
     new PMCDataValue(11, 0, true),
@@ -64,7 +64,7 @@ describe("PMCDataValues makeWithValues() call", () => {
   expBinResult.isBinary = true;
   expBinResult["_valueRange"] = new MinMax(0, 1);
   it("should set binary flag", () => {
-    let n = PMCDataValues.makeWithValues([
+    const n = PMCDataValues.makeWithValues([
       new PMCDataValue(10, 1, false),
       new PMCDataValue(11, 0, true),
       new PMCDataValue(12, 0, false),
@@ -76,7 +76,7 @@ describe("PMCDataValues makeWithValues() call", () => {
 });
 
 describe("PMCDataValues filterToCommonPMCsOnly() call", () => {
-  let data1 = PMCDataValues.makeWithValues([
+  const data1 = PMCDataValues.makeWithValues([
     new PMCDataValue(10, 3, false),
     new PMCDataValue(11, 0, false),
     new PMCDataValue(13, 8, false),
@@ -84,7 +84,7 @@ describe("PMCDataValues filterToCommonPMCsOnly() call", () => {
     new PMCDataValue(15, 2, false),
   ]);
 
-  let data2 = PMCDataValues.makeWithValues([
+  const data2 = PMCDataValues.makeWithValues([
     new PMCDataValue(10, 4, false),
     new PMCDataValue(9, 0, false),
     new PMCDataValue(13, 5, false),
@@ -92,7 +92,7 @@ describe("PMCDataValues filterToCommonPMCsOnly() call", () => {
     new PMCDataValue(23, 2, false),
   ]);
 
-  let data3 = PMCDataValues.makeWithValues([
+  const data3 = PMCDataValues.makeWithValues([
     new PMCDataValue(12, 3, false),
     new PMCDataValue(13, 2, false),
     new PMCDataValue(14, 8, false),
@@ -100,14 +100,14 @@ describe("PMCDataValues filterToCommonPMCsOnly() call", () => {
     new PMCDataValue(16, 2, false),
   ]);
 
-  let expFiltered = [
+  const expFiltered = [
     PMCDataValues.makeWithValues([new PMCDataValue(13, 8, false)]),
     PMCDataValues.makeWithValues([new PMCDataValue(13, 5, false)]),
     PMCDataValues.makeWithValues([new PMCDataValue(13, 2, false)]),
   ];
 
   it("should filter for 3 columns", () => {
-    let filtered = PMCDataValues.filterToCommonPMCsOnly([data1, data2, data3]);
+    const filtered = PMCDataValues.filterToCommonPMCsOnly([data1, data2, data3]);
 
     expect(filtered).toEqual(expFiltered);
   });

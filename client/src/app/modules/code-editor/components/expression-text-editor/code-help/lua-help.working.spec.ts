@@ -31,7 +31,6 @@
 import { LUAHelp } from "./lua-help";
 import { FunctionHelp, FunctionParamHelp } from "./help";
 
-
 const luaExample = `-- A bunch of copyright comments
 -- can be found here
 Map = {
@@ -80,112 +79,54 @@ end
 return Map
 `;
 
-describe("LUAHelp.makeHelpForSource", () => 
-{
-    it("extracts help from source code", () => 
-    {
-        let help = new LUAHelp();
-        let helps = help["makeHelpForSource"]("builtin-Map", luaExample);
-        expect(helps).toEqual([
-            new FunctionHelp(
-                "mul",
-                "Map",
-                "",
-                "builtin-Map",
-                [
-                    new FunctionParamHelp("l", "", []),
-                    new FunctionParamHelp("r", "", [])
-                ]
-            ),
-            new FunctionHelp(
-                "div",
-                "Map",
-                "Here is some help text\nthat is multi-line",
-                "builtin-Map",
-                [
-                    new FunctionParamHelp("l", "", []),
-                    new FunctionParamHelp("r", "", [])
-                ]
-            ),
-            new FunctionHelp(
-                "add",
-                "Map",
-                "Here is some help text\nthat is also multi-line",
-                "builtin-Map",
-                [
-                    new FunctionParamHelp("l", "The left parameter", []),
-                    new FunctionParamHelp("r", "", [])
-                ]
-            ),
-            new FunctionHelp(
-                "sub",
-                "Map",
-                "",
-                "builtin-Map",
-                [
-                    new FunctionParamHelp("l", "", []),
-                    new FunctionParamHelp("r", "Right param", [])
-                ]
-            )
-        ]);
-    });
+describe("LUAHelp.makeHelpForSource", () => {
+  it("extracts help from source code", () => {
+    const help = new LUAHelp();
+    const helps = help["makeHelpForSource"]("builtin-Map", luaExample);
+    expect(helps).toEqual([
+      new FunctionHelp("mul", "Map", "", "builtin-Map", [new FunctionParamHelp("l", "", []), new FunctionParamHelp("r", "", [])]),
+      new FunctionHelp("div", "Map", "Here is some help text\nthat is multi-line", "builtin-Map", [
+        new FunctionParamHelp("l", "", []),
+        new FunctionParamHelp("r", "", []),
+      ]),
+      new FunctionHelp("add", "Map", "Here is some help text\nthat is also multi-line", "builtin-Map", [
+        new FunctionParamHelp("l", "The left parameter", []),
+        new FunctionParamHelp("r", "", []),
+      ]),
+      new FunctionHelp("sub", "Map", "", "builtin-Map", [new FunctionParamHelp("l", "", []), new FunctionParamHelp("r", "Right param", [])]),
+    ]);
+  });
 });
 
-describe("LUAHelp.getFuncDoc", () => 
-{
-    it("extracts help above func", () => 
-    {
-        const src = [
-            "something()",
-            "",
-            "-- Here is some help text",
-            "--that is also multi-line",
-            "-- l: The left parameter",
-            "--with more",
-            "-- r: The right ",
-            "--parameter",
-            "\tfunction Map.add(l, r)"
-        ];
+describe("LUAHelp.getFuncDoc", () => {
+  it("extracts help above func", () => {
+    const src = [
+      "something()",
+      "",
+      "-- Here is some help text",
+      "--that is also multi-line",
+      "-- l: The left parameter",
+      "--with more",
+      "-- r: The right ",
+      "--parameter",
+      "\tfunction Map.add(l, r)",
+    ];
 
-        let help = new LUAHelp();
-        let lines = help["getFuncDoc"](src, 8);
-        expect(lines).toEqual([
-            "Here is some help text",
-            "that is also multi-line",
-            "l: The left parameter",
-            "with more",
-            "r: The right",
-            "parameter",
-        ]);
-    });
+    const help = new LUAHelp();
+    const lines = help["getFuncDoc"](src, 8);
+    expect(lines).toEqual(["Here is some help text", "that is also multi-line", "l: The left parameter", "with more", "r: The right", "parameter"]);
+  });
 });
 
-describe("LUAHelp.getParamHelp", () => 
-{
-    it("extracts help above func", () => 
-    {
-        const src = [
-            "Here is some help text",
-            "that is also multi-line",
-            "l: The left parameter",
-            "with more",
-            "r: The right",
-            "parameter",
-        ];
+describe("LUAHelp.getParamHelp", () => {
+  it("extracts help above func", () => {
+    const src = ["Here is some help text", "that is also multi-line", "l: The left parameter", "with more", "r: The right", "parameter"];
 
-        let help = new LUAHelp();
-        let lines = help["getParamHelp"](src, "l", ["l", "r"]);
-        expect(lines).toEqual([
-            "The left parameter",
-            "with more",
-        ]);
+    const help = new LUAHelp();
+    const lines = help["getParamHelp"](src, "l", ["l", "r"]);
+    expect(lines).toEqual(["The left parameter", "with more"]);
 
-        // Side-effect is we should have deleted these lines from the main source line list too
-        expect(src).toEqual([
-            "Here is some help text",
-            "that is also multi-line",
-            "r: The right",
-            "parameter",
-        ]);
-    });
+    // Side-effect is we should have deleted these lines from the main source line list too
+    expect(src).toEqual(["Here is some help text", "that is also multi-line", "r: The right", "parameter"]);
+  });
 });

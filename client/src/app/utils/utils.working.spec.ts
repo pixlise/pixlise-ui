@@ -48,10 +48,10 @@ import {
 
 describe("randomString", () => {
   it("should return random strings with valid chars", () => {
-    let prevs = new Set<string>();
+    const prevs = new Set<string>();
 
     for (let c = 0; c < 1000; c++) {
-      let str = randomString(8);
+      const str = randomString(8);
 
       expect(str.length).toEqual(8);
 
@@ -232,13 +232,13 @@ describe("makeValidFileName", () => {
 
 // SDSFields file name parser class
 describe("SDSFields.stringToIDSimpleCase", () => {
-  let vals = ["123", "12.3", "0x32", "i12", "12i"];
-  let exp = [123, -1, -1, -1, -1];
+  const vals = ["123", "12.3", "0x32", "i12", "12i"];
+  const exp = [123, -1, -1, -1, -1];
 
-  let s = SDSFields.makeBlankForTest();
+  const s = SDSFields.makeBlankForTest();
 
   for (let c = 0; c < vals.length; c++) {
-    let v = vals[c];
+    const v = vals[c];
     it(v + "==" + exp[c], () => {
       expect(s["stringToIDSimpleCase"](v)).toEqual(exp[c]);
     });
@@ -246,13 +246,13 @@ describe("SDSFields.stringToIDSimpleCase", () => {
 });
 
 describe("SDSFields.isAllDigits", () => {
-  let vals = ["1234567890", "9", "0", "01", "10", "12x4", "12.4"];
-  let exp = [true, true, true, true, true, false, false];
+  const vals = ["1234567890", "9", "0", "01", "10", "12x4", "12.4"];
+  const exp = [true, true, true, true, true, false, false];
 
-  let s = SDSFields.makeBlankForTest();
+  const s = SDSFields.makeBlankForTest();
 
   for (let c = 0; c < vals.length; c++) {
-    let v = vals[c];
+    const v = vals[c];
     it(v + "==" + exp[c], () => {
       expect(s["isAllDigits"](v)).toEqual(exp[c]);
     });
@@ -260,13 +260,13 @@ describe("SDSFields.isAllDigits", () => {
 });
 
 describe("SDSFields.isAlpha", () => {
-  let vals = ["0", "1", "8", "9", "a", "f", "z", "A", "L", "Z", ".", " ", "^"];
-  let exp = [false, false, false, false, true, true, true, true, true, true, false, false, false];
+  const vals = ["0", "1", "8", "9", "a", "f", "z", "A", "L", "Z", ".", " ", "^"];
+  const exp = [false, false, false, false, true, true, true, true, true, true, false, false, false];
 
-  let s = SDSFields.makeBlankForTest();
+  const s = SDSFields.makeBlankForTest();
 
   for (let c = 0; c < vals.length; c++) {
-    let v = vals[c];
+    const v = vals[c];
     it(v + "==" + exp[c], () => {
       expect(s["isAlpha"](v)).toEqual(exp[c]);
     });
@@ -274,13 +274,13 @@ describe("SDSFields.isAlpha", () => {
 });
 
 describe("SDSFields.letterValue", () => {
-  let vals = ["A", "B", "Z", " ", "a", "0"];
-  let exp = [0, 1, 25, -33, 32, -17];
+  const vals = ["A", "B", "Z", " ", "a", "0"];
+  const exp = [0, 1, 25, -33, 32, -17];
 
-  let s = SDSFields.makeBlankForTest();
+  const s = SDSFields.makeBlankForTest();
 
   for (let c = 0; c < vals.length; c++) {
-    let v = vals[c];
+    const v = vals[c];
     it(v + "==" + exp[c], () => {
       expect(s["letterValue"](v)).toEqual(exp[c]);
     });
@@ -288,7 +288,7 @@ describe("SDSFields.letterValue", () => {
 });
 
 describe("SDSFields.stringToSiteID", () => {
-  let vals = [
+  const vals = [
     "123",
     "B01",
     "AA9",
@@ -304,7 +304,7 @@ describe("SDSFields.stringToSiteID", () => {
     "6",
     "HELLO",
   ];
-  let exp = [
+  const exp = [
     123,
     1101,
     3609,
@@ -321,10 +321,10 @@ describe("SDSFields.stringToSiteID", () => {
     -1, // Failed to convert: HELLO to site ID
   ];
 
-  let s = SDSFields.makeBlankForTest();
+  const s = SDSFields.makeBlankForTest();
 
   for (let c = 0; c < vals.length; c++) {
-    let v = vals[c];
+    const v = vals[c];
     it(v + "==" + exp[c], () => {
       expect(s["stringToSiteID"](v)).toEqual(exp[c]);
     });
@@ -332,7 +332,7 @@ describe("SDSFields.stringToSiteID", () => {
 });
 
 describe("SDSFields.stringToDriveID", () => {
-  let vals = [
+  const vals = [
     "0000",
     "1234",
     "9999",
@@ -348,7 +348,7 @@ describe("SDSFields.stringToDriveID", () => {
     "A00",
     "ZAZA",
   ];
-  let exp = [
+  const exp = [
     0,
     1234,
     9999,
@@ -365,10 +365,10 @@ describe("SDSFields.stringToDriveID", () => {
     -1, // Failed to convert: ZAZA to drive ID
   ];
 
-  let s = SDSFields.makeBlankForTest();
+  const s = SDSFields.makeBlankForTest();
 
   for (let c = 0; c < vals.length; c++) {
-    let v = vals[c];
+    const v = vals[c];
     it(v + "==" + exp[c], () => {
       expect(s["stringToDriveID"](v)).toEqual(exp[c]);
     });
@@ -376,8 +376,8 @@ describe("SDSFields.stringToDriveID", () => {
 });
 
 describe("SDSFields.stringToVersion", () => {
-  let vals = ["01", "55", "99", "A0", "AZ", "BA", "BZ", "Z0", "Z9", "ZZ", "Test", "3"];
-  let exp = [
+  const vals = ["01", "55", "99", "A0", "AZ", "BA", "BZ", "Z0", "Z9", "ZZ", "Test", "3"];
+  const exp = [
     1,
     55,
     99,
@@ -392,10 +392,10 @@ describe("SDSFields.stringToVersion", () => {
     -1, // Failed to convert: 3 to version
   ];
 
-  let s = SDSFields.makeBlankForTest();
+  const s = SDSFields.makeBlankForTest();
 
   for (let c = 0; c < vals.length; c++) {
-    let v = vals[c];
+    const v = vals[c];
     it(v + "==" + exp[c], () => {
       expect(s["stringToVersion"](v)).toEqual(exp[c]);
     });
@@ -403,7 +403,7 @@ describe("SDSFields.stringToVersion", () => {
 });
 
 describe("SDSFields.parseFileName", () => {
-  let vals = [
+  const vals = [
     "INCSPRIMVSECONDARYT_TERPROGTSITDRIVSEQNUMRTTCAMSDCOPVE.EXT",
     "PS__D077T0637741109_000RPM_N001003600098356100640__J01.CSV",
     "PCR_D077T0637741562_000EDR_N00100360009835610066000J01.PNG",
@@ -413,7 +413,7 @@ describe("SDSFields.parseFileName", () => {
     "PS__1033_0012345678_000RFS_N001003600098356100640__J01.CSV",
   ];
 
-  let exp = [
+  const exp = [
     "IN C S PRIM V SECONDARYT TER PRO G T SIT DRIV SEQNUMRTT CAMS D CO P VE - -1,0,0,PRIM",
     "PS _ _ D077 T 0637741109 000 RPM _ N 001 0036 000983561 0064 0 __ J 01 - 64,983561,637741109,D077",
     "PC R _ D077 T 0637741562 000 EDR _ N 001 0036 000983561 0066 0 00 J 01 - 66,983561,637741562,D077",
@@ -424,9 +424,9 @@ describe("SDSFields.parseFileName", () => {
   ];
 
   for (let c = 0; c < vals.length; c++) {
-    let v = vals[c];
+    const v = vals[c];
     it(v + "==" + exp[c], () => {
-      let f = SDSFields.makeFromFileName(v);
+      const f = SDSFields.makeFromFileName(v);
       expect(f.toDebugString() + " - " + f.PMC + "," + f.RTT + "," + f.SCLK + "," + f.SOL).toEqual(exp[c]);
     });
   }

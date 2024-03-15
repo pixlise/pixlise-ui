@@ -51,11 +51,11 @@ describe("DatasetFilter.makeSendableSearchString() call", () => {
 
 describe("DatasetFilter", () => {
   it("should return valid search string", () => {
-    let filter = new DatasetFilter(null, "10", null, "123", null, "PIXL-FM", false, false, true, "12", "23");
+    const filter = new DatasetFilter(null, "10", null, "123", null, "PIXL-FM", false, false, true, "12", "23");
     expect(filter.toSearchString()).toEqual("sol=lt|10&site_id=123&detector_config=PIXL-FM&normal_spectra=gt|0&location_count=bw|12|23");
   });
   it("should return valid search string sol greater-than", () => {
-    let filter = new DatasetFilter("34", null, null, null, null, null, false, false, false, null, null);
+    const filter = new DatasetFilter("34", null, null, null, null, null, false, false, false, null, null);
     expect(filter.toSearchString()).toEqual("sol=gt|34");
   });
 });
