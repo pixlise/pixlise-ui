@@ -96,7 +96,7 @@ jobs:
           run: |
             cd /work/client
             npm i -g @angular/cli@13.1.2
-            ng test --watch=false --browsers ChromeHeadless
+            npm test --watch=false --browsers ChromeHeadless
             # This was failing, don't use it locally either, so turned off for now
             #npm run lint
 
@@ -111,7 +111,7 @@ jobs:
             ./genproto.sh
             cd client
             npm i -g @angular/cli@16.1
-            ng build
+            npm build
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
