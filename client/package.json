@@ -8,7 +8,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "postinstall": "node src/version.js",
-    "pretest": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua",
+    "pretest": "ls ./node_modules/pixlise-wasmoon/dist/glue.wasm&&cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua&&ls ./src/app/expression-language/lua",
     "test": "clear&&ng test",
     "lint": "ng lint"
   },
