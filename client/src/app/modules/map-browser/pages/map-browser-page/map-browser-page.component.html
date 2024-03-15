@@ -17,18 +17,17 @@
       <icon-button class="{{ currentPage + 1 >= pageCount ? 'disabled' : '' }}" icon="assets/button-icons/arrow-right.svg" (onClick)="onNextPage()"></icon-button>
     </div>
   </div>
-  <section class="screen-container" *ngIf="loadedScreenConfiguration">
+  <section class="screen-container">
     <section
-      *ngFor="let layout of loadedScreenConfiguration.layouts; let i = index"
       class="widgets-container"
       [ngStyle]="{
-        'grid-template-columns': computedLayouts[i].templateColumns,
-        'grid-template-rows': computedLayouts[i].templateRows
+        'grid-template-columns': 'auto',
+        'grid-template-rows': 'auto'
       }">
       <widget
-        *ngFor="let widget of layout.widgets"
+        *ngFor="let widget of layout.widgets; trackBy: trackByWidget"
         [widgetLayoutConfig]="widget"
-        [layoutIndex]="i"
+        [layoutIndex]="0"
         [initWidget]="widget.type"
         [title]="idToTitleMap[widget.id]"
         [liveExpression]="liveExpressionMap[widget.id]"
@@ -39,6 +38,58 @@
           'grid-row-start': widget.startRow,
           'grid-row-end': widget.endRow
         }"></widget>
+      <!-- <widget
+        [widgetLayoutConfig]="layout.widgets[0]"
+        [layoutIndex]="0"
+        [initWidget]="layout.widgets[0].type"
+        [title]="idToTitleMap[layout.widgets[0].id]"
+        [liveExpression]="liveExpressionMap[layout.widgets[0].id]"
+        [disableSwitch]="true"
+        [ngStyle]="{
+          'grid-column-start': layout.widgets[0].startColumn,
+          'grid-column-end': layout.widgets[0].endColumn,
+          'grid-row-start': layout.widgets[0].startRow,
+          'grid-row-end': layout.widgets[0].endRow
+        }"></widget>
+      <widget
+        [widgetLayoutConfig]="layout.widgets[1]"
+        [layoutIndex]="0"
+        [initWidget]="layout.widgets[1].type"
+        [title]="idToTitleMap[layout.widgets[1].id]"
+        [liveExpression]="liveExpressionMap[layout.widgets[1].id]"
+        [disableSwitch]="true"
+        [ngStyle]="{
+          'grid-column-start': layout.widgets[1].startColumn,
+          'grid-column-end': layout.widgets[1].endColumn,
+          'grid-row-start': layout.widgets[1].startRow,
+          'grid-row-end': layout.widgets[1].endRow
+        }"></widget>
+      <widget
+        [widgetLayoutConfig]="layout.widgets[2]"
+        [layoutIndex]="0"
+        [initWidget]="layout.widgets[2].type"
+        [title]="idToTitleMap[layout.widgets[2].id]"
+        [liveExpression]="liveExpressionMap[layout.widgets[2].id]"
+        [disableSwitch]="true"
+        [ngStyle]="{
+          'grid-column-start': layout.widgets[2].startColumn,
+          'grid-column-end': layout.widgets[2].endColumn,
+          'grid-row-start': layout.widgets[2].startRow,
+          'grid-row-end': layout.widgets[2].endRow
+        }"></widget>
+      <widget
+        [widgetLayoutConfig]="layout.widgets[3]"
+        [layoutIndex]="0"
+        [initWidget]="layout.widgets[3].type"
+        [title]="idToTitleMap[layout.widgets[3].id]"
+        [liveExpression]="liveExpressionMap[layout.widgets[3].id]"
+        [disableSwitch]="true"
+        [ngStyle]="{
+          'grid-column-start': layout.widgets[3].startColumn,
+          'grid-column-end': layout.widgets[3].endColumn,
+          'grid-row-start': layout.widgets[3].startRow,
+          'grid-row-end': layout.widgets[3].endRow
+        }"></widget> -->
     </section>
   </section>
 </section>

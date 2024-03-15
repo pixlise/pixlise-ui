@@ -32,7 +32,6 @@ export type SyncedTransform = {
 })
 export class ContextImageDataService {
   private _contextModelDataMap = new Map<string, Observable<ContextImageModelLoadedData>>();
-  private _layerModelCache = new Map<string, Observable<ContextImageMapLayer>>();
 
   private _syncedTransform$: BehaviorSubject<Record<string, SyncedTransform>> = new BehaviorSubject({});
 
@@ -62,13 +61,26 @@ export class ContextImageDataService {
     this._syncedTransform$.next({});
   }
 
-  getModelData(imageName: string): Observable<ContextImageModelLoadedData> {
-    const cacheId = imageName;
-
+  getModelData(imageName: string, widgetId: string): Observable<ContextImageModelLoadedData> {
+    // Have to include the widget ID to prevent shallow references
+    const cacheId = `${imageName}-${widgetId}`;
     let result = this._contextModelDataMap.get(cacheId);
     if (result === undefined) {
-      // Have to request it!
-      result = this.fetchModelData(imageName).pipe(shareReplay(1));
+      result = this._contextModelDataMap.get(imageName);
+      if (result) {
+        // We have a result, but it's not for this widget, so we need to clone it
+        result = result.pipe(
+          map((mdl: ContextImageModelLoadedData) => {
+            return mdl.copy();
+          })
+        );
+      } else {
+        // Have to request it!
+        result = this.fetchModelData(imageName).pipe(shareReplay(1));
+
+        // Copy with imageName as key so we can shortcut the request next time, but keep response unique
+        this._contextModelDataMap.set(imageName, result);
+      }
 
       // Add it to the map too so a subsequent request will get this
       this._contextModelDataMap.set(cacheId, result);
@@ -85,21 +97,14 @@ export class ContextImageDataService {
     colourRamp: ColourRamp,
     pmcToIndexLookup: Map<number, number>
   ): Observable<ContextImageMapLayer> {
-    let id = `${scanId}-${expressionId}-${quantId}-${roiId}-${colourRamp}-${pmcToIndexLookup.size}`;
-    let result = this._layerModelCache.get(id);
-    if (result === undefined) {
-      // If we're dealing with an expression group, we need to load the group first and run each expression in the group
-      if (!DataExpressionId.isExpressionGroupId(expressionId)) {
-        // It's just a simple layer, load it
-        result = this.getExpressionLayerModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup).pipe(shareReplay(1));
-      } else {
-        // Load the expression group first, run the first 3 expressions
-        result = this.getExpressionGroupModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup).pipe(shareReplay(1));
-      }
-      this._layerModelCache.set(id, result);
+    // If we're dealing with an expression group, we need to load the group first and run each expression in the group
+    if (!DataExpressionId.isExpressionGroupId(expressionId)) {
+      // It's just a simple layer, load it
+      return this.getExpressionLayerModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup);
+    } else {
+      // Load the expression group first, run the first 3 expressions
+      return this.getExpressionGroupModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup);
     }
-
-    return result;
   }
 
   private getExpressionLayerModel(

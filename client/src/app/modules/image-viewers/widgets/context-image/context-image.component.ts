@@ -35,6 +35,7 @@ import { ImageOptionsComponent, ImageDisplayOptions, ImagePickerParams, ImagePic
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
+import { ColourScheme } from "src/app/modules/image-viewers/widgets/context-image/context-image-model-interface";
 
 @Component({
   selector: "app-context-image",
@@ -241,7 +242,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           this.mdl.drawImage = false;
           this.mdl.hideFootprintsForScans = [this.scanId];
           this.mdl.hidePointsForScans = [this.scanId];
-          this.setInitialConfig(true);
+          // this.setInitialConfig(true);
         } else if (contextData) {
           this.mdl.expressionIds = contextData.mapLayers.map((layer: MapLayerVisibility) => layer.expressionID);
 
@@ -412,14 +413,22 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     }
   }
 
-  override injectExpression(liveExpression: LiveExpression) {
+  private _configureForInjectedScan(liveExpression: LiveExpression) {
     this.scanId = liveExpression.scanId;
     this.mdl.expressionIds = [liveExpression.expressionId];
     this._quantOverrideForScan[liveExpression.scanId] = liveExpression.quantId;
     this.mdl.drawImage = false;
     this.mdl.hideFootprintsForScans = [this.scanId];
     this.mdl.hidePointsForScans = [this.scanId];
-    this.setInitialConfig(true);
+  }
+
+  override injectExpression(liveExpression: LiveExpression) {
+    this._configureForInjectedScan(liveExpression);
+    if (this.mdl.imageName && this.mdl.expressionIds.length === 1 && this.mdl.expressionIds[0] === liveExpression.expressionId) {
+      this.reloadModel(true);
+    } else {
+      this.setInitialConfig(true);
+    }
   }
 
   private updateSelection() {
@@ -444,30 +453,30 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
           let quantId = this._quantOverrideForScan[scanId] || this._analysisLayoutService.getQuantIdForScan(scanId);
 
-          this.mdl.expressionIds.forEach((exprId, i) => {
-            this._contextDataService
-              .getLayerModel(scanId, exprId, quantId, PredefinedROIID.getAllPointsForScan(scanId), ColourRamp.SHADE_MAGMA, pmcToIndexLookup)
-              .subscribe({
-                next: (layer: ContextImageMapLayer) => {
-                  this.mdl.setMapLayer(layer);
-                  this.widgetErrorMessage = "";
+          let shading = this._analysisLayoutService.isMapsPage ? ColourRamp.SHADE_VIRIDIS : ColourRamp.SHADE_MAGMA;
 
-                  if (setViewToExperiment && i == this.mdl.expressionIds.length - 1) {
-                    setTimeout(() => {
-                      this.onResetViewToExperiment();
-                    }, 1);
-                  }
-                },
-                error: err => {
-                  if (this._analysisLayoutService.isMapsPage) {
-                    // We have to wait for things to be injected on maps page, so this may be falsely called
-                    console.warn("Failed to add layer: " + exprId + " scan: " + scanId, err);
-                  } else {
-                    this._snackService.openError("Failed to add layer: " + exprId + " scan: " + scanId, err);
-                    this.widgetErrorMessage = "Failed to load layer data for displaying context image: " + this.mdl.imageName;
-                  }
-                },
-              });
+          this.mdl.expressionIds.forEach((exprId, i) => {
+            this._contextDataService.getLayerModel(scanId, exprId, quantId, PredefinedROIID.getAllPointsForScan(scanId), shading, pmcToIndexLookup).subscribe({
+              next: (layer: ContextImageMapLayer) => {
+                this.mdl.setMapLayer(layer);
+                this.widgetErrorMessage = "";
+
+                if (setViewToExperiment && i == this.mdl.expressionIds.length - 1) {
+                  setTimeout(() => {
+                    this.onResetViewToExperiment();
+                  }, 1);
+                }
+              },
+              error: err => {
+                if (this._analysisLayoutService.isMapsPage) {
+                  // We have to wait for things to be injected on maps page, so this may be falsely called
+                  console.warn("Failed to add layer: " + exprId + " scan: " + scanId, err);
+                } else {
+                  this._snackService.openError("Failed to add layer: " + exprId + " scan: " + scanId, err);
+                  this.widgetErrorMessage = "Failed to load layer data for displaying context image: " + this.mdl.imageName;
+                }
+              },
+            });
           });
 
           this.scanId = scanId;
@@ -509,7 +518,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   private reloadModel(setViewToExperiment: boolean = false) {
     this.isWidgetDataLoading = true;
 
-    this._contextDataService.getModelData(this.mdl.imageName).subscribe({
+    this._contextDataService.getModelData(this.mdl.imageName, this._widgetId).subscribe({
       next: (data: ContextImageModelLoadedData) => {
         this.mdl.setData(data);
         this.loadMapLayers(setViewToExperiment);

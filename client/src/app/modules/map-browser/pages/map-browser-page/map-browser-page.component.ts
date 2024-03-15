@@ -1,6 +1,12 @@
 import { Component, HostListener } from "@angular/core";
 // import { AnalysisLayoutService } from "../../services/analysis-layout.service";
-import { ScanConfiguration, ScreenConfiguration, ScreenConfigurationCSS } from "src/app/generated-protos/screen-configuration";
+import {
+  FullScreenLayout,
+  ScanConfiguration,
+  ScreenConfiguration,
+  ScreenConfigurationCSS,
+  WidgetLayoutConfiguration,
+} from "src/app/generated-protos/screen-configuration";
 // import { createDefaultScreenConfiguration } from "../../models/screen-configuration.model";
 import { Subscription } from "rxjs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
@@ -22,6 +28,8 @@ export class MapBrowserPageComponent {
   private _subs: Subscription = new Subscription();
 
   computedLayouts: ScreenConfigurationCSS[] = [];
+
+  layout: FullScreenLayout = FullScreenLayout.create({});
   loadedScreenConfiguration: ScreenConfiguration | null = null;
 
   availableScanQuants: Record<string, QuantificationSummary[]> = {};
@@ -48,7 +56,7 @@ export class MapBrowserPageComponent {
       this._analysisLayoutService.availableScanQuants$.subscribe(availableScanQuants => {
         this.availableScanQuants = availableScanQuants;
         this.loadQuantifiedExpressions();
-        this.createElementMapScreenConfiguration();
+        this.injectNewExpressions();
       })
     );
 
@@ -146,50 +154,41 @@ export class MapBrowserPageComponent {
   }
 
   injectNewExpressions() {
-    if (!this.loadedScreenConfiguration) {
-      this.createElementMapScreenConfiguration();
-      return;
-    }
+    // if (!this.layout.widgets.length) {
+    this.createElementMapScreenConfiguration();
+    //   return;
+    // }
 
-    let currentPage = this.getCurrentPageExpressions();
-    if (this.loadedScreenConfiguration.layouts.length !== currentPage.length) {
-      this.createElementMapScreenConfiguration();
-      return;
-    }
+    // let currentPage = this.getCurrentPageExpressions();
+    // if (this.layout.widgets.length !== currentPage.length) {
+    //   this.createElementMapScreenConfiguration();
+    //   return;
+    // }
 
-    let layout = this.loadedScreenConfiguration.layouts[0];
-    currentPage.forEach(([id, expression], i) => {
-      let widgetId = `element-map-${id}-${this.scanId}`;
-      this.idToTitleMap[widgetId] = expression.name;
-      layout.widgets[i].id = widgetId;
-      this.liveExpressionMap[widgetId] = { expressionId: expression.id, scanId: this.scanId, quantId: this.quantId, expression, mapsMode: true };
+    // currentPage.forEach(([id, expression], i) => {
+    //   let widgetId = `element-map-${id}-${this.scanId}`;
+    //   this.idToTitleMap[widgetId] = expression.name;
+    //   this.layout.widgets[i].id = widgetId;
+    //   this.liveExpressionMap[widgetId] = { expressionId: expression.id, scanId: this.scanId, quantId: this.quantId, expression, mapsMode: true };
 
-      layout.widgets[i].data = WidgetData.create({
-        contextImage: ContextImageState.create({
-          mapLayers: [MapLayerVisibility.create({ expressionID: expression.id })],
-        }),
-      });
-    });
+    //   this.layout.widgets[i].data = WidgetData.create({
+    //     contextImage: ContextImageState.create({
+    //       mapLayers: [MapLayerVisibility.create({ expressionID: expression.id })],
+    //     }),
+    //   });
+    // });
   }
 
   getCurrentPageExpressions() {
     return Object.entries(this._quantifiedExpressions).slice(this.widgetsPerPage * this.currentPage, this.widgetsPerPage * (this.currentPage + 1));
   }
 
-  createElementMapScreenConfiguration() {
-    this.loadedScreenConfiguration = ScreenConfiguration.create({
-      id: `element-map-${this.scanId}`,
-      name: "Element Map",
-      layouts: [
-        {
-          rows: [],
-          columns: [],
-          widgets: [],
-        },
-      ],
-    });
+  trackByWidget(index: number, widget: WidgetLayoutConfiguration) {
+    return widget.id;
+  }
 
-    let layout = this.loadedScreenConfiguration.layouts[0];
+  createElementMapScreenConfiguration() {
+    let layout: FullScreenLayout = FullScreenLayout.create({});
 
     this.computedLayouts = [{ templateColumns: "auto", templateRows: "auto" }];
     this.getCurrentPageExpressions().forEach(([id, expression], i) => {
@@ -198,7 +197,7 @@ export class MapBrowserPageComponent {
 
       let widgetId = `element-map-${id}-${this.scanId}`;
       this.idToTitleMap[widgetId] = expression.name;
-      this.liveExpressionMap[widgetId] = { expressionId: expression.id, scanId: this.scanId, quantId: this.quantId, expression };
+      this.liveExpressionMap[widgetId] = { expressionId: expression.id, scanId: this.scanId, quantId: this.quantId, expression, mapsMode: true };
 
       layout.widgets.push({
         id: widgetId,
@@ -214,6 +213,8 @@ export class MapBrowserPageComponent {
         }),
       });
     });
+
+    this.layout = layout;
   }
 
   @HostListener("window:resize", ["$event"])
