@@ -91,7 +91,7 @@ jobs:
       - name: Run UI Tests
         uses: addnab/docker-run-action@v3
         with:
-          image: atlassianlabs/docker-node-jdk-chrome-firefox:node-16-npm-8
+          image: atlassianlabs/docker-node-jdk-chrome-firefox:2023-05-22
           options: -v ${{ github.workspace }}:/work
           run: |
             cd /work/client
