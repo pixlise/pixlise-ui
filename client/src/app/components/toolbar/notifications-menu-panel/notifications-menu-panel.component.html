@@ -28,13 +28,26 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
-
+<ng-template #messageDisplay>
+  <div class="message-display" *ngIf="activeNotification">
+    <header>
+      <h1>{{ activeNotification.type }} Details</h1>
+      <span class="timestamp">{{ getDateStringFromTimeStamp(activeNotification.systemNotification?.timeStampUnixSec) }}</span>
+    </header>
+    <section class="content">
+      <h2>{{ activeNotification.title }}</h2>
+      <span class="details">{{ activeNotification.systemNotification?.contents }}</span>
+    </section>
+    <div class="buttons"></div>
+  </div>
+</ng-template>
 <div class="panel">
   <section class="header">
     <h1>Notifications</h1>
     <action-button action="close" (onClick)="onHidePanel()" color="#fff"></action-button>
   </section>
   <section class="notifications-container">
+    <div *ngIf="notifications.length === 0" class="empty">No notifications</div>
     <div class="notification" *ngFor="let notification of notifications">
       <div class="notification-content">
         <div class="notification-title">{{ notification.title }}</div>
@@ -43,12 +56,18 @@ POSSIBILITY OF SUCH DAMAGE.
             {{ notification.action?.buttonTitle }}
           </push-button>
         </div>
+        <div *ngIf="notification.type === 'message'" class="notification-action">
+          <push-button [customDialog]="messageDisplay" buttonStyle="outline" (click)="onNotificationMessageClick(notification)">Details</push-button>
+        </div>
         <action-button class="dismiss-notification" action="close" color="rgb(188, 188, 188)" (onClick)="dismissNotification(notification)"></action-button>
       </div>
       <div *ngIf="notification?.timestampUTCSeconds" class="notification-time">{{ notification?.timestampUTCSeconds || 0 * 1000 | date }}</div>
     </div>
   </section>
   <section class="buttons">
-    <push-button buttonStyle="hover-yellow" class="sign-out" (onClick)="dismissAllNotifications()">Dismiss All Notifications</push-button>
+    <push-button [disabled]="notifications.length === 0" buttonStyle="hover-yellow" class="sign-out" (onClick)="dismissAllNotifications()"
+      >Dismiss All Notifications
+    </push-button>
+    <!-- <push-button (onClick)="testNotification()">Add Test</push-button> -->
   </section>
 </div>

@@ -53,13 +53,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <span class="buttons">
       <span class="version"> Pixlise {{ uiVersion }}</span>
       <a class="link-to-v3" href="https://v3.pixlise.org" target="_blank">Back to v3</a>
-      <icon-button
-        (click)="onNotificationsMenu()"
-        [hoverYellow]="true"
-        [state]="notificationsMenuOpen ? 1 : 0"
-        type="notification"
-        [hasBackground]="true"
-        [notificationCount]="notificationsCount"></icon-button>
+      <icon-button (click)="onNotificationsMenu()" [state]="notificationsMenuOpen ? 1 : 0" type="notification" [notificationCount]="notificationsCount"></icon-button>
       <icon-button (click)="onHotkeysMenu()" [hoverYellow]="true" [state]="hotKeysMenuOpen ? 1 : 0" type="hotkeys" [hasBackground]="true"></icon-button>
       <user-icon size="24px" cdkOverlayOrigin #trigger="cdkOverlayOrigin" (click)="onUserMenu()" class="{{ userMenuOpen ? 'open' : '' }}"></user-icon>
     </span>
