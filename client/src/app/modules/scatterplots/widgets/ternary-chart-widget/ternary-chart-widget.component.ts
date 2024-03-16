@@ -440,6 +440,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
   setShowMmol() {
     this.mdl.showMmol = !this.mdl.showMmol;
+    this.update();
     this.saveState();
   }
 

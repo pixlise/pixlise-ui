@@ -286,15 +286,6 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
             this.mdl.expressionIds[i % 2] = result.selectedExpressions[i].id;
           }
 
-          // let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];
-
-          // // If we already have a data source for this scan, keep the ROI ids
-          // const existingSource = this.mdl.dataSourceIds.get(result.scanId);
-          // if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
-          //   roiIds = existingSource.roiIds;
-          // }
-          // this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
-
           this.update();
           this.saveState();
         }
@@ -438,6 +429,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
   setShowMmol() {
     this.mdl.showMmol = !this.mdl.showMmol;
+    this.update();
     this.saveState();
   }
 
