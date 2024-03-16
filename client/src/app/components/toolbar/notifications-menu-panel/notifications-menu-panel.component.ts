@@ -28,6 +28,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, Output } from "@angular/core";
+// import { Notification } from "src/app/generated-protos/notification";
 import { UINotification, NotificationsService } from "src/app/modules/settings/services/notifications.service";
 
 @Component({
@@ -41,8 +42,14 @@ export class NotificationsMenuPanelComponent {
 
   constructor(private _notificationService: NotificationsService) {}
 
+  activeNotification: UINotification | null = null;
+
   get notifications(): UINotification[] {
     return this._notificationService.notifications;
+  }
+
+  onNotificationMessageClick(notification: UINotification) {
+    this.activeNotification = notification;
   }
 
   onNotificationAction(notification: UINotification) {
@@ -68,6 +75,34 @@ export class NotificationsMenuPanelComponent {
   dismissAllNotifications() {
     this._notificationService.dismissAllNotifications();
   }
+
+  getDateStringFromTimeStamp(timeStamp: number | undefined) {
+    if (!timeStamp) {
+      return "";
+    }
+
+    return new Date(timeStamp).toLocaleString();
+  }
+
+  // Useful for testing
+  //
+  // testNotification() {
+  //   let randomId = Math.random().toString(36).substring(7);
+  //   this._notificationService.addNotification({
+  //     id: "test-notification" + randomId,
+  //     title: "Test Notification" + randomId,
+  //     type: "message",
+  //     systemNotification: Notification.create({
+  //       id: "test-notification" + randomId,
+  //       contents: "Contents",
+  //       subject: "Subject Test Notification" + randomId,
+  //       timeStampUnixSec: Date.now(),
+  //     }),
+  //     action: {
+  //       buttonTitle: "Open",
+  //     },
+  //   });
+  // }
 
   onHidePanel() {
     this.close.emit();

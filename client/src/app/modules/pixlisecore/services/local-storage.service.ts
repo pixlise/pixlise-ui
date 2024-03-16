@@ -4,6 +4,7 @@ import { liveQuery } from "dexie";
 import { SnackbarDataItem } from "./snackbar.service";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { UINotification } from "src/app/modules/settings/services/notifications.service";
 
 @Injectable({
   providedIn: "root",
@@ -15,6 +16,21 @@ export class LocalStorageService {
   memoData$ = liveQuery(() => db.memoData);
   images$ = liveQuery(() => db.images);
   rgbuImages$ = liveQuery(() => db.rgbuImages);
+  notifications$ = liveQuery(() =>
+    db.notifications.toArray().then(items =>
+      items.sort((a, b) => {
+        if (a.systemNotification?.timeStampUnixSec && b.systemNotification?.timeStampUnixSec) {
+          return b.systemNotification.timeStampUnixSec - a.systemNotification.timeStampUnixSec;
+        } else if (a.systemNotification?.timeStampUnixSec) {
+          return 1;
+        } else if (b.systemNotification?.timeStampUnixSec) {
+          return -1;
+        } else {
+          return a.title.localeCompare(b.title);
+        }
+      })
+    )
+  );
 
   constructor() {}
 
@@ -29,6 +45,18 @@ export class LocalStorageService {
 
   async clearEventHistory() {
     await db.eventHistory.clear();
+  }
+
+  async addNotification(notification: UINotification) {
+    await db.notifications.add(notification);
+  }
+
+  async dismissNotification(id: string) {
+    await db.notifications.delete(id);
+  }
+
+  async clearNotifications() {
+    await db.notifications.clear();
   }
 
   async deleteMemoKey(key: string) {
