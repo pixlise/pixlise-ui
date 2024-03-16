@@ -19,6 +19,7 @@ import { ExpressionPickerResponse } from "../../expressions/components/expressio
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
+import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 
 export class DefaultExpressions {
   constructor(
@@ -311,13 +312,13 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   get defaultScanId(): string {
-    return this._route?.snapshot?.queryParams["scan_id"] || "";
+    return this._route?.snapshot?.queryParams[EditorConfig.scanIdParam] || "";
   }
 
-  makeExpressionList(scanId: string, count: number): Observable<DefaultExpressions> {
+  makeExpressionList(scanId: string, count: number, scanQuantId: string = ""): Observable<DefaultExpressions> {
     if (scanId.length > 0) {
       // If there's a quant, use elements from that, otherwise use pseudo-intensities (if they exist)
-      const quantId = this.getQuantIdForScan(scanId);
+      const quantId = scanQuantId || this.getQuantIdForScan(scanId);
       if (quantId.length <= 0) {
         // default to pseudo intensities
         return this._cachedDataService.getPseudoIntensity(PseudoIntensityReq.create({ scanId: scanId })).pipe(

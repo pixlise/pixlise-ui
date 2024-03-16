@@ -330,7 +330,7 @@ export class WidgetDataService {
                 this._inFluxSingleQueryResultCache.delete(cacheKey);
 
                 // Also, add to memoisation cache
-                if (!DataExpressionId.isPredefinedExpression(query.exprId)) {
+                if (!DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId)) {
                   const encodedResult = this.toMemoised(result);
                   this._memoisationService.memoise(cacheKey, encodedResult);
                 }
@@ -504,12 +504,6 @@ export class WidgetDataService {
   }
 
   clearUnsavedExpressionResponses(): Observable<void> {
-    this._inFluxSingleQueryResultCache.forEach((obs: Observable<DataQueryResult>, key: string) => {
-      if (key.startsWith(DataExpressionId.UnsavedExpressionPrefix)) {
-        this._inFluxSingleQueryResultCache.delete(key);
-      }
-    });
-
     this.clearUnsavedExpressions();
     return this._memoisationService.clearUnsavedMemoData();
   }

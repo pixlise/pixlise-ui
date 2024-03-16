@@ -770,7 +770,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   }
 
   saveState() {
-    if (this._analysisLayoutService.isMapsPage || !this._widgetId) {
+    if (this._analysisLayoutService.isMapsPage) {
       // We don't save state for maps
       return;
     }

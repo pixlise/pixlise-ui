@@ -1,5 +1,5 @@
 import { Component, OnInit, ComponentRef, ElementRef, HostListener, ViewChild, ViewContainerRef, AfterViewChecked, Input } from "@angular/core";
-import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetToolbarButtonConfiguration, WidgetType } from "../../models/widgets.model";
+import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetType } from "../../models/widgets.model";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { WidgetData } from "src/app/generated-protos/widget-data";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
@@ -7,6 +7,11 @@ import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
 import { Subscription } from "rxjs";
 import { LiveExpression } from "src/app/modules/widget/models/base-widget.model";
+import EditorConfig from "src/app/modules/code-editor/models/editor-config";
+
+const getWidgetOptions = (): WidgetConfiguration[] => {
+  return Object.entries(WIDGETS).map(([id, value]) => ({ id: id as WidgetType, ...value }));
+};
 
 @Component({
   selector: "widget",
@@ -40,7 +45,7 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
 
   isOverflowed: boolean = false;
 
-  allWidgetOptions = Object.entries(WIDGETS).map(([id, value]) => ({ id, ...value }));
+  allWidgetOptions: WidgetConfiguration[] = getWidgetOptions();
   _activeWidget: WidgetType = "ternary-plot";
 
   widgetConfiguration?: WidgetConfiguration;
@@ -151,6 +156,12 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
     this._activeWidget = widget;
     this._analysisLayoutService.updateActiveLayoutWidgetType(this.widgetLayoutConfig.id, this.layoutIndex, widget);
     this.loadWidget();
+  }
+
+  @Input() set widgetTypes(widgetTypes: WidgetType[]) {
+    if (widgetTypes.length > 0) {
+      this.allWidgetOptions = getWidgetOptions().filter(widgetOption => widgetTypes.includes(widgetOption.id as WidgetType));
+    }
   }
 
   @Input() set initWidget(initWidget: string) {
@@ -284,6 +295,11 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
       if (this._currentWidgetRef.instance.onSaveWidgetData) {
         this._subs.add(
           this._currentWidgetRef.instance.onSaveWidgetData.subscribe((widgetData: any) => {
+            if (!this.widgetLayoutConfig.id || this.widgetLayoutConfig.id === EditorConfig.previewWidgetId) {
+              // Don't save if the widget id is not set or if it's a preview widget
+              return;
+            }
+
             let data = this.widgetLayoutConfig.data || WidgetData.create({ id: this.widgetLayoutConfig.id });
             data[this.widgetConfiguration!.dataKey] = widgetData;
             this._analysisLayoutService.writeWidgetData(data);

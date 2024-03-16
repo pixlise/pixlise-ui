@@ -60,6 +60,7 @@ export type WidgetControlConfiguration = {
 
 export type WidgetConfiguration = {
   // Selector information
+  id?: WidgetType;
   name: string;
   description: string;
   maxExpressions?: number;

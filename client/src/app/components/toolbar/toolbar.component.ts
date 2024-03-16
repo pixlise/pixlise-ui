@@ -42,14 +42,12 @@ import { NotificationsMenuPanelComponent } from "./notifications-menu-panel/noti
 import { HotkeysMenuPanelComponent } from "./hotkeys-menu-panel/hotkeys-menu-panel.component";
 import { NotificationsService } from "src/app/modules/settings/services/notifications.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import {
   ScanConfigurationDialog,
   ScanConfigurationDialogData,
 } from "src/app/modules/analysis/components/scan-configuration-dialog/scan-configuration-dialog.component";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
-import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
-import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 
 export type NavigationTab = {
   icon: string;
@@ -269,9 +267,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     this.openTabs.forEach(openTab => {
       openTab.active = strippedURL.endsWith(tab.url);
     });
-    // if (tab.url.includes("/datasets/code-editor") && !this.queryParam[EditorConfig.topExpressionId]) {
-    //   this.queryParam[EditorConfig.topExpressionId] = ExpressionsService.NewExpressionId;
-    // }
     this.router.navigateByUrl(`${tab.url}?${this.queryParamString}`);
   }
 

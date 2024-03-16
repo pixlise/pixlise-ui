@@ -103,6 +103,8 @@ export class LuaRuntimeError {
 }
 
 class EditorConfig {
+  public static previewWidgetId = "preview";
+
   public static scanIdParam = "scan_id";
   public static quantIdParam = "quant_id";
 

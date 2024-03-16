@@ -65,6 +65,7 @@ export type ExpressionPickerData = {
   maxSelection?: number;
   widgetType?: string;
   disableExpressionGroups?: boolean;
+  expressionsOnly?: boolean;
   draggable?: boolean;
 };
 
@@ -155,6 +156,10 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
     if (this.data.disableExpressionGroups) {
       this.browseSections = this.browseSections.filter(section => section.name !== ExpressionBrowseSections.EXPRESSION_GROUPS);
+    }
+
+    if (this.data.expressionsOnly) {
+      this.browseSections = this.browseSections.filter(section => section.name === ExpressionBrowseSections.EXPRESSIONS);
     }
 
     this.updateSelectedExpressions();

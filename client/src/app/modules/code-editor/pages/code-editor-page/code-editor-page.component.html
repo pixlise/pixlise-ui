@@ -39,7 +39,14 @@
 <div class="code-editor">
   <section class="explorer {{ isSidebarOpen ? 'open' : 'closed' }}">
     <div class="top-header">
-      <h2 *ngIf="isSidebarOpen">Explorer</h2>
+      <h2 *ngIf="isSidebarOpen" class="explorer-header">
+        Explorer
+        <!-- <push-button class="run-btn" [flexBtn]="true" buttonStyle="yellow" (onClick)="runExpression()"> <img src="assets/button-icons/play.svg" />Run </push-button> -->
+        <push-button buttonStyle="yellow" [flexBtn]="true" (onClick)="addExpressions()" class="add-expressions-btn">
+          <img class="icon" src="assets/button-icons/search.svg" />
+          <span class="label">Browse</span>
+        </push-button>
+      </h2>
       <div class="sidebar-header-toggle-btn" (click)="onToggleSidebar()">
         <img src="assets/button-icons/double-arrow-left.svg" class="{{ isSidebarOpen ? 'open' : 'closed' }}" />
       </div>
@@ -73,7 +80,7 @@
         </div>
         <div class="group currently-open">
           <div class="header">
-            <h1>Modules ({{ currentlyOpenCount }})</h1>
+            <h1>All Modules ({{ modules.length }})</h1>
             <two-state-icon-button
               toolTip="Show/hide group contents"
               activeIcon="assets/button-icons/caret-down.svg"
@@ -93,24 +100,27 @@
           </div>
         </div>
       </div>
-      <push-button buttonStyle="yellow" (onClick)="addExpressions()" class="add-expressions-btn">Open Expression</push-button>
       <section class="create-btns">
-        <push-button buttonStyle="yellow" (onClick)="onCreateNewExpression()" class="create-btn">+ Expression</push-button>
-        <push-button buttonStyle="yellow" [customDialog]="newModuleDialog" #newModuleDialogBtn class="create-btn">+ Module</push-button>
+        <push-button [flexBtn]="true" buttonStyle="gray-title" (onClick)="onCreateNewExpression()" class="create-btn">
+          <span class="inner-btn-container"> <img class="icon" src="assets/button-icons/plus-white.svg" /> <span class="label">Expression</span></span>
+        </push-button>
+        <push-button [flexBtn]="true" buttonStyle="gray-title" [customDialog]="newModuleDialog" #newModuleDialogBtn class="create-btn">
+          <span class="inner-btn-container"> <img class="icon" src="assets/button-icons/plus-white.svg" /> <span class="label">Module</span></span>
+        </push-button>
       </section>
     </section>
   </section>
   <section class="editors-container {{ isSidebarOpen ? 'with-sidebar' : '' }}">
     <div class="top-header {{ isSidebarOpen ? 'sidebar-open' : 'sidebar-closed' }}">
+      <status-indicator
+        *ngIf="!isTopModuleIdNew || !isTopModule"
+        [valid]="!topExpressionChanged && !isTopExpressionIdNew"
+        [status]="!topExpressionChanged ? 'Latest version is saved' : 'Latest version is not saved'"></status-indicator>
       <input
         class="expression-name {{ (isTopModule && !isTopModuleIdNew) || !isTopEditable ? 'disabled' : '' }}"
         [value]="topExpression?.name || ''"
         (change)="onTopNameChangeEvent($event)"
         [disabled]="(isTopModule && !isTopModuleIdNew) || !isTopEditable" />
-      <status-indicator
-        *ngIf="!isTopModuleIdNew || !isTopModule"
-        [valid]="!topExpressionChanged && !isTopExpressionIdNew"
-        [status]="!topExpressionChanged ? 'Latest version is saved' : 'Latest version is not saved'"></status-indicator>
       <mat-select *ngIf="topExpression && isTopModule && !isTopModuleIdNew" class="versions-select" [(ngModel)]="selectedModuleVersion">
         <mat-option *ngFor="let version of loadedModuleVersions" [value]="version">{{ version }}</mat-option>
       </mat-select>
@@ -246,7 +256,12 @@
       <h2>Visualization: Viz</h2>
     </div>
     <section class="widget-container">
-      <widget [liveExpression]="liveExpressionConfig"></widget>
+      <widget
+        [liveExpression]="liveExpressionConfig"
+        [widgetTypes]="previewWidgetTypes"
+        [initWidget]="initPreviewWidgetType"
+        [widgetLayoutConfig]="previewLayoutConfig">
+      </widget>
     </section>
     <section class="output-container">
       <expression-console

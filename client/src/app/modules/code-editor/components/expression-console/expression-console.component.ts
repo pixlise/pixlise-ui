@@ -40,6 +40,8 @@ import { DataQueryResult } from "src/app/expression-language/data-values";
 import { DataExpression } from "src/app/generated-protos/expressions";
 import { SelectionHistoryItem, SelectionService } from "src/app/modules/pixlisecore/services/selection.service";
 import { invalidPMC } from "src/app/utils/utils";
+import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
+import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 // import { DataExpression } from "src/app/models/Expression";
 
 export interface DataCell {
@@ -85,7 +87,7 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   private _pmcToValueIdx: Map<number, { row: number; col: number }> = new Map();
 
   selectedPMCs: Set<number> = new Set();
-  currentSelection: SelectionHistoryItem | null = null;
+  currentSelection: SelectionHistoryItem = new SelectionHistoryItem(BeamSelection.makeEmptySelection(), PixelSelection.makeEmptySelection());
   hoverIndex: number = -1;
 
   public copyIcon: string = "content_copy";
@@ -93,17 +95,10 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   public showAllPMCs: boolean = true;
   constructor(
     private _selectionService: SelectionService,
-    // private _datasetService: DataSetService,
     private _dialog: MatDialog
   ) {}
 
   ngOnInit() {
-    // this._selectionService.selection$.subscribe((selection) =>
-    // {
-    //     this.currentSelection = selection;
-    //     this.selectedPMCs = this._datasetService.datasetLoaded.getPMCsForLocationIndexes(Array.from(selection.beamSelection.locationIndexes), false)
-    // });
-
     this._subs.add(
       this._selectionService.selection$.subscribe(selection => {
         this.currentSelection = selection;
@@ -302,14 +297,8 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
       if (point !== undefined) {
         return [point.row, point.col];
       }
-      // let point = this._pmcToValueIdx.get(this._selectionService.hoverPMC);
-      //     if(point !== undefined)
-      //     {
-      //         return [point.row, point.col];
-      //     }
     }
     return [];
-    // return null;
   }
 
   onToggleValidOnly(showAllPMCs: boolean) {
@@ -342,17 +331,21 @@ export class ExpressionConsoleComponent implements OnInit, OnDestroy {
   }
 
   onClickPMC(row: number, col: number) {
-    // let dataset = this._datasetService.datasetLoaded;
-    // let pmc = this.data[row][col]?.pmc;
-    // let selectedLocIndex = dataset.pmcToLocationIndex.get(pmc);
-    // let { beamSelection, pixelSelection } = this.currentSelection;
-    // let locationIndexes = new Set(beamSelection.locationIndexes);
-    // if (locationIndexes.has(selectedLocIndex)) {
-    //   locationIndexes.delete(selectedLocIndex);
-    // } else {
-    //   locationIndexes.add(selectedLocIndex);
-    // }
-    // this._selectionService.setSelection(this._datasetService.datasetLoaded, new BeamSelection(dataset, locationIndexes), pixelSelection, true);
+    let pmc = this.data[row]?.[col]?.pmc;
+    if (pmc === undefined || pmc === null || !this.scanId) {
+      return;
+    }
+
+    let pixelSelection = this.currentSelection.pixelSelection;
+    let currentlySelected = this.currentSelection.beamSelection.getSelectedScanEntryPMCs(this.scanId);
+    let newSelection = new Set(currentlySelected);
+    if (newSelection.has(pmc)) {
+      newSelection.delete(pmc);
+    } else {
+      newSelection.add(pmc);
+    }
+
+    this._selectionService.setSelection(BeamSelection.makeSelectionFromScanEntryPMCSets(new Map([[this.scanId, newSelection]])), pixelSelection);
   }
 
   private _copyText(text: string) {

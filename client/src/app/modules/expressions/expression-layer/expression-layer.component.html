@@ -74,16 +74,16 @@ POSSIBILITY OF SUCH DAMAGE.
       <img *ngIf="creatorIcon" [src]="creatorIcon" />
       <span *ngIf="!creatorIcon" class="name-abbreviation">{{ creatorAbbreviation }}</span>
     </div>
-    <div class="info">
+    <div class="info" (click)="onCheckboxClick($event)">
       <h4 #tooltip="matTooltip" matTooltipClass="multiline-tooltip" [matTooltip]="summaryTooltip" [matTooltipShowDelay]="200">
         {{ name }}
         <span
-          *ngIf="!canEdit"
+          *ngIf="canEdit"
           class="lock-icon"
           #tooltip="matTooltip"
-          matTooltip="You are not an editor of this {{ isModule ? 'module' : 'expression' }}."
-          [matTooltipShowDelay]="200">
-          <img src="assets/button-icons/lock.svg" />
+          matTooltip="You are an editor of this {{ isModule ? 'module' : 'expression' }}."
+          [matTooltipShowDelay]="1000">
+          <img src="assets/button-icons/pen-yellow.svg" />
         </span>
       </h4>
       <span class="details-line">
@@ -91,6 +91,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <span class="description">{{ description }}</span>
       </span>
     </div>
+    <div class="spacer-gap" (click)="onCheckboxClick($event)"></div>
     <div class="buttons">
       <!-- <icon-button
         #tooltip="matTooltip"
