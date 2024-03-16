@@ -3,6 +3,7 @@ import { CachedImageItem, CachedRGBUImageItem, db } from "../models/local-storag
 import { liveQuery } from "dexie";
 import { SnackbarDataItem } from "./snackbar.service";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
 
 @Injectable({
   providedIn: "root",
@@ -28,6 +29,14 @@ export class LocalStorageService {
 
   async clearEventHistory() {
     await db.eventHistory.clear();
+  }
+
+  async deleteMemoKey(key: string) {
+    await db.memoData.delete(key);
+  }
+
+  async clearUnsavedMemoData() {
+    await db.memoData.filter(item => item.key.startsWith(DataExpressionId.UnsavedExpressionPrefix)).delete();
   }
 
   async storeMemoData(memoData: MemoisedItem) {

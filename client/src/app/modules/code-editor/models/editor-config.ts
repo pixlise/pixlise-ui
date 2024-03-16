@@ -5,6 +5,156 @@ import { DataModule, DataModuleVersion } from "src/app/generated-protos/modules"
 // import { DataExpression } from "src/app/models/Expression";
 // import { DataModuleService, DataModuleVersionSourceWire } from "src/app/services/data-module.service";
 
+// storeMetadata(): void {
+//   localStorage.setItem("isSidebarOpen", this.isSidebarOpen ? "true" : "false");
+//   if (this.topExpression) {
+//     localStorage.setItem(EditorConfig.topExpressionId, this.topExpression.id);
+//     localStorage.setItem("topExpressionSourceCode", this.topExpression.sourceCode);
+//     localStorage.setItem("topExpressionSourceLanguage", this.topExpression.sourceLanguage);
+//   }
+
+//   if (this.bottomExpression) {
+//     localStorage.setItem(EditorConfig.bottomExpressionId, this.bottomExpression.id);
+//     localStorage.setItem("bottomExpressionSourceCode", this.bottomExpression.sourceCode);
+//     localStorage.setItem("bottomExpressionSourceLanguage", this.bottomExpression.sourceLanguage);
+//   }
+// }
+// fetchLocalStorageMetadata(): LocalStorageMetadata {
+//   let isSidebarOpen = localStorage?.getItem("isSidebarOpen") ?? true;
+//   this.isSidebarOpen = isSidebarOpen === "true";
+//   if (!this.topExpression || this.topExpression.id === localStorage?.getItem(EditorConfig.topExpressionId)) {
+//     if (!this.topExpression) {
+//       this.topExpression = DataExpression.create({
+//         id: localStorage?.getItem(EditorConfig.topExpressionId) || "",
+//         sourceCode: "",
+//         sourceLanguage: EXPR_LANGUAGE_LUA,
+//       });
+//       this.topExpressionChanged = true;
+//     }
+//     let cachedSourceCode = localStorage?.getItem("topExpressionSourceCode") || "";
+//     if ((this.topExpression.sourceCode.length !== cachedSourceCode.length || this.topExpression.sourceCode) !== cachedSourceCode) {
+//       this.topExpression.sourceCode = cachedSourceCode;
+//       this.topExpressionChanged = true;
+//     }
+
+//     let cachedSourceLanguage = localStorage?.getItem("topExpressionSourceLanguage") || EXPR_LANGUAGE_LUA;
+//     if (this.topExpression.sourceLanguage !== cachedSourceLanguage) {
+//       this.topExpression.sourceLanguage = cachedSourceLanguage;
+//       this.topExpressionChanged = true;
+//     }
+//   }
+
+//   let cachedBottomId: string = localStorage?.getItem(EditorConfig.bottomExpressionId) || "";
+//   if (cachedBottomId && this._route.snapshot.queryParams[EditorConfig.bottomExpressionId] !== cachedBottomId) {
+//     this.clearBottomExpressionCache();
+//   } else if (cachedBottomId && (!this.bottomExpression || this.bottomExpression.id === cachedBottomId)) {
+//     if (!this.bottomExpression) {
+//       this.bottomExpression = this._expressionsService.expressions$.value[cachedBottomId] || null;
+//       if (!this.bottomExpression) {
+//         this.bottomExpression = DataExpression.create({ id: cachedBottomId || "", sourceCode: "", sourceLanguage: EXPR_LANGUAGE_LUA });
+//       }
+//       this.bottomExpressionChanged = true;
+//     }
+
+//     let cachedSourceCode = localStorage?.getItem("bottomExpressionSourceCode") || "";
+//     if ((this.bottomExpression.sourceCode.length !== cachedSourceCode.length || this.bottomExpression.sourceCode) !== cachedSourceCode) {
+//       this.bottomExpression.sourceCode = cachedSourceCode;
+//       this.bottomExpressionChanged = true;
+//     }
+
+//     let cachedSourceLanguage = localStorage?.getItem("bottomExpressionSourceLanguage") || EXPR_LANGUAGE_LUA;
+//     if (this.bottomExpression.sourceLanguage !== cachedSourceLanguage) {
+//       this.bottomExpression.sourceLanguage = cachedSourceLanguage;
+//       this.bottomExpressionChanged = true;
+//     }
+//   }
+// }
+
+export class LocalStorageMetadata {
+  public static isSidebarOpen = "isSidebarOpen";
+  public static topExpressionId = "topExpressionId";
+  public static topExpressionSourceCode = "topExpressionSourceCode";
+  public static topExpressionSourceLanguage = "topExpressionSourceLanguage";
+  public static bottomExpressionId = "bottomExpressionId";
+  public static bottomExpressionSourceCode = "bottomExpressionSourceCode";
+  public static bottomExpressionSourceLanguage = "bottomExpressionSourceLanguage";
+
+  public static storedParameters: (keyof DataExpression)[] = ["id", "sourceCode", "sourceLanguage"];
+
+  public updatedTopExpression: boolean = false;
+  public updatedBottomExpression: boolean = false;
+
+  constructor(
+    public isSidebarOpen: boolean = true,
+    public topExpression: DataExpression = DataExpression.create({}),
+    public bottomExpression: DataExpression = DataExpression.create({})
+  ) {}
+
+  get updated(): boolean {
+    return this.updatedTopExpression || this.updatedBottomExpression;
+  }
+
+  store(): void {
+    localStorage.setItem(LocalStorageMetadata.isSidebarOpen, this.isSidebarOpen ? "true" : "false");
+    if (this.topExpression) {
+      localStorage.setItem(LocalStorageMetadata.topExpressionId, this.topExpression.id);
+      localStorage.setItem(LocalStorageMetadata.topExpressionSourceCode, this.topExpression.sourceCode);
+      localStorage.setItem(LocalStorageMetadata.topExpressionSourceLanguage, this.topExpression.sourceLanguage);
+    }
+
+    if (this.bottomExpression) {
+      localStorage.setItem(LocalStorageMetadata.bottomExpressionId, this.bottomExpression.id);
+      localStorage.setItem(LocalStorageMetadata.bottomExpressionSourceCode, this.bottomExpression.sourceCode);
+      localStorage.setItem(LocalStorageMetadata.bottomExpressionSourceLanguage, this.bottomExpression.sourceLanguage);
+    }
+  }
+
+  load() {
+    this.isSidebarOpen = (localStorage?.getItem(LocalStorageMetadata.isSidebarOpen) || "true") === "true";
+    let storedTopExpression = DataExpression.create({
+      id: localStorage?.getItem(LocalStorageMetadata.topExpressionId) || "",
+      sourceCode: localStorage?.getItem(LocalStorageMetadata.topExpressionSourceCode) || "",
+      sourceLanguage: localStorage?.getItem(LocalStorageMetadata.topExpressionSourceLanguage) || "",
+    });
+
+    if ((!this.topExpression.id && storedTopExpression.id) || (this.topExpression.id && this.topExpression.id === storedTopExpression.id)) {
+      LocalStorageMetadata.storedParameters.forEach(param => {
+        if (storedTopExpression[param]) {
+          (this.topExpression as any)[param] = storedTopExpression[param];
+          this.updatedTopExpression = true;
+        }
+      });
+    }
+
+    let storedBottomExpression = DataExpression.create({
+      id: localStorage?.getItem(LocalStorageMetadata.bottomExpressionId) || "",
+      sourceCode: localStorage?.getItem(LocalStorageMetadata.bottomExpressionSourceCode) || "",
+      sourceLanguage: localStorage?.getItem(LocalStorageMetadata.bottomExpressionSourceLanguage) || "",
+    });
+
+    if ((!this.bottomExpression.id && storedBottomExpression.id) || (this.bottomExpression.id && this.bottomExpression.id === storedBottomExpression.id)) {
+      LocalStorageMetadata.storedParameters.forEach(param => {
+        if (storedBottomExpression[param]) {
+          (this.bottomExpression as any)[param] = storedBottomExpression[param];
+          this.updatedBottomExpression = true;
+        }
+      });
+    }
+  }
+
+  clearTopExpressionCache(): void {
+    localStorage?.removeItem(LocalStorageMetadata.topExpressionId);
+    localStorage?.removeItem(LocalStorageMetadata.topExpressionSourceCode);
+    localStorage?.removeItem(LocalStorageMetadata.topExpressionSourceLanguage);
+  }
+
+  clearBottomExpressionCache(): void {
+    localStorage?.removeItem(LocalStorageMetadata.bottomExpressionId);
+    localStorage?.removeItem(LocalStorageMetadata.bottomExpressionSourceCode);
+    localStorage?.removeItem(LocalStorageMetadata.bottomExpressionSourceLanguage);
+  }
+}
+
 export type LocalStorageExpression = {
   text: string;
   date: number; // Seconds since epoch
@@ -21,6 +171,18 @@ export class LuaRuntimeError {
 }
 
 class EditorConfig {
+  public static scanIdParam = "scan_id";
+  public static quantIdParam = "quant_id";
+
+  public static topExpressionId = LocalStorageMetadata.topExpressionId;
+  public static bottomExpressionId = LocalStorageMetadata.bottomExpressionId;
+
+  public static topModuleId = "topModuleId";
+  public static topModuleVersion = "topModuleVersion";
+
+  public static bottomModuleId = "bottomModuleId";
+  public static bottomModuleVersion = "bottomModuleVersion";
+
   private _modules: DataModule[] = [];
   public isSaveableOutput: boolean = true;
 

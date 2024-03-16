@@ -48,6 +48,8 @@ import {
   ScanConfigurationDialogData,
 } from "src/app/modules/analysis/components/scan-configuration-dialog/scan-configuration-dialog.component";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
+import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
+import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 
 export type NavigationTab = {
   icon: string;
@@ -110,7 +112,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   tabs: TabNav[] = [];
   datasetID: string = "";
 
-  queryParam: Params = {};
+  queryParam: Record<string, string> = {};
   allTabs: NavigationTab[] = [
     { icon: "assets/tab-icons/browse.svg", tooltip: "Browse", url: "/datasets" },
     { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: "/datasets/analysis" },
@@ -189,7 +191,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
     this._subs.add(
       this._route.queryParams.subscribe(params => {
-        this.queryParam = params;
+        this.queryParam = { ...params };
         let scanId = params["scan_id"] || params["scanId"];
         if (scanId) {
           this.datasetID = scanId;
@@ -264,10 +266,13 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   onOpenTab(tab: NavigationTab): void {
     let strippedURL = this.router.url.split("?")[0];
-    this.router.navigateByUrl(`${tab.url}?${this.queryParamString}`);
     this.openTabs.forEach(openTab => {
       openTab.active = strippedURL.endsWith(tab.url);
     });
+    // if (tab.url.includes("/datasets/code-editor") && !this.queryParam[EditorConfig.topExpressionId]) {
+    //   this.queryParam[EditorConfig.topExpressionId] = ExpressionsService.NewExpressionId;
+    // }
+    this.router.navigateByUrl(`${tab.url}?${this.queryParamString}`);
   }
 
   get queryParamString(): string {

@@ -201,7 +201,12 @@ export class WidgetDataService {
     // the quant, scan, ROI, etc
 
     // Get the cache key so far
-    const cacheKeyStart = JSON.stringify(query) + ",Resp:" + allowAnyResponse;
+    let cacheKeyStart = JSON.stringify(query) + ",Resp:" + allowAnyResponse;
+
+    // If it's an unsaved expression, make this prominent so it's easier to filter out
+    if (DataExpressionId.isUnsavedExpressionId(query.exprId)) {
+      cacheKeyStart = DataExpressionId.UnsavedExpressionPrefix + query.exprId;
+    }
 
     const queryList = [];
     let exprIdIdx = -1;
@@ -209,7 +214,7 @@ export class WidgetDataService {
     let scanIdIdx = -1;
 
     // Only query timestamp for actual expressions, not our predefined internal ones
-    if (query.exprId && !DataExpressionId.isPredefinedExpression(query.exprId)) {
+    if (query.exprId && !DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId)) {
       exprIdIdx = queryList.length;
       queryList.push(this._cachedDataService.getExpression(ExpressionGetReq.create({ id: query.exprId })));
     }
@@ -281,7 +286,7 @@ export class WidgetDataService {
 
   private getDataWithMemoisation(query: DataSourceParams, allowAnyResponse: boolean, cacheKey: string): Observable<DataQueryResult> {
     // If it's not memomisable, just return the calculated value straight away
-    if (DataExpressionId.isPredefinedExpression(query.exprId)) {
+    if (DataExpressionId.isPredefinedExpression(query.exprId) || DataExpressionId.isUnsavedExpressionId(query.exprId)) {
       return this.getDataSingleCalculate(query, allowAnyResponse, cacheKey);
     }
 
@@ -498,6 +503,17 @@ export class WidgetDataService {
     );
   }
 
+  clearUnsavedExpressionResponses(): Observable<void> {
+    this._inFluxSingleQueryResultCache.forEach((obs: Observable<DataQueryResult>, key: string) => {
+      if (key.startsWith(DataExpressionId.UnsavedExpressionPrefix)) {
+        this._inFluxSingleQueryResultCache.delete(key);
+      }
+    });
+
+    this.clearUnsavedExpressions();
+    return this._memoisationService.clearUnsavedMemoData();
+  }
+
   clearUnsavedExpressions(): void {
     this.unsavedExpressions.clear();
   }
@@ -555,14 +571,21 @@ export class WidgetDataService {
                 if (!lastNotify || nowMs - lastNotify > 60000) {
                   // Also, normalise it for runtime for 1000 points!
                   let runtimePer1000 = 0;
-                  if (queryResult.runtimeMs > 0 && queryResult.resultValues.values.length > 0) {
-                    runtimePer1000 = queryResult.runtimeMs / (queryResult.resultValues.values.length / 1000);
+
+                  // Need to account for allowAnyResponse edge case
+                  let values = queryResult?.resultValues?.values || [];
+                  if (queryResult.runtimeMs > 0 && values.length > 0) {
+                    runtimePer1000 = queryResult.runtimeMs / (values.length / 1000);
                   }
 
                   // Remember when we notified, so we don't spam
                   this._exprRunStatLastNotificationTime.set(expression.id, nowMs);
 
-                  if (!DataExpressionId.isPredefinedExpression(expression.id) && queryResult.dataRequired.length > 0) {
+                  if (
+                    !DataExpressionId.isPredefinedExpression(expression.id) &&
+                    !DataExpressionId.isUnsavedExpressionId(expression.id) &&
+                    queryResult.dataRequired.length > 0
+                  ) {
                     this._dataService
                       .sendExpressionWriteExecStatRequest(
                         ExpressionWriteExecStatReq.create({

@@ -417,9 +417,13 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this.scanId = liveExpression.scanId;
     this.mdl.expressionIds = [liveExpression.expressionId];
     this._quantOverrideForScan[liveExpression.scanId] = liveExpression.quantId;
-    this.mdl.drawImage = false;
-    this.mdl.hideFootprintsForScans = [this.scanId];
-    this.mdl.hidePointsForScans = [this.scanId];
+
+    // If we're on the maps page, we don't want to draw the image, and we want to hide the points and footprints
+    if (this._analysisLayoutService.isMapsPage) {
+      this.mdl.drawImage = false;
+      this.mdl.hideFootprintsForScans = [this.scanId];
+      this.mdl.hidePointsForScans = [this.scanId];
+    }
   }
 
   override injectExpression(liveExpression: LiveExpression) {
@@ -766,7 +770,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   }
 
   saveState() {
-    if (this._analysisLayoutService.isMapsPage) {
+    if (this._analysisLayoutService.isMapsPage || !this._widgetId) {
       // We don't save state for maps
       return;
     }
