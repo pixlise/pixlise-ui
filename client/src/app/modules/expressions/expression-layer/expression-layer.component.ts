@@ -15,6 +15,7 @@ import { WidgetSettingsMenuComponent } from "../../pixlisecore/pixlisecore.modul
 import { ExpressionGroup } from "src/app/generated-protos/expression-group";
 import { BINARY_WIDGET_OPTIONS, TERNARY_WIDGET_OPTIONS, widgetLayerPositions } from "../models/expression-widget-layer-configs";
 import { WidgetType } from "../../widget/models/widgets.model";
+import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 @Component({
   selector: "expression-layer",
   templateUrl: "./expression-layer.component.html",
@@ -104,6 +105,10 @@ export class ExpressionLayerComponent implements OnInit {
 
   get isModule(): boolean {
     return this._module !== null;
+  }
+
+  get hasTopExpression(): boolean {
+    return !!this._route.snapshot.queryParams[EditorConfig.topExpressionId];
   }
 
   @Input() set module(module: DataModule | null) {
@@ -238,10 +243,10 @@ export class ExpressionLayerComponent implements OnInit {
   get showSplitScreenButton(): boolean {
     if (this.isModule) {
       // Only split screen a module if a top expression is open
-      return !!this._route.snapshot.queryParams["topExpressionId"];
+      return !!this._route.snapshot.queryParams[EditorConfig.topExpressionId];
     } else {
       // Only split screen an expression if a bottom module is open
-      return !!this._route.snapshot.queryParams["bottomExpressionId"];
+      return !!this._route.snapshot.queryParams[EditorConfig.bottomExpressionId];
     }
   }
 
@@ -255,15 +260,27 @@ export class ExpressionLayerComponent implements OnInit {
     this.isShareDialogOpen = open;
   }
 
+  getClearedExpressionQueryParams() {
+    let queryParams = { ...this._route.snapshot.queryParams };
+    delete queryParams[EditorConfig.topExpressionId];
+    delete queryParams[EditorConfig.bottomExpressionId];
+    delete queryParams[EditorConfig.topModuleId];
+    delete queryParams[EditorConfig.bottomModuleId];
+    delete queryParams[EditorConfig.topModuleVersion];
+    delete queryParams[EditorConfig.bottomModuleVersion];
+
+    return queryParams;
+  }
+
   onSplitScreenCodeEditor() {
     let queryParams = { ...this._route.snapshot.queryParams };
     if (this.isModule) {
-      delete queryParams["topModuleVersion"];
-      delete queryParams["bottomModuleVersion"];
-      queryParams["bottomExpressionId"] = this.expression?.id;
+      delete queryParams[EditorConfig.topModuleVersion];
+      delete queryParams[EditorConfig.bottomModuleVersion];
+      queryParams[EditorConfig.bottomExpressionId] = this.expression?.id;
     } else {
-      delete queryParams["topModuleId"];
-      queryParams["topExpressionId"] = this.expression?.id;
+      delete queryParams[EditorConfig.topModuleId];
+      queryParams[EditorConfig.topExpressionId] = this.expression?.id;
     }
     this.onCloseModal.emit();
     this._router.navigate(["/datasets/code-editor"], { queryParams });
@@ -272,34 +289,24 @@ export class ExpressionLayerComponent implements OnInit {
   onPreviewCode() {
     let queryParams = { ...this._route.snapshot.queryParams };
     if (this.isModule) {
-      delete queryParams["topExpressionId"];
-      delete queryParams["topModuleVersion"];
-      queryParams["topModuleId"] = this.expression?.id;
+      delete queryParams[EditorConfig.topExpressionId];
+      delete queryParams[EditorConfig.topModuleVersion];
+      queryParams[EditorConfig.topModuleId] = this.expression?.id;
     } else {
-      delete queryParams["topModuleId"];
-      queryParams["topExpressionId"] = this.expression?.id;
+      delete queryParams[EditorConfig.topModuleId];
+      queryParams[EditorConfig.topExpressionId] = this.expression?.id;
     }
     this.onCloseModal.emit();
     this._router.navigate(["/datasets/code-editor"], { queryParams });
   }
 
   onFullScreenCodeEditor() {
-    let scanId = this._route.snapshot.queryParams["scanId"];
-    let quantId = this._route.snapshot.queryParams["quantId"];
-    let queryParams: Record<string, string> = {};
-
-    if (scanId) {
-      queryParams["scanId"] = scanId;
-    }
-
-    if (quantId) {
-      queryParams["quantId"] = quantId;
-    }
+    let queryParams: Record<string, string> = this.getClearedExpressionQueryParams();
 
     if (this.isModule) {
-      queryParams["topModuleId"] = this.expression?.id || "";
+      queryParams[EditorConfig.topModuleId] = this.expression?.id || "";
     } else {
-      queryParams["topExpressionId"] = this.expression?.id || "";
+      queryParams[EditorConfig.topExpressionId] = this.expression?.id || "";
     }
     this._router.navigate(["/datasets/code-editor"], { queryParams });
   }

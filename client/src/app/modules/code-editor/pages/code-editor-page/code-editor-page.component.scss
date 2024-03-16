@@ -243,9 +243,22 @@ $display-height: calc(100vh - 43px - 40px);
         display: flex;
 
         img {
-          filter: brightness(0);
+          filter: brightness(1);
           width: 10px;
           margin-right: 4px;
+        }
+      }
+
+      .run-highlighted-btn {
+        display: flex;
+
+        .icon {
+          filter: brightness(1);
+          margin-right: 4px;
+
+          &.disabled {
+            opacity: 0.2;
+          }
         }
       }
 

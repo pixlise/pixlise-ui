@@ -35,6 +35,11 @@ POSSIBILITY OF SUCH DAMAGE.
       <img src="assets/button-icons/layout-single-view.svg" />
       <span class="option-label" [ngStyle]="{ 'margin-left': 0 }">Open Expression Editor</span>
     </div>
+    <div *ngIf="isModule && hasTopExpression" class="option" (click)="onSplitScreenCodeEditor()">
+      <img src="assets/button-icons/layout-split-bottom-view.svg" />
+      <span class="option-label" [ngStyle]="{ 'margin-left': 0 }">Open in Split Screen</span>
+    </div>
+    <!-- onSplitScreenCodeEditor -->
     <div class="option" (click)="onTriggerTagPicker()">
       <tag-picker
         [type]="isExpressionGroup ? 'expression-mix' : 'expression'"

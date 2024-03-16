@@ -153,9 +153,11 @@
         (changeTags)="onTopTagSelectionChanged($event)"
         (updateMetadata)="onUpdateTopMetadata()"></expression-metadata-editor>
 
-      <push-button class="run-btn" [flexBtn]="true" buttonStyle="yellow" (onClick)="runExpression()"> <img src="assets/button-icons/play.svg" />Run </push-button>
-      <push-button class="run-highlighted-btn" buttonStyle="yellow" (onClick)="runHighlightedExpression()" [disabled]="!highlightedSelection"
-        >{{ textHighlighted === "" ? "Run Code To Line #" : "Run Selected Code" }}
+      <push-button class="run-btn" [flexBtn]="true" buttonStyle="gray-title" (onClick)="runExpression()"><img src="assets/button-icons/play.svg" />Run</push-button>
+      <push-button class="run-highlighted-btn" [flexBtn]="true" buttonStyle="gray-title" (onClick)="runHighlightedExpression()" [disabled]="!highlightedSelection"
+        ><img class="icon {{ !highlightedSelection ? 'disabled' : '' }}" src="assets/button-icons/run-selection.svg" />{{
+          textHighlighted === "" ? "Run Code To Line #" : "Run Selected Code"
+        }}
       </push-button>
     </div>
     <section class="editors">

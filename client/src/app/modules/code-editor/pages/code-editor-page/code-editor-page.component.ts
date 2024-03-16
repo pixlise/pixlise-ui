@@ -200,6 +200,10 @@ export class CodeEditorPageComponent implements OnInit {
         if (params[EditorConfig.bottomExpressionId]) {
           let version = params[EditorConfig.bottomModuleVersion] ? this.getSemanticVersionFromString(params[EditorConfig.bottomModuleVersion]) : null;
           this._expressionsService.fetchModuleVersion(params[EditorConfig.bottomExpressionId], version);
+
+          if (this.bottomExpression?.id !== params[EditorConfig.bottomExpressionId]) {
+            this.isSplitScreen = true;
+          }
         } else {
           this.bottomExpression = null;
         }
