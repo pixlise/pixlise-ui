@@ -42,7 +42,6 @@ import {
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
 import { SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { DataExpressionModule, TextSelection } from "../../components/expression-text-editor/expression-text-editor.component";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { DataModule, DataModuleVersion } from "src/app/generated-protos/modules";
@@ -507,34 +506,8 @@ export class CodeEditorPageComponent implements OnInit {
   runExpression() {
     if (this.isTopEditorActive && this.topExpression) {
       this._runExpression(this.topExpression, !this.topExpressionChanged);
-      // this.lastRunResult = null;
-      // this._widgetDataService
-      //   .runExpression(this.topExpression, this.scanId, this.quantId, PredefinedROIID.getAllPointsForScan(this.scanId), true, true)
-      //   .subscribe(response => {
-      //     this.lastRunResult = response;
-      //     this.stdout = response.stdout;
-      //     this.stderr = response.stderr;
-      //     this.liveExpressionConfig = {
-      //       expressionId: this.topExpression?.id || "",
-      //       scanId: this.scanId,
-      //       quantId: this.quantId,
-      //     };
-      //   });
     } else if (!this.isTopEditorActive && this.bottomExpression) {
       this._runExpression(this.bottomExpression, !this.bottomExpressionChanged);
-      // this.lastRunResult = null;
-      // this._widgetDataService
-      //   .runExpression(this.bottomExpression, this.scanId, this.quantId, PredefinedROIID.getAllPointsForScan(this.scanId), true, true)
-      //   .subscribe(response => {
-      //     this.lastRunResult = response;
-      //     this.stdout = response.stdout;
-      //     this.stderr = response.stderr;
-      //     this.liveExpressionConfig = {
-      //       expressionId: this.bottomExpression?.id || "",
-      //       scanId: this.scanId,
-      //       quantId: this.quantId,
-      //     };
-      //   });
     }
   }
 
