@@ -30,6 +30,10 @@ import { DiffractionTabComponent } from "src/app/modules/analysis/components/ana
 import { MultiQuantComponent } from "./components/analysis-sidepanel/tabs/multi-quant/multi-quant.component";
 import { SelectionComponent } from "./components/analysis-sidepanel/tabs/selection/selection.component";
 import { RoughnessComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roughness/roughness.component";
+import { CodeEditorModule } from "src/app/modules/code-editor/code-editor.module";
+import { MapBrowserModule } from "src/app/modules/map-browser/map-browser.module";
+import { CodeEditorPageComponent } from "src/app/modules/code-editor/pages/code-editor-page/code-editor-page.component";
+import { MapBrowserPageComponent } from "src/app/modules/map-browser/pages/map-browser-page/map-browser-page.component";
 
 export { AnalysisLayoutService } from "./services/analysis-layout.service";
 
@@ -75,7 +79,7 @@ const APP_ROUTES: Routes = [
     MatButtonModule,
     MatMenuModule,
   ],
-  exports: [AnalysisPageComponent, ScanConfigurationDialog],
+  exports: [AnalysisPageComponent, ScanConfigurationDialog, AnalysisSidepanelComponent],
   //providers: [AnalysisLayoutService], <-- If registered here, we get duplicate copies of the service!
 })
 export class AnalysisModule {}

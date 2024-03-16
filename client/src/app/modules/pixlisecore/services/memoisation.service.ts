@@ -7,6 +7,7 @@ import { MemoiseGetReq } from "src/app/generated-protos/memoisation-msgs";
 import { MemoiseGetResp } from "src/app/generated-protos/memoisation-msgs";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { LocalStorageService } from "./local-storage.service";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
 
 @Injectable({
   providedIn: "root",
@@ -19,6 +20,20 @@ export class MemoisationService {
     private _dataService: APIDataService,
     private _localStorageService: LocalStorageService
   ) {}
+
+  delete(key: string): Observable<void> {
+    this._local.delete(key);
+    return from(this._localStorageService.deleteMemoKey(key));
+  }
+
+  clearUnsavedMemoData(): Observable<void> {
+    this._local.forEach((value, key) => {
+      if (key.startsWith(DataExpressionId.UnsavedExpressionPrefix)) {
+        this._local.delete(key);
+      }
+    });
+    return from(this._localStorageService.clearUnsavedMemoData());
+  }
 
   memoise(key: string, data: Uint8Array): Observable<void> {
     // Only memoise if it's changed

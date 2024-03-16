@@ -42,7 +42,7 @@ import { NotificationsMenuPanelComponent } from "./notifications-menu-panel/noti
 import { HotkeysMenuPanelComponent } from "./hotkeys-menu-panel/hotkeys-menu-panel.component";
 import { NotificationsService } from "src/app/modules/settings/services/notifications.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
+import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import {
   ScanConfigurationDialog,
   ScanConfigurationDialogData,
@@ -110,12 +110,12 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   tabs: TabNav[] = [];
   datasetID: string = "";
 
-  queryParam: Params = {};
+  queryParam: Record<string, string> = {};
   allTabs: NavigationTab[] = [
     { icon: "assets/tab-icons/browse.svg", tooltip: "Browse", url: "/datasets" },
     { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: "/datasets/analysis" },
     { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: "/datasets/code-editor" },
-    { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: "/datasets/analysis/element-maps" },
+    { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: "/datasets/maps" },
   ];
   openTabs: NavigationTab[] = [{ icon: "assets/tab-icons/browse.svg", tooltip: "Browse", url: "/datasets" }];
 
@@ -189,7 +189,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
     this._subs.add(
       this._route.queryParams.subscribe(params => {
-        this.queryParam = params;
+        this.queryParam = { ...params };
         let scanId = params["scan_id"] || params["scanId"];
         if (scanId) {
           this.datasetID = scanId;
@@ -260,6 +260,14 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       userOverlayPos,
       true
     );
+  }
+
+  onOpenTab(tab: NavigationTab): void {
+    let strippedURL = this.router.url.split("?")[0];
+    this.openTabs.forEach(openTab => {
+      openTab.active = strippedURL.endsWith(tab.url);
+    });
+    this.router.navigateByUrl(`${tab.url}?${this.queryParamString}`);
   }
 
   get queryParamString(): string {

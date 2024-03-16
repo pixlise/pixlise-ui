@@ -32,7 +32,7 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dial
 import { Observable, Subscription, map, of } from "rxjs";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { SliderValue } from "src/app/modules/pixlisecore/components/atoms/slider/slider.component";
-import { ContextImagePickerComponent, ContextImageItem } from "../../../components/context-image-picker/context-image-picker.component";
+import { ContextImagePickerComponent, ImageSelection } from "../../../components/context-image-picker/context-image-picker.component";
 import { RangeSliderValue } from "src/app/modules/pixlisecore/components/atoms/range-slider/range-slider.component";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
@@ -51,7 +51,8 @@ export class ImageDisplayOptions {
     public colourRatioMax: number | null,
     public rgbuChannels: string,
     public unselectedOpacity: number,
-    public unselectedGrayscale: boolean
+    public unselectedGrayscale: boolean,
+    public selectedScanId: string
   ) {}
 
   copy(): ImageDisplayOptions {
@@ -65,7 +66,8 @@ export class ImageDisplayOptions {
       this.colourRatioMax,
       this.rgbuChannels,
       this.unselectedOpacity,
-      this.unselectedGrayscale
+      this.unselectedGrayscale,
+      this.selectedScanId
     );
   }
 }
@@ -88,7 +90,7 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   // All the settings we can manipulate. We construct a ImagePickerResult from these
-  private _options = new ImageDisplayOptions("", true, 1, false, false, null, null, "RGB", 0.3, false);
+  private _options = new ImageDisplayOptions("", true, 1, false, false, null, null, "RGB", 0.3, false, "");
 
   displayedChannels: string[] = [];
   displayedChannelsWithNone: string[] = [];
@@ -183,8 +185,10 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   //   this.publishOptionChange();
   // }
 
-  onSelectedImageChanged(path: string) {
-    this._options.currentImage = path || "";
+  onSelectedImageChanged(selection: ImageSelection) {
+    this._options.currentImage = selection.path;
+    this._options.selectedScanId = selection.scanId;
+
     this.publishOptionChange();
   }
 

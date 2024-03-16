@@ -30,6 +30,7 @@ import { SpectrumLines, SpectrumWidgetState } from "src/app/generated-protos/wid
 import { ScanEntryRange } from "src/app/generated-protos/scan";
 import { HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
+import { ZoomMap } from "src/app/modules/spectrum/widgets/spectrum-chart-widget/ui-elements/zoom-map";
 
 @Component({
   selector: "app-spectrum-chart-widget",
@@ -184,6 +185,17 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
     }
 
     this._subs.add(
+      this._analysisLayoutService.resizeCanvas$.subscribe(() => {
+        // Reposition the key so it's always under the mini-zoom menu
+        if (this.widgetControlConfiguration.topRightInsetButton) {
+          let clientHeight = this._ref?.location.nativeElement.clientHeight || 0;
+          let offset = Math.min(ZoomMap.maxHeight + 12, clientHeight / 3 + 12);
+          this.widgetControlConfiguration.topRightInsetButton.style = { "margin-top": `${offset}px` };
+        }
+      })
+    );
+
+    this._subs.add(
       this.widgetData$.subscribe((data: any) => {
         const spectrumData = data as SpectrumWidgetState;
         if (spectrumData) {
@@ -230,6 +242,9 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           this.updateLines();
 
           if (this.widgetControlConfiguration.topRightInsetButton) {
+            let clientHeight = this._ref?.location.nativeElement.clientHeight || 0;
+            let offset = Math.min(ZoomMap.maxHeight + 12, clientHeight / 3 + 2);
+            this.widgetControlConfiguration.topRightInsetButton.style = { "margin-top": `${offset}px` };
             this.widgetControlConfiguration.topRightInsetButton.value = this.mdl.keyItems;
           }
         } else {

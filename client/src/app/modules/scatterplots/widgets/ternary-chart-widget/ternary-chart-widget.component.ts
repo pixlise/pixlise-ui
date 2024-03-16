@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
-import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
+import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import { Subscription } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 
@@ -60,6 +60,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   drawer: CanvasDrawer;
 
   scanId: string = "";
+  quantId: string = "";
 
   private _subs = new Subscription();
 
@@ -125,7 +126,8 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   private setInitialConfig() {
-    this.scanId = this._analysisLayoutService.defaultScanId;
+    this.scanId = this.scanId || this._analysisLayoutService.defaultScanId;
+    this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
     this._analysisLayoutService.makeExpressionList(this.scanId, 3).subscribe((exprs: DefaultExpressions) => {
       this.mdl.expressionIds = exprs.exprIds;
 
@@ -297,6 +299,20 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
     this._subs.unsubscribe();
   }
 
+  override injectExpression(liveExpression: LiveExpression) {
+    this.scanId = liveExpression.scanId;
+    this.quantId = liveExpression.quantId;
+
+    this._analysisLayoutService.makeExpressionList(this.scanId, 3, this.quantId).subscribe((exprs: DefaultExpressions) => {
+      if (exprs.exprIds.length > 0) {
+        this.mdl.expressionIds = [liveExpression.expressionId, ...exprs.exprIds.slice(0, 2)];
+      }
+
+      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
+      this.update();
+    });
+  }
+
   reDraw() {
     this.mdl.needsDraw$.next();
   }
@@ -424,6 +440,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
   setShowMmol() {
     this.mdl.showMmol = !this.mdl.showMmol;
+    this.update();
     this.saveState();
   }
 

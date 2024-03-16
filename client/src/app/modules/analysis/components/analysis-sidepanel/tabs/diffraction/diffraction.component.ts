@@ -395,7 +395,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     this.updateDisplayList();
     this.mdl.needsDraw$.next();
 
-    // this._exprService.setDiffractionCountExpression("diffractionPeaks(0,4096)", "All Diffracton Peaks");
+    this.runExpression({ title: "All Diffraction Peaks", expression: "diffractionPeaks(0,4096)", description: "All diffraction peaks" }, this.isMapShown);
   }
 
   runExpression(formedExpression: DiffractionExpressionResponse, updateContextImage: boolean = true) {
@@ -455,7 +455,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
   }
 
   onSaveAsExpressionMap() {
-    let exprData = this.formExpressionForSelection();
+    let exprData = this.formExpressionForSelection(true);
     if (exprData.error) {
       console.error("Error forming expression for selection: " + exprData.error);
       this.canSaveExpression = false;
@@ -678,11 +678,6 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
       for (let c = 0; c < binnedBykeV.length; c++) {
         let keVStart = c * DiffractionHistogramModel.keVBinWidth;
         let colour = Colours.GRAY_70;
-        /*            if(this.iskeVRangeSelected(keVStart+DiffractionHistogramModel.keVBinWidth/2))
-                {
-                    colour = Colours.YELLOW;
-                }*/
-
         bars.push(new HistogramBar(colour, binnedBykeV[c], keVStart));
         countRange.expand(binnedBykeV[c]);
       }
@@ -766,7 +761,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
 
   // If success, returns 3 strings: First item is the name, then expression, then description
   // If fail, returns 1 string, which is the error
-  private formExpressionForSelection(): DiffractionExpressionResponse {
+  private formExpressionForSelection(isBeingSaved: boolean = false): DiffractionExpressionResponse {
     // Take the selected keV values and form an expression map
     if (this._barSelectedCount <= 0) {
       return { error: "No keV ranges selected on diffraction peak histogram!" };
@@ -804,7 +799,12 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
 
     let title = "Diffraction peaks (" + rangeMinMax.min + "-" + rangeMinMax.max + " keV in " + this._barSelectedCount + " ranges)";
 
-    return { title, expression: expr, description: "Diffraction peaks in ranges: " + rangeText };
+    let description = "Diffraction peaks in ranges: " + rangeText;
+    if (!isBeingSaved) {
+      description = `UNSAVED: ${description}.\n\nClick 'Save as Expression Map' from the Diffraction tab to save this selection as an expression map.`;
+    }
+
+    return { title, expression: expr, description };
   }
 
   private getBarIdx(keV: number) {

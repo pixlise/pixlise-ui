@@ -95,13 +95,18 @@ export class MapColourScaleDrawer {
   
   */
   private drawScale(screenContext: CanvasRenderingContext2D, mdl: MapColourScaleModel, pos: ScaleInfo, histogram: Histogram, labelStyle: string) {
-    const scaleRange = mdl.displayValueRange;
-
-    if (scaleRange.min === null || scaleRange.max === null) {
+    // Use the full range, not the display range to draw the whole scale
+    const scaleRange = new MinMax(mdl.valueRange.min, mdl.valueRange.max);
+    if (!scaleRange || scaleRange.min === null || scaleRange.max === null) {
       return;
     }
 
-    let rawValue = scaleRange.min;
+    // We only draw colour scale in this range
+    const displayRange = new MinMax(mdl.displayValueRange.min, mdl.displayValueRange.max);
+    if (!displayRange || displayRange.min === null || displayRange.max === null) {
+      return;
+    }
+
     const rawIncr = scaleRange.getRange() / (pos.stepsShown - 1);
 
     // Start drawing them from the bottom up
@@ -120,12 +125,12 @@ export class MapColourScaleDrawer {
 
     // Calculate which step in the loop to show the hover text if it should be visible
     let showAtStep = 0;
-    if (mdl.hoverValue !== null && mdl.hoverValue > rawValue) {
+    if (mdl.hoverValue !== null && mdl.hoverValue > scaleRange.min) {
       // Only show hover text at these 5 intervals
       const showRanges = [0, pos.stepsShown - 1, Math.floor(pos.stepsShown / 2), Math.floor(pos.stepsShown / 4), Math.floor((pos.stepsShown * 3) / 4)];
 
       // Get the closest step corresponding to the hover value
-      showAtStep = Math.min(Math.floor((mdl.hoverValue - rawValue) / rawIncr), pos.stepsShown - 1);
+      showAtStep = Math.min(Math.floor((mdl.hoverValue - scaleRange.min) / rawIncr), pos.stepsShown - 1);
 
       // Convert the closest step to the closest interval
       showAtStep = showRanges.reduce((prev, curr) => (Math.abs(curr - showAtStep) < Math.abs(prev - showAtStep) ? curr : prev));
@@ -133,10 +138,11 @@ export class MapColourScaleDrawer {
 
     // Min box (bottom) to Max box (top) in steps
     let lastState: MapPointState | null = null;
+    let rawValue = scaleRange.min;
     for (let c = 0; c < pos.stepsShown; c++) {
       // Draw the rect
-      const rep = getDrawParamsForRawValue(mdl.scaleColourRamp, rawValue, mdl.displayValueRange);
-      if (rep.state == MapPointState.IN_RANGE) {
+      const rep = getDrawParamsForRawValue(mdl.scaleColourRamp, rawValue, displayRange);
+      if (rep.state === MapPointState.IN_RANGE) {
         // Get the color of the top-most gradient rectangle
         topFrameColour = rep.colour.asString();
 
@@ -145,12 +151,12 @@ export class MapColourScaleDrawer {
       }
 
       // Save info for drawing the rects at the end
-      if (lastState != rep.state) {
-        if (lastState == MapPointState.BELOW) {
+      if (lastState !== rep.state) {
+        if (lastState === MapPointState.BELOW) {
           bottomFrameYPos = y;
           // Get the color of the bottom-most gradient rectangle
           bottomFrameColour = rep.colour.asString();
-        } else if (lastState == MapPointState.IN_RANGE) {
+        } else if (lastState === MapPointState.IN_RANGE) {
           topFrameYPos = y;
         }
 
@@ -162,10 +168,10 @@ export class MapColourScaleDrawer {
       // NOTE: for binary we calculate position differently...
       let printValue = "";
       let lblYOffset = 0;
-      if (histogram.values.length == 2) {
+      if (histogram.values.length === 2) {
         if (histogram.max() != 0) {
           // If it's binary, show text labels, otherwise the values (it may be a map of say all 3 and 8's)
-          if (scaleRange.min == 0 && scaleRange.max == 1) {
+          if (scaleRange.min === 0 && scaleRange.max === 1) {
             // Assume 0==false, 1==true
             printValue = c == 0 ? "False" : "True";
           } else {

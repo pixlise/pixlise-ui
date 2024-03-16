@@ -37,10 +37,10 @@ import { TwoStateButtonComponent } from "./two-state-button.component";
   styleUrls: ["./two-state-button.component.scss", "./two-state-icon-button.component.scss"],
 })
 export class TwoStateIconButton extends TwoStateButtonComponent {
-  @Input() activeIcon: string;
-  @Input() inactiveIcon: string;
-  @Input() disabledIcon: string;
-  @Input() blackBackground: boolean;
+  @Input() activeIcon: string = "";
+  @Input() inactiveIcon: string = "";
+  @Input() disabledIcon: string = "";
+  @Input() blackBackground: boolean = false;
 
   constructor() {
     super();

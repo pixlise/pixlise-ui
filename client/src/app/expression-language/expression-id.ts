@@ -30,7 +30,7 @@
 export class DataExpressionId {
   public static NewExpression = "new-expression";
   public static NewModule = "new-module";
-  public static UnsavedExpressionPrefix = "unsaved-";
+  public static UnsavedExpressionPrefix = "u-";
 
   public static BuiltInUserId = "builtin";
 

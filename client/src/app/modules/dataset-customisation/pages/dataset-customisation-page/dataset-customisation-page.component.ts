@@ -38,6 +38,7 @@ import { AddCustomImageParameters, AddCustomImageComponent, AddCustomImageResult
 import { ImageUploadReq } from "src/app/generated-protos/image-msgs";
 import { ImageUploadResp } from "src/app/generated-protos/image-msgs";
 import { PickerDialogItem, PickerDialogData } from "src/app/modules/pixlisecore/components/atoms/picker-dialog/picker-dialog.component";
+import { ImageSelection } from "src/app/modules/image-viewers/components/context-image-picker/context-image-picker.component";
 
 @Component({
   selector: "app-dataset-customisation-page",
@@ -62,6 +63,8 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   unalignedImages: ScanImage[] = [];
   matchedImages: ScanImage[] = [];
   downlinkedImages: ScanImage[] = [];
+
+  private _scanId: string = "";
 
   xOffset: string = "";
   yOffset: string = "";
@@ -181,6 +184,10 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   }
 
   private getScanId(): string {
+    if (this.scanId) {
+      return this.scanId;
+    }
+
     if (!this._analysisLayoutService.defaultScanId) {
       this._snackService.openError("No scan id supplied");
       return "";
@@ -190,7 +197,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
   }
 
   get scanId(): string {
-    return this._analysisLayoutService.defaultScanId;
+    return this._scanId || this._analysisLayoutService.defaultScanId;
   }
 
   // For listing all images in a dropdown (currently for default image picker)
@@ -252,16 +259,19 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
       });
   }
 
-  onChangeDefaultImage(imgName: ContextImageItem): void {
-    const scanId = this.getScanId();
-    if (!scanId) {
+  onChangeDefaultImage(selection: ImageSelection): void {
+    if (selection.scanId) {
+      this._scanId = selection.scanId;
+    }
+
+    if (!this.scanId) {
       return;
     }
 
-    this._dataService.sendImageSetDefaultRequest(ImageSetDefaultReq.create({ scanId: scanId, defaultImageFileName: imgName.path })).subscribe({
+    this._dataService.sendImageSetDefaultRequest(ImageSetDefaultReq.create({ scanId: this.scanId, defaultImageFileName: selection.path })).subscribe({
       next: (resp: ImageSetDefaultResp) => {
         //this.defaultContextImage = imgName;
-        this._snackService.openSuccess("Default image changed", `Dataset ${scanId} now has default image set to: ${imgName.path}`);
+        this._snackService.openSuccess("Default image changed", `Dataset ${this.scanId} now has default image set to: ${selection.path}`);
       },
       error: err => {
         this._snackService.openError(err);
@@ -395,7 +405,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  onDeleteImage(imgType: string, img: ScanImage, event): void {
+  onDeleteImage(imgType: string, img: ScanImage, event: any): void {
     event.stopPropagation();
 
     if (!confirm(`Are you sure you want to delete ${img.imagePath}?`)) {
@@ -624,7 +634,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this._imageModelService.getModelData(this.mdl.imageName).subscribe({
+    this._imageModelService.getModelData(this.mdl.imageName, "customization-page").subscribe({
       next: (data: ContextImageModelLoadedData) => {
         this.mdl.setData(data);
 

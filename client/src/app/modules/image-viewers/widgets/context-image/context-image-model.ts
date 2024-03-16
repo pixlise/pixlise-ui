@@ -28,6 +28,28 @@ export class ContextImageModelLoadedData {
     public scanModels: Map<string, ContextImageScanModel>,
     public rgbuSourceImage: RGBUImage | null = null
   ) {}
+
+  copy(): ContextImageModelLoadedData {
+    let scanModelsCopy = new Map<string, ContextImageScanModel>();
+    for (const [scanId, scanModel] of this.scanModels.entries()) {
+      let scanModelCopy = new ContextImageScanModel(
+        scanModel.scanId,
+        scanModel.scanTitle,
+        scanModel.imageName,
+        scanModel.scanPoints,
+        scanModel.scanPointPolygons,
+        scanModel.footprint,
+        scanModel.contextPixelsTommConversion,
+        scanModel.beamRadius_pixels,
+        scanModel.scanPointDisplayRadius,
+        scanModel.scanPointsBBox,
+        scanModel.scanPointColourOverrides
+      );
+      scanModelsCopy.set(scanId, scanModelCopy);
+    }
+
+    return new ContextImageModelLoadedData(this.image, this.imageTransform, scanModelsCopy, this.rgbuSourceImage);
+  }
 }
 
 class ContextImageRawRegion {
@@ -358,6 +380,12 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
   // Set functions, these often require some other action, such as redrawing
   get pointColourScheme(): ColourScheme {
     return this._pointColourScheme;
+  }
+
+  set pointColourScheme(scheme: ColourScheme) {
+    this._pointColourScheme = scheme;
+    this._recalcNeeded = true;
+    this.needsDraw$.next();
   }
 
   get pointBBoxColourScheme(): ColourScheme {

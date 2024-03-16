@@ -50,6 +50,7 @@
     .info {
       display: flex;
       flex-direction: column;
+      cursor: pointer;
 
       margin: 0;
       text-overflow: ellipsis;
@@ -84,6 +85,13 @@
 
     .current-shape {
       margin-left: 8px;
+    }
+
+    .spacer-gap {
+      display: flex;
+      flex: 1;
+      height: 30px;
+      cursor: pointer;
     }
 
     .buttons {

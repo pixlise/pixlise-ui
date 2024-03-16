@@ -1,10 +1,17 @@
 import { Component, OnInit, ComponentRef, ElementRef, HostListener, ViewChild, ViewContainerRef, AfterViewChecked, Input } from "@angular/core";
-import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetToolbarButtonConfiguration, WidgetType } from "../../models/widgets.model";
+import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetType } from "../../models/widgets.model";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { WidgetData } from "src/app/generated-protos/widget-data";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { Subscription } from "rxjs";
+import { LiveExpression } from "src/app/modules/widget/models/base-widget.model";
+import EditorConfig from "src/app/modules/code-editor/models/editor-config";
+
+const getWidgetOptions = (): WidgetConfiguration[] => {
+  return Object.entries(WIDGETS).map(([id, value]) => ({ id: id as WidgetType, ...value }));
+};
 
 @Component({
   selector: "widget",
@@ -12,6 +19,8 @@ import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module"
   styleUrls: ["./widget.component.scss"],
 })
 export class WidgetComponent implements OnInit, AfterViewChecked {
+  private _subs: Subscription = new Subscription();
+
   @ViewChild("currentWidget", { read: ViewContainerRef }) currentWidget!: ViewContainerRef;
   private _currentWidgetRef: ComponentRef<any> | null = null;
 
@@ -29,10 +38,14 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
 
   @Input() widgetLayoutConfig: WidgetLayoutConfiguration = WidgetLayoutConfiguration.create();
   @Input() layoutIndex: number = 0;
+  @Input() disableSwitch: boolean = false;
+  @Input() title: string = "";
 
   visibleTopToolbarCount: number = 0;
 
-  allWidgetOptions = Object.entries(WIDGETS).map(([id, value]) => ({ id, ...value }));
+  isOverflowed: boolean = false;
+
+  allWidgetOptions: WidgetConfiguration[] = getWidgetOptions();
   _activeWidget: WidgetType = "ternary-plot";
 
   widgetConfiguration?: WidgetConfiguration;
@@ -59,6 +72,10 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
     });
   }
 
+  ngOnDestroy() {
+    this._subs.unsubscribe();
+  }
+
   ngAfterViewChecked(): void {
     if (!this._currentWidgetRef) {
       this.loadWidget();
@@ -74,6 +91,7 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
     let buttonsContainerWidth = this.buttonsContainer.nativeElement.offsetWidth;
     let topToolbarWidth = 0;
     if (this.widgetConfiguration?.controlConfiguration?.topToolbar) {
+      let overflowed = false;
       this.widgetConfiguration.controlConfiguration.topToolbar.forEach((button, index) => {
         let buttonWidth = button.maxWidth || 60;
         if (topToolbarWidth + buttonWidth < buttonsContainerWidth) {
@@ -81,9 +99,12 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
           button._overflowed = false;
         } else {
           button._overflowed = true;
+          overflowed = true;
           this.visibleTopToolbarCount = index;
         }
       });
+
+      this.isOverflowed = overflowed;
     }
   }
 
@@ -109,13 +130,17 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
         }
       }
 
+      let overflowed = false;
       this.widgetConfiguration.controlConfiguration.topToolbar.forEach((button, index) => {
         if (index < this.visibleTopToolbarCount) {
           button._overflowed = false;
         } else {
           button._overflowed = true;
+          overflowed = true;
         }
       });
+
+      this.isOverflowed = overflowed;
     }
   }
 
@@ -133,22 +158,46 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
     this.loadWidget();
   }
 
+  @Input() set widgetTypes(widgetTypes: WidgetType[]) {
+    if (widgetTypes.length > 0) {
+      this.allWidgetOptions = getWidgetOptions().filter(widgetOption => widgetTypes.includes(widgetOption.id as WidgetType));
+    }
+  }
+
   @Input() set initWidget(initWidget: string) {
     this._activeWidget = initWidget as WidgetType;
     this.loadWidget();
   }
 
-  @Input() set liveExpression({ expressionId, scanId, quantId }: { expressionId: string; scanId: string; quantId: string }) {
-    if (this._currentWidgetRef?.instance?.mdl?.expressionIds && this._currentWidgetRef?.instance?.mdl.dataSourceIds) {
-      if (this._currentWidgetRef?.instance?.mdl.expressionIds.length > 0) {
-        this._currentWidgetRef.instance.mdl.expressionIds[0] = expressionId;
-      } else {
-        this._currentWidgetRef.instance.mdl.expressionIds = [expressionId];
-      }
-      this._currentWidgetRef?.instance?.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(scanId)]));
+  @Input() set liveExpression(liveExpression: LiveExpression) {
+    if (!liveExpression) {
+      return;
     }
-    if (this._currentWidgetRef?.instance?.update) {
-      this._currentWidgetRef?.instance?.update();
+
+    if (this._currentWidgetRef?.instance) {
+      this._injectLiveExpression(liveExpression);
+    } else {
+      setTimeout(() => {
+        this._injectLiveExpression(liveExpression);
+      }, 1000);
+    }
+  }
+
+  private _injectLiveExpression({ expressionId, scanId, quantId, expression }: LiveExpression) {
+    if (this._currentWidgetRef?.instance?.injectExpression) {
+      this._currentWidgetRef.instance.injectExpression({ expressionId, scanId, quantId, expression });
+    } else {
+      if (this._currentWidgetRef?.instance?.mdl?.expressionIds && this._currentWidgetRef?.instance?.mdl.dataSourceIds) {
+        if (this._currentWidgetRef?.instance?.mdl.expressionIds.length > 0) {
+          this._currentWidgetRef.instance.mdl.expressionIds[0] = expressionId;
+        } else {
+          this._currentWidgetRef.instance.mdl.expressionIds = [expressionId];
+        }
+        this._currentWidgetRef?.instance?.mdl.dataSourceIds.set(scanId, new ScanDataIds(quantId, [PredefinedROIID.getAllPointsForScan(scanId)]));
+      }
+      if (this._currentWidgetRef?.instance?.update) {
+        this._currentWidgetRef?.instance?.update();
+      }
     }
   }
 
@@ -198,35 +247,44 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
     if (this._currentWidgetRef?.instance) {
       // Set the widget id
       this._currentWidgetRef.instance._widgetId = this.widgetLayoutConfig.id;
+      this._currentWidgetRef.instance._ref = this._currentWidgetRef;
       this._currentWidgetRef.instance._isWidgetHighlighted = this.isWidgetHighlighted;
 
       if (this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration) {
-        this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration.subscribe((config: WidgetControlConfiguration) => {
-          this.widgetConfiguration!.controlConfiguration = config;
-          this.initOverflowState();
-        });
+        this._subs.add(
+          this._currentWidgetRef.instance.onUpdateWidgetControlConfiguration.subscribe((config: WidgetControlConfiguration) => {
+            this.widgetConfiguration!.controlConfiguration = config;
+            this.initOverflowState();
+          })
+        );
       }
 
       if (this._currentWidgetRef.instance.onWidgetHighlight) {
-        this._currentWidgetRef.instance.onWidgetHighlight.subscribe((isWidgetHighlighted: boolean) => {
-          this.isWidgetHighlighted = isWidgetHighlighted;
-        });
+        this._subs.add(
+          this._currentWidgetRef.instance.onWidgetHighlight.subscribe((isWidgetHighlighted: boolean) => {
+            this.isWidgetHighlighted = isWidgetHighlighted;
+          })
+        );
       }
 
       if (this._currentWidgetRef.instance.onWidgetLoading) {
-        this._currentWidgetRef.instance.onWidgetLoading.subscribe((isWidgetDataLoading: boolean) => {
-          this.isWidgetDataError = false;
-          this.widgetDataErrorMessage = "";
-          this.isWidgetDataLoading = isWidgetDataLoading;
-        });
+        this._subs.add(
+          this._currentWidgetRef.instance.onWidgetLoading.subscribe((isWidgetDataLoading: boolean) => {
+            this.isWidgetDataError = false;
+            this.widgetDataErrorMessage = "";
+            this.isWidgetDataLoading = isWidgetDataLoading;
+          })
+        );
       }
 
       if (this._currentWidgetRef.instance.onWidgetDataErrorMessage) {
-        this._currentWidgetRef.instance.onWidgetDataErrorMessage.subscribe((widgetDataErrorMessage: string) => {
-          this.isWidgetDataLoading = false;
-          this.isWidgetDataError = !!widgetDataErrorMessage;
-          this.widgetDataErrorMessage = widgetDataErrorMessage;
-        });
+        this._subs.add(
+          this._currentWidgetRef.instance.onWidgetDataErrorMessage.subscribe((widgetDataErrorMessage: string) => {
+            this.isWidgetDataLoading = false;
+            this.isWidgetDataError = !!widgetDataErrorMessage;
+            this.widgetDataErrorMessage = widgetDataErrorMessage;
+          })
+        );
       }
 
       if (this._currentWidgetRef.instance.widgetData$) {
@@ -235,11 +293,18 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
       }
 
       if (this._currentWidgetRef.instance.onSaveWidgetData) {
-        this._currentWidgetRef.instance.onSaveWidgetData.subscribe((widgetData: any) => {
-          let data = this.widgetLayoutConfig.data || WidgetData.create({ id: this.widgetLayoutConfig.id });
-          data[this.widgetConfiguration!.dataKey] = widgetData;
-          this._analysisLayoutService.writeWidgetData(data);
-        });
+        this._subs.add(
+          this._currentWidgetRef.instance.onSaveWidgetData.subscribe((widgetData: any) => {
+            if (!this.widgetLayoutConfig.id || this.widgetLayoutConfig.id === EditorConfig.previewWidgetId) {
+              // Don't save if the widget id is not set or if it's a preview widget
+              return;
+            }
+
+            let data = this.widgetLayoutConfig.data || WidgetData.create({ id: this.widgetLayoutConfig.id });
+            data[this.widgetConfiguration!.dataKey] = widgetData;
+            this._analysisLayoutService.writeWidgetData(data);
+          })
+        );
       }
     }
   }

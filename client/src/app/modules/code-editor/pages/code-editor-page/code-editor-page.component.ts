@@ -29,7 +29,7 @@
 
 import { Component, ElementRef, HostListener, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { ActivatedRoute, Router } from "@angular/router";
+import { ActivatedRoute, Data, Params, Router } from "@angular/router";
 import { Subscription } from "rxjs";
 import { DataQueryResult } from "src/app/expression-language/data-values";
 import { DataExpression, ModuleReference } from "src/app/generated-protos/expressions";
@@ -42,13 +42,17 @@ import {
 } from "src/app/modules/expressions/components/expression-picker/expression-picker.component";
 import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
 import { SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
-import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { DataExpressionModule, TextSelection } from "../../components/expression-text-editor/expression-text-editor.component";
 import { EXPR_LANGUAGE_LUA } from "src/app/expression-language/expression-language";
 import { DataModule, DataModuleVersion } from "src/app/generated-protos/modules";
 import { SemanticVersion, VersionField } from "src/app/generated-protos/version";
 import { ModuleReleaseDialogComponent, ModuleReleaseDialogData } from "../../components/module-release-dialog/module-release-dialog.component";
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
+import { LiveExpression } from "src/app/modules/widget/models/base-widget.model";
+import EditorConfig, { LocalStorageMetadata } from "src/app/modules/code-editor/models/editor-config";
+import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { WidgetType } from "src/app/modules/widget/models/widgets.model";
+import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 
 @Component({
   selector: "code-editor",
@@ -61,6 +65,12 @@ export class CodeEditorPageComponent implements OnInit {
 
   private _subs = new Subscription();
   private _keyPresses: Set<string> = new Set<string>();
+
+  private _id = "code-editor"; // Needed for widget-type subscriptions
+  initPreviewWidgetType = "binary-plot";
+  previewWidgetTypes: WidgetType[] = ["binary-plot", "ternary-plot", "context-image", "histogram", "chord-diagram"];
+
+  previewLayoutConfig: WidgetLayoutConfiguration = WidgetLayoutConfiguration.create({ id: EditorConfig.previewWidgetId });
 
   isSidebarOpen: boolean = true;
   isSplitScreen: boolean = false;
@@ -97,7 +107,9 @@ export class CodeEditorPageComponent implements OnInit {
   public isCurrentlyOpenSectionOpen = true;
   public isModulesSectionOpen = true;
 
-  liveExpressionConfig: { expressionId: string; scanId: string; quantId: string } = {
+  public queryParams: Record<string, string> = {};
+
+  liveExpressionConfig: LiveExpression = {
     expressionId: "",
     scanId: "",
     quantId: "",
@@ -114,36 +126,84 @@ export class CodeEditorPageComponent implements OnInit {
     private _analysisLayoutService: AnalysisLayoutService,
     private _expressionsService: ExpressionsService,
     private _widgetDataService: WidgetDataService,
-    private _apiCachedDataService: APICachedDataService,
     public dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
+    let scanId = this._route.snapshot.queryParams[EditorConfig.scanIdParam];
+    if (scanId) {
+      this.scanId = scanId;
+    } else {
+      this.scanId = this._analysisLayoutService.defaultScanId;
+    }
+
+    let quantId = this._route.snapshot.queryParams[EditorConfig.quantIdParam];
+    if (quantId) {
+      this.quantId = quantId;
+    } else {
+      this.quantId = this._analysisLayoutService.getQuantIdForScan(this.scanId);
+    }
+
     this._expressionsService.fetchExpressions();
     this._expressionsService.fetchModules();
 
     this._subs.add(
-      this._route.queryParams.subscribe(params => {
-        this.scanId = params["scanId"] || "";
-        this.quantId = params["quantId"] || "";
-
-        if (params["topExpressionId"]) {
-          this.isTopModule = false;
-          this._expressionsService.fetchExpression(params["topExpressionId"]);
-          if (!params["bottomExpressionId"]) {
-            this.isSplitScreen = false;
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfig => {
+        if (screenConfig) {
+          this.scanId = this.scanId || this._analysisLayoutService.defaultScanId;
+          if (!this.scanId && Object.keys(screenConfig.scanConfigurations).length > 0) {
+            this.scanId = Object.keys(screenConfig.scanConfigurations)[0];
           }
-        } else if (params["topModuleId"]) {
-          this.isSplitScreen = false;
-          let version = params["topModuleVersion"] ? this.getSemanticVersionFromString(params["topModuleVersion"]) : null;
-          this._expressionsService.fetchModuleVersion(params["topModuleId"], version);
-        } else {
-          this.topExpression = null;
+          this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId);
+        }
+      })
+    );
+
+    this._subs.add(
+      this._route.queryParams.subscribe(params => {
+        this.queryParams = { ...params };
+
+        this.scanId = params[EditorConfig.scanIdParam] || this.scanId || "";
+        if (!this.scanId) {
+          this.scanId = this._analysisLayoutService.defaultScanId;
         }
 
-        if (params["bottomExpressionId"]) {
-          let version = params["bottomModuleVersion"] ? this.getSemanticVersionFromString(params["bottomModuleVersion"]) : null;
-          this._expressionsService.fetchModuleVersion(params["bottomExpressionId"], version);
+        this.quantId = params[EditorConfig.quantIdParam] || this.quantId || "";
+        if (!this.scanId) {
+          this.quantId = this._analysisLayoutService.getQuantIdForScan(this.scanId);
+        }
+
+        let topExpressionId = params[EditorConfig.topExpressionId];
+        let topModuleId = params[EditorConfig.topModuleId];
+
+        let isExpressionToModuleSwitch = (!this.isTopModule && topModuleId) || (this.isTopModule && topExpressionId);
+        let isDifferentExpression = !this.isTopModule && topExpressionId !== this.topExpression?.id;
+        let isDifferentModule = this.isTopModule && topModuleId !== this.loadedModule?.id;
+
+        if (!this.topExpression || isExpressionToModuleSwitch || isDifferentExpression || isDifferentModule) {
+          if (topExpressionId) {
+            this.isTopModule = false;
+            this._expressionsService.fetchExpression(topExpressionId);
+            this.loadExpressionById(topExpressionId, false);
+            if (!params[EditorConfig.bottomExpressionId]) {
+              this.isSplitScreen = false;
+            }
+          } else if (topModuleId) {
+            this.isSplitScreen = false;
+            let version = params[EditorConfig.topModuleVersion] ? this.getSemanticVersionFromString(params[EditorConfig.topModuleVersion]) : null;
+            this._expressionsService.fetchModuleVersion(topModuleId, version);
+          } else {
+            this.topExpression = null;
+          }
+        }
+
+        if (params[EditorConfig.bottomExpressionId]) {
+          let version = params[EditorConfig.bottomModuleVersion] ? this.getSemanticVersionFromString(params[EditorConfig.bottomModuleVersion]) : null;
+          this._expressionsService.fetchModuleVersion(params[EditorConfig.bottomExpressionId], version);
+
+          if (this.bottomExpression?.id !== params[EditorConfig.bottomExpressionId]) {
+            this.isSplitScreen = true;
+          }
         } else {
           this.bottomExpression = null;
         }
@@ -154,33 +214,28 @@ export class CodeEditorPageComponent implements OnInit {
 
     this._subs.add(
       this._expressionsService.expressions$.subscribe(expressions => {
-        let topExpressionId = this._route.snapshot.queryParams["topExpressionId"];
-        if (topExpressionId === ExpressionsService.NewExpressionId && this._expressionsService.lastSavedExpressionId) {
+        let topExpressionId = this.queryParams[EditorConfig.topExpressionId];
+        if (this.isTopModule || (topExpressionId && topExpressionId !== ExpressionsService.NewExpressionId && this.topExpression)) {
+          // If the top expression is a module or is already loaded, don't overwrite it
+          return;
+        } else if (topExpressionId === ExpressionsService.NewExpressionId && this._expressionsService.lastSavedExpressionId) {
           topExpressionId = this._expressionsService.lastSavedExpressionId;
-          let queryParams = { ...this._route.snapshot.queryParams, topExpressionId };
+          let queryParams = { ...this.queryParams, [EditorConfig.topExpressionId]: topExpressionId };
           this._router.navigate([], { queryParams });
         }
+
         if (topExpressionId) {
           this.topExpression = expressions[topExpressionId] || null;
           if (this.topExpression) {
             this.topExpression = DataExpression.create(this.topExpression);
           }
+
+          // At this point, we're at first load, so restore from local storage
+          let updated = this.loadStorageMetadata();
+
+          // We don't have anything in the cache, so now we need to fetch the expression
+          this.loadExpressionById(topExpressionId, updated);
         }
-
-        this.fetchLocalStorageMetadata();
-
-        if (this.topExpression) {
-          this.topModules = [];
-
-          this.topExpression.moduleReferences.forEach(moduleRef => {
-            let module = this.modules.find(module => module.id === moduleRef.moduleId);
-            if (module) {
-              this.topModules.push(new DataExpressionModule(module, moduleRef));
-            }
-          });
-        }
-
-        this.updateLinkedModule();
       })
     );
 
@@ -188,9 +243,18 @@ export class CodeEditorPageComponent implements OnInit {
       this._expressionsService.modules$.subscribe(modules => {
         this.modules = Object.values(modules);
 
-        let topModuleId = this._route.snapshot.queryParams["topModuleId"];
-        let topModuleVersion = this._route.snapshot.queryParams["topModuleVersion"];
-        if (topModuleId) {
+        let topModuleId = this.queryParams[EditorConfig.topModuleId];
+        let topModuleVersion = this.queryParams[EditorConfig.topModuleVersion];
+
+        if (
+          this.isTopModule &&
+          topModuleId === this.topExpression?.id &&
+          this.getVersionString(this.loadedModuleVersion?.version).length > 0 &&
+          this.loadedModuleVersion?.sourceCode
+        ) {
+          // We already have everything loaded, so don't do anything
+          return;
+        } else if (topModuleId) {
           this.isTopModule = true;
           this.topModules = [];
 
@@ -200,7 +264,7 @@ export class CodeEditorPageComponent implements OnInit {
               topModuleVersion = this.getVersionString(modules[topModuleId].versions[0].version);
             }
 
-            let queryParams = { ...this._route.snapshot.queryParams, topModuleId, topModuleVersion };
+            let queryParams = { ...this.queryParams, [EditorConfig.topModuleId]: topModuleId, [EditorConfig.topModuleVersion]: topModuleVersion };
             this._router.navigate([], { queryParams });
           }
 
@@ -256,8 +320,17 @@ export class CodeEditorPageComponent implements OnInit {
             }
           }
         } else {
-          let bottomModuleId = this._route.snapshot.queryParams["bottomExpressionId"];
-          let bottomModuleVersion = this._route.snapshot.queryParams["bottomModuleVersion"];
+          let bottomModuleId = this.queryParams[EditorConfig.bottomExpressionId];
+          let bottomModuleVersion = this.queryParams[EditorConfig.bottomModuleVersion];
+
+          if (
+            bottomModuleId === this.bottomExpression?.id &&
+            this.getVersionString(this.loadedModuleVersion?.version).length > 0 &&
+            this.loadedModuleVersion?.sourceCode
+          ) {
+            // We already have everything loaded, so don't do anything
+            return;
+          }
 
           this.isTopModule = false;
           this.topModules = [];
@@ -314,7 +387,7 @@ export class CodeEditorPageComponent implements OnInit {
           }
         }
 
-        if (this.topExpression) {
+        if (!this.isTopModule && this.topExpression) {
           this.topModules = [];
 
           this.topExpression.moduleReferences.forEach(moduleRef => {
@@ -330,42 +403,91 @@ export class CodeEditorPageComponent implements OnInit {
 
     this._subs.add(
       this._analysisLayoutService.expressionPickerResponse$.subscribe((result: ExpressionPickerResponse | null) => {
-        let scanId = this._route.snapshot.queryParams["scanId"];
-        let quantId = this._route.snapshot.queryParams["quantId"];
-        if (result && result.selectedExpressions?.length > 0) {
-          if (result.scanId) {
-            scanId = result.scanId;
-          }
+        if (!result || this._analysisLayoutService.highlightedWidgetId$.value !== this._id) {
+          return;
+        }
 
-          if (quantId) {
-            quantId = result.quantId;
-          }
+        if (result) {
+          if (result.selectedExpressions?.length > 0) {
+            this.clearExpressionQueryParams();
+            let topExpressionId = result.selectedExpressions[0].id;
+            let queryParams: Record<string, string> = { ...this.queryParams, [EditorConfig.topExpressionId]: topExpressionId };
 
-          if (scanId && !quantId) {
-            quantId = this._analysisLayoutService.getQuantIdForScan(scanId);
-          }
+            if (result.selectedExpressions.length > 1) {
+              queryParams[EditorConfig.bottomExpressionId] = result.selectedExpressions[1].id;
+            } else {
+              delete queryParams[EditorConfig.bottomExpressionId];
+            }
 
-          let queryParams: Record<string, string> = {
-            topExpressionId: result.selectedExpressions[0].id,
-            quantId,
-            scanId,
-          };
+            this.topExpressionChanged = false;
+            this.bottomExpressionChanged = false;
 
-          if (result.selectedExpressions.length > 1) {
-            queryParams["bottomExpressionId"] = result.selectedExpressions[1].id;
+            this._router.navigate([], { queryParams });
           } else {
-            delete queryParams["bottomExpressionId"];
+            this.clearExpressionQueryParams();
+            this._router.navigate([], { queryParams: { ...this.queryParams } });
           }
 
-          this.topExpressionChanged = false;
-          this.bottomExpressionChanged = false;
-
-          this._router.navigate([], { queryParams });
-        } else if (result) {
-          this._router.navigate([], { queryParams: { quantId, scanId } });
+          this._analysisLayoutService.highlightedWidgetId$.next("");
         }
       })
     );
+  }
+
+  loadExpressionById(expressionId: string, updated: boolean) {
+    this._expressionsService.fetchCachedExpression(expressionId).subscribe(expression => {
+      if (expression.expression) {
+        if (!updated) {
+          // If we didn't load from local storage, then just set the expression
+          this.topExpression = DataExpression.create(expression.expression);
+        } else {
+          this.topExpression = DataExpression.create(expression.expression);
+
+          // If we did load from local storage, then we need to update the new expression
+          this.loadStorageMetadata();
+        }
+
+        if (this.topExpression) {
+          this.topModules = [];
+
+          this.topExpression.moduleReferences.forEach(moduleRef => {
+            let module = this.modules.find(module => module.id === moduleRef.moduleId);
+            if (module) {
+              this.topModules.push(new DataExpressionModule(module, moduleRef));
+            }
+          });
+        }
+
+        this.updateLinkedModule();
+        this.runExpression();
+      }
+    });
+  }
+
+  loadStorageMetadata(): boolean {
+    let localStore = new LocalStorageMetadata(this.isSidebarOpen, this.topExpression || undefined, this.bottomExpression || undefined);
+    localStore.load();
+
+    this.isSidebarOpen = localStore.isSidebarOpen;
+    if (localStore.updatedTopExpression) {
+      this.topExpression = localStore.topExpression;
+      this.topExpressionChanged = true;
+    }
+    if (localStore.updatedBottomExpression) {
+      this.bottomExpression = localStore.bottomExpression;
+      this.bottomExpressionChanged = true;
+    }
+
+    return localStore.updated;
+  }
+
+  clearExpressionQueryParams() {
+    delete this.queryParams[EditorConfig.topExpressionId];
+    delete this.queryParams[EditorConfig.bottomExpressionId];
+    delete this.queryParams[EditorConfig.topModuleId];
+    delete this.queryParams[EditorConfig.bottomModuleId];
+    delete this.queryParams[EditorConfig.topModuleVersion];
+    delete this.queryParams[EditorConfig.bottomModuleVersion];
   }
 
   ngOnDestroy(): void {
@@ -389,77 +511,27 @@ export class CodeEditorPageComponent implements OnInit {
   }
 
   storeMetadata(): void {
-    localStorage.setItem("isSidebarOpen", this.isSidebarOpen ? "true" : "false");
-    if (this.topExpression) {
-      localStorage.setItem("topExpressionId", this.topExpression.id);
-      localStorage.setItem("topExpressionSourceCode", this.topExpression.sourceCode);
-      localStorage.setItem("topExpressionSourceLanguage", this.topExpression.sourceLanguage);
+    let topCopy = this.topExpression ? DataExpression.create(this.topExpression) : undefined;
+    if (topCopy) {
+      topCopy.id = topCopy.id.replace(DataExpressionId.UnsavedExpressionPrefix, "");
+    }
+    let bottomCopy = this.bottomExpression ? DataExpression.create(this.bottomExpression) : undefined;
+    if (bottomCopy) {
+      bottomCopy.id = bottomCopy.id.replace(DataExpressionId.UnsavedExpressionPrefix, "");
     }
 
-    if (this.bottomExpression) {
-      localStorage.setItem("bottomExpressionId", this.bottomExpression.id);
-      localStorage.setItem("bottomExpressionSourceCode", this.bottomExpression.sourceCode);
-      localStorage.setItem("bottomExpressionSourceLanguage", this.bottomExpression.sourceLanguage);
-    }
-  }
-
-  fetchLocalStorageMetadata(): void {
-    let isSidebarOpen = localStorage?.getItem("isSidebarOpen") ?? true;
-    this.isSidebarOpen = isSidebarOpen === "true";
-    if (!this.topExpression || this.topExpression.id === localStorage?.getItem("topExpressionId")) {
-      if (!this.topExpression) {
-        this.topExpression = DataExpression.create({ id: localStorage?.getItem("topExpressionId") || "", sourceCode: "", sourceLanguage: EXPR_LANGUAGE_LUA });
-        this.topExpressionChanged = true;
-      }
-      let cachedSourceCode = localStorage?.getItem("topExpressionSourceCode") || "";
-      if ((this.topExpression.sourceCode.length !== cachedSourceCode.length || this.topExpression.sourceCode) !== cachedSourceCode) {
-        this.topExpression.sourceCode = cachedSourceCode;
-        this.topExpressionChanged = true;
-      }
-
-      let cachedSourceLanguage = localStorage?.getItem("topExpressionSourceLanguage") || EXPR_LANGUAGE_LUA;
-      if (this.topExpression.sourceLanguage !== cachedSourceLanguage) {
-        this.topExpression.sourceLanguage = cachedSourceLanguage;
-        this.topExpressionChanged = true;
-      }
-    }
-
-    let cachedBottomId: string = localStorage?.getItem("bottomExpressionId") || "";
-    if (cachedBottomId && this._route.snapshot.queryParams["bottomExpressionId"] !== cachedBottomId) {
-      this.clearBottomExpressionCache();
-    } else if (cachedBottomId && (!this.bottomExpression || this.bottomExpression.id === cachedBottomId)) {
-      if (!this.bottomExpression) {
-        this.bottomExpression = this._expressionsService.expressions$.value[cachedBottomId] || null;
-        if (!this.bottomExpression) {
-          this.bottomExpression = DataExpression.create({ id: cachedBottomId || "", sourceCode: "", sourceLanguage: EXPR_LANGUAGE_LUA });
-        }
-        this.bottomExpressionChanged = true;
-      }
-
-      let cachedSourceCode = localStorage?.getItem("bottomExpressionSourceCode") || "";
-      if ((this.bottomExpression.sourceCode.length !== cachedSourceCode.length || this.bottomExpression.sourceCode) !== cachedSourceCode) {
-        this.bottomExpression.sourceCode = cachedSourceCode;
-        this.bottomExpressionChanged = true;
-      }
-
-      let cachedSourceLanguage = localStorage?.getItem("bottomExpressionSourceLanguage") || EXPR_LANGUAGE_LUA;
-      if (this.bottomExpression.sourceLanguage !== cachedSourceLanguage) {
-        this.bottomExpression.sourceLanguage = cachedSourceLanguage;
-        this.bottomExpressionChanged = true;
-      }
-    }
+    let localStore = new LocalStorageMetadata(this.isSidebarOpen, topCopy, bottomCopy);
+    localStore.store();
   }
 
   clearTopExpressionCache(): void {
-    localStorage.removeItem("topExpressionId");
-    localStorage.removeItem("topExpressionSourceCode");
-    localStorage.removeItem("topExpressionSourceLanguage");
+    let localStore = new LocalStorageMetadata();
+    localStore.clearTopExpressionCache();
   }
 
   clearBottomExpressionCache(): void {
-    localStorage.removeItem("bottomExpressionId");
-    localStorage.removeItem("bottomExpressionSourceCode");
-    localStorage.removeItem("bottomExpressionSourceLanguage");
+    let localStore = new LocalStorageMetadata();
+    localStore.clearBottomExpressionCache();
   }
 
   addLuaHighlight(text: string): string {
@@ -472,6 +544,8 @@ export class CodeEditorPageComponent implements OnInit {
         if (assignmentSplit.length === 2) {
           let lhsVarName = assignmentSplit[0].replace("local ", "").trim();
           textLines.push(`return ${lhsVarName}`);
+        } else if (lastLine.trim().match(/^print\s*\(.+/)) {
+          textLines.push("return {}");
         } else {
           textLines[textLines.length - 1] = "return " + textLines[textLines.length - 1];
         }
@@ -481,35 +555,35 @@ export class CodeEditorPageComponent implements OnInit {
     return changedText;
   }
 
+  private _runExpression(expression: DataExpression, isSaved: boolean = false) {
+    let expressionCopy = DataExpression.create(expression);
+
+    expressionCopy.id = DataExpressionId.UnsavedExpressionPrefix + expressionCopy.id;
+    expressionCopy.name = expressionCopy.name + " (unsaved)";
+
+    // Clear unsaved expression responses if we're intentionally re-running
+    // this._widgetDataService.clearUnsavedExpressionResponses().subscribe(() => {
+    this.lastRunResult = null;
+    this._widgetDataService
+      .runExpression(expressionCopy, this.scanId, this.quantId, PredefinedROIID.getAllPointsForScan(this.scanId), true, true)
+      .subscribe(response => {
+        this.lastRunResult = response;
+        this.stdout = response.stdout;
+        this.stderr = response.stderr;
+        this.liveExpressionConfig = {
+          expressionId: expressionCopy?.id || "",
+          scanId: this.scanId,
+          quantId: this.quantId,
+        };
+      });
+    // });
+  }
+
   runExpression() {
     if (this.isTopEditorActive && this.topExpression) {
-      this.lastRunResult = null;
-      this._widgetDataService
-        .runExpression(this.topExpression, this.scanId, this.quantId, PredefinedROIID.getAllPointsForScan(this.scanId), true, true)
-        .subscribe(response => {
-          this.lastRunResult = response;
-          this.stdout = response.stdout;
-          this.stderr = response.stderr;
-          this.liveExpressionConfig = {
-            expressionId: this.topExpression?.id || "",
-            scanId: this.scanId,
-            quantId: this.quantId,
-          };
-        });
+      this._runExpression(this.topExpression, !this.topExpressionChanged);
     } else if (!this.isTopEditorActive && this.bottomExpression) {
-      this.lastRunResult = null;
-      this._widgetDataService
-        .runExpression(this.bottomExpression, this.scanId, this.quantId, PredefinedROIID.getAllPointsForScan(this.scanId), true, true)
-        .subscribe(response => {
-          this.lastRunResult = response;
-          this.stdout = response.stdout;
-          this.stderr = response.stderr;
-          this.liveExpressionConfig = {
-            expressionId: this.bottomExpression?.id || "",
-            scanId: this.scanId,
-            quantId: this.quantId,
-          };
-        });
+      this._runExpression(this.bottomExpression, !this.bottomExpressionChanged);
     }
   }
 
@@ -540,11 +614,11 @@ export class CodeEditorPageComponent implements OnInit {
     let semanticVersion = this.getSemanticVersionFromString(version);
     if (this.loadedModule?.id && semanticVersion) {
       this._expressionsService.fetchModuleVersion(this.loadedModule.id, semanticVersion);
-      let queryParams = { ...this._route.snapshot.queryParams };
+      let queryParams = { ...this.queryParams };
       if (this.isTopModule) {
-        queryParams["topModuleVersion"] = version;
+        queryParams[EditorConfig.topModuleVersion] = version;
       } else {
-        queryParams["bottomModuleVersion"] = version;
+        queryParams[EditorConfig.bottomModuleVersion] = version;
       }
       this._router.navigate([], { queryParams });
     }
@@ -658,9 +732,9 @@ export class CodeEditorPageComponent implements OnInit {
       }
 
       let queryParams = {
-        ...this._route.snapshot.queryParams,
-        bottomExpressionId: moduleToOpen.id,
-        bottomModuleVersion: version,
+        ...this.queryParams,
+        [EditorConfig.bottomExpressionId]: moduleToOpen.id,
+        [EditorConfig.bottomModuleVersion]: version,
       };
       this._router.navigate([], { queryParams });
     }
@@ -708,63 +782,37 @@ export class CodeEditorPageComponent implements OnInit {
   }
 
   get isTopExpressionIdNew(): boolean {
-    let topExpressionId = this._route.snapshot.queryParams["topExpressionId"];
-    return topExpressionId && topExpressionId === ExpressionsService.NewExpressionId;
+    let topExpressionId = this.queryParams[EditorConfig.topExpressionId];
+    return topExpressionId === ExpressionsService.NewExpressionId;
   }
 
   get isTopModuleIdNew(): boolean {
-    let topModuleId = this._route.snapshot.queryParams["topModuleId"];
-    return !topModuleId || topModuleId === ExpressionsService.NewExpressionId;
+    let topModuleId = this.queryParams[EditorConfig.topModuleId];
+    return topModuleId === ExpressionsService.NewExpressionId;
   }
 
   get isBottomExpressionIdNew(): boolean {
-    let bottomExpressionId = this._route.snapshot.queryParams["bottomExpressionId"];
-    return bottomExpressionId && bottomExpressionId === ExpressionsService.NewExpressionId;
+    let bottomExpressionId = this.queryParams[EditorConfig.bottomExpressionId];
+    return bottomExpressionId === ExpressionsService.NewExpressionId;
   }
 
   addExpressions() {
     const dialogConfig = new MatDialogConfig<ExpressionPickerData>();
     dialogConfig.data = {
-      noActiveScreenConfig: true,
       maxSelection: 1,
       disableExpressionGroups: true,
+      expressionsOnly: true,
+      scanId: this.scanId,
+      quantId: this.quantId,
+      widgetId: this._id,
     };
     dialogConfig.data.selectedIds = [];
-    let topExpressionId = this._route.snapshot.queryParams["topExpressionId"];
+    let topExpressionId = this.queryParams[EditorConfig.topExpressionId];
     if (topExpressionId && !this.isTopExpressionIdNew) {
       dialogConfig.data.selectedIds.push(topExpressionId);
     }
 
-    if (this._route.snapshot.queryParams["bottomExpressionId"]) {
-      dialogConfig.data.selectedIds.push(this._route.snapshot.queryParams["bottomExpressionId"]);
-    }
-
-    dialogConfig.data.scanId = this._route.snapshot.queryParams["scanId"] || "";
-    dialogConfig.data.quantId = this._route.snapshot.queryParams["quantId"] || "";
-
-    const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
-    // dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
-    //   if (result && result.selectedExpressions?.length > 0) {
-    //     let queryParams: Record<string, string> = {
-    //       topExpressionId: result.selectedExpressions[0].id,
-    //       quantId: result.quantId,
-    //       scanId: result.scanId,
-    //     };
-
-    //     if (result.selectedExpressions.length > 1) {
-    //       queryParams["bottomExpressionId"] = result.selectedExpressions[1].id;
-    //     } else {
-    //       delete queryParams["bottomExpressionId"];
-    //     }
-
-    //     this.topExpressionChanged = false;
-    //     this.bottomExpressionChanged = false;
-
-    //     this._router.navigate([], { queryParams });
-    //   } else if (result) {
-    //     this._router.navigate([], { queryParams: { quantId: result.quantId || "", scanId: result.scanId || "" } });
-    //   }
-    // });
+    this.dialog.open(ExpressionPickerComponent, dialogConfig);
   }
 
   onCreateNewExpression() {
@@ -782,15 +830,8 @@ export class CodeEditorPageComponent implements OnInit {
     this.topExpressionChanged = true;
     this.clearTopExpressionCache();
 
-    let queryParams: Record<string, string> = { topExpressionId: ExpressionsService.NewExpressionId };
-    if (this.scanId) {
-      queryParams["scanId"] = this.scanId;
-    }
-
-    if (this.quantId) {
-      queryParams["quantId"] = this.quantId;
-    }
-
+    this.clearExpressionQueryParams();
+    let queryParams: Record<string, string> = { ...this.queryParams, [EditorConfig.topExpressionId]: ExpressionsService.NewExpressionId };
     this._router.navigate([], { queryParams });
   }
 
@@ -836,14 +877,12 @@ export class CodeEditorPageComponent implements OnInit {
     this.topExpressionChanged = true;
     this.clearTopExpressionCache();
 
-    let queryParams: Record<string, string> = { topModuleId: ExpressionsService.NewExpressionId, topModuleVersion: "" };
-    if (this.scanId) {
-      queryParams["scanId"] = this.scanId;
-    }
-
-    if (this.quantId) {
-      queryParams["quantId"] = this.quantId;
-    }
+    this.clearExpressionQueryParams();
+    let queryParams: Record<string, string> = {
+      ...this.queryParams,
+      [EditorConfig.topModuleId]: ExpressionsService.NewExpressionId,
+      [EditorConfig.topModuleVersion]: "",
+    };
 
     this.newModuleName = "";
     this.closeNewModuleDialog();
@@ -1047,16 +1086,23 @@ export class CodeEditorPageComponent implements OnInit {
       if (this.isTopModule) {
         this._expressionsService.writeModuleFromExpression(this.topExpression, VersionField.MV_PATCH);
         this.updateModuleWithActiveExpression();
+
+        // If the top module is new, then we need to fetch the modules
+        // New modules are always on top, so don't need to do this for the bottom module
+        if (!this.modules.find(module => module.id === this.topExpression?.id)) {
+          this._expressionsService.fetchModules();
+        }
+
         // Clear module version from the query so the latest is used
-        let queryParams = { ...this._route.snapshot.queryParams };
-        delete queryParams["topModuleVersion"];
+        let queryParams = { ...this.queryParams };
+        delete queryParams[EditorConfig.topModuleVersion];
         this._router.navigate([], { queryParams });
       } else {
         this.topExpression.moduleReferences = this.topModules.map(module => module.reference);
         this._expressionsService.writeExpression(this.topExpression);
-        let queryParams = { ...this._route.snapshot.queryParams };
-        if (!queryParams["topExpressionId"]) {
-          queryParams["topExpressionId"] = this.topExpression.id || ExpressionsService.NewExpressionId;
+        let queryParams = { ...this.queryParams };
+        if (!queryParams[EditorConfig.topExpressionId]) {
+          queryParams[EditorConfig.topExpressionId] = this.topExpression.id || ExpressionsService.NewExpressionId;
           this._router.navigate([], { queryParams });
         }
       }
@@ -1068,8 +1114,8 @@ export class CodeEditorPageComponent implements OnInit {
       this.clearBottomExpressionCache();
       this.bottomExpressionChanged = false;
 
-      let queryParams = { ...this._route.snapshot.queryParams };
-      delete queryParams["bottomModuleVersion"];
+      let queryParams = { ...this.queryParams };
+      delete queryParams[EditorConfig.bottomModuleVersion];
       this._router.navigate([], { queryParams });
     }
   }

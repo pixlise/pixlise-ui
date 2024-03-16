@@ -21,6 +21,18 @@
     display: flex;
     align-items: center;
 
+    .widget-title {
+      display: flex;
+      white-space: pre;
+      margin-left: 8px;
+      font-family: Roboto;
+      font-style: normal;
+      font-weight: 900;
+      font-size: 16px;
+      line-height: 16px;
+      color: rgb(190, 192, 194);
+    }
+
     .buttons {
       display: flex;
       width: 100%;
