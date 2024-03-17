@@ -97,7 +97,8 @@ jobs:
             cd /work/client
             npm i -g @angular/cli@16.1
             export TERM=xterm
-            npm test --watch=false # --browsers ChromeHeadless
+            ng test --no-watch --no-progress --browsers=ChromeHeadless
+            # npm test --watch=false --browsers ChromeHeadless
             # This was failing, don't use it locally either, so turned off for now
             #npm run lint
 
