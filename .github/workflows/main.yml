@@ -60,6 +60,21 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
+      # Create version source file using version just generated
+      - name: Create version file
+        id: makever
+        run: |
+          echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
+          echo "{\"version\": \"${{ needs.version.outputs.version }}\" }" > ./client/src/version.json
+          cat ./client/src/version.json
+
+      # Install dependencies and generate version file
+      - name: NPM dependencies & version
+        run: |
+          cd client
+          npm ci
+          npm version ${{ needs.version.outputs.version }}
+          npm run postinstall ${{ needs.version.outputs.version }}
       # Protobuf code generation using our build docker container (this is pretty slow, should replace with just an npm package for protobuf??)
       - name: Generate protobuf code
         uses: addnab/docker-run-action@v3
