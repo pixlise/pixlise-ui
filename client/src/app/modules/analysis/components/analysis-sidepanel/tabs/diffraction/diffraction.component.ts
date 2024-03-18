@@ -202,10 +202,18 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
           this.layoutWidgets = widgetReferences;
 
           this.allContextImages = this.layoutWidgets.filter(widget => widget.type === "context-image");
-          this.selectedContextImage = this.allContextImages[0].widget.id;
+          if (this.allContextImages.length > 0) {
+            this.selectedContextImage = this.allContextImages[0].widget.id;
+          } else {
+            this.selectedContextImage = "";
+          }
 
           this.allSpectrumCharts = this.layoutWidgets.filter(widget => widget.type === "spectrum-chart");
-          this.selectedSpectrumChart = this.allSpectrumCharts[0].widget.id;
+          if (this.allSpectrumCharts.length > 0) {
+            this.selectedSpectrumChart = this.allSpectrumCharts[0].widget.id;
+          } else {
+            this.selectedSpectrumChart = "";
+          }
         }
       })
     );
@@ -354,6 +362,33 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     this._selectedScanId = value;
     this.selectedScan = this.allScans.find(scan => scan.id === value) || ScanItem.create();
 
+    this.fetchDiffractionData();
+    // this._diffractionService.fetchManualPeaksForScan(this._selectedScanId);
+    // this._diffractionService.fetchPeakStatusesForScan(this._selectedScanId);
+
+    // this._subs.add(
+    //   this._energyCalibrationService.getCurrentCalibration(this.selectedScanId).subscribe(calibrations => {
+    //     this._currentCalibrations = calibrations;
+    //     let dataSource = new ExpressionDataSource();
+    //     dataSource
+    //       .prepare(
+    //         this._cachedDataService,
+    //         this.selectedScanId,
+    //         this._analysisLayoutService.getQuantIdForScan(this.selectedScanId),
+    //         PredefinedROIID.getAllPointsForScan(this.selectedScanId),
+    //         calibrations
+    //       )
+    //       .subscribe(() => {
+    //         dataSource.getDiffractionPeakEffectData(-1, -1).then((data: PMCDataValues) => {
+    //           this.peaks = dataSource.allPeaks;
+    //           this.updateDisplayList();
+    //         });
+    //       });
+    //   })
+    // );
+  }
+
+  private fetchDiffractionData() {
     this._diffractionService.fetchManualPeaksForScan(this._selectedScanId);
     this._diffractionService.fetchPeakStatusesForScan(this._selectedScanId);
 
