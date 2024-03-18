@@ -198,7 +198,9 @@ export class CodeEditorPageComponent implements OnInit {
           if (topExpressionId) {
             this.isTopModule = false;
             this._expressionsService.fetchExpression(topExpressionId);
+
             this.loadExpressionById(topExpressionId, false);
+
             if (!params[EditorConfig.bottomExpressionId]) {
               this.isSplitScreen = false;
             }
@@ -248,6 +250,7 @@ export class CodeEditorPageComponent implements OnInit {
           let updated = this.loadStorageMetadata();
 
           // We don't have anything in the cache, so now we need to fetch the expression
+
           this.loadExpressionById(topExpressionId, updated);
         }
       })
@@ -480,7 +483,9 @@ export class CodeEditorPageComponent implements OnInit {
         }
 
         this.updateLinkedModule();
-        this.runExpression();
+
+        // AUTO-RUN
+        // this.runExpression();
       }
     });
   }
@@ -585,9 +590,8 @@ export class CodeEditorPageComponent implements OnInit {
     // Clear unsaved expression responses if we're intentionally re-running
     // this._widgetDataService.clearUnsavedExpressionResponses().subscribe(() => {
     this.lastRunResult = null;
-    this._widgetDataService
-      .runExpression(expressionCopy, this.scanId, this.quantId, PredefinedROIID.getAllPointsForScan(this.scanId), true, true)
-      .subscribe(response => {
+    this._widgetDataService.runExpression(expressionCopy, this.scanId, this.quantId, PredefinedROIID.getAllPointsForScan(this.scanId), true, true).subscribe({
+      next: response => {
         this.lastRunResult = response;
         this.stdout = response.stdout;
         this.stderr = response.stderr;
@@ -596,7 +600,15 @@ export class CodeEditorPageComponent implements OnInit {
           scanId: this.scanId,
           quantId: this.quantId,
         };
-      });
+      },
+      error: err => {
+        let errorPreview = `${err}`.substring(0, 100);
+        this._snackbarService.openError(errorPreview, err);
+        this.lastRunResult = null;
+        this.stdout = "";
+        this.stderr = `${err}`;
+      },
+    });
     // });
   }
 
