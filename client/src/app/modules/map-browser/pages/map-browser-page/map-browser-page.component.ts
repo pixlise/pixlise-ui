@@ -161,6 +161,7 @@ export class MapBrowserPageComponent {
 
     this.currentPage++;
     this.injectNewExpressions();
+    this._analysisLayoutService.soloViewWidgetId$.next("");
   }
 
   onPreviousPage() {
@@ -170,32 +171,11 @@ export class MapBrowserPageComponent {
 
     this.currentPage--;
     this.injectNewExpressions();
+    this._analysisLayoutService.soloViewWidgetId$.next("");
   }
 
   injectNewExpressions() {
-    // if (!this.layout.widgets.length) {
     this.createElementMapScreenConfiguration();
-    //   return;
-    // }
-
-    // let currentPage = this.getCurrentPageExpressions();
-    // if (this.layout.widgets.length !== currentPage.length) {
-    //   this.createElementMapScreenConfiguration();
-    //   return;
-    // }
-
-    // currentPage.forEach(([id, expression], i) => {
-    //   let widgetId = `element-map-${id}-${this.scanId}`;
-    //   this.idToTitleMap[widgetId] = expression.name;
-    //   this.layout.widgets[i].id = widgetId;
-    //   this.liveExpressionMap[widgetId] = { expressionId: expression.id, scanId: this.scanId, quantId: this.quantId, expression, mapsMode: true };
-
-    //   this.layout.widgets[i].data = WidgetData.create({
-    //     contextImage: ContextImageState.create({
-    //       mapLayers: [MapLayerVisibility.create({ expressionID: expression.id })],
-    //     }),
-    //   });
-    // });
   }
 
   getCurrentPageExpressions() {
