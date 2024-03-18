@@ -47,8 +47,8 @@ export class LuaDataQuerier {
 
   private _luaInit$: Observable<void> | null = null;
   private _lua: LuaEngine | null = null;
-  private _logTables: boolean = false;
-  private _loggedTables = new Map<string, PMCDataValues>();
+  //private _logTables: boolean = false;
+  //private _loggedTables = new Map<string, PMCDataValues>();
   private _makeLuaTableTime = 0; // Total time spent returning Tables to Lua from things like element() Lua call
   //private _luaLibImports = "";
 
@@ -286,8 +286,8 @@ export class LuaDataQuerier {
     modules: Map<string, string>,
     dataSource: InterpreterDataSource,
     cleanupLua: boolean,
-    allowAnyResponse: boolean,
-    recordExpressionInputs: boolean
+    allowAnyResponse: boolean
+    //recordExpressionInputs: boolean
   ): Observable<DataQueryResult> {
     this._execCount++;
     this._dataSource = dataSource;
@@ -328,7 +328,7 @@ export class LuaDataQuerier {
         allSource += sourceCode;
         const codeParts = this.formatLuaCallable(allSource, exprFuncName /*, imports*/);
         const execSource = codeParts.join("");
-        return this.runQueryInternal(execSource, cleanupLua, t0, allowAnyResponse, recordExpressionInputs);
+        return this.runQueryInternal(execSource, cleanupLua, t0, allowAnyResponse /*, recordExpressionInputs*/);
       })
     );
   }
@@ -369,8 +369,8 @@ export class LuaDataQuerier {
     sourceCode: string,
     cleanupLua: boolean,
     t0: number,
-    allowAnyResponse: boolean,
-    recordExpressionInputs: boolean
+    allowAnyResponse: boolean
+    //recordExpressionInputs: boolean
   ): Observable<DataQueryResult> {
     // Ensure the list of data required is cleared, from here on we're logging what the expression required to run!
     this._runtimeDataRequired.clear();
@@ -380,8 +380,8 @@ export class LuaDataQuerier {
     this._runtimeStdErr = "";
 
     // If we want to record tables (well, any inputs) that the expression requires to run, remember this
-    this._logTables = recordExpressionInputs;
-    this._loggedTables.clear();
+    //this._logTables = recordExpressionInputs;
+    //this._loggedTables.clear();
 
     return this.runLuaCode(sourceCode, environment.luaTimeoutMs).pipe(
       map(result => {
@@ -404,7 +404,7 @@ export class LuaDataQuerier {
             runtimeMs,
             this._runtimeStdOut,
             this._runtimeStdErr,
-            this._loggedTables
+            new Map<string, PMCDataValues>() //this._loggedTables
           );
         }
 
@@ -677,7 +677,7 @@ end
     return PMCDataValues.makeWithValues(values);
   }
 
-  private makeLuaTable(tableSource: string, data: PMCDataValues): any {
+  /*private makeLuaTable(tableSource: string, data: PMCDataValues): any {
     const t0 = performance.now();
     const pmcs = [];
     const values = [];
@@ -701,7 +701,7 @@ end
 
     this._makeLuaTableTime += t1 - t0;
     return luaTable;
-  }
+  }*/
 
   private async makeLuaTableAsync(tableSource: string, data: Promise<PMCDataValues>): Promise<any> {
     return data.then((result: PMCDataValues) => {

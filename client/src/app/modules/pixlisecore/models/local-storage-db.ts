@@ -1,6 +1,7 @@
 import Dexie, { Table } from "dexie";
 import { SnackbarDataItem } from "../services/snackbar.service";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
+import { UINotification } from "src/app/modules/settings/services/notifications.service";
 
 export type CachedImageItem = {
   data: string;
@@ -24,19 +25,36 @@ export class LocalStorageDB extends Dexie {
   memoData!: Table<MemoisedItem, string>;
   images!: Table<CachedImageItem, string>;
   rgbuImages!: Table<CachedRGBUImageItem, string>;
+  notifications!: Table<UINotification, string>;
 
   constructor() {
     super("pixlise");
-    this.version(5).stores({
+    this.version(6).stores({
       eventHistory: "++id",
+      notifications: "id",
       memoData: "key",
       images: "key",
       rgbuImages: "key",
+    });
+
+    this.on("populate", transaction => {
+      transaction.table("notifications").add({
+        id: "hotkeys-panel",
+        title: "Try Hotkeys Panel:",
+        type: "action",
+        action: {
+          buttonTitle: "Open",
+        },
+      });
     });
   }
 
   async resetDatabase() {
     await db.transaction("rw", "eventHistory", () => {
+      this.eventHistory.clear();
+    });
+
+    await db.transaction("rw", "notifications", () => {
       this.eventHistory.clear();
     });
 

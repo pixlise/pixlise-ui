@@ -68,6 +68,21 @@
   border: 1px solid $clr-gray-60;
 }
 
+.btn-gray-title {
+  @extend .btn-base;
+  color: #f8f8f8;
+  background-color: $clr-gray-60;
+  border: 1px solid $clr-gray-60;
+  text-transform: none;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+
+  &:hover {
+    background-color: $clr-gray-70;
+  }
+}
+
 .btn-outline {
   @extend .btn-base;
   color: $clr-gray-30;

@@ -72,7 +72,7 @@ export class DataQuerier {
   ): Observable<DataQueryResult> {
     // Decide which interperter to run it in
     if (expressionLanguage == EXPR_LANGUAGE_LUA) {
-      return this._interpretLua.runQuery(expression, modules, dataSource, environment.newLuaPerExpression, allowAnyResponse, recordExpressionInputs);
+      return this._interpretLua.runQuery(expression, modules, dataSource, environment.newLuaPerExpression, allowAnyResponse /*, recordExpressionInputs*/);
     } else {
       if (this._luaTranspiler) {
         // Transpile to Lua for debugging purposes

@@ -42,9 +42,12 @@ POSSIBILITY OF SUCH DAMAGE.
   [dataForPanel]="dataForPanel"
   (onPanelClose)="onPanelClose($event)"
   #panelFoldoutButton>
-  <div class="quant-dropdown">
-    <div class="quant-name" [title]="selectedQuant">{{ selectedQuant }}</div>
-    <img class="quant-arrow" src="assets/button-icons/arrow-down.svg" />
+  <div class="quant-dropdown {{ !isQuantSelected ? 'no-quant' : '' }}">
+    <img *ngIf="!isQuantSelected" class="no-quant-warning" src="assets/icons/error-triangle-yellow.svg" />
     <div *ngIf="selectedQuantDetectors" class="quant-detectors">{{ selectedQuantDetectors }}</div>
+    <div class="name-container">
+      <span class="quant-name" [title]="selectedQuant">{{ selectedQuant }}</span>
+    </div>
+    <img class="quant-arrow" src="assets/button-icons/arrow-down.svg" />
   </div>
 </panel-foldout-button>

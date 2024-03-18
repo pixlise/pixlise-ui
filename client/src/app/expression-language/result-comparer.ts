@@ -145,7 +145,7 @@ export class ResultComparer {
 
   private runLua(expression: string, modules: Map<string, string>, dataSource: InterpreterDataSource): Observable<DataQueryResult | null> {
     try {
-      return this._interpretLua.runQuery(expression, modules, dataSource, false, false, false);
+      return this._interpretLua.runQuery(expression, modules, dataSource, false, false /*, false*/);
     } catch (err: unknown) {
       if (err instanceof Error && err.message.startsWith("Table expected to have arrays")) {
         throw err;

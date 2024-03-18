@@ -108,11 +108,11 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
     }
 
     this._recalcNeeded = true;
-    return this.processQueryResult(t0, yAxisLabel, data, []); // TODO: error column loading
+    return this.processQueryResult(t0, yAxisLabel, data); // TODO: error column loading
   }
 
   // Returns error message if one is generated
-  private processQueryResult(t0: number, yAxisLabel: string, queryData: RegionDataResults, errCols: PMCDataValues[]): WidgetError[] {
+  private processQueryResult(t0: number, yAxisLabel: string, queryData: RegionDataResults): WidgetError[] {
     const errorMessages: WidgetError[] = [];
 
     const histogramBars: HistogramBars[] = [];
@@ -124,10 +124,29 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
       errorMessages.push(new WidgetError(queryData.error, ""));
     }
 
-    for (let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx++) {
+    let queryIncr = 1;
+    for (let queryIdx = 0; queryIdx < queryData.queryResults.length; queryIdx += queryIncr) {
+      queryIncr = 1;
+
       const colData = queryData.queryResults[queryIdx];
       const exprId = colData.query.exprId;
       //const roiId = colData.query.roiId;
+      let errorCol: PMCDataValues | undefined;
+
+      // Check if we're at the special case where the next column is err, we're % and we have the same element
+      if (
+        queryIdx < queryData.queryResults.length - 1 &&
+        DataExpressionId.getPredefinedQuantExpressionElementColumn(exprId) == "%" &&
+        DataExpressionId.getPredefinedQuantExpressionElementColumn(queryData.queryResults[queryIdx + 1].query.exprId) == "err" &&
+        DataExpressionId.getPredefinedQuantExpressionElement(exprId) ==
+          DataExpressionId.getPredefinedQuantExpressionElement(queryData.queryResults[queryIdx + 1].query.exprId)
+      ) {
+        // Skip over err column in the next iteration
+        queryIncr = 2;
+
+        // Use this error column data
+        errorCol = queryData.queryResults[queryIdx + 1].values;
+      }
 
       if (colData.error) {
         errorMessages.push(colData.error);
@@ -148,8 +167,6 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
       }
 
       // Calc sum of concentrations and read out column into an array
-      const errorCol = errCols[queryIdx];
-
       // TODO: Should this and chord diagram be common code?
       let concentrationSum = 0;
       let errorSum = 0;
@@ -168,10 +185,10 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
       let minMax = new MinMax(avg, avg);
 
       const concentrationPrecision = 0.01;
-      let bands: Record<number, number> = {};
+      const bands: Record<number, number> = {};
       let stdDevSum = 0;
       for (let c = 0; c < concentrationCol.values.length; c++) {
-        let concentration = concentrationCol.values[c].value;
+        const concentration = concentrationCol.values[c].value;
 
         const roundedConcentration = Math.round(concentration / concentrationPrecision) * concentrationPrecision;
         bands[roundedConcentration] = bands[roundedConcentration] ? bands[roundedConcentration] + 1 : 1;
@@ -217,7 +234,7 @@ export class HistogramModel implements CanvasDrawNotifier, BaseChartModel {
 
       // Find the next one (that we actually got data for!)
       let nextExprId = "";
-      for (let c = queryIdx + 1; c < queryData.queryResults.length; c++) {
+      for (let c = queryIdx + queryIncr; c < queryData.queryResults.length; c++) {
         if (queryData.queryResults[c] != null) {
           nextExprId = queryData.queryResults[c].query.exprId;
           break;
@@ -275,8 +292,8 @@ export class HistogramBars {
     public shortLabel: string,
     public longLabel: string,
     public valueRange: MinMax //public roiName: string,
-    //public roiID: string,
-  ) {}
+  ) //public roiID: string,
+  {}
 }
 
 // Stores groups of bars - all bars (different colours for each region), for each expression
@@ -325,6 +342,8 @@ export class HistogramDrawModel implements BaseChartDrawModel {
   bars: HistogramDrawBar[] = [];
 
   regenerate(raw: HistogramData | null, logScale: boolean, viewport: CanvasParams): void {
+    this.drawnData = null;
+
     // Recalc the scales
     const xMargin = 60;
     const yMargin = 30;

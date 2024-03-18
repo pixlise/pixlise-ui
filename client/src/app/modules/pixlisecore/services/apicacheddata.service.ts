@@ -11,8 +11,8 @@ import { ScanListReq, ScanListResp, ScanMetaLabelsAndTypesReq, ScanMetaLabelsAnd
 import { DiffractionPeakManualListReq, DiffractionPeakManualListResp } from "src/app/generated-protos/diffraction-manual-msgs";
 import { ScanEntryReq, ScanEntryResp } from "src/app/generated-protos/scan-entry-msgs";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
-import { ExpressionGetReq, ExpressionGetResp } from "src/app/generated-protos/expression-msgs";
-import { DataModuleGetReq, DataModuleGetResp } from "src/app/generated-protos/module-msgs";
+import { ExpressionGetReq, ExpressionGetResp, ExpressionListReq, ExpressionListResp } from "src/app/generated-protos/expression-msgs";
+import { DataModuleGetReq, DataModuleGetResp, DataModuleListReq, DataModuleListResp } from "src/app/generated-protos/module-msgs";
 
 import { decodeIndexList, decompressZeroRunLengthEncoding } from "src/app/utils/utils";
 import { DetectorConfigListReq, DetectorConfigListResp, DetectorConfigReq, DetectorConfigResp } from "src/app/generated-protos/detector-config-msgs";
@@ -21,6 +21,8 @@ import { ImageBeamLocationsReq, ImageBeamLocationsResp } from "src/app/generated
 import { ExpressionGroupGetReq, ExpressionGroupGetResp, ExpressionGroupListReq, ExpressionGroupListResp } from "src/app/generated-protos/expression-group-msgs";
 import { NotificationReq, NotificationResp, NotificationUpd } from "src/app/generated-protos/notification-msgs";
 import { NotificationType } from "src/app/generated-protos/notification";
+import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src/app/generated-protos/diffraction-status-msgs";
+import { UserGroupListReq, UserGroupListResp } from "src/app/generated-protos/user-group-retrieval-msgs";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
@@ -48,15 +50,25 @@ export class APICachedDataService {
   private _scanEntryMetaReqMap = new Map<string, Observable<ScanEntryMetadataResp>>();
   private _pseudoIntensityReqMap = new Map<string, Observable<PseudoIntensityResp>>();
   private _detectedDiffractionReqMap = new Map<string, Observable<DetectedDiffractionPeaksResp>>();
+  private _detectedDiffractionStatusReqMap = new Map<string, Observable<DiffractionPeakStatusListResp>>();
   private _scanListReqMap = new Map<string, Observable<ScanListResp>>();
   private _detectorConfigReqMap = new Map<string, Observable<DetectorConfigResp>>();
   private _detectorConfigListReq: Observable<DetectorConfigListResp> | null = null;
   private _defaultImageReqMap = new Map<string, Observable<ImageGetDefaultResp>>();
   private _imageBeamLocationsReqMap = new Map<string, Observable<ImageBeamLocationsResp>>();
   private _imageReqMap = new Map<string, Observable<ImageGetResp>>();
+  private _exprListReqMap = new Map<string, Observable<ExpressionListResp>>();
+  private _modListReqMap = new Map<string, Observable<DataModuleListResp>>();
   private _exprGroupListReqMap = new Map<string, Observable<ExpressionGroupListResp>>();
   private _exprGroupReqMap = new Map<string, Observable<ExpressionGroupGetResp>>();
   private _imageListReqMap = new Map<string, Observable<ImageListResp>>();
+  private _userGroupListReqMap = new Map<string, Observable<UserGroupListResp>>();
+
+  // Invalidation requests - if true, then we'll refetch on next request instead of serving cache
+  public detectedDiffractionStatusReqMapCacheInvalid: boolean = false;
+  public exprListReqMapCacheInvalid: boolean = false;
+  public modListReqMapCacheInvalid: boolean = false;
+  public userGroupListReqMapCacheInvalid: boolean = false;
 
   // Non-scan related
   private _regionOfInterestGetReqMap = new Map<string, Observable<RegionOfInterestGetResp>>();
@@ -322,6 +334,21 @@ export class APICachedDataService {
     return result;
   }
 
+  getDetectedDiffractionPeakStatuses(req: DiffractionPeakStatusListReq, updateList: boolean = false) {
+    const cacheId = JSON.stringify(DiffractionPeakStatusListReq.toJSON(req));
+    let result = this._detectedDiffractionStatusReqMap.get(cacheId);
+    if (this.detectedDiffractionStatusReqMapCacheInvalid || updateList || result === undefined) {
+      // Have to request it!
+      result = this._dataService.sendDiffractionPeakStatusListRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this._detectedDiffractionStatusReqMap.set(cacheId, result);
+      this.addIdCacheItem(req.scanId, cacheId, this._scanIdCacheKeys);
+    }
+
+    return result;
+  }
+
   getRegionOfInterest(req: RegionOfInterestGetReq): Observable<RegionOfInterestGetResp> {
     const cacheId = JSON.stringify(RegionOfInterestGetReq.toJSON(req));
     let result = this._regionOfInterestGetReqMap.get(cacheId);
@@ -466,6 +493,34 @@ export class APICachedDataService {
     return result;
   }
 
+  getModuleList(req: DataModuleListReq, updateList: boolean = false): Observable<DataModuleListResp> {
+    const cacheId = JSON.stringify(DataModuleListReq.toJSON(req));
+    let result = this._modListReqMap.get(cacheId);
+    if (this.modListReqMapCacheInvalid || result === undefined || updateList) {
+      // Have to request it!
+      result = this._dataService.sendDataModuleListRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this._modListReqMap.set(cacheId, result);
+    }
+
+    return result;
+  }
+
+  getExpressionList(req: ExpressionListReq, updateList: boolean = false): Observable<ExpressionListResp> {
+    const cacheId = JSON.stringify(ExpressionListReq.toJSON(req));
+    let result = this._exprListReqMap.get(cacheId);
+    if (this.exprListReqMapCacheInvalid || result === undefined || updateList) {
+      // Have to request it!
+      result = this._dataService.sendExpressionListRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this._exprListReqMap.set(cacheId, result);
+    }
+
+    return result;
+  }
+
   getExpressionGroupList(req: ExpressionGroupListReq, updateList: boolean = false): Observable<ExpressionGroupListResp> {
     const cacheId = JSON.stringify(ExpressionGroupListReq.toJSON(req));
     let result = this._exprGroupListReqMap.get(cacheId);
@@ -503,6 +558,20 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._imageListReqMap.set(cacheId, result);
+    }
+
+    return result;
+  }
+
+  getUserGroupList(req: UserGroupListReq): Observable<UserGroupListResp> {
+    const cacheId = JSON.stringify(UserGroupListReq.toJSON(req));
+    let result = this._userGroupListReqMap.get(cacheId);
+    if (result === undefined || this.userGroupListReqMapCacheInvalid) {
+      // Have to request it!
+      result = this._dataService.sendUserGroupListRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this._userGroupListReqMap.set(cacheId, result);
     }
 
     return result;

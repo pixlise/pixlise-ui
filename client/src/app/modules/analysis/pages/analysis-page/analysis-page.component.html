@@ -1,15 +1,15 @@
 <section class="page analysis-container">
   <analysis-sidepanel></analysis-sidepanel>
-  <section class="screen-container" *ngIf="loadedScreenConfiguration">
+  <section class="screen-container" *ngIf="loadedScreenConfiguration && !soloViewWidget">
     <section
-      *ngFor="let layout of loadedScreenConfiguration.layouts; let i = index"
+      *ngFor="let layout of loadedScreenConfiguration.layouts; let i = index; trackBy: trackByLayoutId"
       class="widgets-container"
       [ngStyle]="{
         'grid-template-columns': computedLayouts[i].templateColumns,
         'grid-template-rows': computedLayouts[i].templateRows
       }">
       <widget
-        *ngFor="let widget of layout.widgets"
+        *ngFor="let widget of layout.widgets; trackBy: trackByWidgetId"
         [widgetLayoutConfig]="widget"
         [layoutIndex]="i"
         [initWidget]="widget.type"
@@ -19,6 +19,16 @@
           'grid-row-start': widget.startRow,
           'grid-row-end': widget.endRow
         }"></widget>
+    </section>
+  </section>
+  <section class="screen-container" *ngIf="soloViewWidget">
+    <section
+      class="widgets-container"
+      [ngStyle]="{
+        'grid-template-columns': 'auto',
+        'grid-template-rows': 'auto'
+      }">
+      <widget [widgetLayoutConfig]="soloViewWidget" [initWidget]="soloViewWidget.type"></widget>
     </section>
   </section>
 </section>

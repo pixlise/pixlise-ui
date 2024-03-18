@@ -1,6 +1,11 @@
-<!-- <ng-template #settingsMenu>
-  <div class="settings"></div>
-</ng-template> -->
+<ng-template #settingsMenu>
+  <div class="settings">
+    <div class="row link" (click)="onToggleLinkToDataset()">
+      <div>Link to dataset:</div>
+      <switch-button [active]="linkToDataset" #tooltip="matTooltip" [matTooltip]="linkToDataset ? 'Unlink from dataset' : 'Link to dataset'">Link</switch-button>
+    </div>
+  </div>
+</ng-template>
 
 <interactive-canvas [ngClass]="cursorShown" [drawer]="drawer" [drawNotifier]="mdl" [interactionHandler]="interactionHandler" [transform]="transform">
 </interactive-canvas>

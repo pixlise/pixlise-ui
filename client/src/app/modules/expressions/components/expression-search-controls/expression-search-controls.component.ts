@@ -83,6 +83,9 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this._expressionsService.fetchExpressions();
+    this._expressionsService.fetchModules();
+
     this._subs.add(
       this._userOptionsService.userOptionsChanged$.subscribe(() => {
         this._currentUserId = this._userOptionsService.userDetails.info?.id || "";

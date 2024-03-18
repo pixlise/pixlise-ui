@@ -201,7 +201,12 @@ export class WidgetDataService {
     // the quant, scan, ROI, etc
 
     // Get the cache key so far
-    const cacheKeyStart = JSON.stringify(query) + ",Resp:" + allowAnyResponse;
+    let cacheKeyStart = JSON.stringify(query) + ",Resp:" + allowAnyResponse;
+
+    // If it's an unsaved expression, make this prominent so it's easier to filter out
+    if (DataExpressionId.isUnsavedExpressionId(query.exprId)) {
+      cacheKeyStart = DataExpressionId.UnsavedExpressionPrefix + query.exprId;
+    }
 
     const queryList = [];
     let exprIdIdx = -1;
@@ -209,7 +214,7 @@ export class WidgetDataService {
     let scanIdIdx = -1;
 
     // Only query timestamp for actual expressions, not our predefined internal ones
-    if (query.exprId && !DataExpressionId.isPredefinedExpression(query.exprId)) {
+    if (query.exprId && !DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId)) {
       exprIdIdx = queryList.length;
       queryList.push(this._cachedDataService.getExpression(ExpressionGetReq.create({ id: query.exprId })));
     }
@@ -281,7 +286,7 @@ export class WidgetDataService {
 
   private getDataWithMemoisation(query: DataSourceParams, allowAnyResponse: boolean, cacheKey: string): Observable<DataQueryResult> {
     // If it's not memomisable, just return the calculated value straight away
-    if (DataExpressionId.isPredefinedExpression(query.exprId)) {
+    if (DataExpressionId.isPredefinedExpression(query.exprId) || DataExpressionId.isUnsavedExpressionId(query.exprId)) {
       return this.getDataSingleCalculate(query, allowAnyResponse, cacheKey);
     }
 
@@ -315,12 +320,17 @@ export class WidgetDataService {
               map((roiSettings: RegionSettings) => {
                 result.region = roiSettings;
 
+                // Filter to just the PMCs that are contained in the region.
+                if (roiSettings.region && roiSettings.region.scanEntryIndexesEncoded.length > 0) {
+                  result.resultValues = this.filterForPMCs(result.resultValues, new Set<number>(roiSettings.region.scanEntryIndexesEncoded));
+                }
+
                 // Remove from cache, we only want to cache while it's running, subsequent ones should
                 // re-run it
                 this._inFluxSingleQueryResultCache.delete(cacheKey);
 
                 // Also, add to memoisation cache
-                if (!DataExpressionId.isPredefinedExpression(query.exprId)) {
+                if (!DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId)) {
                   const encodedResult = this.toMemoised(result);
                   this._memoisationService.memoise(cacheKey, encodedResult);
                 }
@@ -350,6 +360,27 @@ export class WidgetDataService {
         return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg));
       })
     );
+  }
+
+  private filterForPMCs(queryResult: PMCDataValues, forPMCs: Set<number>): PMCDataValues {
+    const resultValues: PMCDataValue[] = [];
+
+    // Filter for PMCs requested
+    // TODO: Modify this so we don't uneccessarily run expressions for PMCs we end up throwing away
+    if (forPMCs === null) {
+      for (const item of queryResult.values) {
+        resultValues.push(item);
+      }
+    } else {
+      // Build a new result only containing PMCs specified
+      for (const item of queryResult.values) {
+        if (forPMCs.has(item.pmc)) {
+          resultValues.push(item);
+        }
+      }
+    }
+
+    return PMCDataValues.makeWithValues(resultValues);
   }
 
   private toMemoised(result: DataQueryResult): Uint8Array {
@@ -446,6 +477,11 @@ export class WidgetDataService {
   }
 
   private getExpression(id: string): Observable<DataExpression> {
+    // If we have an unsaved one, return that
+    if (this.unsavedExpressions.has(id)) {
+      return of(this.unsavedExpressions.get(id)) as Observable<DataExpression>;
+    }
+
     // If this is for a "predefined" expression, return one from memory here
     if (DataExpressionId.isPredefinedExpression(id)) {
       const expr = getPredefinedExpression(id);
@@ -453,11 +489,6 @@ export class WidgetDataService {
         return throwError(() => new Error("Failed to create predefined expression for: " + id));
       }
       return of(expr);
-    }
-
-    // If we have an unsaved one, return that
-    if (this.unsavedExpressions.has(id)) {
-      return of(this.unsavedExpressions.get(id)) as Observable<DataExpression>;
     }
 
     // Must be a real one, retrieve it as normal
@@ -470,6 +501,11 @@ export class WidgetDataService {
         return resp.expression;
       })
     );
+  }
+
+  clearUnsavedExpressionResponses(): Observable<void> {
+    this.clearUnsavedExpressions();
+    return this._memoisationService.clearUnsavedMemoData();
   }
 
   clearUnsavedExpressions(): void {
@@ -529,14 +565,21 @@ export class WidgetDataService {
                 if (!lastNotify || nowMs - lastNotify > 60000) {
                   // Also, normalise it for runtime for 1000 points!
                   let runtimePer1000 = 0;
-                  if (queryResult.runtimeMs > 0 && queryResult.resultValues.values.length > 0) {
-                    runtimePer1000 = queryResult.runtimeMs / (queryResult.resultValues.values.length / 1000);
+
+                  // Need to account for allowAnyResponse edge case
+                  let values = queryResult?.resultValues?.values || [];
+                  if (queryResult.runtimeMs > 0 && values.length > 0) {
+                    runtimePer1000 = queryResult.runtimeMs / (values.length / 1000);
                   }
 
                   // Remember when we notified, so we don't spam
                   this._exprRunStatLastNotificationTime.set(expression.id, nowMs);
 
-                  if (!DataExpressionId.isPredefinedExpression(expression.id) && queryResult.dataRequired.length > 0) {
+                  if (
+                    !DataExpressionId.isPredefinedExpression(expression.id) &&
+                    !DataExpressionId.isUnsavedExpressionId(expression.id) &&
+                    queryResult.dataRequired.length > 0
+                  ) {
                     this._dataService
                       .sendExpressionWriteExecStatRequest(
                         ExpressionWriteExecStatReq.create({
@@ -648,7 +691,7 @@ export class WidgetDataService {
           result.stderr,
           result.recordedExpressionInputs
         ),
-        new WidgetError("Query returned unexpected data type", msg),
+        new WidgetError("Expression failed to complete", msg),
         "", // warning
         result.expression,
         result.region,

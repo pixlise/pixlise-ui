@@ -382,7 +382,7 @@ export function drawToolTip(
 
   const maxWidth = Math.max(screenContext.measureText(title).width, ...messages.map(msg => screenContext.measureText(msg.text).width));
 
-  const rect = new Rect(pos.x, pos.y, LABEL_TXT_GAP * 2 + maxWidth, LABEL_TXT_GAP + messages.length * (fontSize + LABEL_TXT_GAP));
+  const rect = new Rect(pos.x, pos.y, LABEL_TXT_GAP * 3 + maxWidth, LABEL_TXT_GAP + messages.length * (fontSize + LABEL_TXT_GAP));
 
   if (drawAbove) {
     rect.y -= rect.h;

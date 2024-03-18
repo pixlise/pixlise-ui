@@ -3,13 +3,15 @@ export const diffractionPeakWidth = 15; // TODO: set this right!
 export class DiffractionPeak {
   public static readonly statusUnspecified = "unspecified";
   public static readonly statusNotAnomaly = "not-anomaly";
+  public static readonly diffractionPeak = "diffraction-peak";
+  public static readonly roughnessPeak = "intensity-mismatch";
 
   public static readonly statusToLabelMap = new Map<string, string>([
     ["other", "Other"],
-    ["intensity-mismatch", "Intensity Mismatch"],
-    ["diffraction-peak", "Diffraction Peak"],
-    [DiffractionPeak.statusNotAnomaly, "Not Anomaly"],
-    [DiffractionPeak.statusUnspecified, "Unspecified"],
+    [DiffractionPeak.roughnessPeak, "Intensity Mismatch"], // Roughness
+    [DiffractionPeak.diffractionPeak, "Diffraction Peak"],
+    [DiffractionPeak.statusNotAnomaly, "Not Anomaly"], // Manually overriden
+    [DiffractionPeak.statusUnspecified, "Unspecified"], // User Specified
   ]);
 
   private _id: string = "";

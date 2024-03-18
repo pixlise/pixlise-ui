@@ -95,7 +95,7 @@ export class ImagePickerDialogComponent implements OnInit {
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ImagePickerDialogData,
-    public dialogRef: MatDialogRef<ImagePickerDialogComponent>,
+    public dialogRef: MatDialogRef<ImagePickerDialogComponent, ImagePickerDialogResponse>,
     private _cachedDataService: APICachedDataService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _endpointsService: APIEndpointsService,
@@ -126,101 +126,103 @@ export class ImagePickerDialogComponent implements OnInit {
       })
     );
 
-    this._cachedDataService.getImageList(ImageListReq.create({ scanIds: this.data.scanIds })).subscribe((resp: ImageListResp) => {
-      this.imageChoices = [];
-      this.filteredImageChoices = [];
+    this._subs.add(
+      this._cachedDataService.getImageList(ImageListReq.create({ scanIds: this.data.scanIds })).subscribe((resp: ImageListResp) => {
+        this.imageChoices = [];
+        this.filteredImageChoices = [];
 
-      // Check if all have the same prefix, because then we don't want to show it as part of the name field
-      let prefix = "";
-      let allSamePrefix = true;
-      for (const img of resp.images) {
-        if (prefix.length <= 0) {
-          const pos = img.imagePath.indexOf("/");
-          prefix = img.imagePath.substring(0, pos + 1);
-        } else {
-          if (!img.imagePath.startsWith(prefix)) {
-            allSamePrefix = false;
-            break;
-          }
-        }
-      }
-
-      for (const responseImage of resp.images.sort((a, b) => b.imagePath.localeCompare(a.imagePath))) {
-        if (this.data.purpose === ScanImagePurpose.SIP_UNKNOWN || responseImage.purpose === this.data.purpose) {
-          let marsViewerURL = this.makeMarsViewerURL(responseImage.imagePath);
-          this.waitingForImages.push(new ImageChoice(responseImage.imagePath, responseImage.imagePath, responseImage.associatedScanIds, "", marsViewerURL));
-
-          let imageChoice = new ImageChoice(responseImage.imagePath, responseImage.imagePath, responseImage.associatedScanIds, "loading", marsViewerURL);
-
-          if (allSamePrefix) {
-            imageChoice.name = imageChoice.name.substring(prefix.length);
-          }
-
-          this.imageChoices.push(imageChoice);
-          if (responseImage.associatedScanIds.includes(this.filterScanId)) {
-            this.filteredImageChoices.push(imageChoice);
-          }
-
-          if (this.selectedImagePath === responseImage.imagePath) {
-            this.selectedChoice = imageChoice;
-          }
-
-          if (responseImage.purpose === ScanImagePurpose.SIP_MULTICHANNEL) {
-            this._endpointsService.loadRGBUImageTIF(responseImage.imagePath).subscribe({
-              next: (img: RGBUImage) => {
-                let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.imagePath);
-                if (imgChoice) {
-                  // TODO: We need to find a lightweight way to display a preview of this TIFF image
-                  imgChoice.url = img.path;
-
-                  // imgChoice.url = "error";
-                  if (this.selectedImagePath === responseImage.imagePath) {
-                    this.selectedChoice = imgChoice;
-                  }
-                }
-
-                this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.imagePath);
-              },
-              error: (err: any) => {
-                console.error(err);
-                let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.imagePath);
-                if (imgChoice) {
-                  imgChoice.url = "error";
-                  if (this.selectedImagePath === responseImage.imagePath) {
-                    this.selectedChoice = imgChoice;
-                  }
-                }
-                this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.imagePath);
-              },
-            });
+        // Check if all have the same prefix, because then we don't want to show it as part of the name field
+        let prefix = "";
+        let allSamePrefix = true;
+        for (const img of resp.images) {
+          if (prefix.length <= 0) {
+            const pos = img.imagePath.indexOf("/");
+            prefix = img.imagePath.substring(0, pos + 1);
           } else {
-            this._endpointsService.loadImageForPath(responseImage.imagePath).subscribe({
-              next: (img: HTMLImageElement) => {
-                let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.imagePath);
-                if (imgChoice) {
-                  imgChoice.url = img.src;
-                  if (this.selectedImagePath === responseImage.imagePath) {
-                    this.selectedChoice = imgChoice;
-                  }
-                }
-                this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.imagePath);
-              },
-              error: (err: any) => {
-                console.error(err);
-                let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.imagePath);
-                if (imgChoice) {
-                  imgChoice.url = "error";
-                  if (this.selectedImagePath === responseImage.imagePath) {
-                    this.selectedChoice = imgChoice;
-                  }
-                }
-                this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.imagePath);
-              },
-            });
+            if (!img.imagePath.startsWith(prefix)) {
+              allSamePrefix = false;
+              break;
+            }
           }
         }
-      }
-    });
+
+        for (const responseImage of resp.images.sort((a, b) => b.imagePath.localeCompare(a.imagePath))) {
+          if (this.data.purpose === ScanImagePurpose.SIP_UNKNOWN || responseImage.purpose === this.data.purpose) {
+            let marsViewerURL = this.makeMarsViewerURL(responseImage.imagePath);
+            this.waitingForImages.push(new ImageChoice(responseImage.imagePath, responseImage.imagePath, responseImage.associatedScanIds, "", marsViewerURL));
+
+            let imageChoice = new ImageChoice(responseImage.imagePath, responseImage.imagePath, responseImage.associatedScanIds, "loading", marsViewerURL);
+
+            if (allSamePrefix) {
+              imageChoice.name = imageChoice.name.substring(prefix.length);
+            }
+
+            this.imageChoices.push(imageChoice);
+            if (responseImage.associatedScanIds.includes(this.filterScanId)) {
+              this.filteredImageChoices.push(imageChoice);
+            }
+
+            if (this.selectedImagePath === responseImage.imagePath) {
+              this.selectedChoice = imageChoice;
+            }
+
+            if (responseImage.purpose === ScanImagePurpose.SIP_MULTICHANNEL) {
+              this._endpointsService.loadRGBUImageTIF(responseImage.imagePath).subscribe({
+                next: (img: RGBUImage) => {
+                  let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.imagePath);
+                  if (imgChoice) {
+                    // TODO: We need to find a lightweight way to display a preview of this TIFF image
+                    imgChoice.url = img.path;
+
+                    // imgChoice.url = "error";
+                    if (this.selectedImagePath === responseImage.imagePath) {
+                      this.selectedChoice = imgChoice;
+                    }
+                  }
+
+                  this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.imagePath);
+                },
+                error: (err: any) => {
+                  console.error(err);
+                  let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.imagePath);
+                  if (imgChoice) {
+                    imgChoice.url = "error";
+                    if (this.selectedImagePath === responseImage.imagePath) {
+                      this.selectedChoice = imgChoice;
+                    }
+                  }
+                  this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.imagePath);
+                },
+              });
+            } else {
+              this._endpointsService.loadImageForPath(responseImage.imagePath).subscribe({
+                next: (img: HTMLImageElement) => {
+                  let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.imagePath);
+                  if (imgChoice) {
+                    imgChoice.url = img.src;
+                    if (this.selectedImagePath === responseImage.imagePath) {
+                      this.selectedChoice = imgChoice;
+                    }
+                  }
+                  this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.imagePath);
+                },
+                error: (err: any) => {
+                  console.error(err);
+                  let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.imagePath);
+                  if (imgChoice) {
+                    imgChoice.url = "error";
+                    if (this.selectedImagePath === responseImage.imagePath) {
+                      this.selectedChoice = imgChoice;
+                    }
+                  }
+                  this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.imagePath);
+                },
+              });
+            }
+          }
+        }
+      })
+    );
   }
 
   ngOnDestroy() {
@@ -316,7 +318,7 @@ export class ImagePickerDialogComponent implements OnInit {
   }
 
   onApply(): void {
-    this.dialogRef.close({ selectedImagePath: this.selectedImagePath, selectedImageName: this.selectedChoice?.name, selectedImageScanId: this.filterScanId });
+    this.dialogRef.close({ selectedImagePath: this.selectedImagePath, selectedImageName: this.selectedChoice?.name || "", selectedImageScanId: this.filterScanId });
   }
 
   onCancel(): void {

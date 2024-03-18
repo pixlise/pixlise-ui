@@ -103,6 +103,7 @@ export class PanZoom implements CanvasWorldTransform {
   // but if the parameter is true, the transform is signalled to be complete, not an in-progress
   // pan operation. So if saving state, only save if parameter is true
   transformChangeComplete$: Subject<boolean> = new Subject<boolean>();
+  transformChangeStarted$: Subject<void> = new Subject<void>();
 
   private _lastTransformCompleteMs: number = 0;
   private _timerSubs: Subscription | null = null;
@@ -164,7 +165,7 @@ export class PanZoom implements CanvasWorldTransform {
   reset(): void {
     this.scale = new Point(1, 1);
     this.pan = new Point(0, 0);
-
+    this.transformChangeStarted$.next();
     this.notifyTransformChangeComplete(true);
   }
 
@@ -204,6 +205,7 @@ export class PanZoom implements CanvasWorldTransform {
     if (!vectorsEqual(filteredScale, this.scale)) {
       // mainly here due to scaling on startup, don't want to save state if we don't have to
       this.scale = filteredScale;
+      this.transformChangeStarted$.next();
       this.notifyTransformChangeComplete(true);
     }
     //this.logDebug();
@@ -211,6 +213,7 @@ export class PanZoom implements CanvasWorldTransform {
 
   setPan(pan: Point, panFinished: boolean) {
     this.pan = pan;
+    this.transformChangeStarted$.next();
 
     if (this._panRestrictor) {
       this._panRestrictor.restrict(this);
@@ -226,6 +229,7 @@ export class PanZoom implements CanvasWorldTransform {
 
     // Set the scale value
     this.scale = newScale;
+    this.transformChangeStarted$.next();
 
     // Pan also to make it like the zoom happened relative to the mouse cursor
     let panScale = new Point(newScale.x - oldScale.x, newScale.y - oldScale.y);
@@ -297,6 +301,7 @@ rectRequested.w.toLocaleString()+'x'+rectRequested.h.toLocaleString()+
     //scale.x = this.scale.x;
     //scale.y = this.scale.y;
     this.scale = this.filterScale(scale);
+    this.transformChangeStarted$.next();
 
     // Work out the pan value
     let pan = new Point(

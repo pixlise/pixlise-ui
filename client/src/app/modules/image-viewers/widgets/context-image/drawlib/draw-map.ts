@@ -100,6 +100,12 @@ function drawX(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderin
 }
 
 function drawPolygon(screenContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, pts: Point[]) {
+  // Don't draw empty polygons
+  if (pts.length < 3) {
+    // console.warn("Invalid polygon skipping...", pts);
+    return;
+  }
+
   screenContext.beginPath();
   screenContext.moveTo(pts[0].x, pts[0].y);
 

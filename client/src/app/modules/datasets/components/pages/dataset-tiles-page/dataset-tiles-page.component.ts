@@ -77,9 +77,11 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
   // Unfortunately we had to include this hack again :(
   @ViewChild("openOptionsButton") openOptionsButton: ElementRef | undefined;
 
-  toSearch: string = "";
+  _searchString: string = "";
 
-  scans: ScanItem[] = [];
+  public scans: ScanItem[] = [];
+  public filteredScans: ScanItem[] = [];
+
   scanDefaultImages: Map<string, string> = new Map<string, string>();
 
   datasetListingAllowed: boolean = true;
@@ -257,6 +259,75 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     this.clearSelection();
   }
 
+  get searchString(): string {
+    return this._searchString;
+  }
+
+  set searchString(value: string) {
+    this._searchString = value;
+
+    this.filterScans();
+  }
+
+  filterScans() {
+    if (this._searchString.length === 0) {
+      this.filteredScans = this.scans;
+      return;
+    }
+
+    // Filter by title, description
+    this.filteredScans = this.scans
+      .filter(scan => {
+        let searchFields = [
+          scan.title,
+          scan.description,
+          scan.instrumentConfig,
+          scan.meta["Sol"],
+          scan.meta["Target"],
+          scan.meta["Site"],
+          scan.meta["DriveId"],
+          scan.meta["RTT"],
+          scan.meta["SCLK"],
+        ];
+        return searchFields.some(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
+      })
+      .sort((scanA, scanB) => {
+        let scanASearchFields = [
+          scanA.title,
+          scanA.description,
+          scanA.instrumentConfig,
+          scanA.meta["Sol"],
+          scanA.meta["Target"],
+          scanA.meta["Site"],
+          scanA.meta["DriveId"],
+          scanA.meta["RTT"],
+          scanA.meta["SCLK"],
+        ];
+
+        let scanBSearchFields = [
+          scanB.title,
+          scanB.description,
+          scanB.instrumentConfig,
+          scanB.meta["Sol"],
+          scanB.meta["Target"],
+          scanB.meta["Site"],
+          scanB.meta["DriveId"],
+          scanB.meta["RTT"],
+          scanB.meta["SCLK"],
+        ];
+
+        // Sort by matching order and then alphabetically
+        let aMatch = scanASearchFields.findIndex(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
+        let bMatch = scanBSearchFields.findIndex(field => field.toLowerCase().includes(this._searchString.toLowerCase()));
+
+        if (aMatch == bMatch) {
+          return scanA.title.localeCompare(scanB.title);
+        } else {
+          return aMatch - bMatch;
+        }
+      });
+  }
+
   onSearch(): void {
     this.scans = [];
     this.errorString = "Fetching Scans...";
@@ -270,8 +341,8 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
     }
 
     // Finally, add the title text search string
-    if (this.toSearch.length > 0) {
-      searchString = DatasetFilter.appendTerm(searchString, "title=" + this.toSearch);
+    if (this._searchString.length > 0) {
+      searchString = DatasetFilter.appendTerm(searchString, "title=" + this._searchString);
     }
 
     // TODO: we don't actually use the filtering stuff, search string needs to change for API
@@ -284,6 +355,7 @@ export class DatasetTilesPageComponent implements OnInit, OnDestroy {
 
         this.scans = resp.scans;
         this.sortScans(this.scans);
+        this.filterScans();
         if (this.scans.length <= 0) {
           this.errorString = HelpMessage.NO_DATASETS_FOUND;
         }

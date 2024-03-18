@@ -41,6 +41,7 @@ import { BaseUIElement } from "./base-ui-element";
 
 export class ZoomMap extends BaseUIElement {
   public static readonly maxHeight = 140;
+  public static readonly maxWidth = 200;
   public static readonly margin = 12;
 
   private _savedPan: Point | null = null;
@@ -155,26 +156,11 @@ export class ZoomMap extends BaseUIElement {
   // Returns the rect of where we're drawing the map
   private calcWindowRect(viewport: CanvasParams): Rect {
     // Work out the position, fitting into max sizes
-    const maxWidth = 200;
 
     const rect = new Rect(viewport.width - ZoomMap.margin, ZoomMap.margin, 0, 0);
-    /*
-        // Fiddle with aspect ratios
-        if(viewport.width > viewport.height)
-        {
-            // Landscape
-            rect.w = maxWidth;
-            rect.h = viewport.height / viewport.width * maxWidth;
-        }
-        else
-        {
-            // Portrait (not likely!)
-            rect.h = maxHeight;
-            rect.w = viewport.height / viewport.width * maxHeight;
-        }
-*/
-    rect.w = maxWidth;
-    rect.h = ZoomMap.maxHeight;
+
+    rect.w = Math.min(ZoomMap.maxWidth, viewport.width / 3);
+    rect.h = Math.min(ZoomMap.maxHeight, viewport.height / 3);
 
     // Apply to rect
     rect.x -= rect.w;

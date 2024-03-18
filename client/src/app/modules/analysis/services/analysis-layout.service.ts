@@ -18,6 +18,8 @@ import { ResponseStatus } from "src/app/generated-protos/websocket";
 import { ExpressionPickerResponse } from "../../expressions/components/expression-picker/expression-picker.component";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
+import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
+import EditorConfig from "src/app/modules/code-editor/models/editor-config";
 
 export class DefaultExpressions {
   constructor(
@@ -30,12 +32,10 @@ export class DefaultExpressions {
   providedIn: "root",
 })
 export class AnalysisLayoutService implements OnDestroy {
-  sidepanelOpen: boolean = false;
-  //private _id = randomString(6);
-
   private _subs = new Subscription();
-
   private _resizeCanvas$ = new ReplaySubject<void>(1);
+
+  sidepanelOpen$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   sidebarTabs: SidebarTabItem[] = SIDEBAR_TABS;
   sidebarViewShortcuts: SidebarViewShortcut[] = SIDEBAR_VIEWS;
@@ -52,8 +52,13 @@ export class AnalysisLayoutService implements OnDestroy {
 
   screenConfigurations$ = new BehaviorSubject<Map<string, ScreenConfiguration>>(new Map());
 
+  soloViewWidgetId$ = new BehaviorSubject<string>("");
+
   highlightedWidgetId$ = new BehaviorSubject<string>("");
   expressionPickerResponse$ = new BehaviorSubject<ExpressionPickerResponse | null>(null);
+
+  highlightedDiffractionWidget$ = new BehaviorSubject<HighlightedDiffraction | null>(null);
+  highlightedContextImageDiffractionWidget$ = new BehaviorSubject<HighlightedContextImageDiffraction | null>(null);
 
   widgetData$ = new BehaviorSubject<Map<string, WidgetData>>(new Map());
 
@@ -95,6 +100,11 @@ export class AnalysisLayoutService implements OnDestroy {
         }
       })
     );
+  }
+
+  get isMapsPage(): boolean {
+    let strippedURL = this._router.url.split("?")[0];
+    return strippedURL.endsWith("/datasets/maps");
   }
 
   ngOnDestroy(): void {
@@ -276,14 +286,23 @@ export class AnalysisLayoutService implements OnDestroy {
     }, delayMS);
   }
 
+  get sidepanelOpen(): boolean {
+    return this.sidepanelOpen$.value;
+  }
+
+  set sidepanelOpen(value: boolean) {
+    this.sidepanelOpen$.next(value);
+  }
+
   toggleSidePanel() {
-    this.sidepanelOpen = !this.sidepanelOpen;
-    if (this.sidepanelOpen && !this.activeTab) {
+    if (!this.sidepanelOpen && !this.activeTab) {
       this.activeTab = this.sidebarTabs[0];
     }
 
+    this.sidepanelOpen = !this.sidepanelOpen;
+
     // We need to wait 100 ms before notifying resize because this is how long the transition is set for
-    this.delayNotifyCanvasResize(100);
+    // this.delayNotifyCanvasResize(100);
   }
 
   get isWindows(): boolean {
@@ -295,13 +314,13 @@ export class AnalysisLayoutService implements OnDestroy {
   }
 
   get defaultScanId(): string {
-    return this._route?.snapshot?.queryParams["scan_id"] || "";
+    return this._route?.snapshot?.queryParams[EditorConfig.scanIdParam] || "";
   }
 
-  makeExpressionList(scanId: string, count: number): Observable<DefaultExpressions> {
+  makeExpressionList(scanId: string, count: number, scanQuantId: string = ""): Observable<DefaultExpressions> {
     if (scanId.length > 0) {
       // If there's a quant, use elements from that, otherwise use pseudo-intensities (if they exist)
-      const quantId = this.getQuantIdForScan(scanId);
+      const quantId = scanQuantId || this.getQuantIdForScan(scanId);
       if (quantId.length <= 0) {
         // default to pseudo intensities
         return this._cachedDataService.getPseudoIntensity(PseudoIntensityReq.create({ scanId: scanId })).pipe(

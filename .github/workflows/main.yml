@@ -51,7 +51,57 @@ jobs:
           # The output method used to generate list of users, 'csv' or 'json'.
           user_format_type: "csv"
 
-  ui-test-and-build:
+  ui-test:
+    runs-on: ubuntu-latest
+    needs: [version]
+    steps:
+      # Checkout the repo
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      # Create version source file using version just generated
+      - name: Create version file
+        id: makever
+        run: |
+          echo "BUILDING VERSION ${{ needs.version.outputs.version }}"
+          echo "{\"version\": \"${{ needs.version.outputs.version }}\" }" > ./client/src/version.json
+          cat ./client/src/version.json
+
+      # Install dependencies and generate version file
+      - name: NPM dependencies & version
+        run: |
+          cd client
+          npm ci
+          npm version ${{ needs.version.outputs.version }}
+          npm run postinstall ${{ needs.version.outputs.version }}
+      # Protobuf code generation using our build docker container (this is pretty slow, should replace with just an npm package for protobuf??)
+      - name: Generate protobuf code
+        uses: addnab/docker-run-action@v3
+        with:
+          image: ghcr.io/pixlise/build-container:golang-1.21-protoc-24.3-protobuf-3.19.3-angular-16.1.0-nodejs-18
+          options: -v ${{ github.workspace }}:/work
+          run: |
+            cd /work
+            ./genproto.sh
+
+      # Run Angular UI unit tests
+      - name: Run UI Tests
+        uses: addnab/docker-run-action@v3
+        with:
+          image: atlassianlabs/docker-node-jdk-chrome-firefox:2023-05-22
+          options: -v ${{ github.workspace }}:/work
+          run: |
+            cd /work/client
+            npm i -g @angular/cli@16.1
+            export TERM=xterm
+            cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua
+            ng test --no-watch --no-progress --browsers=ChromeHeadless
+            # npm test --watch=false --browsers ChromeHeadless
+            # This was failing, don't use it locally either, so turned off for now
+            #npm run lint
+
+  ui-build:
     runs-on: ubuntu-latest
     needs: [version]
     steps:
@@ -77,29 +127,6 @@ jobs:
           npm version ${{ needs.version.outputs.version }}
           npm run postinstall ${{ needs.version.outputs.version }}
 
-      # Protobuf code generation using our build docker container (this is pretty slow, should replace with just an npm package for protobuf??)
-      - name: Generate protobuf code
-        uses: addnab/docker-run-action@v3
-        with:
-          image: ghcr.io/pixlise/build-container:golang-1.21-protoc-24.3-protobuf-3.19.3-angular-16.1.0-nodejs-18
-          options: -v ${{ github.workspace }}:/work
-          run: |
-            cd /work
-            ./genproto.sh
-
-      # Run Angular UI unit tests
-      # - name: Run UI Tests
-      #   uses: addnab/docker-run-action@v3
-      #   with:
-      #     image: atlassianlabs/docker-node-jdk-chrome-firefox:node-16-npm-8
-      #     options: -v ${{ github.workspace }}:/work
-      #     run: |
-      #       cd /work/client
-      #       npm i -g @angular/cli@13.1.2
-      #       ng test --watch=false --browsers ChromeHeadless
-      #       # This was failing, don't use it locally either, so turned off for now
-      #       #npm run lint
-
       # Run the Angular build
       - name: Build UI
         uses: addnab/docker-run-action@v3
@@ -111,6 +138,7 @@ jobs:
             ./genproto.sh
             cd client
             npm i -g @angular/cli@16.1
+            cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua
             ng build
 
       # Login against a Docker registry except on PR

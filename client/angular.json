@@ -7,7 +7,26 @@
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
-          "style": "scss"
+          "style": "scss",
+          "skipTests": true
+        },
+        "@schematics/angular:class": {
+          "skipTests": true
+        },
+        "@schematics/angular:directive": {
+          "skipTests": true
+        },
+        "@schematics/angular:guard": {
+          "skipTests": true
+        },
+        "@schematics/angular:module": {
+          "skipTests": true
+        },
+        "@schematics/angular:pipe": {
+          "skipTests": true
+        },
+        "@schematics/angular:service": {
+          "skipTests": true
         }
       },
       "root": "",
@@ -176,6 +195,31 @@
                 "glob": "DebugHelp.lua",
                 "input": "src/app/expression-language/lua",
                 "output": "assets/lua"
+              },
+              {
+                "glob": "CSV.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "PixliseRuntime.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "SyncRuntime.lua",
+                "input": "src/app/expression-language/lua",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "FuncRunner.lua",
+                "input": "src/app/expression-language/lua/test",
+                "output": "assets/lua"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/monaco-editor",
+                "output": "assets/monaco-editor"
               }
             ],
             "styles": [

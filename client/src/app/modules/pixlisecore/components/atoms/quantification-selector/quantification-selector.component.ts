@@ -54,7 +54,7 @@ export class QuantificationSelectorComponent implements OnInit {
 
   @Output() selectQuant: EventEmitter<string> = new EventEmitter<string>();
 
-  NoSelectedQuantText: string = "Select a quantification";
+  NoSelectedQuantText: string = "No quant selected";
   selectedQuant: string = this.NoSelectedQuantText;
   selectedQuantDetectors: string = "";
 
@@ -94,6 +94,10 @@ export class QuantificationSelectorComponent implements OnInit {
       let selection = response[0] as QuantSelection;
       this.selectQuant.emit(selection.quantId);
     }
+  }
+
+  get isQuantSelected(): boolean {
+    return this.selectedQuantID.length > 0;
   }
 
   private updateVars(): void {

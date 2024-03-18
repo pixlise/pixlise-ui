@@ -14,6 +14,7 @@ import { ReplaySubject } from "rxjs";
 import { UserGroupReq } from "src/app/generated-protos/user-group-retrieval-msgs";
 import { UserGroupIgnoreJoinReq, UserGroupJoinListReq, UserGroupJoinReq } from "src/app/generated-protos/user-group-joining-msgs";
 import { UserOptionsService } from "./user-options.service";
+import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 
 @Injectable({
   providedIn: "root",
@@ -30,6 +31,7 @@ export class GroupsService {
   groupAccessRequestsChanged$ = new ReplaySubject<void>(1);
 
   constructor(
+    private _apiCacheService: APICachedDataService,
     private _dataService: APIDataService,
     private _snackBar: SnackbarService,
     private _userOptionsService: UserOptionsService
@@ -301,7 +303,7 @@ export class GroupsService {
   }
 
   fetchGroups() {
-    this._dataService.sendUserGroupListRequest(UserGroupListReq.create()).subscribe({
+    this._apiCacheService.getUserGroupList(UserGroupListReq.create()).subscribe({
       next: res => {
         this.groups = res.groupInfos;
 

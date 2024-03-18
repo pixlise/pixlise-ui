@@ -30,7 +30,7 @@
 export class DataExpressionId {
   public static NewExpression = "new-expression";
   public static NewModule = "new-module";
-  public static UnsavedExpressionPrefix = "unsaved-";
+  public static UnsavedExpressionPrefix = "u-";
 
   public static BuiltInUserId = "builtin";
 
@@ -39,7 +39,7 @@ export class DataExpressionId {
   private static PredefinedQuantElementLayerPrefix = "elem-";
   private static PredefinedLayerPrefix = "expr-";
   private static PredefinedLayerRoughness = "roughness";
-  //  private static PredefinedLayerDiffractionCounts = "diffraction";
+  private static PredefinedLayerDiffractionCounts = "diffraction";
   private static SuffixUnquantified = "unquantified";
   private static SuffixZHeight = "zheight";
 
@@ -173,6 +173,10 @@ export class DataExpressionId {
     return ["A", "B", "Combined"];
   }
 
+  public static makePredefinedDiffractionCountDataExpression(scanId: string): string {
+    return DataExpressionId.predefinedDiffractionCountDataExpression + "-" + scanId;
+  }
+
   public static makePredefinedQuantElementExpression(element: string, column: string, detector: string = ""): string {
     let result = DataExpressionId.PredefinedLayerPrefix + DataExpressionId.PredefinedQuantElementLayerPrefix + element + "-" + column;
     if (detector.length > 0) {
@@ -195,8 +199,7 @@ export class DataExpressionId {
   public static readonly predefinedRoughnessDataExpression = DataExpressionId.PredefinedLayerPrefix + DataExpressionId.PredefinedLayerRoughness;
 
   // Temporarily disabled - previously this referenced an expression that could be changed by user selecting bars on the diffraction histogram (sidebar)
-  // public static readonly predefinedDiffractionCountDataExpression =
-  //   DataExpressionId.PredefinedLayerPrefix + DataExpressionId.PredefinedLayerDiffractionCounts;
+  public static readonly predefinedDiffractionCountDataExpression = DataExpressionId.PredefinedLayerPrefix + DataExpressionId.PredefinedLayerDiffractionCounts;
 
   public static readonly predefinedHeightZDataExpression = DataExpressionId.PredefinedLayerPrefix + DataExpressionId.SuffixZHeight;
   public static readonly predefinedQuantDataExpression = DataExpressionId.PredefinedLayerPrefix + DataExpressionId.PredefinedQuantDataLayerPrefix;

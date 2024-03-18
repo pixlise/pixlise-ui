@@ -66,7 +66,7 @@ export class VersionDisplayComponent implements OnInit, OnDestroy {
           // Overwrite ours
           this.versions = [this._uiVersion, ...versions.versions];
 
-          versions.versions
+          versions.versions;
           // Remove the image name from piquant version
           for (const ver of this.versions) {
             if (ver.component == "PIQUANT") {

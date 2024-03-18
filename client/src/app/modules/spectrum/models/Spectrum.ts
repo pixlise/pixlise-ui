@@ -450,7 +450,14 @@ export class SpectrumExpressionParser {
       }
     } else {
       for (const idx of locationIndexes) {
-        let spectrum = spectrumSource.getSpectrum(idx, detector, readType);
+        let spectrum: SpectrumValues | null = null;
+        try {
+          spectrum = spectrumSource.getSpectrum(idx, detector, readType);
+        } catch (e) {
+          // If we fail to read a spectrum, just skip it and continue
+          console.error(e);
+          continue;
+        }
         if (spectrum) {
           if (countsPerMinWhenReading) {
             spectrum = spectrum.getAsCountsPerMin();

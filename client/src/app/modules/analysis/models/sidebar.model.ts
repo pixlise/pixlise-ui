@@ -1,5 +1,10 @@
+import { ScanConfigurationTabComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/scan-configuration/scan-configuration.component";
 import { MistROIComponent } from "../components/analysis-sidepanel/tabs/mist-roi/mist-roi.component";
 import { ROITabComponent } from "../components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
+import { DiffractionTabComponent } from "../components/analysis-sidepanel/tabs/diffraction/diffraction.component";
+import { SelectionComponent } from "../components/analysis-sidepanel/tabs/selection/selection.component";
+import { MultiQuantComponent } from "../components/analysis-sidepanel/tabs/multi-quant/multi-quant.component";
+import { RoughnessComponent } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roughness/roughness.component";
 
 export interface SidebarTabItem {
   title: string;
@@ -35,49 +40,60 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
   //   shortcut: ["Cmd", "Shift", "2"],
   // },
   {
+    title: "Scan Configuration",
+    icon: "assets/icons/datasets.svg",
+    component: ScanConfigurationTabComponent,
+    width: "350px",
+    tooltip: "Configure the scans for this workspace",
+    shortcut: ["Cmd", "Shift", "1"],
+    showSearchButton: true,
+  },
+  {
     title: "Regions of Interest",
     icon: "assets/icons/roi.svg",
     component: ROITabComponent,
-    width: "350px",
+    width: "400px",
     tooltip: "Regions of Interest",
-    shortcut: ["Cmd", "Shift", "3"],
+    shortcut: ["Cmd", "Shift", "2"],
     showSearchButton: true,
   },
   {
     title: "MIST ROIs",
     icon: "assets/icons/mist-roi.svg",
     component: MistROIComponent,
-    width: "350px",
+    width: "400px",
     tooltip: "MIST ROIs",
-    shortcut: ["Cmd", "Shift", "4"],
+    shortcut: ["Cmd", "Shift", "3"],
   },
   {
     title: "Selection",
-    icon: "assets/icons/selection.svg",
-    component: null,
+    icon: "assets/icons/selection-lasso.svg",
+    component: SelectionComponent,
     tooltip: "Selection",
-    shortcut: ["Cmd", "Shift", "5"],
+    shortcut: ["Cmd", "Shift", "4"],
   },
   {
     title: "Diffraction",
     icon: "assets/icons/diffraction.svg",
-    component: null,
+    component: DiffractionTabComponent,
+    width: "350px",
     tooltip: "Diffraction",
-    shortcut: ["Cmd", "Shift", "6"],
+    shortcut: ["Cmd", "Shift", "5"],
   },
   {
     title: "Roughness",
     icon: "assets/icons/roughness.svg",
-    component: null,
+    component: RoughnessComponent,
+    width: "350px",
     tooltip: "Roughness",
-    shortcut: ["Cmd", "Shift", "7"],
+    shortcut: ["Cmd", "Shift", "6"],
   },
   {
     title: "Multi-Quant",
     icon: "assets/icons/multiquant.svg",
-    component: null,
+    component: MultiQuantComponent,
     tooltip: "Multi-Quant",
-    shortcut: ["Cmd", "Shift", "8"],
+    shortcut: ["Cmd", "Shift", "7"],
   },
 ];
 

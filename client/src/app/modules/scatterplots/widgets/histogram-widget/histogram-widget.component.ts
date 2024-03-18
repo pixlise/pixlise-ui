@@ -3,7 +3,7 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
 import { CanvasDrawer, CanvasInteractionHandler } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
-import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
+import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import { ScanDataIds } from "src/app/modules/pixlisecore/models/widget-data-source";
 import { DataSourceParams, DataUnit, RegionDataResults, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ROIPickerComponent, ROIPickerData, ROIPickerResponse } from "src/app/modules/roi/components/roi-picker/roi-picker.component";
@@ -34,6 +34,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   transform: PanZoom = new PanZoom();
 
   scanId: string = "";
+  quantId: string = "";
 
   private _subs = new Subscription();
 
@@ -64,6 +65,13 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
         },
+        {
+          id: "solo",
+          type: "button",
+          icon: "assets/button-icons/widget-solo.svg",
+          tooltip: "Toggle Solo View",
+          onClick: () => this.onSoloView(),
+        },
       ],
       topRightInsetButton: {
         id: "key",
@@ -75,9 +83,32 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   }
 
   private setInitialConfig() {
-    this.scanId = this._analysisLayoutService.defaultScanId;
+    this.scanId = this.scanId || this._analysisLayoutService.defaultScanId || "";
+    this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
     this._analysisLayoutService.makeExpressionList(this.scanId, 10).subscribe((exprs: DefaultExpressions) => {
       this.mdl.expressionIds = exprs.exprIds;
+
+      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
+      this.update();
+    });
+  }
+
+  onSoloView() {
+    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
+      this._analysisLayoutService.soloViewWidgetId$.next("");
+    } else {
+      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
+    }
+  }
+
+  override injectExpression(liveExpression: LiveExpression) {
+    this.scanId = liveExpression.scanId;
+    this.quantId = liveExpression.quantId;
+
+    this._analysisLayoutService.makeExpressionList(this.scanId, 10, this.quantId).subscribe((exprs: DefaultExpressions) => {
+      if (exprs.exprIds.length > 0) {
+        this.mdl.expressionIds = [liveExpression.expressionId, ...exprs.exprIds.slice(0, 9)];
+      }
 
       this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
       this.update();
@@ -88,39 +119,24 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
     const query: DataSourceParams[] = [];
 
     // NOTE: processQueryResult depends on the order of the following for loops...
-    for (const [scanId, ids] of this.mdl.dataSourceIds) {
-      for (const roiId of ids.roiIds) {
-        for (const exprId of this.mdl.expressionIds) {
+    for (const exprId of this.mdl.expressionIds) {
+      for (const [scanId, ids] of this.mdl.dataSourceIds) {
+        for (const roiId of ids.roiIds) {
           query.push(new DataSourceParams(scanId, exprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+
+          // Get the error column if this was a predefined expression
+          const elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
+          if (elem.length > 0) {
+            // Get the detector too. If not specified, it will be '' which will mean some defaulting will happen
+            const detector = DataExpressionId.getPredefinedQuantExpressionDetector(exprId);
+
+            // Try query it
+            const errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
+            query.push(new DataSourceParams(scanId, errExprId, ids.quantId, roiId, DataUnit.UNIT_DEFAULT));
+          }
         }
       }
     }
-
-    /* ALSO INCLUDE ERROR BARS:
-  protected getErrorColForExpression(exprId: string, roiId: string): Observable<PMCDataValues | null> {
-    // If we've got a corresponding error column, use that, otherwise return null
-    const elem = DataExpressionId.getPredefinedQuantExpressionElement(exprId);
-    if (elem.length <= 0) {
-      return of(null);
-    }
-
-    // Get the detector too. If not specified, it will be '' which will mean some defaulting will happen
-    const detector = DataExpressionId.getPredefinedQuantExpressionDetector(exprId);
-
-    // Try query it
-    const errExprId = DataExpressionId.makePredefinedQuantElementExpression(elem, "err", detector);
-    const query: DataSourceParams[] = [new DataSourceParams(errExprId, roiId, "")];
-    return this._widgetDataService.getData(query, false).pipe(
-      map(queryData => {
-        if (queryData.error || queryData.hasQueryErrors() || queryData.queryResults.length != 1) {
-          return null;
-        }
-
-        return queryData.queryResults[0].values;
-      })
-    );
-  }
-*/
 
     this._widgetData.getData(query).subscribe({
       next: data => {
@@ -243,29 +259,7 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
 
     this.isWidgetHighlighted = true;
     const dialogRef = this.dialog.open(ExpressionPickerComponent, dialogConfig);
-    // dialogRef.afterClosed().subscribe((result: ExpressionPickerResponse) => {
-    //   this.isWidgetHighlighted = false;
-    //   console.log("RES", result);
-    //   if (result && result.selectedExpressions?.length > 0) {
-    //     this.mdl.expressionIds = [];
-
-    //     for (const expr of result.selectedExpressions) {
-    //       this.mdl.expressionIds.push(expr.id);
-    //     }
-
-    //     let roiIds = [PredefinedROIID.getAllPointsForScan(this.scanId)];
-
-    //     // If we already have a data source for this scan, keep the ROI ids
-    //     const existingSource = this.mdl.dataSourceIds.get(result.scanId);
-    //     if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
-    //       roiIds = existingSource.roiIds;
-    //     }
-    //     this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
-    //   }
-
-    //   this.update();
-    //   this.saveState();
-    // });
+    // NOTE: result returned by AnalysisLayoutService.expressionPickerResponse$
   }
 
   onRegions() {
@@ -343,24 +337,30 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
   get showWhiskers(): boolean {
     return this.mdl.showWhiskers;
   }
+
   onToggleShowWhiskers() {
     this.mdl.showWhiskers = !this.mdl.showWhiskers;
+    this.update();
     this.saveState();
   }
 
-  get showStdError(): boolean {
-    return !this.mdl.showStdDeviation;
+  get showStdDeviation(): boolean {
+    return this.mdl.showStdDeviation;
   }
-  toggleShowStdError() {
+
+  toggleShowStdDeviation() {
     this.mdl.showStdDeviation = !this.mdl.showStdDeviation;
+    this.update();
     this.saveState();
   }
 
   get logScale(): boolean {
     return this.mdl.logScale;
   }
+
   onToggleLogScale() {
     this.mdl.logScale = !this.mdl.logScale;
+    this.update();
     this.saveState();
   }
 }

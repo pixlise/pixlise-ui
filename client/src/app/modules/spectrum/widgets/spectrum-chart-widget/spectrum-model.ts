@@ -163,8 +163,8 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
 
   constructor(
     public xrfDBService: XRFDatabaseService //,
-    // public clipboard: Clipboard
-  ) // public dialog: MatDialog,
+    // public dialog: MatDialog,
+  ) // public clipboard: Clipboard
   {
     this.transform.transformChangeComplete$.subscribe((complete: boolean) => {
       // Remember we need to recalc
@@ -913,7 +913,7 @@ export class SpectrumChartModel implements ISpectrumChartModel, CanvasDrawNotifi
         yMargin,
         this._drawTransform.canvasParams.height - yMargin,
         lineRangeYmin,
-        lineRangeYmax * 1.05  // to leave gap at top above chart
+        lineRangeYmax * 1.05 // to leave gap at top above chart
       );
     }
 

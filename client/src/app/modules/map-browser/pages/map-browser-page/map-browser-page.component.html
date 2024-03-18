@@ -1,6 +1,53 @@
-<div class="map-browser-container">
-  <!-- TODO: <notification-banner></notification-banner> -->
-  <!-- <app-toolbar></app-toolbar> -->
-
-  Map Browser Page
-</div>
+<section class="page map-browser-container">
+  <!-- <analysis-sidepanel></analysis-sidepanel> -->
+  <div class="top-line">
+    <div class="dataset-selector">
+      <mat-select placeholder="Select Scan" [(ngModel)]="scanId" (selectionChange)="onScanChange($event)">
+        <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">
+          {{ scanToTitleMap[scan.id] }}
+        </mat-option>
+      </mat-select>
+    </div>
+    <quantification-selector *ngIf="scanId" [scanId]="scanId" [selectedQuantID]="quantId" (selectQuant)="onSelectQuantForScan($event)"> </quantification-selector>
+    <div class="page-controls">
+      <icon-button class="{{ currentPage - 1 < 0 ? 'disabled' : '' }}" icon="assets/button-icons/arrow-left.svg" (onClick)="onPreviousPage()"></icon-button>
+      <span class="page-tracker" #tooltip="matTooltip" [matTooltip]="quantifiedExpressionCount + ' quantified elements'"
+        >{{ currentPage + 1 }} / {{ pageCount }}</span
+      >
+      <icon-button class="{{ currentPage + 1 >= pageCount ? 'disabled' : '' }}" icon="assets/button-icons/arrow-right.svg" (onClick)="onNextPage()"></icon-button>
+    </div>
+  </div>
+  <section class="screen-container">
+    <section
+      class="widgets-container"
+      [ngStyle]="{
+        'grid-template-columns': 'auto',
+        'grid-template-rows': 'auto'
+      }">
+      <div
+        class="widget-container"
+        *ngFor="let widget of layout.widgets; trackBy: trackByWidget"
+        [ngStyle]="
+          soloViewWidget && soloViewWidget?.id !== widget.id
+            ? { display: 'none' }
+            : soloViewWidget && soloViewWidget?.id === widget.id
+            ? {}
+            : {
+                'grid-column-start': widget.startColumn,
+                'grid-column-end': widget.endColumn,
+                'grid-row-start': widget.startRow,
+                'grid-row-end': widget.endRow
+              }
+        ">
+        <widget
+          *ngIf="!soloViewWidget || soloViewWidget?.id === widget.id"
+          [widgetLayoutConfig]="widget"
+          [layoutIndex]="0"
+          [initWidget]="widget.type"
+          [title]="idToTitleMap[widget.id]"
+          [liveExpression]="liveExpressionMap[widget.id]"
+          [disableSwitch]="true"></widget>
+      </div>
+    </section>
+  </section>
+</section>

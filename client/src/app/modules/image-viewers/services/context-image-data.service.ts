@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { Observable, combineLatest, concatMap, map, shareReplay, switchMap } from "rxjs";
+import { BehaviorSubject, Observable, Subject, combineLatest, concatMap, map, shareReplay, switchMap } from "rxjs";
 import { APIEndpointsService } from "../../pixlisecore/services/apiendpoints.service";
 import { APICachedDataService } from "../../pixlisecore/services/apicacheddata.service";
 import { ScanBeamLocationsResp, ScanBeamLocationsReq } from "src/app/generated-protos/scan-beam-location-msgs";
@@ -20,6 +20,12 @@ import { ExpressionGroupGetReq, ExpressionGroupGetResp } from "src/app/generated
 import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { ContextImageItemTransform } from "../image-viewers.module";
+import { Point } from "src/app/models/Geometry";
+
+export type SyncedTransform = {
+  scale: Point;
+  pan: Point;
+};
 
 @Injectable({
   providedIn: "root",
@@ -27,19 +33,54 @@ import { ContextImageItemTransform } from "../image-viewers.module";
 export class ContextImageDataService {
   private _contextModelDataMap = new Map<string, Observable<ContextImageModelLoadedData>>();
 
+  private _syncedTransform$: BehaviorSubject<Record<string, SyncedTransform>> = new BehaviorSubject({});
+
   constructor(
     protected _cachedDataService: APICachedDataService,
     protected _widgetDataService: WidgetDataService,
     protected _endpointsService: APIEndpointsService
   ) {}
 
-  getModelData(imageName: string): Observable<ContextImageModelLoadedData> {
-    const cacheId = imageName;
+  get syncedTransform$(): BehaviorSubject<Record<string, SyncedTransform>> {
+    return this._syncedTransform$;
+  }
 
+  syncTransformForId(id: string, transform: SyncedTransform) {
+    const current = this._syncedTransform$.value;
+    current[id] = transform;
+    this._syncedTransform$.next(current);
+  }
+
+  unsyncTransformForId(id: string) {
+    const current = this._syncedTransform$.value;
+    delete current[id];
+    this._syncedTransform$.next(current);
+  }
+
+  clearSyncedTransforms() {
+    this._syncedTransform$.next({});
+  }
+
+  getModelData(imageName: string, widgetId: string): Observable<ContextImageModelLoadedData> {
+    // Have to include the widget ID to prevent shallow references
+    const cacheId = `${imageName}-${widgetId}`;
     let result = this._contextModelDataMap.get(cacheId);
     if (result === undefined) {
-      // Have to request it!
-      result = this.fetchModelData(imageName).pipe(shareReplay(1));
+      result = this._contextModelDataMap.get(imageName);
+      if (result) {
+        // We have a result, but it's not for this widget, so we need to clone it
+        result = result.pipe(
+          map((mdl: ContextImageModelLoadedData) => {
+            return mdl.copy();
+          })
+        );
+      } else {
+        // Have to request it!
+        result = this.fetchModelData(imageName).pipe(shareReplay(1));
+
+        // Copy with imageName as key so we can shortcut the request next time, but keep response unique
+        this._contextModelDataMap.set(imageName, result);
+      }
 
       // Add it to the map too so a subsequent request will get this
       this._contextModelDataMap.set(cacheId, result);
@@ -60,10 +101,10 @@ export class ContextImageDataService {
     if (!DataExpressionId.isExpressionGroupId(expressionId)) {
       // It's just a simple layer, load it
       return this.getExpressionLayerModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup);
+    } else {
+      // Load the expression group first, run the first 3 expressions
+      return this.getExpressionGroupModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup);
     }
-
-    // Load the expression group first, run the first 3 expressions
-    return this.getExpressionGroupModel(scanId, expressionId, quantId, roiId, colourRamp, pmcToIndexLookup);
   }
 
   private getExpressionLayerModel(

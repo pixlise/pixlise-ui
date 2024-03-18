@@ -5,9 +5,14 @@
     [ngStyle]="{ display: button._overflowed ? 'block' : 'none', margin: button.margin }"></widget-configuration-button>
 </ng-template>
 
+<ng-template #defaultOverflowSection>
+  <div class="default-overflow"></div>
+</ng-template>
+
 <div class="widget {{ isWidgetHighlighted ? 'highlight' : '' }}">
   <header>
     <mat-select
+      *ngIf="!disableSwitch"
       [(ngModel)]="activeWidget"
       #tooltip="matTooltip"
       [matTooltip]="widgetConfiguration?.description || ''"
@@ -19,6 +24,7 @@
         </div>
       </mat-option>
     </mat-select>
+    <div class="widget-title" *ngIf="disableSwitch && title.length > 0" [title]="title">{{ title }}</div>
 
     <div class="buttons" #buttonsContainer>
       <div class="top-toolbar {{ topToolbarButtons.length > 0 ? 'visible' : 'hidden' }}" #topToolbar>
@@ -27,7 +33,11 @@
           [buttonConfiguration]="button"
           [ngStyle]="{ display: button._overflowed ? 'none' : 'block', margin: button.margin }"></widget-configuration-button>
       </div>
-      <widget-settings-menu *ngIf="settingsMenu" [settingsDialog]="settingsMenu" [overflowSection]="overflowSection" #settingsButton>
+      <widget-settings-menu
+        *ngIf="settingsMenu || isOverflowed"
+        [settingsDialog]="settingsMenu || defaultOverflowSection"
+        [overflowSection]="overflowSection"
+        #settingsButton>
         <icon-button #tooltip="matTooltip" matTooltip="Show Settings Menu" icon="assets/button-icons/settings.svg"> </icon-button>
       </widget-settings-menu>
     </div>

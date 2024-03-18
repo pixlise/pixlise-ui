@@ -22,6 +22,8 @@ import {
   ImagePickerDialogData,
   ImagePickerDialogResponse,
 } from "src/app/modules/pixlisecore/components/atoms/image-picker-dialog/image-picker-dialog.component";
+import { ContextImageDataService } from "src/app/modules/image-viewers/image-viewers.module";
+import { Point } from "src/app/models/Geometry";
 
 @Component({
   selector: "app-multi-channel-viewer",
@@ -38,7 +40,10 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
   public purpose: ScanImagePurpose = ScanImagePurpose.SIP_MULTICHANNEL;
   public scanIds: string[] = [];
 
+  public currentScanId: string = this._analysisLayoutService.defaultScanId;
+
   constructor(
+    private _contextDataService: ContextImageDataService,
     private _analysisLayoutService: AnalysisLayoutService,
     private _cachedDataService: APICachedDataService,
     private _endpointsService: APIEndpointsService,
@@ -54,18 +59,18 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
     this._widgetControlConfiguration = {
       topToolbar: [
         {
-          id: "solo",
-          type: "button",
-          icon: "assets/button-icons/widget-solo.svg",
-          tooltip: "Toggle Solo View",
-          onClick: () => this.onSoloView(),
-        },
-        {
           id: "image-picker",
           type: "button",
           title: "Image",
           tooltip: "Choose image",
           onClick: () => this.onImagePicker(),
+        },
+        {
+          id: "solo",
+          type: "button",
+          icon: "assets/button-icons/widget-solo.svg",
+          tooltip: "Toggle Solo View",
+          onClick: () => this.onSoloView(),
         },
       ],
     };
@@ -92,7 +97,41 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
       })
     );
 
+    this._subs.add(
+      this._contextDataService.syncedTransform$.subscribe(transforms => {
+        let syncedTransform = transforms[this.syncId];
+        if (syncedTransform) {
+          this.mdl.transform.pan.x = syncedTransform.pan.x;
+          this.mdl.transform.pan.y = syncedTransform.pan.y;
+          this.mdl.transform.scale.x = syncedTransform.scale.x;
+          this.mdl.transform.scale.y = syncedTransform.scale.y;
+          if (this.mdl.transform.scale.x <= 0) {
+            this.mdl.transform.scale.x = 1;
+          }
+
+          if (this.mdl.transform.scale.y <= 0) {
+            this.mdl.transform.scale.y = 1;
+          }
+
+          this.reDraw();
+        }
+      })
+    );
+
+    this._subs.add(
+      this.mdl.transform.transformChangeStarted$.subscribe(() => {
+        this._contextDataService.syncTransformForId(this.syncId, {
+          pan: new Point(this.mdl.transform.pan.x, this.mdl.transform.pan.y),
+          scale: new Point(this.mdl.transform.scale.x, this.mdl.transform.scale.y),
+        });
+      })
+    );
+
     this.reDraw();
+  }
+
+  get syncId(): string {
+    return `${this.currentScanId}-${this._analysisLayoutService.isMapsPage ? "maps" : "analysis"}`;
   }
 
   ngOnDestroy() {
@@ -105,11 +144,11 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
       return;
     }
 
-    let scanIds = this.scanIds ? this.scanIds : [this._analysisLayoutService.defaultScanId];
+    const scanIds = this.scanIds.length > 0 ? this.scanIds : [this._analysisLayoutService.defaultScanId];
     this._cachedDataService.getImageList(ImageListReq.create({ scanIds })).subscribe((resp: ImageListResp) => {
       for (const img of resp.images) {
         if (img.purpose === ScanImagePurpose.SIP_MULTICHANNEL && img.imagePath) {
-          this.loadImage(img.imagePath);
+          this.loadImage(img.imagePath, resp?.images?.[0].associatedScanIds?.[0]);
         }
       }
     });
@@ -194,9 +233,16 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
     this.loadImage(selectedImagePath);
   }
 
-  onSoloView() {}
+  onSoloView() {
+    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
+      this._analysisLayoutService.soloViewWidgetId$.next("");
+    } else {
+      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
+    }
+  }
 
-  private loadImage(imagePath: string) {
+  private loadImage(imagePath: string, scanId?: string) {
+    this.currentScanId = scanId || this._analysisLayoutService.defaultScanId;
     this.isWidgetDataLoading = true;
     this._endpointsService.loadRGBUImageTIF(imagePath).subscribe((img: RGBUImage) => {
       this.mdl.imageName = imagePath;

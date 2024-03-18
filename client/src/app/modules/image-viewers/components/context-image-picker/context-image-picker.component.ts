@@ -150,6 +150,11 @@ be a bit misleading.
   }
 }
 
+export type ImageSelection = {
+  path: string;
+  scanId: string;
+};
+
 @Component({
   selector: "image-picker",
   templateUrl: "./context-image-picker.component.html",
@@ -163,7 +168,7 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
   @Input() includeHideOption: boolean = true;
   @Input() onlyInstrumentImages: boolean = false;
 
-  @Output() selectedImage = new EventEmitter();
+  @Output() selectedImage = new EventEmitter<ImageSelection>();
 
   contextImageItemShowing: ContextImageItem | null = null;
   contextImagePath: string = "";
@@ -314,12 +319,12 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
     };
 
     const dialogRef = this.dialog.open(ImagePickerDialogComponent, dialogConfig);
-    dialogRef.afterClosed().subscribe(({ selectedImagePath }: ImagePickerDialogResponse) => {
-      if (selectedImagePath) {
+    dialogRef.afterClosed().subscribe((response: ImagePickerDialogResponse) => {
+      if (response?.selectedImagePath) {
         // img.item.path is the name of the image, not the path, so we need to match by name
-        let selected = this.contextImages.find(img => img?.item?.path && selectedImagePath === img.item.path);
+        let selected = this.contextImages.find(img => img?.item?.path && response.selectedImagePath === img.item.path);
         if (selected) {
-          this.onSetImage(selected);
+          this.onSetImage(selected, response.selectedImageScanId || "");
         }
       }
     });
@@ -329,9 +334,8 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
     this._subs.unsubscribe();
   }
 
-  onSetImage(img: DisplayContextImageItem | null) {
-    this.selectedImage.emit(img ? img.item.path : null);
-
+  onSetImage(img: DisplayContextImageItem | null, scanId: string) {
+    this.selectedImage.emit({ path: img ? img.item.path : "", scanId });
     this.currentImage = img?.item.path || "";
     this.refreshImageList();
   }

@@ -37,34 +37,60 @@
 
 .quant-dropdown {
   border-radius: $sz-half;
-  background-color: $clr-gray-100;
+  // background-color: $clr-gray-100;
+  background-color: #293137;
   display: flex;
+  // max-width: calc(100% - 8px);
 
   //text-align: center;
   //text-transform: uppercase;
 
   font-weight: 400;
-  font-family: Roboto;
-  font-style: italic;
+  font-family: Inter;
+  // font-style: italic;
 
   font-size: 14px;
   line-height: 16px;
 
   white-space: nowrap;
 
-  border: 1px solid $clr-gray-30;
+  // border: 1px solid $clr-gray-30;
   box-sizing: border-box;
+
+  &.no-quant {
+    background: #f0f92114;
+    border: 1px solid #f0f9211f;
+
+    .no-quant-warning {
+      margin-left: 4px;
+    }
+  }
+}
+
+.name-container {
+  display: flex;
+  align-items: center;
+  padding: $sz-half;
+  width: 100%;
+  overflow: hidden;
 }
 
 .quant-name {
-  color: $clr-gray-50;
+  color: #f8f8f8;
   padding: $sz-half $sz-half;
-  min-width: 200px;
-  max-width: 200px;
+  // min-width: 200px;
+  // max-width: 200px;
+  // width: 100%;
+  // align-items: center;
+  // display: flex;
 
-  white-space: nowrap;
-  overflow: hidden;
+  // white-space: nowrap;
+  // overflow: hidden;
+  // text-overflow: ellipsis;
+
+  width: 100%;
   text-overflow: ellipsis;
+  overflow: hidden;
 }
 
 .quant-arrow {
@@ -72,11 +98,20 @@
 }
 
 .quant-detectors {
-  background-color: $clr-gray-30;
-  color: $clr-gray-100;
+  // background-color: $clr-gray-30;
+  // color: $clr-gray-100;
   font-family: Inter;
-  font-weight: 800;
+  // font-weight: 800;
   font-size: 12px;
   font-style: normal;
-  padding: $sz-half $sz-half;
+
+  margin: 4px;
+  padding: 4px;
+  border-radius: 4px;
+  background-color: #bcbcbc;
+  color: #454a39;
+  font-weight: 700;
+
+  justify-content: center;
+  display: flex;
 }

@@ -1,5 +1,5 @@
 import { Component, Input, OnInit, OnDestroy } from "@angular/core";
-import { BaseWidgetModel } from "src/app/modules/widget/models/base-widget.model";
+import { BaseWidgetModel, LiveExpression } from "src/app/modules/widget/models/base-widget.model";
 import { DataSourceParams, DataUnit, RegionDataResults, SelectionService, SnackbarService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { Subscription } from "rxjs";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
@@ -59,6 +59,8 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   drawer: CanvasDrawer;
 
   scanId: string = "";
+  quantId: string = "";
+
   private _subs = new Subscription();
 
   constructor(
@@ -121,7 +123,8 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   private setInitialConfig() {
-    this.scanId = this._analysisLayoutService.defaultScanId;
+    this.scanId = this.scanId || this._analysisLayoutService.defaultScanId || "";
+    this.quantId = this.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
     this._analysisLayoutService.makeExpressionList(this.scanId, 2).subscribe((exprs: DefaultExpressions) => {
       this.mdl.expressionIds = exprs.exprIds;
 
@@ -136,6 +139,20 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
   get yAxisSwitcher(): ScatterPlotAxisInfo | null {
     return this.mdl.raw?.yAxisInfo || null;
+  }
+
+  override injectExpression(liveExpression: LiveExpression) {
+    this.scanId = liveExpression.scanId;
+    this.quantId = liveExpression.quantId;
+
+    this._analysisLayoutService.makeExpressionList(this.scanId, 2, this.quantId).subscribe((exprs: DefaultExpressions) => {
+      if (exprs.exprIds.length > 0) {
+        this.mdl.expressionIds = [liveExpression.expressionId, exprs.exprIds[0]];
+      }
+
+      this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
+      this.update();
+    });
   }
 
   private update() {
@@ -269,15 +286,6 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
             this.mdl.expressionIds[i % 2] = result.selectedExpressions[i].id;
           }
 
-          // let roiIds = [PredefinedROIID.getAllPointsForScan(this._analysisLayoutService.defaultScanId)];
-
-          // // If we already have a data source for this scan, keep the ROI ids
-          // const existingSource = this.mdl.dataSourceIds.get(result.scanId);
-          // if (existingSource && existingSource.roiIds && existingSource.roiIds.length > 0) {
-          //   roiIds = existingSource.roiIds;
-          // }
-          // this.mdl.dataSourceIds.set(result.scanId, new ScanDataIds(result.quantId, roiIds));
-
           this.update();
           this.saveState();
         }
@@ -316,7 +324,15 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   onExport() {}
-  onSoloView() {}
+
+  onSoloView() {
+    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
+      this._analysisLayoutService.soloViewWidgetId$.next("");
+    } else {
+      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
+    }
+  }
+
   onRegions() {
     const dialogConfig = new MatDialogConfig<ROIPickerData>();
 
@@ -421,6 +437,7 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
 
   setShowMmol() {
     this.mdl.showMmol = !this.mdl.showMmol;
+    this.update();
     this.saveState();
   }
 

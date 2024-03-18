@@ -24,17 +24,20 @@ export class ExpressionsService {
 
   lastSavedExpressionId: string = "";
 
+  public static ExpressionCheckInterval: number = 1000 * 60 * 5; // 5 minutes
+  lastFetchedTime: number = 0;
+
   constructor(
     private _snackBarService: SnackbarService,
     private _cacheService: APICachedDataService,
     private _dataService: APIDataService
   ) {
-    this.fetchExpressions();
-    this.fetchModules();
+    // this.fetchExpressions();
+    // this.fetchModules();
   }
 
   fetchModules() {
-    this._dataService.sendDataModuleListRequest(DataModuleListReq.create({})).subscribe(res => {
+    this._cacheService.getModuleList(DataModuleListReq.create({})).subscribe(res => {
       this.modules$.next(res.modules);
     });
   }
@@ -73,7 +76,7 @@ export class ExpressionsService {
   }
 
   fetchExpressions() {
-    this._dataService.sendExpressionListRequest(ExpressionListReq.create({})).subscribe(res => {
+    this._cacheService.getExpressionList(ExpressionListReq.create({})).subscribe(res => {
       this.expressions$.next(res.expressions);
     });
   }
@@ -180,12 +183,20 @@ export class ExpressionsService {
     // Remove owner to avoid overwriting
     expression.owner = undefined;
 
-    this._dataService.sendExpressionWriteRequest(ExpressionWriteReq.create({ expression })).subscribe(res => {
-      if (res.expression) {
-        this.lastSavedExpressionId = res.expression.id;
-        this.expressions$.next({ ...this.expressions$.value, [res.expression.id]: res.expression });
-        this._cacheService.cacheExpression(ExpressionGetReq.create({ id: expression.id }), ExpressionGetResp.create({ expression: res.expression }));
-      }
+    this._dataService.sendExpressionWriteRequest(ExpressionWriteReq.create({ expression })).subscribe({
+      next: res => {
+        if (res.expression) {
+          this.lastSavedExpressionId = res.expression.id;
+          this.expressions$.next({ ...this.expressions$.value, [res.expression.id]: res.expression });
+          this._cacheService.cacheExpression(ExpressionGetReq.create({ id: expression.id }), ExpressionGetResp.create({ expression: res.expression }));
+
+          this._snackBarService.openSuccess(`Expression (${expression.name}) saved`);
+        }
+      },
+      error: err => {
+        this._snackBarService.openError(`Failed to save expression (${expression.name})`, err);
+        console.error(`Failed to save expression (${expression.name}): `, err);
+      },
     });
   }
 

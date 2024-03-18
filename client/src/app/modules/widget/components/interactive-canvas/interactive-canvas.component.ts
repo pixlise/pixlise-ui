@@ -151,6 +151,7 @@ export class CanvasKeyEvent {
 
 export interface CanvasDrawNotifier {
   needsDraw$: Subject<void>;
+  needsCanvasResize$?: Subject<void>;
 }
 
 export class CanvasInteractionResult {
@@ -234,6 +235,14 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ OnDestroy {
           this.triggerRedraw();
         })
       );
+
+      if (this.drawNotifier.needsCanvasResize$) {
+        this._subs.add(
+          this.drawNotifier.needsCanvasResize$.subscribe(() => {
+            this.callFitCanvasToContainer();
+          })
+        );
+      }
     }
   }
 
@@ -249,6 +258,14 @@ export class InteractiveCanvasComponent implements /*OnInit,*/ OnDestroy {
           this.triggerRedraw();
         })
       );
+
+      if (this.drawNotifier.needsCanvasResize$) {
+        this._subs.add(
+          this.drawNotifier.needsCanvasResize$.subscribe(() => {
+            this.callFitCanvasToContainer();
+          })
+        );
+      }
     }
   }
 
