@@ -8,6 +8,9 @@ import { DEFAULT_ROI_SHAPE, ROIShape, ROI_SHAPES } from "../roi-shape/roi-shape.
 import { COLOURS, ColourOption, findColourOption, generateDefaultColour } from "../../models/roi-colors";
 import { ROIDisplaySettings, createDefaultROIDisplaySettings } from "../../models/roi-region";
 import { ObjectType } from "src/app/generated-protos/ownership-access";
+import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
+import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
+import { decodeIndexList } from "src/app/utils/utils";
 
 export type SubItemOptionSection = {
   title: string;
@@ -440,5 +443,85 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   clearShape() {
     this.shape = DEFAULT_ROI_SHAPE;
     this._shapeDefined = false;
+  }
+
+  onSaveSelectionToROI(): void {
+    let currentSelection = this._selectionService.getCurrentSelection();
+    let scanIds = currentSelection.beamSelection.getScanIds();
+
+    let currentROIScanId = this._detailedInfo?.scanId || "";
+
+    if (currentROIScanId && !scanIds.includes(currentROIScanId)) {
+      this._snackBarService.openError("Cannot save selection to ROI. Selection is from a different scan.");
+      return;
+    }
+
+    let pmcSelection = currentSelection.beamSelection.getSelectedScanEntryPMCs(currentROIScanId);
+    let pixelSelection = currentSelection.pixelSelection;
+
+    if (pmcSelection.size <= 0 && pixelSelection.selectedPixels.size <= 0) {
+      this._snackBarService.openError("Cannot save an empty ROI. Please select something!");
+      return;
+    }
+
+    if (!this._detailedInfo) {
+      this._snackBarService.openError("Cannot save selection to ROI. ROI not found.");
+      return;
+    }
+
+    this._detailedInfo.scanEntryIndexesEncoded = Array.from(pmcSelection);
+    this._detailedInfo.pixelIndexesEncoded = Array.from(pixelSelection.selectedPixels);
+    this._detailedInfo.imageName = pixelSelection.imageName;
+
+    this._roiService.writeROI(this._detailedInfo, false, false);
+  }
+
+  onAddRGBUPixelsToROI(): void {
+    let currentSelection = this._selectionService.getCurrentSelection();
+    let scanIds = currentSelection.beamSelection.getScanIds();
+
+    let currentROIScanId = this._detailedInfo?.scanId || "";
+
+    if (currentROIScanId && !scanIds.includes(currentROIScanId)) {
+      this._snackBarService.openError("Cannot save selection to ROI. Selection is from a different scan.");
+      return;
+    }
+
+    let pmcSelection = currentSelection.beamSelection.getSelectedScanEntryPMCs(currentROIScanId);
+    let pixelSelection = currentSelection.pixelSelection;
+
+    if (pmcSelection.size <= 0 && pixelSelection.selectedPixels.size <= 0) {
+      this._snackBarService.openError("Cannot save an empty ROI. Please select something!");
+      return;
+    }
+
+    if (!this._detailedInfo) {
+      this._snackBarService.openError("Cannot save selection to ROI. ROI not found.");
+      return;
+    }
+
+    let joinedPixels = new Set<number>(this._detailedInfo.pixelIndexesEncoded);
+    pixelSelection.selectedPixels.forEach(pixel => {
+      joinedPixels.add(pixel);
+    });
+
+    this._detailedInfo.pixelIndexesEncoded = Array.from(joinedPixels);
+    this._detailedInfo.imageName = pixelSelection.imageName;
+
+    this._roiService.writeROI(this._detailedInfo, false, false);
+  }
+
+  onSelect(): void {
+    if (this._detailedInfo) {
+      let pmcSelection = new Map<string, Set<number>>();
+      Object.entries(this.scanEntryIndicesByDataset).forEach(([scanId, pmcs]) => {
+        pmcSelection.set(scanId, new Set(pmcs));
+      });
+
+      let pixels = new Set<number>(this._detailedInfo.pixelIndexesEncoded);
+      let pixelSelection = new PixelSelection(pixels, 0, 0, this._detailedInfo.imageName);
+
+      this._selectionService.setSelection(new BeamSelection(pmcSelection), pixelSelection);
+    }
   }
 }

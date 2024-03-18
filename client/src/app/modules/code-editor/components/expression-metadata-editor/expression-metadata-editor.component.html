@@ -109,7 +109,7 @@ POSSIBILITY OF SUCH DAMAGE.
         [buttonStyle]="buttonStyle"
         #tooltip="matTooltip"
         matTooltip="{{ isShowingDifference ? 'Hide' : 'Show' }} Code Difference between v{{ currentVersion?.version }} and v{{ latestRelease?.version }}"
-        (click)="showDiffClicked()"
+        (onClick)="showDiffClicked()"
         >{{ isShowingDifference ? "Hide" : "Show" }} Difference
       </push-button>
     </div>
