@@ -52,6 +52,8 @@ export class AnalysisLayoutService implements OnDestroy {
 
   screenConfigurations$ = new BehaviorSubject<Map<string, ScreenConfiguration>>(new Map());
 
+  soloViewWidgetId$ = new BehaviorSubject<string>("");
+
   highlightedWidgetId$ = new BehaviorSubject<string>("");
   expressionPickerResponse$ = new BehaviorSubject<ExpressionPickerResponse | null>(null);
 

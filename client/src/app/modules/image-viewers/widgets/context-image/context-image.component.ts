@@ -578,7 +578,13 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
   onCrop(trigger: Element | undefined) {}
 
-  onSoloView() {}
+  onSoloView() {
+    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
+      this._analysisLayoutService.soloViewWidgetId$.next("");
+    } else {
+      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
+    }
+  }
 
   onToggleShowPoints(trigger: Element | undefined) {
     const options: SubItemOptionSection[] = [

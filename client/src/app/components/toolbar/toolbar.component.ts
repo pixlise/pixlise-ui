@@ -48,6 +48,7 @@ import {
   ScanConfigurationDialogData,
 } from "src/app/modules/analysis/components/scan-configuration-dialog/scan-configuration-dialog.component";
 import { EnvConfigurationService } from "src/app/services/env-configuration.service";
+import { VERSION } from "src/environments/version";
 
 export type NavigationTab = {
   icon: string;
@@ -145,22 +146,8 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.updateToolbar();
 
-    this._subs.add(
-      this.envConfigService.getComponentVersions().subscribe({
-        next: versions => {
-          this.uiVersion = versions.versions.find(v => v.component === "PIXLISE")?.version || "";
-          if (this.uiVersion.length <= 0) {
-            this.uiVersion = "(Local build)";
-          } else {
-            // TODO: Remove this when we're out of beta
-            this.uiVersion = `v${this.uiVersion} (beta)`;
-          }
-        },
-        error: err => {
-          console.error("Failed to get UI version", err);
-        },
-      })
-    );
+    this.uiVersion = (VERSION as any)?.raw || "(Local build)";
+
     // // If user changes tabs, etc, we want to know
     this._subs.add(
       this.router.events.subscribe(event => {

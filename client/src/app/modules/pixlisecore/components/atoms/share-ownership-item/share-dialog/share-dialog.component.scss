@@ -38,26 +38,100 @@
   justify-content: flex-end;
 }
 
-.fields {
-  margin-top: 16px;
+.share-dialog {
+  width: 600px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 
-  .user-group-container {
-    &:first-of-type {
-      margin-bottom: 8px;
+  h1 {
+    // text-transform: capitalize;
+  }
+}
+
+.fields {
+  .search-field {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+
+    .auto-container {
+      flex: 1;
+      display: flex;
+
+      input {
+        width: 100%;
+        line-height: 40px;
+
+        border-right: none;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+      }
     }
 
-    .user-group-list {
+    .search-type {
+      padding: 7px;
+      background: #454c50;
+      border: 1px solid rgb(84, 95, 100);
+      border-left: none;
+      border-radius: 4px;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+  }
+
+  .access-list {
+    display: flex;
+    flex-direction: column;
+    max-height: 300px;
+    overflow-y: auto;
+
+    .member-item {
       display: flex;
-      .select-container {
-        h5 {
-          margin: 0;
-          margin-left: 16px;
-          color: rgb(var(--clr-gray-50));
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px;
+
+      .icon {
+        &.current-user {
+          .user-icon,
+          img {
+            outline: 1px solid rgb(var(--clr-yellow));
+          }
         }
 
-        mat-select {
-          min-width: 200px;
+        img {
+          width: 32px;
+          border-radius: 4px;
         }
+
+        .user-icon,
+        .group-icon {
+          width: 32px;
+          height: 32px;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .user-icon {
+          background: rgb(var(--clr-gray-60));
+        }
+
+        .group-icon {
+          background: rgb(var(--clr-gray-70));
+        }
+      }
+
+      .name {
+      }
+
+      .access-type {
+        margin-left: auto;
+        display: flex;
       }
     }
   }

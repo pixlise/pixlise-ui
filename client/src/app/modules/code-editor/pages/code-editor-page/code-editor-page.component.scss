@@ -342,6 +342,22 @@ $display-height: calc(100vh - 43px - 40px);
       max-height: 40vh;
       height: 100%;
     }
+
+    &.preview-solo {
+      .output-container {
+        display: none;
+      }
+    }
+
+    &.console-solo {
+      .output-container {
+        max-height: calc(100vh - 83px);
+      }
+
+      .widget-container {
+        display: none;
+      }
+    }
   }
 }
 

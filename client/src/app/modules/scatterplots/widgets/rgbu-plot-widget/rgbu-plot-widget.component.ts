@@ -125,6 +125,13 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
           tooltip: "Choose image",
           onClick: () => this.onImagePicker(),
         },
+        {
+          id: "solo",
+          type: "button",
+          icon: "assets/button-icons/widget-solo.svg",
+          tooltip: "Toggle Solo View",
+          onClick: () => this.onSoloView(),
+        },
       ],
       topRightInsetButton: {
         id: "key",
@@ -204,6 +211,14 @@ export class RGBUPlotWidgetComponent extends BaseWidgetModel implements OnInit, 
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  onSoloView() {
+    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
+      this._analysisLayoutService.soloViewWidgetId$.next("");
+    } else {
+      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
+    }
   }
 
   onMinerals(trigger: Element | undefined) {

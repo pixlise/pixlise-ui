@@ -1,6 +1,6 @@
 import { Component, HostListener } from "@angular/core";
 import { AnalysisLayoutService } from "../../services/analysis-layout.service";
-import { ScreenConfiguration } from "src/app/generated-protos/screen-configuration";
+import { FullScreenLayout, ScreenConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { createDefaultScreenConfiguration } from "../../models/screen-configuration.model";
 import { Subscription } from "rxjs";
 
@@ -21,6 +21,9 @@ export class AnalysisPageComponent {
   computedLayouts: ScreenConfigurationCSS[] = [];
   loadedScreenConfiguration: ScreenConfiguration | null = null;
 
+  soloViewWidgetId: string | null = null;
+  soloViewWidget: WidgetLayoutConfiguration | null = null;
+
   constructor(private _analysisLayoutService: AnalysisLayoutService) {}
 
   ngOnInit(): void {
@@ -30,10 +33,34 @@ export class AnalysisPageComponent {
         this.computeLayouts();
       })
     );
+
+    this._subs.add(
+      this._analysisLayoutService.soloViewWidgetId$.subscribe(soloViewWidgetId => {
+        this.soloViewWidgetId = soloViewWidgetId;
+
+        if (soloViewWidgetId) {
+          let widget = (this.loadedScreenConfiguration?.layouts || [])
+            .map(layout => layout.widgets.find(widget => widget.id === soloViewWidgetId))
+            .find(widget => widget !== undefined);
+          this.soloViewWidget = widget || null;
+          this._analysisLayoutService.delayNotifyCanvasResize(500);
+        } else {
+          this.soloViewWidget = null;
+        }
+      })
+    );
   }
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+  }
+
+  trackByWidgetId(index: number, widget: WidgetLayoutConfiguration): string {
+    return widget.id;
+  }
+
+  trackByLayoutId(index: number, layout: FullScreenLayout): string {
+    return `${index}-${this.loadedScreenConfiguration?.id}`;
   }
 
   computeLayouts() {

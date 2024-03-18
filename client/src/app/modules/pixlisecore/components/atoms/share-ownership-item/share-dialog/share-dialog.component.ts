@@ -28,16 +28,20 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, Inject, OnInit } from "@angular/core";
+import { MatOptionSelectionChange } from "@angular/material/core";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { MatSelectChange } from "@angular/material/select";
+import { Subscription } from "rxjs";
 import { OwnershipItem, UserGroupList } from "src/app/generated-protos/ownership-access";
-import { UserInfo } from "src/app/generated-protos/user";
+import { UserDetails, UserInfo } from "src/app/generated-protos/user";
 import { UserGroupInfo } from "src/app/generated-protos/user-group";
 import { GroupsService } from "src/app/modules/settings/services/groups.service";
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { UsersService } from "src/app/modules/settings/services/users.service";
-import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 
 export type ShareDialogData = {
   ownershipItem: OwnershipItem;
+  typeName: string;
 };
 
 export type ShareDialogResponse = {
@@ -47,12 +51,26 @@ export type ShareDialogResponse = {
   deleteViewers: UserGroupList;
 };
 
+type MembershipItem = {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  isGroup: boolean;
+  isEditor: boolean;
+};
+
 @Component({
   selector: "share-dialog",
   templateUrl: "./share-dialog.component.html",
   styleUrls: ["./share-dialog.component.scss"],
 })
 export class ShareDialogComponent implements OnInit {
+  private _subs: Subscription = new Subscription();
+
+  private _isSearchingGroups: boolean = true;
+  private _searchField: string = "";
+
   groupEditors: string[] = [];
   newGroupEditors: Set<string> = new Set();
   removedGroupEditors: Set<string> = new Set();
@@ -78,166 +96,183 @@ export class ShareDialogComponent implements OnInit {
   groups: UserGroupInfo[] = [];
   users: UserInfo[] = [];
 
+  filteredGroups: UserGroupInfo[] = [];
+  filteredUsers: UserInfo[] = [];
+
+  isChanged: boolean = false;
+  members: MembershipItem[] = [];
+  memberIds: Set<string> = new Set();
+
+  currentUser: UserDetails = UserDetails.create();
+
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ShareDialogData,
     public dialogRef: MatDialogRef<ShareDialogComponent, ShareDialogResponse>,
     private _groupsService: GroupsService,
-    private _usersService: UsersService
-  ) {
-    this._groupsService.fetchGroups();
-    this._usersService.searchUsers("");
-  }
+    private _usersService: UsersService,
+    private _userOptionsSerivce: UserOptionsService
+  ) {}
 
   ngOnInit(): void {
-    this._groupsService.groupsChanged$.subscribe(() => {
-      this.groups = this._groupsService.groups;
-      this.formGroupViewersTooltip();
-      this.formGroupEditorsTooltip();
-    });
+    this._groupsService.fetchGroups();
+    this._usersService.searchUsers("");
 
-    this._usersService.searchedUsers$.subscribe(searchedUsers => {
-      this.users = searchedUsers;
-      this.formUserViewersTooltip();
-      this.formUserEditorsTooltip();
-    });
+    this._subs.add(
+      this._userOptionsSerivce.userOptionsChanged$.subscribe(() => {
+        this.currentUser = this._userOptionsSerivce.userDetails;
+      })
+    );
 
+    this._subs.add(
+      this._groupsService.groupsChanged$.subscribe(() => {
+        this.groups = this._groupsService.groups;
+
+        if (!this.isChanged) {
+          this.resetMembers();
+        }
+      })
+    );
+
+    this._subs.add(
+      this._usersService.searchedUsers$.subscribe(searchedUsers => {
+        this.users = searchedUsers;
+
+        if (!this.isChanged) {
+          this.resetMembers();
+        }
+      })
+    );
+
+    if (!this.isChanged) {
+      this.resetMembers();
+    }
+  }
+
+  get isSearchingGroups(): boolean {
+    return this._isSearchingGroups;
+  }
+
+  set isSearchingGroups(value: boolean) {
+    this._isSearchingGroups = value;
+    this.filterSearch();
+  }
+
+  get searchField(): string {
+    return this._searchField;
+  }
+
+  set searchField(value: string) {
+    this._searchField = value;
+    this.filterSearch();
+  }
+
+  filterSearch() {
+    if (this.isSearchingGroups) {
+      this.filteredGroups = this.groups.filter(group => group.name.toLowerCase().includes(this.searchField.toLowerCase()));
+    } else {
+      this.filteredUsers = this.users.filter(user => user.name.toLowerCase().includes(this.searchField.toLowerCase()));
+    }
+  }
+
+  onSelectUser(user: UserInfo, evt: MatOptionSelectionChange) {
+    if (evt.isUserInput && !this.memberIds.has(user.id)) {
+      this.members = [{ id: user.id, name: user.name, icon: user.iconURL, isGroup: false, isEditor: false }, ...this.members];
+      this.memberIds.add(user.id);
+      this.isChanged = true;
+      this.calculateChanges();
+      this.searchField = "";
+      setTimeout(() => {
+        this.searchField = "";
+      }, 0);
+    }
+    return false;
+  }
+
+  onSelectGroup(group: UserGroupInfo, evt: MatOptionSelectionChange) {
+    if (evt.isUserInput && !this.memberIds.has(group.id)) {
+      this.members = [{ id: group.id, name: group.name, description: group.description, isGroup: true, isEditor: false }, ...this.members];
+      this.memberIds.add(group.id);
+      this.isChanged = true;
+      this.calculateChanges();
+      this.searchField = "";
+      setTimeout(() => {
+        this.searchField = "";
+      }, 0);
+    }
+    return false;
+  }
+
+  trackByMemberId(index: number, member: MembershipItem) {
+    return member.id;
+  }
+
+  resetMembers() {
     this.groupEditors = this.data?.ownershipItem?.editors?.groupIds || [];
     this.userEditors = this.data?.ownershipItem?.editors?.userIds || [];
 
     this.groupViewers = this.data?.ownershipItem?.viewers?.groupIds || [];
     this.userViewers = this.data?.ownershipItem?.viewers?.userIds || [];
-  }
 
-  get maxUsersPerOwnershipItem(): number {
-    return EnvConfigurationInitService.appConfig.maxUsersPerOwnershipItem;
-  }
+    this.members = [];
+    this.groupEditors.forEach(id => {
+      let group = this.groups.find(group => group.id === id);
 
-  formUserViewersTooltip() {
-    let viewerNames = this.userViewers.map(editor => {
-      let user = this.users.find(user => user.id === editor);
-      return user?.name || editor;
+      // TODO: Fix edge case - What if the user isn't a member of the group
+      // someone else added this item to, but they are an editor?
+      // We wouldn't have a relationship to the group in that case and would just get the id...
+      this.members.push({ id, name: group?.name || id, description: group?.description, isGroup: true, isEditor: true });
     });
 
-    this.userViewersTooltip = viewerNames.join("\n");
-  }
-
-  formUserEditorsTooltip() {
-    let editorNames = this.userEditors.map(editor => {
-      let user = this.users.find(user => user.id === editor);
-      return user?.name || editor;
-    });
-
-    this.userEditorsTooltip = editorNames.join("\n");
-  }
-
-  formGroupViewersTooltip() {
-    let groupNames = this.groupViewers.map(editor => {
-      let group = this.groups.find(group => group.id === editor);
-      return group?.name || editor;
-    });
-
-    this.groupViewersTooltip = groupNames.join("\n");
-  }
-
-  formGroupEditorsTooltip() {
-    let editorNames = this.groupEditors.map(editor => {
-      let group = this.groups.find(group => group.id === editor);
-      return group?.name || editor;
-    });
-
-    this.groupEditorsTooltip = editorNames.join("\n");
-  }
-
-  onEditorUserChange(event: any) {
-    let existingEditors = new Set(this.data?.ownershipItem?.editors?.userIds || []);
-    let newEditorsList = new Set(event.value as string[]);
-
-    this.newUserEditors.clear();
-    this.removedUserEditors.clear();
-
-    existingEditors.forEach(editor => {
-      if (!newEditorsList.has(editor)) {
-        this.removedUserEditors.add(editor);
+    this.groupViewers.forEach(id => {
+      if (this.members.find(member => member.id === id)) {
+        // This shouldn't happen, but just in case we don't want to add a duplicate
+        return;
       }
+
+      let group = this.groups.find(group => group.id === id);
+      this.members.push({ id, name: group?.name || id, description: group?.description, isGroup: true, isEditor: false });
     });
 
-    newEditorsList.forEach(editor => {
-      if (!existingEditors.has(editor)) {
-        this.newUserEditors.add(editor);
+    this.userEditors.forEach(id => {
+      let user = this.users.find(user => user.id === id);
+      this.members.push({ id, name: user?.name || id, icon: user?.iconURL, isGroup: false, isEditor: true });
+    });
+
+    this.userViewers.forEach(id => {
+      if (this.members.find(member => member.id === id)) {
+        // This shouldn't happen, but just in case we don't want to add a duplicate
+        return;
       }
+      let user = this.users.find(user => user.id === id);
+      this.members.push({ id, name: user?.name || id, icon: user?.iconURL, isGroup: false, isEditor: false });
     });
 
-    this.formUserEditorsTooltip();
-    this.formConfirmButtonTooltip();
+    this.memberIds = new Set(this.members.map(member => member.id));
+    this.calculateChanges();
   }
 
-  onViewerUserChange(event: any) {
-    let existingViewers = new Set(this.data?.ownershipItem?.viewers?.userIds || []);
-    let newViewersList = new Set(event.value as string[]);
-
-    this.newUserViewers.clear();
-    this.removedUserViewers.clear();
-
-    existingViewers.forEach(viewer => {
-      if (!newViewersList.has(viewer)) {
-        this.removedUserViewers.add(viewer);
-      }
-    });
-
-    newViewersList.forEach(viewer => {
-      if (!existingViewers.has(viewer)) {
-        this.newUserViewers.add(viewer);
-      }
-    });
-
-    this.formUserViewersTooltip();
-    this.formConfirmButtonTooltip();
+  ngOnDestroy() {
+    this._subs.unsubscribe();
   }
 
-  onEditorGroupChange(event: any) {
-    let existingEditors = new Set(this.data?.ownershipItem?.editors?.groupIds || []);
-    let newEditorsList = new Set(event.value as string[]);
-
-    this.newGroupEditors.clear();
-    this.removedGroupEditors.clear();
-
-    existingEditors.forEach(editor => {
-      if (!newEditorsList.has(editor)) {
-        this.removedGroupEditors.add(editor);
-      }
-    });
-
-    newEditorsList.forEach(editor => {
-      if (!existingEditors.has(editor)) {
-        this.newGroupEditors.add(editor);
-      }
-    });
-
-    this.formGroupEditorsTooltip();
-    this.formConfirmButtonTooltip();
+  get currentUserId(): string {
+    return this.currentUser.info?.id || "";
   }
 
-  onViewerGroupChange(event: any) {
-    let existingViewers = new Set(this.data?.ownershipItem?.viewers?.groupIds || []);
-    let newViewersList = new Set(event.value as string[]);
+  onAccessChange(id: string, evt: MatSelectChange) {
+    let member = this.members.find(member => member.id === id);
+    if (member) {
+      member.isEditor = evt.value;
+      this.isChanged = true;
+    }
+    this.calculateChanges();
+  }
 
-    this.newGroupViewers.clear();
-    this.removedGroupViewers.clear();
-
-    existingViewers.forEach(viewer => {
-      if (!newViewersList.has(viewer)) {
-        this.removedGroupViewers.add(viewer);
-      }
-    });
-
-    newViewersList.forEach(viewer => {
-      if (!existingViewers.has(viewer)) {
-        this.newGroupViewers.add(viewer);
-      }
-    });
-
-    this.formGroupViewersTooltip();
-    this.formConfirmButtonTooltip();
+  onRemoveMember(id: string) {
+    this.members = this.members.filter(member => member.id !== id);
+    this.memberIds.delete(id);
+    this.isChanged = true;
+    this.calculateChanges();
   }
 
   onCancel(): void {
@@ -290,7 +325,96 @@ export class ShareDialogComponent implements OnInit {
     this.confirmButtonTooltip = tooltip;
   }
 
+  calculateChanges() {
+    this.newUserEditors.clear();
+    this.removedUserEditors.clear();
+    this.newUserViewers.clear();
+    this.removedUserViewers.clear();
+    this.newGroupEditors.clear();
+    this.removedGroupEditors.clear();
+    this.newGroupViewers.clear();
+    this.removedGroupViewers.clear();
+
+    // Determine new editors/viewers
+    this.members.forEach(member => {
+      if (member.isEditor) {
+        if (member.isGroup) {
+          if (this.groupEditors.includes(member.id)) {
+            return;
+          }
+          this.newGroupEditors.add(member.id);
+        } else {
+          if (this.userEditors.includes(member.id)) {
+            return;
+          }
+          this.newUserEditors.add(member.id);
+        }
+      } else {
+        if (member.isGroup) {
+          if (this.groupViewers.includes(member.id)) {
+            return;
+          }
+          this.newGroupViewers.add(member.id);
+        } else {
+          if (this.userViewers.includes(member.id)) {
+            return;
+          }
+          this.newUserViewers.add(member.id);
+        }
+      }
+    });
+
+    // Determine removed editors/viewers
+    this.groupEditors.forEach(editor => {
+      if (!this.memberIds.has(editor)) {
+        this.removedGroupEditors.add(editor);
+      } else {
+        let member = this.members.find(member => member.id === editor);
+        if (member && !member.isEditor) {
+          this.removedGroupEditors.add(editor);
+        }
+      }
+    });
+
+    this.userEditors.forEach(editor => {
+      if (!this.memberIds.has(editor)) {
+        this.removedUserEditors.add(editor);
+      } else {
+        let member = this.members.find(member => member.id === editor);
+        if (member && !member.isEditor) {
+          this.removedUserEditors.add(editor);
+        }
+      }
+    });
+
+    this.groupViewers.forEach(viewer => {
+      if (!this.memberIds.has(viewer)) {
+        this.removedGroupViewers.add(viewer);
+      } else {
+        let member = this.members.find(member => member.id === viewer);
+        if (member && member.isEditor) {
+          this.removedGroupViewers.add(viewer);
+        }
+      }
+    });
+
+    this.userViewers.forEach(viewer => {
+      if (!this.memberIds.has(viewer)) {
+        this.removedUserViewers.add(viewer);
+      } else {
+        let member = this.members.find(member => member.id === viewer);
+        if (member && member.isEditor) {
+          this.removedUserViewers.add(viewer);
+        }
+      }
+    });
+
+    this.formConfirmButtonTooltip();
+  }
+
   onConfirm(): void {
+    this.calculateChanges();
+
     this.dialogRef.close({
       addEditors: UserGroupList.create({
         userIds: Array.from(this.newUserEditors),

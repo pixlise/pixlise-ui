@@ -63,6 +63,13 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
         },
+        {
+          id: "solo",
+          type: "button",
+          icon: "assets/button-icons/widget-solo.svg",
+          tooltip: "Toggle Solo View",
+          onClick: () => this.onSoloView(),
+        },
       ],
     };
   }
@@ -110,6 +117,14 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  onSoloView() {
+    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
+      this._analysisLayoutService.soloViewWidgetId$.next("");
+    } else {
+      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
+    }
   }
 
   private setInitialConfig() {
