@@ -330,7 +330,13 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
   }
 
   onExport() {}
-  onSoloView() {}
+  onSoloView() {
+    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
+      this._analysisLayoutService.soloViewWidgetId$.next("");
+    } else {
+      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
+    }
+  }
   onRegions() {
     const dialogConfig = new MatDialogConfig<ROIPickerData>();
 

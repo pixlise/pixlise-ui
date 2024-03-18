@@ -59,18 +59,18 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
     this._widgetControlConfiguration = {
       topToolbar: [
         {
-          id: "solo",
-          type: "button",
-          icon: "assets/button-icons/widget-solo.svg",
-          tooltip: "Toggle Solo View",
-          onClick: () => this.onSoloView(),
-        },
-        {
           id: "image-picker",
           type: "button",
           title: "Image",
           tooltip: "Choose image",
           onClick: () => this.onImagePicker(),
+        },
+        {
+          id: "solo",
+          type: "button",
+          icon: "assets/button-icons/widget-solo.svg",
+          tooltip: "Toggle Solo View",
+          onClick: () => this.onSoloView(),
         },
       ],
     };
@@ -233,7 +233,13 @@ export class MultiChannelViewerComponent extends BaseWidgetModel implements OnIn
     this.loadImage(selectedImagePath);
   }
 
-  onSoloView() {}
+  onSoloView() {
+    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
+      this._analysisLayoutService.soloViewWidgetId$.next("");
+    } else {
+      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
+    }
+  }
 
   private loadImage(imagePath: string, scanId?: string) {
     this.currentScanId = scanId || this._analysisLayoutService.defaultScanId;

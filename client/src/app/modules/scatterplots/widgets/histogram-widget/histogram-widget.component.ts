@@ -65,6 +65,13 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
           tooltip: "Choose regions to display",
           onClick: () => this.onRegions(),
         },
+        {
+          id: "solo",
+          type: "button",
+          icon: "assets/button-icons/widget-solo.svg",
+          tooltip: "Toggle Solo View",
+          onClick: () => this.onSoloView(),
+        },
       ],
       topRightInsetButton: {
         id: "key",
@@ -84,6 +91,14 @@ export class HistogramWidgetComponent extends BaseWidgetModel implements OnInit,
       this.mdl.dataSourceIds.set(this.scanId, new ScanDataIds(exprs.quantId, [PredefinedROIID.getAllPointsForScan(this.scanId)]));
       this.update();
     });
+  }
+
+  onSoloView() {
+    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
+      this._analysisLayoutService.soloViewWidgetId$.next("");
+    } else {
+      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
+    }
   }
 
   override injectExpression(liveExpression: LiveExpression) {

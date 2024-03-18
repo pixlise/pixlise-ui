@@ -263,7 +263,14 @@ export class ChordDiagramWidgetComponent extends BaseWidgetModel implements OnIn
     this.isWidgetHighlighted = true;
     this.dialog.open(ExpressionPickerComponent, dialogConfig);
   }
-  onSoloView() {}
+
+  onSoloView() {
+    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
+      this._analysisLayoutService.soloViewWidgetId$.next("");
+    } else {
+      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
+    }
+  }
 
   private saveState(): void {
     const visibleROIs: VisibleROI[] = [];

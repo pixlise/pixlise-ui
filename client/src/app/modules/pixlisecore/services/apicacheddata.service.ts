@@ -22,6 +22,7 @@ import { ExpressionGroupGetReq, ExpressionGroupGetResp, ExpressionGroupListReq, 
 import { NotificationReq, NotificationResp, NotificationUpd } from "src/app/generated-protos/notification-msgs";
 import { NotificationType } from "src/app/generated-protos/notification";
 import { DiffractionPeakStatusListReq, DiffractionPeakStatusListResp } from "src/app/generated-protos/diffraction-status-msgs";
+import { UserGroupListReq, UserGroupListResp } from "src/app/generated-protos/user-group-retrieval-msgs";
 
 // Provides a way to get the same responses we'd get from the API but will only send out one request
 // and all subsequent subscribers will be given a shared replay of the response that comes back.
@@ -61,11 +62,13 @@ export class APICachedDataService {
   private _exprGroupListReqMap = new Map<string, Observable<ExpressionGroupListResp>>();
   private _exprGroupReqMap = new Map<string, Observable<ExpressionGroupGetResp>>();
   private _imageListReqMap = new Map<string, Observable<ImageListResp>>();
+  private _userGroupListReqMap = new Map<string, Observable<UserGroupListResp>>();
 
   // Invalidation requests - if true, then we'll refetch on next request instead of serving cache
   public detectedDiffractionStatusReqMapCacheInvalid: boolean = false;
   public exprListReqMapCacheInvalid: boolean = false;
   public modListReqMapCacheInvalid: boolean = false;
+  public userGroupListReqMapCacheInvalid: boolean = false;
 
   // Non-scan related
   private _regionOfInterestGetReqMap = new Map<string, Observable<RegionOfInterestGetResp>>();
@@ -555,6 +558,20 @@ export class APICachedDataService {
 
       // Add it to the map too so a subsequent request will get this
       this._imageListReqMap.set(cacheId, result);
+    }
+
+    return result;
+  }
+
+  getUserGroupList(req: UserGroupListReq): Observable<UserGroupListResp> {
+    const cacheId = JSON.stringify(UserGroupListReq.toJSON(req));
+    let result = this._userGroupListReqMap.get(cacheId);
+    if (result === undefined || this.userGroupListReqMapCacheInvalid) {
+      // Have to request it!
+      result = this._dataService.sendUserGroupListRequest(req).pipe(shareReplay(1));
+
+      // Add it to the map too so a subsequent request will get this
+      this._userGroupListReqMap.set(cacheId, result);
     }
 
     return result;
