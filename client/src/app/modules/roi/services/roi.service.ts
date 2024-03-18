@@ -378,6 +378,7 @@ export class ROIService {
         next: res => {
           if (res.regionOfInterest) {
             res.regionOfInterest.scanEntryIndexesEncoded = decodeIndexList(res.regionOfInterest.scanEntryIndexesEncoded);
+            res.regionOfInterest.pixelIndexesEncoded = decodeIndexList(res.regionOfInterest.pixelIndexesEncoded);
             this.roiItems$.value[id] = res.regionOfInterest;
             this.roiItems$.next(this.roiItems$.value);
           } else {
@@ -411,6 +412,7 @@ export class ROIService {
         }
 
         roiResp.regionOfInterest.scanEntryIndexesEncoded = decodeIndexList(roiResp.regionOfInterest.scanEntryIndexesEncoded);
+        roiResp.regionOfInterest.pixelIndexesEncoded = decodeIndexList(roiResp.regionOfInterest.pixelIndexesEncoded);
         return roiResp.regionOfInterest;
       })
     );
@@ -485,6 +487,10 @@ export class ROIService {
       roiToWrite.scanEntryIndexesEncoded = encodeIndexList(roiToWrite.scanEntryIndexesEncoded);
     }
 
+    if (roiToWrite.pixelIndexesEncoded && roiToWrite.pixelIndexesEncoded.length > 0) {
+      roiToWrite.pixelIndexesEncoded = encodeIndexList(roiToWrite.pixelIndexesEncoded);
+    }
+
     this._dataService
       .sendRegionOfInterestWriteRequest(
         RegionOfInterestWriteReq.create({
@@ -495,6 +501,9 @@ export class ROIService {
       .subscribe({
         next: res => {
           if (res.regionOfInterest) {
+            res.regionOfInterest.scanEntryIndexesEncoded = decodeIndexList(res.regionOfInterest.scanEntryIndexesEncoded);
+            res.regionOfInterest.pixelIndexesEncoded = decodeIndexList(res.regionOfInterest.pixelIndexesEncoded);
+
             this.roiItems$.value[res.regionOfInterest.id] = res.regionOfInterest;
             this.roiItems$.next(this.roiItems$.value);
 

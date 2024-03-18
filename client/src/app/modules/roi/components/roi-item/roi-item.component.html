@@ -231,16 +231,21 @@
             Image: {{ detailedInfo.imageName || "N/A" }}
           </h5>
           <div class="selection-btns">
-            <push-button (onClick)="onSaveSelectionToROI()" buttonStyle="outline" title="Saves the selected Scan Entries into this ROI, overwriting previous Scan Entry list"
+            <push-button
+              (onClick)="onSaveSelectionToROI()"
+              buttonStyle="outline"
+              title="Saves the selected Scan Entries into this ROI, overwriting previous Scan Entry list"
               >Save Selection to ROI</push-button
             >
-            <push-button (onClick)="onAddRGBUPixelsToROI()" buttonStyle="outline" title="Adds pixels within bounding polygons of Scan Entry points to ROI">Add RGBU Pixels to ROI</push-button>
+            <push-button (onClick)="onAddRGBUPixelsToROI()" buttonStyle="outline" title="Adds pixels within bounding polygons of Scan Entry points to ROI"
+              >Add RGBU Pixels to ROI</push-button
+            >
           </div>
         </div>
         <div class="scan-entries" *ngFor="let scanId of scanIds">
           <span class="header">
             <span class="rtt-label">RTT: {{ scanId }}</span>
-            <span class="entry-count">{{ scanEntryIndicesByDataset[scanId].length }} PMCs</span>
+            <span class="entry-count">{{ scanEntryIndicesByDataset[scanId]?.length || "" }} PMCs</span>
             <action-button [action]="openScanIdxs.has(scanId) ? 'closeAccordion' : 'openAccordion'" (click)="onToggleScanMenu(scanId)"></action-button>
           </span>
           <div *ngIf="openScanIdxs.has(scanId)" class="scan-entries-container">
@@ -257,8 +262,8 @@
                   action="close"
                   color="rgb(188, 188, 188)"
                   (onClick)="onDeleteScanEntryIdx(entryIdx)"
-                  [disabled]="scanEntryIndicesByDataset[scanId].length === 1"
-                  [tooltipTitle]="scanEntryIndicesByDataset[scanId].length === 1 ? 'Cannot delete the last PMC' : 'Delete PMC'"></action-button>
+                  [disabled]="scanEntryIndicesByDataset[scanId]?.length === 1"
+                  [tooltipTitle]="scanEntryIndicesByDataset[scanId]?.length === 1 ? 'Cannot delete the last PMC' : 'Delete PMC'"></action-button>
               </div>
             </cdk-virtual-scroll-viewport>
           </div>
