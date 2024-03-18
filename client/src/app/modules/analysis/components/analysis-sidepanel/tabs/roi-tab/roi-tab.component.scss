@@ -2,6 +2,16 @@
   .panel-row {
     margin: 8px;
   }
+
+  .widget-selectors {
+    display: flex;
+    width: 100%;
+
+    mat-select {
+      flex: 1;
+      margin: 0 8px;
+    }
+  }
 }
 
 .new-roi {

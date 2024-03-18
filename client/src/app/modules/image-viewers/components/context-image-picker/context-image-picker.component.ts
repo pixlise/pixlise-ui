@@ -50,8 +50,8 @@ export class ContextImageItem {
     public hasBeamData: boolean,
     public beamIJIndex: number, // -1=default context image beam ij's, 0+ indexes into beam.context_locations[]
     public imageDrawTransform: ContextImageItemTransform | null // public rgbuSourceImage: RGBUImage, // eg if image was a floating point TIF
-  ) // public rgbSourceImage: HTMLImageElement, // eg if image was a PNG or JPG
-  {}
+    // public rgbSourceImage: HTMLImageElement, // eg if image was a PNG or JPG
+  ) {}
 }
 
 // TODO: Should probably generalise this and make it into a reusable drop-list since the reason for writing
@@ -163,6 +163,7 @@ export type ImageSelection = {
 export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges {
   private _subs = new Subscription();
 
+  @Input() initialScanId: string = "";
   @Input() scanIds: string[] = [];
   @Input() currentImage: string = "";
   @Input() includeHideOption: boolean = true;
@@ -311,6 +312,7 @@ export class ContextImagePickerComponent implements OnInit, OnDestroy, OnChanges
     const dialogConfig = new MatDialogConfig<ImagePickerDialogData>();
     // Pass data to dialog
     dialogConfig.data = {
+      defaultScanId: this.initialScanId,
       scanIds: this.scanIds,
       purpose: ScanImagePurpose.SIP_UNKNOWN,
       selectedImagePath: this.contextImagePath,

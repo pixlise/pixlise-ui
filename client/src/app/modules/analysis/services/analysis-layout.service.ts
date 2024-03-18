@@ -20,6 +20,7 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { HighlightedContextImageDiffraction, HighlightedDiffraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
 import EditorConfig from "src/app/modules/code-editor/models/editor-config";
+import { HighlightedROI } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
 
 export class DefaultExpressions {
   constructor(
@@ -59,6 +60,9 @@ export class AnalysisLayoutService implements OnDestroy {
 
   highlightedDiffractionWidget$ = new BehaviorSubject<HighlightedDiffraction | null>(null);
   highlightedContextImageDiffractionWidget$ = new BehaviorSubject<HighlightedContextImageDiffraction | null>(null);
+
+  // For now this will just be for the context image, but we may want to expand it to other widgets
+  highlightedROI$ = new BehaviorSubject<HighlightedROI | null>(null);
 
   widgetData$ = new BehaviorSubject<Map<string, WidgetData>>(new Map());
 

@@ -32,6 +32,7 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { Subscription } from "rxjs";
 import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { ScanItem } from "src/app/generated-protos/scan";
+import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { SelectionService } from "src/app/modules/pixlisecore/pixlisecore.module";
@@ -39,7 +40,14 @@ import { NewROIDialogComponent, NewROIDialogData } from "src/app/modules/roi/com
 import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
 import { ROISearchFilter } from "src/app/modules/roi/models/roi-search";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
+import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
 import { Colours } from "src/app/utils/colours";
+
+export type HighlightedROI = {
+  widgetId: string;
+  roiId: string;
+  scanId: string;
+};
 
 @Component({
   selector: "roi-tab",
@@ -73,6 +81,10 @@ export class ROITabComponent implements OnInit {
   entryCount: number = 0;
   selectedScanIds: string[] = [];
 
+  layoutWidgets: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
+  allContextImages: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
+  private _selectedContextImage: string = "";
+
   constructor(
     private _roiService: ROIService,
     private _analysisLayoutService: AnalysisLayoutService,
@@ -100,10 +112,54 @@ export class ROITabComponent implements OnInit {
         this.entryCount = selection.beamSelection.getSelectedEntryCount();
       })
     );
+
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
+        if (config) {
+          let widgetReferences: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
+          config.layouts.forEach((layout, i) => {
+            let widgetCounts: Record<string, number> = {};
+            layout.widgets.forEach((widget, widgetIndex) => {
+              if (widgetCounts[widget.type]) {
+                widgetCounts[widget.type]++;
+              } else {
+                widgetCounts[widget.type] = 1;
+              }
+
+              let widgetTypeName = WIDGETS[widget.type as keyof typeof WIDGETS].name;
+              let widgetName = `${widgetTypeName} ${widgetCounts[widget.type]}${i > 0 ? ` (page ${i + 1})` : ""}`;
+
+              widgetReferences.push({ widget, name: widgetName, type: widget.type });
+            });
+          });
+
+          this.layoutWidgets = widgetReferences;
+
+          this.allContextImages = this.layoutWidgets.filter(widget => widget.type === "context-image");
+          this.selectedContextImage = this.allContextImages[0].widget.id;
+        }
+      })
+    );
   }
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  get selectedContextImage(): string {
+    return this._selectedContextImage;
+  }
+
+  set selectedContextImage(widgetId: string) {
+    // If the ROI is highlighted, update the widgetId
+    if (this._analysisLayoutService.highlightedROI$.value?.widgetId === this._selectedContextImage) {
+      this._analysisLayoutService.highlightedROI$.next({
+        widgetId,
+        roiId: this._analysisLayoutService.highlightedROI$.value?.roiId,
+        scanId: this.visibleScanId,
+      });
+    }
+    this._selectedContextImage = widgetId;
   }
 
   trackBySummaryId(index: number, summary: ROIItemSummary) {
@@ -141,6 +197,29 @@ export class ROITabComponent implements OnInit {
 
   onCancelCreateROI() {
     this.closeCreateROIMenu();
+  }
+
+  get highlightedROIId(): string {
+    return this._analysisLayoutService.highlightedROI$.value?.roiId || "";
+  }
+
+  onROIVisibleToggle(roi: ROIItemSummary) {
+    if (
+      roi.id === this._analysisLayoutService.highlightedROI$.value?.roiId &&
+      this.selectedContextImage === this._analysisLayoutService.highlightedROI$.value?.widgetId
+    ) {
+      this._analysisLayoutService.highlightedROI$.next({
+        widgetId: this.selectedContextImage,
+        roiId: "", // Clear the highlighted ROI
+        scanId: this.visibleScanId,
+      });
+    } else {
+      this._analysisLayoutService.highlightedROI$.next({
+        widgetId: this.selectedContextImage,
+        roiId: roi.id,
+        scanId: this.visibleScanId,
+      });
+    }
   }
 
   onNewROI() {

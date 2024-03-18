@@ -271,7 +271,7 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   get isVisible(): boolean {
-    return false;
+    return this.selected;
   }
 
   get createdDate(): number {
@@ -335,7 +335,9 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
     this.closeSettingsMenu();
   }
 
-  onVisibility(evt: any) {}
+  onVisibility(evt: any) {
+    this.onROISelect.emit();
+  }
 
   onScanEntryIdxPagePrev() {}
 

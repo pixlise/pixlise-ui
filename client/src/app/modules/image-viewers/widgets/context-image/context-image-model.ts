@@ -17,7 +17,7 @@ import { ContextImageRegionLayer, RegionDisplayPolygon } from "../../models/regi
 import { MapColourScaleModel, MapColourScaleSourceData } from "./ui-elements/map-colour-scale/map-colour-scale-model";
 import { randomString } from "src/app/utils/utils";
 import { MinMax } from "src/app/models/BasicTypes";
-import { adjustImageRGB } from "src/app/utils/drawing";
+import { adjustImageRGB, alphaBytesToImage } from "src/app/utils/drawing";
 import { VisibleROI } from "src/app/generated-protos/widget-data";
 import { ROIItem } from "src/app/generated-protos/roi";
 
@@ -722,6 +722,22 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
     }
   }
 
+  private makePixelMask(pixelIndexes: Set<number>, width: number, height: number, roiColour: RGBA): HTMLImageElement | null {
+    // If we have been informed of a context images dimensions, we can generate a mask image
+    if (width <= 0 || height <= 0) {
+      return null;
+    }
+
+    const pixelCount = width * height;
+    let maskBytes = new Uint8Array(pixelCount);
+
+    for (let idx of pixelIndexes) {
+      maskBytes[idx] = 192;
+    }
+
+    return alphaBytesToImage(maskBytes, width, height, roiColour);
+  }
+
   private makeRegion(scanId: string, roiId: string, from: ContextImageModel): ContextImageRegionLayer {
     const roiLayer = new ContextImageRegionLayer(roiId, "");
 
@@ -754,6 +770,14 @@ export class ContextImageDrawModel implements BaseChartDrawModel {
 
     if (roi.roi.displaySettings) {
       roiLayer.colour = RGBA.fromString(roi.roi.displaySettings.colour);
+    }
+
+    // If we have pixel indexes, we can generate a mask image
+    if (roi.roi.pixelIndexesEncoded.length > 0 && roi.roi.imageName == from.imageName) {
+      let width = from.raw?.rgbuSourceImage?.r?.width || 0;
+      let height = from.raw?.rgbuSourceImage?.r?.height || 0;
+
+      roiLayer.pixelMask = this.makePixelMask(new Set(roi.roi.pixelIndexesEncoded), width, height, roiLayer.colour);
     }
 
     return roiLayer;
