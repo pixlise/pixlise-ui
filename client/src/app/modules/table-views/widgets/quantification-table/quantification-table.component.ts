@@ -490,7 +490,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
     return this._orderByAbundance;
   }
 
-  setOrderByAbundance(event): void {
+  setOrderByAbundance(event: any): void {
     this._orderByAbundance = !this._orderByAbundance;
 
     this.saveState();

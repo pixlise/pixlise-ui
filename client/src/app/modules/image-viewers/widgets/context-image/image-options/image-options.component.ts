@@ -185,6 +185,10 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
   //   this.publishOptionChange();
   // }
 
+  get selectedScanId(): string {
+    return this._options.selectedScanId || "";
+  }
+
   onSelectedImageChanged(selection: ImageSelection) {
     this._options.currentImage = selection.path;
     this._options.selectedScanId = selection.scanId;

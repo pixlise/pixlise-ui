@@ -43,10 +43,17 @@ POSSIBILITY OF SUCH DAMAGE.
       >New ROI from Selection</push-button
     >
   </div>
+  <div class="widget-selectors">
+    <mat-select [(ngModel)]="selectedContextImage" class="scan-filter" placeholder="Open a Context Image ...">
+      <mat-option *ngFor="let chart of allContextImages" [value]="chart.widget.id">{{ chart.name }} </mat-option>
+    </mat-select>
+  </div>
+
   <roi-search-controls
     class="{{ showSearch ? 'visible' : '' }}"
     [summaries]="summaries"
     (onFilterChanged)="onFilterChanged($event)"
+    [showAllPoints]="false"
     [manualFilters]="manualFilters"></roi-search-controls>
   <section class="rois {{ showSearch ? 'search-controls-visible' : '' }}">
     <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport">
@@ -55,7 +62,9 @@ POSSIBILITY OF SUCH DAMAGE.
         [summary]="item"
         [selectAuthorToFilter]="showSearch"
         (onFilterAuthor)="onFilterAuthor($event)"
-        [displaySettings]="displaySettingsMap[item.id]"></roi-item>
+        [displaySettings]="displaySettingsMap[item.id]"
+        [selected]="highlightedROIId === item.id"
+        (onROISelect)="onROIVisibleToggle(item)"></roi-item>
     </cdk-virtual-scroll-viewport>
   </section>
 </section>

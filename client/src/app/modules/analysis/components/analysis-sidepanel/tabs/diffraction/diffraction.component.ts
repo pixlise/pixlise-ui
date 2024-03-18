@@ -35,13 +35,10 @@ import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
 import { DetectedDiffractionPeakStatuses, DetectedDiffractionPerLocation, ManualDiffractionPeak } from "src/app/generated-protos/diffraction-data";
 import { DataExpression } from "src/app/generated-protos/expressions";
-import { ScanEntryRange, ScanItem } from "src/app/generated-protos/scan";
-import { ScanEntryReq } from "src/app/generated-protos/scan-entry-msgs";
+import { ScanItem } from "src/app/generated-protos/scan";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { MinMax, SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-// import { HistogramInteraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction-tab-old/interaction";
-// import { HistogramInteraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction-tab-old/interaction";
 import { DiffractionHistogramDrawer } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/drawer";
 import { HistogramInteraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/interaction";
 import {
@@ -60,7 +57,6 @@ import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selecti
 import { SelectionService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
-import { HistogramDrawer } from "src/app/modules/scatterplots/widgets/histogram-widget/histogram-drawer";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { DiffractionPeakMapPerLocation, DiffractionService } from "src/app/modules/spectrum/services/diffraction.service";
 import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
@@ -68,7 +64,6 @@ import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canv
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
 import { Colours } from "src/app/utils/colours";
-import { encodeIndexList } from "src/app/utils/utils";
 
 export type DiffractionExpressionResponse = {
   title?: string;
