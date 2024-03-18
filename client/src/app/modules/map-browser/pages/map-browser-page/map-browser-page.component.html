@@ -24,72 +24,30 @@
         'grid-template-columns': 'auto',
         'grid-template-rows': 'auto'
       }">
-      <widget
+      <div
+        class="widget-container"
         *ngFor="let widget of layout.widgets; trackBy: trackByWidget"
-        [widgetLayoutConfig]="widget"
-        [layoutIndex]="0"
-        [initWidget]="widget.type"
-        [title]="idToTitleMap[widget.id]"
-        [liveExpression]="liveExpressionMap[widget.id]"
-        [disableSwitch]="true"
-        [ngStyle]="{
-          'grid-column-start': widget.startColumn,
-          'grid-column-end': widget.endColumn,
-          'grid-row-start': widget.startRow,
-          'grid-row-end': widget.endRow
-        }"></widget>
-      <!-- <widget
-        [widgetLayoutConfig]="layout.widgets[0]"
-        [layoutIndex]="0"
-        [initWidget]="layout.widgets[0].type"
-        [title]="idToTitleMap[layout.widgets[0].id]"
-        [liveExpression]="liveExpressionMap[layout.widgets[0].id]"
-        [disableSwitch]="true"
-        [ngStyle]="{
-          'grid-column-start': layout.widgets[0].startColumn,
-          'grid-column-end': layout.widgets[0].endColumn,
-          'grid-row-start': layout.widgets[0].startRow,
-          'grid-row-end': layout.widgets[0].endRow
-        }"></widget>
-      <widget
-        [widgetLayoutConfig]="layout.widgets[1]"
-        [layoutIndex]="0"
-        [initWidget]="layout.widgets[1].type"
-        [title]="idToTitleMap[layout.widgets[1].id]"
-        [liveExpression]="liveExpressionMap[layout.widgets[1].id]"
-        [disableSwitch]="true"
-        [ngStyle]="{
-          'grid-column-start': layout.widgets[1].startColumn,
-          'grid-column-end': layout.widgets[1].endColumn,
-          'grid-row-start': layout.widgets[1].startRow,
-          'grid-row-end': layout.widgets[1].endRow
-        }"></widget>
-      <widget
-        [widgetLayoutConfig]="layout.widgets[2]"
-        [layoutIndex]="0"
-        [initWidget]="layout.widgets[2].type"
-        [title]="idToTitleMap[layout.widgets[2].id]"
-        [liveExpression]="liveExpressionMap[layout.widgets[2].id]"
-        [disableSwitch]="true"
-        [ngStyle]="{
-          'grid-column-start': layout.widgets[2].startColumn,
-          'grid-column-end': layout.widgets[2].endColumn,
-          'grid-row-start': layout.widgets[2].startRow,
-          'grid-row-end': layout.widgets[2].endRow
-        }"></widget>
-      <widget
-        [widgetLayoutConfig]="layout.widgets[3]"
-        [layoutIndex]="0"
-        [initWidget]="layout.widgets[3].type"
-        [title]="idToTitleMap[layout.widgets[3].id]"
-        [liveExpression]="liveExpressionMap[layout.widgets[3].id]"
-        [disableSwitch]="true"
-        [ngStyle]="{
-          'grid-column-start': layout.widgets[3].startColumn,
-          'grid-column-end': layout.widgets[3].endColumn,
-          'grid-row-start': layout.widgets[3].startRow,
-          'grid-row-end': layout.widgets[3].endRow
-        }"></widget> -->
+        [ngStyle]="
+          soloViewWidget && soloViewWidget?.id !== widget.id
+            ? { display: 'none' }
+            : soloViewWidget && soloViewWidget?.id === widget.id
+            ? {}
+            : {
+                'grid-column-start': widget.startColumn,
+                'grid-column-end': widget.endColumn,
+                'grid-row-start': widget.startRow,
+                'grid-row-end': widget.endRow
+              }
+        ">
+        <widget
+          *ngIf="!soloViewWidget || soloViewWidget?.id === widget.id"
+          [widgetLayoutConfig]="widget"
+          [layoutIndex]="0"
+          [initWidget]="widget.type"
+          [title]="idToTitleMap[widget.id]"
+          [liveExpression]="liveExpressionMap[widget.id]"
+          [disableSwitch]="true"></widget>
+      </div>
     </section>
   </section>
 </section>

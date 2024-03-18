@@ -253,7 +253,7 @@
       <push-button buttonStyle="yellow" (onClick)="onSave()" [disabled]="!activeExpressionChanged" class="save-btn">Save</push-button>
     </div>
   </section>
-  <section class="visualization-container">
+  <section class="visualization-container {{ isExpressionConsoleSolo ? 'console-solo' : '' }} {{ isPreviewWidgetSolo ? 'preview-solo' : '' }}">
     <div class="top-header">
       <h2>Visualization: Viz</h2>
     </div>
@@ -272,6 +272,7 @@
         [evaluatedExpression]="lastRunResult"
         [stdout]="stdout"
         [stderr]="stderr"
+        (onToggleSolo)="onToggleExpressionConsoleSolo()"
         [columnCount]="10"></expression-console>
     </section>
   </section>

@@ -29,7 +29,7 @@
 
 import { Component, ElementRef, HostListener, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { ActivatedRoute, Data, Params, Router } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { Subscription } from "rxjs";
 import { DataQueryResult } from "src/app/expression-language/data-values";
 import { DataExpression, ModuleReference } from "src/app/generated-protos/expressions";
@@ -119,6 +119,9 @@ export class CodeEditorPageComponent implements OnInit {
   public stdout: string = "";
   public stderr: string = "";
 
+  public isPreviewWidgetSolo: boolean = false;
+  public isExpressionConsoleSolo: boolean = false;
+
   constructor(
     private _router: Router,
     private _route: ActivatedRoute,
@@ -146,6 +149,17 @@ export class CodeEditorPageComponent implements OnInit {
 
     this._expressionsService.fetchExpressions();
     this._expressionsService.fetchModules();
+
+    this._subs.add(
+      this._analysisLayoutService.soloViewWidgetId$.subscribe(soloViewWidgetId => {
+        this.isPreviewWidgetSolo = soloViewWidgetId === EditorConfig.previewWidgetId;
+        if (this.isPreviewWidgetSolo) {
+          this.isExpressionConsoleSolo = false;
+        }
+
+        this._analysisLayoutService.delayNotifyCanvasResize(1);
+      })
+    );
 
     this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfig => {
@@ -432,6 +446,13 @@ export class CodeEditorPageComponent implements OnInit {
         }
       })
     );
+  }
+
+  onToggleExpressionConsoleSolo() {
+    this.isExpressionConsoleSolo = !this.isExpressionConsoleSolo;
+    if (this.isExpressionConsoleSolo) {
+      this.isPreviewWidgetSolo = false;
+    }
   }
 
   loadExpressionById(expressionId: string, updated: boolean) {
