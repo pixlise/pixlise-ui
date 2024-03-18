@@ -83,7 +83,11 @@ POSSIBILITY OF SUCH DAMAGE.
             <mat-option [value]="true">Editor</mat-option>
             <mat-option [value]="false">Viewer</mat-option>
           </mat-select>
-          <action-button action="close" confirmText="Are you sure you want to remove {{ member.name }}?" (onClick)="onRemoveMember(member.id)"></action-button>
+          <action-button
+            action="close"
+            color="rgb(var(--clr-gray-30))"
+            confirmText="Are you sure you want to remove {{ member.name }}?"
+            (onClick)="onRemoveMember(member.id)"></action-button>
         </div>
       </div>
     </div>
