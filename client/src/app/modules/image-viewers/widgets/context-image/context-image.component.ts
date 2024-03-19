@@ -35,7 +35,6 @@ import { ImageOptionsComponent, ImageDisplayOptions, ImagePickerParams, ImagePic
 import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
-import { ColourScheme } from "src/app/modules/image-viewers/widgets/context-image/context-image-model-interface";
 import { HighlightedROI } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
 
 @Component({
@@ -66,6 +65,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   private _shownImageOptions: MatDialogRef<ImageOptionsComponent> | null = null;
 
   private _expressionPickerDialog: MatDialogRef<ExpressionPickerComponent> | null = null;
+
+  private _showBottomToolbar: boolean = !this._analysisLayoutService.isMapsPage;
 
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
@@ -162,40 +163,74 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         tooltip: "Selection changer",
         onClick: () => {},
       },
-      bottomToolbar: [
-        {
-          id: "layers",
-          type: "button",
-          title: "Layers",
-          tooltip: "Manage layers of data drawn",
-          value: false,
-          onClick: (value, trigger) => this.onToggleLayersView(trigger),
-        },
-        {
-          id: "regions",
-          type: "button",
-          title: "Regions",
-          tooltip: "Manage regions drawn",
-          value: false,
-          onClick: () => this.onRegions(),
-        },
-        {
-          id: "image",
-          type: "button",
-          title: "Image",
-          margin: "0 auto 0 0",
-          tooltip: "Manage images drawn",
-          value: false,
-          onClick: (value, trigger) => this.onToggleImageOptionsView(trigger),
-        },
-      ],
+      bottomToolbar: [],
     };
+
+    if (this.showBottomToolbar) {
+      this.loadBottomToolbar();
+    }
+  }
+
+  get showBottomToolbar(): boolean {
+    return this._showBottomToolbar;
+  }
+
+  set showBottomToolbar(value: boolean) {
+    if (value === this._showBottomToolbar) {
+      return;
+    }
+
+    this._showBottomToolbar = value;
+    if (value) {
+      this.loadBottomToolbar();
+    }
+  }
+
+  onToggleBottomToolbar() {
+    this.showBottomToolbar = !this.showBottomToolbar;
+    if (!this.showBottomToolbar) {
+      this.hideBottomToolbar();
+    }
+  }
+
+  hideBottomToolbar() {
+    this._widgetControlConfiguration.bottomToolbar = [];
+  }
+
+  loadBottomToolbar() {
+    this._widgetControlConfiguration.bottomToolbar = [
+      {
+        id: "layers",
+        type: "button",
+        title: "Layers",
+        tooltip: "Manage layers of data drawn",
+        value: false,
+        onClick: (value, trigger) => this.onToggleLayersView(trigger),
+      },
+      {
+        id: "regions",
+        type: "button",
+        title: "Regions",
+        tooltip: "Manage regions drawn",
+        value: false,
+        onClick: () => this.onRegions(),
+      },
+      {
+        id: "image",
+        type: "button",
+        title: "Image",
+        margin: "0 auto 0 0",
+        tooltip: "Manage images drawn",
+        value: false,
+        onClick: (value, trigger) => this.onToggleImageOptionsView(trigger),
+      },
+    ];
 
     for (const tool of this.toolhost.getToolButtons()) {
       let customStyle = {};
-      if (tool.toolId == ContextImageToolId.ZOOM) {
+      if (tool.toolId === ContextImageToolId.ZOOM) {
         customStyle = { "border-left": "1px solid rgb(var(--clr-gray-70))", "margin-left": "4px" };
-      } else if (tool.toolId == ContextImageToolId.PAN) {
+      } else if (tool.toolId === ContextImageToolId.PAN) {
         customStyle = { "border-right": "1px solid rgb(var(--clr-gray-70))", "padding-right": "4px" };
       }
 
@@ -409,6 +444,10 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     this.reDraw();
   }
 
+  get isMapsPage(): boolean {
+    return this._analysisLayoutService.isMapsPage;
+  }
+
   get syncId(): string {
     return `${this.scanId}-${this._analysisLayoutService.isMapsPage ? "maps" : "analysis"}`;
   }
@@ -517,32 +556,6 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     // And generate ROI polygons
     for (const roi of this.mdl.roiIds) {
       this.loadROIRegion(roi);
-      // NOTE: loadROI calls decodeIndexList so from this point we don't have to worry, we have a list of PMCs!
-      // this._roiService.loadROI(roi.id).subscribe({
-      //   next: (roiLoaded: ROIItem) => {
-      //     // We need to be able to convert PMCs to location indexes...
-      //     const scanMdl = this.mdl.getScanModelFor(roi.scanId);
-      //     if (scanMdl) {
-      //       const pmcToIndexLookup = new Map<number, number>();
-      //       for (const pt of scanMdl.scanPoints) {
-      //         pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
-      //       }
-
-      //       // Make sure it has up to date display settings
-      //       const disp = this._roiService.getRegionDisplaySettings(roi.id);
-      //       if (disp) {
-      //         roiLoaded.displaySettings = ROIItemDisplaySettings.create({ colour: disp.colour.asString(), shape: disp.shape });
-      //       }
-
-      //       // We've loaded the region itself, store these so we can build a draw model when needed
-      //       this.mdl.setRegion(roi.id, roiLoaded, pmcToIndexLookup);
-      //     }
-      //   },
-      //   error: err => {
-      //     this._snackService.openError("Failed to generate region: " + roi.id + " scan: " + roi.scanId, err);
-      //     this.widgetErrorMessage = "Failed to load region data for displaying context image: " + this.mdl.imageName;
-      //   },
-      // });
     }
   }
 
@@ -646,8 +659,14 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   onSoloView() {
     if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
       this._analysisLayoutService.soloViewWidgetId$.next("");
+      if (this._analysisLayoutService.isMapsPage) {
+        this.hideBottomToolbar();
+      }
     } else {
       this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
+      if (this._analysisLayoutService.isMapsPage) {
+        this.loadBottomToolbar();
+      }
     }
   }
 
