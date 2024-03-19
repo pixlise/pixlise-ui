@@ -426,8 +426,10 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           this.saveState();
         }
 
-        // Expression picker has closed, so we can stop highlighting this widget
-        this._analysisLayoutService.highlightedWidgetId$.next("");
+        if (!result?.persistDialog) {
+          // Expression picker has closed, so we can stop highlighting this widget
+          this._analysisLayoutService.highlightedWidgetId$.next("");
+        }
       })
     );
 
@@ -802,6 +804,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       scanId: this.scanId,
       selectedIds: this.mdl.expressionIds || [],
       draggable: true,
+      liveReload: true,
+      singleSelectionOption: true,
+      maxSelection: 1,
     };
 
     this._expressionPickerDialog = this.dialog.open(ExpressionPickerComponent, dialogConfig);
