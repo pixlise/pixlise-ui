@@ -31,13 +31,11 @@
 
 .toolbar {
   height: 40px;
-  // padding: $sz-half $sz-double;
   margin-bottom: $ui-border-size;
   user-select: none;
 
   display: flex;
   flex-direction: row;
-  // justify-content: space-between;
   align-items: center;
   background: #1b1d1e;
   border-bottom: 1px solid #293137;
@@ -47,10 +45,14 @@
     display: flex;
     align-items: center;
     padding-right: 16px;
-    // margin-right: 16px;
     margin-left: 16px;
     height: 100%;
     border-right: 1px solid #293137;
+
+    .abbreviated,
+    .full {
+      cursor: pointer;
+    }
 
     .title-text {
       margin-left: -64px;

@@ -34,6 +34,9 @@ import { Navigation } from "../../navigation";
 
 import { LoginPrefix, SignupPrefix } from "../number-button/number-button.component";
 import { DefaultLoggedInLink } from "../../navigation";
+import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
+import { AuthService } from "@auth0/auth0-angular";
+import { Subscription } from "rxjs";
 
 @Component({
   selector: "nav-top-menu",
@@ -43,24 +46,52 @@ import { DefaultLoggedInLink } from "../../navigation";
 export class NavTopMenuComponent implements OnInit {
   @ViewChildren("childMenu") childMenuElements: QueryList<ElementRef> = new QueryList<ElementRef>();
 
+  private _subs: Subscription = new Subscription();
+
   loginLink: string = LoginPrefix + DefaultLoggedInLink;
   signupLink: string = SignupPrefix + DefaultLoggedInLink;
+  loggedInPage: string = DefaultLoggedInLink;
+
   navigation: Navigation = new Navigation();
   private _openMenus: Map<string, boolean> = new Map<string, boolean>();
   private _activeNavGroup: string = "";
 
+  isLoggedIn: boolean = false;
+
   constructor(
+    private _authService: AuthService,
     private _activeRoute: ActivatedRoute,
     private _router: Router
   ) {}
 
   ngOnInit(): void {
+    this._subs.add(
+      this._authService.isAuthenticated$.subscribe(isLoggedIn => {
+        this.isLoggedIn = isLoggedIn;
+      })
+    );
+
     for (let c of this.navigation.categories) {
       this._openMenus.set(c, false);
     }
 
-    this._activeRoute.url.subscribe(url => {
-      this._activeNavGroup = this.navigation.getCategoryByLink(this._router.url);
+    this._subs.add(
+      this._activeRoute.url.subscribe(url => {
+        this._activeNavGroup = this.navigation.getCategoryByLink(this._router.url);
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
+  }
+
+  onLogout() {
+    // this._authService.logout({ returnTo: window.location.origin });
+    this._authService.logout({
+      openUrl: () => {
+        this._router.navigate(["/"]);
+      },
     });
   }
 
