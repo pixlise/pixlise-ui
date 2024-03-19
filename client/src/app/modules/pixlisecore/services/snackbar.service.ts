@@ -53,7 +53,7 @@ export class SnackbarService {
     });
   }
 
-  openError(message: any, details: string | Error = "", action: string = "", rateLimitMS = 1000): void {
+  openError(message: any, details: string | Error | WidgetError = "", action: string = "", rateLimitMS = 1000): void {
     let messageText = "";
     let newDetails = "";
     if (message instanceof WidgetError) {
@@ -72,7 +72,22 @@ export class SnackbarService {
     }
 
     // If the details has an error in it, interpret it a bit nicer
-    if (details instanceof Error) {
+    if (details instanceof WidgetError) {
+      if (details.message.length > 0) {
+        if (newDetails.length > 0) {
+          newDetails += ". ";
+        }
+        newDetails += details.message;
+      }
+
+      if (details.description.length > 0) {
+        if (newDetails.length > 0) {
+          newDetails += ". ";
+        }
+        newDetails += details.description;
+      }
+      details = newDetails;
+    } else if (details instanceof Error) {
       // Badly named, but this interprets lots of kinds of errors...
       details = httpErrorToString(details, newDetails.length > 0 ? newDetails : message);
     } else {

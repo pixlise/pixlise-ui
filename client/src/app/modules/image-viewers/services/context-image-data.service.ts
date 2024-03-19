@@ -21,6 +21,7 @@ import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { ContextImageItemTransform } from "../image-viewers.module";
 import { Point } from "src/app/models/Geometry";
+import { WidgetError } from "../../pixlisecore/services/widget-data.service";
 
 export type SyncedTransform = {
   scale: Point;
@@ -172,7 +173,7 @@ export class ContextImageDataService {
     }
 
     if (results.queryResults.length != query.length) {
-      throw new Error(`getExpressionGroupModel: expected ${query.length} results, received ${results.queryResults.length}`);
+      throw new Error(`processQueryResults: expected ${query.length} results, received ${results.queryResults.length}`);
     }
 
     const valueRanges: MinMax[] = [];
@@ -189,12 +190,12 @@ export class ContextImageDataService {
     for (let c = 0; c < results.queryResults.length; c++) {
       const result = results.queryResults[c];
       if (result.error) {
-        throw new Error(`getExpressionGroupModel: group ${expressionId} expression ${result.expression?.name} (${expressionId}) had error: ${result.error}`);
+        throw new WidgetError(`processQueryResults: expression ${result.expression?.name} (${expressionId}) had error: ${result.error}`, result.error.description);
       }
 
       if (c > 0 && results.queryResults[0].values.values.length != result.values.values.length) {
         throw new Error(
-          `getExpressionGroupModel: group ${expressionId} results differed in length, ${results.queryResults[0].values.values.length} vs ${result.values.values.length}`
+          `processQueryResults: expression ${result.expression?.name} (${expressionId}) results differed in length, ${results.queryResults[0].values.values.length} vs ${result.values.values.length}`
         );
       }
 
@@ -215,11 +216,11 @@ export class ContextImageDataService {
             if (pts[i].scanEntryId == item.pmc && pts[i].scanEntryIndex == idx) {
               pts[i].values.push(item.value);
             } else {
-              throw new Error(`getExpressionGroupModel: group ${expressionId} value ${i} of ${result.expression?.id || "?"} had non-matching PMC/index`);
+              throw new Error(`processQueryResults: expression ${expressionId} value ${i} of ${result.expression?.id || "?"} had non-matching PMC/index`);
             }
           }
         } else {
-          throw new Error(`getExpressionGroupModel: group ${expressionId} PMC ${item.pmc} doesn't exist`);
+          throw new Error(`processQueryResults: expression ${expressionId} PMC ${item.pmc} doesn't exist`);
         }
       }
     }
