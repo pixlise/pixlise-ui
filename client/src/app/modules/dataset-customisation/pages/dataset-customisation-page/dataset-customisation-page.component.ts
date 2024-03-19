@@ -659,7 +659,7 @@ export class DatasetCustomisationPageComponent implements OnInit, OnDestroy {
                     this.reDraw();
                   },
                   error: err => {
-                    this._snackService.openError("Failed to add element map layer: " + exprId + " for scan: " + scanId, err);
+                    this._snackService.openError(err);
                   },
                 });
             }

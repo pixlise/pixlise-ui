@@ -501,7 +501,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
                   // We have to wait for things to be injected on maps page, so this may be falsely called
                   console.warn("Failed to add layer: " + exprId + " scan: " + scanId, err);
                 } else {
-                  this._snackService.openError("Failed to add layer: " + exprId + " scan: " + scanId, err);
+                  //this._snackService.openError("Failed to add layer: " + exprId + " scan: " + scanId, err);
+                  this._snackService.openError(err);
                   this.widgetErrorMessage = "Failed to load layer data for displaying context image: " + this.mdl.imageName;
                 }
               },
