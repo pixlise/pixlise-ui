@@ -174,6 +174,7 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
     <push-button
+      *ngIf="maxSelection !== 1 || !persistDialog"
       buttonStyle="yellow"
       #tooltip="matTooltip"
       [matTooltip]="applyTooltip"
@@ -183,7 +184,7 @@ POSSIBILITY OF SUCH DAMAGE.
       >Apply</push-button
     >
     <push-button
-      *ngIf="persistDialog"
+      *ngIf="maxSelection !== 1 && persistDialog"
       buttonStyle="yellow"
       #tooltip="matTooltip"
       [matTooltip]="applyTooltip"
