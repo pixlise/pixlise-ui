@@ -289,7 +289,12 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   onSingleSelectionToggle(): void {
-    this.maxSelection = this.maxSelection === 1 ? (WIDGETS[this.widgetType as keyof typeof WIDGETS] as WidgetConfiguration)?.maxExpressions || 0 : 1;
+    this.maxSelection = this.maxSelection === 1 ? 0 : 1;
+    if (this.maxSelection === 1 && this.selectedExpressionIdOrder.length > 1) {
+      this.selectedExpressionIds = new Set([this.selectedExpressionIdOrder[0]]);
+      this.selectedExpressionIdOrder = [this.selectedExpressionIdOrder[0]];
+      this.updateSelectedExpressions();
+    }
   }
 
   get activeWidgetId(): string {
@@ -498,7 +503,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   get canSelectMore(): boolean {
-    return !this.data.maxSelection || this.selectedExpressionIds.size < this.data.maxSelection;
+    return !this.maxSelection || this.selectedExpressionIds.size < this.maxSelection;
   }
 
   get selectedExpressionGroupId(): string {
@@ -555,11 +560,16 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   toggleExpression(expression: DataExpression, saveToRecent: boolean = true): void {
-    if (this.data.maxSelection === 1) {
+    if (this.maxSelection === 1) {
       this.selectedExpressionIds.clear();
       this.selectedExpressionIds.add(expression.id);
       this.selectedExpressionIdOrder = [expression.id];
       this.updateRecentExpression(expression as DataExpression);
+      this.updateSelectedExpressions();
+
+      if (this.persistDialog) {
+        this.onConfirm();
+      }
       return;
     }
 
@@ -583,6 +593,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
         this.updateRecentExpression(expression as DataExpression);
       }
     }
+
+    this.updateSelectedExpressions();
   }
 
   onSelect(expression: DataExpression | ExpressionGroup): void {
