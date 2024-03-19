@@ -277,7 +277,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     }
 
     this.selectedExpressionIds.forEach(id => {
-      if (!this._expressionService.expressions$.value[id]) {
+      if (!this._expressionService.expressions$.value[id] && !this.isExpressionBuiltin(id)) {
         this.fetchedAllSelectedExpressions = false;
         this._expressionService.fetchExpression(id);
       }
@@ -356,6 +356,11 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     }
   }
 
+  isExpressionBuiltin(id: string): boolean {
+    let unsavedExpression = this._widgetDataService.unsavedExpressions.get(id);
+    return !!(unsavedExpression || this._pseudoIntensities[id] || this._quantifiedExpressions[id] || this._anomalyExpressions[id]);
+  }
+
   updateSelectedExpressions() {
     this._unmatchedExpressions = false;
     this.selectedExpressions = [];
@@ -406,7 +411,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
       // Add these to what we're building
       if (toSelect.length > 0) {
-        this.selectedExpressions.push(...toSelect);
+        this.selectedExpressions = [...toSelect];
       }
     }
   }

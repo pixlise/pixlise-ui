@@ -10,7 +10,7 @@ import { DataExpression } from "src/app/generated-protos/expressions";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ExpressionGroup } from "src/app/generated-protos/expression-group";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
-import { getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
+import { getAnomalyExpressions, getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { ExpressionBrowseSections } from "../../models/expression-browse-sections";
@@ -165,22 +165,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   }
 
   private refreshAnomalyMaps() {
-    this._anomalyExpressions = [];
-
-    let roughnessExpression = getPredefinedExpression(DataExpressionId.predefinedRoughnessDataExpression);
-    if (roughnessExpression) {
-      this._anomalyExpressions.push(roughnessExpression);
-    }
-
-    let diffractionExpression = getPredefinedExpression(DataExpressionId.predefinedDiffractionCountDataExpression);
-    if (diffractionExpression) {
-      this._anomalyExpressions.push(diffractionExpression);
-    }
-
-    let heightZExpression = getPredefinedExpression(DataExpressionId.predefinedHeightZDataExpression);
-    if (heightZExpression) {
-      this._anomalyExpressions.push(heightZExpression);
-    }
+    this._anomalyExpressions = getAnomalyExpressions();
   }
 
   private refreshPseudointensities(scanId: string) {
