@@ -35,14 +35,14 @@ import { DataExpression } from "src/app/generated-protos/expressions";
 import { ExpressionSearchFilter, RecentExpression } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { ScanConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ExpressionGroup, ExpressionGroupItem } from "src/app/generated-protos/expression-group";
 import { ExpressionBrowseSections } from "../../models/expression-browse-sections";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
-import { getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
+import { getAnomalyExpressions, getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
 import { WIDGETS, WidgetConfiguration, WidgetType } from "src/app/modules/widget/models/widgets.model";
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { WidgetData } from "src/app/generated-protos/widget-data";
@@ -88,6 +88,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   recentExpressions: RecentExpression[] = [];
 
   private _quantifiedExpressions: Record<string, DataExpression> = {};
+  private _anomalyExpressions: Record<string, DataExpression> = {};
   private _pseudoIntensities: Record<string, DataExpression> = {};
 
   private _unmatchedExpressions: boolean = false;
@@ -162,6 +163,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       this.browseSections = this.browseSections.filter(section => section.name === ExpressionBrowseSections.EXPRESSIONS);
     }
 
+    this.loadAnomalyExpressions();
     this.updateSelectedExpressions();
     this.loadRecentExpressionsFromCache();
 
@@ -303,6 +305,14 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     }
   }
 
+  loadAnomalyExpressions(): void {
+    this._anomalyExpressions = {};
+    let anomalyExpressions = getAnomalyExpressions();
+    anomalyExpressions.forEach(expression => {
+      this._anomalyExpressions[expression.id] = expression;
+    });
+  }
+
   loadQuantifiedExpressions(availableScanQuants: Record<string, QuantificationSummary[]>): void {
     this._quantifiedExpressions = {};
 
@@ -350,6 +360,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
         } else if (this._quantifiedExpressions[id]) {
           // Check if we have it in quantified expressions
           toSelect.push(this._quantifiedExpressions[id]);
+        } else if (this._anomalyExpressions[id]) {
+          toSelect.push(this._anomalyExpressions[id]);
         } else if (this.filteredExpressions) {
           // Check if we have it in filtered expressions
           const filteredItem = this.filteredExpressions.find(expression => expression.id === id);

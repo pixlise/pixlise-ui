@@ -184,9 +184,11 @@ export class DataExpressionId {
     }
     return result;
   }
+
   public static makePredefinedPseudoIntensityExpression(pseudoElem: string): string {
     return DataExpressionId.PredefinedLayerPrefix + DataExpressionId.PredefinedPseudoIntensityLayerPrefix + pseudoElem;
   }
+
   public static makePredefinedQuantDataExpression(column: string, detector: string): string {
     let result = DataExpressionId.predefinedQuantDataExpression + column;
     if (detector) {
@@ -194,6 +196,7 @@ export class DataExpressionId {
     }
     return result;
   }
+
   public static readonly predefinedUnquantifiedPercentDataExpression =
     DataExpressionId.PredefinedLayerPrefix + DataExpressionId.PredefinedQuantElementLayerPrefix + DataExpressionId.SuffixUnquantified;
   public static readonly predefinedRoughnessDataExpression = DataExpressionId.PredefinedLayerPrefix + DataExpressionId.PredefinedLayerRoughness;
