@@ -42,6 +42,7 @@ POSSIBILITY OF SUCH DAMAGE.
     <img *ngIf="user !== null" class="user-icon" src="{{ user.info?.iconURL }}" />
   </section>
   <section class="buttons">
+    <push-button *ngIf="isAdminOfAnyGroup" buttonStyle="hover-yellow" class="settings" (onClick)="onGroups()">Groups</push-button>
     <push-button buttonStyle="hover-yellow" class="settings" (onClick)="onSettings()">Settings</push-button>
     <push-button buttonStyle="hover-yellow" class="sign-out" (onClick)="onLogout()">Sign Out</push-button>
   </section>

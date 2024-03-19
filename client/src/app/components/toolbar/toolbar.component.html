@@ -31,8 +31,22 @@ POSSIBILITY OF SUCH DAMAGE.
 
 <div *ngIf="isVisible" class="toolbar" [ngClass]="{ 'dark-background': darkBackground }">
   <div class="logo-title">
-    <img *ngIf="title.length > 0" src="assets/PIXLISE-abbreviated.svg" />
-    <img *ngIf="title.length === 0" src="assets/PIXLISE-red-logo.svg" />
+    <img
+      class="abbreviated"
+      *ngIf="title.length > 0"
+      src="assets/PIXLISE-abbreviated.svg"
+      (click)="onLogoClick()"
+      #tooltip="matTooltip"
+      matTooltip="Go to homepage"
+      [matTooltipShowDelay]="500" />
+    <img
+      class="full"
+      *ngIf="title.length === 0"
+      src="assets/PIXLISE-red-logo.svg"
+      (click)="onLogoClick()"
+      #tooltip="matTooltip"
+      matTooltip="Go to homepage"
+      [matTooltipShowDelay]="500" />
     <div class="title-text" *ngIf="title.length > 0" [title]="title">{{ title }}</div>
   </div>
   <div class="tabs">

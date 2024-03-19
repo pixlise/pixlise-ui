@@ -249,6 +249,10 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     );
   }
 
+  onLogoClick(): void {
+    this.router.navigateByUrl("/");
+  }
+
   onOpenTab(tab: NavigationTab): void {
     let strippedURL = this.router.url.split("?")[0];
     this.openTabs.forEach(openTab => {
