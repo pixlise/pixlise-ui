@@ -335,6 +335,10 @@ $display-height: calc(100vh - 43px - 40px);
     .timeout {
       margin-left: auto;
       margin-right: 8px;
+
+      .label {
+        color: rgb(var(--clr-gray-30));
+      }
     }
 
     .widget-container {
