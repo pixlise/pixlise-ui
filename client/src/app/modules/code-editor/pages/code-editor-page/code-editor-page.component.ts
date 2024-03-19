@@ -109,6 +109,8 @@ export class CodeEditorPageComponent implements OnInit {
 
   public queryParams: Record<string, string> = {};
 
+  public expressionTimeoutMs: number = 30000;
+
   liveExpressionConfig: LiveExpression = {
     expressionId: "",
     scanId: "",
@@ -590,25 +592,27 @@ export class CodeEditorPageComponent implements OnInit {
     // Clear unsaved expression responses if we're intentionally re-running
     // this._widgetDataService.clearUnsavedExpressionResponses().subscribe(() => {
     this.lastRunResult = null;
-    this._widgetDataService.runExpression(expressionCopy, this.scanId, this.quantId, PredefinedROIID.getAllPointsForScan(this.scanId), true, true).subscribe({
-      next: response => {
-        this.lastRunResult = response;
-        this.stdout = response.stdout;
-        this.stderr = response.stderr;
-        this.liveExpressionConfig = {
-          expressionId: expressionCopy?.id || "",
-          scanId: this.scanId,
-          quantId: this.quantId,
-        };
-      },
-      error: err => {
-        let errorPreview = `${err}`.substring(0, 100);
-        this._snackbarService.openError(errorPreview, err);
-        this.lastRunResult = null;
-        this.stdout = "";
-        this.stderr = `${err}`;
-      },
-    });
+    this._widgetDataService
+      .runExpression(expressionCopy, this.scanId, this.quantId, PredefinedROIID.getAllPointsForScan(this.scanId), true, true, this.expressionTimeoutMs)
+      .subscribe({
+        next: response => {
+          this.lastRunResult = response;
+          this.stdout = response.stdout;
+          this.stderr = response.stderr;
+          this.liveExpressionConfig = {
+            expressionId: expressionCopy?.id || "",
+            scanId: this.scanId,
+            quantId: this.quantId,
+          };
+        },
+        error: err => {
+          let errorPreview = `${err}`.substring(0, 100);
+          this._snackbarService.openError(errorPreview, err);
+          this.lastRunResult = null;
+          this.stdout = "";
+          this.stderr = `${err}`;
+        },
+      });
     // });
   }
 

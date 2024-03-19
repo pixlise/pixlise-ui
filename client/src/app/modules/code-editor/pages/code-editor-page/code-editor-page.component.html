@@ -256,6 +256,18 @@
   <section class="visualization-container {{ isExpressionConsoleSolo ? 'console-solo' : '' }} {{ isPreviewWidgetSolo ? 'preview-solo' : '' }}">
     <div class="top-header">
       <h2>Visualization: Viz</h2>
+      <div class="timeout">
+        <span class="label">Max Timeout:</span>
+        <mat-select [(ngModel)]="expressionTimeoutMs">
+          <mat-option [value]="5000">5 seconds</mat-option>
+          <mat-option [value]="10000">10 seconds</mat-option>
+          <mat-option [value]="30000">30 seconds</mat-option>
+          <mat-option [value]="45000">45 seconds</mat-option>
+          <mat-option [value]="60000">1 minute</mat-option>
+          <mat-option [value]="300000">5 minutes</mat-option>
+          <mat-option [value]="600000">10 minutes</mat-option>
+        </mat-select>
+      </div>
     </div>
     <section class="widget-container">
       <widget
