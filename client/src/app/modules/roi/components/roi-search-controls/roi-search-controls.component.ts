@@ -30,7 +30,7 @@ export class ROISearchControlsComponent {
 
   filteredTagIDs: string[] = [];
 
-  @Input() showAllPoints: boolean = true;
+  @Input() showBuiltin: boolean = true;
   @Input() limitToConfiguredScans: boolean = true;
 
   configuredScans: ScanItem[] = [];
@@ -49,6 +49,10 @@ export class ROISearchControlsComponent {
   ) {}
 
   ngOnInit(): void {
+    if (!this.showBuiltin) {
+      this._selectedROITypes.splice(this._selectedROITypes.indexOf("builtin"), 1);
+    }
+
     if (!this._visibleScanId) {
       this.visibleScanId = this._analysisLayoutService.defaultScanId;
     }
@@ -166,7 +170,7 @@ export class ROISearchControlsComponent {
     const filteredSummaries: ROIItemSummary[] = [];
     const searchString = this.roiSearchString.toLowerCase();
     for (const summary of this.summaries) {
-      if (PredefinedROIID.isAllPointsROI(summary.id) && !this.showAllPoints) {
+      if (PredefinedROIID.isAllPointsROI(summary.id)) {
         continue;
       }
 

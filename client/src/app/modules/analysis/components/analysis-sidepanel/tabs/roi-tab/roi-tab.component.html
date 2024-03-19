@@ -53,7 +53,7 @@ POSSIBILITY OF SUCH DAMAGE.
     class="{{ showSearch ? 'visible' : '' }}"
     [summaries]="summaries"
     (onFilterChanged)="onFilterChanged($event)"
-    [showAllPoints]="false"
+    [showBuiltin]="false"
     [manualFilters]="manualFilters"></roi-search-controls>
   <section class="rois {{ showSearch ? 'search-controls-visible' : '' }}">
     <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport">
