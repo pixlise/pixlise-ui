@@ -1,5 +1,4 @@
 import { Component, HostListener } from "@angular/core";
-// import { AnalysisLayoutService } from "../../services/analysis-layout.service";
 import {
   FullScreenLayout,
   ScanConfiguration,
@@ -7,7 +6,6 @@ import {
   ScreenConfigurationCSS,
   WidgetLayoutConfiguration,
 } from "src/app/generated-protos/screen-configuration";
-// import { createDefaultScreenConfiguration } from "../../models/screen-configuration.model";
 import { Subscription } from "rxjs";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
@@ -25,6 +23,8 @@ import { LiveExpression } from "src/app/modules/widget/models/base-widget.model"
   styleUrls: ["./map-browser-page.component.scss"],
 })
 export class MapBrowserPageComponent {
+  public static defaultWidgetsPerPageOptions = [4, 9, 12, 16];
+
   private _subs: Subscription = new Subscription();
 
   computedLayouts: ScreenConfigurationCSS[] = [];
@@ -40,7 +40,8 @@ export class MapBrowserPageComponent {
   idToTitleMap: Record<string, string> = {};
   private _quantifiedExpressions: Record<string, DataExpression> = {};
 
-  widgetsPerPage = 4;
+  widgetsPerPageOptions = MapBrowserPageComponent.defaultWidgetsPerPageOptions.slice();
+  private _widgetsPerPage = 4;
   public currentPage = 0;
   public pageCount = 0;
 
@@ -89,8 +90,6 @@ export class MapBrowserPageComponent {
         if (soloViewWidgetId) {
           let widget = (this.layout?.widgets || []).find(widget => widget?.id === soloViewWidgetId);
           this.soloViewWidget = widget || null;
-          this._analysisLayoutService.delayNotifyCanvasResize(0);
-          this._analysisLayoutService.delayNotifyCanvasResize(200);
           this._analysisLayoutService.delayNotifyCanvasResize(500);
         } else {
           this.soloViewWidget = null;
@@ -101,6 +100,18 @@ export class MapBrowserPageComponent {
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+  }
+
+  get widgetsPerPage(): number {
+    return this._widgetsPerPage;
+  }
+
+  set widgetsPerPage(value: number) {
+    this._widgetsPerPage = value;
+    this.pageCount = Math.ceil(Object.keys(this._quantifiedExpressions).length / this.widgetsPerPage);
+    this.currentPage = 0;
+    this.injectNewExpressions();
+    this._analysisLayoutService.delayNotifyCanvasResize(500);
   }
 
   onScanChange(evt: MatSelectChange) {
@@ -144,6 +155,9 @@ export class MapBrowserPageComponent {
           }
         });
 
+        this.widgetsPerPageOptions = [...MapBrowserPageComponent.defaultWidgetsPerPageOptions, currentQuant.elements.length].filter(
+          count => count <= currentQuant.elements.length
+        );
         this.pageCount = Math.ceil(Object.keys(this._quantifiedExpressions).length / this.widgetsPerPage);
         this.currentPage = 0;
       }
@@ -189,10 +203,17 @@ export class MapBrowserPageComponent {
   createElementMapScreenConfiguration() {
     let layout: FullScreenLayout = FullScreenLayout.create({});
 
-    this.computedLayouts = [{ templateColumns: "auto", templateRows: "auto" }];
+    // Automatically adjust based on total widgetsPerPage
+    let columnCount = Math.min(Math.ceil(Math.sqrt(this.widgetsPerPage)), 4);
+    let rowCount = Math.ceil(this.widgetsPerPage / columnCount);
+
+    let templateColumns = Array(columnCount).fill("1fr").join(" ");
+    let templateRows = Array(rowCount).fill("1fr").join(" ");
+
+    this.computedLayouts = [{ templateColumns, templateRows }];
     this.getCurrentPageExpressions().forEach(([id, expression], i) => {
-      let startRow = Math.floor(i / 2) + 1;
-      let startColumn = (i % 2) + 1;
+      let startRow = Math.floor(i / columnCount) + 1;
+      let startColumn = (i % columnCount) + 1;
 
       let widgetId = `element-map-${id}-${this.scanId}`;
       this.idToTitleMap[widgetId] = expression.name;

@@ -4,6 +4,10 @@
       <div>Link to dataset:</div>
       <switch-button [active]="linkToDataset" #tooltip="matTooltip" [matTooltip]="linkToDataset ? 'Unlink from dataset' : 'Link to dataset'">Link</switch-button>
     </div>
+    <div *ngIf="isMapsPage" class="row link" (click)="onToggleBottomToolbar()">
+      <div>Show bottom toolbar:</div>
+      <switch-button [active]="showBottomToolbar" #tooltip="matTooltip" [matTooltip]="showBottomToolbar ? 'Hide' : 'Show'">Show</switch-button>
+    </div>
   </div>
 </ng-template>
 
