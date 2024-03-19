@@ -57,6 +57,7 @@ import { ROIShape } from "../../roi/components/roi-shape/roi-shape.component";
 import { RegionOfInterestGetReq, RegionOfInterestGetResp } from "src/app/generated-protos/roi-msgs";
 import { ScanListReq, ScanListResp } from "src/app/generated-protos/scan-msgs";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
+import { environment } from "src/environments/environment";
 
 export type DataModuleVersionWithRef = {
   id: string;
@@ -340,6 +341,9 @@ export class WidgetDataService {
             );
           }),
           catchError(err => {
+            // Make sure we don't have broken stuff cached!
+            this._inFluxSingleQueryResultCache.delete(cacheKey);
+
             const errorMsg = httpErrorToString(err, "Expression runtime error"); // We use this function because it can decode many kinds of error class/type
 
             // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
@@ -521,7 +525,8 @@ export class WidgetDataService {
     roiId: string,
     // TODO: calibration as a parameter?
     allowAnyResponse: boolean,
-    isUnsaved: boolean = false
+    isUnsaved: boolean = false,
+    maxTimeoutMs: number = environment.luaTimeoutMs
   ): Observable<DataQueryResult> {
     console.log(
       `runExpression for scan: ${scanId}, expr: "${expression.name}" (${expression.id}, ${expression.sourceLanguage}), roi: "${roiId}", quant: "${quantId}"`
@@ -555,7 +560,7 @@ export class WidgetDataService {
           concatMap(() => {
             const intDataSource = new InterpreterDataSource(dataSource, dataSource, dataSource, dataSource, dataSource);
 
-            return querier.runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, intDataSource, allowAnyResponse, false).pipe(
+            return querier.runQuery(sources.expressionSrc, modSources, expression.sourceLanguage, intDataSource, allowAnyResponse, false, maxTimeoutMs).pipe(
               map((queryResult: DataQueryResult) => {
                 console.log(`>>> ${expression.sourceLanguage} expression "${expression.name}" took: ${queryResult.runtimeMs.toLocaleString()}ms`);
 

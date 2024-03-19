@@ -30,7 +30,7 @@
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { ShareDialogComponent, ShareDialogData, ShareDialogResponse } from "./share-dialog/share-dialog.component";
-import { ObjectType, OwnershipSummary } from "src/app/generated-protos/ownership-access";
+import { ObjectType, OwnershipSummary, objectTypeToJSON } from "src/app/generated-protos/ownership-access";
 import { APIDataService, SnackbarService } from "../../../pixlisecore.module";
 import { GetOwnershipReq, ObjectEditAccessReq } from "src/app/generated-protos/ownership-access-msgs";
 
@@ -94,9 +94,19 @@ export class ShareOwnershipItemButtonComponent implements OnInit {
         return;
       }
 
+      // Convert the object type to a human-readable string
+      let typeName = objectTypeToJSON(this.type).replace("OT_", "");
+      if (typeName.length > 0) {
+        typeName = typeName
+          .split("_")
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(" ");
+      }
+
       const dialogConfig = new MatDialogConfig<ShareDialogData>();
       dialogConfig.data = {
         ownershipItem: res.ownership,
+        typeName,
       };
 
       let dialogRef = this.dialog.open(ShareDialogComponent, dialogConfig);

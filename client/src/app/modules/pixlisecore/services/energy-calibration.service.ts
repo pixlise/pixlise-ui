@@ -12,19 +12,19 @@ import { AnalysisLayoutService } from "../../analysis/analysis.module";
 @Injectable({
   providedIn: "root",
 })
-export class EnergyCalibrationService implements OnInit {
+export class EnergyCalibrationService {
   // The currently applied calibration
   private _currentCalibration: Map<string, SpectrumEnergyCalibration[]> = new Map<string, SpectrumEnergyCalibration[]>();
 
   constructor(
     private _analysisLayoutService: AnalysisLayoutService,
     private _cachedDataService: APICachedDataService
-  ) {}
-
-  ngOnInit(): void {
-    this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
-      this.loadCalibrationFromScreenConfiguration(config);
-    });
+  ) {
+    if (this._currentCalibration.size === 0) {
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
+        this.loadCalibrationFromScreenConfiguration(config);
+      });
+    }
   }
 
   private loadCalibrationFromScreenConfiguration(config: ScreenConfiguration) {

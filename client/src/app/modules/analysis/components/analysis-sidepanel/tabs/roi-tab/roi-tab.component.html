@@ -29,35 +29,6 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<!-- <ng-template #newROIMenu>
-  <div class="new-roi">
-    <header>
-      <h1 class="title">New ROI</h1>
-      <tag-picker
-        type="roi"
-        placeholderText="Search ROI Tags ..."
-        [selectedTagIDs]="newROITags"
-        [showCurrentTagsSection]="true"
-        [editable]="true"
-        (onTagSelectionChanged)="onNewTagSelectionChanged($event)">
-      </tag-picker>
-    </header>
-    <div class="meta-line">Pixels: {{ pixelCount | number }}, PMCs: {{ entryCount | number }}</div>
-
-    <input type="text" class="name" [(ngModel)]="newROIName" placeholder="ROI Name" />
-    <textarea class="description" [(ngModel)]="newROIDescription" placeholder="ROI Description" rows="4"></textarea>
-
-    <div class="multiple-scan-warning" *ngIf="selectedScanIds.length > 1">
-      <span>*ROI spans multiple scans, so multiple ROIs for the following scans will be created: {{ selectedScanIds.join(", ") }}</span>
-    </div>
-
-    <div class="buttons">
-      <push-button buttonStyle="outline" (onClick)="onCancelCreateROI()" title="Cancel creating this ROI">Cancel</push-button>
-      <push-button buttonStyle="yellow" (onClick)="onSaveNewROI()" title="Save new ROI">Save</push-button>
-    </div>
-  </div>
-</ng-template> -->
-
 <section class="roi-container">
   <div class="panel-row">
     <push-button
@@ -72,10 +43,17 @@ POSSIBILITY OF SUCH DAMAGE.
       >New ROI from Selection</push-button
     >
   </div>
+  <div class="widget-selectors">
+    <mat-select [(ngModel)]="selectedContextImage" class="scan-filter" placeholder="Open a Context Image ...">
+      <mat-option *ngFor="let chart of allContextImages" [value]="chart.widget.id">{{ chart.name }} </mat-option>
+    </mat-select>
+  </div>
+
   <roi-search-controls
     class="{{ showSearch ? 'visible' : '' }}"
     [summaries]="summaries"
     (onFilterChanged)="onFilterChanged($event)"
+    [showAllPoints]="false"
     [manualFilters]="manualFilters"></roi-search-controls>
   <section class="rois {{ showSearch ? 'search-controls-visible' : '' }}">
     <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport">
@@ -84,7 +62,9 @@ POSSIBILITY OF SUCH DAMAGE.
         [summary]="item"
         [selectAuthorToFilter]="showSearch"
         (onFilterAuthor)="onFilterAuthor($event)"
-        [displaySettings]="displaySettingsMap[item.id]"></roi-item>
+        [displaySettings]="displaySettingsMap[item.id]"
+        [selected]="highlightedROIId === item.id"
+        (onROISelect)="onROIVisibleToggle(item)"></roi-item>
     </cdk-virtual-scroll-viewport>
   </section>
 </section>

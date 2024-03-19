@@ -36,6 +36,7 @@ import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pa
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 import { ROIItem, ROIItemDisplaySettings } from "src/app/generated-protos/roi";
 import { ColourScheme } from "src/app/modules/image-viewers/widgets/context-image/context-image-model-interface";
+import { HighlightedROI } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/roi-tab/roi-tab.component";
 
 @Component({
   selector: "app-context-image",
@@ -49,6 +50,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
   // For saving and restoring
   cachedExpressionIds: string[] = [];
+  cachedROIs: VisibleROI[] = [];
 
   cursorShown: string = "";
 
@@ -338,12 +340,35 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         if (expressionId) {
           this.cachedExpressionIds = this.mdl.expressionIds.slice();
           this.mdl.expressionIds = [expressionId];
-
-          this.reloadModel();
         } else {
           this.mdl.expressionIds = this.cachedExpressionIds.slice();
-          this.reloadModel();
         }
+
+        this.reloadModel();
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.highlightedROI$.subscribe((highlighted: HighlightedROI | null) => {
+        if (!highlighted || highlighted.widgetId !== this._widgetId) {
+          return;
+        }
+
+        if (highlighted.scanId !== this.scanId) {
+          this._snackService.openWarning("Highlighted ROI is not in the current scan on the context image");
+          this._analysisLayoutService.highlightedROI$.next(null);
+          return;
+        }
+
+        if (highlighted.roiId) {
+          this.cachedROIs = this.mdl.roiIds.slice();
+          let visibleROI = VisibleROI.create({ id: highlighted.roiId, scanId: highlighted.scanId });
+          this.loadROIRegion(visibleROI, true);
+        } else {
+          this.mdl.roiIds = this.cachedROIs.slice();
+        }
+
+        this.reloadModel();
       })
     );
 
@@ -476,7 +501,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
                   // We have to wait for things to be injected on maps page, so this may be falsely called
                   console.warn("Failed to add layer: " + exprId + " scan: " + scanId, err);
                 } else {
-                  this._snackService.openError("Failed to add layer: " + exprId + " scan: " + scanId, err);
+                  //this._snackService.openError("Failed to add layer: " + exprId + " scan: " + scanId, err);
+                  this._snackService.openError(err);
                   this.widgetErrorMessage = "Failed to load layer data for displaying context image: " + this.mdl.imageName;
                 }
               },
@@ -490,33 +516,68 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
     // And generate ROI polygons
     for (const roi of this.mdl.roiIds) {
+      this.loadROIRegion(roi);
       // NOTE: loadROI calls decodeIndexList so from this point we don't have to worry, we have a list of PMCs!
-      this._roiService.loadROI(roi.id).subscribe({
-        next: (roiLoaded: ROIItem) => {
-          // We need to be able to convert PMCs to location indexes...
-          const scanMdl = this.mdl.getScanModelFor(roi.scanId);
-          if (scanMdl) {
-            const pmcToIndexLookup = new Map<number, number>();
-            for (const pt of scanMdl.scanPoints) {
-              pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
-            }
+      // this._roiService.loadROI(roi.id).subscribe({
+      //   next: (roiLoaded: ROIItem) => {
+      //     // We need to be able to convert PMCs to location indexes...
+      //     const scanMdl = this.mdl.getScanModelFor(roi.scanId);
+      //     if (scanMdl) {
+      //       const pmcToIndexLookup = new Map<number, number>();
+      //       for (const pt of scanMdl.scanPoints) {
+      //         pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
+      //       }
 
-            // Make sure it has up to date display settings
-            const disp = this._roiService.getRegionDisplaySettings(roi.id);
-            if (disp) {
-              roiLoaded.displaySettings = ROIItemDisplaySettings.create({ colour: disp.colour.asString(), shape: disp.shape });
-            }
+      //       // Make sure it has up to date display settings
+      //       const disp = this._roiService.getRegionDisplaySettings(roi.id);
+      //       if (disp) {
+      //         roiLoaded.displaySettings = ROIItemDisplaySettings.create({ colour: disp.colour.asString(), shape: disp.shape });
+      //       }
 
-            // We've loaded the region itself, store these so we can build a draw model when needed
-            this.mdl.setRegion(roi.id, roiLoaded, pmcToIndexLookup);
-          }
-        },
-        error: err => {
-          this._snackService.openError("Failed to generate region: " + roi.id + " scan: " + roi.scanId, err);
-          this.widgetErrorMessage = "Failed to load region data for displaying context image: " + this.mdl.imageName;
-        },
-      });
+      //       // We've loaded the region itself, store these so we can build a draw model when needed
+      //       this.mdl.setRegion(roi.id, roiLoaded, pmcToIndexLookup);
+      //     }
+      //   },
+      //   error: err => {
+      //     this._snackService.openError("Failed to generate region: " + roi.id + " scan: " + roi.scanId, err);
+      //     this.widgetErrorMessage = "Failed to load region data for displaying context image: " + this.mdl.imageName;
+      //   },
+      // });
     }
+  }
+
+  private loadROIRegion(roi: VisibleROI, setROIVisible: boolean = false) {
+    // NOTE: loadROI calls decodeIndexList so from this point we don't have to worry, we have a list of PMCs!
+    this._roiService.loadROI(roi.id).subscribe({
+      next: (roiLoaded: ROIItem) => {
+        // We need to be able to convert PMCs to location indexes...
+        const scanMdl = this.mdl.getScanModelFor(roi.scanId);
+        if (scanMdl) {
+          const pmcToIndexLookup = new Map<number, number>();
+          for (const pt of scanMdl.scanPoints) {
+            pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
+          }
+
+          // Make sure it has up to date display settings
+          const disp = this._roiService.getRegionDisplaySettings(roi.id);
+          if (disp) {
+            roiLoaded.displaySettings = ROIItemDisplaySettings.create({ colour: disp.colour.asString(), shape: disp.shape });
+          }
+
+          // We've loaded the region itself, store these so we can build a draw model when needed
+          this.mdl.setRegion(roi.id, roiLoaded, pmcToIndexLookup);
+
+          if (setROIVisible) {
+            this.mdl.roiIds = [roi];
+            this.reloadModel();
+          }
+        }
+      },
+      error: err => {
+        this._snackService.openError("Failed to generate region: " + roi.id + " scan: " + roi.scanId, err);
+        this.widgetErrorMessage = "Failed to load region data for displaying context image: " + this.mdl.imageName;
+      },
+    });
   }
 
   private reloadModel(setViewToExperiment: boolean = false) {
@@ -524,6 +585,10 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
     this._contextDataService.getModelData(this.mdl.imageName, this._widgetId).subscribe({
       next: (data: ContextImageModelLoadedData) => {
+        if (data.scanModels.size > 0) {
+          this.scanId = data.scanModels.keys().next().value;
+        }
+
         this.mdl.setData(data);
         this.loadMapLayers(setViewToExperiment);
       },
@@ -578,7 +643,13 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
   onCrop(trigger: Element | undefined) {}
 
-  onSoloView() {}
+  onSoloView() {
+    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
+      this._analysisLayoutService.soloViewWidgetId$.next("");
+    } else {
+      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
+    }
+  }
 
   onToggleShowPoints(trigger: Element | undefined) {
     const options: SubItemOptionSection[] = [

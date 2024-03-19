@@ -286,8 +286,9 @@ export class LuaDataQuerier {
     modules: Map<string, string>,
     dataSource: InterpreterDataSource,
     cleanupLua: boolean,
-    allowAnyResponse: boolean
+    allowAnyResponse: boolean,
     //recordExpressionInputs: boolean
+    maxTimeoutMs: number = environment.luaTimeoutMs
   ): Observable<DataQueryResult> {
     this._execCount++;
     this._dataSource = dataSource;
@@ -328,7 +329,7 @@ export class LuaDataQuerier {
         allSource += sourceCode;
         const codeParts = this.formatLuaCallable(allSource, exprFuncName /*, imports*/);
         const execSource = codeParts.join("");
-        return this.runQueryInternal(execSource, cleanupLua, t0, allowAnyResponse /*, recordExpressionInputs*/);
+        return this.runQueryInternal(execSource, cleanupLua, t0, allowAnyResponse /*, recordExpressionInputs*/, maxTimeoutMs);
       })
     );
   }
@@ -369,7 +370,8 @@ export class LuaDataQuerier {
     sourceCode: string,
     cleanupLua: boolean,
     t0: number,
-    allowAnyResponse: boolean
+    allowAnyResponse: boolean,
+    maxTimeoutMs: number = environment.luaTimeoutMs
     //recordExpressionInputs: boolean
   ): Observable<DataQueryResult> {
     // Ensure the list of data required is cleared, from here on we're logging what the expression required to run!
@@ -383,7 +385,7 @@ export class LuaDataQuerier {
     //this._logTables = recordExpressionInputs;
     //this._loggedTables.clear();
 
-    return this.runLuaCode(sourceCode, environment.luaTimeoutMs).pipe(
+    return this.runLuaCode(sourceCode, maxTimeoutMs).pipe(
       map(result => {
         if (result) {
           // We still want to return non-PMC table values, so we need to check if we got a table back before transforming it
@@ -411,7 +413,7 @@ export class LuaDataQuerier {
         throw new Error("Expression: did not return a value");
       }),
       catchError(err => {
-        const parsedErr = this.parseLuaError(err, sourceCode);
+        const parsedErr = this.parseLuaError(err, sourceCode, maxTimeoutMs);
 
         // We may need to reset Lua as we seem to have a resource leak that causes an error after running about 20 expressions
         // TODO: this will need fixing at somepoint!
@@ -467,7 +469,7 @@ export class LuaDataQuerier {
     }
 */
   // For examples, see unit tests
-  private parseLuaError(err: any, sourceCode: string): Error {
+  private parseLuaError(err: any, sourceCode: string, maxTimeoutMs: number = environment.luaTimeoutMs): Error {
     // At this point, we can look at the error Lua returned and maybe form a more useful error message for users
     // because we supply multi-line source code to Lua, but all its error msgs print out a segment of the first line!
     let errType = "";
@@ -494,7 +496,7 @@ export class LuaDataQuerier {
       // Sometimes its an abort message, which happens when the code times out. We don't have
       // a better way of reporting from Lua so try to make a nicer error message here
       if (err.message.startsWith("Aborted()")) {
-        return new Error(`Lua call took longer than limit of ${environment.luaTimeoutMs}ms. Error: ${err.message}`);
+        return new Error(`Lua call took longer than limit of ${maxTimeoutMs}ms. Error: ${err.message}`);
       } else {
         // It appears it can optionally come as:
         // error message

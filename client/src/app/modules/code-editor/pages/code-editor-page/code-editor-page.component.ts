@@ -29,7 +29,7 @@
 
 import { Component, ElementRef, HostListener, OnInit, ViewChild, ViewContainerRef } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
-import { ActivatedRoute, Data, Params, Router } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { Subscription } from "rxjs";
 import { DataQueryResult } from "src/app/expression-language/data-values";
 import { DataExpression, ModuleReference } from "src/app/generated-protos/expressions";
@@ -109,6 +109,8 @@ export class CodeEditorPageComponent implements OnInit {
 
   public queryParams: Record<string, string> = {};
 
+  public expressionTimeoutMs: number = 30000;
+
   liveExpressionConfig: LiveExpression = {
     expressionId: "",
     scanId: "",
@@ -118,6 +120,9 @@ export class CodeEditorPageComponent implements OnInit {
 
   public stdout: string = "";
   public stderr: string = "";
+
+  public isPreviewWidgetSolo: boolean = false;
+  public isExpressionConsoleSolo: boolean = false;
 
   constructor(
     private _router: Router,
@@ -146,6 +151,17 @@ export class CodeEditorPageComponent implements OnInit {
 
     this._expressionsService.fetchExpressions();
     this._expressionsService.fetchModules();
+
+    this._subs.add(
+      this._analysisLayoutService.soloViewWidgetId$.subscribe(soloViewWidgetId => {
+        this.isPreviewWidgetSolo = soloViewWidgetId === EditorConfig.previewWidgetId;
+        if (this.isPreviewWidgetSolo) {
+          this.isExpressionConsoleSolo = false;
+        }
+
+        this._analysisLayoutService.delayNotifyCanvasResize(1);
+      })
+    );
 
     this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(screenConfig => {
@@ -184,7 +200,9 @@ export class CodeEditorPageComponent implements OnInit {
           if (topExpressionId) {
             this.isTopModule = false;
             this._expressionsService.fetchExpression(topExpressionId);
+
             this.loadExpressionById(topExpressionId, false);
+
             if (!params[EditorConfig.bottomExpressionId]) {
               this.isSplitScreen = false;
             }
@@ -234,6 +252,7 @@ export class CodeEditorPageComponent implements OnInit {
           let updated = this.loadStorageMetadata();
 
           // We don't have anything in the cache, so now we need to fetch the expression
+
           this.loadExpressionById(topExpressionId, updated);
         }
       })
@@ -434,6 +453,13 @@ export class CodeEditorPageComponent implements OnInit {
     );
   }
 
+  onToggleExpressionConsoleSolo() {
+    this.isExpressionConsoleSolo = !this.isExpressionConsoleSolo;
+    if (this.isExpressionConsoleSolo) {
+      this.isPreviewWidgetSolo = false;
+    }
+  }
+
   loadExpressionById(expressionId: string, updated: boolean) {
     this._expressionsService.fetchCachedExpression(expressionId).subscribe(expression => {
       if (expression.expression) {
@@ -459,7 +485,9 @@ export class CodeEditorPageComponent implements OnInit {
         }
 
         this.updateLinkedModule();
-        this.runExpression();
+
+        // AUTO-RUN
+        // this.runExpression();
       }
     });
   }
@@ -565,16 +593,25 @@ export class CodeEditorPageComponent implements OnInit {
     // this._widgetDataService.clearUnsavedExpressionResponses().subscribe(() => {
     this.lastRunResult = null;
     this._widgetDataService
-      .runExpression(expressionCopy, this.scanId, this.quantId, PredefinedROIID.getAllPointsForScan(this.scanId), true, true)
-      .subscribe(response => {
-        this.lastRunResult = response;
-        this.stdout = response.stdout;
-        this.stderr = response.stderr;
-        this.liveExpressionConfig = {
-          expressionId: expressionCopy?.id || "",
-          scanId: this.scanId,
-          quantId: this.quantId,
-        };
+      .runExpression(expressionCopy, this.scanId, this.quantId, PredefinedROIID.getAllPointsForScan(this.scanId), true, true, this.expressionTimeoutMs)
+      .subscribe({
+        next: response => {
+          this.lastRunResult = response;
+          this.stdout = response.stdout;
+          this.stderr = response.stderr;
+          this.liveExpressionConfig = {
+            expressionId: expressionCopy?.id || "",
+            scanId: this.scanId,
+            quantId: this.quantId,
+          };
+        },
+        error: err => {
+          let errorPreview = `${err}`.substring(0, 100);
+          this._snackbarService.openError(errorPreview, err);
+          this.lastRunResult = null;
+          this.stdout = "";
+          this.stderr = `${err}`;
+        },
       });
     // });
   }

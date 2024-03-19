@@ -128,6 +128,13 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
           value: false,
           onClick: () => this.onShowXRayTubeLines(),
         },
+        {
+          id: "solo",
+          type: "button",
+          icon: "assets/button-icons/widget-solo.svg",
+          tooltip: "Toggle Solo View",
+          onClick: () => this.onSoloView(),
+        },
       ],
       bottomToolbar: [
         {
@@ -375,6 +382,14 @@ export class SpectrumChartWidgetComponent extends BaseWidgetModel implements OnI
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  onSoloView() {
+    if (this._analysisLayoutService.soloViewWidgetId$.value === this._widgetId) {
+      this._analysisLayoutService.soloViewWidgetId$.next("");
+    } else {
+      this._analysisLayoutService.soloViewWidgetId$.next(this._widgetId);
+    }
   }
 
   reDraw() {

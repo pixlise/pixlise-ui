@@ -49,6 +49,9 @@ export class MapBrowserPageComponent {
 
   liveExpressionMap: Record<string, LiveExpression> = {};
 
+  soloViewWidgetId: string | null = null;
+  soloViewWidget: WidgetLayoutConfiguration | null = null;
+
   constructor(private _analysisLayoutService: AnalysisLayoutService) {}
 
   ngOnInit(): void {
@@ -76,6 +79,22 @@ export class MapBrowserPageComponent {
         allScans.forEach(scan => {
           this.scanToTitleMap[scan.id] = scan.title;
         });
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.soloViewWidgetId$.subscribe(soloViewWidgetId => {
+        this.soloViewWidgetId = soloViewWidgetId;
+
+        if (soloViewWidgetId) {
+          let widget = (this.layout?.widgets || []).find(widget => widget?.id === soloViewWidgetId);
+          this.soloViewWidget = widget || null;
+          this._analysisLayoutService.delayNotifyCanvasResize(0);
+          this._analysisLayoutService.delayNotifyCanvasResize(200);
+          this._analysisLayoutService.delayNotifyCanvasResize(500);
+        } else {
+          this.soloViewWidget = null;
+        }
       })
     );
   }
@@ -142,6 +161,7 @@ export class MapBrowserPageComponent {
 
     this.currentPage++;
     this.injectNewExpressions();
+    this._analysisLayoutService.soloViewWidgetId$.next("");
   }
 
   onPreviousPage() {
@@ -151,32 +171,11 @@ export class MapBrowserPageComponent {
 
     this.currentPage--;
     this.injectNewExpressions();
+    this._analysisLayoutService.soloViewWidgetId$.next("");
   }
 
   injectNewExpressions() {
-    // if (!this.layout.widgets.length) {
     this.createElementMapScreenConfiguration();
-    //   return;
-    // }
-
-    // let currentPage = this.getCurrentPageExpressions();
-    // if (this.layout.widgets.length !== currentPage.length) {
-    //   this.createElementMapScreenConfiguration();
-    //   return;
-    // }
-
-    // currentPage.forEach(([id, expression], i) => {
-    //   let widgetId = `element-map-${id}-${this.scanId}`;
-    //   this.idToTitleMap[widgetId] = expression.name;
-    //   this.layout.widgets[i].id = widgetId;
-    //   this.liveExpressionMap[widgetId] = { expressionId: expression.id, scanId: this.scanId, quantId: this.quantId, expression, mapsMode: true };
-
-    //   this.layout.widgets[i].data = WidgetData.create({
-    //     contextImage: ContextImageState.create({
-    //       mapLayers: [MapLayerVisibility.create({ expressionID: expression.id })],
-    //     }),
-    //   });
-    // });
   }
 
   getCurrentPageExpressions() {

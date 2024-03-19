@@ -30,6 +30,7 @@ export class ROISearchControlsComponent {
 
   filteredTagIDs: string[] = [];
 
+  @Input() showAllPoints: boolean = true;
   @Input() limitToConfiguredScans: boolean = true;
 
   configuredScans: ScanItem[] = [];
@@ -165,6 +166,10 @@ export class ROISearchControlsComponent {
     const filteredSummaries: ROIItemSummary[] = [];
     const searchString = this.roiSearchString.toLowerCase();
     for (const summary of this.summaries) {
+      if (PredefinedROIID.isAllPointsROI(summary.id) && !this.showAllPoints) {
+        continue;
+      }
+
       const summaryNameLower = summary.name.toLowerCase();
       if (this.visibleScanId.length > 0 && summary.scanId !== this.visibleScanId) {
         continue;
