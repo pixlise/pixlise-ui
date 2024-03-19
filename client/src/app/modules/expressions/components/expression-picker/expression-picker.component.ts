@@ -53,6 +53,7 @@ export type ExpressionPickerResponse = {
   selectedExpressions: (DataExpression | ExpressionGroup)[];
   scanId: string;
   quantId: string;
+  persistDialog: boolean;
 };
 
 export type ExpressionPickerData = {
@@ -67,6 +68,8 @@ export type ExpressionPickerData = {
   disableExpressionGroups?: boolean;
   expressionsOnly?: boolean;
   draggable?: boolean;
+  liveReload?: boolean;
+  singleSelectionOption?: boolean;
 };
 
 @Component({
@@ -126,6 +129,9 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
   draggable: boolean = false;
 
+  persistDialog: boolean = false;
+  singleSelectionOption: boolean = false;
+
   constructor(
     private _cachedDataSerivce: APICachedDataService,
     private _analysisLayoutService: AnalysisLayoutService,
@@ -138,6 +144,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.persistDialog = !!this.data?.liveReload;
+    this.singleSelectionOption = !!this.data?.singleSelectionOption;
     this.scanId = this.data.scanId || this._analysisLayoutService.defaultScanId || "";
     this.quantId = this.data.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
     this.draggable = this.data.draggable || false;
@@ -278,6 +286,10 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+  }
+
+  onSingleSelectionToggle(): void {
+    this.maxSelection = this.maxSelection === 1 ? (WIDGETS[this.widgetType as keyof typeof WIDGETS] as WidgetConfiguration)?.maxExpressions || 0 : 1;
   }
 
   get activeWidgetId(): string {
@@ -710,6 +722,15 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this.expressionTriggerPosition = -1;
   }
 
+  onTogglePersistDialog(): void {
+    this.persistDialog = !this.persistDialog;
+  }
+
+  onApplyAndClose(): void {
+    this.persistDialog = false;
+    this.onConfirm();
+  }
+
   onConfirm(): void {
     const selectedExpressions: (DataExpression | ExpressionGroup)[] = Array.from(this.selectedExpressionIdOrder)
       .map(id => this.selectedExpressions.find(expression => expression?.id === id))
@@ -719,9 +740,12 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       selectedExpressions,
       scanId: this.scanId,
       quantId: this.quantId,
+      persistDialog: this.persistDialog,
     });
 
-    this.dialogRef.close();
+    if (!this.persistDialog) {
+      this.dialogRef.close();
+    }
   }
 
   onClear(): void {

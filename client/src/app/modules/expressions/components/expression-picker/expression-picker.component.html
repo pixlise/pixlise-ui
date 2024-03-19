@@ -155,6 +155,19 @@ POSSIBILITY OF SUCH DAMAGE.
     </section>
   </section>
   <div class="button-container">
+    <div class="persist-dialog" *ngIf="singleSelectionOption">
+      <two-state-icon-button
+        #tooltip="matTooltip"
+        matTooltip="Keep dialog open after applying"
+        [matTooltipShowDelay]="200"
+        [activeIcon]="'assets/button-icons/check-on.svg'"
+        [inactiveIcon]="'assets/button-icons/check-off.svg'"
+        class="checkbox-button"
+        [active]="maxSelection === 1"
+        (onToggle)="onSingleSelectionToggle()">
+      </two-state-icon-button>
+      <span class="label">Single Layer Mode</span>
+    </div>
     <div class="toggle-trigger-position-btn" *ngIf="expressionTriggerPosition > -1">
       <action-button action="close" color="rgb(var(--clr-gray-30))" (onClick)="onClearTriggerPosition()"></action-button>
       <h5>Trigger Position: {{ triggerName }}</h5>
@@ -168,6 +181,16 @@ POSSIBILITY OF SUCH DAMAGE.
       [disabled]="waitingForExpressions.length > 0"
       (onClick)="onConfirm()"
       >Apply</push-button
+    >
+    <push-button
+      *ngIf="persistDialog"
+      buttonStyle="yellow"
+      #tooltip="matTooltip"
+      [matTooltip]="applyTooltip"
+      [matTooltipDisabled]="waitingForExpressions.length === 0 && selectedExpressionIds.size === 0"
+      [disabled]="waitingForExpressions.length > 0"
+      (onClick)="onApplyAndClose()"
+      >Apply & Close</push-button
     >
   </div>
 </div>
