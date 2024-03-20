@@ -807,6 +807,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       liveReload: true,
       singleSelectionOption: true,
       maxSelection: 1,
+      preserveGroupSelection: true,
     };
 
     this._expressionPickerDialog = this.dialog.open(ExpressionPickerComponent, dialogConfig);
