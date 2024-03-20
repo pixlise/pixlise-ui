@@ -12,6 +12,7 @@ import { UserGroupInfo, UserGroupRelationship } from "src/app/generated-protos/u
 import { SettingsModule } from "src/app/modules/settings/settings.module";
 import { SnackbarDataItem } from "src/app/modules/pixlisecore/services/snackbar.service";
 import { RequestGroupDialogComponent } from "src/app/modules/settings/components/request-group-dialog/request-group-dialog.component";
+import { Subscription } from "rxjs";
 
 @Component({
   selector: "app-settings-sidebar",
@@ -21,6 +22,8 @@ import { RequestGroupDialogComponent } from "src/app/modules/settings/components
   imports: [CommonModule, PIXLISECoreModule, SettingsModule],
 })
 export class SettingsSidebarComponent {
+  private _subs: Subscription = new Subscription();
+
   notifications: NotificationSetting[] = [];
   user!: UserInfo;
   groupsWithAccess: UserGroupInfo[] = [];
@@ -36,7 +39,9 @@ export class SettingsSidebarComponent {
     private _groupsService: GroupsService,
     private _snackBar: SnackbarService,
     private dialog: MatDialog
-  ) {
+  ) {}
+
+  ngOnInit(): void {
     // Create blank notification settings for all notifications
     this.notifications = NotificationSubscriptions.allNotifications.map(notification => new NotificationSetting(notification));
 
@@ -57,9 +62,15 @@ export class SettingsSidebarComponent {
       });
     });
 
-    this._groupsService.groupsChanged$.subscribe(() => {
-      this.groupsWithAccess = this._groupsService.groups.filter(group => group.relationshipToUser > UserGroupRelationship.UGR_UNKNOWN);
-    });
+    this._subs.add(
+      this._groupsService.groupsChanged$.subscribe(() => {
+        this.groupsWithAccess = this._groupsService.groups.filter(group => group.relationshipToUser > UserGroupRelationship.UGR_UNKNOWN);
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
   }
 
   getGroupRelationship(group: UserGroupInfo): string {

@@ -35,14 +35,14 @@ import { DataExpression } from "src/app/generated-protos/expressions";
 import { ExpressionSearchFilter, RecentExpression } from "../../models/expression-search";
 import { ExpressionsService } from "../../services/expressions.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { ScanConfiguration, WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { ExpressionGroup, ExpressionGroupItem } from "src/app/generated-protos/expression-group";
 import { ExpressionBrowseSections } from "../../models/expression-browse-sections";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
-import { getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
+import { getAnomalyExpressions, getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
 import { WIDGETS, WidgetConfiguration, WidgetType } from "src/app/modules/widget/models/widgets.model";
 import { PushButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/push-button/push-button.component";
 import { WidgetData } from "src/app/generated-protos/widget-data";
@@ -53,6 +53,7 @@ export type ExpressionPickerResponse = {
   selectedExpressions: (DataExpression | ExpressionGroup)[];
   scanId: string;
   quantId: string;
+  persistDialog: boolean;
 };
 
 export type ExpressionPickerData = {
@@ -67,6 +68,9 @@ export type ExpressionPickerData = {
   disableExpressionGroups?: boolean;
   expressionsOnly?: boolean;
   draggable?: boolean;
+  liveReload?: boolean;
+  singleSelectionOption?: boolean;
+  preserveGroupSelection?: boolean; // If user selects a group, don't select its component expressions, but keep the group id selected
 };
 
 @Component({
@@ -88,6 +92,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   recentExpressions: RecentExpression[] = [];
 
   private _quantifiedExpressions: Record<string, DataExpression> = {};
+  private _anomalyExpressions: Record<string, DataExpression> = {};
   private _pseudoIntensities: Record<string, DataExpression> = {};
 
   private _unmatchedExpressions: boolean = false;
@@ -125,6 +130,9 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
   draggable: boolean = false;
 
+  persistDialog: boolean = false;
+  singleSelectionOption: boolean = false;
+
   constructor(
     private _cachedDataSerivce: APICachedDataService,
     private _analysisLayoutService: AnalysisLayoutService,
@@ -137,6 +145,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.persistDialog = !!this.data?.liveReload;
+    this.singleSelectionOption = !!this.data?.singleSelectionOption;
     this.scanId = this.data.scanId || this._analysisLayoutService.defaultScanId || "";
     this.quantId = this.data.quantId || this._analysisLayoutService.getQuantIdForScan(this.scanId) || "";
     this.draggable = this.data.draggable || false;
@@ -162,15 +172,16 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       this.browseSections = this.browseSections.filter(section => section.name === ExpressionBrowseSections.EXPRESSIONS);
     }
 
+    this.loadAnomalyExpressions();
     this.updateSelectedExpressions();
     this.loadRecentExpressionsFromCache();
 
     this._subs.add(
       this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
         if (config) {
-          let widgetReferences: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
+          const widgetReferences: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
           config.layouts.forEach((layout, i) => {
-            let widgetCounts: Record<string, number> = {};
+            const widgetCounts: Record<string, number> = {};
             layout.widgets.forEach((widget, widgetIndex) => {
               if (widgetCounts[widget.type]) {
                 widgetCounts[widget.type]++;
@@ -178,8 +189,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
                 widgetCounts[widget.type] = 1;
               }
 
-              let widgetTypeName = WIDGETS[widget.type as keyof typeof WIDGETS].name;
-              let widgetName = `${widgetTypeName} ${widgetCounts[widget.type]}${i > 0 ? ` (page ${i + 1})` : ""}`;
+              const widgetTypeName = WIDGETS[widget.type as keyof typeof WIDGETS].name;
+              const widgetName = `${widgetTypeName} ${widgetCounts[widget.type]}${i > 0 ? ` (page ${i + 1})` : ""}`;
 
               widgetReferences.push({ widget, name: widgetName, type: widget.type });
             });
@@ -192,7 +203,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
     this._subs.add(
       this._expressionService.expressions$.subscribe(expressions => {
-        let notFoundExpressions: string[] = [];
+        const notFoundExpressions: string[] = [];
         this.waitingForExpressions.forEach((id, i) => {
           if (!expressions[id]) {
             notFoundExpressions.push(id);
@@ -267,7 +278,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     }
 
     this.selectedExpressionIds.forEach(id => {
-      if (!this._expressionService.expressions$.value[id]) {
+      if (!this._expressionService.expressions$.value[id] && !this.isExpressionBuiltin(id)) {
         this.fetchedAllSelectedExpressions = false;
         this._expressionService.fetchExpression(id);
       }
@@ -276,6 +287,15 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this._subs.unsubscribe();
+  }
+
+  onSingleSelectionToggle(): void {
+    this.maxSelection = this.maxSelection === 1 ? 0 : 1;
+    if (this.maxSelection === 1 && this.selectedExpressionIdOrder.length > 1) {
+      this.selectedExpressionIds = new Set([this.selectedExpressionIdOrder[0]]);
+      this.selectedExpressionIdOrder = [this.selectedExpressionIdOrder[0]];
+      this.updateSelectedExpressions();
+    }
   }
 
   get activeWidgetId(): string {
@@ -287,11 +307,11 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this._analysisLayoutService.highlightedWidgetId$.next(id);
     this.expressionTriggerPosition = -1;
 
-    let widget = this.layoutWidgets.find(widget => widget.widget.id === id);
+    const widget = this.layoutWidgets.find(widget => widget.widget.id === id);
     if (widget) {
       if (widget.type) {
         this.widgetType = widget.type as WidgetType;
-        let widgetSpec = WIDGETS[widget.type as keyof typeof WIDGETS];
+        const widgetSpec = WIDGETS[widget.type as keyof typeof WIDGETS];
         if (widgetSpec) {
           this.selectedExpressionIds = new Set((widget.widget.data?.[widgetSpec.dataKey as keyof WidgetData] as any)?.expressionIDs || []);
           this.selectedExpressionIdOrder = Array.from(this.selectedExpressionIds);
@@ -303,15 +323,23 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     }
   }
 
+  loadAnomalyExpressions(): void {
+    this._anomalyExpressions = {};
+    const anomalyExpressions = getAnomalyExpressions();
+    anomalyExpressions.forEach(expression => {
+      this._anomalyExpressions[expression.id] = expression;
+    });
+  }
+
   loadQuantifiedExpressions(availableScanQuants: Record<string, QuantificationSummary[]>): void {
     this._quantifiedExpressions = {};
 
-    let quants = availableScanQuants[this.scanId];
+    const quants = availableScanQuants[this.scanId];
     if (quants) {
       if (!this.quantId) {
         this.quantId = this._analysisLayoutService.getQuantIdForScan(this.scanId);
       }
-      let currentQuant = quants.find(quant => quant.id === this.quantId);
+      const currentQuant = quants.find(quant => quant.id === this.quantId);
       if (currentQuant) {
         currentQuant.elements.forEach(quantElement => {
           let det = currentQuant?.params?.userParams?.quantMode || "";
@@ -329,18 +357,23 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     }
   }
 
+  isExpressionBuiltin(id: string): boolean {
+    const unsavedExpression = this._widgetDataService.unsavedExpressions.get(id);
+    return !!(unsavedExpression || this._pseudoIntensities[id] || this._quantifiedExpressions[id] || this._anomalyExpressions[id]);
+  }
+
   updateSelectedExpressions() {
     this._unmatchedExpressions = false;
     this.selectedExpressions = [];
 
-    for (const id of this.selectedExpressionIds) {
-      const toSelect: DataExpression[] = [];
+    const toSelect: (DataExpression | ExpressionGroup)[] = [];
 
+    for (const id of this.selectedExpressionIds) {
       const expression = this._expressionService.expressions$.value[id];
       if (expression) {
         toSelect.push(expression);
       } else {
-        let unsavedExpression = this._widgetDataService.unsavedExpressions.get(id);
+        const unsavedExpression = this._widgetDataService.unsavedExpressions.get(id);
         if (unsavedExpression) {
           // Check if we have it in unsaved expressions
           toSelect.push(unsavedExpression);
@@ -350,6 +383,8 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
         } else if (this._quantifiedExpressions[id]) {
           // Check if we have it in quantified expressions
           toSelect.push(this._quantifiedExpressions[id]);
+        } else if (this._anomalyExpressions[id]) {
+          toSelect.push(this._anomalyExpressions[id]);
         } else if (this.filteredExpressions) {
           // Check if we have it in filtered expressions
           const filteredItem = this.filteredExpressions.find(expression => expression.id === id);
@@ -358,12 +393,18 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
               // If it's an expression, just add it
               toSelect.push(filteredItem as DataExpression);
             } else {
-              // If it's a group, add each sub-item
-              const filteredGroup = filteredItem as ExpressionGroup;
-              for (const groupItem of filteredGroup.groupItems) {
-                const subExpr = this._expressionService.expressions$.value[groupItem.expressionId];
-                if (subExpr) {
-                  toSelect.push(subExpr);
+              // If it's a group, proceed depending on setting
+              if (this.data.preserveGroupSelection) {
+                // Add the group
+                toSelect.push(filteredItem);
+              } else {
+                // add each sub-item
+                const filteredGroup = filteredItem as ExpressionGroup;
+                for (const groupItem of filteredGroup.groupItems) {
+                  const subExpr = this._expressionService.expressions$.value[groupItem.expressionId];
+                  if (subExpr) {
+                    toSelect.push(subExpr);
+                  }
                 }
               }
             }
@@ -374,11 +415,11 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           }
         }
       }
+    }
 
-      // Add these to what we're building
-      if (toSelect.length > 0) {
-        this.selectedExpressions.push(...toSelect);
-      }
+    // Add these to what we're building
+    if (toSelect.length > 0) {
+      this.selectedExpressions = [...toSelect];
     }
   }
 
@@ -397,7 +438,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   onSaveNewExpressionGroup() {
-    let expressionGroup = ExpressionGroup.create({
+    const expressionGroup = ExpressionGroup.create({
       name: this.newExpressionGroupName,
       description: this.newExpressionGroupDescription,
       tags: this.newExpressionGroupTags,
@@ -463,7 +504,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
           return;
         }
 
-        let expression = this.selectedExpressions.find(expression => expression.id === id);
+        const expression = this.selectedExpressions.find(expression => expression.id === id);
         if (expression && expression.id) {
           tooltip += `\n${expression?.name || id}`;
         }
@@ -474,7 +515,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   get canSelectMore(): boolean {
-    return !this.data.maxSelection || this.selectedExpressionIds.size < this.data.maxSelection;
+    return !this.maxSelection || this.selectedExpressionIds.size < this.maxSelection;
   }
 
   get selectedExpressionGroupId(): string {
@@ -484,16 +525,16 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   set selectedExpressionGroupId(id: string) {
     this._selectedExpressionGroupId = id;
 
-    let expressionGroup = this.editableExpressionGroups.find(group => group.id === id);
+    const expressionGroup = this.editableExpressionGroups.find(group => group.id === id);
     this.newExpressionGroupName = expressionGroup?.name || "";
     this.newExpressionGroupDescription = expressionGroup?.description || "";
     this.newExpressionGroupTags = expressionGroup?.tags || [];
   }
 
   loadRecentExpressionsFromCache(): void {
-    let recentExpressions = localStorage.getItem("recentExpressions");
+    const recentExpressions = localStorage.getItem("recentExpressions");
     if (recentExpressions) {
-      let parsedExpressions = JSON.parse(recentExpressions);
+      const parsedExpressions = JSON.parse(recentExpressions);
       if (Array.isArray(parsedExpressions)) {
         this.recentExpressions = parsedExpressions.map((recentExpression: RecentExpression) => {
           return {
@@ -519,7 +560,7 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    let existingRecentExpression = this.recentExpressions.find(recentExpression => recentExpression.expression.id === expression.id);
+    const existingRecentExpression = this.recentExpressions.find(recentExpression => recentExpression.expression.id === expression.id);
     if (!existingRecentExpression) {
       this.recentExpressions.push({ expression, type: this.isShowingExpressionGroups ? "group" : "expression", lastSelected: Date.now() });
     } else {
@@ -530,16 +571,21 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this.cacheRecentExpressions();
   }
 
-  toggleExpression(expression: DataExpression, saveToRecent: boolean = true): void {
-    if (this.data.maxSelection === 1) {
+  toggleExpression(expression: DataExpression | ExpressionGroup, saveToRecent: boolean = true): void {
+    if (this.maxSelection === 1) {
       this.selectedExpressionIds.clear();
       this.selectedExpressionIds.add(expression.id);
       this.selectedExpressionIdOrder = [expression.id];
-      this.updateRecentExpression(expression as DataExpression);
+      this.updateRecentExpression(expression);
+      this.updateSelectedExpressions();
+
+      if (this.persistDialog) {
+        this.onConfirm();
+      }
       return;
     }
 
-    let strippedExpressionId = expression.id.replace("loading-", "");
+    const strippedExpressionId = expression.id.replace("loading-", "");
 
     if (this.selectedExpressionIds.has(strippedExpressionId)) {
       this.selectedExpressionIds.delete(strippedExpressionId);
@@ -556,36 +602,44 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       }
 
       if (saveToRecent) {
-        this.updateRecentExpression(expression as DataExpression);
+        this.updateRecentExpression(expression);
       }
     }
+
+    this.updateSelectedExpressions();
   }
 
   onSelect(expression: DataExpression | ExpressionGroup): void {
     if (this.isShowingExpressionGroups && (expression as ExpressionGroup)?.groupItems) {
-      let expressionGroup = expression as ExpressionGroup;
+      const expressionGroup = expression as ExpressionGroup;
 
       this.updateRecentExpression(expressionGroup);
 
-      let groupItemIds = (expressionGroup?.groupItems || []).map(groupItem => groupItem.expressionId);
+      if (!this.data.preserveGroupSelection) {
+        const groupItemIds = (expressionGroup?.groupItems || []).map(groupItem => groupItem.expressionId);
 
-      this.selectedExpressionIds = new Set(groupItemIds);
-      this.selectedExpressionIdOrder = groupItemIds;
+        this.selectedExpressionIds = new Set(groupItemIds);
+        this.selectedExpressionIdOrder = groupItemIds;
 
-      groupItemIds.forEach(expressionId => {
-        this._expressionService.fetchExpression(expressionId);
-      });
+        groupItemIds.forEach(expressionId => {
+          this._expressionService.fetchExpression(expressionId);
+        });
 
-      this.overwriteExistingExpressionGroup = true;
-      this.selectedExpressionGroupId = expressionGroup.id;
+        this.overwriteExistingExpressionGroup = true;
+        this.selectedExpressionGroupId = expressionGroup.id;
 
-      // Clear the last written expression because we're now working with a new group
-      this._expressionService.lastWrittenExpressionGroupId$.next("");
+        // Clear the last written expression because we're now working with a new group
+        this._expressionService.lastWrittenExpressionGroupId$.next("");
+      } else {
+        this.toggleExpression(expressionGroup);
+      }
     } else {
       this.toggleExpression(expression as DataExpression);
     }
 
-    this.updateSelectedExpressions();
+    if (!this.data.preserveGroupSelection) {
+      this.updateSelectedExpressions();
+    }
   }
 
   onFilterAuthor(author: string): void {
@@ -615,10 +669,10 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   onChangeWidgetPosition(expression: DataExpression, widgetPosition: number): void {
-    let existingOrder = Array.from(this.selectedExpressionIdOrder);
-    let idInRequestedPosition = existingOrder[widgetPosition];
+    const existingOrder = Array.from(this.selectedExpressionIdOrder);
+    const idInRequestedPosition = existingOrder[widgetPosition];
     if (idInRequestedPosition) {
-      let existingPosition = existingOrder.indexOf(expression.id);
+      const existingPosition = existingOrder.indexOf(expression.id);
       if (existingPosition > -1) {
         // Both ids exist, so swap them
         existingOrder[existingPosition] = idInRequestedPosition;
@@ -679,14 +733,14 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
   }
 
   get activeLayerHeight(): number {
-    let widgetLayerConfig = widgetLayerPositions[this.widgetType];
+    const widgetLayerConfig = widgetLayerPositions[this.widgetType];
     return widgetLayerConfig ? 80 : 45.5;
   }
 
   get triggerName(): string {
-    let defaultName = `${this.expressionTriggerPosition + 1}`;
+    const defaultName = `${this.expressionTriggerPosition + 1}`;
 
-    let widgetLayerConfig = widgetLayerPositions[this.widgetType];
+    const widgetLayerConfig = widgetLayerPositions[this.widgetType];
     if (widgetLayerConfig) {
       return Object.entries(widgetLayerConfig).find(([, option]) => option.position === this.expressionTriggerPosition)?.[0] || defaultName;
     } else {
@@ -698,6 +752,15 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
     this.expressionTriggerPosition = -1;
   }
 
+  onTogglePersistDialog(): void {
+    this.persistDialog = !this.persistDialog;
+  }
+
+  onApplyAndClose(): void {
+    this.persistDialog = false;
+    this.onConfirm();
+  }
+
   onConfirm(): void {
     const selectedExpressions: (DataExpression | ExpressionGroup)[] = Array.from(this.selectedExpressionIdOrder)
       .map(id => this.selectedExpressions.find(expression => expression?.id === id))
@@ -707,9 +770,12 @@ export class ExpressionPickerComponent implements OnInit, OnDestroy {
       selectedExpressions,
       scanId: this.scanId,
       quantId: this.quantId,
+      persistDialog: this.persistDialog,
     });
 
-    this.dialogRef.close();
+    if (!this.persistDialog) {
+      this.dialogRef.close();
+    }
   }
 
   onClear(): void {

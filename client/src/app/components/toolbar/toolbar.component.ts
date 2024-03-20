@@ -35,7 +35,7 @@ import { Subscription } from "rxjs";
 import { EnvConfigurationInitService } from "src/app/services/env-configuration-init.service";
 import { OverlayHost } from "src/app/utils/overlay-host";
 import { UserMenuPanelComponent } from "./user-menu-panel/user-menu-panel.component";
-import { PIXLISECoreModule } from "src/app/modules/pixlisecore/pixlisecore.module";
+import { PIXLISECoreModule, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { CommonModule } from "@angular/common";
 import { SettingsModule } from "src/app/modules/settings/settings.module";
 import { NotificationsMenuPanelComponent } from "./notifications-menu-panel/notifications-menu-panel.component";
@@ -86,6 +86,11 @@ class TabNav {
   imports: [PIXLISECoreModule, CommonModule, OverlayModule, SettingsModule],
 })
 export class ToolbarComponent implements OnInit, OnDestroy {
+  public static BrowseTabURL: string = "/datasets";
+  public static AnalysisTabURL: string = "/datasets/analysis";
+  public static CodeEditorTabURL: string = "/datasets/code-editor";
+  public static MapsTabURL: string = "/datasets/maps";
+
   @Input() titleToShow: string = "";
   @Input() darkBackground: boolean = false;
 
@@ -113,12 +118,12 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   queryParam: Record<string, string> = {};
   allTabs: NavigationTab[] = [
-    { icon: "assets/tab-icons/browse.svg", tooltip: "Browse", url: "/datasets" },
-    { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: "/datasets/analysis" },
-    { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: "/datasets/code-editor" },
-    { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: "/datasets/maps" },
+    { icon: "assets/tab-icons/browse.svg", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL },
+    { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: ToolbarComponent.AnalysisTabURL },
+    { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: ToolbarComponent.CodeEditorTabURL },
+    { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: ToolbarComponent.MapsTabURL },
   ];
-  openTabs: NavigationTab[] = [{ icon: "assets/tab-icons/browse.svg", tooltip: "Browse", url: "/datasets" }];
+  openTabs: NavigationTab[] = [{ icon: "assets/tab-icons/browse.svg", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL }];
 
   editingAnnotationIndex: number = -1;
 
@@ -139,7 +144,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     private titleService: Title, // public dialog: MatDialog,
     private _notificationsSerivce: NotificationsService,
     private _analysisLayoutService: AnalysisLayoutService,
-    private envConfigService: EnvConfigurationService,
+    private _snackService: SnackbarService,
     private _matDialog: MatDialog
   ) {}
 
@@ -165,8 +170,20 @@ export class ToolbarComponent implements OnInit, OnDestroy {
             this.titleToShow = screenConfig.name;
           }
 
-          if (this._isAnalysisTab && screenConfig.scanConfigurations && Object.keys(screenConfig.scanConfigurations).length === 0) {
-            this.onScanConfiguration();
+          let hasQuantConfiguredScan = false;
+          if (screenConfig?.scanConfigurations) {
+            for (let key in screenConfig.scanConfigurations) {
+              if (screenConfig.scanConfigurations[key].quantId) {
+                hasQuantConfiguredScan = true;
+                break;
+              }
+            }
+          }
+
+          if (this._isAnalysisTab && screenConfig.scanConfigurations && !hasQuantConfiguredScan) {
+            this._analysisLayoutService.activeTab = this._analysisLayoutService.sidebarTabs[0];
+            this._analysisLayoutService.sidepanelOpen$.next(true);
+            this._snackService.open("No scans configured for this workspace. Please configure scans.");
           }
         }
 
@@ -247,6 +264,10 @@ export class ToolbarComponent implements OnInit, OnDestroy {
       userOverlayPos,
       true
     );
+  }
+
+  onLogoClick(): void {
+    this.router.navigateByUrl("/");
   }
 
   onOpenTab(tab: NavigationTab): void {
@@ -348,15 +369,20 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     // }
 
     let strippedURL = url.split("?")[0];
+
+    let isAnalysisTab = false;
     this.openTabs.forEach(tab => {
       tab.active = strippedURL.endsWith(tab.url);
+      if (tab.url === ToolbarComponent.AnalysisTabURL) {
+        isAnalysisTab = tab.active;
+      }
     });
 
     // Set the doc title to show the tab we're on
     this.titleService.setTitle("PIXLISE" + (this._currTab.length > 0 ? " - " + this._currTab : ""));
 
     // We only show saving of view state on analysis tab
-    this._isAnalysisTab = this._currTab == "Analysis";
+    this._isAnalysisTab = isAnalysisTab;
   }
 
   onUserMenu(): void {
@@ -398,7 +424,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   }
 
   get showScanConfigurator(): boolean {
-    return this.router.url.includes("/datasets/code-editor") || this._isAnalysisTab;
+    return this.router.url.includes(ToolbarComponent.CodeEditorTabURL) || this._isAnalysisTab;
   }
 
   onScanConfiguration(): void {
@@ -406,10 +432,6 @@ export class ToolbarComponent implements OnInit, OnDestroy {
     dialogConfig.disableClose = true;
     dialogConfig.autoFocus = true;
     dialogConfig.width = "1200px";
-
-    dialogConfig.data = {
-      writeToQueryParams: this.router.url.includes("/datasets/code-editor"),
-    };
 
     this._matDialog.open(ScanConfigurationDialog, dialogConfig);
   }

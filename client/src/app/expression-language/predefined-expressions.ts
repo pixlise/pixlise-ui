@@ -40,22 +40,15 @@ export function getPredefinedExpression(id: string): DataExpression | undefined 
     if (id.startsWith(DataExpressionId.predefinedUnquantifiedPercentDataExpression)) {
       expr = '100-elementSum("%","' + detectorId + '")';
       name = "Unquantified Weight %" + detectorSuffix;
-    } else if (id == DataExpressionId.predefinedHeightZDataExpression) {
+    } else if (id === DataExpressionId.predefinedHeightZDataExpression) {
       expr = 'position("z")';
       name = "Height in Z";
-    } else if (id == DataExpressionId.predefinedRoughnessDataExpression) {
+    } else if (id === DataExpressionId.predefinedRoughnessDataExpression) {
       expr = "roughness()";
       name = "Roughness";
-      // TODO: Bring this back in future, user bar selection on diffraction sidebar histogram used to change this expression...
-      /*} else if (id == DataExpressionId.predefinedDiffractionCountDataExpression) {
+    } else if (id === DataExpressionId.predefinedDiffractionCountDataExpression) {
       expr = "diffractionPeaks(0,4096)";
-      if (this._diffractionCountExpression.length > 0) {
-        expr = this._diffractionCountExpression;
-      }
       name = "Diffraction Count";
-      if (this._diffractionCountExpressionName.length > 0) {
-        name = this._diffractionCountExpressionName;
-      }*/
     } else {
       const pseudoElem = DataExpressionId.getPredefinedPseudoIntensityExpressionElement(id);
       if (pseudoElem.length > 0) {
@@ -119,4 +112,25 @@ export function getPrintableColumnName(column: string): string {
 
   // If we don't have anything better to call it, use the column name as is
   return column;
+}
+
+export function getAnomalyExpressions(): DataExpression[] {
+  let anomalyExpressions = [];
+
+  let roughnessExpression = getPredefinedExpression(DataExpressionId.predefinedRoughnessDataExpression);
+  if (roughnessExpression) {
+    anomalyExpressions.push(roughnessExpression);
+  }
+
+  let diffractionExpression = getPredefinedExpression(DataExpressionId.predefinedDiffractionCountDataExpression);
+  if (diffractionExpression) {
+    anomalyExpressions.push(diffractionExpression);
+  }
+
+  let heightZExpression = getPredefinedExpression(DataExpressionId.predefinedHeightZDataExpression);
+  if (heightZExpression) {
+    anomalyExpressions.push(heightZExpression);
+  }
+
+  return anomalyExpressions;
 }

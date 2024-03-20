@@ -70,14 +70,6 @@
 .buttons {
   display: flex;
   flex-direction: column;
-
+  gap: $sz-unit;
   padding: 0 16px;
-
-  push-button {
-    margin-bottom: $sz-unit;
-
-    &:last-of-type {
-      margin-bottom: 0;
-    }
-  }
 }

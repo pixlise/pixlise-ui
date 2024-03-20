@@ -28,8 +28,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Component, EventEmitter, Output } from "@angular/core";
+import { ActivatedRoute, Route, Router } from "@angular/router";
 import { AuthService } from "@auth0/auth0-angular";
+import { Subscription } from "rxjs";
 import { UserDetails } from "src/app/generated-protos/user";
+import { UserGroupRelationship } from "src/app/generated-protos/user-group";
+import { GroupsService } from "src/app/modules/settings/services/groups.service";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 
 @Component({
@@ -38,6 +42,7 @@ import { UserOptionsService } from "src/app/modules/settings/services/user-optio
   styleUrls: ["./user-menu-panel.component.scss"],
 })
 export class UserMenuPanelComponent {
+  private _subs: Subscription = new Subscription();
   @Output() close = new EventEmitter();
 
   user: UserDetails = {
@@ -53,15 +58,36 @@ export class UserMenuPanelComponent {
 
   isOpen = false;
 
+  isAdminOfAnyGroup = false;
+
   trigger: any;
 
   constructor(
+    private _router: Router,
+    private _route: ActivatedRoute,
+    private _groupsService: GroupsService,
     private _authService: AuthService,
     private _userOptionsService: UserOptionsService
-  ) {
-    this._userOptionsService.userOptionsChanged$.subscribe(() => {
-      this.user = this._userOptionsService.userDetails;
-    });
+  ) {}
+
+  ngOnInit(): void {
+    this._subs.add(
+      this._userOptionsService.userOptionsChanged$.subscribe(() => {
+        this.user = this._userOptionsService.userDetails;
+      })
+    );
+
+    this._subs.add(
+      this._groupsService.groupsChanged$.subscribe(() => {
+        this.isAdminOfAnyGroup =
+          this._userOptionsService.hasFeatureAccess("admin") ||
+          !!this._groupsService.groups.find(group => group.relationshipToUser === UserGroupRelationship.UGR_ADMIN);
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this._subs.unsubscribe();
   }
 
   onHidePanel() {
@@ -74,6 +100,10 @@ export class UserMenuPanelComponent {
   }
 
   onResetHints(): void {}
+
+  onGroups(): void {
+    this._router.navigate(["/groups"], { queryParams: this._route.snapshot.queryParams });
+  }
 
   onSettings(): void {
     this._userOptionsService.toggleSidebar();

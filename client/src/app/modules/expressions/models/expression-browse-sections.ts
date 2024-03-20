@@ -8,11 +8,17 @@ export class ExpressionBrowseSections {
   public static QUANTIFIED_ELEMENTS = "Quantified Elements";
   public static PSEUDO_INTENSITIES = "Pseudo-Intensities";
 
+  public static ANOMALY_MAPS = "Anomaly Maps";
+
   public static ELEMENTS = "Elements";
   public static EXPRESSIONS = "Expressions";
   public static EXPRESSION_GROUPS = "Expression Groups";
 
   public static SECTIONS = [
+    {
+      name: ExpressionBrowseSections.ANOMALY_MAPS,
+      subSections: [ExpressionBrowseSections.ALL],
+    },
     {
       name: ExpressionBrowseSections.ELEMENTS,
       subSections: [ExpressionBrowseSections.QUANTIFIED_ELEMENTS, ExpressionBrowseSections.PSEUDO_INTENSITIES],

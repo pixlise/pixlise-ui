@@ -10,7 +10,7 @@ import { DataExpression } from "src/app/generated-protos/expressions";
 import { QuantificationSummary } from "src/app/generated-protos/quantification-meta";
 import { ExpressionGroup } from "src/app/generated-protos/expression-group";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
-import { getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
+import { getAnomalyExpressions, getPredefinedExpression } from "src/app/expression-language/predefined-expressions";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { PseudoIntensityReq, PseudoIntensityResp } from "src/app/generated-protos/pseudo-intensities-msgs";
 import { ExpressionBrowseSections } from "../../models/expression-browse-sections";
@@ -24,6 +24,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   private _subs = new Subscription();
 
   private _loadedExpressions: DataExpression[] = [];
+  private _anomalyExpressions: DataExpression[] = [];
   private _pseudoIntensities: DataExpression[] = [];
   private _quantifiedExpressions: DataExpression[] = [];
   private _expressionGroups: ExpressionGroup[] = [];
@@ -57,7 +58,8 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
   private _et_ExpressionGroups = ExpressionBrowseSections.EXPRESSION_GROUPS;
   private _et_QuantifiedElements = ExpressionBrowseSections.QUANTIFIED_ELEMENTS;
   private _et_PseudoIntensities = ExpressionBrowseSections.PSEUDO_INTENSITIES;
-  expressionListTypes = [this._et_Expression, this._et_ExpressionGroups, this._et_QuantifiedElements, this._et_PseudoIntensities];
+  private _et_AnomalyMaps = ExpressionBrowseSections.ANOMALY_MAPS;
+  expressionListTypes = [this._et_Expression, this._et_ExpressionGroups, this._et_QuantifiedElements, this._et_PseudoIntensities, this._et_AnomalyMaps];
   expressionListType = ExpressionBrowseSections.EXPRESSIONS;
 
   constructor(
@@ -65,7 +67,9 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
     private _expressionsService: ExpressionsService,
     private _userOptionsService: UserOptionsService,
     private _cachedDataSerivce: APICachedDataService
-  ) {
+  ) {}
+
+  ngOnInit(): void {
     const quants = this._analysisLayoutService.availableScanQuants$.value?.[this.visibleScanId];
     if (this.visibleScanId && quants && quants.length > 0) {
       this.selectedQuantId = quants[0].id;
@@ -80,9 +84,9 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
         this.refreshPseudointensities(this.visibleScanId);
       }
     }
-  }
 
-  ngOnInit(): void {
+    this.refreshAnomalyMaps();
+
     this._expressionsService.fetchExpressions();
     this._expressionsService.fetchModules();
 
@@ -158,6 +162,10 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
       this.onlyShowRecent = filters.onlyShowRecent ?? false;
       this.filterExpressionsForDisplay();
     }
+  }
+
+  private refreshAnomalyMaps() {
+    this._anomalyExpressions = getAnomalyExpressions();
   }
 
   private refreshPseudointensities(scanId: string) {
@@ -294,14 +302,16 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
           (recent: RecentExpression) => (recent.type === "group" && this.isExpressionGroupList) || (recent.type === "expression" && !this.isExpressionGroupList)
         )
         .map((recentExpression: RecentExpression) => recentExpression.expression);
-    } else if (this.expressionListType == this._et_Expression) {
+    } else if (this.expressionListType === this._et_Expression) {
       expressions = this._loadedExpressions;
-    } else if (this.expressionListType == this._et_QuantifiedElements) {
+    } else if (this.expressionListType === this._et_QuantifiedElements) {
       expressions = this._quantifiedExpressions;
-    } else if (this.expressionListType == this._et_PseudoIntensities) {
+    } else if (this.expressionListType === this._et_PseudoIntensities) {
       expressions = this._pseudoIntensities;
-    } else if (this.expressionListType == this._et_ExpressionGroups) {
+    } else if (this.expressionListType === this._et_ExpressionGroups) {
       expressions = this._expressionGroups;
+    } else if (this.expressionListType === this._et_AnomalyMaps) {
+      expressions = this._anomalyExpressions;
     }
 
     let filteredExpressions: (DataExpression | ExpressionGroup)[] = [];

@@ -62,7 +62,7 @@ export class SentryHelper {
     }
 
     // Now get a usable error object
-    let processableError = SentryHelper.extractError(error);
+    const processableError = SentryHelper.extractError(error);
 
     // Send this to Sentry
     return Sentry.captureException(processableError);
@@ -133,7 +133,7 @@ export function makeGUID(): string {
 // https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
 // https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues
 export function randomString(len: number): string {
-  let arr = new Uint8Array(len * 2);
+  const arr = new Uint8Array(len * 2);
   window.crypto.getRandomValues(arr);
   return Array.from(arr, byteToHexString).join("").substring(0, len);
 }
@@ -156,7 +156,7 @@ export function radToDeg(rad: number): number {
 }
 
 export function xor_sum(value1: number, value2: number): number {
-  let xor = value1 ^ value2;
+  const xor = value1 ^ value2;
 
   // What's sum mean here? Are we adding up the bits that are on after xor?
   let bit = 1;
@@ -203,7 +203,7 @@ export function stripInvalidCharsFromPhoneNumber(phNum: string): string {
   let result = "";
 
   let c = 0;
-  for (let ch of phNum) {
+  for (const ch of phNum) {
     if ((c == 0 && ch == "+") || (ch >= "0" && ch <= "9")) {
       result += ch;
     }
@@ -225,9 +225,9 @@ export function getPearsonCorrelation(x: any, y: any) {
     return null;
   }
 
-  let xy = [];
-  let x2 = [];
-  let y2 = [];
+  const xy = [];
+  const x2 = [];
+  const y2 = [];
 
   for (let i = 0; i < shortestArrayLength; i++) {
     xy.push(x[i] * y[i]);
@@ -249,10 +249,10 @@ export function getPearsonCorrelation(x: any, y: any) {
     sum_y2 += y2[i];
   }
 
-  let step1 = shortestArrayLength * sum_xy - sum_x * sum_y;
-  let step2 = shortestArrayLength * sum_x2 - sum_x * sum_x;
-  let step3 = shortestArrayLength * sum_y2 - sum_y * sum_y;
-  let step4 = Math.sqrt(step2 * step3);
+  const step1 = shortestArrayLength * sum_xy - sum_x * sum_y;
+  const step2 = shortestArrayLength * sum_x2 - sum_x * sum_x;
+  const step3 = shortestArrayLength * sum_y2 - sum_y * sum_y;
+  const step4 = Math.sqrt(step2 * step3);
   let answer = 0;
   if (step4 != 0) {
     answer = step1 / step4;
@@ -272,11 +272,11 @@ export function makeScatterPlotData(xvalues: any, yvalues: any, extraValueLookup
     );
   }
 
-  let xys: any[] = [];
-  let c = 0;
+  const xys: any[] = [];
+  const c = 0;
 
   for (let c = 0; c < xvalues.length; c++) {
-    let xy: any = { x: xvalues[c], y: yvalues[c] };
+    const xy: any = { x: xvalues[c], y: yvalues[c] };
 
     // If this value happens to have a definition in the element list, add it for use with tooltips
     if (extraValueLookupTable && c in extraValueLookupTable) {
@@ -302,7 +302,7 @@ export function setsEqual<T>(a: Set<T>, b: Set<T>): boolean {
   }
 
   // Check each item
-  for (let aVal of a) {
+  for (const aVal of a) {
     if (!b.has(aVal)) {
       return false;
     }
@@ -332,7 +332,7 @@ export function arraysEqual<T>(a: Array<T>, b: Array<T>): boolean {
 export function niceNum(value: number): number {
   const isNeg = value < 0;
 
-  let absValue = Math.abs(value);
+  const absValue = Math.abs(value);
 
   const exponent = Math.floor(Math.log10(absValue));
   const fraction = absValue / Math.pow(10, exponent);
@@ -388,8 +388,8 @@ export const UNICODE_GREEK_LOWERCASE_PSI = "\u03C8";
 export const UNICODE_ELLIPSIS = "\u2026";
 
 export function Uint8ToString(u8a: Uint8Array) {
-  let CHUNK_SZ = 0x8000;
-  let c = [];
+  const CHUNK_SZ = 0x8000;
+  const c = [];
   for (let i = 0; i < u8a.length; i += CHUNK_SZ) {
     c.push(String.fromCharCode.apply(null, Array.from(u8a.subarray(i, i + CHUNK_SZ))));
   }
@@ -399,7 +399,7 @@ export function Uint8ToString(u8a: Uint8Array) {
 export function positionDialogNearParent(openerRect: any, ourWindowRect: any): object {
   const gapSizeHalf = 4; // Should be the same as $sz-half from CSS
 
-  let windowPos = new Rect(openerRect.right + gapSizeHalf, openerRect.top - ourWindowRect.height / 2, ourWindowRect.width, ourWindowRect.height);
+  const windowPos = new Rect(openerRect.right + gapSizeHalf, openerRect.top - ourWindowRect.height / 2, ourWindowRect.width, ourWindowRect.height);
 
   // Adjust so it's always on screen still...
   if (windowPos.x < gapSizeHalf) {
@@ -418,7 +418,7 @@ export function positionDialogNearParent(openerRect: any, ourWindowRect: any): o
     windowPos.y -= windowPos.maxY() - window.innerHeight + gapSizeHalf;
   }
 
-  let pos = { left: windowPos.x + "px", top: windowPos.y + "px" };
+  const pos = { left: windowPos.x + "px", top: windowPos.y + "px" };
   return pos;
 }
 
@@ -492,15 +492,15 @@ export function isValidElementsString(elements: string): boolean {
     return false;
   }
 
-  let elemSymbols = elements.split(",");
+  const elemSymbols = elements.split(",");
   for (let symbol of elemSymbols) {
     // We allow elements with _<something> after it, for special control of PIQUANT
-    let uscoreIdx = symbol.indexOf("_");
+    const uscoreIdx = symbol.indexOf("_");
     if (uscoreIdx > -1) {
       symbol = symbol.substring(0, uscoreIdx);
     }
 
-    let elem = periodicTableDB.getElementOxidationState(symbol);
+    const elem = periodicTableDB.getElementOxidationState(symbol);
     if (!elem || !elem.isElement) {
       // Found a not-an-element
       return false;
@@ -512,22 +512,22 @@ export function isValidElementsString(elements: string): boolean {
 
 // Expecting stuff like 88, 89, 91 - 94
 export function parseNumberRangeString(nums: string): Set<number> {
-  let result: Set<number> = new Set<number>();
+  const result: Set<number> = new Set<number>();
 
   // Remove all whitespace first
   nums.replace(/ /g, "");
 
   // Split by , and filter out blank strings
-  let parts = nums.split(",").filter(part => part.length > 0);
+  const parts = nums.split(",").filter(part => part.length > 0);
 
   // Run through each and parse it
-  for (let part of parts) {
+  for (const part of parts) {
     // If eg 91-94
     if (part.indexOf("-") > -1) {
-      let rangeParts = part.split("-");
+      const rangeParts = part.split("-");
       if (rangeParts.length === 2) {
-        let start = Number(rangeParts[0]);
-        let end = Number(rangeParts[1]);
+        const start = Number(rangeParts[0]);
+        const end = Number(rangeParts[1]);
         if (!isNaN(start) && !isNaN(end)) {
           for (let c = start; c <= end; c++) {
             result.add(c);
@@ -535,7 +535,7 @@ export function parseNumberRangeString(nums: string): Set<number> {
         }
       }
     } else {
-      let num = Number(part);
+      const num = Number(part);
       if (!isNaN(num)) {
         result.add(num);
       }
@@ -591,7 +591,7 @@ export class SDSFields {
       return null;
     }
 
-    let result = new SDSFields(
+    const result = new SDSFields(
       name.substring(0, 2),
       name.substring(2, 3),
       name.substring(3, 4),
@@ -816,7 +816,7 @@ export class SDSFields {
 
   private isAllDigits(str: string): boolean {
     for (let c = 0; c < str.length; c++) {
-      let ch = str.charCodeAt(c);
+      const ch = str.charCodeAt(c);
       if (ch < "0".charCodeAt(0) || ch > "9".charCodeAt(0)) {
         return false;
       }
@@ -829,7 +829,7 @@ export class SDSFields {
       return false;
     }
 
-    let c = s.charAt(0);
+    const c = s.charAt(0);
     return (c >= "a" && c <= "z") || (c >= "A" && c <= "Z");
   }
 
@@ -843,13 +843,13 @@ export class SDSFields {
 
   private stringToVersion(version: string): number {
     if (version.length == 2) {
-      let val = this.stringToIDSimpleCase(version);
+      const val = this.stringToIDSimpleCase(version);
       if (val >= 0) {
         return val;
       }
 
       if (this.isAlpha(version.substring(0, 1)) && this.isAllDigits(version.substring(1))) {
-        let remainder = this.stringToIDSimpleCase(version.substring(1));
+        const remainder = this.stringToIDSimpleCase(version.substring(1));
         if (remainder >= 0) {
           return 100 + this.letterValue(version.substring(0, 1)) * 36 + remainder;
         }
@@ -865,20 +865,20 @@ export class SDSFields {
 
   private stringToSiteID(site: string): number {
     if (site.length == 3) {
-      let id = this.stringToIDSimpleCase(site);
+      const id = this.stringToIDSimpleCase(site);
       if (id >= 0) {
         return id;
       }
 
       if (this.isAlpha(site.substring(0, 1)) && this.isAllDigits(site.substring(1))) {
-        let remainder = this.stringToIDSimpleCase(site.substring(1));
+        const remainder = this.stringToIDSimpleCase(site.substring(1));
         if (remainder >= 0) {
           return 1000 + this.letterValue(site.substring(0, 1)) * 100 + remainder;
         }
       }
 
       if (this.isAlpha(site.substring(0, 1)) && this.isAlpha(site.substring(1, 2)) && this.isAllDigits(site.substring(2))) {
-        let remainder = this.stringToIDSimpleCase(site.substring(2));
+        const remainder = this.stringToIDSimpleCase(site.substring(2));
         if (remainder >= 0) {
           return 3600 + this.letterValue(site.substring(0, 1)) * 260 + this.letterValue(site.substring(1, 2)) * 10 + remainder;
         }
@@ -894,9 +894,9 @@ export class SDSFields {
       }
 
       if (this.isAllDigits(site.substring(0, 1)) && this.isAlpha(site.substring(1, 2)) && this.isAlpha(site.substring(2, 3))) {
-        let firstDigit = this.stringToIDSimpleCase(site.substring(0, 1));
+        const firstDigit = this.stringToIDSimpleCase(site.substring(0, 1));
         if (firstDigit >= 0) {
-          let val = 27936 + firstDigit * 26 * 26 + this.letterValue(site.substring(1, 2)) * 26 + this.letterValue(site.substring(2, 3));
+          const val = 27936 + firstDigit * 26 * 26 + this.letterValue(site.substring(1, 2)) * 26 + this.letterValue(site.substring(2, 3));
           if (val < 32768) {
             return val;
           }
@@ -909,22 +909,22 @@ export class SDSFields {
 
   private stringToDriveID(drive: string): number {
     if (drive.length == 4) {
-      let id = this.stringToIDSimpleCase(drive);
+      const id = this.stringToIDSimpleCase(drive);
       if (id >= 0) {
         return id;
       }
 
       if (this.isAlpha(drive.substring(0, 1)) && this.isAllDigits(drive.substring(1))) {
-        let remainder = this.stringToIDSimpleCase(drive.substring(1));
+        const remainder = this.stringToIDSimpleCase(drive.substring(1));
         if (remainder >= 0) {
           return 10000 + this.letterValue(drive.substring(0, 1)) * 1000 + remainder;
         }
       }
 
       if (this.isAlpha(drive.substring(0, 1)) && this.isAlpha(drive.substring(1, 2)) && this.isAllDigits(drive.substring(2))) {
-        let remainder = this.stringToIDSimpleCase(drive.substring(2));
+        const remainder = this.stringToIDSimpleCase(drive.substring(2));
         if (remainder >= 0) {
-          let val = 36000 + this.letterValue(drive.substring(0, 1)) * 2600 + this.letterValue(drive.substring(1, 2)) * 100 + remainder;
+          const val = 36000 + this.letterValue(drive.substring(0, 1)) * 2600 + this.letterValue(drive.substring(1, 2)) * 100 + remainder;
           if (val < 65536) {
             return val;
           }

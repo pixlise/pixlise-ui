@@ -126,7 +126,9 @@ const appInitializerFn = (configService: EnvConfigurationInitService, handler: H
     {
       provide: ErrorHandler,
       useValue: Sentry.createErrorHandler({
-        showDialog: true,
+        showDialog: false, // Decided to turn off the dialog because we got it for situations
+                           // that didnt require it. Expecting our snack service to inform users
+                           // when needed
       }),
     },
   ],

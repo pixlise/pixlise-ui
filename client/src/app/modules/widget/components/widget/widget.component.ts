@@ -1,4 +1,4 @@
-import { Component, OnInit, ComponentRef, ElementRef, HostListener, ViewChild, ViewContainerRef, AfterViewChecked, Input } from "@angular/core";
+import { Component, OnInit, ComponentRef, ElementRef, HostListener, ViewChild, ViewContainerRef, AfterViewChecked, Input, OnDestroy } from "@angular/core";
 import { WIDGETS, WidgetConfiguration, WidgetControlConfiguration, WidgetType } from "../../models/widgets.model";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
 import { WidgetData } from "src/app/generated-protos/widget-data";
@@ -18,7 +18,7 @@ const getWidgetOptions = (): WidgetConfiguration[] => {
   templateUrl: "./widget.component.html",
   styleUrls: ["./widget.component.scss"],
 })
-export class WidgetComponent implements OnInit, AfterViewChecked {
+export class WidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
   private _subs: Subscription = new Subscription();
 
   @ViewChild("currentWidget", { read: ViewContainerRef }) currentWidget!: ViewContainerRef;
@@ -88,12 +88,12 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
   }
 
   initOverflowState() {
-    let buttonsContainerWidth = this.buttonsContainer.nativeElement.offsetWidth;
+    const buttonsContainerWidth = this.buttonsContainer.nativeElement.offsetWidth;
     let topToolbarWidth = 0;
     if (this.widgetConfiguration?.controlConfiguration?.topToolbar) {
       let overflowed = false;
       this.widgetConfiguration.controlConfiguration.topToolbar.forEach((button, index) => {
-        let buttonWidth = button.maxWidth || 60;
+        const buttonWidth = button.maxWidth || 60;
         if (topToolbarWidth + buttonWidth < buttonsContainerWidth) {
           topToolbarWidth += buttonWidth;
           button._overflowed = false;
@@ -109,8 +109,8 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
   }
 
   hideOverflowedButtons() {
-    let buttonsContainerWidth = this.buttonsContainer?.nativeElement?.offsetWidth;
-    let topToolbarWidth = this.topToolbar?.nativeElement?.offsetWidth;
+    const buttonsContainerWidth = this.buttonsContainer?.nativeElement?.offsetWidth;
+    const topToolbarWidth = this.topToolbar?.nativeElement?.offsetWidth;
     if (buttonsContainerWidth === undefined || topToolbarWidth === undefined) {
       return;
     }
@@ -119,7 +119,7 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
       if (buttonsContainerWidth - topToolbarWidth <= 60 && this.visibleTopToolbarCount > 0) {
         this.visibleTopToolbarCount -= 1;
       } else {
-        let firstOverflowed = this.widgetConfiguration.controlConfiguration.topToolbar[this.visibleTopToolbarCount];
+        const firstOverflowed = this.widgetConfiguration.controlConfiguration.topToolbar[this.visibleTopToolbarCount];
         if (
           buttonsContainerWidth - topToolbarWidth > (firstOverflowed?.maxWidth || 100) &&
           this.visibleTopToolbarCount < this.widgetConfiguration?.controlConfiguration?.topToolbar?.length
@@ -300,7 +300,7 @@ export class WidgetComponent implements OnInit, AfterViewChecked {
               return;
             }
 
-            let data = this.widgetLayoutConfig.data || WidgetData.create({ id: this.widgetLayoutConfig.id });
+            const data = this.widgetLayoutConfig.data || WidgetData.create({ id: this.widgetLayoutConfig.id });
             data[this.widgetConfiguration!.dataKey] = widgetData;
             this._analysisLayoutService.writeWidgetData(data);
           })

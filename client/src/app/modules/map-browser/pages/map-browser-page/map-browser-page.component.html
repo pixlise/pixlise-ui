@@ -10,6 +10,9 @@
     </div>
     <quantification-selector *ngIf="scanId" [scanId]="scanId" [selectedQuantID]="quantId" (selectQuant)="onSelectQuantForScan($event)"> </quantification-selector>
     <div class="page-controls">
+      <mat-select placeholder="Elements/Page" [(ngModel)]="widgetsPerPage" #tooltip="matTooltip" [matTooltipShowDelay]="500" matTooltip="Elements per page">
+        <mat-option *ngFor="let count of widgetsPerPageOptions" [value]="count"> {{ count }} elements</mat-option>
+      </mat-select>
       <icon-button class="{{ currentPage - 1 < 0 ? 'disabled' : '' }}" icon="assets/button-icons/arrow-left.svg" (onClick)="onPreviousPage()"></icon-button>
       <span class="page-tracker" #tooltip="matTooltip" [matTooltip]="quantifiedExpressionCount + ' quantified elements'"
         >{{ currentPage + 1 }} / {{ pageCount }}</span

@@ -53,6 +53,7 @@ import EditorConfig, { LocalStorageMetadata } from "src/app/modules/code-editor/
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { WidgetType } from "src/app/modules/widget/models/widgets.model";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+import { environment } from "src/environments/environment";
 
 @Component({
   selector: "code-editor",
@@ -109,7 +110,7 @@ export class CodeEditorPageComponent implements OnInit {
 
   public queryParams: Record<string, string> = {};
 
-  public expressionTimeoutMs: number = 30000;
+  public expressionTimeoutMs: number = environment.luaTimeoutMs;
 
   liveExpressionConfig: LiveExpression = {
     expressionId: "",
