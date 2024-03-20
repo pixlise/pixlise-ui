@@ -896,16 +896,22 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     );
   }
 
-  onToggleImageOptionsView(trigger: Element | undefined) {
-    if (this._shownImageOptions) {
-      // Hide it
-      this._shownImageOptions.close();
-      return;
-    }
+  getImagePickerParams(): ImagePickerParams {
+    // let colourRatioRangeMin = 0;
+    // if (this.mdl.removeBottomSpecularArtifacts && this.mdl.rgbuImageScaleData?.specularRemovedValueRange) {
+    //   colourRatioRangeMin = this.mdl.rgbuImageScaleData?.specularRemovedValueRange.min || 0;
+    // } else if (this.mdl.rgbuImageScaleData?.valueRange) {
+    //   colourRatioRangeMin = this.mdl.rgbuImageScaleData?.valueRange.min || 0;
+    // }
 
-    const dialogConfig = new MatDialogConfig();
-    // Pass data to dialog
-    dialogConfig.data = new ImagePickerParams(
+    // let colourRatioRangeMax = 0;
+    // if (this.mdl.removeTopSpecularArtifacts && this.mdl.rgbuImageScaleData?.specularRemovedValueRange) {
+    //   colourRatioRangeMax = this.mdl.rgbuImageScaleData?.specularRemovedValueRange.max || 0;
+    // } else if (this.mdl.rgbuImageScaleData?.valueRange) {
+    //   colourRatioRangeMax = this.mdl.rgbuImageScaleData?.valueRange.max || 0;
+    // }
+
+    return new ImagePickerParams(
       this.configuredScanIds,
       new ImageDisplayOptions(
         this.mdl.imageName,
@@ -918,9 +924,23 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         this.mdl.rgbuChannels,
         this.mdl.unselectedOpacity,
         this.mdl.unselectedGrayscale,
-        this.scanId
+        this.scanId,
+        this.mdl.rgbuImageScaleData?.specularRemovedValueRange,
+        this.mdl.rgbuImageScaleData?.valueRange
       )
     );
+  }
+
+  onToggleImageOptionsView(trigger: Element | undefined) {
+    if (this._shownImageOptions) {
+      // Hide it
+      this._shownImageOptions.close();
+      return;
+    }
+
+    const dialogConfig = new MatDialogConfig();
+    // Pass data to dialog
+    dialogConfig.data = this.getImagePickerParams();
 
     dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
@@ -953,6 +973,11 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
       this.reloadModel();
       this.saveState();
+
+      if (this._shownImageOptions?.componentInstance?.loadOptions) {
+        let params = this.getImagePickerParams();
+        this._shownImageOptions.componentInstance.loadOptions(params.options);
+      }
     });
 
     this._shownImageOptions.afterClosed().subscribe(() => {
