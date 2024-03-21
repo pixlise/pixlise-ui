@@ -193,7 +193,7 @@ export class ROISearchControlsComponent {
 
       if (this.selectedROITypes.includes("builtin") && PredefinedROIID.isPredefined(summary.id)) {
         filteredSummaries.push(summary);
-      } else if (this.selectedROITypes.includes("user-created") && this.checkUserIsAuthor(summary)) {
+      } else if (this.selectedROITypes.includes("user-created") && this.checkUserIsAuthor(summary) && !summary.isMIST) {
         filteredSummaries.push(summary);
       } else if (this.selectedROITypes.includes("shared") && !this.checkUserIsAuthor(summary)) {
         filteredSummaries.push(summary);

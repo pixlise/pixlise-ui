@@ -50,6 +50,8 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   widgetConfiguration?: WidgetConfiguration;
 
+  isWidgetTargeted: boolean = false;
+
   isWidgetHighlighted: boolean = false;
 
   isWidgetDataLoading: boolean = false;
@@ -69,6 +71,10 @@ export class WidgetComponent implements OnInit, OnDestroy, AfterViewChecked {
       } else if (this.isWidgetHighlighted) {
         this.isWidgetHighlighted = false;
       }
+    });
+
+    this._analysisLayoutService.targetWidgetIds$.subscribe(targetWidgetIds => {
+      this.isWidgetTargeted = targetWidgetIds.has(this.widgetLayoutConfig.id);
     });
   }
 

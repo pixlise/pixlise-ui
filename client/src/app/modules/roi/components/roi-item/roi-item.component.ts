@@ -34,6 +34,7 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
 
   @Input() selectedOptions: string[] = [];
   @Input() selected = false;
+  @Input() isVisible = false;
   @Input() colorChangeOnly = false;
 
   @Input() colorOptions: ColourOption[] = COLOURS;
@@ -49,6 +50,7 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   @Input() summary!: ROIItemSummary;
 
   @Output() onROISelect = new EventEmitter();
+  @Output() onVisibilityChange = new EventEmitter<boolean>();
 
   @Input() selectAuthorToFilter: boolean = false;
   @Output() onFilterAuthor = new EventEmitter();
@@ -271,10 +273,6 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
-  get isVisible(): boolean {
-    return this.selected;
-  }
-
   get createdDate(): number {
     return this.summary.owner?.createdUnixSec ? this.summary.owner.createdUnixSec * 1000 : 0;
   }
@@ -337,7 +335,7 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   onVisibility(evt: any) {
-    this.onROISelect.emit();
+    this.onVisibilityChange.emit(!this.isVisible);
   }
 
   onScanEntryIdxPagePrev() {}

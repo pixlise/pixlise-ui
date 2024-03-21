@@ -10,6 +10,10 @@
     border: 1px solid #ffb800;
   }
 
+  &.targeted {
+    border: 1px solid #ffb800;
+  }
+
   header {
     background-color: rgb(var(--clr-gray-80));
     height: 40px;

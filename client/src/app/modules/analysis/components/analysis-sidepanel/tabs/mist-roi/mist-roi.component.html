@@ -40,6 +40,27 @@ POSSIBILITY OF SUCH DAMAGE. -->
         Upload ROI Set From CSV
       </push-button>
     </div>
+    <div class="widget-selectors">
+      <mat-select
+        [(ngModel)]="visibleScanId"
+        class="scan-filter"
+        placeholder="Scan ..."
+        #tooltip="matTooltip"
+        matTooltip="Filter to a scan"
+        [matTooltipShowDelay]="500">
+        <mat-option *ngFor="let scan of configuredScans" [value]="scan.id">{{ scan.title }} </mat-option>
+      </mat-select>
+      <mat-select
+        [(ngModel)]="selectedContextImage"
+        class="widget-filter"
+        placeholder="Open a Context Image ..."
+        #tooltip="matTooltip"
+        matTooltip="Choose a context image to display the ROIs on"
+        [matTooltipShowDelay]="500">
+        <mat-option *ngFor="let chart of allContextImages" [value]="chart.widget.id">{{ chart.name }} </mat-option>
+      </mat-select>
+    </div>
+
     <div class="selection">
       <push-button
         class="option"
@@ -49,7 +70,7 @@ POSSIBILITY OF SUCH DAMAGE. -->
         buttonStyle="outline"
         >Delete Selected
       </push-button>
-      <push-button class="option" (onClick)="onConvertSelected()" [disabled]="roiSelectionEmpty" buttonStyle="outline">Convert Selected </push-button>
+      <push-button class="option" (onClick)="onConvertSelected()" [disabled]="roiSelectionEmpty" buttonStyle="outline">Convert Selected</push-button>
     </div>
   </div>
   <cdk-accordion class="mist-roi-accordion">
@@ -77,6 +98,7 @@ POSSIBILITY OF SUCH DAMAGE. -->
         </div>
       </div>
       <div [style.display]="expandedIndices.includes(0) ? '' : 'none'">
+        <!-- <cdk-virtual-scroll-viewport [itemSize]="48" class="rois-viewport"> -->
         <roi-item
           *ngFor="let region of fullyIdentifiedMistROIs"
           [summary]="region"
@@ -86,8 +108,11 @@ POSSIBILITY OF SUCH DAMAGE. -->
           [colorChangeOnly]="true"
           [showCreatorIcon]="false"
           [selected]="checkSelected(region)"
-          (onROISelect)="onROISelectToggle(region)">
+          (onROISelect)="onROISelectToggle(region)"
+          [isVisible]="highlightedROIId === region.id"
+          (onVisibilityChange)="onROIVisibleToggle(region)">
         </roi-item>
+        <!-- </cdk-virtual-scroll-viewport> -->
       </div>
     </cdk-accordion-item>
     <cdk-accordion-item role="button" tabindex="1" class="pmcs-container">

@@ -74,11 +74,11 @@ roi-search-controls {
 }
 
 .rois {
-  height: calc(100vh - 40px - 40px - 52px);
+  height: calc(100vh - 40px - 40px - 122px);
 
   &.search-controls-visible {
     // height: calc(100vh - 40px - 40px - 134px);
-    height: calc(100vh - 40px - 40px - 94px);
+    height: calc(100vh - 40px - 40px - 122px);
   }
 
   .rois-viewport {

@@ -32,6 +32,7 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dial
 
 import papa from "papaparse";
 import { ROIItem } from "src/app/generated-protos/roi";
+import { ScanItem } from "src/app/generated-protos/scan";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { ROIService } from "src/app/modules/roi/services/roi.service";
 
@@ -39,8 +40,20 @@ export class MistROIUploadData {
   static readonly MIST_ROI_HEADERS = ["ClassificationTrail", "ID_Depth", "PMC", "group1", "group2", "group3", "group4", "species", "formula"];
   static readonly DatasetIDHeader = "DatasetID";
 
-  constructor(public datasetID: string = "") {}
+  constructor(
+    public scanId: string = "",
+    public configuredScans: ScanItem[] = [],
+    public allScans: ScanItem[] = []
+  ) {}
 }
+
+export type ROIUploadSummary = {
+  scanId: string;
+  scanName: string;
+  mistROIs: ROIItem[];
+  upload: boolean;
+  isScanConfigured: boolean;
+};
 
 @Component({
   selector: "app-mist-roi-upload",
@@ -52,11 +65,23 @@ export class MistRoiUploadComponent implements OnInit {
   public overwriteOptions: string[] = ["Over-Write All", "Over-Write ROIs With the Same Name", "Do Not Over-Write"];
   public csvFile: File | null = null;
   public mistROIs: ROIItem[] = [];
-  public mistROIsByDatasetID: Map<string, ROIItem[]> = new Map<string, ROIItem[]>();
   public uploadToSubDatasets: boolean = false;
 
   public uniqueROIs: Record<string, ROIItem> = {};
   public uploadedScanIds: string[] = [];
+
+  expectedHeaders = MistROIUploadData.MIST_ROI_HEADERS;
+
+  datasetIDHeader = MistROIUploadData.DatasetIDHeader;
+  optionalHeaders = [MistROIUploadData.DatasetIDHeader];
+
+  allScans: ScanItem[] = [];
+  configuredScans: ScanItem[] = [];
+
+  selectedScanId: string = "";
+
+  public uploadSummaries: ROIUploadSummary[] = [];
+  public mistROIsByDatasetID: Map<string, ROIItem[]> = new Map<string, ROIItem[]>();
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: MistROIUploadData,
@@ -66,13 +91,50 @@ export class MistRoiUploadComponent implements OnInit {
     private _roiService: ROIService
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.selectedScanId = this.data.scanId || this._analysisLayoutService.defaultScanId;
+    this.configuredScans = this.data.configuredScans;
+    this.allScans = this.data.allScans;
+  }
+
+  get browseTooltip(): string {
+    return `Expected Headers: ${this.expectedHeaders.join(", ")}\nOptional Headers: ${this.optionalHeaders.join(", ")}\n`;
+  }
+
+  get allChecked(): boolean {
+    return this.uploadSummaries.every(summary => summary.upload);
+  }
+
+  set allChecked(checked: boolean) {
+    this.uploadSummaries.forEach(summary => (summary.upload = checked));
+  }
+
+  get allScansConfigured(): boolean {
+    return this.uploadSummaries.every(summary => !summary.upload || summary.isScanConfigured);
+  }
+
+  private formSummary() {
+    Object.entries(this.uniqueROIs).forEach(([id, roi]) => {
+      let datasetId = roi.scanId;
+      if (!this.mistROIsByDatasetID.has(datasetId)) {
+        this.mistROIsByDatasetID.set(datasetId, []);
+      }
+      this.mistROIsByDatasetID.get(datasetId)?.push(roi);
+    });
+
+    this.uploadSummaries = Array.from(this.mistROIsByDatasetID.keys()).map(scanId => {
+      let scanName = this.allScans.find(scan => scan.id === scanId)?.title || scanId;
+      let isScanConfigured = this.configuredScans.some(scan => scan.id === scanId);
+      return { scanId, scanName, mistROIs: this.mistROIsByDatasetID.get(scanId) || [], upload: true, isScanConfigured };
+    });
+  }
 
   onBrowse(file: any): void {
     this.csvFile = file.target.files[0];
     let fileReader = new FileReader();
     fileReader.onload = evt => {
       this.mistROIs = this.readInMistROIs(fileReader.result as string);
+      this.formSummary();
     };
     fileReader.readAsText(this.csvFile as Blob);
   }
@@ -84,11 +146,9 @@ export class MistRoiUploadComponent implements OnInit {
   readInMistROIs(rawCSV: string): ROIItem[] {
     let items: ROIItem[] = [];
 
-    let expectedHeaders = MistROIUploadData.MIST_ROI_HEADERS;
-
     let rows: any = papa.parse(rawCSV);
     let headers: any[] = rows.data.length > 0 ? rows.data[0] : [];
-    if (!expectedHeaders.every(header => headers.includes(header))) {
+    if (!this.expectedHeaders.every(header => headers.includes(header))) {
       alert("Malformed Mist ROI CSV! Unexpected headers found.");
       return [];
     }
@@ -97,14 +157,14 @@ export class MistRoiUploadComponent implements OnInit {
 
     let scanIds = new Set<string>();
     if (!scanIdPerRow) {
-      scanIds.add(this._analysisLayoutService.defaultScanId);
+      scanIds.add(this.selectedScanId);
     }
 
     let uniqueROIs: Record<string, ROIItem> = {};
     for (let row of rows.data.slice(1)) {
       let rawItem = headers.reduce((fields: string[], key: string, i: number) => ({ ...fields, [key]: row[i] }), {});
 
-      let scanId = this._analysisLayoutService.defaultScanId;
+      let scanId = this.selectedScanId;
       if (scanIdPerRow && rawItem[MistROIUploadData.DatasetIDHeader]) {
         scanId = rawItem[MistROIUploadData.DatasetIDHeader];
         scanIds.add(scanId);
@@ -168,7 +228,10 @@ export class MistRoiUploadComponent implements OnInit {
       let skipDuplicates = this.overwriteOption === "Do Not Over-Write";
 
       let idsToDelete = deleteExisting ? this.uploadedScanIds : [];
-      this._roiService.bulkWriteROIs(Object.values(this.uniqueROIs), overwrite, skipDuplicates, true, idsToDelete);
+
+      let filteredROIs = Object.values(this.uniqueROIs).filter(roi => this.uploadSummaries.some(summary => summary.scanId === roi.scanId && summary.upload));
+
+      this._roiService.bulkWriteROIs(filteredROIs, overwrite, skipDuplicates, true, idsToDelete);
 
       this.dialogRef.close({
         deleteExisting,
