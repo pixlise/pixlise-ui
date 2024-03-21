@@ -331,7 +331,7 @@ export class ContextImageModel implements IContextImageModel, CanvasDrawNotifier
     // Only build the colour scale if we don't:
     // - Already have a colour scale (eg from expressions)
     // - Are showing an RGBU image in ratio mode
-    if (this._colourScales.length == 0 && this.rgbuChannels.indexOf("/") == 1 && this._raw && this._raw.rgbuSourceImage && this._drawModel.rgbuImageScaleData) {
+    if (this._colourScales.length == 0 && this.rgbuChannels.indexOf("/") === 1 && this._raw && this._raw.rgbuSourceImage && this._drawModel.rgbuImageScaleData) {
       const layerShading = ColourRamp.SHADE_MAGMA;
 
       //const clr = Colours.sampleColourRamp(ColourRamp.SHADE_MAGMA, pct);

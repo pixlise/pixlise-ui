@@ -897,20 +897,6 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
   }
 
   getImagePickerParams(): ImagePickerParams {
-    // let colourRatioRangeMin = 0;
-    // if (this.mdl.removeBottomSpecularArtifacts && this.mdl.rgbuImageScaleData?.specularRemovedValueRange) {
-    //   colourRatioRangeMin = this.mdl.rgbuImageScaleData?.specularRemovedValueRange.min || 0;
-    // } else if (this.mdl.rgbuImageScaleData?.valueRange) {
-    //   colourRatioRangeMin = this.mdl.rgbuImageScaleData?.valueRange.min || 0;
-    // }
-
-    // let colourRatioRangeMax = 0;
-    // if (this.mdl.removeTopSpecularArtifacts && this.mdl.rgbuImageScaleData?.specularRemovedValueRange) {
-    //   colourRatioRangeMax = this.mdl.rgbuImageScaleData?.specularRemovedValueRange.max || 0;
-    // } else if (this.mdl.rgbuImageScaleData?.valueRange) {
-    //   colourRatioRangeMax = this.mdl.rgbuImageScaleData?.valueRange.max || 0;
-    // }
-
     return new ImagePickerParams(
       this.configuredScanIds,
       new ImageDisplayOptions(
