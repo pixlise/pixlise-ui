@@ -39,6 +39,7 @@ import { ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs
 import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { APIDataService, SnackbarService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { ImportMarsViewerImageReq, ImportMarsViewerImageResp } from "src/app/generated-protos/image-coreg-msgs";
+import { MinMax } from "src/app/models/BasicTypes";
 
 export class ImageDisplayOptions {
   constructor(
@@ -52,8 +53,11 @@ export class ImageDisplayOptions {
     public rgbuChannels: string,
     public unselectedOpacity: number,
     public unselectedGrayscale: boolean,
-    public selectedScanId: string
-  ) {}
+    public selectedScanId: string,
+    public specularRemovedValueRange?: MinMax,
+    public valueRange?: MinMax // public colourRatioRangeMin?: number,
+  ) // public colourRatioRangeMax?: number
+  {}
 
   copy(): ImageDisplayOptions {
     return new ImageDisplayOptions(
@@ -67,7 +71,9 @@ export class ImageDisplayOptions {
       this.rgbuChannels,
       this.unselectedOpacity,
       this.unselectedGrayscale,
-      this.selectedScanId
+      this.selectedScanId,
+      this.specularRemovedValueRange,
+      this.valueRange
     );
   }
 }
@@ -100,6 +106,10 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
   public downloadLoading: boolean = false;
 
+  // This prevents an infinite loop of loadOptions -> publishOptionChange in the case
+  // something's wrong with loading a scale range
+  private _requestedNewRange: boolean = false;
+
   @Output() optionChange = new EventEmitter();
 
   constructor(
@@ -111,10 +121,25 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     public dialog: MatDialog //private _exportDataService: ExportDataService
   ) {
     // Copy the options so we can have "reset" buttons for eg
-    this._options = data.options.copy();
+    this.loadOptions(data.options);
+  }
+
+  loadOptions(options: ImageDisplayOptions) {
+    this._options = options.copy();
 
     this.displayedChannels = [...RGBUImage.channelToDisplayMap.values()];
     this.displayedChannelsWithNone = [...this.displayedChannels, "(None)"];
+    if (!this._options.specularRemovedValueRange && !this._options.valueRange && !this.rgbuAsChannels && this.isRGBU) {
+      if (!this._requestedNewRange) {
+        // Wait a frame for the scale to be set up
+        setTimeout(() => {
+          this.publishOptionChange();
+        }, 1);
+        this._requestedNewRange = true;
+      }
+    } else {
+      this._requestedNewRange = false;
+    }
   }
 
   ngOnInit(): void {
@@ -372,8 +397,8 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
   onResetRatioColourRemapping(): void {
     this.onResetBrightness();
-    this._options.colourRatioMin = null;
-    this._options.colourRatioMax = null;
+    this._options.colourRatioMin = this.data.options.colourRatioMax;
+    this._options.colourRatioMax = this.data.options.colourRatioMax;
     this.publishOptionChange();
   }
 
@@ -382,6 +407,10 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
       this._options.colourRatioMin = val;
       this.publishOptionChange();
     }
+  }
+
+  get colourRatioMin(): number {
+    return this._options.colourRatioMin ?? Math.round(this.colourRatioRangeMin * 100) / 100;
   }
 
   // colourRatioMinStr - as string, used for text box entry
@@ -414,6 +443,10 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     }
   }
 
+  get colourRatioMax(): number {
+    return this._options.colourRatioMax ?? Math.round(this.colourRatioRangeMax * 100) / 100;
+  }
+
   // colourRatioMaxStr - as string, used for text box entry
   get colourRatioMaxStr(): string {
     const val = this.colourRatioMax;
@@ -439,27 +472,23 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
 
   // Getting the min/max of the entire colour ratio range
   get colourRatioRangeMin(): number {
-    // let rgbuImgLayer = this._contextImageService.mdl.rgbuImageLayerForScale;
-
-    // if (this.removeBottomSpecularArtifacts && rgbuImgLayer && rgbuImgLayer.getSpecularRemovedValueRange(0)) {
-    //   return rgbuImgLayer.getSpecularRemovedValueRange(0).min;
-    // } else if (rgbuImgLayer && rgbuImgLayer.getValueRange(0)) {
-    //   return rgbuImgLayer.getValueRange(0).min;
-    // }
-
-    return 0;
+    if (this.options.removeBottomSpecularArtifacts && this.options.specularRemovedValueRange) {
+      return this.options.specularRemovedValueRange.min || 0;
+    } else if (this.options.valueRange) {
+      return this.options.valueRange.min || 0;
+    } else {
+      return 0;
+    }
   }
 
   get colourRatioRangeMax(): number {
-    // let rgbuImgLayer = this._contextImageService.mdl.rgbuImageLayerForScale;
-
-    // if (this.removeTopSpecularArtifacts && rgbuImgLayer && rgbuImgLayer.getSpecularRemovedValueRange(0)) {
-    //   return rgbuImgLayer.getSpecularRemovedValueRange(0).max;
-    // } else if (rgbuImgLayer && rgbuImgLayer.getValueRange(0)) {
-    //   return rgbuImgLayer.getValueRange(0).max;
-    // }
-
-    return 0;
+    if (this.options.removeTopSpecularArtifacts && this.options.specularRemovedValueRange) {
+      return this.options.specularRemovedValueRange.max || 0;
+    } else if (this.options.valueRange) {
+      return this.options.valueRange.max || 0;
+    } else {
+      return 0;
+    }
   }
 
   scaleImageWidth: number = 100;
@@ -468,6 +497,8 @@ export class ImageOptionsComponent implements OnInit, OnDestroy {
     if (event.finish) {
       this.colourRatioMin = event.minValue;
       this.colourRatioMax = event.maxValue;
+      this.colourRatioMaxStr = event.maxValue.toString();
+      this.colourRatioMinStr = event.minValue.toString();
       this.publishOptionChange();
     }
   }
