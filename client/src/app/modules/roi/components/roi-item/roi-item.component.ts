@@ -11,6 +11,7 @@ import { ObjectType } from "src/app/generated-protos/ownership-access";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { decodeIndexList } from "src/app/utils/utils";
+import { SelectionTabModel } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/selection/model";
 
 export type SubItemOptionSection = {
   title: string;
@@ -501,6 +502,8 @@ export class ROIItemComponent implements OnInit, OnDestroy, OnChanges {
       this._snackBarService.openError("Cannot save selection to ROI. ROI not found.");
       return;
     }
+
+    // this._selectionService.selectRGBUPixels();
 
     let joinedPixels = new Set<number>(this._detailedInfo.pixelIndexesEncoded);
     pixelSelection.selectedPixels.forEach(pixel => {
