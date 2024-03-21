@@ -44,10 +44,12 @@ export class MemoisationService {
       return of();
     }
 
+    console.debug("Memoised: " + key);
+
     // Save it in memory (we'll update the time stamp soon)
     const ts = Date.now() / 1000;
 
-    let localMemoData = MemoisedItem.create({ key, data, memoTimeUnixSec: ts });
+    const localMemoData = MemoisedItem.create({ key, data, memoTimeUnixSec: ts });
     this._local.set(key, localMemoData);
     this._localStorageService.storeMemoData(localMemoData);
 
@@ -72,6 +74,8 @@ export class MemoisationService {
   }
 
   get(key: string): Observable<MemoisedItem> {
+    console.debug("Checking for memoised: " + key);
+
     // If we have it locally, stop here
     const local = this._local.get(key);
     if (local !== undefined) {
@@ -101,7 +105,7 @@ export class MemoisationService {
 
   private async getFromAPI(key: string): Promise<MemoisedItem> {
     // Get from API
-    let apiResponse = await firstValueFrom(
+    const apiResponse = await firstValueFrom(
       this._dataService.sendMemoiseGetRequest(MemoiseGetReq.create({ key })).pipe(
         map((resp: MemoiseGetResp) => {
           if (!resp.item) {

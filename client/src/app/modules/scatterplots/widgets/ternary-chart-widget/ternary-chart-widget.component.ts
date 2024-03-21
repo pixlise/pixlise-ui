@@ -150,7 +150,7 @@ export class TernaryChartWidgetComponent extends BaseWidgetModel implements OnIn
 
   private update() {
     if (this.mdl.expressionIds.length !== 3) {
-      this._snackService.openError("Expected 3 expression ids for Ternary");
+      this._snackService.openError("Expected 3 expression ids for Ternary, got: " + this.mdl.expressionIds.length);
       return;
     }
 
