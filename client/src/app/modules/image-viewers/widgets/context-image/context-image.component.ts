@@ -312,7 +312,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           return;
         }
 
-        let syncedTransform = transforms[this.syncId];
+        const syncedTransform = transforms[this.syncId];
         if (syncedTransform) {
           this.mdl.transform.pan.x = syncedTransform.pan.x;
           this.mdl.transform.pan.y = syncedTransform.pan.y;
@@ -370,7 +370,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
           return;
         }
 
-        let expressionId = highlightedWidget.expressionId || highlightedWidget.result?.expression?.id;
+        const expressionId = highlightedWidget.expressionId || highlightedWidget.result?.expression?.id;
 
         if (expressionId) {
           this.cachedExpressionIds = this.mdl.expressionIds.slice();
@@ -397,7 +397,7 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
         if (highlighted.roiId) {
           this.cachedROIs = this.mdl.roiIds.slice();
-          let visibleROI = VisibleROI.create({ id: highlighted.roiId, scanId: highlighted.scanId });
+          const visibleROI = VisibleROI.create({ id: highlighted.roiId, scanId: highlighted.scanId });
           this.loadROIRegion(visibleROI, true);
         } else {
           this.mdl.roiIds = this.cachedROIs.slice();
@@ -521,9 +521,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
             pmcToIndexLookup.set(pt.PMC, pt.locationIdx);
           }
 
-          let quantId = this._quantOverrideForScan[scanId] || this._analysisLayoutService.getQuantIdForScan(scanId);
+          const quantId = this._quantOverrideForScan[scanId] || this._analysisLayoutService.getQuantIdForScan(scanId);
 
-          let shading = this._analysisLayoutService.isMapsPage ? ColourRamp.SHADE_VIRIDIS : ColourRamp.SHADE_MAGMA;
+          const shading = this._analysisLayoutService.isMapsPage ? ColourRamp.SHADE_VIRIDIS : ColourRamp.SHADE_MAGMA;
 
           this.mdl.expressionIds.forEach((exprId, i) => {
             this._contextDataService.getLayerModel(scanId, exprId, quantId, PredefinedROIID.getAllPointsForScan(scanId), shading, pmcToIndexLookup).subscribe({
