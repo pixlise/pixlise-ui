@@ -320,7 +320,7 @@ export class ExpressionSearchControlsComponent implements OnInit, OnDestroy {
       let expressionNameLower = expression.name.toLowerCase();
       if (
         (!this.onlyShowEditable || this.checkIsEditable(expression)) && // Only show editable expressions (if requested
-        (searchString.length <= 0 || expressionNameLower.indexOf(searchString) >= 0) && // No search string or search string matches
+        (searchString.length <= 0 || expressionNameLower.indexOf(searchString) >= 0 || expression.id == this.searchString) && // No search string or search string matches
         (this.filteredTagIDs.length <= 0 || this.filteredTagIDs.some(tagID => expression.tags.includes(tagID))) && // No selected tags or expression has selected tag
         (this.filteredAuthors.length <= 0 || this.filteredAuthors.some(author => expression.owner?.creatorUser?.id === author)) // No selected authors or expression has selected author
       ) {

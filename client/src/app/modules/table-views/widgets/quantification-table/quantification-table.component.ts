@@ -176,6 +176,7 @@ export class QuantificationTableComponent extends BaseWidgetModel implements OnI
         this.regionDataTables.push(table);
       }
     });
+    // TODO: handle errors?
   }
 
   private makeTable(scanId: string, roiId: string, quantId: string): Observable<TableData> {
