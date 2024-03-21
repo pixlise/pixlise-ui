@@ -118,7 +118,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
 
   queryParam: Record<string, string> = {};
   allTabs: NavigationTab[] = [
-    { icon: "assets/tab-icons/browse.svg", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL },
+    { icon: "assets/tab-icons/browse.svg", label: "Browse", tooltip: "Browse", url: ToolbarComponent.BrowseTabURL },
     { icon: "assets/tab-icons/analysis.svg", label: "Analysis", tooltip: "Analysis", url: ToolbarComponent.AnalysisTabURL },
     { icon: "assets/tab-icons/code-editor.svg", label: "Code Editor", tooltip: "Code Editor", url: ToolbarComponent.CodeEditorTabURL },
     { icon: "assets/tab-icons/element-maps.svg", label: "Element Maps", tooltip: "Element Maps", url: ToolbarComponent.MapsTabURL },
