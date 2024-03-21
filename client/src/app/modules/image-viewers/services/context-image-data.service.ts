@@ -189,13 +189,14 @@ export class ContextImageDataService {
 
     for (let c = 0; c < results.queryResults.length; c++) {
       const result = results.queryResults[c];
+      const expr = result.expression?.name ? `${result.expression?.name} (${expressionId})` : `id=${expressionId}`;
       if (result.error) {
-        throw new WidgetError(`processQueryResults: expression ${result.expression?.name} (${expressionId}) had error: ${result.error}`, result.error.description);
+        throw new WidgetError(`processQueryResults: expression ${expr} had error: ${result.error}`, result.error.description);
       }
 
       if (c > 0 && results.queryResults[0].values.values.length != result.values.values.length) {
         throw new Error(
-          `processQueryResults: expression ${result.expression?.name} (${expressionId}) results differed in length, ${results.queryResults[0].values.values.length} vs ${result.values.values.length}`
+          `processQueryResults: expression ${expr} results differed in length, ${results.queryResults[0].values.values.length} vs ${result.values.values.length}`
         );
       }
 
@@ -216,11 +217,11 @@ export class ContextImageDataService {
             if (pts[i].scanEntryId == item.pmc && pts[i].scanEntryIndex == idx) {
               pts[i].values.push(item.value);
             } else {
-              throw new Error(`processQueryResults: expression ${expressionId} value ${i} of ${result.expression?.id || "?"} had non-matching PMC/index`);
+              throw new Error(`processQueryResults: expression ${expr} value ${i} of ${result.expression?.id || "?"} had non-matching PMC/index`);
             }
           }
         } else {
-          throw new Error(`processQueryResults: expression ${expressionId} PMC ${item.pmc} doesn't exist`);
+          throw new Error(`processQueryResults: expression ${expr} PMC ${item.pmc} doesn't exist`);
         }
       }
     }

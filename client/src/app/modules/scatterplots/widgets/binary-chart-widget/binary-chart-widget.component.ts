@@ -156,8 +156,9 @@ export class BinaryChartWidgetComponent extends BaseWidgetModel implements OnIni
   }
 
   private update() {
-    if (this.mdl.expressionIds.length != 2) {
-      throw new Error("Expected 2 expression ids for Binary");
+    if (this.mdl.expressionIds.length !== 2) {
+      this._snackService.openError("Expected 2 expression ids for Binary, got " + this.mdl.expressionIds.length);
+      return;
     }
 
     const unit = this.mdl.showMmol ? DataUnit.UNIT_MMOL : DataUnit.UNIT_DEFAULT;

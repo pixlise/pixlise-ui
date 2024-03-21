@@ -179,7 +179,7 @@ export class ROISearchControlsComponent {
         continue;
       }
 
-      if (searchString.length > 0 && summaryNameLower.indexOf(searchString) < 0) {
+      if (searchString.length > 0 && summaryNameLower.indexOf(searchString) < 0 && this.roiSearchString != summary.id) {
         continue;
       }
 

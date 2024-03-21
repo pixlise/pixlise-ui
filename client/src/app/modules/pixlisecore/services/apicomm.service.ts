@@ -71,7 +71,7 @@ export class APICommService implements OnDestroy {
               // Log large messages
               if (arr.length > environment.largeMessageLogThresholdBytes) {
                 //const msgInfo = rawProtoMessageToDebugString(arr, 20);
-                console.warn(`Large message received: ${arr.length} bytes, type: ${getMessageName(res)}, msgId: ${res.msgId}`);
+                console.warn(`Large message received: ${arr.length.toLocaleString()} bytes, type: ${getMessageName(res)}, msgId: ${res.msgId}`);
               }
 
               return res;
