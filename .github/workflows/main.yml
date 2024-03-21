@@ -129,8 +129,6 @@ jobs:
 
       # Run the Angular build
       - name: Build UI
-        env:
-          
         uses: addnab/docker-run-action@v3
         with:
           image: ghcr.io/pixlise/build-container:golang-1.21-protoc-24.3-protobuf-3.19.3-angular-16.1.0-nodejs-18
