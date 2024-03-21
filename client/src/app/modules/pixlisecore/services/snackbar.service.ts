@@ -61,7 +61,7 @@ export class SnackbarService {
       newDetails = (message as WidgetError).description;
     } else if (message instanceof WSError) {
       const wsErr = message as WSError;
-      messageText = `Request failed: ${wsErr.messageName} ${wsErr.message}`;
+      messageText = `Request failed: ${wsErr.messageName} - ${wsErr.message}`;
       newDetails = (message as WSError).errorText;
     } else if (typeof message === "object" && message?.errorText) {
       messageText = message.errorText;
