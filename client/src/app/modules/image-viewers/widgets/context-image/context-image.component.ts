@@ -276,6 +276,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
         if (this._analysisLayoutService.isMapsPage && contextData.mapLayers.length > 0) {
           this.mdl.expressionIds = contextData.mapLayers.map((layer: MapLayerVisibility) => layer.expressionID);
+          this.cachedExpressionIds = this.mdl.expressionIds.slice();
+          this.cachedROIs = this.mdl.roiIds.slice();
           this.mdl.drawImage = false;
           this.mdl.hideFootprintsForScans = [this.scanId];
           this.mdl.hidePointsForScans = [this.scanId];
@@ -373,7 +375,6 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         const expressionId = highlightedWidget.expressionId || highlightedWidget.result?.expression?.id;
 
         if (expressionId) {
-          this.cachedExpressionIds = this.mdl.expressionIds.slice();
           this.mdl.expressionIds = [expressionId];
         } else {
           this.mdl.expressionIds = this.cachedExpressionIds.slice();
@@ -396,7 +397,6 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         }
 
         if (highlighted.roiId) {
-          this.cachedROIs = this.mdl.roiIds.slice();
           const visibleROI = VisibleROI.create({ id: highlighted.roiId, scanId: highlighted.scanId });
           this.loadROIRegion(visibleROI, true);
         } else {
@@ -870,6 +870,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       // We don't save state for maps
       return;
     }
+
+    this.cachedExpressionIds = this.mdl.expressionIds.slice();
+    this.cachedROIs = this.mdl.roiIds.slice();
 
     this.onSaveWidgetData.emit(
       ContextImageState.create({

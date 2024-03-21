@@ -108,8 +108,8 @@
 <div
   class="roi-container"
   [ngStyle]="{
-    'border-left-color': colour.colour,
-    'border-left-width': colour.colour ? '4px' : '0',
+    'border-left-color': colour.colour || 'transparent',
+    'border-left-width': '4px',
     'border-bottom': lightVariant ? '1px solid rgb(var(--clr-gray-80))' : '1px solid rgb(var(--clr-gray-70))'
   }">
   <div
@@ -137,6 +137,7 @@
       class="creator {{ selectAuthorToFilter ? 'filterable' : '' }}"
       #tooltip="matTooltip"
       (click)="filterToAuthor()"
+      [matTooltipShowDelay]="200"
       matTooltip="Creator: {{ creatorName || 'N/A' }} {{ selectAuthorToFilter && creatorName ? '\n\n(Click to filter)' : '' }}">
       <img *ngIf="icon" [src]="icon" />
       <span *ngIf="!icon" class="name-abbreviation">{{ creatorAbbreviation }}</span>
@@ -145,6 +146,7 @@
       class="info"
       #tooltip="matTooltip"
       matTooltipClass="multiline-tooltip"
+      [matTooltipShowDelay]="500"
       [matTooltip]="name + (description ? '\n\n' + description : '') + (createdDate > 0 ? '\n\nCreated: ' + dateCreatedString : '')">
       <h4>
         {{ name }}
