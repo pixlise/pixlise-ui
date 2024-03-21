@@ -14,8 +14,6 @@ env:
   REGISTRY: ghcr.io
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
-  # Sentry token (so we upload source maps)
-  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
 jobs:
   version:
@@ -131,6 +129,8 @@ jobs:
 
       # Run the Angular build
       - name: Build UI
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }} # Sentry token (so we upload source maps)
         uses: addnab/docker-run-action@v3
         with:
           image: ghcr.io/pixlise/build-container:golang-1.21-protoc-24.3-protobuf-3.19.3-angular-16.1.0-nodejs-18
