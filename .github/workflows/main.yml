@@ -141,6 +141,7 @@ jobs:
             cd client
             npm i -g @angular/cli@16.1
             cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua
+            env
             npm run build
 
       # Login against a Docker registry except on PR
