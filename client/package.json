@@ -5,12 +5,13 @@
     "prestart": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua",
     "start": "clear&&ng serve",
     "prebuild": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua",
-    "build": "ng build",
+    "build": "ng build && npm run sentry:sourcemaps",
     "watch": "ng build --watch --configuration development",
     "postinstall": "node src/version.js",
     "pretest": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua",
     "test": "clear&&ng test",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org sentry --project pixlise ./dist/pixlise && sentry-cli --url https://sentry.pixlise.org/ sourcemaps upload --org sentry --project pixlise ./dist/pixlise"
   },
   "private": true,
   "dependencies": {
@@ -27,6 +28,7 @@
     "@auth0/auth0-angular": "^2.2.1",
     "@sentry/angular-ivy": "^7.56.0",
     "@sentry/browser": "^7.56.0",
+    "@sentry/cli": "^2.30.2",
     "compressorjs": "^1.2.1",
     "dexie": "^3.2.4",
     "dropzone": "^6.0.0-beta.2",

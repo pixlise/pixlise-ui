@@ -14,6 +14,8 @@ env:
   REGISTRY: ghcr.io
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
+  # Sentry token (so we upload source maps)
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
 jobs:
   version:
@@ -139,7 +141,7 @@ jobs:
             cd client
             npm i -g @angular/cli@16.1
             cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua
-            ng build
+            npm run build
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
