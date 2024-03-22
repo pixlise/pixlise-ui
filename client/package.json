@@ -5,14 +5,13 @@
     "prestart": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua",
     "start": "clear&&ng serve",
     "prebuild": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua",
-    "build": "ng build",
-    "buildwithsourcemap": "ng build && npm run sentry:sourcemaps",
+    "build": "ng build && npm run sentry:sourcemaps",
     "watch": "ng build --watch --configuration development",
     "postinstall": "node src/version.js",
     "pretest": "cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua",
     "test": "clear&&ng test",
     "lint": "ng lint",
-    "sentry:sourcemaps": "sentry-cli sourcemaps inject --ignore ./dist/pixlise/assets/monaco-editor/**/* --org sentry --project pixlise ./dist/pixlise && sentry-cli --url https://sentry.pixlise.org sourcemaps upload --log-level trace --org sentry --ignore ./dist/pixlise/assets/monaco-editor/**/* --project pixlise ./dist/pixlise"
+    "sentry:sourcemaps": "mv ./dist/pixlise/assets ./&&sentry-cli sourcemaps inject --org sentry --project pixlise ./dist/pixlise && sentry-cli --url https://sentry.pixlise.org sourcemaps upload --org sentry --project pixlise ./dist/pixlise&&mv ./assets ./dist/pixlise/"
   },
   "private": true,
   "dependencies": {

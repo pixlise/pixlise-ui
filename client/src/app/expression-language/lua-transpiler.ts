@@ -30,6 +30,7 @@
 import jsep from "jsep";
 import { QuantOp } from "src/app/expression-language/data-values";
 import { PixliseDataQuerier } from "src/app/expression-language/interpret-pixlise";
+import { SentryHelper } from "../utils/utils";
 
 export class LuaTranspiler {
   private _runningExpression: string = "";
@@ -75,7 +76,7 @@ export class LuaTranspiler {
     let result = "";
     let returnCount = 0;
 
-    let lines = expression.split("\n");
+    const lines = expression.split("\n");
 
     // Run through each line, convert comments, parse assignments and the expression per line
     for (let c = 0; c < lines.length; c++) {
@@ -91,7 +92,7 @@ export class LuaTranspiler {
       let luaLine = "";
 
       // Strip comments
-      let commentPos = line.indexOf("//");
+      const commentPos = line.indexOf("//");
       if (commentPos > -1) {
         // Run back and find the first whitespace before the comment too
         for (let c = commentPos - 1; c > 0; c--) {
@@ -108,7 +109,7 @@ export class LuaTranspiler {
       line = line.trimStart();
 
       if (line.length > 0) {
-        let equalPos = line.indexOf("=");
+        const equalPos = line.indexOf("=");
         if (equalPos > -1) {
           varName = line.substring(0, equalPos).trim();
           varName = this.ensureNoClash(varName);
@@ -140,11 +141,11 @@ export class LuaTranspiler {
 
           // If we've got a var being defined, check if it's just a number
           if (varName.length > 0) {
-            let isMap = this.evaluatesToMap(lineExpression, this._variableLookupIsMap);
+            const isMap = this.evaluatesToMap(lineExpression, this._variableLookupIsMap);
             this._variableLookupIsMap.set(varName, isMap);
           }
         } catch (err) {
-          console.error(err);
+          SentryHelper.logMsg(true, `transpile parseLineExpression error: ${err}`);
           return "";
         }
       }
@@ -196,26 +197,26 @@ export class LuaTranspiler {
 
   private parseLineExpression(expression: string, variableLookupIsMap: Map<string, boolean>): any {
     this._runningExpression = '"' + expression + '"';
-    let parseTree = jsep(expression);
+    const parseTree = jsep(expression);
     return this.parseExpressionNode(parseTree, variableLookupIsMap);
   }
 
   private evaluatesToMap(expression: string, variableLookupIsMap: Map<string, boolean>): boolean {
-    let parseTree = jsep(expression);
+    const parseTree = jsep(expression);
     return this.parseExpressionNodeEvalToMap(parseTree, variableLookupIsMap);
   }
 
   private parseExpressionNodeEvalToMap(expressionParseTreeNode: object, variableLookupIsMap: Map<string, boolean>): boolean {
-    let expType = expressionParseTreeNode["type"];
+    const expType = expressionParseTreeNode["type"];
     if (expType == "BinaryExpression") {
       // These are the tricky ones, we need to check left & right side
-      let left = this.parseExpressionNodeEvalToMap(expressionParseTreeNode["left"], variableLookupIsMap);
-      let right = this.parseExpressionNodeEvalToMap(expressionParseTreeNode["right"], variableLookupIsMap);
+      const left = this.parseExpressionNodeEvalToMap(expressionParseTreeNode["left"], variableLookupIsMap);
+      const right = this.parseExpressionNodeEvalToMap(expressionParseTreeNode["right"], variableLookupIsMap);
 
       // Either one could eval to a map, and the binary expression could then become a map
       return left || right;
     } else if (expType == "CallExpression") {
-      let callee = expressionParseTreeNode["callee"]["name"];
+      const callee = expressionParseTreeNode["callee"]["name"];
 
       // If we call a function that returns a map, it's a map!
       if (this._mapReturningFuncs.indexOf(callee) > -1) {
@@ -224,8 +225,8 @@ export class LuaTranspiler {
 
       // Otherwise it depends on the parameters to the function because some of ours have optional maps/scalars
       // Here we simply check each argument to see what it evaluates to
-      for (let arg of expressionParseTreeNode["arguments"]) {
-        let isMap = this.parseExpressionNodeEvalToMap(arg, variableLookupIsMap);
+      for (const arg of expressionParseTreeNode["arguments"]) {
+        const isMap = this.parseExpressionNodeEvalToMap(arg, variableLookupIsMap);
         if (isMap) {
           return true;
         }
@@ -253,7 +254,7 @@ export class LuaTranspiler {
   }
 
   private parseExpressionNode(expressionParseTreeNode: object, variableLookupIsMap: Map<string, boolean>): string {
-    let expType = expressionParseTreeNode["type"];
+    const expType = expressionParseTreeNode["type"];
     if (expType == "BinaryExpression") {
       return this.binaryExpression(expressionParseTreeNode, variableLookupIsMap);
     } else if (expType == "CallExpression") {
@@ -292,9 +293,9 @@ export class LuaTranspiler {
   }
 
   private unaryExpression(expressionParseTreeNode: object): string {
-    let op = this.getEnumForOp(expressionParseTreeNode["operator"]);
-    let prefix = expressionParseTreeNode["prefix"];
-    let arg = expressionParseTreeNode["argument"];
+    const op = this.getEnumForOp(expressionParseTreeNode["operator"]);
+    const prefix = expressionParseTreeNode["prefix"];
+    const arg = expressionParseTreeNode["argument"];
 
     // We only support unary expressions of negative numbers...
     if (op == QuantOp.SUBTRACT && prefix && arg) {
@@ -306,12 +307,12 @@ export class LuaTranspiler {
 
   private binaryExpression(expressionParseTreeNode: object, variableLookupIsMap: Map<string, boolean>): any {
     // Parse left, right, then combine them
-    let left = this.parseExpressionNode(expressionParseTreeNode["left"], variableLookupIsMap);
-    let leftIsMap = this.parseExpressionNodeEvalToMap(expressionParseTreeNode["left"], variableLookupIsMap);
-    let right = this.parseExpressionNode(expressionParseTreeNode["right"], variableLookupIsMap);
-    let rightIsMap = this.parseExpressionNodeEvalToMap(expressionParseTreeNode["right"], variableLookupIsMap);
+    const left = this.parseExpressionNode(expressionParseTreeNode["left"], variableLookupIsMap);
+    const leftIsMap = this.parseExpressionNodeEvalToMap(expressionParseTreeNode["left"], variableLookupIsMap);
+    const right = this.parseExpressionNode(expressionParseTreeNode["right"], variableLookupIsMap);
+    const rightIsMap = this.parseExpressionNodeEvalToMap(expressionParseTreeNode["right"], variableLookupIsMap);
 
-    let op = this.getEnumForOp(expressionParseTreeNode["operator"]);
+    const op = this.getEnumForOp(expressionParseTreeNode["operator"]);
 
     if (typeof left == "string" && typeof right == "string" && left.startsWith('"') && right.startsWith('"')) {
       return left + ".." + right;
@@ -346,16 +347,16 @@ export class LuaTranspiler {
     let callee = expressionParseTreeNode["callee"]["name"];
 
     let mapArgs = 0;
-    let argTxts = [];
+    const argTxts = [];
     let argFlat = "";
-    for (let arg of expressionParseTreeNode["arguments"]) {
+    for (const arg of expressionParseTreeNode["arguments"]) {
       if (argFlat.length > 0) {
         argFlat += ", ";
       }
 
-      let argTxt = this.parseExpressionNode(arg, variableLookupIsMap);
+      const argTxt = this.parseExpressionNode(arg, variableLookupIsMap);
       // Also determine if this is a map, as that affects what we call
-      let isMap = this.parseExpressionNodeEvalToMap(arg, variableLookupIsMap);
+      const isMap = this.parseExpressionNodeEvalToMap(arg, variableLookupIsMap);
       if (isMap) {
         mapArgs++;
       }

@@ -22,9 +22,10 @@ jobs:
     outputs:
       github_ref_slug: ${{ env.GITHUB_REF_NAME_SLUG }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          show-progress: false
       - name: GitHub Slug Action
         uses: rlespinasse/github-slug-action@v4.4.0
   staging:
