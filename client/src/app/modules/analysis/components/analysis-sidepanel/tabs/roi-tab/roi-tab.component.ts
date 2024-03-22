@@ -146,6 +146,16 @@ export class ROITabComponent implements OnInit {
     this._subs.unsubscribe();
   }
 
+  // This is called by the sidepanel component
+  onTabClose() {
+    this._analysisLayoutService.targetWidgetIds$.next(new Set());
+  }
+
+  // This is called by the sidepanel component
+  onTabOpen() {
+    this._analysisLayoutService.targetWidgetIds$.next(new Set([this.selectedContextImage]));
+  }
+
   get selectedContextImage(): string {
     return this._selectedContextImage;
   }
@@ -160,6 +170,7 @@ export class ROITabComponent implements OnInit {
       });
     }
     this._selectedContextImage = widgetId;
+    this._analysisLayoutService.targetWidgetIds$.next(new Set([this.selectedContextImage]));
   }
 
   trackBySummaryId(index: number, summary: ROIItemSummary) {

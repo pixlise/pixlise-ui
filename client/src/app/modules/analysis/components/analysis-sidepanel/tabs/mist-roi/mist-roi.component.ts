@@ -38,6 +38,9 @@ import { ROIItem, ROIItemSummary } from "src/app/generated-protos/roi";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
 import { ROIDisplaySettings } from "src/app/modules/roi/models/roi-region";
+import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
+import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
+import { ScanItem } from "src/app/generated-protos/scan";
 
 @Component({
   selector: "app-mist-roi",
@@ -60,11 +63,21 @@ export class MistROIComponent implements OnInit {
   private _selectionEmpty: boolean = true;
   roiSearchString: string = "";
 
+  mistROIByScanId: Record<string, Record<string, ROIItemSummary>> = {};
+
   isAllFullyIdentifiedMistROIsChecked: boolean = false;
   fullyIdentifiedMistROIs: ROIItemSummary[] = [];
 
   isAllGroupIdentifiedMistROIsChecked: boolean = false;
   groupIdentifiedMistROIs: ROIItemSummary[] = [];
+
+  configuredScans: ScanItem[] = [];
+  allScans: ScanItem[] = [];
+  private _visibleScanId: string = "";
+
+  layoutWidgets: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
+  allContextImages: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
+  private _selectedContextImage: string = "";
 
   constructor(
     private _roiService: ROIService,
@@ -74,22 +87,16 @@ export class MistROIComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    if (this.defaultScanId) {
-      this._roiService.listMistROIs(this.defaultScanId);
+    if (this.defaultScanId && !this.visibleScanId) {
+      this.visibleScanId = this.defaultScanId;
     }
 
     this._subs.add(
       this._roiService.mistROIsByScanId$.subscribe(mistROIByScanId => {
-        if (this.defaultScanId && mistROIByScanId[this.defaultScanId]) {
-          this.mistROIs = Object.values(mistROIByScanId[this.defaultScanId]).sort((roiA, roiB) => roiA.name.localeCompare(roiB.name));
+        this.mistROIByScanId = mistROIByScanId;
 
-          this.fullyIdentifiedMistROIs = this.mistROIs
-            .filter(roi => roi.mistROIItem?.idDepth !== undefined && roi.mistROIItem.idDepth >= 5)
-            .sort((roiA, roiB) => (roiB.mistROIItem?.idDepth || 0) - (roiA.mistROIItem?.idDepth || 0));
-
-          this.groupIdentifiedMistROIs = this.mistROIs
-            .filter(roi => roi.mistROIItem?.idDepth !== undefined && roi.mistROIItem?.idDepth < 5)
-            .sort((roiA, roiB) => (roiB.mistROIItem?.idDepth || 0) - (roiA.mistROIItem?.idDepth || 0));
+        if (this.visibleScanId && mistROIByScanId[this.visibleScanId]) {
+          this.filterMistROIs();
         }
       })
     );
@@ -99,10 +106,87 @@ export class MistROIComponent implements OnInit {
         this.displaySettingsMap = displaySettingsMap;
       })
     );
+
+    this._subs.add(
+      this._analysisLayoutService.availableScans$.subscribe(scans => {
+        if (!this.visibleScanId) {
+          this.visibleScanId = this.defaultScanId;
+        }
+        this.allScans = scans;
+        if (this._analysisLayoutService.activeScreenConfiguration$.value) {
+          this.configuredScans = scans.filter(scan => this._analysisLayoutService.activeScreenConfiguration$.value?.scanConfigurations[scan.id]);
+        }
+      })
+    );
+
+    this._subs.add(
+      this._analysisLayoutService.activeScreenConfiguration$.subscribe(config => {
+        if (config) {
+          let widgetReferences: { widget: WidgetLayoutConfiguration; name: string; type: string }[] = [];
+          config.layouts.forEach((layout, i) => {
+            let widgetCounts: Record<string, number> = {};
+            layout.widgets.forEach((widget, widgetIndex) => {
+              if (widgetCounts[widget.type]) {
+                widgetCounts[widget.type]++;
+              } else {
+                widgetCounts[widget.type] = 1;
+              }
+
+              let widgetTypeName = WIDGETS[widget.type as keyof typeof WIDGETS].name;
+              let widgetName = `${widgetTypeName} ${widgetCounts[widget.type]}${i > 0 ? ` (page ${i + 1})` : ""}`;
+
+              widgetReferences.push({ widget, name: widgetName, type: widget.type });
+            });
+          });
+
+          this.layoutWidgets = widgetReferences;
+
+          this.allContextImages = this.layoutWidgets.filter(widget => widget.type === "context-image");
+          this.selectedContextImage = this.allContextImages[0].widget.id;
+        }
+      })
+    );
   }
 
   ngOnDestroy() {
     this._subs.unsubscribe();
+  }
+
+  get visibleScanId(): string {
+    return this._visibleScanId;
+  }
+
+  set visibleScanId(scanId: string) {
+    this._visibleScanId = scanId;
+    this._roiService.listMistROIs(scanId);
+    this.filterMistROIs();
+  }
+
+  // This is called by the sidepanel component
+  onTabClose() {
+    this._analysisLayoutService.targetWidgetIds$.next(new Set());
+  }
+
+  // This is called by the sidepanel component
+  onTabOpen() {
+    this._analysisLayoutService.targetWidgetIds$.next(new Set([this.selectedContextImage]));
+  }
+
+  get selectedContextImage(): string {
+    return this._selectedContextImage;
+  }
+
+  set selectedContextImage(widgetId: string) {
+    // If the ROI is highlighted, update the widgetId
+    if (this._analysisLayoutService.highlightedROI$.value?.widgetId === this._selectedContextImage) {
+      this._analysisLayoutService.highlightedROI$.next({
+        widgetId,
+        roiId: this._analysisLayoutService.highlightedROI$.value?.roiId,
+        scanId: this.visibleScanId,
+      });
+    }
+    this._selectedContextImage = widgetId;
+    this._analysisLayoutService.targetWidgetIds$.next(new Set([this.selectedContextImage]));
   }
 
   get defaultScanId(): string {
@@ -117,10 +201,49 @@ export class MistROIComponent implements OnInit {
     return this._selectedROIs.length;
   }
 
+  get highlightedROIId(): string {
+    return this._analysisLayoutService.highlightedROI$.value?.roiId || "";
+  }
+
+  onROIVisibleToggle(roi: ROIItemSummary) {
+    if (this.highlightedROIId === roi.id) {
+      this._analysisLayoutService.highlightedROI$.next({
+        widgetId: this.selectedContextImage,
+        roiId: "",
+        scanId: this.visibleScanId,
+      });
+    } else {
+      this._analysisLayoutService.highlightedROI$.next({
+        widgetId: this.selectedContextImage,
+        roiId: roi.id,
+        scanId: this.visibleScanId,
+      });
+    }
+  }
+
+  filterMistROIs() {
+    if (!this.mistROIByScanId[this.visibleScanId]) {
+      this.mistROIs = [];
+      this.fullyIdentifiedMistROIs = [];
+      this.groupIdentifiedMistROIs = [];
+      return;
+    }
+
+    this.mistROIs = Object.values(this.mistROIByScanId[this.visibleScanId]).sort((roiA, roiB) => roiA.name.localeCompare(roiB.name));
+
+    this.fullyIdentifiedMistROIs = this.mistROIs
+      .filter(roi => roi.mistROIItem?.idDepth !== undefined && roi.mistROIItem.idDepth >= 5)
+      .sort((roiA, roiB) => (roiB.mistROIItem?.idDepth || 0) - (roiA.mistROIItem?.idDepth || 0));
+
+    this.groupIdentifiedMistROIs = this.mistROIs
+      .filter(roi => roi.mistROIItem?.idDepth !== undefined && roi.mistROIItem?.idDepth < 5)
+      .sort((roiA, roiB) => (roiB.mistROIItem?.idDepth || 0) - (roiA.mistROIItem?.idDepth || 0));
+  }
+
   onUploadROIs(event: any): void {
     const dialogConfig = new MatDialogConfig();
 
-    dialogConfig.data = new MistROIUploadData("");
+    dialogConfig.data = new MistROIUploadData(this.visibleScanId, this.configuredScans, this.allScans);
     const dialogRef = this.dialog.open(MistRoiUploadComponent, dialogConfig);
 
     dialogRef

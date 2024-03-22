@@ -124,9 +124,9 @@ POSSIBILITY OF SUCH DAMAGE.
         <input [(ngModel)]="colourRatioMinStr" type="number" step="0.1" placeholder="" />
 
         <range-slider
-          *ngIf="(options.removeBottomSpecularArtifacts || options.removeTopSpecularArtifacts) && (options.colourRatioMin || options.colourRatioMax)"
+          *ngIf="(options.removeBottomSpecularArtifacts || options.removeTopSpecularArtifacts) && options.specularRemovedValueRange"
           [minValue]="colourRatioRangeMin"
-          [selectedMinValue]="options.colourRatioMin !== null ? options.colourRatioMin : colourRatioRangeMin"
+          [selectedMinValue]="colourRatioMin"
           [maxValue]="colourRatioRangeMax"
           [selectedMaxValue]="options.colourRatioMax !== null ? options.colourRatioMax : colourRatioRangeMax"
           [pxLength]="scaleImageWidth"
@@ -134,11 +134,11 @@ POSSIBILITY OF SUCH DAMAGE.
           (onChange)="onChangeRatioMinMaxSlider($event)">
         </range-slider>
         <range-slider
-          *ngIf="!(options.removeBottomSpecularArtifacts || options.removeTopSpecularArtifacts)"
+          *ngIf="!options.removeBottomSpecularArtifacts && !options.removeTopSpecularArtifacts && options.valueRange"
           [minValue]="colourRatioRangeMin"
-          [selectedMinValue]="options.colourRatioMin !== null ? options.colourRatioMin : colourRatioRangeMin"
+          [selectedMinValue]="colourRatioMin"
           [maxValue]="colourRatioRangeMax"
-          [selectedMaxValue]="options.colourRatioMax !== null ? options.colourRatioMax : colourRatioRangeMax"
+          [selectedMaxValue]="colourRatioMax"
           [pxLength]="scaleImageWidth"
           trackColour="viridis"
           (onChange)="onChangeRatioMinMaxSlider($event)">

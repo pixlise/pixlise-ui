@@ -51,3 +51,5 @@ Thumbs.db
 /src/app/protolibs
 /src/environments/version.ts
 /src/local-development-pixlise-config.json
+# Sentry Config File
+.sentryclirc

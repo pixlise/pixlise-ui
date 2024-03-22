@@ -25,20 +25,6 @@ export interface SidebarViewShortcut {
 }
 
 export const SIDEBAR_TABS: SidebarTabItem[] = [
-  // {
-  //   title: "Workspaces",
-  //   icon: "assets/icons/workspaces.svg",
-  //   component: null,
-  //   tooltip: "Workspaces",
-  //   shortcut: ["Cmd", "Shift", "1"],
-  // },
-  // {
-  //   title: "Collections",
-  //   icon: "assets/icons/collections.svg",
-  //   component: null,
-  //   tooltip: "Collections",
-  //   shortcut: ["Cmd", "Shift", "2"],
-  // },
   {
     title: "Scan Configuration",
     icon: "assets/icons/datasets.svg",
@@ -61,7 +47,7 @@ export const SIDEBAR_TABS: SidebarTabItem[] = [
     title: "MIST ROIs",
     icon: "assets/icons/mist-roi.svg",
     component: MistROIComponent,
-    width: "400px",
+    width: "500px",
     tooltip: "MIST ROIs",
     shortcut: ["Cmd", "Shift", "3"],
   },

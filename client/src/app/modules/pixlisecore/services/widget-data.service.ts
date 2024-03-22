@@ -186,13 +186,20 @@ export class WidgetDataService {
       map((results: DataQueryResult[]) => {
         const resultItems = [];
         for (let c = 0; c < results.length; c++) {
-          resultItems.push(this.processQueryResult(results[c], what[c]));
+          resultItems.push(this.processGetDataResult(results[c], what[c]));
         }
         return new RegionDataResults(resultItems, "");
       }),
       catchError(err => {
-        console.error(err);
-        throw new Error(err);
+        const whatDbg = [];
+        for (const x of what) {
+          whatDbg.push(`Query: expr=${x.exprId}, scan=${x.scanId}, quant=${x.quantId}, roi=${x.roiId}`);
+        }
+        SentryHelper.logMsg(true, `Uncaught error in getData: ${err}.\nQuery items:\n${whatDbg.join("\n")}`);
+
+        // TODO: make it so getData() never throws an error!
+        // return new RegionDataResults([], err);
+        throw err;
       })
     );
   }
@@ -217,18 +224,36 @@ export class WidgetDataService {
     // Only query timestamp for actual expressions, not our predefined internal ones
     if (query.exprId && !DataExpressionId.isPredefinedExpression(query.exprId) && !DataExpressionId.isUnsavedExpressionId(query.exprId)) {
       exprIdIdx = queryList.length;
-      queryList.push(this._cachedDataService.getExpression(ExpressionGetReq.create({ id: query.exprId })));
+      queryList.push(
+        this._cachedDataService.getExpression(ExpressionGetReq.create({ id: query.exprId })).pipe(
+          catchError(err => {
+            throw new Error(`Failed to load expression: ${query.exprId} - ${err}`);
+          })
+        )
+      );
     }
 
     // Only query timestamp for actual ROIs not predefined internal ones
     if (query.roiId && !PredefinedROIID.isPredefined(query.roiId)) {
       roiIdIdx = queryList.length;
-      queryList.push(this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: query.roiId })));
+      queryList.push(
+        this._cachedDataService.getRegionOfInterest(RegionOfInterestGetReq.create({ id: query.roiId })).pipe(
+          catchError(err => {
+            throw new Error(`Failed to load expression: ${query.roiId} - ${err}`);
+          })
+        )
+      );
     }
 
     if (query.scanId) {
       scanIdIdx = queryList.length;
-      queryList.push(this._cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId: query.scanId } })));
+      queryList.push(
+        this._cachedDataService.getScanList(ScanListReq.create({ searchFilters: { scanId: query.scanId } })).pipe(
+          catchError(err => {
+            throw new Error(`Failed to scan: ${query.scanId} - ${err}`);
+          })
+        )
+      );
     }
 
     if (queryList.length <= 0) {
@@ -281,6 +306,28 @@ export class WidgetDataService {
         // Add to our in-flux cache
         this._inFluxSingleQueryResultCache.set(cacheKey, obs); // Make sure any obs going in here has shareReplay in its pipe
         return obs;
+      }),
+      catchError(err => {
+        // Failed to make the cache key, so some request for data failed... form an error that can be displayed for this exact expression
+        console.error(`Expression failed in makeCacheKey: ${err}`);
+
+        return of(
+          new DataQueryResult(
+            null,
+            false,
+            [],
+            0,
+            "",
+            "",
+            new Map<string, PMCDataValues>(),
+            err,
+            DataExpression.create({
+              id: query.exprId,
+              name: query.exprId,
+            }),
+            null
+          )
+        );
       })
     );
   }
@@ -301,7 +348,7 @@ export class WidgetDataService {
       }),
       catchError(err => {
         // This is now already logged in memoisation service
-        //console.error("Memoisation cache miss for " + cacheKey + ", calculating...");
+        SentryHelper.logMsg(true, `Error reading ${cacheKey} from memoisationService.get: ${err}. Will calculate instead`);
 
         // No matter what the error was, we need to now calculate this locally
         return this.getDataSingleCalculate(query, allowAnyResponse, cacheKey);
@@ -349,7 +396,8 @@ export class WidgetDataService {
             // Only send stuff to sentry that are exceptional. Common issues just get handled on the client and it can recover from them
             if (
               errorMsg.indexOf("The currently loaded quantification does not contain data for detector") < 0 &&
-              errorMsg.indexOf("The currently loaded quantification does not contain column") < 0
+              errorMsg.indexOf("The currently loaded quantification does not contain column") < 0 &&
+              errorMsg.indexOf("no quantification id specified") < 0
             ) {
               SentryHelper.logMsg(true, errorMsg);
             }
@@ -360,7 +408,10 @@ export class WidgetDataService {
       }),
       catchError(err => {
         const errorMsg = httpErrorToString(err, "Error getting expression: " + query.exprId);
+
+        // Don't need this in sentry!
         console.error(errorMsg);
+
         return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg));
       })
     );
@@ -572,7 +623,7 @@ export class WidgetDataService {
                   let runtimePer1000 = 0;
 
                   // Need to account for allowAnyResponse edge case
-                  let values = queryResult?.resultValues?.values || [];
+                  const values = queryResult?.resultValues?.values || [];
                   if (queryResult.runtimeMs > 0 && values.length > 0) {
                     runtimePer1000 = queryResult.runtimeMs / (values.length / 1000);
                   }
@@ -652,7 +703,7 @@ export class WidgetDataService {
               throw new Error(`Module ${ref.moduleId} version ${ref.version} came back empty`);
             }
 
-            let moduleVersion = value.module.versions.find(
+            const moduleVersion = value.module.versions.find(
               v => v.version?.major === ref.version?.major && v.version?.minor === ref.version?.minor && v.version?.patch === ref.version?.patch
             );
             if (!moduleVersion) {
@@ -679,7 +730,7 @@ export class WidgetDataService {
     );
   }
 
-  private processQueryResult(result: DataQueryResult, query: DataSourceParams): RegionDataResultItem {
+  private processGetDataResult(result: DataQueryResult, query: DataSourceParams): RegionDataResultItem {
     const pmcValues = result?.resultValues as PMCDataValues;
     if (result.errorMsg || !Array.isArray(pmcValues?.values) || (pmcValues.values.length > 0 && !(pmcValues.values[0] instanceof PMCDataValue))) {
       let msg = result.errorMsg;

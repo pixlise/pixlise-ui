@@ -32,7 +32,7 @@ import { map, mergeMap, concatMap, catchError, finalize, shareReplay } from "rxj
 import { PMCDataValue, PMCDataValues, DataQueryResult } from "src/app/expression-language/data-values";
 import { periodicTableDB } from "src/app/periodic-table/periodic-table-db";
 import { InterpreterDataSource } from "./interpreter-data-source";
-import { randomString } from "src/app/utils/utils";
+import { SentryHelper, randomString } from "src/app/utils/utils";
 import { DataExpressionId } from "./expression-id";
 import { DataModuleHelpers } from "./data-module-helpers";
 import { environment } from "src/environments/environment";
@@ -99,8 +99,8 @@ export class LuaDataQuerier {
         console.log(str);
       },
       str => {
+        SentryHelper.logMsg(true, `lua stderr: ${str}`);
         this._runtimeStdErr += str + "\n";
-        console.error(str);
       }
     );
     const luaOpts = {
@@ -306,7 +306,7 @@ export class LuaDataQuerier {
         catchError(err => {
           // We failed within init$, cleaer our lua variable so we re-init in future
           this._lua = null;
-          console.error(err);
+          SentryHelper.logMsg(true, `initLua error: ${err}`);
           throw err;
         })
       );
@@ -421,7 +421,7 @@ export class LuaDataQuerier {
           cleanupLua = true;
         }
 
-        console.error(parsedErr);
+        SentryHelper.logMsg(true, `runLuaCode error: ${parsedErr}`);
 
         // This prints a bunch of tables out but hasn't proven useful for debugging...
         //this._lua.global.dumpStack(console.error);

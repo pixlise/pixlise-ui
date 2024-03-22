@@ -23,9 +23,10 @@ jobs:
       version_tag: ${{ steps.version.outputs.version_tag }}
       github_sha_short: ${GITHUB_SHA_SHORT}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          show-progress: false
       - name: GitHub Slug Action
         uses: rlespinasse/github-slug-action@v4.4.0
       - name: version
@@ -56,9 +57,10 @@ jobs:
     needs: [version]
     steps:
       # Checkout the repo
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          show-progress: false
           submodules: recursive
       # Create version source file using version just generated
       - name: Create version file
@@ -80,7 +82,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: ghcr.io/pixlise/build-container:golang-1.21-protoc-24.3-protobuf-3.19.3-angular-16.1.0-nodejs-18
-          options: -v ${{ github.workspace }}:/work
+          options: -v ${{ github.workspace }}:/work #-q
           run: |
             cd /work
             ./genproto.sh
@@ -90,7 +92,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: atlassianlabs/docker-node-jdk-chrome-firefox:2023-05-22
-          options: -v ${{ github.workspace }}:/work
+          options: -v ${{ github.workspace }}:/work #-q
           run: |
             cd /work/client
             npm i -g @angular/cli@16.1
@@ -106,10 +108,11 @@ jobs:
     needs: [version]
     steps:
       # Checkout the repo
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: recursive
+          show-progress: false
 
       # Create version source file using version just generated
       - name: Create version file
@@ -132,14 +135,17 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: ghcr.io/pixlise/build-container:golang-1.21-protoc-24.3-protobuf-3.19.3-angular-16.1.0-nodejs-18
-          options: -v ${{ github.workspace }}:/work
+          options: -v ${{ github.workspace }}:/work #-q
+          # NOTE: we set the env var for Sentry token (so we upload source maps)
           run: |
             cd /work
             ./genproto.sh
             cd client
             npm i -g @angular/cli@16.1
             cp ./node_modules/pixlise-wasmoon/dist/glue.wasm ./src/app/expression-language/lua
-            ng build
+            export SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
+            #export SENTRY_LOG_LEVEL=debug
+            npm run build
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action

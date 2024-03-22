@@ -95,3 +95,51 @@
   flex-direction: row;
   justify-content: flex-end;
 }
+
+.upload-summary {
+  display: flex;
+  flex-direction: column;
+
+  h5 {
+  }
+
+  .summary-header {
+    display: flex;
+    background: #222829;
+    padding: 8px;
+
+    font-weight: 600;
+    color: rgb(var(--clr-gray-20));
+  }
+
+  .cell {
+    display: flex;
+    align-items: center;
+    flex: 1;
+
+    &.configured {
+      display: flex;
+      justify-content: flex-end;
+    }
+  }
+
+  .summary-rows {
+    display: flex;
+    flex-direction: column;
+    max-height: 200px;
+    overflow-y: auto;
+
+    .summary-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      justify-content: space-between;
+
+      &:nth-child(odd) {
+        background-color: rgb(var(--clr-gray-90));
+      }
+    }
+  }
+}
