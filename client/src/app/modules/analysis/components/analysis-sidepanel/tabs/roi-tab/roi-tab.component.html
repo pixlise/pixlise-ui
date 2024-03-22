@@ -44,7 +44,13 @@ POSSIBILITY OF SUCH DAMAGE.
     >
   </div>
   <div class="widget-selectors">
-    <mat-select [(ngModel)]="selectedContextImage" class="scan-filter" placeholder="Open a Context Image ...">
+    <mat-select
+      [(ngModel)]="selectedContextImage"
+      class="scan-filter"
+      placeholder="Open a Context Image ..."
+      #tooltip="matTooltip"
+      matTooltip="Choose a context image to display the ROIs on"
+      [matTooltipShowDelay]="500">
       <mat-option *ngFor="let chart of allContextImages" [value]="chart.widget.id">{{ chart.name }} </mat-option>
     </mat-select>
   </div>
@@ -63,8 +69,8 @@ POSSIBILITY OF SUCH DAMAGE.
         [selectAuthorToFilter]="showSearch"
         (onFilterAuthor)="onFilterAuthor($event)"
         [displaySettings]="displaySettingsMap[item.id]"
-        [selected]="highlightedROIId === item.id"
-        (onROISelect)="onROIVisibleToggle(item)"></roi-item>
+        [isVisible]="highlightedROIId === item.id"
+        (onVisibilityChange)="onROIVisibleToggle(item)"></roi-item>
     </cdk-virtual-scroll-viewport>
   </section>
 </section>

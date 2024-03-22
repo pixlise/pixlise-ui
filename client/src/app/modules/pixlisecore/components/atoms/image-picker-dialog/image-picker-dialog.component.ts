@@ -29,12 +29,13 @@
 
 import { Component, EventEmitter, Inject, OnInit, Output } from "@angular/core";
 import { MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
-import { Subscription } from "rxjs";
+import { Observable, Subscription } from "rxjs";
 import { ScanImagePurpose } from "src/app/generated-protos/image";
 import { ImageGetReq, ImageListReq, ImageListResp } from "src/app/generated-protos/image-msgs";
 import { ScanItem } from "src/app/generated-protos/scan";
 import { RGBUImage } from "src/app/models/RGBUImage";
 import { AnalysisLayoutService } from "src/app/modules/analysis/analysis.module";
+import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { APIDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { APIEndpointsService } from "src/app/modules/pixlisecore/services/apiendpoints.service";
@@ -48,7 +49,8 @@ export class ImageChoice {
     public path: string,
     public scanIds: string[] = [],
     public url: string = "",
-    public marsViewerURL: string = ""
+    public marsViewerURL: string = "",
+    public isTiff: boolean = false
   ) {}
 }
 
@@ -149,9 +151,25 @@ export class ImagePickerDialogComponent implements OnInit {
         for (const responseImage of resp.images.sort((a, b) => b.imagePath.localeCompare(a.imagePath))) {
           if (this.data.purpose === ScanImagePurpose.SIP_UNKNOWN || responseImage.purpose === this.data.purpose) {
             let marsViewerURL = this.makeMarsViewerURL(responseImage.imagePath);
-            this.waitingForImages.push(new ImageChoice(responseImage.imagePath, responseImage.imagePath, responseImage.associatedScanIds, "", marsViewerURL));
+            this.waitingForImages.push(
+              new ImageChoice(
+                responseImage.imagePath,
+                responseImage.imagePath,
+                responseImage.associatedScanIds,
+                "",
+                marsViewerURL,
+                responseImage.purpose === ScanImagePurpose.SIP_MULTICHANNEL
+              )
+            );
 
-            let imageChoice = new ImageChoice(responseImage.imagePath, responseImage.imagePath, responseImage.associatedScanIds, "loading", marsViewerURL);
+            let imageChoice = new ImageChoice(
+              responseImage.imagePath,
+              responseImage.imagePath,
+              responseImage.associatedScanIds,
+              "loading",
+              marsViewerURL,
+              responseImage.purpose === ScanImagePurpose.SIP_MULTICHANNEL
+            );
 
             if (allSamePrefix) {
               imageChoice.name = imageChoice.name.substring(prefix.length);
@@ -166,24 +184,21 @@ export class ImagePickerDialogComponent implements OnInit {
               this.selectedChoice = imageChoice;
             }
 
-            if (responseImage.purpose === ScanImagePurpose.SIP_MULTICHANNEL) {
-              this._endpointsService.loadRGBUImageTIF(responseImage.imagePath).subscribe({
-                next: (img: RGBUImage) => {
+            if (imageChoice.isTiff) {
+              this._endpointsService.loadRGBUImageTIFPreview(responseImage.imagePath).subscribe({
+                next: (url: string) => {
                   let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.imagePath);
                   if (imgChoice) {
-                    // TODO: We need to find a lightweight way to display a preview of this TIFF image
-                    imgChoice.url = img.path;
-
-                    // imgChoice.url = "error";
+                    imgChoice.url = url;
                     if (this.selectedImagePath === responseImage.imagePath) {
                       this.selectedChoice = imgChoice;
                     }
+                    this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.imagePath);
                   }
-
-                  this.waitingForImages = this.waitingForImages.filter(imgChoice => imgChoice.path !== responseImage.imagePath);
                 },
                 error: (err: any) => {
                   console.error(err);
+
                   let imgChoice = this.imageChoices.find(imgChoice => imgChoice.path === responseImage.imagePath);
                   if (imgChoice) {
                     imgChoice.url = "error";

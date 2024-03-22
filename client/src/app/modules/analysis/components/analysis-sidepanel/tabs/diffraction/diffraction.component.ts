@@ -300,12 +300,23 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     this.onResetBarSelection();
   }
 
+  // This is called by the sidepanel component
+  onTabClose() {
+    this._analysisLayoutService.targetWidgetIds$.next(new Set());
+  }
+
+  // This is called by the sidepanel component
+  onTabOpen() {
+    this._analysisLayoutService.targetWidgetIds$.next(new Set([this.selectedContextImage, this.selectedSpectrumChart]));
+  }
+
   get selectedContextImage(): string {
     return this._selectedContextImage;
   }
 
   set selectedContextImage(value: string) {
     this._selectedContextImage = value;
+    this._analysisLayoutService.targetWidgetIds$.next(new Set([this.selectedContextImage, this.selectedSpectrumChart]));
   }
 
   get selectedSpectrumChart(): string {
@@ -316,6 +327,7 @@ export class DiffractionTabComponent implements OnInit, HistogramSelectionOwner 
     this._selectedSpectrumChart = value;
     this._analysisLayoutService.highlightedDiffractionWidget$.next(null);
     this.selectedPeakTrackId = "";
+    this._analysisLayoutService.targetWidgetIds$.next(new Set([this.selectedContextImage, this.selectedSpectrumChart]));
   }
 
   hoverChartSelection(id: string) {

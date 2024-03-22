@@ -29,11 +29,11 @@ POSSIBILITY OF SUCH DAMAGE. -->
 
 <div fxLayout="column" class="mist-convert">
   <div fxLayout="row" fxLayoutAlign="space-between center" class="card-toolbar header">
-    <div class="txt-widget-title">Convert MIST to Standard ROIs</div>
+    <div class="txt-widget-title">Convert {{ selectedROIs.length }} MIST to Standard ROIs</div>
   </div>
   <div class="card-toolbar gap-separated-horizontal-elements">
-    <push-button buttonStyle="outline" (onClick)="onCancel()"> Cancel </push-button>
-    <push-button buttonStyle="yellow" (onClick)="onConvert()"> Convert </push-button>
+    <push-button buttonStyle="outline" (onClick)="onCancel()">Cancel</push-button>
+    <push-button buttonStyle="yellow" (onClick)="onConvert()">Convert</push-button>
     <!-- <push-button buttonStyle="yellow" (onClick)="onConvert(true)"> Convert + Share </push-button> -->
   </div>
 </div>

@@ -2,6 +2,7 @@ import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from "@angular
 import { Injectable } from "@angular/core";
 import { Observable, map, mergeMap, of } from "rxjs";
 import { RGBUImage } from "src/app/models/RGBUImage";
+import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
 import { LocalStorageService } from "src/app/modules/pixlisecore/services/local-storage.service";
 import { APIPaths } from "src/app/utils/api-helpers";
 import { Uint8ToString } from "src/app/utils/utils";
@@ -130,6 +131,76 @@ export class APIEndpointsService {
         return RGBUImage.readImage(bytes, imagePath);
       })
     );
+  }
+
+  private _generatedTIFFPreview(imagePath: string, maxAge: number = 3600): Observable<string> {
+    return new Observable<string>(previewObserver => {
+      this.loadRGBUImageTIF(imagePath, maxAge).subscribe({
+        next: img => {
+          new Observable<string>(observer => {
+            let generated = img.generateRGBDisplayImage(1, "RGB", 0, false, PixelSelection.makeEmptySelection(), null, null);
+            if (generated?.image?.src) {
+              observer.next(generated.image.src);
+            } else {
+              observer.error("error");
+              console.error("Error generating RGB display image", img?.path);
+            }
+          }).subscribe({
+            next: (url: string) => {
+              previewObserver.next(url);
+            },
+            error: (err: any) => {
+              console.error(err);
+              previewObserver.error(err);
+            },
+          });
+        },
+        error: err => {
+          console.error(err);
+          previewObserver.error(err);
+        },
+      });
+    });
+  }
+
+  loadRGBUImageTIFPreview(imagePath: string, maxAge: number = 3600): Observable<string> {
+    const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
+    let tiffPreviewKey = `tiff-preview-${apiUrl}`;
+
+    return new Observable<string>(previewObserver => {
+      this.localStorageService
+        .getImage(tiffPreviewKey)
+        .then(async imageData => {
+          if (imageData && imageData.timestamp > Date.now() - maxAge) {
+            previewObserver.next(imageData.data);
+            previewObserver.complete();
+          } else {
+            this._generatedTIFFPreview(imagePath, maxAge).subscribe({
+              next: url => {
+                previewObserver.next(url);
+                this.localStorageService.storeImage(url, tiffPreviewKey, tiffPreviewKey, 0, 0, url.length);
+                previewObserver.complete();
+              },
+              error: err => {
+                previewObserver.error(err);
+              },
+            });
+          }
+        })
+        .catch(async err => {
+          console.error(err);
+          this._generatedTIFFPreview(imagePath, maxAge).subscribe({
+            next: url => {
+              previewObserver.next(url);
+              this.localStorageService.storeImage(url, tiffPreviewKey, tiffPreviewKey, 0, 0, url.length);
+              previewObserver.complete();
+            },
+            error: err => {
+              previewObserver.error(err);
+            },
+          });
+        });
+    });
   }
 
   // Used by dataset customisation RGBU loading and from loadRGBUImage()

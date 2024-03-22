@@ -143,7 +143,7 @@ export class RGBUImage {
     removeTopSpecularArtifacts: boolean = false,
     removeBottomSpecularArtifacts: boolean = false
   ): RGBUImageGenerated | null {
-    if (channelOrder.length != 3) {
+    if (channelOrder.length !== 3) {
       return null;
     }
 
@@ -244,7 +244,7 @@ export class RGBUImage {
   }
 
   private makeRGBImageBytes(channelOrder: string, pixelCount: number, brightness: number): Uint8Array {
-    const channels: (FloatImage | null)[] = []; //[this.r, this.g, this.b, this.u];
+    let channels: (FloatImage | null)[] = []; //[this.r, this.g, this.b, this.u];
     // fill it!
     for (let ch = 0; ch < channelOrder.length; ch++) {
       const img = this.channelImageForName(channelOrder[ch]);
@@ -273,8 +273,7 @@ export class RGBUImage {
           }
 
           // Also write it to the overall image for the appropriate channel
-          //if(ch < 3)
-          {
+          if (ch < 3) {
             overallImgBytes[writeIdx + ch] = greyValue;
           }
 

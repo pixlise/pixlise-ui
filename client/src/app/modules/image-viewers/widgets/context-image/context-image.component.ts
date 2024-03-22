@@ -276,6 +276,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
         if (this._analysisLayoutService.isMapsPage && contextData.mapLayers.length > 0) {
           this.mdl.expressionIds = contextData.mapLayers.map((layer: MapLayerVisibility) => layer.expressionID);
+          this.cachedExpressionIds = this.mdl.expressionIds.slice();
+          this.cachedROIs = this.mdl.roiIds.slice();
           this.mdl.drawImage = false;
           this.mdl.hideFootprintsForScans = [this.scanId];
           this.mdl.hidePointsForScans = [this.scanId];
@@ -373,7 +375,6 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         const expressionId = highlightedWidget.expressionId || highlightedWidget.result?.expression?.id;
 
         if (expressionId) {
-          this.cachedExpressionIds = this.mdl.expressionIds.slice();
           this.mdl.expressionIds = [expressionId];
         } else {
           this.mdl.expressionIds = this.cachedExpressionIds.slice();
@@ -396,7 +397,6 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         }
 
         if (highlighted.roiId) {
-          this.cachedROIs = this.mdl.roiIds.slice();
           const visibleROI = VisibleROI.create({ id: highlighted.roiId, scanId: highlighted.scanId });
           this.loadROIRegion(visibleROI, true);
         } else {
@@ -871,6 +871,9 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
       return;
     }
 
+    this.cachedExpressionIds = this.mdl.expressionIds.slice();
+    this.cachedROIs = this.mdl.roiIds.slice();
+
     this.onSaveWidgetData.emit(
       ContextImageState.create({
         panX: this.mdl.transform.pan.x,
@@ -896,16 +899,8 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
     );
   }
 
-  onToggleImageOptionsView(trigger: Element | undefined) {
-    if (this._shownImageOptions) {
-      // Hide it
-      this._shownImageOptions.close();
-      return;
-    }
-
-    const dialogConfig = new MatDialogConfig();
-    // Pass data to dialog
-    dialogConfig.data = new ImagePickerParams(
+  getImagePickerParams(): ImagePickerParams {
+    return new ImagePickerParams(
       this.configuredScanIds,
       new ImageDisplayOptions(
         this.mdl.imageName,
@@ -918,9 +913,23 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
         this.mdl.rgbuChannels,
         this.mdl.unselectedOpacity,
         this.mdl.unselectedGrayscale,
-        this.scanId
+        this.scanId,
+        this.mdl.rgbuImageScaleData?.specularRemovedValueRange,
+        this.mdl.rgbuImageScaleData?.valueRange
       )
     );
+  }
+
+  onToggleImageOptionsView(trigger: Element | undefined) {
+    if (this._shownImageOptions) {
+      // Hide it
+      this._shownImageOptions.close();
+      return;
+    }
+
+    const dialogConfig = new MatDialogConfig();
+    // Pass data to dialog
+    dialogConfig.data = this.getImagePickerParams();
 
     dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
@@ -953,6 +962,11 @@ export class ContextImageComponent extends BaseWidgetModel implements OnInit, On
 
       this.reloadModel();
       this.saveState();
+
+      if (this._shownImageOptions?.componentInstance?.loadOptions) {
+        let params = this.getImagePickerParams();
+        this._shownImageOptions.componentInstance.loadOptions(params.options);
+      }
     });
 
     this._shownImageOptions.afterClosed().subscribe(() => {

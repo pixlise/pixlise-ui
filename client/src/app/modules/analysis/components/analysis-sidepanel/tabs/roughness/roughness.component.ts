@@ -33,25 +33,12 @@ import { Subscription } from "rxjs";
 import { PMCDataValues } from "src/app/expression-language/data-values";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
 import { EXPR_LANGUAGE_PIXLANG } from "src/app/expression-language/expression-language";
-import { DetectedDiffractionPeakStatuses, DetectedDiffractionPerLocation, ManualDiffractionPeak } from "src/app/generated-protos/diffraction-data";
+import { DetectedDiffractionPeakStatuses, ManualDiffractionPeak } from "src/app/generated-protos/diffraction-data";
 import { DataExpression } from "src/app/generated-protos/expressions";
-import { ScanEntryRange, ScanItem } from "src/app/generated-protos/scan";
-import { ScanEntryReq } from "src/app/generated-protos/scan-entry-msgs";
+import { ScanItem } from "src/app/generated-protos/scan";
 import { WidgetLayoutConfiguration } from "src/app/generated-protos/screen-configuration";
-import { MinMax, SpectrumEnergyCalibration } from "src/app/models/BasicTypes";
 import { PredefinedROIID } from "src/app/models/RegionOfInterest";
-// import { HistogramInteraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction-tab-old/interaction";
-// import { HistogramInteraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction-tab-old/interaction";
-import { DiffractionHistogramDrawer } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/drawer";
-import { HistogramInteraction } from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/interaction";
-import {
-  DiffractionHistogramModel,
-  HistogramBar,
-  HistogramData,
-  HistogramSelectionOwner,
-} from "src/app/modules/analysis/components/analysis-sidepanel/tabs/diffraction/model";
 import { AnalysisLayoutService } from "src/app/modules/analysis/services/analysis-layout.service";
-import { ExpressionsService } from "src/app/modules/expressions/services/expressions.service";
 import { ActionButtonComponent } from "src/app/modules/pixlisecore/components/atoms/buttons/action-button/action-button.component";
 import { BeamSelection } from "src/app/modules/pixlisecore/models/beam-selection";
 import { DiffractionPeak, RoughnessItem } from "src/app/modules/pixlisecore/models/diffraction";
@@ -60,15 +47,9 @@ import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selecti
 import { SelectionService, WidgetDataService } from "src/app/modules/pixlisecore/pixlisecore.module";
 import { APICachedDataService } from "src/app/modules/pixlisecore/services/apicacheddata.service";
 import { EnergyCalibrationService } from "src/app/modules/pixlisecore/services/energy-calibration.service";
-import { HistogramDrawer } from "src/app/modules/scatterplots/widgets/histogram-widget/histogram-drawer";
 import { UserOptionsService } from "src/app/modules/settings/services/user-options.service";
 import { DiffractionPeakMapPerLocation, DiffractionService } from "src/app/modules/spectrum/services/diffraction.service";
-import { CursorId } from "src/app/modules/widget/components/interactive-canvas/cursor-id";
-import { CanvasDrawer } from "src/app/modules/widget/components/interactive-canvas/interactive-canvas.component";
-import { PanZoom } from "src/app/modules/widget/components/interactive-canvas/pan-zoom";
 import { WIDGETS } from "src/app/modules/widget/models/widgets.model";
-import { Colours } from "src/app/utils/colours";
-import { encodeIndexList } from "src/app/utils/utils";
 
 export type DiffractionExpressionResponse = {
   title?: string;
@@ -114,9 +95,6 @@ export class RoughnessComponent implements OnInit {
   peakStatusesPerScan: Map<string, DetectedDiffractionPeakStatuses> = new Map();
   peakStatuses: DetectedDiffractionPeakStatuses = DetectedDiffractionPeakStatuses.create();
 
-  private _allPeakskeVRange: MinMax = new MinMax(0, 0);
-  private _currentCalibrations: SpectrumEnergyCalibration[] | null = null;
-
   detectedPeaksPerScan: Map<string, DiffractionPeakMapPerLocation> = new Map();
   peaks: RoughnessItem[] = [];
   filteredPeaks: RoughnessItem[] = [];
@@ -129,8 +107,6 @@ export class RoughnessComponent implements OnInit {
   userPeakEditing: boolean = false;
 
   visiblePeakId: string = "";
-  private _barSelected: boolean[] = [];
-  private _barSelectedCount: number = 0;
 
   detectPeaksListOpen: boolean = false;
 
@@ -167,7 +143,6 @@ export class RoughnessComponent implements OnInit {
     private _diffractionService: DiffractionService,
     private _userOptionsService: UserOptionsService,
     private _widgetDataService: WidgetDataService,
-    private _expressionsService: ExpressionsService,
     public dialog: MatDialog
   ) {}
 
@@ -263,12 +238,23 @@ export class RoughnessComponent implements OnInit {
     this.updateDisplayList();
   }
 
+  // This is called by the sidepanel component
+  onTabClose() {
+    this._analysisLayoutService.targetWidgetIds$.next(new Set());
+  }
+
+  // This is called by the sidepanel component
+  onTabOpen() {
+    this._analysisLayoutService.targetWidgetIds$.next(new Set([this.selectedContextImage, this.selectedSpectrumChart]));
+  }
+
   get selectedContextImage(): string {
     return this._selectedContextImage;
   }
 
   set selectedContextImage(value: string) {
     this._selectedContextImage = value;
+    this._analysisLayoutService.targetWidgetIds$.next(new Set([this.selectedContextImage, this.selectedSpectrumChart]));
   }
 
   get selectedSpectrumChart(): string {
@@ -279,6 +265,7 @@ export class RoughnessComponent implements OnInit {
     this._selectedSpectrumChart = value;
     this._analysisLayoutService.highlightedDiffractionWidget$.next(null);
     this.selectedPeakTrackId = "";
+    this._analysisLayoutService.targetWidgetIds$.next(new Set([this.selectedContextImage, this.selectedSpectrumChart]));
   }
 
   hoverChartSelection(id: string) {
@@ -330,7 +317,6 @@ export class RoughnessComponent implements OnInit {
 
     this._subs.add(
       this._energyCalibrationService.getCurrentCalibration(this.selectedScanId).subscribe(calibrations => {
-        this._currentCalibrations = calibrations;
         let dataSource = new ExpressionDataSource();
         dataSource
           .prepare(
