@@ -191,7 +191,12 @@ export class WidgetDataService {
         return new RegionDataResults(resultItems, "");
       }),
       catchError(err => {
-        console.error(err);
+        const whatDbg = [];
+        for (const x of what) {
+          whatDbg.push(`Query: expr=${x.exprId}, scan=${x.scanId}, quant=${x.quantId}, roi=${x.roiId}`);
+        }
+        SentryHelper.logMsg(true, `Uncaught error in getData: ${err}.\nQuery items:\n${whatDbg.join("\n")}`);
+
         // TODO: make it so getData() never throws an error!
         // return new RegionDataResults([], err);
         throw err;
@@ -343,7 +348,7 @@ export class WidgetDataService {
       }),
       catchError(err => {
         // This is now already logged in memoisation service
-        //console.error("Memoisation cache miss for " + cacheKey + ", calculating...");
+        SentryHelper.logMsg(true, `Error reading ${cacheKey} from memoisationService.get: ${err}. Will calculate instead`);
 
         // No matter what the error was, we need to now calculate this locally
         return this.getDataSingleCalculate(query, allowAnyResponse, cacheKey);
@@ -403,7 +408,10 @@ export class WidgetDataService {
       }),
       catchError(err => {
         const errorMsg = httpErrorToString(err, "Error getting expression: " + query.exprId);
+
+        // Don't need this in sentry!
         console.error(errorMsg);
+
         return of(new DataQueryResult(null, false, [], 0, "", "", new Map<string, PMCDataValues>(), errorMsg));
       })
     );
@@ -615,7 +623,7 @@ export class WidgetDataService {
                   let runtimePer1000 = 0;
 
                   // Need to account for allowAnyResponse edge case
-                  let values = queryResult?.resultValues?.values || [];
+                  const values = queryResult?.resultValues?.values || [];
                   if (queryResult.runtimeMs > 0 && values.length > 0) {
                     runtimePer1000 = queryResult.runtimeMs / (values.length / 1000);
                   }
@@ -695,7 +703,7 @@ export class WidgetDataService {
               throw new Error(`Module ${ref.moduleId} version ${ref.version} came back empty`);
             }
 
-            let moduleVersion = value.module.versions.find(
+            const moduleVersion = value.module.versions.find(
               v => v.version?.major === ref.version?.major && v.version?.minor === ref.version?.minor && v.version?.patch === ref.version?.patch
             );
             if (!moduleVersion) {

@@ -8,6 +8,7 @@ import { MemoiseGetResp } from "src/app/generated-protos/memoisation-msgs";
 import { MemoisedItem } from "src/app/generated-protos/memoisation";
 import { LocalStorageService } from "./local-storage.service";
 import { DataExpressionId } from "src/app/expression-language/expression-id";
+import { SentryHelper } from "src/app/utils/utils";
 
 @Injectable({
   providedIn: "root",
@@ -38,10 +39,15 @@ export class MemoisationService {
   memoise(key: string, data: Uint8Array): Observable<void> {
     // Only memoise if it's changed
     const existing = this._local.get(key);
-    if (existing && this.equals(existing.data, data)) {
-      // Stop here, we've already got this memoised
-      console.warn("Already memoised: " + key);
-      return of();
+    if (existing) {
+      const idx = this.getIndexAtDifference(existing.data, data);
+      if (idx < 0) {
+        // Stop here, we've already got this memoised
+        console.warn("Already memoised: " + key);
+        return of();
+      } else {
+        SentryHelper.logMsg(false, `Memoised data ${key} changed at idx ${idx}`);
+      }
     }
 
     console.debug("Memoised: " + key);
@@ -95,7 +101,7 @@ export class MemoisationService {
           }
         })
         .catch(async err => {
-          console.error(err);
+          SentryHelper.logMsg(true, `Error reading ${key} from local storage memoisation: ${err}`);
 
           // Get from API
           return await this.getFromAPI(key);
@@ -133,17 +139,16 @@ export class MemoisationService {
   // We should use hashes stored in the API or something...
   // Also currently no faster way than this it seems
   // https://stackoverflow.com/questions/76127214/compare-equality-of-two-uint8array
-  private equals(a: Uint8Array, b: Uint8Array): boolean {
+  private getIndexAtDifference(a: Uint8Array, b: Uint8Array): number {
     if (a.length != b.length) {
-      return false;
+      return 0;
     }
 
     for (let c = 0; c < a.length; c++) {
       if (a[c] != b[c]) {
-        console.log("Memoisation equality failed at idx: " + c);
-        return false;
+        return c;
       }
     }
-    return true;
+    return -1;
   }
 }
