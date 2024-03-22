@@ -461,19 +461,35 @@ export class RGBUImage {
                   fVal = 0;
                 }
 
-                // TIF to RGBU mapping:
-                // Looks like the image channels aren't in R=0,G=1,B=2,U=3 order as expected, but that they are saved
-                // in this way:
+                // TIF to RGBU mapping has had issues in past! v3 used a previous geotiff lib that just dumped the data out and
+                // the channels were not in R=0,G=1,B=2,U=3 order as expected, but came in as:
                 // red=blue (2)
                 // green=UV (3)
                 // blue=red (0)
                 // UV=green (1)
+                //
+                // For v3 image: PCCR0257_0689789827_000VIS_N008000008906394300060LUD01.tif, from idx 4139 onwards the channels
+                // array ended up containing:
+                // 0: 24688877
+                // 1: 12344444
+                // 2: 01122222222
+                // 3: 01122222233
+                //
+                // With v4 PIXLISE we used a newer version of the geotiff lib (which has the above readRasters()). This was thought
+                // to behave the same, but we had colour channel mismatches. Turns out this does seem to store the channels in expected
+                // order BUT for some unknown reason, the data comes in like so:
+                // v4:
+                // 0: 4139 246888777777
+                // 1: 4139 123444444333
+                // 2: 4139 112222222222
+                // 3: 4139 112222223333
+                //
+                // NOTE that v3 had 1 byte of offset for the B and U channels! This doesn't seem to look any different visually
+                // though perhaps there is some padding that was interpreted as channel data in v3, and maybe the B and U channels
+                // were off by 1?
 
-                // So we modify where we write the data...
-                const writeChannel = (ch + 2) % 4;
-
-                channels[writeChannel].values[px] = fVal;
-                channels[writeChannel].valueRange.expand(fVal);
+                channels[ch].values[px] = fVal;
+                channels[ch].valueRange.expand(fVal);
               }
 
               readIdx += 4;
