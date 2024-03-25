@@ -61,8 +61,6 @@ export class AppConfig {
   versionPollUrl: string = "";
   dataCollectionAgreementVersionUrl: string = "";
 
-  allowDifferentMapSizesInExpressions: boolean = true;
-
   expectedDataCollectionAgreementVersion: string = ""; // Eg "1.0"
 
   unassignedNewUserRoleId: string = ""; // Auth0 role ID for unassigned new user
