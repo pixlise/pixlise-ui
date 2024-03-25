@@ -38,6 +38,7 @@ import { DataModuleHelpers } from "./data-module-helpers";
 import { environment } from "src/environments/environment";
 
 import { LuaFactory, LuaLibraries, LuaEngine } from "pixlise-wasmoon";
+import { ExpressionError } from "./expression-error";
 
 export class LuaDataQuerier {
   // An id we use for logging about this Lua runner
@@ -316,7 +317,7 @@ export class LuaDataQuerier {
       concatMap(() => {
         // Here we concat modules with the source we're about to run
         let allSource = "";
-        for (let [moduleName, moduleSource] of modules) {
+        for (const [moduleName, moduleSource] of modules) {
           const retPos = moduleSource.lastIndexOf("return " + moduleName);
           if (retPos == -1) {
             throw new Error("Expected module to end with return statement returning itself");
@@ -421,7 +422,8 @@ export class LuaDataQuerier {
           cleanupLua = true;
         }
 
-        SentryHelper.logMsg(true, `runLuaCode error: ${parsedErr}`);
+        // This was doubling up on log msgs, no point sending to Sentry here because whatever called us should log anyway
+        //SentryHelper.logMsg(true, `runLuaCode error: ${parsedErr}`);
 
         // This prints a bunch of tables out but hasn't proven useful for debugging...
         //this._lua.global.dumpStack(console.error);
@@ -469,7 +471,7 @@ export class LuaDataQuerier {
     }
 */
   // For examples, see unit tests
-  private parseLuaError(err: any, sourceCode: string, maxTimeoutMs: number = environment.luaTimeoutMs): Error {
+  private parseLuaError(err: any, sourceCode: string, maxTimeoutMs: number = environment.luaTimeoutMs): ExpressionError {
     // At this point, we can look at the error Lua returned and maybe form a more useful error message for users
     // because we supply multi-line source code to Lua, but all its error msgs print out a segment of the first line!
     let errType = "";
@@ -496,7 +498,7 @@ export class LuaDataQuerier {
       // Sometimes its an abort message, which happens when the code times out. We don't have
       // a better way of reporting from Lua so try to make a nicer error message here
       if (err.message.startsWith("Aborted()")) {
-        return new Error(`Lua call took longer than limit of ${maxTimeoutMs}ms. Error: ${err.message}`);
+        return new ExpressionError(`Lua call took longer than limit of ${maxTimeoutMs}ms. Error: ${err.message}`, "", -1, "Runtime", "");
       } else {
         // It appears it can optionally come as:
         // error message
@@ -552,15 +554,7 @@ export class LuaDataQuerier {
     if ((errType == "ErrorSyntax" || errType == "ErrorRun") && errLine > -1) {
       // Process this as a syntax error, including the relevant fields pointing to source code
       const errTypeStr = errType == "ErrorSyntax" ? "Syntax" : "Runtime";
-      let result = new Error(`${errTypeStr} error on line ${errLine}: ${errMsg}`);
-      result["stack"] = err?.stack;
-      result["line"] = errLine;
-      result["errType"] = errType;
-      if (errSourceLine.length >= 0) {
-        result["sourceLine"] = errSourceLine;
-      }
-
-      return result;
+      return new ExpressionError(`${errTypeStr} error on line ${errLine}: ${errMsg}`, err?.stack, errLine, errType, errSourceLine);
     }
     // else
 

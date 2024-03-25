@@ -145,7 +145,7 @@ export class LuaTranspiler {
             this._variableLookupIsMap.set(varName, isMap);
           }
         } catch (err) {
-          SentryHelper.logMsg(true, `transpile parseLineExpression error: ${err}`);
+          SentryHelper.logException(err, `lua transpiler`);
           return "";
         }
       }

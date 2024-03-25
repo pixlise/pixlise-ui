@@ -120,7 +120,7 @@ export class APIEndpointsService {
     });
   }
 
-  loadRGBUImageTIFFromAPI(imagePath: string, maxCacheSize: number = 15000000): Observable<RGBUImage> {
+  private loadRGBUImageTIFFromAPI(imagePath: string, maxCacheSize: number = 15000000): Observable<RGBUImage> {
     const apiUrl = APIPaths.getWithHost(`images/download/${imagePath}`);
     return this.http.get(apiUrl, { responseType: "arraybuffer" }).pipe(
       mergeMap((bytes: ArrayBuffer) => {

@@ -33,7 +33,7 @@
 .image-options {
     display: flex;
     flex-direction: column;
-    width: 700px;
+    min-width: 520px;
 
     header {
         display: flex;
@@ -122,10 +122,15 @@
         @extend .setting-row;
     }
 
+    .bunched {
+      justify-content: start;
+    }
+
     .centered-row {
         display: flex;
         flex-direction: row;
         align-items: center;
+        gap: 8px;
     }
 
     .column {

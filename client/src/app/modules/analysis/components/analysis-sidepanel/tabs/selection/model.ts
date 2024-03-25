@@ -28,20 +28,19 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 import { Point } from "src/app/models/Geometry";
-import { ContextImageItem } from "src/app/modules/image-viewers/image-viewers.module";
-import { PixelSelection } from "src/app/modules/pixlisecore/models/pixel-selection";
+import { FloatImage, RGBUImage } from "src/app/models/RGBUImage";
 import { SelectionHistoryItem } from "src/app/modules/pixlisecore/services/selection.service";
 
 export interface AverageRGBURatio {
   name: string;
-  ratio: number;
+  ratio: number | null;
 }
-export const rgbuDisplayNames = {
-  r: "Near-IR",
-  g: "Green",
-  b: "Blue",
-  u: "UV",
-};
+const rgbuDisplayNames = new Map<string, string>([
+  ["r", "Near-IR"],
+  ["g", "Green"],
+  ["b", "Blue"],
+  ["u", "UV"],
+]);
 
 export interface PixelPoint {
   point: Point;
@@ -49,11 +48,12 @@ export interface PixelPoint {
 }
 
 export class SelectionTabModel {
-  /* static calculateAverageRGBURatio(pixels: Set<number>, contextImage: ContextImageItem, firstChannel: string, secondChannel: string): AverageRGBURatio {
-    const averageName = firstChannel === secondChannel ? `${rgbuDisplayNames[firstChannel]}` : `${rgbuDisplayNames[firstChannel]}/${rgbuDisplayNames[secondChannel]}`;
+  static calculateAverageRGBURatio(pixels: Set<number>, rgbuSourceImage: RGBUImage, firstChannel: string, secondChannel: string): AverageRGBURatio {
+    const averageName =
+      firstChannel === secondChannel ? `${rgbuDisplayNames.get(firstChannel)}` : `${rgbuDisplayNames.get(firstChannel)}/${rgbuDisplayNames.get(secondChannel)}`;
 
     // Verify context image is valid and there is an RGBU source image
-    if (!contextImage || !contextImage.rgbuSourceImage) {
+    if (!rgbuSourceImage) {
       return {
         name: averageName,
         ratio: null,
@@ -61,16 +61,18 @@ export class SelectionTabModel {
     }
 
     // Verify both selected channels are not null
-    const rgbuSourceImage = contextImage.rgbuSourceImage;
-    if (!rgbuSourceImage[firstChannel] || !rgbuSourceImage[secondChannel]) {
+    const firstChannelImg = rgbuSourceImage.getChannel(firstChannel);
+    const secondChannelImg = rgbuSourceImage.getChannel(secondChannel);
+
+    if (!firstChannelImg || !secondChannelImg) {
       console.error(`Invalid Channel Selection (${firstChannel}/${secondChannel})`);
       return {
         name: averageName,
         ratio: null,
       };
     }
-    const firstChannelPixels = rgbuSourceImage[firstChannel].values;
-    const secondChannelPixels = rgbuSourceImage[secondChannel].values;
+    const firstChannelPixels = firstChannelImg.values;
+    const secondChannelPixels = secondChannelImg.values;
 
     let averageRatio = 0;
     let count = pixels.size;
@@ -111,23 +113,22 @@ export class SelectionTabModel {
     };
   }
 
-  static calculateAverageRGBURatios(selection: SelectionHistoryItem, contextImage: ContextImageItem): AverageRGBURatio[] {
-    const channelPermutations = [];
-    Object.keys(rgbuDisplayNames).forEach(channel => {
+  static calculateAverageRGBURatios(selection: SelectionHistoryItem, rgbuImage: RGBUImage): AverageRGBURatio[] {
+    const channelPermutations: string[][] = [];
+    for (const channel of rgbuDisplayNames.keys()) {
       channelPermutations.push([channel, channel]);
-      Object.keys(rgbuDisplayNames)
-        .filter(subChannel => subChannel !== channel)
-        .forEach(subChannel => {
+      for (const subChannel of rgbuDisplayNames.keys()) {
+        if (subChannel != channel) {
           channelPermutations.push([channel, subChannel]);
-        });
-    });
+        }
+      }
+    }
 
     return channelPermutations.map(([firstChannel, secondChannel]) => {
-      return this.calculateAverageRGBURatio(selection.pixelSelection.selectedPixels, contextImage, firstChannel, secondChannel);
+      return this.calculateAverageRGBURatio(selection.pixelSelection.selectedPixels, rgbuImage, firstChannel, secondChannel);
     });
   }
 
-*/
   // static getNearbyPixels(pixelIndex: number, contextImage: ContextImageItem, radius: number = 3): PixelPoint[] {
   //   // Only contine if we have a valid RGBU context image and requested radius >= 0
   //   if (!contextImage || radius < 0) {

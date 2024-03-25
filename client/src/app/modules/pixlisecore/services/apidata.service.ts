@@ -1,7 +1,6 @@
 import { Injectable } from "@angular/core";
 
 import { APICommService } from "./apicomm.service";
-import { Subject, ReplaySubject, BehaviorSubject, Observable } from "rxjs";
 
 import { WSMessage } from "../../../generated-protos/websocket";
 import { WSMessageHandler } from "./wsMessageHandler";
